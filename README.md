@@ -635,6 +635,6 @@ Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICE
 
 ---
 
-Geliştirici: [Tunjay Orucov](https://github.com/tunjayoff)  
+Geliştirici: [Tuncay Eşsiz](https://github.com/tunjayoff)  
 Sürüm: 1.0.0  
 Son güncelleme: Mart 2024 

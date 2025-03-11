@@ -1,6 +1,16 @@
 # SofaScore Scraper Gereksinimleri
-requests>=2.31.0
-aiohttp>=3.9.1
-colorama>=0.4.6
-tqdm>=4.66.1
-python-dotenv>=1.0.0 
+# Temel HTTP İstek Kütüphaneleri
+requests>=2.31.0         # Senkron HTTP istekleri için
+aiohttp>=3.9.1           # Asenkron HTTP istekleri için
+
+# Kullanıcı Arayüzü ve Görselleştirme
+colorama>=0.4.6          # Terminal renklendirme
+tqdm>=4.66.1             # İlerleme çubukları
+
+# Konfigürasyon ve Ortam Değişkenleri
+python-dotenv>=1.0.0     # .env dosyalarını yüklemek için
+
+# Opsiyonel Bağımlılıklar (İhtiyaç Halinde Kurulabilir)
+# pandas>=2.1.0          # Veri analizi ve CSV işlemleri için (gerekirse yorum satırını kaldırın)
+# matplotlib>=3.8.0      # Grafik oluşturma için (gerekirse yorum satırını kaldırın)
+# tabulate>=0.9.0        # Terminal tablo formatları için (gerekirse yorum satırını kaldırın) 
