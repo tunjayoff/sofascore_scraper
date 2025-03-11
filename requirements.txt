@@ -1,0 +1,6 @@
+# SofaScore Scraper Gereksinimleri
+requests>=2.31.0
+aiohttp>=3.9.1
+colorama>=0.4.6
+tqdm>=4.66.1
+python-dotenv>=1.0.0 

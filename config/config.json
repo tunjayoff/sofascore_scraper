@@ -1,0 +1,14 @@
+{
+    "api": {
+        "base_url": "https://api.sofascore.com/api/v1",
+        "use_proxy": false,
+        "proxy_url": ""
+    },
+    "general": {
+        "data_dir": "data"
+    },
+    "display": {
+        "use_color": true,
+        "date_format": "%Y-%m-%d %H:%M:%S"
+    }
+}

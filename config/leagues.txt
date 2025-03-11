@@ -1,0 +1,12 @@
+# League configuration file
+# Format: League Name: ID
+Premier League: 17
+LaLiga: 8
+Serie A: 23
+Bundesliga: 35
+Ligue 1: 34
+Brasileirão Betano: 325
+Saudi Pro League: 955
+Eredivisie: 37
+Liga Portugal Betclic: 238
+Turkey: 52
