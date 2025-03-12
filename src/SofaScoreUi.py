@@ -94,7 +94,7 @@ class SimpleSofaScoreUI:
         """Terminal ekranını temizler."""
         if platform.system() == "Windows":
             os.system("cls")
-                else:
+        else:
             os.system("clear")
     
     def print_header(self) -> None:
@@ -131,9 +131,9 @@ class SimpleSofaScoreUI:
     def run(self) -> None:
         """Kullanıcı arayüzünü çalıştırır."""
         try:
-        while True:
+            while True:
                 self.clear_screen()
-            self.print_header()
+                self.print_header()
                 self.print_system_status()
                 self.print_main_menu()
                 
@@ -141,20 +141,20 @@ class SimpleSofaScoreUI:
                 
                 if choice == "0":
                     print(f"\n{COLORS['INFO']}SofaScore Scraper'dan çıkılıyor. Hoşçakalın!")
-                break
+                    break
                 elif choice == "1":
                     self.show_league_menu()
-            elif choice == "2":
+                elif choice == "2":
                     self.show_season_menu()
-            elif choice == "3":
+                elif choice == "3":
                     self.show_match_menu()
-            elif choice == "4":
+                elif choice == "4":
                     self.show_match_data_menu()
-            elif choice == "5":
+                elif choice == "5":
                     self.show_stats_menu()
-            elif choice == "6":
+                elif choice == "6":
                     self.show_settings_menu()
-            else:
+                else:
                     input(f"{COLORS['WARNING']}Geçersiz seçim! Devam etmek için Enter'a basın...")
         
         except KeyboardInterrupt:
@@ -167,7 +167,7 @@ class SimpleSofaScoreUI:
     def show_league_menu(self) -> None:
         """Lig yönetimi menüsünü görüntüler."""
         while True:
-        self.clear_screen()
+            self.clear_screen()
             self.print_header()
             
             print(f"\n{COLORS['SUBTITLE']}Lig Yönetimi:")
@@ -217,13 +217,13 @@ class SimpleSofaScoreUI:
             elif choice == "1":
                 self.season_menu.update_all_seasons()
                 input("\nDevam etmek için Enter'a basın...")
-        elif choice == "2":
+            elif choice == "2":
                 self.season_menu.update_league_seasons()
                 input("\nDevam etmek için Enter'a basın...")
-        elif choice == "3":
+            elif choice == "3":
                 self.season_menu.list_seasons()
                 input("\nDevam etmek için Enter'a basın...")
-        else:
+            else:
                 input(f"{COLORS['WARNING']}Geçersiz seçim! Devam etmek için Enter'a basın...")
     
     def show_match_menu(self) -> None:
@@ -242,17 +242,17 @@ class SimpleSofaScoreUI:
             choice = input("\nSeçiminiz (0-3): ")
             
             if choice == "0":
-                    break
+                break
             elif choice == "1":
                 self.match_menu.fetch_matches_for_league()
                 input("\nDevam etmek için Enter'a basın...")
-        elif choice == "2":
+            elif choice == "2":
                 self.match_menu.fetch_matches_for_all_leagues()
                 input("\nDevam etmek için Enter'a basın...")
-        elif choice == "3":
+            elif choice == "3":
                 self.match_menu.list_matches()
                 input("\nDevam etmek için Enter'a basın...")
-        else:
+            else:
                 input(f"{COLORS['WARNING']}Geçersiz seçim! Devam etmek için Enter'a basın...")
     
     def show_match_data_menu(self) -> None:
@@ -317,10 +317,10 @@ class SimpleSofaScoreUI:
         """Ayarlar menüsünü görüntüler."""
         while True:
             self.clear_screen()
-        self.print_header()
-        
+            self.print_header()
+            
             print(f"\n{COLORS['SUBTITLE']}Ayarlar:")
-        print("-" * 50)
+            print("-" * 50)
             print("1. ⚙️ Yapılandırma Düzenle")
             print("2. 💾 Veri Yedekle")
             print("3. 📤 Veri Geri Yükle")
@@ -341,17 +341,17 @@ class SimpleSofaScoreUI:
             elif choice == "3":
                 self.settings_menu.restore_data()
                 input("\nDevam etmek için Enter'a basın...")
-                elif choice == "4":
+            elif choice == "4":
                 self.settings_menu.clear_data()
                 input("\nDevam etmek için Enter'a basın...")
-                elif choice == "5":
+            elif choice == "5":
                 self.settings_menu.show_about()
                 input("\nDevam etmek için Enter'a basın...")
-                else:
+            else:
                 input(f"{COLORS['WARNING']}Geçersiz seçim! Devam etmek için Enter'a basın...")
     
     def _ensure_directory(self, directory: str) -> None:
         """Dizin yoksa oluşturur."""
         if not os.path.exists(directory):
             os.makedirs(directory)
-            logger.info(f"Dizin oluşturuldu: {directory}") 
+            logger.info(f"Dizin oluşturuldu: {directory}")

@@ -561,7 +561,7 @@ class MatchFetcher:
             if csv_data:
                 with open(csv_summary_file, 'w', encoding='utf-8', newline='') as f:
                     writer = csv.DictWriter(f, fieldnames=csv_fields)
-                writer.writeheader()
+                    writer.writeheader()
                     writer.writerows(csv_data)
             
                 logger.info(f"{league_name}: Sezon {season_id} CSV özeti kaydedildi: {csv_summary_file}")
