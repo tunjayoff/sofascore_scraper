@@ -1,6 +1,6 @@
 # SofaScore Scraper
 
-Bu proje, SofaScore API'sini kullanarak futbol maçlarının verilerini çekmek, analiz etmek ve yönetmek için geliştirilmiş bir Python uygulamasıdır. Farklı ligler, sezonlar ve maçlar hakkında kapsamlı veri toplama, işleme ve dışa aktarma imkanı sunar.
+Bu proje, SofaScore'dan futbol maçlarının verilerini çekmek, analiz etmek ve yönetmek için geliştirilmiş bir Python uygulamasıdır. Farklı ligler, sezonlar ve maçlar hakkında kapsamlı veri toplama, işleme ve dışa aktarma imkanı sunar.
 
 <div align="center">
     
@@ -43,7 +43,6 @@ SofaScore Scraper, aşağıdaki temel özellikleri sunar:
 - **Lig Yönetimi**:
   - Ligleri listeleme, ekleme ve kaldırma
   - Desteklenen tüm SofaScore liglerini görüntüleme
-  - Lig ID'lerini otomatik tespit etme
 
 - **Sezon İşlemleri**:
   - Liglere ait tüm sezonları çekme ve listeleme
@@ -54,14 +53,12 @@ SofaScore Scraper, aşağıdaki temel özellikleri sunar:
   - Belirli bir lig ve sezon için maç listelerini çekme
   - Haftalık/turlu maç verilerini görüntüleme
   - Tüm ligler için toplu maç verisi toplama
-  - Akıllı sezon seçimi ile eksik verileri tamamlama
 
 - **Maç Detayları**:
   - Maç istatistiklerini çekme
   - Takım serilerini görüntüleme
   - Maç öncesi form verilerini toplama
   - Karşılıklı istatistikleri (H2H) inceleme
-  - Maç olaylarını ve skorlarını analiz etme
 
 - **Veri Dışa Aktarma**:
   - Maç verilerini CSV formatına dönüştürme
@@ -343,11 +340,7 @@ JSON dosyaları, SofaScore API'nin döndürdüğü veri yapısını korur, ancak
 Yeni bir lig eklemek için iki yöntem vardır:
 
 #### 1. Uygulama Üzerinden:
-
-1. Ana menüden "Lig İşlemleri"ni seçin (1)
-2. "Lig Ekle" seçeneğini seçin (2)
-3. SofaScore'dan lig ID'sini öğrenmek için isim ile arama yapın
-4. Lig adını ve ID'sini girin
+# Gelecek güncellemelerle eklenecek.
 
 #### 2. Doğrudan `leagues.txt` Dosyası Üzerinden:
 
@@ -530,15 +523,13 @@ if csv_paths and csv_paths[0]:
 
 ### 1. Lig ID'sini nasıl bulabilirim?
 
-SofaScore web sitesinde veya mobil uygulamasında, ligin URL'sine bakabilirsiniz. Örneğin, Süper Lig için URL `https://www.sofascore.com/tournament/football/turkey/super-lig/52` şeklindedir. Buradaki son sayı (52) lig ID'sidir.
+SofaScore web sitesinde, ligin URL'sine bakabilirsiniz. Örneğin, Süper Lig için URL `https://www.sofascore.com/tournament/football/turkey/super-lig/52` şeklindedir. Buradaki son sayı (52) lig ID'sidir.
 
-Alternatif olarak, uygulama içinde "Lig Ara" özelliğini kullanarak isimle arama yapabilirsiniz.
 
 ### 2. Maç ID'sini nasıl bulabilirim?
 
 Maç ID'lerini birkaç yöntemle bulabilirsiniz:
 - Uygulamada "Maçları Listele" seçeneğini kullanarak
-- SofaScore web sitesinde maç sayfasına giderek URL'den (örn: `https://www.sofascore.com/event/10257123`)
 - Çektiğiniz maç verilerini içeren JSON dosyalarından
 
 ### 3. Rate-limiting hatalarıyla karşılaşıyorum. Ne yapmalıyım?
