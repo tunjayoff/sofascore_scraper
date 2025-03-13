@@ -71,15 +71,31 @@ class SettingsMenuHandler:
             print(f"\n{COLORS['SUBTITLE']}API Yapılandırması:")
             print("-" * 50)
             
-            # Mevcut yapılandırmayı al
-            current_config = self.config_manager.config.get("api", {})
-            base_url = current_config.get("base_url", "https://api.sofascore.com/api/v1")
-            use_proxy = current_config.get("use_proxy", False)
-            proxy_url = current_config.get("proxy_url", "")
+            # Mevcut yapılandırmayı .env dosyasından al
+            import os
+            import dotenv
+            
+            # .env dosyasını yükle
+            dotenv_path = dotenv.find_dotenv()
+            if not dotenv_path:
+                dotenv_path = ".env"  # Varsayılan konum
+            dotenv.load_dotenv(dotenv_path)
+            
+            # Mevcut değerleri al
+            base_url = os.getenv("API_BASE_URL", "https://www.sofascore.com/api/v1")
+            use_proxy = os.getenv("USE_PROXY", "false").lower() == "true"
+            proxy_url = os.getenv("PROXY_URL", "")
+            timeout = int(os.getenv("REQUEST_TIMEOUT", "30"))
+            retry_count = int(os.getenv("MAX_RETRIES", "3"))
+            max_concurrent = int(os.getenv("MAX_CONCURRENT", "25"))
+            user_agent = os.getenv("USER_AGENT", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36")
             
             # Mevcut yapılandırmayı göster
             print(f"{COLORS['INFO']}Mevcut Yapılandırma:")
             print(f"  Base URL: {COLORS['SUCCESS']}{base_url}")
+            print(f"  İstek Zaman Aşımı: {COLORS['SUCCESS']}{timeout} saniye")
+            print(f"  Yeniden Deneme Sayısı: {COLORS['SUCCESS']}{retry_count}")
+            print(f"  Maksimum Eşzamanlı İstek: {COLORS['SUCCESS']}{max_concurrent}")
             print(f"  Proxy Kullan: {COLORS['SUCCESS']}{use_proxy}")
             if use_proxy:
                 print(f"  Proxy URL: {COLORS['SUCCESS']}{proxy_url}")
@@ -87,8 +103,35 @@ class SettingsMenuHandler:
             # Yeni değerleri al
             print(f"\n{COLORS['INFO']}Yeni değerler için Enter tuşuna basarak mevcut değeri koruyabilirsiniz:")
             
+            # Ana API Ayarları
+            print(f"\n{COLORS['SUBTITLE']}Ana API Ayarları:")
             new_base_url = input(f"Base URL [{base_url}]: ").strip() or base_url
             
+            # Performans Ayarları
+            print(f"\n{COLORS['SUBTITLE']}Performans Ayarları:")
+            try:
+                new_timeout = input(f"İstek Zaman Aşımı (saniye) [{timeout}]: ").strip()
+                new_timeout = int(new_timeout) if new_timeout else timeout
+            except ValueError:
+                print(f"{COLORS['WARNING']}⚠️ Geçersiz değer, varsayılan kullanılıyor: {timeout}")
+                new_timeout = timeout
+
+            try:
+                new_retry_count = input(f"Yeniden Deneme Sayısı [{retry_count}]: ").strip()
+                new_retry_count = int(new_retry_count) if new_retry_count else retry_count
+            except ValueError:
+                print(f"{COLORS['WARNING']}⚠️ Geçersiz değer, varsayılan kullanılıyor: {retry_count}")
+                new_retry_count = retry_count
+                
+            try:
+                new_max_concurrent = input(f"Maksimum Eşzamanlı İstek [{max_concurrent}]: ").strip()
+                new_max_concurrent = int(new_max_concurrent) if new_max_concurrent else max_concurrent
+            except ValueError:
+                print(f"{COLORS['WARNING']}⚠️ Geçersiz değer, varsayılan kullanılıyor: {max_concurrent}")
+                new_max_concurrent = max_concurrent
+
+            # Proxy Ayarları
+            print(f"\n{COLORS['SUBTITLE']}Proxy Ayarları:")
             use_proxy_input = input(f"Proxy Kullan (e/h) [{use_proxy}]: ").strip().lower()
             if use_proxy_input:
                 new_use_proxy = use_proxy_input in ["e", "evet", "y", "yes", "true", "1"]
@@ -99,26 +142,73 @@ class SettingsMenuHandler:
             if new_use_proxy:
                 new_proxy_url = input(f"Proxy URL [{proxy_url}]: ").strip() or proxy_url
             
-            # Yapılandırmayı güncelle
-            if not self.config_manager.config.get("api"):
-                self.config_manager.config["api"] = {}
+            # Yapılandırmayı .env dosyasına kaydet
+            changes = {
+                "API_BASE_URL": new_base_url,
+                "REQUEST_TIMEOUT": str(new_timeout),
+                "MAX_RETRIES": str(new_retry_count),
+                "MAX_CONCURRENT": str(new_max_concurrent),
+                "USE_PROXY": "true" if new_use_proxy else "false",
+            }
             
-            self.config_manager.config["api"]["base_url"] = new_base_url
-            self.config_manager.config["api"]["use_proxy"] = new_use_proxy
-            if new_use_proxy:
-                self.config_manager.config["api"]["proxy_url"] = new_proxy_url
+            if new_use_proxy and new_proxy_url:
+                changes["PROXY_URL"] = new_proxy_url
             
-            # Yapılandırmayı kaydet
-            success = self.config_manager.save_config()
+            # .env dosyasını güncelle
+            success = self._update_env_file(dotenv_path, changes)
             
             if success:
                 print(f"\n{COLORS['SUCCESS']}✅ API yapılandırması başarıyla güncellendi.")
+                print(f"{COLORS['INFO']}Değişikliklerin etkili olması için uygulamayı yeniden başlatmanız gerekebilir.")
             else:
                 print(f"\n{COLORS['WARNING']}❌ Yapılandırma kaydedilirken bir hata oluştu.")
                 
         except Exception as e:
             logger.error(f"API yapılandırması düzenlenirken hata: {str(e)}")
             print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+            
+    def _update_env_file(self, env_path: str, changes: Dict[str, str]) -> bool:
+        """
+        .env dosyasını güncelleyen yardımcı fonksiyon
+        
+        Args:
+            env_path: .env dosyasının yolu 
+            changes: Güncellenecek değerler sözlüğü
+            
+        Returns:
+            bool: Başarılı olursa True, değilse False
+        """
+        try:
+            import os
+            import dotenv
+            from pathlib import Path
+            
+            # .env dosyasının varlığını kontrol et
+            if not os.path.exists(env_path):
+                # .env dosyası yoksa temel bir template oluştur
+                with open(env_path, 'w', encoding='utf-8') as f:
+                    f.write("# SofaScore Scraper API ayarları\n")
+                    f.write("API_BASE_URL=https://www.sofascore.com/api/v1\n")
+                    f.write("REQUEST_TIMEOUT=30\n")
+                    f.write("MAX_RETRIES=3\n")
+                    f.write("MAX_CONCURRENT=25\n")
+                    f.write("USE_PROXY=false\n")
+                    f.write("PROXY_URL=\n")
+                    f.write("WAIT_TIME_MIN=0.2\n")
+                    f.write("WAIT_TIME_MAX=0.5\n")
+                    f.write("FETCH_ONLY_FINISHED=true\n")
+                    f.write("SAVE_EMPTY_ROUNDS=false\n")
+                    f.write("DATA_DIR=data\n")
+            
+            # .env dosyasını güncelle
+            for key, value in changes.items():
+                dotenv.set_key(env_path, key, value)
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f".env dosyası güncellenirken hata: {str(e)}")
+            return False
     
     def _change_data_directory(self) -> None:
         """Veri dizinini değiştirir."""

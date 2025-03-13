@@ -5,6 +5,7 @@ Bu modül, istatistik görüntüleme ve raporlama işlemlerini içerir.
 
 import os
 import json
+import traceback
 from typing import Dict, Any, Optional, List
 from colorama import Fore, Style
 
@@ -37,139 +38,161 @@ class StatsMenuHandler:
         self.colors = colors
     
     def show_system_stats(self) -> None:
-        """Sistem istatistiklerini görüntüler."""
+        """Sistem durumunu ve istatistiklerini gösterir."""
         COLORS = self.colors  # Kısa erişim için
         
         try:
-            print(f"\n{COLORS['SUBTITLE']}Sistem İstatistikleri:")
-            print("-" * 50)
+            print(f"\n{COLORS['TITLE']}{'Sistem İstatistikleri':^50}\n{'-'*50}")
             
-            # Lig sayısı
+            # Toplam lig sayısı
             leagues = self.config_manager.get_leagues()
             league_count = len(leagues) if leagues else 0
+            print(f"Toplam Lig: {COLORS['SUCCESS']}{league_count}")
             
-            # Sezon sayısı
+            # Toplam sezon sayısı
             season_count = 0
             seasons_dir = os.path.join(self.data_dir, "seasons")
             if os.path.exists(seasons_dir):
-                for league_dir in os.listdir(seasons_dir):
-                    league_path = os.path.join(seasons_dir, league_dir)
-                    if os.path.isdir(league_path):
-                        season_files = [f for f in os.listdir(league_path) if f.endswith(".json")]
-                        season_count += len(season_files)
+                # Sezonlar doğrudan seasons dizininde <lig_id>_<lig_adı>_seasons.json formatında
+                season_files = [f for f in os.listdir(seasons_dir) if f.endswith("_seasons.json")]
+                
+                for season_file in season_files:
+                    file_path = os.path.join(seasons_dir, season_file)
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            seasons_data = json.load(f)
+                            if isinstance(seasons_data, dict) and "seasons" in seasons_data:
+                                # Verinin "seasons" anahtarı altında bir liste olduğunu kontrol et
+                                season_count += len(seasons_data["seasons"])
+                            elif isinstance(seasons_data, list):
+                                # Geriye dönük uyumluluk için direkt liste kontrolü de yap
+                                season_count += len(seasons_data)
+                    except Exception as e:
+                        logger.error(f"Sezon dosyası okuma hatası {file_path}: {str(e)}")
+            print(f"Toplam Sezon: {COLORS['SUCCESS']}{season_count}")
             
-            # Maç sayısı
+            # Toplam maç sayısı
             match_count = 0
             matches_dir = os.path.join(self.data_dir, "matches")
             if os.path.exists(matches_dir):
+                # Her lig için
                 for league_dir in os.listdir(matches_dir):
                     league_path = os.path.join(matches_dir, league_dir)
-                    if os.path.isdir(league_path):
-                        for season_dir in os.listdir(league_path):
-                            season_path = os.path.join(league_path, season_dir)
-                            if os.path.isdir(season_path):
-                                match_files = [f for f in os.listdir(season_path) if f.endswith("_matches.csv")]
-                                for match_file in match_files:
-                                    file_path = os.path.join(season_path, match_file)
+                    if not os.path.isdir(league_path):
+                        continue
+                    
+                    # Lig dizini içerisinde dolaş
+                    for root, dirs, files in os.walk(league_path):
+                        # CSV dosyalarını bul ve maç sayısını hesapla
+                        for file in files:
+                            if file.endswith("_matches.csv") or file.endswith("_summary.csv"):
+                                file_path = os.path.join(root, file)
+                                try:
                                     with open(file_path, 'r', encoding='utf-8') as f:
-                                        # İlk satır başlık, geri kalanı veri
                                         lines = f.readlines()
                                         if len(lines) > 1:  # Başlık satırını çıkar
                                             match_count += len(lines) - 1
+                                except Exception as e:
+                                    logger.error(f"CSV dosyası okuma hatası {file_path}: {str(e)}")
+            print(f"Toplam Maç: {COLORS['SUCCESS']}{match_count}")
             
-            # Maç detayı sayısı
-            match_data_count = 0
-            match_data_dir = os.path.join(self.data_dir, "match_data")
-            if os.path.exists(match_data_dir):
-                match_data_files = [f for f in os.listdir(match_data_dir) if f.endswith(".json")]
-                match_data_count = len(match_data_files)
-            
-            # İstatistikleri görüntüle
-            print(f"{COLORS['INFO']}Yapılandırılmış Lig Sayısı: {COLORS['SUCCESS']}{league_count}")
-            print(f"{COLORS['INFO']}Yüklenen Sezon Sayısı: {COLORS['SUCCESS']}{season_count}")
-            print(f"{COLORS['INFO']}Çekilen Maç Sayısı: {COLORS['SUCCESS']}{match_count}")
-            print(f"{COLORS['INFO']}Çekilen Maç Detayı Sayısı: {COLORS['SUCCESS']}{match_data_count}")
+            # Toplam maç detayı sayısı
+            match_details_count = 0
+            match_details_dir = os.path.join(self.data_dir, "match_details")
+            if os.path.exists(match_details_dir):
+                # Her bir lig dizinini dolaş
+                for league_dir in os.listdir(match_details_dir):
+                    league_path = os.path.join(match_details_dir, league_dir)
+                    if os.path.isdir(league_path):
+                        # Her bir dizin (lig) içindeki JSON dosyalarını say
+                        for root, dirs, files in os.walk(league_path):
+                            match_details_count += len([f for f in files if f.endswith('.json')])
             
             # Disk kullanımı
-            total_size = 0
+            print(f"\n{COLORS['SUBTITLE']}Disk Kullanımı:")
             
-            # Sezon verileri boyutu
             seasons_size = self._get_directory_size(seasons_dir) if os.path.exists(seasons_dir) else 0
-            total_size += seasons_size
-            
-            # Maç verileri boyutu
             matches_size = self._get_directory_size(matches_dir) if os.path.exists(matches_dir) else 0
-            total_size += matches_size
+            match_details_size = self._get_directory_size(match_details_dir) if os.path.exists(match_details_dir) else 0
             
-            # Maç detayları boyutu
-            match_data_size = self._get_directory_size(match_data_dir) if os.path.exists(match_data_dir) else 0
-            total_size += match_data_size
-            
-            # CSV veri setleri boyutu
             datasets_dir = os.path.join(self.data_dir, "datasets")
             datasets_size = self._get_directory_size(datasets_dir) if os.path.exists(datasets_dir) else 0
-            total_size += datasets_size
             
-            print(f"\n{COLORS['SUBTITLE']}Disk Kullanımı:")
-            print(f"{COLORS['INFO']}Sezon Verileri: {COLORS['SUCCESS']}{self._format_size(seasons_size)}")
-            print(f"{COLORS['INFO']}Maç Verileri: {COLORS['SUCCESS']}{self._format_size(matches_size)}")
-            print(f"{COLORS['INFO']}Maç Detayları: {COLORS['SUCCESS']}{self._format_size(match_data_size)}")
-            print(f"{COLORS['INFO']}CSV Veri Setleri: {COLORS['SUCCESS']}{self._format_size(datasets_size)}")
-            print(f"{COLORS['INFO']}Toplam: {COLORS['SUCCESS']}{self._format_size(total_size)}")
+            print(f"  Sezonlar: {COLORS['SUCCESS']}{self._format_size(seasons_size)}")
+            print(f"  Maçlar: {COLORS['SUCCESS']}{self._format_size(matches_size)}")
+            print(f"  Maç Detayları: {COLORS['SUCCESS']}{self._format_size(match_details_size)}")
+            print(f"  Veri Setleri: {COLORS['SUCCESS']}{self._format_size(datasets_size)}")
+            
+            total_size = seasons_size + matches_size + match_details_size + datasets_size
+            print(f"  Toplam: {COLORS['SUCCESS']}{self._format_size(total_size)}")
             
         except Exception as e:
-            logger.error(f"Sistem istatistikleri görüntülenirken hata: {str(e)}")
-            print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+            logger.error(f"Sistem istatistikleri gösterilirken hata: {str(e)}")
+            logger.error(traceback.format_exc())
+            print(f"\n{COLORS['ERROR']}Hata: {str(e)}")
     
-    def show_league_stats(self) -> None:
-        """Lig bazında istatistikleri görüntüler."""
+    def show_league_stats(self, league_id):
+        """
+        Belirli bir lig için ayrıntılı istatistikleri gösterir
+        """
         COLORS = self.colors  # Kısa erişim için
         
         try:
+            # Lig adını bul
             leagues = self.config_manager.get_leagues()
+            league_name = leagues.get(league_id, f"Lig {league_id}")
             
-            if not leagues:
-                print(f"\n{COLORS['WARNING']}Yapılandırılmış lig bulunamadı.")
-                return
+            print(f"\n{COLORS['INFO']}● {league_name} {COLORS['DIM']}(ID: {league_id})")
             
-            print(f"\n{COLORS['SUBTITLE']}Lig İstatistikleri:")
-            print("-" * 50)
+            # Sezon sayısı
+            season_count = 0
+            # Kesin lig ID'si ile dosya eşleştirmesi yap
+            season_file_pattern = f"{league_id}_"
+            season_file = None
+            season_size = 0
             
-            for league_id, league_name in leagues.items():
-                print(f"\n{COLORS['INFO']}● {league_name} {COLORS['DIM']}(ID: {league_id})")
+            # Tüm sezon dosyalarını tara ve ID ile başlayanı bul
+            seasons_dir = os.path.join(self.data_dir, "seasons")
+            if os.path.exists(seasons_dir):
+                for file_name in os.listdir(seasons_dir):
+                    if file_name.startswith(season_file_pattern) and file_name.endswith("_seasons.json"):
+                        season_file = os.path.join(seasons_dir, file_name)
+                        break
+            
+            if season_file and os.path.exists(season_file):
+                # Dosya boyutunu hesapla
+                season_size = os.path.getsize(season_file)
+            
+            # Maç sayısı
+            match_count = 0
+            matches_dir = None
+            matches_size = 0
+            
+            # Kesin lig ID'si ile dizin eşleştirmesi yap
+            matches_dir_pattern = f"{league_id}_"
+            
+            # Tüm matches alt dizinlerini tara ve ID ile başlayanı bul
+            matches_dir_base = os.path.join(self.data_dir, "matches")
+            if os.path.exists(matches_dir_base):
+                for dir_name in os.listdir(matches_dir_base):
+                    if dir_name.startswith(matches_dir_pattern):
+                        matches_dir = os.path.join(matches_dir_base, dir_name)
+                        break
+            
+            if matches_dir and os.path.exists(matches_dir):
+                # Maç verilerini oku
+                matches_size = self._get_directory_size(matches_dir)
                 
-                # Sezon sayısı
-                season_count = 0
-                season_file = os.path.join(self.data_dir, "seasons", f"{league_id}_{league_name}_seasons.json")
-                season_size = 0
+                # Bu lig için çekilmiş sezon sayısını hesapla - matches dizini altında
+                # her bir alt dizin bir sezonu temsil eder
+                try:
+                    season_count = len([d for d in os.listdir(matches_dir) if os.path.isdir(os.path.join(matches_dir, d))])
+                except Exception as e:
+                    logger.error(f"Sezon dizinleri sayılırken hata: {e}")
+                    season_count = 0
                 
-                if os.path.exists(season_file):
-                    # Sezon verisini oku
-                    try:
-                        with open(season_file, 'r', encoding='utf-8') as f:
-                            seasons_data = json.load(f)
-                            if isinstance(seasons_data, list):
-                                season_count = len(seasons_data)
-                    except Exception as e:
-                        logger.error(f"Sezon verisi okunurken hata: {e}")
-                    
-                    # Dosya boyutu
-                    season_size = os.path.getsize(season_file)
-                
-                # Maç sayısı
-                match_count = 0
-                matches_dir = os.path.join(self.data_dir, "matches", f"{league_name}")
-                matches_size = 0
-                
-                if not os.path.exists(matches_dir):
-                    # League ID ile birleşik dizin adı da deneyelim
-                    matches_dir = os.path.join(self.data_dir, "matches", f"{league_id}_{league_name}")
-                
-                if os.path.exists(matches_dir):
-                    # Maç verilerini oku
-                    matches_size = self._get_directory_size(matches_dir)
-                    
-                    # CSV dosyalarını bul ve maç sayısını hesapla
+                # CSV dosyalarını bul ve maç sayısını hesapla
+                try:
                     for root, dirs, files in os.walk(matches_dir):
                         for file in files:
                             if file.endswith("_matches.csv") or file.endswith("_summary.csv"):
@@ -181,19 +204,94 @@ class StatsMenuHandler:
                                             match_count += len(lines) - 1
                                 except Exception as e:
                                     logger.error(f"Maç dosyası okunurken hata: {e}")
+                except Exception as e:
+                    logger.error(f"Maç dosyaları taranırken hata: {e}")
+            
+            print(f"  {COLORS['INFO']}○ Sezon Sayısı: {COLORS['SUCCESS']}{season_count}")
+            print(f"  {COLORS['INFO']}○ Maç Sayısı: {COLORS['SUCCESS']}{match_count}")
+            
+            # Maç detayları sayısı
+            match_details_count = 0
+            match_details_dir = None
+            match_details_size = 0
+            
+            # Maç detayları dizinini ara - daha akıllı bir algoritma
+            match_details_base = os.path.join(self.data_dir, "match_details")
+            if os.path.exists(match_details_base):
+                all_match_detail_dirs = os.listdir(match_details_base)
                 
-                print(f"  {COLORS['INFO']}○ Sezon Sayısı: {COLORS['SUCCESS']}{season_count}")
-                print(f"  {COLORS['INFO']}○ Maç Sayısı: {COLORS['SUCCESS']}{match_count}")
+                # En iyi eşleşmeyi bulmak için puanlama sistemi
+                best_dir = None
+                best_score = -1
                 
-                print(f"  {COLORS['INFO']}○ Sezon Verileri: {COLORS['SUCCESS']}{self._format_size(season_size)}")
-                print(f"  {COLORS['INFO']}○ Maç Verileri: {COLORS['SUCCESS']}{self._format_size(matches_size)}")
-                print(f"  {COLORS['INFO']}○ Toplam: {COLORS['SUCCESS']}{self._format_size(season_size + matches_size)}")
+                for dir_name in all_match_detail_dirs:
+                    score = 0
+                    dir_lower = dir_name.lower()
+                    
+                    # 1. Tam eşleşme - en yüksek puan (100)
+                    if dir_name == league_name or dir_name == league_name.replace(" ", "_"):
+                        score = 100
+                    
+                    # 2. ID ile başlayan - yüksek puan (90)
+                    elif dir_name.startswith(f"{league_id}_"):
+                        score = 90
+                    
+                    # 3. Lig adının ilk kelimesi dizin adında geçiyor - orta puan (50-80)
+                    elif league_name and dir_lower.startswith(league_name.lower().split()[0]):
+                        score = 80
+                    elif league_name and league_name.lower().split()[0] in dir_lower:
+                        score = 70
+                    
+                    # 4. Lig ID'si dizin adında geçiyor - düşük-orta puan (60)
+                    elif str(league_id) in dir_name:
+                        score = 60
+                    
+                    # 5. Türkiye ligi için özel kontrol (ID: 52)
+                    elif str(league_id) == "52":
+                        if any(keyword in dir_lower for keyword in ["türk", "turk", "türkiye", "turkey", "turkiye"]):
+                            score = 85  # Yüksek puan - türkiye ligi için spesifik kontrol
+                        elif any(keyword in dir_lower for keyword in ["süper", "super"]):
+                            score = 75  # Orta-yüksek puan
+                    
+                    # Daha yüksek puan bulduysak güncelle
+                    if score > best_score:
+                        best_score = score
+                        best_dir = dir_name
                 
+                # Eğer bir eşleşme bulunduysa
+                if best_dir and best_score > 0:
+                    match_details_dir = os.path.join(match_details_base, best_dir)
+            
+            if match_details_dir and os.path.exists(match_details_dir):
+                # Maç detaylarını oku
+                match_details_size = self._get_directory_size(match_details_dir)
+                
+                # JSON dosyalarını say - alt dizinlerde sezonlar ve maç detayları var
+                try:
+                    for root, dirs, files in os.walk(match_details_dir):
+                        match_details_count += len([f for f in files if f.endswith('.json')])
+                except Exception as e:
+                    logger.error(f"Maç detay dosyaları taranırken hata: {e}")
+            
+            print(f"  {COLORS['INFO']}○ Maç Detayı Sayısı: {COLORS['SUCCESS']}{match_details_count}")
+            
+            # Disk kullanımı
+            print(f"  {COLORS['INFO']}○ Sezon Verileri: {COLORS['SUCCESS']}{self._format_size(season_size)}")
+            print(f"  {COLORS['INFO']}○ Maç Verileri: {COLORS['SUCCESS']}{self._format_size(matches_size)}")
+            print(f"  {COLORS['INFO']}○ Maç Detayları: {COLORS['SUCCESS']}{self._format_size(match_details_size)}")
+            print(f"  {COLORS['INFO']}○ Toplam: {COLORS['SUCCESS']}{self._format_size(season_size + matches_size + match_details_size)}")
+            
         except Exception as e:
+            # Eğer Türkiye ligi (ID: 52) için bir hata oluştuysa, match_details dizinindeki tüm klasörleri logla
+            if str(league_id) == "52":
+                match_details_base = os.path.join(self.data_dir, "match_details")
+                if os.path.exists(match_details_base):
+                    all_dirs = os.listdir(match_details_base)
+                    logger.error(f"Türkiye ligi için match_details dizinindeki tüm klasörler: {all_dirs}")
+            
             logger.error(f"Lig istatistikleri görüntülenirken hata: {str(e)}")
+            logger.error(traceback.format_exc())
             print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
-            import traceback
-            traceback.print_exc()
     
     def generate_report(self) -> None:
         """İstatistik raporu oluşturur."""
@@ -234,11 +332,11 @@ class StatsMenuHandler:
                     "league_count": 0,
                     "season_count": 0,
                     "match_count": 0,
-                    "match_data_count": 0,
+                    "match_details_count": 0,
                     "disk_usage": {
                         "seasons": 0,
                         "matches": 0,
-                        "match_data": 0,
+                        "match_details": 0,
                         "datasets": 0,
                         "total": 0
                     }
@@ -252,39 +350,65 @@ class StatsMenuHandler:
             # Sezon sayısı
             seasons_dir = os.path.join(self.data_dir, "seasons")
             if os.path.exists(seasons_dir):
-                for league_dir in os.listdir(seasons_dir):
-                    league_path = os.path.join(seasons_dir, league_dir)
-                    if os.path.isdir(league_path):
-                        season_files = [f for f in os.listdir(league_path) if f.endswith(".json")]
-                        report_data["stats"]["season_count"] += len(season_files)
+                # Sezonlar doğrudan seasons dizininde <lig_id>_<lig_adı>_seasons.json formatında
+                season_files = [f for f in os.listdir(seasons_dir) if f.endswith("_seasons.json")]
+                
+                for season_file in season_files:
+                    file_path = os.path.join(seasons_dir, season_file)
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            seasons_data = json.load(f)
+                            if isinstance(seasons_data, dict) and "seasons" in seasons_data:
+                                # Verinin "seasons" anahtarı altında bir liste olduğunu kontrol et
+                                report_data["stats"]["season_count"] += len(seasons_data["seasons"])
+                            elif isinstance(seasons_data, list):
+                                # Geriye dönük uyumluluk için direkt liste kontrolü de yap
+                                report_data["stats"]["season_count"] += len(seasons_data)
+                    except Exception as e:
+                        logger.error(f"Sezon dosyası okuma hatası {file_path}: {str(e)}")
             
             # Maç sayısı
             matches_dir = os.path.join(self.data_dir, "matches")
             if os.path.exists(matches_dir):
+                # Her lig için
                 for league_dir in os.listdir(matches_dir):
                     league_path = os.path.join(matches_dir, league_dir)
-                    if os.path.isdir(league_path):
-                        for season_dir in os.listdir(league_path):
-                            season_path = os.path.join(league_path, season_dir)
-                            if os.path.isdir(season_path):
-                                match_files = [f for f in os.listdir(season_path) if f.endswith("_matches.csv")]
-                                for match_file in match_files:
-                                    file_path = os.path.join(season_path, match_file)
+                    if not os.path.isdir(league_path):
+                        continue
+                    
+                    # Lig dizini içerisinde dolaş
+                    for root, dirs, files in os.walk(league_path):
+                        # CSV dosyalarını bul ve maç sayısını hesapla
+                        for file in files:
+                            if file.endswith("_matches.csv") or file.endswith("_summary.csv"):
+                                file_path = os.path.join(root, file)
+                                try:
                                     with open(file_path, 'r', encoding='utf-8') as f:
                                         lines = f.readlines()
                                         if len(lines) > 1:  # Başlık satırını çıkar
                                             report_data["stats"]["match_count"] += len(lines) - 1
+                                except Exception as e:
+                                    logger.error(f"CSV dosyası okuma hatası {file_path}: {str(e)}")
             
             # Maç detayı sayısı
-            match_data_dir = os.path.join(self.data_dir, "match_data")
-            if os.path.exists(match_data_dir):
-                match_data_files = [f for f in os.listdir(match_data_dir) if f.endswith(".json")]
-                report_data["stats"]["match_data_count"] = len(match_data_files)
+            match_details_count = 0
+            match_details_dir = os.path.join(self.data_dir, "match_details")
+            if os.path.exists(match_details_dir):
+                # Her bir lig dizinini dolaş
+                for league_dir in os.listdir(match_details_dir):
+                    league_path = os.path.join(match_details_dir, league_dir)
+                    if os.path.isdir(league_path):
+                        # Her bir dizin (lig) içindeki JSON dosyalarını say
+                        for root, dirs, files in os.walk(league_path):
+                            match_details_count += len([f for f in files if f.endswith('.json')])
+            
+            # Hesaplanan değerleri report_data içerisine atayalım
+            report_data["stats"]["match_details_count"] = match_details_count
             
             # Disk kullanımı
             report_data["stats"]["disk_usage"]["seasons"] = self._get_directory_size(seasons_dir) if os.path.exists(seasons_dir) else 0
             report_data["stats"]["disk_usage"]["matches"] = self._get_directory_size(matches_dir) if os.path.exists(matches_dir) else 0
-            report_data["stats"]["disk_usage"]["match_data"] = self._get_directory_size(match_data_dir) if os.path.exists(match_data_dir) else 0
+            report_data["stats"]["disk_usage"]["match_details"] = self._get_directory_size(match_details_dir) if os.path.exists(match_details_dir) else 0
             
             datasets_dir = os.path.join(self.data_dir, "datasets")
             report_data["stats"]["disk_usage"]["datasets"] = self._get_directory_size(datasets_dir) if os.path.exists(datasets_dir) else 0
@@ -292,7 +416,7 @@ class StatsMenuHandler:
             report_data["stats"]["disk_usage"]["total"] = (
                 report_data["stats"]["disk_usage"]["seasons"] +
                 report_data["stats"]["disk_usage"]["matches"] +
-                report_data["stats"]["disk_usage"]["match_data"] +
+                report_data["stats"]["disk_usage"]["match_details"] +
                 report_data["stats"]["disk_usage"]["datasets"]
             )
             
@@ -344,28 +468,66 @@ class StatsMenuHandler:
                 }
                 
                 # Sezon sayısı
-                seasons_dir = os.path.join(self.data_dir, "seasons", f"{league_id}_{league_name}")
-                if os.path.exists(seasons_dir):
-                    season_files = [f for f in os.listdir(seasons_dir) if f.endswith(".json")]
-                    league_data["stats"]["season_count"] = len(season_files)
+                season_count = 0
+                # Kesin lig ID'si ile dosya eşleştirmesi yap
+                season_file_pattern = f"{league_id}_"
+                season_file = None
+                season_size = 0
+                
+                # Tüm sezon dosyalarını tara ve ID ile başlayanı bul
+                for file_name in os.listdir(os.path.join(self.data_dir, "seasons")):
+                    if file_name.startswith(season_file_pattern) and file_name.endswith("_seasons.json"):
+                        season_file = os.path.join(self.data_dir, "seasons", file_name)
+                        break
+                
+                if season_file and os.path.exists(season_file):
+                    # Dosya boyutunu hesapla
+                    season_size = os.path.getsize(season_file)
                 
                 # Maç sayısı
-                matches_dir = os.path.join(self.data_dir, "matches", f"{league_id}_{league_name}")
-                if os.path.exists(matches_dir):
-                    for season_dir in os.listdir(matches_dir):
-                        season_path = os.path.join(matches_dir, season_dir)
-                        if os.path.isdir(season_path):
-                            for match_file in os.listdir(season_path):
-                                if match_file.endswith("_matches.csv"):
-                                    file_path = os.path.join(season_path, match_file)
+                match_count = 0
+                matches_dir = None
+                matches_size = 0
+                
+                # Kesin lig ID'si ile dizin eşleştirmesi yap
+                matches_dir_pattern = f"{league_id}_"
+                
+                # Tüm matches alt dizinlerini tara ve ID ile başlayanı bul
+                for dir_name in os.listdir(os.path.join(self.data_dir, "matches")):
+                    if dir_name.startswith(matches_dir_pattern):
+                        matches_dir = os.path.join(self.data_dir, "matches", dir_name)
+                        break
+                
+                if matches_dir and os.path.exists(matches_dir):
+                    # Maç verilerini oku
+                    matches_size = self._get_directory_size(matches_dir)
+                    
+                    # Bu lig için çekilmiş sezon sayısını hesapla
+                    season_count = len([d for d in os.listdir(matches_dir) if os.path.isdir(os.path.join(matches_dir, d))])
+                    
+                    # Toplanan sezon sayısını kaydet
+                    league_data["stats"]["season_count"] = season_count
+                    
+                    # CSV dosyalarını bul ve maç sayısını hesapla
+                    match_count = 0
+                    for root, dirs, files in os.walk(matches_dir):
+                        for file in files:
+                            if file.endswith("_matches.csv") or file.endswith("_summary.csv"):
+                                file_path = os.path.join(root, file)
+                                try:
                                     with open(file_path, 'r', encoding='utf-8') as f:
                                         lines = f.readlines()
                                         if len(lines) > 1:  # Başlık satırını çıkar
-                                            league_data["stats"]["match_count"] += len(lines) - 1
+                                            match_count += len(lines) - 1
+                                except Exception as e:
+                                    logger.error(f"Maç dosyası okunurken hata: {e}")
+                    
+                    # Toplanan maç sayısını kaydet
+                    league_data["stats"]["match_count"] = match_count
                 
                 # Disk kullanımı
-                league_data["stats"]["disk_usage"]["seasons"] = self._get_directory_size(seasons_dir) if os.path.exists(seasons_dir) else 0
-                league_data["stats"]["disk_usage"]["matches"] = self._get_directory_size(matches_dir) if os.path.exists(matches_dir) else 0
+                league_data["stats"]["disk_usage"]["seasons"] = season_size
+                league_data["stats"]["disk_usage"]["matches"] = matches_size
                 league_data["stats"]["disk_usage"]["total"] = league_data["stats"]["disk_usage"]["seasons"] + league_data["stats"]["disk_usage"]["matches"]
                 
                 report_data["leagues"][str(league_id)] = league_data
@@ -401,44 +563,66 @@ class StatsMenuHandler:
             season_count = 0
             seasons_dir = os.path.join(self.data_dir, "seasons")
             if os.path.exists(seasons_dir):
-                for league_dir in os.listdir(seasons_dir):
-                    league_path = os.path.join(seasons_dir, league_dir)
-                    if os.path.isdir(league_path):
-                        season_files = [f for f in os.listdir(league_path) if f.endswith(".json")]
-                        season_count += len(season_files)
+                # Sezonlar doğrudan seasons dizininde <lig_id>_<lig_adı>_seasons.json formatında
+                season_files = [f for f in os.listdir(seasons_dir) if f.endswith("_seasons.json")]
+                
+                for season_file in season_files:
+                    file_path = os.path.join(seasons_dir, season_file)
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            seasons_data = json.load(f)
+                            if isinstance(seasons_data, dict) and "seasons" in seasons_data:
+                                # Verinin "seasons" anahtarı altında bir liste olduğunu kontrol et
+                                season_count += len(seasons_data["seasons"])
+                            elif isinstance(seasons_data, list):
+                                # Geriye dönük uyumluluk için direkt liste kontrolü de yap
+                                season_count += len(seasons_data)
+                    except Exception as e:
+                        logger.error(f"Sezon dosyası okuma hatası {file_path}: {str(e)}")
             
             match_count = 0
             matches_dir = os.path.join(self.data_dir, "matches")
             if os.path.exists(matches_dir):
+                # Her lig için
                 for league_dir in os.listdir(matches_dir):
                     league_path = os.path.join(matches_dir, league_dir)
-                    if os.path.isdir(league_path):
-                        for season_dir in os.listdir(league_path):
-                            season_path = os.path.join(league_path, season_dir)
-                            if os.path.isdir(season_path):
-                                match_files = [f for f in os.listdir(season_path) if f.endswith("_matches.csv")]
-                                for match_file in match_files:
-                                    file_path = os.path.join(season_path, match_file)
+                    if not os.path.isdir(league_path):
+                        continue
+                    
+                    # Lig dizini içerisinde dolaş
+                    for root, dirs, files in os.walk(league_path):
+                        # CSV dosyalarını bul ve maç sayısını hesapla
+                        for file in files:
+                            if file.endswith("_matches.csv") or file.endswith("_summary.csv"):
+                                file_path = os.path.join(root, file)
+                                try:
                                     with open(file_path, 'r', encoding='utf-8') as f:
                                         lines = f.readlines()
                                         if len(lines) > 1:  # Başlık satırını çıkar
                                             match_count += len(lines) - 1
+                                except Exception as e:
+                                    logger.error(f"CSV dosyası okuma hatası {file_path}: {str(e)}")
             
-            match_data_count = 0
-            match_data_dir = os.path.join(self.data_dir, "match_data")
-            if os.path.exists(match_data_dir):
-                match_data_files = [f for f in os.listdir(match_data_dir) if f.endswith(".json")]
-                match_data_count = len(match_data_files)
+            match_details_count = 0
+            match_details_dir = os.path.join(self.data_dir, "match_details")
+            if os.path.exists(match_details_dir):
+                # Her bir lig dizinini dolaş
+                for league_dir in os.listdir(match_details_dir):
+                    league_path = os.path.join(match_details_dir, league_dir)
+                    if os.path.isdir(league_path):
+                        # Her bir dizin (lig) içindeki JSON dosyalarını say
+                        for root, dirs, files in os.walk(league_path):
+                            match_details_count += len([f for f in files if f.endswith('.json')])
             
             # Disk kullanımı
             seasons_size = self._get_directory_size(seasons_dir) if os.path.exists(seasons_dir) else 0
             matches_size = self._get_directory_size(matches_dir) if os.path.exists(matches_dir) else 0
-            match_data_size = self._get_directory_size(match_data_dir) if os.path.exists(match_data_dir) else 0
+            match_details_size = self._get_directory_size(match_details_dir) if os.path.exists(match_details_dir) else 0
             
             datasets_dir = os.path.join(self.data_dir, "datasets")
             datasets_size = self._get_directory_size(datasets_dir) if os.path.exists(datasets_dir) else 0
             
-            total_size = seasons_size + matches_size + match_data_size + datasets_size
+            total_size = seasons_size + matches_size + match_details_size + datasets_size
             
             system_report = {
                 "timestamp": self._get_timestamp(),
@@ -446,11 +630,11 @@ class StatsMenuHandler:
                     "league_count": league_count,
                     "season_count": season_count,
                     "match_count": match_count,
-                    "match_data_count": match_data_count,
+                    "match_details_count": match_details_count,
                     "disk_usage": {
                         "seasons": seasons_size,
                         "matches": matches_size,
-                        "match_data": match_data_size,
+                        "match_details": match_details_size,
                         "datasets": datasets_size,
                         "total": total_size
                     }
@@ -475,28 +659,64 @@ class StatsMenuHandler:
                     }
                     
                     # Sezon sayısı
-                    seasons_dir = os.path.join(self.data_dir, "seasons", f"{league_id}_{league_name}")
-                    if os.path.exists(seasons_dir):
-                        season_files = [f for f in os.listdir(seasons_dir) if f.endswith(".json")]
-                        league_data["stats"]["season_count"] = len(season_files)
+                    season_count = 0
+                    # Kesin lig ID'si ile dosya eşleştirmesi yap
+                    season_file_pattern = f"{league_id}_"
+                    season_file = None
+                    
+                    # Tüm sezon dosyalarını tara ve ID ile başlayanı bul
+                    for file_name in os.listdir(os.path.join(self.data_dir, "seasons")):
+                        if file_name.startswith(season_file_pattern) and file_name.endswith("_seasons.json"):
+                            season_file = os.path.join(self.data_dir, "seasons", file_name)
+                            break
+                    
+                    if season_file and os.path.exists(season_file):
+                        # Dosya boyutunu hesapla
+                        season_size = os.path.getsize(season_file)
                     
                     # Maç sayısı
-                    matches_dir = os.path.join(self.data_dir, "matches", f"{league_id}_{league_name}")
-                    if os.path.exists(matches_dir):
-                        for season_dir in os.listdir(matches_dir):
-                            season_path = os.path.join(matches_dir, season_dir)
-                            if os.path.isdir(season_path):
-                                for match_file in os.listdir(season_path):
-                                    if match_file.endswith("_matches.csv"):
-                                        file_path = os.path.join(season_path, match_file)
+                    matches_dir = None
+                    matches_size = 0
+                    
+                    # Kesin lig ID'si ile dizin eşleştirmesi yap
+                    matches_dir_pattern = f"{league_id}_"
+                    
+                    # Tüm matches alt dizinlerini tara ve ID ile başlayanı bul
+                    for dir_name in os.listdir(os.path.join(self.data_dir, "matches")):
+                        if dir_name.startswith(matches_dir_pattern):
+                            matches_dir = os.path.join(self.data_dir, "matches", dir_name)
+                            break
+                    
+                    if matches_dir and os.path.exists(matches_dir):
+                        # Maç verilerini oku
+                        matches_size = self._get_directory_size(matches_dir)
+                        
+                        # Bu lig için çekilmiş sezon sayısını hesapla
+                        season_count = len([d for d in os.listdir(matches_dir) if os.path.isdir(os.path.join(matches_dir, d))])
+                        
+                        # Toplanan sezon sayısını kaydet
+                        league_data["stats"]["season_count"] = season_count
+                        
+                        # CSV dosyalarını bul ve maç sayısını hesapla
+                        match_count = 0
+                        for root, dirs, files in os.walk(matches_dir):
+                            for file in files:
+                                if file.endswith("_matches.csv") or file.endswith("_summary.csv"):
+                                    file_path = os.path.join(root, file)
+                                    try:
                                         with open(file_path, 'r', encoding='utf-8') as f:
                                             lines = f.readlines()
                                             if len(lines) > 1:  # Başlık satırını çıkar
-                                                league_data["stats"]["match_count"] += len(lines) - 1
+                                                match_count += len(lines) - 1
+                                    except Exception as e:
+                                        logger.error(f"Maç dosyası okunurken hata: {e}")
+                    
+                    # Toplanan maç sayısını kaydet
+                    league_data["stats"]["match_count"] = match_count
                     
                     # Disk kullanımı
-                    league_data["stats"]["disk_usage"]["seasons"] = self._get_directory_size(seasons_dir) if os.path.exists(seasons_dir) else 0
-                    league_data["stats"]["disk_usage"]["matches"] = self._get_directory_size(matches_dir) if os.path.exists(matches_dir) else 0
+                    league_data["stats"]["disk_usage"]["seasons"] = season_size
+                    league_data["stats"]["disk_usage"]["matches"] = matches_size
                     league_data["stats"]["disk_usage"]["total"] = league_data["stats"]["disk_usage"]["seasons"] + league_data["stats"]["disk_usage"]["matches"]
                     
                     league_report["leagues"][str(league_id)] = league_data

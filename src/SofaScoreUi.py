@@ -305,7 +305,13 @@ class SimpleSofaScoreUI:
                 self.stats_menu.show_system_stats()
                 input("\nDevam etmek için Enter'a basın...")
             elif choice == "2":
-                self.stats_menu.show_league_stats()
+                # Tüm liglerin istatistiklerini göster
+                leagues = self.config_manager.get_leagues()
+                if not leagues:
+                    print(f"{COLORS['WARNING']}Yapılandırılmış lig bulunamadı.")
+                else:
+                    for league_id in leagues:
+                        self.stats_menu.show_league_stats(league_id)
                 input("\nDevam etmek için Enter'a basın...")
             elif choice == "3":
                 self.stats_menu.generate_report()

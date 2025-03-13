@@ -8,13 +8,20 @@ import csv
 import logging
 import time
 import random
+import datetime
+import re
 from typing import Dict, List, Optional, Any, Union, Tuple
 from pathlib import Path
 import asyncio
 import aiohttp
+import urllib.parse
+from collections import Counter
+import pandas as pd
+from tqdm import tqdm
 
 from src.config_manager import ConfigManager
 from src.utils import make_api_request, ensure_directory
+from src.season_fetcher import SeasonFetcher
 
 # Loglama yapılandırması
 logging.basicConfig(
@@ -22,6 +29,16 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger("MatchDataFetcher")
+
+# Gerekli dosyaların listesini ekleyelim
+REQUIRED_FILES = [
+    'full_data.json',
+    'basic.json',
+    'statistics.json',
+    'team_streaks.json',
+    'pregame_form.json',
+    'h2h.json'
+]
 
 class MatchDataFetcher:
     """SofaScore API'sinden detaylı maç verilerini çeken ve işleyen sınıf."""
@@ -222,8 +239,6 @@ class MatchDataFetcher:
     # Main metodunda çağırmak için senkron wrapper
     def fetch_matches_batch_parallel(self, match_ids, max_concurrent=10):
         """Paralel istekler için senkron wrapper."""
-        from tqdm import tqdm
-        
         print(f"Toplam {len(match_ids)} maç paralel olarak işleniyor...")
         progress = tqdm(total=len(match_ids), desc="Maç detayları çekiliyor")
         
@@ -608,7 +623,6 @@ class MatchDataFetcher:
         """Bir grup maç için veri çeker."""
         # tqdm modülünü ekleyelim
         try:
-            from tqdm import tqdm
             use_tqdm = True
         except ImportError:
             use_tqdm = False
@@ -663,7 +677,6 @@ class MatchDataFetcher:
         Returns:
             Union[str, List[str]]: Path(s) to created CSV file(s), or empty string/list if an error occurred
         """
-        from tqdm import tqdm
         import re  # For safe filename creation
         
         # Collection for processed match data - will hold all matches
@@ -1507,3 +1520,166 @@ class MatchDataFetcher:
             import traceback
             logger.error(traceback.format_exc())
             return None
+
+    def generate_file_report(self, base_path: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Maç dosyalarının durumunu analiz eden ve rapor üreten fonksiyon.
+        
+        Args:
+            base_path: İncelenecek dizin yolu. Eğer None ise, varsayılan match_details dizini kullanılır.
+            
+        Returns:
+            Dict[str, Any]: Rapor sonuçlarını içeren sözlük
+        """
+        # Varsayılan dizini kullan
+        if base_path is None:
+            base_path = self.match_details_dir
+        
+        base_path = Path(base_path)
+        print(f"Maç dosyaları analiz ediliyor: {base_path}")
+        
+        # Sonuçları başlat
+        results = {}
+        missing_files_counter = Counter()
+        total_matches = 0
+        matches_with_all_files = 0
+        league_stats = {}
+        
+        # Tüm ligleri döngüyle incele
+        for league_dir in tqdm(list(base_path.iterdir()), desc="Ligler işleniyor"):
+            if not league_dir.is_dir():
+                continue
+                
+            league_name = league_dir.name
+            league_stats[league_name] = {
+                "total_matches": 0,
+                "complete_matches": 0,
+                "missing_files": Counter(),
+                "seasons": {}
+            }
+            
+            # Tüm sezonları döngüyle incele
+            for season_dir in league_dir.glob("season_*"):
+                if not season_dir.is_dir():
+                    continue
+                    
+                season_name = season_dir.name
+                league_stats[league_name]["seasons"][season_name] = {
+                    "total_matches": 0,
+                    "complete_matches": 0,
+                    "missing_files": Counter()
+                }
+                
+                # Tüm maçları döngüyle incele
+                for match_dir in season_dir.iterdir():
+                    if not match_dir.is_dir():
+                        continue
+                        
+                    match_id = match_dir.name
+                    total_matches += 1
+                    league_stats[league_name]["total_matches"] += 1
+                    league_stats[league_name]["seasons"][season_name]["total_matches"] += 1
+                    
+                    # Gerekli dosyaları kontrol et
+                    missing_files = []
+                    for req_file in REQUIRED_FILES:
+                        file_path = match_dir / req_file
+                        if not file_path.exists():
+                            missing_files.append(req_file)
+                    
+                    # İstatistikleri güncelle
+                    if not missing_files:
+                        matches_with_all_files += 1
+                        league_stats[league_name]["complete_matches"] += 1
+                        league_stats[league_name]["seasons"][season_name]["complete_matches"] += 1
+                    else:
+                        for missing_file in missing_files:
+                            missing_files_counter[missing_file] += 1
+                            league_stats[league_name]["missing_files"][missing_file] += 1
+                            league_stats[league_name]["seasons"][season_name]["missing_files"][missing_file] += 1
+        
+        # Genel istatistikleri hesapla
+        overall_stats = {
+            "total_matches": total_matches,
+            "matches_with_all_files": matches_with_all_files,
+            "completion_rate": round(matches_with_all_files / total_matches * 100, 2) if total_matches > 0 else 0,
+            "missing_files": dict(missing_files_counter),
+        }
+        
+        # Her lig için tamamlanma oranını hesapla
+        for league in league_stats:
+            total = league_stats[league]["total_matches"]
+            complete = league_stats[league]["complete_matches"]
+            league_stats[league]["completion_rate"] = round(complete / total * 100, 2) if total > 0 else 0
+            
+            # Her sezon için tamamlanma oranını hesapla
+            for season in league_stats[league]["seasons"]:
+                season_total = league_stats[league]["seasons"][season]["total_matches"]
+                season_complete = league_stats[league]["seasons"][season]["complete_matches"]
+                league_stats[league]["seasons"][season]["completion_rate"] = round(season_complete / season_total * 100, 2) if season_total > 0 else 0
+        
+        # Raporu ekrana yazdır
+        print("=" * 80)
+        print("MAÇ DOSYALARI ANALİZ RAPORU")
+        print("=" * 80)
+        
+        print(f"\nToplam analiz edilen maç: {overall_stats['total_matches']}")
+        print(f"Tüm gerekli dosyaları olan maçlar: {overall_stats['matches_with_all_files']} ({overall_stats['completion_rate']}%)")
+        
+        # En sık eksik olan dosyalar
+        print("\nEksik dosya dağılımı:")
+        for file, count in sorted(overall_stats['missing_files'].items(), key=lambda x: x[1], reverse=True):
+            percentage = round(count / overall_stats['total_matches'] * 100, 2)
+            print(f"  - {file}: {count} maçta eksik ({percentage}%)")
+        
+        # Lig istatistikleri
+        print("\nLig istatistikleri:")
+        league_data = []
+        for league, stats in league_stats.items():
+            league_data.append({
+                'Lig': league,
+                'Toplam Maç': stats['total_matches'],
+                'Tam Maç': stats['complete_matches'],
+                'Tamamlanma Oranı': f"{stats['completion_rate']}%"
+            })
+        
+        if league_data:
+            league_df = pd.DataFrame(league_data)
+            print(league_df.sort_values('Tamamlanma Oranı', ascending=False).to_string(index=False))
+        
+        # Detaylı istatistikleri JSON olarak dışa aktar
+        json_file_path = os.path.join(self.processed_dir, 'match_files_stats.json')
+        with open(json_file_path, 'w', encoding='utf-8') as f:
+            json.dump({
+                'league_stats': league_stats,
+                'overall_stats': overall_stats
+            }, f, ensure_ascii=False, indent=2)
+        
+        print(f"\nDetaylı istatistikler '{json_file_path}' dosyasına kaydedildi")
+        
+        # CSV raporu oluştur
+        csv_file_path = os.path.join(self.processed_dir, 'match_files_report.csv')
+        with open(csv_file_path, 'w', encoding='utf-8', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['Lig', 'Sezon', 'Toplam Maç', 'Tam Maç', 'Tamamlanma Oranı', 'Eksik Dosyalar'])
+            
+            for league, league_data in league_stats.items():
+                for season, season_data in league_data['seasons'].items():
+                    missing_str = "; ".join([f"{file}: {count}" for file, count in season_data['missing_files'].items()])
+                    writer.writerow([
+                        league,
+                        season,
+                        season_data['total_matches'],
+                        season_data['complete_matches'],
+                        f"{season_data['completion_rate']}%",
+                        missing_str
+                    ])
+        
+        print(f"CSV raporu '{csv_file_path}' dosyasına kaydedildi")
+        
+        return {
+            'league_stats': league_stats,
+            'overall_stats': overall_stats,
+            'json_report_path': json_file_path,
+            'csv_report_path': csv_file_path
+        }

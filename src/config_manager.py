@@ -74,12 +74,12 @@ class ConfigManager:
         self.leagues_by_name: Dict[str, int] = {}
         self.config: Dict[str, Any] = {
             "api": {
-                "base_url": "https://api.sofascore.com/api/v1",
-                "use_proxy": False,
-                "proxy_url": ""
+                "base_url": os.getenv("API_BASE_URL", "https://sofascore.com/api/v1"),
+                "use_proxy": os.getenv("USE_PROXY", "false").lower() == "true",
+                "proxy_url": os.getenv("PROXY_URL", "")
             },
             "general": {
-                "data_dir": "data"
+                "data_dir": os.getenv("DATA_DIR", "data")
             },
             "display": {
                 "use_color": True,

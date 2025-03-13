@@ -631,4 +631,65 @@ class MatchDataMenuHandler:
                 
         except Exception as e:
             logger.error(f"CSV dönüştürürken hata: {str(e)}")
-            print(f"\nHata: {str(e)}") 
+            print(f"\nHata: {str(e)}")
+    
+    def show_menu(self) -> None:
+        """Menüyü gösterir ve seçimleri işler."""
+        while True:
+            print("\n" + "=" * 50)
+            print("MAÇ DETAYLARI YÖNETİMİ")
+            print("=" * 50)
+            
+            print("\n1. Tek Maç Veri Çekme")
+            print("2. ID Listesinden Maç Veri Çekme")
+            print("3. Tüm Maç Verilerini CSV'ye Dönüştür")
+            print("4. Maç Dosyaları Analiz Raporu Oluştur")
+            print("0. Ana Menüye Dön")
+            
+            choice = input("\nSeçiminiz: ").strip()
+            
+            if choice == "1":
+                self.fetch_single_match()
+            elif choice == "2":
+                self.fetch_from_id_list()
+            elif choice == "3":
+                self.convert_to_csv()
+            elif choice == "4":
+                self.generate_file_report()
+            elif choice == "0":
+                break
+            else:
+                print("\n❌ Geçersiz seçim!")
+    
+    def generate_file_report(self) -> None:
+        """Maç dosyalarının durumunu analiz eder ve rapor oluşturur."""
+        try:
+            print("\nMaç Dosyaları Analiz Raporu:")
+            
+            # Kullanıcıya özel dizin seçeneği sun
+            custom_path = input("\nÖzel bir dizin yolu girmek ister misiniz? (varsayılan için boş bırakın): ").strip()
+            
+            # Rapor oluştur
+            if custom_path:
+                if not os.path.isdir(custom_path):
+                    print(f"\n❌ Geçersiz dizin yolu: {custom_path}")
+                    return
+                    
+                result = self.match_data_fetcher.generate_file_report(custom_path)
+            else:
+                result = self.match_data_fetcher.generate_file_report()
+            
+            # Sonuçları göster (fonksiyon zaten ekrana yazdırıyor)
+            if result:
+                # Opsiyonel olarak CSV ve JSON dosya yollarını göster
+                print(f"\nRapor dosyaları:")
+                print(f"JSON: {result.get('json_report_path', 'Oluşturulmadı')}")
+                print(f"CSV: {result.get('csv_report_path', 'Oluşturulmadı')}")
+            else:
+                print(f"\n❌ Rapor oluşturulurken bir hata oluştu.")
+                
+        except Exception as e:
+            logger.error(f"Rapor oluştururken hata: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            print(f"\n❌ Hata: {str(e)}") 
