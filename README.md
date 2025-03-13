@@ -114,7 +114,7 @@ Gerekli Python paketlerini yükleyin:
 pip install -r requirements.txt
 ```
 
-### 4. Çevre Değişkenleri (Opsiyonel)
+### 4. Çevre Değişkenleri Yapılandırma
 
 `.env` dosyasını kullanarak çevre değişkenlerini yapılandırabilirsiniz:
 
@@ -136,14 +136,14 @@ python main.py
 Belirli parametrelerle çalıştırmak için:
 
 ```bash
-# Hata ayıklama modunda çalıştırma
-python main.py --debug
+# Arayüz olmadan çalıştırma (headless mode)
+python main.py --headless
 
-# Belirli bir konfigürasyon dosyasıyla çalıştırma
-python main.py --config=custom_config.json
+# Tüm liglerin verilerini güncelleme
+python main.py --headless --update-all
 
-# Sadece belirli bir görevi çalıştırma (sezon verilerini çekme)
-python main.py --task=fetch_seasons --league=52
+# Verileri CSV formatında dışa aktarma
+python main.py --headless --csv-export
 ```
 
 ### Ana Menü
@@ -197,7 +197,30 @@ Seçiminiz (0-5):
 
 ## ⚙️ Konfigürasyon
 
-### Lig Yapılandırması
+SofaScore Scraper, iki farklı yöntemle yapılandırılabilir:
+
+### 1. .env Dosyası (Önerilen)
+
+Proje, `.env` dosyası aracılığıyla çevre değişkenleri kullanarak konfigüre edilebilir. Örnek bir `.env` dosyası:
+
+```
+# Sofascore Scraper yapılandırma değişkenleri
+API_BASE_URL='https://www.sofascore.com/api/v1'
+REQUEST_TIMEOUT='20'
+MAX_RETRIES='3'
+MAX_CONCURRENT='25'
+WAIT_TIME_MIN=0.4
+WAIT_TIME_MAX=0.8
+DATA_DIR='data'
+FETCH_ONLY_FINISHED=true
+SAVE_EMPTY_ROUNDS=false
+USE_COLOR=true
+DATE_FORMAT="%Y-%m-%d %H:%M:%S"
+USE_PROXY=false
+PROXY_URL=''
+```
+
+### 2. Lig Yapılandırması
 
 Lig bilgilerini `config/leagues.txt` dosyasında yönetebilirsiniz:
 
@@ -211,23 +234,6 @@ Ligue 1: 34
 Süper Lig: 52
 ```
 
-### Genel Yapılandırma
-
-Uygulama ayarlarını `config/config.json` dosyasında düzenleyebilirsiniz:
-
-```json
-{
-  "data_dir": "data",
-  "seasons_dir": "seasons",
-  "matches_dir": "matches",
-  "match_details_dir": "match_details",
-  "max_retry_count": 3,
-  "batch_size": 100,
-  "max_concurrent_requests": 30,
-  "log_level": "INFO"
-}
-```
-
 ## 📂 Veri Yapısı
 
 SofaScore Scraper, topladığı verileri aşağıdaki yapıda organize eder:
@@ -235,8 +241,7 @@ SofaScore Scraper, topladığı verileri aşağıdaki yapıda organize eder:
 ```
 data/
 ├── seasons/
-│   └── {lig_id}_{lig_adı}/
-│       └── seasons.json
+│   └── {lig_id}_{lig_adı}_seasons.json
 ├── matches/
 │   └── {lig_id}_{lig_adı}/
 │       └── {sezon_id}_{sezon_adı}/
@@ -340,7 +345,7 @@ JSON dosyaları, SofaScore API'nin döndürdüğü veri yapısını korur, ancak
 Yeni bir lig eklemek için iki yöntem vardır:
 
 #### 1. Uygulama Üzerinden:
-# Gelecek güncellemelerle eklenecek.
+Ana menüden "Lig İşlemleri" seçip "Lig Ekle" seçeneğini kullanabilirsiniz.
 
 #### 2. Doğrudan `leagues.txt` Dosyası Üzerinden:
 
@@ -437,6 +442,7 @@ Belirli bir maçın detaylarını çekmek ve analiz etmek için:
 
 ```python
 import json
+import os
 from src.config_manager import ConfigManager
 from src.match_data_fetcher import MatchDataFetcher
 
@@ -525,7 +531,6 @@ if csv_paths and csv_paths[0]:
 
 SofaScore web sitesinde, ligin URL'sine bakabilirsiniz. Örneğin, Süper Lig için URL `https://www.sofascore.com/tournament/football/turkey/super-lig/52` şeklindedir. Buradaki son sayı (52) lig ID'sidir.
 
-
 ### 2. Maç ID'sini nasıl bulabilirim?
 
 Maç ID'lerini birkaç yöntemle bulabilirsiniz:
@@ -535,13 +540,13 @@ Maç ID'lerini birkaç yöntemle bulabilirsiniz:
 ### 3. Rate-limiting hatalarıyla karşılaşıyorum. Ne yapmalıyım?
 
 SofaScore API, kısa sürede çok fazla istek yapıldığında rate-limiting uygulayabilir. Bu durumda şunları deneyebilirsiniz:
-- İstek sayısını azaltmak için `max_concurrent_requests` değerini düşürün
-- Batch işlemler arasındaki bekleme süresini artırın
+- `.env` dosyasında `MAX_CONCURRENT` değerini düşürün (örneğin 10'a)
+- `WAIT_TIME_MIN` ve `WAIT_TIME_MAX` değerlerini artırın
 - Daha az veri çekerek başlayın ve zamanla artırın
 
 ### 4. Çekilen veriler nerede saklanır?
 
-Tüm veriler `data/` dizini altında saklanır:
+Tüm veriler varsayılan olarak `data/` dizini altında saklanır (`.env` dosyasında `DATA_DIR` değişkeni ile değiştirilebilir):
 - Sezon verileri: `data/seasons/`
 - Maç listeleri: `data/matches/`
 - Maç detayları: `data/match_details/`
@@ -557,7 +562,7 @@ SofaScore Scraper, modüler bir mimari kullanılarak geliştirilmiştir:
 
 ### Ana Bileşenler
 
-1. **ConfigManager**: Konfigürasyon yönetimi
+1. **ConfigManager**: Konfigürasyon yönetimi ve çevre değişkenleri
 2. **SeasonFetcher**: Sezon verilerini çekme ve yönetme
 3. **MatchFetcher**: Maç listelerini çekme ve yönetme
 4. **MatchDataFetcher**: Detaylı maç verilerini çekme ve işleme
@@ -580,7 +585,7 @@ https://www.sofascore.com/api/v1/...
 
 ### Paralel İşleme
 
-Maç detayları çekilirken, işlem hızını artırmak için asenkron HTTP istekleri kullanılır. Bu, `aiohttp` kütüphanesi ile gerçekleştirilir.
+Maç detayları çekilirken, işlem hızını artırmak için asenkron HTTP istekleri kullanılır. Bu, `aiohttp` kütüphanesi ile gerçekleştirilir ve `.env` dosyasındaki `MAX_CONCURRENT` değişkeni ile kontrol edilebilir.
 
 ### Geliştirici İçin Notlar
 
@@ -600,14 +605,14 @@ Kodu genişletmek veya değiştirmek isteyenler için:
 
 ### Loglama
 
-Hata mesajları `logs/` dizininde kaydedilir. Sorun yaşadığınızda logları kontrol edin.
+Hata mesajları `logs/` dizininde kaydedilir. Sorun yaşadığınızda logları kontrol edin. Log seviyesi `.env` dosyasındaki `LOG_LEVEL` değişkeni ile kontrol edilebilir.
 
 ### Temel Sorun Giderme Adımları
 
 1. **Güncel Sürüm Kontrolü**: Projenin en son sürümünü kullandığınızdan emin olun
-2. **Bağımlılık Kontrolü**: Tüm gerekli paketlerin doğru sürümlerle yüklendiğini kontrol edin
-3. **Konfigürasyon Kontrolü**: Konfigürasyon dosyalarının doğru formatta olduğunu kontrol edin
-4. **Log İncelemesi**: Hata mesajları için log dosyalarını inceleyin
+2. **Bağımlılık Kontrolü**: `requirements.txt` dosyasındaki tüm paketlerin doğru sürümlerle yüklendiğini kontrol edin
+3. **Çevre Değişkenleri Kontrolü**: `.env` dosyasının doğru yapılandırıldığından emin olun
+4. **Log İncelemesi**: Hata mesajları için `logs/` dizinindeki dosyaları inceleyin
 5. **Ağ Kontrolü**: SofaScore API'ye erişim sağlanabiliyor mu kontrol edin
 
 ## 🤝 Katkıda Bulunma
