@@ -71,31 +71,24 @@ class SettingsMenuHandler:
             print(f"\n{COLORS['SUBTITLE']}API Yapılandırması:")
             print("-" * 50)
             
-            # Mevcut yapılandırmayı .env dosyasından al
-            import os
-            import dotenv
+            # .env dosyasının varlığını kontrol et
+            env_path = os.path.join(os.getcwd(), ".env")
+            env_exists = os.path.exists(env_path)
             
-            # .env dosyasını yükle
-            dotenv_path = dotenv.find_dotenv()
-            if not dotenv_path:
-                dotenv_path = ".env"  # Varsayılan konum
-            dotenv.load_dotenv(dotenv_path)
-            
-            # Mevcut değerleri al
+            # Mevcut değerleri .env dosyasından veya sistem çevre değişkenlerinden al
             base_url = os.getenv("API_BASE_URL", "https://www.sofascore.com/api/v1")
+            request_timeout = os.getenv("REQUEST_TIMEOUT", "30")
+            max_retries = os.getenv("MAX_RETRIES", "3")
             use_proxy = os.getenv("USE_PROXY", "false").lower() == "true"
             proxy_url = os.getenv("PROXY_URL", "")
-            timeout = int(os.getenv("REQUEST_TIMEOUT", "30"))
-            retry_count = int(os.getenv("MAX_RETRIES", "3"))
-            max_concurrent = int(os.getenv("MAX_CONCURRENT", "25"))
-            user_agent = os.getenv("USER_AGENT", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36")
+            max_concurrent = os.getenv("MAX_CONCURRENT", "25")
             
             # Mevcut yapılandırmayı göster
             print(f"{COLORS['INFO']}Mevcut Yapılandırma:")
             print(f"  Base URL: {COLORS['SUCCESS']}{base_url}")
-            print(f"  İstek Zaman Aşımı: {COLORS['SUCCESS']}{timeout} saniye")
-            print(f"  Yeniden Deneme Sayısı: {COLORS['SUCCESS']}{retry_count}")
-            print(f"  Maksimum Eşzamanlı İstek: {COLORS['SUCCESS']}{max_concurrent}")
+            print(f"  İstek Zaman Aşımı: {COLORS['SUCCESS']}{request_timeout} saniye")
+            print(f"  Yeniden Deneme Sayısı: {COLORS['SUCCESS']}{max_retries}")
+            print(f"  Paralel İstek Sayısı: {COLORS['SUCCESS']}{max_concurrent}")
             print(f"  Proxy Kullan: {COLORS['SUCCESS']}{use_proxy}")
             if use_proxy:
                 print(f"  Proxy URL: {COLORS['SUCCESS']}{proxy_url}")
@@ -110,22 +103,22 @@ class SettingsMenuHandler:
             # Performans Ayarları
             print(f"\n{COLORS['SUBTITLE']}Performans Ayarları:")
             try:
-                new_timeout = input(f"İstek Zaman Aşımı (saniye) [{timeout}]: ").strip()
-                new_timeout = int(new_timeout) if new_timeout else timeout
+                new_request_timeout = input(f"İstek Zaman Aşımı (saniye) [{request_timeout}]: ").strip()
+                new_request_timeout = new_request_timeout if new_request_timeout else request_timeout
             except ValueError:
-                print(f"{COLORS['WARNING']}⚠️ Geçersiz değer, varsayılan kullanılıyor: {timeout}")
-                new_timeout = timeout
+                print(f"{COLORS['WARNING']}⚠️ Geçersiz değer, varsayılan kullanılıyor: {request_timeout}")
+                new_request_timeout = request_timeout
 
             try:
-                new_retry_count = input(f"Yeniden Deneme Sayısı [{retry_count}]: ").strip()
-                new_retry_count = int(new_retry_count) if new_retry_count else retry_count
+                new_max_retries = input(f"Yeniden Deneme Sayısı [{max_retries}]: ").strip()
+                new_max_retries = new_max_retries if new_max_retries else max_retries
             except ValueError:
-                print(f"{COLORS['WARNING']}⚠️ Geçersiz değer, varsayılan kullanılıyor: {retry_count}")
-                new_retry_count = retry_count
+                print(f"{COLORS['WARNING']}⚠️ Geçersiz değer, varsayılan kullanılıyor: {max_retries}")
+                new_max_retries = max_retries
                 
             try:
-                new_max_concurrent = input(f"Maksimum Eşzamanlı İstek [{max_concurrent}]: ").strip()
-                new_max_concurrent = int(new_max_concurrent) if new_max_concurrent else max_concurrent
+                new_max_concurrent = input(f"Paralel İstek Sayısı [{max_concurrent}]: ").strip() 
+                new_max_concurrent = new_max_concurrent if new_max_concurrent else max_concurrent
             except ValueError:
                 print(f"{COLORS['WARNING']}⚠️ Geçersiz değer, varsayılan kullanılıyor: {max_concurrent}")
                 new_max_concurrent = max_concurrent
@@ -142,74 +135,60 @@ class SettingsMenuHandler:
             if new_use_proxy:
                 new_proxy_url = input(f"Proxy URL [{proxy_url}]: ").strip() or proxy_url
             
-            # Yapılandırmayı .env dosyasına kaydet
-            changes = {
+            # .env dosyasını güncelle veya oluştur
+            env_content = []
+            
+            # Eğer .env dosyası varsa, içeriğini oku
+            if env_exists:
+                try:
+                    with open(env_path, 'r', encoding='utf-8') as f:
+                        env_content = f.readlines()
+                except Exception as e:
+                    logger.error(f".env dosyası okunurken hata: {str(e)}")
+                    env_content = []
+            
+            # Her bir değişken için .env içeriğini güncelle
+            env_vars = {
                 "API_BASE_URL": new_base_url,
-                "REQUEST_TIMEOUT": str(new_timeout),
-                "MAX_RETRIES": str(new_retry_count),
-                "MAX_CONCURRENT": str(new_max_concurrent),
-                "USE_PROXY": "true" if new_use_proxy else "false",
+                "REQUEST_TIMEOUT": new_request_timeout,
+                "MAX_RETRIES": new_max_retries,
+                "MAX_CONCURRENT": new_max_concurrent,
+                "USE_PROXY": str(new_use_proxy).lower(),
+                "PROXY_URL": new_proxy_url if new_use_proxy else ""
             }
             
-            if new_use_proxy and new_proxy_url:
-                changes["PROXY_URL"] = new_proxy_url
+            # Her değişken için içeriği düzenle
+            updated_env = []
+            for var_name, var_value in env_vars.items():
+                var_found = False
+                for line in env_content:
+                    if line.strip().startswith(f"{var_name}="):
+                        var_found = True
+                        # Değeri güncelle
+                        updated_env.append(f"{var_name}={var_value}\n")
+                    else:
+                        # Diğer satırları aynen koru
+                        if line not in updated_env:
+                            updated_env.append(line)
+                
+                # Eğer değişken .env dosyasında yoksa ekle
+                if not var_found:
+                    updated_env.append(f"{var_name}={var_value}\n")
             
-            # .env dosyasını güncelle
-            success = self._update_env_file(dotenv_path, changes)
-            
-            if success:
+            # Dosyaya yaz
+            try:
+                with open(env_path, 'w', encoding='utf-8') as f:
+                    f.writelines(updated_env)
                 print(f"\n{COLORS['SUCCESS']}✅ API yapılandırması başarıyla güncellendi.")
-                print(f"{COLORS['INFO']}Değişikliklerin etkili olması için uygulamayı yeniden başlatmanız gerekebilir.")
-            else:
-                print(f"\n{COLORS['WARNING']}❌ Yapılandırma kaydedilirken bir hata oluştu.")
+                print(f"{COLORS['INFO']}ℹ️ Değişikliklerin tam olarak etkili olabilmesi için uygulamayı yeniden başlatmanız gerekebilir.")
+            except Exception as e:
+                logger.error(f".env dosyası yazılırken hata: {str(e)}")
+                print(f"\n{COLORS['WARNING']}❌ .env dosyası güncellenirken bir hata oluştu: {str(e)}")
                 
         except Exception as e:
             logger.error(f"API yapılandırması düzenlenirken hata: {str(e)}")
             print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
             
-    def _update_env_file(self, env_path: str, changes: Dict[str, str]) -> bool:
-        """
-        .env dosyasını güncelleyen yardımcı fonksiyon
-        
-        Args:
-            env_path: .env dosyasının yolu 
-            changes: Güncellenecek değerler sözlüğü
-            
-        Returns:
-            bool: Başarılı olursa True, değilse False
-        """
-        try:
-            import os
-            import dotenv
-            from pathlib import Path
-            
-            # .env dosyasının varlığını kontrol et
-            if not os.path.exists(env_path):
-                # .env dosyası yoksa temel bir template oluştur
-                with open(env_path, 'w', encoding='utf-8') as f:
-                    f.write("# SofaScore Scraper API ayarları\n")
-                    f.write("API_BASE_URL=https://www.sofascore.com/api/v1\n")
-                    f.write("REQUEST_TIMEOUT=30\n")
-                    f.write("MAX_RETRIES=3\n")
-                    f.write("MAX_CONCURRENT=25\n")
-                    f.write("USE_PROXY=false\n")
-                    f.write("PROXY_URL=\n")
-                    f.write("WAIT_TIME_MIN=0.2\n")
-                    f.write("WAIT_TIME_MAX=0.5\n")
-                    f.write("FETCH_ONLY_FINISHED=true\n")
-                    f.write("SAVE_EMPTY_ROUNDS=false\n")
-                    f.write("DATA_DIR=data\n")
-            
-            # .env dosyasını güncelle
-            for key, value in changes.items():
-                dotenv.set_key(env_path, key, value)
-            
-            return True
-            
-        except Exception as e:
-            logger.error(f".env dosyası güncellenirken hata: {str(e)}")
-            return False
-    
     def _change_data_directory(self) -> None:
         """Veri dizinini değiştirir."""
         COLORS = self.colors  # Kısa erişim için
@@ -242,32 +221,73 @@ class SettingsMenuHandler:
                 # Alt dizinleri oluştur
                 os.makedirs(os.path.join(new_data_dir, "seasons"), exist_ok=True)
                 os.makedirs(os.path.join(new_data_dir, "matches"), exist_ok=True)
-                os.makedirs(os.path.join(new_data_dir, "match_data"), exist_ok=True)
+                os.makedirs(os.path.join(new_data_dir, "match_details"), exist_ok=True)
                 os.makedirs(os.path.join(new_data_dir, "datasets"), exist_ok=True)
                 os.makedirs(os.path.join(new_data_dir, "reports"), exist_ok=True)
                 
                 # Verileri taşı
                 self._move_directory_contents(os.path.join(current_data_dir, "seasons"), os.path.join(new_data_dir, "seasons"))
                 self._move_directory_contents(os.path.join(current_data_dir, "matches"), os.path.join(new_data_dir, "matches"))
-                self._move_directory_contents(os.path.join(current_data_dir, "match_data"), os.path.join(new_data_dir, "match_data"))
+                self._move_directory_contents(os.path.join(current_data_dir, "match_details"), os.path.join(new_data_dir, "match_details"))
                 self._move_directory_contents(os.path.join(current_data_dir, "datasets"), os.path.join(new_data_dir, "datasets"))
                 self._move_directory_contents(os.path.join(current_data_dir, "reports"), os.path.join(new_data_dir, "reports"))
                 
                 print(f"\n{COLORS['SUCCESS']}✅ Veriler başarıyla taşındı.")
             
-            # Yapılandırmayı güncelle
+            # .env dosyasını güncelle
+            env_path = os.path.join(os.getcwd(), ".env")
+            env_exists = os.path.exists(env_path)
+            
+            env_content = []
+            # Eğer .env dosyası varsa, içeriğini oku
+            if env_exists:
+                try:
+                    with open(env_path, 'r', encoding='utf-8') as f:
+                        env_content = f.readlines()
+                except Exception as e:
+                    logger.error(f".env dosyası okunurken hata: {str(e)}")
+                    env_content = []
+            
+            # Veri dizini değişkenini .env içeriğinde güncelle
+            var_name = "DATA_DIR"
+            var_value = new_data_dir
+            
+            var_found = False
+            updated_env = []
+            
+            for line in env_content:
+                if line.strip().startswith(f"{var_name}="):
+                    var_found = True
+                    # Değeri güncelle
+                    updated_env.append(f"{var_name}={var_value}\n")
+                else:
+                    # Diğer satırları aynen koru
+                    if line not in updated_env:
+                        updated_env.append(line)
+            
+            # Eğer değişken .env dosyasında yoksa ekle
+            if not var_found:
+                updated_env.append(f"{var_name}={var_value}\n")
+            
+            # Dosyaya yaz
+            try:
+                with open(env_path, 'w', encoding='utf-8') as f:
+                    f.writelines(updated_env)
+                print(f"\n{COLORS['SUCCESS']}✅ Veri dizini başarıyla güncellendi.")
+                print(f"{COLORS['INFO']}ℹ️ Değişikliklerin tam olarak etkili olabilmesi için uygulamayı yeniden başlatmanız gerekiyor.")
+            except Exception as e:
+                logger.error(f".env dosyası yazılırken hata: {str(e)}")
+                print(f"\n{COLORS['WARNING']}❌ .env dosyası güncellenirken bir hata oluştu: {str(e)}")
+            
+            # Ayrıca config dosyasını da güncelle (geriye dönük uyumluluk için)
             if not self.config_manager.config.get("general"):
                 self.config_manager.config["general"] = {}
             
             self.config_manager.config["general"]["data_dir"] = new_data_dir
-            
-            # Yapılandırmayı kaydet
             success = self.config_manager.save_config()
             
-            if success:
-                print(f"\n{COLORS['SUCCESS']}✅ Veri dizini başarıyla güncellendi. Uygulamayı yeniden başlatmanız gerekiyor.")
-            else:
-                print(f"\n{COLORS['WARNING']}❌ Yapılandırma kaydedilirken bir hata oluştu.")
+            if not success:
+                print(f"\n{COLORS['WARNING']}⚠️ Yapılandırma dosyasında güncelleme başarısız oldu, ancak .env dosyası güncellendi.")
                 
         except Exception as e:
             logger.error(f"Veri dizini değiştirilirken hata: {str(e)}")
@@ -281,10 +301,9 @@ class SettingsMenuHandler:
             print(f"\n{COLORS['SUBTITLE']}Görüntüleme Ayarları:")
             print("-" * 50)
             
-            # Mevcut yapılandırmayı al
-            current_config = self.config_manager.config.get("display", {})
-            use_color = current_config.get("use_color", True)
-            date_format = current_config.get("date_format", "%Y-%m-%d %H:%M:%S")
+            # Mevcut değerleri .env veya config'den al
+            use_color = os.getenv("USE_COLOR", "true").lower() == "true"
+            date_format = os.getenv("DATE_FORMAT", "%Y-%m-%d %H:%M:%S")
             
             # Mevcut yapılandırmayı göster
             print(f"{COLORS['INFO']}Mevcut Yapılandırma:")
@@ -302,20 +321,64 @@ class SettingsMenuHandler:
             
             new_date_format = input(f"Tarih Formatı [{date_format}]: ").strip() or date_format
             
-            # Yapılandırmayı güncelle
+            # .env dosyasını güncelle
+            env_path = os.path.join(os.getcwd(), ".env")
+            env_exists = os.path.exists(env_path)
+            
+            env_content = []
+            # Eğer .env dosyası varsa, içeriğini oku
+            if env_exists:
+                try:
+                    with open(env_path, 'r', encoding='utf-8') as f:
+                        env_content = f.readlines()
+                except Exception as e:
+                    logger.error(f".env dosyası okunurken hata: {str(e)}")
+                    env_content = []
+            
+            # Değişkenleri .env içeriğinde güncelle
+            env_vars = {
+                "USE_COLOR": str(new_use_color).lower(),
+                "DATE_FORMAT": new_date_format
+            }
+            
+            updated_env = []
+            for var_name, var_value in env_vars.items():
+                var_found = False
+                for line in env_content:
+                    if line.strip().startswith(f"{var_name}="):
+                        var_found = True
+                        # Değeri güncelle
+                        updated_env.append(f"{var_name}={var_value}\n")
+                    else:
+                        # Diğer satırları aynen koru
+                        if line not in updated_env:
+                            updated_env.append(line)
+                
+                # Eğer değişken .env dosyasında yoksa ekle
+                if not var_found:
+                    updated_env.append(f"{var_name}={var_value}\n")
+            
+            # Dosyaya yaz
+            try:
+                with open(env_path, 'w', encoding='utf-8') as f:
+                    f.writelines(updated_env)
+                print(f"\n{COLORS['SUCCESS']}✅ Görüntüleme ayarları başarıyla güncellendi.")
+                print(f"{COLORS['INFO']}ℹ️ Değişikliklerin tam olarak etkili olabilmesi için uygulamayı yeniden başlatmanız gerekebilir.")
+            except Exception as e:
+                logger.error(f".env dosyası yazılırken hata: {str(e)}")
+                print(f"\n{COLORS['WARNING']}❌ .env dosyası güncellenirken bir hata oluştu: {str(e)}")
+            
+            # Ayrıca config dosyasını da güncelle (geriye dönük uyumluluk için)
             if not self.config_manager.config.get("display"):
                 self.config_manager.config["display"] = {}
             
             self.config_manager.config["display"]["use_color"] = new_use_color
             self.config_manager.config["display"]["date_format"] = new_date_format
             
-            # Yapılandırmayı kaydet
             success = self.config_manager.save_config()
             
-            if success:
-                print(f"\n{COLORS['SUCCESS']}✅ Görüntüleme ayarları başarıyla güncellendi.")
-            else:
-                print(f"\n{COLORS['WARNING']}❌ Yapılandırma kaydedilirken bir hata oluştu.")
+            if not success:
+                print(f"\n{COLORS['WARNING']}⚠️ Yapılandırma dosyasında güncelleme başarısız oldu, ancak .env dosyası güncellendi.")
                 
         except Exception as e:
             logger.error(f"Görüntüleme ayarları düzenlenirken hata: {str(e)}")
@@ -370,8 +433,13 @@ class SettingsMenuHandler:
             if os.path.exists(config_file):
                 shutil.copy2(config_file, os.path.join(backup_dir, "config"))
             
+            # .env dosyasını kopyala
+            env_file = os.path.join(os.getcwd(), ".env")
+            if os.path.exists(env_file):
+                shutil.copy2(env_file, os.path.join(backup_dir, "config"))
+            
             # Veri dizinlerini kopyala
-            data_dirs = ["seasons", "matches", "match_data", "datasets", "reports"]
+            data_dirs = ["seasons", "matches", "match_details", "datasets", "reports"]
             
             for dir_name in data_dirs:
                 src_dir = os.path.join(self.data_dir, dir_name)
@@ -414,7 +482,7 @@ class SettingsMenuHandler:
                 elif selection == "3":
                     data_types.append("matches")
                 elif selection == "4":
-                    data_types.append("match_data")
+                    data_types.append("match_details")
                 elif selection == "5":
                     data_types.append("datasets")
                 elif selection == "6":
@@ -445,7 +513,7 @@ class SettingsMenuHandler:
             data_dir_mapping = {
                 "seasons": "seasons",
                 "matches": "matches",
-                "match_data": "match_data",
+                "match_details": "match_details",
                 "datasets": "datasets",
                 "reports": "reports"
             }
@@ -495,7 +563,7 @@ class SettingsMenuHandler:
             data_dir_mapping = {
                 "seasons": "Sezon Verileri",
                 "matches": "Maç Verileri",
-                "match_data": "Maç Detayları",
+                "match_details": "Maç Detayları",
                 "datasets": "CSV Veri Setleri",
                 "reports": "Raporlar"
             }
@@ -519,7 +587,7 @@ class SettingsMenuHandler:
                     print(f"{i}. 📅 Sezon Verileri")
                 elif data_type.endswith("matches"):
                     print(f"{i}. 🎮 Maç Verileri")
-                elif data_type.endswith("match_data"):
+                elif data_type.endswith("match_details"):
                     print(f"{i}. 📈 Maç Detayları")
                 elif data_type.endswith("datasets"):
                     print(f"{i}. 📊 CSV Veri Setleri")
@@ -627,7 +695,7 @@ class SettingsMenuHandler:
                 return
             
             # Veri dizinlerini temizle
-            data_dirs = ["seasons", "matches", "match_data", "datasets", "reports"]
+            data_dirs = ["seasons", "matches", "match_details", "datasets", "reports"]
             
             for dir_name in data_dirs:
                 dir_path = os.path.join(self.data_dir, dir_name)
@@ -665,7 +733,7 @@ class SettingsMenuHandler:
             dir_mapping = {
                 "1": "seasons",
                 "2": "matches",
-                "3": "match_data",
+                "3": "match_details",
                 "4": "datasets",
                 "5": "reports"
             }
