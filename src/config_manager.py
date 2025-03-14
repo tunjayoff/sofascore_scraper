@@ -62,30 +62,9 @@ class ConfigManager:
         # Lig yapılandırma dosyası
         self.league_config_path = config_path or "config/leagues.txt"
         
-        # Genel yapılandırma dosyası
-        self.config_path = os.path.splitext(self.league_config_path)[0] + ".json"
-        if config_path and config_path.endswith(".json"):
-            self.config_path = config_path
-        elif not os.path.exists(self.config_path):
-            self.config_path = "config/config.json"
-        
         # Lig ve diğer yapılandırma verilerini tut
         self.leagues: Dict[int, str] = {}
         self.leagues_by_name: Dict[str, int] = {}
-        self.config: Dict[str, Any] = {
-            "api": {
-                "base_url": os.getenv("API_BASE_URL", "https://sofascore.com/api/v1"),
-                "use_proxy": os.getenv("USE_PROXY", "false").lower() == "true",
-                "proxy_url": os.getenv("PROXY_URL", "")
-            },
-            "general": {
-                "data_dir": os.getenv("DATA_DIR", "data")
-            },
-            "display": {
-                "use_color": True,
-                "date_format": "%Y-%m-%d %H:%M:%S"
-            }
-        }
         
         # Yapılandırma dizinlerini kontrol et
         self._ensure_config_dir()
@@ -93,15 +72,11 @@ class ConfigManager:
         # Yapılandırma dosyaları yoksa örnek dosyaları oluştur
         if not os.path.exists(self.league_config_path):
             self._create_sample_league_config()
-        if not os.path.exists(self.config_path):
-            self._create_sample_config()
         
-        # Ligleri ve diğer yapılandırmaları yükle
+        # Ligleri yükle
         self._load_leagues()
-        self._load_config()
         
         logger.info(f"Yapılandırma yöneticisi başlatıldı: {len(self.leagues)} lig yüklendi ({self.league_config_path})")
-        logger.info(f"Genel yapılandırma yüklendi: {self.config_path}")
         
         # Başlatma tamamlandı
         self._initialized = True
@@ -117,11 +92,6 @@ class ConfigManager:
         league_config_dir = os.path.dirname(self.league_config_path)
         if league_config_dir:
             os.makedirs(league_config_dir, exist_ok=True)
-        
-        # Genel yapılandırma dizini
-        config_dir = os.path.dirname(self.config_path)
-        if config_dir:
-            os.makedirs(config_dir, exist_ok=True)
     
     def _create_sample_league_config(self) -> None:
         """
@@ -142,38 +112,6 @@ class ConfigManager:
             logger.error(f"Örnek lig yapılandırma dosyası oluşturulamadı: {str(e)}")
             raise
     
-    def _create_sample_config(self) -> None:
-        """
-        Örnek bir genel yapılandırma dosyası oluşturur.
-        
-        Raises:
-            OSError: Dosya oluşturulamazsa
-        """
-        try:
-            # Varsayılan yapılandırma
-            config = {
-                "api": {
-                    "base_url": "https://api.sofascore.com/api/v1",
-                    "use_proxy": False,
-                    "proxy_url": ""
-                },
-                "general": {
-                    "data_dir": "data"
-                },
-                "display": {
-                    "use_color": True,
-                    "date_format": "%Y-%m-%d %H:%M:%S"
-                }
-            }
-            
-            with open(self.config_path, 'w', encoding='utf-8') as f:
-                json.dump(config, f, indent=4)
-            
-            logger.info(f"Örnek genel yapılandırma dosyası oluşturuldu: {self.config_path}")
-        except OSError as e:
-            logger.error(f"Örnek genel yapılandırma dosyası oluşturulamadı: {str(e)}")
-            raise
-    
     def _load_leagues(self) -> None:
         """
         Lig bilgilerini yapılandırma dosyasından yükler.
@@ -188,9 +126,6 @@ class ConfigManager:
             
             # Ligleri metin dosyasından yükle
             self._load_leagues_from_text()
-            
-            # Ligleri JSON dosyasından yükle ve birleştir (varsa)
-            self._load_leagues_from_json()
             
             logger.info(f"{len(self.leagues)} lig yapılandırması yüklendi")
         except Exception as e:
@@ -245,72 +180,45 @@ class ConfigManager:
         except Exception as e:
             logger.error(f"Metin dosyasından ligler yüklenirken hata: {str(e)}")
     
-    def _load_leagues_from_json(self) -> None:
-        """Ligleri JSON dosyasından yükler."""
-        if not os.path.exists(self.config_path):
-            logger.warning(f"JSON yapılandırma dosyası bulunamadı: {self.config_path}")
-            return
-            
-        try:
-            # JSON dosyasından yapılandırmayı oku
-            with open(self.config_path, 'r', encoding='utf-8') as f:
-                config_data = json.load(f)
-            
-            # Ligleri yükle
-            if "leagues" in config_data:
-                for league_id_str, league_name in config_data["leagues"].items():
-                    try:
-                        league_id = int(league_id_str)
-                        self.leagues[league_id] = league_name
-                        self.leagues_by_name[league_name] = league_id
-                    except ValueError:
-                        logger.warning(f"Geçersiz lig ID formatı: {league_id_str}")
-                        
-                logger.debug(f"JSON dosyasından {len(config_data.get('leagues', {}))} lig yüklendi")
-        except Exception as e:
-            logger.error(f"JSON dosyasından ligler yüklenirken hata: {str(e)}")
-    
-    def _load_config(self) -> None:
-        """
-        Genel yapılandırma dosyasını yükler.
-        
-        Raises:
-            ConfigError: Yapılandırma yüklenemezse
-        """
-        try:
-            if os.path.exists(self.config_path):
-                with open(self.config_path, 'r', encoding='utf-8') as f:
-                    loaded_config = json.load(f)
-                    
-                    # Mevcut yapılandırmayı güncelle
-                    for section in ["api", "general", "display"]:
-                        if section in loaded_config:
-                            if section not in self.config:
-                                self.config[section] = {}
-                            
-                            # Alt bölümleri güncelle
-                            for key, value in loaded_config[section].items():
-                                self.config[section][key] = value
-        except Exception as e:
-            logger.error(f"Genel yapılandırma dosyası yüklenirken hata: {str(e)}")
-            # Hata durumunda varsayılan yapılandırmayı kullan
-            pass
-
     def save_config(self) -> bool:
         """
-        Genel yapılandırmayı dosyaya kaydeder.
+        Çevre değişkenlerini .env dosyasına kaydeder.
         
         Returns:
             bool: Başarılı olursa True, değilse False
         """
         try:
-            with open(self.config_path, 'w', encoding='utf-8') as f:
-                json.dump(self.config, f, indent=4)
+            # Mevcut .env dosyasını oku
+            env_path = ".env"
+            env_vars = {}
             
-            logger.info(f"Genel yapılandırma kaydedildi: {self.config_path}")
+            if os.path.exists(env_path):
+                with open(env_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith('#'):
+                            continue
+                        if '=' in line:
+                            key, value = line.split('=', 1)
+                            env_vars[key.strip()] = value.strip()
+            
+            # Güncellenmiş değerleri ekle
+            env_vars["API_BASE_URL"] = os.getenv("API_BASE_URL", "https://www.sofascore.com/api/v1")
+            env_vars["USE_PROXY"] = os.getenv("USE_PROXY", "false")
+            env_vars["PROXY_URL"] = os.getenv("PROXY_URL", "")
+            env_vars["DATA_DIR"] = os.getenv("DATA_DIR", "data")
+            env_vars["USE_COLOR"] = os.getenv("USE_COLOR", "true")
+            env_vars["DATE_FORMAT"] = os.getenv("DATE_FORMAT", "%Y-%m-%d %H:%M:%S")
+            
+            # .env dosyasını yeniden yaz
+            with open(env_path, 'w', encoding='utf-8') as f:
+                for key, value in env_vars.items():
+                    f.write(f"{key}={value}\n")
+            
+            logger.info(f"Çevre değişkenleri .env dosyasına kaydedildi")
             return True
         except Exception as e:
-            logger.error(f"Genel yapılandırma kaydedilirken hata: {str(e)}")
+            logger.error(f"Çevre değişkenleri kaydedilirken hata: {str(e)}")
             return False
     
     def get_leagues(self) -> Dict[int, str]:
@@ -364,6 +272,30 @@ class ConfigManager:
         """
         return self.leagues.get(league_id)
     
+    def get_league_name_by_id(self, league_id: int) -> Optional[str]:
+        """
+        ID'ye göre lig adını döndürür. get_league_by_id ile aynı işlevi görür.
+        
+        Args:
+            league_id: Lig ID'si
+            
+        Returns:
+            Optional[str]: Lig adı veya bulunamazsa None
+        """
+        return self.get_league_by_id(league_id)
+    
+    def get_league_id_by_name(self, league_name: str) -> Optional[int]:
+        """
+        İsme göre lig ID'sini döndürür. get_league_by_name ile aynı işlevi görür.
+        
+        Args:
+            league_name: Lig adı
+            
+        Returns:
+            Optional[int]: Lig ID'si veya bulunamazsa None
+        """
+        return self.get_league_by_name(league_name)
+    
     def get_data_dir(self) -> str:
         """
         Veri dizinini döndürür.
@@ -371,7 +303,7 @@ class ConfigManager:
         Returns:
             str: Yapılandırmada tanımlanan veri dizini
         """
-        return self.config.get("general", {}).get("data_dir", "data")
+        return os.getenv("DATA_DIR", "data")
     
     def get_match_data_dir(self) -> str:
         """
@@ -382,6 +314,51 @@ class ConfigManager:
         """
         data_dir = self.get_data_dir()
         return os.path.join(data_dir, "matches")
+    
+    def get_api_base_url(self) -> str:
+        """
+        API temel URL'sini döndürür.
+        
+        Returns:
+            str: API temel URL'si
+        """
+        return os.getenv("API_BASE_URL", "https://www.sofascore.com/api/v1")
+    
+    def get_use_proxy(self) -> bool:
+        """
+        Proxy kullanımı ayarını döndürür.
+        
+        Returns:
+            bool: Proxy kullanılacaksa True, değilse False
+        """
+        return os.getenv("USE_PROXY", "false").lower() == "true"
+    
+    def get_proxy_url(self) -> str:
+        """
+        Proxy URL'sini döndürür.
+        
+        Returns:
+            str: Proxy URL'si
+        """
+        return os.getenv("PROXY_URL", "")
+    
+    def get_use_color(self) -> bool:
+        """
+        Renk kullanımı ayarını döndürür.
+        
+        Returns:
+            bool: Renk kullanılacaksa True, değilse False
+        """
+        return os.getenv("USE_COLOR", "true").lower() == "true"
+    
+    def get_date_format(self) -> str:
+        """
+        Tarih formatını döndürür.
+        
+        Returns:
+            str: Tarih formatı
+        """
+        return os.getenv("DATE_FORMAT", "%Y-%m-%d %H:%M:%S")
     
     def reload_config(self) -> bool:
         """
@@ -398,8 +375,8 @@ class ConfigManager:
             # Ligleri yeniden yükle
             self._load_leagues()
             
-            # Genel yapılandırmayı yeniden yükle
-            self._load_config()
+            # Çevre değişkenlerini yeniden yükle
+            dotenv.load_dotenv(override=True)
             
             # Debug için ligleri logla
             logger.debug(f"Yapılandırma yeniden yüklendi: {len(self.leagues)} lig bulundu")
@@ -466,28 +443,11 @@ class ConfigManager:
                     f.write(new_line)
                 
                 logger.info(f"Lig eklendi: {league_name} (ID: {league_id})")
+                return True
+                
             except Exception as e:
                 logger.error(f"Lig eklenirken metin dosyası hatası: {str(e)}")
                 raise ConfigError(f"Lig eklenirken metin dosyası hatası: {str(e)}") from e
-            
-            # JSON yapılandırmasına lig ekle
-            try:
-                # Leagues bölümü yoksa oluştur
-                if "leagues" not in self.config:
-                    self.config["leagues"] = {}
-                
-                # Lig ID'sini string olarak ekle
-                self.config["leagues"][str(league_id)] = league_name
-                
-                # Yapılandırmayı kaydet
-                success = self.save_config()
-                if not success:
-                    logger.warning("JSON yapılandırması kaydedilemedi, ancak metin dosyası güncellendi")
-            except Exception as e:
-                logger.error(f"Lig eklenirken JSON yapılandırma hatası: {str(e)}")
-                # Metin dosyası başarılı olduğu için devam et
-            
-            return True
             
         except Exception as e:
             logger.error(f"Lig eklenirken beklenmeyen hata: {str(e)}")
@@ -550,30 +510,61 @@ class ConfigManager:
                 with open(self.league_config_path, 'w', encoding='utf-8') as f:
                     f.writelines(new_lines)
                 
+                # Lig bilgilerini kaldır
+                del self.leagues[league_id]
+                del self.leagues_by_name[league_name]
+                
                 logger.info(f"Lig kaldırıldı: {league_name} (ID: {league_id})")
+                return True
+                
             except Exception as e:
                 logger.error(f"Lig kaldırılırken metin dosyası hatası: {str(e)}")
                 raise ConfigError(f"Lig kaldırılırken metin dosyası hatası: {str(e)}") from e
             
-            # JSON yapılandırmasından ligi kaldır
-            try:
-                if "leagues" in self.config and str(league_id) in self.config["leagues"]:
-                    del self.config["leagues"][str(league_id)]
-                    
-                    # Yapılandırmayı kaydet
-                    success = self.save_config()
-                    if not success:
-                        logger.warning("JSON yapılandırması kaydedilemedi, ancak metin dosyası güncellendi")
-            except Exception as e:
-                logger.error(f"Lig kaldırılırken JSON yapılandırma hatası: {str(e)}")
-                # Metin dosyası başarılı olduğu için devam et
-            
-            # Hafızadaki ligi kaldır
-            del self.leagues_by_name[league_name]
-            del self.leagues[league_id]
-            
-            return True
-            
         except Exception as e:
             logger.error(f"Lig kaldırılırken beklenmeyen hata: {str(e)}")
+            return False
+    
+    def update_env_variable(self, key: str, value: str) -> bool:
+        """
+        Çevre değişkenini günceller ve .env dosyasına kaydeder.
+        
+        Args:
+            key: Değişken adı
+            value: Yeni değer
+            
+        Returns:
+            bool: Başarılı olursa True, değilse False
+        """
+        try:
+            # Çevre değişkenini güncelle
+            os.environ[key] = value
+            
+            # .env dosyasını güncelle
+            env_path = ".env"
+            env_vars = {}
+            
+            # Mevcut .env dosyasını oku
+            if os.path.exists(env_path):
+                with open(env_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith('#'):
+                            continue
+                        if '=' in line:
+                            k, v = line.split('=', 1)
+                            env_vars[k.strip()] = v.strip()
+            
+            # Değişkeni güncelle
+            env_vars[key] = value
+            
+            # .env dosyasını yeniden yaz
+            with open(env_path, 'w', encoding='utf-8') as f:
+                for k, v in env_vars.items():
+                    f.write(f"{k}={v}\n")
+            
+            logger.info(f"Çevre değişkeni güncellendi: {key}={value}")
+            return True
+        except Exception as e:
+            logger.error(f"Çevre değişkeni güncellenirken hata: {str(e)}")
             return False

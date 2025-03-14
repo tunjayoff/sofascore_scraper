@@ -71,16 +71,12 @@ class SettingsMenuHandler:
             print(f"\n{COLORS['SUBTITLE']}API Yapılandırması:")
             print("-" * 50)
             
-            # .env dosyasının varlığını kontrol et
-            env_path = os.path.join(os.getcwd(), ".env")
-            env_exists = os.path.exists(env_path)
-            
-            # Mevcut değerleri .env dosyasından veya sistem çevre değişkenlerinden al
-            base_url = os.getenv("API_BASE_URL", "https://www.sofascore.com/api/v1")
+            # Mevcut değerleri ConfigManager'dan al
+            base_url = self.config_manager.get_api_base_url()
             request_timeout = os.getenv("REQUEST_TIMEOUT", "30")
             max_retries = os.getenv("MAX_RETRIES", "3")
-            use_proxy = os.getenv("USE_PROXY", "false").lower() == "true"
-            proxy_url = os.getenv("PROXY_URL", "")
+            use_proxy = self.config_manager.get_use_proxy()
+            proxy_url = self.config_manager.get_proxy_url()
             max_concurrent = os.getenv("MAX_CONCURRENT", "25")
             
             # Mevcut yapılandırmayı göster
@@ -135,55 +131,19 @@ class SettingsMenuHandler:
             if new_use_proxy:
                 new_proxy_url = input(f"Proxy URL [{proxy_url}]: ").strip() or proxy_url
             
-            # .env dosyasını güncelle veya oluştur
-            env_content = []
+            # Çevre değişkenlerini güncelle
+            success1 = self.config_manager.update_env_variable("API_BASE_URL", new_base_url)
+            success2 = self.config_manager.update_env_variable("REQUEST_TIMEOUT", new_request_timeout)
+            success3 = self.config_manager.update_env_variable("MAX_RETRIES", new_max_retries)
+            success4 = self.config_manager.update_env_variable("MAX_CONCURRENT", new_max_concurrent)
+            success5 = self.config_manager.update_env_variable("USE_PROXY", str(new_use_proxy).lower())
+            success6 = self.config_manager.update_env_variable("PROXY_URL", new_proxy_url if new_use_proxy else "")
             
-            # Eğer .env dosyası varsa, içeriğini oku
-            if env_exists:
-                try:
-                    with open(env_path, 'r', encoding='utf-8') as f:
-                        env_content = f.readlines()
-                except Exception as e:
-                    logger.error(f".env dosyası okunurken hata: {str(e)}")
-                    env_content = []
-            
-            # Her bir değişken için .env içeriğini güncelle
-            env_vars = {
-                "API_BASE_URL": new_base_url,
-                "REQUEST_TIMEOUT": new_request_timeout,
-                "MAX_RETRIES": new_max_retries,
-                "MAX_CONCURRENT": new_max_concurrent,
-                "USE_PROXY": str(new_use_proxy).lower(),
-                "PROXY_URL": new_proxy_url if new_use_proxy else ""
-            }
-            
-            # Her değişken için içeriği düzenle
-            updated_env = []
-            for var_name, var_value in env_vars.items():
-                var_found = False
-                for line in env_content:
-                    if line.strip().startswith(f"{var_name}="):
-                        var_found = True
-                        # Değeri güncelle
-                        updated_env.append(f"{var_name}={var_value}\n")
-                    else:
-                        # Diğer satırları aynen koru
-                        if line not in updated_env:
-                            updated_env.append(line)
-                
-                # Eğer değişken .env dosyasında yoksa ekle
-                if not var_found:
-                    updated_env.append(f"{var_name}={var_value}\n")
-            
-            # Dosyaya yaz
-            try:
-                with open(env_path, 'w', encoding='utf-8') as f:
-                    f.writelines(updated_env)
+            if success1 and success2 and success3 and success4 and success5 and success6:
                 print(f"\n{COLORS['SUCCESS']}✅ API yapılandırması başarıyla güncellendi.")
                 print(f"{COLORS['INFO']}ℹ️ Değişikliklerin tam olarak etkili olabilmesi için uygulamayı yeniden başlatmanız gerekebilir.")
-            except Exception as e:
-                logger.error(f".env dosyası yazılırken hata: {str(e)}")
-                print(f"\n{COLORS['WARNING']}❌ .env dosyası güncellenirken bir hata oluştu: {str(e)}")
+            else:
+                print(f"\n{COLORS['WARNING']}❌ API yapılandırması güncellenirken bir hata oluştu.")
                 
         except Exception as e:
             logger.error(f"API yapılandırması düzenlenirken hata: {str(e)}")
@@ -234,60 +194,14 @@ class SettingsMenuHandler:
                 
                 print(f"\n{COLORS['SUCCESS']}✅ Veriler başarıyla taşındı.")
             
-            # .env dosyasını güncelle
-            env_path = os.path.join(os.getcwd(), ".env")
-            env_exists = os.path.exists(env_path)
+            # Çevre değişkenini güncelle
+            success = self.config_manager.update_env_variable("DATA_DIR", new_data_dir)
             
-            env_content = []
-            # Eğer .env dosyası varsa, içeriğini oku
-            if env_exists:
-                try:
-                    with open(env_path, 'r', encoding='utf-8') as f:
-                        env_content = f.readlines()
-                except Exception as e:
-                    logger.error(f".env dosyası okunurken hata: {str(e)}")
-                    env_content = []
-            
-            # Veri dizini değişkenini .env içeriğinde güncelle
-            var_name = "DATA_DIR"
-            var_value = new_data_dir
-            
-            var_found = False
-            updated_env = []
-            
-            for line in env_content:
-                if line.strip().startswith(f"{var_name}="):
-                    var_found = True
-                    # Değeri güncelle
-                    updated_env.append(f"{var_name}={var_value}\n")
-                else:
-                    # Diğer satırları aynen koru
-                    if line not in updated_env:
-                        updated_env.append(line)
-            
-            # Eğer değişken .env dosyasında yoksa ekle
-            if not var_found:
-                updated_env.append(f"{var_name}={var_value}\n")
-            
-            # Dosyaya yaz
-            try:
-                with open(env_path, 'w', encoding='utf-8') as f:
-                    f.writelines(updated_env)
+            if success:
                 print(f"\n{COLORS['SUCCESS']}✅ Veri dizini başarıyla güncellendi.")
                 print(f"{COLORS['INFO']}ℹ️ Değişikliklerin tam olarak etkili olabilmesi için uygulamayı yeniden başlatmanız gerekiyor.")
-            except Exception as e:
-                logger.error(f".env dosyası yazılırken hata: {str(e)}")
-                print(f"\n{COLORS['WARNING']}❌ .env dosyası güncellenirken bir hata oluştu: {str(e)}")
-            
-            # Ayrıca config dosyasını da güncelle (geriye dönük uyumluluk için)
-            if not self.config_manager.config.get("general"):
-                self.config_manager.config["general"] = {}
-            
-            self.config_manager.config["general"]["data_dir"] = new_data_dir
-            success = self.config_manager.save_config()
-            
-            if not success:
-                print(f"\n{COLORS['WARNING']}⚠️ Yapılandırma dosyasında güncelleme başarısız oldu, ancak .env dosyası güncellendi.")
+            else:
+                print(f"\n{COLORS['WARNING']}❌ Veri dizini güncellenirken bir hata oluştu.")
                 
         except Exception as e:
             logger.error(f"Veri dizini değiştirilirken hata: {str(e)}")
@@ -301,9 +215,9 @@ class SettingsMenuHandler:
             print(f"\n{COLORS['SUBTITLE']}Görüntüleme Ayarları:")
             print("-" * 50)
             
-            # Mevcut değerleri .env veya config'den al
-            use_color = os.getenv("USE_COLOR", "true").lower() == "true"
-            date_format = os.getenv("DATE_FORMAT", "%Y-%m-%d %H:%M:%S")
+            # Mevcut değerleri ConfigManager'dan al
+            use_color = self.config_manager.get_use_color()
+            date_format = self.config_manager.get_date_format()
             
             # Mevcut yapılandırmayı göster
             print(f"{COLORS['INFO']}Mevcut Yapılandırma:")
@@ -321,64 +235,15 @@ class SettingsMenuHandler:
             
             new_date_format = input(f"Tarih Formatı [{date_format}]: ").strip() or date_format
             
-            # .env dosyasını güncelle
-            env_path = os.path.join(os.getcwd(), ".env")
-            env_exists = os.path.exists(env_path)
+            # Çevre değişkenlerini güncelle
+            success1 = self.config_manager.update_env_variable("USE_COLOR", str(new_use_color).lower())
+            success2 = self.config_manager.update_env_variable("DATE_FORMAT", new_date_format)
             
-            env_content = []
-            # Eğer .env dosyası varsa, içeriğini oku
-            if env_exists:
-                try:
-                    with open(env_path, 'r', encoding='utf-8') as f:
-                        env_content = f.readlines()
-                except Exception as e:
-                    logger.error(f".env dosyası okunurken hata: {str(e)}")
-                    env_content = []
-            
-            # Değişkenleri .env içeriğinde güncelle
-            env_vars = {
-                "USE_COLOR": str(new_use_color).lower(),
-                "DATE_FORMAT": new_date_format
-            }
-            
-            updated_env = []
-            for var_name, var_value in env_vars.items():
-                var_found = False
-                for line in env_content:
-                    if line.strip().startswith(f"{var_name}="):
-                        var_found = True
-                        # Değeri güncelle
-                        updated_env.append(f"{var_name}={var_value}\n")
-                    else:
-                        # Diğer satırları aynen koru
-                        if line not in updated_env:
-                            updated_env.append(line)
-                
-                # Eğer değişken .env dosyasında yoksa ekle
-                if not var_found:
-                    updated_env.append(f"{var_name}={var_value}\n")
-            
-            # Dosyaya yaz
-            try:
-                with open(env_path, 'w', encoding='utf-8') as f:
-                    f.writelines(updated_env)
+            if success1 and success2:
                 print(f"\n{COLORS['SUCCESS']}✅ Görüntüleme ayarları başarıyla güncellendi.")
                 print(f"{COLORS['INFO']}ℹ️ Değişikliklerin tam olarak etkili olabilmesi için uygulamayı yeniden başlatmanız gerekebilir.")
-            except Exception as e:
-                logger.error(f".env dosyası yazılırken hata: {str(e)}")
-                print(f"\n{COLORS['WARNING']}❌ .env dosyası güncellenirken bir hata oluştu: {str(e)}")
-            
-            # Ayrıca config dosyasını da güncelle (geriye dönük uyumluluk için)
-            if not self.config_manager.config.get("display"):
-                self.config_manager.config["display"] = {}
-            
-            self.config_manager.config["display"]["use_color"] = new_use_color
-            self.config_manager.config["display"]["date_format"] = new_date_format
-            
-            success = self.config_manager.save_config()
-            
-            if not success:
-                print(f"\n{COLORS['WARNING']}⚠️ Yapılandırma dosyasında güncelleme başarısız oldu, ancak .env dosyası güncellendi.")
+            else:
+                print(f"\n{COLORS['WARNING']}❌ Görüntüleme ayarları güncellenirken bir hata oluştu.")
                 
         except Exception as e:
             logger.error(f"Görüntüleme ayarları düzenlenirken hata: {str(e)}")
@@ -412,48 +277,54 @@ class SettingsMenuHandler:
         COLORS = self.colors  # Kısa erişim için
         
         try:
-            print(f"\n{COLORS['INFO']}Tüm veriler yedekleniyor...")
+            print(f"\n{COLORS['SUBTITLE']}Tüm Verileri Yedekleme:")
+            print("-" * 50)
             
             # Yedekleme dizinini al
-            backup_dir = input("Yedekleme Dizini: ").strip()
+            backup_dir = input(f"Yedekleme Dizini [backup]: ").strip() or "backup"
             
-            if not backup_dir:
-                print(f"\n{COLORS['WARNING']}❌ Yedekleme dizini belirtilmedi.")
-                return
-            
-            # Dizini oluştur
+            # Yedekleme dizinini oluştur
             os.makedirs(backup_dir, exist_ok=True)
             
             # Alt dizinleri oluştur
             os.makedirs(os.path.join(backup_dir, "config"), exist_ok=True)
             os.makedirs(os.path.join(backup_dir, "data"), exist_ok=True)
             
-            # Yapılandırma dosyasını kopyala
-            config_file = self.config_manager.config_path
-            if os.path.exists(config_file):
-                shutil.copy2(config_file, os.path.join(backup_dir, "config"))
+            # Yapılandırma dosyalarını yedekle
+            print(f"\n{COLORS['INFO']}Yapılandırma dosyaları yedekleniyor...")
             
-            # .env dosyasını kopyala
+            # leagues.txt dosyasını yedekle
+            league_file = self.config_manager.league_config_path
+            if os.path.exists(league_file):
+                league_backup = os.path.join(backup_dir, "config", os.path.basename(league_file))
+                shutil.copy2(league_file, league_backup)
+                print(f"{COLORS['SUCCESS']}✓ Lig yapılandırması yedeklendi: {league_backup}")
+            
+            # .env dosyasını yedekle
             env_file = os.path.join(os.getcwd(), ".env")
             if os.path.exists(env_file):
-                shutil.copy2(env_file, os.path.join(backup_dir, "config"))
+                env_backup = os.path.join(backup_dir, "config", ".env")
+                shutil.copy2(env_file, env_backup)
+                print(f"{COLORS['SUCCESS']}✓ Çevre değişkenleri yedeklendi: {env_backup}")
             
-            # Veri dizinlerini kopyala
-            data_dirs = ["seasons", "matches", "match_details", "datasets", "reports"]
+            # Veri dizinini yedekle
+            print(f"\n{COLORS['INFO']}Veri dizini yedekleniyor...")
             
-            for dir_name in data_dirs:
-                src_dir = os.path.join(self.data_dir, dir_name)
-                dest_dir = os.path.join(backup_dir, "data", dir_name)
-                
-                if os.path.exists(src_dir):
-                    if os.path.exists(dest_dir):
-                        shutil.rmtree(dest_dir)
-                    shutil.copytree(src_dir, dest_dir)
+            # Alt dizinleri yedekle
+            for subdir in ["seasons", "matches", "match_details"]:
+                src_dir = os.path.join(self.data_dir, subdir)
+                if os.path.exists(src_dir) and os.path.isdir(src_dir):
+                    dst_dir = os.path.join(backup_dir, "data", subdir)
+                    
+                    # Dizini kopyala
+                    print(f"{COLORS['INFO']}'{subdir}' dizini yedekleniyor...")
+                    shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
+                    print(f"{COLORS['SUCCESS']}✓ '{subdir}' dizini yedeklendi: {dst_dir}")
             
-            print(f"\n{COLORS['SUCCESS']}✅ Tüm veriler başarıyla yedeklendi: {backup_dir}")
+            print(f"\n{COLORS['SUCCESS']}✅ Tüm veriler başarıyla yedeklendi: {os.path.abspath(backup_dir)}")
             
         except Exception as e:
-            logger.error(f"Tüm veriler yedeklenirken hata: {str(e)}")
+            logger.error(f"Veri yedeklenirken hata: {str(e)}")
             print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
     
     def _backup_selected_data(self) -> None:
@@ -461,80 +332,83 @@ class SettingsMenuHandler:
         COLORS = self.colors  # Kısa erişim için
         
         try:
-            print(f"\n{COLORS['SUBTITLE']}Seçili Veri Türlerini Yedekle:")
+            print(f"\n{COLORS['SUBTITLE']}Seçili Veri Tiplerini Yedekleme:")
             print("-" * 50)
-            print("1. ⚙️ Yapılandırma")
-            print("2. 📅 Sezon Verileri")
-            print("3. 🎮 Maç Verileri")
-            print("4. 📈 Maç Detayları")
-            print("5. 📊 CSV Veri Setleri")
-            print("6. 📝 Raporlar")
-            
-            data_types = []
-            selections = input("\nSeçiminiz (virgülle ayrılmış numaralar): ").strip()
-            
-            for selection in selections.split(","):
-                selection = selection.strip()
-                if selection == "1":
-                    data_types.append("config")
-                elif selection == "2":
-                    data_types.append("seasons")
-                elif selection == "3":
-                    data_types.append("matches")
-                elif selection == "4":
-                    data_types.append("match_details")
-                elif selection == "5":
-                    data_types.append("datasets")
-                elif selection == "6":
-                    data_types.append("reports")
-            
-            if not data_types:
-                print(f"\n{COLORS['WARNING']}❌ Hiçbir veri türü seçilmedi.")
-                return
             
             # Yedekleme dizinini al
-            backup_dir = input("Yedekleme Dizini: ").strip()
+            backup_dir = input(f"Yedekleme Dizini [backup]: ").strip() or "backup"
             
-            if not backup_dir:
-                print(f"\n{COLORS['WARNING']}❌ Yedekleme dizini belirtilmedi.")
-                return
-            
-            # Dizini oluştur
+            # Yedekleme dizinini oluştur
             os.makedirs(backup_dir, exist_ok=True)
             
-            # Seçili veri türlerini yedekle
-            if "config" in data_types:
+            # Yedeklenecek veri tiplerini seç
+            print(f"\n{COLORS['INFO']}Yedeklenecek veri tiplerini seçin:")
+            print("1. 📝 Yapılandırma Dosyaları")
+            print("2. 🏆 Lig ve Sezon Verileri")
+            print("3. ⚽ Maç Verileri")
+            print("4. 📊 Maç Detayları")
+            
+            choices = input("\nSeçimleriniz (örn: 1,2,3): ").strip()
+            selected = [int(c.strip()) for c in choices.split(",") if c.strip().isdigit()]
+            
+            # Seçim yoksa çık
+            if not selected:
+                print(f"\n{COLORS['WARNING']}⚠️ Hiçbir veri tipi seçilmedi!")
+                return
+            
+            # Yapılandırma dosyalarını yedekle
+            if 1 in selected:
+                print(f"\n{COLORS['INFO']}Yapılandırma dosyaları yedekleniyor...")
                 os.makedirs(os.path.join(backup_dir, "config"), exist_ok=True)
-                config_file = self.config_manager.config_path
-                if os.path.exists(config_file):
-                    shutil.copy2(config_file, os.path.join(backup_dir, "config"))
-                    print(f"{COLORS['SUCCESS']}✓ Yapılandırma yedeklendi.")
+                
+                # leagues.txt dosyasını yedekle
+                league_file = self.config_manager.league_config_path
+                if os.path.exists(league_file):
+                    league_backup = os.path.join(backup_dir, "config", os.path.basename(league_file))
+                    shutil.copy2(league_file, league_backup)
+                    print(f"{COLORS['SUCCESS']}✓ Lig yapılandırması yedeklendi: {league_backup}")
+                
+                # .env dosyasını yedekle
+                env_file = os.path.join(os.getcwd(), ".env")
+                if os.path.exists(env_file):
+                    env_backup = os.path.join(backup_dir, "config", ".env")
+                    shutil.copy2(env_file, env_backup)
+                    print(f"{COLORS['SUCCESS']}✓ Çevre değişkenleri yedeklendi: {env_backup}")
             
-            data_dir_mapping = {
-                "seasons": "seasons",
-                "matches": "matches",
-                "match_details": "match_details",
-                "datasets": "datasets",
-                "reports": "reports"
-            }
+            # Veri dizinini oluştur
+            os.makedirs(os.path.join(backup_dir, "data"), exist_ok=True)
             
-            for data_type in data_types:
-                if data_type in data_dir_mapping:
-                    src_dir = os.path.join(self.data_dir, data_dir_mapping[data_type])
-                    dest_dir = os.path.join(backup_dir, data_dir_mapping[data_type])
-                    
-                    if os.path.exists(src_dir):
-                        if os.path.exists(dest_dir):
-                            shutil.rmtree(dest_dir)
-                        shutil.copytree(src_dir, dest_dir)
-                        print(f"{COLORS['SUCCESS']}✓ {data_type} verileri yedeklendi.")
-                    else:
-                        print(f"{COLORS['WARNING']}✗ {data_type} dizini bulunamadı.")
+            # Lig ve sezon verilerini yedekle
+            if 2 in selected:
+                print(f"\n{COLORS['INFO']}Lig ve sezon verileri yedekleniyor...")
+                src_dir = os.path.join(self.data_dir, "seasons")
+                if os.path.exists(src_dir) and os.path.isdir(src_dir):
+                    dst_dir = os.path.join(backup_dir, "data", "seasons")
+                    shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
+                    print(f"{COLORS['SUCCESS']}✓ Sezon verileri yedeklendi: {dst_dir}")
             
-            print(f"\n{COLORS['SUCCESS']}✅ Seçili veriler başarıyla yedeklendi: {backup_dir}")
+            # Maç verilerini yedekle
+            if 3 in selected:
+                print(f"\n{COLORS['INFO']}Maç verileri yedekleniyor...")
+                src_dir = os.path.join(self.data_dir, "matches")
+                if os.path.exists(src_dir) and os.path.isdir(src_dir):
+                    dst_dir = os.path.join(backup_dir, "data", "matches")
+                    shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
+                    print(f"{COLORS['SUCCESS']}✓ Maç verileri yedeklendi: {dst_dir}")
+            
+            # Maç detaylarını yedekle
+            if 4 in selected:
+                print(f"\n{COLORS['INFO']}Maç detayları yedekleniyor...")
+                src_dir = os.path.join(self.data_dir, "match_details")
+                if os.path.exists(src_dir) and os.path.isdir(src_dir):
+                    dst_dir = os.path.join(backup_dir, "data", "match_details")
+                    shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
+                    print(f"{COLORS['SUCCESS']}✓ Maç detayları yedeklendi: {dst_dir}")
+            
+            print(f"\n{COLORS['SUCCESS']}✅ Seçili veriler başarıyla yedeklendi: {os.path.abspath(backup_dir)}")
             
         except Exception as e:
-            logger.error(f"Seçili veriler yedeklenirken hata: {str(e)}")
+            logger.error(f"Veri yedeklenirken hata: {str(e)}")
             print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
     
     def restore_data(self) -> None:
@@ -546,110 +420,87 @@ class SettingsMenuHandler:
             print("-" * 50)
             
             # Yedek dizinini al
-            backup_dir = input("Yedek Dizini: ").strip()
+            backup_dir = input(f"Yedek Dizini [backup]: ").strip() or "backup"
             
-            if not backup_dir or not os.path.exists(backup_dir):
-                print(f"\n{COLORS['WARNING']}❌ Geçerli bir yedek dizini belirtilmedi.")
+            # Yedek dizini kontrol et
+            if not os.path.exists(backup_dir) or not os.path.isdir(backup_dir):
+                print(f"\n{COLORS['WARNING']}⚠️ Belirtilen yedek dizini bulunamadı: {backup_dir}")
                 return
             
-            print(f"\n{COLORS['INFO']}Yedek içeriği kontrol ediliyor...")
+            # Geri yüklenecek veri tiplerini seç
+            print(f"\n{COLORS['INFO']}Geri yüklenecek veri tiplerini seçin:")
+            print("1. 📝 Yapılandırma Dosyaları")
+            print("2. 🏆 Lig ve Sezon Verileri")
+            print("3. ⚽ Maç Verileri")
+            print("4. 📊 Maç Detayları")
             
-            # Kullanılabilir veri türlerini kontrol et
-            available_data_types = []
+            choices = input("\nSeçimleriniz (örn: 1,2,3): ").strip()
+            selected = [int(c.strip()) for c in choices.split(",") if c.strip().isdigit()]
             
-            if os.path.exists(os.path.join(backup_dir, "config")):
-                available_data_types.append("config")
-            
-            data_dir_mapping = {
-                "seasons": "Sezon Verileri",
-                "matches": "Maç Verileri",
-                "match_details": "Maç Detayları",
-                "datasets": "CSV Veri Setleri",
-                "reports": "Raporlar"
-            }
-            
-            for data_type, display_name in data_dir_mapping.items():
-                if os.path.exists(os.path.join(backup_dir, data_type)):
-                    available_data_types.append(data_type)
-                elif os.path.exists(os.path.join(backup_dir, "data", data_type)):
-                    available_data_types.append(f"data/{data_type}")
-            
-            if not available_data_types:
-                print(f"\n{COLORS['WARNING']}❌ Yedekte geçerli veri bulunamadı.")
+            # Seçim yoksa çık
+            if not selected:
+                print(f"\n{COLORS['WARNING']}⚠️ Hiçbir veri tipi seçilmedi!")
                 return
             
-            print(f"\n{COLORS['INFO']}Mevcut veri türleri:")
+            # Yapılandırma dosyalarını geri yükle
+            if 1 in selected:
+                print(f"\n{COLORS['INFO']}Yapılandırma dosyaları geri yükleniyor...")
+                
+                # leagues.txt dosyasını geri yükle
+                league_file = os.path.join(backup_dir, "config", os.path.basename(self.config_manager.league_config_path))
+                if os.path.exists(league_file):
+                    shutil.copy2(league_file, self.config_manager.league_config_path)
+                    print(f"{COLORS['SUCCESS']}✓ Lig yapılandırması geri yüklendi: {self.config_manager.league_config_path}")
+                
+                # .env dosyasını geri yükle
+                env_file = os.path.join(backup_dir, "config", ".env")
+                if os.path.exists(env_file):
+                    shutil.copy2(env_file, os.path.join(os.getcwd(), ".env"))
+                    print(f"{COLORS['SUCCESS']}✓ Çevre değişkenleri geri yüklendi: .env")
             
-            for i, data_type in enumerate(available_data_types, 1):
-                if data_type == "config":
-                    print(f"{i}. ⚙️ Yapılandırma")
-                elif data_type.endswith("seasons"):
-                    print(f"{i}. 📅 Sezon Verileri")
-                elif data_type.endswith("matches"):
-                    print(f"{i}. 🎮 Maç Verileri")
-                elif data_type.endswith("match_details"):
-                    print(f"{i}. 📈 Maç Detayları")
-                elif data_type.endswith("datasets"):
-                    print(f"{i}. 📊 CSV Veri Setleri")
-                elif data_type.endswith("reports"):
-                    print(f"{i}. 📝 Raporlar")
+            # Lig ve sezon verilerini geri yükle
+            if 2 in selected:
+                print(f"\n{COLORS['INFO']}Lig ve sezon verileri geri yükleniyor...")
+                src_dir = os.path.join(backup_dir, "data", "seasons")
+                if os.path.exists(src_dir) and os.path.isdir(src_dir):
+                    dst_dir = os.path.join(self.data_dir, "seasons")
+                    os.makedirs(dst_dir, exist_ok=True)
+                    shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
+                    print(f"{COLORS['SUCCESS']}✓ Sezon verileri geri yüklendi: {dst_dir}")
             
-            # Geri yüklenecek verileri seç
-            selections = input("\nGeri yüklenecek veriler (virgülle ayrılmış numaralar, tümü için boş bırakın): ").strip()
+            # Maç verilerini geri yükle
+            if 3 in selected:
+                print(f"\n{COLORS['INFO']}Maç verileri geri yükleniyor...")
+                src_dir = os.path.join(backup_dir, "data", "matches")
+                if os.path.exists(src_dir) and os.path.isdir(src_dir):
+                    dst_dir = os.path.join(self.data_dir, "matches")
+                    os.makedirs(dst_dir, exist_ok=True)
+                    shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
+                    print(f"{COLORS['SUCCESS']}✓ Maç verileri geri yüklendi: {dst_dir}")
             
-            selected_data_types = []
+            # Maç detaylarını geri yükle
+            if 4 in selected:
+                print(f"\n{COLORS['INFO']}Maç detayları geri yükleniyor...")
+                src_dir = os.path.join(backup_dir, "data", "match_details")
+                if os.path.exists(src_dir) and os.path.isdir(src_dir):
+                    dst_dir = os.path.join(self.data_dir, "match_details")
+                    os.makedirs(dst_dir, exist_ok=True)
+                    shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
+                    print(f"{COLORS['SUCCESS']}✓ Maç detayları geri yüklendi: {dst_dir}")
             
-            if not selections:
-                selected_data_types = available_data_types
-            else:
-                for selection in selections.split(","):
-                    try:
-                        index = int(selection.strip()) - 1
-                        if 0 <= index < len(available_data_types):
-                            selected_data_types.append(available_data_types[index])
-                    except ValueError:
-                        pass
-            
-            if not selected_data_types:
-                print(f"\n{COLORS['WARNING']}❌ Hiçbir veri türü seçilmedi.")
-                return
-            
-            # Mevcut verilerin üzerine yazma onayı
-            confirm = input(f"\n{COLORS['WARNING']}DİKKAT: Bu işlem mevcut verilerin üzerine yazacak. Devam etmek istiyor musunuz? (e/h): ").strip().lower()
-            
-            if confirm not in ["e", "evet", "y", "yes", "true", "1"]:
-                print(f"\n{COLORS['INFO']}Geri yükleme işlemi iptal edildi.")
-                return
-            
-            # Verileri geri yükle
-            for data_type in selected_data_types:
-                if data_type == "config":
-                    config_file = os.path.join(backup_dir, "config", os.path.basename(self.config_manager.config_path))
-                    if os.path.exists(config_file):
-                        shutil.copy2(config_file, self.config_manager.config_path)
-                        print(f"{COLORS['SUCCESS']}✓ Yapılandırma geri yüklendi.")
+            # Yapılandırmayı yeniden yükle
+            if 1 in selected:
+                success = self.config_manager.reload_config()
+                if success:
+                    print(f"{COLORS['SUCCESS']}✓ Yapılandırma yeniden yüklendi.")
                 else:
-                    if data_type.startswith("data/"):
-                        # data/ dizini içindeki veriler
-                        src_dir = os.path.join(backup_dir, data_type)
-                        dest_dir = os.path.join(self.data_dir, data_type.split("/")[1])
-                    else:
-                        # Doğrudan kök dizindeki veriler
-                        src_dir = os.path.join(backup_dir, data_type)
-                        dest_dir = os.path.join(self.data_dir, data_type)
-                    
-                    if os.path.exists(src_dir):
-                        if os.path.exists(dest_dir):
-                            shutil.rmtree(dest_dir)
-                        shutil.copytree(src_dir, dest_dir)
-                        
-                        display_name = data_dir_mapping.get(data_type.split("/")[-1], data_type)
-                        print(f"{COLORS['SUCCESS']}✓ {display_name} geri yüklendi.")
+                    print(f"{COLORS['WARNING']}⚠️ Yapılandırma yeniden yüklenemedi!")
             
-            print(f"\n{COLORS['SUCCESS']}✅ Veriler başarıyla geri yüklendi. Uygulamayı yeniden başlatmanız gerekiyor.")
+            print(f"\n{COLORS['SUCCESS']}✅ Seçili veriler başarıyla geri yüklendi.")
+            print(f"{COLORS['INFO']}ℹ️ Değişikliklerin tam olarak etkili olabilmesi için uygulamayı yeniden başlatmanız gerekebilir.")
             
         except Exception as e:
-            logger.error(f"Veri geri yükleme işlemi sırasında hata: {str(e)}")
+            logger.error(f"Veri geri yüklenirken hata: {str(e)}")
             print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
     
     def clear_data(self) -> None:

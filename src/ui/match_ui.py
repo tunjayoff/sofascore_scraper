@@ -602,17 +602,47 @@ class MatchDataMenuHandler:
             
             # Belirli bir lig için CSV
             elif option == "2":
-                league_id = input("\nCSV'ye dönüştürülecek lig ID: ").strip()
+                # Ligleri al ve göster
+                leagues = self.config_manager.get_leagues()
+                if not leagues:
+                    print(f"\n❌ Kayıtlı lig bulunamadı. Önce lig ekleyin.")
+                    return
                 
-                result = self.match_data_fetcher.convert_league_matches_to_csv(league_id)
+                print("\nLig Listesi:")
+                for i, (league_id, league_name) in enumerate(leagues.items(), 1):
+                    print(f"{i}. {league_name} (ID: {league_id})")
                 
-                if result:
-                    csv_paths = result
-                    print(f"\n✅ {len(result)} lig için CSV dosyaları başarıyla oluşturuldu:")
-                    for csv_path in csv_paths:
-                        print(f"  - {csv_path}")
-                else:
-                    print(f"\n❌ CSV dosyaları oluşturulurken hata oluştu.")
+                # Lig seçimini al
+                league_choice = input("\nCSV'ye dönüştürülecek ligin numarasını girin (0: İptal): ").strip()
+                
+                if league_choice == "0":
+                    return
+                    
+                try:
+                    league_index = int(league_choice) - 1
+                    if league_index < 0 or league_index >= len(leagues):
+                        print(f"\n❌ Geçersiz lig numarası!")
+                        return
+                        
+                    # Seçilen ligi al
+                    league_id = list(leagues.keys())[league_index]
+                    league_name = leagues[league_id]
+                    
+                    print(f"\n'{league_name}' (ID: {league_id}) için CSV oluşturuluyor...")
+                    
+                    result = self.match_data_fetcher.convert_league_matches_to_csv(league_id)
+                    
+                    if result:
+                        csv_paths = result
+                        print(f"\n✅ CSV dosyaları başarıyla oluşturuldu:")
+                        for csv_path in csv_paths:
+                            print(f"  - {csv_path}")
+                    else:
+                        print(f"\n❌ CSV dosyaları oluşturulurken hata oluştu.")
+                        
+                except ValueError:
+                    print(f"\n❌ Geçersiz numara formatı!")
+                    return
             
             # Tüm ligler için CSV
             elif option == "3":

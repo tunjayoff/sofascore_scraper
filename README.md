@@ -197,32 +197,48 @@ Seçiminiz (0-5):
 
 ## ⚙️ Konfigürasyon
 
-SofaScore Scraper, iki farklı yöntemle yapılandırılabilir:
+SofaScore Scraper, çevre değişkenleri ve lig yapılandırması olmak üzere iki temel yapılandırma yöntemi kullanır:
 
-### 1. .env Dosyası (Önerilen)
+### 1. .env Dosyası
 
-Proje, `.env` dosyası aracılığıyla çevre değişkenleri kullanarak konfigüre edilebilir. Örnek bir `.env` dosyası:
+Proje, `.env` dosyası aracılığıyla çevre değişkenleri kullanarak konfigüre edilir. Uygulama ilk çalıştırıldığında otomatik olarak bir `.env` dosyası oluşturulur veya mevcut dosya kullanılır. Ayarlar menüsünden bu değişkenleri kolayca güncelleyebilirsiniz.
+
+Örnek bir `.env` dosyası:
 
 ```
-# Sofascore Scraper yapılandırma değişkenleri
-API_BASE_URL='https://www.sofascore.com/api/v1'
-REQUEST_TIMEOUT='20'
-MAX_RETRIES='3'
-MAX_CONCURRENT='25'
+# API Yapılandırması
+API_BASE_URL=https://www.sofascore.com/api/v1
+REQUEST_TIMEOUT=20
+MAX_RETRIES=3
+MAX_CONCURRENT=25
 WAIT_TIME_MIN=0.4
 WAIT_TIME_MAX=0.8
-DATA_DIR='data'
+USE_PROXY=false
+PROXY_URL=
+
+# Veri Yapılandırması
+DATA_DIR=data
 FETCH_ONLY_FINISHED=true
 SAVE_EMPTY_ROUNDS=false
+
+# Görüntüleme Ayarları
 USE_COLOR=true
-DATE_FORMAT="%Y-%m-%d %H:%M:%S"
-USE_PROXY=false
-PROXY_URL=''
+DATE_FORMAT=%Y-%m-%d %H:%M:%S
+
+# Hata Ayıklama
+LOG_LEVEL=INFO
+DEBUG=false
 ```
+
+Ayarlar menüsünden şu yapılandırmaları değiştirebilirsiniz:
+- API Yapılandırması (API URL, zaman aşımı, yeniden deneme sayısı, vb.)
+- Veri Dizini (verilerin kaydedileceği konum)
+- Görüntüleme Ayarları (renk kullanımı, tarih formatı)
+- Yedekleme ve Geri Yükleme işlemleri
 
 ### 2. Lig Yapılandırması
 
-Lig bilgilerini `config/leagues.txt` dosyasında yönetebilirsiniz:
+Lig bilgilerini `config/leagues.txt` dosyasında yönetebilirsiniz. Bu dosya, uygulamanın hangi ligleri takip edeceğini belirler:
 
 ```
 # Format: Lig Adı: ID
@@ -233,6 +249,8 @@ Bundesliga: 35
 Ligue 1: 34
 Süper Lig: 52
 ```
+
+Lig işlemleri menüsünden ligleri ekleyebilir, düzenleyebilir veya kaldırabilirsiniz.
 
 ## 📂 Veri Yapısı
 
@@ -252,24 +270,24 @@ data/
     └── {lig_adı}/
         └── season_{sezon_adı}/
             └── {maç_id}/
-                ├── full_data.json
                 ├── basic.json
                 ├── statistics.json
                 ├── team_streaks.json
                 ├── pregame_form.json
-                └── h2h.json
+                ├── h2h.json
+                └── lineups.json
 ```
 
 ### Veri Dosyaları
 
 1. **seasons.json**: Bir lig için tüm sezonların listesi
 2. **round_X.json**: Bir sezonun belirli bir turu/haftası için maçlar
-3. **full_data.json**: Bir maç için toplanan tüm veriler
-4. **basic.json**: Maçın temel bilgileri (takımlar, skor, tarih, vb.)
-5. **statistics.json**: Maç istatistikleri (şutlar, paslar, korneler, vb.)
-6. **team_streaks.json**: Takımların seriler/istatistikleri
-7. **pregame_form.json**: Maç öncesi takım formları
-8. **h2h.json**: Takımlar arası karşılaşma geçmişi
+3. **basic.json**: Maçın temel bilgileri (takımlar, skor, tarih, vb.)
+4. **statistics.json**: Maç istatistikleri (şutlar, paslar, korneler, vb.)
+5. **team_streaks.json**: Takımların seriler/istatistikleri
+6. **pregame_form.json**: Maç öncesi takım formları
+7. **h2h.json**: Takımlar arası karşılaşma geçmişi
+8. **lineups.json**: Takım kadroları ve oyuncu bilgileri
 
 ## 📊 Çıktılar ve Veri Formatları
 
@@ -409,7 +427,13 @@ else:
    - Belirli Bir Lig İçin CSV
    - Tüm Ligler İçin CSV
 
-**Belirli bir lig için CSV veri seti oluşturma örneği:**
+**Belirli bir lig için CSV veri seti oluşturma adımları:**
+
+1. "Belirli Bir Lig İçin CSV" seçeneğini seçin
+2. Görüntülenen lig listesinden, istediğiniz ligin numarasını girin
+3. CSV dosyaları oluşturulduktan sonra ekranda dosya yolları görüntülenecektir
+
+**Programlama ile CSV veri seti oluşturma örneği:**
 
 ```python
 from src.config_manager import ConfigManager
@@ -421,8 +445,11 @@ config = ConfigManager()
 # Maç veri çekicisini başlat
 match_data_fetcher = MatchDataFetcher(config)
 
-# Süper Lig (ID: 52) için CSV veri seti oluştur
-csv_paths = match_data_fetcher.convert_league_matches_to_csv("52")
+# Süper Lig için CSV veri seti oluştur (ID ile)
+csv_paths = match_data_fetcher.convert_league_matches_to_csv(52)
+
+# veya lig adı ile de çalışabilir
+# csv_paths = match_data_fetcher.convert_league_matches_to_csv("Süper Lig")
 
 if csv_paths:
     print(f"CSV dosyaları oluşturuldu: {csv_paths}")
@@ -562,7 +589,7 @@ SofaScore Scraper, modüler bir mimari kullanılarak geliştirilmiştir:
 
 ### Ana Bileşenler
 
-1. **ConfigManager**: Konfigürasyon yönetimi ve çevre değişkenleri
+1. **ConfigManager**: Konfigürasyon yönetimi ve çevre değişkenleri (.env dosyası)
 2. **SeasonFetcher**: Sezon verilerini çekme ve yönetme
 3. **MatchFetcher**: Maç listelerini çekme ve yönetme
 4. **MatchDataFetcher**: Detaylı maç verilerini çekme ve işleme
@@ -574,6 +601,15 @@ SofaScore Scraper, modüler bir mimari kullanılarak geliştirilmiştir:
 ```
 ConfigManager → SeasonFetcher → MatchFetcher → MatchDataFetcher → CSV/JSON Çıktılar
 ```
+
+### Yapılandırma Yönetimi
+
+Uygulama, yapılandırma için çevre değişkenlerini (.env dosyası) kullanır:
+
+1. **Çevre Değişkenleri**: API URL, zaman aşımı, yeniden deneme sayısı, veri dizini gibi temel ayarlar
+2. **Lig Yapılandırması**: Takip edilecek ligler ve ID'leri (leagues.txt dosyası)
+
+ConfigManager sınıfı, bu yapılandırma kaynaklarını yönetir ve uygulamanın diğer bileşenlerine erişim sağlar.
 
 ### API İstekleri
 
@@ -594,6 +630,7 @@ Kodu genişletmek veya değiştirmek isteyenler için:
 - Yeni bir veri türü eklemek için `MatchDataFetcher` sınıfını genişletin
 - Yeni bir UI modülü için `src/ui/` altında yeni bir sınıf oluşturun
 - API davranışı değişirse `utils.py` içindeki `make_api_request` fonksiyonunu güncelleyin
+- Yeni çevre değişkenleri eklemek için `ConfigManager` sınıfını ve `.env.example` dosyasını güncelleyin
 
 ## 🔍 Sorun Giderme
 

@@ -32,12 +32,12 @@ logger = logging.getLogger("MatchDataFetcher")
 
 # Gerekli dosyaların listesini ekleyelim
 REQUIRED_FILES = [
-    'full_data.json',
     'basic.json',
     'statistics.json',
     'team_streaks.json',
     'pregame_form.json',
-    'h2h.json'
+    'h2h.json',
+    'lineups.json'
 ]
 
 class MatchDataFetcher:
@@ -67,12 +67,12 @@ class MatchDataFetcher:
                     continue
                 
                 match_path = os.path.join(season_path, match_id)
-                if os.path.isdir(match_path) and os.path.exists(os.path.join(match_path, "full_data.json")):
+                if os.path.isdir(match_path) and os.path.exists(os.path.join(match_path, "basic.json")):
                     return (league_name, season_name, match_path)
         
         # Check old structure as fallback
         old_match_path = os.path.join(self.match_details_dir, match_id)
-        if os.path.isdir(old_match_path) and os.path.exists(os.path.join(old_match_path, "full_data.json")):
+        if os.path.isdir(old_match_path) and os.path.exists(os.path.join(old_match_path, "basic.json")):
             return (None, None, old_match_path)
         
         return None
@@ -107,7 +107,8 @@ class MatchDataFetcher:
                         self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/statistics", "statistics"),
                         self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/team-streaks", "team_streaks"),
                         self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/pregame-form", "pregame_form"),
-                        self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/h2h", "h2h")
+                        self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/h2h", "h2h"),
+                        self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/lineups", "lineups")
                     ]
                     
                     # Tüm görevleri topluca çalıştır, hata veren görevleri atla
@@ -313,7 +314,8 @@ class MatchDataFetcher:
             "statistics": None,
             "team_streaks": None,
             "pregame_form": None,
-            "h2h": None
+            "h2h": None,
+            "lineups": None
         }
         
         # Diğer endpointleri topla
@@ -321,6 +323,7 @@ class MatchDataFetcher:
         match_data["team_streaks"] = self._fetch_team_streaks(match_id)
         match_data["pregame_form"] = self._fetch_pregame_form(match_id)
         match_data["h2h"] = self._fetch_h2h(match_id)
+        match_data["lineups"] = self._fetch_lineups(match_id)
         
         # Verileri kaydet
         self._save_match_data(match_id, match_data)
@@ -398,7 +401,7 @@ class MatchDataFetcher:
     
     def _fetch_h2h(self, match_id: str) -> Optional[Dict[str, Any]]:
         """
-        Head-to-head verilerini çeker.
+        Takımlar arası karşılaşma geçmişini çeker.
         
         Args:
             match_id: Maç ID'si
@@ -411,6 +414,23 @@ class MatchDataFetcher:
             return make_api_request(url)
         except Exception as e:
             logger.error(f"Maç ID {match_id} için H2H verisi çekilirken hata: {str(e)}")
+            return None
+    
+    def _fetch_lineups(self, match_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Maç kadro bilgilerini (lineups) çeker.
+        
+        Args:
+            match_id: Maç ID'si
+            
+        Returns:
+            Optional[Dict[str, Any]]: Lineup verisi veya başarısız ise None
+        """
+        url = f"{self.base_url}/event/{match_id}/lineups"
+        try:
+            return make_api_request(url)
+        except Exception as e:
+            logger.error(f"Maç ID {match_id} için lineup verisi çekilirken hata: {str(e)}")
             return None
     
     def _save_match_data(self, match_id: str, match_data: Dict[str, Any]) -> None:
@@ -457,12 +477,7 @@ class MatchDataFetcher:
             match_dir = os.path.join(season_dir, str(match_id))
             ensure_directory(match_dir)
             
-            # Ana veriyi kaydet
-            full_path = os.path.join(match_dir, "full_data.json")
-            with open(full_path, 'w', encoding='utf-8') as f:
-                json.dump(match_data, f, ensure_ascii=False, indent=2)
-                
-            # Her veri türünü ayrıca kaydet
+            # Her veri türünü ayrı ayrı kaydet
             for data_type, data in match_data.items():
                 if data is not None:
                     type_path = os.path.join(match_dir, f"{data_type}.json")
@@ -489,8 +504,8 @@ class MatchDataFetcher:
         Returns:
             Optional[Dict[str, Any]]: Processed data or None if an error occurred
         """
-        # If no match data provided, load from file
-        if match_data is None:
+        # Her veri türü için ayrı yükleme
+        try:
             # Determine file path based on provided structure
             if league_dir and season_dir:
                 # New structure: match_details/league/season/match_id/
@@ -499,18 +514,36 @@ class MatchDataFetcher:
                 # Old structure: match_details/match_id/
                 match_dir = os.path.join(self.match_details_dir, str(match_id))
             
-            full_path = os.path.join(match_dir, "full_data.json")
-            
-            if not os.path.exists(full_path):
-                logger.warning(f"Maç ID {match_id} için veri bulunamadı: {full_path}")
-                return None
+            # match_data sözlüğünü başlat
+            if match_data is None:
+                match_data = {}
                 
-            try:
-                with open(full_path, 'r', encoding='utf-8') as f:
-                    match_data = json.load(f)
-            except Exception as e:
-                logger.error(f"Maç ID {match_id} için veri yüklenirken hata: {str(e)}")
-                return None
+                # Her veri dosyasını kontrol et ve yükle
+                for file_name in REQUIRED_FILES:
+                    file_path = os.path.join(match_dir, file_name)
+                    if os.path.exists(file_path):
+                        try:
+                            with open(file_path, 'r', encoding='utf-8') as f:
+                                data_type = file_name.split('.')[0]  # .json uzantısını kaldır
+                                match_data[data_type] = json.load(f)
+                        except Exception as e:
+                            logger.warning(f"Maç ID {match_id} için {file_name} dosyası yüklenirken hata: {str(e)}")
+                
+                # En azından basic.json dosyası gerekli
+                basic_path = os.path.join(match_dir, 'basic.json')
+                if not os.path.exists(basic_path):
+                    logger.warning(f"Maç ID {match_id} için basic.json dosyası bulunamadı: {basic_path}")
+                    return None
+                
+                try:
+                    with open(basic_path, 'r', encoding='utf-8') as f:
+                        match_data['basic'] = json.load(f)
+                except Exception as e:
+                    logger.error(f"Maç ID {match_id} için basic.json yüklenirken hata: {str(e)}")
+                    return None
+        except Exception as e:
+            logger.error(f"Maç ID {match_id} için veri hazırlanırken hata: {str(e)}")
+            return None
         
         # Extract folder information (if provided)
         league_name = os.path.basename(league_dir) if league_dir else None
@@ -617,6 +650,50 @@ class MatchDataFetcher:
                 "h2h_draws": h2h.get("draws")
             })
         
+        # Process lineup data
+        if "lineups" in match_data and match_data["lineups"]:
+            lineups = match_data["lineups"]
+            # Add lineup confirmation status - type check için güncelleme
+            processed["lineups_confirmed"] = lineups.get("confirmed", False) if isinstance(lineups, dict) else False
+            
+            # Process home team lineup - tip kontrolü eklenmiş
+            if isinstance(lineups, dict) and "home" in lineups and isinstance(lineups["home"], dict):
+                home_lineup = lineups["home"]
+                if "players" in home_lineup and isinstance(home_lineup["players"], list):
+                    home_players = home_lineup["players"]
+                    # Add starting XI count
+                    starting_xi_home = sum(1 for player in home_players if player.get("substitute") is False)
+                    processed["home_starting_xi_count"] = starting_xi_home
+                    
+                    # Add substitutes count
+                    subs_home = sum(1 for player in home_players if player.get("substitute") is True)
+                    processed["home_substitutes_count"] = subs_home
+                
+                # Add formation information if available
+                if "formation" in home_lineup and isinstance(home_lineup["formation"], dict):
+                    processed["home_formation"] = home_lineup["formation"].get("name")
+                else:
+                    processed["home_formation"] = None
+            
+            # Process away team lineup - tip kontrolü eklenmiş  
+            if isinstance(lineups, dict) and "away" in lineups and isinstance(lineups["away"], dict):
+                away_lineup = lineups["away"]
+                if "players" in away_lineup and isinstance(away_lineup["players"], list):
+                    away_players = away_lineup["players"]
+                    # Add starting XI count
+                    starting_xi_away = sum(1 for player in away_players if player.get("substitute") is False)
+                    processed["away_starting_xi_count"] = starting_xi_away
+                    
+                    # Add substitutes count
+                    subs_away = sum(1 for player in away_players if player.get("substitute") is True)
+                    processed["away_substitutes_count"] = subs_away
+                
+                # Add formation information if available
+                if "formation" in away_lineup and isinstance(away_lineup["formation"], dict):
+                    processed["away_formation"] = away_lineup["formation"].get("name")
+                else:
+                    processed["away_formation"] = None
+        
         return processed
     
     def fetch_matches_batch(self, match_ids: List[Union[int, str]]) -> Dict[str, Dict[str, Any]]:
@@ -698,7 +775,7 @@ class MatchDataFetcher:
                         continue
                     
                     # Check if this is the old structure where match IDs are direct subdirectories
-                    if os.path.exists(os.path.join(league_path, "full_data.json")):
+                    if os.path.exists(os.path.join(league_path, "basic.json")):
                         # This is a match folder in the old structure
                         match_id = league_name
                         # Try to extract league name from the data
@@ -723,13 +800,13 @@ class MatchDataFetcher:
                         # Scan match directories
                         for match_id in os.listdir(season_path):
                             match_path = os.path.join(season_path, match_id)
-                            if os.path.isdir(match_path) and os.path.exists(os.path.join(match_path, "full_data.json")):
+                            if os.path.isdir(match_path) and os.path.exists(os.path.join(match_path, "basic.json")):
                                 match_infos.append((league_name, season_name, match_id))
                 
                 # Also check for matches directly under match_details (old structure)
                 for item in os.listdir(self.match_details_dir):
                     direct_path = os.path.join(self.match_details_dir, item)
-                    if os.path.isdir(direct_path) and item != "processed" and os.path.exists(os.path.join(direct_path, "full_data.json")):
+                    if os.path.isdir(direct_path) and item != "processed" and os.path.exists(os.path.join(direct_path, "basic.json")):
                         # This is likely a match ID from the old structure
                         match_id = item
                         # Try to extract league info
@@ -797,7 +874,7 @@ class MatchDataFetcher:
                         continue
                     
                     # Skip if this is a match folder (old structure)
-                    if os.path.exists(os.path.join(league_path, "full_data.json")):
+                    if os.path.exists(os.path.join(league_path, "basic.json")):
                         continue
                     
                     # Check each season
@@ -808,7 +885,7 @@ class MatchDataFetcher:
                         
                         # Check if this match exists in this season
                         match_path = os.path.join(season_path, match_id)
-                        if os.path.isdir(match_path) and os.path.exists(os.path.join(match_path, "full_data.json")):
+                        if os.path.isdir(match_path) and os.path.exists(os.path.join(match_path, "basic.json")):
                             # Process with new structure parameters
                             processed = self.process_match_for_csv(
                                 match_id=match_id,
@@ -839,7 +916,7 @@ class MatchDataFetcher:
                 if not match_found:
                     # Check direct match folder
                     direct_path = os.path.join(self.match_details_dir, match_id)
-                    if os.path.isdir(direct_path) and os.path.exists(os.path.join(direct_path, "full_data.json")):
+                    if os.path.isdir(direct_path) and os.path.exists(os.path.join(direct_path, "basic.json")):
                         # Process with old structure
                         processed = self.process_match_for_csv(match_id=match_id)
                         
@@ -858,7 +935,7 @@ class MatchDataFetcher:
                         # Also check if it might be a league folder name (old structure)
                         for item in os.listdir(self.match_details_dir):
                             item_path = os.path.join(self.match_details_dir, item)
-                            if os.path.isdir(item_path) and item == match_id and os.path.exists(os.path.join(item_path, "full_data.json")):
+                            if os.path.isdir(item_path) and item == match_id and os.path.exists(os.path.join(item_path, "basic.json")):
                                 # This is a match with a league name as its ID (unusual but possible)
                                 processed = self.process_match_for_csv(match_id=match_id)
                                 
@@ -1241,14 +1318,14 @@ class MatchDataFetcher:
                         
                         for match_id in os.listdir(season_path):
                             if os.path.isdir(os.path.join(season_path, match_id)) and \
-                               os.path.exists(os.path.join(season_path, match_id, "full_data.json")):
+                               os.path.exists(os.path.join(season_path, match_id, "basic.json")):
                                 existing_details.add(match_id)
                 
                 # Eski yapıdaki maçları da kontrol et
                 for item in os.listdir(match_details_dir):
                     item_path = os.path.join(match_details_dir, item)
                     if os.path.isdir(item_path) and item != "processed" and \
-                       os.path.exists(os.path.join(item_path, "full_data.json")):
+                       os.path.exists(os.path.join(item_path, "basic.json")):
                         existing_details.add(item)
             
             # İşlenmemiş maçları filtrele
@@ -1405,33 +1482,68 @@ class MatchDataFetcher:
             logger.error(traceback.format_exc())
             return None
     
-    def convert_league_matches_to_csv(self, league_id: Union[int, str]) -> Optional[List[str]]:
+    def convert_league_matches_to_csv(self, league_id_or_name: Union[int, str]) -> Optional[List[str]]:
         """
         Belirli bir ligin tüm maçlarını CSV formatına dönüştürür.
         
         Args:
-            league_id: Dönüştürülecek ligin ID'si
+            league_id_or_name: Dönüştürülecek ligin ID'si veya adı
             
         Returns:
             Optional[List[str]]: Oluşturulan CSV dosyalarının yolları veya işlem başarısız ise None
         """
         try:
-            league_id = str(league_id)
-            print(f"Lig ID {league_id} için CSV oluşturuluyor...")
+            # Lig ID'si veya adını string'e dönüştür
+            league_id_or_name = str(league_id_or_name)
+            print(f"'{league_id_or_name}' için CSV oluşturuluyor...")
             
             # Lig dizinini bul
             matches_dir = os.path.join(self.data_dir, "matches")
             league_dir = None
             
-            # Lig ID'sine göre dizini bul
+            # ConfigManager'dan lig adı-ID eşleştirmelerini al
+            league_id = None
+            league_name = None
+            
+            # Önce sayısal ID mi kontrol et
+            if league_id_or_name.isdigit():
+                league_id = league_id_or_name
+                league_name = self.config_manager.get_league_name_by_id(int(league_id_or_name))
+            else:
+                # İsim olarak kontrol et
+                league_id = self.config_manager.get_league_id_by_name(league_id_or_name)
+                if league_id:
+                    league_name = league_id_or_name
+                    league_id = str(league_id)
+            
+            if league_id:
+                print(f"Lig ID: {league_id}, Lig Adı: {league_name or 'Bilinmiyor'}")
+            
+            # Eğer ConfigManager'dan bulunamadıysa, dizin isimlerinden bulmaya çalış
             for dir_name in os.listdir(matches_dir):
-                if dir_name.startswith(f"{league_id}_") or dir_name == league_id:
+                # ID ile eşleşme kontrolü
+                if league_id and (dir_name.startswith(f"{league_id}_") or dir_name == league_id):
+                    league_dir = dir_name
+                    break
+                
+                # Ad ile eşleşme kontrolü (tam veya kısmi)
+                if league_name:
+                    safe_league_name = league_name.replace(" ", "_").lower()
+                    if safe_league_name in dir_name.lower():
+                        league_dir = dir_name
+                        break
+                
+                # Girilen değer doğrudan dizin ismiyle eşleşiyorsa
+                if league_id_or_name.lower() in dir_name.lower():
                     league_dir = dir_name
                     break
             
             if not league_dir:
-                logger.warning(f"Lig ID {league_id} için dizin bulunamadı.")
+                logger.warning(f"'{league_id_or_name}' için dizin bulunamadı.")
+                print(f"\n❌ '{league_id_or_name}' için dizin bulunamadı.")
                 return None
+            
+            print(f"Dizin bulundu: {league_dir}")
             
             # Bu lige ait tüm maç ID'lerini topla
             match_ids = []
@@ -1451,7 +1563,23 @@ class MatchDataFetcher:
                 season_path = os.path.join(league_path, season_dir)
                 if os.path.isdir(season_path):
                     for file_name in os.listdir(season_path):
-                        if file_name.endswith('_matches.csv') or file_name.endswith('_summary.csv'):
+                        if file_name.endswith('.json'):
+                            try:
+                                # JSON dosyalarından maç ID'lerini çıkar
+                                file_path = os.path.join(season_path, file_name)
+                                with open(file_path, 'r', encoding='utf-8') as f:
+                                    data = json.load(f)
+                                    
+                                    # round_X.json dosyasından maç ID'lerini çıkar
+                                    if "events" in data and isinstance(data["events"], list):
+                                        for event in data["events"]:
+                                            match_id = event.get("id")
+                                            if match_id:
+                                                match_ids.append(str(match_id))
+                            except Exception as e:
+                                logger.debug(f"JSON dosyası {file_path} okunurken hata: {str(e)}")
+                                continue
+                        elif file_name.endswith('_matches.csv') or file_name.endswith('_summary.csv'):
                             file_path = os.path.join(season_path, file_name)
                             ids_from_csv = self._extract_match_ids_from_csv(file_path)
                             if ids_from_csv:
@@ -1461,7 +1589,7 @@ class MatchDataFetcher:
             match_ids = list(set(match_ids))
             
             if not match_ids:
-                logger.warning(f"Lig ID {league_id} için maç verisi bulunamadı.")
+                logger.warning(f"'{league_id_or_name}' için maç verisi bulunamadı.")
                 return None
             
             print(f"Toplam {len(match_ids)} maç bulundu, CSV'ye dönüştürülüyor...")
@@ -1471,55 +1599,268 @@ class MatchDataFetcher:
             
             if result:
                 if isinstance(result, list):
-                    logger.info(f"Lig ID {league_id} için {len(result)} CSV dosyası başarıyla oluşturuldu.")
+                    logger.info(f"Lig ID {league_id_or_name} için {len(result)} CSV dosyası başarıyla oluşturuldu.")
                 else:
-                    logger.info(f"Lig ID {league_id} için CSV dosyası başarıyla oluşturuldu: {result}")
+                    logger.info(f"Lig ID {league_id_or_name} için CSV dosyası başarıyla oluşturuldu: {result}")
                 return result if isinstance(result, list) else [result]
             else:
-                logger.warning(f"Lig ID {league_id} için CSV oluşturulamadı.")
+                logger.warning(f"Lig ID {league_id_or_name} için CSV oluşturulamadı.")
                 return None
                 
         except Exception as e:
-            logger.error(f"Lig ID {league_id} için CSV dönüştürürken hata: {str(e)}")
+            logger.error(f"Lig ID {league_id_or_name} için CSV dönüştürürken hata: {str(e)}")
             import traceback
             logger.error(traceback.format_exc())
             return None
     
-    def convert_all_matches_to_csv(self) -> Union[str, List[str], None]:
+    def convert_all_matches_to_csv(self, match_ids: Optional[List[str]] = None, separate_by_league: bool = False) -> Union[str, List[str]]:
         """
-        Tüm maçların verilerini CSV formatına dönüştürür.
+        Tüm maçları CSV formatına dönüştürür.
         
+        Args:
+            match_ids: Liste halinde maç ID'leri (belirtilmezse tüm maçlar)
+            separate_by_league: Lig bazında ayrı CSV'ler oluştur
+            
         Returns:
-            Union[str, List[str], None]: Oluşturulan CSV dosyasının/dosyalarının yolu veya işlem başarısız ise None
+            Union[str, List[str]]: Oluşturulan CSV dosyasının/dosyalarının yolu
         """
-        try:
-            print(f"Tüm maçlar için CSV oluşturuluyor...")
+        # Sonuçları kaydetmek için koleksiyonlar
+        all_processed_matches = []
+        league_matches = {}
+        
+        if not match_ids:
+            # Klasör yapısını tara ve tüm maçları bul
+            match_infos = []  # (league_name, season_name, match_id) tuples
             
-            # Ligleri kontrol et
-            matches_dir = os.path.join(self.data_dir, "matches")
-            if not os.path.exists(matches_dir):
-                logger.warning("Maç dizini bulunamadı!")
-                return None
-            
-            # Kullanıcıya sorma - doğrudan tüm verileri işle
-            # create_csv_dataset metodunu parametresiz çağırmak tüm verileri işleyecektir
-            result = self.create_csv_dataset(separate_by_league=True)
-            
-            if result:
-                if isinstance(result, list):
-                    logger.info(f"Tüm maçlar için {len(result)} CSV dosyası başarıyla oluşturuldu.")
-                else:
-                    logger.info(f"Tüm maçlar için CSV dosyası başarıyla oluşturuldu: {result}")
-                return result
-            else:
-                logger.warning("CSV oluşturulamadı.")
-                return None
+            try:
+                # Scan the directory structure for all saved match details
+                for league_name in os.listdir(self.match_details_dir):
+                    league_path = os.path.join(self.match_details_dir, league_name)
+                    
+                    # Skip non-directories and the "processed" directory
+                    if not os.path.isdir(league_path) or league_name == "processed":
+                        continue
+                    
+                    # Check if this is the old structure where match IDs are direct subdirectories
+                    if os.path.exists(os.path.join(league_path, "basic.json")):
+                        # This is a match folder in the old structure
+                        match_id = league_name
+                        # Try to extract league name from the data
+                        try:
+                            with open(os.path.join(league_path, "basic.json"), 'r', encoding='utf-8') as f:
+                                basic_data = json.load(f)
+                                actual_league = basic_data.get("tournament", {}).get("uniqueTournament", {}).get("name", "Unknown")
+                                actual_season = basic_data.get("season", {}).get("name", "Unknown")
+                                match_infos.append((actual_league, actual_season, match_id))
+                        except Exception as e:
+                            logger.warning(f"Eski yapıdaki {match_id} maçı için veri okunamadı: {str(e)}")
+                            # Fall back to "Unknown" if we can't extract league name
+                            match_infos.append(("Unknown", "Unknown", match_id))
+                        continue
+                    
+                    # Scan season directories in the new structure
+                    for season_name in os.listdir(league_path):
+                        season_path = os.path.join(league_path, season_name)
+                        if not os.path.isdir(season_path):
+                            continue
+                        
+                        # Scan match directories
+                        for match_id in os.listdir(season_path):
+                            match_path = os.path.join(season_path, match_id)
+                            if os.path.isdir(match_path) and os.path.exists(os.path.join(match_path, "basic.json")):
+                                match_infos.append((league_name, season_name, match_id))
                 
-        except Exception as e:
-            logger.error(f"Tüm maçlar için CSV dönüştürürken hata: {str(e)}")
-            import traceback
-            logger.error(traceback.format_exc())
-            return None
+                # Also check for matches directly under match_details (old structure)
+                for item in os.listdir(self.match_details_dir):
+                    direct_path = os.path.join(self.match_details_dir, item)
+                    if os.path.isdir(direct_path) and item != "processed" and os.path.exists(os.path.join(direct_path, "basic.json")):
+                        # This is likely a match ID from the old structure
+                        match_id = item
+                        # Try to extract league info
+                        try:
+                            with open(os.path.join(direct_path, "basic.json"), 'r', encoding='utf-8') as f:
+                                basic_data = json.load(f)
+                                actual_league = basic_data.get("tournament", {}).get("uniqueTournament", {}).get("name", "Unknown")
+                                actual_season = basic_data.get("season", {}).get("name", "Unknown")
+                                match_infos.append((actual_league, actual_season, match_id))
+                        except:
+                            match_infos.append(("Unknown", "Unknown", match_id))
+                
+                # Log summary of found matches
+                logger.info(f"Toplam {len(match_infos)} maç CSV'ye dönüştürülüyor...")
+                
+                # Process each match
+                for league_name, season_name, match_id in tqdm(match_infos, desc="Maçlar işleniyor"):
+                    # For league directory, we may need to use the folder name or league name from data
+                    league_dir = league_name if os.path.isdir(os.path.join(self.match_details_dir, league_name)) else None
+                    season_dir = season_name if league_dir and os.path.isdir(os.path.join(self.match_details_dir, league_dir, season_name)) else None
+                    
+                    # Process the match
+                    processed = self.process_match_for_csv(
+                        match_id=match_id,
+                        league_dir=league_dir,
+                        season_dir=season_dir
+                    )
+                    
+                    if processed:
+                        # Add the match to the combined list
+                        all_processed_matches.append(processed)
+                        
+                        # If creating separate files by league, organize by league
+                        if separate_by_league:
+                            # Use either the folder name or the tournament name from the data
+                            league_key = processed.get("league_folder", 
+                                        processed.get("tournament_name", "Unknown"))
+                            
+                            if league_key not in league_matches:
+                                league_matches[league_key] = []
+                            
+                            league_matches[league_key].append(processed)
+                        
+            except Exception as e:
+                logger.error(f"Klasör yapısı taranırken hata: {str(e)}")
+                import traceback
+                logger.error(traceback.format_exc())
+                return "" if not separate_by_league else []
+                
+        else:
+            # Process specific match IDs provided by the user
+            match_ids = [str(mid) for mid in match_ids]  # Convert all IDs to strings
+            logger.info(f"Belirtilen {len(match_ids)} maç CSV'ye dönüştürülüyor...")
+            
+            # Process each specified match ID
+            for match_id in tqdm(match_ids, desc="Belirtilen maçlar işleniyor"):
+                # Search for this match in the directory structure
+                match_found = False
+                
+                # First check new structure
+                for league_name in os.listdir(self.match_details_dir):
+                    league_path = os.path.join(self.match_details_dir, league_name)
+                    
+                    if not os.path.isdir(league_path) or league_name == "processed":
+                        continue
+                    
+                    # Skip if this is a match folder (old structure)
+                    if os.path.exists(os.path.join(league_path, "basic.json")):
+                        continue
+                    
+                    # Check each season
+                    for season_name in os.listdir(league_path):
+                        season_path = os.path.join(league_path, season_name)
+                        if not os.path.isdir(season_path):
+                            continue
+                        
+                        # Check if this match exists in this season
+                        match_path = os.path.join(season_path, match_id)
+                        if os.path.isdir(match_path) and os.path.exists(os.path.join(match_path, "basic.json")):
+                            # Process with new structure parameters
+                            processed = self.process_match_for_csv(
+                                match_id=match_id,
+                                league_dir=league_name,
+                                season_dir=season_name
+                            )
+                            
+                            if processed:
+                                all_processed_matches.append(processed)
+                                
+                                # Organize by league if needed
+                                if separate_by_league:
+                                    league_key = processed.get("league_folder", 
+                                                processed.get("tournament_name", "Unknown"))
+                                    
+                                    if league_key not in league_matches:
+                                        league_matches[league_key] = []
+                                    
+                                    league_matches[league_key].append(processed)
+                            
+                            match_found = True
+                            break
+                        
+                    if match_found:
+                        break
+                
+                # If not found in new structure, check old structure
+                if not match_found:
+                    # Check direct match folder
+                    direct_path = os.path.join(self.match_details_dir, match_id)
+                    if os.path.isdir(direct_path) and os.path.exists(os.path.join(direct_path, "basic.json")):
+                        # Process with old structure
+                        processed = self.process_match_for_csv(match_id=match_id)
+                        
+                        if processed:
+                            all_processed_matches.append(processed)
+                            
+                            # Organize by league if needed
+                            if separate_by_league:
+                                league_key = processed.get("tournament_name", "Unknown")
+                                
+                                if league_key not in league_matches:
+                                    league_matches[league_key] = []
+                                
+                                league_matches[league_key].append(processed)
+                    else:
+                        # Also check if it might be a league folder name (old structure)
+                        for item in os.listdir(self.match_details_dir):
+                            item_path = os.path.join(self.match_details_dir, item)
+                            if os.path.isdir(item_path) and item == match_id and os.path.exists(os.path.join(item_path, "basic.json")):
+                                # This is a match with a league name as its ID (unusual but possible)
+                                processed = self.process_match_for_csv(match_id=match_id)
+                                
+                                if processed:
+                                    all_processed_matches.append(processed)
+                                    
+                                    if separate_by_league:
+                                        league_key = processed.get("tournament_name", "Unknown")
+                                        
+                                        if league_key not in league_matches:
+                                            league_matches[league_key] = []
+                                        
+                                        league_matches[league_key].append(processed)
+                                
+                                match_found = True
+                                break
+                
+                if not match_found:
+                    logger.warning(f"Maç ID {match_id} için veri bulunamadı")
+        
+        # Check if we have processed any matches
+        if not all_processed_matches:
+            logger.warning("İşlenecek maç verisi bulunamadı")
+            return "" if not separate_by_league else []
+        
+        # Generate timestamp for filenames
+        timestamp = int(time.time())
+        
+        # Create separate CSV files by league if requested
+        if separate_by_league:
+            csv_paths = []
+            
+            for league_name, matches in league_matches.items():
+                if not matches:
+                    continue
+                
+                # Create a safe filename from the league name
+                safe_league_name = re.sub(r'[^\w]', '_', league_name)
+                csv_path = os.path.join(self.processed_dir, f"{safe_league_name}_{timestamp}.csv")
+                
+                # Write the CSV file
+                if self._write_matches_to_csv(matches, csv_path):
+                    csv_paths.append(csv_path)
+                    logger.info(f"{league_name} ligi için CSV dosyası oluşturuldu: {csv_path}")
+            
+            if not csv_paths:
+                logger.warning("Hiçbir lig için CSV dosyası oluşturulamadı")
+            
+            return csv_paths
+        else:
+            # Create a single combined CSV file
+            csv_path = os.path.join(self.processed_dir, f"all_matches_{timestamp}.csv")
+            
+            if self._write_matches_to_csv(all_processed_matches, csv_path):
+                logger.info(f"Tüm maçlar için CSV dosyası oluşturuldu: {csv_path}")
+                return csv_path
+            else:
+                return ""
 
     def generate_file_report(self, base_path: Optional[str] = None) -> Dict[str, Any]:
         """
