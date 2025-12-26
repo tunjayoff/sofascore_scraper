@@ -25,6 +25,7 @@ from src.ui.match_ui import MatchMenuHandler, MatchDataMenuHandler
 from src.ui.stats_ui import StatsMenuHandler
 from src.ui.settings_ui import SettingsMenuHandler
 from src.logger import get_logger
+from src.i18n import get_i18n
 
 # Logger'ı al
 logger = get_logger("SofaScoreUI")
@@ -88,6 +89,7 @@ class SimpleSofaScoreUI:
         self.stats_menu = StatsMenuHandler(self.config_manager, data_dir, COLORS)
         self.settings_menu = SettingsMenuHandler(self.config_manager, data_dir, COLORS)
         
+        self.i18n = get_i18n()
         logger.info("SofaScore Scraper kullanıcı arayüzü başlatıldı")
     
     def clear_screen(self) -> None:
@@ -102,45 +104,52 @@ class SimpleSofaScoreUI:
         print(f"\n{COLORS['TITLE']}SofaScore Scraper v1.0.0")
         print("==========================================")
     
-    def print_system_status(self) -> None:
-        """Sistem durumunu görüntüler."""
-        leagues = self.config_manager.get_leagues()
-        league_count = len(leagues) if leagues else 0
+    def print_menu(self) -> None:
+        """Ana menüyü ekrana basar."""
+        # Sistem durumunu göster
+        self.print_system_status()
         
-        # Toplam sezon sayısını hesapla
-        season_count = 0
-        for league_seasons in self.season_fetcher.league_seasons.values():
-            season_count += len(league_seasons)
-        
-        print(f"\n{COLORS['INFO']}Sistem Durumu:")
-        print(f"  Yapılandırılmış Lig: {COLORS['SUCCESS']}{league_count}")
-        print(f"  Yüklenen Sezon: {COLORS['SUCCESS']}{season_count}")
-    
-    def print_main_menu(self) -> None:
-        """Ana menüyü görüntüler."""
-        print(f"\n{COLORS['SUBTITLE']}Ana Menü:")
+        print(f"\n{COLORS['TITLE']}{self.i18n.t('main_menu_title')}")
         print("-" * 50)
-        print("1. 🏆 Lig Yönetimi")
-        print("2. 📅 Sezon Verileri")
-        print("3. 🎮 Maç Verileri")
-        print("4. 📈 Maç Detayları")
-        print("5. 📊 İstatistikler")
-        print("6. ⚙️ Ayarlar")
-        print(f"{COLORS['WARNING']}0. ❌ Çıkış")
-    
+        print(self.i18n.t("menu_league_management"))
+        print(self.i18n.t("menu_season_data"))
+        print(self.i18n.t("menu_match_data"))
+        print(self.i18n.t("menu_match_details"))
+        print(self.i18n.t("menu_stats"))
+        print(self.i18n.t("menu_settings"))
+        print(self.i18n.t("menu_exit"))
+        
+    def print_system_status(self) -> None:
+        """Sistem durumu özetini gösterir."""
+        leagues = self.config_manager.get_leagues()
+        # Sezon sayısını hızlıca al (dosyaları saymadan, sadece klasör var mı diye bakılabilir ama
+        # şimdilik basit tutalım, detaylı sayım yavaş olabilir)
+        
+        # Basit istatistikler
+        league_count = len(leagues)
+        
+        # Sezon dosya sayısını bul (yaklaşık)
+        seasons_dir = os.path.join(self.data_dir, "seasons")
+        season_files = 0
+        if os.path.exists(seasons_dir):
+            season_files = len([f for f in os.listdir(seasons_dir) if f.endswith("_seasons.json")])
+        
+        print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('system_status')}")
+        print(f"  {self.i18n.t('configured_leagues')} {COLORS['SUCCESS']}{league_count}")
+        print(f"  {self.i18n.t('loaded_seasons')} {COLORS['SUCCESS']}{season_files}")  # Bu aslında liglerin sezon dosyası sayısı
+
     def run(self) -> None:
         """Kullanıcı arayüzünü çalıştırır."""
         try:
             while True:
                 self.clear_screen()
                 self.print_header()
-                self.print_system_status()
-                self.print_main_menu()
+                self.print_menu()
                 
-                choice = input("\nSeçiminiz (0-6): ")
+                choice = input(f"\n{self.i18n.t('selection_prompt')}").strip()
                 
                 if choice == "0":
-                    print(f"\n{COLORS['INFO']}SofaScore Scraper'dan çıkılıyor. Hoşçakalın!")
+                    print(f"\n{COLORS['INFO']}{self.i18n.t('exit_message')}")
                     break
                 elif choice == "1":
                     self.show_league_menu()
@@ -155,7 +164,7 @@ class SimpleSofaScoreUI:
                 elif choice == "6":
                     self.show_settings_menu()
                 else:
-                    input(f"{COLORS['WARNING']}Geçersiz seçim! Devam etmek için Enter'a basın...")
+                    input(f"{COLORS['WARNING']}{self.i18n.t('invalid_choice_error')} {self.i18n.t('press_enter_to_continue')}")
         
         except KeyboardInterrupt:
             print(f"\n\n{COLORS['INFO']}Program kullanıcı tarafından sonlandırıldı.")
@@ -170,32 +179,32 @@ class SimpleSofaScoreUI:
             self.clear_screen()
             self.print_header()
             
-            print(f"\n{COLORS['SUBTITLE']}Lig Yönetimi:")
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('submenu_league_title')}")
             print("-" * 50)
-            print("1. 📋 Ligleri Listele")
-            print("2. ➕ Yeni Lig Ekle")
-            print("3. 🔄 Lig Yapılandırmasını Yeniden Yükle")
-            print("4. 🔍 Lig Ara (Henüz Uygulanmadı)")
-            print(f"{COLORS['WARNING']}0. ⬅️ Ana Menüye Dön")
+            print(self.i18n.t('submenu_league_list'))
+            print(self.i18n.t('submenu_league_add'))
+            print(self.i18n.t('submenu_league_reload'))
+            print(self.i18n.t('submenu_league_search'))
+            print(f"{COLORS['WARNING']}{self.i18n.t('submenu_back_main')}")
             
-            choice = input("\nSeçiminiz (0-4): ")
+            choice = input(self.i18n.t('selection_prompt_range', range="0-4"))
             
             if choice == "0":
                 break
             elif choice == "1":
                 self.league_menu.list_leagues()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             elif choice == "2":
                 self.league_menu.add_new_league()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             elif choice == "3":
                 self.league_menu.reload_leagues()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             elif choice == "4":
                 self.league_menu.search_leagues()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             else:
-                input(f"{COLORS['WARNING']}Geçersiz seçim! Devam etmek için Enter'a basın...")
+                input(f"{COLORS['WARNING']}{self.i18n.t('invalid_choice_error')} {self.i18n.t('press_enter_to_continue')}")
     
     def show_season_menu(self) -> None:
         """Sezon verileri menüsünü görüntüler."""
@@ -203,28 +212,28 @@ class SimpleSofaScoreUI:
             self.clear_screen()
             self.print_header()
             
-            print(f"\n{COLORS['SUBTITLE']}Sezon Verileri:")
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('submenu_season_title')}")
             print("-" * 50)
-            print("1. 🔄 Tüm Ligler İçin Sezonları Güncelle")
-            print("2. 📋 Tek Lig İçin Sezonları Güncelle")
-            print("3. 📊 Sezonları Listele")
-            print(f"{COLORS['WARNING']}0. ⬅️ Ana Menüye Dön")
+            print(self.i18n.t('submenu_season_update_all'))
+            print(self.i18n.t('submenu_season_update_one'))
+            print(self.i18n.t('submenu_season_list'))
+            print(f"{COLORS['WARNING']}{self.i18n.t('submenu_back_main')}")
             
-            choice = input("\nSeçiminiz (0-3): ")
+            choice = input(self.i18n.t('selection_prompt_range', range="0-3"))
             
             if choice == "0":
                 break
             elif choice == "1":
                 self.season_menu.update_all_seasons()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             elif choice == "2":
                 self.season_menu.update_league_seasons()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             elif choice == "3":
                 self.season_menu.list_seasons()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             else:
-                input(f"{COLORS['WARNING']}Geçersiz seçim! Devam etmek için Enter'a basın...")
+                input(f"{COLORS['WARNING']}{self.i18n.t('invalid_choice_error')} {self.i18n.t('press_enter_to_continue')}")
     
     def show_match_menu(self) -> None:
         """Maç verileri menüsünü görüntüler."""
@@ -232,28 +241,28 @@ class SimpleSofaScoreUI:
             self.clear_screen()
             self.print_header()
             
-            print(f"\n{COLORS['SUBTITLE']}Maç Verileri:")
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('submenu_match_title')}")
             print("-" * 50)
-            print("1. 🏆 Tek Lig İçin Maçları Çek")
-            print("2. 🔄 Tüm Ligler İçin Maçları Çek")
-            print("3. 📋 Çekilen Maçları Listele")
-            print(f"{COLORS['WARNING']}0. ⬅️ Ana Menüye Dön")
+            print(self.i18n.t('submenu_match_fetch_one'))
+            print(self.i18n.t('submenu_match_fetch_all'))
+            print(self.i18n.t('submenu_match_list'))
+            print(f"{COLORS['WARNING']}{self.i18n.t('submenu_back_main')}")
             
-            choice = input("\nSeçiminiz (0-3): ")
+            choice = input(self.i18n.t('selection_prompt_range', range="0-3"))
             
             if choice == "0":
                 break
             elif choice == "1":
                 self.match_menu.fetch_matches_for_league()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             elif choice == "2":
                 self.match_menu.fetch_matches_for_all_leagues()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             elif choice == "3":
                 self.match_menu.list_matches()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             else:
-                input(f"{COLORS['WARNING']}Geçersiz seçim! Devam etmek için Enter'a basın...")
+                input(f"{COLORS['WARNING']}{self.i18n.t('invalid_choice_error')} {self.i18n.t('press_enter_to_continue')}")
     
     def show_match_data_menu(self) -> None:
         """Maç detayları menüsünü görüntüler."""
@@ -261,28 +270,28 @@ class SimpleSofaScoreUI:
             self.clear_screen()
             self.print_header()
             
-            print(f"\n{COLORS['SUBTITLE']}Maç Detayları:")
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('submenu_match_details_title')}")
             print("-" * 50)
-            print("1. 🏟️ Belirli Maçlar İçin Detayları Çek")
-            print("2. 🔄 Tüm Maçlar İçin Detayları Çek")
-            print("3. 📊 CSV Veri Seti Oluştur")
-            print(f"{COLORS['WARNING']}0. ⬅️ Ana Menüye Dön")
+            print(self.i18n.t('submenu_match_details_fetch_one'))
+            print(self.i18n.t('submenu_match_details_fetch_all'))
+            print(self.i18n.t('submenu_match_details_csv'))
+            print(f"{COLORS['WARNING']}{self.i18n.t('submenu_back_main')}")
             
-            choice = input("\nSeçiminiz (0-3): ")
+            choice = input(self.i18n.t('selection_prompt_range', range="0-3"))
             
             if choice == "0":
                 break
             elif choice == "1":
                 self.match_data_menu.fetch_match_details()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             elif choice == "2":
                 self.match_data_menu.fetch_all_match_details()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             elif choice == "3":
                 self.match_data_menu.convert_to_csv()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             else:
-                input(f"{COLORS['WARNING']}Geçersiz seçim! Devam etmek için Enter'a basın...")
+                input(f"{COLORS['WARNING']}{self.i18n.t('invalid_choice_error')} {self.i18n.t('press_enter_to_continue')}")
     
     def show_stats_menu(self) -> None:
         """İstatistikler menüsünü görüntüler."""
@@ -290,34 +299,34 @@ class SimpleSofaScoreUI:
             self.clear_screen()
             self.print_header()
             
-            print(f"\n{COLORS['SUBTITLE']}İstatistikler:")
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('submenu_stats_title')}")
             print("-" * 50)
-            print("1. 🖥️ Sistem İstatistikleri")
-            print("2. 🏆 Lig İstatistikleri")
-            print("3. 📃 Rapor Oluştur")
-            print(f"{COLORS['WARNING']}0. ⬅️ Ana Menüye Dön")
+            print(self.i18n.t('submenu_stats_system'))
+            print(self.i18n.t('submenu_stats_league'))
+            print(self.i18n.t('submenu_stats_report'))
+            print(f"{COLORS['WARNING']}{self.i18n.t('submenu_back_main')}")
             
-            choice = input("\nSeçiminiz (0-3): ")
+            choice = input(self.i18n.t('selection_prompt_range', range="0-3"))
             
             if choice == "0":
                 break
             elif choice == "1":
                 self.stats_menu.show_system_stats()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             elif choice == "2":
                 # Tüm liglerin istatistiklerini göster
                 leagues = self.config_manager.get_leagues()
                 if not leagues:
-                    print(f"{COLORS['WARNING']}Yapılandırılmış lig bulunamadı.")
+                    print(f"{COLORS['WARNING']}{self.i18n.t('no_configured_leagues')}")
                 else:
                     for league_id in leagues:
                         self.stats_menu.show_league_stats(league_id)
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             elif choice == "3":
                 self.stats_menu.generate_report()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             else:
-                input(f"{COLORS['WARNING']}Geçersiz seçim! Devam etmek için Enter'a basın...")
+                input(f"{COLORS['WARNING']}{self.i18n.t('invalid_choice_error')} {self.i18n.t('press_enter_to_continue')}")
     
     def show_settings_menu(self) -> None:
         """Ayarlar menüsünü görüntüler."""
@@ -325,39 +334,62 @@ class SimpleSofaScoreUI:
             self.clear_screen()
             self.print_header()
             
-            print(f"\n{COLORS['SUBTITLE']}Ayarlar:")
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('submenu_settings_title')}")
             print("-" * 50)
-            print("1. ⚙️ Yapılandırma Düzenle")
-            print("2. 💾 Veri Yedekle")
-            print("3. 📤 Veri Geri Yükle")
-            print("4. 🧹 Veri Temizle")
-            print("5. ℹ️ Hakkında")
-            print(f"{COLORS['WARNING']}0. ⬅️ Ana Menüye Dön")
+            print(self.i18n.t('submenu_settings_config'))
+            print(self.i18n.t('submenu_settings_backup'))
+            print(self.i18n.t('submenu_settings_restore'))
+            print(self.i18n.t('submenu_settings_clean'))
+            print(self.i18n.t('submenu_settings_about'))
+            print(f"{COLORS['WARNING']}{self.i18n.t('submenu_back_main')}")
             
-            choice = input("\nSeçiminiz (0-5): ")
+            choice = input(self.i18n.t('selection_prompt_range', range="0-5"))
             
             if choice == "0":
                 break
             elif choice == "1":
                 self.settings_menu.edit_config()
-                input("\nDevam etmek için Enter'a basın...")
+                # Config değişmiş olabilir, tekrar beklemeye gerek yok
             elif choice == "2":
                 self.settings_menu.backup_data()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             elif choice == "3":
                 self.settings_menu.restore_data()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             elif choice == "4":
                 self.settings_menu.clear_data()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             elif choice == "5":
                 self.settings_menu.show_about()
-                input("\nDevam etmek için Enter'a basın...")
+                input(self.i18n.t('press_enter_to_continue'))
             else:
-                input(f"{COLORS['WARNING']}Geçersiz seçim! Devam etmek için Enter'a basın...")
+                input(f"{COLORS['WARNING']}{self.i18n.t('invalid_choice_error')} {self.i18n.t('press_enter_to_continue')}")
     
     def _ensure_directory(self, directory: str) -> None:
         """Dizin yoksa oluşturur."""
         if not os.path.exists(directory):
             os.makedirs(directory)
             logger.info(f"Dizin oluşturuldu: {directory}")
+
+    def update_all_leagues(self) -> None:
+        """Tüm ligler için verileri (sezon, maç, detay) günceller (Headless mod için)."""
+        print(f"\n{COLORS['INFO']}Headless Mod: Tüm veriler güncelleniyor...")
+        
+        # 1. Sezonları güncelle
+        print(f"\n{COLORS['SUBTITLE']}1. Sezon Verileri Güncelleniyor...")
+        self.season_menu.update_all_seasons()
+        
+        # 2. Maçları çek
+        print(f"\n{COLORS['SUBTITLE']}2. Maç Verileri Çekiliyor...")
+        self.match_menu.fetch_matches_for_all_leagues(max_seasons=0)
+        
+        # 3. Maç detaylarını çek
+        print(f"\n{COLORS['SUBTITLE']}3. Maç Detayları Çekiliyor...")
+        self.match_data_menu.fetch_all_match_details(max_seasons=0)
+        
+        print(f"\n{COLORS['SUCCESS']}Tüm işlemler tamamlandı.")
+
+    def export_all_to_csv(self) -> None:
+        """Tüm verileri CSV'ye aktarır (Headless mod için)."""
+        print(f"\n{COLORS['INFO']}Headless Mod: CSV dışa aktarılıyor...")
+        self.match_data_menu.convert_to_csv(scope="all")

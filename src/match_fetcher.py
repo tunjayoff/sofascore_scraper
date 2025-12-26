@@ -9,20 +9,19 @@ import logging
 import datetime
 import asyncio
 import aiohttp
-import tqdm
+import aiohttp
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeRemainingColumn
 from typing import Dict, List, Optional, Any, Tuple
 from pathlib import Path
+
+from src.exceptions import ResourceNotFoundError
 
 from src.config_manager import ConfigManager
 from src.season_fetcher import SeasonFetcher
 from src.utils import make_api_request, make_api_request_async, get_request_headers, ensure_directory, MAX_CONCURRENT, FETCH_ONLY_FINISHED, SAVE_EMPTY_ROUNDS
+from src.logger import get_logger
 
-# Loglama yapılandırması
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger("MatchFetcher")
+logger = get_logger("MatchFetcher")
 
 class MatchFetcher:
     """SofaScore API'sinden maç verilerini çeken ve yöneten sınıf."""
@@ -177,9 +176,8 @@ class MatchFetcher:
         Returns:
             Tüm turların maç verilerini içeren liste
         """
-        from src.utils import MAX_CONCURRENT
-        # tqdm modülünü doğru şekilde import et
-        from tqdm.auto import tqdm
+        from src.utils import MAX_CONCURRENT, create_session_async
+        from src.utils import MAX_CONCURRENT, create_session_async
 
         league_name = self.config_manager.get_leagues().get(league_id, f"Bilinmeyen Lig {league_id}")
         season_name = self.season_fetcher.get_season_name(league_id, season_id)
@@ -191,10 +189,8 @@ class MatchFetcher:
         
         os.makedirs(output_dir, exist_ok=True)
         
-        # İstek zaman aşımını ve bağlantı ayarlarını özellştirelim
-        timeout = aiohttp.ClientTimeout(total=60, connect=20)
-        conn = aiohttp.TCPConnector(limit=MAX_CONCURRENT, verify_ssl=False)
-        async with aiohttp.ClientSession(timeout=timeout, connector=conn) as session:
+        # curl_cffi session oluştur
+        async with create_session_async() as session:
             # Eşzamanlı istek sayısını çevre değişkeninden al
             semaphore_limit = MAX_CONCURRENT  # Paralel istek sayısı
             logger.info(f"{league_name}: {season_name} için eşzamanlı istek limiti: {semaphore_limit}")
@@ -210,21 +206,33 @@ class MatchFetcher:
                 )
                 tasks.append(task)
             
-            # tqdm kullanarak işlem takibi
-            progress_desc = f"{league_name}: {season_name} için turlar çekiliyor"
+            # Rich Progress kullanarak işlem takibi
+            progress_desc = f"[bold cyan]{league_name}[/]: [yellow]{season_name}[/] için turlar çekiliyor"
             results = []
             
             try:
-                for task in tqdm(asyncio.as_completed(tasks), total=len(tasks), desc=progress_desc):
-                    try:
-                        result = await task
-                        if result:
-                            results.append(result)
-                    except Exception as e:
-                        logger.error(f"Task çalıştırılırken hata: {str(e)}")
-                        # Hataya rağmen devam et, diğer görevler tamamlanabilir
+                with Progress(
+                    SpinnerColumn(),
+                    TextColumn("[progress.description]{task.description}"),
+                    BarColumn(),
+                    TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+                    TimeRemainingColumn(),
+                    transient=True 
+                ) as progress:
+                    task_id = progress.add_task(progress_desc, total=len(tasks))
+                    
+                    for coro in asyncio.as_completed(tasks):
+                        try:
+                            result = await coro
+                            if result:
+                                results.append(result)
+                        except Exception as e:
+                            logger.error(f"Task hatası: {e}")
+                        finally:
+                            progress.advance(task_id)
+
             except Exception as e:
-                logger.error(f"Asenkron işlemler sırasında beklenmeyen hata: {str(e)}")
+                logger.error(f"Async işlem hatası: {e}")
             
             # Boş olmayan sonuçları filtrele
             valid_results = [r for r in results if r is not None]
@@ -234,7 +242,7 @@ class MatchFetcher:
     async def _fetch_and_save_round(
         self,
         semaphore_limit: int,
-        session: aiohttp.ClientSession,
+        session: Any,
         league_id: int,
         season_id: int,
         round_num: int,
@@ -327,6 +335,12 @@ class MatchFetcher:
             # Aksi takdirde orijinal veriyi döndür
             return data_to_save
             
+        except ResourceNotFoundError:
+            league_name = self.config_manager.get_leagues().get(league_id, f"Bilinmeyen Lig {league_id}")
+            # Bu bir hata değil, muhtemelen sezonun bittiği anlamına gelir
+            logger.debug(f"{league_name}: Tur {round_num} bulunamadı (Sezon sonuna ulaşılmış olabilir)")
+            return None
+            
         except Exception as e:
             league_name = self.config_manager.get_leagues().get(league_id, f"Bilinmeyen Lig {league_id}")
             logger.error(f"{league_name}: Tur {round_num} çekilirken hata: {str(e)}")
@@ -375,20 +389,14 @@ class MatchFetcher:
             logger.warning("Yapılandırılmış lig bulunamadı. Önce ligler ekleyin.")
             return {}
         
-        # İlerleme çubuğu için tqdm kullanmayı deneyelim
-        try:
-            from tqdm import tqdm
-            use_tqdm = True
-        except ImportError:
-            use_tqdm = False
-        
         # İşlenecek ligleri hazırla
         leagues_to_process = list(leagues.items())
-        iterator = tqdm(leagues_to_process) if use_tqdm else leagues_to_process
+        
+        # Basit bir iterator kullan, çünkü içerideki metod zaten progress bar gösteriyor
+        iterator = leagues_to_process
         
         for league_id, league_name in iterator:
-            if use_tqdm:
-                iterator.set_description(f"{league_name} işleniyor")
+            # Lig adı loglarda görünecek zaten
                 
             # Güncel sezon ID'sini bul
             season_id = self.season_fetcher.get_current_season_id(league_id)
@@ -494,9 +502,10 @@ class MatchFetcher:
         round_counts = {}
         for result in results:
             round_num = result.get("round")
-            if round_num in round_counts:
-                logger.warning(f"Lig {league_id}, Sezon {season_id}: Hafta {round_num} birden fazla kez çekilmiş.")
-            round_counts[round_num] = round_counts.get(round_num, 0) + 1
+            if round_num is not None:
+                if round_num in round_counts:
+                    logger.warning(f"Lig {league_id}, Sezon {season_id}: Hafta {round_num} birden fazla kez çekilmiş.")
+                round_counts[round_num] = round_counts.get(round_num, 0) + 1
         
         league_name = self.config_manager.get_leagues().get(league_id, "Unknown_League")
         league_name_safe = league_name.replace(' ', '_')

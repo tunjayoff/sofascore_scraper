@@ -11,6 +11,7 @@ from colorama import Fore, Style
 
 from src.config_manager import ConfigManager
 from src.logger import get_logger
+from src.i18n import get_i18n
 
 # Logger'ı al
 logger = get_logger("SettingsUI")
@@ -36,19 +37,21 @@ class SettingsMenuHandler:
         self.config_manager = config_manager
         self.data_dir = data_dir
         self.colors = colors
+        self.i18n = get_i18n()
     
     def edit_config(self) -> None:
         """Yapılandırma dosyasını düzenler."""
         COLORS = self.colors  # Kısa erişim için
         
         try:
-            print(f"\n{COLORS['SUBTITLE']}Yapılandırma Düzenleme:")
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('settings_title')}")
             print("-" * 50)
-            print("1. 🔧 API Yapılandırmasını Düzenle")
-            print("2. 📂 Veri Dizinini Değiştir")
-            print("3. 📊 Görüntüleme Ayarlarını Düzenle")
+            print(self.i18n.t('edit_api_config'))
+            print(self.i18n.t('change_data_dir'))
+            print(self.i18n.t('edit_display_settings'))
+            print(self.i18n.t('change_language_option'))
             
-            choice = input("\nSeçenek (1-3): ")
+            choice = input(f"\n{self.i18n.t('settings_option_prompt')} ").strip()
             
             if choice == "1":
                 self._edit_api_config()
@@ -56,6 +59,8 @@ class SettingsMenuHandler:
                 self._change_data_directory()
             elif choice == "3":
                 self._edit_display_settings()
+            elif choice == "4":
+                self._change_language()
             else:
                 print(f"\n{COLORS['WARNING']}❌ Geçersiz seçenek!")
                 
@@ -68,7 +73,7 @@ class SettingsMenuHandler:
         COLORS = self.colors  # Kısa erişim için
         
         try:
-            print(f"\n{COLORS['SUBTITLE']}API Yapılandırması:")
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('api_config_title')}")
             print("-" * 50)
             
             # Mevcut değerleri ConfigManager'dan al
@@ -80,48 +85,48 @@ class SettingsMenuHandler:
             max_concurrent = os.getenv("MAX_CONCURRENT", "25")
             
             # Mevcut yapılandırmayı göster
-            print(f"{COLORS['INFO']}Mevcut Yapılandırma:")
-            print(f"  Base URL: {COLORS['SUCCESS']}{base_url}")
-            print(f"  İstek Zaman Aşımı: {COLORS['SUCCESS']}{request_timeout} saniye")
-            print(f"  Yeniden Deneme Sayısı: {COLORS['SUCCESS']}{max_retries}")
-            print(f"  Paralel İstek Sayısı: {COLORS['SUCCESS']}{max_concurrent}")
-            print(f"  Proxy Kullan: {COLORS['SUCCESS']}{use_proxy}")
+            print(f"{COLORS['INFO']}{self.i18n.t('current_config')}")
+            print(f"  {self.i18n.t('base_url')} {COLORS['SUCCESS']}{base_url}")
+            print(f"  {self.i18n.t('request_timeout')} {COLORS['SUCCESS']}{request_timeout} saniye")
+            print(f"  {self.i18n.t('max_retries')} {COLORS['SUCCESS']}{max_retries}")
+            print(f"  {self.i18n.t('max_concurrent')} {COLORS['SUCCESS']}{max_concurrent}")
+            print(f"  {self.i18n.t('use_proxy')} {COLORS['SUCCESS']}{use_proxy}")
             if use_proxy:
-                print(f"  Proxy URL: {COLORS['SUCCESS']}{proxy_url}")
+                print(f"  {self.i18n.t('proxy_url')} {COLORS['SUCCESS']}{proxy_url}")
             
             # Yeni değerleri al
-            print(f"\n{COLORS['INFO']}Yeni değerler için Enter tuşuna basarak mevcut değeri koruyabilirsiniz:")
+            print(f"\n{COLORS['INFO']}{self.i18n.t('enter_new_values_prompt')}")
             
             # Ana API Ayarları
-            print(f"\n{COLORS['SUBTITLE']}Ana API Ayarları:")
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('main_api_settings')}")
             new_base_url = input(f"Base URL [{base_url}]: ").strip() or base_url
             
             # Performans Ayarları
-            print(f"\n{COLORS['SUBTITLE']}Performans Ayarları:")
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('performance_settings')}")
             try:
-                new_request_timeout = input(f"İstek Zaman Aşımı (saniye) [{request_timeout}]: ").strip()
+                new_request_timeout = input(f"{self.i18n.t('request_timeout')} [{request_timeout}]: ").strip()
                 new_request_timeout = new_request_timeout if new_request_timeout else request_timeout
             except ValueError:
-                print(f"{COLORS['WARNING']}⚠️ Geçersiz değer, varsayılan kullanılıyor: {request_timeout}")
+                print(f"{COLORS['WARNING']}⚠️ Geçersiz değer, varsayılan kullanılıyor: {request_timeout}")  # TODO: Buna da key eklenebilir ama user onayiyla atliyorum
                 new_request_timeout = request_timeout
 
             try:
-                new_max_retries = input(f"Yeniden Deneme Sayısı [{max_retries}]: ").strip()
+                new_max_retries = input(f"{self.i18n.t('max_retries')} [{max_retries}]: ").strip()
                 new_max_retries = new_max_retries if new_max_retries else max_retries
             except ValueError:
                 print(f"{COLORS['WARNING']}⚠️ Geçersiz değer, varsayılan kullanılıyor: {max_retries}")
                 new_max_retries = max_retries
                 
             try:
-                new_max_concurrent = input(f"Paralel İstek Sayısı [{max_concurrent}]: ").strip() 
+                new_max_concurrent = input(f"{self.i18n.t('max_concurrent')} [{max_concurrent}]: ").strip() 
                 new_max_concurrent = new_max_concurrent if new_max_concurrent else max_concurrent
             except ValueError:
                 print(f"{COLORS['WARNING']}⚠️ Geçersiz değer, varsayılan kullanılıyor: {max_concurrent}")
                 new_max_concurrent = max_concurrent
 
             # Proxy Ayarları
-            print(f"\n{COLORS['SUBTITLE']}Proxy Ayarları:")
-            use_proxy_input = input(f"Proxy Kullan (e/h) [{use_proxy}]: ").strip().lower()
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('proxy_settings')}")
+            use_proxy_input = input(f"{self.i18n.t('use_proxy')} (e/h) [{use_proxy}]: ").strip().lower()
             if use_proxy_input:
                 new_use_proxy = use_proxy_input in ["e", "evet", "y", "yes", "true", "1"]
             else:
@@ -129,7 +134,7 @@ class SettingsMenuHandler:
             
             new_proxy_url = ""
             if new_use_proxy:
-                new_proxy_url = input(f"Proxy URL [{proxy_url}]: ").strip() or proxy_url
+                new_proxy_url = input(f"{self.i18n.t('proxy_url')} [{proxy_url}]: ").strip() or proxy_url
             
             # Çevre değişkenlerini güncelle
             success1 = self.config_manager.update_env_variable("API_BASE_URL", new_base_url)
@@ -140,8 +145,8 @@ class SettingsMenuHandler:
             success6 = self.config_manager.update_env_variable("PROXY_URL", new_proxy_url if new_use_proxy else "")
             
             if success1 and success2 and success3 and success4 and success5 and success6:
-                print(f"\n{COLORS['SUCCESS']}✅ API yapılandırması başarıyla güncellendi.")
-                print(f"{COLORS['INFO']}ℹ️ Değişikliklerin tam olarak etkili olabilmesi için uygulamayı yeniden başlatmanız gerekebilir.")
+                print(f"\n{COLORS['SUCCESS']}✅ {self.i18n.t('api_config_updated')}")
+                print(f"{COLORS['INFO']}ℹ️ {self.i18n.t('restart_required')}")
             else:
                 print(f"\n{COLORS['WARNING']}❌ API yapılandırması güncellenirken bir hata oluştu.")
                 
@@ -154,29 +159,29 @@ class SettingsMenuHandler:
         COLORS = self.colors  # Kısa erişim için
         
         try:
-            print(f"\n{COLORS['SUBTITLE']}Veri Dizini Değiştirme:")
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('data_dir_change_title')}")
             print("-" * 50)
             
             # Mevcut veri dizinini göster
             current_data_dir = self.data_dir
-            print(f"{COLORS['INFO']}Mevcut Veri Dizini: {COLORS['SUCCESS']}{current_data_dir}")
+            print(f"{COLORS['INFO']}{self.i18n.t('current_data_dir')} {COLORS['SUCCESS']}{current_data_dir}")
             
             # Yeni veri dizinini al
-            new_data_dir = input(f"\nYeni Veri Dizini [{current_data_dir}]: ").strip() or current_data_dir
+            new_data_dir = input(f"\n{self.i18n.t('new_data_dir_prompt')} [{current_data_dir}]: ").strip() or current_data_dir
             
             # Aynı dizin ise işlem yapma
             if new_data_dir == current_data_dir:
-                print(f"\n{COLORS['INFO']}Veri dizini değiştirilmedi.")
+                print(f"\n{COLORS['INFO']}{self.i18n.t('data_dir_not_changed')}")
                 return
             
             # Yeni dizini oluştur
             os.makedirs(new_data_dir, exist_ok=True)
             
             # Verileri taşımak isteyip istemediğini sor
-            move_data = input(f"\nMevcut verileri yeni dizine taşımak istiyor musunuz? (e/h): ").strip().lower()
+            move_data = input(f"\n{self.i18n.t('move_data_prompt')} ").strip().lower()
             
             if move_data in ["e", "evet", "y", "yes", "true", "1"]:
-                print(f"\n{COLORS['INFO']}Veriler taşınıyor...")
+                print(f"\n{COLORS['INFO']}{self.i18n.t('moving_data')}")
                 
                 # Alt dizinleri oluştur
                 os.makedirs(os.path.join(new_data_dir, "seasons"), exist_ok=True)
@@ -192,14 +197,14 @@ class SettingsMenuHandler:
                 self._move_directory_contents(os.path.join(current_data_dir, "datasets"), os.path.join(new_data_dir, "datasets"))
                 self._move_directory_contents(os.path.join(current_data_dir, "reports"), os.path.join(new_data_dir, "reports"))
                 
-                print(f"\n{COLORS['SUCCESS']}✅ Veriler başarıyla taşındı.")
+                print(f"\n{COLORS['SUCCESS']}✅ {self.i18n.t('data_moved_success')}")
             
             # Çevre değişkenini güncelle
             success = self.config_manager.update_env_variable("DATA_DIR", new_data_dir)
             
             if success:
-                print(f"\n{COLORS['SUCCESS']}✅ Veri dizini başarıyla güncellendi.")
-                print(f"{COLORS['INFO']}ℹ️ Değişikliklerin tam olarak etkili olabilmesi için uygulamayı yeniden başlatmanız gerekiyor.")
+                print(f"\n{COLORS['SUCCESS']}✅ {self.i18n.t('data_dir_updated_success')}")
+                print(f"{COLORS['INFO']}ℹ️ {self.i18n.t('restart_required')}")
             else:
                 print(f"\n{COLORS['WARNING']}❌ Veri dizini güncellenirken bir hata oluştu.")
                 
@@ -212,7 +217,7 @@ class SettingsMenuHandler:
         COLORS = self.colors  # Kısa erişim için
         
         try:
-            print(f"\n{COLORS['SUBTITLE']}Görüntüleme Ayarları:")
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('display_settings_title')}")
             print("-" * 50)
             
             # Mevcut değerleri ConfigManager'dan al
@@ -220,33 +225,74 @@ class SettingsMenuHandler:
             date_format = self.config_manager.get_date_format()
             
             # Mevcut yapılandırmayı göster
-            print(f"{COLORS['INFO']}Mevcut Yapılandırma:")
-            print(f"  Renk Kullan: {COLORS['SUCCESS']}{use_color}")
-            print(f"  Tarih Formatı: {COLORS['SUCCESS']}{date_format}")
+            print(f"{COLORS['INFO']}{self.i18n.t('current_config')}")
+            print(f"  {self.i18n.t('use_color')} {COLORS['SUCCESS']}{use_color}")
+            print(f"  {self.i18n.t('date_format')} {COLORS['SUCCESS']}{date_format}")
             
             # Yeni değerleri al
-            print(f"\n{COLORS['INFO']}Yeni değerler için Enter tuşuna basarak mevcut değeri koruyabilirsiniz:")
+            print(f"\n{COLORS['INFO']}{self.i18n.t('enter_new_values_prompt')}")
             
-            use_color_input = input(f"Renk Kullan (e/h) [{use_color}]: ").strip().lower()
+            use_color_input = input(f"{self.i18n.t('use_color')} (e/h) [{use_color}]: ").strip().lower()
             if use_color_input:
                 new_use_color = use_color_input in ["e", "evet", "y", "yes", "true", "1"]
             else:
                 new_use_color = use_color
             
-            new_date_format = input(f"Tarih Formatı [{date_format}]: ").strip() or date_format
+            new_date_format = input(f"{self.i18n.t('date_format')} [{date_format}]: ").strip() or date_format
             
             # Çevre değişkenlerini güncelle
             success1 = self.config_manager.update_env_variable("USE_COLOR", str(new_use_color).lower())
             success2 = self.config_manager.update_env_variable("DATE_FORMAT", new_date_format)
             
             if success1 and success2:
-                print(f"\n{COLORS['SUCCESS']}✅ Görüntüleme ayarları başarıyla güncellendi.")
-                print(f"{COLORS['INFO']}ℹ️ Değişikliklerin tam olarak etkili olabilmesi için uygulamayı yeniden başlatmanız gerekebilir.")
+                print(f"\n{COLORS['SUCCESS']}✅ {self.i18n.t('display_settings_updated')}")
+                print(f"{COLORS['INFO']}ℹ️ {self.i18n.t('restart_required')}")
             else:
                 print(f"\n{COLORS['WARNING']}❌ Görüntüleme ayarları güncellenirken bir hata oluştu.")
                 
         except Exception as e:
             logger.error(f"Görüntüleme ayarları düzenlenirken hata: {str(e)}")
+            print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+
+    def _change_language(self) -> None:
+        """Dil değiştirme işlemi."""
+        COLORS = self.colors
+        
+        try:
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('language_selection_title')}")
+            print("-" * 50)
+            
+            current_lang = self.config_manager.get_language()
+            print(f"{COLORS['INFO']}{self.i18n.t('current_language')} {COLORS['SUCCESS']}{current_lang}")
+            
+            print("\n1. 🇹🇷 Türkçe (tr)")
+            print("2. 🇬🇧 English (en)")
+            
+            choice = input(f"\n{self.i18n.t('language_choice_prompt')} ").strip()
+            
+            new_lang = None
+            if choice == "1":
+                new_lang = "tr"
+            elif choice == "2":
+                new_lang = "en"
+            else:
+                print(f"\n{COLORS['WARNING']}❌ {self.i18n.t('invalid_choice_bilingual')}")
+                return
+            
+            if new_lang == current_lang:
+                print(f"\n{COLORS['INFO']}{self.i18n.t('language_already_set', new_lang=new_lang)}")
+                return
+
+            if self.config_manager.set_language(new_lang):
+                from src.i18n import get_i18n
+                get_i18n().set_language(new_lang)
+                print(f"\n{COLORS['SUCCESS']}✅ {self.i18n.t('language_changed_success')} {new_lang}")
+                print(f"{COLORS['INFO']}ℹ️ {self.i18n.t('restart_required')}")
+            else:
+                 print(f"\n{COLORS['WARNING']}❌ {self.i18n.t('failed_to_change_language')}")
+
+        except Exception as e:
+            logger.error(f"Dil değiştirilirken hata: {str(e)}")
             print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
     
     def backup_data(self) -> None:
@@ -628,14 +674,14 @@ class SettingsMenuHandler:
         COLORS = self.colors  # Kısa erişim için
         
         try:
-            print(f"\n{COLORS['SUBTITLE']}SofaScore Scraper Hakkında:")
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('about_title')}")
             print("-" * 50)
-            print(f"{COLORS['INFO']}Versiyon: {COLORS['SUCCESS']}1.0.0")
-            print(f"{COLORS['INFO']}Geliştirici: {COLORS['SUCCESS']}SofaScore Scraper Ekibi")
-            print(f"{COLORS['INFO']}Lisans: {COLORS['SUCCESS']}MIT")
-            print(f"{COLORS['INFO']}Açıklama: {COLORS['SUCCESS']}SofaScore API kullanarak futbol maç verilerini çeken ve analiz eden bir uygulama.")
+            print(f"{COLORS['INFO']}{self.i18n.t('version')} {COLORS['SUCCESS']}1.0.0")
+            print(f"{COLORS['INFO']}{self.i18n.t('developer')} {COLORS['SUCCESS']}SofaScore Scraper Ekibi")
+            print(f"{COLORS['INFO']}{self.i18n.t('license')} {COLORS['SUCCESS']}MIT")
+            print(f"{COLORS['INFO']}{self.i18n.t('description')} {COLORS['SUCCESS']}SofaScore API kullanarak futbol maç verilerini çeken ve analiz eden bir uygulama.")
             
-            print(f"\n{COLORS['SUBTITLE']}Kütüphaneler:")
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('libraries')}")
             print(f"{COLORS['INFO']}requests: HTTP istekleri için")
             print(f"{COLORS['INFO']}colorama: Renkli terminal çıktısı için")
             print(f"{COLORS['INFO']}pandas: Veri analizi için")

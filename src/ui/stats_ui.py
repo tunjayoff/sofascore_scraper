@@ -11,6 +11,7 @@ from colorama import Fore, Style
 
 from src.config_manager import ConfigManager
 from src.logger import get_logger
+from src.i18n import get_i18n
 
 # Logger'ı al
 logger = get_logger("StatsUI")
@@ -36,18 +37,19 @@ class StatsMenuHandler:
         self.config_manager = config_manager
         self.data_dir = data_dir
         self.colors = colors
+        self.i18n = get_i18n()
     
     def show_system_stats(self) -> None:
         """Sistem durumunu ve istatistiklerini gösterir."""
         COLORS = self.colors  # Kısa erişim için
         
         try:
-            print(f"\n{COLORS['TITLE']}{'Sistem İstatistikleri':^50}\n{'-'*50}")
+            print(f"\n{COLORS['TITLE']}{self.i18n.t('system_stats_title'):^50}\n{'-'*50}")
             
             # Toplam lig sayısı
             leagues = self.config_manager.get_leagues()
             league_count = len(leagues) if leagues else 0
-            print(f"Toplam Lig: {COLORS['SUCCESS']}{league_count}")
+            print(f"{self.i18n.t('total_leagues')} {COLORS['SUCCESS']}{league_count}")
             
             # Toplam sezon sayısı
             season_count = 0
@@ -69,7 +71,7 @@ class StatsMenuHandler:
                                 season_count += len(seasons_data)
                     except Exception as e:
                         logger.error(f"Sezon dosyası okuma hatası {file_path}: {str(e)}")
-            print(f"Toplam Sezon: {COLORS['SUCCESS']}{season_count}")
+            print(f"{self.i18n.t('total_seasons')} {COLORS['SUCCESS']}{season_count}")
             
             # Toplam maç sayısı
             match_count = 0
@@ -94,7 +96,7 @@ class StatsMenuHandler:
                                             match_count += len(lines) - 1
                                 except Exception as e:
                                     logger.error(f"CSV dosyası okuma hatası {file_path}: {str(e)}")
-            print(f"Toplam Maç: {COLORS['SUCCESS']}{match_count}")
+            print(f"{self.i18n.t('total_matches')} {COLORS['SUCCESS']}{match_count}")
             
             # Toplam maç detayı sayısı
             match_details_count = 0
@@ -109,7 +111,7 @@ class StatsMenuHandler:
                             match_details_count += len([f for f in files if f.endswith('.json')])
             
             # Disk kullanımı
-            print(f"\n{COLORS['SUBTITLE']}Disk Kullanımı:")
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('disk_usage_title')}")
             
             seasons_size = self._get_directory_size(seasons_dir) if os.path.exists(seasons_dir) else 0
             matches_size = self._get_directory_size(matches_dir) if os.path.exists(matches_dir) else 0
@@ -118,13 +120,13 @@ class StatsMenuHandler:
             datasets_dir = os.path.join(self.data_dir, "datasets")
             datasets_size = self._get_directory_size(datasets_dir) if os.path.exists(datasets_dir) else 0
             
-            print(f"  Sezonlar: {COLORS['SUCCESS']}{self._format_size(seasons_size)}")
-            print(f"  Maçlar: {COLORS['SUCCESS']}{self._format_size(matches_size)}")
-            print(f"  Maç Detayları: {COLORS['SUCCESS']}{self._format_size(match_details_size)}")
-            print(f"  Veri Setleri: {COLORS['SUCCESS']}{self._format_size(datasets_size)}")
+            print(f"  {self.i18n.t('disk_seasons')} {COLORS['SUCCESS']}{self._format_size(seasons_size)}")
+            print(f"  {self.i18n.t('disk_matches')} {COLORS['SUCCESS']}{self._format_size(matches_size)}")
+            print(f"  {self.i18n.t('disk_match_details')} {COLORS['SUCCESS']}{self._format_size(match_details_size)}")
+            print(f"  {self.i18n.t('disk_datasets')} {COLORS['SUCCESS']}{self._format_size(datasets_size)}")
             
             total_size = seasons_size + matches_size + match_details_size + datasets_size
-            print(f"  Toplam: {COLORS['SUCCESS']}{self._format_size(total_size)}")
+            print(f"  {self.i18n.t('disk_total')} {COLORS['SUCCESS']}{self._format_size(total_size)}")
             
         except Exception as e:
             logger.error(f"Sistem istatistikleri gösterilirken hata: {str(e)}")
@@ -207,8 +209,8 @@ class StatsMenuHandler:
                 except Exception as e:
                     logger.error(f"Maç dosyaları taranırken hata: {e}")
             
-            print(f"  {COLORS['INFO']}○ Sezon Sayısı: {COLORS['SUCCESS']}{season_count}")
-            print(f"  {COLORS['INFO']}○ Maç Sayısı: {COLORS['SUCCESS']}{match_count}")
+            print(f"  {COLORS['INFO']}○ {self.i18n.t('stats_season_count')} {COLORS['SUCCESS']}{season_count}")
+            print(f"  {COLORS['INFO']}○ {self.i18n.t('stats_match_count')} {COLORS['SUCCESS']}{match_count}")
             
             # Maç detayları sayısı
             match_details_count = 0
@@ -273,13 +275,13 @@ class StatsMenuHandler:
                 except Exception as e:
                     logger.error(f"Maç detay dosyaları taranırken hata: {e}")
             
-            print(f"  {COLORS['INFO']}○ Maç Detayı Sayısı: {COLORS['SUCCESS']}{match_details_count}")
+            print(f"  {COLORS['INFO']}○ {self.i18n.t('stats_match_details_count')} {COLORS['SUCCESS']}{match_details_count}")
             
             # Disk kullanımı
-            print(f"  {COLORS['INFO']}○ Sezon Verileri: {COLORS['SUCCESS']}{self._format_size(season_size)}")
-            print(f"  {COLORS['INFO']}○ Maç Verileri: {COLORS['SUCCESS']}{self._format_size(matches_size)}")
-            print(f"  {COLORS['INFO']}○ Maç Detayları: {COLORS['SUCCESS']}{self._format_size(match_details_size)}")
-            print(f"  {COLORS['INFO']}○ Toplam: {COLORS['SUCCESS']}{self._format_size(season_size + matches_size + match_details_size)}")
+            print(f"  {COLORS['INFO']}○ {self.i18n.t('stats_season_data')} {COLORS['SUCCESS']}{self._format_size(season_size)}")
+            print(f"  {COLORS['INFO']}○ {self.i18n.t('stats_match_data')} {COLORS['SUCCESS']}{self._format_size(matches_size)}")
+            print(f"  {COLORS['INFO']}○ {self.i18n.t('disk_match_details')} {COLORS['SUCCESS']}{self._format_size(match_details_size)}")
+            print(f"  {COLORS['INFO']}○ {self.i18n.t('disk_total')} {COLORS['SUCCESS']}{self._format_size(season_size + matches_size + match_details_size)}")
             
         except Exception as e:
             # Eğer Türkiye ligi (ID: 52) için bir hata oluştuysa, match_details dizinindeki tüm klasörleri logla
@@ -298,13 +300,13 @@ class StatsMenuHandler:
         COLORS = self.colors  # Kısa erişim için
         
         try:
-            print(f"\n{COLORS['SUBTITLE']}İstatistik Raporu Oluşturma:")
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('report_generation_title')}")
             print("-" * 50)
-            print("1. 📊 Sistem Raporu")
-            print("2. 📈 Lig Bazlı Rapor")
-            print("3. 📉 Detaylı Rapor (Tüm İstatistikler)")
+            print(self.i18n.t('report_system'))
+            print(self.i18n.t('report_league'))
+            print(self.i18n.t('report_detailed'))
             
-            choice = input("\nSeçenek (1-3): ")
+            choice = input(f"\n{self.i18n.t('settings_option_prompt')} ")
             
             if choice == "1":
                 self._generate_system_report()
@@ -429,7 +431,7 @@ class StatsMenuHandler:
             with open(report_file, 'w', encoding='utf-8') as f:
                 json.dump(report_data, f, indent=2)
             
-            print(f"\n{COLORS['SUCCESS']}✅ Sistem raporu başarıyla oluşturuldu: {report_file}")
+            print(f"\n{COLORS['SUCCESS']}✅ {self.i18n.t('system_report_created')} {report_file}")
             
         except Exception as e:
             logger.error(f"Sistem raporu oluşturulurken hata: {str(e)}")
@@ -541,7 +543,7 @@ class StatsMenuHandler:
             with open(report_file, 'w', encoding='utf-8') as f:
                 json.dump(report_data, f, indent=2)
             
-            print(f"\n{COLORS['SUCCESS']}✅ Lig raporu başarıyla oluşturuldu: {report_file}")
+            print(f"\n{COLORS['SUCCESS']}✅ {self.i18n.t('league_report_created')} {report_file}")
             
         except Exception as e:
             logger.error(f"Lig raporu oluşturulurken hata: {str(e)}")
@@ -737,7 +739,7 @@ class StatsMenuHandler:
             with open(report_file, 'w', encoding='utf-8') as f:
                 json.dump(detailed_report, f, indent=2)
             
-            print(f"\n{COLORS['SUCCESS']}✅ Detaylı rapor başarıyla oluşturuldu: {report_file}")
+            print(f"\n{COLORS['SUCCESS']}✅ {self.i18n.t('detailed_report_created')} {report_file}")
             
         except Exception as e:
             logger.error(f"Detaylı rapor oluşturulurken hata: {str(e)}")

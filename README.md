@@ -1,6 +1,6 @@
 # SofaScore Scraper
 
-Bu proje, SofaScore'dan futbol maçlarının verilerini çekmek, analiz etmek ve yönetmek için geliştirilmiş bir Python uygulamasıdır. Farklı ligler, sezonlar ve maçlar hakkında kapsamlı veri toplama, işleme ve dışa aktarma imkanı sunar.
+A Python application designed to fetch, analyze, and manage football match data from SofaScore. It provides comprehensive capabilities for collecting, processing, and exporting data about various leagues, seasons, and matches.
 
 <div align="center">
     
@@ -10,203 +10,211 @@ Bu proje, SofaScore'dan futbol maçlarının verilerini çekmek, analiz etmek ve
     
 </div>
 
-## 📋 İçindekiler
+For Turkish documentation, please see [README.tr.md](README.tr.md).
 
-- [Özellikler](#özellikler)
-- [Sistem Gereksinimleri](#sistem-gereksinimleri)
-- [Kurulum](#kurulum)
-- [Kullanım](#kullanım)
-  - [Ana Menü](#ana-menü)
-  - [Lig İşlemleri](#lig-işlemleri)
-  - [Sezon İşlemleri](#sezon-işlemleri)
-  - [Maç İşlemleri](#maç-işlemleri)
-  - [Maç Detayları](#maç-detayları)
-- [Konfigürasyon](#konfigürasyon)
-- [Veri Yapısı](#veri-yapısı)
-- [Çıktılar ve Veri Formatları](#çıktılar-ve-veri-formatları)
-- [Nasıl Yapılır (How-to)](#nasıl-yapılır-how-to)
-  - [Yeni Bir Lig Ekleme](#yeni-bir-lig-ekleme)
-  - [Bir Sezonun Tüm Maçlarını Çekme](#bir-sezonun-tüm-maçlarını-çekme)
-  - [CSV Veri Seti Oluşturma](#csv-veri-seti-oluşturma)
-  - [Maç Detaylarını Analiz Etme](#maç-detaylarını-analiz-etme)
-  - [Veri Analizi İçin Dışa Aktarma](#veri-analizi-için-dışa-aktarma)
-- [Sık Sorulan Sorular (SSS)](#sık-sorulan-sorular-sss)
-- [Mimari ve Geliştirme](#mimari-ve-geliştirme)
-- [Sorun Giderme](#sorun-giderme)
-- [Katkıda Bulunma](#katkıda-bulunma)
-- [Lisans](#lisans)
+## 📋 Table of Contents
 
-## ✨ Özellikler
+- [Features](#features)
+- [System Requirements](#system-requirements)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Main Menu](#main-menu)
+  - [League Management](#league-management)
+  - [Season Data](#season-data)
+  - [Schedule & Results](#schedule--results)
+  - [Detailed Match Stats](#detailed-match-stats)
+- [Configuration](#configuration)
+- [Data Structure](#data-structure)
+- [Outputs and Data Formats](#outputs-and-data-formats)
+- [How-to](#how-to)
+  - [Adding a New League](#adding-a-new-league)
+  - [Fetching All Matches for a Season](#fetching-all-matches-for-a-season)
+  - [Creating CSV Datasets](#creating-csv-datasets)
+  - [Analyzing Match Details](#analyzing-match-details)
+  - [Exporting for Data Analysis](#exporting-for-data-analysis)
+- [FAQ](#faq)
+- [Architecture and Development](#architecture-and-development)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
 
-SofaScore Scraper, aşağıdaki temel özellikleri sunar:
+## ✨ Features
 
-- **Lig Yönetimi**:
-  - Ligleri listeleme, ekleme ve kaldırma
-  - Desteklenen tüm SofaScore liglerini görüntüleme
+SofaScore Scraper offers the following key features:
 
-- **Sezon İşlemleri**:
-  - Liglere ait tüm sezonları çekme ve listeleme
-  - Aktif sezonları otomatik tespit etme
-  - Geçmiş ve gelecek sezonları yönetme
+- **League Management**:
+  - List, add, and remove leagues
+  - View all supported SofaScore leagues
+  - **New:** Search for leagues by name
 
-- **Maç Verileri**:
-  - Belirli bir lig ve sezon için maç listelerini çekme
-  - Haftalık/turlu maç verilerini görüntüleme
-  - Tüm ligler için toplu maç verisi toplama
+- **Season Operations**:
+  - Fetch and list all seasons for leagues
+  - Automatically detect active seasons
+  - Manage past and future seasons
 
-- **Maç Detayları**:
-  - Maç istatistiklerini çekme
-  - Takım serilerini görüntüleme
-  - Maç öncesi form verilerini toplama
-  - Karşılıklı istatistikleri (H2H) inceleme
+- **Match Data**:
+  - Fetch match lists for specific leagues and seasons
+  - View weekly/round match data
+  - Collect bulk match data for all leagues
 
-- **Veri Dışa Aktarma**:
-  - Maç verilerini CSV formatına dönüştürme
-  - Lig bazlı veya tüm liglerin verilerini tek seferde dışa aktarma
-  - Tek bir maçın detaylarını CSV formatında kaydetme
+- **Detailed Match Stats**:
+  - Fetch rich match statistics
+  - View team streaks and forms
+  - Collect pre-game form data
+  - Analyze Head-to-Head (H2H) statistics
 
-- **Kullanıcı Arayüzü**:
-  - Sezgisel terminal tabanlı menü sistemi
-  - Renkli ve kategorize edilmiş çıktılar
-  - İlerleme çubukları ve işlem durum göstergeleri
-  - Detaylı hata mesajları ve loglama
+- **Data Export**:
+  - Convert match data to CSV format
+  - Export data by league or in bulk
+  - Save single match details as CSV
 
-## 💻 Sistem Gereksinimleri
+- **Multi-language Support**:
+  - Turkish and English language options
+  - Instant language switching within the app
 
-- Python 3.8 veya üzeri
-- pip (Python paket yöneticisi)
-- İnternet bağlantısı (SofaScore API'ye erişmek için)
-- 100 MB+ disk alanı (toplanan verilerin miktarına bağlı olarak değişir)
+- **User Interface**:
+  - Intuitive terminal-based menu system
+  - Colorful and categorized outputs
+  - Progress bars and status indicators
+  - Detailed error messages and logging
 
-## 🔧 Kurulum
+## 💻 System Requirements
 
-### 1. Projeyi İndirme
+- Python 3.8 or higher
+- pip (Python package manager)
+- Internet connection (to access SofaScore API)
+- 100 MB+ disk space (varies based on collected data)
 
-GitHub deposundan projeyi klonlayın:
+## 🔧 Installation
+
+### 1. Clone the Project
+
+Clone the project from the GitHub repository:
 
 ```bash
 git clone https://github.com/tunjayoff/sofascore_scraper.git
 cd sofascore_scraper
 ```
 
-Alternatif olarak, projeyi ZIP olarak indirip açabilirsiniz.
+Alternatively, download and extract the ZIP file.
 
-### 2. Sanal Ortam Oluşturma (Opsiyonel ama Önerilen)
+### 2. Create Virtual Environment (Optional but Recommended)
 
-Python sanal ortamı oluşturmak, paket çakışmalarını önlemeye yardımcı olur:
+Creating a virtual environment helps avoid package conflicts:
 
 ```bash
-# Sanal ortam oluşturma
+# Create virtual environment
 python -m venv venv
 
-# Sanal ortamı aktifleştirme
-# Linux/MacOS için:
+# Activate virtual environment
+# For Linux/MacOS:
 source venv/bin/activate
-# Windows için:
+# For Windows:
 venv\Scripts\activate
 ```
 
-### 3. Bağımlılıkları Yükleme
+### 3. Install Dependencies
 
-Gerekli Python paketlerini yükleyin:
+Install the required Python packages:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Çevre Değişkenleri Yapılandırma
+### 4. Configure Environment Variables
 
-`.env` dosyasını kullanarak çevre değişkenlerini yapılandırabilirsiniz:
+You can configure environment variables using the `.env` file:
 
 ```bash
-# .env.example dosyasını kopyalayın
+# Copy the example file
 cp .env.example .env
-# Düzenleyin
-nano .env  # veya tercih ettiğiniz metin editörü
+# Edit the file
+nano .env  # or your preferred text editor
 ```
 
-## 📘 Kullanım
+## 📘 Usage
 
-Uygulamayı çalıştırmak için ana dizinde şu komutu kullanın:
+Run the application using the following command in the main directory:
 
 ```bash
 python main.py
 ```
 
-Belirli parametrelerle çalıştırmak için:
+To run with specific parameters:
 
 ```bash
-# Arayüz olmadan çalıştırma (headless mode)
+# Run headless (without UI)
 python main.py --headless
 
-# Tüm liglerin verilerini güncelleme
+# Update data for all leagues
 python main.py --headless --update-all
 
-# Verileri CSV formatında dışa aktarma
+# Export data to CSV
 python main.py --headless --csv-export
 ```
 
-### Ana Menü
+### Main Menu
 
-Uygulama başladığında karşınıza bir ana menü gelecektir:
+When the application starts, you will see the main menu:
 
 ```
 SofaScore Scraper v1.0.0
 ==========================================
 
-Ana Menü:
+Main Menu:
 --------------------------------------------------
-1. 🏆 Lig İşlemleri
-2. 🗓️ Sezon İşlemleri
-3. ⚽ Maç İşlemleri
-4. 📊 Maç Detayları
-5. ⚙️ Ayarlar
-0. 🚪 Çıkış
+1. 🏆 League Management
+2. 📅 Season Data
+3. 📅 Schedule & Results
+4. 📊 Detailed Match Stats
+5. 📊 Statistics
+6. ⚙️ Settings
+0. ❌ Exit
 
-Seçiminiz (0-5): 
+Your choice (0-6): 
 ```
 
-### Lig İşlemleri
+### League Management
 
-1. **Ligleri Listele**: Kayıtlı ligleri görüntüler
-2. **Lig Ekle**: Yeni bir lig ekler (Lig adı ve ID'si gereklidir)
-3. **Lig Sil**: Mevcut bir ligi kaldırır
-4. **Lig Ara**: Ligleri ada göre arar
-5. **Ana Menüye Dön**: Ana menüye geri döner
+1. **List Leagues**: View configured leagues
+2. **Add New League**: Add a new league (Name and ID required)
+3. **Reload League Config**: Reload changes from the league file
+4. **Search League**: Search leagues by name (New!)
+0. **Back to Main Menu**: Return to the main menu
 
-### Sezon İşlemleri
+### Season Data
 
-1. **Sezonları Listele**: Kayıtlı sezonları görüntüler
-2. **Sezon Verilerini Çek**: Belirli bir lig için sezon verilerini çeker
-3. **Tüm Ligler İçin Sezon Verilerini Çek**: Tüm ligler için sezon verilerini çeker
-4. **Ana Menüye Dön**: Ana menüye geri döner
+1. **List Seasons**: View stored seasons
+2. **Update Seasons for Single League**: Fetch season data for a specific league
+3. **Update Seasons for All Leagues**: Fetch season data for all leagues
+0. **Back to Main Menu**: Return to the main menu
 
-### Maç İşlemleri
+### Schedule & Results
 
-1. **Maçları Listele**: Çekilen maçları listeler
-2. **Maç Verilerini Çek**: Belirli bir lig ve sezon için maç verilerini çeker
-3. **Tüm Ligler İçin Maç Verilerini Çek**: Tüm ligler için maç verilerini çeker
-4. **Ana Menüye Dön**: Ana menüye geri döner
+1. **List Fetched Matches**: List downloaded matches
+2. **Fetch Matches for Single League**: Fetch match data for a specific league and season
+3. **Fetch Matches for All Leagues**: Fetch match data for all leagues
+0. **Back to Main Menu**: Return to the main menu
 
-### Maç Detayları
+### Detailed Match Stats
 
-1. **Maç Detaylarını Çek**: Belirli maçlar için detaylı verileri çeker
-2. **Tüm Maçlar İçin Detayları Çek**: Tüm maçlar için detaylı verileri çeker
-3. **CSV Veri Seti Oluştur**: Maç verilerini CSV formatına dönüştürür
-4. **Ana Menüye Dön**: Ana menüye geri döner
+1. **Fetch Details for Specific Matches**: Fetch detailed data for selected matches
+2. **Fetch Details for All Matches**: Fetch detailed data for all matches
+3. **Generate CSV Dataset**: Convert match data to CSV format
+0. **Back to Main Menu**: Return to the main menu
 
-## ⚙️ Konfigürasyon
+## ⚙️ Configuration
 
-SofaScore Scraper, çevre değişkenleri ve lig yapılandırması olmak üzere iki temel yapılandırma yöntemi kullanır:
+SofaScore Scraper uses two main configuration methods: environment variables and league configuration.
 
-### 1. .env Dosyası
+### 1. .env File
 
-Proje, `.env` dosyası aracılığıyla çevre değişkenleri kullanarak konfigüre edilir. Uygulama ilk çalıştırıldığında otomatik olarak bir `.env` dosyası oluşturulur veya mevcut dosya kullanılır. Ayarlar menüsünden bu değişkenleri kolayca güncelleyebilirsiniz.
+The project is configured via the `.env` file. The application automatically creates one if it doesn't exist. You can update these settings easily from the Settings menu.
 
-Örnek bir `.env` dosyası:
+Example `.env` file:
 
 ```
-# API Yapılandırması
+# API Configuration
 API_BASE_URL=https://www.sofascore.com/api/v1
 REQUEST_TIMEOUT=20
 MAX_RETRIES=3
@@ -216,32 +224,36 @@ WAIT_TIME_MAX=0.8
 USE_PROXY=false
 PROXY_URL=
 
-# Veri Yapılandırması
+# Data Configuration
 DATA_DIR=data
 FETCH_ONLY_FINISHED=true
 SAVE_EMPTY_ROUNDS=false
 
-# Görüntüleme Ayarları
+# Display Settings
 USE_COLOR=true
 DATE_FORMAT=%Y-%m-%d %H:%M:%S
 
-# Hata Ayıklama
+# Debugging
 LOG_LEVEL=INFO
 DEBUG=false
+
+# Language Setting
+LANGUAGE=en
 ```
 
-Ayarlar menüsünden şu yapılandırmaları değiştirebilirsiniz:
-- API Yapılandırması (API URL, zaman aşımı, yeniden deneme sayısı, vb.)
-- Veri Dizini (verilerin kaydedileceği konum)
-- Görüntüleme Ayarları (renk kullanımı, tarih formatı)
-- Yedekleme ve Geri Yükleme işlemleri
+You can change the following configurations from the Settings menu:
+- API Configuration (URL, timeout, retries, etc.)
+- Data Directory (storage location)
+- Display Settings (color usage, date format)
+- Language Selection (Turkish / English)
+- Backup and Restore operations
 
-### 2. Lig Yapılandırması
+### 2. League Configuration
 
-Lig bilgilerini `config/leagues.txt` dosyasında yönetebilirsiniz. Bu dosya, uygulamanın hangi ligleri takip edeceğini belirler:
+You can manage leagues in the `config/leagues.txt` file. This determines which leagues the application tracks:
 
 ```
-# Format: Lig Adı: ID
+# Format: League Name: ID
 Premier League: 17
 LaLiga: 8
 Serie A: 23
@@ -250,26 +262,26 @@ Ligue 1: 34
 Süper Lig: 52
 ```
 
-Lig işlemleri menüsünden ligleri ekleyebilir, düzenleyebilir veya kaldırabilirsiniz.
+You can add, edit, or remove leagues from the League Management menu.
 
-## 📂 Veri Yapısı
+## 📂 Data Structure
 
-SofaScore Scraper, topladığı verileri aşağıdaki yapıda organize eder:
+SofaScore Scraper organizes collected data in the following structure:
 
 ```
 data/
 ├── seasons/
-│   └── {lig_id}_{lig_adı}_seasons.json
+│   └── {league_id}_{league_name}_seasons.json
 ├── matches/
-│   └── {lig_id}_{lig_adı}/
-│       └── {sezon_id}_{sezon_adı}/
+│   └── {league_id}_{league_name}/
+│       └── {season_id}_{season_name}/
 │           ├── round_1.json
 │           ├── round_2.json
 │           └── ...
 └── match_details/
-    └── {lig_adı}/
-        └── season_{sezon_adı}/
-            └── {maç_id}/
+    └── {league_name}/
+        └── season_{season_name}/
+            └── {match_id}/
                 ├── basic.json
                 ├── statistics.json
                 ├── team_streaks.json
@@ -278,396 +290,121 @@ data/
                 └── lineups.json
 ```
 
-### Veri Dosyaları
+### Data Files
 
-1. **seasons.json**: Bir lig için tüm sezonların listesi
-2. **round_X.json**: Bir sezonun belirli bir turu/haftası için maçlar
-3. **basic.json**: Maçın temel bilgileri (takımlar, skor, tarih, vb.)
-4. **statistics.json**: Maç istatistikleri (şutlar, paslar, korneler, vb.)
-5. **team_streaks.json**: Takımların seriler/istatistikleri
-6. **pregame_form.json**: Maç öncesi takım formları
-7. **h2h.json**: Takımlar arası karşılaşma geçmişi
-8. **lineups.json**: Takım kadroları ve oyuncu bilgileri
+1. **seasons.json**: List of all seasons for a league
+2. **round_X.json**: Matches for a specific round/week
+3. **basic.json**: Basic match info (teams, score, date, etc.)
+4. **statistics.json**: Match statistics (shots, passes, corners, etc.)
+5. **team_streaks.json**: Team streaks/stats
+6. **pregame_form.json**: Pre-game team form
+7. **h2h.json**: Head-to-Head history
+8. **lineups.json**: Lineups and player info
 
-## 📊 Çıktılar ve Veri Formatları
+## 📊 Outputs and Data Formats
 
-### CSV Çıktıları
+### CSV Outputs
 
-CSV dosyaları `data/match_details/processed/` dizinine kaydedilir:
+CSV files are saved in `data/match_details/processed/`:
 
-1. **Tek Maç CSV**: `{maç_id}_{timestamp}.csv`
-2. **Lig Maçları CSV**: `{lig_adı}_{timestamp}.csv`
-3. **Tüm Maçlar CSV**: `all_matches_{timestamp}.csv`
+1. **Single Match CSV**: `{match_id}_{timestamp}.csv`
+2. **League Matches CSV**: `{league_name}_{timestamp}.csv`
+3. **All Matches CSV**: `all_matches_{timestamp}.csv`
 
-Örnek CSV çıktısı:
+Example CSV output:
 
 ```csv
 match_id,tournament_name,season_name,round,home_team_name,away_team_name,home_score_ft,away_score_ft,match_date,home_possession,away_possession,home_shots_total,away_shots_total,home_shots_on_target,away_shots_on_target
 10257123,Premier League,2023/2024,38,Manchester City,West Ham,3,1,1621789200,65,35,23,5,12,2
 ```
 
-### JSON Veri Yapısı
+## 🛠 How-to
 
-JSON dosyaları, SofaScore API'nin döndürdüğü veri yapısını korur, ancak bazı durumlarda ek bilgilerle zenginleştirilir.
+### Adding a New League
 
-Örnek bir `basic.json` dosyası:
+There are two ways to add a new league:
 
-```json
-{
-  "tournament": {
-    "name": "Premier League",
-    "slug": "premier-league",
-    "category": {
-      "name": "England",
-      "slug": "england",
-      "sport": {
-        "name": "Football",
-        "slug": "football",
-        "id": 1
-      },
-      "id": 1,
-      "flag": "england"
-    },
-    "uniqueTournament": {
-      "name": "Premier League",
-      "slug": "premier-league",
-      "category": {
-        "name": "England",
-        "slug": "england",
-        "sport": {
-          "name": "Football",
-          "slug": "football",
-          "id": 1
-        },
-        "id": 1,
-        "flag": "england"
-      },
-      "userCount": 1327093,
-      "hasEventPlayerStatistics": true,
-      "crowdsourcingEnabled": false,
-      "hasPerformanceGraphFeature": true,
-      "id": 17,
-      "hasPositionGraph": true
-    },
-    "primaryColorHex": "#3c1c5a",
-    "secondaryColorHex": "#000000",
-    "id": 29415
-  }
-}
-```
+#### 1. Via Application:
+Select "League Management" from the main menu and use the "Add New League" option.
 
-## 🛠 Nasıl Yapılır (How-to)
+#### 2. Directly via `leagues.txt`:
 
-### Yeni Bir Lig Ekleme
-
-Yeni bir lig eklemek için iki yöntem vardır:
-
-#### 1. Uygulama Üzerinden:
-Ana menüden "Lig İşlemleri" seçip "Lig Ekle" seçeneğini kullanabilirsiniz.
-
-#### 2. Doğrudan `leagues.txt` Dosyası Üzerinden:
-
-1. `config/leagues.txt` dosyasını bir metin editöründe açın
-2. Yeni ligi şu formatla ekleyin: `Lig Adı: ID`
+1. Open `config/leagues.txt` in a text editor.
+2. Add the new league in the format: `League Name: ID`
 
 ```
 Premier League: 17
 LaLiga: 8
-Serie A: 23
-Bundesliga: 35
-Ligue 1: 34
-Süper Lig: 52
-Brasileirão Betano: 325
 ```
 
-### Bir Sezonun Tüm Maçlarını Çekme
+### Fetching All Matches for a Season
 
-Belirli bir lig ve sezon için tüm maçları çekmek için:
+To fetch all matches for a specific league and season:
 
-1. Ana menüden "Maç İşlemleri"ni seçin (3)
-2. "Maç Verilerini Çek" seçeneğini seçin (2)
-3. Ligler listesinden hedef ligi seçin
-4. Sezon filtreleme seçeneğinden "Belirli Bir Sezon" seçin (3)
-5. Sezon listesinden istediğiniz sezonu seçin
+1. Select "Schedule & Results" (3) from the main menu.
+2. Select "Fetch Matches for Single League" (2).
+3. Select the target league from the list.
+4. Choose "Specific Season" (3) from the filter options.
+5. Select the desired season from the list.
 
-**Python kodunda programatik olarak kullanım:**
+### Creating CSV Datasets
 
-```python
-from src.config_manager import ConfigManager
-from src.match_fetcher import MatchFetcher
-from src.season_fetcher import SeasonFetcher
+To convert match data to CSV format:
 
-# Config yöneticisini başlat
-config = ConfigManager()
+1. Select "Detailed Match Stats" (4) from the main menu.
+2. Select "Generate CSV Dataset" (3).
+3. Choose one of the conversion options:
+   - Single Match CSV
+   - League CSV
+   - All Leagues CSV
 
-# Sezon ve maç çekicilerini başlat
-season_fetcher = SeasonFetcher(config)
-match_fetcher = MatchFetcher(config, season_fetcher)
+## ❓ FAQ
 
-# Süper Lig (ID: 52) için aktif sezonu al
-season_id = season_fetcher.get_current_season_id(52)
-
-# Süper Lig'in aktif sezonu için tüm maçları çek
-success = match_fetcher.fetch_matches_for_season(52, season_id)
-
-if success:
-    print("Tüm maçlar başarıyla çekildi!")
-else:
-    print("Maç çekme işlemi başarısız!")
-```
+### 1. How do I find a League ID?
 
-### CSV Veri Seti Oluşturma
-
-Çekilen maç verilerini CSV formatına dönüştürmek için:
+You can find the ID in the URL on the SofaScore website. For example, for Premier League, the URL is `https://www.sofascore.com/tournament/football/england/premier-league/17`. The last number (17) is the League ID.
 
-1. Ana menüden "Maç Detayları"nı seçin (4)
-2. "CSV Veri Seti Oluştur" seçeneğini seçin (3)
-3. Dönüştürme seçeneklerinden birini seçin:
-   - Tek Maç CSV
-   - Belirli Bir Lig İçin CSV
-   - Tüm Ligler İçin CSV
+### 2. How do I find a Match ID?
 
-**Belirli bir lig için CSV veri seti oluşturma adımları:**
+You can find Match IDs by:
+- Using the "List Fetched Matches" option in the app
+- Checking the fetched JSON files
 
-1. "Belirli Bir Lig İçin CSV" seçeneğini seçin
-2. Görüntülenen lig listesinden, istediğiniz ligin numarasını girin
-3. CSV dosyaları oluşturulduktan sonra ekranda dosya yolları görüntülenecektir
+### 3. I'm getting rate-limiting errors. What should I do?
 
-**Programlama ile CSV veri seti oluşturma örneği:**
-
-```python
-from src.config_manager import ConfigManager
-from src.match_data_fetcher import MatchDataFetcher
-
-# Config yöneticisini başlat
-config = ConfigManager()
-
-# Maç veri çekicisini başlat
-match_data_fetcher = MatchDataFetcher(config)
-
-# Süper Lig için CSV veri seti oluştur (ID ile)
-csv_paths = match_data_fetcher.convert_league_matches_to_csv(52)
-
-# veya lig adı ile de çalışabilir
-# csv_paths = match_data_fetcher.convert_league_matches_to_csv("Süper Lig")
-
-if csv_paths:
-    print(f"CSV dosyaları oluşturuldu: {csv_paths}")
-else:
-    print("CSV oluşturma işlemi başarısız!")
-```
-
-### Maç Detaylarını Analiz Etme
-
-Belirli bir maçın detaylarını çekmek ve analiz etmek için:
-
-1. Ana menüden "Maç Detayları"nı seçin (4)
-2. "Maç Detaylarını Çek" seçeneğini seçin (1)
-3. Maç ID'sini girin (Maç ID'lerini "Maçları Listele" seçeneğinden bulabilirsiniz)
-
-**Örnek: Bir maçın istatistiklerini Python'da analiz etme:**
-
-```python
-import json
-import os
-from src.config_manager import ConfigManager
-from src.match_data_fetcher import MatchDataFetcher
-
-# Config yöneticisini başlat
-config = ConfigManager()
-
-# Maç veri çekicisini başlat
-match_data_fetcher = MatchDataFetcher(config)
-
-# Maç ID'si
-match_id = "10257123"  # Örnek bir maç ID'si
-
-# Maç detaylarını çek
-success = match_data_fetcher.fetch_match_details(match_id)
-
-if success:
-    # Maç dizinini bul
-    match_path = match_data_fetcher._find_match_path(match_id)
-    if match_path:
-        league_dir, season_dir, match_dir = match_path
-        
-        # İstatistikleri oku
-        stats_file = os.path.join(match_dir, "statistics.json")
-        with open(stats_file, 'r', encoding='utf-8') as f:
-            stats = json.load(f)
-        
-        # İstatistikleri analiz et
-        print(f"Maç ID: {match_id}")
-        
-        # Temel istatistikleri çıkar
-        for period in stats.get("statistics", []):
-            if period.get("period") == "ALL":
-                print("\nMaç İstatistikleri:")
-                for group in period.get("groups", []):
-                    print(f"\n{group.get('groupName')}:")
-                    for item in group.get("statisticsItems", []):
-                        print(f"  - {item.get('name')}: Ev {item.get('homeValue')} - Deplasman {item.get('awayValue')}")
-```
-
-### Veri Analizi İçin Dışa Aktarma
-
-Verileri Python analiz araçlarıyla (Pandas, NumPy, vb.) kullanmak için:
-
-```python
-import pandas as pd
-import os
-from src.config_manager import ConfigManager
-from src.match_data_fetcher import MatchDataFetcher
-
-# Config yöneticisini başlat
-config = ConfigManager()
-
-# Maç veri çekicisini başlat
-match_data_fetcher = MatchDataFetcher(config)
+If you make too many requests, you might hit rate limits. Try:
+- Lowering `MAX_CONCURRENT` in `.env` (e.g., to 10)
+- Increasing `WAIT_TIME_MIN` and `WAIT_TIME_MAX`
+- Fetching data in smaller batches
 
-# Süper Lig (ID: 52) için CSV dosyasını oluştur
-csv_paths = match_data_fetcher.convert_league_matches_to_csv("52")
+### 4. Can I run this in another language?
 
-if csv_paths and csv_paths[0]:
-    # İlk CSV dosyasını Pandas DataFrame'e yükle
-    df = pd.read_csv(csv_paths[0])
-    
-    # Veri analizi
-    print(f"Toplam maç sayısı: {len(df)}")
-    print(f"Ev sahibi gol ortalaması: {df['home_score_ft'].mean():.2f}")
-    print(f"Deplasman gol ortalaması: {df['away_score_ft'].mean():.2f}")
-    
-    # En çok gol atan takımlar
-    home_goals = df.groupby('home_team_name')['home_score_ft'].sum()
-    away_goals = df.groupby('away_team_name')['away_score_ft'].sum()
-    
-    # Toplam goller
-    team_goals = pd.DataFrame({
-        'Ev Golleri': home_goals,
-        'Deplasman Golleri': away_goals
-    }).fillna(0)
-    
-    team_goals['Toplam Goller'] = team_goals['Ev Golleri'] + team_goals['Deplasman Golleri']
-    print("\nEn çok gol atan 5 takım:")
-    print(team_goals.sort_values('Toplam Goller', ascending=False).head(5))
-```
+Yes! The application supports both English and Turkish. You can change the language from the Settings menu.
 
-## ❓ Sık Sorulan Sorular (SSS)
+## 🏗 Architecture
 
-### 1. Lig ID'sini nasıl bulabilirim?
+The project uses a modular architecture:
 
-SofaScore web sitesinde, ligin URL'sine bakabilirsiniz. Örneğin, Süper Lig için URL `https://www.sofascore.com/tournament/football/turkey/super-lig/52` şeklindedir. Buradaki son sayı (52) lig ID'sidir.
+1. **ConfigManager**: Configuration and env variable management
+2. **SeasonFetcher**: Fetching and managing seasons
+3. **MatchFetcher**: Fetching match lists
+4. **MatchDataFetcher**: Fetching detailed match stats
+5. **UI Modules**: Separate handlers for different menu sections
 
-### 2. Maç ID'sini nasıl bulabilirim?
+## 🤝 Contributing
 
-Maç ID'lerini birkaç yöntemle bulabilirsiniz:
-- Uygulamada "Maçları Listele" seçeneğini kullanarak
-- Çektiğiniz maç verilerini içeren JSON dosyalarından
+1. Fork the repository
+2. Create a new branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-### 3. Rate-limiting hatalarıyla karşılaşıyorum. Ne yapmalıyım?
+## 📄 License
 
-SofaScore API, kısa sürede çok fazla istek yapıldığında rate-limiting uygulayabilir. Bu durumda şunları deneyebilirsiniz:
-- `.env` dosyasında `MAX_CONCURRENT` değerini düşürün (örneğin 10'a)
-- `WAIT_TIME_MIN` ve `WAIT_TIME_MAX` değerlerini artırın
-- Daha az veri çekerek başlayın ve zamanla artırın
-
-### 4. Çekilen veriler nerede saklanır?
-
-Tüm veriler varsayılan olarak `data/` dizini altında saklanır (`.env` dosyasında `DATA_DIR` değişkeni ile değiştirilebilir):
-- Sezon verileri: `data/seasons/`
-- Maç listeleri: `data/matches/`
-- Maç detayları: `data/match_details/`
-- CSV çıktıları: `data/match_details/processed/`
-
-### 5. Farklı bir dilde çalıştırabilir miyim?
-
-Şu anda uygulama Türkçe olarak geliştirilmiştir. Farklı diller için destek eklemeyi planlıyoruz.
-
-## 🏗 Mimari ve Geliştirme
-
-SofaScore Scraper, modüler bir mimari kullanılarak geliştirilmiştir:
-
-### Ana Bileşenler
-
-1. **ConfigManager**: Konfigürasyon yönetimi ve çevre değişkenleri (.env dosyası)
-2. **SeasonFetcher**: Sezon verilerini çekme ve yönetme
-3. **MatchFetcher**: Maç listelerini çekme ve yönetme
-4. **MatchDataFetcher**: Detaylı maç verilerini çekme ve işleme
-5. **SofaScoreUI**: Ana kullanıcı arayüzü 
-6. **UI Modülleri**: Farklı işlemler için özel UI sınıfları
-
-### Veri Akışı
-
-```
-ConfigManager → SeasonFetcher → MatchFetcher → MatchDataFetcher → CSV/JSON Çıktılar
-```
-
-### Yapılandırma Yönetimi
-
-Uygulama, yapılandırma için çevre değişkenlerini (.env dosyası) kullanır:
-
-1. **Çevre Değişkenleri**: API URL, zaman aşımı, yeniden deneme sayısı, veri dizini gibi temel ayarlar
-2. **Lig Yapılandırması**: Takip edilecek ligler ve ID'leri (leagues.txt dosyası)
-
-ConfigManager sınıfı, bu yapılandırma kaynaklarını yönetir ve uygulamanın diğer bileşenlerine erişim sağlar.
-
-### API İstekleri
-
-SofaScore API'si resmi olarak belgelenmemiştir. Bu proje, web sitesinin ve mobil uygulamanın kullandığı aynı API'leri kullanır:
-
-```
-https://www.sofascore.com/api/v1/...
-```
-
-### Paralel İşleme
-
-Maç detayları çekilirken, işlem hızını artırmak için asenkron HTTP istekleri kullanılır. Bu, `aiohttp` kütüphanesi ile gerçekleştirilir ve `.env` dosyasındaki `MAX_CONCURRENT` değişkeni ile kontrol edilebilir.
-
-### Geliştirici İçin Notlar
-
-Kodu genişletmek veya değiştirmek isteyenler için:
-
-- Yeni bir veri türü eklemek için `MatchDataFetcher` sınıfını genişletin
-- Yeni bir UI modülü için `src/ui/` altında yeni bir sınıf oluşturun
-- API davranışı değişirse `utils.py` içindeki `make_api_request` fonksiyonunu güncelleyin
-- Yeni çevre değişkenleri eklemek için `ConfigManager` sınıfını ve `.env.example` dosyasını güncelleyin
-
-## 🔍 Sorun Giderme
-
-### Sık Karşılaşılan Sorunlar
-
-1. **API Hataları**: SofaScore API'de değişiklikler olabileceğinden, güncellemeler gerekebilir.
-2. **Rate Limiting**: Çok fazla istek gönderildiğinde API istek sınırlamalarına takılabilirsiniz.
-3. **Veri Boşlukları**: Bazı maçlarda veya liglerde eksik veriler olabilir.
-
-### Loglama
-
-Hata mesajları `logs/` dizininde kaydedilir. Sorun yaşadığınızda logları kontrol edin. Log seviyesi `.env` dosyasındaki `LOG_LEVEL` değişkeni ile kontrol edilebilir.
-
-### Temel Sorun Giderme Adımları
-
-1. **Güncel Sürüm Kontrolü**: Projenin en son sürümünü kullandığınızdan emin olun
-2. **Bağımlılık Kontrolü**: `requirements.txt` dosyasındaki tüm paketlerin doğru sürümlerle yüklendiğini kontrol edin
-3. **Çevre Değişkenleri Kontrolü**: `.env` dosyasının doğru yapılandırıldığından emin olun
-4. **Log İncelemesi**: Hata mesajları için `logs/` dizinindeki dosyaları inceleyin
-5. **Ağ Kontrolü**: SofaScore API'ye erişim sağlanabiliyor mu kontrol edin
-
-## 🤝 Katkıda Bulunma
-
-Projeye katkıda bulunmak için:
-
-1. Bu depoyu "fork"layın
-2. Yeni bir dal oluşturun (`git checkout -b özellik/yenilik`)
-3. Değişikliklerinizi commit edin (`git commit -m 'Yeni özellik eklendi'`)
-4. Dalınızı push edin (`git push origin özellik/yenilik`)
-5. Bir "Pull Request" açın
-
-## 📄 Lisans
-
-Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına bakın.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-Geliştirici: [Tuncay Eşsiz](https://github.com/tunjayoff)  
-Sürüm: 1.0.0  
-Son güncelleme: Mart 2024 
+Developer: [Tuncay Eşsiz](https://github.com/tunjayoff)  
+Version: 1.1.0  
+Last Updated: 26 December 2025

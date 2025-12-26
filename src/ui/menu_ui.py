@@ -12,6 +12,10 @@ from src.season_fetcher import SeasonFetcher
 from src.logger import get_logger
 
 # Logger'ı al
+from src.logger import get_logger
+from src.i18n import get_i18n
+
+# Logger'ı al
 logger = get_logger("MenuUI")
 
 
@@ -28,17 +32,18 @@ class LeagueMenuHandler:
         """
         self.config_manager = config_manager
         self.colors = colors
+        self.i18n = get_i18n()
     
     def list_leagues(self) -> None:
         """Yapılandırılmış ligleri listeler."""
         try:
             leagues = self.config_manager.get_leagues()
             
-            print(f"\n{self.colors['SUBTITLE']}Yapılandırılmış Ligler ({len(leagues)}):")
+            print(f"\n{self.colors['SUBTITLE']}{self.i18n.t('configured_leagues_list')} ({len(leagues)}):")
             print("-" * 50)
             
             if not leagues:
-                print(f"{self.colors['WARNING']}Yapılandırılmış lig bulunamadı.")
+                print(f"{self.colors['WARNING']}{self.i18n.t('no_configured_leagues')}")
                 return
                 
             sorted_leagues = sorted(leagues.items(), key=lambda x: x[1])
@@ -52,19 +57,19 @@ class LeagueMenuHandler:
     def add_new_league(self) -> None:
         """Yeni bir lig ekler."""
         try:
-            print(f"\n{self.colors['SUBTITLE']}Yeni Lig Ekle:")
+            print(f"\n{self.colors['SUBTITLE']}{self.i18n.t('add_new_league_title')}")
             print("-" * 50)
             
             # Lig adını al
-            league_name = input("Lig adı: ").strip()
+            league_name = input(f"{self.i18n.t('league_name_prompt')} ").strip()
             if not league_name:
-                print(f"{self.colors['WARNING']}Lig adı boş olamaz!")
+                print(f"{self.colors['WARNING']}{self.i18n.t('league_name_empty_error')}")
                 return
             
             # Lig ID'sini al
-            league_id_str = input("Lig ID: ").strip()
+            league_id_str = input(f"{self.i18n.t('league_id_prompt')} ").strip()
             if not league_id_str.isdigit():
-                print(f"{self.colors['WARNING']}Geçersiz ID formatı! Sayısal bir değer girilmelidir.")
+                print(f"{self.colors['WARNING']}{self.i18n.t('invalid_id_format')}")
                 return
                 
             league_id = int(league_id_str)
@@ -73,9 +78,9 @@ class LeagueMenuHandler:
             success = self.config_manager.add_league(league_name, league_id)
             
             if success:
-                print(f"\n{self.colors['SUCCESS']}✅ {league_name} (ID: {league_id}) başarıyla eklendi!")
+                print(f"\n{self.colors['SUCCESS']}✅ {self.i18n.t('league_added_success', league_name=league_name, league_id=league_id)}")
             else:
-                print(f"\n{self.colors['WARNING']}❌ Lig eklenirken bir hata oluştu. Bu ID zaten kullanılıyor olabilir.")
+                print(f"\n{self.colors['WARNING']}❌ {self.i18n.t('league_add_error')}")
                 
         except Exception as e:
             logger.error(f"Lig eklenirken hata: {str(e)}")
@@ -89,9 +94,9 @@ class LeagueMenuHandler:
             leagues_count = len(leagues)
             
             if success:
-                print(f"\n{self.colors['SUCCESS']}✅ Lig yapılandırması yeniden yüklendi. ({leagues_count} lig)")
+                print(f"\n{self.colors['SUCCESS']}✅ {self.i18n.t('league_config_reloaded')} ({len(leagues)} lig)")
             else:
-                print(f"\n{self.colors['WARNING']}❌ Yapılandırma yeniden yüklenirken hata oluştu.")
+                print(f"\n{self.colors['WARNING']}❌ {self.i18n.t('config_reload_error')}")
                 
         except Exception as e:
             logger.error(f"Ligler yeniden yüklenirken hata: {str(e)}")
@@ -100,10 +105,31 @@ class LeagueMenuHandler:
     def search_leagues(self) -> None:
         """Ligleri arama işlemi."""
         try:
-            print(f"\n{self.colors['SUBTITLE']}Lig Ara (henüz uygulanmadı):")
-            print(f"{self.colors['INFO']}Bu özellik ileride eklenecektir.")
+            print(f"\n{self.colors['SUBTITLE']}{self.i18n.t('submenu_league_search').replace(' (Henüz Uygulanmadı)', '').replace(' (Not Implemented)', '')}")
+            print("-" * 50)
+            
+            search_term = input(f"{self.i18n.t('search_prompt')} ").strip().lower()
+            
+            if not search_term:
+                return
+
+            leagues = self.config_manager.get_leagues()
+            found_leagues = []
+            
+            for league_id, league_name in leagues.items():
+                if search_term in league_name.lower():
+                    found_leagues.append((league_id, league_name))
+            
+            if found_leagues:
+                print(f"\n{self.colors['SUCCESS']}{self.i18n.t('search_results_title', count=len(found_leagues))}")
+                for league_id, league_name in found_leagues:
+                     print(f"  {self.colors['SUCCESS']}● {league_name} {self.colors['DIM']}(ID: {league_id})")
+            else:
+                print(f"\n{self.colors['WARNING']}{self.i18n.t('no_matches_found')}")
+
         except Exception as e:
             logger.error(f"Lig arama işlemi sırasında hata: {str(e)}")
+            print(f"\n{self.colors['WARNING']}Hata: {str(e)}")
 
 
 class SeasonMenuHandler:
@@ -122,6 +148,7 @@ class SeasonMenuHandler:
         self.season_fetcher = season_fetcher
         self.colors = colors
         self.league_menu = LeagueMenuHandler(config_manager, colors)
+        self.i18n = get_i18n()
     
     def update_all_seasons(self) -> None:
         """Tüm ligler için sezon verilerini günceller."""
@@ -129,26 +156,26 @@ class SeasonMenuHandler:
             leagues = self.config_manager.get_leagues()
             
             if not leagues:
-                print(f"\n{self.colors['WARNING']}❌ Hiç lig tanımlanmamış! Önce lig ekleyiniz.")
+                print(f"\n{self.colors['WARNING']}❌ {self.i18n.t('no_leagues_defined')}")
                 return
                 
-            print("\nTüm ligler için sezon verileri çekiliyor...")
+            print(f"\n{self.i18n.t('fetching_seasons_for_all')}")
             
             total_seasons = 0
             for league_id, league_name in leagues.items():
                 try:
-                    print(f"  - {league_name} (ID: {league_id}) sezonları çekiliyor...")
+                    print(f"  - {self.i18n.t('fetching_seasons_for', league_name=league_name, league_id=league_id)}")
                     
                     # Tüm sezonları çek
                     all_seasons = self.season_fetcher.fetch_seasons_for_league(league_id)
                     total_seasons += len(all_seasons)
                     
-                    print(f"    ✓ {len(all_seasons)} sezon bulundu")
+                    print(f"    ✓ {self.i18n.t('seasons_found_count', count=len(all_seasons))}")
                 except Exception as e:
                     logger.error(f"{league_name} için sezon verisi çekilirken hata: {str(e)}")
                     print(f"    ✗ Hata: {str(e)}")
             
-            print(f"\n{self.colors['SUCCESS']}✅ Tüm ligler için toplam {total_seasons} sezon başarıyla çekildi.")
+            print(f"\n{self.colors['SUCCESS']}✅ {self.i18n.t('all_seasons_fetched_success', count=total_seasons)}")
             
         except Exception as e:
             logger.error(f"Tüm sezon verileri güncellenirken hata: {str(e)}")
@@ -160,14 +187,14 @@ class SeasonMenuHandler:
             leagues = self.config_manager.get_leagues()
             
             if not leagues:
-                print(f"\n{self.colors['WARNING']}❌ Hiç lig tanımlanmamış! Önce lig ekleyiniz.")
+                print(f"\n{self.colors['WARNING']}❌ {self.i18n.t('no_leagues_defined')}")
                 return
             
-            print("\nLig Listesi:")
+            print(f"\n{self.i18n.t('league_list')}")
             for i, (league_id, league_name) in enumerate(leagues.items(), 1):
                 print(f"{i}. {league_name} (ID: {league_id})")
             
-            league_choice = input("\nSezonlarını güncellemek istediğiniz ligin numarasını girin (0: İptal): ").strip()
+            league_choice = input(f"\n{self.i18n.t('select_league_to_update')} ").strip()
             
             if league_choice == "0":
                 return
@@ -175,21 +202,21 @@ class SeasonMenuHandler:
             try:
                 league_index = int(league_choice) - 1
                 if league_index < 0 or league_index >= len(leagues):
-                    print(f"\n{self.colors['WARNING']}Geçersiz lig numarası!")
+                    print(f"\n{self.colors['WARNING']}{self.i18n.t('invalid_league_num')}")
                     return
                     
                 # Seçilen ligi al
                 league_id = list(leagues.keys())[league_index]
                 league_name = leagues[league_id]
                 
-                print(f"\n{self.colors['SUBTITLE']}{league_name} (ID: {league_id}) için sezonlar çekiliyor...")
+                print(f"\n{self.colors['SUBTITLE']}{self.i18n.t('fetching_seasons_title', league_name=league_name, league_id=league_id)}")
                 
                 # Tüm sezonları çek
                 all_seasons = self.season_fetcher.fetch_seasons_for_league(league_id)
                 
-                print(f"\n{self.colors['SUCCESS']}✅ {len(all_seasons)} sezon başarıyla çekildi:")
+                print(f"\n{self.colors['SUCCESS']}✅ {self.i18n.t('seasons_fetched_success', count=len(all_seasons))}")
                 for season in all_seasons:
-                    print(f"  - {season.get('name', 'İsimsiz Sezon')} ({season.get('year', 'Yıl bilgisi yok')})")
+                    print(f"  - {season.get('name', self.i18n.t('unnamed_season'))} ({season.get('year', self.i18n.t('no_year_info'))})")
                 
             except ValueError:
                 print(f"\n{self.colors['WARNING']}Geçersiz numara formatı!")
@@ -204,25 +231,25 @@ class SeasonMenuHandler:
     def list_seasons(self) -> None:
         """Ligler ve sezonları listeler."""
         try:
-            print(f"\n{self.colors['SUBTITLE']}Lig ve Sezon Listesi:")
+            print(f"\n{self.colors['SUBTITLE']}{self.i18n.t('league_season_list_title')}")
             print("-" * 50)
             
             seasons_data = self.season_fetcher.league_seasons
             leagues = self.config_manager.get_leagues()
             
             # Lig bazında verileri görüntüle
-            for league_id, league_seasons in sorted(seasons_data.items(), key=lambda x: leagues.get(x[0], f"Bilinmeyen Lig {x[0]}")):
-                league_name = leagues.get(league_id, f"Bilinmeyen Lig {league_id}")
+            for league_id, league_seasons in sorted(seasons_data.items(), key=lambda x: leagues.get(x[0], f"{self.i18n.t('unknown_league')} {x[0]}")):
+                league_name = leagues.get(league_id, f"{self.i18n.t('unknown_league')} {league_id}")
                 print(f"\n{self.colors['INFO']}● {league_name} {self.colors['DIM']}(ID: {league_id}):")
                 
                 # Sezonları listeye
                 if not league_seasons:
-                    print(f"  {self.colors['WARNING']}Sezon verisi bulunamadı.")
+                    print(f"  {self.colors['WARNING']}{self.i18n.t('no_seasons_found_for_league')}")
                     continue
                     
                 for season in league_seasons:
                     season_id = season.get("id", "?")
-                    season_name = season.get("name", "Bilinmeyen Sezon")
+                    season_name = season.get("name", self.i18n.t("unknown_season"))
                     season_year = season.get("year", "?")
                     print(f"  {self.colors['SUCCESS']}○ {season_name} {self.colors['DIM']}(ID: {season_id}, Yıl: {season_year})")
             

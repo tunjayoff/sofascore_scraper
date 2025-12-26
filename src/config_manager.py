@@ -208,7 +208,9 @@ class ConfigManager:
             env_vars["PROXY_URL"] = os.getenv("PROXY_URL", "")
             env_vars["DATA_DIR"] = os.getenv("DATA_DIR", "data")
             env_vars["USE_COLOR"] = os.getenv("USE_COLOR", "true")
+            env_vars["USE_COLOR"] = os.getenv("USE_COLOR", "true")
             env_vars["DATE_FORMAT"] = os.getenv("DATE_FORMAT", "%Y-%m-%d %H:%M:%S")
+            env_vars["LANGUAGE"] = os.getenv("LANGUAGE", "tr")
             
             # .env dosyasını yeniden yaz
             with open(env_path, 'w', encoding='utf-8') as f:
@@ -359,6 +361,27 @@ class ConfigManager:
             str: Tarih formatı
         """
         return os.getenv("DATE_FORMAT", "%Y-%m-%d %H:%M:%S")
+
+    def get_language(self) -> str:
+        """
+        Uygulama dilini döndürür.
+        
+        Returns:
+            str: Dil kodu (tr, en, vs.)
+        """
+        return os.getenv("LANGUAGE", "tr")
+    
+    def set_language(self, lang_code: str) -> bool:
+        """
+        Uygulama dilini ayarlar.
+        
+        Args:
+            lang_code: Dil kodu (tr, en)
+            
+        Returns:
+            bool: Başarılı olursa True
+        """
+        return self.update_env_variable("LANGUAGE", lang_code)
     
     def reload_config(self) -> bool:
         """

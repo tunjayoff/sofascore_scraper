@@ -37,6 +37,12 @@ class RateLimitError(APIError):
             message += f", {wait_time} saniye bekleniyor"
         super().__init__(message, 429)
 
+class ResourceNotFoundError(APIError):
+    """İstenen kaynak bulunamadığında (404) oluşan hata."""
+    
+    def __init__(self, message: str = "Kaynak bulunamadı"):
+        super().__init__(message, 404)
+
 
 class DataNotFoundError(SofaScoreScraperError):
     """Veri bulunamadığında oluşan hatalar için özel sınıf."""

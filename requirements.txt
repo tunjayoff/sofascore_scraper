@@ -11,6 +11,9 @@ tqdm>=4.66.1             # İlerleme çubukları
 python-dotenv>=1.0.0     # .env dosyalarını yüklemek için
 
 # Opsiyonel Bağımlılıklar (İhtiyaç Halinde Kurulabilir)
-# pandas>=2.1.0          # Veri analizi ve CSV işlemleri için (gerekirse yorum satırını kaldırın)
+pandas>=2.1.0          # Veri analizi ve CSV işlemleri için (gerekirse yorum satırını kaldırın)
 # matplotlib>=3.8.0      # Grafik oluşturma için (gerekirse yorum satırını kaldırın)
 # tabulate>=0.9.0        # Terminal tablo formatları için (gerekirse yorum satırını kaldırın) 
+curl_cffi
+pandas
+rich>=0.7.0         # Cloudflare korumasını aşmak için istek kütüphanesi 

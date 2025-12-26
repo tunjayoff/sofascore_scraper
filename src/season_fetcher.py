@@ -16,12 +16,9 @@ import re
 from src.config_manager import ConfigManager
 from src.utils import make_api_request, make_api_request_async, get_request_headers, ensure_directory
 
-# Loglama yapılandırması
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger("SeasonFetcher")
+from src.logger import get_logger
+
+logger = get_logger("SeasonFetcher")
 
 class SeasonFetcher:
     """SofaScore API'sinden lig sezonlarını çeken ve yöneten sınıf."""
@@ -112,6 +109,8 @@ class SeasonFetcher:
     
     async def fetch_seasons_batch_async(self, league_ids, max_concurrent=10):
         """Birden çok lig için sezon verilerini paralel olarak çeker."""
+        from src.utils import create_session_async
+        
         results = {}
         
         # İlerleme çubuğu
@@ -122,11 +121,8 @@ class SeasonFetcher:
             use_tqdm = False
             print("İlerleme çubuğu için 'pip install tqdm' çalıştırabilirsiniz")
         
-        connector = aiohttp.TCPConnector(limit=max_concurrent)
-        timeout = aiohttp.ClientTimeout(total=30)
-        headers = get_request_headers()
-        
-        async with aiohttp.ClientSession(connector=connector, timeout=timeout, headers=headers) as session:
+        # curl_cffi AsyncSession kullanımı
+        async with create_session_async() as session:
             tasks = []
             for league_id in league_ids:
                 tasks.append(self._fetch_league_seasons_async(session, league_id))
