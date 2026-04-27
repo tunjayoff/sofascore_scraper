@@ -19,6 +19,7 @@ dotenv.load_dotenv()
 
 from src.SofaScoreUi import SimpleSofaScoreUI
 from src.logger import get_logger
+from src.i18n import get_i18n
 
 # Logger'ı al
 logger = get_logger("Main")
@@ -52,6 +53,12 @@ def parse_arguments() -> argparse.Namespace:
         action="store_true",
         help="Verileri CSV formatında dışa aktarır"
     )
+
+    parser.add_argument(
+        "--web",
+        action="store_true",
+        help="Web arayüzünü başlatır"
+    )
     
     return parser.parse_args()
 
@@ -81,6 +88,23 @@ def main() -> int:
             if args.csv_export:
                 logger.info("CSV dışa aktarma işlemi başlatılıyor")
                 ui.export_all_to_csv()
+        elif args.web:
+            # Web arayüzü modu
+            try:
+                import uvicorn
+                logger.info("Web arayüzü başlatılıyor: http://localhost:8000")
+                i18n = get_i18n()
+                print(i18n.t('web_server_starting'))
+                print(i18n.t('go_to_address'))
+                print(i18n.t('press_ctrl_c'))
+                
+                # Uvicorn ile uygulamayı başlat
+                uvicorn.run("src.web.app:app", host="0.0.0.0", port=8000, reload=True)
+            except ImportError:
+                i18n = get_i18n()
+                print(i18n.t('err_web_packages_not_installed'))
+                print(i18n.t('run_pip_install'))
+                return 1
         else:
             # Normal interaktif mod
             logger.info("İnteraktif mod başlatılıyor")
@@ -89,14 +113,16 @@ def main() -> int:
         return 0  # Başarılı çıkış
         
     except KeyboardInterrupt:
-        print("\n\nProgram kullanıcı tarafından sonlandırıldı.")
+        i18n = get_i18n()
+        print(i18n.t('prog_terminated_by_user'))
         return 0
         
     except Exception as e:
+        i18n = get_i18n()
         logger.exception(f"Beklenmeyen hata: {str(e)}")
-        print(f"\nBeklenmeyen bir hata oluştu: {str(e)}")
+        print(i18n.t('unexpected_error_occurred', error=str(e)))
         traceback.print_exc()
-        print("Lütfen detaylar için log dosyasını kontrol edin.")
+        print(i18n.t('check_log_for_details'))
         return 1  # Hata çıkışı
 
 

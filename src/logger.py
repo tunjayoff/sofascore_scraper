@@ -1,10 +1,11 @@
 import logging
+import os
 from rich.logging import RichHandler
 
 # Flag to track if logging has been configured
 _configured = False
 
-def setup_logger(level: int = logging.INFO):
+def setup_logger(level: int = None):
     """
     Configures the root logger with RichHandler.
     """
@@ -12,6 +13,20 @@ def setup_logger(level: int = logging.INFO):
     if _configured:
         return
         
+    if level is None:
+        log_level_str = os.getenv("LOG_LEVEL", "INFO").upper()
+        # Override if DEBUG env variable is truthy
+        if os.getenv("DEBUG", "").lower() in ("true", "1", "yes", "t", "y"):
+            log_level_str = "DEBUG"
+            
+        try:
+            level = getattr(logging, log_level_str)
+            if not isinstance(level, int):
+                raise ValueError
+        except (AttributeError, ValueError):
+            level = logging.INFO
+            print(f"Uyarı: Geçersiz LOG_LEVEL '{log_level_str}'. INFO olarak ayarlanıyor.")
+            
     logging.basicConfig(
         level=level,
         format="%(message)s",
