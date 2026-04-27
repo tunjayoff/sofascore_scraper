@@ -40,9 +40,16 @@ MAX_CONCURRENT: int = int(os.getenv("MAX_CONCURRENT", "25"))  # Paralel istek sa
 WAIT_TIME_MIN: float = float(os.getenv("WAIT_TIME_MIN", "0.2"))  # Minimum bekleme süresi
 WAIT_TIME_MAX: float = float(os.getenv("WAIT_TIME_MAX", "0.5"))  # Maksimum ek bekleme süresi
 
+from src.config_manager import ConfigManager
+
 # Filtreleme ayarları
 FETCH_ONLY_FINISHED: bool = os.getenv("FETCH_ONLY_FINISHED", "true").lower() == "true"
 SAVE_EMPTY_ROUNDS: bool = os.getenv("SAVE_EMPTY_ROUNDS", "false").lower() == "true"
+
+# Proxy ayarları
+_cm = ConfigManager()
+USE_PROXY: bool = _cm.get_use_proxy()
+PROXY_URL: str = _cm.get_proxy_url()
 
 # Tip tanımı
 JsonResponse = Dict[str, Any]
@@ -93,12 +100,18 @@ def make_api_request(
         try:
             logger.info(f"API İsteği ({attempt+1}/{max_retries}): {url}")
             
+            kwargs = {
+                "headers": headers,
+                "timeout": timeout,
+                "impersonate": "chrome"
+            }
+            if USE_PROXY and PROXY_URL:
+                kwargs["proxies"] = {"http": PROXY_URL, "https": PROXY_URL}
+
             # IMPERSONATE CHROME to bypass Cloudflare
             response = cffi_requests.get(
                 full_url, 
-                headers=headers, 
-                timeout=timeout,
-                impersonate="chrome"
+                **kwargs
             )
             
             # Rate limiting kontrolü
@@ -132,7 +145,10 @@ def make_api_request(
             return cast(JsonResponse, data)
             
         except Exception as e:
-            logger.error(f"İstek hatası: {str(e)}")
+            if "curl: (7)" in str(e) or "Failed to connect" in str(e):
+                logger.error(f"Proxy/Bağlantı hatası: {str(e)} - PROXY_URL: {PROXY_URL if USE_PROXY else 'Yok'}")
+            else:
+                logger.error(f"İstek hatası: {str(e)}")
             
             if attempt < max_retries - 1:
                 wait_time = 3 * (2 ** attempt)
@@ -168,8 +184,12 @@ async def make_api_request_async(
         try:
             logger.debug(f"Asenkron API İsteği ({attempt+1}/{max_retries}): {url}")
             
+            kwargs = {"timeout": 30}
+            if USE_PROXY and PROXY_URL:
+                kwargs["proxy"] = PROXY_URL
+                
             # The session is already configured with impersonate
-            response = await session.get(full_url, timeout=30)
+            response = await session.get(full_url, **kwargs)
                 
             if response.status_code == 429:
                 wait_time = min(60, 5 * (2 ** attempt))
@@ -214,7 +234,11 @@ async def make_api_request_async(
             raise
 
         except Exception as e:
-            logger.error(f"Asenkron hata: {str(e)}")
+            if "curl: (7)" in str(e) or "Failed to connect" in str(e):
+                logger.error(f"Proxy/Bağlantı hatası: {str(e)} - PROXY_URL: {PROXY_URL if USE_PROXY else 'Yok'}")
+            else:
+                logger.error(f"Asenkron hata: {str(e)}")
+            
             if attempt < max_retries - 1:
                 wait_time = 3 * (2 ** attempt)
                 await asyncio.sleep(wait_time)

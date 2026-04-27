@@ -27,11 +27,16 @@ def setup_logger(level: int = None):
             level = logging.INFO
             print(f"Uyarı: Geçersiz LOG_LEVEL '{log_level_str}'. INFO olarak ayarlanıyor.")
             
+    # USE_COLOR kontrolü
+    use_color = os.getenv("USE_COLOR", "true").lower() == "true"
+    if not use_color:
+        os.environ["NO_COLOR"] = "1"
+        
     logging.basicConfig(
         level=level,
         format="%(message)s",
         datefmt="[%X]",
-        handlers=[RichHandler(rich_tracebacks=True, markup=True)]
+        handlers=[RichHandler(rich_tracebacks=True, markup=use_color)]
     )
     _configured = True
 

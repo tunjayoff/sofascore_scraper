@@ -70,13 +70,19 @@ class SimpleSofaScoreUI:
         self._ensure_directory(data_dir)
         self._ensure_directory(os.path.join(data_dir, "seasons"))
         self._ensure_directory(os.path.join(data_dir, "matches"))
-        self._ensure_directory(os.path.join(data_dir, "match_data"))
+        self._ensure_directory(os.path.join(data_dir, "match_details"))
         self._ensure_directory(os.path.join(data_dir, "datasets"))
         
         # Ana sınıfları başlat (dependency injection)
         self.config_manager = config_manager or ConfigManager(config_path)
         self.data_dir = data_dir
         
+        # USE_COLOR kontrolü
+        global COLORS
+        if not self.config_manager.get_use_color():
+            COLORS = {k: "" for k in COLORS}
+            os.environ["NO_COLOR"] = "1"  # rich.console gibi kütüphaneler için
+
         self.season_fetcher = season_fetcher or SeasonFetcher(self.config_manager, data_dir)
         self.match_fetcher = match_fetcher or MatchFetcher(self.config_manager, self.season_fetcher, data_dir)
         self.match_data_fetcher = match_data_fetcher or MatchDataFetcher(self.config_manager, data_dir)
