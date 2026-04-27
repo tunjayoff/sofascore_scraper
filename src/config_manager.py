@@ -362,6 +362,70 @@ class ConfigManager:
         """
         return os.getenv("DATE_FORMAT", "%Y-%m-%d %H:%M:%S")
 
+    def get_max_concurrent(self) -> int:
+        """Maksimum paralel istek sayısını döndürür."""
+        try:
+            return int(os.getenv("MAX_CONCURRENT", "10"))
+        except ValueError:
+            logger.warning("MAX_CONCURRENT geçersiz, varsayılan 10 kullanılacak.")
+            return 10
+
+    def get_wait_time_min(self) -> float:
+        """İstekler arası minimum bekleme süresini döndürür."""
+        try:
+            return float(os.getenv("WAIT_TIME_MIN", "0.2"))
+        except ValueError:
+            logger.warning("WAIT_TIME_MIN geçersiz, varsayılan 0.2 kullanılacak.")
+            return 0.2
+
+    def get_wait_time_max(self) -> float:
+        """İstekler arası maksimum ek bekleme süresini döndürür."""
+        try:
+            return float(os.getenv("WAIT_TIME_MAX", "0.5"))
+        except ValueError:
+            logger.warning("WAIT_TIME_MAX geçersiz, varsayılan 0.5 kullanılacak.")
+            return 0.5
+
+    def get_request_timeout(self) -> int:
+        """İstek zaman aşımı değerini döndürür."""
+        try:
+            return int(os.getenv("REQUEST_TIMEOUT", "10"))
+        except ValueError:
+            logger.warning("REQUEST_TIMEOUT geçersiz, varsayılan 10 kullanılacak.")
+            return 10
+
+    def get_max_retries(self) -> int:
+        """Maksimum yeniden deneme sayısını döndürür."""
+        try:
+            return int(os.getenv("MAX_RETRIES", "3"))
+        except ValueError:
+            logger.warning("MAX_RETRIES geçersiz, varsayılan 3 kullanılacak.")
+            return 3
+
+    def get_rate_limit_threshold_consecutive(self) -> int:
+        """Arka arkaya rate-limit hatası eşiğini döndürür."""
+        try:
+            return int(os.getenv("RATE_LIMIT_THRESHOLD_CONSECUTIVE", "20"))
+        except ValueError:
+            logger.warning("RATE_LIMIT_THRESHOLD_CONSECUTIVE geçersiz, varsayılan 20 kullanılacak.")
+            return 20
+
+    def get_rate_limit_threshold_ratio(self) -> float:
+        """Rate-limit hata oranı eşiğini döndürür."""
+        try:
+            return float(os.getenv("RATE_LIMIT_THRESHOLD_RATIO", "0.9"))
+        except ValueError:
+            logger.warning("RATE_LIMIT_THRESHOLD_RATIO geçersiz, varsayılan 0.9 kullanılacak.")
+            return 0.9
+
+    def get_server_error_threshold_consecutive(self) -> int:
+        """Arka arkaya 5xx hataları için eşik döndürür."""
+        try:
+            return int(os.getenv("SERVER_ERROR_THRESHOLD_CONSECUTIVE", "50"))
+        except ValueError:
+            logger.warning("SERVER_ERROR_THRESHOLD_CONSECUTIVE geçersiz, varsayılan 50 kullanılacak.")
+            return 50
+
     def get_language(self) -> str:
         """
         Uygulama dilini döndürür.

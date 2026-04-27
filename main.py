@@ -59,6 +59,12 @@ def parse_arguments() -> argparse.Namespace:
         action="store_true",
         help="Web arayüzünü başlatır"
     )
+
+    parser.add_argument(
+        "--ignore-rate-limit",
+        action="store_true",
+        help="Rate-limit circuit breaker mekanizmasını devre dışı bırakır"
+    )
     
     return parser.parse_args()
 
@@ -73,6 +79,10 @@ def main() -> int:
     try:
         # Komut satırı argümanlarını ayrıştır
         args = parse_arguments()
+
+        if args.ignore_rate_limit:
+            os.environ["IGNORE_RATE_LIMIT"] = "true"
+            logger.warning("Rate-limit circuit breaker --ignore-rate-limit ile devre dışı bırakıldı.")
         
         # UI nesnesini oluştur
         ui = SimpleSofaScoreUI()
@@ -110,6 +120,9 @@ def main() -> int:
             logger.info("İnteraktif mod başlatılıyor")
             ui.run()
             
+        forced_exit_code = os.getenv("APP_EXIT_CODE")
+        if forced_exit_code and forced_exit_code.isdigit():
+            return int(forced_exit_code)
         return 0  # Başarılı çıkış
         
     except KeyboardInterrupt:

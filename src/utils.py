@@ -6,9 +6,9 @@ import os
 import time
 import random
 import asyncio
-import aiohttp
-import requests
-from typing import Dict, Any, Optional, Union, List, TypeVar, cast
+from email.utils import parsedate_to_datetime
+from datetime import datetime, timezone
+from typing import Dict, Any, Optional, Union, TypeVar, cast, Tuple
 from pathlib import Path
 import dotenv
 
@@ -24,21 +24,8 @@ dotenv.load_dotenv()
 # Logger'ı alın
 logger = get_logger("Utils")
 
-# API isteği için kullanılan User-Agent'lar
-USER_AGENTS: List[str] = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
-]
-
 # API ayarları için çevre değişkenleri
 API_BASE_URL: str = os.getenv("API_BASE_URL", "https://www.sofascore.com/api/v1")
-REQUEST_TIMEOUT: int = int(os.getenv("REQUEST_TIMEOUT", "10"))
-MAX_RETRIES: int = int(os.getenv("MAX_RETRIES", "3"))
-MAX_CONCURRENT: int = int(os.getenv("MAX_CONCURRENT", "25"))  # Paralel istek sayısı - arttırıldı
-WAIT_TIME_MIN: float = float(os.getenv("WAIT_TIME_MIN", "0.2"))  # Minimum bekleme süresi
-WAIT_TIME_MAX: float = float(os.getenv("WAIT_TIME_MAX", "0.5"))  # Maksimum ek bekleme süresi
 
 from src.config_manager import ConfigManager
 
@@ -48,8 +35,6 @@ SAVE_EMPTY_ROUNDS: bool = os.getenv("SAVE_EMPTY_ROUNDS", "false").lower() == "tr
 
 # Proxy ayarları
 _cm = ConfigManager()
-USE_PROXY: bool = _cm.get_use_proxy()
-PROXY_URL: str = _cm.get_proxy_url()
 
 # Tip tanımı
 JsonResponse = Dict[str, Any]
@@ -59,6 +44,15 @@ T = TypeVar('T')
 # curl-cffi ile istekler (Cloudflare bypass için)
 from curl_cffi import requests as cffi_requests
 from curl_cffi.requests import AsyncSession
+
+IMPERSONATE_PROFILES = [
+    "chrome",
+    "chrome110",
+    "chrome120",
+    "chrome124",
+    "safari17_0",
+    "edge101",
+]
 
 # ... imports ...
 
@@ -76,6 +70,40 @@ def get_request_headers() -> Dict[str, str]:
     }
 
 
+def _get_runtime_request_config() -> Dict[str, Union[int, float]]:
+    """Runtime'da güncel request ayarlarını döndürür."""
+    return {
+        "request_timeout": _cm.get_request_timeout(),
+        "max_retries": _cm.get_max_retries(),
+        "wait_time_min": _cm.get_wait_time_min(),
+        "wait_time_max": _cm.get_wait_time_max(),
+    }
+
+
+def _get_proxy_config() -> Tuple[bool, str]:
+    """Runtime'da güncel proxy ayarlarını döndürür."""
+    use_proxy = _cm.get_use_proxy()
+    proxy_url = _cm.get_proxy_url().strip()
+    return use_proxy, proxy_url
+
+
+def _parse_retry_after_seconds(retry_after: Optional[str], default_wait: int) -> int:
+    """Retry-After header değerini saniye cinsinden parse eder."""
+    if not retry_after:
+        return default_wait
+    try:
+        return max(1, int(retry_after))
+    except ValueError:
+        try:
+            dt = parsedate_to_datetime(retry_after)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            delta = int((dt - datetime.now(timezone.utc)).total_seconds())
+            return max(1, min(120, delta))
+        except (TypeError, ValueError):
+            return default_wait
+
+
 def make_api_request(
     url: str, 
     max_retries: Optional[int] = None,
@@ -84,9 +112,12 @@ def make_api_request(
     """
     Belirtilen URL'ye API isteği yapar (curl_cffi kullanarak).
     """
-    # Varsayılan değerleri çevre değişkenlerinden al
-    max_retries = max_retries if max_retries is not None else MAX_RETRIES
-    timeout = timeout if timeout is not None else REQUEST_TIMEOUT
+    runtime_config = _get_runtime_request_config()
+    max_retries = max_retries if max_retries is not None else int(runtime_config["max_retries"])
+    timeout = timeout if timeout is not None else int(runtime_config["request_timeout"])
+    wait_time_min = float(runtime_config["wait_time_min"])
+    wait_time_max = float(runtime_config["wait_time_max"])
+    use_proxy, proxy_url = _get_proxy_config()
     
     headers = get_request_headers()
     
@@ -100,13 +131,13 @@ def make_api_request(
         try:
             logger.info(f"API İsteği ({attempt+1}/{max_retries}): {url}")
             
-            kwargs = {
+            kwargs: Dict[str, Any] = {
                 "headers": headers,
                 "timeout": timeout,
-                "impersonate": "chrome"
+                "impersonate": random.choice(IMPERSONATE_PROFILES),
             }
-            if USE_PROXY and PROXY_URL:
-                kwargs["proxies"] = {"http": PROXY_URL, "https": PROXY_URL}
+            if use_proxy and proxy_url:
+                kwargs["proxies"] = {"http": proxy_url, "https": proxy_url}
 
             # IMPERSONATE CHROME to bypass Cloudflare
             response = cffi_requests.get(
@@ -115,9 +146,11 @@ def make_api_request(
             )
             
             # Rate limiting kontrolü
-            if response.status_code == 429:  # Too Many Requests
-                wait_time = min(60, 5 * (2 ** attempt))
-                logger.warning(f"Rate limit aşıldı. {wait_time} saniye bekleniyor...")
+            if response.status_code in (429, 503):
+                default_wait = min(60, 5 * (2 ** attempt))
+                retry_after = response.headers.get("Retry-After")
+                wait_time = _parse_retry_after_seconds(retry_after, default_wait)
+                logger.warning(f"Rate limit/Sunucu meşgul. {wait_time} saniye bekleniyor... (Retry-After: {retry_after})")
                 time.sleep(wait_time)
                 
                 if attempt == max_retries - 1:
@@ -125,7 +158,17 @@ def make_api_request(
                 continue
             
             if response.status_code == 403:
-                logger.warning(f"403 Forbidden - Cloudflare bloklaması olabilir. (Deneme {attempt+1})")
+                wait_time = min(120, 10 * (2 ** attempt))
+                cf_ray = response.headers.get("cf-ray", "yok")
+                cf_status = response.headers.get("cf-mitigated", "yok")
+                logger.warning(
+                    f"403 Forbidden (deneme {attempt+1}/{max_retries}). "
+                    f"Cloudflare koruması tetiklenmiş olabilir. {wait_time}s bekleniyor..."
+                )
+                logger.debug(f"cf-ray: {cf_ray}, cf-mitigated: {cf_status}")
+                time.sleep(wait_time)
+                if attempt < max_retries - 1:
+                    continue
             
             # HTTP hatalarını kontrol et
             if response.status_code >= 400:
@@ -138,7 +181,7 @@ def make_api_request(
                 raise DataParsingError(f"JSON ayrıştırma hatası: {str(e)}") from e
             
             # İnsan davranışını simüle etmek için kısa bekleme
-            wait_time = WAIT_TIME_MIN + random.uniform(0, WAIT_TIME_MAX)
+            wait_time = wait_time_min + random.uniform(0, wait_time_max)
             logger.info(f"Başarılı! Sonraki istek için {wait_time:.1f} saniye bekleniyor...")
             time.sleep(wait_time)
             
@@ -146,7 +189,7 @@ def make_api_request(
             
         except Exception as e:
             if "curl: (7)" in str(e) or "Failed to connect" in str(e):
-                logger.error(f"Proxy/Bağlantı hatası: {str(e)} - PROXY_URL: {PROXY_URL if USE_PROXY else 'Yok'}")
+                logger.error(f"Proxy/Bağlantı hatası: {str(e)} - PROXY_URL: {proxy_url if use_proxy else 'Yok'}")
             else:
                 logger.error(f"İstek hatası: {str(e)}")
             
@@ -170,7 +213,12 @@ async def make_api_request_async(
     Belirtilen URL'ye asenkron API isteği yapar (curl_cffi kullanarak).
     IMPORTANT: The session object MUST be a curl_cffi AsyncSession.
     """
-    max_retries = max_retries if max_retries is not None else MAX_RETRIES
+    runtime_config = _get_runtime_request_config()
+    max_retries = max_retries if max_retries is not None else int(runtime_config["max_retries"])
+    request_timeout = int(runtime_config["request_timeout"])
+    wait_time_min = float(runtime_config["wait_time_min"])
+    wait_time_max = float(runtime_config["wait_time_max"])
+    use_proxy, proxy_url = _get_proxy_config()
     
     if not url.startswith("http"):
         full_url = f"{API_BASE_URL}{url}"
@@ -184,20 +232,35 @@ async def make_api_request_async(
         try:
             logger.debug(f"Asenkron API İsteği ({attempt+1}/{max_retries}): {url}")
             
-            kwargs = {"timeout": 30}
-            if USE_PROXY and PROXY_URL:
-                kwargs["proxy"] = PROXY_URL
+            kwargs: Dict[str, Any] = {"timeout": request_timeout}
+            if use_proxy and proxy_url:
+                kwargs["proxy"] = proxy_url
                 
             # The session is already configured with impersonate
             response = await session.get(full_url, **kwargs)
                 
-            if response.status_code == 429:
-                wait_time = min(60, 5 * (2 ** attempt))
-                logger.warning(f"Rate limit aşıldı. {wait_time} saniye bekleniyor...")
+            if response.status_code in (429, 503):
+                default_wait = min(60, 5 * (2 ** attempt))
+                retry_after = response.headers.get("Retry-After")
+                wait_time = _parse_retry_after_seconds(retry_after, default_wait)
+                logger.warning(f"Rate limit/Sunucu meşgul. {wait_time} saniye bekleniyor... (Retry-After: {retry_after})")
                 await asyncio.sleep(wait_time)
                 if attempt == max_retries - 1:
                     raise RateLimitError(wait_time)
                 continue
+
+            if response.status_code == 403:
+                wait_time = min(120, 10 * (2 ** attempt))
+                cf_ray = response.headers.get("cf-ray", "yok")
+                cf_status = response.headers.get("cf-mitigated", "yok")
+                logger.warning(
+                    f"403 Forbidden (deneme {attempt+1}/{max_retries}). "
+                    f"Cloudflare koruması tetiklenmiş olabilir. {wait_time}s bekleniyor..."
+                )
+                logger.debug(f"cf-ray: {cf_ray}, cf-mitigated: {cf_status}")
+                await asyncio.sleep(wait_time)
+                if attempt < max_retries - 1:
+                    continue
             
             if response.status_code == 404:
                 # 404 hatalarını normal akışta yönetebilmek için özel exception fırlat
@@ -224,7 +287,7 @@ async def make_api_request_async(
                 logger.error(error_msg)
                 raise DataParsingError(error_msg) from e
             
-            wait_time = WAIT_TIME_MIN * (random.random() * 0.5)
+            wait_time = wait_time_min + random.uniform(0, wait_time_max)
             await asyncio.sleep(wait_time)
             
             return cast(JsonResponse, data)
@@ -235,7 +298,7 @@ async def make_api_request_async(
 
         except Exception as e:
             if "curl: (7)" in str(e) or "Failed to connect" in str(e):
-                logger.error(f"Proxy/Bağlantı hatası: {str(e)} - PROXY_URL: {PROXY_URL if USE_PROXY else 'Yok'}")
+                logger.error(f"Proxy/Bağlantı hatası: {str(e)} - PROXY_URL: {proxy_url if use_proxy else 'Yok'}")
             else:
                 logger.error(f"Asenkron hata: {str(e)}")
             
@@ -265,8 +328,11 @@ def create_session_async() -> AsyncSession:
     """
     Asenkron API istekleri için curl_cffi.requests.AsyncSession oluşturur.
     """
+    runtime_config = _get_runtime_request_config()
+    profile = random.choice(IMPERSONATE_PROFILES)
+    logger.debug(f"Async session oluşturuldu, impersonate profili: {profile}")
     return AsyncSession(
         headers=get_request_headers(),
-        timeout=REQUEST_TIMEOUT,
-        impersonate="chrome"  # Magic is here
+        timeout=int(runtime_config["request_timeout"]),
+        impersonate=profile,
     )

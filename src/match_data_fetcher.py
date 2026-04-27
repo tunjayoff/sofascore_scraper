@@ -1,3 +1,4 @@
+from src.i18n import get_i18n
 """
 SofaScore API'sinden detaylı maç verilerini çeken modül.
 """
@@ -150,91 +151,129 @@ class MatchDataFetcher:
         return key, None
 
     async def fetch_matches_batch_async(self, match_ids, max_concurrent=30, progress_bar=None):
-        """Birden çok maç için veri çeker (optimize edilmiş versiyon)."""
+        """Birden çok maç için veri çeker (circuit breaker destekli)."""
         logger.debug(f"Starting batch fetch for {len(match_ids)} matches")
-        
-        # Zaten işlenmiş maçları kontrol et
+        ignore_rate_limit = os.getenv("IGNORE_RATE_LIMIT", "false").lower() == "true"
+
         processed_ids = set()
         details_dir = os.path.join(self.data_dir, "match_details")
         if os.path.exists(details_dir):
-            processed_ids = {d for d in os.listdir(details_dir) 
-                            if os.path.isdir(os.path.join(details_dir, d))}
-        
-        # İşlenmemiş maçları filtrele
+            for root, dirs, files in os.walk(details_dir):
+                if "basic.json" in files:
+                    processed_ids.add(os.path.basename(root))
+
         match_ids_to_process = [id for id in match_ids if str(id) not in processed_ids]
-        
         if len(match_ids_to_process) < len(match_ids):
             already_processed = len(match_ids) - len(match_ids_to_process)
             logger.info(f"{already_processed} maç zaten işlenmiş, atlanıyor")
-            # Update progress for already processed matches
             if progress_bar:
                 progress_bar.update(already_processed)
-        
-        results = {}
-        
-        # Optimize edilmiş HTTP oturum ayarları
-        conn = aiohttp.TCPConnector(limit=max_concurrent, ttl_dns_cache=300)
-        timeout = aiohttp.ClientTimeout(total=60, connect=10, sock_connect=10, sock_read=30)
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "Accept": "*/*",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Referer": "https://www.sofascore.com/",
-            "Connection": "keep-alive"
-        }
-        
-        # Daha büyük batch'ler halinde işle
-        batch_size = 100  # Her seferde 100 maç
-        all_batches = [match_ids_to_process[i:i+batch_size] for i in range(0, len(match_ids_to_process), batch_size)]
-        
-        for batch_idx, batch in enumerate(all_batches):
-            logger.info(f"Processing batch {batch_idx+1}/{len(all_batches)} ({len(batch)} matches)")
-            
-            async with aiohttp.ClientSession(connector=conn, timeout=timeout, headers=headers) as session:
-                # Semaphore kullanarak eşzamanlı istek sayısını kontrol et
-                sem = asyncio.Semaphore(max_concurrent)
-                
-                async def fetch_with_retry(match_id):
+
+        results: Dict[str, Dict[str, Any]] = {}
+        status_counts: Counter = Counter()
+        recent_headers: List[Dict[str, str]] = []
+        consecutive_failures = 0
+        consecutive_server_errors = 0
+        total_failures = 0
+        total_attempts = 0
+        breaker_triggered = False
+
+        batch_size = 100
+        all_batches = [match_ids_to_process[i:i + batch_size] for i in range(0, len(match_ids_to_process), batch_size)]
+
+        from src.utils import create_session_async
+        async with create_session_async() as session:
+            sem = asyncio.Semaphore(max_concurrent)
+            for batch_idx, batch in enumerate(all_batches):
+                if breaker_triggered:
+                    break
+                logger.info(f"Processing batch {batch_idx+1}/{len(all_batches)} ({len(batch)} matches)")
+                batch_status_counts: Counter = Counter()
+                batch_success = 0
+                batch_failed = 0
+
+                async def fetch_one(match_id):
+                    nonlocal consecutive_failures, consecutive_server_errors, total_failures, total_attempts, breaker_triggered, batch_success, batch_failed
                     max_retries = 3
-                    retry_delay = 1.0
-                    
                     for attempt in range(max_retries):
                         try:
                             async with sem:
+                                total_attempts += 1
                                 result = await self._fetch_match_data_async(session, match_id)
-                                # İlerleme çubuğunu güncelle
-                                if progress_bar:
-                                    progress_bar.update(1)
-                                return result
+                                if result and "basic" in result:
+                                    consecutive_failures = 0
+                                    consecutive_server_errors = 0
+                                    batch_success += 1
+                                    if progress_bar:
+                                        progress_bar.update(1)
+                                    return result
+                                status_counts["other"] += 1
+                                batch_status_counts["other"] += 1
+                                break
                         except Exception as e:
-                            if attempt < max_retries - 1:
-                                # Üstel geri çekilme
-                                wait_time = retry_delay * (2 ** attempt) + random.uniform(0, 1)
-                                logger.warning(f"Maç ID {match_id} için hata, {wait_time:.2f}s sonra tekrar deneniyor: {str(e)}")
-                                await asyncio.sleep(wait_time)
+                            err = str(e)
+                            status_key = "other"
+                            if "403" in err:
+                                status_key = "403"
+                            elif "429" in err:
+                                status_key = "429"
+                            elif "404" in err:
+                                status_key = "404"
+                            elif "5" in err and "HTTP" in err:
+                                status_key = "5xx"
+                            elif "timeout" in err.lower():
+                                status_key = "timeout"
+
+                            status_counts[status_key] += 1
+                            batch_status_counts[status_key] += 1
+                            if status_key != "404":
+                                total_failures += 1
+                                consecutive_failures += 1
+                            if status_key == "5xx":
+                                consecutive_server_errors += 1
                             else:
-                                logger.error(f"Maç ID {match_id} için maksimum deneme sayısı aşıldı: {str(e)}")
-                                if progress_bar:
-                                    progress_bar.update(1)  # Başarısız olsa bile ilerlemeyi güncelle
-                                return None
-                
-                # Görevleri oluştur
-                tasks = [fetch_with_retry(match_id) for match_id in batch]
-                
-                # Tüm görevleri çalıştır
-                completed_tasks = await asyncio.gather(*tasks, return_exceptions=False)
-                
-                # Sonuçları işle
-                for match_data in completed_tasks:
+                                consecutive_server_errors = 0
+
+                            if status_key in ("403", "429", "5xx"):
+                                recent_headers.append({"match_id": str(match_id), "error": err})
+                                if len(recent_headers) > 20:
+                                    recent_headers.pop(0)
+
+                            if not ignore_rate_limit:
+                                threshold_cons = self.config_manager.get_rate_limit_threshold_consecutive()
+                                threshold_ratio = self.config_manager.get_rate_limit_threshold_ratio()
+                                threshold_5xx = self.config_manager.get_server_error_threshold_consecutive()
+                                ratio_triggered = total_attempts > 50 and (total_failures / total_attempts) >= threshold_ratio
+                                if consecutive_failures >= threshold_cons or consecutive_server_errors >= threshold_5xx or ratio_triggered:
+                                    breaker_triggered = True
+                                    return None
+
+                            if attempt < max_retries - 1:
+                                await asyncio.sleep(1.0 * (2 ** attempt) + random.uniform(0, 1))
+                                continue
+                            break
+
+                    batch_failed += 1
+                    if progress_bar:
+                        progress_bar.update(1)
+                    return None
+
+                completed = await asyncio.gather(*[fetch_one(match_id) for match_id in batch], return_exceptions=False)
+                for match_data in completed:
                     if match_data and "basic" in match_data:
                         match_id = match_data["basic"].get("id")
                         if match_id:
                             results[str(match_id)] = match_data
-            
-            # Batch'ler arasında API sunucusunun nefes alması için kısa bekleme
-            if batch_idx < len(all_batches) - 1:
-                await asyncio.sleep(1.0)
-        
+
+                status_text = ", ".join([f"{v}x {k}" for k, v in batch_status_counts.items()]) if batch_status_counts else "hata yok"
+                logger.info(f"Batch {batch_idx+1}/{len(all_batches)}: {batch_success} başarılı, {batch_failed} başarısız ({status_text})")
+
+                if batch_idx < len(all_batches) - 1 and not breaker_triggered:
+                    await asyncio.sleep(1.0)
+
+        self.last_status_counts = dict(status_counts)
+        self.rate_limit_breaker_triggered = breaker_triggered
+        self.last_rate_limit_headers = recent_headers
         return results
 
     # Main metodunda çağırmak için senkron wrapper
@@ -273,6 +312,9 @@ class MatchDataFetcher:
         self.match_details_dir = os.path.join(data_dir, "match_details")
         self.processed_dir = os.path.join(self.match_details_dir, "processed")
         self.base_url = "https://www.sofascore.com/api/v1"
+        self.rate_limit_breaker_triggered = False
+        self.last_rate_limit_headers: List[Dict[str, str]] = []
+        self.last_status_counts: Dict[str, int] = {}
         
         # Veri dizinlerinin var olduğundan emin ol
         ensure_directory(self.data_dir)
@@ -703,7 +745,7 @@ class MatchDataFetcher:
             use_tqdm = True
         except ImportError:
             use_tqdm = False
-            print("İlerleme çubuğu için 'pip install tqdm' çalıştırabilirsiniz")
+            print(get_i18n().t('install_tqdm_for_progress'))
         
         results = {}
         
@@ -711,8 +753,9 @@ class MatchDataFetcher:
         processed_ids = set()
         details_dir = os.path.join(self.data_dir, "match_details")
         if os.path.exists(details_dir):
-            processed_ids = {d for d in os.listdir(details_dir) 
-                            if os.path.isdir(os.path.join(details_dir, d))}
+            for root, dirs, files in os.walk(details_dir):
+                if "basic.json" in files:
+                    processed_ids.add(os.path.basename(root))
         
         # İşlenmemiş maçları filtrele
         match_ids_to_process = [id for id in match_ids if str(id) not in processed_ids]
@@ -1130,7 +1173,7 @@ class MatchDataFetcher:
                 print(f"{current_batch}: {len(batch)} maç işleniyor...")
                 
                 # fetch_matches_batch_parallel metodunu kullan (bu metot zaten paralel işlem yapıyor ve ilerleme çubuğu gösterir)
-                results = self.fetch_matches_batch_parallel(batch, max_concurrent=30)
+                results = self.fetch_matches_batch_parallel(batch, max_concurrent=self.config_manager.get_max_concurrent())
                 
                 if results:
                     total_success += len(results)
@@ -1357,16 +1400,25 @@ class MatchDataFetcher:
                 print(f"\nBatch {current_batch}/{total_batches}: {len(batch)} maç işleniyor ({start_index}-{end_index}/{total_attempts})...")
                 
                 # Paralel işleme ile maç detaylarını çek
-                results = self.fetch_matches_batch_parallel(batch, max_concurrent=30)
+                results = self.fetch_matches_batch_parallel(batch, max_concurrent=self.config_manager.get_max_concurrent())
                 
                 if results:
                     success_count = len(results)
                     total_success += success_count
                     print(f"✓ Batch {current_batch}: {success_count}/{len(batch)} başarılı")
-                    
-                    # Her batch arasında kısa bir bekleme
-                    if i + batch_size < len(match_ids_to_process):
-                        time.sleep(1.0)
+                if self.rate_limit_breaker_triggered:
+                    i18n = get_i18n()
+                    print(i18n.t("error_rate_limit_detected", count=len(results) if results else 0))
+                    if self.last_rate_limit_headers:
+                        logger.warning("Son başarısız isteklerden header/debug özeti:")
+                        for idx, header_info in enumerate(self.last_rate_limit_headers[-20:], start=1):
+                            logger.warning(f"{idx}. match_id={header_info.get('match_id')} error={header_info.get('error')}")
+                    os.environ["APP_EXIT_CODE"] = "2"
+                    break
+
+                # Her batch arasında kısa bir bekleme
+                if i + batch_size < len(match_ids_to_process):
+                    time.sleep(1.0)
             
             # Genel başarı oranı
             success_rate = (total_success / total_attempts) * 100 if total_attempts > 0 else 0

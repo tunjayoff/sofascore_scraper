@@ -1,3 +1,4 @@
+from src.i18n import get_i18n
 """
 SofaScore API'sinden maç verilerini çeken modül.
 """
@@ -18,7 +19,7 @@ from src.exceptions import ResourceNotFoundError
 
 from src.config_manager import ConfigManager
 from src.season_fetcher import SeasonFetcher
-from src.utils import make_api_request, make_api_request_async, get_request_headers, ensure_directory, MAX_CONCURRENT, FETCH_ONLY_FINISHED, SAVE_EMPTY_ROUNDS
+from src.utils import make_api_request, make_api_request_async, get_request_headers, ensure_directory, FETCH_ONLY_FINISHED, SAVE_EMPTY_ROUNDS
 from src.logger import get_logger
 
 logger = get_logger("MatchFetcher")
@@ -44,6 +45,18 @@ class MatchFetcher:
         # Veri dizinlerinin var olduğundan emin ol
         ensure_directory(self.data_dir)
         ensure_directory(self.matches_dir)
+
+    def _format_timestamp_for_terminal(self, timestamp: int, default_format: str = "%Y-%m-%d %H:%M:%S") -> str:
+        """Terminal çıktısı için timestamp'i yapılandırılmış formata çevirir."""
+        if not timestamp:
+            return ""
+        dt = datetime.datetime.fromtimestamp(timestamp)
+        date_format = self.config_manager.get_date_format()
+        try:
+            return dt.strftime(date_format)
+        except ValueError:
+            logger.warning(f"Geçersiz DATE_FORMAT '{date_format}'. Varsayılan format kullanılacak.")
+            return dt.strftime(default_format)
     
     def _filter_finished_matches(self, data: Dict[str, Any]) -> Tuple[Dict[str, Any], int, int]:
         """
@@ -176,8 +189,7 @@ class MatchFetcher:
         Returns:
             Tüm turların maç verilerini içeren liste
         """
-        from src.utils import MAX_CONCURRENT, create_session_async
-        from src.utils import MAX_CONCURRENT, create_session_async
+        from src.utils import create_session_async
 
         league_name = self.config_manager.get_leagues().get(league_id, f"Bilinmeyen Lig {league_id}")
         season_name = self.season_fetcher.get_season_name(league_id, season_id)
@@ -192,7 +204,7 @@ class MatchFetcher:
         # curl_cffi session oluştur
         async with create_session_async() as session:
             # Eşzamanlı istek sayısını çevre değişkeninden al
-            semaphore_limit = MAX_CONCURRENT  # Paralel istek sayısı
+            semaphore_limit = self.config_manager.get_max_concurrent()
             logger.info(f"{league_name}: {season_name} için eşzamanlı istek limiti: {semaphore_limit}")
             
             # Her async task için bir liste oluştur
@@ -356,7 +368,7 @@ class MatchFetcher:
         ensure_directory(output_dir)
         
         # max_round parametresini artık doğrudan burada kullanıyoruz
-        logger.info(f"Sezon için {max_round} haftaya kadar veri çekiliyor...")
+        logger.info(get_i18n().t('fetching_data_up_to_max_rounds', max_round=max_round))
         
         return asyncio.run(self.fetch_all_rounds_async(league_id, season_id, output_dir))
     
@@ -476,7 +488,7 @@ class MatchFetcher:
                         "status": event.get("status", {}).get("description"),
                         "status_type": event.get("status", {}).get("type"),  # status type'ı da ekledik
                         "start_timestamp": event.get("startTimestamp"),
-                        "start_time": datetime.datetime.fromtimestamp(event.get("startTimestamp", 0)).strftime('%Y-%m-%d %H:%M:%S') if event.get("startTimestamp") else None,
+                        "start_time": datetime.datetime.fromtimestamp(event.get("startTimestamp", 0)).isoformat() if event.get("startTimestamp") else None,
                         "slug": event.get("slug")
                     }
                     matches.append(match_data)
@@ -552,7 +564,7 @@ class MatchFetcher:
                             "away_team": self._get_nested_value(event, ["awayTeam", "name"], ""),
                             "home_score": self._get_nested_value(event, ["homeScore", "current"], 0),
                             "away_score": self._get_nested_value(event, ["awayScore", "current"], 0),
-                            "match_date": datetime.datetime.fromtimestamp(event.get("startTimestamp", 0)).strftime("%Y-%m-%d %H:%M"),
+                            "match_date": datetime.datetime.fromtimestamp(event.get("startTimestamp", 0)).isoformat() if event.get("startTimestamp") else "",
                             "status": self._get_nested_value(event, ["status", "description"], ""),
                             "tournament": self._get_nested_value(event, ["tournament", "name"], ""),
                             "season": self._get_nested_value(event, ["season", "name"], "")
@@ -643,7 +655,7 @@ class MatchFetcher:
                                 "away_team": self._get_nested_value(event, ["awayTeam", "name"], ""),
                                 "home_score": self._get_nested_value(event, ["homeScore", "current"], 0),
                                 "away_score": self._get_nested_value(event, ["awayScore", "current"], 0),
-                                "match_date": datetime.datetime.fromtimestamp(event.get("startTimestamp", 0)).strftime("%Y-%m-%d %H:%M"),
+                                "match_date": datetime.datetime.fromtimestamp(event.get("startTimestamp", 0)).isoformat() if event.get("startTimestamp") else "",
                                 "status": self._get_nested_value(event, ["status", "description"], "")
                             }
                             csv_data.append(match_data)
@@ -691,7 +703,7 @@ class MatchFetcher:
             league_name = self.config_manager.get_league_by_id(league_id) or f"Bilinmeyen Lig {league_id}"
             season_name = self.season_fetcher.get_season_name(league_id, season_id)
             
-            logger.info(f"{league_name} - {season_name} için tüm maçlar çekiliyor...")
+            logger.info(get_i18n().t('fetching_all_matches_for_league_season', league_name=league_name, season_name=season_name))
             
             # Tüm haftaları asenkron çek
             results = self.fetch_all_rounds_for_season(league_id, season_id, max_round)
@@ -890,7 +902,7 @@ class MatchFetcher:
                     logger.error(f"Lig ID {league_id} için güncel sezon ID bulunamadı!")
                     return False
                 
-            logger.info(f"Sezon {season_id} için maçlar çekiliyor (Lig ID: {league_id})...")
+            logger.info(get_i18n().t('fetching_matches_for_season', season_id=season_id, league_id=league_id))
             
             # Önce yerel dosyalara bakalım
             league_name = self.config_manager.get_league_by_id(league_id) or f"Unknown_League_{league_id}"
@@ -935,7 +947,7 @@ class MatchFetcher:
                         return True
             
             # Yerel dosya bulunamadı veya özet dosyası yoktu, maçları çekmeyi dene
-            logger.info(f"Yerel dosya bulunamadı, maçları çekmeyi deniyorum...")
+            logger.info(get_i18n().t('local_file_not_found_trying_fetch'))
                 
             # Maçları çek
             success = self.fetch_all_matches_for_season(league_id, season_id)
