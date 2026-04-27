@@ -203,6 +203,13 @@ Your choice (0-6):
 3. **Generate CSV Dataset**: Convert match data to CSV format
 0. **Back to Main Menu**: Return to the main menu
 
+### Statistics
+
+1. **System Statistics**: Shows global totals such as configured leagues, collected seasons/matches/match details and disk usage by data folders.
+2. **League Statistics**: Iterates all configured leagues and prints per-league counts (season/match/detail) plus storage usage so you can compare data coverage.
+3. **Generate Report**: Creates JSON report files under the reports directory (system, league-based, or detailed) for offline inspection and historical tracking.
+0. **Back to Main Menu**: Return to the main menu
+
 ## ⚙️ Configuration
 
 SofaScore Scraper uses two main configuration methods: environment variables and league configuration.
@@ -218,9 +225,9 @@ Example `.env` file:
 API_BASE_URL=https://www.sofascore.com/api/v1
 REQUEST_TIMEOUT=20
 MAX_RETRIES=3
-MAX_CONCURRENT=25
-WAIT_TIME_MIN=0.4
-WAIT_TIME_MAX=0.8
+MAX_CONCURRENT=10
+WAIT_TIME_MIN=0.2
+WAIT_TIME_MAX=0.5
 USE_PROXY=false
 PROXY_URL=
 
