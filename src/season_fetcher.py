@@ -1,3 +1,4 @@
+from src.i18n import get_i18n
 """
 SofaScore API'sinden lig sezonlarını çeken modül.
 """
@@ -119,7 +120,7 @@ class SeasonFetcher:
             use_tqdm = True
         except ImportError:
             use_tqdm = False
-            print("İlerleme çubuğu için 'pip install tqdm' çalıştırabilirsiniz")
+            print(get_i18n().t('install_tqdm_for_progress'))
         
         # curl_cffi AsyncSession kullanımı
         async with create_session_async() as session:

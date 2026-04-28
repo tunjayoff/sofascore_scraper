@@ -461,6 +461,7 @@ class MatchDataMenuHandler:
         self.config_manager = config_manager
         self.match_data_fetcher = match_data_fetcher
         self.colors = colors
+        self.i18n = get_i18n()
     
     def fetch_match_details(self) -> None:
         """Maç detaylarını çeker."""

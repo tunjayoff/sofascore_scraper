@@ -219,7 +219,7 @@ class SeasonMenuHandler:
                     print(f"  - {season.get('name', self.i18n.t('unnamed_season'))} ({season.get('year', self.i18n.t('no_year_info'))})")
                 
             except ValueError:
-                print(f"\n{self.colors['WARNING']}Geçersiz numara formatı!")
+                print(f"\n{self.colors['WARNING']}{self.i18n.t('invalid_number_format')}")
             except Exception as e:
                 logger.error(f"Lig sezonları güncellenirken hata: {str(e)}")
                 print(f"\n{self.colors['WARNING']}❌ Hata: {str(e)}")
@@ -251,7 +251,7 @@ class SeasonMenuHandler:
                     season_id = season.get("id", "?")
                     season_name = season.get("name", self.i18n.t("unknown_season"))
                     season_year = season.get("year", "?")
-                    print(f"  {self.colors['SUCCESS']}○ {season_name} {self.colors['DIM']}(ID: {season_id}, Yıl: {season_year})")
+                    print(f"  {self.colors['SUCCESS']}○ {season_name} {self.colors['DIM']}(ID: {season_id}{self.i18n.t('year')} {season_year})")
             
         except Exception as e:
             logger.error(f"Sezonları listelerken hata: {str(e)}")

@@ -315,7 +315,7 @@ class StatsMenuHandler:
             elif choice == "3":
                 self._generate_detailed_report()
             else:
-                print(f"\n{COLORS['WARNING']}❌ Geçersiz seçenek!")
+                print(f"\n{COLORS['WARNING']}{self.i18n.t('error_invalid_option')}")
                 
         except Exception as e:
             logger.error(f"Rapor oluşturulurken hata: {str(e)}")
@@ -445,7 +445,7 @@ class StatsMenuHandler:
             leagues = self.config_manager.get_leagues()
             
             if not leagues:
-                print(f"\n{COLORS['WARNING']}Yapılandırılmış lig bulunamadı.")
+                print(f"\n{COLORS['WARNING']}{self.i18n.t('warning_no_configured_league')}")
                 return
             
             # Rapor verilerini topla

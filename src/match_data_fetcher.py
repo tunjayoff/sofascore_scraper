@@ -82,70 +82,69 @@ class MatchDataFetcher:
         try:
             # Temel veriyi çek
             basic_url = f"{self.base_url}/event/{match_id}"
-            async with session.get(basic_url) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    basic_data = data.get("event")
-                    
-                    if not basic_data:
-                        return None
-                    
-                    # Maçın durumunu kontrol et
-                    status = basic_data.get("status", {})
-                    status_desc = status.get("description", "")
-                    status_type = status.get("type", "")
-                    
-                    # Sadece bitmiş maçları işle
-                    if status_desc != "Ended" or status_type != "finished":
-                        logger.debug(f"Maç ID {match_id} henüz bitmemiş (Durum: {status_desc}/{status_type}), atlanıyor.")
-                        return None
-                    
-                    # Diğer verileri toplamak için görevleri hazırla, başarısız olanlara rağmen devam et
-                    match_data = {"basic": basic_data}
-                    
-                    # Tüm endpoint'lere eşzamanlı istekler gönder
-                    tasks = [
-                        self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/statistics", "statistics"),
-                        self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/team-streaks", "team_streaks"),
-                        self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/pregame-form", "pregame_form"),
-                        self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/h2h", "h2h"),
-                        self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/lineups", "lineups")
-                    ]
-                    
-                    # Tüm görevleri topluca çalıştır, hata veren görevleri atla
-                    results = await asyncio.gather(*tasks, return_exceptions=True)
-                    
-                    # Sonuçları işle
-                    for result in results:
-                        if isinstance(result, Exception):
-                            # Hata durumunda loglayıp devam et
-                            logger.debug(f"Maç ID {match_id} için endpoint isteğinde hata: {str(result)}")
-                            continue
-                        
-                        if result and isinstance(result, tuple) and len(result) == 2:
-                            key, data = result
-                            match_data[key] = data
-                    
-                    # Verileri kaydet (veri toplama ile dosya yazma işlemlerini ayır)
-                    self._save_match_data(match_id, match_data)
-                    return match_data
-                elif response.status == 429:  # Rate limit
-                    logger.warning(f"Maç ID {match_id} için rate limit aşıldı. Status: {response.status}")
-                    # Sunucuya biraz nefes aldır
-                    await asyncio.sleep(2.0 + random.uniform(0, 1))
-                    raise Exception("Rate limit exceeded")
-                else:
-                    logger.debug(f"Maç ID {match_id} için başarısız API yanıtı. Status: {response.status}")
+            response = await session.get(basic_url)
+            if response.status_code == 200:
+                data = response.json()
+                basic_data = data.get("event")
+                
+                if not basic_data:
                     return None
+                
+                # Maçın durumunu kontrol et
+                status = basic_data.get("status", {})
+                status_desc = status.get("description", "")
+                status_type = status.get("type", "")
+                
+                # Sadece bitmiş maçları işle
+                if status_desc != "Ended" or status_type != "finished":
+                    logger.debug(f"Maç ID {match_id} henüz bitmemiş (Durum: {status_desc}/{status_type}), atlanıyor.")
+                    return None
+                
+                # Diğer verileri toplamak için görevleri hazırla, başarısız olanlara rağmen devam et
+                match_data = {"basic": basic_data}
+                
+                # Tüm endpoint'lere eşzamanlı istekler gönder
+                tasks = [
+                    self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/statistics", "statistics"),
+                    self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/team-streaks", "team_streaks"),
+                    self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/pregame-form", "pregame_form"),
+                    self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/h2h", "h2h"),
+                    self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/lineups", "lineups")
+                ]
+                
+                # Tüm görevleri topluca çalıştır, hata veren görevleri atla
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                
+                # Sonuçları işle
+                for result in results:
+                    if isinstance(result, Exception):
+                        # Hata durumunda loglayıp devam et
+                        logger.debug(f"Maç ID {match_id} için endpoint isteğinde hata: {str(result)}")
+                        continue
+                    
+                    if result and isinstance(result, tuple) and len(result) == 2:
+                        key, data = result
+                        match_data[key] = data
+                
+                # Verileri kaydet (veri toplama ile dosya yazma işlemlerini ayır)
+                self._save_match_data(match_id, match_data)
+                return match_data
+            if response.status_code == 429:  # Rate limit
+                logger.warning(f"Maç ID {match_id} için rate limit aşıldı. Status: {response.status_code}")
+                # Sunucuya biraz nefes aldır
+                await asyncio.sleep(2.0 + random.uniform(0, 1))
+                raise Exception("Rate limit exceeded")
+            logger.debug(f"Maç ID {match_id} için başarısız API yanıtı. Status: {response.status_code}")
+            return None
         except Exception as e:
             logger.error(f"Maç ID {match_id} için asenkron veri çekilirken hata: {str(e)}")
             raise  # Yeniden deneme mekanizmasının çalışması için hatayı yeniden fırlat
 
     async def _fetch_endpoint_async(self, session, url, key):
         try:
-            async with session.get(url) as response:
-                if response.status == 200:
-                    return key, await response.json()
+            response = await session.get(url)
+            if response.status_code == 200:
+                return key, response.json()
         except Exception as e:
             logger.debug(f"{url} için asenkron istek hatası: {str(e)}")
         return key, None
