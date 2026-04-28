@@ -72,7 +72,6 @@ async def view_settings(request: Request):
     """Render the Settings page."""
     i18n.set_language(config_manager.get_language())
     
-    # Prepare current settings
     current_settings = {
         "api_base_url": config_manager.get_api_base_url(),
         "use_proxy": config_manager.get_use_proxy(),
@@ -80,7 +79,19 @@ async def view_settings(request: Request):
         "data_dir": config_manager.get_data_dir(),
         "date_format": config_manager.get_date_format(),
         "use_color": config_manager.get_use_color(),
-        "language": config_manager.get_language()
+        "language": config_manager.get_language(),
+        "max_concurrent": config_manager.get_max_concurrent(),
+        "wait_time_min": config_manager.get_wait_time_min(),
+        "wait_time_max": config_manager.get_wait_time_max(),
+        "request_timeout": config_manager.get_request_timeout(),
+        "max_retries": config_manager.get_max_retries(),
+        "rate_limit_threshold_consecutive": config_manager.get_rate_limit_threshold_consecutive(),
+        "rate_limit_threshold_ratio": config_manager.get_rate_limit_threshold_ratio(),
+        "server_error_threshold_consecutive": config_manager.get_server_error_threshold_consecutive(),
+        "fetch_only_finished": os.getenv("FETCH_ONLY_FINISHED", "true").lower() == "true",
+        "save_empty_rounds": os.getenv("SAVE_EMPTY_ROUNDS", "false").lower() == "true",
+        "log_level": os.getenv("LOG_LEVEL", "INFO"),
+        "debug": os.getenv("DEBUG", "false").lower() == "true",
     }
     
     return templates.TemplateResponse(

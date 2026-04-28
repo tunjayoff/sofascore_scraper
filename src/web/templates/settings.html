@@ -10,18 +10,56 @@
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-8" x-data="{
+<div x-data="{
+    activeTab: window.location.hash?.slice(1) || 'general',
     settings: {
         language: '{{ settings.language }}',
         api_base_url: '{{ settings.api_base_url }}',
         use_proxy: {{ 'true' if settings.use_proxy else 'false' }},
         proxy_url: '{{ settings.proxy_url }}',
         data_dir: '{{ settings.data_dir }}',
-        use_color: {{ 'true' if settings.use_color else 'false' }}
+        use_color: {{ 'true' if settings.use_color else 'false' }},
+        date_format: '{{ settings.date_format }}',
+        max_concurrent: {{ settings.max_concurrent }},
+        wait_time_min: {{ settings.wait_time_min }},
+        wait_time_max: {{ settings.wait_time_max }},
+        request_timeout: {{ settings.request_timeout }},
+        max_retries: {{ settings.max_retries }},
+        rate_limit_threshold_consecutive: {{ settings.rate_limit_threshold_consecutive }},
+        rate_limit_threshold_ratio: {{ settings.rate_limit_threshold_ratio }},
+        server_error_threshold_consecutive: {{ settings.server_error_threshold_consecutive }},
+        fetch_only_finished: {{ 'true' if settings.fetch_only_finished else 'false' }},
+        save_empty_rounds: {{ 'true' if settings.save_empty_rounds else 'false' }},
+        log_level: '{{ settings.log_level }}',
+        debug: {{ 'true' if settings.debug else 'false' }}
     },
     saving: false,
+    saveMessage: null,
+    saveError: null,
+    setTab(tab) {
+        this.activeTab = tab;
+        window.location.hash = tab;
+    },
+    formatPreview() {
+        try {
+            const now = new Date();
+            let fmt = this.settings.date_format;
+            const map = {
+                '%Y': now.getFullYear(),
+                '%m': String(now.getMonth()+1).padStart(2,'0'),
+                '%d': String(now.getDate()).padStart(2,'0'),
+                '%H': String(now.getHours()).padStart(2,'0'),
+                '%M': String(now.getMinutes()).padStart(2,'0'),
+                '%S': String(now.getSeconds()).padStart(2,'0')
+            };
+            for (const [k,v] of Object.entries(map)) fmt = fmt.replace(k, v);
+            return fmt;
+        } catch(e) { return '?'; }
+    },
     async saveSettings() {
         this.saving = true;
+        this.saveMessage = null;
+        this.saveError = null;
         try {
             const res = await fetch('/api/settings', {
                 method: 'POST',
@@ -30,107 +68,242 @@
             });
             const data = await res.json();
             if (res.ok) {
-                alert('{{ i18n.t('api_config_updated') }}\\n' + '{{ i18n.t('restart_required') }}');
-                location.reload();
+                this.saveMessage = '{{ i18n.t('settings_applied_runtime') }}';
+                setTimeout(() => this.saveMessage = null, 3000);
             } else {
-                alert('Error: ' + data.detail);
+                this.saveError = data.detail || 'Error';
             }
         } catch(e) {
-            alert('Error saving settings: ' + e);
+            this.saveError = e.toString();
         } finally {
             this.saving = false;
         }
     }
 }">
 
-    <!-- General Settings -->
-    <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl space-y-6">
-        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-300 dark:border-zinc-700 pb-2">
-            {{ i18n.t('language_selection_title') }}
-        </h2>
+    <!-- Tabs -->
+    <div class="flex gap-1 mb-8 overflow-x-auto pb-2 hide-scrollbar border-b border-zinc-200 dark:border-zinc-800">
+        <template x-for="tab in [
+            {id: 'general', label: '{{ i18n.t('settings_tab_general') }}'},
+            {id: 'performance', label: '{{ i18n.t('settings_tab_performance') }}'},
+            {id: 'rate_limit', label: '{{ i18n.t('settings_tab_rate_limit') }}'},
+            {id: 'data_filters', label: '{{ i18n.t('settings_tab_data_filters') }}'},
+            {id: 'logging', label: '{{ i18n.t('settings_tab_logging') }}'},
+            {id: 'appearance', label: '{{ i18n.t('settings_tab_appearance') }}'}
+        ]" :key="tab.id">
+            <button @click="setTab(tab.id)"
+                class="px-5 py-2.5 text-sm font-medium rounded-t-xl whitespace-nowrap transition-all -mb-px border-b-2"
+                :class="activeTab === tab.id ? 'text-indigo-600 dark:text-indigo-400 border-indigo-500 bg-white dark:bg-zinc-800/50' : 'text-zinc-500 dark:text-zinc-400 border-transparent hover:text-zinc-700 dark:hover:text-zinc-300'"
+                x-text="tab.label">
+            </button>
+        </template>
+    </div>
 
+    <!-- Save notification -->
+    <div x-show="saveMessage" x-transition class="mb-6 p-4 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
+        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        <span x-text="saveMessage"></span>
+    </div>
+    <div x-show="saveError" x-transition class="mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl text-red-600 dark:text-red-400 text-sm">
+        <span x-text="saveError"></span>
+    </div>
+
+    <!-- General Tab -->
+    <div x-show="activeTab === 'general'" x-transition class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl space-y-6">
+        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-700 pb-2">{{ i18n.t('language_selection_title') }}</h2>
         <div>
             <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('current_language') }}</label>
             <select x-model="settings.language"
-                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 shadow-sm text-zinc-900 dark:text-white px-4 py-2 rounded-xl focus:outline-none focus:border-indigo-500">
-                <option value="tr">Türkçe</option>
+                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                <option value="tr">Turkce</option>
                 <option value="en">English</option>
             </select>
         </div>
 
-        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-300 dark:border-zinc-700 pb-2 pt-4">
-            {{ i18n.t('display_settings_title') }}
-        </h2>
-
-        <div class="flex items-center justify-between">
-            <span class="text-zinc-700 dark:text-zinc-300">{{ i18n.t('use_color') }}</span>
-            <button class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                :class="settings.use_color ? 'bg-indigo-600' : 'bg-zinc-200 dark:bg-zinc-700'"
-                @click="settings.use_color = !settings.use_color">
-                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-                    :class="settings.use_color ? 'translate-x-6' : 'translate-x-1'">
-                </span>
-            </button>
-        </div>
-    </div>
-
-    <!-- API & Data Settings -->
-    <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl space-y-6">
-        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-300 dark:border-zinc-700 pb-2">
-            {{ i18n.t('api_config_title') }}
-        </h2>
-
+        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-700 pb-2 pt-4">{{ i18n.t('api_config_title') }}</h2>
         <div>
             <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('base_url') }}</label>
             <input type="text" x-model="settings.api_base_url"
-                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 shadow-sm text-zinc-900 dark:text-white px-4 py-2 rounded-xl focus:outline-none focus:border-indigo-500">
+                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
         </div>
 
-        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-300 dark:border-zinc-700 pb-2 pt-4">
-            {{ i18n.t('proxy_settings') }}
-        </h2>
-
+        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-700 pb-2 pt-4">{{ i18n.t('proxy_settings') }}</h2>
         <div class="flex items-center justify-between">
             <span class="text-zinc-700 dark:text-zinc-300">{{ i18n.t('use_proxy') }}</span>
             <button class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
                 :class="settings.use_proxy ? 'bg-indigo-600' : 'bg-zinc-200 dark:bg-zinc-700'"
                 @click="settings.use_proxy = !settings.use_proxy">
                 <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-                    :class="settings.use_proxy ? 'translate-x-6' : 'translate-x-1'">
-                </span>
+                    :class="settings.use_proxy ? 'translate-x-6' : 'translate-x-1'"></span>
             </button>
         </div>
-
         <div x-show="settings.use_proxy" x-transition>
             <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('proxy_url') }}</label>
             <input type="text" x-model="settings.proxy_url" placeholder="http://user:pass@host:port"
-                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 shadow-sm text-zinc-900 dark:text-white px-4 py-2 rounded-xl focus:outline-none focus:border-indigo-500">
+                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
         </div>
 
-        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-300 dark:border-zinc-700 pb-2 pt-4">
-            {{ i18n.t('change_data_dir') }}
-        </h2>
-
+        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-700 pb-2 pt-4">{{ i18n.t('change_data_dir') }}</h2>
         <div>
             <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('current_data_dir') }}</label>
             <input type="text" x-model="settings.data_dir"
-                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 shadow-sm text-zinc-900 dark:text-white px-4 py-2 rounded-xl focus:outline-none focus:border-indigo-500">
+                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
         </div>
     </div>
 
-    <!-- Save Button Area -->
-    <div class="lg:col-span-2 flex justify-end">
+    <!-- Performance Tab -->
+    <div x-show="activeTab === 'performance'" x-transition class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl space-y-6">
+        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-700 pb-2">{{ i18n.t('performance_settings') }}</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('settings_max_concurrent') }}</label>
+                <input type="number" x-model.number="settings.max_concurrent" min="1" max="50"
+                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                <p class="text-xs text-zinc-400 mt-1">1 - 50</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('settings_request_timeout') }}</label>
+                <input type="number" x-model.number="settings.request_timeout" min="5" max="120"
+                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                <p class="text-xs text-zinc-400 mt-1">5 - 120</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('settings_wait_time_min') }}</label>
+                <input type="number" x-model.number="settings.wait_time_min" min="0" max="10" step="0.1"
+                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                <p class="text-xs text-zinc-400 mt-1">0.0 - 10.0</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('settings_wait_time_max') }}</label>
+                <input type="number" x-model.number="settings.wait_time_max" min="0" max="10" step="0.1"
+                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                <p class="text-xs text-zinc-400 mt-1">0.0 - 10.0</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('settings_max_retries') }}</label>
+                <input type="number" x-model.number="settings.max_retries" min="1" max="10"
+                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                <p class="text-xs text-zinc-400 mt-1">1 - 10</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rate Limit Tab -->
+    <div x-show="activeTab === 'rate_limit'" x-transition class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl space-y-6">
+        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-700 pb-2">{{ i18n.t('settings_tab_rate_limit') }}</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('settings_rate_limit_consecutive') }}</label>
+                <input type="number" x-model.number="settings.rate_limit_threshold_consecutive" min="5" max="100"
+                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                <p class="text-xs text-zinc-400 mt-1">5 - 100</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('settings_rate_limit_ratio') }}</label>
+                <input type="number" x-model.number="settings.rate_limit_threshold_ratio" min="0.1" max="1.0" step="0.05"
+                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                <p class="text-xs text-zinc-400 mt-1">0.1 - 1.0</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('settings_server_error_consecutive') }}</label>
+                <input type="number" x-model.number="settings.server_error_threshold_consecutive" min="10" max="200"
+                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                <p class="text-xs text-zinc-400 mt-1">10 - 200</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Filters Tab -->
+    <div x-show="activeTab === 'data_filters'" x-transition class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl space-y-6">
+        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-700 pb-2">{{ i18n.t('settings_tab_data_filters') }}</h2>
+        <div class="flex items-center justify-between py-2">
+            <div>
+                <span class="text-zinc-700 dark:text-zinc-300 font-medium">{{ i18n.t('settings_fetch_only_finished') }}</span>
+                <p class="text-xs text-zinc-400 mt-0.5">FETCH_ONLY_FINISHED</p>
+            </div>
+            <button class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                :class="settings.fetch_only_finished ? 'bg-indigo-600' : 'bg-zinc-200 dark:bg-zinc-700'"
+                @click="settings.fetch_only_finished = !settings.fetch_only_finished">
+                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                    :class="settings.fetch_only_finished ? 'translate-x-6' : 'translate-x-1'"></span>
+            </button>
+        </div>
+        <div class="flex items-center justify-between py-2">
+            <div>
+                <span class="text-zinc-700 dark:text-zinc-300 font-medium">{{ i18n.t('settings_save_empty_rounds') }}</span>
+                <p class="text-xs text-zinc-400 mt-0.5">SAVE_EMPTY_ROUNDS</p>
+            </div>
+            <button class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                :class="settings.save_empty_rounds ? 'bg-indigo-600' : 'bg-zinc-200 dark:bg-zinc-700'"
+                @click="settings.save_empty_rounds = !settings.save_empty_rounds">
+                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                    :class="settings.save_empty_rounds ? 'translate-x-6' : 'translate-x-1'"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Logging Tab -->
+    <div x-show="activeTab === 'logging'" x-transition class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl space-y-6">
+        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-700 pb-2">{{ i18n.t('settings_tab_logging') }}</h2>
+        <div>
+            <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('settings_log_level') }}</label>
+            <select x-model="settings.log_level"
+                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                <option value="DEBUG">DEBUG</option>
+                <option value="INFO">INFO</option>
+                <option value="WARNING">WARNING</option>
+                <option value="ERROR">ERROR</option>
+                <option value="CRITICAL">CRITICAL</option>
+            </select>
+        </div>
+        <div class="flex items-center justify-between py-2">
+            <div>
+                <span class="text-zinc-700 dark:text-zinc-300 font-medium">{{ i18n.t('settings_debug') }}</span>
+                <p class="text-xs text-zinc-400 mt-0.5">DEBUG</p>
+            </div>
+            <button class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                :class="settings.debug ? 'bg-indigo-600' : 'bg-zinc-200 dark:bg-zinc-700'"
+                @click="settings.debug = !settings.debug">
+                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                    :class="settings.debug ? 'translate-x-6' : 'translate-x-1'"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Appearance Tab -->
+    <div x-show="activeTab === 'appearance'" x-transition class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl space-y-6">
+        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-700 pb-2">{{ i18n.t('settings_tab_appearance') }}</h2>
+        <div class="flex items-center justify-between py-2">
+            <span class="text-zinc-700 dark:text-zinc-300 font-medium">{{ i18n.t('use_color') }}</span>
+            <button class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                :class="settings.use_color ? 'bg-indigo-600' : 'bg-zinc-200 dark:bg-zinc-700'"
+                @click="settings.use_color = !settings.use_color">
+                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                    :class="settings.use_color ? 'translate-x-6' : 'translate-x-1'"></span>
+            </button>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('date_format') }}</label>
+            <input type="text" x-model="settings.date_format"
+                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+            <div class="mt-2 flex items-center gap-2">
+                <span class="text-xs text-zinc-400">{{ i18n.t('settings_date_format_preview') }}:</span>
+                <span class="text-xs font-mono text-indigo-500 dark:text-indigo-400" x-text="formatPreview()"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Button -->
+    <div class="flex justify-end mt-8">
         <button @click="saveSettings()" :disabled="saving"
-            class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition-all shadow-md shadow-indigo-500/20 dark:shadow-indigo-900/20 flex items-center gap-2">
-            <span x-show="!saving">Save Changes</span>
-            <span x-show="saving">Saving...</span>
-            <svg x-show="!saving" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-            </svg>
-            <svg x-show="saving" class="animate-spin w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6">
-                </path>
-            </svg>
+            class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2 disabled:opacity-50">
+            <template x-if="!saving">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            </template>
+            <template x-if="saving">
+                <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            </template>
+            <span x-text="saving ? '{{ i18n.t('fetching_in_progress') }}' : 'Save Changes'"></span>
         </button>
     </div>
 

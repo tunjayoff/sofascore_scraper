@@ -34,6 +34,18 @@ class SettingsUpdate(BaseModel):
     use_color: Optional[bool] = None
     date_format: Optional[str] = None
     language: Optional[str] = None
+    max_concurrent: Optional[int] = None
+    wait_time_min: Optional[float] = None
+    wait_time_max: Optional[float] = None
+    request_timeout: Optional[int] = None
+    max_retries: Optional[int] = None
+    rate_limit_threshold_consecutive: Optional[int] = None
+    rate_limit_threshold_ratio: Optional[float] = None
+    server_error_threshold_consecutive: Optional[int] = None
+    fetch_only_finished: Optional[bool] = None
+    save_empty_rounds: Optional[bool] = None
+    log_level: Optional[str] = None
+    debug: Optional[bool] = None
 
 
 class FetchRequest(BaseModel):
@@ -312,37 +324,66 @@ async def system_status():
         "language": config_manager.get_language()
     }
 
+@router.get("/settings")
+async def get_all_settings():
+    """Get all current settings."""
+    return {
+        "language": config_manager.get_language(),
+        "api_base_url": config_manager.get_api_base_url(),
+        "use_proxy": config_manager.get_use_proxy(),
+        "proxy_url": config_manager.get_proxy_url(),
+        "data_dir": config_manager.get_data_dir(),
+        "use_color": config_manager.get_use_color(),
+        "date_format": config_manager.get_date_format(),
+        "max_concurrent": config_manager.get_max_concurrent(),
+        "wait_time_min": config_manager.get_wait_time_min(),
+        "wait_time_max": config_manager.get_wait_time_max(),
+        "request_timeout": config_manager.get_request_timeout(),
+        "max_retries": config_manager.get_max_retries(),
+        "rate_limit_threshold_consecutive": config_manager.get_rate_limit_threshold_consecutive(),
+        "rate_limit_threshold_ratio": config_manager.get_rate_limit_threshold_ratio(),
+        "server_error_threshold_consecutive": config_manager.get_server_error_threshold_consecutive(),
+        "fetch_only_finished": os.getenv("FETCH_ONLY_FINISHED", "true").lower() == "true",
+        "save_empty_rounds": os.getenv("SAVE_EMPTY_ROUNDS", "false").lower() == "true",
+        "log_level": os.getenv("LOG_LEVEL", "INFO"),
+        "debug": os.getenv("DEBUG", "false").lower() == "true",
+    }
+
+
 @router.post("/settings")
 async def update_settings(settings: SettingsUpdate):
     """Update application settings."""
     try:
         updated = False
-        
-        if settings.language:
-            if config_manager.set_language(settings.language):
-                updated = True
-        
-        if settings.api_base_url is not None:
-            if config_manager.update_env_variable("API_BASE_URL", settings.api_base_url):
-                updated = True
-                
-        if settings.use_proxy is not None:
-            if config_manager.update_env_variable("USE_PROXY", str(settings.use_proxy).lower()):
-                updated = True
+        env_map = {
+            "language": ("LANGUAGE", lambda v: v),
+            "api_base_url": ("API_BASE_URL", lambda v: v),
+            "use_proxy": ("USE_PROXY", lambda v: str(v).lower()),
+            "proxy_url": ("PROXY_URL", lambda v: v),
+            "data_dir": ("DATA_DIR", lambda v: v),
+            "use_color": ("USE_COLOR", lambda v: str(v).lower()),
+            "date_format": ("DATE_FORMAT", lambda v: v),
+            "max_concurrent": ("MAX_CONCURRENT", lambda v: str(v)),
+            "wait_time_min": ("WAIT_TIME_MIN", lambda v: str(v)),
+            "wait_time_max": ("WAIT_TIME_MAX", lambda v: str(v)),
+            "request_timeout": ("REQUEST_TIMEOUT", lambda v: str(v)),
+            "max_retries": ("MAX_RETRIES", lambda v: str(v)),
+            "rate_limit_threshold_consecutive": ("RATE_LIMIT_THRESHOLD_CONSECUTIVE", lambda v: str(v)),
+            "rate_limit_threshold_ratio": ("RATE_LIMIT_THRESHOLD_RATIO", lambda v: str(v)),
+            "server_error_threshold_consecutive": ("SERVER_ERROR_THRESHOLD_CONSECUTIVE", lambda v: str(v)),
+            "fetch_only_finished": ("FETCH_ONLY_FINISHED", lambda v: str(v).lower()),
+            "save_empty_rounds": ("SAVE_EMPTY_ROUNDS", lambda v: str(v).lower()),
+            "log_level": ("LOG_LEVEL", lambda v: v),
+            "debug": ("DEBUG", lambda v: str(v).lower()),
+        }
 
-        if settings.proxy_url is not None:
-            if config_manager.update_env_variable("PROXY_URL", settings.proxy_url):
-                updated = True
-                
-        if settings.data_dir is not None:
-             if config_manager.update_env_variable("DATA_DIR", settings.data_dir):
-                updated = True
-                
-        if settings.use_color is not None:
-             if config_manager.update_env_variable("USE_COLOR", str(settings.use_color).lower()):
-                updated = True
-                
-        # Force reload to apply changes in memory
+        settings_dict = settings.model_dump(exclude_none=True)
+        for field, value in settings_dict.items():
+            if field in env_map:
+                env_key, converter = env_map[field]
+                if config_manager.update_env_variable(env_key, converter(value)):
+                    updated = True
+
         if updated:
             config_manager.reload_config()
             return {"status": "success", "message": "Settings updated successfully."}
