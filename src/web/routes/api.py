@@ -792,3 +792,128 @@ async def get_system_stats():
         logger.error(f"Error generating stats: {e}")
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail="Failed to generate statistics")
+
+
+# --- Data Management Endpoints (W10) ---
+
+@router.post("/data/backup")
+async def create_backup(scope: str = "all"):
+    """Veri yedeği oluşturur ve indirilebilir zip dosyası döndürür."""
+    import zipfile
+    import tempfile
+    import datetime as _dt
+    from fastapi.responses import FileResponse
+
+    data_dir = config_manager.get_data_dir()
+    if not os.path.isabs(data_dir):
+        data_dir = os.path.abspath(data_dir)
+    
+    timestamp = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_filename = f"backup_{scope}_{timestamp}.zip"
+
+    static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "backups")
+    os.makedirs(static_dir, exist_ok=True)
+    zip_path = os.path.join(static_dir, backup_filename)
+
+    try:
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+            dirs_to_backup = []
+            if scope in ("all", "config"):
+                config_path = config_manager.league_config_path
+                if os.path.exists(config_path):
+                    zf.write(config_path, os.path.basename(config_path))
+                if os.path.exists(".env"):
+                    zf.write(".env", ".env")
+            if scope in ("all", "seasons"):
+                dirs_to_backup.append(os.path.join(data_dir, "seasons"))
+            if scope in ("all", "matches"):
+                dirs_to_backup.append(os.path.join(data_dir, "matches"))
+            if scope in ("all", "match_details"):
+                dirs_to_backup.append(os.path.join(data_dir, "match_details"))
+
+            for dir_path in dirs_to_backup:
+                if os.path.exists(dir_path):
+                    for root, _, files in os.walk(dir_path):
+                        for f in files:
+                            fp = os.path.join(root, f)
+                            arcname = os.path.relpath(fp, os.path.dirname(data_dir))
+                            zf.write(fp, arcname)
+
+        return {"download_url": f"/static/backups/{backup_filename}", "filename": backup_filename}
+    except Exception as e:
+        logger.error(f"Backup failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class ClearRequest(BaseModel):
+    scope: str = "all"
+
+
+@router.post("/data/clear")
+async def clear_data(req: ClearRequest):
+    """Veriyi temizler."""
+    import shutil
+    data_dir = config_manager.get_data_dir()
+    if not os.path.isabs(data_dir):
+        data_dir = os.path.abspath(data_dir)
+
+    cleared = []
+    try:
+        if req.scope in ("all", "match_details"):
+            path = os.path.join(data_dir, "match_details")
+            if os.path.exists(path):
+                shutil.rmtree(path)
+                os.makedirs(path, exist_ok=True)
+                cleared.append("match_details")
+        if req.scope in ("all", "matches"):
+            path = os.path.join(data_dir, "matches")
+            if os.path.exists(path):
+                shutil.rmtree(path)
+                os.makedirs(path, exist_ok=True)
+                cleared.append("matches")
+        if req.scope in ("all", "seasons"):
+            path = os.path.join(data_dir, "seasons")
+            if os.path.exists(path):
+                shutil.rmtree(path)
+                os.makedirs(path, exist_ok=True)
+                cleared.append("seasons")
+        return {"status": "success", "cleared": cleared}
+    except Exception as e:
+        logger.error(f"Clear data failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# --- CSV Export Endpoint (W11) ---
+
+@router.get("/export/csv")
+async def export_csv(league_id: Optional[int] = None):
+    """CSV export. Mevcut processed CSV'yi döndürür veya yeni oluşturur."""
+    from fastapi.responses import FileResponse
+    data_dir = config_manager.get_data_dir()
+    csv_dir = os.path.join(data_dir, "match_details", "processed")
+
+    if league_id:
+        pattern = os.path.join(csv_dir, f"*league_{league_id}*.csv")
+        files = glob.glob(pattern)
+        if not files:
+            pattern = os.path.join(csv_dir, "all_matches_*.csv")
+            files = glob.glob(pattern)
+    else:
+        files = glob.glob(os.path.join(csv_dir, "all_matches_*.csv"))
+
+    if not files:
+        from src.SofaScoreUi import SimpleSofaScoreUI
+        try:
+            ui = SimpleSofaScoreUI(config_manager=config_manager)
+            ui.export_all_to_csv()
+            files = glob.glob(os.path.join(csv_dir, "all_matches_*.csv"))
+        except Exception as e:
+            logger.error(f"CSV export failed: {e}")
+            raise HTTPException(status_code=500, detail="CSV generation failed")
+
+    if not files:
+        raise HTTPException(status_code=404, detail="No CSV data available. Run a fetch first.")
+
+    latest = max(files, key=os.path.getctime)
+    filename = os.path.basename(latest)
+    return FileResponse(latest, filename=filename, media_type="text/csv")

@@ -89,7 +89,8 @@
             {id: 'rate_limit', label: '{{ i18n.t('settings_tab_rate_limit') }}'},
             {id: 'data_filters', label: '{{ i18n.t('settings_tab_data_filters') }}'},
             {id: 'logging', label: '{{ i18n.t('settings_tab_logging') }}'},
-            {id: 'appearance', label: '{{ i18n.t('settings_tab_appearance') }}'}
+            {id: 'appearance', label: '{{ i18n.t('settings_tab_appearance') }}'},
+            {id: 'data_management', label: '{{ i18n.t('settings_tab_data_management') }}'}
         ]" :key="tab.id">
             <button @click="setTab(tab.id)"
                 class="px-5 py-2.5 text-sm font-medium rounded-t-xl whitespace-nowrap transition-all -mb-px border-b-2"
@@ -293,8 +294,113 @@
         </div>
     </div>
 
-    <!-- Save Button -->
-    <div class="flex justify-end mt-8">
+    <!-- Data Management Tab -->
+    <div x-show="activeTab === 'data_management'" x-transition class="space-y-6" x-data="{
+        backingUp: false,
+        backupResult: null,
+        clearing: false,
+        clearConfirm: '',
+        clearScope: 'match_details',
+        clearResult: null,
+        async backup(scope) {
+            this.backingUp = true;
+            this.backupResult = null;
+            try {
+                const res = await fetch('/api/data/backup?scope=' + scope, { method: 'POST' });
+                const data = await res.json();
+                if (res.ok) {
+                    this.backupResult = data;
+                } else {
+                    alert('Backup failed: ' + (data.detail || 'Unknown error'));
+                }
+            } catch(e) {
+                alert('Backup error: ' + e);
+            } finally {
+                this.backingUp = false;
+            }
+        },
+        async clearData() {
+            if (this.clearConfirm !== 'DELETE') return;
+            this.clearing = true;
+            this.clearResult = null;
+            try {
+                const res = await fetch('/api/data/clear', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ scope: this.clearScope })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    this.clearResult = data;
+                    this.clearConfirm = '';
+                }
+            } catch(e) {
+                alert('Clear error: ' + e);
+            } finally {
+                this.clearing = false;
+            }
+        }
+    }">
+        <!-- Backup -->
+        <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl">
+            <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-700 pb-2 mb-4">{{ i18n.t('backup_all') }}</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <button @click="backup('all')" :disabled="backingUp"
+                    class="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50">
+                    <span x-show="!backingUp">{{ i18n.t('backup_all') }}</span>
+                    <span x-show="backingUp" class="flex items-center justify-center gap-2">
+                        <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    </span>
+                </button>
+                <button @click="backup('seasons')" :disabled="backingUp" class="px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-xl text-sm font-medium transition-colors disabled:opacity-50">{{ i18n.t('disk_seasons') }}</button>
+                <button @click="backup('matches')" :disabled="backingUp" class="px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-xl text-sm font-medium transition-colors disabled:opacity-50">{{ i18n.t('disk_matches') }}</button>
+                <button @click="backup('match_details')" :disabled="backingUp" class="px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-xl text-sm font-medium transition-colors disabled:opacity-50">{{ i18n.t('disk_match_details') }}</button>
+            </div>
+            <div x-show="backupResult" x-transition class="mt-4 p-4 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl text-green-600 dark:text-green-400 text-sm flex items-center justify-between">
+                <span>Backup ready!</span>
+                <a :href="backupResult?.download_url" download class="px-4 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition-colors">Download</a>
+            </div>
+        </div>
+
+        <!-- CSV Export -->
+        <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl">
+            <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-700 pb-2 mb-4">{{ i18n.t('csv_download') }}</h2>
+            <a href="/api/export/csv" download
+                class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                {{ i18n.t('csv_download') }}
+            </a>
+        </div>
+
+        <!-- Clear Data -->
+        <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-red-200 dark:border-red-500/30 shadow-sm p-6 rounded-xl">
+            <h2 class="text-xl font-semibold text-red-600 dark:text-red-400 border-b border-red-200 dark:border-red-500/30 pb-2 mb-4">{{ i18n.t('clear_data') }}</h2>
+            <div class="space-y-4">
+                <select x-model="clearScope"
+                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/50">
+                    <option value="all">{{ i18n.t('clear_scope_all') }}</option>
+                    <option value="match_details">{{ i18n.t('clear_scope_details') }}</option>
+                    <option value="seasons">{{ i18n.t('clear_scope_seasons') }}</option>
+                    <option value="matches">{{ i18n.t('clear_scope_matches') }}</option>
+                </select>
+                <div>
+                    <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('clear_confirm_type') }}</label>
+                    <input type="text" x-model="clearConfirm" placeholder="DELETE"
+                        class="w-full bg-white dark:bg-zinc-900 border border-red-300 dark:border-red-500/30 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/50">
+                </div>
+                <button @click="clearData()" :disabled="clearConfirm !== 'DELETE' || clearing"
+                    class="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold transition-colors disabled:opacity-50">
+                    {{ i18n.t('clear_data') }}
+                </button>
+                <div x-show="clearResult" x-transition class="p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl text-green-600 dark:text-green-400 text-sm">
+                    Data cleared successfully.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Button (only for settings tabs, not data management) -->
+    <div class="flex justify-end mt-8" x-show="activeTab !== 'data_management'">
         <button @click="saveSettings()" :disabled="saving"
             class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2 disabled:opacity-50">
             <template x-if="!saving">
