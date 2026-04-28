@@ -48,9 +48,16 @@ class SettingsUpdate(BaseModel):
     debug: Optional[bool] = None
 
 
+class FetchSelection(BaseModel):
+    league_id: int
+    season_ids: Optional[List[int]] = None
+    match_ids: Optional[List[int]] = None
+
+
 class FetchRequest(BaseModel):
     league_id: Optional[int] = None
     mode: str = "full"
+    selections: Optional[List[FetchSelection]] = None
 
 
 @router.get("/leagues", response_model=List[LeagueModel])
@@ -118,6 +125,119 @@ async def search_remote_leagues(q: str = Query(..., min_length=2)):
                 slug=entity.get("slug")
             ))
     return leagues[:20]
+
+
+@router.get("/leagues/{league_id}/seasons")
+async def get_league_seasons(league_id: int):
+    """Bir ligin yerel olarak kayıtlı sezon listesini döndürür."""
+    data_dir = config_manager.get_data_dir()
+    seasons_file = os.path.join(data_dir, "seasons", f"{league_id}_seasons.json")
+    if not os.path.exists(seasons_file):
+        return {"seasons": [], "fetched": False}
+    try:
+        with open(seasons_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        seasons = data.get("seasons", data) if isinstance(data, dict) else data
+        return {"seasons": seasons if isinstance(seasons, list) else [], "fetched": True}
+    except Exception as e:
+        logger.error(f"Error reading seasons for league {league_id}: {e}")
+        return {"seasons": [], "fetched": False}
+
+
+@router.post("/leagues/{league_id}/seasons/refresh")
+async def refresh_league_seasons(league_id: int):
+    """Bir ligin sezon listesini SofaScore'dan yeniler."""
+    from src.SofaScoreUi import SimpleSofaScoreUI
+    try:
+        ui = SimpleSofaScoreUI(config_manager=config_manager)
+        ui.season_fetcher.fetch_seasons_for_league(league_id)
+        data_dir = config_manager.get_data_dir()
+        seasons_file = os.path.join(data_dir, "seasons", f"{league_id}_seasons.json")
+        if os.path.exists(seasons_file):
+            with open(seasons_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            seasons = data.get("seasons", data) if isinstance(data, dict) else data
+            return {"status": "success", "seasons": seasons if isinstance(seasons, list) else []}
+        return {"status": "success", "seasons": []}
+    except Exception as e:
+        logger.error(f"Failed to refresh seasons for league {league_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/seasons/{season_id}/matches")
+async def get_season_matches(season_id: int, league_id: int = Query(...)):
+    """Yerel kayıtlı maç listesini sezon bazında döndürür."""
+    data_dir = config_manager.get_data_dir()
+    matches_dir = os.path.join(data_dir, "matches")
+    matches = []
+    if not os.path.exists(matches_dir):
+        return {"matches": []}
+    
+    pattern = os.path.join(matches_dir, f"{league_id}_*", f"{season_id}_*_summary.csv")
+    summary_files = glob.glob(pattern)
+    if not summary_files:
+        pattern = os.path.join(matches_dir, f"{league_id}_*", f"*{season_id}*.csv")
+        summary_files = glob.glob(pattern)
+    
+    for f in summary_files:
+        try:
+            df = pd.read_csv(f)
+            matches.extend(df.fillna("").to_dict(orient="records"))
+        except Exception as e:
+            logger.error(f"Error reading match file {f}: {e}")
+    
+    return {"matches": matches}
+
+
+@router.get("/leagues/{league_id}/missing-details")
+async def get_missing_details(league_id: int, season_id: Optional[int] = None):
+    """Bir lig için detayı çekilmemiş maçları döndürür."""
+    data_dir = config_manager.get_data_dir()
+    matches_dir = os.path.join(data_dir, "matches")
+    match_details_dir = os.path.join(data_dir, "match_details")
+    
+    all_match_ids = set()
+    match_info = {}
+    
+    if os.path.exists(matches_dir):
+        pattern = os.path.join(matches_dir, f"{league_id}_*", "*.csv")
+        for csv_file in glob.glob(pattern):
+            try:
+                df = pd.read_csv(csv_file)
+                if "match_id" in df.columns:
+                    for _, row in df.iterrows():
+                        mid = row.get("match_id")
+                        if pd.notna(mid):
+                            mid = int(mid)
+                            all_match_ids.add(mid)
+                            match_info[mid] = {
+                                "match_id": mid,
+                                "home": row.get("home_team", ""),
+                                "away": row.get("away_team", ""),
+                                "match_date": str(row.get("match_date", "")),
+                                "season_name": str(row.get("season_name", row.get("season", ""))),
+                            }
+            except Exception as e:
+                logger.error(f"Error reading CSV for missing details: {e}")
+
+    fetched_ids = set()
+    if os.path.exists(match_details_dir):
+        basic_files = glob.glob(os.path.join(match_details_dir, "**", "basic.json"), recursive=True)
+        for bf in basic_files:
+            parent = os.path.basename(os.path.dirname(bf))
+            try:
+                fetched_ids.add(int(parent))
+            except ValueError:
+                pass
+    
+    missing_ids = all_match_ids - fetched_ids
+    missing = [match_info[mid] for mid in sorted(missing_ids) if mid in match_info][:500]
+    
+    return {
+        "total_matches": len(all_match_ids),
+        "missing_count": len(missing_ids),
+        "missing": missing
+    }
 
 
 @router.get("/matches", response_model=List[dict])
