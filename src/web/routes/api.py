@@ -17,6 +17,21 @@ logger = get_logger("WebAPI")
 config_manager = ConfigManager()
 
 
+def _find_league_seasons_json(data_dir: str, league_id: int) -> Optional[str]:
+    """SeasonFetcher kaydı: {id}_{safe_name}_seasons.json; eski format: {id}_seasons.json."""
+    seasons_dir = os.path.join(data_dir, "seasons")
+    if not os.path.isdir(seasons_dir):
+        return None
+    legacy = os.path.join(seasons_dir, f"{league_id}_seasons.json")
+    if os.path.isfile(legacy):
+        return legacy
+    pattern = os.path.join(seasons_dir, f"{league_id}_*_seasons.json")
+    matches = glob.glob(pattern)
+    if not matches:
+        return None
+    return max(matches, key=os.path.getmtime)
+
+
 class LeagueModel(BaseModel):
     id: int
     name: str
@@ -132,8 +147,8 @@ async def search_remote_leagues(q: str = Query(..., min_length=2)):
 async def get_league_seasons(league_id: int):
     """Bir ligin yerel olarak kayıtlı sezon listesini döndürür."""
     data_dir = config_manager.get_data_dir()
-    seasons_file = os.path.join(data_dir, "seasons", f"{league_id}_seasons.json")
-    if not os.path.exists(seasons_file):
+    seasons_file = _find_league_seasons_json(data_dir, league_id)
+    if not seasons_file:
         return {"seasons": [], "fetched": False}
     try:
         with open(seasons_file, 'r', encoding='utf-8') as f:
@@ -153,8 +168,8 @@ async def refresh_league_seasons(league_id: int):
         ui = SimpleSofaScoreUI(config_manager=config_manager)
         ui.season_fetcher.fetch_seasons_for_league(league_id)
         data_dir = config_manager.get_data_dir()
-        seasons_file = os.path.join(data_dir, "seasons", f"{league_id}_seasons.json")
-        if os.path.exists(seasons_file):
+        seasons_file = _find_league_seasons_json(data_dir, league_id)
+        if seasons_file:
             with open(seasons_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             seasons = data.get("seasons", data) if isinstance(data, dict) else data
