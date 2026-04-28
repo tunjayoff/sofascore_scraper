@@ -69,6 +69,45 @@ async def search_leagues(q: str = Query(..., min_length=2)) -> List[LeagueModel]
     return [LeagueModel(id=lid, name=name) for lid, name in leagues.items() if q.lower() in name.lower()]
 
 
+class RemoteLeagueResult(BaseModel):
+    id: int
+    name: str
+    country: str
+    slug: Optional[str] = None
+
+
+@router.get("/leagues/search-remote", response_model=List[RemoteLeagueResult])
+async def search_remote_leagues(q: str = Query(..., min_length=2)):
+    """SofaScore'dan lig ara. Kullanıcının yeni eklemek istediği ligleri bulması için."""
+    from src.utils import make_api_request
+    url = f"https://www.sofascore.com/api/v1/search/unique-tournaments/{q}"
+    try:
+        data = make_api_request(url)
+    except Exception as e:
+        logger.error(f"Remote league search failed: {e}")
+        return []
+    if not data:
+        return []
+
+    leagues = []
+    results = data.get("uniqueTournaments", data.get("results", []))
+    for item in results:
+        entity = item.get("entity", item) if isinstance(item, dict) else item
+        if not isinstance(entity, dict):
+            continue
+        lid = entity.get("id")
+        name = entity.get("name")
+        if lid and name:
+            category = entity.get("category", {})
+            leagues.append(RemoteLeagueResult(
+                id=lid,
+                name=name,
+                country=category.get("name", "Unknown") if isinstance(category, dict) else "Unknown",
+                slug=entity.get("slug")
+            ))
+    return leagues[:20]
+
+
 @router.get("/matches", response_model=List[dict])
 async def get_matches(
     limit: int = 100,
