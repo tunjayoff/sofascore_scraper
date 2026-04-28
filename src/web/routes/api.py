@@ -380,30 +380,28 @@ async def get_system_stats():
 
         match_details_dir = os.path.join(data_dir, "match_details")
         if os.path.exists(match_details_dir):
-            for root, dirs, files in os.walk(match_details_dir):
-                parts = root.split(os.sep)
+            league_name_to_id = {}
+            for lid, lname in leagues.items():
+                league_name_to_id[lname.replace(' ', '_').replace('/', '_').lower()] = lid
+
+            basic_files = glob.glob(os.path.join(match_details_dir, "*", "season_*", "*", "basic.json"))
+            for bf in basic_files:
+                stats["details"] += 1
+                rel = os.path.relpath(bf, match_details_dir)
+                lg_folder = rel.split(os.sep)[0]
                 current_l_id = None
                 try:
-                    idx = parts.index("match_details")
-                    if len(parts) > idx + 1:
-                        lg_folder = parts[idx+1]
-                        # lg_folder might be '17_Premier_League' or 'Premier_League'
-                        try:
-                            current_l_id = int(lg_folder.split("_")[0])
-                        except ValueError:
-                            # Try matching with known leagues if not integer prefixed
-                            clean_folder_name = lg_folder.replace("_", " ").lower()
-                            for lid, lname in leagues.items():
-                                if lname.lower() == clean_folder_name:
-                                    current_l_id = lid
-                                    break
-                except Exception:
-                    pass
-
-                if "basic.json" in files:
-                    stats["details"] += 1
-                    if current_l_id in league_stats:
-                        league_stats[current_l_id]["details"] += 1
+                    current_l_id = int(lg_folder.split("_")[0])
+                except (ValueError, IndexError):
+                    clean = lg_folder.lower()
+                    current_l_id = league_name_to_id.get(clean)
+                    if current_l_id is None:
+                        for key, lid in league_name_to_id.items():
+                            if key in clean or clean in key:
+                                current_l_id = lid
+                                break
+                if current_l_id in league_stats:
+                    league_stats[current_l_id]["details"] += 1
         
         # Format breakdown
         for l_id, data in league_stats.items():

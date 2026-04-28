@@ -497,8 +497,8 @@ class MatchDataFetcher:
             season_name = season_data.get("name", "Unknown_Season")
             season_year = season_data.get("year", "Unknown_Year")
             
-            # Güvenli dizin adları oluştur
-            safe_tournament_name = tournament_name.replace(' ', '_').replace('/', '_')
+            # Güvenli dizin adları oluştur (ID prefix ile standart format)
+            safe_tournament_name = f"{tournament_id}_{tournament_name.replace(' ', '_').replace('/', '_')}" if tournament_id else tournament_name.replace(' ', '_').replace('/', '_')
             
             # Sezon adı için güvenli string oluştur - öncelikle name kullan, yoksa year
             if season_name and season_name != "Unknown_Season":

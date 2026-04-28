@@ -56,6 +56,18 @@
     }
 }" x-init="fetchStats()" @refresh-stats.window="fetchStats()">
 
+    <!-- Empty State -->
+    <div x-show="!loading && stats.leagues_count === 0 && stats.matches === 0 && stats.details === 0"
+         class="flex flex-col items-center justify-center py-16 px-4 mb-8">
+        <div class="w-20 h-20 mb-6 rounded-2xl bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center text-zinc-400 dark:text-zinc-500 shadow-inner">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+        </div>
+        <h3 class="text-xl font-bold text-zinc-900 dark:text-white mb-2">{{ i18n.t('no_data_yet') }}</h3>
+        <a href="/schedule" class="mt-4 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors">
+            {{ i18n.t('menu_match_data') }}
+        </a>
+    </div>
+
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <!-- Leagues -->
@@ -135,7 +147,7 @@
                 </thead>
                 <tbody class="divide-y divide-zinc-800">
                     <template x-for="lg in stats.league_breakdown" :key="lg.id">
-                        <tr class="hover:bg-white dark:bg-white/50 dark:bg-white dark:bg-zinc-100 dark:bg-zinc-800/50 transition-colors">
+                        <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                             <td class="px-4 py-4 text-zinc-800 dark:text-zinc-100 font-medium" x-text="lg.name"></td>
                             <td class="px-4 py-4 text-zinc-700 dark:text-zinc-300" x-text="lg.matches"></td>
                             <td class="px-4 py-4 text-zinc-700 dark:text-zinc-300" x-text="lg.details"></td>
