@@ -61,10 +61,14 @@ class I18nManager:
         """
         lang_data = self.translations.get(self.current_lang, {})
         text = lang_data.get(key)
-        
-        # Fallback to default language if key not found
-        if text is None and self.current_lang != "tr":
-             text = self.translations.get("tr", {}).get(key)
+
+        if text is None:
+            for fb in ("en", "tr"):
+                if fb == self.current_lang:
+                    continue
+                text = self.translations.get(fb, {}).get(key)
+                if text is not None:
+                    break
 
         if text is None:
             return key # Return key if translation missing

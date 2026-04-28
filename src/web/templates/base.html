@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ i18n.current_lang }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -55,7 +55,7 @@
                 <button id="theme-toggle" class="relative flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors text-zinc-600 dark:text-zinc-400 group">
                     <span class="flex items-center gap-3">
                         <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-                        Görünüm Seç
+                        {{ i18n.t('ui_theme_toggle') }}
                     </span>
                     <span class="relative inline-flex h-6 w-11 items-center rounded-full bg-zinc-200 dark:bg-indigo-500 transition-colors">
                         <span id="theme-toggle-knob" class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform translate-x-1"></span>
@@ -109,6 +109,15 @@
         });
     </script>
 
+    <script>
+        window.__SS_BASE_I18N__ = {
+            global_task_title: {{ i18n.t('global_toast_background_task') | tojson }},
+            scraper_starting: {{ i18n.t('scraper_task_starting') | tojson }},
+            toast_generic_error: {{ i18n.t('toast_generic_error') | tojson }},
+            toast_close: {{ i18n.t('toast_close_aria') | tojson }},
+        };
+    </script>
+
     <!-- Global Task Toast -->
     <div x-data="globalScraperToast" x-init="initToast"
          x-show="state.is_running"
@@ -127,7 +136,7 @@
                 <span class="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
             </div>
             <div class="flex-1 flex justify-between items-center min-w-0">
-                <span class="font-bold text-sm text-zinc-900 dark:text-white truncate">Arka Plan İşlemi...</span>
+                <span class="font-bold text-sm text-zinc-900 dark:text-white truncate">{{ i18n.t('global_toast_background_task') }}</span>
                 <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400 ml-2" x-text="state.progress + '%'"></span>
             </div>
         </div>
@@ -136,7 +145,7 @@
             <div class="bg-gradient-to-r from-indigo-500 to-indigo-400 h-full rounded-full transition-all duration-300 ease-out" :style="`width: ${state.progress}%`"></div>
         </div>
         
-        <div class="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono truncate" x-text="state.current_task || 'Başlatılıyor...'"></div>
+        <div class="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono truncate" x-text="state.current_task || (window.__SS_BASE_I18N__ && window.__SS_BASE_I18N__.scraper_starting)"></div>
     </div>
 
     <script>
@@ -187,7 +196,7 @@
     <script>
         (function () {
             function asText(x) {
-                if (x == null || x === '') return 'Error';
+                if (x == null || x === '') return (window.__SS_BASE_I18N__ && window.__SS_BASE_I18N__.toast_generic_error) || '';
                 if (typeof x === 'string') return x;
                 if (typeof x === 'object' && x.detail != null) return asText(x.detail);
                 try { return JSON.stringify(x); } catch (e) { return String(x); }
@@ -226,7 +235,7 @@
                 var btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'shrink-0 rounded-lg p-1 -m-1 text-current opacity-50 hover:opacity-100 transition-opacity';
-                btn.setAttribute('aria-label', 'Close');
+                btn.setAttribute('aria-label', (window.__SS_BASE_I18N__ && window.__SS_BASE_I18N__.toast_close) || '');
                 btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
                 var hideTimer = setTimeout(function () { removeToast(el, host); }, 5500);
                 function close() {

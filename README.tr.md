@@ -19,12 +19,60 @@ Bu proje SofaScore ile bağlantılı değildir. İstek hızına dikkat edin ve i
 ## Gereksinimler
 
 - Python **3.10+** (önerilen: 3.11+).
+- **Git** — `curl | bash` ile tek satır kurulum için gerekli (depoyu klonlar); elle indiriyorsanız isteğe bağlı.
 - SofaScore’a ağ erişimi.
 
 ## Kurulum
 
+### Hızlı kurulum (betik)
+
+Resmi depo: [github.com/tunjayoff/sofascore_scraper](https://github.com/tunjayoff/sofascore_scraper).
+
+**Linux / macOS / Git Bash** — depoyu zaten klonladıysanız:
+
 ```bash
-git clone <repository-url>
+chmod +x scripts/install.sh   # bir kez
+./scripts/install.sh
+```
+
+**Tek satır** (depoyu klonlar, `.venv` kurar, bağımlılıkları yükler, `.env` oluşturur):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/tunjayoff/sofascore_scraper/main/scripts/install.sh | bash
+```
+
+- İsteğe bağlı **ilk argüman** (URL değilse): hedef klasör adı (varsayılan `sofascore_scraper`); veya `SOFASCORE_SCRAPER_DIR`.
+- Başka bir çatalla varsayılan kaynak: `export SOFASCORE_SCRAPER_REPO=https://github.com/SIZ/fork.git` ardından yukarıdaki `curl | bash`, veya tam git URL’sini `bash -s` ile verin:  
+  `curl ... | bash -s -- https://github.com/SIZ/fork.git [klasör]`
+- Gerekirse: `SOFASCORE_SCRAPER_DEFAULT_REPO`.
+
+**Windows** — PowerShell (klon gerekirse betik kendisi yapar):
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned   # gerekirse, bir kez
+Invoke-RestMethod https://raw.githubusercontent.com/tunjayoff/sofascore_scraper/main/scripts/install.ps1 | Invoke-Expression
+```
+
+veya klon sonrası:
+
+```powershell
+.\scripts\install.ps1
+```
+
+Açıkça adres / klasör:
+
+```powershell
+.\scripts\install.ps1 -RepoUrl https://github.com/tunjayoff/sofascore_scraper.git -InstallDir sofascore_scraper
+```
+
+CMD: `scripts\install.bat`. Ortam: `SOFASCORE_SCRAPER_REPO`, `SOFASCORE_SCRAPER_DIR`, `SOFASCORE_SCRAPER_DEFAULT_REPO`.
+
+**Önkoşullar:** **Git** (tek satır / klon yolu için), **PATH** üzerinde **Python 3.10+**. Betikler `git`, `python`, `venv` veya `pip` hata verirse anlaşılır Türkçe/İngilizce iletir (ör. Ubuntu’da `python3-venv` eksikliği).
+
+### Elle kurulum
+
+```bash
+git clone https://github.com/tunjayoff/sofascore_scraper.git
 cd sofascore_scraper
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate

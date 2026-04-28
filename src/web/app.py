@@ -32,6 +32,20 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 # Configure Templates
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
+
+def _js_single_quoted(value) -> str:
+    """Güvenli şekilde tek tırnaklı JS string içine gömülür (x-data vb.)."""
+    s = "" if value is None else str(value)
+    return (
+        s.replace("\\", "\\\\")
+        .replace("'", "\\'")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+    )
+
+
+templates.env.filters["js_sq"] = _js_single_quoted
+
 # Initialize ConfigManager
 config_manager = ConfigManager()
 

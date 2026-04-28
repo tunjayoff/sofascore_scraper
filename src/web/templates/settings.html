@@ -36,6 +36,7 @@
     saving: false,
     saveMessage: null,
     saveError: null,
+    genericErr: '{{ i18n.t("settings_error_generic")|js_sq }}',
     setTab(tab) {
         this.activeTab = tab;
         window.location.hash = tab;
@@ -71,7 +72,7 @@
                 this.saveMessage = '{{ i18n.t('settings_applied_runtime') }}';
                 setTimeout(() => this.saveMessage = null, 3000);
             } else {
-                this.saveError = data.detail || 'Error';
+                this.saveError = data.detail || this.genericErr;
             }
         } catch(e) {
             this.saveError = e.toString();
@@ -116,8 +117,8 @@
             <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('current_language') }}</label>
             <select x-model="settings.language"
                 class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
-                <option value="tr">Turkce</option>
-                <option value="en">English</option>
+                <option value="tr">{{ i18n.t('settings_lang_option_tr') }}</option>
+                <option value="en">{{ i18n.t('settings_lang_option_en') }}</option>
             </select>
         </div>
 
@@ -298,6 +299,7 @@
     <div x-show="activeTab === 'data_management'" x-transition class="space-y-6" x-data="{
         backingUp: false,
         backupResult: null,
+        backupFailedMsg: '{{ i18n.t("backup_failed")|js_sq }}',
         clearing: false,
         clearConfirm: '',
         clearScope: 'match_details',
@@ -311,7 +313,7 @@
                 if (res.ok) {
                     this.backupResult = data;
                 } else {
-                    window.appToast(data.detail || 'Backup failed', 'error');
+                    window.appToast(data.detail || this.backupFailedMsg, 'error');
                 }
             } catch(e) {
                 window.appToast(e, 'error');
@@ -357,8 +359,8 @@
                 <button @click="backup('match_details')" :disabled="backingUp" class="px-4 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-xl text-sm font-medium transition-colors disabled:opacity-50">{{ i18n.t('disk_match_details') }}</button>
             </div>
             <div x-show="backupResult" x-transition class="mt-4 p-4 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl text-green-600 dark:text-green-400 text-sm flex items-center justify-between">
-                <span>Backup ready!</span>
-                <a :href="backupResult?.download_url" download class="px-4 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition-colors">Download</a>
+                <span>{{ i18n.t('backup_ready') }}</span>
+                <a :href="backupResult?.download_url" download class="px-4 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition-colors">{{ i18n.t('backup_download') }}</a>
             </div>
         </div>
 
@@ -393,7 +395,7 @@
                     {{ i18n.t('clear_data') }}
                 </button>
                 <div x-show="clearResult" x-transition class="p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl text-green-600 dark:text-green-400 text-sm">
-                    Data cleared successfully.
+                    {{ i18n.t('clear_data_success') }}
                 </div>
             </div>
         </div>
@@ -409,7 +411,7 @@
             <template x-if="saving">
                 <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
             </template>
-            <span x-text="saving ? '{{ i18n.t('fetching_in_progress') }}' : 'Save Changes'"></span>
+            <span x-text="saving ? '{{ i18n.t('fetching_in_progress') }}' : '{{ i18n.t('settings_save_changes') }}'"></span>
         </button>
     </div>
 

@@ -24,7 +24,7 @@
                     d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
                 </path>
             </svg>
-            Refresh
+            {{ i18n.t('stats_refresh') }}
         </button>
     </div>
 </div>
@@ -40,6 +40,8 @@
         }
     },
     loading: true,
+    _u_kb: '{{ i18n.t("disk_unit_kb")|js_sq }}',
+    _u_mb: '{{ i18n.t("disk_unit_mb")|js_sq }}',
     async fetchStats() {
         this.loading = true;
         try {
@@ -117,7 +119,7 @@
         <!-- Match Details -->
         <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl flex items-center justify-between">
             <div>
-                <p class="text-zinc-500 dark:text-zinc-400 text-sm font-medium uppercase tracking-wider">Details</p>
+                <p class="text-zinc-500 dark:text-zinc-400 text-sm font-medium uppercase tracking-wider">{{ i18n.t('stats_card_match_details') }}</p>
                 <h3 class="text-3xl font-bold text-zinc-900 dark:text-white mt-1" x-text="stats.details">0</h3>
             </div>
             <div class="w-12 h-12 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400">
@@ -133,16 +135,16 @@
     <!-- League Breakdown Table -->
     <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl mt-8">
         <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-300 dark:border-zinc-700 pb-4 mb-6">
-            League Coverage Breakdown
+            {{ i18n.t('stats_league_coverage_title') }}
         </h2>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="text-zinc-500 dark:text-zinc-400 text-sm uppercase tracking-wider">
-                        <th class="px-4 py-3">League</th>
-                        <th class="px-4 py-3">Matches Found</th>
-                        <th class="px-4 py-3">Details Scraped</th>
-                        <th class="px-4 py-3">Coverage</th>
+                        <th class="px-4 py-3">{{ i18n.t('stats_col_league') }}</th>
+                        <th class="px-4 py-3">{{ i18n.t('stats_col_matches_found') }}</th>
+                        <th class="px-4 py-3">{{ i18n.t('stats_col_details_scraped') }}</th>
+                        <th class="px-4 py-3">{{ i18n.t('stats_col_coverage') }}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-zinc-800">
@@ -180,7 +182,7 @@
                 <div class="flex justify-between text-sm mb-1">
                     <span class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('disk_seasons') }}</span>
                     <span class="text-zinc-900 dark:text-white font-mono"
-                        x-text="(stats.disk_usage.seasons / 1024).toFixed(2) + ' KB'"></span>
+                        x-text="(stats.disk_usage.seasons / 1024).toFixed(2) + ' ' + _u_kb"></span>
                 </div>
                 <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2">
                     <div class="bg-green-500 h-2 rounded-full"
@@ -193,7 +195,7 @@
                 <div class="flex justify-between text-sm mb-1">
                     <span class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('disk_matches') }}</span>
                     <span class="text-zinc-900 dark:text-white font-mono"
-                        x-text="(stats.disk_usage.matches / 1024).toFixed(2) + ' KB'"></span>
+                        x-text="(stats.disk_usage.matches / 1024).toFixed(2) + ' ' + _u_kb"></span>
                 </div>
                 <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2">
                     <div class="bg-purple-500 h-2 rounded-full"
@@ -206,7 +208,7 @@
                 <div class="flex justify-between text-sm mb-1">
                     <span class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('disk_match_details') }}</span>
                     <span class="text-zinc-900 dark:text-white font-mono"
-                        x-text="(stats.disk_usage.details / 1024 / 1024).toFixed(2) + ' MB'"></span>
+                        x-text="(stats.disk_usage.details / 1024 / 1024).toFixed(2) + ' ' + _u_mb"></span>
                 </div>
                 <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2">
                     <div class="bg-orange-500 h-2 rounded-full"

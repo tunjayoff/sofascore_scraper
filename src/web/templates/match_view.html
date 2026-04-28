@@ -278,14 +278,14 @@ window.createMatchViewState = function (matchId) {
         if (typLower === 'substitution') {
             if (typ) parts.push(typ);
             const L = window.__MATCH_VIEW_I18N__ || {};
-            const offL = L.inc_sub_off || 'Off';
-            const onL = L.inc_sub_on || 'On';
+            const offL = L.inc_sub_off || '';
+            const onL = L.inc_sub_on || '';
             const outN = this.incidentPersonName(inc.playerOut) || this.incidentPersonName(inc.player);
             const inN = this.incidentPersonName(inc.playerIn) || this.incidentPersonName(inc.assist1);
             if (outN) parts.push(offL + ': ' + outN);
             if (inN) parts.push(onL + ': ' + inN);
             if (this.incidentIsInjurySubstitution(inc) && outN)
-                parts.push((L.inc_injured_player || 'Injured') + ': ' + outN);
+                parts.push((L.inc_injured_player || '') + ': ' + outN);
         } else if (typLower === 'period') {
             if (inc.text) parts.push(String(inc.text));
             else if (typ) parts.push(typ);
@@ -385,8 +385,8 @@ window.createMatchViewState = function (matchId) {
         const typLower = String(typKey || '').toLowerCase();
         const min = this.formatIncidentMinute(inc);
         const L = window.__MATCH_VIEW_I18N__ || {};
-        const offL = L.inc_sub_off || 'Off';
-        const onL = L.inc_sub_on || 'On';
+        const offL = L.inc_sub_off || '';
+        const onL = L.inc_sub_on || '';
         const onlyText = !!(inc.text && (inc.time == null || inc.time < 0));
         const score =
             inc.homeScore != null && inc.awayScore != null ? inc.homeScore + '–' + inc.awayScore : '';
@@ -536,7 +536,7 @@ window.createMatchViewState = function (matchId) {
                 this.notFetched = true;
                 return;
             }
-            if (!res.ok) throw new Error(msg.fetch_error_generic || 'Error');
+            if (!res.ok) throw new Error(msg.fetch_error_generic || '');
             const data = await res.json();
             if (!data || (Object.keys(data).length === 0)) {
                 this.notFetched = true;

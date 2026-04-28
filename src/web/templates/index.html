@@ -6,7 +6,7 @@
 <div class="mb-8 flex items-center justify-between">
     <div>
         <h1 class="text-3xl font-bold text-zinc-900 dark:text-white mb-2">{{ i18n.t('main_menu_title') }}</h1>
-        <p class="text-zinc-500 dark:text-zinc-400">Welcome to your scraping command center.</p>
+        <p class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('dashboard_subtitle') }}</p>
     </div>
     <div class="flex gap-3">
         <a href="/schedule"
@@ -20,6 +20,8 @@
 <div x-data="{
     dashboard: null,
     loading: true,
+    _u_kb: '{{ i18n.t("disk_unit_kb")|js_sq }}',
+    _u_mb: '{{ i18n.t("disk_unit_mb")|js_sq }}',
     async fetchDashboard() {
         this.loading = true;
         try {
@@ -75,7 +77,7 @@
             <div>
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-semibold text-zinc-900 dark:text-white">{{ i18n.t('league_list_title') }}</h2>
-                    <a href="/leagues" class="text-sm text-indigo-500 hover:text-indigo-400 font-medium">Manage &rarr;</a>
+                    <a href="/leagues" class="text-sm text-indigo-500 hover:text-indigo-400 font-medium">{{ i18n.t('dashboard_manage_leagues') }}</a>
                 </div>
 
                 <!-- Empty state -->
@@ -92,7 +94,7 @@
                             <div class="flex items-start justify-between mb-3">
                                 <div>
                                     <h3 class="text-base font-bold text-zinc-900 dark:text-white" x-text="lg.name"></h3>
-                                    <span class="text-xs text-zinc-500 font-mono">ID: <span x-text="lg.id"></span></span>
+                                    <span class="text-xs text-zinc-500 font-mono">{{ i18n.t('entity_id_prefix') }} <span x-text="lg.id"></span></span>
                                 </div>
                                 <span class="text-2xl">&#127942;</span>
                             </div>
@@ -108,7 +110,7 @@
                                     <div class="font-bold text-zinc-900 dark:text-white text-sm" x-text="lg.matches"></div>
                                 </div>
                                 <div class="bg-zinc-50 dark:bg-zinc-900/50 rounded-lg p-2">
-                                    <div class="text-xs text-zinc-500 mb-0.5">Details</div>
+                                    <div class="text-xs text-zinc-500 mb-0.5">{{ i18n.t('stats_card_match_details') }}</div>
                                     <div class="font-bold text-zinc-900 dark:text-white text-sm" x-text="lg.details"></div>
                                 </div>
                             </div>
@@ -116,7 +118,7 @@
                             <!-- Coverage bar -->
                             <div class="mb-4">
                                 <div class="flex justify-between text-xs mb-1">
-                                    <span class="text-zinc-500">Coverage</span>
+                                    <span class="text-zinc-500">{{ i18n.t('dashboard_coverage_label') }}</span>
                                     <span class="font-mono text-zinc-700 dark:text-zinc-300" x-text="lg.coverage + '%'"></span>
                                 </div>
                                 <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-1.5">
@@ -126,7 +128,7 @@
 
                             <!-- Last update -->
                             <div x-show="lg.last_update" class="text-[11px] text-zinc-400 mb-3">
-                                Last update: <span x-text="lg.last_update ? new Date(lg.last_update).toLocaleString(document.documentElement.lang || 'tr-TR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '-'"></span>
+                                {{ i18n.t('dashboard_last_update_prefix') }} <span x-text="lg.last_update ? new Date(lg.last_update).toLocaleString(document.documentElement.lang || 'tr-TR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '-'"></span>
                             </div>
 
                             <!-- Actions -->
@@ -152,7 +154,7 @@
                     <div>
                         <div class="flex justify-between text-sm mb-1">
                             <span class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('disk_seasons') }}</span>
-                            <span class="text-zinc-900 dark:text-white font-mono text-xs" x-text="(dashboard.disk_usage.seasons / 1024).toFixed(1) + ' KB'"></span>
+                            <span class="text-zinc-900 dark:text-white font-mono text-xs" x-text="(dashboard.disk_usage.seasons / 1024).toFixed(1) + ' ' + _u_kb"></span>
                         </div>
                         <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2">
                             <div class="bg-green-500 h-2 rounded-full" :style="`width: ${(dashboard.disk_usage.seasons / (dashboard.disk_usage.total || 1)) * 100}%`"></div>
@@ -161,7 +163,7 @@
                     <div>
                         <div class="flex justify-between text-sm mb-1">
                             <span class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('disk_matches') }}</span>
-                            <span class="text-zinc-900 dark:text-white font-mono text-xs" x-text="(dashboard.disk_usage.matches / 1024).toFixed(1) + ' KB'"></span>
+                            <span class="text-zinc-900 dark:text-white font-mono text-xs" x-text="(dashboard.disk_usage.matches / 1024).toFixed(1) + ' ' + _u_kb"></span>
                         </div>
                         <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2">
                             <div class="bg-purple-500 h-2 rounded-full" :style="`width: ${(dashboard.disk_usage.matches / (dashboard.disk_usage.total || 1)) * 100}%`"></div>
@@ -170,7 +172,7 @@
                     <div>
                         <div class="flex justify-between text-sm mb-1">
                             <span class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('disk_match_details') }}</span>
-                            <span class="text-zinc-900 dark:text-white font-mono text-xs" x-text="(dashboard.disk_usage.details / 1024 / 1024).toFixed(2) + ' MB'"></span>
+                            <span class="text-zinc-900 dark:text-white font-mono text-xs" x-text="(dashboard.disk_usage.details / 1024 / 1024).toFixed(2) + ' ' + _u_mb"></span>
                         </div>
                         <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2">
                             <div class="bg-orange-500 h-2 rounded-full" :style="`width: ${(dashboard.disk_usage.details / (dashboard.disk_usage.total || 1)) * 100}%`"></div>

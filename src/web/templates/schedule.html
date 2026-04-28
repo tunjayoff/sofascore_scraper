@@ -10,6 +10,16 @@ window.__SS_SCHEDULE_I18N__ = {
     page_prev: {{ i18n.t('schedule_page_prev') | tojson }},
     page_next: {{ i18n.t('schedule_page_next') | tojson }},
     page_status: {{ i18n.t('schedule_page_status') | tojson }},
+    running: {{ i18n.t('scraper_status_running') | tojson }},
+    completed: {{ i18n.t('scraper_status_completed') | tojson }},
+    failed: {{ i18n.t('scraper_status_failed') | tojson }},
+    idle: {{ i18n.t('scraper_idle_label') | tojson }},
+    matchday_format: {{ i18n.t('schedule_matchday_format') | tojson }},
+    status_finished: {{ i18n.t('schedule_match_status_finished') | tojson }},
+    time_minutes_short: {{ i18n.t('time_minutes_short') | tojson }},
+    wizard_time_approx: {{ i18n.t('wizard_time_approx_minutes') | tojson }},
+    missing_inline: {{ i18n.t('missing_details_inline_line') | tojson }},
+    missing_n_selected: {{ i18n.t('missing_details_n_selected') | tojson }},
 };
 </script>
 <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -106,6 +116,55 @@ window.__SS_SCHEDULE_I18N__ = {
         const tpl = (window.__SS_SCHEDULE_I18N__ && window.__SS_SCHEDULE_I18N__.page_status) || 'Page {page} of {pages}';
         const pages = this.totalPages();
         return tpl.replace(/\{page\}/g, String(this.currentPage)).replace(/\{pages\}/g, String(pages));
+    },
+
+    scraperStatusLabel() {
+        const s = this.scraperState.status;
+        const m = window.__SS_SCHEDULE_I18N__ || {};
+        if (s === 'Running') return m.running || s;
+        if (s === 'Completed') return m.completed || s;
+        if (s === 'Failed') return m.failed || s;
+        if (s === 'Idle') return m.idle || s;
+        return s;
+    },
+    formatEtaMinutes(sec) {
+        if (!sec) return '-';
+        const n = Math.ceil(Number(sec) / 60);
+        const tpl = (window.__SS_SCHEDULE_I18N__ && window.__SS_SCHEDULE_I18N__.time_minutes_short) || '{n} min';
+        return String(tpl).replace(/\{n\}/g, String(n));
+    },
+    formatMatchday(round) {
+        if (round === null || round === undefined || round === '') return '';
+        const tpl = (window.__SS_SCHEDULE_I18N__ && window.__SS_SCHEDULE_I18N__.matchday_format) || '{round}';
+        return String(tpl).replace(/\{round\}/g, String(round));
+    },
+    matchStatusBadge(status) {
+        if (status === 'Ended') {
+            const m = window.__SS_SCHEDULE_I18N__ || {};
+            return m.status_finished || 'COMPLETED';
+        }
+        return (status || '?').toString().toUpperCase();
+    },
+    formatWizardTimeMinutes(n) {
+        const tpl = (window.__SS_SCHEDULE_I18N__ && window.__SS_SCHEDULE_I18N__.wizard_time_approx) || '~{n} min';
+        return String(tpl).replace(/\{n\}/g, String(n));
+    },
+    formatMatchRowSubtitle(match) {
+        const parts = [];
+        if (match.tournament) parts.push(match.tournament);
+        const md = this.formatMatchday(match.round);
+        if (md) parts.push(md);
+        return parts.join(' \u2022 ');
+    },
+    missingInlineSummary() {
+        const d = this.missingData;
+        if (!d || d.missing_count === 0) return '';
+        const tpl = (window.__SS_SCHEDULE_I18N__ && window.__SS_SCHEDULE_I18N__.missing_inline) || '';
+        return String(tpl).replace(/\{total\}/g, String(d.total_matches)).replace(/\{missing\}/g, String(d.missing_count));
+    },
+    missingSelectedCountLabel() {
+        const tpl = (window.__SS_SCHEDULE_I18N__ && window.__SS_SCHEDULE_I18N__.missing_n_selected) || '{n}';
+        return String(tpl).replace(/\{n\}/g, String(this.missingSelected.length));
     },
 
     async loadFilterSeasons() {
@@ -255,7 +314,7 @@ window.__SS_SCHEDULE_I18N__ = {
                 this.checkStatus();
             } else {
                 const err = await res.json();
-                window.appToast(err.detail || {{ i18n.t('fetch_error_generic') | tojson }}, 'error');
+                window.appToast(err.detail || '{{ i18n.t("fetch_error_generic")|js_sq }}', 'error');
             }
         } catch(e) {
             window.appToast(e, 'error');
@@ -370,7 +429,7 @@ window.__SS_SCHEDULE_I18N__ = {
             if (res.ok) this.checkStatus();
             else {
                 const err = await res.json();
-                window.appToast(err.detail || {{ i18n.t('fetch_error_generic') | tojson }}, 'error');
+                window.appToast(err.detail || '{{ i18n.t("fetch_error_generic")|js_sq }}', 'error');
             }
         } catch(e) {
             window.appToast(e, 'error');
@@ -456,7 +515,7 @@ window.__SS_SCHEDULE_I18N__ = {
                         'text-green-600 dark:text-green-400': scraperState.status === 'Completed',
                         'text-red-600 dark:text-red-400': scraperState.status === 'Failed'
                     }"
-                    x-text="scraperState.status === 'Running' ? '{{ i18n.t('scraper_status_running') }}' : scraperState.status">
+                    x-text="scraperStatusLabel()">
                 </span>
             </div>
             <span class="text-sm font-bold text-zinc-700 dark:text-zinc-300" x-text="scraperState.progress + '%'"></span>
@@ -474,7 +533,7 @@ window.__SS_SCHEDULE_I18N__ = {
         <!-- Extra details -->
         <div x-show="scraperState.is_running && scraperState.matches_total > 0" class="grid grid-cols-3 gap-4 mt-3 text-xs text-zinc-500 dark:text-zinc-400">
             <div>{{ i18n.t('scraper_batch') }}: <span class="font-semibold text-zinc-700 dark:text-zinc-300" x-text="scraperState.matches_done + '/' + scraperState.matches_total"></span></div>
-            <div x-show="scraperState.eta_seconds">{{ i18n.t('scraper_eta') }}: <span class="font-semibold text-zinc-700 dark:text-zinc-300" x-text="scraperState.eta_seconds ? Math.ceil(scraperState.eta_seconds / 60) + ' min' : '-'"></span></div>
+            <div x-show="scraperState.eta_seconds">{{ i18n.t('scraper_eta') }}: <span class="font-semibold text-zinc-700 dark:text-zinc-300" x-text="scraperState.eta_seconds ? formatEtaMinutes(scraperState.eta_seconds) : '-'"></span></div>
             <div>{{ i18n.t('scraper_errors') }}: <span class="font-semibold" :class="scraperState.matches_failed > 0 ? 'text-red-400' : 'text-zinc-700 dark:text-zinc-300'" x-text="scraperState.matches_failed"></span></div>
         </div>
 
@@ -492,7 +551,7 @@ window.__SS_SCHEDULE_I18N__ = {
             class="mt-3 text-sm text-red-500 hover:text-red-400 hover:underline font-medium">
             {{ i18n.t('scraper_cancel') }}
         </button>
-        <span x-show="scraperState.cancel_requested" class="mt-3 text-sm text-amber-500 font-medium block">{{ i18n.t('scraper_cancel') }}...</span>
+        <span x-show="scraperState.cancel_requested" class="mt-3 text-sm text-amber-500 font-medium block">{{ i18n.t('scraper_cancel_pending') }}</span>
     </div>
 
     <!-- Filters Area -->
@@ -621,7 +680,7 @@ window.__SS_SCHEDULE_I18N__ = {
                                     <td class="px-5 py-3.5">
                                         <div class="flex flex-col">
                                             <span class="text-[12px] font-semibold text-zinc-700 dark:text-zinc-300" x-text="match.tournament || ''"></span>
-                                            <span class="text-[11px] text-zinc-500" x-text="(match.round ? match.round + '. Hafta' : '')"></span>
+                                            <span class="text-[11px] text-zinc-500" x-text="formatMatchday(match.round)"></span>
                                         </div>
                                     </td>
                                     <td class="px-5 py-3.5 text-center">
@@ -630,7 +689,7 @@ window.__SS_SCHEDULE_I18N__ = {
                                                 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-500': match.status === 'Ended',
                                                 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400': match.status !== 'Ended'
                                             }"
-                                            x-text="match.status === 'Ended' ? 'COMPLETED' : (match.status || '?').toUpperCase()">
+                                            x-text="matchStatusBadge(match.status)">
                                         </span>
                                     </td>
                                 </tr>
@@ -655,7 +714,7 @@ window.__SS_SCHEDULE_I18N__ = {
                             <span class="text-xs text-zinc-500 dark:text-zinc-400" x-text="formatDate(match.match_date)"></span>
                             <span class="text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full"
                                 :class="match.status === 'Ended' ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-500' : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'"
-                                x-text="match.status === 'Ended' ? 'COMPLETED' : (match.status || '?').toUpperCase()"></span>
+                                x-text="matchStatusBadge(match.status)"></span>
                         </div>
                         <div class="flex items-center justify-between">
                             <span class="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex-1 text-right pr-3" x-text="match.home_team || '-'"></span>
@@ -664,7 +723,7 @@ window.__SS_SCHEDULE_I18N__ = {
                             </span>
                             <span class="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex-1 pl-3" x-text="match.away_team || '-'"></span>
                         </div>
-                        <div class="mt-2 text-xs text-zinc-500" x-text="(match.tournament || '') + (match.round ? ' \u2022 ' + match.round + '. Hafta' : '')"></div>
+                        <div class="mt-2 text-xs text-zinc-500" x-text="formatMatchRowSubtitle(match)"></div>
                     </a>
                 </template>
             </div>
@@ -785,7 +844,7 @@ window.__SS_SCHEDULE_I18N__ = {
                     </div>
                     <div>
                         <div class="text-zinc-500 dark:text-zinc-400 text-xs mb-1">{{ i18n.t('wizard_estimated_time') }}</div>
-                        <div class="font-bold tabular-nums text-zinc-900 dark:text-white" x-text="'~' + getWizardEstimate().minutes + ' min'"></div>
+                        <div class="font-bold tabular-nums text-zinc-900 dark:text-white" x-text="formatWizardTimeMinutes(getWizardEstimate().minutes)"></div>
                     </div>
                 </div>
             </div>
@@ -831,7 +890,7 @@ window.__SS_SCHEDULE_I18N__ = {
                     <div>
                         <div class="mb-6 p-4 rounded-xl" :class="missingData.missing_count === 0 ? 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-300'">
                             <span x-show="missingData.missing_count === 0">{{ i18n.t('missing_details_none') }}</span>
-                            <span x-show="missingData.missing_count > 0" x-text="missingData.total_matches + ' {{ i18n.t('total_matches') }} \u2014 ' + missingData.missing_count + ' missing'"></span>
+                            <span x-show="missingData.missing_count > 0" x-text="missingInlineSummary()"></span>
                         </div>
 
                         <template x-if="missingData.missing_count > 0">
@@ -840,7 +899,7 @@ window.__SS_SCHEDULE_I18N__ = {
                                     <button @click="missingSelected = missingData.missing.map(m => m.match_id)" class="text-xs text-indigo-500 hover:text-indigo-400 font-medium">{{ i18n.t('missing_details_select_all') }}</button>
                                     <span class="text-zinc-300 dark:text-zinc-600">|</span>
                                     <button @click="missingSelected = []" class="text-xs text-zinc-500 hover:text-zinc-400 font-medium">{{ i18n.t('missing_details_select_none') }}</button>
-                                    <span class="ml-auto text-xs text-zinc-500" x-text="missingSelected.length + ' selected'"></span>
+                                    <span class="ml-auto text-xs text-zinc-500" x-text="missingSelectedCountLabel()"></span>
                                 </div>
 
                                 <div class="space-y-2 max-h-64 overflow-y-auto">

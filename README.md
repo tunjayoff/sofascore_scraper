@@ -19,12 +19,62 @@ This project is not affiliated with SofaScore. Use reasonable request rates and 
 ## Requirements
 
 - Python **3.10+** (3.11+ recommended).
+- **Git** — required for the one-line `curl | bash` installer (clones this repo); optional if you already extracted or cloned the project manually.
 - Network access to SofaScore.
 
 ## Installation
 
+### Quick install (script)
+
+Official repository: [github.com/tunjayoff/sofascore_scraper](https://github.com/tunjayoff/sofascore_scraper).
+
+**Linux / macOS / Git Bash**
+
+Already cloned:
+
 ```bash
-git clone <repository-url>
+chmod +x scripts/install.sh   # once
+./scripts/install.sh
+```
+
+**One-liner** (clones [tunjayoff/sofascore_scraper](https://github.com/tunjayoff/sofascore_scraper), creates `.venv`, installs dependencies, copies `.env`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/tunjayoff/sofascore_scraper/main/scripts/install.sh | bash
+```
+
+- Optional **first argument**: target folder name (default `sofascore_scraper`), or set `SOFASCORE_SCRAPER_DIR`.
+- To use another fork as default clone source: `export SOFASCORE_SCRAPER_REPO=https://github.com/YOU/fork.git` before `curl | bash`, or pass a **full git URL** as the first argument to `bash -s`:  
+  `curl ... | bash -s -- https://github.com/YOU/fork.git [folder]`
+- Override the built-in default URL only if needed: `SOFASCORE_SCRAPER_DEFAULT_REPO`.
+
+**Windows** — PowerShell (clone is automatic if you are not already inside the repo):
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned   # if needed, once
+Invoke-RestMethod https://raw.githubusercontent.com/tunjayoff/sofascore_scraper/main/scripts/install.ps1 | Invoke-Expression
+```
+
+Or after cloning:
+
+```powershell
+.\scripts\install.ps1
+```
+
+Explicit clone URL / folder:
+
+```powershell
+.\scripts\install.ps1 -RepoUrl https://github.com/tunjayoff/sofascore_scraper.git -InstallDir sofascore_scraper
+```
+
+From CMD: `scripts\install.bat`. Environment overrides: `SOFASCORE_SCRAPER_REPO`, `SOFASCORE_SCRAPER_DIR`, `SOFASCORE_SCRAPER_DEFAULT_REPO`.
+
+**Prerequisites:** **Git** (for the one-liner / clone path), **Python 3.10+** on `PATH`. The scripts print clear errors if `git`, `python`, `venv`, or `pip install` fails (e.g. missing `python3-venv` on Debian/Ubuntu).
+
+### Manual install
+
+```bash
+git clone https://github.com/tunjayoff/sofascore_scraper.git
 cd sofascore_scraper
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
