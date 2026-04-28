@@ -10,108 +10,175 @@
     </div>
     <div class="flex gap-3">
         <a href="/schedule"
-            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors shadow-md shadow-indigo-500/20 dark:shadow-indigo-900/20 flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-                </path>
-            </svg>
+            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors shadow-md shadow-indigo-500/20 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
             {{ i18n.t('menu_match_data') }}
         </a>
     </div>
 </div>
 
-<!-- Stats Grid -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-    <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-zinc-500 dark:text-zinc-400 font-medium text-sm">{{ i18n.t('configured_leagues_list') }}</h3>
-            <span class="p-2 bg-indigo-500/10 text-indigo-500 rounded-lg">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
-                    </path>
-                </svg>
-            </span>
-        </div>
-        <div class="text-3xl font-bold text-zinc-900 dark:text-white">{{ leagues|length }}</div>
-        <div class="text-sm text-green-500 mt-2 flex items-center gap-1">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18">
-                </path>
-            </svg>
-            <span>Configured</span>
-        </div>
+<div x-data="{
+    dashboard: null,
+    loading: true,
+    async fetchDashboard() {
+        this.loading = true;
+        try {
+            const res = await fetch('/api/dashboard');
+            this.dashboard = await res.json();
+        } catch(e) {
+            console.error('Dashboard fetch failed:', e);
+        } finally {
+            this.loading = false;
+        }
+    }
+}" x-init="fetchDashboard()">
+
+    <!-- Loading -->
+    <div x-show="loading" class="flex items-center justify-center py-20">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
     </div>
 
-    <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-zinc-500 dark:text-zinc-400 font-medium text-sm">{{ i18n.t('total_matches') }}</h3>
-            <span class="p-2 bg-purple-500/10 text-purple-500 rounded-lg">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
-                    </path>
-                </svg>
-            </span>
-        </div>
-        <div class="text-3xl font-bold text-zinc-900 dark:text-white">--</div>
-        <div class="text-sm text-zinc-500 mt-2">Cached locally</div>
-    </div>
+    <template x-if="dashboard && !loading">
+        <div class="space-y-8">
+            <!-- Top Stats Row -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-zinc-500 dark:text-zinc-400 font-medium text-sm">{{ i18n.t('configured_leagues_list') }}</h3>
+                        <span class="p-2 bg-indigo-500/10 text-indigo-500 rounded-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                        </span>
+                    </div>
+                    <div class="text-3xl font-bold text-zinc-900 dark:text-white" x-text="dashboard.totals.leagues"></div>
+                </div>
+                <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-zinc-500 dark:text-zinc-400 font-medium text-sm">{{ i18n.t('total_matches') }}</h3>
+                        <span class="p-2 bg-purple-500/10 text-purple-500 rounded-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                        </span>
+                    </div>
+                    <div class="text-3xl font-bold text-zinc-900 dark:text-white" x-text="dashboard.totals.matches.toLocaleString()"></div>
+                </div>
+                <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-zinc-500 dark:text-zinc-400 font-medium text-sm">{{ i18n.t('disk_usage_title') }}</h3>
+                        <span class="p-2 bg-green-500/10 text-green-500 rounded-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path></svg>
+                        </span>
+                    </div>
+                    <div class="text-3xl font-bold text-zinc-900 dark:text-white" x-text="dashboard.disk_usage.formatted_total"></div>
+                </div>
+            </div>
 
-    <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-zinc-500 dark:text-zinc-400 font-medium text-sm">{{ i18n.t('system_status') }}</h3>
-            <span class="p-2 bg-green-500/10 text-green-500 rounded-lg">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-            </span>
-        </div>
-        <div class="text-2xl font-bold text-white">Operational</div>
-        <div class="text-sm text-green-500 mt-2">v1.1.0</div>
-    </div>
-</div>
+            <!-- League Cards -->
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-zinc-900 dark:text-white">{{ i18n.t('league_list_title') }}</h2>
+                    <a href="/leagues" class="text-sm text-indigo-500 hover:text-indigo-400 font-medium">Manage &rarr;</a>
+                </div>
 
-<!-- Leagues List -->
-<div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm rounded-xl overflow-hidden">
-    <div class="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-zinc-900 dark:text-white">{{ i18n.t('league_list_title') }}</h2>
-        <a href="/leagues" class="text-sm text-indigo-400 hover:text-blue-300">Manage</a>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 text-[11px] font-semibold uppercase tracking-widest">
-                    <th class="px-6 py-4 font-medium">{{ i18n.t('league_name') }}</th>
-                    <th class="px-6 py-4 font-medium">{{ i18n.t('id') }}</th>
-                    <th class="px-6 py-4 font-medium">Status</th>
-                    <th class="px-6 py-4 font-medium text-right">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-zinc-800">
-                {% for id, name in leagues.items() %}
-                <tr class="hover:bg-zinc-50 dark:bg-zinc-800/30 transition-colors">
-                    <td class="px-6 py-4 text-zinc-900 dark:text-zinc-100 font-medium">{{ name }}</td>
-                    <td class="px-6 py-4 text-zinc-500 dark:text-zinc-400 font-mono text-sm">{{ id }}</td>
-                    <td class="px-6 py-4">
-                        <span
-                            class="px-2 py-1 rounded-full bg-green-500/10 text-green-500 text-xs font-medium">Active</span>
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                        <a href="/leagues" class="text-zinc-500 dark:text-zinc-400 hover:text-indigo-500 transition-colors">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z">
-                                </path>
-                            </svg>
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                <!-- Empty state -->
+                <div x-show="dashboard.leagues.length === 0" class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm rounded-xl p-12 text-center">
+                    <p class="text-zinc-500 dark:text-zinc-400 mb-4">{{ i18n.t('no_configured_leagues') }}</p>
+                    <a href="/leagues" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors inline-block">
+                        {{ i18n.t('submenu_league_add') }}
+                    </a>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <template x-for="lg in dashboard.leagues" :key="lg.id">
+                        <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-5 rounded-xl hover:border-indigo-500/50 transition-all duration-300 group">
+                            <div class="flex items-start justify-between mb-3">
+                                <div>
+                                    <h3 class="text-base font-bold text-zinc-900 dark:text-white" x-text="lg.name"></h3>
+                                    <span class="text-xs text-zinc-500 font-mono">ID: <span x-text="lg.id"></span></span>
+                                </div>
+                                <span class="text-2xl">&#127942;</span>
+                            </div>
+
+                            <!-- Stats -->
+                            <div class="grid grid-cols-3 gap-3 mb-4 text-center">
+                                <div class="bg-zinc-50 dark:bg-zinc-900/50 rounded-lg p-2">
+                                    <div class="text-xs text-zinc-500 mb-0.5">{{ i18n.t('total_seasons') }}</div>
+                                    <div class="font-bold text-zinc-900 dark:text-white text-sm" x-text="lg.seasons"></div>
+                                </div>
+                                <div class="bg-zinc-50 dark:bg-zinc-900/50 rounded-lg p-2">
+                                    <div class="text-xs text-zinc-500 mb-0.5">{{ i18n.t('total_matches') }}</div>
+                                    <div class="font-bold text-zinc-900 dark:text-white text-sm" x-text="lg.matches"></div>
+                                </div>
+                                <div class="bg-zinc-50 dark:bg-zinc-900/50 rounded-lg p-2">
+                                    <div class="text-xs text-zinc-500 mb-0.5">Details</div>
+                                    <div class="font-bold text-zinc-900 dark:text-white text-sm" x-text="lg.details"></div>
+                                </div>
+                            </div>
+
+                            <!-- Coverage bar -->
+                            <div class="mb-4">
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-zinc-500">Coverage</span>
+                                    <span class="font-mono text-zinc-700 dark:text-zinc-300" x-text="lg.coverage + '%'"></span>
+                                </div>
+                                <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-1.5">
+                                    <div class="bg-indigo-500 h-1.5 rounded-full transition-all" :style="`width: ${Math.min(lg.coverage, 100)}%`"></div>
+                                </div>
+                            </div>
+
+                            <!-- Last update -->
+                            <div x-show="lg.last_update" class="text-[11px] text-zinc-400 mb-3">
+                                Last update: <span x-text="lg.last_update ? new Date(lg.last_update).toLocaleDateString() : '-'"></span>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="flex gap-2">
+                                <a :href="'/schedule?league_id=' + lg.id"
+                                    class="flex-1 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs rounded-lg transition-colors text-center font-medium">
+                                    {{ i18n.t('submenu_match_list') }}
+                                </a>
+                                <a :href="'/stats?league_id=' + lg.id"
+                                    class="flex-1 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs rounded-lg transition-colors text-center font-medium">
+                                    {{ i18n.t('menu_stats') }}
+                                </a>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Disk Usage Breakdown -->
+            <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl">
+                <h2 class="text-lg font-semibold text-zinc-900 dark:text-white mb-4">{{ i18n.t('disk_usage_title') }}</h2>
+                <div class="space-y-3">
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('disk_seasons') }}</span>
+                            <span class="text-zinc-900 dark:text-white font-mono text-xs" x-text="(dashboard.disk_usage.seasons / 1024).toFixed(1) + ' KB'"></span>
+                        </div>
+                        <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2">
+                            <div class="bg-green-500 h-2 rounded-full" :style="`width: ${(dashboard.disk_usage.seasons / (dashboard.disk_usage.total || 1)) * 100}%`"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('disk_matches') }}</span>
+                            <span class="text-zinc-900 dark:text-white font-mono text-xs" x-text="(dashboard.disk_usage.matches / 1024).toFixed(1) + ' KB'"></span>
+                        </div>
+                        <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2">
+                            <div class="bg-purple-500 h-2 rounded-full" :style="`width: ${(dashboard.disk_usage.matches / (dashboard.disk_usage.total || 1)) * 100}%`"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('disk_match_details') }}</span>
+                            <span class="text-zinc-900 dark:text-white font-mono text-xs" x-text="(dashboard.disk_usage.details / 1024 / 1024).toFixed(2) + ' MB'"></span>
+                        </div>
+                        <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2">
+                            <div class="bg-orange-500 h-2 rounded-full" :style="`width: ${(dashboard.disk_usage.details / (dashboard.disk_usage.total || 1)) * 100}%`"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
 </div>
 {% endblock %}

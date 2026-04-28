@@ -498,6 +498,94 @@ async def system_status():
         "language": config_manager.get_language()
     }
 
+
+@router.get("/dashboard")
+async def get_dashboard():
+    """Dashboard overview with league cards, disk usage, and quick stats."""
+    data_dir = config_manager.get_data_dir()
+    if not os.path.isabs(data_dir):
+        data_dir = os.path.abspath(data_dir)
+    
+    leagues = config_manager.get_leagues()
+    seasons_dir = os.path.join(data_dir, "seasons")
+    matches_dir = os.path.join(data_dir, "matches")
+    details_dir = os.path.join(data_dir, "match_details")
+
+    league_cards = []
+    for lid, lname in leagues.items():
+        card = {"id": lid, "name": lname, "seasons": 0, "matches": 0, "details": 0, "coverage": 0, "last_update": None}
+        sf = os.path.join(seasons_dir, f"{lid}_seasons.json")
+        if os.path.exists(sf):
+            try:
+                with open(sf, 'r') as f:
+                    d = json.load(f)
+                s = d.get("seasons", d) if isinstance(d, dict) else d
+                card["seasons"] = len(s) if isinstance(s, list) else 0
+            except Exception:
+                pass
+        
+        match_pattern = os.path.join(matches_dir, f"{lid}_*", "*.csv")
+        for mf in glob.glob(match_pattern):
+            try:
+                with open(mf, 'r') as f:
+                    rows = sum(1 for _ in f) - 1
+                if rows > 0:
+                    card["matches"] += rows
+            except Exception:
+                pass
+        
+        detail_files = glob.glob(os.path.join(details_dir, f"{lid}_*", "season_*", "*", "basic.json"))
+        if not detail_files:
+            safe_name = lname.replace(' ', '_').replace('/', '_')
+            detail_files = glob.glob(os.path.join(details_dir, safe_name, "season_*", "*", "basic.json"))
+        card["details"] = len(detail_files)
+        card["coverage"] = round(card["details"] / card["matches"] * 100, 1) if card["matches"] > 0 else 0
+
+        if detail_files:
+            latest_mtime = max(os.path.getmtime(f) for f in detail_files)
+            import datetime
+            card["last_update"] = datetime.datetime.fromtimestamp(latest_mtime).isoformat()
+
+        league_cards.append(card)
+
+    def get_dir_size(path):
+        total = 0
+        if os.path.exists(path):
+            for dp, _, fns in os.walk(path):
+                for fn in fns:
+                    try:
+                        total += os.path.getsize(os.path.join(dp, fn))
+                    except Exception:
+                        pass
+        return total
+
+    s_size = get_dir_size(seasons_dir)
+    m_size = get_dir_size(matches_dir)
+    d_size = get_dir_size(details_dir)
+    total = s_size + m_size + d_size
+    
+    size_fmt = total
+    for unit in ['B', 'KB', 'MB', 'GB']:
+        if size_fmt < 1024:
+            formatted = f"{size_fmt:.1f} {unit}"
+            break
+        size_fmt /= 1024
+    else:
+        formatted = f"{size_fmt:.1f} TB"
+
+    return {
+        "leagues": league_cards,
+        "disk_usage": {
+            "seasons": s_size, "matches": m_size, "details": d_size,
+            "total": total, "formatted_total": formatted
+        },
+        "totals": {
+            "leagues": len(leagues),
+            "matches": sum(c["matches"] for c in league_cards),
+            "details": sum(c["details"] for c in league_cards),
+        }
+    }
+
 @router.get("/settings")
 async def get_all_settings():
     """Get all current settings."""
