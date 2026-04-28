@@ -292,6 +292,15 @@ SCRAPER_STATE = {
     "status": "Idle",
     "progress": 0,
     "current_task": "",
+    "current_batch": "",
+    "matches_total": 0,
+    "matches_done": 0,
+    "matches_failed": 0,
+    "circuit_breaker_triggered": False,
+    "circuit_breaker_reason": None,
+    "eta_seconds": None,
+    "started_at": None,
+    "cancel_requested": False,
     "log": []
 }
 
@@ -358,6 +367,16 @@ async def get_scrape_status():
     """Get the current status of the background scraper."""
     return SCRAPER_STATE
 
+@router.post("/scrape/cancel")
+async def cancel_scrape():
+    """Çalışan background fetch işlemini iptal eder."""
+    if not SCRAPER_STATE["is_running"]:
+        raise HTTPException(status_code=400, detail="No scraping process is running.")
+    SCRAPER_STATE["cancel_requested"] = True
+    SCRAPER_STATE["current_task"] = "Cancellation requested..."
+    return {"status": "cancelling", "message": "Cancel signal sent."}
+
+
 @router.post("/fetch")
 async def trigger_fetch(background_tasks: BackgroundTasks, payload: FetchRequest):
     """Trigger a background fetch operation. Mode 'full' or 'details'."""
@@ -368,18 +387,27 @@ async def trigger_fetch(background_tasks: BackgroundTasks, payload: FetchRequest
     from src.SofaScoreUi import SimpleSofaScoreUI
     import traceback
     
+    import datetime as _dt
+
     def update_state(status: str, progress: int, task: str):
         SCRAPER_STATE["status"] = status
         SCRAPER_STATE["progress"] = progress
         SCRAPER_STATE["current_task"] = task
-        # Keep log size manageable
         if len(SCRAPER_STATE["log"]) > 50:
              SCRAPER_STATE["log"].pop(0)
         SCRAPER_STATE["log"].append(f"[{status}] {task}")
 
     def run_update():
         SCRAPER_STATE["is_running"] = True
-        SCRAPER_STATE["log"] = [] # Clear log on start
+        SCRAPER_STATE["cancel_requested"] = False
+        SCRAPER_STATE["log"] = []
+        SCRAPER_STATE["matches_done"] = 0
+        SCRAPER_STATE["matches_failed"] = 0
+        SCRAPER_STATE["matches_total"] = 0
+        SCRAPER_STATE["circuit_breaker_triggered"] = False
+        SCRAPER_STATE["circuit_breaker_reason"] = None
+        SCRAPER_STATE["eta_seconds"] = None
+        SCRAPER_STATE["started_at"] = _dt.datetime.now().isoformat()
         update_state("Running", 0, f"Starting fetch for {payload.league_id if payload.league_id else 'All Leagues'}")
         
         logger.info(f"Background fetch started. League ID: {payload.league_id if payload.league_id else 'All'}")
