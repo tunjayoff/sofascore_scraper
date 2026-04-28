@@ -1,0 +1,522 @@
+{
+  "invalid_number_format": {
+    "en": "Invalid number format!",
+    "tr": "Geçersiz numara formatı!"
+  },
+  "year": {
+    "en": "Year",
+    "tr": ", Yıl:"
+  },
+  "menu_turkish": {
+    "en": "1. Turkish (tr)",
+    "tr": "1. 🇹🇷 Türkçe (tr)"
+  },
+  "menu_backup_all": {
+    "en": "1. Backup All Data",
+    "tr": "1. 💾 Tüm Verileri Yedekle"
+  },
+  "menu_backup_selected": {
+    "en": "2. Backup Selected Data Types",
+    "tr": "2. 📦 Seçili Veri Tiplerini Yedekle"
+  },
+  "prompt_option_1_2": {
+    "en": "Option (1-2):",
+    "tr": "Seçenek (1-2): "
+  },
+  "title_backup_all": {
+    "en": "Backup All Data:",
+    "tr": "Tüm Verileri Yedekleme:"
+  },
+  "info_backing_up_config": {
+    "en": "Backing up configuration files...",
+    "tr": "Yapılandırma dosyaları yedekleniyor..."
+  },
+  "success_backup_all": {
+    "en": "All data successfully backed up:",
+    "tr": "✅ Tüm veriler başarıyla yedeklendi: "
+  },
+  "title_backup_selected": {
+    "en": "Backup Selected Data Types:",
+    "tr": "Seçili Veri Tiplerini Yedekleme:"
+  },
+  "prompt_select_backup_types": {
+    "en": "Select data types to backup:",
+    "tr": "Yedeklenecek veri tiplerini seçin:"
+  },
+  "menu_config_files": {
+    "en": "1. Configuration Files",
+    "tr": "1. 📝 Yapılandırma Dosyaları"
+  },
+  "menu_match_data": {
+    "en": "3. Match Data",
+    "tr": "3. ⚽ Maç Verileri"
+  },
+  "menu_match_details": {
+    "en": "4. Match Details",
+    "tr": "4. 📊 Maç Detayları"
+  },
+  "success_backup_selected": {
+    "en": "Selected data successfully backed up:",
+    "tr": "✅ Seçili veriler başarıyla yedeklendi: "
+  },
+  "title_restore_data": {
+    "en": "Restore Data:",
+    "tr": "Veri Geri Yükleme:"
+  },
+  "prompt_select_restore_types": {
+    "en": "Select data types to restore:",
+    "tr": "Geri yüklenecek veri tiplerini seçin:"
+  },
+  "success_restore_selected": {
+    "en": "Selected data successfully restored.",
+    "tr": "✅ Seçili veriler başarıyla geri yüklendi."
+  },
+  "info_restart_required": {
+    "en": "You may need to restart the application for changes to take full effect.",
+    "tr": "ℹ️ Değişikliklerin tam olarak etkili olabilmesi için uygulamayı yeniden başlatmanız gerekebilir."
+  },
+  "menu_clear_all": {
+    "en": "1. Clear All Data",
+    "tr": "1. 🗑️ Tüm Verileri Temizle"
+  },
+  "menu_clear_selected": {
+    "en": "2. Clear Selected Data Types",
+    "tr": "2. 🧹 Seçili Veri Türlerini Temizle"
+  },
+  "success_clear_all": {
+    "en": "All data successfully cleared.",
+    "tr": "✅ Tüm veriler başarıyla temizlendi."
+  },
+  "title_clear_selected": {
+    "en": "Clear Selected Data Types:",
+    "tr": "Seçili Veri Türlerini Temizle:"
+  },
+  "menu_clear_match_data": {
+    "en": "2. Match Data",
+    "tr": "2. 🎮 Maç Verileri"
+  },
+  "menu_clear_match_details": {
+    "en": "3. Match Details",
+    "tr": "3. 📈 Maç Detayları"
+  },
+  "success_clear_selected": {
+    "en": "Selected data types successfully cleared.",
+    "tr": "✅ Seçili veri türleri başarıyla temizlendi."
+  },
+  "app_description": {
+    "en": "An application that fetches and analyzes football match data using the SofaScore API.",
+    "tr": "SofaScore API kullanarak futbol maç verilerini çeken ve analiz eden bir uygulama."
+  },
+  "dependency_requests": {
+    "en": "requests: For HTTP requests",
+    "tr": "requests: HTTP istekleri için"
+  },
+  "dependency_colorama": {
+    "en": "colorama: For colored terminal output",
+    "tr": "colorama: Renkli terminal çıktısı için"
+  },
+  "dependency_pandas": {
+    "en": "pandas: For data analysis",
+    "tr": "pandas: Veri analizi için"
+  },
+  "error_update_api_config": {
+    "en": "An error occurred while updating the API configuration.",
+    "tr": "❌ API yapılandırması güncellenirken bir hata oluştu."
+  },
+  "error_update_data_dir": {
+    "en": "An error occurred while updating the data directory.",
+    "tr": "❌ Veri dizini güncellenirken bir hata oluştu."
+  },
+  "error_update_display_settings": {
+    "en": "An error occurred while updating the display settings.",
+    "tr": "❌ Görüntüleme ayarları güncellenirken bir hata oluştu."
+  },
+  "warning_no_data_type_selected": {
+    "en": "No data type selected!",
+    "tr": "⚠️ Hiçbir veri tipi seçilmedi!"
+  },
+  "info_backing_up_match_data": {
+    "en": "Backing up match data...",
+    "tr": "Maç verileri yedekleniyor..."
+  },
+  "info_backing_up_match_details": {
+    "en": "Backing up match details...",
+    "tr": "Maç detayları yedekleniyor..."
+  },
+  "warning_backup_dir_not_found": {
+    "en": "Specified backup directory not found:",
+    "tr": "⚠️ Belirtilen yedek dizini bulunamadı: "
+  },
+  "info_restoring_config_files": {
+    "en": "Restoring configuration files...",
+    "tr": "Yapılandırma dosyaları geri yükleniyor..."
+  },
+  "info_restoring_league_season_data": {
+    "en": "Restoring league and season data...",
+    "tr": "Lig ve sezon verileri geri yükleniyor..."
+  },
+  "info_restoring_match_data": {
+    "en": "Restoring match data...",
+    "tr": "Maç verileri geri yükleniyor..."
+  },
+  "info_restoring_match_details": {
+    "en": "Restoring match details...",
+    "tr": "Maç detayları geri yükleniyor..."
+  },
+  "info_clear_cancelled": {
+    "en": "Clear operation cancelled.",
+    "tr": "Temizleme işlemi iptal edildi."
+  },
+  "error_no_data_type_selected": {
+    "en": "No data type selected.",
+    "tr": "❌ Hiçbir veri türü seçilmedi."
+  },
+  "warning_invalid_value_default": {
+    "en": "Invalid value, using default:",
+    "tr": "⚠️ Geçersiz değer, varsayılan kullanılıyor: "
+  },
+  "error_invalid_option": {
+    "en": "Invalid option!",
+    "tr": "❌ Geçersiz seçenek!"
+  },
+  "prompt_selections": {
+    "en": "Selections (e.g. 1,2,3):",
+    "tr": "Seçimleriniz (örn: 1,2,3): "
+  },
+  "success_backup_league_config": {
+    "en": "League configuration backed up:",
+    "tr": "✓ Lig yapılandırması yedeklendi: "
+  },
+  "success_backup_env_vars": {
+    "en": "Environment variables backed up:",
+    "tr": "✓ Çevre değişkenleri yedeklendi: "
+  },
+  "success_backup_match_data": {
+    "en": "Match data backed up:",
+    "tr": "✓ Maç verileri yedeklendi: "
+  },
+  "success_backup_match_details": {
+    "en": "Match details backed up:",
+    "tr": "✓ Maç detayları yedeklendi: "
+  },
+  "success_restore_league_config": {
+    "en": "League configuration restored:",
+    "tr": "✓ Lig yapılandırması geri yüklendi: "
+  },
+  "success_restore_env_vars": {
+    "en": "Environment variables restored: .env",
+    "tr": "✓ Çevre değişkenleri geri yüklendi: .env"
+  },
+  "success_restore_season_data": {
+    "en": "Season data restored:",
+    "tr": "✓ Sezon verileri geri yüklendi: "
+  },
+  "success_restore_match_data": {
+    "en": "Match data restored:",
+    "tr": "✓ Maç verileri geri yüklendi: "
+  },
+  "success_restore_match_details": {
+    "en": "Match details restored:",
+    "tr": "✓ Maç detayları geri yüklendi: "
+  },
+  "success_config_reloaded": {
+    "en": "Configuration reloaded.",
+    "tr": "✓ Yapılandırma yeniden yüklendi."
+  },
+  "warning_config_reload_failed": {
+    "en": "Configuration reload failed!",
+    "tr": "⚠️ Yapılandırma yeniden yüklenemedi!"
+  },
+  "prompt_selections_comma": {
+    "en": "Selection (comma separated numbers):",
+    "tr": "Seçiminiz (virgülle ayrılmış numaralar): "
+  },
+  "warning_clear_all_confirm": {
+    "en": "WARNING: This operation will delete ALL data and cannot be undone! Do you want to continue? (y/n):",
+    "tr": "DİKKAT: Bu işlem TÜM verileri silecek ve geri alınamaz! Devam etmek istiyor musunuz? (e/h): "
+  },
+  "warning_clear_all_final": {
+    "en": "WARNING: All your data will be lost. Final confirmation? (y/n):",
+    "tr": "UYARI: Bu işlem sonucunda tüm verileriniz kaybolacak. Son kez onaylıyor musunuz? (e/h): "
+  },
+  "warning_clear_selected_confirm": {
+    "en": "WARNING: This operation will delete selected data types! Do you want to continue? (y/n):",
+    "tr": "DİKKAT: Bu işlem seçili veri türlerini silecek! Devam etmek istiyor musunuz? (e/h): "
+  },
+  "warning_no_configured_league": {
+    "en": "Configured league not found.",
+    "tr": "Yapılandırılmış lig bulunamadı."
+  },
+  "info_total_matches_fetched": {
+    "en": "Total matches successfully fetched for all leagues:",
+    "tr": "Tüm ligler için toplam"
+  },
+  "info_total_matches_fetched_suffix": {
+    "en": "match data successfully fetched.",
+    "tr": "maç verisi başarıyla çekildi."
+  },
+  "info_fetching_match_details": {
+    "en": "Fetching match details...",
+    "tr": "Maç detayları çekiliyor..."
+  },
+  "info_match_details_completed": {
+    "en": "Match details fetching completed.",
+    "tr": "Maç detayları çekme işlemi tamamlandı."
+  },
+  "info_match_successful": {
+    "en": "match successful.",
+    "tr": "maç başarılı."
+  },
+  "title_fetching_details_all": {
+    "en": "Fetching Details for All Matches:",
+    "tr": "Tüm Maçlar İçin Detaylar Çekiliyor:"
+  },
+  "title_filter_options": {
+    "en": "Filtering Options:",
+    "tr": "Filtreleme Seçenekleri:"
+  },
+  "menu_all_leagues": {
+    "en": "1. All Leagues",
+    "tr": "1. Tüm Ligler"
+  },
+  "menu_cancel": {
+    "en": "0. Cancel",
+    "tr": "0. İptal"
+  },
+  "title_csv_conversion": {
+    "en": "CSV Conversion:",
+    "tr": "CSV Dönüştürme:"
+  },
+  "title_match_details_management": {
+    "en": "MATCH DETAILS MANAGEMENT",
+    "tr": "MAÇ DETAYLARI YÖNETİMİ"
+  },
+  "menu_fetch_single_match": {
+    "en": "1. Fetch Single Match Data",
+    "tr": "1. Tek Maç Veri Çekme"
+  },
+  "menu_fetch_match_from_id": {
+    "en": "2. Fetch Match Data from ID List",
+    "tr": "2. ID Listesinden Maç Veri Çekme"
+  },
+  "menu_convert_all_to_csv": {
+    "en": "3. Convert All Match Data to CSV",
+    "tr": "3. Tüm Maç Verilerini CSV'ye Dönüştür"
+  },
+  "menu_generate_analysis_report": {
+    "en": "4. Generate Match Files Analysis Report",
+    "tr": "4. Maç Dosyaları Analiz Raporu Oluştur"
+  },
+  "menu_return_main": {
+    "en": "0. Return to Main Menu",
+    "tr": "0. Ana Menüye Dön"
+  },
+  "title_analysis_report": {
+    "en": "Match Files Analysis Report:",
+    "tr": "Maç Dosyaları Analiz Raporu:"
+  },
+  "error_no_saved_league": {
+    "en": "Saved league not found. Add a league first.",
+    "tr": "Kayıtlı lig bulunamadı. Önce lig ekleyin."
+  },
+  "info_last_seasons_prefix": {
+    "en": "For each league, the last",
+    "tr": "Her lig için son"
+  },
+  "info_last_seasons_suffix": {
+    "en": "seasons will be fetched",
+    "tr": "sezon çekilecek"
+  },
+  "info_all_seasons_fetched": {
+    "en": "All seasons will be fetched for each league",
+    "tr": "Her lig için tüm sezonlar çekilecek"
+  },
+  "title_fetched_matches": {
+    "en": "Fetched Matches:",
+    "tr": "Çekilen Maçlar:"
+  },
+  "invalid_season_number": {
+    "en": "Invalid season number!",
+    "tr": "Geçersiz sezon numarası!"
+  },
+  "invalid_directory_path": {
+    "en": "Invalid directory path:",
+    "tr": "❌ Geçersiz dizin yolu:"
+  },
+  "no_match_data_for_season": {
+    "en": "No match data found for this season.",
+    "tr": "Bu sezon için maç verisi bulunamadı."
+  },
+  "match_files": {
+    "en": "Match Files:",
+    "tr": "Maç Dosyaları:"
+  },
+  "match_id_comma": {
+    "en": "Match ID (comma separated for multiple):",
+    "tr": "Maç ID (birden fazla için virgülle ayırın):"
+  },
+  "valid_match_id_not_found": {
+    "en": "Valid match ID not found.",
+    "tr": "Geçerli maç ID'si bulunamadı."
+  },
+  "fetch_details_error": {
+    "en": "Error fetching match details.",
+    "tr": "✗ Maç ID"
+  },
+  "operation_success": {
+    "en": "Operation completed successfully.",
+    "tr": "✅ İşlem başarıyla tamamlandı."
+  },
+  "operation_error": {
+    "en": "An error occurred during during the operation.",
+    "tr": "❌ İşlem sırasında bir hata oluştu."
+  },
+  "seasons_to_fetch_details": {
+    "en": "How many seasons do you want to fetch details for?",
+    "tr": "Kaç sezon için detayları çekmek istiyorsunuz?"
+  },
+  "all_seasons_0_last_n": {
+    "en": "(Enter 0 for all seasons, enter number for last N seasons)",
+    "tr": "(Tüm sezonlar için 0 girin, son N sezon için rakam girin)"
+  },
+  "season_count": {
+    "en": "Number of seasons:",
+    "tr": "Sezon sayısı:"
+  },
+  "enter_valid_number_greater_0": {
+    "en": "Please enter a valid number (0 or greater)",
+    "tr": "Lütfen geçerli bir sayı girin (0 veya daha büyük)"
+  },
+  "enter_valid_number": {
+    "en": "Please enter a valid number",
+    "tr": "Lütfen geçerli bir sayı girin"
+  },
+  "fetching_match_details_for_all": {
+    "en": "Fetching match details for all leagues...",
+    "tr": "Tüm ligler için maç detayları çekiliyor..."
+  },
+  "match_details_success_all": {
+    "en": "Details for all matches successfully fetched.",
+    "tr": "✅ Tüm maçlar için detaylar başarıyla çekildi."
+  },
+  "match_details_error": {
+    "en": "An error occurred while fetching match details.",
+    "tr": "❌ Maç detayları çekilirken bir hata oluştu."
+  },
+  "input_league_number_details": {
+    "en": "Enter the number of the league to fetch details for (0: Cancel):",
+    "tr": "Detaylarını çekmek istediğiniz ligin numarasını girin (0: İptal):"
+  },
+  "fetching_match_details_for": {
+    "en": "Fetching match details for",
+    "tr": "için maç detayları çekiliyor..."
+  },
+  "match_details_success_for": {
+    "en": "Match details successfully fetched for",
+    "tr": "için maç detayları başarıyla çekildi."
+  },
+  "invalid_selection": {
+    "en": "Invalid selection!",
+    "tr": "Geçersiz seçim!"
+  },
+  "single_match_csv": {
+    "en": "1. Single Match CSV",
+    "tr": "1. Tek Maç CSV"
+  },
+  "specific_league_csv": {
+    "en": "2. CSV for Specific League",
+    "tr": "2. Belirli Bir Lig İçin CSV"
+  },
+  "all_leagues_csv": {
+    "en": "3. CSV for All Leagues",
+    "tr": "3. Tüm Ligler İçin CSV"
+  },
+  "csv_match_id": {
+    "en": "Match ID to convert to CSV:",
+    "tr": "CSV'ye dönüştürülecek maç ID:"
+  },
+  "csv_created_success": {
+    "en": "CSV file successfully created:",
+    "tr": "✅ CSV dosyası başarıyla oluşturuldu:"
+  },
+  "csv_created_error": {
+    "en": "Error occurred while creating CSV file.",
+    "tr": "❌ CSV dosyası oluşturulurken hata oluştu."
+  },
+  "csv_input_league_number": {
+    "en": "Enter the number of the league to convert to CSV (0: Cancel):",
+    "tr": "CSV'ye dönüştürülecek ligin numarasını girin (0: İptal):"
+  },
+  "creating_csv_for": {
+    "en": "Creating CSV for",
+    "tr": "için CSV oluşturuluyor..."
+  },
+  "csv_files_created_success": {
+    "en": "CSV files successfully created:",
+    "tr": "✅ CSV dosyaları başarıyla oluşturuldu:"
+  },
+  "csv_files_created_error": {
+    "en": "Error occurred while creating CSV files.",
+    "tr": "❌ CSV dosyaları oluşturulurken hata oluştu."
+  },
+  "custom_dir_path": {
+    "en": "Would you like to enter a custom directory path? (leave empty for default):",
+    "tr": "Özel bir dizin yolu girmek ister misiniz? (varsayılan için boş bırakın):"
+  },
+  "report_files": {
+    "en": "Report files:",
+    "tr": "Rapor dosyaları:"
+  },
+  "not_created": {
+    "en": "Not created",
+    "tr": "Oluşturulmadı"
+  },
+  "report_error": {
+    "en": "An error occurred while creating report.",
+    "tr": "❌ Rapor oluşturulurken bir hata oluştu."
+  },
+  "invalid_season_number_format": {
+    "en": "Invalid numerical format!",
+    "tr": "Geçersiz numara formatı!"
+  },
+  "no_season_data_found_locally": {
+    "en": "Season data not found locally, fetching from API...",
+    "tr": "Sezon verisi yerel olarak bulunamadı, API'den çekiliyor..."
+  },
+  "no_match_found_skipping": {
+    "en": "Match not found. Skipping.",
+    "tr": "Maç bulunamadı. Atlanıyor."
+  },
+  "season_data_not_sorted": {
+    "en": "Season data could not be sorted. Skipping.",
+    "tr": "Sezon verisi sıralanamadı. Atlanıyor."
+  },
+  "fetching_matches_for_season": {
+    "en": "Fetching matches for season",
+    "tr": "sezonu için maçlar çekiliyor..."
+  },
+  "matches_fetched_successfully": {
+    "en": "Matches successfully fetched.",
+    "tr": "✓ Maçlar başarıyla çekildi."
+  },
+  "total_matches_fetched_for_league": {
+    "en": "Total matches fetched for",
+    "tr": "için toplam"
+  },
+  "matches_not_found": {
+    "en": "Match data not found.",
+    "tr": "Maç verisi bulunamadı."
+  },
+  "league_number_to_view_matches": {
+    "en": "League number to view matches:",
+    "tr": "Maçları görüntülemek istediğiniz lig numarası:"
+  },
+  "season_data_not_found_for_league": {
+    "en": "Season data not found for this league.",
+    "tr": "Bu lig için sezon verisi bulunamadı."
+  },
+  "season_number_to_view_matches": {
+    "en": "Season number to view matches:",
+    "tr": "Maçları görüntülemek istediğiniz sezon numarası:"
+  }
+}

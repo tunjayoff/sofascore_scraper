@@ -5,8 +5,8 @@
 {% block content %}
 <div class="mb-8 flex items-center justify-between">
     <div>
-        <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">{{ i18n.t('menu_stats') }}</h1>
-        <p class="text-slate-500 dark:text-slate-400">{{ i18n.t('system_stats_title') }}</p>
+        <h1 class="text-3xl font-bold text-zinc-900 dark:text-white mb-2">{{ i18n.t('menu_stats') }}</h1>
+        <p class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('system_stats_title') }}</p>
     </div>
     <div x-data="{
         refreshing: false,
@@ -17,7 +17,7 @@
         }
     }">
         <button @click="refresh()"
-            class="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-sm text-slate-700 dark:text-white rounded-lg transition-colors flex items-center gap-2">
+            class="px-4 py-2 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 shadow-sm text-zinc-700 dark:text-white rounded-lg transition-colors flex items-center gap-2">
             <svg class="w-4 h-4" :class="{'animate-spin': refreshing}" fill="none" stroke="currentColor"
                 viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -59,12 +59,12 @@
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <!-- Leagues -->
-        <div class="glass-panel p-6 rounded-xl flex items-center justify-between">
+        <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl flex items-center justify-between">
             <div>
-                <p class="text-slate-500 dark:text-slate-400 text-sm font-medium uppercase tracking-wider">{{ i18n.t('total_leagues') }}</p>
-                <h3 class="text-3xl font-bold text-slate-900 dark:text-white mt-1" x-text="stats.leagues_count">0</h3>
+                <p class="text-zinc-500 dark:text-zinc-400 text-sm font-medium uppercase tracking-wider">{{ i18n.t('total_leagues') }}</p>
+                <h3 class="text-3xl font-bold text-zinc-900 dark:text-white mt-1" x-text="stats.leagues_count">0</h3>
             </div>
-            <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+            <div class="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
@@ -74,10 +74,10 @@
         </div>
 
         <!-- Seasons -->
-        <div class="glass-panel p-6 rounded-xl flex items-center justify-between">
+        <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl flex items-center justify-between">
             <div>
-                <p class="text-slate-500 dark:text-slate-400 text-sm font-medium uppercase tracking-wider">{{ i18n.t('total_seasons') }}</p>
-                <h3 class="text-3xl font-bold text-slate-900 dark:text-white mt-1" x-text="stats.seasons">0</h3>
+                <p class="text-zinc-500 dark:text-zinc-400 text-sm font-medium uppercase tracking-wider">{{ i18n.t('total_seasons') }}</p>
+                <h3 class="text-3xl font-bold text-zinc-900 dark:text-white mt-1" x-text="stats.seasons">0</h3>
             </div>
             <div class="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,10 +89,10 @@
         </div>
 
         <!-- Matches -->
-        <div class="glass-panel p-6 rounded-xl flex items-center justify-between">
+        <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl flex items-center justify-between">
             <div>
-                <p class="text-slate-500 dark:text-slate-400 text-sm font-medium uppercase tracking-wider">{{ i18n.t('total_matches') }}</p>
-                <h3 class="text-3xl font-bold text-slate-900 dark:text-white mt-1" x-text="stats.matches">0</h3>
+                <p class="text-zinc-500 dark:text-zinc-400 text-sm font-medium uppercase tracking-wider">{{ i18n.t('total_matches') }}</p>
+                <h3 class="text-3xl font-bold text-zinc-900 dark:text-white mt-1" x-text="stats.matches">0</h3>
             </div>
             <div class="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,10 +103,10 @@
         </div>
 
         <!-- Match Details -->
-        <div class="glass-panel p-6 rounded-xl flex items-center justify-between">
+        <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl flex items-center justify-between">
             <div>
-                <p class="text-slate-500 dark:text-slate-400 text-sm font-medium uppercase tracking-wider">Details</p>
-                <h3 class="text-3xl font-bold text-slate-900 dark:text-white mt-1" x-text="stats.details">0</h3>
+                <p class="text-zinc-500 dark:text-zinc-400 text-sm font-medium uppercase tracking-wider">Details</p>
+                <h3 class="text-3xl font-bold text-zinc-900 dark:text-white mt-1" x-text="stats.details">0</h3>
             </div>
             <div class="w-12 h-12 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -119,33 +119,33 @@
     </div>
 
     <!-- League Breakdown Table -->
-    <div class="glass-panel p-6 rounded-xl mt-8">
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-white border-b border-slate-300 dark:border-slate-700 pb-4 mb-6">
+    <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl mt-8">
+        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-300 dark:border-zinc-700 pb-4 mb-6">
             League Coverage Breakdown
         </h2>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="text-slate-500 dark:text-slate-400 text-sm uppercase tracking-wider">
+                    <tr class="text-zinc-500 dark:text-zinc-400 text-sm uppercase tracking-wider">
                         <th class="px-4 py-3">League</th>
                         <th class="px-4 py-3">Matches Found</th>
                         <th class="px-4 py-3">Details Scraped</th>
                         <th class="px-4 py-3">Coverage</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-800">
+                <tbody class="divide-y divide-zinc-800">
                     <template x-for="lg in stats.league_breakdown" :key="lg.id">
-                        <tr class="hover:bg-white dark:bg-white/50 dark:bg-white dark:bg-slate-100 dark:bg-slate-800/50 transition-colors">
-                            <td class="px-4 py-4 text-slate-800 dark:text-slate-100 font-medium" x-text="lg.name"></td>
-                            <td class="px-4 py-4 text-slate-700 dark:text-slate-300" x-text="lg.matches"></td>
-                            <td class="px-4 py-4 text-slate-700 dark:text-slate-300" x-text="lg.details"></td>
+                        <tr class="hover:bg-white dark:bg-white/50 dark:bg-white dark:bg-zinc-100 dark:bg-zinc-800/50 transition-colors">
+                            <td class="px-4 py-4 text-zinc-800 dark:text-zinc-100 font-medium" x-text="lg.name"></td>
+                            <td class="px-4 py-4 text-zinc-700 dark:text-zinc-300" x-text="lg.matches"></td>
+                            <td class="px-4 py-4 text-zinc-700 dark:text-zinc-300" x-text="lg.details"></td>
                             <td class="px-4 py-4 w-48">
                                 <div class="flex items-center gap-3">
-                                    <div class="flex-grow bg-slate-100 dark:bg-slate-800 rounded-full h-2">
-                                        <div class="bg-blue-500 h-2 rounded-full" :style="`width: ${lg.coverage}%`">
+                                    <div class="flex-grow bg-zinc-100 dark:bg-zinc-800 rounded-full h-2">
+                                        <div class="bg-indigo-500 h-2 rounded-full" :style="`width: ${lg.coverage}%`">
                                         </div>
                                     </div>
-                                    <span class="text-xs font-mono text-slate-500 dark:text-slate-400" x-text="lg.coverage + '%'"></span>
+                                    <span class="text-xs font-mono text-zinc-500 dark:text-zinc-400" x-text="lg.coverage + '%'"></span>
                                 </div>
                             </td>
                         </tr>
@@ -156,21 +156,21 @@
     </div>
 
     <!-- Disk Usage -->
-    <div class="glass-panel p-6 rounded-xl mt-8">
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-white border-b border-slate-300 dark:border-slate-700 pb-4 mb-6">
+    <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl mt-8">
+        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-300 dark:border-zinc-700 pb-4 mb-6">
             {{ i18n.t('disk_usage_title') }}
-            <span class="float-right text-blue-400 font-bold" x-text="stats.disk_usage.formatted_total"></span>
+            <span class="float-right text-indigo-400 font-bold" x-text="stats.disk_usage.formatted_total"></span>
         </h2>
 
         <div class="space-y-4">
             <!-- Seasons Storage -->
             <div>
                 <div class="flex justify-between text-sm mb-1">
-                    <span class="text-slate-500 dark:text-slate-400">{{ i18n.t('disk_seasons') }}</span>
-                    <span class="text-slate-900 dark:text-white font-mono"
+                    <span class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('disk_seasons') }}</span>
+                    <span class="text-zinc-900 dark:text-white font-mono"
                         x-text="(stats.disk_usage.seasons / 1024).toFixed(2) + ' KB'"></span>
                 </div>
-                <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2">
                     <div class="bg-green-500 h-2 rounded-full"
                         :style="`width: ${(stats.disk_usage.seasons / (stats.disk_usage.total || 1)) * 100}%`"></div>
                 </div>
@@ -179,11 +179,11 @@
             <!-- Matches Storage -->
             <div>
                 <div class="flex justify-between text-sm mb-1">
-                    <span class="text-slate-500 dark:text-slate-400">{{ i18n.t('disk_matches') }}</span>
-                    <span class="text-slate-900 dark:text-white font-mono"
+                    <span class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('disk_matches') }}</span>
+                    <span class="text-zinc-900 dark:text-white font-mono"
                         x-text="(stats.disk_usage.matches / 1024).toFixed(2) + ' KB'"></span>
                 </div>
-                <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2">
                     <div class="bg-purple-500 h-2 rounded-full"
                         :style="`width: ${(stats.disk_usage.matches / (stats.disk_usage.total || 1)) * 100}%`"></div>
                 </div>
@@ -192,11 +192,11 @@
             <!-- Details Storage -->
             <div>
                 <div class="flex justify-between text-sm mb-1">
-                    <span class="text-slate-500 dark:text-slate-400">{{ i18n.t('disk_match_details') }}</span>
-                    <span class="text-slate-900 dark:text-white font-mono"
+                    <span class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('disk_match_details') }}</span>
+                    <span class="text-zinc-900 dark:text-white font-mono"
                         x-text="(stats.disk_usage.details / 1024 / 1024).toFixed(2) + ' MB'"></span>
                 </div>
-                <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2">
                     <div class="bg-orange-500 h-2 rounded-full"
                         :style="`width: ${(stats.disk_usage.details / (stats.disk_usage.total || 1)) * 100}%`"></div>
                 </div>

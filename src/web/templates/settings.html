@@ -5,8 +5,8 @@
 {% block content %}
 <div class="mb-8 flex items-center justify-between">
     <div>
-        <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">{{ i18n.t('menu_settings') }}</h1>
-        <p class="text-slate-500 dark:text-slate-400">{{ i18n.t('settings_title') }}</p>
+        <h1 class="text-3xl font-bold text-zinc-900 dark:text-white mb-2">{{ i18n.t('menu_settings') }}</h1>
+        <p class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('settings_title') }}</p>
     </div>
 </div>
 
@@ -44,28 +44,28 @@
 }">
 
     <!-- General Settings -->
-    <div class="glass-panel p-6 rounded-xl space-y-6">
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-white border-b border-slate-300 dark:border-slate-700 pb-2">
+    <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl space-y-6">
+        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-300 dark:border-zinc-700 pb-2">
             {{ i18n.t('language_selection_title') }}
         </h2>
 
         <div>
-            <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">{{ i18n.t('current_language') }}</label>
+            <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('current_language') }}</label>
             <select x-model="settings.language"
-                class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm text-slate-900 dark:text-white px-4 py-2 rounded-xl focus:outline-none focus:border-blue-500">
+                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 shadow-sm text-zinc-900 dark:text-white px-4 py-2 rounded-xl focus:outline-none focus:border-indigo-500">
                 <option value="tr">Türkçe</option>
                 <option value="en">English</option>
             </select>
         </div>
 
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-white border-b border-slate-300 dark:border-slate-700 pb-2 pt-4">
+        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-300 dark:border-zinc-700 pb-2 pt-4">
             {{ i18n.t('display_settings_title') }}
         </h2>
 
         <div class="flex items-center justify-between">
-            <span class="text-slate-700 dark:text-slate-300">{{ i18n.t('use_color') }}</span>
+            <span class="text-zinc-700 dark:text-zinc-300">{{ i18n.t('use_color') }}</span>
             <button class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                :class="settings.use_color ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-700'"
+                :class="settings.use_color ? 'bg-indigo-600' : 'bg-zinc-200 dark:bg-zinc-700'"
                 @click="settings.use_color = !settings.use_color">
                 <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
                     :class="settings.use_color ? 'translate-x-6' : 'translate-x-1'">
@@ -75,25 +75,25 @@
     </div>
 
     <!-- API & Data Settings -->
-    <div class="glass-panel p-6 rounded-xl space-y-6">
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-white border-b border-slate-300 dark:border-slate-700 pb-2">
+    <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl space-y-6">
+        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-300 dark:border-zinc-700 pb-2">
             {{ i18n.t('api_config_title') }}
         </h2>
 
         <div>
-            <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">{{ i18n.t('base_url') }}</label>
+            <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('base_url') }}</label>
             <input type="text" x-model="settings.api_base_url"
-                class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm text-slate-900 dark:text-white px-4 py-2 rounded-xl focus:outline-none focus:border-blue-500">
+                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 shadow-sm text-zinc-900 dark:text-white px-4 py-2 rounded-xl focus:outline-none focus:border-indigo-500">
         </div>
 
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-white border-b border-slate-300 dark:border-slate-700 pb-2 pt-4">
+        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-300 dark:border-zinc-700 pb-2 pt-4">
             {{ i18n.t('proxy_settings') }}
         </h2>
 
         <div class="flex items-center justify-between">
-            <span class="text-slate-700 dark:text-slate-300">{{ i18n.t('use_proxy') }}</span>
+            <span class="text-zinc-700 dark:text-zinc-300">{{ i18n.t('use_proxy') }}</span>
             <button class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                :class="settings.use_proxy ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-700'"
+                :class="settings.use_proxy ? 'bg-indigo-600' : 'bg-zinc-200 dark:bg-zinc-700'"
                 @click="settings.use_proxy = !settings.use_proxy">
                 <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
                     :class="settings.use_proxy ? 'translate-x-6' : 'translate-x-1'">
@@ -102,26 +102,26 @@
         </div>
 
         <div x-show="settings.use_proxy" x-transition>
-            <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">{{ i18n.t('proxy_url') }}</label>
+            <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('proxy_url') }}</label>
             <input type="text" x-model="settings.proxy_url" placeholder="http://user:pass@host:port"
-                class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm text-slate-900 dark:text-white px-4 py-2 rounded-xl focus:outline-none focus:border-blue-500">
+                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 shadow-sm text-zinc-900 dark:text-white px-4 py-2 rounded-xl focus:outline-none focus:border-indigo-500">
         </div>
 
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-white border-b border-slate-300 dark:border-slate-700 pb-2 pt-4">
+        <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-300 dark:border-zinc-700 pb-2 pt-4">
             {{ i18n.t('change_data_dir') }}
         </h2>
 
         <div>
-            <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">{{ i18n.t('current_data_dir') }}</label>
+            <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('current_data_dir') }}</label>
             <input type="text" x-model="settings.data_dir"
-                class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm text-slate-900 dark:text-white px-4 py-2 rounded-xl focus:outline-none focus:border-blue-500">
+                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 shadow-sm text-zinc-900 dark:text-white px-4 py-2 rounded-xl focus:outline-none focus:border-indigo-500">
         </div>
     </div>
 
     <!-- Save Button Area -->
     <div class="lg:col-span-2 flex justify-end">
         <button @click="saveSettings()" :disabled="saving"
-            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-all shadow-md shadow-blue-500/20 dark:shadow-blue-900/20 flex items-center gap-2">
+            class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold transition-all shadow-md shadow-indigo-500/20 dark:shadow-indigo-900/20 flex items-center gap-2">
             <span x-show="!saving">Save Changes</span>
             <span x-show="saving">Saving...</span>
             <svg x-show="!saving" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

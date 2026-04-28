@@ -24,7 +24,7 @@
 
     <div class="mb-6 flex items-center justify-between">
         <div>
-            <nav class="flex mb-4 text-sm text-slate-500" aria-label="Breadcrumb">
+            <nav class="flex mb-4 text-sm text-zinc-500" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
                     <li class="inline-flex items-center">
                         <a href="/schedule" class="hover:text-white">Schedule</a>
@@ -32,15 +32,15 @@
                     <li>
                         <div class="flex items-center">
                             <span class="mx-2">/</span>
-                            <span class="text-slate-700 dark:text-slate-300">Match Details</span>
+                            <span class="text-zinc-700 dark:text-zinc-300">Match Details</span>
                         </div>
                     </li>
                 </ol>
             </nav>
-            <h1 class="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+            <h1 class="text-3xl font-bold text-zinc-900 dark:text-white flex items-center gap-3">
                 <span x-show="!loading"
                     x-text="(matchData && matchData.basic && matchData.basic.homeTeam.name) || 'Loading...'"></span>
-                <span x-show="!loading" class="text-slate-500">vs</span>
+                <span x-show="!loading" class="text-zinc-500">vs</span>
                 <span x-show="!loading"
                     x-text="(matchData && matchData.basic && matchData.basic.awayTeam.name) || ''"></span>
             </h1>
@@ -49,13 +49,13 @@
 
     <!-- Error State -->
     <template x-if="error">
-        <div class="glass-panel p-8 border-red-500/30 text-center">
+        <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-8 border-red-500/30 text-center">
             <div class="text-red-400 mb-4 text-4xl">⚠️</div>
-            <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2" x-text="error"></h3>
-            <p class="text-slate-500 dark:text-slate-400 mb-6">You might need to use the 'Match Details' fetcher in the schedule page first.
+            <h3 class="text-xl font-bold text-zinc-900 dark:text-white mb-2" x-text="error"></h3>
+            <p class="text-zinc-500 dark:text-zinc-400 mb-6">You might need to use the 'Match Details' fetcher in the schedule page first.
             </p>
             <a href="/schedule"
-                class="px-6 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-sm border border-slate-200 dark:border-slate-700 shadow-sm text-slate-900 dark:text-white rounded-lg transition-colors">Back to
+                class="px-6 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 shadow-sm border border-zinc-200 dark:border-zinc-700 shadow-sm text-zinc-900 dark:text-white rounded-lg transition-colors">Back to
                 Schedule</a>
         </div>
     </template>
@@ -63,8 +63,8 @@
     <!-- Loading State -->
     <template x-if="loading && !error">
         <div class="flex flex-col items-center justify-center py-20">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-            <p class="text-slate-500 dark:text-slate-400">Loading detailed match data...</p>
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mb-4"></div>
+            <p class="text-zinc-500 dark:text-zinc-400">Loading detailed match data...</p>
         </div>
     </template>
 
@@ -72,31 +72,31 @@
     <template x-if="matchData">
         <div class="space-y-8">
             <!-- Scoreboard Card -->
-            <div class="glass-panel p-8 rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50">
+            <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-8 rounded-2xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50">
                 <div class="flex flex-col md:flex-row items-center justify-between gap-8">
                     <!-- Home Team -->
                     <div class="flex-1 text-center md:text-right">
                         <h2 class="text-2xl font-bold text-white mb-2" x-text="matchData.basic.homeTeam.name"></h2>
-                        <span class="text-slate-500 dark:text-slate-400 text-sm"
+                        <span class="text-zinc-500 dark:text-zinc-400 text-sm"
                             x-text="matchData.basic.tournament.uniqueTournament.name"></span>
                     </div>
 
                     <!-- Score -->
                     <div
-                        class="flex flex-col items-center px-12 py-4 bg-slate-950/50 rounded-2xl border border-slate-300 dark:border-slate-700/50">
+                        class="flex flex-col items-center px-12 py-4 bg-slate-950/50 rounded-2xl border border-zinc-300 dark:border-zinc-700/50">
                         <div class="text-5xl font-black text-white tracking-widest flex items-center gap-4">
                             <span x-text="matchData.basic.homeScore.display"></span>
-                            <span class="text-slate-700">-</span>
+                            <span class="text-zinc-700">-</span>
                             <span x-text="matchData.basic.awayScore.display"></span>
                         </div>
-                        <span class="text-xs font-bold text-blue-400 uppercase tracking-widest mt-2"
+                        <span class="text-xs font-bold text-indigo-400 uppercase tracking-widest mt-2"
                             x-text="matchData.basic.status.type"></span>
                     </div>
 
                     <!-- Away Team -->
                     <div class="flex-grow text-center md:text-left">
                         <h2 class="text-2xl font-bold text-white mb-2" x-text="matchData.basic.awayTeam.name"></h2>
-                        <span class="text-slate-500 dark:text-slate-400 text-sm" x-text="matchData.basic.season.name"></span>
+                        <span class="text-zinc-500 dark:text-zinc-400 text-sm" x-text="matchData.basic.season.name"></span>
                     </div>
                 </div>
             </div>
@@ -105,28 +105,28 @@
                 <!-- Main Stats Column -->
                 <div class="lg:col-span-2 space-y-8">
                     <!-- Statistics -->
-                    <div class="glass-panel p-6 rounded-xl">
-                        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6 border-b border-white/5 pb-4">Match Statistics</h3>
+                    <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl">
+                        <h3 class="text-lg font-bold text-zinc-900 dark:text-white mb-6 border-b border-white/5 pb-4">Match Statistics</h3>
                         <div class="space-y-6">
                             <template x-for="group in matchData.statistics" :key="group.groupName">
                                 <div>
-                                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4"
+                                    <h4 class="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4"
                                         x-text="group.groupName"></h4>
                                     <div class="space-y-4">
                                         <template x-for="stat in group.statisticsItems" :key="stat.name">
                                             <div>
                                                 <div class="flex justify-between text-sm mb-1">
-                                                    <span class="text-slate-800 dark:text-slate-100 font-medium" x-text="stat.home"></span>
-                                                    <span class="text-slate-500 dark:text-slate-400 uppercase text-xs tracking-tighter"
+                                                    <span class="text-zinc-800 dark:text-zinc-100 font-medium" x-text="stat.home"></span>
+                                                    <span class="text-zinc-500 dark:text-zinc-400 uppercase text-xs tracking-tighter"
                                                         x-text="stat.name"></span>
-                                                    <span class="text-slate-800 dark:text-slate-100 font-medium" x-text="stat.away"></span>
+                                                    <span class="text-zinc-800 dark:text-zinc-100 font-medium" x-text="stat.away"></span>
                                                 </div>
                                                 <div class="flex gap-1 h-1.5">
-                                                    <div class="flex-grow bg-slate-100 dark:bg-slate-800 rounded-l-full overflow-hidden">
-                                                        <div class="bg-blue-500 h-full float-right"
+                                                    <div class="flex-grow bg-zinc-100 dark:bg-zinc-800 rounded-l-full overflow-hidden">
+                                                        <div class="bg-indigo-500 h-full float-right"
                                                             :style="`width: ${stat.homeValue}%`"></div>
                                                     </div>
-                                                    <div class="flex-grow bg-slate-100 dark:bg-slate-800 rounded-r-full overflow-hidden">
+                                                    <div class="flex-grow bg-zinc-100 dark:bg-zinc-800 rounded-r-full overflow-hidden">
                                                         <div class="bg-red-500 h-full"
                                                             :style="`width: ${stat.awayValue}%`"></div>
                                                     </div>
@@ -143,29 +143,29 @@
                 <!-- Info Sidebar -->
                 <div class="space-y-8">
                     <!-- Venue / Referee Info -->
-                    <div class="glass-panel p-6 rounded-xl">
-                        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Venue & Info</h3>
+                    <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl">
+                        <h3 class="text-lg font-bold text-zinc-900 dark:text-white mb-4">Venue & Info</h3>
                         <div class="space-y-4 text-sm">
                             <div class="flex justify-between">
-                                <span class="text-slate-500 dark:text-slate-400">Date</span>
+                                <span class="text-zinc-500 dark:text-zinc-400">Date</span>
                                 <span class="text-white"
                                     x-text="new Date(matchData.basic.startTimestamp * 1000).toLocaleString()"></span>
                             </div>
                             <div class="flex justify-between" x-show="matchData.basic.venue">
-                                <span class="text-slate-500 dark:text-slate-400">Stadium</span>
+                                <span class="text-zinc-500 dark:text-zinc-400">Stadium</span>
                                 <span class="text-white" x-text="matchData.basic.venue?.name"></span>
                             </div>
                             <div class="flex justify-between" x-show="matchData.basic.referee">
-                                <span class="text-slate-500 dark:text-slate-400">Referee</span>
+                                <span class="text-zinc-500 dark:text-zinc-400">Referee</span>
                                 <span class="text-white" x-text="matchData.basic.referee?.name"></span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Lineups Placeholder or Summary -->
-                    <div class="glass-panel p-6 rounded-xl border-dashed border-white/10">
-                        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2 italic">Data Completeness</h3>
-                        <p class="text-slate-500 dark:text-slate-400 text-sm">
+                    <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl border-dashed border-white/10">
+                        <h3 class="text-lg font-bold text-zinc-900 dark:text-white mb-2 italic">Data Completeness</h3>
+                        <p class="text-zinc-500 dark:text-zinc-400 text-sm">
                             Detailed stats for <span class="text-white font-bold" x-text="matchId"></span>
                             are stored in local JSON at:
                         </p>

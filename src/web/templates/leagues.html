@@ -4,12 +4,12 @@
 
 {% block content %}
 <div class="mb-8">
-    <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">{{ i18n.t('menu_league_management') }}</h1>
-    <p class="text-slate-500 dark:text-slate-400">{{ i18n.t('submenu_league_title') }}</p>
+    <h1 class="text-3xl font-bold text-zinc-900 dark:text-white mb-2">{{ i18n.t('menu_league_management') }}</h1>
+    <p class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('submenu_league_title') }}</p>
 </div>
 
 <!-- Add League Form -->
-<div class="glass-panel p-6 rounded-xl mb-8" x-data="{ 
+<div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl mb-8" x-data="{ 
     searchQuery: '', 
     leagueId: '',
     async search() {
@@ -23,14 +23,14 @@
         await addLeague(this.searchQuery, this.leagueId);
     }
 }">
-    <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">{{ i18n.t('add_new_league_title') }}</h2>
+    <h2 class="text-lg font-semibold text-zinc-900 dark:text-white mb-4">{{ i18n.t('add_new_league_title') }}</h2>
     <div class="flex gap-4">
         <input type="text" x-model="searchQuery" placeholder="{{ i18n.t('league_name_prompt') }}"
-            class="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm text-slate-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:border-blue-500 transition-colors">
+            class="flex-1 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 shadow-sm text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500 transition-colors">
         <input type="number" x-model="leagueId" placeholder="{{ i18n.t('league_id_prompt') }}"
-            class="w-48 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm text-slate-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:border-blue-500 transition-colors">
+            class="w-48 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 shadow-sm text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500 transition-colors">
         <button @click="submit()"
-            class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-md shadow-blue-500/20 dark:shadow-blue-900/20">
+            class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors shadow-md shadow-indigo-500/20 dark:shadow-indigo-900/20">
             {{ i18n.t('submenu_league_add') }}
         </button>
     </div>
@@ -39,12 +39,12 @@
 <!-- Active Leagues Grid -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="leagues-grid">
     {% for id, name in leagues.items() %}
-    <div class="glass-panel p-5 rounded-xl group hover:border-blue-500/50 transition-all duration-300 relative"
+    <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-5 rounded-xl group hover:border-indigo-500/50 transition-all duration-300 relative"
         x-data="{ deleting: false }">
         <!-- Delete Button -->
         <button
             @click="if(confirm('Are you sure you want to remove {{ name }}?')) { deleting = true; await fetch('/api/leagues/{{ id }}', { method: 'DELETE' }); window.location.reload(); }"
-            class="absolute top-4 right-4 text-slate-500 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-1 bg-white dark:bg-slate-900/50 rounded-full">
+            class="absolute top-4 right-4 text-zinc-500 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-1 bg-white dark:bg-zinc-900/50 rounded-full">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
@@ -53,26 +53,26 @@
         </button>
 
         <div class="flex justify-between items-start mb-4">
-            <div class="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg text-2xl">🏆</div>
+            <div class="p-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-2xl">🏆</div>
         </div>
-        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">{{ name }}</h3>
-        <div class="text-sm text-slate-500 dark:text-slate-400 font-mono mb-4">{{ i18n.t('id') }}: {{ id }}</div>
+        <h3 class="text-lg font-bold text-zinc-900 dark:text-white mb-1">{{ name }}</h3>
+        <div class="text-sm text-zinc-500 dark:text-zinc-400 font-mono mb-4">{{ i18n.t('id') }}: {{ id }}</div>
 
         <div class="flex gap-2 mt-auto">
-            <button
-                class="flex-1 px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-lg transition-colors">
-                {{ i18n.t('submenu_season_list') }}
-            </button>
-            <button
-                class="flex-1 px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-lg transition-colors">
-                {{ i18n.t('submenu_match_fetch_one') }}
-            </button>
+            <a href="/schedule?league_id={{ id }}"
+                class="flex-1 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm rounded-lg transition-colors text-center font-medium block">
+                Maçları Gör
+            </a>
+            <a href="/stats?league_id={{ id }}"
+                class="flex-1 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm rounded-lg transition-colors text-center font-medium block">
+                {{ i18n.t('menu_stats') }}
+            </a>
         </div>
 
         <!-- Loading Overlay -->
         <div x-show="deleting"
-            class="absolute inset-0 bg-white dark:bg-slate-900/80 backdrop-blur-sm flex items-center justify-center rounded-xl">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            class="absolute inset-0 bg-white dark:bg-zinc-900/80 backdrop-blur-sm flex items-center justify-center rounded-xl">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
         </div>
     </div>
     {% endfor %}
