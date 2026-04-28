@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Match Details: {{ match_id }} - SofaScore Scraper{% endblock %}
+{% block title %}{{ i18n.t('match_detail_title') }}: {{ match_id }} - SofaScore Scraper{% endblock %}
 
 {% block content %}
 <div x-data="{
@@ -8,16 +8,59 @@
     matchData: null,
     loading: true,
     error: null,
+    notFetched: false,
+    fetching: false,
+    fetchError: null,
+    fetchSuccess: false,
     async fetchDetails() {
         this.loading = true;
+        this.error = null;
+        this.notFetched = false;
         try {
             const res = await fetch(`/api/matches/${this.matchId}`);
-            if (!res.ok) throw new Error('Match data not found or not yet scraped.');
-            this.matchData = await res.json();
+            if (res.status === 404) {
+                this.notFetched = true;
+                return;
+            }
+            if (!res.ok) throw new Error('{{ i18n.t('fetch_error_generic') }}');
+            const data = await res.json();
+            if (!data || (Object.keys(data).length === 0)) {
+                this.notFetched = true;
+                return;
+            }
+            this.matchData = data;
         } catch(e) {
             this.error = e.message;
         } finally {
             this.loading = false;
+        }
+    },
+    async triggerFetch() {
+        this.fetching = true;
+        this.fetchError = null;
+        this.fetchSuccess = false;
+        try {
+            const res = await fetch(`/api/matches/${this.matchId}/fetch`, { method: 'POST' });
+            if (res.status === 429) {
+                this.fetchError = '{{ i18n.t('fetch_error_rate_limit') }}';
+                return;
+            }
+            if (res.status === 404) {
+                this.fetchError = '{{ i18n.t('fetch_error_not_found') }}';
+                return;
+            }
+            if (!res.ok) {
+                const err = await res.json();
+                this.fetchError = err.detail || '{{ i18n.t('fetch_error_generic') }}';
+                return;
+            }
+            this.fetchSuccess = true;
+            this.notFetched = false;
+            await this.fetchDetails();
+        } catch(e) {
+            this.fetchError = '{{ i18n.t('fetch_error_generic') }}';
+        } finally {
+            this.fetching = false;
         }
     }
 }" x-init="fetchDetails()">
@@ -27,76 +70,113 @@
             <nav class="flex mb-4 text-sm text-zinc-500" aria-label="Breadcrumb">
                 <ol class="inline-flex items-center space-x-1 md:space-x-3">
                     <li class="inline-flex items-center">
-                        <a href="/schedule" class="hover:text-white">Schedule</a>
+                        <a href="/schedule" class="hover:text-indigo-500 dark:hover:text-white transition-colors">{{ i18n.t('menu_match_data') }}</a>
                     </li>
                     <li>
                         <div class="flex items-center">
                             <span class="mx-2">/</span>
-                            <span class="text-zinc-700 dark:text-zinc-300">Match Details</span>
+                            <span class="text-zinc-700 dark:text-zinc-300">{{ i18n.t('match_detail_title') }}</span>
                         </div>
                     </li>
                 </ol>
             </nav>
             <h1 class="text-3xl font-bold text-zinc-900 dark:text-white flex items-center gap-3">
-                <span x-show="!loading"
-                    x-text="(matchData && matchData.basic && matchData.basic.homeTeam.name) || 'Loading...'"></span>
-                <span x-show="!loading" class="text-zinc-500">vs</span>
-                <span x-show="!loading"
-                    x-text="(matchData && matchData.basic && matchData.basic.awayTeam.name) || ''"></span>
+                <template x-if="matchData && matchData.basic">
+                    <span>
+                        <span x-text="matchData.basic.homeTeam?.name || matchData.basic.homeTeam?.shortName || '-'"></span>
+                        <span class="text-zinc-500 mx-2">vs</span>
+                        <span x-text="matchData.basic.awayTeam?.name || matchData.basic.awayTeam?.shortName || '-'"></span>
+                    </span>
+                </template>
+                <template x-if="!matchData || !matchData.basic">
+                    <span>{{ i18n.t('match_detail_title') }} #<span x-text="matchId"></span></span>
+                </template>
             </h1>
         </div>
+        <a href="/schedule"
+            class="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-xl text-sm font-medium transition-colors flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            {{ i18n.t('back_to_schedule') }}
+        </a>
     </div>
 
-    <!-- Error State -->
-    <template x-if="error">
-        <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-8 border-red-500/30 text-center">
-            <div class="text-red-400 mb-4 text-4xl">⚠️</div>
-            <h3 class="text-xl font-bold text-zinc-900 dark:text-white mb-2" x-text="error"></h3>
-            <p class="text-zinc-500 dark:text-zinc-400 mb-6">You might need to use the 'Match Details' fetcher in the schedule page first.
-            </p>
-            <a href="/schedule"
-                class="px-6 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 shadow-sm border border-zinc-200 dark:border-zinc-700 shadow-sm text-zinc-900 dark:text-white rounded-lg transition-colors">Back to
-                Schedule</a>
+    <!-- Loading State -->
+    <template x-if="loading && !error && !notFetched">
+        <div class="flex flex-col items-center justify-center py-20">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mb-4"></div>
+            <p class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('fetching_in_progress') }}</p>
         </div>
     </template>
 
-    <!-- Loading State -->
-    <template x-if="loading && !error">
-        <div class="flex flex-col items-center justify-center py-20">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mb-4"></div>
-            <p class="text-zinc-500 dark:text-zinc-400">Loading detailed match data...</p>
+    <!-- Not Fetched State -->
+    <template x-if="notFetched && !loading">
+        <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm rounded-2xl p-12 text-center">
+            <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 dark:text-zinc-500">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+            </div>
+            <h3 class="text-xl font-bold text-zinc-900 dark:text-white mb-2">{{ i18n.t('match_details_not_fetched') }}</h3>
+            <p class="text-zinc-500 dark:text-zinc-400 mb-8 max-w-md mx-auto">
+                {{ i18n.t('match_detail_title') }} #<span x-text="matchId"></span>
+            </p>
+
+            <!-- Fetch Error -->
+            <div x-show="fetchError" x-transition class="mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-xl text-red-600 dark:text-red-400 text-sm max-w-md mx-auto">
+                <span x-text="fetchError"></span>
+            </div>
+
+            <!-- Fetch Success -->
+            <div x-show="fetchSuccess" x-transition class="mb-6 p-4 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl text-green-600 dark:text-green-400 text-sm max-w-md mx-auto">
+                {{ i18n.t('fetch_success') }}
+            </div>
+
+            <button @click="triggerFetch()" :disabled="fetching"
+                class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-3 mx-auto disabled:opacity-50 disabled:cursor-not-allowed">
+                <template x-if="!fetching">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                </template>
+                <template x-if="fetching">
+                    <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                </template>
+                <span x-text="fetching ? '{{ i18n.t('fetching_in_progress') }}' : '{{ i18n.t('fetch_now_button') }}'"></span>
+            </button>
+        </div>
+    </template>
+
+    <!-- Error State -->
+    <template x-if="error && !notFetched">
+        <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-red-200 dark:border-red-500/30 shadow-sm rounded-2xl p-8 text-center">
+            <div class="text-red-400 mb-4 text-4xl">!</div>
+            <h3 class="text-xl font-bold text-zinc-900 dark:text-white mb-2" x-text="error"></h3>
+            <a href="/schedule"
+                class="inline-block mt-6 px-6 py-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white rounded-xl transition-colors">
+                {{ i18n.t('back_to_schedule') }}
+            </a>
         </div>
     </template>
 
     <!-- Content -->
-    <template x-if="matchData">
+    <template x-if="matchData && matchData.basic">
         <div class="space-y-8">
             <!-- Scoreboard Card -->
-            <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-8 rounded-2xl bg-gradient-to-br from-zinc-800/50 to-zinc-900/50">
+            <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-8 rounded-2xl bg-gradient-to-br from-zinc-50 dark:from-zinc-800/50 to-zinc-100 dark:to-zinc-900/50">
                 <div class="flex flex-col md:flex-row items-center justify-between gap-8">
-                    <!-- Home Team -->
                     <div class="flex-1 text-center md:text-right">
-                        <h2 class="text-2xl font-bold text-white mb-2" x-text="matchData.basic.homeTeam.name"></h2>
+                        <h2 class="text-2xl font-bold text-zinc-900 dark:text-white mb-2" x-text="matchData.basic.homeTeam?.name"></h2>
                         <span class="text-zinc-500 dark:text-zinc-400 text-sm"
-                            x-text="matchData.basic.tournament.uniqueTournament.name"></span>
+                            x-text="matchData.basic.tournament?.uniqueTournament?.name"></span>
                     </div>
-
-                    <!-- Score -->
-                    <div
-                        class="flex flex-col items-center px-12 py-4 bg-slate-950/50 rounded-2xl border border-zinc-300 dark:border-zinc-700/50">
-                        <div class="text-5xl font-black text-white tracking-widest flex items-center gap-4">
-                            <span x-text="matchData.basic.homeScore.display"></span>
-                            <span class="text-zinc-700">-</span>
-                            <span x-text="matchData.basic.awayScore.display"></span>
+                    <div class="flex flex-col items-center px-12 py-4 bg-zinc-100 dark:bg-slate-950/50 rounded-2xl border border-zinc-200 dark:border-zinc-700/50">
+                        <div class="text-5xl font-black text-zinc-900 dark:text-white tracking-widest flex items-center gap-4">
+                            <span x-text="matchData.basic.homeScore?.display ?? '-'"></span>
+                            <span class="text-zinc-300 dark:text-zinc-700">-</span>
+                            <span x-text="matchData.basic.awayScore?.display ?? '-'"></span>
                         </div>
-                        <span class="text-xs font-bold text-indigo-400 uppercase tracking-widest mt-2"
-                            x-text="matchData.basic.status.type"></span>
+                        <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mt-2"
+                            x-text="matchData.basic.status?.type"></span>
                     </div>
-
-                    <!-- Away Team -->
                     <div class="flex-grow text-center md:text-left">
-                        <h2 class="text-2xl font-bold text-white mb-2" x-text="matchData.basic.awayTeam.name"></h2>
-                        <span class="text-zinc-500 dark:text-zinc-400 text-sm" x-text="matchData.basic.season.name"></span>
+                        <h2 class="text-2xl font-bold text-zinc-900 dark:text-white mb-2" x-text="matchData.basic.awayTeam?.name"></h2>
+                        <span class="text-zinc-500 dark:text-zinc-400 text-sm" x-text="matchData.basic.season?.name"></span>
                     </div>
                 </div>
             </div>
@@ -105,73 +185,87 @@
                 <!-- Main Stats Column -->
                 <div class="lg:col-span-2 space-y-8">
                     <!-- Statistics -->
-                    <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl">
-                        <h3 class="text-lg font-bold text-zinc-900 dark:text-white mb-6 border-b border-white/5 pb-4">Match Statistics</h3>
-                        <div class="space-y-6">
-                            <template x-for="group in matchData.statistics" :key="group.groupName">
-                                <div>
-                                    <h4 class="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4"
-                                        x-text="group.groupName"></h4>
-                                    <div class="space-y-4">
-                                        <template x-for="stat in group.statisticsItems" :key="stat.name">
-                                            <div>
-                                                <div class="flex justify-between text-sm mb-1">
-                                                    <span class="text-zinc-800 dark:text-zinc-100 font-medium" x-text="stat.home"></span>
-                                                    <span class="text-zinc-500 dark:text-zinc-400 uppercase text-xs tracking-tighter"
-                                                        x-text="stat.name"></span>
-                                                    <span class="text-zinc-800 dark:text-zinc-100 font-medium" x-text="stat.away"></span>
-                                                </div>
-                                                <div class="flex gap-1 h-1.5">
-                                                    <div class="flex-grow bg-zinc-100 dark:bg-zinc-800 rounded-l-full overflow-hidden">
-                                                        <div class="bg-indigo-500 h-full float-right"
-                                                            :style="`width: ${stat.homeValue}%`"></div>
+                    <template x-if="matchData.statistics && (Array.isArray(matchData.statistics) ? matchData.statistics.length > 0 : matchData.statistics.statistics)">
+                        <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl">
+                            <h3 class="text-lg font-bold text-zinc-900 dark:text-white mb-6 border-b border-zinc-200 dark:border-zinc-700/50 pb-4">Match Statistics</h3>
+                            <div class="space-y-6">
+                                <template x-for="group in (Array.isArray(matchData.statistics) ? matchData.statistics : matchData.statistics.statistics || [])" :key="group.groupName">
+                                    <div>
+                                        <h4 class="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4"
+                                            x-text="group.groupName"></h4>
+                                        <div class="space-y-4">
+                                            <template x-for="stat in group.statisticsItems" :key="stat.name">
+                                                <div>
+                                                    <div class="flex justify-between text-sm mb-1">
+                                                        <span class="text-zinc-800 dark:text-zinc-100 font-medium" x-text="stat.home"></span>
+                                                        <span class="text-zinc-500 dark:text-zinc-400 uppercase text-xs tracking-tighter"
+                                                            x-text="stat.name"></span>
+                                                        <span class="text-zinc-800 dark:text-zinc-100 font-medium" x-text="stat.away"></span>
                                                     </div>
-                                                    <div class="flex-grow bg-zinc-100 dark:bg-zinc-800 rounded-r-full overflow-hidden">
-                                                        <div class="bg-red-500 h-full"
-                                                            :style="`width: ${stat.awayValue}%`"></div>
+                                                    <div class="flex gap-1 h-1.5">
+                                                        <div class="flex-grow bg-zinc-100 dark:bg-zinc-800 rounded-l-full overflow-hidden">
+                                                            <div class="bg-indigo-500 h-full float-right"
+                                                                :style="`width: ${stat.homeValue || 50}%`"></div>
+                                                        </div>
+                                                        <div class="flex-grow bg-zinc-100 dark:bg-zinc-800 rounded-r-full overflow-hidden">
+                                                            <div class="bg-red-500 h-full"
+                                                                :style="`width: ${stat.awayValue || 50}%`"></div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </template>
+                                            </template>
+                                        </div>
                                     </div>
-                                </div>
-                            </template>
+                                </template>
+                            </div>
                         </div>
-                    </div>
+                    </template>
+
+                    <!-- No Statistics -->
+                    <template x-if="!matchData.statistics || (Array.isArray(matchData.statistics) && matchData.statistics.length === 0)">
+                        <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl border-dashed">
+                            <h3 class="text-lg font-bold text-zinc-900 dark:text-white mb-2">Match Statistics</h3>
+                            <p class="text-zinc-500 dark:text-zinc-400 text-sm">No statistics data available for this match.</p>
+                        </div>
+                    </template>
                 </div>
 
                 <!-- Info Sidebar -->
                 <div class="space-y-8">
-                    <!-- Venue / Referee Info -->
                     <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl">
                         <h3 class="text-lg font-bold text-zinc-900 dark:text-white mb-4">Venue & Info</h3>
                         <div class="space-y-4 text-sm">
                             <div class="flex justify-between">
                                 <span class="text-zinc-500 dark:text-zinc-400">Date</span>
-                                <span class="text-white"
-                                    x-text="new Date(matchData.basic.startTimestamp * 1000).toLocaleString()"></span>
+                                <span class="text-zinc-900 dark:text-white"
+                                    x-text="matchData.basic.startTimestamp ? new Date(matchData.basic.startTimestamp * 1000).toLocaleString() : '-'"></span>
                             </div>
                             <div class="flex justify-between" x-show="matchData.basic.venue">
                                 <span class="text-zinc-500 dark:text-zinc-400">Stadium</span>
-                                <span class="text-white" x-text="matchData.basic.venue?.name"></span>
+                                <span class="text-zinc-900 dark:text-white" x-text="matchData.basic.venue?.stadium?.name || matchData.basic.venue?.name || '-'"></span>
                             </div>
                             <div class="flex justify-between" x-show="matchData.basic.referee">
                                 <span class="text-zinc-500 dark:text-zinc-400">Referee</span>
-                                <span class="text-white" x-text="matchData.basic.referee?.name"></span>
+                                <span class="text-zinc-900 dark:text-white" x-text="matchData.basic.referee?.name || '-'"></span>
+                            </div>
+                            <div class="flex justify-between" x-show="matchData.basic.roundInfo">
+                                <span class="text-zinc-500 dark:text-zinc-400">Round</span>
+                                <span class="text-zinc-900 dark:text-white" x-text="matchData.basic.roundInfo?.round || '-'"></span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Lineups Placeholder or Summary -->
-                    <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl border-dashed border-white/10">
-                        <h3 class="text-lg font-bold text-zinc-900 dark:text-white mb-2 italic">Data Completeness</h3>
-                        <p class="text-zinc-500 dark:text-zinc-400 text-sm">
-                            Detailed stats for <span class="text-white font-bold" x-text="matchId"></span>
-                            are stored in local JSON at:
-                        </p>
-                        <code class="block mt-4 text-[10px] p-2 bg-slate-950 rounded text-blue-300">
-                            data/match_details/.../<span x-text="matchId"></span>.json
-                        </code>
+                    <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl">
+                        <h3 class="text-lg font-bold text-zinc-900 dark:text-white mb-2">Data Completeness</h3>
+                        <div class="space-y-2 text-sm">
+                            <template x-for="key in ['basic', 'statistics', 'lineups', 'h2h', 'team_streaks', 'pregame_form']" :key="key">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-zinc-500 dark:text-zinc-400 capitalize" x-text="key.replace('_', ' ')"></span>
+                                    <span :class="matchData[key] ? 'text-green-500' : 'text-zinc-400 dark:text-zinc-600'"
+                                        x-text="matchData[key] ? '&#10003;' : '&#10007;'"></span>
+                                </div>
+                            </template>
+                        </div>
                     </div>
                 </div>
             </div>

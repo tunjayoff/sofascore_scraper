@@ -162,6 +162,26 @@ async def get_match_details(match_id: str):
         
     return result
 
+@router.post("/matches/{match_id}/fetch")
+async def fetch_single_match(match_id: str):
+    """Tek bir maç için detayları senkron olarak çeker."""
+    from src.match_data_fetcher import MatchDataFetcher
+    fetcher = MatchDataFetcher(config_manager=config_manager, data_dir=config_manager.get_data_dir())
+    try:
+        result = fetcher.fetch_match_data(match_id)
+        if result is None:
+            raise HTTPException(status_code=404,
+                                detail="Match data could not be fetched (may be unfinished or unavailable).")
+        return {"status": "success", "match_id": match_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Single match fetch failed for {match_id}: {e}")
+        if "403" in str(e) or "rate" in str(e).lower():
+            raise HTTPException(status_code=429, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/scrape/status")
 async def get_scrape_status():
     """Get the current status of the background scraper."""

@@ -243,8 +243,8 @@
             </thead>
             <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800/50">
                 <template x-for="match in matches" :key="match.match_id || Math.random()">
-                    <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 group transition-all duration-200 cursor-default"
-                        @click="if(match.match_id) window.open(`https://www.sofascore.com/-/${match.match_id}`, '_blank')">
+                    <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 group transition-all duration-200 cursor-pointer"
+                        @click="if(match.match_id) window.location.href = `/match/${match.match_id}`">
                         <td class="px-5 py-3.5">
                             <div class="flex items-center gap-2">
                                 <svg class="w-4 h-4 text-zinc-400 group-hover:text-indigo-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
