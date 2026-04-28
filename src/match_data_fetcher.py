@@ -11,7 +11,7 @@ import time
 import random
 import datetime
 import re
-from typing import Dict, List, Optional, Any, Union, Tuple
+from typing import Any, Callable, Dict, List, Optional, Union, Tuple
 from pathlib import Path
 import asyncio
 import aiohttp
@@ -38,8 +38,19 @@ REQUIRED_FILES = [
     'team_streaks.json',
     'pregame_form.json',
     'h2h.json',
-    'lineups.json'
+    'lineups.json',
+    'incidents.json',
 ]
+
+# UI / dosya tamlığı ile uyumlu alt dilimler (basic hariç)
+DETAIL_SLICE_KEYS = (
+    "statistics",
+    "team_streaks",
+    "pregame_form",
+    "h2h",
+    "lineups",
+    "incidents",
+)
 
 class MatchDataFetcher:
     """SofaScore API'sinden detaylı maç verilerini çeken ve işleyen sınıf."""
@@ -109,7 +120,8 @@ class MatchDataFetcher:
                     self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/team-streaks", "team_streaks"),
                     self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/pregame-form", "pregame_form"),
                     self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/h2h", "h2h"),
-                    self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/lineups", "lineups")
+                    self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/lineups", "lineups"),
+                    self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/incidents", "incidents"),
                 ]
                 
                 # Tüm görevleri topluca çalıştır, hata veren görevleri atla
@@ -149,24 +161,17 @@ class MatchDataFetcher:
             logger.debug(f"{url} için asenkron istek hatası: {str(e)}")
         return key, None
 
-    async def fetch_matches_batch_async(self, match_ids, max_concurrent=30, progress_bar=None):
+    async def fetch_matches_batch_async(self, match_ids, max_concurrent=30, progress_bar=None, progress_callback=None):
         """Birden çok maç için veri çeker (circuit breaker destekli)."""
         logger.debug(f"Starting batch fetch for {len(match_ids)} matches")
         ignore_rate_limit = os.getenv("IGNORE_RATE_LIMIT", "false").lower() == "true"
 
-        processed_ids = set()
-        details_dir = os.path.join(self.data_dir, "match_details")
-        if os.path.exists(details_dir):
-            for root, dirs, files in os.walk(details_dir):
-                if "basic.json" in files:
-                    processed_ids.add(os.path.basename(root))
-
-        match_ids_to_process = [id for id in match_ids if str(id) not in processed_ids]
-        if len(match_ids_to_process) < len(match_ids):
-            already_processed = len(match_ids) - len(match_ids_to_process)
-            logger.info(f"{already_processed} maç zaten işlenmiş, atlanıyor")
+        match_ids_to_process = [id for id in match_ids if self._needs_detail_fetch(str(id)) != "none"]
+        skipped = len(match_ids) - len(match_ids_to_process)
+        if skipped:
+            logger.info(f"{skipped} maç detayları tamam, atlanıyor")
             if progress_bar:
-                progress_bar.update(already_processed)
+                progress_bar.update(skipped)
 
         results: Dict[str, Dict[str, Any]] = {}
         status_counts: Counter = Counter()
@@ -179,6 +184,11 @@ class MatchDataFetcher:
 
         batch_size = 100
         all_batches = [match_ids_to_process[i:i + batch_size] for i in range(0, len(match_ids_to_process), batch_size)]
+
+        total_m = len(match_ids_to_process)
+        if progress_callback and total_m > 0:
+            progress_callback(0, total_m, f"Starting {total_m} match detail requests…")
+        cumulative_done = 0
 
         from src.utils import create_session_async
         async with create_session_async() as session:
@@ -198,7 +208,13 @@ class MatchDataFetcher:
                         try:
                             async with sem:
                                 total_attempts += 1
-                                result = await self._fetch_match_data_async(session, match_id)
+                                need = self._needs_detail_fetch(str(match_id))
+                                if need == "refill":
+                                    result = await asyncio.to_thread(self.refill_missing_match_slices, str(match_id))
+                                    if not (result and "basic" in result):
+                                        result = await self._fetch_match_data_async(session, match_id)
+                                else:
+                                    result = await self._fetch_match_data_async(session, match_id)
                                 if result and "basic" in result:
                                     consecutive_failures = 0
                                     consecutive_server_errors = 0
@@ -257,12 +273,28 @@ class MatchDataFetcher:
                         progress_bar.update(1)
                     return None
 
-                completed = await asyncio.gather(*[fetch_one(match_id) for match_id in batch], return_exceptions=False)
-                for match_data in completed:
-                    if match_data and "basic" in match_data:
-                        match_id = match_data["basic"].get("id")
-                        if match_id:
-                            results[str(match_id)] = match_data
+                batch_tasks = [fetch_one(match_id) for match_id in batch]
+                batch_completed = 0
+                notify_stride = max(1, min(20, max(total_m // 50, 1)))
+                for coro in asyncio.as_completed(batch_tasks):
+                    match_data = await coro
+                    batch_completed += 1
+                    cumulative_done += 1
+                    if match_data and isinstance(match_data, dict) and "basic" in match_data:
+                        match_id_res = match_data["basic"].get("id")
+                        if match_id_res:
+                            results[str(match_id_res)] = match_data
+                    if progress_callback and total_m > 0:
+                        if (
+                            cumulative_done % notify_stride == 0
+                            or batch_completed == len(batch)
+                            or cumulative_done >= total_m
+                        ):
+                            progress_callback(
+                                min(cumulative_done, total_m),
+                                total_m,
+                                f"Match details {min(cumulative_done, total_m)}/{total_m} (parallel batch {batch_idx + 1}/{len(all_batches)})",
+                            )
 
                 status_text = ", ".join([f"{v}x {k}" for k, v in batch_status_counts.items()]) if batch_status_counts else "hata yok"
                 logger.info(f"Batch {batch_idx+1}/{len(all_batches)}: {batch_success} başarılı, {batch_failed} başarısız ({status_text})")
@@ -270,13 +302,16 @@ class MatchDataFetcher:
                 if batch_idx < len(all_batches) - 1 and not breaker_triggered:
                     await asyncio.sleep(1.0)
 
+        if progress_callback and total_m > 0:
+            progress_callback(total_m, total_m, "Parallel detail batches finished")
+
         self.last_status_counts = dict(status_counts)
         self.rate_limit_breaker_triggered = breaker_triggered
         self.last_rate_limit_headers = recent_headers
         return results
 
     # Main metodunda çağırmak için senkron wrapper
-    def fetch_matches_batch_parallel(self, match_ids, max_concurrent=10):
+    def fetch_matches_batch_parallel(self, match_ids, max_concurrent=10, progress_callback=None):
         """Paralel istekler için senkron wrapper."""
         print(f"Toplam {len(match_ids)} maç paralel olarak işleniyor...")
         progress = tqdm(total=len(match_ids), desc="Maç detayları çekiliyor")
@@ -288,7 +323,7 @@ class MatchDataFetcher:
         try:
             # Run the async function with progress bar
             results = loop.run_until_complete(self.fetch_matches_batch_async(
-                match_ids, max_concurrent, progress
+                match_ids, max_concurrent, progress, progress_callback
             ))
         finally:
             # Close the loop
@@ -319,6 +354,177 @@ class MatchDataFetcher:
         ensure_directory(self.data_dir)
         ensure_directory(self.match_details_dir)
         ensure_directory(self.processed_dir)
+
+    def _load_match_data_from_dir(self, match_dir: str, match_id: str) -> Dict[str, Any]:
+        """match_details/.../match_id içinden API ile aynı birleşik sözlüğü yükler."""
+        mid = str(match_id)
+        result: Dict[str, Any] = {}
+        full_json_path = os.path.join(match_dir, f"{mid}.json")
+        try:
+            if os.path.exists(full_json_path):
+                with open(full_json_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            for fname in REQUIRED_FILES:
+                if not fname.endswith(".json"):
+                    fname = f"{fname}.json"
+                component = fname[:-5]
+                c_path = os.path.join(match_dir, fname)
+                if os.path.exists(c_path):
+                    with open(c_path, "r", encoding="utf-8") as f:
+                        result[component] = json.load(f)
+        except Exception as e:
+            logger.warning(f"Maç {mid} dizininden yüklenirken hata: {e}")
+        return result
+
+    def _statistics_has_data(self, d: Dict[str, Any]) -> bool:
+        s = d.get("statistics")
+        if s is None:
+            return False
+        periods = s if isinstance(s, list) else (s.get("statistics") or [])
+        all_periods = [p for p in periods if p and p.get("period") == "ALL"]
+        if not all_periods and periods:
+            all_periods = [periods[0]]
+        for p in all_periods:
+            for g in p.get("groups") or []:
+                if (g.get("statisticsItems") or []):
+                    return True
+        return False
+
+    def _has_lineups_data_dict(self, d: Dict[str, Any]) -> bool:
+        L = d.get("lineups")
+        if not L or not isinstance(L, dict):
+            return False
+        for side in ("home", "away"):
+            block = L.get(side)
+            if not isinstance(block, dict):
+                continue
+            players = block.get("players")
+            if isinstance(players, list) and len(players) > 0:
+                return True
+        return False
+
+    def _has_h2h_data_dict(self, d: Dict[str, Any]) -> bool:
+        h = d.get("h2h")
+        if not h or not isinstance(h, dict):
+            return False
+        td = h.get("teamDuel") or {}
+        if td and any(td.get(x) is not None for x in ("homeWins", "awayWins", "draws")):
+            return True
+        raw = h.get("matches") or h.get("events") or td.get("matches")
+        return isinstance(raw, list) and len(raw) > 0
+
+    def _has_pregame_form_data_dict(self, d: Dict[str, Any]) -> bool:
+        p = d.get("pregame_form")
+        if not p or not isinstance(p, dict):
+            return False
+
+        def chk(t: Any) -> bool:
+            if not t or not isinstance(t, dict):
+                return False
+            form = t.get("form")
+            if isinstance(form, list) and len(form) > 0:
+                return True
+            return any(t.get(x) is not None for x in ("position", "value", "avgRating"))
+
+        return chk(p.get("homeTeam")) or chk(p.get("awayTeam"))
+
+    def _has_team_streaks_data_dict(self, d: Dict[str, Any]) -> bool:
+        g = (d.get("team_streaks") or {}).get("general")
+        return isinstance(g, list) and len(g) > 0
+
+    def _has_incidents_data_dict(self, d: Dict[str, Any]) -> bool:
+        raw = d.get("incidents")
+        if raw and isinstance(raw, dict) and not isinstance(raw, list):
+            raw = raw.get("incidents")
+        return isinstance(raw, list) and len(raw) > 0
+
+    def match_detail_slice_present(self, key: str, d: Dict[str, Any]) -> bool:
+        """Web arayüzündeki matchDetailSlicePresent ile aynı anlam."""
+        if key == "basic":
+            return bool(d.get("basic"))
+        if key == "statistics":
+            return self._statistics_has_data(d)
+        if key == "lineups":
+            return self._has_lineups_data_dict(d)
+        if key == "h2h":
+            return self._has_h2h_data_dict(d)
+        if key == "team_streaks":
+            return self._has_team_streaks_data_dict(d)
+        if key == "pregame_form":
+            return self._has_pregame_form_data_dict(d)
+        if key == "incidents":
+            return self._has_incidents_data_dict(d)
+        return bool(d.get(key))
+
+    def _needs_detail_fetch(self, match_id: str) -> str:
+        """
+        Returns:
+            'none' — tüm dilimler tamam
+            'refill' — basic var, eksik dilim(ler) var
+            'full' — kayıt yok veya basic yok
+        """
+        mid = str(match_id)
+        path_info = self._find_match_path(mid)
+        if not path_info:
+            return "full"
+        _, _, match_dir = path_info
+        data = self._load_match_data_from_dir(match_dir, mid)
+        if not data.get("basic"):
+            return "full"
+        for key in DETAIL_SLICE_KEYS:
+            if not self.match_detail_slice_present(key, data):
+                return "refill"
+        return "none"
+
+    def refill_missing_match_slices(self, match_id: Union[int, str]) -> Optional[Dict[str, Any]]:
+        """
+        Diskte basic.json olan maçta eksik API dilimlerini tamamlar (yeni maç için fetch_match_data kullanın).
+        """
+        mid = str(match_id)
+        path_info = self._find_match_path(mid)
+        if not path_info:
+            return None
+        _, _, match_dir = path_info
+        match_data = self._load_match_data_from_dir(match_dir, mid)
+        if not match_data.get("basic"):
+            return None
+
+        basic_live = self._fetch_match_basic(mid)
+        if not basic_live:
+            logger.warning(f"Maç {mid} refill: canlı basic alınamadı")
+            return None
+        status = basic_live.get("status", {})
+        status_code = status.get("code", 0)
+        status_desc = status.get("description", "")
+        status_type = status.get("type", "")
+        if status_code == 0 or status_type in ("scheduled", "notstarted"):
+            logger.info(f"Maç {mid} henüz oynanmamış, refill atlanıyor.")
+            return None
+        if status_desc != "Ended" or status_type != "finished":
+            logger.info(f"Maç {mid} bitmemiş ({status_desc}/{status_type}), refill atlanıyor.")
+            return None
+
+        match_data["basic"] = basic_live
+        missing = [k for k in DETAIL_SLICE_KEYS if not self.match_detail_slice_present(k, match_data)]
+        if not missing:
+            return match_data
+
+        fetchers = {
+            "statistics": self._fetch_match_statistics,
+            "team_streaks": self._fetch_team_streaks,
+            "pregame_form": self._fetch_pregame_form,
+            "h2h": self._fetch_h2h,
+            "lineups": self._fetch_lineups,
+            "incidents": self._fetch_incidents,
+        }
+        for key in missing:
+            try:
+                match_data[key] = fetchers[key](mid)
+            except Exception as e:
+                logger.error(f"Maç {mid} refill {key} hatası: {e}")
+                match_data[key] = None
+        self._save_match_data(mid, match_data)
+        return match_data
     
     def fetch_match_data(self, match_id: Union[int, str]) -> Optional[Dict[str, Any]]:
         """Bir maç için tüm detay verilerini çeker."""
@@ -356,7 +562,8 @@ class MatchDataFetcher:
             "team_streaks": None,
             "pregame_form": None,
             "h2h": None,
-            "lineups": None
+            "lineups": None,
+            "incidents": None,
         }
         
         # Diğer endpointleri topla
@@ -365,6 +572,7 @@ class MatchDataFetcher:
         match_data["pregame_form"] = self._fetch_pregame_form(match_id)
         match_data["h2h"] = self._fetch_h2h(match_id)
         match_data["lineups"] = self._fetch_lineups(match_id)
+        match_data["incidents"] = self._fetch_incidents(match_id)
         
         # Verileri kaydet
         self._save_match_data(match_id, match_data)
@@ -472,6 +680,15 @@ class MatchDataFetcher:
             return make_api_request(url)
         except Exception as e:
             logger.error(f"Maç ID {match_id} için lineup verisi çekilirken hata: {str(e)}")
+            return None
+    
+    def _fetch_incidents(self, match_id: str) -> Optional[Dict[str, Any]]:
+        """Maç olaylarını (goller, kartlar, devre vb.) çeker — yanıt genelde {\"incidents\": [...], \"home\": ..., \"away\": ...}."""
+        url = f"{self.base_url}/event/{match_id}/incidents"
+        try:
+            return make_api_request(url)
+        except Exception as e:
+            logger.error(f"Maç ID {match_id} için incidents verisi çekilirken hata: {str(e)}")
             return None
     
     def _save_match_data(self, match_id: str, match_data: Dict[str, Any]) -> None:
@@ -737,7 +954,11 @@ class MatchDataFetcher:
         
         return processed
     
-    def fetch_matches_batch(self, match_ids: List[Union[int, str]]) -> Dict[str, Dict[str, Any]]:
+    def fetch_matches_batch(
+        self,
+        match_ids: List[Union[int, str]],
+        progress_callback: Optional[Callable[[int, int, str], None]] = None,
+    ) -> Dict[str, Dict[str, Any]]:
         """Bir grup maç için veri çeker."""
         # tqdm modülünü ekleyelim
         try:
@@ -748,24 +969,15 @@ class MatchDataFetcher:
         
         results = {}
         
-        # Zaten işlenmiş maçları kontrol et
-        processed_ids = set()
-        details_dir = os.path.join(self.data_dir, "match_details")
-        if os.path.exists(details_dir):
-            for root, dirs, files in os.walk(details_dir):
-                if "basic.json" in files:
-                    processed_ids.add(os.path.basename(root))
+        match_ids_to_process = [id for id in match_ids if self._needs_detail_fetch(str(id)) != "none"]
+        skipped = len(match_ids) - len(match_ids_to_process)
+        if skipped:
+            logger.info(f"{skipped} maç detayları tamam, atlanıyor")
         
-        # İşlenmemiş maçları filtrele
-        match_ids_to_process = [id for id in match_ids if str(id) not in processed_ids]
+        n = len(match_ids_to_process)
+        iterator: Any = tqdm(match_ids_to_process) if use_tqdm else match_ids_to_process
         
-        if len(match_ids_to_process) < len(match_ids):
-            logger.info(f"{len(match_ids) - len(match_ids_to_process)} maç zaten işlenmiş, atlanıyor")
-        
-        # İlerleme çubuğu
-        iterator = tqdm(match_ids_to_process) if use_tqdm else match_ids_to_process
-        
-        for match_id in iterator:
+        for idx, match_id in enumerate(iterator):
             match_id = str(match_id)
             
             if use_tqdm:
@@ -773,10 +985,18 @@ class MatchDataFetcher:
             else:
                 logger.info(f"Maç verisi çekiliyor: ID {match_id}")
             
-            match_data = self.fetch_match_data(match_id)
+            if self._needs_detail_fetch(match_id) == "refill":
+                match_data = self.refill_missing_match_slices(match_id)
+                if not match_data:
+                    match_data = self.fetch_match_data(match_id)
+            else:
+                match_data = self.fetch_match_data(match_id)
             
             if match_data:
                 results[match_id] = match_data
+            
+            if progress_callback and n > 0:
+                progress_callback(idx + 1, n, f"Match details {idx + 1}/{n}")
             
             # Sabit kısa bekleme (SofaScore saniyede 5 isteğe izin veriyor)
             if match_id != match_ids_to_process[-1]:  # Son elemandan sonra bekleme yapma
@@ -1223,7 +1443,13 @@ class MatchDataFetcher:
         
         return match_ids
 
-    def fetch_all_match_details(self, league_id: Optional[str] = None, max_seasons: int = 0) -> bool:
+    def fetch_all_match_details(
+        self,
+        league_id: Optional[str] = None,
+        max_seasons: int = 0,
+        only_season_ids: Optional[List[int]] = None,
+        progress_callback: Optional[Callable[[int, int, str], None]] = None,
+    ) -> bool:
         """
         Tüm maçlar için detaylı verileri çeker.
         UI tarafından çağrılmak üzere tasarlanmıştır.
@@ -1231,6 +1457,8 @@ class MatchDataFetcher:
         Args:
             league_id: Belirli bir lig ID'si (None ise tüm ligler)
             max_seasons: Son kaç sezon işlenecek (0 ise tüm sezonlar)
+            only_season_ids: Verilmişse yalnızca bu sezon ID'lerindeki CSV'lerden maçlar alınır.
+            progress_callback: İsteğe bağlı (done, total, message) ile ara ilerleme (ör. web UI).
             
         Returns:
             bool: İşlem başarılı ise True, değilse False
@@ -1276,48 +1504,48 @@ class MatchDataFetcher:
                 current_league_id = league_dir.split('_')[0] if '_' in league_dir else None
                 print(f"\nLig dizini: {league_dir}")
                 
-                # Doğrudan lig dizinindeki CSV dosyalarını kontrol et
-                summary_files = []
-                for file_name in os.listdir(league_path):
-                    if file_name.endswith('_matches.csv') or file_name.endswith('_summary.csv'):
-                        summary_files.append((os.path.join(league_path, file_name), file_name))
-                
-                # Sezonları kontrol et
-                season_dirs = []
+                season_dirs_all: List[Tuple[str, str, Optional[str], str]] = []
                 for season_dir in os.listdir(league_path):
                     season_path = os.path.join(league_path, season_dir)
                     if os.path.isdir(season_path):
-                        # Sezon ID'sini ve adını çıkar
                         season_parts = season_dir.split('_', 1)
                         season_id = season_parts[0] if len(season_parts) > 0 else None
                         season_name = season_parts[1] if len(season_parts) > 1 else season_dir
-                        
-                        summary_file_path = os.path.join(league_path, f"{season_id}_{season_name}_summary.csv")
-                        if os.path.exists(summary_file_path):
-                            summary_files.append((summary_file_path, os.path.basename(summary_file_path)))
-                        
-                        # Sezon dizini için dosyaları da kontrol et
-                        for file_name in os.listdir(season_path):
-                            if file_name.endswith('_matches.csv') or file_name.endswith('_summary.csv'):
-                                summary_files.append((os.path.join(season_path, file_name), file_name))
-                        
-                        season_dirs.append((season_path, season_dir, season_id, season_name))
+                        season_dirs_all.append((season_path, season_dir, season_id, season_name))
                 
-                # Sezonları tarihe göre sırala (en yeni en üstte)
-                season_dirs.sort(key=lambda x: x[2] if x[2] and x[2].isdigit() else '0', reverse=True)
+                season_dirs_all.sort(
+                    key=lambda x: x[2] if x[2] and str(x[2]).isdigit() else '0',
+                    reverse=True,
+                )
                 
-                # Son N sezonu seç
+                season_dirs = list(season_dirs_all)
+                if only_season_ids is not None:
+                    allowed_ids = {str(s) for s in only_season_ids}
+                    season_dirs = [sd for sd in season_dirs if sd[2] in allowed_ids]
+                
                 if max_seasons > 0 and len(season_dirs) > max_seasons:
                     print(f"Son {max_seasons} sezon seçiliyor (toplam {len(season_dirs)} sezon mevcut)")
                     season_dirs = season_dirs[:max_seasons]
                 
-                # Seçilen sezonlar için özet dosyalarını al
-                for season_path, season_dir, season_id, season_name in season_dirs:
-                    summary_file_path = os.path.join(league_path, f"{season_id}_{season_name}_summary.csv")
-                    if os.path.exists(summary_file_path):
-                        summary_files.append((summary_file_path, os.path.basename(summary_file_path)))
-                    
-                    # Sezon dizini için dosyaları da kontrol et
+                summary_files = []
+                if only_season_ids is not None:
+                    allowed_ids = {str(s) for s in only_season_ids}
+                    for file_name in os.listdir(league_path):
+                        if file_name.endswith('_matches.csv') or file_name.endswith('_summary.csv'):
+                            prefix = file_name.split('_', 1)[0]
+                            if prefix in allowed_ids:
+                                summary_files.append((os.path.join(league_path, file_name), file_name))
+                    subdirs_to_scan = season_dirs
+                else:
+                    for file_name in os.listdir(league_path):
+                        if file_name.endswith('_matches.csv') or file_name.endswith('_summary.csv'):
+                            summary_files.append((os.path.join(league_path, file_name), file_name))
+                    subdirs_to_scan = season_dirs_all
+                
+                for season_path, season_dir, season_id, season_name in subdirs_to_scan:
+                    league_summary = os.path.join(league_path, f"{season_id}_{season_name}_summary.csv")
+                    if os.path.exists(league_summary):
+                        summary_files.append((league_summary, os.path.basename(league_summary)))
                     for file_name in os.listdir(season_path):
                         if file_name.endswith('_matches.csv') or file_name.endswith('_summary.csv'):
                             summary_files.append((os.path.join(season_path, file_name), file_name))
@@ -1342,51 +1570,25 @@ class MatchDataFetcher:
                 print("Hiç maç ID'si bulunamadı!")
                 return False
             
-            # Zaten işlenmiş maçları kontrol et ve filtrele
-            match_details_dir = os.path.join(self.data_dir, "match_details")
-            existing_details = set()
-            
-            # match_details dizini içindeki tüm işlenmiş maçları kontrol et
-            if os.path.exists(match_details_dir):
-                for league_name in os.listdir(match_details_dir):
-                    league_path = os.path.join(match_details_dir, league_name)
-                    if not os.path.isdir(league_path) or league_name == "processed":
-                        continue
-                    
-                    for season_name in os.listdir(league_path):
-                        season_path = os.path.join(match_details_dir, league_name, season_name)
-                        if not os.path.isdir(season_path):
-                            continue
-                        
-                        for match_id in os.listdir(season_path):
-                            if os.path.isdir(os.path.join(season_path, match_id)) and \
-                               os.path.exists(os.path.join(season_path, match_id, "basic.json")):
-                                existing_details.add(match_id)
-                
-                # Eski yapıdaki maçları da kontrol et
-                for item in os.listdir(match_details_dir):
-                    item_path = os.path.join(match_details_dir, item)
-                    if os.path.isdir(item_path) and item != "processed" and \
-                       os.path.exists(os.path.join(item_path, "basic.json")):
-                        existing_details.add(item)
-            
-            # İşlenmemiş maçları filtrele
-            match_ids_to_process = [id for id in match_ids if str(id) not in existing_details]
-            
-            if len(match_ids_to_process) < len(match_ids):
-                already_processed = len(match_ids) - len(match_ids_to_process)
-                print(f"{already_processed} maç zaten işlenmiş, atlanıyor")
+            match_ids_to_process = [
+                id for id in match_ids
+                if self._needs_detail_fetch(str(id)) != "none"
+            ]
+            complete_count = len(match_ids) - len(match_ids_to_process)
+            if complete_count:
+                print(f"{complete_count} maçta tüm detay dilimleri hazır; eksik/kısmi olanlar işlenecek.")
             
             if not match_ids_to_process:
-                print("Tüm maçların detayları zaten çekilmiş!")
+                print("Tüm maçların detayları tam!")
                 return True
             
             # Maç detaylarını paralel olarak çek
             batch_size = 100  # Her seferde kaç maç işleneceği
             total_success = 0
             total_attempts = len(match_ids_to_process)
-            
             print(f"\nToplam {total_attempts} maç için detaylar çekilecek...")
+            if progress_callback:
+                progress_callback(0, total_attempts, f"Match details 0/{total_attempts}")
             
             # İlerleme gösterimi için daha temiz bir format
             for i in range(0, len(match_ids_to_process), batch_size):
@@ -1398,8 +1600,32 @@ class MatchDataFetcher:
                 
                 print(f"\nBatch {current_batch}/{total_batches}: {len(batch)} maç işleniyor ({start_index}-{end_index}/{total_attempts})...")
                 
-                # Paralel işleme ile maç detaylarını çek
-                results = self.fetch_matches_batch_parallel(batch, max_concurrent=self.config_manager.get_max_concurrent())
+                nested_cb: Optional[Callable[[int, int, str], None]] = None
+                if progress_callback:
+                    batch_base = i
+
+                    def nested_cb(
+                        done_l: int,
+                        total_l: int,
+                        _msg: str,
+                        _base: int = batch_base,
+                        _tb: int = total_batches,
+                        _cb: int = current_batch,
+                    ) -> None:
+                        global_done = min(_base + done_l, total_attempts)
+                        progress_callback(
+                            global_done,
+                            total_attempts,
+                            f"Match details {global_done}/{total_attempts} (batch {_cb}/{_tb})",
+                        )
+
+                # Paralel katman fetch_matches_batch_async zaten alt batch'lerde ilerleme verir;
+                # web UI'da 0/total takılı kalmaması için buraya bağlıyoruz.
+                results = self.fetch_matches_batch_parallel(
+                    batch,
+                    max_concurrent=self.config_manager.get_max_concurrent(),
+                    progress_callback=nested_cb,
+                )
                 
                 if results:
                     success_count = len(results)
@@ -1446,11 +1672,14 @@ class MatchDataFetcher:
             match_id = str(match_id)
             logger.info(f"Maç ID {match_id} için detaylar çekiliyor...")
             
-            # Daha önce çekilmiş mi kontrol et
+            # Daha önce klasör varsa eksik dilimleri tamamla; yoksa tam çekim
             match_path = self._find_match_path(match_id)
             if match_path:
-                logger.info(f"Maç ID {match_id} daha önce işlenmiş, atlanıyor.")
-                return True
+                match_data = self.refill_missing_match_slices(match_id)
+                if match_data:
+                    return True
+                match_data = self.fetch_match_data(match_id)
+                return bool(match_data)
             
             # Maç verilerini çek
             match_data = self.fetch_match_data(match_id)

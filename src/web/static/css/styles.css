@@ -13,6 +13,14 @@ body {
     transform: translateX(4px);
 }
 
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
 .glass-panel {
     transition: all 0.3s ease;
 }

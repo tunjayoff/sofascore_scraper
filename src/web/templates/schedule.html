@@ -5,6 +5,12 @@
 {% block content %}
 <script>
 window.__SS_SCHEDULE_LEAGUES__ = {{ leagues | tojson }};
+window.__SS_SCHEDULE_I18N__ = {
+    pagination_range: {{ i18n.t('schedule_pagination_range') | tojson }},
+    page_prev: {{ i18n.t('schedule_page_prev') | tojson }},
+    page_next: {{ i18n.t('schedule_page_next') | tojson }},
+    page_status: {{ i18n.t('schedule_page_status') | tojson }},
+};
 </script>
 <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
     <div>
@@ -13,12 +19,18 @@ window.__SS_SCHEDULE_LEAGUES__ = {{ leagues | tojson }};
     </div>
 </div>
 
-<div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm rounded-xl overflow-hidden p-6" x-data="{
+<div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm rounded-xl p-6 overflow-visible" x-data="{
     matches: [],
     loading: false,
     selectedLeague: 'all',
     dateFilter: '',
-    
+    dateSortOrder: 'desc',
+    totalCount: 0,
+    pageSize: 25,
+    currentPage: 1,
+    selectedSeason: '',
+    filterSeasons: [],
+
     scraperState: {
         is_running: false,
         status: 'Idle',
@@ -44,29 +56,122 @@ window.__SS_SCHEDULE_LEAGUES__ = {{ leagues | tojson }};
     missingSelected: [],
 
     formatDate(dateStr) {
-        if (!dateStr) return '-';
+        if (dateStr === null || dateStr === undefined || dateStr === '') return '-';
+        if (typeof dateStr === 'number' && dateStr > 0 && dateStr < 1e12) {
+            const d = new Date(dateStr * 1000);
+            if (!isNaN(d.getTime())) {
+                return d.toLocaleDateString(document.documentElement.lang || 'tr-TR', {
+                    day: 'numeric', month: 'short', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit', hour12: false
+                });
+            }
+        }
         try {
             const d = new Date(dateStr);
-            if (isNaN(d.getTime())) return dateStr.split(' ')[0];
+            if (isNaN(d.getTime())) return String(dateStr).split(' ')[0];
             return d.toLocaleDateString(document.documentElement.lang || 'tr-TR', { 
                 day: 'numeric', month: 'short', year: 'numeric',
-                hour: '2-digit', minute: '2-digit'
+                hour: '2-digit', minute: '2-digit', hour12: false
             });
         } catch(e) {
-            return dateStr;
+            return String(dateStr);
         }
+    },
+
+    toggleDateSort() {
+        this.dateSortOrder = this.dateSortOrder === 'desc' ? 'asc' : 'desc';
+        this.currentPage = 1;
+        this.fetchMatches();
+    },
+
+    rangeStart() {
+        if (!this.totalCount) return 0;
+        return (this.currentPage - 1) * this.pageSize + 1;
+    },
+    rangeEnd() {
+        return Math.min(this.currentPage * this.pageSize, this.totalCount);
+    },
+    totalPages() {
+        if (!this.totalCount) return 1;
+        return Math.ceil(this.totalCount / this.pageSize);
+    },
+    paginationBarText() {
+        const tpl = (window.__SS_SCHEDULE_I18N__ && window.__SS_SCHEDULE_I18N__.pagination_range) || '{start}–{end} of {total}';
+        if (!this.totalCount) return '';
+        const start = this.rangeStart();
+        const end = this.rangeEnd();
+        return tpl.replace(/\{start\}/g, String(start)).replace(/\{end\}/g, String(end)).replace(/\{total\}/g, String(this.totalCount));
+    },
+    pageStatusText() {
+        const tpl = (window.__SS_SCHEDULE_I18N__ && window.__SS_SCHEDULE_I18N__.page_status) || 'Page {page} of {pages}';
+        const pages = this.totalPages();
+        return tpl.replace(/\{page\}/g, String(this.currentPage)).replace(/\{pages\}/g, String(pages));
+    },
+
+    async loadFilterSeasons() {
+        this.filterSeasons = [];
+        this.selectedSeason = '';
+        if (this.selectedLeague === 'all') return;
+        try {
+            const res = await fetch(`/api/leagues/${this.selectedLeague}/seasons`);
+            const data = await res.json();
+            this.filterSeasons = data.seasons || [];
+        } catch (e) {
+            console.error(e);
+        }
+    },
+
+    async onLeagueChange() {
+        this.currentPage = 1;
+        await this.loadFilterSeasons();
+        this.fetchMatches();
+    },
+
+    onDateFilterChange() {
+        this.currentPage = 1;
+        this.fetchMatches();
+    },
+
+    onSeasonFilterChange() {
+        this.currentPage = 1;
+        this.fetchMatches();
+    },
+
+    onPageSizeChange() {
+        this.currentPage = 1;
+        this.fetchMatches();
+    },
+
+    goToPage(p) {
+        const tp = this.totalPages();
+        const next = Math.min(Math.max(1, p), tp);
+        if (next === this.currentPage) return;
+        this.currentPage = next;
+        this.fetchMatches();
     },
 
     async fetchMatches() {
         this.loading = true;
         try {
-            let url = '/api/matches?limit=100';
-            if (this.selectedLeague !== 'all') url += `&league_id=${this.selectedLeague}`;
-            if (this.dateFilter) url += `&date=${this.dateFilter}`;
-            const res = await fetch(url);
-            this.matches = await res.json();
-            if (this.matches.length > 0 && this.matches[0].match_date) {
-                this.matches.sort((a,b) => new Date(b.match_date) - new Date(a.match_date));
+            for (;;) {
+                const limit = this.pageSize;
+                const offset = (this.currentPage - 1) * this.pageSize;
+                let url = `/api/matches?limit=${limit}&offset=${offset}&sort=${this.dateSortOrder}`;
+                if (this.selectedLeague !== 'all') url += `&league_id=${this.selectedLeague}`;
+                if (this.dateFilter) url += `&date=${encodeURIComponent(this.dateFilter)}`;
+                if (this.selectedSeason) url += `&season_id=${encodeURIComponent(this.selectedSeason)}`;
+                const res = await fetch(url);
+                const data = await res.json();
+                const total = typeof data.total === 'number' ? data.total : 0;
+                this.totalCount = total;
+                const tp = total > 0 ? Math.max(1, Math.ceil(total / this.pageSize)) : 1;
+                if (total > 0 && this.currentPage > tp) {
+                    this.currentPage = tp;
+                    continue;
+                }
+                if (total === 0) this.currentPage = 1;
+                this.matches = Array.isArray(data.items) ? data.items : [];
+                break;
             }
         } catch(e) {
             console.error(e);
@@ -150,10 +255,10 @@ window.__SS_SCHEDULE_LEAGUES__ = {{ leagues | tojson }};
                 this.checkStatus();
             } else {
                 const err = await res.json();
-                alert('Error: ' + err.detail);
+                window.appToast(err.detail || {{ i18n.t('fetch_error_generic') | tojson }}, 'error');
             }
         } catch(e) {
-            alert('Error: ' + e);
+            window.appToast(e, 'error');
         }
     },
 
@@ -265,10 +370,10 @@ window.__SS_SCHEDULE_LEAGUES__ = {{ leagues | tojson }};
             if (res.ok) this.checkStatus();
             else {
                 const err = await res.json();
-                alert('Error: ' + err.detail);
+                window.appToast(err.detail || {{ i18n.t('fetch_error_generic') | tojson }}, 'error');
             }
         } catch(e) {
-            alert('Error: ' + e);
+            window.appToast(e, 'error');
         }
     },
 
@@ -317,16 +422,20 @@ window.__SS_SCHEDULE_LEAGUES__ = {{ leagues | tojson }};
             });
             if (res.ok) this.checkStatus();
         } catch(e) {
-            alert('Error: ' + e);
+            window.appToast(e, 'error');
         }
     },
 
-    init() {
+    async initPage() {
         const urlParams = new URLSearchParams(window.location.search);
         const lg = urlParams.get('league_id');
         if (lg) this.selectedLeague = lg;
-        this.fetchMatches();
+        await this.loadFilterSeasons();
+        await this.fetchMatches();
         this.checkStatus();
+    },
+    init() {
+        this.initPage();
     }
 }">
 
@@ -335,7 +444,7 @@ window.__SS_SCHEDULE_LEAGUES__ = {{ leagues | tojson }};
         x-transition:enter="transition ease-out duration-300"
         x-transition:enter-start="opacity-0 transform -translate-y-4"
         x-transition:enter-end="opacity-100 transform translate-y-0"
-        class="mb-6 bg-zinc-50 dark:bg-zinc-800/80 rounded-xl p-5 border border-zinc-200 dark:border-zinc-700 shadow-inner">
+        class="mb-6 shrink-0 bg-zinc-50 dark:bg-zinc-800/80 rounded-xl p-5 border border-zinc-200 dark:border-zinc-700 shadow-inner">
         <div class="flex justify-between items-center mb-3">
             <div class="flex items-center gap-3">
                 <div x-show="scraperState.status === 'Running'" class="relative flex h-3 w-3">
@@ -387,21 +496,42 @@ window.__SS_SCHEDULE_LEAGUES__ = {{ leagues | tojson }};
     </div>
 
     <!-- Filters Area -->
-    <div class="flex flex-col md:flex-row gap-4 justify-between mb-8 pb-6 border-b border-zinc-100 dark:border-zinc-800/60">
-        <div class="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+    <div class="flex flex-col md:flex-row md:flex-wrap gap-4 justify-between shrink-0 pb-4 border-b border-zinc-100 dark:border-zinc-800/60">
+        <div class="flex flex-wrap items-center gap-3 w-full md:flex-1 md:min-w-0">
             <div class="relative">
                 <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                <input type="date" x-model="dateFilter" @change="fetchMatches()"
+                <input type="date" x-model="dateFilter" @change="onDateFilterChange()"
                     class="pl-9 pr-3 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 shadow-sm rounded-xl text-sm font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer">
             </div>
             <div class="relative">
                 <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
-                <select x-model="selectedLeague" @change="fetchMatches()"
+                <select x-model="selectedLeague" @change="onLeagueChange()"
                     class="pl-9 pr-8 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 shadow-sm rounded-xl text-sm font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer appearance-none">
                     <option value="all">{{ i18n.t('menu_all_leagues') }}</option>
                     {% for id, name in leagues.items() %}
                     <option value="{{ id }}">{{ name }}</option>
                     {% endfor %}
+                </select>
+            </div>
+            <div class="relative" x-show="selectedLeague !== 'all'">
+                <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <select x-model="selectedSeason" @change="onSeasonFilterChange()"
+                    class="pl-9 pr-8 py-2.5 min-w-[10rem] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 shadow-sm rounded-xl text-sm font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer appearance-none">
+                    <option value="">{{ i18n.t('all_seasons') }}</option>
+                    <template x-for="s in filterSeasons" :key="s.id">
+                        <option :value="String(s.id)" x-text="(s.name || '') + (s.year ? ' (' + s.year + ')' : '')"></option>
+                    </template>
+                </select>
+            </div>
+            <div class="relative flex items-center gap-2 shrink-0">
+                <label class="text-xs text-zinc-500 dark:text-zinc-400 whitespace-nowrap hidden sm:inline">{{ i18n.t('schedule_per_page') }}</label>
+                <select x-model.number="pageSize" @change="onPageSizeChange()"
+                    class="py-2.5 px-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 shadow-sm rounded-xl text-sm font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="200">200</option>
                 </select>
             </div>
             <button @click="fetchMatches()" :disabled="loading"
@@ -426,106 +556,139 @@ window.__SS_SCHEDULE_LEAGUES__ = {{ leagues | tojson }};
         </div>
     </div>
 
-    <!-- Empty State -->
-    <div x-show="matches.length === 0 && !loading" class="flex flex-col items-center justify-center py-16 px-4">
-        <div class="w-20 h-20 mb-6 rounded-2xl bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center text-zinc-400 dark:text-zinc-500 shadow-inner">
-            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
-        </div>
-        <h3 class="text-xl font-bold text-zinc-900 dark:text-white mb-2">{{ i18n.t('no_matches_found') }}</h3>
-        <p class="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm text-center">{{ i18n.t('no_match_data_for_season') }}</p>
-    </div>
-
-    <!-- Skeleton Loader -->
-    <div x-show="loading && matches.length === 0" class="space-y-4 py-4">
-        <template x-for="i in 3">
-            <div class="w-full flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/20 rounded-xl animate-pulse border border-zinc-100 dark:border-zinc-800">
-                <div class="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-24"></div>
-                <div class="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-32"></div>
-                <div class="h-6 bg-zinc-200 dark:bg-zinc-700 rounded w-16"></div>
-                <div class="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-32"></div>
+    <div class="mt-4 rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-zinc-50/40 dark:bg-zinc-900/25 overflow-hidden max-h-[min(68vh,calc(100dvh-14rem))] sm:max-h-[min(70vh,calc(100dvh-13rem))] min-h-[min(42vh,20rem)] flex flex-col">
+        <div class="overflow-y-auto overscroll-y-contain touch-pan-y flex-1 min-h-[12rem]">
+            <!-- Empty State -->
+            <div x-show="totalCount === 0 && !loading" class="flex flex-col items-center justify-center py-16 px-4">
+                <div class="w-20 h-20 mb-6 rounded-2xl bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center text-zinc-400 dark:text-zinc-500 shadow-inner">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold text-zinc-900 dark:text-white mb-2">{{ i18n.t('no_matches_found') }}</h3>
+                <p class="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm text-center">{{ i18n.t('no_match_data_for_season') }}</p>
             </div>
-        </template>
-    </div>
 
-    <!-- Desktop Data Table -->
-    <div x-show="matches.length > 0" x-transition class="hidden md:block overflow-x-auto" :class="{'opacity-50 pointer-events-none grayscale-[30%]': loading}">
-        <p class="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-4 pl-1" x-text="matches.length + ' {{ i18n.t('total_matches') }}'"></p>
-        <table class="w-full text-left border-collapse whitespace-nowrap">
-            <thead>
-                <tr class="bg-zinc-50/80 dark:bg-zinc-800/40 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest border-y border-zinc-200 dark:border-zinc-700/50">
-                    <th class="px-5 py-4 rounded-tl-xl rounded-bl-xl">{{ i18n.t('date_format') }}</th>
-                    <th class="px-5 py-4 text-right">{{ i18n.t('submenu_match_fetch_one') }}</th>
-                    <th class="px-5 py-4 text-center">Score</th>
-                    <th class="px-5 py-4">{{ i18n.t('submenu_match_fetch_all') }}</th>
-                    <th class="px-5 py-4">{{ i18n.t('league_name') }}</th>
-                    <th class="px-5 py-4 rounded-tr-xl rounded-br-xl text-center">Status</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800/50">
-                <template x-for="match in matches" :key="match.match_id || Math.random()">
-                    <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 group transition-all duration-200 cursor-pointer"
-                        @click="if(match.match_id) window.location.href = `/match/${match.match_id}`">
-                        <td class="px-5 py-3.5">
-                            <div class="flex items-center gap-2">
-                                <svg class="w-4 h-4 text-zinc-400 group-hover:text-indigo-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <span class="text-[13px] font-medium text-zinc-600 dark:text-zinc-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" x-text="formatDate(match.match_date)"></span>
-                            </div>
-                        </td>
-                        <td class="px-5 py-3.5 text-[14px] font-bold text-zinc-900 dark:text-zinc-100 text-right group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" x-text="match.home_team || '-'"></td>
-                        <td class="px-5 py-3.5 text-center">
-                            <span class="inline-flex items-center justify-center min-w-[3.5rem] px-2 py-1 rounded bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-extrabold text-sm tracking-widest shadow-sm">
-                                <span x-text="match.home_score !== '' && match.home_score != null ? match.home_score : '-'"></span><span class="mx-1 font-normal opacity-50">:</span><span x-text="match.away_score !== '' && match.away_score != null ? match.away_score : '-'"></span>
-                            </span>
-                        </td>
-                        <td class="px-5 py-3.5 text-[14px] font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" x-text="match.away_team || '-'"></td>
-                        <td class="px-5 py-3.5">
-                            <div class="flex flex-col">
-                                <span class="text-[12px] font-semibold text-zinc-700 dark:text-zinc-300" x-text="match.tournament || ''"></span>
-                                <span class="text-[11px] text-zinc-500" x-text="(match.round ? match.round + '. Hafta' : '')"></span>
-                            </div>
-                        </td>
-                        <td class="px-5 py-3.5 text-center">
-                            <span class="text-[10px] uppercase tracking-widest font-bold px-2.5 py-1 rounded-full whitespace-nowrap"
-                                :class="{
-                                    'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-500': match.status === 'Ended',
-                                    'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400': match.status !== 'Ended'
-                                }"
-                                x-text="match.status === 'Ended' ? 'COMPLETED' : (match.status || '?').toUpperCase()">
-                            </span>
-                        </td>
-                    </tr>
+            <!-- Skeleton Loader -->
+            <div x-show="loading && matches.length === 0" class="space-y-4 py-4 px-2">
+                <template x-for="i in 3">
+                    <div class="w-full flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/20 rounded-xl animate-pulse border border-zinc-100 dark:border-zinc-800">
+                        <div class="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-24"></div>
+                        <div class="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-32"></div>
+                        <div class="h-6 bg-zinc-200 dark:bg-zinc-700 rounded w-16"></div>
+                        <div class="h-4 bg-zinc-200 dark:bg-zinc-700 rounded w-32"></div>
+                    </div>
                 </template>
-            </tbody>
-        </table>
-    </div>
+            </div>
 
-    <!-- Mobile Card View -->
-    <div x-show="matches.length > 0" x-transition class="md:hidden space-y-3" :class="{'opacity-50 pointer-events-none': loading}">
-        <p class="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-3" x-text="matches.length + ' {{ i18n.t('total_matches') }}'"></p>
-        <template x-for="match in matches" :key="match.match_id || Math.random()">
-            <a :href="match.match_id ? `/match/${match.match_id}` : '#'"
-                class="block bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-4 border border-zinc-100 dark:border-zinc-800 hover:border-indigo-500/50 transition-all">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs text-zinc-500 dark:text-zinc-400" x-text="formatDate(match.match_date)"></span>
-                    <span class="text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full"
-                        :class="match.status === 'Ended' ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-500' : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'"
-                        x-text="match.status === 'Ended' ? 'COMPLETED' : (match.status || '?').toUpperCase()"></span>
+            <!-- Desktop Data Table -->
+            <div x-show="totalCount > 0" x-transition class="hidden md:block" :class="{'opacity-50 pointer-events-none grayscale-[30%]': loading}">
+                <p class="text-xs font-semibold text-zinc-400 uppercase tracking-widest py-3 px-3 mb-0 border-b border-zinc-200/80 dark:border-zinc-700/50 bg-zinc-50/80 dark:bg-zinc-900/40" x-text="paginationBarText()"></p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse whitespace-nowrap">
+                        <thead>
+                            <tr class="sticky top-0 z-10 bg-zinc-100/95 dark:bg-zinc-800/95 backdrop-blur-sm text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest border-b border-zinc-200 dark:border-zinc-700/50 shadow-sm">
+                                <th class="px-5 py-3.5 align-bottom">
+                                    <button type="button" @click="toggleDateSort()"
+                                        class="inline-flex items-center gap-1.5 font-semibold text-zinc-600 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors -ml-1 px-1 py-0.5 rounded-lg hover:bg-zinc-200/60 dark:hover:bg-zinc-700/50"
+                                        :title="dateSortOrder === 'desc' ? '{{ i18n.t('schedule_sort_newest_first') }}' : '{{ i18n.t('schedule_sort_oldest_first') }}'">
+                                        <span>{{ i18n.t('match_table_col_date') }}</span>
+                                        <span class="text-indigo-500 dark:text-indigo-400 tabular-nums" x-text="dateSortOrder === 'desc' ? '↓' : '↑'"></span>
+                                    </button>
+                                </th>
+                                <th class="px-5 py-3.5 text-right">{{ i18n.t('match_table_col_home') }}</th>
+                                <th class="px-5 py-3.5 text-center">{{ i18n.t('match_table_col_score') }}</th>
+                                <th class="px-5 py-3.5">{{ i18n.t('match_table_col_away') }}</th>
+                                <th class="px-5 py-3.5">{{ i18n.t('match_table_col_league_round') }}</th>
+                                <th class="px-5 py-3.5 text-center">{{ i18n.t('match_table_col_status') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800/50 bg-white/60 dark:bg-zinc-900/20">
+                            <template x-for="match in matches" :key="match.match_id || Math.random()">
+                                <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 group transition-all duration-200 cursor-pointer"
+                                    @click="if(match.match_id) window.location.href = `/match/${match.match_id}`">
+                                    <td class="px-5 py-3.5">
+                                        <div class="flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-zinc-400 group-hover:text-indigo-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            <span class="text-[13px] font-medium text-zinc-600 dark:text-zinc-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" x-text="formatDate(match.match_date)"></span>
+                                        </div>
+                                    </td>
+                                    <td class="px-5 py-3.5 text-[14px] font-bold text-zinc-900 dark:text-zinc-100 text-right group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" x-text="match.home_team || '-'"></td>
+                                    <td class="px-5 py-3.5 text-center">
+                                        <span class="inline-flex items-center justify-center min-w-[3.5rem] px-2 py-1 rounded bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-extrabold text-sm tracking-widest shadow-sm">
+                                            <span x-text="match.home_score !== '' && match.home_score != null ? match.home_score : '-'"></span><span class="mx-1 font-normal opacity-50">:</span><span x-text="match.away_score !== '' && match.away_score != null ? match.away_score : '-'"></span>
+                                        </span>
+                                    </td>
+                                    <td class="px-5 py-3.5 text-[14px] font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" x-text="match.away_team || '-'"></td>
+                                    <td class="px-5 py-3.5">
+                                        <div class="flex flex-col">
+                                            <span class="text-[12px] font-semibold text-zinc-700 dark:text-zinc-300" x-text="match.tournament || ''"></span>
+                                            <span class="text-[11px] text-zinc-500" x-text="(match.round ? match.round + '. Hafta' : '')"></span>
+                                        </div>
+                                    </td>
+                                    <td class="px-5 py-3.5 text-center">
+                                        <span class="text-[10px] uppercase tracking-widest font-bold px-2.5 py-1 rounded-full whitespace-nowrap"
+                                            :class="{
+                                                'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-500': match.status === 'Ended',
+                                                'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400': match.status !== 'Ended'
+                                            }"
+                                            x-text="match.status === 'Ended' ? 'COMPLETED' : (match.status || '?').toUpperCase()">
+                                        </span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex-1 text-right pr-3" x-text="match.home_team || '-'"></span>
-                    <span class="inline-flex items-center justify-center min-w-[3rem] px-2 py-1 rounded bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-extrabold text-xs tracking-widest">
-                        <span x-text="(match.home_score ?? '-') + ':' + (match.away_score ?? '-')"></span>
-                    </span>
-                    <span class="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex-1 pl-3" x-text="match.away_team || '-'"></span>
+            </div>
+
+            <!-- Mobile Card View -->
+            <div x-show="totalCount > 0" x-transition class="md:hidden space-y-3 p-3 pb-6" :class="{'opacity-50 pointer-events-none': loading}">
+                <div class="flex flex-wrap items-center justify-between gap-2 py-2 px-3 mb-1 border-b border-zinc-200/80 dark:border-zinc-700/50 bg-zinc-50/80 dark:bg-zinc-900/40">
+                    <p class="text-xs font-semibold text-zinc-400 uppercase tracking-widest" x-text="paginationBarText()"></p>
+                    <button type="button" @click="toggleDateSort()"
+                        class="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                        x-text="dateSortOrder === 'desc' ? '{{ i18n.t('schedule_sort_newest_first') }}' : '{{ i18n.t('schedule_sort_oldest_first') }}'"></button>
                 </div>
-                <div class="mt-2 text-xs text-zinc-500" x-text="(match.tournament || '') + (match.round ? ' \u2022 ' + match.round + '. Hafta' : '')"></div>
-            </a>
-        </template>
+                <template x-for="match in matches" :key="match.match_id || Math.random()">
+                    <a :href="match.match_id ? `/match/${match.match_id}` : '#'"
+                        class="block bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-4 border border-zinc-100 dark:border-zinc-800 hover:border-indigo-500/50 transition-all">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs text-zinc-500 dark:text-zinc-400" x-text="formatDate(match.match_date)"></span>
+                            <span class="text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-full"
+                                :class="match.status === 'Ended' ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-500' : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'"
+                                x-text="match.status === 'Ended' ? 'COMPLETED' : (match.status || '?').toUpperCase()"></span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex-1 text-right pr-3" x-text="match.home_team || '-'"></span>
+                            <span class="inline-flex items-center justify-center min-w-[3rem] px-2 py-1 rounded bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-extrabold text-xs tracking-widest">
+                                <span x-text="(match.home_score ?? '-') + ':' + (match.away_score ?? '-')"></span>
+                            </span>
+                            <span class="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex-1 pl-3" x-text="match.away_team || '-'"></span>
+                        </div>
+                        <div class="mt-2 text-xs text-zinc-500" x-text="(match.tournament || '') + (match.round ? ' \u2022 ' + match.round + '. Hafta' : '')"></div>
+                    </a>
+                </template>
+            </div>
+        </div>
+        <div x-show="totalCount > 0" class="shrink-0 flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-zinc-200/80 dark:border-zinc-700/50 bg-zinc-50/90 dark:bg-zinc-900/50">
+            <span class="text-xs text-zinc-500 dark:text-zinc-400 tabular-nums" x-text="pageStatusText()"></span>
+            <div class="flex items-center gap-2">
+                <button type="button" @click="goToPage(currentPage - 1)"
+                    :disabled="loading || currentPage <= 1"
+                    class="px-3 py-1.5 text-sm font-medium rounded-lg border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-50 dark:hover:bg-zinc-700">
+                    {{ i18n.t('schedule_page_prev') }}
+                </button>
+                <button type="button" @click="goToPage(currentPage + 1)"
+                    :disabled="loading || currentPage >= totalPages()"
+                    class="px-3 py-1.5 text-sm font-medium rounded-lg border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-50 dark:hover:bg-zinc-700">
+                    {{ i18n.t('schedule_page_next') }}
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Fetch Wizard Modal -->
-    <div x-show="showWizard" x-transition.opacity class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showWizard = false">
-        <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col" @click.stop>
+    <div x-show="showWizard" x-transition.opacity class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" @click.self="showWizard = false">
+        <div class="relative z-10 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col" @click.stop>
             <!-- Header -->
             <div class="p-6 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0">
                 <h2 class="text-xl font-bold text-zinc-900 dark:text-white">{{ i18n.t('wizard_title') }}</h2>
@@ -603,26 +766,27 @@ window.__SS_SCHEDULE_LEAGUES__ = {{ leagues | tojson }};
                                     </template>
                                 </div>
                             </template>
-
-                            <!-- Estimate -->
-                            <div class="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-4 text-sm" x-show="getWizardEstimate().seasons > 0">
-                                <div class="grid grid-cols-3 gap-4 text-center">
-                                    <div>
-                                        <div class="text-zinc-500 text-xs mb-1">{{ i18n.t('wizard_seasons_selected') }}</div>
-                                        <div class="font-bold text-zinc-900 dark:text-white" x-text="getWizardEstimate().seasons"></div>
-                                    </div>
-                                    <div>
-                                        <div class="text-zinc-500 text-xs mb-1">{{ i18n.t('wizard_estimated_requests') }}</div>
-                                        <div class="font-bold text-zinc-900 dark:text-white" x-text="'~' + getWizardEstimate().requests"></div>
-                                    </div>
-                                    <div>
-                                        <div class="text-zinc-500 text-xs mb-1">{{ i18n.t('wizard_estimated_time') }}</div>
-                                        <div class="font-bold text-zinc-900 dark:text-white" x-text="'~' + getWizardEstimate().minutes + ' min'"></div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </template>
+                </div>
+            </div>
+
+            <!-- Summary strip: pinned above actions (not inside scroll area) -->
+            <div class="shrink-0 px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/95 dark:bg-zinc-800/80"
+                x-show="wizardStep === 2 && !wizardLoadingSeasons && getWizardEstimate().seasons > 0">
+                <div class="grid grid-cols-3 gap-3 sm:gap-4 text-center text-sm">
+                    <div>
+                        <div class="text-zinc-500 dark:text-zinc-400 text-xs mb-1">{{ i18n.t('wizard_seasons_selected') }}</div>
+                        <div class="font-bold tabular-nums text-zinc-900 dark:text-white" x-text="getWizardEstimate().seasons"></div>
+                    </div>
+                    <div>
+                        <div class="text-zinc-500 dark:text-zinc-400 text-xs mb-1">{{ i18n.t('wizard_estimated_requests') }}</div>
+                        <div class="font-bold tabular-nums text-zinc-900 dark:text-white" x-text="'~' + getWizardEstimate().requests"></div>
+                    </div>
+                    <div>
+                        <div class="text-zinc-500 dark:text-zinc-400 text-xs mb-1">{{ i18n.t('wizard_estimated_time') }}</div>
+                        <div class="font-bold tabular-nums text-zinc-900 dark:text-white" x-text="'~' + getWizardEstimate().minutes + ' min'"></div>
+                    </div>
                 </div>
             </div>
 
@@ -650,8 +814,8 @@ window.__SS_SCHEDULE_LEAGUES__ = {{ leagues | tojson }};
     </div>
 
     <!-- Missing Details Modal -->
-    <div x-show="showMissing" x-transition.opacity class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showMissing = false">
-        <div class="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col" @click.stop>
+    <div x-show="showMissing" x-transition.opacity class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" @click.self="showMissing = false">
+        <div class="relative z-10 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col" @click.stop>
             <div class="p-6 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0">
                 <h2 class="text-xl font-bold text-zinc-900 dark:text-white">{{ i18n.t('missing_details_title') }}</h2>
                 <button @click="showMissing = false" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">

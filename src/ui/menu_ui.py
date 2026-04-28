@@ -4,7 +4,7 @@ Bu modül, lig ve sezon ile ilgili UI işlemlerini içerir.
 """
 
 import os
-from typing import Dict, Any, Optional, List
+from typing import Any, Callable, Dict, List, Optional
 from colorama import Fore, Style
 
 from src.config_manager import ConfigManager
@@ -150,7 +150,10 @@ class SeasonMenuHandler:
         self.league_menu = LeagueMenuHandler(config_manager, colors)
         self.i18n = get_i18n()
     
-    def update_all_seasons(self) -> None:
+    def update_all_seasons(
+        self,
+        progress_callback: Optional[Callable[[int, int, str], None]] = None,
+    ) -> None:
         """Tüm ligler için sezon verilerini günceller."""
         try:
             leagues = self.config_manager.get_leagues()
@@ -161,8 +164,13 @@ class SeasonMenuHandler:
                 
             print(f"\n{self.i18n.t('fetching_seasons_for_all')}")
             
+            league_list = list(leagues.items())
+            n_leagues = len(league_list)
+            if progress_callback and n_leagues > 0:
+                progress_callback(0, n_leagues, f"Seasons 0/{n_leagues} (starting)")
+            
             total_seasons = 0
-            for league_id, league_name in leagues.items():
+            for idx, (league_id, league_name) in enumerate(league_list):
                 try:
                     print(f"  - {self.i18n.t('fetching_seasons_for', league_name=league_name, league_id=league_id)}")
                     
@@ -171,9 +179,21 @@ class SeasonMenuHandler:
                     total_seasons += len(all_seasons)
                     
                     print(f"    ✓ {self.i18n.t('seasons_found_count', count=len(all_seasons))}")
+                    if progress_callback and n_leagues > 0:
+                        progress_callback(
+                            idx + 1,
+                            n_leagues,
+                            f"Seasons {idx + 1}/{n_leagues}: {league_name}",
+                        )
                 except Exception as e:
                     logger.error(f"{league_name} için sezon verisi çekilirken hata: {str(e)}")
                     print(f"    ✗ Hata: {str(e)}")
+                    if progress_callback and n_leagues > 0:
+                        progress_callback(
+                            idx + 1,
+                            n_leagues,
+                            f"Seasons {idx + 1}/{n_leagues}: {league_name} (error)",
+                        )
             
             print(f"\n{self.colors['SUCCESS']}✅ {self.i18n.t('all_seasons_fetched_success', count=total_seasons)}")
             

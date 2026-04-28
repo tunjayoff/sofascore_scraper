@@ -126,7 +126,7 @@
 
                             <!-- Last update -->
                             <div x-show="lg.last_update" class="text-[11px] text-zinc-400 mb-3">
-                                Last update: <span x-text="lg.last_update ? new Date(lg.last_update).toLocaleDateString() : '-'"></span>
+                                Last update: <span x-text="lg.last_update ? new Date(lg.last_update).toLocaleString(document.documentElement.lang || 'tr-TR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '-'"></span>
                             </div>
 
                             <!-- Actions -->

@@ -4,7 +4,7 @@ Bu modül, maç ve maç detayları ile ilgili UI işlemlerini içerir.
 """
 
 import os
-from typing import Dict, Any, Optional, List, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 from colorama import Fore, Style
 
 from src.config_manager import ConfigManager
@@ -207,7 +207,11 @@ class MatchMenuHandler:
             logger.error(f"Error fetching matches: {str(e)}")
             print(self.i18n.t("matches_fetch_error", error=str(e)))
     
-    def fetch_matches_for_all_leagues(self, max_seasons: Optional[int] = None) -> None:
+    def fetch_matches_for_all_leagues(
+        self,
+        max_seasons: Optional[int] = None,
+        progress_callback: Optional[Callable[[int, int, str], None]] = None,
+    ) -> None:
         """
         Tüm ligler için maç verilerini çeker.
         Args:
@@ -220,6 +224,11 @@ class MatchMenuHandler:
             if not leagues:
                 print(f"\n{self.i18n.t('error_no_saved_league')}")
                 return
+            
+            league_list = list(leagues.items())
+            n_leagues = len(league_list)
+            if progress_callback and n_leagues > 0:
+                progress_callback(0, n_leagues, f"Matches 0/{n_leagues} leagues (starting)")
             
             # Kaç sezon çekileceğini kullanıcıya sor (eğer parametre olarak gelmediyse)
             if max_seasons is None:
@@ -242,7 +251,7 @@ class MatchMenuHandler:
                 print(f"{self.i18n.t('info_all_seasons_fetched')}")
             
             total_matches = 0
-            for league_id, league_name in leagues.items():
+            for li, (league_id, league_name) in enumerate(league_list):
                 try:
                     print(f"\n  🏆 {league_name} (ID: {league_id})")
                     
@@ -258,12 +267,24 @@ class MatchMenuHandler:
                     
                     if not seasons:
                         print(f"  {self.i18n.t('no_match_found_skipping')}")
+                        if progress_callback and n_leagues > 0:
+                            progress_callback(
+                                li + 1,
+                                n_leagues,
+                                f"Matches {li + 1}/{n_leagues}: {league_name} (no seasons)",
+                            )
                         continue
                     
                     # Sezonları tarihe göre sırala (en yeni en üstte)
                     sorted_seasons = sorted(seasons, key=lambda s: self.season_fetcher._get_sortable_year_value(s.get("year", "")), reverse=True)
                     if not sorted_seasons:
                         print(f"  {self.i18n.t('season_data_not_sorted')}")
+                        if progress_callback and n_leagues > 0:
+                            progress_callback(
+                                li + 1,
+                                n_leagues,
+                                f"Matches {li + 1}/{n_leagues}: {league_name} (skip)",
+                            )
                         continue
                     
                     # Sezon sayısını sınırla
@@ -297,10 +318,22 @@ class MatchMenuHandler:
                     
                     total_matches += league_matches
                     print(f"  {league_name} {self.i18n.t('total_matches_fetched_for_league')} {league_matches} maç verisi çekildi.")
+                    if progress_callback and n_leagues > 0:
+                        progress_callback(
+                            li + 1,
+                            n_leagues,
+                            f"Matches {li + 1}/{n_leagues}: {league_name}",
+                        )
                     
                 except Exception as e:
                     logger.error(f"{league_name} için maç verisi çekilirken hata: {str(e)}")
                     print(f"  Hata: {str(e)}")
+                    if progress_callback and n_leagues > 0:
+                        progress_callback(
+                            li + 1,
+                            n_leagues,
+                            f"Matches {li + 1}/{n_leagues}: {league_name} (error)",
+                        )
             
             print(f"\n{self.i18n.t('info_total_matches_fetched')} {total_matches} {self.i18n.t('info_total_matches_fetched_suffix')}")
             
@@ -498,12 +531,18 @@ class MatchDataMenuHandler:
             logger.error(f"Maç detaylarını çekerken hata: {str(e)}")
             print(f"\nHata: {str(e)}")
     
-    def fetch_all_match_details(self, league_id: Optional[str] = None, max_seasons: Optional[int] = None) -> None:
+    def fetch_all_match_details(
+        self,
+        league_id: Optional[str] = None,
+        max_seasons: Optional[int] = None,
+        progress_callback: Optional[Callable[[int, int, str], None]] = None,
+    ) -> None:
         """
         Tüm maçların detaylarını çeker.
         Args:
             league_id: Belirli bir lig ID'si (None: Tümü)
             max_seasons: Çekilecek sezon sayısı (0: Tümü, None: Kullanıcıya sor)
+            progress_callback: Opsiyonel (done, total, msg) web/headless ilerlemesi
         """
         try:
             print(f"\n{self.i18n.t('title_fetching_details_all')}")
@@ -524,7 +563,11 @@ class MatchDataMenuHandler:
                     else:
                         print(f"Tüm sezonlar çekilecek")
                     
-                    result = self.match_data_fetcher.fetch_all_match_details(league_id=league_id, max_seasons=max_seasons)
+                    result = self.match_data_fetcher.fetch_all_match_details(
+                        league_id=league_id,
+                        max_seasons=max_seasons,
+                        progress_callback=progress_callback,
+                    )
                 # Tüm ligler için
                 else:
                     print(f"\n{self.i18n.t('fetching_match_details_for_all')}")
@@ -533,7 +576,10 @@ class MatchDataMenuHandler:
                     else:
                         print(f"{self.i18n.t('info_all_seasons_fetched')}")
                     
-                    result = self.match_data_fetcher.fetch_all_match_details(max_seasons=max_seasons)
+                    result = self.match_data_fetcher.fetch_all_match_details(
+                        max_seasons=max_seasons,
+                        progress_callback=progress_callback,
+                    )
                 
                 if result:
                     print(f"\n{self.i18n.t('operation_success')}")

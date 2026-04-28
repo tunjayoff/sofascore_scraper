@@ -179,6 +179,71 @@
             }));
         });
     </script>
+
+    <!-- In-app toasts (replaces window.alert) -->
+    <div id="app-toast-stack"
+        class="fixed top-4 left-1/2 -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 md:top-6 z-[200] flex flex-col gap-2 w-[calc(100%-2rem)] max-w-md pointer-events-none"
+        aria-live="polite"></div>
+    <script>
+        (function () {
+            function asText(x) {
+                if (x == null || x === '') return 'Error';
+                if (typeof x === 'string') return x;
+                if (typeof x === 'object' && x.detail != null) return asText(x.detail);
+                try { return JSON.stringify(x); } catch (e) { return String(x); }
+            }
+            function removeToast(el, host) {
+                if (!el.parentNode) return;
+                el.classList.add('opacity-0', '-translate-y-1', 'scale-[0.98]');
+                setTimeout(function () { el.remove(); }, 240);
+            }
+            window.appToast = function (message, variant) {
+                var v = variant === 'success' ? 'success' : variant === 'info' ? 'info' : 'error';
+                var host = document.getElementById('app-toast-stack');
+                if (!host) return;
+                var msg = asText(message);
+                var el = document.createElement('div');
+                el.setAttribute('role', v === 'error' ? 'alert' : 'status');
+                el.className = 'pointer-events-auto flex items-start gap-3 rounded-2xl border px-4 py-3.5 shadow-2xl backdrop-blur-xl opacity-0 -translate-y-1 scale-[0.98] transition-all duration-300 ease-out ' + (
+                    v === 'success'
+                        ? 'bg-emerald-50/95 dark:bg-emerald-950/85 border-emerald-200/90 dark:border-emerald-500/40 text-emerald-950 dark:text-emerald-50'
+                        : v === 'info'
+                        ? 'bg-white/95 dark:bg-zinc-900/95 border-zinc-200 dark:border-zinc-600 text-zinc-900 dark:text-zinc-50'
+                        : 'bg-red-50/95 dark:bg-red-950/85 border-red-200/90 dark:border-red-500/40 text-red-950 dark:text-red-50'
+                );
+                var icon = document.createElement('div');
+                icon.className = 'shrink-0 mt-0.5';
+                if (v === 'success') {
+                    icon.innerHTML = '<svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+                } else if (v === 'info') {
+                    icon.innerHTML = '<svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z"></path></svg>';
+                } else {
+                    icon.innerHTML = '<svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
+                }
+                var p = document.createElement('p');
+                p.className = 'text-sm font-medium leading-snug flex-1 min-w-0 break-words';
+                p.textContent = msg;
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'shrink-0 rounded-lg p-1 -m-1 text-current opacity-50 hover:opacity-100 transition-opacity';
+                btn.setAttribute('aria-label', 'Close');
+                btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+                var hideTimer = setTimeout(function () { removeToast(el, host); }, 5500);
+                function close() {
+                    clearTimeout(hideTimer);
+                    removeToast(el, host);
+                }
+                btn.addEventListener('click', close);
+                el.appendChild(icon);
+                el.appendChild(p);
+                el.appendChild(btn);
+                host.appendChild(el);
+                requestAnimationFrame(function () {
+                    el.classList.remove('opacity-0', '-translate-y-1', 'scale-[0.98]');
+                });
+            };
+        })();
+    </script>
 </body>
 
 </html>

@@ -311,10 +311,10 @@
                 if (res.ok) {
                     this.backupResult = data;
                 } else {
-                    alert('Backup failed: ' + (data.detail || 'Unknown error'));
+                    window.appToast(data.detail || 'Backup failed', 'error');
                 }
             } catch(e) {
-                alert('Backup error: ' + e);
+                window.appToast(e, 'error');
             } finally {
                 this.backingUp = false;
             }
@@ -335,7 +335,7 @@
                     this.clearConfirm = '';
                 }
             } catch(e) {
-                alert('Clear error: ' + e);
+                window.appToast(e, 'error');
             } finally {
                 this.clearing = false;
             }

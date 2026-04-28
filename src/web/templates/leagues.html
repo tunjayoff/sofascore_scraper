@@ -8,8 +8,8 @@
     <p class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('submenu_league_title') }}</p>
 </div>
 
-<!-- Add League Form -->
-<div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl mb-8" x-data="{
+<!-- Add League Form: z-index so remote-search dropdown stacks above league cards below -->
+<div class="relative z-30 bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl mb-8" x-data="{
     searchQuery: '',
     results: [],
     searching: false,
@@ -95,8 +95,8 @@
     </div>
 </div>
 
-<!-- Active Leagues Grid -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="leagues-grid">
+<!-- Active Leagues Grid (z-0 keeps cards under the add-league popover) -->
+<div class="relative z-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="leagues-grid">
     {% for id, name in leagues.items() %}
     <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-5 rounded-xl group hover:border-indigo-500/50 transition-all duration-300 relative"
         x-data="{ deleting: false }">
