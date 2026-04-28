@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SofaScore Scraper{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+        // On page load or when changing themes, best to add inline in `head` to avoid FOUC
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-slate-50 border-slate-200 dark:bg-slate-900 text-slate-800 dark:text-slate-100 antialiased">
+    <div class="min-h-screen flex">
+        <aside class="w-64 shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex flex-col">
+            <div class="flex-1">
+                <div class="text-xl font-bold text-blue-400 mb-6">SofaScraper</div>
+                <nav class="space-y-2 text-sm">
+                    <a href="/" class="block rounded px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800">{{ i18n.t('main_menu_title') }}</a>
+                    <a href="/leagues" class="block rounded px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800">{{ i18n.t('menu_league_management') }}</a>
+                    <a href="/schedule" class="block rounded px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800">{{ i18n.t('menu_match_data') }}</a>
+                    <a href="/stats" class="block rounded px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800">{{ i18n.t('menu_stats') }}</a>
+                    <a href="/settings" class="block rounded px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800">{{ i18n.t('menu_settings') }}</a>
+                </nav>
+            </div>
+            
+            <div class="mt-auto border-t border-slate-200 dark:border-slate-800 pt-4">
+                <button id="theme-toggle" class="flex w-full items-center gap-2 rounded px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400">
+                    <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                    </svg>
+                    <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4.22 1.22a1 1 0 011.415 0l.8.8a1 1 0 01-1.414 1.414l-.8-.8a1 1 0 010-1.414zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM15.435 15.435a1 1 0 010 1.414l-.8.8a1 1 0 01-1.414-1.414l.8-.8a1 1 0 011.414 0zM10 18a1 1 0 01-1-1v-1a1 1 0 112 0v1a1 1 0 01-1 1zm-4.22-1.22a1 1 0 01-1.415 0l-.8-.8a1 1 0 011.414-1.414l.8.8a1 1 0 010 1.414zM2 10a1 1 0 011-1h1a1 1 0 110 2H3a1 1 0 01-1-1zm1.22-4.22a1 1 0 010-1.415l.8-.8a1 1 0 011.414 1.414l-.8.8a1 1 0 01-1.414 0zM10 5a5 5 0 100 10 5 5 0 000-10z"></path>
+                    </svg>
+                    <span id="theme-toggle-text">Tema</span>
+                </button>
+            </div>
+        </aside>
+        <main class="flex-1 p-6">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            const darkIcon = document.getElementById('theme-toggle-dark-icon');
+            const lightIcon = document.getElementById('theme-toggle-light-icon');
+
+            function updateIcons() {
+                if (document.documentElement.classList.contains('dark')) {
+                    darkIcon.classList.add('hidden');
+                    lightIcon.classList.remove('hidden');
+                } else {
+                    lightIcon.classList.add('hidden');
+                    darkIcon.classList.remove('hidden');
+                }
+            }
+
+            // Init icons
+            updateIcons();
+
+            themeToggleBtn.addEventListener('click', function() {
+                if (document.documentElement.classList.contains('dark')) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                }
+                updateIcons();
+            });
+        });
+    </script>
+</body>
+</html>

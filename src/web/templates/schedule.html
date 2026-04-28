@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}{{ i18n.t('menu_match_data') }} - SofaScore Scraper{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex items-center justify-between">
+    <div>
+        <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">{{ i18n.t('menu_match_data') }}</h1>
+        <p class="text-slate-500 dark:text-slate-400">{{ i18n.t('submenu_match_title') }}</p>
+    </div>
+    <div class="flex gap-3">
+        <!-- Controls moved to x-data scope below -->
+    </div>
+</div>
+
+<div class="glass-panel rounded-xl overflow-hidden p-6" x-data="{
+    matches: [],
+    loading: false,
+    selectedLeague: 'all',
+    
+    // Scraper State
+    scraperState: {
+        is_running: false,
+        status: 'Idle',
+        progress: 0,
+        current_task: '',
+        log: []
+    },
+    pollInterval: null,
+
+    async fetchMatches() {
+        this.loading = true;
+        try {
+            let url = `/api/matches?limit=100`;
+            if (this.selectedLeague !== 'all') url += `&league_id=${this.selectedLeague}`;
+            if (this.dateFilter) url += `&date=${this.dateFilter}`;
+            
+            const res = await fetch(url);
+            this.matches = await res.json();
+        } catch(e) {
+            console.error(e);
+        } finally {
+            this.loading = false;
+        }
+    },
+
+    async checkStatus() {
+        try {
+            const res = await fetch('/api/scrape/status');
+            this.scraperState = await res.json();
+            
+            if (this.scraperState.is_running) {
+                if (!this.pollInterval) {
+                    this.pollInterval = setInterval(() => this.checkStatus(), 2000);
+                }
+            } else {
+                if (this.pollInterval) {
+                    clearInterval(this.pollInterval);
+                    this.pollInterval = null;
+                    // Scrape finished, refresh data
+                    if (this.scraperState.status === 'Completed') {
+                        this.fetchMatches();
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Status check failed', e);
+        }
+    },
+
+    async triggerScrape() {
+        if (this.scraperState.is_running) return;
+        
+        if(!confirm('Start background scraping process?')) return;
+        
+        try {
+            const res = await fetch('/api/fetch', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ league_id: this.selectedLeague === 'all' ? null : parseInt(this.selectedLeague) })
+            });
+            
+            if (res.ok) {
+                // Start polling immediately
+                this.checkStatus();
+            } else {
+                const err = await res.json();
+                alert('Error: ' + err.detail);
+            }
+        } catch(e) {
+            alert('Failed to start scrape: ' + e);
+        }
+    },
+    
+    init() {
+        this.fetchMatches();
+        this.checkStatus(); // Check on load in case it's already running
+    }
+}">
+
+    <!-- Progress Bar Section -->
+    <div x-show="scraperState.is_running || scraperState.status === 'Completed' || scraperState.status === 'Failed'"
+        x-transition class="mb-6 bg-slate-100 dark:bg-slate-800 rounded-lg p-4 border border-slate-300 dark:border-slate-700">
+
+        <div class="flex justify-between items-center mb-2">
+            <span class="font-medium" :class="{
+                      'text-blue-400': scraperState.status === 'Running',
+                      'text-green-400': scraperState.status === 'Completed',
+                      'text-red-400': scraperState.status === 'Failed'
+                  }"
+                x-text="scraperState.status === 'Running' ? 'Scraping in progress...' : 'Scrape ' + scraperState.status">
+            </span>
+            <span class="text-sm text-slate-500 dark:text-slate-400" x-text="scraperState.progress + '%'"></span>
+        </div>
+
+        <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 mb-2">
+            <div class="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
+                :style="`width: ${scraperState.progress}%`" :class="{
+                    'bg-green-500': scraperState.status === 'Completed',
+                    'bg-red-500': scraperState.status === 'Failed'
+                 }">
+            </div>
+        </div>
+
+        <div class="text-xs text-slate-500 dark:text-slate-400 font-mono" x-text="scraperState.current_task"></div>
+    </div>
+
+    <!-- Filter Bar Re-implementation inside x-data scope -->
+    <div class="flex flex-col md:flex-row gap-4 justify-between mb-6">
+        <div class="flex flex-wrap items-center gap-4">
+            <input type="date" x-model="dateFilter" @change="fetchMatches()"
+                class="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+            <select x-model="selectedLeague" @change="fetchMatches()"
+                class="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 shadow-sm rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="all" x-text="i18n.t('submenu_league_all')"></option>
+                {% for id, name in leagues.items() %}
+                <option value="{{ id }}">{{ name }}</option>
+                {% endfor %}
+            </select>
+            <!-- Scrape Buttons -->
+            <div class="flex flex-wrap gap-2">
+                <button @click="triggerScrape('full')" :disabled="scraperState.is_running"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-md transition duration-200 flex items-center gap-2 disabled:opacity-50"
+                    :title="i18n.t('button_fetch_new_data_help')">
+                    <span x-text="i18n.t('button_fetch_new_data')"></span>
+                </button>
+
+                <button @click="triggerScrape('details')" :disabled="scraperState.is_running"
+                    class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded shadow-md transition duration-200 flex items-center gap-2 disabled:opacity-50"
+                    title="Only fetch detailed stats for existing matches">
+                    <span>{{ i18n.t('menu_match_details') }}</span>
+                </button>
+
+                <button @click="fetchMatches()"
+                    class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded shadow-md transition duration-200 flex items-center gap-2">
+                    <span>{{ i18n.t('submenu_league_reload') }}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div x-show="matches.length === 0 && !loading" class="text-center py-10">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 mb-4">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                </path>
+            </svg>
+        </div>
+        <h3 class="text-xl font-medium text-slate-900 dark:text-white mb-2">{{ i18n.t('no_matches_found') }}</h3>
+        <p class="text-slate-500 dark:text-slate-400 max-w-md mx-auto">{{ i18n.t('no_matches_skipping') }}</p>
+    </div>
+
+    <!-- Match Table -->
+    <div x-show="matches.length > 0" class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700/50 mt-4">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider border-y border-slate-200 dark:border-slate-700/50">
+                    <th class="px-4 py-3 font-medium">Date</th>
+                    <th class="px-4 py-3 font-medium">Home</th>
+                    <th class="px-4 py-3 font-medium text-center">Score</th>
+                    <th class="px-4 py-3 font-medium">Away</th>
+                    <th class="px-4 py-3 font-medium">Round</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-700/50">
+                <template x-for="match in matches" :key="match.id || Math.random()">
+                    <tr class="hover:bg-slate-50 dark:bg-slate-800/30 transition-colors">
+                        <td class="px-4 py-3 text-slate-500 dark:text-slate-400 text-sm" x-text="match.date || '-'"></td>
+                        <td class="px-4 py-3 text-slate-900 dark:text-slate-100 font-medium" x-text="match.home_team || '-'"></td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-sm">
+                                <span x-text="match.home_score"></span> - <span x-text="match.away_score"></span>
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-slate-900 dark:text-slate-100 font-medium" x-text="match.away_team || '-'"></td>
+                        <td class="px-4 py-3 text-slate-500 text-sm" x-text="match.round || 'R-'"></td>
+                        <td class="px-4 py-3">
+                            <a :href="'/match/' + match.match_id"
+                                class="text-blue-400 hover:text-blue-300 font-mono text-sm underline decoration-blue-500/30"
+                                x-text="match.match_id"></a>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div x-show="loading" class="flex justify-center py-10">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    </div>
+</div>
+{% endblock %}
