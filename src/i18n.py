@@ -1,10 +1,16 @@
 import json
 import os
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 from pathlib import Path
 from src.logger import get_logger
 
 logger = get_logger("I18n")
+
+
+def _default_locale_dir() -> str:
+    """Proje kökündeki locales/ dizini (cwd'ye bağlı değil)."""
+    return str(Path(__file__).resolve().parent.parent / "locales")
+
 
 class I18nManager:
     """
@@ -12,8 +18,8 @@ class I18nManager:
     Loads JSON based locale files and provides string retrieval.
     """
     
-    def __init__(self, locale_dir: str = "locales", default_lang: str = "tr"):
-        self.locale_dir = locale_dir
+    def __init__(self, locale_dir: Optional[Union[str, Path]] = None, default_lang: str = "tr"):
+        self.locale_dir = str(locale_dir) if locale_dir is not None else _default_locale_dir()
         # Try to load from env var first (set by ConfigManager)
         self.current_lang = os.getenv("LANGUAGE", default_lang)
         self.translations: Dict[str, Dict[str, str]] = {}
@@ -72,7 +78,7 @@ class I18nManager:
 # Global instance
 _i18n_instance = None
 
-def get_i18n(locale_dir: str = "locales") -> I18nManager:
+def get_i18n(locale_dir: Optional[Union[str, Path]] = None) -> I18nManager:
     global _i18n_instance
     if _i18n_instance is None:
         _i18n_instance = I18nManager(locale_dir=locale_dir)
