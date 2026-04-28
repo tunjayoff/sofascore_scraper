@@ -3,6 +3,9 @@
 {% block title %}{{ i18n.t('menu_match_data') }} - SofaScore Scraper{% endblock %}
 
 {% block content %}
+<script>
+window.__SS_SCHEDULE_LEAGUES__ = {{ leagues | tojson }};
+</script>
 <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
     <div>
         <h1 class="text-3xl font-bold text-zinc-900 dark:text-white mb-2">{{ i18n.t('menu_match_data') }}</h1>
@@ -161,7 +164,7 @@
         this.wizardStep = 1;
         this.wizardSelectedSeasons = {};
         
-        const allLeagues = {{ leagues | tojson }};
+        const allLeagues = window.__SS_SCHEDULE_LEAGUES__ || {};
         this.wizardLeagues = Object.entries(allLeagues).map(([id, name]) => ({id: parseInt(id), name}));
         
         if (this.selectedLeague !== 'all') {
