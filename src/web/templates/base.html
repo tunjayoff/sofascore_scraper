@@ -143,17 +143,38 @@
         document.addEventListener('alpine:init', () => {
             Alpine.data('globalScraperToast', () => ({
                 state: { is_running: false, progress: 0, current_task: '' },
+                _sse: null,
+                _poll: null,
                 async checkStatus() {
                     try {
                         const res = await fetch('/api/scrape/status');
                         if (res.ok) {
                             this.state = await res.json();
+                            if (this.state.is_running) this._connectSSE();
                         }
                     } catch (e) {}
                 },
+                _connectSSE() {
+                    if (this._sse) return;
+                    if (this._poll) { clearInterval(this._poll); this._poll = null; }
+                    try {
+                        this._sse = new EventSource('/api/scrape/stream');
+                        this._sse.addEventListener('update', (e) => { this.state = JSON.parse(e.data); });
+                        this._sse.addEventListener('done', () => { this._closeSSE(); });
+                        this._sse.onerror = () => {
+                            this._closeSSE();
+                            this._poll = setInterval(() => this.checkStatus(), 3000);
+                        };
+                    } catch(e) {
+                        this._poll = setInterval(() => this.checkStatus(), 3000);
+                    }
+                },
+                _closeSSE() {
+                    if (this._sse) { this._sse.close(); this._sse = null; }
+                },
                 initToast() {
                     this.checkStatus();
-                    setInterval(() => this.checkStatus(), 2000);
+                    this._poll = setInterval(() => this.checkStatus(), 5000);
                 }
             }));
         });

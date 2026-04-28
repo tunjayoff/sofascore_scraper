@@ -1,3 +1,4 @@
+import asyncio
 import glob
 import json
 import os
@@ -5,7 +6,7 @@ import traceback
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from src.config_manager import ConfigManager
@@ -366,6 +367,31 @@ async def fetch_single_match(match_id: str):
 async def get_scrape_status():
     """Get the current status of the background scraper."""
     return SCRAPER_STATE
+
+
+@router.get("/scrape/stream")
+async def scrape_status_stream(request: Request):
+    """SSE endpoint for real-time scraper status updates."""
+    try:
+        from sse_starlette.sse import EventSourceResponse
+    except ImportError:
+        raise HTTPException(status_code=501, detail="SSE not available, use polling instead")
+
+    async def event_generator():
+        last_state_json = None
+        while True:
+            if await request.is_disconnected():
+                break
+            current_json = json.dumps(SCRAPER_STATE, default=str)
+            if current_json != last_state_json:
+                yield {"event": "update", "data": current_json}
+                last_state_json = current_json
+                if not SCRAPER_STATE["is_running"] and SCRAPER_STATE["status"] != "Running":
+                    yield {"event": "done", "data": current_json}
+                    break
+            await asyncio.sleep(0.5)
+
+    return EventSourceResponse(event_generator())
 
 @router.post("/scrape/cancel")
 async def cancel_scrape():

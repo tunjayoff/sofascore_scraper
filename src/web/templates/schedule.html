@@ -72,21 +72,58 @@
         }
     },
 
+    eventSource: null,
+
+    connectSSE() {
+        if (this.eventSource) return;
+        try {
+            this.eventSource = new EventSource('/api/scrape/stream');
+            this.eventSource.addEventListener('update', (e) => {
+                this.scraperState = JSON.parse(e.data);
+            });
+            this.eventSource.addEventListener('done', (e) => {
+                this.scraperState = JSON.parse(e.data);
+                this.closeSSE();
+                if (this.scraperState.status === 'Completed') this.fetchMatches();
+            });
+            this.eventSource.onerror = () => {
+                this.closeSSE();
+                if (!this.pollInterval) {
+                    this.pollInterval = setInterval(() => this.checkStatus(), 2000);
+                }
+            };
+        } catch(e) {
+            if (!this.pollInterval) {
+                this.pollInterval = setInterval(() => this.checkStatus(), 2000);
+            }
+        }
+    },
+
+    closeSSE() {
+        if (this.eventSource) {
+            this.eventSource.close();
+            this.eventSource = null;
+        }
+    },
+
     async checkStatus() {
         try {
             const res = await fetch('/api/scrape/status');
             this.scraperState = await res.json();
             if (this.scraperState.is_running) {
-                if (!this.pollInterval) {
-                    this.pollInterval = setInterval(() => this.checkStatus(), 2000);
+                if (this.pollInterval) {
+                    clearInterval(this.pollInterval);
+                    this.pollInterval = null;
                 }
+                this.connectSSE();
             } else {
                 if (this.pollInterval) {
                     clearInterval(this.pollInterval);
                     this.pollInterval = null;
-                    if (this.scraperState.status === 'Completed') {
-                        this.fetchMatches();
-                    }
+                }
+                this.closeSSE();
+                if (this.scraperState.status === 'Completed') {
+                    this.fetchMatches();
                 }
             }
         } catch (e) {
@@ -106,6 +143,7 @@
                 })
             });
             if (res.ok) {
+                this.connectSSE();
                 this.checkStatus();
             } else {
                 const err = await res.json();
