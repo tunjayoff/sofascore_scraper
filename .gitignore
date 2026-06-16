@@ -106,6 +106,7 @@ venv.bak/
 *.sqlite
 /data/
 /logs/
+src/web/static/backups/
 
 # System files
 .DS_Store

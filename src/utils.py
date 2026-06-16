@@ -46,12 +46,10 @@ from curl_cffi import requests as cffi_requests
 from curl_cffi.requests import AsyncSession
 
 IMPERSONATE_PROFILES = [
-    "chrome",
-    "chrome110",
-    "chrome120",
-    "chrome124",
-    "safari17_0",
-    "edge101",
+    "chrome131",
+    "chrome136",
+    "chrome142",
+    "chrome145",
 ]
 
 # ... imports ...
@@ -66,6 +64,9 @@ def get_request_headers() -> Dict[str, str]:
         "Accept": "*/*",
         "Accept-Language": "en-US,en;q=0.9",
         "Referer": "https://www.sofascore.com/",
+        "Origin": "https://www.sofascore.com",
+        # SofaScore API returns 403 {"reason":"challenge"} without this XHR marker
+        "X-Requested-With": "XMLHttpRequest",
         # User-Agent is handled by impersonate="chrome"
     }
 
