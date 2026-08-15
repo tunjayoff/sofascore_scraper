@@ -99,7 +99,7 @@ See `.env.example` for all keys. Common ones:
 | `LANGUAGE` | `en` or `tr` for UI strings. |
 | `MAX_CONCURRENT` | Parallel detail requests cap. |
 | `USE_PROXY` / `PROXY_URL` | Optional HTTP proxy. |
-| `FETCH_ONLY_FINISHED` | Prefer finished matches when fetching lists. |
+| `FETCH_ONLY_FINISHED` | Keep only finished matches (`status.type == finished`). Default `true`. Upcoming fixtures are dropped from schedule files. |
 | `RATE_LIMIT_*` / `SERVER_ERROR_*` | Circuit breaker thresholds when many errors occur. |
 
 Tuning for the web UI (timeouts, retries, logging) is exposed under **Settings**; writing settings updates `.env`.
@@ -139,6 +139,19 @@ Run `python main.py` and work through the numbered menus: manage leagues, refres
 - First-time **full** fetch for a big league can take a long time; start with one league and a few recent seasons from the wizard.
 - If you hit rate limits or many errors, lower **MAX_CONCURRENT** and raise waits slightly in **Settings**; avoid `--ignore-rate-limit` unless you know what you are doing.
 - For the same dataset in **web** and **CLI/headless**, keep `DATA_DIR` in `.env` aligned with `--data-dir` when you use the command line.
+- Prefer a season that already has finished matches. The newest label (e.g. European `26/27`) is often fixtures-only; the UI prefers the previous season when possible, and the scraper can fall back automatically.
+
+### Troubleshooting
+
+**Seasons appear but fetch finds 0 matches** (`İşlenecek maç verisi bulunamadı` / `0it`)
+
+1. Confirm the SofaScore **unique tournament ID** in the URL (MLS is **`242`** — that ID is correct).
+2. Not every league exposes a sequential week schedule (`events/round/1..N`). **Premier League**-style competitions do; **MLS** and some others do not:
+   - MLS `/rounds` is empty or only playoff-style IDs (e.g. `227`), and `events/round/1` returns nothing.
+   - The scraper must use paginated **`events/last` + `events/next`** for those seasons.
+   - Older builds that only probed weeks `1..50` therefore downloaded PL fine but returned **zero MLS matches**. Update to a release that includes the event-list fallback, refresh seasons, and re-run the fetch.
+3. With `FETCH_ONLY_FINISHED=true` (default), not-yet-played fixtures are ignored. If a brand-new season has no finished games yet, pick the previous season (or wait / set `FETCH_ONLY_FINISHED=false` if you intentionally want fixtures).
+4. Stale season IDs (SofaScore retired the ID after a refresh) also yield empty schedules — use **Refresh seasons** on that league, then fetch again.
 
 ### Interactive terminal
 

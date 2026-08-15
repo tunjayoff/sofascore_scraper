@@ -58,6 +58,61 @@ class MatchFetcher:
             logger.warning(f"Geçersiz DATE_FORMAT '{date_format}'. Varsayılan format kullanılacak.")
             return dt.strftime(default_format)
     
+    @staticmethod
+    def _is_finished_event(event: Dict[str, Any]) -> bool:
+        """SofaScore finished: type/code matter more than description (AET/AP/Ended)."""
+        status = event.get("status") or {}
+        if status.get("type") == "finished":
+            return True
+        if status.get("code") == 100:
+            return True
+        desc = str(status.get("description") or "").lower()
+        return desc in ("ended", "aet", "after extra time", "ap", "penalties")
+
+    @staticmethod
+    def _parse_season_start_year(season_name: str, season_info: Optional[Dict[str, Any]] = None) -> Optional[int]:
+        """Parse start year from '26/27', '2024/25', or 'Premier League 26/27'."""
+        import re
+
+        texts: List[str] = []
+        if season_info:
+            texts.append(str(season_info.get("year") or ""))
+            texts.append(str(season_info.get("name") or ""))
+        texts.append(season_name or "")
+        for text in texts:
+            if not text:
+                continue
+            m = re.search(r"(20\d{2})\s*/\s*(?:20)?\d{2}", text)
+            if m:
+                return int(m.group(1))
+            m = re.search(r"\b(\d{2})\s*/\s*(\d{2})\b", text)
+            if m:
+                return 2000 + int(m.group(1))
+            m = re.search(r"(20\d{2})", text)
+            if m:
+                return int(m.group(1))
+        return None
+
+    def _previous_season(self, league_id: int, season_id: int) -> Optional[Dict[str, Any]]:
+        seasons = self.season_fetcher.get_seasons_for_league(league_id) or []
+        sorted_seasons = sorted(
+            seasons,
+            key=lambda s: self.season_fetcher._get_sortable_year_value(s.get("year", "0")),
+            reverse=True,
+        )
+        for i, s in enumerate(sorted_seasons):
+            if s.get("id") == season_id and i + 1 < len(sorted_seasons):
+                return sorted_seasons[i + 1]
+        # Stale / unknown id: prefer downloadable season (usually 2nd newest)
+        preferred_id = self.season_fetcher.preferred_download_season_id(league_id)
+        for s in sorted_seasons:
+            if s.get("id") == preferred_id and preferred_id != season_id:
+                return s
+        if sorted_seasons and sorted_seasons[0].get("id") != season_id:
+            # last resort: newest that isn't the bad id
+            return sorted_seasons[0] if len(sorted_seasons) == 1 else sorted_seasons[min(1, len(sorted_seasons) - 1)]
+        return None
+
     def _filter_finished_matches(self, data: Dict[str, Any]) -> Tuple[Dict[str, Any], int, int]:
         """
         Veri setinden sadece bitmiş maçları filtreler.
@@ -76,11 +131,9 @@ class MatchFetcher:
             
         total_events = len(data.get("events", []))
         
-        # Bitmiş maçları filtrele
         finished_events = [
             event for event in data.get("events", [])
-            if (event.get("status", {}).get("description") == "Ended" and 
-                event.get("status", {}).get("type") == "finished")
+            if self._is_finished_event(event)
         ]
         
         # Orijinal veriyi bozmadan yeni obje oluştur
@@ -132,8 +185,7 @@ class MatchFetcher:
         
         logger.info(f"{league_name}: {season_name}, Hafta {round_number} maçları çekiliyor...")
         
-        # URL formatını düzelt
-        url = f"{self.base_url}/unique-tournament/{league_id}/season/{season_id}/events/round/{round_number}"
+        url = f"{self.base_url}{self.build_round_events_url(league_id, season_id, round_number)}"
         data = make_api_request(url)
         
         if self._is_empty_round_data(data):
@@ -154,8 +206,7 @@ class MatchFetcher:
         season_name = self.season_fetcher.get_season_name(league_id, season_id)
         logger.info(f"{league_name}: {season_name}, Hafta {round_number} maçları asenkron olarak çekiliyor...")
         
-        # URL formatını düzelt
-        url = f"{self.base_url}/unique-tournament/{league_id}/season/{season_id}/events/round/{round_number}"
+        url = f"{self.base_url}{self.build_round_events_url(league_id, season_id, round_number)}"
         
         try:
             data = await make_api_request_async(session, url)
@@ -175,82 +226,231 @@ class MatchFetcher:
         
         return None
     
+    @staticmethod
+    def build_round_events_url(
+        league_id: int, season_id: int, round_num: int, slug: Optional[str] = None
+    ) -> str:
+        """SofaScore round events path (with optional cup slug)."""
+        base = f"/unique-tournament/{league_id}/season/{season_id}/events/round/{round_num}"
+        if slug:
+            return f"{base}/slug/{slug}"
+        return base
+
+    @staticmethod
+    def is_week_based_rounds(rounds: List[Dict[str, Any]], max_round: int = 50) -> bool:
+        """
+        True when /rounds looks like sequential league weeks (1..N), not cup-only IDs.
+        MLS playoff listings use large round ids (e.g. 227) and are not week-based.
+        """
+        if not rounds:
+            return False
+        nums = [r.get("round") for r in rounds if isinstance(r.get("round"), int)]
+        if not nums:
+            return False
+        return all(1 <= n <= max_round for n in nums)
+
+    def _apply_finished_filter(self, data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        """Return payload to persist based on FETCH_ONLY_FINISHED."""
+        from src.utils import FETCH_ONLY_FINISHED
+
+        if not data:
+            return None
+        filtered_data, total_events, finished_count = self._filter_finished_matches(data)
+        if FETCH_ONLY_FINISHED:
+            if finished_count == 0:
+                return None
+            return filtered_data
+        return data if total_events else None
+
+    async def _fetch_rounds_metadata(
+        self, session: Any, league_id: int, season_id: int
+    ) -> List[Dict[str, Any]]:
+        """GET /rounds; empty list on 404/error."""
+        from src.utils import make_api_request_async
+
+        url = f"/unique-tournament/{league_id}/season/{season_id}/rounds"
+        try:
+            data = await make_api_request_async(session, url, max_retries=1)
+            if not data:
+                return []
+            rounds = data.get("rounds") or []
+            return rounds if isinstance(rounds, list) else []
+        except ResourceNotFoundError:
+            return []
+        except Exception as e:
+            logger.warning(f"Rounds metadata alınamadı ({league_id}/{season_id}): {e}")
+            return []
+
     async def fetch_all_rounds_async(
-        self, league_id: int, season_id: int, output_dir: str
+        self,
+        league_id: int,
+        season_id: int,
+        output_dir: str,
+        max_round: int = 50,
     ) -> List[Dict[str, Any]]:
         """
-        Asenkron olarak bir sezonun tüm turlarındaki maçları çeker.
-
-        Args:
-            league_id: Lig kimliği
-            season_id: Sezon kimliği
-            output_dir: Maç verilerinin kaydedileceği dizin
-
-        Returns:
-            Tüm turların maç verilerini içeren liste
+        Fetch season schedule: week-based /rounds when available, else paginated events/last+next.
         """
         from src.utils import create_session_async
 
         league_name = self.config_manager.get_leagues().get(league_id, f"Bilinmeyen Lig {league_id}")
         season_name = self.season_fetcher.get_season_name(league_id, season_id)
-        logger.info(f"{league_name}: {season_name} için tüm turlar asenkron çekiliyor...")
+        logger.info(f"{league_name}: {season_name} için maç programı çekiliyor...")
 
-        # Maksimum tur sayısı - genellikle bir sezonda bu kadar tur olmaz
-        # ancak tüm olası turları taramak için bu değeri kullanıyoruz
-        max_rounds = 40  # Mantıklı bir sayıya düşürüldü - tüm turları dolaşmak zaman alıyor
-        
         os.makedirs(output_dir, exist_ok=True)
-        
-        # curl_cffi session oluştur
+        max_round = max(1, int(max_round or 50))
+
         async with create_session_async() as session:
-            # Eşzamanlı istek sayısını çevre değişkeninden al
             semaphore_limit = self.config_manager.get_max_concurrent()
             logger.info(f"{league_name}: {season_name} için eşzamanlı istek limiti: {semaphore_limit}")
-            
-            # Her async task için bir liste oluştur
-            tasks = []
-            for round_num in range(1, max_rounds + 1):
-                # Semaphore'u doğrudan geçiriyoruz
-                task = asyncio.create_task(
-                    self._fetch_and_save_round(
-                        semaphore_limit, session, league_id, season_id, round_num, output_dir
-                    )
-                )
-                tasks.append(task)
-            
-            # Rich Progress kullanarak işlem takibi
-            progress_desc = f"[bold cyan]{league_name}[/]: [yellow]{season_name}[/] için turlar çekiliyor"
-            results = []
-            
-            try:
-                with Progress(
-                    SpinnerColumn(),
-                    TextColumn("[progress.description]{task.description}"),
-                    BarColumn(),
-                    TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-                    TimeRemainingColumn(),
-                    transient=True 
-                ) as progress:
-                    task_id = progress.add_task(progress_desc, total=len(tasks))
-                    
-                    for coro in asyncio.as_completed(tasks):
-                        try:
-                            result = await coro
-                            if result:
-                                results.append(result)
-                        except Exception as e:
-                            logger.error(f"Task hatası: {e}")
-                        finally:
-                            progress.advance(task_id)
 
-            except Exception as e:
-                logger.error(f"Async işlem hatası: {e}")
-            
-            # Boş olmayan sonuçları filtrele
-            valid_results = [r for r in results if r is not None]
-            logger.info(f"{league_name}: {season_name} için toplam {len(valid_results)}/{len(tasks)} tur başarıyla çekildi")
-            return valid_results
-    
+            rounds_meta = await self._fetch_rounds_metadata(session, league_id, season_id)
+            use_weeks = self.is_week_based_rounds(rounds_meta, max_round=max_round)
+
+            results: List[Dict[str, Any]] = []
+            if use_weeks:
+                round_specs = []
+                for r in rounds_meta:
+                    rn = r.get("round")
+                    if not isinstance(rn, int) or rn < 1 or rn > max_round:
+                        continue
+                    round_specs.append((rn, r.get("slug")))
+                if not round_specs:
+                    # Fallback: sequential 1..max from metadata current or full range
+                    round_specs = [(n, None) for n in range(1, max_round + 1)]
+
+                progress_desc = f"[bold cyan]{league_name}[/]: [yellow]{season_name}[/] turlar çekiliyor"
+                tasks = [
+                    asyncio.create_task(
+                        self._fetch_and_save_round(
+                            semaphore_limit,
+                            session,
+                            league_id,
+                            season_id,
+                            round_num,
+                            output_dir,
+                            slug=slug,
+                        )
+                    )
+                    for round_num, slug in round_specs
+                ]
+                try:
+                    with Progress(
+                        SpinnerColumn(),
+                        TextColumn("[progress.description]{task.description}"),
+                        BarColumn(),
+                        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+                        TimeRemainingColumn(),
+                        transient=True,
+                    ) as progress:
+                        task_id = progress.add_task(progress_desc, total=len(tasks))
+                        for coro in asyncio.as_completed(tasks):
+                            try:
+                                result = await coro
+                                if result:
+                                    results.append(result)
+                            except Exception as e:
+                                logger.error(f"Task hatası: {e}")
+                            finally:
+                                progress.advance(task_id)
+                except Exception as e:
+                    logger.error(f"Async işlem hatası: {e}")
+
+                logger.info(
+                    f"{league_name}: {season_name} için {len(results)}/{len(tasks)} tur çekildi"
+                )
+
+            if not results:
+                if use_weeks:
+                    logger.warning(
+                        f"{league_name}: {season_name} — round schedule empty, "
+                        "falling back to event list (events/last + events/next)"
+                    )
+                else:
+                    logger.info(
+                        f"{league_name}: {season_name} — round schedule unavailable "
+                        f"(rounds={len(rounds_meta)}), using event list"
+                    )
+                results = await self._fetch_and_save_event_pages(
+                    session, league_id, season_id, output_dir
+                )
+
+            if not results and not use_weeks:
+                # Invalid/retired season ids 404 on rounds + events — don't spray 50 round requests
+                logger.warning(
+                    f"{league_name}: {season_name} — no rounds/events for season {season_id}; "
+                    "skipping sequential round probe"
+                )
+
+            return [r for r in results if r is not None]
+
+    async def _fetch_and_save_event_pages(
+        self,
+        session: Any,
+        league_id: int,
+        season_id: int,
+        output_dir: str,
+    ) -> List[Dict[str, Any]]:
+        """Paginate events/last and events/next; dedupe by match id; save pages + return chunks."""
+        from src.utils import FETCH_ONLY_FINISHED, make_api_request_async
+
+        league_name = self.config_manager.get_leagues().get(league_id, f"Bilinmeyen Lig {league_id}")
+        seen_ids: set = set()
+        results: List[Dict[str, Any]] = []
+
+        for kind in ("last", "next"):
+            page = 0
+            while page < 200:
+                url = f"/unique-tournament/{league_id}/season/{season_id}/events/{kind}/{page}"
+                try:
+                    data = await make_api_request_async(session, url, max_retries=2)
+                except ResourceNotFoundError:
+                    break
+                except Exception as e:
+                    logger.error(f"{league_name}: events/{kind}/{page} hatası: {e}")
+                    break
+
+                if not data or not data.get("events"):
+                    break
+
+                events = []
+                for ev in data.get("events") or []:
+                    mid = ev.get("id")
+                    if mid is None or mid in seen_ids:
+                        continue
+                    seen_ids.add(mid)
+                    events.append(ev)
+
+                page_payload = {
+                    "events": events,
+                    "hasNextPage": bool(data.get("hasNextPage")),
+                    "source": f"{kind}/{page}",
+                }
+                file_path = os.path.join(output_dir, f"events_{kind}_{page}.json")
+                to_save = self._apply_finished_filter(page_payload)
+                if to_save and to_save.get("events"):
+                    with open(file_path, "w", encoding="utf-8") as f:
+                        json.dump(to_save, f, ensure_ascii=False, indent=2)
+                    chunk = dict(to_save)
+                    chunk["round"] = f"{kind}_{page}"
+                    results.append(chunk)
+                elif not FETCH_ONLY_FINISHED and events:
+                    with open(file_path, "w", encoding="utf-8") as f:
+                        json.dump(page_payload, f, ensure_ascii=False, indent=2)
+                    chunk = dict(page_payload)
+                    chunk["round"] = f"{kind}_{page}"
+                    results.append(chunk)
+
+                if not data.get("hasNextPage"):
+                    break
+                page += 1
+
+        logger.info(
+            f"{league_name}: event listesinden {len(seen_ids)} benzersiz maç, "
+            f"{len(results)} sayfa kaydedildi"
+        )
+        return results
+
     async def _fetch_and_save_round(
         self,
         semaphore_limit: int,
@@ -259,132 +459,95 @@ class MatchFetcher:
         season_id: int,
         round_num: int,
         output_dir: str,
+        slug: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
-        """
-        Belirli bir turdaki maçları çeker ve kaydeder.
+        """Fetch and save one round (optional cup slug)."""
+        from src.utils import FETCH_ONLY_FINISHED, SAVE_EMPTY_ROUNDS, make_api_request_async
 
-        Args:
-            semaphore_limit: Eşzamanlı istekleri sınırlamak için semaphore limiti
-            session: HTTP oturumu
-            league_id: Lig kimliği
-            season_id: Sezon kimliği
-            round_num: Tur numarası
-            output_dir: Maç verilerinin kaydedileceği dizin
+        url = self.build_round_events_url(league_id, season_id, round_num, slug)
+        safe_slug = slug.replace("/", "-").replace("\\", "-") if slug else None
+        suffix = f"_{safe_slug}" if safe_slug else ""
+        file_path = os.path.join(output_dir, f"round_{round_num}{suffix}.json")
 
-        Returns:
-            Tur verileri veya None (hata durumunda)
-        """
-        from src.utils import FETCH_ONLY_FINISHED, SAVE_EMPTY_ROUNDS
-        
-        # URL formatını düzelt: tournament/matches -> unique-tournament/events
-        url = f"/unique-tournament/{league_id}/season/{season_id}/events/round/{round_num}"
-        file_path = os.path.join(output_dir, f"round_{round_num}.json")
-        
-        # Dosya zaten varsa ve tekrar kontrol edilmesi istenmiyorsa, onu okuyup döndür
         if os.path.exists(file_path):
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    # Yüklenen veri boş mu kontrol et
                     if self._is_empty_round_data(data):
                         logger.debug(f"Tur {round_num} için yerel dosyada veri bulunamadı")
                         return None
                     return data
             except json.JSONDecodeError:
                 logger.warning(f"Bozuk JSON dosyası: {file_path}, yeniden çekiliyor...")
-                # Dosya bozuksa, silip yeniden çekelim
                 os.remove(file_path)
-        
-        # Semaphore kullanmadan doğrudan işlemi gerçekleştir
+
         try:
-            from src.utils import make_api_request_async
             data = await make_api_request_async(session, url)
-            
-            # Boş veri kontrolü
+
             if self._is_empty_round_data(data):
                 league_name = self.config_manager.get_leagues().get(league_id, f"Bilinmeyen Lig {league_id}")
                 logger.debug(f"{league_name}: Tur {round_num} için maç bulunamadı, atlanıyor...")
-                
-                # Boş tur verilerinin kaydedilip kaydedilmeyeceğini kontrol et
                 if SAVE_EMPTY_ROUNDS and data:
-                    logger.info(f"{league_name}: Boş tur {round_num} kaydediliyor (SAVE_EMPTY_ROUNDS=true)")
                     with open(file_path, "w", encoding="utf-8") as f:
                         json.dump(data, f, ensure_ascii=False, indent=2)
-                
                 return None
-            
-            # Veriyi filtrele - asenkron modda
+
             filtered_data, total_events, finished_count = self._filter_finished_matches(data)
-            
-            # Sadece bitmiş maçları mı yoksa tüm verileri mi kaydedecek?
             data_to_save = filtered_data if FETCH_ONLY_FINISHED else data
-            
-            # Hiç bitmiş maç yoksa durumu kaydet
+
             if finished_count == 0:
                 league_name = self.config_manager.get_leagues().get(league_id, f"Bilinmeyen Lig {league_id}")
                 logger.info(f"{league_name}: Tur {round_num} için bitmiş maç yok (Toplam: {total_events})")
-                
-                # Sadece bitmiş maçlar isteniyorsa ve hiç bitmiş maç yoksa, sadece log kaydı tutalım
                 if FETCH_ONLY_FINISHED:
                     if SAVE_EMPTY_ROUNDS:
-                        # Boş sonuç verileri kaydet
                         with open(file_path, "w", encoding="utf-8") as f:
                             json.dump(data_to_save, f, ensure_ascii=False, indent=2)
-                        logger.debug(f"Boş filtrelenmiş tur {round_num} kaydedildi (SAVE_EMPTY_ROUNDS=true)")
-                    # Bitmiş maç olmadığında None döndür
-                    return None 
-                else:
-                    # Tüm maçları kaydet (bitmiş olmasalar bile)
-                    with open(file_path, "w", encoding="utf-8") as f:
-                        json.dump(data_to_save, f, ensure_ascii=False, indent=2)
-                    return data_to_save
-            
-            # Bitmiş maçlar varsa onları kaydet
+                    return None
+                with open(file_path, "w", encoding="utf-8") as f:
+                    json.dump(data_to_save, f, ensure_ascii=False, indent=2)
+                data_to_save = dict(data_to_save)
+                data_to_save["round"] = round_num
+                return data_to_save
+
             with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(data_to_save, f, ensure_ascii=False, indent=2)
-            
-            # Sadece bitmiş maçlar isteniyorsa, filtrelenmiş veriyi döndür
-            # Aksi takdirde orijinal veriyi döndür
+            data_to_save = dict(data_to_save)
+            data_to_save["round"] = round_num
             return data_to_save
-            
+
         except ResourceNotFoundError:
             league_name = self.config_manager.get_leagues().get(league_id, f"Bilinmeyen Lig {league_id}")
-            # Bu bir hata değil, muhtemelen sezonun bittiği anlamına gelir
-            logger.debug(f"{league_name}: Tur {round_num} bulunamadı (Sezon sonuna ulaşılmış olabilir)")
+            logger.debug(f"{league_name}: Tur {round_num} bulunamadı")
             return None
-            
         except Exception as e:
             league_name = self.config_manager.get_leagues().get(league_id, f"Bilinmeyen Lig {league_id}")
             logger.error(f"{league_name}: Tur {round_num} çekilirken hata: {str(e)}")
             return None
-    
-    # Senkron wrapper
+
     def fetch_all_rounds_parallel(self, league_id, season_id, max_round=50):
         """Paralel istekler için senkron wrapper."""
-        # Sezon dizinini oluştur
         league_name_safe = self.config_manager.get_leagues().get(league_id, f"League_{league_id}").replace(' ', '_')
         season_name_safe = self.season_fetcher.get_season_name(league_id, season_id).replace(' ', '_').replace('/', '_')
         output_dir = os.path.join(self.matches_dir, f"{league_id}_{league_name_safe}", f"{season_id}_{season_name_safe}")
         ensure_directory(output_dir)
-        
-        # max_round parametresini artık doğrudan burada kullanıyoruz
+
         logger.info(get_i18n().t('fetching_data_up_to_max_rounds', max_round=max_round))
-        
-        return asyncio.run(self.fetch_all_rounds_async(league_id, season_id, output_dir))
-    
+        return asyncio.run(
+            self.fetch_all_rounds_async(league_id, season_id, output_dir, max_round=max_round)
+        )
+
     def fetch_all_rounds_for_season(self, league_id: int, season_id: int, max_round: int = 50) -> List[Dict[str, Any]]:
         """
         Belirli bir lig ve sezon için tüm haftaların maç verilerini çeker.
-        
+
         Args:
             league_id: Lig ID'si
             season_id: Sezon ID'si
             max_round: Maksimum hafta sayısı (varsayılan: 50)
-        
+
         Returns:
             List[Dict[str, Any]]: Her hafta için özet bilgi içeren liste
         """
-        # Paralel versiyonu çağır
         return self.fetch_all_rounds_parallel(league_id, season_id, max_round)
     
     def fetch_all_leagues_current_season(self) -> Dict[int, List[Dict[str, Any]]]:
@@ -709,94 +872,43 @@ class MatchFetcher:
             results = self.fetch_all_rounds_for_season(league_id, season_id, max_round)
             
             if not results:
-                # Hiç sonuç bulunamadı (hepsi boş veya hata)
-                logger.warning(f"{league_name} - {season_name} için maç bulunamadı")
-                
-                # Gelecek sezon olabilir mi kontrol et
+                # Hiç bitmiş maç yok: fixtures-only upcoming (örn. PL 26/27) veya boş sezon
+                logger.warning(f"{league_name} - {season_name} için bitmiş maç bulunamadı")
+
+                season_info = self.season_fetcher.get_season_info(league_id, season_id)
+                season_year = self._parse_season_start_year(season_name or "", season_info)
                 current_date = datetime.datetime.now()
                 current_year = current_date.year
-                
-                # Sezon yılını çıkarmaya çalış
-                season_year = None
-                if season_name:
-                    # 1. Direkt sezon adından çıkar (örn. "Premier League 2024/25")
-                    import re
-                    year_matches = re.findall(r'20\d\d', season_name)
-                    if year_matches:
-                        try:
-                            season_year = int(year_matches[0])
-                        except (ValueError, TypeError):
-                            pass
-                
-                # Eğer sezon adından yıl çıkarılamadıysa, sezon bilgisini kontrol et
-                if not season_year:
-                    season_info = self.season_fetcher.get_season_info(league_id, season_id)
-                    if season_info:
-                        season_year_str = season_info.get("year", "")
-                        if season_year_str and '/' in season_year_str:
-                            # "2024/25" veya "2024/2025" formatı
-                            start_year = season_year_str.split('/')[0].strip()
-                            if len(start_year) == 4:
-                                season_year = int(start_year)
-                            elif len(start_year) == 2:
-                                # 2 haneli yıl (örn. "24/25")
-                                season_year = 2000 + int(start_year)
-                        elif season_year_str:
-                            # Tek yıl formatı: "2024"
-                            try:
-                                season_year = int(season_year_str)
-                            except (ValueError, TypeError):
-                                pass
-                
-                # Gelecek sezon kontrolü
-                is_future_season = False
-                if season_year:
+
+                # Short-year seasons like 26/27 often publish full fixtures before kickoff
+                is_future_or_unstarted = False
+                if season_year is not None:
                     if season_year > current_year:
-                        is_future_season = True
-                    # Eğer güncel yıldaysak ancak henüz sezon başlamamışsa (örn. Haziran'da futbol sezonları)
-                    elif season_year == current_year and current_date.month < 8:  # Çoğu futbol ligi Ağustos'ta başlar
-                        # Sezon maçlarının olup olmadığını kontrol et
-                        if not results or (isinstance(results, list) and len(results) == 0):
-                            is_future_season = True
-                
-                if is_future_season:
-                    logger.warning(f"{league_name} - {season_year} henüz başlamamış veya maç yok. Alternatif sezon deneniyor...")
-                    
-                    # Bir önceki sezonu deneyelim
-                    seasons = self.season_fetcher.get_seasons_for_league(league_id)
-                    
-                    # Sezonları yıla göre sırala
-                    sorted_seasons = sorted(
-                        seasons,
-                        key=lambda s: self.season_fetcher._get_sortable_year_value(s.get("year", "0")),
-                        reverse=True  # En yeni ilk
-                    )
-                    
-                    # Şu anki sezonun indeksini bul
-                    current_index = -1
-                    for i, s in enumerate(sorted_seasons):
-                        if s.get("id") == season_id:
-                            current_index = i
-                            break
-                    
-                    # Bir önceki sezonu kullan
-                    if current_index >= 0 and current_index + 1 < len(sorted_seasons):
-                        prev_season = sorted_seasons[current_index + 1]
+                        is_future_or_unstarted = True
+                    elif season_year == current_year and current_date.month < 8:
+                        is_future_or_unstarted = True
+
+                # Always try previous season once when finished filter emptied the schedule
+                if retry_count == 0:
+                    prev_season = self._previous_season(league_id, season_id)
+                    if prev_season:
                         prev_season_id = prev_season.get("id")
                         prev_season_name = prev_season.get("name", "")
-                        
-                        logger.info(f"Alternatif sezon deneniyor: {prev_season_name} (ID: {prev_season_id})")
-                        return self.fetch_all_matches_for_season(league_id, prev_season_id, max_round, retry_count + 1)
-                    else:
-                        logger.warning(f"Alternatif sezon bulunamadı.")
-                elif results is not None and len(results) == 0:
-                    # Bu durumda sezon mevcut ancak hiç bitmiş maç yok
-                    # Lig tatilde veya maçlar henüz başlamamış olabilir
-                    logger.warning(f"{league_name} - {season_name} için hiç bitmiş maç bulunamadı")
-                    
-                    # Sezon özetini yine de oluştur
-                    self._save_season_summary(league_id, season_id, [])
-                
+                        reason = (
+                            f"upcoming/unstarted ({season_year})"
+                            if is_future_or_unstarted
+                            else "no finished matches in selected season"
+                        )
+                        logger.warning(
+                            f"{league_name} - {season_name}: {reason}. "
+                            f"Falling back to {prev_season_name} (ID: {prev_season_id})"
+                        )
+                        return self.fetch_all_matches_for_season(
+                            league_id, prev_season_id, max_round, retry_count + 1
+                        )
+                    logger.warning(f"{league_name}: alternatif (önceki) sezon bulunamadı.")
+
+                self._save_season_summary(league_id, season_id, [])
                 return False
             
             # Sezon özeti oluştur

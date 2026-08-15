@@ -111,3 +111,6 @@ src/web/static/backups/
 # System files
 .DS_Store
 Thumbs.db 
+frontend/node_modules/
+frontend/dist/
+.cursor/

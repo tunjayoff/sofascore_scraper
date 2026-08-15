@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from src.config_manager import ConfigManager
@@ -783,23 +783,26 @@ async def get_matches(
         season_id,
     )
 
-# Global Scraper State
-SCRAPER_STATE = {
-    "is_running": False,
-    "status": "Idle",
-    "progress": 0,
-    "current_task": "",
-    "current_batch": "",
-    "matches_total": 0,
-    "matches_done": 0,
-    "matches_failed": 0,
-    "circuit_breaker_triggered": False,
-    "circuit_breaker_reason": None,
-    "eta_seconds": None,
-    "started_at": None,
-    "cancel_requested": False,
-    "log": []
-}
+# Global Scraper State (mirror of JobStore for legacy field access during a run)
+from src.web.jobs import get_job_store
+
+_job_store = get_job_store(config_manager.get_data_dir())
+SCRAPER_STATE = _job_store.snapshot()
+
+
+def _refresh_scraper_state() -> Dict[str, Any]:
+    """Keep module-level SCRAPER_STATE dict in sync with JobStore mirror."""
+    global SCRAPER_STATE
+    snap = _job_store.snapshot()
+    SCRAPER_STATE.clear()
+    SCRAPER_STATE.update(snap)
+    return SCRAPER_STATE
+
+
+def _persist_scraper_fields(**kwargs: Any) -> None:
+    _job_store.update(**kwargs)
+    _refresh_scraper_state()
+
 
 @router.get("/matches/{match_id}")
 async def get_match_details(match_id: str):
@@ -821,7 +824,21 @@ async def fetch_single_match(match_id: str):
 @router.get("/scrape/status")
 async def get_scrape_status():
     """Get the current status of the background scraper."""
-    return SCRAPER_STATE
+    return _refresh_scraper_state()
+
+
+@router.get("/jobs")
+async def list_jobs(limit: int = Query(20, ge=1, le=100)):
+    """Recent scrape jobs (newest first)."""
+    return {"jobs": _job_store.list_jobs(limit=limit)}
+
+
+@router.get("/jobs/{job_id}")
+async def get_job(job_id: str):
+    job = _job_store.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
 
 
 @router.get("/scrape/stream")
@@ -837,11 +854,12 @@ async def scrape_status_stream(request: Request):
         while True:
             if await request.is_disconnected():
                 break
-            current_json = json.dumps(SCRAPER_STATE, default=str)
+            state = _refresh_scraper_state()
+            current_json = json.dumps(state, default=str)
             if current_json != last_state_json:
                 yield {"event": "update", "data": current_json}
                 last_state_json = current_json
-                if not SCRAPER_STATE["is_running"] and SCRAPER_STATE["status"] != "Running":
+                if not state.get("is_running") and state.get("status") != "Running":
                     yield {"event": "done", "data": current_json}
                     break
             await asyncio.sleep(0.5)
@@ -851,45 +869,49 @@ async def scrape_status_stream(request: Request):
 @router.post("/scrape/cancel")
 async def cancel_scrape():
     """Çalışan background fetch işlemini iptal eder."""
-    if not SCRAPER_STATE["is_running"]:
+    if not _job_store.request_cancel():
         raise HTTPException(status_code=400, detail="No scraping process is running.")
-    SCRAPER_STATE["cancel_requested"] = True
-    SCRAPER_STATE["current_task"] = "Cancellation requested..."
+    _refresh_scraper_state()
     return {"status": "cancelling", "message": "Cancel signal sent."}
 
 
 @router.post("/fetch")
-async def trigger_fetch(background_tasks: BackgroundTasks, payload: FetchRequest):
+async def trigger_fetch(payload: FetchRequest):
     """Trigger a background fetch operation. Mode 'full' or 'details'."""
-    
-    if SCRAPER_STATE["is_running"]:
+    _refresh_scraper_state()
+    if SCRAPER_STATE.get("is_running"):
         raise HTTPException(status_code=409, detail="Scraping process is already running.")
 
     from src.SofaScoreUi import SimpleSofaScoreUI
     import traceback
-    
-    import datetime as _dt
+
+    payload_dict = payload.model_dump()
+    job_id = _job_store.create_running(payload_dict)
+    _refresh_scraper_state()
 
     def update_state(status: str, progress: int, task: str):
-        SCRAPER_STATE["status"] = status
-        SCRAPER_STATE["progress"] = progress
-        SCRAPER_STATE["current_task"] = task
-        if len(SCRAPER_STATE["log"]) > 50:
-             SCRAPER_STATE["log"].pop(0)
-        SCRAPER_STATE["log"].append(f"[{status}] {task}")
+        finished = status in ("Completed", "Failed", "Cancelled")
+        db_status = None
+        if status == "Completed":
+            db_status = "completed"
+        elif status == "Failed":
+            db_status = "failed"
+        elif status == "Cancelled":
+            db_status = "cancelled"
+        _job_store.update(
+            status=status if not finished else status,
+            progress=progress,
+            current_task=task,
+            append_log=f"[{status}] {task}",
+            finished=finished,
+        )
+        # map human status for mirror when finished
+        if finished and db_status:
+            # update() already mapped; refresh
+            pass
+        _refresh_scraper_state()
 
     def run_update():
-        SCRAPER_STATE["is_running"] = True
-        SCRAPER_STATE["cancel_requested"] = False
-        SCRAPER_STATE["log"] = []
-        SCRAPER_STATE["matches_done"] = 0
-        SCRAPER_STATE["matches_failed"] = 0
-        SCRAPER_STATE["matches_total"] = 0
-        SCRAPER_STATE["circuit_breaker_triggered"] = False
-        SCRAPER_STATE["circuit_breaker_reason"] = None
-        SCRAPER_STATE["eta_seconds"] = None
-        SCRAPER_STATE["started_at"] = _dt.datetime.now().isoformat()
-
         def web_detail_progress(lo: int, hi: int):
             """Terminal tqdm ile uyumlu ara adımlar: done/total → [lo, hi]."""
 
@@ -900,8 +922,7 @@ async def trigger_fetch(background_tasks: BackgroundTasks, payload: FetchRequest
                 else:
                     pct = lo + int((done / total) * (hi_clamped - lo))
                 pct = max(lo, min(hi_clamped, pct))
-                SCRAPER_STATE["matches_done"] = done
-                SCRAPER_STATE["matches_total"] = total
+                _job_store.update(matches_done=done, matches_total=total)
                 update_state("Running", pct, task)
 
             return cb
@@ -912,8 +933,8 @@ async def trigger_fetch(background_tasks: BackgroundTasks, payload: FetchRequest
             else (str(payload.league_id) if payload.league_id else "All Leagues")
         )
         update_state("Running", 0, f"Starting fetch for {summary}")
-        logger.info(f"Background fetch started. Target: {summary}")
-        
+        logger.info(f"Background fetch started. job_id=%s Target: %s", job_id, summary)
+
         try:
             ui = SimpleSofaScoreUI(config_manager=config_manager)
             
@@ -933,6 +954,7 @@ async def trigger_fetch(background_tasks: BackgroundTasks, payload: FetchRequest
                         ui.match_data_fetcher.fetch_matches_batch(
                             all_mids,
                             progress_callback=web_detail_progress(10, 85),
+                            should_cancel=_job_store.cancel_requested,
                         )
                 else:
                     logger.info(
@@ -941,7 +963,7 @@ async def trigger_fetch(background_tasks: BackgroundTasks, payload: FetchRequest
                     )
                     unique_leagues = sorted({s.league_id for s in payload.selections})
                     for league_id in unique_leagues:
-                        if SCRAPER_STATE.get("cancel_requested"):
+                        if _job_store.cancel_requested():
                             break
                         update_state(
                             "Running",
@@ -954,14 +976,27 @@ async def trigger_fetch(background_tasks: BackgroundTasks, payload: FetchRequest
                     seen_pairs: Set[Tuple[int, int]] = set()
                     for s in payload.selections:
                         for sid in s.season_ids or []:
-                            key = (s.league_id, sid)
+                            resolved = ui.season_fetcher.resolve_season_id(s.league_id, sid)
+                            if resolved != sid:
+                                update_state(
+                                    "Running",
+                                    8,
+                                    f"Season {sid} outdated → using {resolved} for league {s.league_id}",
+                                )
+                            key = (s.league_id, resolved)
                             if key not in seen_pairs:
                                 seen_pairs.add(key)
                                 pairs.append(key)
                     
+                    # Keep detail fetch aligned with resolved season ids
+                    resolved_by_league: Dict[int, List[int]] = {}
+                    for lid, sid in pairs:
+                        resolved_by_league.setdefault(lid, []).append(sid)
+                    
                     total_ops = len(pairs) or 1
+                    empty_schedule = 0
                     for idx, (lid, sid) in enumerate(pairs):
-                        if SCRAPER_STATE.get("cancel_requested"):
+                        if _job_store.cancel_requested():
                             break
                         pct = 10 + int((idx / total_ops) * 45)
                         update_state(
@@ -969,19 +1004,24 @@ async def trigger_fetch(background_tasks: BackgroundTasks, payload: FetchRequest
                             pct,
                             f"Fetching matches: league {lid}, season {sid}",
                         )
-                        ui.match_fetcher.fetch_matches_for_season(lid, sid)
+                        ok = ui.match_fetcher.fetch_matches_for_season(lid, sid)
+                        if not ok:
+                            empty_schedule += 1
+                    _job_store.update(schedule_empty_seasons=empty_schedule)
+                    _refresh_scraper_state()
+                    if empty_schedule and empty_schedule >= len(pairs):
+                        from src.i18n import get_i18n
+                        update_state(
+                            "Running",
+                            54,
+                            get_i18n().t("fetch_zero_matches"),
+                        )
                     
-                    league_to_seasons: Dict[int, List[int]] = {}
-                    for s in payload.selections:
-                        league_to_seasons.setdefault(s.league_id, [])
-                        for sid in s.season_ids or []:
-                            if sid not in league_to_seasons[s.league_id]:
-                                league_to_seasons[s.league_id].append(sid)
-                    
+                    league_to_seasons: Dict[int, List[int]] = resolved_by_league
                     n_leagues = len(league_to_seasons) or 1
                     detail_span = 30
                     for i, (lid, only_sids) in enumerate(league_to_seasons.items()):
-                        if SCRAPER_STATE.get("cancel_requested"):
+                        if _job_store.cancel_requested():
                             break
                         if not only_sids:
                             continue
@@ -999,6 +1039,7 @@ async def trigger_fetch(background_tasks: BackgroundTasks, payload: FetchRequest
                             max_seasons=0,
                             only_season_ids=only_sids,
                             progress_callback=web_detail_progress(lo, hi),
+                            should_cancel=_job_store.cancel_requested,
                         )
             
             elif payload.league_id:
@@ -1011,16 +1052,27 @@ async def trigger_fetch(background_tasks: BackgroundTasks, payload: FetchRequest
                     update_state("Running", 30, f"Fetching matches for League {payload.league_id}...")
                     seasons = ui.season_fetcher.get_seasons_for_league(payload.league_id)
                     total_seasons = len(seasons)
+                    empty_schedule = 0
                     for i, season in enumerate(seasons):
+                        if _job_store.cancel_requested():
+                            break
                         processing_season_name = season.get('name', season.get('year', 'Unknown'))
-                        update_state("Running", 30 + int((i/total_seasons)*30), f"Fetching matches: {processing_season_name}")
-                        ui.match_fetcher.fetch_matches_for_season(payload.league_id, season["id"])
+                        update_state("Running", 30 + int((i/total_seasons)*30) if total_seasons else 30, f"Fetching matches: {processing_season_name}")
+                        ok = ui.match_fetcher.fetch_matches_for_season(payload.league_id, season["id"])
+                        if not ok:
+                            empty_schedule += 1
+                    _job_store.update(schedule_empty_seasons=empty_schedule)
+                    _refresh_scraper_state()
+                    if empty_schedule and total_seasons and empty_schedule >= total_seasons:
+                        from src.i18n import get_i18n
+                        update_state("Running", 55, get_i18n().t("fetch_zero_matches"))
                 
                 update_state("Running", 60, f"Fetching match details for League {payload.league_id}…")
                 ui.match_data_fetcher.fetch_all_match_details(
                     league_id=str(payload.league_id),
                     max_seasons=0,
                     progress_callback=web_detail_progress(60, 89),
+                    should_cancel=_job_store.cancel_requested,
                 )
                 
             else:
@@ -1029,20 +1081,31 @@ async def trigger_fetch(background_tasks: BackgroundTasks, payload: FetchRequest
                     ui.match_data_fetcher.fetch_all_match_details(
                         max_seasons=0,
                         progress_callback=web_detail_progress(10, 89),
+                        should_cancel=_job_store.cancel_requested,
                     )
                 else:
                     update_state("Running", 10, "Updating ALL leagues (Seasons, Matches, Details)…")
                     print("--> Updating ALL leagues...")
                     ui.update_all_leagues(progress_factory=web_detail_progress)
             
-            # Export
-            update_state("Running", 90, "Exporting data to CSV...")
-            print("--> Exporting to CSV...")
-            ui.export_all_to_csv()
-            
-            update_state("Completed", 100, "Background Task Completed Successfully.")
-            print("--> Background Task Completed Successfully.")
-            logger.info("Background update and export completed.")
+            if _job_store.cancel_requested():
+                update_state("Cancelled", int(_job_store.snapshot().get("progress") or 0), "Cancelled")
+            else:
+                # Export
+                update_state("Running", 90, "Exporting data to CSV...")
+                print("--> Exporting to CSV...")
+                ui.export_all_to_csv()
+
+                from src.i18n import get_i18n
+                empty_n = int(_job_store.snapshot().get("schedule_empty_seasons") or 0)
+                result = {"schedule_empty_seasons": empty_n}
+                _job_store.update(result=result)
+                if empty_n > 0:
+                    update_state("Completed", 100, get_i18n().t("fetch_completed_with_warning"))
+                else:
+                    update_state("Completed", 100, "Background Task Completed Successfully.")
+                print("--> Background Task Completed Successfully.")
+                logger.info("Background update and export completed.")
             
         except Exception as e:
             error_msg = str(e)
@@ -1051,10 +1114,20 @@ async def trigger_fetch(background_tasks: BackgroundTasks, payload: FetchRequest
             print(f"--> Background Task FAILED: {e}")
             update_state("Failed", 0, f"Error: {error_msg}")
         finally:
-            SCRAPER_STATE["is_running"] = False
+            snap = _job_store.snapshot()
+            if snap.get("is_running"):
+                # Ensure job is closed if worker exited without terminal status
+                if _job_store.cancel_requested():
+                    update_state("Cancelled", int(snap.get("progress") or 0), "Cancelled")
+                else:
+                    update_state("Failed", int(snap.get("progress") or 0), "Interrupted")
+            _refresh_scraper_state()
 
-    background_tasks.add_task(run_update)
-    return {"status": "started", "message": "Update started."}
+    # Dedicated thread: long scrapes must not occupy Starlette's shared threadpool
+    # (otherwise /dashboard, /stats, page navigations starve while fetch runs).
+    import threading
+    threading.Thread(target=run_update, name="sofascore-fetch", daemon=True).start()
+    return {"status": "started", "job_id": job_id, "message": "Update started."}
 
 @router.get("/status")
 async def system_status():

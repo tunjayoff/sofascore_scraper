@@ -1,0 +1,209 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Soft sports desk — muted teal accent, clean surfaces, no pitch grid */
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-2: #eef0f3;
+  --text: #14181f;
+  --muted: #5f6b7a;
+  --accent: #0f766e;
+  --accent-ink: #ffffff;
+  --primary: #0f766e;
+  --primary-hover: #0d9488;
+  --primary-soft: rgba(15, 118, 110, 0.12);
+  --danger: #dc2626;
+  --border: #dde1e8;
+  --radius: 0.625rem;
+  --radius-lg: 0.875rem;
+  --shadow: 0 1px 2px rgba(20, 24, 31, 0.04), 0 8px 24px -16px rgba(20, 24, 31, 0.18);
+  --header: rgba(255, 255, 255, 0.92);
+}
+
+html.dark {
+  --bg: #111418;
+  --surface: #1a1f26;
+  --surface-2: #232a33;
+  --text: #eef1f4;
+  --muted: #9aa5b2;
+  --accent: #2dd4bf;
+  --accent-ink: #042f2e;
+  --primary: #2dd4bf;
+  --primary-hover: #5eead4;
+  --primary-soft: rgba(45, 212, 191, 0.14);
+  --danger: #f87171;
+  --border: #2c3540;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 12px 28px -18px rgba(0, 0, 0, 0.55);
+  --header: rgba(26, 31, 38, 0.92);
+}
+
+body {
+  font-family: Manrope, system-ui, sans-serif;
+  color: var(--text);
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.display {
+  font-family: Syne, Manrope, sans-serif;
+  letter-spacing: -0.03em;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 font-semibold transition-colors;
+  border-radius: var(--radius);
+}
+.btn-primary {
+  background: var(--primary);
+  color: var(--accent-ink);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+.btn-primary:disabled {
+  @apply opacity-45 cursor-not-allowed;
+}
+.btn-accent {
+  background: var(--primary);
+  color: var(--accent-ink);
+}
+.btn-accent:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+.btn-secondary {
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.btn-secondary:hover {
+  background: var(--surface-2);
+}
+.btn-danger {
+  @apply text-white;
+  background: var(--danger);
+}
+.btn-danger:hover {
+  filter: brightness(1.06);
+}
+
+.panel {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.field-input {
+  @apply w-full min-h-[48px] px-4 py-2.5 border bg-[var(--surface)] focus:outline-none transition;
+  border-color: var(--border);
+  border-radius: var(--radius);
+}
+.field-input:focus {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.nav-pill {
+  @apply relative inline-flex items-center gap-2 min-h-[40px] px-3.5 py-2 rounded-lg text-sm font-semibold text-[var(--muted)];
+}
+.nav-pill:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+.nav-pill.is-active {
+  color: var(--text);
+}
+.nav-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.5rem;
+  background: var(--primary-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  pointer-events: none;
+}
+.ring-accent {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.link-accent {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.step-badge {
+  @apply inline-flex items-center justify-center w-9 h-9 font-extrabold text-sm shrink-0;
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: var(--accent-ink);
+}
+.step-badge.idle {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.page-title {
+  @apply text-3xl md:text-4xl font-extrabold tracking-tight;
+  font-family: Syne, Manrope, sans-serif;
+  letter-spacing: -0.04em;
+}
+
+.chip {
+  @apply inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold;
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--primary-soft);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.header-shell {
+  background: var(--header);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand-mark {
+  @apply relative flex items-center justify-center w-9 h-9 font-extrabold text-sm shrink-0;
+  border-radius: var(--radius);
+  background: var(--primary);
+  color: var(--accent-ink);
+  font-family: Syne, sans-serif;
+}
+
+.scoreboard-row {
+  @apply grid items-center gap-3 px-4 py-3.5 border-b border-[var(--border)] last:border-0;
+  grid-template-columns: 7.5rem 1fr auto 1fr;
+}
+
+.tools-menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  min-width: 11rem;
+  padding: 0.35rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  z-index: 40;
+}
+
+.tab-btn {
+  @apply relative px-3.5 py-2 text-sm font-semibold text-[var(--muted)] rounded-lg;
+}
+.tab-btn.is-active {
+  color: var(--text);
+  background: var(--primary-soft);
+}
+
+@media (max-width: 640px) {
+  .scoreboard-row {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+}

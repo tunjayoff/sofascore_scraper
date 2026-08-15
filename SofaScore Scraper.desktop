@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=SofaScore Scraper
+Comment=Open the local match data web UI
+TryExec=bash
+Exec=bash -c 'DIR="$(dirname "$(readlink -f "%k")")"; cd "$DIR" && exec ./start-sofascore.sh'
+Terminal=true
+Categories=Utility;Sports;
+StartupNotify=true

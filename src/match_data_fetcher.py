@@ -161,7 +161,7 @@ class MatchDataFetcher:
             logger.debug(f"{url} için asenkron istek hatası: {str(e)}")
         return key, None
 
-    async def fetch_matches_batch_async(self, match_ids, max_concurrent=30, progress_bar=None, progress_callback=None):
+    async def fetch_matches_batch_async(self, match_ids, max_concurrent=30, progress_bar=None, progress_callback=None, should_cancel=None):
         """Birden çok maç için veri çeker (circuit breaker destekli)."""
         logger.debug(f"Starting batch fetch for {len(match_ids)} matches")
         ignore_rate_limit = os.getenv("IGNORE_RATE_LIMIT", "false").lower() == "true"
@@ -181,6 +181,7 @@ class MatchDataFetcher:
         total_failures = 0
         total_attempts = 0
         breaker_triggered = False
+        cancelled = False
 
         batch_size = 100
         all_batches = [match_ids_to_process[i:i + batch_size] for i in range(0, len(match_ids_to_process), batch_size)]
@@ -194,7 +195,11 @@ class MatchDataFetcher:
         async with create_session_async() as session:
             sem = asyncio.Semaphore(max_concurrent)
             for batch_idx, batch in enumerate(all_batches):
-                if breaker_triggered:
+                if breaker_triggered or cancelled:
+                    break
+                if should_cancel and should_cancel():
+                    cancelled = True
+                    logger.info("Parallel match fetch cancelled before batch %s", batch_idx + 1)
                     break
                 logger.info(f"Processing batch {batch_idx+1}/{len(all_batches)} ({len(batch)} matches)")
                 batch_status_counts: Counter = Counter()
@@ -202,19 +207,34 @@ class MatchDataFetcher:
                 batch_failed = 0
 
                 async def fetch_one(match_id):
-                    nonlocal consecutive_failures, consecutive_server_errors, total_failures, total_attempts, breaker_triggered, batch_success, batch_failed
+                    nonlocal consecutive_failures, consecutive_server_errors, total_failures, total_attempts, breaker_triggered, batch_success, batch_failed, cancelled
+                    if cancelled or (should_cancel and should_cancel()):
+                        cancelled = True
+                        return None
                     max_retries = 3
                     for attempt in range(max_retries):
+                        if cancelled or (should_cancel and should_cancel()):
+                            cancelled = True
+                            return None
                         try:
                             async with sem:
+                                if cancelled or (should_cancel and should_cancel()):
+                                    cancelled = True
+                                    return None
                                 total_attempts += 1
                                 need = self._needs_detail_fetch(str(match_id))
                                 if need == "refill":
                                     result = await asyncio.to_thread(self.refill_missing_match_slices, str(match_id))
+                                    if cancelled or (should_cancel and should_cancel()):
+                                        cancelled = True
+                                        return None
                                     if not (result and "basic" in result):
                                         result = await self._fetch_match_data_async(session, match_id)
                                 else:
                                     result = await self._fetch_match_data_async(session, match_id)
+                                if cancelled or (should_cancel and should_cancel()):
+                                    cancelled = True
+                                    return None
                                 if result and "basic" in result:
                                     consecutive_failures = 0
                                     consecutive_server_errors = 0
@@ -273,11 +293,23 @@ class MatchDataFetcher:
                         progress_bar.update(1)
                     return None
 
-                batch_tasks = [fetch_one(match_id) for match_id in batch]
+                batch_tasks = [asyncio.create_task(fetch_one(match_id)) for match_id in batch]
                 batch_completed = 0
                 notify_stride = max(1, min(20, max(total_m // 50, 1)))
                 for coro in asyncio.as_completed(batch_tasks):
-                    match_data = await coro
+                    if should_cancel and should_cancel():
+                        cancelled = True
+                        for t in batch_tasks:
+                            if not t.done():
+                                t.cancel()
+                        # Don't await remaining work — drop out of the batch
+                        break
+                    try:
+                        match_data = await coro
+                    except asyncio.CancelledError:
+                        continue
+                    if cancelled:
+                        break
                     batch_completed += 1
                     cumulative_done += 1
                     if match_data and isinstance(match_data, dict) and "basic" in match_data:
@@ -296,13 +328,22 @@ class MatchDataFetcher:
                                 f"Match details {min(cumulative_done, total_m)}/{total_m} (parallel batch {batch_idx + 1}/{len(all_batches)})",
                             )
 
+                if cancelled:
+                    # Best-effort: cancel leftovers and don't wait on long sleeps
+                    pending = [t for t in batch_tasks if not t.done()]
+                    for t in pending:
+                        t.cancel()
+                    if pending:
+                        await asyncio.gather(*pending, return_exceptions=True)
+                    break
+
                 status_text = ", ".join([f"{v}x {k}" for k, v in batch_status_counts.items()]) if batch_status_counts else "hata yok"
                 logger.info(f"Batch {batch_idx+1}/{len(all_batches)}: {batch_success} başarılı, {batch_failed} başarısız ({status_text})")
 
                 if batch_idx < len(all_batches) - 1 and not breaker_triggered:
                     await asyncio.sleep(1.0)
 
-        if progress_callback and total_m > 0:
+        if progress_callback and total_m > 0 and not cancelled:
             progress_callback(total_m, total_m, "Parallel detail batches finished")
 
         self.last_status_counts = dict(status_counts)
@@ -311,7 +352,7 @@ class MatchDataFetcher:
         return results
 
     # Main metodunda çağırmak için senkron wrapper
-    def fetch_matches_batch_parallel(self, match_ids, max_concurrent=10, progress_callback=None):
+    def fetch_matches_batch_parallel(self, match_ids, max_concurrent=10, progress_callback=None, should_cancel=None):
         """Paralel istekler için senkron wrapper."""
         print(f"Toplam {len(match_ids)} maç paralel olarak işleniyor...")
         progress = tqdm(total=len(match_ids), desc="Maç detayları çekiliyor")
@@ -323,7 +364,7 @@ class MatchDataFetcher:
         try:
             # Run the async function with progress bar
             results = loop.run_until_complete(self.fetch_matches_batch_async(
-                match_ids, max_concurrent, progress, progress_callback
+                match_ids, max_concurrent, progress, progress_callback, should_cancel
             ))
         finally:
             # Close the loop
@@ -958,6 +999,7 @@ class MatchDataFetcher:
         self,
         match_ids: List[Union[int, str]],
         progress_callback: Optional[Callable[[int, int, str], None]] = None,
+        should_cancel: Optional[Callable[[], bool]] = None,
     ) -> Dict[str, Dict[str, Any]]:
         """Bir grup maç için veri çeker."""
         # tqdm modülünü ekleyelim
@@ -978,6 +1020,9 @@ class MatchDataFetcher:
         iterator: Any = tqdm(match_ids_to_process) if use_tqdm else match_ids_to_process
         
         for idx, match_id in enumerate(iterator):
+            if should_cancel and should_cancel():
+                logger.info("Match detail batch cancelled after %s/%s", idx, n)
+                break
             match_id = str(match_id)
             
             if use_tqdm:
@@ -1449,6 +1494,7 @@ class MatchDataFetcher:
         max_seasons: int = 0,
         only_season_ids: Optional[List[int]] = None,
         progress_callback: Optional[Callable[[int, int, str], None]] = None,
+        should_cancel: Optional[Callable[[], bool]] = None,
     ) -> bool:
         """
         Tüm maçlar için detaylı verileri çeker.
@@ -1592,6 +1638,9 @@ class MatchDataFetcher:
             
             # İlerleme gösterimi için daha temiz bir format
             for i in range(0, len(match_ids_to_process), batch_size):
+                if should_cancel and should_cancel():
+                    logger.info("fetch_all_match_details cancelled before batch at index %s", i)
+                    break
                 batch = match_ids_to_process[i:i+batch_size]
                 current_batch = i // batch_size + 1
                 total_batches = (len(match_ids_to_process) - 1) // batch_size + 1
@@ -1625,6 +1674,7 @@ class MatchDataFetcher:
                     batch,
                     max_concurrent=self.config_manager.get_max_concurrent(),
                     progress_callback=nested_cb,
+                    should_cancel=should_cancel,
                 )
                 
                 if results:

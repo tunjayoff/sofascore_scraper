@@ -97,7 +97,7 @@ Tüm anahtarlar `.env.example` içinde. Sık kullanılanlar:
 | `LANGUAGE` | Arayüz dili: `en` veya `tr`. |
 | `MAX_CONCURRENT` | Paralel detay isteği üst sınırı. |
 | `USE_PROXY` / `PROXY_URL` | İsteğe bağlı proxy. |
-| `FETCH_ONLY_FINISHED` | Liste çekerken tercihen bitmiş maçlar. |
+| `FETCH_ONLY_FINISHED` | Yalnız bitmiş maçları tut (`status.type == finished`). Varsayılan `true`. Henüz oynanmamış fikstürler schedule dosyalarına yazılmaz. |
 | `RATE_LIMIT_*` / `SERVER_ERROR_*` | Çok hata durumunda devreye giren eşikler. |
 
 Web **Ayarlar** sayfasından birçok değer düzenlenir; kayıt `.env`’i günceller.
@@ -137,6 +137,19 @@ python main.py --config /yol/leagues.txt --data-dir /yol/veri
 - Büyük ligde ilk **tam** çekim uzun sürebilir; önce tek lig ve sihirbazla az sayıda sezon deneyin.
 - Hız sınırı veya çok hata görürseniz **Ayarlar**’dan **MAX_CONCURRENT** düşürüp bekleme sürelerini hafif artırın; `--ignore-rate-limit` yalnız bilinçli kullanımda.
 - **Web** ile **CLI/headless** aynı veriyi paylaşacaksa `.env` içindeki `DATA_DIR` ile komut satırındaki `--data-dir` değerini hizalayın.
+- Mümkünse içinde bitmiş maç olan sezonu seçin. En yeni etiket (ör. Avrupa `26/27`) çoğu zaman yalnızca fikstürdür; arayüz önceki sezonu tercih eder, scraper da gerekirse otomatik düşer.
+
+### Sorun giderme
+
+**Sezonlar görünüyor ama çekim 0 maç buluyor** (`İşlenecek maç verisi bulunamadı` / `0it`)
+
+1. SofaScore URL’sindeki **unique tournament** ID’sini doğrulayın (MLS için **`242`** — doğrudur).
+2. Her lig sıralı hafta programı (`events/round/1..N`) sunmaz. **Premier League** tarzı ligler sunar; **MLS** ve bazıları sunmaz:
+   - MLS `/rounds` boş veya yalnızca playoff tarzı ID’ler (ör. `227`) döner; `events/round/1` boş gelir.
+   - Bu sezonlarda scraper sayfalı **`events/last` + `events/next`** kullanmalıdır.
+   - Yalnız `1..50` hafta tarayan eski sürümler PL’yi indirir ama **MLS’te 0 maç** döner. Event-list yedeklemesini içeren sürüme güncelleyin, sezonları yenileyin ve çekimi tekrarlayın.
+3. `FETCH_ONLY_FINISHED=true` (varsayılan) iken oynanmamış maçlar atılır. Yeni sezonda henüz bitmiş maç yoksa önceki sezonu seçin (veya bilerek fikstür istiyorsanız `FETCH_ONLY_FINISHED=false`).
+4. Eski/retired sezon ID’leri de boş schedule üretir — ligde **Sezonları yenile**, sonra tekrar çekin.
 
 ### Etkileşimli terminal
 

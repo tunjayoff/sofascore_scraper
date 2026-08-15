@@ -1,44 +1,30 @@
 {% extends "base.html" %}
 
-{% block title %}{{ i18n.t('menu_settings') }} - SofaScore Scraper{% endblock %}
+{% block title %}{{ i18n.t('nav_settings') }} - {{ i18n.t('brand_name') }}{% endblock %}
 
 {% block content %}
-<div class="mb-8 flex items-center justify-between">
-    <div>
-        <h1 class="text-3xl font-bold text-zinc-900 dark:text-white mb-2">{{ i18n.t('menu_settings') }}</h1>
-        <p class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('settings_title') }}</p>
-    </div>
+<div class="mb-6">
+    <p class="text-sm font-semibold text-emerald-700 dark:text-emerald-400 mb-1">{{ i18n.t('advanced_hint') }}</p>
+    <h1 class="text-3xl font-extrabold tracking-tight mb-1">{{ i18n.t('nav_settings') }}</h1>
+    <p class="text-[var(--muted)]">{{ i18n.t('settings_title') }}</p>
 </div>
 
 <div x-data="{
-    activeTab: window.location.hash?.slice(1) || 'general',
-    settings: {
-        language: '{{ settings.language }}',
-        api_base_url: '{{ settings.api_base_url }}',
-        use_proxy: {{ 'true' if settings.use_proxy else 'false' }},
-        proxy_url: '{{ settings.proxy_url }}',
-        data_dir: '{{ settings.data_dir }}',
-        use_color: {{ 'true' if settings.use_color else 'false' }},
-        date_format: '{{ settings.date_format }}',
-        max_concurrent: {{ settings.max_concurrent }},
-        wait_time_min: {{ settings.wait_time_min }},
-        wait_time_max: {{ settings.wait_time_max }},
-        request_timeout: {{ settings.request_timeout }},
-        max_retries: {{ settings.max_retries }},
-        rate_limit_threshold_consecutive: {{ settings.rate_limit_threshold_consecutive }},
-        rate_limit_threshold_ratio: {{ settings.rate_limit_threshold_ratio }},
-        server_error_threshold_consecutive: {{ settings.server_error_threshold_consecutive }},
-        fetch_only_finished: {{ 'true' if settings.fetch_only_finished else 'false' }},
-        save_empty_rounds: {{ 'true' if settings.save_empty_rounds else 'false' }},
-        log_level: '{{ settings.log_level }}',
-        debug: {{ 'true' if settings.debug else 'false' }}
-    },
+    mode: (['general','performance','rate_limit','data_filters','logging','appearance','data_management'].includes(window.location.hash?.slice(1)) ? 'tech' : 'simple'),
+    activeTab: (['general','performance','rate_limit','data_filters','logging','appearance','data_management'].includes(window.location.hash?.slice(1)) ? window.location.hash.slice(1) : 'general'),
+    settings: {{ settings | tojson }},
     saving: false,
     saveMessage: null,
     saveError: null,
     genericErr: '{{ i18n.t("settings_error_generic")|js_sq }}',
+    setMode(m) {
+        this.mode = m;
+        if (m === 'simple') window.location.hash = 'simple';
+        else { this.activeTab = this.activeTab || 'general'; window.location.hash = this.activeTab; }
+    },
     setTab(tab) {
         this.activeTab = tab;
+        this.mode = 'tech';
         window.location.hash = tab;
     },
     formatPreview() {
@@ -82,8 +68,42 @@
     }
 }">
 
-    <!-- Tabs -->
-    <div class="flex gap-1 mb-8 overflow-x-auto pb-2 hide-scrollbar border-b border-zinc-200 dark:border-zinc-800">
+    <!-- Simple vs Technical -->
+    <div class="flex gap-2 mb-6">
+        <button type="button" @click="setMode('simple')" class="btn text-sm"
+            :class="mode === 'simple' ? 'btn-primary' : 'btn-secondary'">{{ i18n.t('settings_tab_simple') }}</button>
+        <button type="button" @click="setMode('tech')" class="btn text-sm"
+            :class="mode === 'tech' ? 'btn-primary' : 'btn-secondary'">{{ i18n.t('settings_tab_tech') }}</button>
+    </div>
+
+    <div x-show="mode === 'simple'" class="panel p-6 space-y-6 mb-6">
+        <div>
+            <label class="block text-sm font-medium text-[var(--muted)] mb-2">{{ i18n.t('current_language') }}</label>
+            <select x-model="settings.language" class="field-input">
+                <option value="tr">{{ i18n.t('settings_lang_option_tr') }}</option>
+                <option value="en">{{ i18n.t('settings_lang_option_en') }}</option>
+            </select>
+        </div>
+        <div>
+            <p class="text-sm font-medium mb-2">{{ i18n.t('settings_tab_appearance') }}</p>
+            <p class="text-sm text-[var(--muted)] mb-3">{{ i18n.t('ui_theme_toggle') }} — {{ i18n.t('nav_advanced') }} / sidebar</p>
+            <div class="flex items-center justify-between py-2">
+                <span>{{ i18n.t('use_color') }}</span>
+                <button type="button" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                    :class="settings.use_color ? 'bg-emerald-600' : 'bg-zinc-200 dark:bg-zinc-700'"
+                    @click="settings.use_color = !settings.use_color">
+                    <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                        :class="settings.use_color ? 'translate-x-6' : 'translate-x-1'"></span>
+                </button>
+            </div>
+        </div>
+        <button type="button" @click="saveSettings()" :disabled="saving" class="btn btn-primary">
+            <span x-text="saving ? '…' : '{{ i18n.t('settings_save_changes')|js_sq }}'"></span>
+        </button>
+    </div>
+
+    <div x-show="mode === 'tech'">
+    <div class="flex gap-1 mb-6 overflow-x-auto pb-2 hide-scrollbar border-b border-[var(--border)]">
         <template x-for="tab in [
             {id: 'general', label: '{{ i18n.t('settings_tab_general') }}'},
             {id: 'performance', label: '{{ i18n.t('settings_tab_performance') }}'},
@@ -95,7 +115,7 @@
         ]" :key="tab.id">
             <button @click="setTab(tab.id)"
                 class="px-5 py-2.5 text-sm font-medium rounded-t-xl whitespace-nowrap transition-all -mb-px border-b-2"
-                :class="activeTab === tab.id ? 'text-indigo-600 dark:text-indigo-400 border-indigo-500 bg-white dark:bg-zinc-800/50' : 'text-zinc-500 dark:text-zinc-400 border-transparent hover:text-zinc-700 dark:hover:text-zinc-300'"
+                :class="activeTab === tab.id ? 'text-emerald-700 dark:text-emerald-400 border-emerald-500 bg-[var(--surface)]' : 'text-[var(--muted)] border-transparent'"
                 x-text="tab.label">
             </button>
         </template>
@@ -116,7 +136,7 @@
         <div>
             <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('current_language') }}</label>
             <select x-model="settings.language"
-                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
                 <option value="tr">{{ i18n.t('settings_lang_option_tr') }}</option>
                 <option value="en">{{ i18n.t('settings_lang_option_en') }}</option>
             </select>
@@ -126,14 +146,14 @@
         <div>
             <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('base_url') }}</label>
             <input type="text" x-model="settings.api_base_url"
-                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
         </div>
 
         <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-700 pb-2 pt-4">{{ i18n.t('proxy_settings') }}</h2>
         <div class="flex items-center justify-between">
             <span class="text-zinc-700 dark:text-zinc-300">{{ i18n.t('use_proxy') }}</span>
             <button class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                :class="settings.use_proxy ? 'bg-indigo-600' : 'bg-zinc-200 dark:bg-zinc-700'"
+                :class="settings.use_proxy ? 'bg-emerald-600' : 'bg-zinc-200 dark:bg-zinc-700'"
                 @click="settings.use_proxy = !settings.use_proxy">
                 <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
                     :class="settings.use_proxy ? 'translate-x-6' : 'translate-x-1'"></span>
@@ -142,14 +162,14 @@
         <div x-show="settings.use_proxy" x-transition>
             <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('proxy_url') }}</label>
             <input type="text" x-model="settings.proxy_url" placeholder="http://user:pass@host:port"
-                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
         </div>
 
         <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-700 pb-2 pt-4">{{ i18n.t('change_data_dir') }}</h2>
         <div>
             <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('current_data_dir') }}</label>
             <input type="text" x-model="settings.data_dir"
-                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
         </div>
     </div>
 
@@ -160,31 +180,31 @@
             <div>
                 <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('settings_max_concurrent') }}</label>
                 <input type="number" x-model.number="settings.max_concurrent" min="1" max="50"
-                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
                 <p class="text-xs text-zinc-400 mt-1">1 - 50</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('settings_request_timeout') }}</label>
                 <input type="number" x-model.number="settings.request_timeout" min="5" max="120"
-                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
                 <p class="text-xs text-zinc-400 mt-1">5 - 120</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('settings_wait_time_min') }}</label>
                 <input type="number" x-model.number="settings.wait_time_min" min="0" max="10" step="0.1"
-                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
                 <p class="text-xs text-zinc-400 mt-1">0.0 - 10.0</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('settings_wait_time_max') }}</label>
                 <input type="number" x-model.number="settings.wait_time_max" min="0" max="10" step="0.1"
-                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
                 <p class="text-xs text-zinc-400 mt-1">0.0 - 10.0</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('settings_max_retries') }}</label>
                 <input type="number" x-model.number="settings.max_retries" min="1" max="10"
-                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
                 <p class="text-xs text-zinc-400 mt-1">1 - 10</p>
             </div>
         </div>
@@ -197,19 +217,19 @@
             <div>
                 <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('settings_rate_limit_consecutive') }}</label>
                 <input type="number" x-model.number="settings.rate_limit_threshold_consecutive" min="5" max="100"
-                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
                 <p class="text-xs text-zinc-400 mt-1">5 - 100</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('settings_rate_limit_ratio') }}</label>
                 <input type="number" x-model.number="settings.rate_limit_threshold_ratio" min="0.1" max="1.0" step="0.05"
-                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
                 <p class="text-xs text-zinc-400 mt-1">0.1 - 1.0</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('settings_server_error_consecutive') }}</label>
                 <input type="number" x-model.number="settings.server_error_threshold_consecutive" min="10" max="200"
-                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                    class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
                 <p class="text-xs text-zinc-400 mt-1">10 - 200</p>
             </div>
         </div>
@@ -224,7 +244,7 @@
                 <p class="text-xs text-zinc-400 mt-0.5">FETCH_ONLY_FINISHED</p>
             </div>
             <button class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                :class="settings.fetch_only_finished ? 'bg-indigo-600' : 'bg-zinc-200 dark:bg-zinc-700'"
+                :class="settings.fetch_only_finished ? 'bg-emerald-600' : 'bg-zinc-200 dark:bg-zinc-700'"
                 @click="settings.fetch_only_finished = !settings.fetch_only_finished">
                 <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
                     :class="settings.fetch_only_finished ? 'translate-x-6' : 'translate-x-1'"></span>
@@ -236,7 +256,7 @@
                 <p class="text-xs text-zinc-400 mt-0.5">SAVE_EMPTY_ROUNDS</p>
             </div>
             <button class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                :class="settings.save_empty_rounds ? 'bg-indigo-600' : 'bg-zinc-200 dark:bg-zinc-700'"
+                :class="settings.save_empty_rounds ? 'bg-emerald-600' : 'bg-zinc-200 dark:bg-zinc-700'"
                 @click="settings.save_empty_rounds = !settings.save_empty_rounds">
                 <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
                     :class="settings.save_empty_rounds ? 'translate-x-6' : 'translate-x-1'"></span>
@@ -250,7 +270,7 @@
         <div>
             <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('settings_log_level') }}</label>
             <select x-model="settings.log_level"
-                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
                 <option value="DEBUG">DEBUG</option>
                 <option value="INFO">INFO</option>
                 <option value="WARNING">WARNING</option>
@@ -264,7 +284,7 @@
                 <p class="text-xs text-zinc-400 mt-0.5">DEBUG</p>
             </div>
             <button class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                :class="settings.debug ? 'bg-indigo-600' : 'bg-zinc-200 dark:bg-zinc-700'"
+                :class="settings.debug ? 'bg-emerald-600' : 'bg-zinc-200 dark:bg-zinc-700'"
                 @click="settings.debug = !settings.debug">
                 <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
                     :class="settings.debug ? 'translate-x-6' : 'translate-x-1'"></span>
@@ -278,7 +298,7 @@
         <div class="flex items-center justify-between py-2">
             <span class="text-zinc-700 dark:text-zinc-300 font-medium">{{ i18n.t('use_color') }}</span>
             <button class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                :class="settings.use_color ? 'bg-indigo-600' : 'bg-zinc-200 dark:bg-zinc-700'"
+                :class="settings.use_color ? 'bg-emerald-600' : 'bg-zinc-200 dark:bg-zinc-700'"
                 @click="settings.use_color = !settings.use_color">
                 <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
                     :class="settings.use_color ? 'translate-x-6' : 'translate-x-1'"></span>
@@ -287,10 +307,10 @@
         <div>
             <label class="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2">{{ i18n.t('date_format') }}</label>
             <input type="text" x-model="settings.date_format"
-                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                class="w-full bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white px-4 py-2.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
             <div class="mt-2 flex items-center gap-2">
                 <span class="text-xs text-zinc-400">{{ i18n.t('settings_date_format_preview') }}:</span>
-                <span class="text-xs font-mono text-indigo-500 dark:text-indigo-400" x-text="formatPreview()"></span>
+                <span class="text-xs font-mono text-emerald-500 dark:text-emerald-400" x-text="formatPreview()"></span>
             </div>
         </div>
     </div>
@@ -348,7 +368,7 @@
             <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-700 pb-2 mb-4">{{ i18n.t('backup_all') }}</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <button @click="backup('all')" :disabled="backingUp"
-                    class="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50">
+                    class="px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50">
                     <span x-show="!backingUp">{{ i18n.t('backup_all') }}</span>
                     <span x-show="backingUp" class="flex items-center justify-center gap-2">
                         <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
@@ -368,7 +388,7 @@
         <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl">
             <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-200 dark:border-zinc-700 pb-2 mb-4">{{ i18n.t('csv_download') }}</h2>
             <a href="/api/export/csv" download
-                class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors">
+                class="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                 {{ i18n.t('csv_download') }}
             </a>
@@ -404,7 +424,7 @@
     <!-- Save Button (only for settings tabs, not data management) -->
     <div class="flex justify-end mt-8" x-show="activeTab !== 'data_management'">
         <button @click="saveSettings()" :disabled="saving"
-            class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2 disabled:opacity-50">
+            class="btn btn-primary flex items-center gap-2 disabled:opacity-50">
             <template x-if="!saving">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             </template>
@@ -414,6 +434,7 @@
             <span x-text="saving ? '{{ i18n.t('fetching_in_progress') }}' : '{{ i18n.t('settings_save_changes') }}'"></span>
         </button>
     </div>
+    </div><!-- /tech -->
 
 </div>
 {% endblock %}

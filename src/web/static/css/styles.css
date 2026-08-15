@@ -1,16 +1,188 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --bg: #f4f7f5;
+    --surface: #ffffff;
+    --surface-2: #eef3f0;
+    --text: #14201a;
+    --muted: #5b6b63;
+    --primary: #059669;
+    --primary-hover: #047857;
+    --primary-soft: #d1fae5;
+    --danger: #dc2626;
+    --danger-soft: #fee2e2;
+    --border: #d5e0da;
+    --radius: 1rem;
+    --radius-lg: 1.25rem;
+    --shadow: 0 10px 30px -12px rgba(20, 32, 26, 0.18);
+}
+
+html.dark {
+    --bg: #0c1210;
+    --surface: #151c19;
+    --surface-2: #1c2622;
+    --text: #eef5f1;
+    --muted: #9aaca3;
+    --primary: #34d399;
+    --primary-hover: #6ee7b7;
+    --primary-soft: rgba(52, 211, 153, 0.15);
+    --danger: #f87171;
+    --danger-soft: rgba(248, 113, 113, 0.15);
+    --border: #2a3631;
+    --shadow: 0 12px 36px -14px rgba(0, 0, 0, 0.55);
+}
 
 body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-.sidebar-link {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+.app-shell {
+    min-height: 100vh;
 }
 
-.sidebar-link:hover {
-    transform: translateX(4px);
+.app-rail {
+    background: var(--surface);
+    border-color: var(--border);
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 2.75rem;
+    padding: 0.7rem 1rem;
+    border-radius: var(--radius);
+    color: var(--muted);
+    font-weight: 600;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.nav-link:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.nav-link.is-active {
+    background: var(--primary-soft);
+    color: var(--primary-hover);
+}
+
+html.dark .nav-link.is-active {
+    color: var(--primary);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.65rem 1.25rem;
+    border-radius: var(--radius);
+    font-weight: 700;
+    transition: background 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--primary-hover);
+}
+
+html.dark .btn-primary {
+    color: #06241a;
+}
+
+.btn-secondary {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: var(--surface-2);
+}
+
+.btn-danger {
+    background: var(--danger-soft);
+    color: var(--danger);
+    border: 1px solid transparent;
+}
+
+.btn-danger:hover:not(:disabled) {
+    filter: brightness(0.97);
+}
+
+.panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+}
+
+.step-pill {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    background: var(--surface-2);
+    color: var(--muted);
+}
+
+.step-pill.is-active {
+    background: var(--primary);
+    color: #fff;
+}
+
+html.dark .step-pill.is-active {
+    color: #06241a;
+}
+
+.field-input {
+    width: 100%;
+    min-height: 3rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+}
+
+.field-input:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
+}
+
+.progress-track {
+    height: 0.5rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--primary);
+    transition: width 0.35s ease;
 }
 
 .no-scrollbar {
@@ -19,17 +191,4 @@ body {
 }
 .no-scrollbar::-webkit-scrollbar {
     display: none;
-}
-
-.glass-panel {
-    transition: all 0.3s ease;
-}
-
-.glass-panel:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
-    transform: translateY(-2px);
-}
-
-html.dark .glass-panel:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
 }

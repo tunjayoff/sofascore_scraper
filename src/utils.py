@@ -171,6 +171,11 @@ def make_api_request(
                 if attempt < max_retries - 1:
                     continue
             
+            # 404 = missing resource (e.g. pregame-form). Never retry — burns cancel latency.
+            if response.status_code == 404:
+                logger.debug(f"Kaynak bulunamadı (404): {url}")
+                return None
+
             # HTTP hatalarını kontrol et
             if response.status_code >= 400:
                 raise APIError(f"HTTP hata: {response.status_code} {response.reason}", response.status_code)

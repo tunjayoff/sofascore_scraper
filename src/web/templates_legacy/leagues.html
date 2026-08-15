@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}{{ i18n.t('nav_leagues') }} - {{ i18n.t('brand_name') }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <p class="text-sm font-semibold text-emerald-700 dark:text-emerald-400 mb-1">{{ i18n.t('advanced_hint') }}</p>
+    <h1 class="text-3xl font-extrabold tracking-tight mb-1">{{ i18n.t('nav_leagues') }}</h1>
+    <p class="text-[var(--muted)]">{{ i18n.t('home_subtitle') }}</p>
+</div>
+
+<div class="panel p-5 md:p-6 mb-6 relative z-30" x-data="{
+    searchQuery: '',
+    results: [],
+    searching: false,
+    showResults: false,
+    addError: null,
+    addSuccess: null,
+    addedLeagueId: null,
+    addedToastMsg: '{{ i18n.t("league_added_toast")|js_sq }}',
+    async search() {
+        if (this.searchQuery.length < 2) { this.results = []; this.showResults = false; return; }
+        this.searching = true;
+        try {
+            const res = await fetch('/api/leagues/search-remote?q=' + encodeURIComponent(this.searchQuery));
+            if (res.ok) { this.results = await res.json(); this.showResults = true; }
+        } catch(e) {}
+        finally { this.searching = false; }
+    },
+    async addLeague(id, name) {
+        this.addError = null; this.addSuccess = null; this.addedLeagueId = null;
+        try {
+            const res = await fetch('/api/leagues', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, name })
+            });
+            if (res.ok) {
+                this.addSuccess = name; this.addedLeagueId = id; this.showResults = false; this.searchQuery = '';
+                if (window.appToast) window.appToast(this.addedToastMsg, 'success');
+                setTimeout(() => window.location.reload(), 900);
+            } else {
+                const err = await res.json();
+                this.addError = err.detail || '{{ i18n.t("league_already_exists")|js_sq }}';
+            }
+        } catch(e) { this.addError = '{{ i18n.t("league_add_error")|js_sq }}'; }
+    }
+}" @click.outside="showResults = false">
+    <h2 class="text-lg font-bold mb-4">{{ i18n.t('home_step_add') }}</h2>
+    <div x-show="addSuccess" class="mb-4 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 space-y-3">
+        <div class="font-medium" x-text="addSuccess + ' — ' + addedToastMsg"></div>
+        <a :href="'/'" class="btn btn-primary inline-flex">{{ i18n.t('home_go_download') }}</a>
+    </div>
+    <div x-show="addError" class="mb-4 p-3 rounded-xl bg-red-50 text-red-700 text-sm" x-text="addError"></div>
+    <div class="relative">
+        <input type="text" class="field-input" x-model="searchQuery" @input.debounce.300ms="search()"
+            placeholder="{{ i18n.t('home_search_placeholder') }}">
+        <div x-show="showResults" class="absolute z-50 mt-2 w-full panel max-h-80 overflow-y-auto">
+            <template x-for="r in results" :key="r.id">
+                <button type="button" @click="addLeague(r.id, r.name)"
+                    class="w-full text-left px-4 py-3.5 hover:bg-[var(--surface-2)] border-b border-[var(--border)] last:border-0">
+                    <span class="font-bold" x-text="r.name"></span>
+                    <span class="block text-xs text-[var(--muted)]" x-text="(r.country||'') + ' · ' + r.id"></span>
+                </button>
+            </template>
+        </div>
+    </div>
+</div>
+
+{% if not leagues %}
+<div class="panel p-10 text-center mb-6">
+    <p class="text-[var(--muted)]">{{ i18n.t('leagues_empty_hint') }}</p>
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {% for id, name in leagues.items() %}
+    <div class="panel p-5 relative" x-data="{ deleting: false, leagueName: {{ name | tojson }} }">
+        <h3 class="text-lg font-bold mb-1">{{ name }}</h3>
+        <p class="text-sm text-[var(--muted)] font-mono mb-4">ID {{ id }}</p>
+        <div class="flex flex-wrap gap-2">
+            <a href="/" class="btn btn-primary text-sm">{{ i18n.t('home_download_btn') }}</a>
+            <a href="/schedule?league_id={{ id }}" class="btn btn-secondary text-sm">{{ i18n.t('home_open_matches') }}</a>
+            <button type="button" class="btn btn-danger text-sm ml-auto"
+                @click="if (confirm('Remove ' + leagueName + '?')) { deleting=true; fetch('/api/leagues/{{ id }}',{method:'DELETE'}).then(() => location.reload()); }">×</button>
+        </div>
+        <div x-show="deleting" class="absolute inset-0 bg-[var(--surface)]/80 flex items-center justify-center rounded-[var(--radius-lg)]">
+            <div class="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

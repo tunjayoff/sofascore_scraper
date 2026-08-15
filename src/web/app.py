@@ -1,73 +1,63 @@
-import os
-from fastapi import FastAPI, Request
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
 import dotenv
 
-from src.config_manager import ConfigManager
 from src.logger import get_logger
 
-# Load environment variables
 dotenv.load_dotenv()
-
-# Initialize Logger
 logger = get_logger("WebApp")
 
-# Initialize App
 app = FastAPI(
     title="SofaScore Scraper Web UI",
     description="Web interface for SofaScore Scraper",
-    version="1.0.0"
+    version="2.0.0",
 )
 
-# Get Source Directory
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-STATIC_DIR = os.path.join(BASE_DIR, "static")
-TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
+BASE_DIR = Path(__file__).resolve().parent
+REPO_ROOT = BASE_DIR.parent.parent
+FRONTEND_DIST = REPO_ROOT / "frontend" / "dist"
+LEGACY_STATIC = BASE_DIR / "static"
 
-# Mount Static Files
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+from src.web.routes import api
 
-# Configure Templates
-templates = Jinja2Templates(directory=TEMPLATES_DIR)
-
-
-def _js_single_quoted(value) -> str:
-    """Güvenli şekilde tek tırnaklı JS string içine gömülür (x-data vb.)."""
-    s = "" if value is None else str(value)
-    return (
-        s.replace("\\", "\\\\")
-        .replace("'", "\\'")
-        .replace("\n", "\\n")
-        .replace("\r", "\\r")
-    )
-
-
-templates.env.filters["js_sq"] = _js_single_quoted
-
-# Initialize ConfigManager
-config_manager = ConfigManager()
-
-# Include Routers
-from src.web.routes import api, ui
 app.include_router(api.router)
-app.include_router(ui.router)
 
-@app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
-    """Render the dashboard/home page."""
-    return templates.TemplateResponse(
-        request=request,
-        name="index.html",
-        context={
-            "request": request,
-            "title": "SofaScore Scraper - Dashboard",
-            "leagues": config_manager.get_leagues(),
-        },
-    )
+if LEGACY_STATIC.is_dir():
+    app.mount("/legacy-static", StaticFiles(directory=str(LEGACY_STATIC)), name="legacy_static")
+
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
-    return {"status": "ok", "version": "1.0.0"}
+    return {"status": "ok", "version": "2.0.0", "ui": "vue-spa" if FRONTEND_DIST.is_dir() else "missing-dist"}
+
+
+if FRONTEND_DIST.is_dir():
+    assets_dir = FRONTEND_DIST / "assets"
+    if assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="spa_assets")
+
+    @app.get("/{full_path:path}")
+    async def spa_fallback(full_path: str):
+        if full_path.startswith("api"):
+            raise HTTPException(status_code=404, detail="Not Found")
+        candidate = FRONTEND_DIST / full_path
+        if full_path and candidate.is_file():
+            return FileResponse(candidate)
+        index = FRONTEND_DIST / "index.html"
+        if not index.is_file():
+            raise HTTPException(status_code=500, detail="SPA index missing")
+        return FileResponse(index)
+else:
+    logger.warning("frontend/dist missing — run: cd frontend && npm run build")
+
+    @app.get("/")
+    async def missing_frontend():
+        return {
+            "error": "SPA not built",
+            "hint": "cd frontend && npm install && npm run build",
+            "api": "/api",
+            "health": "/health",
+        }

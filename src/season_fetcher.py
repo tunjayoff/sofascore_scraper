@@ -344,6 +344,45 @@ class SeasonFetcher:
         except Exception as e:
             logger.warning(f"Sezon adı alınırken hata: {str(e)}")
             return f"Season_{season_id}"
+
+    def preferred_download_season_id(self, league_id: int) -> int:
+        """Prefer 2nd-newest season — newest is often fixtures-only / not started yet."""
+        seasons = self.get_seasons_for_league(league_id) or []
+        if not seasons:
+            return 0
+        sorted_seasons = sorted(
+            seasons,
+            key=lambda s: self._get_sortable_year_value(s.get("year", "0")),
+            reverse=True,
+        )
+        pick = sorted_seasons[1] if len(sorted_seasons) > 1 else sorted_seasons[0]
+        return int(pick.get("id") or 0)
+
+    def resolve_season_id(self, league_id: int, requested_id: int) -> int:
+        """
+        Map a possibly stale UI season id onto the live SofaScore season list.
+        SofaScore occasionally retires season ids (e.g. 77559 → 77806).
+        """
+        try:
+            requested_id = int(requested_id)
+            league_id = int(league_id)
+        except (TypeError, ValueError):
+            return int(requested_id or 0)
+
+        seasons = self.get_seasons_for_league(league_id) or []
+        if not seasons:
+            return requested_id
+
+        known = {int(s["id"]) for s in seasons if s.get("id") is not None}
+        if requested_id in known:
+            return requested_id
+
+        preferred = self.preferred_download_season_id(league_id)
+        logger.warning(
+            f"Stale season id {requested_id} for league {league_id} "
+            f"(not in refreshed list). Using {preferred}."
+        )
+        return preferred or requested_id
     
     def _load_existing_season_data(self):
         """Daha önce kaydedilmiş sezon verilerini yükler."""

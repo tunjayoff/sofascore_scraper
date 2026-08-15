@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}{{ i18n.t('menu_stats') }} - SofaScore Scraper{% endblock %}
+{% block title %}{{ i18n.t('nav_stats') }} - {{ i18n.t('brand_name') }}{% endblock %}
 
 {% block content %}
-<div class="mb-8 flex items-center justify-between">
+<div class="mb-6 flex flex-wrap items-end justify-between gap-4">
     <div>
-        <h1 class="text-3xl font-bold text-zinc-900 dark:text-white mb-2">{{ i18n.t('menu_stats') }}</h1>
-        <p class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('system_stats_title') }}</p>
+        <p class="text-sm font-semibold text-emerald-700 dark:text-emerald-400 mb-1">{{ i18n.t('advanced_hint') }}</p>
+        <h1 class="text-3xl font-extrabold tracking-tight mb-1">{{ i18n.t('nav_stats') }}</h1>
+        <p class="text-[var(--muted)]">{{ i18n.t('system_stats_title') }}</p>
     </div>
-    <div x-data="{
+    <div class="flex flex-wrap gap-2" x-data="{
         refreshing: false,
         async refresh() {
             this.refreshing = true;
@@ -16,13 +17,11 @@
             setTimeout(() => this.refreshing = false, 500);
         }
     }">
-        <button @click="refresh()"
-            class="px-4 py-2 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 shadow-sm text-zinc-700 dark:text-white rounded-lg transition-colors flex items-center gap-2">
-            <svg class="w-4 h-4" :class="{'animate-spin': refreshing}" fill="none" stroke="currentColor"
-                viewBox="0 0 24 24">
+        <a href="/" class="btn btn-secondary text-sm">{{ i18n.t('nav_home') }}</a>
+        <button type="button" @click="refresh()" class="btn btn-secondary text-sm">
+            <svg class="w-4 h-4" :class="{'animate-spin': refreshing}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-                </path>
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
             </svg>
             {{ i18n.t('stats_refresh') }}
         </button>
@@ -65,8 +64,8 @@
             <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
         </div>
         <h3 class="text-xl font-bold text-zinc-900 dark:text-white mb-2">{{ i18n.t('no_data_yet') }}</h3>
-        <a href="/schedule" class="mt-4 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors">
-            {{ i18n.t('menu_match_data') }}
+        <a href="/" class="mt-4 btn btn-primary inline-flex">
+            {{ i18n.t('home_go_download') }}
         </a>
     </div>
 
@@ -78,7 +77,7 @@
                 <p class="text-zinc-500 dark:text-zinc-400 text-sm font-medium uppercase tracking-wider">{{ i18n.t('total_leagues') }}</p>
                 <h3 class="text-3xl font-bold text-zinc-900 dark:text-white mt-1" x-text="stats.leagues_count">0</h3>
             </div>
-            <div class="w-12 h-12 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+            <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
@@ -156,7 +155,7 @@
                             <td class="px-4 py-4 w-48">
                                 <div class="flex items-center gap-3">
                                     <div class="flex-grow bg-zinc-100 dark:bg-zinc-800 rounded-full h-2">
-                                        <div class="bg-indigo-500 h-2 rounded-full" :style="`width: ${lg.coverage}%`">
+                                        <div class="bg-emerald-500 h-2 rounded-full" :style="`width: ${lg.coverage}%`">
                                         </div>
                                     </div>
                                     <span class="text-xs font-mono text-zinc-500 dark:text-zinc-400" x-text="lg.coverage + '%'"></span>
@@ -173,7 +172,7 @@
     <div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm p-6 rounded-xl mt-8">
         <h2 class="text-xl font-semibold text-zinc-900 dark:text-white border-b border-zinc-300 dark:border-zinc-700 pb-4 mb-6">
             {{ i18n.t('disk_usage_title') }}
-            <span class="float-right text-indigo-400 font-bold" x-text="stats.disk_usage.formatted_total"></span>
+            <span class="float-right text-emerald-400 font-bold" x-text="stats.disk_usage.formatted_total"></span>
         </h2>
 
         <div class="space-y-4">

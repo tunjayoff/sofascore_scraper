@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="{{ i18n.current_lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ i18n.t('brand_name') }}{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' };
+        // Light-first: only use dark when explicitly saved
+        if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            if (!localStorage.getItem('theme')) localStorage.setItem('theme', 'light');
+        }
+    </script>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+{% set path = request.url.path %}
+<body class="antialiased overflow-x-hidden">
+    <div class="app-shell flex flex-col md:flex-row">
+        <aside class="app-rail w-full md:w-64 shrink-0 border-b md:border-b-0 md:border-r p-5 flex flex-col z-20 sticky top-0 md:h-screen"
+               x-data="{ advOpen: {{ 'true' if path.startswith('/leagues') or path.startswith('/stats') or path.startswith('/settings') else 'false' }} }">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-extrabold text-lg shadow-md shadow-emerald-600/25">S</div>
+                <div class="text-xl font-extrabold tracking-tight">{{ i18n.t('brand_name') }}</div>
+            </div>
+
+            <nav class="space-y-1.5 flex-1">
+                <a href="/" class="nav-link {{ 'is-active' if path == '/' else '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    {{ i18n.t('nav_home') }}
+                </a>
+                <a href="/schedule" class="nav-link {{ 'is-active' if path.startswith('/schedule') or path.startswith('/match') else '' }}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    {{ i18n.t('nav_matches') }}
+                </a>
+
+                <div class="pt-4">
+                    <button type="button" @click="advOpen = !advOpen"
+                        class="nav-link w-full justify-between text-left">
+                        <span class="flex items-center gap-3">
+                            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                            {{ i18n.t('nav_advanced') }}
+                        </span>
+                        <svg class="w-4 h-4 transition-transform" :class="advOpen && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div x-show="advOpen" class="mt-1 ml-2 space-y-1 border-l border-[var(--border)] pl-3">
+                        <a href="/leagues" class="nav-link text-sm {{ 'is-active' if path.startswith('/leagues') else '' }}">{{ i18n.t('nav_leagues') }}</a>
+                        <a href="/stats" class="nav-link text-sm {{ 'is-active' if path.startswith('/stats') else '' }}">{{ i18n.t('nav_stats') }}</a>
+                        <a href="/settings" class="nav-link text-sm {{ 'is-active' if path.startswith('/settings') else '' }}">{{ i18n.t('nav_settings') }}</a>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="mt-auto pt-4 border-t border-[var(--border)]">
+                <button id="theme-toggle" type="button" class="btn btn-secondary w-full text-sm">
+                    <span id="theme-toggle-label">{{ i18n.t('ui_theme_toggle') }}</span>
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 w-full max-w-5xl mx-auto p-5 md:p-8 lg:p-10 pb-28">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script>
+        window.__SS_BASE_I18N__ = {
+            scraper_starting: {{ i18n.t('scraper_task_starting') | tojson }},
+            toast_generic_error: {{ i18n.t('toast_generic_error') | tojson }},
+            toast_close: {{ i18n.t('toast_close_aria') | tojson }},
+            progress_title: {{ i18n.t('progress_title') | tojson }},
+            home_stop: {{ i18n.t('home_stop') | tojson }},
+            home_job_done: {{ i18n.t('home_job_done') | tojson }},
+        };
+    </script>
+
+    <!-- Global sticky progress -->
+    <div x-data="globalScraperToast" x-init="initToast"
+         x-show="state.is_running || state.status === 'Completed' || state.status === 'Failed'"
+         x-cloak
+         class="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--border)] bg-[var(--surface)]/95 backdrop-blur-xl shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-3 mb-1.5">
+                    <span class="font-bold text-sm" x-text="state.is_running ? (window.__SS_BASE_I18N__.progress_title) : (state.status === 'Failed' ? '!' : window.__SS_BASE_I18N__.home_job_done)"></span>
+                    <span class="text-sm font-extrabold text-emerald-700 dark:text-emerald-400 tabular-nums" x-text="(state.progress || 0) + '%'"></span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill" :style="'width:' + (state.progress || 0) + '%'"
+                         :class="state.status === 'Failed' && '!bg-red-500'"></div>
+                </div>
+                <p class="text-xs text-[var(--muted)] mt-1.5 truncate" x-text="state.current_task || ''"></p>
+            </div>
+            <button type="button" x-show="state.is_running && !state.cancel_requested"
+                class="btn btn-danger shrink-0 pointer-events-auto"
+                @click="cancelJob()">
+                {{ i18n.t('home_stop') }}
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('globalScraperToast', () => ({
+                state: { is_running: false, progress: 0, current_task: '', status: 'Idle', cancel_requested: false },
+                _sse: null,
+                _poll: null,
+                async checkStatus() {
+                    try {
+                        const res = await fetch('/api/scrape/status');
+                        if (!res.ok) return;
+                        this.state = await res.json();
+                        if (this.state.is_running) this._connectSSE();
+                    } catch (e) {}
+                },
+                _connectSSE() {
+                    if (this._sse) return;
+                    if (this._poll) { clearInterval(this._poll); this._poll = null; }
+                    try {
+                        this._sse = new EventSource('/api/scrape/stream');
+                        this._sse.addEventListener('update', (e) => { this.state = JSON.parse(e.data); });
+                        this._sse.addEventListener('done', (e) => {
+                            this.state = JSON.parse(e.data);
+                            this._closeSSE();
+                        });
+                        this._sse.onerror = () => {
+                            this._closeSSE();
+                            this._poll = setInterval(() => this.checkStatus(), 3000);
+                        };
+                    } catch (e) {
+                        this._poll = setInterval(() => this.checkStatus(), 3000);
+                    }
+                },
+                _closeSSE() {
+                    if (this._sse) { this._sse.close(); this._sse = null; }
+                },
+                async cancelJob() {
+                    try { await fetch('/api/scrape/cancel', { method: 'POST' }); } catch (e) {}
+                    this.state.cancel_requested = true;
+                },
+                initToast() {
+                    this.checkStatus();
+                    this._poll = setInterval(() => this.checkStatus(), 5000);
+                    window.__ssWakeScrapeProgress = () => this.checkStatus();
+                    window.addEventListener('pagehide', () => {
+                        this._closeSSE();
+                        if (this._poll) { clearInterval(this._poll); this._poll = null; }
+                    });
+                }
+            }));
+        });
+    </script>
+
+    <div id="app-toast-stack"
+        class="fixed top-4 left-1/2 -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 md:top-6 z-[200] flex flex-col gap-2 w-[calc(100%-2rem)] max-w-md pointer-events-none"
+        aria-live="polite"></div>
+    <script>
+        (function () {
+            function asText(x) {
+                if (x == null || x === '') return (window.__SS_BASE_I18N__ && window.__SS_BASE_I18N__.toast_generic_error) || '';
+                if (typeof x === 'string') return x;
+                if (typeof x === 'object' && x.detail != null) return asText(x.detail);
+                try { return JSON.stringify(x); } catch (e) { return String(x); }
+            }
+            function removeToast(el) {
+                if (!el.parentNode) return;
+                el.classList.add('opacity-0', '-translate-y-1');
+                setTimeout(function () { el.remove(); }, 240);
+            }
+            window.appToast = function (message, variant) {
+                var v = variant === 'success' ? 'success' : variant === 'info' ? 'info' : 'error';
+                var host = document.getElementById('app-toast-stack');
+                if (!host) return;
+                var el = document.createElement('div');
+                el.className = 'pointer-events-auto rounded-2xl border px-4 py-3.5 shadow-xl backdrop-blur-xl opacity-0 -translate-y-1 transition-all duration-300 text-sm font-medium ' + (
+                    v === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-950 dark:bg-emerald-950/85 dark:border-emerald-500/40 dark:text-emerald-50'
+                    : v === 'info' ? 'bg-[var(--surface)] border-[var(--border)] text-[var(--text)]'
+                    : 'bg-red-50 border-red-200 text-red-950 dark:bg-red-950/85 dark:border-red-500/40 dark:text-red-50'
+                );
+                el.textContent = asText(message);
+                host.appendChild(el);
+                requestAnimationFrame(function () { el.classList.remove('opacity-0', '-translate-y-1'); });
+                setTimeout(function () { removeToast(el); }, 5500);
+            };
+        })();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('theme-toggle');
+            if (!btn) return;
+            btn.addEventListener('click', () => {
+                const dark = document.documentElement.classList.toggle('dark');
+                localStorage.setItem('theme', dark ? 'dark' : 'light');
+            });
+        });
+    </script>
+    <style>[x-cloak]{display:none!important}</style>
+</body>
+</html>

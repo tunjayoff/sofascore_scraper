@@ -130,7 +130,18 @@ def main() -> int:
                 print(i18n.t('go_to_address'))
                 print(i18n.t('press_ctrl_c'))
 
-                uvicorn.run("src.web.app:app", host="0.0.0.0", port=8000, reload=True)
+                uvicorn.run(
+                    "src.web.app:app",
+                    host="0.0.0.0",
+                    port=8000,
+                    reload=True,
+                    # Only watch app code — data/ match writes must not restart the server mid-scrape
+                    reload_dirs=[
+                        str(script_dir / "src"),
+                        str(script_dir / "locales"),
+                    ],
+                )
+                # ponytail: SPA assets live in frontend/dist — rebuild with `cd frontend && npm run build` after UI changes
             except ImportError:
                 i18n = get_i18n()
                 print(i18n.t('err_web_packages_not_installed'))

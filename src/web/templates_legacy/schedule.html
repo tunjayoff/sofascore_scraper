@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
-{% block title %}{{ i18n.t('menu_match_data') }} - SofaScore Scraper{% endblock %}
-
+{% block title %}{{ i18n.t('matches_title') }} - {{ i18n.t('brand_name') }}{% endblock %}
+    
 {% block content %}
 <script>
 window.__SS_SCHEDULE_LEAGUES__ = {{ leagues | tojson }};
@@ -20,16 +20,16 @@ window.__SS_SCHEDULE_I18N__ = {
     wizard_time_approx: {{ i18n.t('wizard_time_approx_minutes') | tojson }},
     missing_inline: {{ i18n.t('missing_details_inline_line') | tojson }},
     missing_n_selected: {{ i18n.t('missing_details_n_selected') | tojson }},
+    fetch_zero_matches: {{ i18n.t('fetch_zero_matches') | tojson }},
+    fetch_completed_with_warning: {{ i18n.t('fetch_completed_with_warning') | tojson }},
 };
 </script>
-<div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-    <div>
-        <h1 class="text-3xl font-bold text-zinc-900 dark:text-white mb-2">{{ i18n.t('menu_match_data') }}</h1>
-        <p class="text-zinc-500 dark:text-zinc-400">{{ i18n.t('submenu_match_title') }}</p>
-    </div>
+<div class="mb-6">
+    <h1 class="text-3xl font-extrabold tracking-tight mb-1">{{ i18n.t('matches_title') }}</h1>
+    <p class="text-[var(--muted)]">{{ i18n.t('matches_subtitle') }}</p>
 </div>
 
-<div class="bg-white dark:bg-zinc-800/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-700/50 shadow-sm rounded-xl p-6 overflow-visible" x-data="{
+<div class="panel p-5 md:p-6 overflow-visible" x-data="{
     matches: [],
     loading: false,
     selectedLeague: 'all',
@@ -40,17 +40,9 @@ window.__SS_SCHEDULE_I18N__ = {
     currentPage: 1,
     selectedSeason: '',
     filterSeasons: [],
-
-    scraperState: {
-        is_running: false,
-        status: 'Idle',
-        progress: 0,
-        current_task: '',
-        log: []
-    },
+    showMoreFilters: false,
+    scraperState: { is_running: false, status: 'Idle', progress: 0, current_task: '', log: [] },
     pollInterval: null,
-
-    // Wizard state
     showWizard: false,
     wizardStep: 1,
     wizardLeagues: [],
@@ -58,8 +50,6 @@ window.__SS_SCHEDULE_I18N__ = {
     wizardSeasons: {},
     wizardSelectedSeasons: {},
     wizardLoadingSeasons: false,
-
-    // Missing details modal state
     showMissing: false,
     missingData: null,
     missingLoading: false,
@@ -251,7 +241,17 @@ window.__SS_SCHEDULE_I18N__ = {
             this.eventSource.addEventListener('done', (e) => {
                 this.scraperState = JSON.parse(e.data);
                 this.closeSSE();
-                if (this.scraperState.status === 'Completed') this.fetchMatches();
+                if (this.scraperState.status === 'Completed') {
+                    this.fetchMatches();
+                    const emptyN = this.scraperState.schedule_empty_seasons || 0;
+                    const i18n = window.__SS_SCHEDULE_I18N__ || {};
+                    if (emptyN > 0 && window.appToast) {
+                        window.appToast(
+                            i18n.fetch_completed_with_warning || i18n.fetch_zero_matches || this.scraperState.current_task,
+                            'info'
+                        );
+                    }
+                }
             });
             this.eventSource.onerror = () => {
                 this.closeSSE();
@@ -291,6 +291,14 @@ window.__SS_SCHEDULE_I18N__ = {
                 this.closeSSE();
                 if (this.scraperState.status === 'Completed') {
                     this.fetchMatches();
+                    const emptyN = this.scraperState.schedule_empty_seasons || 0;
+                    const i18n = window.__SS_SCHEDULE_I18N__ || {};
+                    if (emptyN > 0 && window.appToast) {
+                        window.appToast(
+                            i18n.fetch_completed_with_warning || i18n.fetch_zero_matches || this.scraperState.current_task,
+                            'info'
+                        );
+                    }
                 }
             }
         } catch (e) {
@@ -426,7 +434,10 @@ window.__SS_SCHEDULE_I18N__ = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ mode: 'full', selections: selections })
             });
-            if (res.ok) this.checkStatus();
+            if (res.ok) {
+                this.checkStatus();
+                if (typeof window.__ssWakeScrapeProgress === 'function') window.__ssWakeScrapeProgress();
+            }
             else {
                 const err = await res.json();
                 window.appToast(err.detail || '{{ i18n.t("fetch_error_generic")|js_sq }}', 'error');
@@ -479,7 +490,10 @@ window.__SS_SCHEDULE_I18N__ = {
                     selections: [{ league_id: lid, season_ids: null, match_ids: this.missingSelected }]
                 })
             });
-            if (res.ok) this.checkStatus();
+            if (res.ok) {
+                this.checkStatus();
+                if (typeof window.__ssWakeScrapeProgress === 'function') window.__ssWakeScrapeProgress();
+            }
         } catch(e) {
             window.appToast(e, 'error');
         }
@@ -487,6 +501,10 @@ window.__SS_SCHEDULE_I18N__ = {
 
     async initPage() {
         const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('fetch') === '1') {
+            window.location.replace('/');
+            return;
+        }
         const lg = urlParams.get('league_id');
         if (lg) this.selectedLeague = lg;
         await this.loadFilterSeasons();
@@ -495,135 +513,60 @@ window.__SS_SCHEDULE_I18N__ = {
     },
     init() {
         this.initPage();
+        window.addEventListener('pagehide', () => {
+            this.closeSSE();
+            if (this.pollInterval) {
+                clearInterval(this.pollInterval);
+                this.pollInterval = null;
+            }
+        });
     }
 }">
 
-    <!-- Progress Component -->
-    <div x-show="scraperState.is_running || scraperState.status === 'Completed' || scraperState.status === 'Failed'"
-        x-transition:enter="transition ease-out duration-300"
-        x-transition:enter-start="opacity-0 transform -translate-y-4"
-        x-transition:enter-end="opacity-100 transform translate-y-0"
-        class="mb-6 shrink-0 bg-zinc-50 dark:bg-zinc-800/80 rounded-xl p-5 border border-zinc-200 dark:border-zinc-700 shadow-inner">
-        <div class="flex justify-between items-center mb-3">
-            <div class="flex items-center gap-3">
-                <div x-show="scraperState.status === 'Running'" class="relative flex h-3 w-3">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
-                </div>
-                <span class="font-semibold text-sm tracking-wide uppercase" :class="{
-                        'text-indigo-600 dark:text-indigo-400': scraperState.status === 'Running',
-                        'text-green-600 dark:text-green-400': scraperState.status === 'Completed',
-                        'text-red-600 dark:text-red-400': scraperState.status === 'Failed'
-                    }"
-                    x-text="scraperStatusLabel()">
-                </span>
-            </div>
-            <span class="text-sm font-bold text-zinc-700 dark:text-zinc-300" x-text="scraperState.progress + '%'"></span>
-        </div>
-        <div class="w-full bg-zinc-200 dark:bg-zinc-900 rounded-full h-3 overflow-hidden shadow-sm">
-            <div class="bg-gradient-to-r from-indigo-500 to-indigo-400 h-3 transition-all duration-500 ease-out"
-                :style="`width: ${scraperState.progress}%`" :class="{
-                    'from-green-500 to-green-400': scraperState.status === 'Completed',
-                    'from-red-500 to-red-400': scraperState.status === 'Failed'
-                 }">
-            </div>
-        </div>
-        <div class="text-xs text-zinc-500 dark:text-zinc-400 font-mono mt-3 truncate" x-text="scraperState.current_task"></div>
+    <!-- Progress moved to global sticky bar in base.html -->
 
-        <!-- Extra details -->
-        <div x-show="scraperState.is_running && scraperState.matches_total > 0" class="grid grid-cols-3 gap-4 mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-            <div>{{ i18n.t('scraper_batch') }}: <span class="font-semibold text-zinc-700 dark:text-zinc-300" x-text="scraperState.matches_done + '/' + scraperState.matches_total"></span></div>
-            <div x-show="scraperState.eta_seconds">{{ i18n.t('scraper_eta') }}: <span class="font-semibold text-zinc-700 dark:text-zinc-300" x-text="scraperState.eta_seconds ? formatEtaMinutes(scraperState.eta_seconds) : '-'"></span></div>
-            <div>{{ i18n.t('scraper_errors') }}: <span class="font-semibold" :class="scraperState.matches_failed > 0 ? 'text-red-400' : 'text-zinc-700 dark:text-zinc-300'" x-text="scraperState.matches_failed"></span></div>
+    <!-- Filters -->
+    <div class="flex flex-col gap-4 shrink-0 pb-4 border-b border-[var(--border)] mb-4">
+        <div class="flex flex-wrap items-center gap-3">
+            <input type="date" x-model="dateFilter" @change="onDateFilterChange()" class="field-input !min-h-11 !w-auto">
+            <select x-model="selectedLeague" @change="onLeagueChange()" class="field-input !min-h-11 !w-auto">
+                <option value="all">{{ i18n.t('menu_all_leagues') }}</option>
+                {% for id, name in leagues.items() %}
+                <option value="{{ id }}">{{ name }}</option>
+                {% endfor %}
+            </select>
+            <select x-show="selectedLeague !== 'all'" x-model="selectedSeason" @change="onSeasonFilterChange()"
+                class="field-input !min-h-11 !w-auto min-w-[10rem]">
+                <option value="">{{ i18n.t('all_seasons') }}</option>
+                <template x-for="s in filterSeasons" :key="s.id">
+                    <option :value="String(s.id)" x-text="(s.name || '') + (s.year ? ' (' + s.year + ')' : '')"></option>
+                </template>
+            </select>
+            <button type="button" class="btn btn-secondary text-sm" @click="showMoreFilters = !showMoreFilters">{{ i18n.t('matches_more_filters') }}</button>
+            <a href="/" class="btn btn-primary text-sm ml-auto">{{ i18n.t('home_go_download') }}</a>
+            <button type="button" class="btn btn-secondary text-sm" @click="openMissingDetails()"
+                :disabled="scraperState.is_running || selectedLeague === 'all'"
+                x-show="selectedLeague !== 'all'">{{ i18n.t('matches_missing_details') }}</button>
         </div>
-
-        <!-- Circuit breaker warning -->
-        <div x-show="scraperState.circuit_breaker_triggered"
-            class="mt-3 p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-lg">
-            <div class="font-semibold text-red-600 dark:text-red-400 text-sm">{{ i18n.t('circuit_breaker_title') }}</div>
-            <div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{{ i18n.t('circuit_breaker_suggestion') }}</div>
-            <a href="/settings#performance" class="text-xs text-indigo-500 mt-1 inline-block hover:underline">{{ i18n.t('circuit_breaker_settings_link') }} &rarr;</a>
-        </div>
-
-        <!-- Cancel button -->
-        <button x-show="scraperState.is_running && !scraperState.cancel_requested" 
-            @click="if(confirm('{{ i18n.t('scraper_cancel_confirm') }}')) fetch('/api/scrape/cancel', {method:'POST'})"
-            class="mt-3 text-sm text-red-500 hover:text-red-400 hover:underline font-medium">
-            {{ i18n.t('scraper_cancel') }}
-        </button>
-        <span x-show="scraperState.cancel_requested" class="mt-3 text-sm text-amber-500 font-medium block">{{ i18n.t('scraper_cancel_pending') }}</span>
-    </div>
-
-    <!-- Filters Area -->
-    <div class="flex flex-col md:flex-row md:flex-wrap gap-4 justify-between shrink-0 pb-4 border-b border-zinc-100 dark:border-zinc-800/60">
-        <div class="flex flex-wrap items-center gap-3 w-full md:flex-1 md:min-w-0">
-            <div class="relative">
-                <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                <input type="date" x-model="dateFilter" @change="onDateFilterChange()"
-                    class="pl-9 pr-3 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 shadow-sm rounded-xl text-sm font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer">
-            </div>
-            <div class="relative">
-                <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
-                <select x-model="selectedLeague" @change="onLeagueChange()"
-                    class="pl-9 pr-8 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 shadow-sm rounded-xl text-sm font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer appearance-none">
-                    <option value="all">{{ i18n.t('menu_all_leagues') }}</option>
-                    {% for id, name in leagues.items() %}
-                    <option value="{{ id }}">{{ name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="relative" x-show="selectedLeague !== 'all'">
-                <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                <select x-model="selectedSeason" @change="onSeasonFilterChange()"
-                    class="pl-9 pr-8 py-2.5 min-w-[10rem] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 shadow-sm rounded-xl text-sm font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer appearance-none">
-                    <option value="">{{ i18n.t('all_seasons') }}</option>
-                    <template x-for="s in filterSeasons" :key="s.id">
-                        <option :value="String(s.id)" x-text="(s.name || '') + (s.year ? ' (' + s.year + ')' : '')"></option>
-                    </template>
-                </select>
-            </div>
-            <div class="relative flex items-center gap-2 shrink-0">
-                <label class="text-xs text-zinc-500 dark:text-zinc-400 whitespace-nowrap hidden sm:inline">{{ i18n.t('schedule_per_page') }}</label>
-                <select x-model.number="pageSize" @change="onPageSizeChange()"
-                    class="py-2.5 px-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 shadow-sm rounded-xl text-sm font-medium text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer">
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                    <option value="200">200</option>
-                </select>
-            </div>
-            <button @click="fetchMatches()" :disabled="loading"
-                class="ml-auto md:ml-0 aspect-square w-10 shrink-0 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 rounded-xl shadow-sm transition-colors flex items-center justify-center disabled:opacity-50">
-                <svg class="w-4 h-4" :class="{'animate-spin text-indigo-500': loading}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            </button>
-        </div>
-
-        <!-- Scrape Buttons -->
-        <div class="flex items-center gap-3 shrink-0">
-            <button @click="openFetchWizard()" :disabled="scraperState.is_running"
-                class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2.5 px-4 rounded-xl shadow-md shadow-indigo-500/20 transition-all flex items-center gap-2 disabled:opacity-50 disabled:shadow-none hover:-translate-y-0.5">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                <span x-text="selectedLeague === 'all' ? '{{ i18n.t('button_fetch_new_data') }}' : '{{ i18n.t('submenu_match_fetch_one') }}'"></span>
-            </button>
-            <button @click="openMissingDetails()" :disabled="scraperState.is_running || selectedLeague === 'all'"
-                class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-medium py-2.5 px-4 rounded-xl shadow-sm transition-all flex items-center gap-2 disabled:opacity-50 disabled:shadow-none"
-                title="{{ i18n.t('missing_details_title') }}">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                {{ i18n.t('missing_details_title') }}
-            </button>
+        <div x-show="showMoreFilters" class="flex items-center gap-2">
+            <label class="text-sm text-[var(--muted)]">{{ i18n.t('schedule_per_page') }}</label>
+            <select x-model.number="pageSize" @change="onPageSizeChange()" class="field-input !min-h-10 !w-auto">
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+            </select>
+            <button type="button" @click="fetchMatches()" :disabled="loading" class="btn btn-secondary text-sm">↻</button>
         </div>
     </div>
 
-    <div class="mt-4 rounded-xl border border-zinc-200 dark:border-zinc-700/50 bg-zinc-50/40 dark:bg-zinc-900/25 overflow-hidden max-h-[min(68vh,calc(100dvh-14rem))] sm:max-h-[min(70vh,calc(100dvh-13rem))] min-h-[min(42vh,20rem)] flex flex-col">
-        <div class="overflow-y-auto overscroll-y-contain touch-pan-y flex-1 min-h-[12rem]">
-            <!-- Empty State -->
+    <div class="mt-2 rounded-xl border border-[var(--border)] overflow-hidden max-h-[min(68vh,calc(100dvh-14rem))] min-h-[min(42vh,20rem)] flex flex-col bg-[var(--surface)]">
+        <div class="overflow-y-auto flex-1 min-h-[12rem]">
             <div x-show="totalCount === 0 && !loading" class="flex flex-col items-center justify-center py-16 px-4">
-                <div class="w-20 h-20 mb-6 rounded-2xl bg-zinc-100 dark:bg-zinc-800/80 flex items-center justify-center text-zinc-400 dark:text-zinc-500 shadow-inner">
-                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
-                </div>
-                <h3 class="text-xl font-bold text-zinc-900 dark:text-white mb-2">{{ i18n.t('no_matches_found') }}</h3>
-                <p class="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm text-center">{{ i18n.t('no_match_data_for_season') }}</p>
+                <h3 class="text-xl font-bold mb-2">{{ i18n.t('no_matches_found') }}</h3>
+                <p class="text-sm text-[var(--muted)] max-w-sm text-center mb-6">{{ i18n.t('matches_empty_hint') }}</p>
+                <a href="/" class="btn btn-primary">{{ i18n.t('matches_empty_cta') }}</a>
             </div>
 
             <!-- Skeleton Loader -->
@@ -741,133 +684,6 @@ window.__SS_SCHEDULE_I18N__ = {
                     class="px-3 py-1.5 text-sm font-medium rounded-lg border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-50 dark:hover:bg-zinc-700">
                     {{ i18n.t('schedule_page_next') }}
                 </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Fetch Wizard Modal -->
-    <div x-show="showWizard" x-transition.opacity class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" @click.self="showWizard = false">
-        <div class="relative z-10 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col" @click.stop>
-            <!-- Header -->
-            <div class="p-6 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0">
-                <h2 class="text-xl font-bold text-zinc-900 dark:text-white">{{ i18n.t('wizard_title') }}</h2>
-                <div class="flex items-center gap-4">
-                    <div class="flex gap-1">
-                        <template x-for="s in [1,2]" :key="s">
-                            <div class="w-8 h-1.5 rounded-full transition-colors" :class="wizardStep >= s ? 'bg-indigo-500' : 'bg-zinc-200 dark:bg-zinc-700'"></div>
-                        </template>
-                    </div>
-                    <button @click="showWizard = false" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Body -->
-            <div class="p-6 overflow-y-auto flex-1">
-                <!-- Step 1: League Selection -->
-                <div x-show="wizardStep === 1">
-                    <h3 class="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-4">{{ i18n.t('wizard_step_league') }}</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <template x-for="league in wizardLeagues" :key="league.id">
-                            <button @click="toggleWizardLeague(league.id)"
-                                class="p-4 rounded-xl border-2 transition-all text-left"
-                                :class="wizardSelectedLeagues.includes(league.id) ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600'">
-                                <span class="font-semibold text-zinc-900 dark:text-white text-sm" x-text="league.name"></span>
-                                <span class="block text-xs text-zinc-500 mt-1">ID: <span x-text="league.id"></span></span>
-                            </button>
-                        </template>
-                    </div>
-                </div>
-
-                <!-- Step 2: Season Selection -->
-                <div x-show="wizardStep === 2">
-                    <h3 class="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-4">{{ i18n.t('wizard_step_season') }}</h3>
-                    
-                    <div x-show="wizardLoadingSeasons" class="flex items-center justify-center py-12">
-                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-                        <span class="ml-3 text-zinc-500">{{ i18n.t('wizard_loading_seasons') }}</span>
-                    </div>
-
-                    <template x-if="!wizardLoadingSeasons">
-                        <div class="space-y-6">
-                            <template x-for="lid in wizardSelectedLeagues" :key="lid">
-                                <div class="border border-zinc-200 dark:border-zinc-700 rounded-xl p-4">
-                                    <div class="flex items-center justify-between mb-3">
-                                        <h4 class="font-semibold text-zinc-900 dark:text-white text-sm" x-text="wizardLeagues.find(l => l.id === lid)?.name"></h4>
-                                        <template x-if="!wizardSeasons[lid]?.fetched">
-                                            <button @click="refreshSeasonsForLeague(lid)" class="text-xs text-indigo-500 hover:text-indigo-400 font-medium">{{ i18n.t('wizard_fetch_seasons') }}</button>
-                                        </template>
-                                    </div>
-                                    
-                                    <template x-if="wizardSeasons[lid]?.seasons?.length > 0">
-                                        <div>
-                                            <div class="flex flex-wrap gap-2 mb-3">
-                                                <button @click="selectSeasonPreset(lid, 'latest')" class="text-xs px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">{{ i18n.t('wizard_preset_latest') }}</button>
-                                                <button @click="selectSeasonPreset(lid, 'last3')" class="text-xs px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">{{ i18n.t('wizard_preset_last3') }}</button>
-                                                <button @click="selectSeasonPreset(lid, 'last5')" class="text-xs px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">{{ i18n.t('wizard_preset_last5') }}</button>
-                                                <button @click="selectSeasonPreset(lid, 'all')" class="text-xs px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">{{ i18n.t('wizard_preset_all') }}</button>
-                                            </div>
-                                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-                                                <template x-for="season in wizardSeasons[lid].seasons" :key="season.id">
-                                                    <button @click="toggleWizardSeason(lid, season.id)"
-                                                        class="px-3 py-2 rounded-lg text-xs font-medium border transition-all text-left"
-                                                        :class="isSeasonSelected(lid, season.id) ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : 'border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300'">
-                                                        <span x-text="season.name || season.year || ('Season ' + season.id)"></span>
-                                                    </button>
-                                                </template>
-                                            </div>
-                                        </div>
-                                    </template>
-                                    
-                                    <template x-if="!wizardSeasons[lid]?.seasons?.length && wizardSeasons[lid]?.fetched !== false">
-                                        <p class="text-sm text-zinc-500">{{ i18n.t('wizard_no_seasons') }}</p>
-                                    </template>
-                                </div>
-                            </template>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-            <!-- Summary strip: pinned above actions (not inside scroll area) -->
-            <div class="shrink-0 px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/95 dark:bg-zinc-800/80"
-                x-show="wizardStep === 2 && !wizardLoadingSeasons && getWizardEstimate().seasons > 0">
-                <div class="grid grid-cols-3 gap-3 sm:gap-4 text-center text-sm">
-                    <div>
-                        <div class="text-zinc-500 dark:text-zinc-400 text-xs mb-1">{{ i18n.t('wizard_seasons_selected') }}</div>
-                        <div class="font-bold tabular-nums text-zinc-900 dark:text-white" x-text="getWizardEstimate().seasons"></div>
-                    </div>
-                    <div>
-                        <div class="text-zinc-500 dark:text-zinc-400 text-xs mb-1">{{ i18n.t('wizard_estimated_requests') }}</div>
-                        <div class="font-bold tabular-nums text-zinc-900 dark:text-white" x-text="'~' + getWizardEstimate().requests"></div>
-                    </div>
-                    <div>
-                        <div class="text-zinc-500 dark:text-zinc-400 text-xs mb-1">{{ i18n.t('wizard_estimated_time') }}</div>
-                        <div class="font-bold tabular-nums text-zinc-900 dark:text-white" x-text="formatWizardTimeMinutes(getWizardEstimate().minutes)"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="p-6 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0">
-                <button @click="wizardStep === 1 ? showWizard = false : wizardStep--"
-                    class="px-5 py-2.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors">
-                    <span x-text="wizardStep === 1 ? '{{ i18n.t('wizard_cancel') }}' : '{{ i18n.t('wizard_back') }}'"></span>
-                </button>
-                <template x-if="wizardStep === 1">
-                    <button @click="wizardStep = 2; loadSeasonsForWizard()" :disabled="wizardSelectedLeagues.length === 0"
-                        class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50">
-                        {{ i18n.t('wizard_next') }}
-                    </button>
-                </template>
-                <template x-if="wizardStep === 2">
-                    <button @click="startWizardFetch()" :disabled="getWizardEstimate().seasons === 0"
-                        class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        {{ i18n.t('wizard_start') }}
-                    </button>
-                </template>
             </div>
         </div>
     </div>

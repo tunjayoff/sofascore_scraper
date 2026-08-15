@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}{{ i18n.t('home_title') }} - {{ i18n.t('brand_name') }}{% endblock %}
+
+{% block content %}
+<script>
+window.__SS_HOME_LEAGUES__ = {{ leagues | tojson }};
+window.__SS_HOME_I18N__ = {
+    no_results: {{ i18n.t('home_no_search_results') | tojson }},
+    select_first: {{ i18n.t('home_select_league_first') | tojson }},
+    loading: {{ i18n.t('home_loading_seasons') | tojson }},
+    no_seasons: {{ i18n.t('home_no_seasons') | tojson }},
+    added: {{ i18n.t('league_added_toast') | tojson }},
+    zero: {{ i18n.t('fetch_zero_matches') | tojson }},
+    warn: {{ i18n.t('fetch_completed_with_warning') | tojson }},
+    err: {{ i18n.t('toast_generic_error') | tojson }},
+};
+</script>
+
+<div class="mb-8">
+    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-2">{{ i18n.t('home_title') }}</h1>
+    <p class="text-[var(--muted)] text-lg">{{ i18n.t('home_subtitle') }}</p>
+</div>
+
+<div class="space-y-6" x-data="homeWorkspace()" x-init="init()">
+    <!-- Step indicators -->
+    <div class="flex flex-wrap gap-3">
+        <div class="flex items-center gap-2">
+            <span class="step-pill" :class="step >= 1 && 'is-active'">1</span>
+            <span class="font-semibold text-sm" :class="step === 1 ? 'text-[var(--text)]' : 'text-[var(--muted)]'">{{ i18n.t('home_step_add') }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="step-pill" :class="step >= 2 && 'is-active'">2</span>
+            <span class="font-semibold text-sm" :class="step === 2 ? 'text-[var(--text)]' : 'text-[var(--muted)]'">{{ i18n.t('home_step_download') }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="step-pill" :class="step >= 3 && 'is-active'">3</span>
+            <span class="font-semibold text-sm" :class="step === 3 ? 'text-[var(--text)]' : 'text-[var(--muted)]'">{{ i18n.t('home_step_done') }}</span>
+        </div>
+    </div>
+
+    <!-- Step 1: Add / pick league -->
+    <section class="panel p-5 md:p-6">
+        <h2 class="text-lg font-bold mb-4">1. {{ i18n.t('home_step_add') }}</h2>
+
+        <div class="relative mb-4">
+            <input type="search" class="field-input pr-10" x-model="searchQuery"
+                @input.debounce.300ms="search()"
+                placeholder="{{ i18n.t('home_search_placeholder') }}"
+                autocomplete="off">
+            <div x-show="searching" class="absolute right-3 top-1/2 -translate-y-1/2">
+                <div class="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <div x-show="showResults" @click.outside="showResults=false"
+                class="absolute z-30 mt-2 w-full panel overflow-hidden max-h-72 overflow-y-auto">
+                <template x-if="results.length === 0 && !searching && searchQuery.length >= 2">
+                    <p class="p-4 text-sm text-[var(--muted)]" x-text="i18n.no_results"></p>
+                </template>
+                <template x-for="r in results" :key="r.id">
+                    <button type="button" @click="addLeague(r)"
+                        class="w-full text-left px-4 py-3.5 hover:bg-[var(--surface-2)] border-b border-[var(--border)] last:border-0">
+                        <span class="font-bold block" x-text="r.name"></span>
+                        <span class="text-xs text-[var(--muted)]" x-text="(r.country || '') + ' · ' + r.id"></span>
+                    </button>
+                </template>
+            </div>
+        </div>
+
+        <div x-show="leagueList.length" class="space-y-2">
+            <p class="text-sm font-semibold text-[var(--muted)] mb-2">{{ i18n.t('home_your_leagues') }}</p>
+            <template x-for="lg in leagueList" :key="lg.id">
+                <button type="button" @click="selectLeague(lg.id)"
+                    class="w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl border-2 transition-colors text-left"
+                    :class="selectedLeague === lg.id ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10' : 'border-[var(--border)] hover:border-emerald-300'">
+                    <span>
+                        <span class="font-bold block" x-text="lg.name"></span>
+                        <span class="text-xs text-[var(--muted)] font-mono" x-text="'ID ' + lg.id"></span>
+                    </span>
+                    <span class="text-emerald-600 font-bold text-sm" x-show="selectedLeague === lg.id">✓</span>
+                </button>
+            </template>
+        </div>
+    </section>
+
+    <!-- Step 2: Seasons + download -->
+    <section class="panel p-5 md:p-6" :class="!selectedLeague && 'opacity-60'">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h2 class="text-lg font-bold">2. {{ i18n.t('home_pick_seasons') }}</h2>
+            <button type="button" class="btn btn-secondary text-sm" :disabled="!selectedLeague || loadingSeasons"
+                @click="refreshSeasons()">{{ i18n.t('home_refresh_seasons') }}</button>
+        </div>
+
+        <template x-if="!selectedLeague">
+            <p class="text-[var(--muted)]" x-text="i18n.select_first"></p>
+        </template>
+
+        <template x-if="selectedLeague && loadingSeasons">
+            <p class="text-[var(--muted)]" x-text="i18n.loading"></p>
+        </template>
+
+        <template x-if="selectedLeague && !loadingSeasons">
+            <div>
+                <div class="flex flex-wrap gap-2 mb-4" x-show="seasons.length">
+                    <button type="button" class="btn btn-secondary text-sm" @click="preset('latest')">{{ i18n.t('home_preset_latest') }}</button>
+                    <button type="button" class="btn btn-secondary text-sm" @click="preset('last3')">{{ i18n.t('home_preset_last3') }}</button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-5" x-show="seasons.length">
+                    <template x-for="s in seasons" :key="s.id">
+                        <label class="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--border)] cursor-pointer hover:bg-[var(--surface-2)]"
+                            :class="selectedSeasons.includes(s.id) && 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-500/10'">
+                            <input type="checkbox" class="w-5 h-5 accent-emerald-600"
+                                :checked="selectedSeasons.includes(s.id)"
+                                @change="toggleSeason(s.id)">
+                            <span class="font-semibold text-sm" x-text="s.name || s.year"></span>
+                        </label>
+                    </template>
+                </div>
+                <p class="text-[var(--muted)] text-sm mb-4" x-show="!seasons.length" x-text="i18n.no_seasons"></p>
+                <button type="button" class="btn btn-primary w-full sm:w-auto text-base px-8"
+                    :disabled="!selectedSeasons.length || jobRunning"
+                    @click="startDownload()">
+                    {{ i18n.t('home_download_btn') }}
+                </button>
+            </div>
+        </template>
+    </section>
+
+    <!-- Step 3: Done CTA -->
+    <section class="panel p-5 md:p-6" x-show="step >= 3 || jobDone" x-cloak>
+        <h2 class="text-lg font-bold mb-2">3. {{ i18n.t('home_step_done') }}</h2>
+        <p class="text-[var(--muted)] mb-4">{{ i18n.t('guide_step3_desc') }}</p>
+        <a :href="'/schedule' + (selectedLeague ? ('?league_id=' + selectedLeague) : '')"
+            class="btn btn-primary inline-flex">{{ i18n.t('home_open_matches') }}</a>
+    </section>
+</div>
+
+<script>
+function homeWorkspace() {
+    const i18n = window.__SS_HOME_I18N__ || {};
+    const raw = window.__SS_HOME_LEAGUES__ || {};
+    return {
+        i18n,
+        searchQuery: '',
+        results: [],
+        searching: false,
+        showResults: false,
+        leagueList: Object.entries(raw).map(([id, name]) => ({ id: parseInt(id, 10), name })),
+        selectedLeague: null,
+        seasons: [],
+        selectedSeasons: [],
+        loadingSeasons: false,
+        jobRunning: false,
+        jobDone: false,
+        step: 1,
+        get stepComputed() {
+            if (this.jobDone) return 3;
+            if (this.selectedLeague) return 2;
+            return this.leagueList.length ? 2 : 1;
+        },
+        init() {
+            this.step = this.stepComputed;
+            if (this.leagueList.length === 1) this.selectLeague(this.leagueList[0].id);
+            this._watchJob();
+        },
+        async search() {
+            if (this.searchQuery.length < 2) {
+                this.results = [];
+                this.showResults = false;
+                return;
+            }
+            this.searching = true;
+            try {
+                const res = await fetch('/api/leagues/search-remote?q=' + encodeURIComponent(this.searchQuery));
+                this.results = res.ok ? await res.json() : [];
+                this.showResults = true;
+            } catch (e) {
+                this.results = [];
+            } finally {
+                this.searching = false;
+            }
+        },
+        async addLeague(r) {
+            try {
+                const res = await fetch('/api/leagues', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: r.id, name: r.name }),
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    window.appToast && window.appToast(err.detail || i18n.err, 'error');
+                    return;
+                }
+                if (!this.leagueList.find(l => l.id === r.id)) {
+                    this.leagueList = [...this.leagueList, { id: r.id, name: r.name }];
+                }
+                this.showResults = false;
+                this.searchQuery = '';
+                window.appToast && window.appToast(i18n.added, 'success');
+                await this.selectLeague(r.id);
+            } catch (e) {
+                window.appToast && window.appToast(i18n.err, 'error');
+            }
+        },
+        async selectLeague(id) {
+            this.selectedLeague = id;
+            this.step = 2;
+            this.jobDone = false;
+            await this.loadSeasons(false);
+        },
+        async loadSeasons(forceRefresh) {
+            if (!this.selectedLeague) return;
+            this.loadingSeasons = true;
+            try {
+                if (forceRefresh) {
+                    await fetch('/api/leagues/' + this.selectedLeague + '/seasons/refresh', { method: 'POST' });
+                }
+                const res = await fetch('/api/leagues/' + this.selectedLeague + '/seasons');
+                const data = res.ok ? await res.json() : { seasons: [] };
+                this.seasons = data.seasons || [];
+                this.selectedSeasons = this.seasons.length ? [this.seasons[0].id] : [];
+            } catch (e) {
+                this.seasons = [];
+                this.selectedSeasons = [];
+            } finally {
+                this.loadingSeasons = false;
+            }
+        },
+        refreshSeasons() { return this.loadSeasons(true); },
+        toggleSeason(sid) {
+            const i = this.selectedSeasons.indexOf(sid);
+            if (i >= 0) this.selectedSeasons = this.selectedSeasons.filter(x => x !== sid);
+            else this.selectedSeasons = [...this.selectedSeasons, sid];
+        },
+        preset(kind) {
+            if (kind === 'latest') this.selectedSeasons = this.seasons.length ? [this.seasons[0].id] : [];
+            else if (kind === 'last3') this.selectedSeasons = this.seasons.slice(0, 3).map(s => s.id);
+        },
+        async startDownload() {
+            if (!this.selectedLeague || !this.selectedSeasons.length) return;
+            try {
+                const res = await fetch('/api/fetch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'full',
+                        selections: [{ league_id: this.selectedLeague, season_ids: this.selectedSeasons }],
+                    }),
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    window.appToast && window.appToast(err.detail || i18n.err, 'error');
+                    return;
+                }
+                this.jobRunning = true;
+                this.jobDone = false;
+                if (typeof window.__ssWakeScrapeProgress === 'function') window.__ssWakeScrapeProgress();
+            } catch (e) {
+                window.appToast && window.appToast(i18n.err, 'error');
+            }
+        },
+        _watchJob() {
+            setInterval(async () => {
+                try {
+                    const res = await fetch('/api/scrape/status');
+                    if (!res.ok) return;
+                    const st = await res.json();
+                    if (st.is_running) {
+                        this.jobRunning = true;
+                        return;
+                    }
+                    if (this.jobRunning && (st.status === 'Completed' || st.status === 'Failed')) {
+                        this.jobRunning = false;
+                        this.jobDone = st.status === 'Completed';
+                        this.step = 3;
+                        if (st.schedule_empty_seasons > 0) {
+                            window.appToast && window.appToast(i18n.warn || i18n.zero, 'info');
+                        }
+                    }
+                } catch (e) {}
+            }, 2000);
+        },
+    };
+}
+</script>
+{% endblock %}
