@@ -228,17 +228,16 @@ def make_api_request(
 
                 # Turnstile challenge kontrolü ve otomatik çözme denemesi
                 if "challenge" in response.text:
-                    logger.info("Turnstile challenge tespit edildi. Token yenilenmeye çalışılıyor...")
+                    logger.info("Turnstile challenge tespit edildi. BrowserBridge üzerinden veri alınıyor...")
                     try:
-                        from src.challenge_solver import solve_turnstile_challenge_sync
-                        new_token = solve_turnstile_challenge_sync()
-                        if new_token:
-                            logger.info("Yeni sofa_captcha tokeni başarıyla alındı! İstek yenileniyor.")
-                            headers["X-Captcha"] = new_token
-                            headers["Cookie"] = f"sofa_captcha={new_token}"
-                            continue
+                        from src.challenge_solver import fetch_api_via_browser_sync
+                        browser_data = fetch_api_via_browser_sync(url)
+                        if browser_data is not None:
+                            logger.info("Veri BrowserBridge üzerinden başarıyla alındı!")
+                            _adaptive_limiter.success()
+                            return cast(JsonResponse, browser_data)
                     except Exception as te:
-                        logger.debug(f"Otomatik token çözücü hatası: {te}")
+                        logger.debug(f"BrowserBridge hatası: {te}")
 
                 time.sleep(wait_time)
                 if attempt < max_retries - 1:
@@ -342,17 +341,16 @@ async def make_api_request_async(
 
                 # Turnstile challenge kontrolü ve otomatik çözme denemesi
                 if "challenge" in response.text:
-                    logger.info("Turnstile challenge tespit edildi. Token yenilenmeye çalışılıyor...")
+                    logger.info("Turnstile challenge tespit edildi. BrowserBridge üzerinden veri alınıyor...")
                     try:
-                        from src.challenge_solver import solve_turnstile_challenge
-                        new_token = await solve_turnstile_challenge()
-                        if new_token:
-                            logger.info("Yeni sofa_captcha tokeni başarıyla alındı! İstek yenileniyor.")
-                            session.headers["X-Captcha"] = new_token
-                            session.headers["Cookie"] = f"sofa_captcha={new_token}"
-                            continue
+                        from src.challenge_solver import fetch_api_via_browser
+                        browser_data = await fetch_api_via_browser(url)
+                        if browser_data is not None:
+                            logger.info("Veri BrowserBridge üzerinden başarıyla alındı!")
+                            _adaptive_limiter.success()
+                            return cast(JsonResponse, browser_data)
                     except Exception as te:
-                        logger.debug(f"Otomatik token çözücü hatası: {te}")
+                        logger.debug(f"BrowserBridge hatası: {te}")
 
                 await asyncio.sleep(wait_time)
                 if attempt < max_retries - 1:
