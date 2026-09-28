@@ -19,7 +19,7 @@ const { stagger, reduce } = useMotionPrefs()
 
 const step = ref(1)
 const searchQuery = ref('')
-const searchResults = ref<{ id: number; name: string; country?: string }[]>([])
+const searchResults = ref<{ id: number; name: string; country?: string; sport?: string }[]>([])
 const searching = ref(false)
 const selectedLeague = ref<number | null>(null)
 const seasons = ref<Season[]>([])
@@ -35,6 +35,20 @@ const fetchMode = ref<'full' | 'schedule' | 'details'>('full')
 const seasonFilter = ref('')
 const missingCount = ref<number | null>(null)
 const loadingMissing = ref(false)
+
+function sportIcon(sport?: string) {
+  const s = (sport || '').toLowerCase()
+  if (s.includes('basket')) return '🏀'
+  if (s.includes('tennis')) return '🎾'
+  return '⚽'
+}
+
+function sportBadgeClass(sport?: string) {
+  const s = (sport || '').toLowerCase()
+  if (s.includes('basket')) return 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20'
+  if (s.includes('tennis')) return 'bg-lime-500/10 text-lime-600 dark:text-lime-400 border border-lime-500/20'
+  return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+}
 
 const filteredSeasons = computed(() => {
   const q = seasonFilter.value.trim().toLowerCase()
@@ -382,11 +396,17 @@ watch(
           v-for="r in searchResults"
           :key="r.id"
           type="button"
-          class="w-full text-left px-4 py-3 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
+          class="w-full text-left px-4 py-3 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)] transition-colors"
           @click="addLeague(r.id, r.name)"
         >
-          <span class="font-bold">{{ r.name }}</span>
-          <span class="block text-xs text-[var(--muted)] mono mt-0.5">{{ r.country }} · {{ r.id }}</span>
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-bold truncate">{{ r.name }}</span>
+            <span v-if="r.sport" class="text-[11px] px-2 py-0.5 rounded-full font-medium shrink-0 flex items-center gap-1" :class="sportBadgeClass(r.sport)">
+              <span>{{ sportIcon(r.sport) }}</span>
+              <span>{{ r.sport }}</span>
+            </span>
+          </div>
+          <span class="block text-xs text-[var(--muted)] mono mt-0.5">{{ r.country }} · ID: {{ r.id }}</span>
         </button>
       </div>
     </motion.div>
@@ -819,10 +839,17 @@ watch(
               v-for="r in searchResults"
               :key="r.id"
               type="button"
-              class="w-full text-left px-4 py-3 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"
+              class="w-full text-left px-4 py-3 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)] transition-colors"
               @click="addLeague(r.id, r.name)"
             >
-              <span class="font-bold">{{ r.name }}</span>
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-bold truncate">{{ r.name }}</span>
+                <span v-if="r.sport" class="text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 flex items-center gap-1" :class="sportBadgeClass(r.sport)">
+                  <span>{{ sportIcon(r.sport) }}</span>
+                  <span>{{ r.sport }}</span>
+                </span>
+              </div>
+              <span class="block text-xs text-[var(--muted)] mono mt-0.5">{{ r.country }} · ID: {{ r.id }}</span>
             </button>
           </div>
         </div>

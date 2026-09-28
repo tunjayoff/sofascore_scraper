@@ -305,12 +305,15 @@ def _search_remote_leagues_sync(q: str) -> List[RemoteLeagueResult]:
         name = entity.get("name")
         if lid and name:
             category = entity.get("category", {})
+            sport_obj = category.get("sport", {}) if isinstance(category, dict) else {}
+            sport_name = sport_obj.get("name", "Football") if isinstance(sport_obj, dict) else "Football"
             leagues.append(
                 RemoteLeagueResult(
                     id=lid,
                     name=name,
                     country=category.get("name", "Unknown") if isinstance(category, dict) else "Unknown",
                     slug=entity.get("slug"),
+                    sport=sport_name,
                 )
             )
     return leagues[:20]
@@ -711,6 +714,7 @@ class RemoteLeagueResult(BaseModel):
     name: str
     country: str
     slug: Optional[str] = None
+    sport: Optional[str] = "Football"
 
 
 @router.get("/leagues/search-remote", response_model=List[RemoteLeagueResult])
