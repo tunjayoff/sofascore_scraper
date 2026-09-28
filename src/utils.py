@@ -46,29 +46,86 @@ from curl_cffi import requests as cffi_requests
 from curl_cffi.requests import AsyncSession
 
 IMPERSONATE_PROFILES = [
+    "chrome124",
     "chrome131",
+    "chrome133a",
     "chrome136",
     "chrome142",
     "chrome145",
+    # Safari profilleri — TLS parmak izi çeşitliliği sağlar
+    "safari17_0",
+    "safari18_0",
+    # Firefox — ek çeşitlilik
+    "firefox133",
 ]
 
-# ... imports ...
+import hashlib
+
+# Accept-Language header havuzu — her istekte rastgele seçilir
+_ACCEPT_LANGUAGES = [
+    "en-US,en;q=0.9",
+    "en-US,en;q=0.9,tr;q=0.8",
+    "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+    "en-GB,en;q=0.9,en-US;q=0.8",
+    "tr-TR,tr;q=0.9,en;q=0.8",
+]
+
+
+def get_sofascore_hash() -> str:
+    """
+    Sofascore'un dinamik X-Requested-With başlığını hesaplar.
+    Her 30 dakikalık UNIX zaman aralığının SHA-256 hash'inin ilk 6 karakteri.
+    """
+    bucket = str(int(time.time()) // 1800)
+    return hashlib.sha256(bucket.encode("utf-8")).hexdigest()[:6]
+
+
+def get_sofa_captcha_token() -> Optional[str]:
+    """
+    Geçerli sofa_captcha JWT tokenini döndürür.
+    Önce .env (SOFA_CAPTCHA_TOKEN), sonra önbellekten bakar.
+    """
+    env_token = os.getenv("SOFA_CAPTCHA_TOKEN", "").strip()
+    if env_token:
+        return env_token
+    try:
+        from src.challenge_solver import get_cached_token
+        return get_cached_token()
+    except Exception:
+        return None
 
 
 def get_request_headers() -> Dict[str, str]:
     """
     API istekleri için kullanılacak HTTP başlıklarını döndürür.
-    curl_cffi already handles user-agent impersonation, so we just add extra headers if needed.
+    Dinamik 30 dakikalık X-Requested-With hash'i ve sofa_captcha tokeni otomatik eklenir.
     """
-    return {
+    headers = {
         "Accept": "*/*",
-        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Language": random.choice(_ACCEPT_LANGUAGES),
         "Referer": "https://www.sofascore.com/",
         "Origin": "https://www.sofascore.com",
-        # SofaScore API returns 403 {"reason":"challenge"} without this XHR marker
-        "X-Requested-With": "XMLHttpRequest",
+        # Sofascore dinamik 30-dakikalık hash
+        "X-Requested-With": get_sofascore_hash(),
+        # Sec-Fetch-* — modern tarayıcılar bu header'ları gönderir
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-origin",
         # User-Agent is handled by impersonate="chrome"
     }
+
+    # sofa_captcha / X-Captcha token mevcutsa ekle
+    token = get_sofa_captcha_token()
+    if token:
+        headers["X-Captcha"] = token
+        headers["Cookie"] = f"sofa_captcha={token}"
+
+    # Opsiyonel header'lar — gerçek tarayıcılarda bazen var bazen yok
+    if random.random() > 0.5:
+        headers["Cache-Control"] = "no-cache"
+        headers["Pragma"] = "no-cache"
+
+    return headers
 
 
 def _get_runtime_request_config() -> Dict[str, Union[int, float]]:
@@ -159,14 +216,30 @@ def make_api_request(
                 continue
             
             if response.status_code == 403:
+                _adaptive_limiter.failure(403)
                 wait_time = min(120, 10 * (2 ** attempt))
                 cf_ray = response.headers.get("cf-ray", "yok")
                 cf_status = response.headers.get("cf-mitigated", "yok")
                 logger.warning(
                     f"403 Forbidden (deneme {attempt+1}/{max_retries}). "
-                    f"Cloudflare koruması tetiklenmiş olabilir. {wait_time}s bekleniyor..."
+                    f"Cloudflare/Turnstile koruması devrede. {wait_time}s bekleniyor..."
                 )
                 logger.debug(f"cf-ray: {cf_ray}, cf-mitigated: {cf_status}")
+
+                # Turnstile challenge kontrolü ve otomatik çözme denemesi
+                if "challenge" in response.text:
+                    logger.info("Turnstile challenge tespit edildi. Token yenilenmeye çalışılıyor...")
+                    try:
+                        from src.challenge_solver import solve_turnstile_challenge_sync
+                        new_token = solve_turnstile_challenge_sync()
+                        if new_token:
+                            logger.info("Yeni sofa_captcha tokeni başarıyla alındı! İstek yenileniyor.")
+                            headers["X-Captcha"] = new_token
+                            headers["Cookie"] = f"sofa_captcha={new_token}"
+                            continue
+                    except Exception as te:
+                        logger.debug(f"Otomatik token çözücü hatası: {te}")
+
                 time.sleep(wait_time)
                 if attempt < max_retries - 1:
                     continue
@@ -187,6 +260,7 @@ def make_api_request(
                 raise DataParsingError(f"JSON ayrıştırma hatası: {str(e)}") from e
             
             # İnsan davranışını simüle etmek için kısa bekleme
+            _adaptive_limiter.success()
             wait_time = wait_time_min + random.uniform(0, wait_time_max)
             logger.info(f"Başarılı! Sonraki istek için {wait_time:.1f} saniye bekleniyor...")
             time.sleep(wait_time)
@@ -256,14 +330,30 @@ async def make_api_request_async(
                 continue
 
             if response.status_code == 403:
+                _adaptive_limiter.failure(403)
                 wait_time = min(120, 10 * (2 ** attempt))
                 cf_ray = response.headers.get("cf-ray", "yok")
                 cf_status = response.headers.get("cf-mitigated", "yok")
                 logger.warning(
                     f"403 Forbidden (deneme {attempt+1}/{max_retries}). "
-                    f"Cloudflare koruması tetiklenmiş olabilir. {wait_time}s bekleniyor..."
+                    f"Cloudflare/Turnstile koruması devrede. {wait_time}s bekleniyor..."
                 )
                 logger.debug(f"cf-ray: {cf_ray}, cf-mitigated: {cf_status}")
+
+                # Turnstile challenge kontrolü ve otomatik çözme denemesi
+                if "challenge" in response.text:
+                    logger.info("Turnstile challenge tespit edildi. Token yenilenmeye çalışılıyor...")
+                    try:
+                        from src.challenge_solver import solve_turnstile_challenge
+                        new_token = await solve_turnstile_challenge()
+                        if new_token:
+                            logger.info("Yeni sofa_captcha tokeni başarıyla alındı! İstek yenileniyor.")
+                            session.headers["X-Captcha"] = new_token
+                            session.headers["Cookie"] = f"sofa_captcha={new_token}"
+                            continue
+                    except Exception as te:
+                        logger.debug(f"Otomatik token çözücü hatası: {te}")
+
                 await asyncio.sleep(wait_time)
                 if attempt < max_retries - 1:
                     continue
@@ -293,6 +383,7 @@ async def make_api_request_async(
                 logger.error(error_msg)
                 raise DataParsingError(error_msg) from e
             
+            _adaptive_limiter.success()
             wait_time = wait_time_min + random.uniform(0, wait_time_max)
             await asyncio.sleep(wait_time)
             
@@ -330,15 +421,95 @@ def ensure_directory(directory_path: Union[str, Path]) -> bool:
         return False
 
 
-def create_session_async() -> AsyncSession:
+
+class AdaptiveRateLimiter:
+    """Başarı/başarısızlık oranına göre dinamik bekleme süresi ayarlar."""
+
+    def __init__(self, base_delay: float = 1.0, max_delay: float = 30.0):
+        self.base_delay = base_delay
+        self.max_delay = max_delay
+        self.current_delay = base_delay
+        self.consecutive_success = 0
+        self.consecutive_fail = 0
+
+    def success(self) -> None:
+        self.consecutive_success += 1
+        self.consecutive_fail = 0
+        # 5 ardışık başarıdan sonra hafifçe hızlan
+        if self.consecutive_success > 5:
+            self.current_delay = max(self.base_delay, self.current_delay * 0.85)
+
+    def failure(self, status_code: int) -> None:
+        self.consecutive_fail += 1
+        self.consecutive_success = 0
+        if status_code == 429:
+            self.current_delay = min(self.max_delay, self.current_delay * 3)
+        elif status_code == 403:
+            self.current_delay = min(self.max_delay, self.current_delay * 2)
+        else:
+            self.current_delay = min(self.max_delay, self.current_delay * 1.5)
+
+    def get_delay(self) -> float:
+        return self.current_delay + random.uniform(0, self.current_delay * 0.3)
+
+
+# Modül düzeyinde paylaşılan adaptive rate limiter
+_adaptive_limiter = AdaptiveRateLimiter()
+
+
+def get_adaptive_limiter() -> AdaptiveRateLimiter:
+    """Paylaşılan AdaptiveRateLimiter instance'ını döndürür."""
+    return _adaptive_limiter
+
+
+async def _warmup_session(session: AsyncSession) -> None:
     """
-    Asenkron API istekleri için curl_cffi.requests.AsyncSession oluşturur.
+    Ana sayfaya GET yaparak Cloudflare cookie'lerini toplar.
+    Session içindeki cookie jar'a otomatik eklenir.
+    Başarısız olursa sessizce devam eder.
     """
-    runtime_config = _get_runtime_request_config()
-    profile = random.choice(IMPERSONATE_PROFILES)
-    logger.debug(f"Async session oluşturuldu, impersonate profili: {profile}")
-    return AsyncSession(
-        headers=get_request_headers(),
-        timeout=int(runtime_config["request_timeout"]),
-        impersonate=profile,
-    )
+    warmup_url = "https://www.sofascore.com/"
+    try:
+        logger.debug("Session warm-up başlatılıyor...")
+        resp = await session.get(warmup_url, timeout=15)
+        logger.debug(
+            f"Warm-up tamamlandı: status={resp.status_code}, "
+            f"cookies={len(session.cookies) if hasattr(session, 'cookies') else '?'}"
+        )
+        # Cloudflare challenge geçişi için kısa bekleme
+        await asyncio.sleep(random.uniform(0.5, 1.5))
+    except Exception as e:
+        logger.debug(f"Warm-up başarısız (devam ediliyor): {e}")
+
+
+class WarmableAsyncSession:
+    """
+    Warm-up destekli AsyncSession context manager.
+    İlk kullanımda ana sayfaya gidip Cloudflare cookie'lerini toplar.
+    """
+
+    def __init__(self) -> None:
+        runtime_config = _get_runtime_request_config()
+        profile = random.choice(IMPERSONATE_PROFILES)
+        logger.debug(f"Async session oluşturuldu, impersonate profili: {profile}")
+        self._session = AsyncSession(
+            headers=get_request_headers(),
+            timeout=int(runtime_config["request_timeout"]),
+            impersonate=profile,
+        )
+
+    async def __aenter__(self) -> AsyncSession:
+        await self._session.__aenter__()
+        await _warmup_session(self._session)
+        return self._session
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:  # type: ignore[override]
+        await self._session.__aexit__(exc_type, exc_val, exc_tb)
+
+
+def create_session_async() -> WarmableAsyncSession:
+    """
+    Asenkron API istekleri için warm-up destekli session oluşturur.
+    Kullanım: async with create_session_async() as session: ...
+    """
+    return WarmableAsyncSession()
