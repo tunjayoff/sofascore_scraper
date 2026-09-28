@@ -1139,6 +1139,38 @@ async def system_status():
     }
 
 
+@router.get("/bypass/status")
+async def bypass_status():
+    """Get Cloudflare Turnstile & BrowserBridge status."""
+    from src.challenge_solver import get_cached_token, _is_token_valid
+    token = get_cached_token()
+    return {
+        "status": "ready",
+        "has_token": bool(token),
+        "is_valid": _is_token_valid(),
+        "token_preview": f"{token[:15]}...{token[-10:]}" if token else None,
+        "mechanism": "BrowserBridge (Chrome persistent context + Turnstile auto-solve)",
+    }
+
+
+@router.post("/bypass/test")
+async def bypass_test():
+    """Test live connectivity and challenge solving through BrowserBridge."""
+    from src.challenge_solver import fetch_api_via_browser
+    data = await fetch_api_via_browser("/sport/football/events/live")
+    if data and "events" in data:
+        return {
+            "success": True,
+            "events_count": len(data.get("events", [])),
+            "message": "BrowserBridge connection verified successfully.",
+        }
+    return {
+        "success": False,
+        "message": "BrowserBridge test failed to retrieve live data.",
+    }
+
+
+
 @router.get("/dashboard")
 async def get_dashboard():
     """Dashboard overview with league cards, disk usage, and quick stats."""

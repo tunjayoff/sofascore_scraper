@@ -221,8 +221,33 @@ HTML sayfaları kök yollarla; JSON API öneki **`/api`**.
 - **Scraper**: `POST /api/fetch` (gövde: `full` | `details`, isteğe bağlı lig ve sihirbaz `selections`), iptal, durum, SSE akışı.
 - **Pano / istatistik / ayarlar**: Web panellerine JSON; ayarlar `.env` ile uyumlu.
 - **Veri**: yedek zip, kapsam seçerek temizleme, CSV export.
+- **Bypass Durumu**: `GET /api/bypass/status` ve canlı test `POST /api/bypass/test`.
 
 Sunucu çalışırken OpenAPI: `GET /docs`.
+
+## Anti-Bot Koruması ve Otonom Bypass (BrowserBridge)
+
+Sofascore API'leri Cloudflare Turnstile CAPTCHA ve Varnish TLS/JA4 parmak izi denetimi ile korunmaktadır:
+1. **Dinamik Hash:** `X-Requested-With` başlığı 30 dakikalık zaman aralıklarıyla SHA-256 hash'i olarak otomatik üretilir.
+2. **Turnstile ve JWT Token:** API'ler ilk istekte `403 {"reason": "challenge"}` döndürür.
+3. **Otonom BrowserBridge:** Sistem arka planda çalışan kalıcı bir Chrome/Playwright oturumu üzerinden Turnstile challenge'ını 1-2 saniye içinde otomatik çözer, `sofa_captcha` JWT token'ını alır ve API isteklerini tarayıcının TLS oturumu üzerinden **2-10 milisaniye** hızında şeffafça tamamlar.
+
+### Sunucu (Headless Linux) Gereksinimleri
+
+Headless bir Linux sunucuda veya Docker üzerinde çalışırken:
+```bash
+# Playwright tarayıcı kütüphanesini kurun:
+playwright install chromium
+# veya doğrudan sistem Google Chrome'unu kurun (önerilir):
+sudo apt install google-chrome-stable  # Ubuntu/Debian
+sudo pacman -S google-chrome           # Arch Linux
+```
+Sunucuda ekran kartı/masaüstü yoksa sanal ekran ile çalıştırabilirsiniz:
+```bash
+xvfb-run python main.py --headless --update-all
+```
+Masaüstü ortamında (Linux X11/Wayland, Windows, macOS) herhangi bir ek işlem gerekmez; BrowserBridge arka planda otomatik çalışır.
+
 
 ## Geliştirme
 

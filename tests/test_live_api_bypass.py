@@ -18,61 +18,32 @@ from src.utils import (
 )
 
 
+import pytest
+
+
 def test_sync_live_request():
     """Senkron istek ile Premier League sezonlarını çek."""
-    print("\n" + "=" * 60)
-    print("TEST 1: Senkron API İsteği (Premier League sezonları)")
-    print("=" * 60)
-    
     url = "/unique-tournament/17/seasons"
     data = make_api_request(url, max_retries=2, timeout=15)
-    
-    if data and "seasons" in data:
-        seasons = data["seasons"]
-        print(f"  ✅ BAŞARILI — {len(seasons)} sezon alındı")
-        for s in seasons[:3]:
-            print(f"     - {s.get('name', '?')} (ID: {s.get('id', '?')})")
-        return True
-    else:
-        print(f"  ❌ BAŞARISIZ — Yanıt: {data}")
-        return False
+    assert data is not None, "API yanıtı None olamaz"
+    assert "seasons" in data, "Yanıt içinde 'seasons' bulunmalı"
 
 
+@pytest.mark.asyncio
 async def test_async_live_request():
-    """Asenkron istek + warm-up ile LaLiga sezonlarını çek."""
-    print("\n" + "=" * 60)
-    print("TEST 2: Asenkron API İsteği + Warm-up (LaLiga sezonları)")
-    print("=" * 60)
-    
+    """Asenkron istek ile LaLiga sezonlarını çek."""
     url = "/unique-tournament/8/seasons"
     async with create_session_async() as session:
         data = await make_api_request_async(session, url, max_retries=2)
-    
-    if data and "seasons" in data:
-        seasons = data["seasons"]
-        print(f"  ✅ BAŞARILI — {len(seasons)} sezon alındı (warm-up ile)")
-        for s in seasons[:3]:
-            print(f"     - {s.get('name', '?')} (ID: {s.get('id', '?')})")
-        return True
-    else:
-        print(f"  ❌ BAŞARISIZ — Yanıt: {data}")
-        return False
+    assert data is not None, "API yanıtı None olamaz"
+    assert "seasons" in data, "Yanıt içinde 'seasons' bulunmalı"
 
 
 def test_headers_display():
-    """Üretilen header'ları göster."""
-    print("\n" + "=" * 60)
-    print("TEST 3: Header Çeşitlendirme Kontrolü")
-    print("=" * 60)
-    
-    for i in range(3):
-        headers = get_request_headers()
-        print(f"\n  Set {i+1}:")
-        for k, v in headers.items():
-            print(f"    {k}: {v}")
-    
-    print(f"\n  Aktif profiller: {IMPERSONATE_PROFILES}")
-    return True
+    """Üretilen header'ları kontrol et."""
+    headers = get_request_headers()
+    assert "X-Requested-With" in headers
+    assert len(headers["X-Requested-With"]) == 6
 
 
 def main():

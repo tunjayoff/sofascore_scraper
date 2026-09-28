@@ -223,8 +223,33 @@ All routes are prefixed with `/api` unless noted.
 - **Scraper**: `POST /api/fetch` (body: mode `full` or `details`, optional league and wizard `selections`), cancel, status, SSE stream.
 - **Dashboard / stats / settings**: JSON for the web UI; settings mirror `.env` keys.
 - **Data**: backup zip, clear scopes, CSV export.
+- **Bypass Status**: `GET /api/bypass/status` and live test `POST /api/bypass/test`.
 
 OpenAPI: `GET /docs` when the server is running.
+
+## Anti-Bot Protection & Autonomous Bypass (BrowserBridge)
+
+Sofascore API endpoints are protected by Cloudflare Turnstile CAPTCHA and Varnish TLS/JA4 fingerprinting:
+1. **Dynamic Hash:** The `X-Requested-With` header is dynamically generated as a SHA-256 hash using 30-minute timestamp intervals.
+2. **Turnstile & JWT Token:** Initial API requests trigger `403 {"reason": "challenge"}`.
+3. **Autonomous BrowserBridge:** When a challenge is received, a lightweight background Chrome/Playwright persistent session solves Turnstile automatically in 1–2 seconds, exchanges the JWT `sofa_captcha` token, and fulfills API requests directly through the authenticated TLS session at **2–10 ms** speeds.
+
+### Headless Server Setup (Linux / Docker)
+
+When running on a headless Linux server or in a container:
+```bash
+# Install Playwright browser dependencies:
+playwright install chromium
+# Or install Google Chrome package directly (recommended):
+sudo apt install google-chrome-stable  # Ubuntu/Debian
+sudo pacman -S google-chrome           # Arch Linux
+```
+On servers without a physical display, run inside a virtual display:
+```bash
+xvfb-run python main.py --headless --update-all
+```
+On standard desktop environments (Linux X11/Wayland, Windows, macOS), BrowserBridge runs automatically without extra configuration.
+
 
 ## Development
 
