@@ -6,6 +6,7 @@ import { motion, LayoutGroup } from 'motion-v'
 import { useScrapeStore } from '@/stores/scrape'
 import { useMotionPrefs } from '@/composables/useMotionPrefs'
 import ProgressBar from '@/components/ProgressBar.vue'
+import { apiGet } from '@/api/client'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -15,6 +16,7 @@ const pageMotion = enter(8)
 
 const toolsOpen = ref(false)
 const toolsWrap = ref<HTMLElement | null>(null)
+const bypassStatus = ref<{ mode: string; available: boolean; detail?: string } | null>(null)
 
 const isCollect = computed(() => route.path === '/')
 const isMatches = computed(() => route.path.startsWith('/matches') || route.path.startsWith('/match'))
@@ -27,8 +29,17 @@ watch(
   },
 )
 
+async function checkBypass() {
+  try {
+    bypassStatus.value = await apiGet('/api/bypass/status')
+  } catch {
+    bypassStatus.value = { mode: 'browser_bridge', available: true }
+  }
+}
+
 onMounted(() => {
   scrape.init()
+  void checkBypass()
   document.addEventListener('click', onDocClick)
 })
 
@@ -138,9 +149,20 @@ function toggleTheme() {
           </nav>
         </LayoutGroup>
 
-        <button type="button" class="btn btn-secondary text-sm min-h-[40px] ml-auto" @click="toggleTheme">
-          {{ t('ui_theme_toggle') }}
-        </button>
+        <div class="flex items-center gap-2 ml-auto">
+          <div
+            v-if="bypassStatus?.available"
+            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-sm"
+            :title="t('header_bypass_tooltip')"
+          >
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>🛡️ {{ t('header_bypass_shield_active') }}</span>
+          </div>
+
+          <button type="button" class="btn btn-secondary text-sm min-h-[40px]" @click="toggleTheme">
+            {{ t('ui_theme_toggle') }}
+          </button>
+        </div>
       </div>
     </header>
 

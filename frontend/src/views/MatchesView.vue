@@ -141,10 +141,20 @@ watch([selectedLeague, selectedSeason, dateFilter, pageSize, currentPage], async
     </div>
   </div>
 
-  <div v-if="loading" class="text-center py-12 text-[var(--muted)] mono">…</div>
-  <div v-else-if="!matches.length" class="panel p-10 text-center space-y-4">
-    <p class="text-[var(--muted)]">{{ t('matches_empty_hint') }}</p>
-    <RouterLink to="/" class="btn btn-primary inline-flex">{{ t('matches_empty_cta') }}</RouterLink>
+  <div v-if="loading" class="text-center py-16 text-[var(--muted)] mono">
+    <div class="inline-block animate-spin mr-2">⏳</div>
+    <span>{{ t('home_loading_seasons') }}</span>
+  </div>
+  <div v-else-if="!matches.length" class="panel p-12 text-center max-w-lg mx-auto space-y-4 shadow-sm border border-[var(--border)]">
+    <div class="text-4xl mb-2">⚽</div>
+    <h3 class="text-lg font-bold">{{ t('matches_empty_title') }}</h3>
+    <p class="text-sm text-[var(--muted)] leading-relaxed">{{ t('matches_empty_desc') }}</p>
+    <div class="pt-2">
+      <RouterLink :to="selectedLeague !== 'all' ? `/?download=${selectedLeague}` : '/'" class="btn btn-primary inline-flex gap-2 items-center">
+        <span>⚡</span>
+        <span>{{ t('matches_empty_btn') }}</span>
+      </RouterLink>
+    </div>
   </div>
   <div v-else class="panel overflow-hidden">
     <div class="hidden sm:grid grid-cols-[7.5rem_1fr_auto_1fr] gap-3 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--muted)] border-b border-[var(--border)]">

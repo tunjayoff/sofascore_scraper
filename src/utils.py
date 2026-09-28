@@ -233,6 +233,9 @@ def make_api_request(
                         from src.challenge_solver import fetch_api_via_browser_sync
                         browser_data = fetch_api_via_browser_sync(url)
                         if browser_data is not None:
+                            if isinstance(browser_data, dict) and browser_data.get("__404__"):
+                                logger.debug(f"Kaynak bulunamadı (404): {url}")
+                                return None
                             logger.info("Veri BrowserBridge üzerinden başarıyla alındı!")
                             _adaptive_limiter.success()
                             return cast(JsonResponse, browser_data)
@@ -346,9 +349,14 @@ async def make_api_request_async(
                         from src.challenge_solver import fetch_api_via_browser
                         browser_data = await fetch_api_via_browser(url)
                         if browser_data is not None:
+                            if isinstance(browser_data, dict) and browser_data.get("__404__"):
+                                logger.debug(f"Kaynak bulunamadı (404): {url}")
+                                raise ResourceNotFoundError(f"Kaynak bulunamadı: {url}")
                             logger.info("Veri BrowserBridge üzerinden başarıyla alındı!")
                             _adaptive_limiter.success()
                             return cast(JsonResponse, browser_data)
+                    except ResourceNotFoundError:
+                        raise
                     except Exception as te:
                         logger.debug(f"BrowserBridge hatası: {te}")
 

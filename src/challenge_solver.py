@@ -272,6 +272,10 @@ class BrowserBridge:
         if res.get("ok"):
             return res.get("data")
 
+        if res.get("status") == 404:
+            logger.debug(f"Kaynak bulunamadı (404): {url}")
+            return {"__404__": True}
+
         logger.warning(f"Tarayıcı fetch başarısız (status {res.get('status')}): {res.get('text', '')[:100]}")
         return None
 
