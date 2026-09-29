@@ -1,0 +1,385 @@
+{
+  "case_id": "B1_future_7d",
+  "event_id": 16611486,
+  "fetched_at_utc": "2026-09-29T15:54:53+00:00",
+  "source_endpoint": "/api/v1/event/16611486",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"e173c73d7e\"",
+    "date": "Tue, 29 Sep 2026 15:54:53 GMT"
+  },
+  "note": "Gelecek maç (7+ gün sonra); index source scan:2026-10-06",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "Champions League, Group A",
+      "slug": "champions-league-group-a",
+      "category": {
+        "name": "International",
+        "slug": "international",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 11,
+        "country": {},
+        "id": 103,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دولي",
+            "hi": "अंतर्राष्ट्रीय",
+            "bn": "আন্তর্জাতিক",
+            "ru": "Международные"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Champions League",
+        "slug": "champions-league",
+        "primaryColorHex": "#002b53",
+        "secondaryColorHex": "#00b4af",
+        "category": {
+          "name": "International",
+          "slug": "international",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 11,
+          "country": {},
+          "id": 103,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دولي",
+              "hi": "अंतर्राष्ट्रीय",
+              "bn": "আন্তর্জাতিক",
+              "ru": "Международные"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 4372,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 9357,
+        "hasEventPlayerStatistics": false,
+        "hasBoxScore": true,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دوري أبطال أوروبا",
+            "bn": "চ্যাম্পিয়ন্স লীগ",
+            "hi": "चैंपियंस लीग",
+            "ru": "Лига чемпионов"
+          },
+          "shortNameTranslation": {}
+        },
+        "hasRating": true,
+        "hasLiveRating": true
+      },
+      "priority": 129,
+      "isGroup": true,
+      "groupName": "Group A",
+      "competitionType": 1,
+      "isLive": false,
+      "id": 56285,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "دوري أبطال أوروبا، المجموعة A",
+          "bn": "চ্যাম্পিয়ন্স লীগ, গ্রুপ এ",
+          "hi": "चैंपियंस लीग, ग्रुप ए",
+          "ru": "Лига чемпионов, Группа A"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Champions League 26/27",
+      "year": "26/27",
+      "editor": false,
+      "id": 98086
+    },
+    "roundInfo": {
+      "round": 1
+    },
+    "customId": "ircsTRUd",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "venue": {
+      "city": {
+        "name": "Vilnius",
+        "country": {
+          "alpha2": "LT",
+          "alpha3": "LTU",
+          "name": "Lithuania",
+          "slug": "lithuania"
+        },
+        "id": 18026
+      },
+      "hidden": true,
+      "slug": "twinsbet-arena",
+      "name": "Twinsbet Arena",
+      "capacity": 10000,
+      "country": {
+        "alpha2": "LT",
+        "alpha3": "LTU",
+        "name": "Lithuania",
+        "slug": "lithuania"
+      },
+      "id": 7098,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "توينسبت أرينا",
+          "hi": "ट्विंसबेट एरिना",
+          "bn": "টুইনসবেট এরিনা",
+          "ru": "Арена Twinsbet"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Twinsbet Arena",
+        "capacity": 10000
+      }
+    },
+    "homeTeam": {
+      "name": "Rytas Vilnius",
+      "slug": "vilniaus-rytas",
+      "shortName": "Rytas",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 4551,
+      "manager": {
+        "name": "Giedrius Zibenas",
+        "slug": "zibenas-giedrius",
+        "shortName": "G. Zibenas",
+        "country": {
+          "alpha2": "LT",
+          "alpha3": "LTU",
+          "name": "Lithuania",
+          "slug": "lithuania"
+        },
+        "id": 814420,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "زيبيناس، جيدريوس",
+            "ru": "Зибенас, Гедрюс"
+          },
+          "shortNameTranslation": {
+            "ar": "ج. زيبيناس",
+            "ru": "Г. Зибенас"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Vilnius",
+          "country": {
+            "alpha2": "LT",
+            "alpha3": "LTU",
+            "name": "Lithuania",
+            "slug": "lithuania"
+          },
+          "id": 18026
+        },
+        "hidden": true,
+        "slug": "twinsbet-arena",
+        "name": "Twinsbet Arena",
+        "capacity": 10000,
+        "country": {
+          "alpha2": "LT",
+          "alpha3": "LTU",
+          "name": "Lithuania",
+          "slug": "lithuania"
+        },
+        "id": 7098,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "توينسبت أرينا",
+            "hi": "ट्विंसबेट एरिना",
+            "bn": "টুইনসবেট এরিনা",
+            "ru": "Арена Twinsbet"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Twinsbet Arena",
+          "capacity": 10000
+        }
+      },
+      "nameCode": "RYV",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "LT",
+        "alpha3": "LTU",
+        "name": "Lithuania",
+        "slug": "lithuania"
+      },
+      "id": 5858,
+      "fullName": "Rytas Vilnius",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#000000",
+        "secondary": "#ed1c24",
+        "text": "#ed1c24"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "فيلنيوس ريتاس",
+          "ru": "Летувос Ритас"
+        },
+        "shortNameTranslation": {
+          "ar": "ريتاس",
+          "bn": "রিটাস",
+          "hi": "राइटस"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "BC Sabah",
+      "slug": "sabah-bc",
+      "shortName": "Sabah",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 656,
+      "manager": {
+        "name": "Rimas Kurtinaitis",
+        "slug": "rimas-kurtinaitis",
+        "shortName": "R. Kurtinaitis",
+        "country": {
+          "alpha2": "LT",
+          "alpha3": "LTU",
+          "name": "Lithuania",
+          "slug": "lithuania"
+        },
+        "id": 795395,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ريماس كورتينيتيس",
+            "bn": "রিমাস কুর্তিনাইটিস",
+            "hi": "रिमास कुर्टिनैटिस",
+            "ru": "Римас Куртинайтис"
+          },
+          "shortNameTranslation": {
+            "ar": "ر. كورتينيتيس",
+            "hi": "आर. कर्तिनैटिस",
+            "bn": "আর. কুর্তিনাইটিস",
+            "ru": "Р. Куртинайтис"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Baku",
+          "country": {
+            "alpha2": "AZ",
+            "alpha3": "AZE",
+            "name": "Azerbaijan",
+            "slug": "azerbaijan"
+          },
+          "id": 17970
+        },
+        "hidden": true,
+        "slug": "sarhadchi-sport-olympic-center",
+        "name": "Sarhadchi Sport Olympic Center",
+        "country": {
+          "alpha2": "AZ",
+          "alpha3": "AZE",
+          "name": "Azerbaijan",
+          "slug": "azerbaijan"
+        },
+        "id": 10334,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "مركز سارهاتشي الأولمبي الرياضي",
+            "hi": "सरहदची स्पोर्ट ओलंपिक सेंटर",
+            "bn": "সরদচি স্পোর্টস অলিম্পিক সেন্টার",
+            "ru": "Спортивный комплекс Sarhadchi"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Sarhadchi Sport Olympic Center"
+        }
+      },
+      "nameCode": "SAB",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "AZ",
+        "alpha3": "AZE",
+        "name": "Azerbaijan",
+        "slug": "azerbaijan"
+      },
+      "id": 487143,
+      "fullName": "BC Sabah",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "صباح بي سي",
+          "ru": "БК Сабах"
+        },
+        "shortNameTranslation": {
+          "ar": "صباح",
+          "ru": "Сабах"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16611486,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "bc-sabah-rytas-vilnius",
+    "startTimestamp": 1791304200,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "seasonStatisticsType": "overall",
+    "showTotoPromo": true,
+    "isEditor": false
+  },
+  "error": null
+}

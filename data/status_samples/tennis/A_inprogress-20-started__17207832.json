@@ -1,0 +1,332 @@
+{
+  "case_id": "A_inprogress-20-started",
+  "event_id": 17207832,
+  "fetched_at_utc": "2026-09-29T15:51:42+00:00",
+  "source_endpoint": "/api/v1/event/17207832",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"8bc520280c\"",
+    "date": "Tue, 29 Sep 2026 15:51:42 GMT"
+  },
+  "note": "live snapshot 2026-09-29T15:51:18+00:00",
+  "event": {
+    "tournament": {
+      "name": "ITF M25 Zaragoza Men",
+      "slug": "itf-m25-zaragoza-men",
+      "category": {
+        "name": "ITF Men",
+        "slug": "itf-men",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 4,
+        "country": {},
+        "id": 785,
+        "flag": "itf-men",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "اتحاد التنس الدولي للرجال",
+            "ru": "Мужской мировой теннисный тур ITF"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "ITF M25 Zaragoza Men",
+        "slug": "itf-m25-zaragoza-men",
+        "category": {
+          "name": "ITF Men",
+          "slug": "itf-men",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 4,
+          "country": {},
+          "id": 785,
+          "flag": "itf-men",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "اتحاد التنس الدولي للرجال",
+              "ru": "Мужской мировой теннисный тур ITF"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 9,
+        "groundType": "Clay",
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 29816,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ITF M25 سرقسطة رجال",
+            "ru": "ITF M25 Сарагоса среди мужчин"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "competitionType": 2,
+      "id": 164896,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ITF M25 سرقسطة للرجال",
+          "ru": "ITF M25 Сарагоса среди мужчин"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "2026",
+      "year": "2026",
+      "editor": false,
+      "id": 104357
+    },
+    "roundInfo": {
+      "round": 6,
+      "name": "Round of 32",
+      "slug": "round-of-32",
+      "cupRoundType": 16
+    },
+    "customId": "pFFsqlqc",
+    "status": {
+      "code": 20,
+      "description": "Started",
+      "type": "inprogress"
+    },
+    "homeTeam": {
+      "name": "Ivan Gakhov",
+      "slug": "gakhov-ivan",
+      "shortName": "I. Gakhov",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 1324,
+      "playerTeamInfo": {
+        "height": 1.91,
+        "weight": 83,
+        "plays": "left-handed",
+        "prizeCurrent": 14932,
+        "prizeTotal": 468781,
+        "birthCity": {
+          "name": "Moscow",
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 19072
+        },
+        "residenceCity": {
+          "name": "Barcelona",
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 18512
+        },
+        "id": 577,
+        "birthplace": "Moscow, Russia",
+        "birthDateTimestamp": 847065600,
+        "underage": false,
+        "residence": "Barcelona, Spain",
+        "prizeCurrentRaw": {
+          "value": 14932,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 468781,
+          "currency": "EUR"
+        },
+        "currentRanking": 445
+      },
+      "nameCode": "GAK",
+      "ranking": 445,
+      "disabled": false,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "RU",
+        "alpha3": "RUS",
+        "name": "Russia",
+        "slug": "russia"
+      },
+      "id": 76515,
+      "fullName": "Ivan Gakhov",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "إيفان غاخوف",
+          "ru": "Гахов, Иван"
+        },
+        "shortNameTranslation": {
+          "ar": "إ. غاخوف",
+          "bn": "আই. গাখভ",
+          "hi": "आई. गखोव"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Nicolas Ifi",
+      "slug": "ifi-nicolas",
+      "shortName": "N. Ifi",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 196,
+      "playerTeamInfo": {
+        "height": 1.93,
+        "weight": 87,
+        "plays": "right-handed",
+        "prizeCurrent": 2476,
+        "prizeTotal": 18127,
+        "birthCity": {
+          "name": "Uccle",
+          "country": {
+            "alpha2": "BE",
+            "alpha3": "BEL",
+            "name": "Belgium",
+            "slug": "belgium"
+          },
+          "id": 34587
+        },
+        "id": 14634,
+        "birthplace": "Uccle, Belgium",
+        "birthDateTimestamp": 898300800,
+        "underage": false,
+        "prizeCurrentRaw": {
+          "value": 2476,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 18127,
+          "currency": "EUR"
+        },
+        "currentRanking": 1077
+      },
+      "nameCode": "IFI",
+      "ranking": 1077,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "BE",
+        "alpha3": "BEL",
+        "name": "Belgium",
+        "slug": "belgium"
+      },
+      "id": 290566,
+      "fullName": "Nicolas Ifi",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "نيكولا إيفي",
+          "ru": "Николас Ифи"
+        },
+        "shortNameTranslation": {
+          "ar": "ن. إيفي",
+          "ru": "Н. Ифи"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 0
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 0
+    },
+    "time": {},
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type",
+        "homeScore.current",
+        "homeScore.display",
+        "homeScore.period1",
+        "awayScore.current",
+        "awayScore.display",
+        "awayScore.period1"
+      ],
+      "changeTimestamp": 1790696953
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17207832,
+    "defaultPeriodCount": 3,
+    "slug": "nicolas-ifi-ivan-gakhov",
+    "startTimestamp": 1790694000,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "finalResultOnly": false,
+    "hasBet365LiveStream": true,
+    "bet365ExcludedCountryCodes": [
+      "CZ",
+      "SK",
+      "IR",
+      "GR",
+      "RU",
+      "CH",
+      "CA"
+    ],
+    "feedLocked": false,
+    "groundType": "Clay",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "singles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "lower"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

@@ -1,0 +1,263 @@
+{
+  "case_id": "B1_future_7d",
+  "event_id": 13500881,
+  "fetched_at_utc": "2026-09-29T15:53:02+00:00",
+  "source_endpoint": "/api/v1/event/13500881",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"e841f9b16a\"",
+    "date": "Tue, 29 Sep 2026 15:53:01 GMT"
+  },
+  "note": "Gelecek maç (7+ gün sonra); index source scan:2026-10-06",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "U21 EURO, Qualification, Group A",
+      "slug": "u21-euro-qualification-group-1",
+      "category": {
+        "name": "Europe",
+        "slug": "europe",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 19,
+        "country": {},
+        "id": 1465,
+        "flag": "europe",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أوروبا",
+            "hi": "यूरोप",
+            "bn": "ইউরোপ",
+            "ru": "Европа"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "U21 Euro Qualification",
+        "slug": "u21-euro-qualification",
+        "primaryColorHex": "#4593ba",
+        "secondaryColorHex": "#117493",
+        "category": {
+          "name": "Europe",
+          "slug": "europe",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 19,
+          "country": {},
+          "id": 1465,
+          "flag": "europe",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أوروبا",
+              "hi": "यूरोप",
+              "bn": "ইউরোপ",
+              "ru": "Европа"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 9182,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "showBanner": true,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 26,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "تصفيات أمم أوروبا تحت 21 سنة",
+            "bn": "আন্ডার21 ইউরো কোয়ালিফিকেশন",
+            "hi": "U21 यूरो क्वालीफिकेशन",
+            "ru": "Квалификация до 21 года ЕВРО"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": true,
+      "groupName": "Group A",
+      "competitionType": 1,
+      "id": 146434,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "تصفيات يورو تحت 21 سنة، المجموعة 1",
+          "bn": "আন্ডার21 ইউরো, কোয়ালিফিকেশন, গ্রুপ 1",
+          "hi": "U21 यूरो, क्वालिफिकेशन, ग्रुप 1",
+          "ru": "Лига U21 ЕВРО, Квалификация, Группа A"
+        },
+        "shortNameTranslation": {}
+      },
+      "qualificationOrPreliminary": true
+    },
+    "season": {
+      "name": "U21 UEFA European Championship, Qualification 2025",
+      "year": "25/26",
+      "editor": false,
+      "seasonCoverageInfo": {
+        "editorCoverageLevel": 5
+      },
+      "id": 72382
+    },
+    "roundInfo": {
+      "round": 13
+    },
+    "customId": "wvcsawc",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "homeTeam": {
+      "name": "Cyprus U21",
+      "slug": "cyprus-u21",
+      "shortName": "Cyprus U21",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 1877,
+      "manager": {
+        "name": "Marios Nikolaou",
+        "slug": "marios-nikolaou",
+        "shortName": "M. Nikolaou",
+        "country": {
+          "alpha2": "CY",
+          "alpha3": "CYP",
+          "name": "Cyprus",
+          "slug": "cyprus"
+        },
+        "id": 797144,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ماريوس نيكولاو",
+            "ru": "Мариос Николау"
+          },
+          "shortNameTranslation": {
+            "ar": "م. نيكولاو",
+            "ru": "М. Николау"
+          }
+        }
+      },
+      "nameCode": "CYP",
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "CY",
+        "alpha3": "CYP",
+        "name": "Cyprus",
+        "slug": "cyprus"
+      },
+      "id": 6021,
+      "fullName": "Cyprus U21",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#285c9f",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "قبرص تحت 21",
+          "hi": "साईप्रस U21",
+          "ru": "Кипр U21"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "San Marino U21",
+      "slug": "san-marino-u21",
+      "shortName": "San Marino U21",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 1746,
+      "manager": {
+        "name": "Matteo Cecchetti",
+        "slug": "matteo-cecchetti",
+        "shortName": "M. Cecchetti",
+        "country": {
+          "alpha2": "SM",
+          "alpha3": "SMR",
+          "name": "San Marino",
+          "slug": "san-marino"
+        },
+        "id": 790286,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ماتيو تشيكيتي",
+            "ru": "Маттео Чеккети"
+          },
+          "shortNameTranslation": {
+            "ar": "م. تشيكيتي",
+            "ru": "М. Чеккети"
+          }
+        }
+      },
+      "nameCode": "SMR",
+      "class": 1,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "SM",
+        "alpha3": "SMR",
+        "name": "San Marino",
+        "slug": "san-marino"
+      },
+      "id": 6050,
+      "fullName": "San Marino U21",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#0083c5",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "سان مارينو تحت 21",
+          "hi": "सँ मारिनो U21",
+          "ru": "Сан-Марино U21"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "detailId": 4,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 13500881,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "slug": "san-marino-u21-cyprus-u21",
+    "startTimestamp": 1791306000,
+    "finalResultOnly": false,
+    "feedLocked": true,
+    "showTotoPromo": true,
+    "isEditor": false
+  },
+  "error": null
+}

@@ -1,0 +1,39 @@
+{
+  "case_id": "A_inprogress-6-1st-half",
+  "event_id": 17018554,
+  "fetched_at_utc": "2026-09-29T13:43:58+00:00",
+  "source_file": "data/status_samples/football/A_inprogress-6-1st-half__17018554.json",
+  "status": {
+    "code": 6,
+    "description": "1st half",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "normaltime": 0
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "normaltime": 0
+  },
+  "startTimestamp": 1790686800,
+  "time": {
+    "currentPeriodStartTimestamp": 1790686877,
+    "initial": 0,
+    "max": 2700,
+    "extra": 540
+  },
+  "changes": {
+    "changes": [
+      "homeScore.period1",
+      "homeScore.normaltime",
+      "awayScore.period1",
+      "awayScore.normaltime"
+    ],
+    "changeTimestamp": 1790686995
+  }
+}

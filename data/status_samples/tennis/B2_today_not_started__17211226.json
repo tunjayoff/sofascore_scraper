@@ -1,0 +1,327 @@
+{
+  "case_id": "B2_today_not_started",
+  "event_id": 17211226,
+  "fetched_at_utc": "2026-09-29T15:56:42+00:00",
+  "source_endpoint": "/api/v1/event/17211226",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"176fcd64ff\"",
+    "date": "Tue, 29 Sep 2026 15:56:42 GMT"
+  },
+  "note": "Bugün, henüz başlamamış; index source scan:2026-09-30",
+  "event": {
+    "homeTeamSeed": "Q",
+    "tournament": {
+      "name": "Curitiba, Brazil",
+      "slug": "curitiba-brazil",
+      "category": {
+        "name": "Challenger",
+        "slug": "challenger",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 6,
+        "country": {},
+        "id": 72,
+        "flag": "challenger",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "চ্যালেঞ্জার",
+            "ar": "تحدي (تنس)",
+            "hi": "डेनमार्क",
+            "ru": "Challenger"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Curitiba, Brazil",
+        "slug": "curitiba-brazil",
+        "category": {
+          "name": "Challenger",
+          "slug": "challenger",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 6,
+          "country": {},
+          "id": 72,
+          "flag": "challenger",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "চ্যালেঞ্জার",
+              "ar": "تحدي (تنس)",
+              "hi": "डेनमार्क",
+              "ru": "Challenger"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 206,
+        "groundType": "Red clay",
+        "tennisPoints": 75,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 9366,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كوريتيبا، البرازيل",
+            "ru": "Куритиба, Бразилия"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "id": 201510,
+      "endTimestamp": 1791072000,
+      "startTimestamp": 1790553600
+    },
+    "season": {
+      "name": "ATP Challenger Curitiba, Brazil Men Singles 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 96692
+    },
+    "roundInfo": {
+      "round": 6,
+      "name": "Round of 32",
+      "slug": "round-of-32",
+      "cupRoundType": 16
+    },
+    "customId": "WGncserde",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "venue": {
+      "city": {
+        "name": "Curitiba",
+        "country": {
+          "alpha2": "BR",
+          "alpha3": "BRA",
+          "name": "Brazil",
+          "slug": "brazil"
+        },
+        "id": 19541
+      },
+      "hidden": true,
+      "slug": "quadra-1",
+      "name": "Quadra 1",
+      "country": {
+        "alpha2": "BR",
+        "alpha3": "BRA",
+        "name": "Brazil",
+        "slug": "brazil"
+      },
+      "id": 24737,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ملعب كوادرا 1",
+          "hi": "क्वाड्रा 1",
+          "bn": "কুয়াড্রা 1"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Quadra 1"
+      }
+    },
+    "homeTeam": {
+      "name": "Victor Hugo Remondy Pagotto",
+      "slug": "remondy-pagotto-victor-hugo",
+      "shortName": "V. Remondy Pagotto",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 301,
+      "playerTeamInfo": {
+        "height": 1.88,
+        "weight": 80,
+        "plays": "right-handed",
+        "prizeCurrent": 3159,
+        "prizeTotal": 15692,
+        "birthCity": {
+          "name": "Sao Jose do Rio Preto",
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 21122
+        },
+        "id": 27087,
+        "birthplace": "Sao Jose do Rio Preto, Brazil",
+        "birthDateTimestamp": 1118361600,
+        "underage": false,
+        "prizeCurrentRaw": {
+          "value": 3159,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 15692,
+          "currency": "EUR"
+        },
+        "currentRanking": 851
+      },
+      "nameCode": "REM",
+      "ranking": 851,
+      "disabled": false,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "BR",
+        "alpha3": "BRA",
+        "name": "Brazil",
+        "slug": "brazil"
+      },
+      "id": 508354,
+      "fullName": "Victor Hugo Remondy Pagotto",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "فيكتور هوغو ريموندي باغوتو",
+          "ru": "Виктор Уго Ремонди Паготто"
+        },
+        "shortNameTranslation": {
+          "ar": "ف. باغوتو",
+          "ru": "В. Паготто"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Pedro Boscardin Dias",
+      "slug": "boscardin-dias-pedro",
+      "shortName": "P. Boscardin Dias",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 1760,
+      "playerTeamInfo": {
+        "height": 1.8,
+        "weight": 75,
+        "plays": "right-handed",
+        "prizeCurrent": 99120,
+        "prizeTotal": 243325,
+        "birthCity": {
+          "name": "Joinville",
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 18973
+        },
+        "id": 4973,
+        "birthplace": "Joinville, Brazil",
+        "birthDateTimestamp": 1043712000,
+        "underage": false,
+        "prizeCurrentRaw": {
+          "value": 99120,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 243325,
+          "currency": "EUR"
+        },
+        "currentRanking": 262
+      },
+      "nameCode": "BOS",
+      "ranking": 284,
+      "disabled": false,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "BR",
+        "alpha3": "BRA",
+        "name": "Brazil",
+        "slug": "brazil"
+      },
+      "id": 284096,
+      "fullName": "Pedro Boscardin Dias",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "بيدرو بوسكاردين دياز",
+          "ru": "Педро Боскардин Диас"
+        },
+        "shortNameTranslation": {
+          "ar": "ب. دياز",
+          "ru": "П. Диас"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17211226,
+    "defaultPeriodCount": 3,
+    "slug": "victor-hugo-remondy-pagotto-pedro-boscardin-dias",
+    "startTimestamp": 1790697600,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "groundType": "Red clay",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "singles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "lower"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

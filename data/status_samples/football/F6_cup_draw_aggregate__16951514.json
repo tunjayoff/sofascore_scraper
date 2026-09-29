@@ -1,0 +1,390 @@
+{
+  "case_id": "F6_cup_draw_aggregate",
+  "event_id": 16951514,
+  "fetched_at_utc": "2026-09-29T15:53:37+00:00",
+  "source_endpoint": "/api/v1/event/16951514",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"23c6328b1d\"",
+    "date": "Tue, 29 Sep 2026 15:53:37 GMT"
+  },
+  "note": "Kupa: 90 dk berabere, toplamla bitmiş; index source scan:2026-09-16",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "CONCACAF Central American Cup, Knockout Stage",
+      "slug": "concacaf-central-american-cup-knockout-stage",
+      "category": {
+        "name": "North & Central America",
+        "slug": "north-central-america",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 15,
+        "country": {},
+        "id": 1469,
+        "flag": "north-and-central-america",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أمريكا الشمالية والوسطى",
+            "ru": "Северная и Центральная Америка"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "CONCACAF Central American Cup",
+        "slug": "concacaf-central-american-cup",
+        "category": {
+          "name": "North & Central America",
+          "slug": "north-central-america",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 15,
+          "country": {},
+          "id": 1469,
+          "flag": "north-and-central-america",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أمريكا الشمالية والوسطى",
+              "ru": "Северная и Центральная Америка"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 6316,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 20695,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كأس أمريكا الوسطى كونكاكاف",
+            "bn": "কনকাকাফ সেন্ট্রাল আমেরিকান কাপ",
+            "hi": "कोनकाकैफ़ सेंट्रल अमेरिकन कप",
+            "es": "Copa Centroamericana",
+            "es-la": "Copa Centroamericana",
+            "ru": "Кубок Центральной Америки КОНКАКАФ"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "isLive": false,
+      "id": 120556,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "كأس أمريكا الوسطى - الكونكاكاف، دور الـنهائي",
+          "bn": "কনকাকাফ সেন্ট্রাল আমেরিকান কাপ, নকআউট স্টেজ",
+          "hi": "कॉनकैकाफ़ सेंट्रल अमेरिकन कप, नॉकआउट स्टेज",
+          "es": "Copa Centroamericana, Fase eliminatoria",
+          "es-la": "Copa Centroamericana, Fase eliminatoria",
+          "ru": "Кубок Центральной Америки CONCACAF, Стадия плей-офф"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "CONCACAF Central American Cup 2026",
+      "year": "2026",
+      "editor": false,
+      "seasonCoverageInfo": {
+        "editorCoverageLevel": 3
+      },
+      "id": 95751
+    },
+    "roundInfo": {
+      "round": 27,
+      "name": "Quarterfinals",
+      "slug": "quarterfinals",
+      "cupRoundType": 4
+    },
+    "customId": "XPisIMj",
+    "status": {
+      "code": 100,
+      "description": "Ended",
+      "type": "finished"
+    },
+    "winnerCode": 3,
+    "aggregatedWinnerCode": 2,
+    "attendance": 50,
+    "homeTeam": {
+      "name": "Alianza FC",
+      "slug": "alianza-fc",
+      "shortName": "Alianza",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 9713,
+      "manager": {
+        "name": "Roberto Carlos Pompei",
+        "slug": "roberto-carlos-pompei",
+        "shortName": "R. C. Pompei",
+        "country": {
+          "alpha2": "AR",
+          "alpha3": "ARG",
+          "name": "Argentina",
+          "slug": "argentina"
+        },
+        "id": 340393,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "روبرتو كارلوس بومبي",
+            "ru": "Роберто Карлос Помпей"
+          },
+          "shortNameTranslation": {
+            "ar": "ر. ك. بومبي",
+            "ru": "Р. Помпей"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "San Salvador",
+          "country": {
+            "alpha2": "SV",
+            "alpha3": "SLV",
+            "name": "El Salvador",
+            "slug": "el-salvador"
+          },
+          "id": 22302
+        },
+        "venueCoordinates": {
+          "latitude": 13.681123,
+          "longitude": -89.222331
+        },
+        "hidden": true,
+        "slug": "estadio-cuscatlan",
+        "name": "Estadio Cuscatlan",
+        "capacity": 45000,
+        "country": {
+          "alpha2": "SV",
+          "alpha3": "SLV",
+          "name": "El Salvador",
+          "slug": "el-salvador"
+        },
+        "id": 8263,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب كوسكاتلان",
+            "hi": "एस्टेडियो कुस्काटलान",
+            "bn": "এস্তাদিও কাসকাটলান",
+            "ru": "Стадион Cuscatlan"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Estadio Cuscatlan",
+          "capacity": 45000
+        }
+      },
+      "nameCode": "ALI",
+      "class": 1,
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "SV",
+        "alpha3": "SLV",
+        "name": "El Salvador",
+        "slug": "el-salvador"
+      },
+      "id": 24383,
+      "fullName": "Alianza FC",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffffff",
+        "secondary": "#f22a33",
+        "text": "#f22a33"
+      },
+      "foundationDateTimestamp": -354153600,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "أليانزا إف سي",
+          "ru": "ФК Альянса"
+        },
+        "shortNameTranslation": {
+          "ar": "أليانزا",
+          "ru": "Альянса"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "FC Motagua",
+      "slug": "fc-motagua",
+      "shortName": "Motagua",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 12905,
+      "manager": {
+        "name": "Javier López López",
+        "slug": "javier-lopez-lopez",
+        "shortName": "J. L. López",
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 808666,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "خافيير لوبيز لوبيز",
+            "ru": "Хавьер Лопес Лопес"
+          },
+          "shortNameTranslation": {
+            "ar": "ج. ل. ل. لوبيز",
+            "ru": "Х. Лопес"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Tegucigalpa",
+          "country": {
+            "alpha2": "HN",
+            "alpha3": "HND",
+            "name": "Honduras",
+            "slug": "honduras"
+          },
+          "id": 25402
+        },
+        "venueCoordinates": {
+          "latitude": 14.0818,
+          "longitude": -87.20681
+        },
+        "hidden": true,
+        "slug": "estadio-nacional-chelato-ucl-s",
+        "name": "Estadio Nacional Chelato Uclés",
+        "capacity": 35000,
+        "country": {
+          "alpha2": "HN",
+          "alpha3": "HND",
+          "name": "Honduras",
+          "slug": "honduras"
+        },
+        "id": 1169,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب ناسيونال شيلاتو أوكليز",
+            "hi": "एस्टेडियो नैशनल चेलाटो यूक्लेस",
+            "bn": "এস্তাদিও ন্যাসিওনাল চেলাতো ইউক্লেস",
+            "ru": "Стадион Estadio Nacional Chelato Uclés"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Estadio Nacional Chelato Uclés",
+          "capacity": 35000
+        }
+      },
+      "nameCode": "MOT",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "HN",
+        "alpha3": "HND",
+        "name": "Honduras",
+        "slug": "honduras"
+      },
+      "id": 22047,
+      "fullName": "FC Motagua",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#330066",
+        "secondary": "#330066",
+        "text": "#330066"
+      },
+      "foundationDateTimestamp": -1304640000,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "إف سي موتاوا",
+          "ru": "Мотагуа"
+        },
+        "shortNameTranslation": {
+          "ar": "موتاوا"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 0,
+      "period2": 0,
+      "normaltime": 0,
+      "aggregated": 0
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 0,
+      "period2": 0,
+      "normaltime": 0,
+      "aggregated": 3
+    },
+    "time": {
+      "periodLength": 2700,
+      "overtimeLength": 900,
+      "totalPeriodCount": 2,
+      "currentPeriodStartTimestamp": 1789618632,
+      "lastPeriodEndTimestamp": 1789617726
+    },
+    "changes": {
+      "changes": [
+        "providerLock.status",
+        "providerLock.statusSource"
+      ],
+      "changeTimestamp": 1789621625
+    },
+    "hasGlobalHighlights": true,
+    "hasXg": true,
+    "hasEventPlayerStatistics": true,
+    "hasEventPlayerHeatMap": true,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16951514,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "slug": "alianza-fc-fc-motagua",
+    "currentPeriodStartTimestamp": 1789618632,
+    "previousLegEventId": 16951503,
+    "startTimestamp": 1789614900,
+    "finalResultOnly": false,
+    "feedLocked": true,
+    "cupMatchesInRound": 2,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

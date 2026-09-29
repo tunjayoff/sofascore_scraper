@@ -1,0 +1,46 @@
+{
+  "case_id": "K3_two_halves",
+  "event_id": 16694075,
+  "fetched_at_utc": "2026-09-29T15:55:31+00:00",
+  "source_file": "data/status_samples/basketball/K3_two_halves__16694075.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 81,
+    "display": 81,
+    "period2": 38,
+    "period4": 43,
+    "normaltime": 81
+  },
+  "awayScore": {
+    "current": 75,
+    "display": 75,
+    "period2": 33,
+    "period4": 42,
+    "normaltime": 75
+  },
+  "startTimestamp": 1790445600,
+  "time": {},
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type",
+      "homeScore.current",
+      "homeScore.display",
+      "homeScore.period2",
+      "homeScore.period4",
+      "homeScore.normaltime",
+      "awayScore.current",
+      "awayScore.display",
+      "awayScore.period2",
+      "awayScore.period4",
+      "awayScore.normaltime"
+    ],
+    "changeTimestamp": 1790469703
+  }
+}

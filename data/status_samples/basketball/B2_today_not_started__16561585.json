@@ -1,0 +1,413 @@
+{
+  "case_id": "B2_today_not_started",
+  "event_id": 16561585,
+  "fetched_at_utc": "2026-09-29T15:54:55+00:00",
+  "source_endpoint": "/api/v1/event/16561585",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"abc5287f19\"",
+    "date": "Tue, 29 Sep 2026 15:54:54 GMT"
+  },
+  "note": "Bugün, henüz başlamamış; index source scan:2026-09-29",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "Eurocup, Group A",
+      "slug": "eurocup-group-a",
+      "category": {
+        "name": "International",
+        "slug": "international",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 11,
+        "country": {},
+        "id": 103,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دولي",
+            "hi": "अंतर्राष्ट्रीय",
+            "bn": "আন্তর্জাতিক",
+            "ru": "Международные"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Eurocup",
+        "slug": "eurocup",
+        "primaryColorHex": "#0072cd",
+        "secondaryColorHex": "#0072cd",
+        "category": {
+          "name": "International",
+          "slug": "international",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 11,
+          "country": {},
+          "id": 103,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دولي",
+              "hi": "अंतर्राष्ट्रीय",
+              "bn": "আন্তর্জাতিক",
+              "ru": "Международные"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 6386,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 141,
+        "hasEventPlayerStatistics": false,
+        "hasBoxScore": true,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كأس أوروبا",
+            "hi": "यूरोकप",
+            "bn": "ইউরোকাপ",
+            "ru": "Еврокубок"
+          },
+          "shortNameTranslation": {}
+        },
+        "hasRating": true,
+        "hasLiveRating": true
+      },
+      "priority": 148,
+      "isGroup": true,
+      "groupName": "Group A",
+      "groupSign": "A",
+      "competitionType": 1,
+      "isLive": false,
+      "id": 2560,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "hi": "यूरोकप, ग्रुप ए",
+          "ar": "كأس أوروبا، المجموعة أ",
+          "bn": "ইউরোকাপ, গ্রুপ এ",
+          "ru": "Еврокубок, Группа A"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Eurocup 26/27",
+      "year": "26/27",
+      "editor": false,
+      "id": 98669
+    },
+    "roundInfo": {
+      "round": 1
+    },
+    "customId": "HIcsyYqc",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "venue": {
+      "city": {
+        "name": "Jerusalem",
+        "country": {
+          "alpha2": "IL",
+          "alpha3": "ISR",
+          "name": "Israel",
+          "slug": "israel"
+        },
+        "id": 19717
+      },
+      "hidden": true,
+      "slug": "pais-arena",
+      "name": "Pais Arena",
+      "capacity": 11000,
+      "country": {
+        "alpha2": "IL",
+        "alpha3": "ISR",
+        "name": "Israel",
+        "slug": "israel"
+      },
+      "id": 23957,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "أرينا بايس",
+          "hi": "पेस एरिना",
+          "bn": "পায়েস এরিনা",
+          "ru": "Арена Pais"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Pais Arena",
+        "capacity": 11000
+      }
+    },
+    "homeTeam": {
+      "name": "Hapoel Jerusalem BC",
+      "slug": "hapoel-jerusalem-bc",
+      "shortName": "Hapoel Jerusalem",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 2187,
+      "manager": {
+        "name": "Saša Obradović",
+        "slug": "sasa-obradovic",
+        "shortName": "S. Obradović",
+        "country": {
+          "alpha2": "RS",
+          "alpha3": "SRB",
+          "name": "Serbia",
+          "slug": "serbia"
+        },
+        "id": 797516,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ساشا أوبراودوفيتش",
+            "bn": "সাশা ওব্রাদোভিচ",
+            "hi": "साशा ओब्राडोविक",
+            "ru": "Саша Обрадович"
+          },
+          "shortNameTranslation": {
+            "ar": "س. أوبراودوفيتش",
+            "hi": "एस. ओब्राडोविक",
+            "bn": "এস. ওব্রাডোভিচ",
+            "ru": "С. Обрадович"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Jerusalem",
+          "country": {
+            "alpha2": "IL",
+            "alpha3": "ISR",
+            "name": "Israel",
+            "slug": "israel"
+          },
+          "id": 19717
+        },
+        "hidden": true,
+        "slug": "pais-arena",
+        "name": "Pais Arena",
+        "capacity": 11000,
+        "country": {
+          "alpha2": "IL",
+          "alpha3": "ISR",
+          "name": "Israel",
+          "slug": "israel"
+        },
+        "id": 23957,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أرينا بايس",
+            "hi": "पेस एरिना",
+            "bn": "পায়েস এরিনা",
+            "ru": "Арена Pais"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Pais Arena",
+          "capacity": 11000
+        }
+      },
+      "nameCode": "HAP",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "IL",
+        "alpha3": "ISR",
+        "name": "Israel",
+        "slug": "israel"
+      },
+      "id": 6682,
+      "fullName": "Hapoel Jerusalem BC",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#cc0000",
+        "secondary": "#000000",
+        "text": "#000000"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "هابوعيل القدس بي سي",
+          "ru": "Хапоэль Иерусалим"
+        },
+        "shortNameTranslation": {
+          "ar": "هابوعيل القدس",
+          "bn": "হ্যাপোয়েল জেরুজালেম",
+          "hi": "हापोएल येरुशलम"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Rostock Seawolves",
+      "slug": "rostock-seawolves",
+      "shortName": "Rostock Seawolves",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 1184,
+      "manager": {
+        "name": "Przemyslaw Frasunkiewicz",
+        "slug": "przemyslaw-frasunkiewicz",
+        "shortName": "P. Frasunkiewicz",
+        "country": {
+          "alpha2": "PL",
+          "alpha3": "POL",
+          "name": "Poland",
+          "slug": "poland"
+        },
+        "id": 807488,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "برزيميسلاو فاسونكيفيتش",
+            "ru": "Пшемыслав Фрасункевич"
+          },
+          "shortNameTranslation": {
+            "ar": "ب. فاسونكيفيتش",
+            "ru": "П. Фрасункевич"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Rostock",
+          "country": {
+            "alpha2": "DE",
+            "alpha3": "DEU",
+            "name": "Germany",
+            "slug": "germany"
+          },
+          "id": 19456
+        },
+        "hidden": true,
+        "slug": "stadthalle-rostock",
+        "name": "StadtHalle Rostock",
+        "capacity": 4550,
+        "country": {
+          "alpha2": "DE",
+          "alpha3": "DEU",
+          "name": "Germany",
+          "slug": "germany"
+        },
+        "id": 16843,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "قاعة مدينة روستوك",
+            "hi": "स्टैड्टहाले रोस्टॉक",
+            "bn": "স্ট্যাডহ্যাল রোস্টক",
+            "ru": "Спортивный комплекс Rostock"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "StadtHalle Rostock",
+          "capacity": 4550
+        }
+      },
+      "nameCode": "ROS",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "DE",
+        "alpha3": "DEU",
+        "name": "Germany",
+        "slug": "germany"
+      },
+      "id": 292423,
+      "fullName": "Rostock Seawolves",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#fd6400",
+        "secondary": "#001c3c",
+        "text": "#001c3c"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "روستوك سي وولفز",
+          "bn": "রিস্টক সিওল্ভস",
+          "hi": "रोस्टॉक सीवॉल्व्स",
+          "ru": "Росток Морские Волки"
+        },
+        "shortNameTranslation": {
+          "ru": "Росток Морские Волки"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16561585,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "rostock-seawolves-hapoel-jerusalem-bc",
+    "startTimestamp": 1790701200,
+    "finalResultOnly": false,
+    "hasBet365LiveStream": true,
+    "bet365ExcludedCountryCodes": [
+      "AN",
+      "CU",
+      "IR",
+      "KP",
+      "SY",
+      "VE",
+      "GR",
+      "RU",
+      "CH",
+      "CA"
+    ],
+    "feedLocked": false,
+    "seasonStatisticsType": "regularSeason",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "top-competitions",
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

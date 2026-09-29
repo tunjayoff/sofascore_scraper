@@ -1,0 +1,41 @@
+{
+  "case_id": "T9_challenger_itf",
+  "event_id": 17208186,
+  "fetched_at_utc": "2026-09-29T15:57:16+00:00",
+  "source_file": "data/status_samples/tennis/T9_challenger_itf__17208186.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 3,
+    "period2": 2,
+    "point": "0",
+    "normaltime": 0
+  },
+  "awayScore": {
+    "current": 2,
+    "display": 2,
+    "period1": 6,
+    "period2": 6,
+    "point": "0",
+    "normaltime": 2
+  },
+  "startTimestamp": 1790684100,
+  "time": {
+    "period1": 2313,
+    "period2": 2601,
+    "currentPeriodStartTimestamp": 1790687077
+  },
+  "changes": {
+    "changes": [
+      "time.currentPeriodStart",
+      "time.period2"
+    ],
+    "changeTimestamp": 1790689743
+  }
+}

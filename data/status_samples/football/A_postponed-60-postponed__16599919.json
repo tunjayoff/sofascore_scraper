@@ -1,0 +1,476 @@
+{
+  "case_id": "A_postponed-60-postponed",
+  "event_id": 16599919,
+  "fetched_at_utc": "2026-09-29T15:52:50+00:00",
+  "source_endpoint": "/api/v1/event/16599919",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"04890bf4a7\"",
+    "date": "Tue, 29 Sep 2026 15:52:49 GMT"
+  },
+  "note": "index source scan:2026-09-20",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "Primera Federacion, Group 2",
+      "slug": "primera-federacion-group-2",
+      "category": {
+        "name": "Spain",
+        "slug": "spain",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 9,
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 32,
+        "flag": "spain",
+        "alpha2": "ES",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "hi": "स्पेन",
+            "ar": "إسبانيا",
+            "bn": "স্পেন",
+            "ru": "Испания"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Primera Federación",
+        "slug": "primera-federacion",
+        "primaryColorHex": "#fe0235",
+        "secondaryColorHex": "#8c8c8c",
+        "category": {
+          "name": "Spain",
+          "slug": "spain",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 9,
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 32,
+          "flag": "spain",
+          "alpha2": "ES",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "स्पेन",
+              "ar": "إسبانيا",
+              "bn": "স্পেন",
+              "ru": "Испания"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 7485,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 17073,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "الدوري الأول الفيدرالي",
+            "bn": "প্রিমেরা ফেডারেশন",
+            "hi": "प्राइमेरा फ़ेडरेशन",
+            "ru": "Лига Примера Федерасьон"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": true,
+      "groupName": "Group 2",
+      "competitionType": 1,
+      "isLive": false,
+      "id": 94191,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "الدوري الإسباني الممتاز، المجموعة 2",
+          "bn": "প্রাইমেরা ফেদেরাসিওন, গ্রুপ 2",
+          "hi": "प्राइमेरा फेडरेशन, ग्रुप 2",
+          "ru": "Лига Primera Federacion, Группа 2"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Primera Federacion 26/27",
+      "year": "26/27",
+      "editor": false,
+      "seasonCoverageInfo": {
+        "editorCoverageLevel": 5
+      },
+      "id": 97382
+    },
+    "roundInfo": {
+      "round": 4
+    },
+    "customId": "ubcsnMj",
+    "status": {
+      "code": 60,
+      "description": "Postponed",
+      "type": "postponed"
+    },
+    "homeTeam": {
+      "name": "UE Sant Andreu",
+      "slug": "ue-sant-andreu",
+      "shortName": "Sant Andreu",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 4901,
+      "manager": {
+        "name": "Natxo Gonzalez",
+        "slug": "natxo-gonzalez",
+        "shortName": "N. Gonzalez",
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 785707,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ناتشو غونزاليس",
+            "ru": "Натхо Гонсалес"
+          },
+          "shortNameTranslation": {
+            "ar": "ن. غونزاليس",
+            "ru": "Н. Гонсалес"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Barcelona",
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 18512
+        },
+        "venueCoordinates": {
+          "latitude": 41.66667,
+          "longitude": 2
+        },
+        "hidden": true,
+        "slug": "estadio-narcis-sala",
+        "name": "Estadi Narcís Sala",
+        "capacity": 6557,
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 24168,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب ناركيس سالا",
+            "hi": "एस्टेडियो नार्सिस साला",
+            "bn": "এস্তাদিও নার্সিস সালা",
+            "ru": "Стадион Narcis Sala"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Estadi Narcís Sala",
+          "capacity": 6557
+        }
+      },
+      "nameCode": "AND",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "ES",
+        "alpha3": "ESP",
+        "name": "Spain",
+        "slug": "spain"
+      },
+      "id": 24363,
+      "fullName": "UE Sant Andreu",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#f5d300",
+        "secondary": "#de0031",
+        "text": "#de0031"
+      },
+      "foundationDateTimestamp": -1927756800,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "سان اندرو",
+          "ru": "ФК Сант Андреу"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Real Madrid Castilla U21",
+      "slug": "real-madrid-castilla",
+      "shortName": "Real Madrid Castilla U21",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 51160,
+      "manager": {
+        "name": "Julián López de Lerma",
+        "slug": "julian-lopez",
+        "shortName": "J. López",
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 812769,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "يوليان لوبيز",
+            "ru": "Хулиан Лопес де Лерма"
+          },
+          "shortNameTranslation": {
+            "ar": "ي. لوبيز",
+            "ru": "Х. Лерма"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Madrid",
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 18283
+        },
+        "venueCoordinates": {
+          "latitude": 40.476937,
+          "longitude": -3.61506
+        },
+        "hidden": true,
+        "slug": "estadio-alfredo-di-stefano",
+        "name": "Estadio Alfredo di Stefano",
+        "capacity": 9000,
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 9601,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب ألفريدو دي ستيفانو",
+            "hi": "एस्टेडियो अल्फ्रेडो डि स्टेफानो",
+            "bn": "এস্তাদিও আলফ্রেডো ডি স্টেফানো",
+            "ru": "Стадион Estadio Alfredo di Stefano"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Estadio Alfredo di Stefano",
+          "capacity": 9000
+        }
+      },
+      "nameCode": "RMA",
+      "disabled": false,
+      "national": false,
+      "parentTeam": {
+        "name": "Real Madrid",
+        "slug": "real-madrid",
+        "shortName": "Real Madrid",
+        "gender": "M",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "userCount": 8353770,
+        "manager": {
+          "name": "José Mourinho",
+          "slug": "jose-mourinho",
+          "shortName": "J. Mourinho",
+          "country": {
+            "alpha2": "PT",
+            "alpha3": "PRT",
+            "name": "Portugal",
+            "slug": "portugal"
+          },
+          "id": 53418,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "جوزيه مورينيو",
+              "ru": "Жозе Моуринью"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. مورينيو",
+              "ru": "Ж. Моуринью"
+            }
+          }
+        },
+        "venue": {
+          "city": {
+            "name": "Madrid",
+            "country": {
+              "alpha2": "ES",
+              "alpha3": "ESP",
+              "name": "Spain",
+              "slug": "spain"
+            },
+            "id": 18283
+          },
+          "venueCoordinates": {
+            "latitude": 40.453,
+            "longitude": -3.6883
+          },
+          "hidden": false,
+          "slug": "santiago-bernab-u",
+          "name": "Bernabéu",
+          "capacity": 83186,
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 754,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سانتياغو برنابيو",
+              "hi": "सैंटियागो बर्नबेउ",
+              "bn": "সান্তিয়াগো বার্নাব্যু",
+              "ru": "Стадион Бернабеу"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "Bernabéu",
+            "capacity": 83186
+          }
+        },
+        "nameCode": "RMA",
+        "class": 4,
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 2829,
+        "fullName": "Real Madrid",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#ffffff",
+          "secondary": "#004996",
+          "text": "#004996"
+        },
+        "foundationDateTimestamp": -2140387200,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ريال مدريد",
+            "bn": "রিয়াল মাদ্রিদ",
+            "hi": "रियल मैड्रिड",
+            "ru": "Реал Мадрид"
+          },
+          "shortNameTranslation": {}
+        },
+        "timeActive": []
+      },
+      "type": 0,
+      "country": {
+        "alpha2": "ES",
+        "alpha3": "ESP",
+        "name": "Spain",
+        "slug": "spain"
+      },
+      "id": 5069,
+      "fullName": "Real Madrid Castilla U21",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffffff",
+        "secondary": "#004996",
+        "text": "#004996"
+      },
+      "foundationDateTimestamp": -2140387200,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ريال مدريد كاستيا",
+          "hi": "रियल माद्रिद कास्टिला",
+          "ru": "Реал Мадрид Б"
+        },
+        "shortNameTranslation": {
+          "ar": "ريال مدريد كاستيا"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type"
+      ],
+      "changeTimestamp": 1788204125
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16599919,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "slug": "ue-sant-andreu-u19-real-madrid-castilla-u21",
+    "startTimestamp": 1789916400,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

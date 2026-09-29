@@ -1,0 +1,285 @@
+{
+  "case_id": "A_canceled-70-canceled",
+  "event_id": 17084262,
+  "fetched_at_utc": "2026-09-29T15:56:34+00:00",
+  "source_endpoint": "/api/v1/event/17084262",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"1646b54b61\"",
+    "date": "Tue, 29 Sep 2026 15:56:34 GMT"
+  },
+  "note": "index source scan:2026-09-15",
+  "event": {
+    "awayTeamSeed": "7",
+    "tournament": {
+      "name": "Sao Paulo, Brazil",
+      "slug": "sao-paulo-brazil",
+      "category": {
+        "name": "WTA",
+        "slug": "wta",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 7,
+        "country": {},
+        "id": 6,
+        "flag": "wta",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "رابطة لاعبات التنس",
+            "hi": "चैलेंजर",
+            "bn": "ডব্লিউটিএ",
+            "ru": "WTA"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "WTA Sao Paulo, Brazil Women, Singles",
+        "slug": "wta-sao-paulo-brazil-women-singles",
+        "category": {
+          "name": "WTA",
+          "slug": "wta",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 7,
+          "country": {},
+          "id": 6,
+          "flag": "wta",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "رابطة لاعبات التنس",
+              "hi": "चैलेंजर",
+              "bn": "ডব্লিউটিএ",
+              "ru": "WTA"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 603,
+        "groundType": "Hardcourt outdoor",
+        "tennisPoints": 250,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 29211,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "بطولة WTA ساو باولو، البرازيل، فردي سيدات",
+            "ru": "WTA Сан-Паулу, Бразилия среди женщин, одиночный разряд"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "id": 199531,
+      "endTimestamp": 1789862400,
+      "startTimestamp": 1789344000
+    },
+    "season": {
+      "name": "WTA Sao Paulo, Brazil Women, Singles 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 85667
+    },
+    "roundInfo": {
+      "round": 6,
+      "name": "Round of 32",
+      "slug": "round-of-32",
+      "cupRoundType": 16
+    },
+    "customId": "hjVsXbnd",
+    "status": {
+      "code": 70,
+      "description": "Canceled",
+      "type": "canceled"
+    },
+    "homeTeam": {
+      "name": "Leolia Jeanjean",
+      "slug": "jeanjean-leolia",
+      "shortName": "L. Jeanjean",
+      "gender": "F",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 2877,
+      "playerTeamInfo": {
+        "height": 1.68,
+        "plays": "right-handed",
+        "prizeCurrent": 648906,
+        "prizeTotal": 1915135,
+        "birthCity": {
+          "name": "Montpellier",
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 19219
+        },
+        "id": 4592,
+        "birthplace": "Montpellier, France",
+        "birthDateTimestamp": 808358400,
+        "underage": false,
+        "prizeCurrentRaw": {
+          "value": 648906,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 1915135,
+          "currency": "EUR"
+        },
+        "currentRanking": 104
+      },
+      "nameCode": "JEA",
+      "ranking": 109,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "FR",
+        "alpha3": "FRA",
+        "name": "France",
+        "slug": "france"
+      },
+      "id": 112957,
+      "fullName": "Leolia Jeanjean",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ليوليا جانجيان",
+          "bn": "লিওলিয়া জিনজিন",
+          "hi": "लेओलिया जीनजीन",
+          "ru": "Жанжан, Лоли"
+        },
+        "shortNameTranslation": {
+          "ar": "ل. جانجيان"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Kaitlin Quevedo",
+      "slug": "quevedo-kaitlin",
+      "shortName": "K. Quevedo",
+      "gender": "F",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 2123,
+      "playerTeamInfo": {
+        "height": 1.67,
+        "plays": "right-handed",
+        "prizeCurrent": 267275,
+        "prizeTotal": 375455,
+        "id": 5739,
+        "birthDateTimestamp": 1139788800,
+        "underage": false,
+        "prizeCurrentRaw": {
+          "value": 267275,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 375455,
+          "currency": "EUR"
+        },
+        "currentRanking": 71
+      },
+      "nameCode": "QUE",
+      "ranking": 78,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "ES",
+        "alpha3": "ESP",
+        "name": "Spain",
+        "slug": "spain"
+      },
+      "id": 407597,
+      "fullName": "Kaitlin Quevedo",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "كايتلين كويفيدو",
+          "ru": "Кейтлин Кеведо"
+        },
+        "shortNameTranslation": {
+          "ar": "ك. كويفيدو",
+          "ru": "К. Кеведо"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type"
+      ],
+      "changeTimestamp": 1789305649
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17084262,
+    "defaultPeriodCount": 3,
+    "slug": "kaitlin-quevedo-leolia-jeanjean",
+    "startTimestamp": 1789390800,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "groundType": "Hardcourt outdoor",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "singles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "p250"
+      ],
+      "gender": [
+        "F"
+      ]
+    }
+  },
+  "error": null
+}

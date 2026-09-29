@@ -1,0 +1,309 @@
+{
+  "case_id": "A_canceled-70-canceled",
+  "event_id": 17110363,
+  "fetched_at_utc": "2026-09-29T15:54:48+00:00",
+  "source_endpoint": "/api/v1/event/17110363",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"6d7f522bcd\"",
+    "date": "Tue, 29 Sep 2026 15:54:48 GMT"
+  },
+  "note": "index source scan:2026-09-16",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "Club Friendlies",
+      "slug": "club-friendlies",
+      "category": {
+        "name": "International",
+        "slug": "international",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 11,
+        "country": {},
+        "id": 103,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دولي",
+            "hi": "अंतर्राष्ट्रीय",
+            "bn": "আন্তর্জাতিক",
+            "ru": "Международные"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Club Friendly Games",
+        "slug": "club-friendly-games",
+        "primaryColorHex": "#151922",
+        "secondaryColorHex": "#ea181f",
+        "category": {
+          "name": "International",
+          "slug": "international",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 11,
+          "country": {},
+          "id": 103,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دولي",
+              "hi": "अंतर्राष्ट्रीय",
+              "bn": "আন্তর্জাতিক",
+              "ru": "Международные"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 723,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 1195,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "ক্লাব ফ্রেন্ডলি গেমস",
+            "ar": "مباريات ودية للأندية",
+            "hi": "क्लब फ्रेंडली गेम्स",
+            "ru": "Товарищеские матчи клубов"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "isLive": false,
+      "id": 4788,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "hi": "क्लब फ्रेंडलीज",
+          "ar": "مباريات ودية للأندية",
+          "bn": "ক্লাব ফ্রেন্ডলিনেস",
+          "ru": "Дружеские матчи"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Club Friendly Games 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 87164
+    },
+    "roundInfo": {
+      "round": 1
+    },
+    "customId": "PHvbsblid",
+    "status": {
+      "code": 70,
+      "description": "Canceled",
+      "type": "canceled"
+    },
+    "homeTeam": {
+      "name": "Shumen",
+      "slug": "shumen",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 219,
+      "venue": {
+        "city": {
+          "name": "Shumen",
+          "country": {
+            "alpha2": "BG",
+            "alpha3": "BGR",
+            "name": "Bulgaria",
+            "slug": "bulgaria"
+          },
+          "id": 19250
+        },
+        "hidden": true,
+        "slug": "mladost-hall",
+        "name": "Mladost Hall",
+        "country": {
+          "alpha2": "BG",
+          "alpha3": "BGR",
+          "name": "Bulgaria",
+          "slug": "bulgaria"
+        },
+        "id": 33191,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "قاعة ملادوست",
+            "hi": "म्लादोस्त हॉल",
+            "bn": "ম্লাদোস্ট হল",
+            "ru": "Mladost Hall"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Mladost Hall"
+        }
+      },
+      "nameCode": "SHU",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "BG",
+        "alpha3": "BGR",
+        "name": "Bulgaria",
+        "slug": "bulgaria"
+      },
+      "id": 395551,
+      "fullName": "Shumen",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "شومن",
+          "bn": "শুমেন",
+          "hi": "शुमेन",
+          "ru": "Шумен"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "BC Yambol",
+      "slug": "bc-yambol",
+      "shortName": "Yambol",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 83,
+      "venue": {
+        "city": {
+          "name": "Yambol",
+          "country": {
+            "alpha2": "BG",
+            "alpha3": "BGR",
+            "name": "Bulgaria",
+            "slug": "bulgaria"
+          },
+          "id": 23984
+        },
+        "hidden": true,
+        "slug": "sports-hall-diana",
+        "name": "Sports Hall Diana",
+        "capacity": 3000,
+        "country": {
+          "alpha2": "BG",
+          "alpha3": "BGR",
+          "name": "Bulgaria",
+          "slug": "bulgaria"
+        },
+        "id": 30378,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "صالة ديانا الرياضية",
+            "hi": "स्पोर्ट्स हॉल डायना",
+            "bn": "স্পোর্টস হল ডায়ানা",
+            "ru": "Спортивный зал Diana"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Sports Hall Diana",
+          "capacity": 3000
+        }
+      },
+      "nameCode": "TUY",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "BG",
+        "alpha3": "BGR",
+        "name": "Bulgaria",
+        "slug": "bulgaria"
+      },
+      "id": 176640,
+      "fullName": "BC Yambol",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffcc00",
+        "secondary": "#00339a",
+        "text": "#00339a"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ب سي يامبول",
+          "ru": "Тунджа Ямболь"
+        },
+        "shortNameTranslation": {
+          "ar": "يامبول",
+          "bn": "ইয়াম্বোল",
+          "hi": "याम्बोल"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type",
+        "providerLock.status",
+        "providerLock.statusSource"
+      ],
+      "changeTimestamp": 1789626980
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17110363,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "shumen-bc-yambol",
+    "startTimestamp": 1789574400,
+    "finalResultOnly": true,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

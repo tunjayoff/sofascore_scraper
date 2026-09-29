@@ -1,0 +1,50 @@
+{
+  "case_id": "A_finished-110-aet",
+  "event_id": 17060398,
+  "fetched_at_utc": "2026-09-29T15:54:45+00:00",
+  "source_file": "data/status_samples/basketball/A_finished-110-aet__17060398.json",
+  "status": {
+    "code": 110,
+    "description": "AET",
+    "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {
+    "current": 96,
+    "display": 96,
+    "period1": 27,
+    "period2": 28,
+    "period3": 18,
+    "period4": 13,
+    "normaltime": 86,
+    "overtime": 10
+  },
+  "awayScore": {
+    "current": 97,
+    "display": 97,
+    "period1": 16,
+    "period2": 19,
+    "period3": 24,
+    "period4": 27,
+    "normaltime": 86,
+    "overtime": 11
+  },
+  "startTimestamp": 1789426800,
+  "time": {
+    "periodLength": 600,
+    "overtimeLength": 300,
+    "totalPeriodCount": 4
+  },
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type",
+      "homeScore.normaltime",
+      "awayScore.normaltime",
+      "time.played",
+      "time.playedLastUpdated"
+    ],
+    "changeTimestamp": 1789435623
+  }
+}

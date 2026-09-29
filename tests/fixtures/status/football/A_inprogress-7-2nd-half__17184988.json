@@ -1,0 +1,44 @@
+{
+  "case_id": "A_inprogress-7-2nd-half",
+  "event_id": 17184988,
+  "fetched_at_utc": "2026-09-29T13:44:11+00:00",
+  "source_file": "data/status_samples/football/A_inprogress-7-2nd-half__17184988.json",
+  "status": {
+    "code": 7,
+    "description": "2nd half",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "period2": 0
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "period2": 0
+  },
+  "startTimestamp": 1790685000,
+  "time": {
+    "periodLength": 2700,
+    "overtimeLength": 900,
+    "totalPeriodCount": 2,
+    "currentPeriodStartTimestamp": 1790689246,
+    "lastPeriodEndTimestamp": 1790688094,
+    "initial": 2700,
+    "max": 5400,
+    "extra": 540
+  },
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "homeScore.period2",
+      "awayScore.period2",
+      "time.currentPeriodStart"
+    ],
+    "changeTimestamp": 1790689247
+  }
+}

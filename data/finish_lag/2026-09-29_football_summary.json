@@ -1,0 +1,349 @@
+{
+  "events": [
+    {
+      "event_id": 17018572,
+      "kickoff": 1790683200,
+      "season_list_path": null,
+      "last_inprogress_seen": "2026-09-29T13:54:54+00:00",
+      "first_finished_seen": "2026-09-29T13:55:55+00:00",
+      "dropped_from_live": "2026-09-29T13:55:55+00:00",
+      "first_finished_seen_season_list": "2026-09-29T13:55:55+00:00",
+      "first_finished_seen_scheduled": "2026-09-29T13:54:54+00:00",
+      "lag_event": 61,
+      "lag_live": 61,
+      "lag_season_list": 0,
+      "lag_scheduled": -61,
+      "max_age_header_seen": {},
+      "cache_control_seen": [
+        "max-age=10, public, s-maxage=172800",
+        "max-age=10, public, s-maxage=86400",
+        "max-age=5, public, s-maxage=5, stale-while-revalidate=60",
+        "max-age=60, public, s-maxage=60"
+      ],
+      "score_changed_after_finished": false,
+      "status_code_at_finish": 100,
+      "full_lifecycle": true,
+      "final_status": [
+        "finished",
+        100,
+        "Ended"
+      ]
+    },
+    {
+      "event_id": 16461725,
+      "kickoff": 1790683200,
+      "season_list_path": null,
+      "last_inprogress_seen": "2026-09-29T13:49:54+00:00",
+      "first_finished_seen": "2026-09-29T13:50:54+00:00",
+      "dropped_from_live": "2026-09-29T13:50:54+00:00",
+      "first_finished_seen_season_list": "2026-09-29T13:50:54+00:00",
+      "first_finished_seen_scheduled": "2026-09-29T13:49:54+00:00",
+      "lag_event": 60,
+      "lag_live": 60,
+      "lag_season_list": 0,
+      "lag_scheduled": -60,
+      "max_age_header_seen": {},
+      "cache_control_seen": [
+        "max-age=10, public, s-maxage=172800",
+        "max-age=10, public, s-maxage=86400",
+        "max-age=5, public, s-maxage=5, stale-while-revalidate=60",
+        "max-age=60, public, s-maxage=60"
+      ],
+      "score_changed_after_finished": false,
+      "status_code_at_finish": 100,
+      "full_lifecycle": true,
+      "final_status": [
+        "finished",
+        100,
+        "Ended"
+      ]
+    },
+    {
+      "event_id": 16461724,
+      "kickoff": 1790683200,
+      "season_list_path": null,
+      "last_inprogress_seen": "2026-09-29T13:52:54+00:00",
+      "first_finished_seen": "2026-09-29T13:53:54+00:00",
+      "dropped_from_live": "2026-09-29T13:53:54+00:00",
+      "first_finished_seen_season_list": "2026-09-29T13:54:54+00:00",
+      "first_finished_seen_scheduled": "2026-09-29T13:53:54+00:00",
+      "lag_event": 60,
+      "lag_live": 60,
+      "lag_season_list": 60,
+      "lag_scheduled": 0,
+      "max_age_header_seen": {},
+      "cache_control_seen": [
+        "max-age=10, public, s-maxage=172800",
+        "max-age=10, public, s-maxage=86400",
+        "max-age=5, public, s-maxage=5, stale-while-revalidate=60",
+        "max-age=60, public, s-maxage=60"
+      ],
+      "score_changed_after_finished": false,
+      "status_code_at_finish": 100,
+      "full_lifecycle": true,
+      "final_status": [
+        "finished",
+        100,
+        "Ended"
+      ]
+    },
+    {
+      "event_id": 16938657,
+      "kickoff": 1790683200,
+      "season_list_path": null,
+      "last_inprogress_seen": "2026-09-29T13:52:54+00:00",
+      "first_finished_seen": "2026-09-29T13:53:54+00:00",
+      "dropped_from_live": "2026-09-29T13:53:54+00:00",
+      "first_finished_seen_season_list": "2026-09-29T13:53:54+00:00",
+      "first_finished_seen_scheduled": "2026-09-29T13:53:54+00:00",
+      "lag_event": 60,
+      "lag_live": 60,
+      "lag_season_list": 0,
+      "lag_scheduled": 0,
+      "max_age_header_seen": {},
+      "cache_control_seen": [
+        "max-age=10, public, s-maxage=172800",
+        "max-age=10, public, s-maxage=86400",
+        "max-age=5, public, s-maxage=5, stale-while-revalidate=60",
+        "max-age=60, public, s-maxage=86400"
+      ],
+      "score_changed_after_finished": false,
+      "status_code_at_finish": 100,
+      "full_lifecycle": true,
+      "final_status": [
+        "finished",
+        100,
+        "Ended"
+      ]
+    },
+    {
+      "event_id": 16787737,
+      "kickoff": 1790683200,
+      "season_list_path": null,
+      "last_inprogress_seen": "2026-09-29T13:57:55+00:00",
+      "first_finished_seen": "2026-09-29T13:58:55+00:00",
+      "dropped_from_live": "2026-09-29T13:58:55+00:00",
+      "first_finished_seen_season_list": "2026-09-29T13:58:55+00:00",
+      "first_finished_seen_scheduled": "2026-09-29T13:57:55+00:00",
+      "lag_event": 60,
+      "lag_live": 60,
+      "lag_season_list": 0,
+      "lag_scheduled": -60,
+      "max_age_header_seen": {},
+      "cache_control_seen": [
+        "max-age=10, public, s-maxage=172800",
+        "max-age=10, public, s-maxage=86400",
+        "max-age=5, public, s-maxage=5, stale-while-revalidate=60",
+        "max-age=60, public, s-maxage=86400"
+      ],
+      "score_changed_after_finished": false,
+      "status_code_at_finish": 100,
+      "full_lifecycle": true,
+      "final_status": [
+        "finished",
+        100,
+        "Ended"
+      ]
+    },
+    {
+      "event_id": 16787732,
+      "kickoff": 1790683200,
+      "season_list_path": null,
+      "last_inprogress_seen": "2026-09-29T13:47:31+00:00",
+      "first_finished_seen": "2026-09-29T13:48:52+00:00",
+      "dropped_from_live": "2026-09-29T13:48:52+00:00",
+      "first_finished_seen_season_list": "2026-09-29T13:48:52+00:00",
+      "first_finished_seen_scheduled": "2026-09-29T13:47:31+00:00",
+      "lag_event": 81,
+      "lag_live": 81,
+      "lag_season_list": 0,
+      "lag_scheduled": -81,
+      "max_age_header_seen": {},
+      "cache_control_seen": [
+        "max-age=10, public, s-maxage=172800",
+        "max-age=10, public, s-maxage=86400",
+        "max-age=5, public, s-maxage=5, stale-while-revalidate=60",
+        "max-age=60, public, s-maxage=86400"
+      ],
+      "score_changed_after_finished": false,
+      "status_code_at_finish": 100,
+      "full_lifecycle": true,
+      "final_status": [
+        "finished",
+        100,
+        "Ended"
+      ]
+    },
+    {
+      "event_id": 16787739,
+      "kickoff": 1790683200,
+      "season_list_path": null,
+      "last_inprogress_seen": "2026-09-29T13:57:55+00:00",
+      "first_finished_seen": "2026-09-29T13:58:55+00:00",
+      "dropped_from_live": "2026-09-29T13:58:55+00:00",
+      "first_finished_seen_season_list": "2026-09-29T13:58:55+00:00",
+      "first_finished_seen_scheduled": "2026-09-29T13:58:55+00:00",
+      "lag_event": 60,
+      "lag_live": 60,
+      "lag_season_list": 0,
+      "lag_scheduled": 0,
+      "max_age_header_seen": {},
+      "cache_control_seen": [
+        "max-age=10, public, s-maxage=172800",
+        "max-age=10, public, s-maxage=86400",
+        "max-age=5, public, s-maxage=5, stale-while-revalidate=60",
+        "max-age=60, public, s-maxage=86400"
+      ],
+      "score_changed_after_finished": false,
+      "status_code_at_finish": 100,
+      "full_lifecycle": true,
+      "final_status": [
+        "finished",
+        100,
+        "Ended"
+      ]
+    },
+    {
+      "event_id": 16787740,
+      "kickoff": 1790683200,
+      "season_list_path": null,
+      "last_inprogress_seen": "2026-09-29T13:50:54+00:00",
+      "first_finished_seen": "2026-09-29T13:51:54+00:00",
+      "dropped_from_live": "2026-09-29T13:51:54+00:00",
+      "first_finished_seen_season_list": "2026-09-29T13:51:54+00:00",
+      "first_finished_seen_scheduled": "2026-09-29T13:50:54+00:00",
+      "lag_event": 60,
+      "lag_live": 60,
+      "lag_season_list": 0,
+      "lag_scheduled": -60,
+      "max_age_header_seen": {},
+      "cache_control_seen": [
+        "max-age=10, public, s-maxage=172800",
+        "max-age=10, public, s-maxage=86400",
+        "max-age=5, public, s-maxage=5, stale-while-revalidate=60",
+        "max-age=60, public, s-maxage=86400"
+      ],
+      "score_changed_after_finished": false,
+      "status_code_at_finish": 100,
+      "full_lifecycle": true,
+      "final_status": [
+        "finished",
+        100,
+        "Ended"
+      ]
+    },
+    {
+      "event_id": 16787741,
+      "kickoff": 1790683200,
+      "season_list_path": null,
+      "last_inprogress_seen": "2026-09-29T13:59:55+00:00",
+      "first_finished_seen": "2026-09-29T14:00:56+00:00",
+      "dropped_from_live": "2026-09-29T14:00:56+00:00",
+      "first_finished_seen_season_list": "2026-09-29T14:00:56+00:00",
+      "first_finished_seen_scheduled": "2026-09-29T14:00:56+00:00",
+      "lag_event": 61,
+      "lag_live": 61,
+      "lag_season_list": 0,
+      "lag_scheduled": 0,
+      "max_age_header_seen": {},
+      "cache_control_seen": [
+        "max-age=10, public, s-maxage=172800",
+        "max-age=10, public, s-maxage=86400",
+        "max-age=5, public, s-maxage=5, stale-while-revalidate=60",
+        "max-age=60, public, s-maxage=86400"
+      ],
+      "score_changed_after_finished": false,
+      "status_code_at_finish": 100,
+      "full_lifecycle": true,
+      "final_status": [
+        "finished",
+        100,
+        "Ended"
+      ]
+    },
+    {
+      "event_id": 17206702,
+      "kickoff": 1790683200,
+      "season_list_path": null,
+      "last_inprogress_seen": "2026-09-29T13:50:54+00:00",
+      "first_finished_seen": "2026-09-29T13:51:54+00:00",
+      "dropped_from_live": "2026-09-29T13:51:54+00:00",
+      "first_finished_seen_season_list": null,
+      "first_finished_seen_scheduled": "2026-09-29T13:50:54+00:00",
+      "lag_event": 60,
+      "lag_live": 60,
+      "lag_season_list": null,
+      "lag_scheduled": -60,
+      "max_age_header_seen": {},
+      "cache_control_seen": [
+        "max-age=10, public, s-maxage=172800",
+        "max-age=10, public, s-maxage=86400",
+        "max-age=5, public, s-maxage=5, stale-while-revalidate=60"
+      ],
+      "score_changed_after_finished": false,
+      "status_code_at_finish": 100,
+      "full_lifecycle": true,
+      "final_status": [
+        "finished",
+        100,
+        "Ended"
+      ]
+    },
+    {
+      "event_id": 17206703,
+      "kickoff": 1790683200,
+      "season_list_path": null,
+      "last_inprogress_seen": "2026-09-29T13:49:54+00:00",
+      "first_finished_seen": "2026-09-29T13:50:54+00:00",
+      "dropped_from_live": "2026-09-29T13:50:54+00:00",
+      "first_finished_seen_season_list": null,
+      "first_finished_seen_scheduled": "2026-09-29T13:49:54+00:00",
+      "lag_event": 60,
+      "lag_live": 60,
+      "lag_season_list": null,
+      "lag_scheduled": -60,
+      "max_age_header_seen": {},
+      "cache_control_seen": [
+        "max-age=10, public, s-maxage=172800",
+        "max-age=10, public, s-maxage=86400",
+        "max-age=5, public, s-maxage=5, stale-while-revalidate=60"
+      ],
+      "score_changed_after_finished": false,
+      "status_code_at_finish": 100,
+      "full_lifecycle": true,
+      "final_status": [
+        "finished",
+        100,
+        "Ended"
+      ]
+    }
+  ],
+  "aggregate": {
+    "lag_event": {
+      "n": 11,
+      "median": 60,
+      "max": 81
+    },
+    "lag_live": {
+      "n": 11,
+      "median": 60,
+      "max": 81
+    },
+    "lag_season_list": {
+      "n": 9,
+      "median": 0,
+      "max": 60
+    },
+    "lag_scheduled": {
+      "n": 11,
+      "median": -60,
+      "max": 0
+    },
+    "full_lifecycle": 11,
+    "score_changed_after_finished": 0
+  },
+  "notes": {
+    "summarized_from": "data/finish_lag/2026-09-29_football.jsonl",
+    "summarized_at_utc": "2026-09-29T14:14:45+00:00"
+  }
+}

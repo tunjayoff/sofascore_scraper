@@ -1,0 +1,18 @@
+{
+  "case_id": "A_notstarted-0-not-started",
+  "event_id": 17079409,
+  "fetched_at_utc": "2026-09-29T15:54:42+00:00",
+  "source_file": "data/status_samples/basketball/A_notstarted-0-not-started__17079409.json",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1789411500,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 0
+  }
+}

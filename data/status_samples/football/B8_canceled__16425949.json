@@ -1,0 +1,226 @@
+{
+  "case_id": "B8_canceled",
+  "event_id": 16425949,
+  "fetched_at_utc": "2026-09-29T15:53:30+00:00",
+  "source_endpoint": "/api/v1/event/16425949",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"bc5ec34bc3\"",
+    "date": "Tue, 29 Sep 2026 15:53:29 GMT"
+  },
+  "note": "İptal; index source scan:2026-09-21",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "Primera Federacion, Women",
+      "slug": "primera-federacion-women",
+      "category": {
+        "name": "Spain",
+        "slug": "spain",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 9,
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 32,
+        "flag": "spain",
+        "alpha2": "ES",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "hi": "स्पेन",
+            "ar": "إسبانيا",
+            "bn": "স্পেন",
+            "ru": "Испания"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Primera Federacion Women",
+        "slug": "primera-federacion-women",
+        "category": {
+          "name": "Spain",
+          "slug": "spain",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 9,
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 32,
+          "flag": "spain",
+          "alpha2": "ES",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "स्पेन",
+              "ar": "إسبانيا",
+              "bn": "স্পেন",
+              "ru": "Испания"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 1080,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 27917,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "بطولة الدرجة الأولى للسيدات",
+            "ru": "Лига 1 Федерасион, среди женщин"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 1,
+      "id": 157460,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "الفيدرالية الأولى، السيدات",
+          "ru": "Примера Федерасион, Женщины"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Primera Federacion, Women 26/27",
+      "year": "26/27",
+      "editor": false,
+      "id": 97381
+    },
+    "roundInfo": {
+      "round": 2
+    },
+    "customId": "WzuhsvBXj",
+    "status": {
+      "code": 70,
+      "description": "Canceled",
+      "type": "canceled"
+    },
+    "homeTeam": {
+      "name": "Real Sociedad San Sebastian B",
+      "slug": "real-sociedad-san-sebastian-b",
+      "gender": "F",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 35,
+      "nameCode": "REA",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "ES",
+        "alpha3": "ESP",
+        "name": "Spain",
+        "slug": "spain"
+      },
+      "id": 1243820,
+      "fullName": "Real Sociedad San Sebastian B",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Costa Adeje Tenerife B",
+      "slug": "ud-granadilla-tenerife-ii",
+      "shortName": "Tenerife B",
+      "gender": "F",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 321,
+      "nameCode": "TEN",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "ES",
+        "alpha3": "ESP",
+        "name": "Spain",
+        "slug": "spain"
+      },
+      "id": 923746,
+      "fullName": "Costa Adeje Tenerife B",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "يو دي غراناديلا تينيريفي ب",
+          "ru": "Коста Адехе Тенерифе Б"
+        },
+        "shortNameTranslation": {
+          "ar": "تينيريفي ب",
+          "ru": "Тенерифе Б"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type"
+      ],
+      "changeTimestamp": 1785409269
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16425949,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "slug": "real-sociedad-san-sebastian-costa-adeje-tenerife",
+    "startTimestamp": 1789916400,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "F"
+      ]
+    }
+  },
+  "error": null
+}

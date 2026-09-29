@@ -1,0 +1,382 @@
+{
+  "case_id": "B6_finished_regular",
+  "event_id": 17206241,
+  "fetched_at_utc": "2026-09-29T13:38:49+00:00",
+  "source_endpoint": "/api/v1/event/17206241",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"e5e0697282\"",
+    "date": "Tue, 29 Sep 2026 13:38:49 GMT"
+  },
+  "note": "Normal bitmiş; index source scan:2026-09-29",
+  "event": {
+    "firstToServe": 2,
+    "awayTeamSeed": "A",
+    "tournament": {
+      "name": "Beijing, China, Qualifying",
+      "slug": "beijing-china-qualifying",
+      "category": {
+        "name": "ATP",
+        "slug": "atp",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 8,
+        "country": {},
+        "id": 3,
+        "flag": "atp",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "এটিপি",
+            "hi": "डब्ल्यूटीए",
+            "ar": "رابطة محترفي التنس",
+            "ru": "ATP"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Beijing",
+        "slug": "beijing",
+        "primaryColorHex": "#bb141a",
+        "secondaryColorHex": "#636363",
+        "category": {
+          "name": "ATP",
+          "slug": "atp",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 8,
+          "country": {},
+          "id": 3,
+          "flag": "atp",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "এটিপি",
+              "hi": "डब्ल्यूटीए",
+              "ar": "رابطة محترفي التنس",
+              "ru": "ATP"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 2669,
+        "groundType": "Hardcourt outdoor",
+        "tennisPoints": 500,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": true,
+        "country": {},
+        "id": 2436,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "بكين",
+            "hi": "बीजिंग",
+            "bn": "বেইজিং",
+            "ru": "Пекин"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "id": 202261,
+      "endTimestamp": 1790640000,
+      "startTimestamp": 1790553600,
+      "qualificationOrPreliminary": true
+    },
+    "season": {
+      "name": "ATP Beijing, China Men Singles 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 82371
+    },
+    "roundInfo": {
+      "round": 250,
+      "name": "Qualification Final",
+      "slug": "qualification-final"
+    },
+    "customId": "aqVbsMEdd",
+    "status": {
+      "code": 100,
+      "description": "Ended",
+      "type": "finished"
+    },
+    "winnerCode": 2,
+    "venue": {
+      "city": {
+        "name": "Beijing",
+        "country": {
+          "alpha2": "CN",
+          "alpha3": "CHN",
+          "name": "China",
+          "slug": "china"
+        },
+        "id": 19159
+      },
+      "hidden": true,
+      "slug": "brad-drewett-court",
+      "name": "Brad Drewett Court",
+      "country": {
+        "alpha2": "CN",
+        "alpha3": "CHN",
+        "name": "China",
+        "slug": "china"
+      },
+      "id": 18630,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ملعب براد درويت",
+          "hi": "ब्रैड ड्रूएट कोर्ट",
+          "bn": "ব্র্যাড ড্রুয়েট কোর্ট"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Brad Drewett Court"
+      }
+    },
+    "homeTeam": {
+      "name": "Tomaš Machač",
+      "slug": "machac-tomas",
+      "shortName": "T. Machač",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 9033,
+      "playerTeamInfo": {
+        "height": 1.83,
+        "weight": 74,
+        "plays": "right-handed",
+        "prizeCurrent": 723629,
+        "prizeTotal": 5904643,
+        "birthCity": {
+          "name": "Beroun",
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 19694
+        },
+        "residenceCity": {
+          "name": "Czech Republic",
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 35391
+        },
+        "id": 2994,
+        "birthplace": "Beroun, Czechia",
+        "birthDateTimestamp": 971395200,
+        "underage": false,
+        "residence": "Czech Republic, Czechia",
+        "prizeCurrentRaw": {
+          "value": 723629,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 5904643,
+          "currency": "EUR"
+        },
+        "currentRanking": 65
+      },
+      "nameCode": "MAC",
+      "ranking": 74,
+      "class": 1,
+      "disabled": false,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "CZ",
+        "alpha3": "CZE",
+        "name": "Czechia",
+        "slug": "czechia"
+      },
+      "id": 238300,
+      "fullName": "Tomaš Machač",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "توماس ماتشاك",
+          "ru": "Махач, Томас"
+        },
+        "shortNameTranslation": {
+          "ar": "ت. ماتشاك",
+          "bn": "টি. মাচাচ",
+          "hi": "टी. माचाच"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Arthur Gea",
+      "slug": "gea-arthur",
+      "shortName": "A. Gea",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 4880,
+      "playerTeamInfo": {
+        "height": 1.8,
+        "weight": 72,
+        "plays": "right-handed",
+        "prizeCurrent": 357152,
+        "prizeTotal": 576586,
+        "birthCity": {
+          "name": "Carpentras",
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 35281
+        },
+        "id": 5361,
+        "birthplace": "Carpentras, France",
+        "birthDateTimestamp": 1104624000,
+        "underage": false,
+        "prizeCurrentRaw": {
+          "value": 357152,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 576586,
+          "currency": "EUR"
+        },
+        "currentRanking": 58
+      },
+      "nameCode": "GEA",
+      "ranking": 61,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "FR",
+        "alpha3": "FRA",
+        "name": "France",
+        "slug": "france"
+      },
+      "id": 383987,
+      "fullName": "Arthur Gea",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "أرثر غيا",
+          "ru": "Артур Геа"
+        },
+        "shortNameTranslation": {
+          "ar": "أ. غيا",
+          "ru": "А. Геа"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 3,
+      "period2": 4,
+      "point": "30",
+      "normaltime": 0
+    },
+    "awayScore": {
+      "current": 2,
+      "display": 2,
+      "period1": 6,
+      "period2": 6,
+      "point": "40",
+      "normaltime": 2
+    },
+    "time": {
+      "period1": 2218,
+      "period2": 2451,
+      "currentPeriodStartTimestamp": 1790653630
+    },
+    "changes": {
+      "changes": [
+        "time.currentPeriodStart",
+        "time.period2"
+      ],
+      "changeTimestamp": 1790656104
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "correctAiInsight": true,
+    "id": 17206241,
+    "defaultPeriodCount": 3,
+    "slug": "arthur-gea-tomas-machac",
+    "currentPeriodStartTimestamp": 1790653630,
+    "startTimestamp": 1790650800,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "finalResultOnly": false,
+    "hasBet365LiveStream": true,
+    "bet365ExcludedCountryCodes": [
+      "AN",
+      "CU",
+      "IR",
+      "KP",
+      "SY",
+      "VE",
+      "GR",
+      "RU",
+      "CH",
+      "CA"
+    ],
+    "feedLocked": false,
+    "groundType": "Hardcourt outdoor",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "singles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "p500"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

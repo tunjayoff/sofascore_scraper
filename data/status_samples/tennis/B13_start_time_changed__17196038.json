@@ -1,0 +1,363 @@
+{
+  "case_id": "B13_start_time_changed",
+  "event_id": 17196038,
+  "fetched_at_utc": "2026-09-29T16:02:22+00:00",
+  "source_endpoint": "/api/v1/event/17196038",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"d02886b9a1\"",
+    "date": "Tue, 29 Sep 2026 16:02:22 GMT"
+  },
+  "note": "gözlenen startTimestamp değerleri: [1790696700, 1790697000]",
+  "event": {
+    "firstToServe": 2,
+    "homeTeamSeed": "1",
+    "awayTeamSeed": "WC",
+    "tournament": {
+      "name": "Mouilleron-le-Captif, France",
+      "slug": "mouilleron-le-captif-france",
+      "category": {
+        "name": "Challenger",
+        "slug": "challenger",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 6,
+        "country": {},
+        "id": 72,
+        "flag": "challenger",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "চ্যালেঞ্জার",
+            "ar": "تحدي (تنس)",
+            "hi": "डेनमार्क",
+            "ru": "Challenger"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Mouilleron-Le-Captif, France",
+        "slug": "mouilleron-le-captif-france",
+        "category": {
+          "name": "Challenger",
+          "slug": "challenger",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 6,
+          "country": {},
+          "id": 72,
+          "flag": "challenger",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "চ্যালেঞ্জার",
+              "ar": "تحدي (تنس)",
+              "hi": "डेनमार्क",
+              "ru": "Challenger"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 210,
+        "groundType": "Hardcourt indoor",
+        "tennisPoints": 100,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 5936,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "مويليون لو كابتيف، فرنسا",
+            "ru": "Муйерон-Ле-Каптиф, Франция"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "id": 201499,
+      "endTimestamp": 1791072000,
+      "startTimestamp": 1790553600
+    },
+    "season": {
+      "name": "ATP Challenger Mouilleron-Le-Captif, France Men Singles 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 96684
+    },
+    "roundInfo": {
+      "round": 6,
+      "name": "Round of 32",
+      "slug": "round-of-32",
+      "cupRoundType": 16
+    },
+    "customId": "DpebsQEdd",
+    "status": {
+      "code": 8,
+      "description": "1st set",
+      "type": "inprogress"
+    },
+    "venue": {
+      "city": {
+        "name": "Mouilleron-Le-Captif",
+        "country": {
+          "alpha2": "FR",
+          "alpha3": "FRA",
+          "name": "France",
+          "slug": "france"
+        },
+        "id": 19358
+      },
+      "hidden": true,
+      "slug": "court-central",
+      "name": "Court Central",
+      "country": {
+        "alpha2": "FR",
+        "alpha3": "FRA",
+        "name": "France",
+        "slug": "france"
+      },
+      "id": 19286,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "الملعب المركزي",
+          "hi": "कोर्ट सेंट्रल",
+          "bn": "কোর্ট সেন্ট্রাল"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Court Central"
+      }
+    },
+    "homeTeam": {
+      "name": "Mark Lajal",
+      "slug": "lajal-mark",
+      "shortName": "M. Lajal",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 3890,
+      "playerTeamInfo": {
+        "height": 1.91,
+        "weight": 85,
+        "plays": "right-handed",
+        "prizeCurrent": 123446,
+        "prizeTotal": 608548,
+        "birthCity": {
+          "name": "Tallinn",
+          "country": {
+            "alpha2": "EE",
+            "alpha3": "EST",
+            "name": "Estonia",
+            "slug": "estonia"
+          },
+          "id": 19371
+        },
+        "id": 5181,
+        "birthplace": "Tallinn, Estonia",
+        "birthDateTimestamp": 1052697600,
+        "underage": false,
+        "prizeCurrentRaw": {
+          "value": 123446,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 608548,
+          "currency": "EUR"
+        },
+        "currentRanking": 135
+      },
+      "nameCode": "LAJ",
+      "ranking": 143,
+      "class": 0,
+      "disabled": false,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "EE",
+        "alpha3": "EST",
+        "name": "Estonia",
+        "slug": "estonia"
+      },
+      "id": 383991,
+      "fullName": "Mark Lajal",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "مارك لاجال",
+          "bn": "মার্ক লাজল",
+          "hi": "मार्क लाजल",
+          "ru": "Марк Лажал"
+        },
+        "shortNameTranslation": {
+          "ar": "م. لاجال",
+          "ru": "М. Лажал"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Lucas Poullain",
+      "slug": "poullain-lucas",
+      "shortName": "L. Poullain",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 911,
+      "playerTeamInfo": {
+        "height": 1.75,
+        "weight": 68,
+        "plays": "right-handed",
+        "prizeCurrent": 17368,
+        "prizeTotal": 185854,
+        "birthCity": {
+          "name": "Saint-Nazaire",
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 24839
+        },
+        "id": 2196,
+        "birthplace": "Saint-Nazaire, France",
+        "birthDateTimestamp": 818121600,
+        "underage": false,
+        "prizeCurrentRaw": {
+          "value": 17368,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 185854,
+          "currency": "EUR"
+        },
+        "currentRanking": 325
+      },
+      "nameCode": "POU",
+      "ranking": 325,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "FR",
+        "alpha3": "FRA",
+        "name": "France",
+        "slug": "france"
+      },
+      "id": 135778,
+      "fullName": "Lucas Poullain",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "لوكاس بولان",
+          "ru": "Пуллан, Люка"
+        },
+        "shortNameTranslation": {
+          "ar": "ل. بولان"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 2,
+      "point": "0"
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 1,
+      "point": "0"
+    },
+    "time": {
+      "currentPeriodStartTimestamp": 1790697037
+    },
+    "changes": {
+      "changes": [
+        "homeScore.point",
+        "awayScore.period1",
+        "awayScore.point",
+        "firstToServe"
+      ],
+      "changeTimestamp": 1790697699
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17196038,
+    "defaultPeriodCount": 3,
+    "slug": "mark-lajal-lucas-poullain",
+    "currentPeriodStartTimestamp": 1790697037,
+    "startTimestamp": 1790697000,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "lastPeriod": "period1",
+    "finalResultOnly": false,
+    "hasBet365LiveStream": true,
+    "bet365ExcludedCountryCodes": [
+      "AN",
+      "CU",
+      "IR",
+      "KP",
+      "SY",
+      "VE",
+      "GR",
+      "RU",
+      "CH",
+      "CA"
+    ],
+    "feedLocked": false,
+    "groundType": "Hardcourt indoor",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "singles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "lower"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

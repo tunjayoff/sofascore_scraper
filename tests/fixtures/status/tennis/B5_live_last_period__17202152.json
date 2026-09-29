@@ -1,0 +1,44 @@
+{
+  "case_id": "B5_live_last_period",
+  "event_id": 17202152,
+  "fetched_at_utc": "2026-09-29T15:56:46+00:00",
+  "source_file": "data/status_samples/tennis/B5_live_last_period__17202152.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {
+    "current": 1,
+    "display": 1,
+    "period1": 3,
+    "period2": 6,
+    "period3": 4,
+    "point": "40",
+    "normaltime": 1
+  },
+  "awayScore": {
+    "current": 2,
+    "display": 2,
+    "period1": 6,
+    "period2": 4,
+    "period3": 6,
+    "point": "A",
+    "normaltime": 2
+  },
+  "startTimestamp": 1790684100,
+  "time": {
+    "period1": 2216,
+    "period2": 2864,
+    "period3": 3781,
+    "currentPeriodStartTimestamp": 1790688365
+  },
+  "changes": {
+    "changes": [
+      "time.currentPeriodStart",
+      "time.period3"
+    ],
+    "changeTimestamp": 1790692193
+  }
+}

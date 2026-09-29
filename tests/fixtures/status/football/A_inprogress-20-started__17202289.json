@@ -1,0 +1,33 @@
+{
+  "case_id": "A_inprogress-20-started",
+  "event_id": 17202289,
+  "fetched_at_utc": "2026-09-29T13:44:20+00:00",
+  "source_file": "data/status_samples/football/A_inprogress-20-started__17202289.json",
+  "status": {
+    "code": 20,
+    "description": "Started",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 0,
+    "display": 0
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0
+  },
+  "startTimestamp": 1790685000,
+  "time": {},
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type",
+      "homeScore.current",
+      "homeScore.display",
+      "awayScore.current",
+      "awayScore.display"
+    ],
+    "changeTimestamp": 1790685002
+  }
+}

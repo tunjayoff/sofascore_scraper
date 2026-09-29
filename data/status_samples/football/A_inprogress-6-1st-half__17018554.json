@@ -1,0 +1,337 @@
+{
+  "case_id": "A_inprogress-6-1st-half",
+  "event_id": 17018554,
+  "fetched_at_utc": "2026-09-29T13:43:58+00:00",
+  "source_endpoint": "/api/v1/event/17018554",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"e72464f5b3\"",
+    "date": "Tue, 29 Sep 2026 13:43:58 GMT"
+  },
+  "note": "live snapshot 2026-09-29T13:43:27+00:00",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "Africa Cup of Nations, Qualification, Group A",
+      "slug": "africa-cup-of-nations-qualification-group-a",
+      "category": {
+        "name": "Africa",
+        "slug": "africa",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 16,
+        "country": {},
+        "id": 1466,
+        "flag": "africa",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أفريقيا",
+            "ru": "Африка"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Africa Cup of Nations Qual.",
+        "slug": "africa-cup-of-nations-qual",
+        "primaryColorHex": "#00752e",
+        "secondaryColorHex": "#edc73e",
+        "category": {
+          "name": "Africa",
+          "slug": "africa",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 16,
+          "country": {},
+          "id": 1466,
+          "flag": "africa",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أفريقيا",
+              "ru": "Африка"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 81203,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 1848,
+        "hasEventPlayerStatistics": true,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "تصفيات كأس أمم أفريقيا",
+            "bn": "আফ্রিকা কাপ অফ নেশনস কোয়ালিফাইং.",
+            "hi": "अफ्रीका कप ऑफ नेशंस क्वालिफिकेशन.",
+            "ru": "Кубок африканских наций, квалификация"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 569,
+      "isGroup": true,
+      "groupName": "Group A",
+      "competitionType": 1,
+      "isLive": false,
+      "id": 59834,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "كأس الأمم الأفريقية، التصفيات، المجموعة A",
+          "bn": "আফ্রিকা কাপ অফ নেশনস, কোয়ালিফিকেশন, গ্রুপ এ",
+          "hi": "अफ्रीका कप ऑफ नेशंस, क्वालिफिकेशन, ग्रुप ए",
+          "ru": "Кубок африканских наций, Квалификация, Группа A"
+        },
+        "shortNameTranslation": {}
+      },
+      "qualificationOrPreliminary": true
+    },
+    "season": {
+      "name": "Africa Cup of Nations Qualification 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 90940
+    },
+    "roundInfo": {
+      "round": 2
+    },
+    "customId": "DVbsIkd",
+    "status": {
+      "code": 6,
+      "description": "1st half",
+      "type": "inprogress"
+    },
+    "homeTeam": {
+      "name": "Lesotho",
+      "slug": "lesotho",
+      "shortName": "Lesotho",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 11662,
+      "manager": {
+        "name": "Bob Mafoso",
+        "slug": "bob-mafoso",
+        "shortName": "B. Mafoso",
+        "country": {
+          "alpha2": "LS",
+          "alpha3": "LSO",
+          "name": "Lesotho",
+          "slug": "lesotho"
+        },
+        "id": 822595,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ru": "Боб Мафосо"
+          },
+          "shortNameTranslation": {
+            "ru": "Б. Мафосо"
+          }
+        }
+      },
+      "nameCode": "LES",
+      "ranking": 146,
+      "class": 4,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "LS",
+        "alpha3": "LSO",
+        "name": "Lesotho",
+        "slug": "lesotho"
+      },
+      "id": 8033,
+      "fullName": "Lesotho",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#0000ff",
+        "secondary": "#008000",
+        "text": "#008000"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ليسوتو",
+          "bn": "লেসোথো",
+          "hi": "लेसोथो",
+          "ru": "Лесото"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Morocco",
+      "slug": "morocco",
+      "shortName": "Morocco",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 1255126,
+      "manager": {
+        "name": "Mohamed Ouahbi",
+        "slug": "mohamed-ouahbi",
+        "shortName": "M. Ouahbi",
+        "country": {
+          "alpha2": "MA",
+          "alpha3": "MAR",
+          "name": "Morocco",
+          "slug": "morocco"
+        },
+        "id": 807706,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ru": "Мохамед Уахби",
+            "ar": "محمد وهبي"
+          },
+          "shortNameTranslation": {
+            "ru": "М. Уахби",
+            "ar": "م. وهبي"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Rabat",
+          "country": {
+            "alpha2": "MA",
+            "alpha3": "MAR",
+            "name": "Morocco",
+            "slug": "morocco"
+          },
+          "id": 20758
+        },
+        "hidden": false,
+        "slug": "prince-moulay-abdellah-stadium",
+        "name": "Prince Moulay Abdellah Stadium",
+        "capacity": 68700,
+        "country": {
+          "alpha2": "MA",
+          "alpha3": "MAR",
+          "name": "Morocco",
+          "slug": "morocco"
+        },
+        "id": 65504,
+        "stadium": {
+          "name": "Prince Moulay Abdellah Stadium",
+          "capacity": 68700
+        }
+      },
+      "nameCode": "MAR",
+      "ranking": 6,
+      "class": 4,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "MA",
+        "alpha3": "MAR",
+        "name": "Morocco",
+        "slug": "morocco"
+      },
+      "id": 4778,
+      "fullName": "Morocco",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ff0000",
+        "secondary": "#006600",
+        "text": "#006600"
+      },
+      "foundationDateTimestamp": -473385600,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "المغرب",
+          "bn": "মরক্কো",
+          "hi": "मोरक्को",
+          "ru": "Марокко"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 0,
+      "normaltime": 0
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 0,
+      "normaltime": 0
+    },
+    "time": {
+      "currentPeriodStartTimestamp": 1790686877,
+      "initial": 0,
+      "max": 2700,
+      "extra": 540
+    },
+    "changes": {
+      "changes": [
+        "homeScore.period1",
+        "homeScore.normaltime",
+        "awayScore.period1",
+        "awayScore.normaltime"
+      ],
+      "changeTimestamp": 1790686995
+    },
+    "hasGlobalHighlights": false,
+    "hasEventPlayerStatistics": true,
+    "hasEventPlayerHeatMap": true,
+    "detailId": 1,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17018554,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "varInProgress": {
+      "homeTeam": false,
+      "awayTeam": false
+    },
+    "statusTime": {
+      "prefix": "",
+      "initial": 0,
+      "max": 2700,
+      "timestamp": 1790686877,
+      "extra": 540
+    },
+    "slug": "lesotho-morocco",
+    "currentPeriodStartTimestamp": 1790686877,
+    "startTimestamp": 1790686800,
+    "lastPeriod": "period1",
+    "finalResultOnly": false,
+    "feedLocked": true,
+    "seasonStatisticsType": "overall",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "national"
+      ],
+      "level": [
+        "top-competitions",
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

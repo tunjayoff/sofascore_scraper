@@ -1,0 +1,16 @@
+{
+  "football": {
+    "events_indexed": 2406,
+    "triples": 11
+  },
+  "basketball": {
+    "events_indexed": 2542,
+    "triples": 13
+  },
+  "tennis": {
+    "events_indexed": 2212,
+    "triples": 11
+  },
+  "requests_total": 2296,
+  "duration_s_total": 3653
+}

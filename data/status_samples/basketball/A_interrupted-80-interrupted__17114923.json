@@ -1,0 +1,367 @@
+{
+  "case_id": "A_interrupted-80-interrupted",
+  "event_id": 17114923,
+  "fetched_at_utc": "2026-09-29T15:54:51+00:00",
+  "source_endpoint": "/api/v1/event/17114923",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"0bb6c9763c\"",
+    "date": "Tue, 29 Sep 2026 15:54:51 GMT"
+  },
+  "note": "index source scan:2026-09-21",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "Unicef Trophy Qualifiers",
+      "slug": "unicef-trophy-qualifiers",
+      "category": {
+        "name": "Greece",
+        "slug": "greece",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "GR",
+          "alpha3": "GRC",
+          "name": "Greece",
+          "slug": "greece"
+        },
+        "id": 108,
+        "flag": "greece",
+        "alpha2": "GR",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "اليونان",
+            "ru": "Греция"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Greek Basketball Cup Qualifiers",
+        "slug": "greek-basketball-cup-qualifiers",
+        "category": {
+          "name": "Greece",
+          "slug": "greece",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 108,
+          "flag": "greece",
+          "alpha2": "GR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "اليونان",
+              "ru": "Греция"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 68,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 26103,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "تصفيات كأس كرة السلة اليونانية",
+            "ru": "Кубок Греции по баскетболу — отборочные турниры"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "id": 194353,
+      "qualificationOrPreliminary": true
+    },
+    "season": {
+      "name": "2026",
+      "year": "2026",
+      "editor": true,
+      "id": 99743
+    },
+    "roundInfo": {
+      "round": 6,
+      "name": "1/16",
+      "slug": "round-of-32",
+      "cupRoundType": 16
+    },
+    "customId": "kODdspNie",
+    "status": {
+      "code": 80,
+      "description": "Interrupted",
+      "type": "interrupted"
+    },
+    "venue": {
+      "city": {
+        "name": "Athens",
+        "country": {
+          "alpha2": "GR",
+          "alpha3": "GRC",
+          "name": "Greece",
+          "slug": "greece"
+        },
+        "id": 18392
+      },
+      "hidden": true,
+      "slug": "sporting-sports-arena",
+      "name": "Sporting Sports Arena",
+      "capacity": 2500,
+      "country": {
+        "alpha2": "GR",
+        "alpha3": "GRC",
+        "name": "Greece",
+        "slug": "greece"
+      },
+      "id": 30514,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ساحة الرياضة الرياضية",
+          "hi": "स्पोर्टिंग स्पोर्ट्स एरिना",
+          "bn": "স্পোর্টিং স্পোর্টস এরিনা",
+          "ru": "Спортивная арена Sporting"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Sporting Sports Arena",
+        "capacity": 2500
+      }
+    },
+    "homeTeam": {
+      "name": "Sporting BC",
+      "slug": "sporting-bc",
+      "shortName": "Sporting",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 75,
+      "venue": {
+        "city": {
+          "name": "Athens",
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 18392
+        },
+        "hidden": true,
+        "slug": "sporting-sports-arena",
+        "name": "Sporting Sports Arena",
+        "capacity": 2500,
+        "country": {
+          "alpha2": "GR",
+          "alpha3": "GRC",
+          "name": "Greece",
+          "slug": "greece"
+        },
+        "id": 30514,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ساحة الرياضة الرياضية",
+            "hi": "स्पोर्टिंग स्पोर्ट्स एरिना",
+            "bn": "স্পোর্টিং স্পোর্টস এরিনা",
+            "ru": "Спортивная арена Sporting"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Sporting Sports Arena",
+          "capacity": 2500
+        }
+      },
+      "nameCode": "SBC",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "GR",
+        "alpha3": "GRC",
+        "name": "Greece",
+        "slug": "greece"
+      },
+      "id": 521915,
+      "fullName": "Sporting BC",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "سبورتينغ بي سي",
+          "ru": "Спортинг БК"
+        },
+        "shortNameTranslation": {
+          "ar": "سبورتينغ",
+          "ru": "Спортинг"
+        }
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "AGE Chalkidas",
+      "slug": "gs-ermis-sximatariou",
+      "shortName": "Chalkida",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 223,
+      "manager": {
+        "name": "Savvas Symeonidis",
+        "slug": "savvas-symeonidis",
+        "shortName": "S. Symeonidis",
+        "country": {
+          "alpha2": "GR",
+          "alpha3": "GRC",
+          "name": "Greece",
+          "slug": "greece"
+        },
+        "id": 824926
+      },
+      "venue": {
+        "city": {
+          "name": "Schimatari",
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 23581
+        },
+        "hidden": true,
+        "slug": "schimatario-indoor-stadium",
+        "name": "Schimatario Indoor Stadium",
+        "country": {
+          "alpha2": "GR",
+          "alpha3": "GRC",
+          "name": "Greece",
+          "slug": "greece"
+        },
+        "id": 37317,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب شيماتاريو الداخلي",
+            "hi": "शिमाटारियो इनडोर स्टेडियम",
+            "bn": "শিমাতারিও ইনডোর স্টেডিয়াম",
+            "ru": "Стадион Schimatario Indoor"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Schimatario Indoor Stadium"
+        }
+      },
+      "nameCode": "ERM",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "GR",
+        "alpha3": "GRC",
+        "name": "Greece",
+        "slug": "greece"
+      },
+      "id": 446960,
+      "fullName": "AGE Chalkidas",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "جي اس إيرميس سخيماطاريو",
+          "ru": "АГЕ Халкида"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 0,
+      "display": 0
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0
+    },
+    "time": {},
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type",
+        "homeScore.current",
+        "homeScore.display",
+        "awayScore.current",
+        "awayScore.display"
+      ],
+      "changeTimestamp": 1789920059
+    },
+    "hasGlobalHighlights": true,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17114923,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "sporting-bc-age-chalkida",
+    "startTimestamp": 1789916400,
+    "finalResultOnly": true,
+    "feedLocked": false,
+    "createdByNickname": "Παναγιώτης Μοσχάκης",
+    "eventEditorName": "Παναγιώτης Μοσχάκης",
+    "eventEditor": {
+      "id": "69d38f6b5d576460fd4b4431",
+      "name": "Παναγιώτης Μοσχάκης"
+    },
+    "showTotoPromo": true,
+    "isEditor": true,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

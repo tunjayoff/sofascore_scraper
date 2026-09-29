@@ -1,0 +1,334 @@
+{
+  "case_id": "A_finished-110-aet",
+  "event_id": 17060398,
+  "fetched_at_utc": "2026-09-29T15:54:45+00:00",
+  "source_endpoint": "/api/v1/event/17060398",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"ec01905c86\"",
+    "date": "Tue, 29 Sep 2026 15:54:45 GMT"
+  },
+  "note": "index source scan:2026-09-15",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "LNB, Championship Round",
+      "slug": "lnb-championship-round",
+      "category": {
+        "name": "Chile",
+        "slug": "chile",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "CL",
+          "alpha3": "CHL",
+          "name": "Chile",
+          "slug": "chile"
+        },
+        "id": 1183,
+        "flag": "chile",
+        "alpha2": "CL",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "تشيلي",
+            "ru": "Чили"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Chile LNB",
+        "slug": "liga-nacional",
+        "primaryColorHex": "#243c47",
+        "secondaryColorHex": "#ff2c3c",
+        "category": {
+          "name": "Chile",
+          "slug": "chile",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "CL",
+            "alpha3": "CHL",
+            "name": "Chile",
+            "slug": "chile"
+          },
+          "id": 1183,
+          "flag": "chile",
+          "alpha2": "CL",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تشيلي",
+              "ru": "Чили"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 501,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 9506,
+        "hasEventPlayerStatistics": false,
+        "hasBoxScore": true,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "الدوري التشيلي لكرة السلة (LNB)",
+            "ru": "Лига НБ Чили"
+          },
+          "shortNameTranslation": {}
+        },
+        "hasRating": true,
+        "hasLiveRating": true
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 1,
+      "id": 199438
+    },
+    "season": {
+      "name": "LNB 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 92229
+    },
+    "roundInfo": {
+      "round": 1
+    },
+    "customId": "ZkTbsAATb",
+    "status": {
+      "code": 110,
+      "description": "AET",
+      "type": "finished"
+    },
+    "winnerCode": 2,
+    "homeTeam": {
+      "name": "CD Puente Alto",
+      "slug": "cd-puente-alto",
+      "shortName": "Puente Alto",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 300,
+      "venue": {
+        "city": {
+          "name": "Puente Alto",
+          "country": {
+            "alpha2": "CL",
+            "alpha3": "CHL",
+            "name": "Chile",
+            "slug": "chile"
+          },
+          "id": 22365
+        },
+        "hidden": true,
+        "slug": "gimnasio-municipal-irene-vel-squez-de-puente-alto",
+        "name": "Gimnasio Municipal Irene Velásquez de Puente Alto",
+        "capacity": 1080,
+        "country": {
+          "alpha2": "CL",
+          "alpha3": "CHL",
+          "name": "Chile",
+          "slug": "chile"
+        },
+        "id": 28669,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "القاعة البلدية إيرين فيلاسكيز في بويينتي ألتو",
+            "hi": "जिम्नासियो म्यूनिसिपल आइरीन वेलास्केज़ डी पुएंते ऑल्टो",
+            "bn": "মিউনিসিপ্যাল ​​জিমনেসিও আইরিন ভেলাসকুয়েজ ডে পুয়েন্তে আল্টো",
+            "ru": "Gimnasio Municipal Irene Velásquez de Puente Alto"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Gimnasio Municipal Irene Velásquez de Puente Alto",
+          "capacity": 1080
+        }
+      },
+      "nameCode": "PUE",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "CL",
+        "alpha3": "CHL",
+        "name": "Chile",
+        "slug": "chile"
+      },
+      "id": 233775,
+      "fullName": "CD Puente Alto",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#d16d2b",
+        "secondary": "#2a3d67",
+        "text": "#2a3d67"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "نادي بوينتي ألتو",
+          "ru": "Пуэнте Альто"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Universidad de Concepción",
+      "slug": "universidad-de-concepcion",
+      "shortName": "U de Concepción",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 802,
+      "venue": {
+        "city": {
+          "name": "Concepción",
+          "country": {
+            "alpha2": "CL",
+            "alpha3": "CHL",
+            "name": "Chile",
+            "slug": "chile"
+          },
+          "id": 22268
+        },
+        "hidden": true,
+        "slug": "casa-del-deporte-udec",
+        "name": "Casa Del Deporte UDEC",
+        "country": {
+          "alpha2": "CL",
+          "alpha3": "CHL",
+          "name": "Chile",
+          "slug": "chile"
+        },
+        "id": 28670,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "منزل الرياضة يو دي إي سي",
+            "hi": "कासा डेल डेपोर्टे यूडीईसी",
+            "bn": "কাসা ডেল ডেপোরটে ইউডিইসি",
+            "ru": "Casa Del Deporte UDEC"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Casa Del Deporte UDEC"
+        }
+      },
+      "nameCode": "UNI",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "CL",
+        "alpha3": "CHL",
+        "name": "Chile",
+        "slug": "chile"
+      },
+      "id": 233049,
+      "fullName": "Universidad de Concepción",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffff00",
+        "secondary": "#001a57",
+        "text": "#001a57"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "يونيفيرسيداد دي كونسيبسيون",
+          "ru": "Универсидад де Консепсьон"
+        },
+        "shortNameTranslation": {
+          "ar": "تحت كونسيبسيون"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 96,
+      "display": 96,
+      "period1": 27,
+      "period2": 28,
+      "period3": 18,
+      "period4": 13,
+      "normaltime": 86,
+      "overtime": 10
+    },
+    "awayScore": {
+      "current": 97,
+      "display": 97,
+      "period1": 16,
+      "period2": 19,
+      "period3": 24,
+      "period4": 27,
+      "normaltime": 86,
+      "overtime": 11
+    },
+    "time": {
+      "periodLength": 600,
+      "overtimeLength": 300,
+      "totalPeriodCount": 4
+    },
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type",
+        "homeScore.normaltime",
+        "awayScore.normaltime",
+        "time.played",
+        "time.playedLastUpdated"
+      ],
+      "changeTimestamp": 1789435623
+    },
+    "hasGlobalHighlights": false,
+    "hasEventPlayerStatistics": true,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17060398,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "cd-puente-alto-universidad-de-concepcion",
+    "startTimestamp": 1789426800,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "cupMatchesInRound": 1,
+    "seasonStatisticsType": "overall",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

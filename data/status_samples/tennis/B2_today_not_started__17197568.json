@@ -1,0 +1,348 @@
+{
+  "case_id": "B2_today_not_started",
+  "event_id": 17197568,
+  "fetched_at_utc": "2026-09-29T15:56:43+00:00",
+  "source_endpoint": "/api/v1/event/17197568",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"d8c358966d\"",
+    "date": "Tue, 29 Sep 2026 15:56:43 GMT"
+  },
+  "note": "Bugün, henüz başlamamış; index source scan:2026-09-30",
+  "event": {
+    "tournament": {
+      "name": "Columbus, USA",
+      "slug": "columbus-usa",
+      "category": {
+        "name": "Challenger",
+        "slug": "challenger",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 6,
+        "country": {},
+        "id": 72,
+        "flag": "challenger",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "চ্যালেঞ্জার",
+            "ar": "تحدي (تنس)",
+            "hi": "डेनमार्क",
+            "ru": "Challenger"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Colombus, USA Men Singles",
+        "slug": "colombus-usa-men-singles",
+        "category": {
+          "name": "Challenger",
+          "slug": "challenger",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 6,
+          "country": {},
+          "id": 72,
+          "flag": "challenger",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "চ্যালেঞ্জার",
+              "ar": "تحدي (تنس)",
+              "hi": "डेनमार्क",
+              "ru": "Challenger"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 183,
+        "groundType": "Hardcourt indoor",
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 6652,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كولومبوس، الولايات المتحدة الأمريكية فردي الرجال",
+            "ru": "Колумбус, США, одиночный разряд среди мужчин"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "id": 201513,
+      "endTimestamp": 1791072000,
+      "startTimestamp": 1790553600
+    },
+    "season": {
+      "name": "ATP Challenger Columbus, USA Men Singles 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 96688
+    },
+    "roundInfo": {
+      "round": 6,
+      "name": "Round of 32",
+      "slug": "round-of-32",
+      "cupRoundType": 16
+    },
+    "customId": "hTHsIEdc",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "venue": {
+      "city": {
+        "name": "Columbus",
+        "country": {
+          "alpha2": "US",
+          "alpha3": "USA",
+          "name": "USA",
+          "slug": "usa"
+        },
+        "id": 19044
+      },
+      "hidden": true,
+      "slug": "court-3",
+      "name": "Court 3",
+      "country": {
+        "alpha2": "US",
+        "alpha3": "USA",
+        "name": "USA",
+        "slug": "usa"
+      },
+      "id": 41785,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ملعب 3",
+          "hi": "कोर्ट 3",
+          "bn": "কোর্ট 3"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Court 3"
+      }
+    },
+    "homeTeam": {
+      "name": "Igor Marcondes",
+      "slug": "marcondes-igor",
+      "shortName": "I. Marcondes",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 1308,
+      "playerTeamInfo": {
+        "height": 1.85,
+        "weight": 78,
+        "plays": "left-handed",
+        "prizeCurrent": 36645,
+        "prizeTotal": 119663,
+        "birthCity": {
+          "name": "Caraguatatuba",
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 35785
+        },
+        "residenceCity": {
+          "name": "Sao Jose dos Campos",
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 20351
+        },
+        "id": 1756,
+        "birthplace": "Caraguatatuba, Brazil",
+        "birthDateTimestamp": 866419200,
+        "underage": false,
+        "residence": "Sao Jose dos Campos, Brazil",
+        "prizeCurrentRaw": {
+          "value": 36645,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 119663,
+          "currency": "EUR"
+        },
+        "currentRanking": 269
+      },
+      "nameCode": "RIB",
+      "ranking": 324,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "BR",
+        "alpha3": "BRA",
+        "name": "Brazil",
+        "slug": "brazil"
+      },
+      "id": 82157,
+      "fullName": "Igor Marcondes",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "إيغور ماركوندس",
+          "ru": "Рибейро Маркондес, Игор"
+        },
+        "shortNameTranslation": {
+          "ar": "إ. ماركوندس"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Andrew Fenty",
+      "slug": "fenty-andrew",
+      "shortName": "A. Fenty",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 670,
+      "playerTeamInfo": {
+        "height": 1.93,
+        "weight": 88,
+        "plays": "right-handed",
+        "prizeCurrent": 17922,
+        "prizeTotal": 74656,
+        "birthCity": {
+          "name": "Washington, DC",
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 18695
+        },
+        "id": 4011,
+        "birthplace": "Washington, DC, USA",
+        "birthDateTimestamp": 952473600,
+        "underage": false,
+        "prizeCurrentRaw": {
+          "value": 17922,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 74656,
+          "currency": "EUR"
+        },
+        "currentRanking": 427
+      },
+      "nameCode": "FEN",
+      "ranking": 431,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "US",
+        "alpha3": "USA",
+        "name": "USA",
+        "slug": "usa"
+      },
+      "id": 258983,
+      "fullName": "Andrew Fenty",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "أندرو فنتي",
+          "bn": "অ্যান্ড্রু ফেন্টি",
+          "hi": "एंड्रयू फेंटी",
+          "ru": "Эндрю Фенти"
+        },
+        "shortNameTranslation": {
+          "ar": "أ. فنتي",
+          "ru": "Э. Фенти"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17197568,
+    "defaultPeriodCount": 3,
+    "slug": "andrew-fenty-igor-marcondes",
+    "startTimestamp": 1790700600,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "finalResultOnly": false,
+    "hasBet365LiveStream": true,
+    "bet365ExcludedCountryCodes": [
+      "AN",
+      "CU",
+      "IR",
+      "KP",
+      "SY",
+      "VE",
+      "GR",
+      "RU",
+      "CH",
+      "CA"
+    ],
+    "feedLocked": false,
+    "groundType": "Hardcourt indoor",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "singles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "lower"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

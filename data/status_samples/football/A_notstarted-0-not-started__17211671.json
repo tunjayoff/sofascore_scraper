@@ -1,0 +1,274 @@
+{
+  "case_id": "A_notstarted-0-not-started",
+  "event_id": 17211671,
+  "fetched_at_utc": "2026-09-29T15:52:58+00:00",
+  "source_endpoint": "/api/v1/event/17211671",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"d21fea0f8d\"",
+    "date": "Tue, 29 Sep 2026 15:52:58 GMT"
+  },
+  "note": "index source scan:2026-09-29",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "U19 Friendly Games",
+      "slug": "u19-friendly-games",
+      "category": {
+        "name": "World",
+        "slug": "world",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 20,
+        "country": {},
+        "id": 1468,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "العالم",
+            "hi": "विश्व",
+            "bn": "বিশ্ব",
+            "ru": "Мир"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "U19 Friendly Games",
+        "slug": "u19-friendly-games",
+        "primaryColorHex": "#25497d",
+        "secondaryColorHex": "#d38f1d",
+        "category": {
+          "name": "World",
+          "slug": "world",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 20,
+          "country": {},
+          "id": 1468,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "العالم",
+              "hi": "विश्व",
+              "bn": "বিশ্ব",
+              "ru": "Мир"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 2282,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "showBanner": true,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 856,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "مباريات ودية تحت 19 سنة",
+            "hi": "अंडर-19 फ्रेंडली गेम्स",
+            "bn": "আন্ডার19 ফ্রেন্ডলি গেমস",
+            "ru": "Товарищеские игры до 19 лет"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 3,
+      "isLive": false,
+      "id": 5799,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "hi": "अंडर-19 फ्रेंडली गेम्स",
+          "ar": "مباريات ودية تحت 19 سنة",
+          "bn": "আন্ডার19 ফ্রেন্ডলি গেমস",
+          "ru": "Дружеские матчи до 19 лет"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "U19 Friendly Games 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 87180
+    },
+    "customId": "iajsmaj",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "homeTeam": {
+      "name": "Finland U19",
+      "slug": "finland-u19",
+      "shortName": "Finland U19",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 2088,
+      "manager": {
+        "name": "Peter Lundberg",
+        "slug": "peter-lundberg",
+        "shortName": "P. Lundberg",
+        "country": {
+          "alpha2": "FI",
+          "alpha3": "FIN",
+          "name": "Finland",
+          "slug": "finland"
+        },
+        "id": 788188,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "بيتر لوندبرغ",
+            "bn": "পিটার লুন্ডবার্গ",
+            "hi": "पीटर लुंडबर्ग",
+            "ru": "Петер Лундберг"
+          },
+          "shortNameTranslation": {
+            "ar": "ب. لوندبرغ",
+            "hi": "पी. लुंडबर्ग",
+            "bn": "পি. লুন্ডবার্গ",
+            "ru": "П. Лундберг"
+          }
+        }
+      },
+      "nameCode": "FIN",
+      "class": 1,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "FI",
+        "alpha3": "FIN",
+        "name": "Finland",
+        "slug": "finland"
+      },
+      "id": 22508,
+      "fullName": "Finland U19",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffffff",
+        "secondary": "#0066b3",
+        "text": "#0066b3"
+      },
+      "foundationDateTimestamp": -1976227200,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "فنلندا تحت 19",
+          "hi": "फ़िनलैंड U19",
+          "ru": "Финляндия U19"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Germany U19",
+      "slug": "germany-u19",
+      "shortName": "Germany U19",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 11944,
+      "manager": {
+        "name": "Christian Worns",
+        "slug": "christian-worns",
+        "shortName": "C. Worns",
+        "country": {
+          "alpha2": "DE",
+          "alpha3": "DEU",
+          "name": "Germany",
+          "slug": "germany"
+        },
+        "id": 786433,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كريستيان وورنز",
+            "ru": "Кристиан Ворнс"
+          },
+          "shortNameTranslation": {
+            "ar": "ج. وورنز",
+            "ru": "К. Ворнс"
+          }
+        }
+      },
+      "nameCode": "GER",
+      "class": 1,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "DE",
+        "alpha3": "DEU",
+        "name": "Germany",
+        "slug": "germany"
+      },
+      "id": 22512,
+      "fullName": "Germany U19",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffffff",
+        "secondary": "#000000",
+        "text": "#000000"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ألمانيا تحت 19",
+          "hi": "जर्मनी U19",
+          "ru": "Германия U19"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17211671,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "slug": "germany-u19-finland-u19",
+    "startTimestamp": 1790758800,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "national"
+      ],
+      "level": [
+        "pro",
+        "youth"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

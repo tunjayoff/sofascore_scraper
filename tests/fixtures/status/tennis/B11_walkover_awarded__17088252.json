@@ -1,0 +1,27 @@
+{
+  "case_id": "B11_walkover_awarded",
+  "event_id": 17088252,
+  "fetched_at_utc": "2026-09-29T15:56:53+00:00",
+  "source_file": "data/status_samples/tennis/B11_walkover_awarded__17088252.json",
+  "status": {
+    "code": 91,
+    "description": "Walkover",
+    "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1789555200,
+  "time": {
+    "currentPeriodStartTimestamp": 1789554704
+  },
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type",
+      "time.currentPeriodStart"
+    ],
+    "changeTimestamp": 1789554707
+  }
+}

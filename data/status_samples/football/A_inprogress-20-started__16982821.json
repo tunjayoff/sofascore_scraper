@@ -1,0 +1,277 @@
+{
+  "case_id": "A_inprogress-20-started",
+  "event_id": 16982821,
+  "fetched_at_utc": "2026-09-29T13:44:15+00:00",
+  "source_endpoint": "/api/v1/event/16982821",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"51babe2061\"",
+    "date": "Tue, 29 Sep 2026 13:44:14 GMT"
+  },
+  "note": "live snapshot 2026-09-29T13:43:27+00:00",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "Kup NS USK",
+      "slug": "kup-ns-usk",
+      "category": {
+        "name": "Bosnia & Herzegovina Amateur",
+        "slug": "bosnia-and-herzegovina-amateur",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "BA",
+          "alpha3": "BIH",
+          "name": "Bosnia & Herzegovina",
+          "slug": "bosnia-and-herzegovina"
+        },
+        "id": 1582,
+        "flag": "bosnia-herzegovina",
+        "alpha2": "BA",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "البوسنة والهرسك هواة",
+            "ru": "Босния и Герцеговина Любители"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Kup NS USK",
+        "slug": "kup-ns-usk",
+        "category": {
+          "name": "Bosnia & Herzegovina Amateur",
+          "slug": "bosnia-and-herzegovina-amateur",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "BA",
+            "alpha3": "BIH",
+            "name": "Bosnia & Herzegovina",
+            "slug": "bosnia-and-herzegovina"
+          },
+          "id": 1582,
+          "flag": "bosnia-herzegovina",
+          "alpha2": "BA",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "البوسنة والهرسك هواة",
+              "ru": "Босния и Герцеговина Любители"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 13,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 22347,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كأس إن إس يو إس كيه",
+            "ru": "Кубок NS USK"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "id": 129487,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "كأس إن إس يو إس كيه",
+          "ru": "Кубок NS USK"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Kup NS USK 26/27",
+      "year": "26/27",
+      "editor": true,
+      "id": 102441
+    },
+    "roundInfo": {
+      "round": 6,
+      "name": "1/16",
+      "slug": "round-of-32",
+      "cupRoundType": 16
+    },
+    "customId": "gmXcsdIhk",
+    "status": {
+      "code": 20,
+      "description": "Started",
+      "type": "inprogress"
+    },
+    "homeTeam": {
+      "name": "AN Jedinstvo Bihać",
+      "slug": "an-jedinstvo-bihac",
+      "shortName": "AN Jedinstvo Bihać",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 7,
+      "nameCode": "AJB",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "BA",
+        "alpha3": "BIH",
+        "name": "Bosnia & Herzegovina",
+        "slug": "bosnia-and-herzegovina"
+      },
+      "id": 1269153,
+      "fullName": "AN Jedinstvo Bihać",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "NK Sloga Bosanska Otoka",
+      "slug": "nk-sloga-bosanska-otoka",
+      "shortName": "Sloga Bosanska Otoka",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 96,
+      "venue": {
+        "city": {
+          "name": "Bosanska Otoka",
+          "country": {
+            "alpha2": "BA",
+            "alpha3": "BIH",
+            "name": "Bosnia & Herzegovina",
+            "slug": "bosnia-and-herzegovina"
+          },
+          "id": 25531
+        },
+        "venueCoordinates": {
+          "latitude": 44.9613239,
+          "longitude": 16.1741734
+        },
+        "hidden": true,
+        "slug": "stadion-bare",
+        "name": "Stadion Bare",
+        "country": {
+          "alpha2": "BA",
+          "alpha3": "BIH",
+          "name": "Bosnia & Herzegovina",
+          "slug": "bosnia-and-herzegovina"
+        },
+        "id": 48064,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ru": "Стадион Bare"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Stadion Bare"
+        }
+      },
+      "nameCode": "NSB",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "BA",
+        "alpha3": "BIH",
+        "name": "Bosnia & Herzegovina",
+        "slug": "bosnia-and-herzegovina"
+      },
+      "id": 368106,
+      "fullName": "NK Sloga Bosanska Otoka",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "إن كيه سلوغا بوسانسكا أوتوكه",
+          "ru": "НК Слога Босанска Отока"
+        },
+        "shortNameTranslation": {
+          "ar": "سلوغا بوسانسكا أوتوكه",
+          "ru": "Слога Босанска Отока"
+        }
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 1,
+      "display": 1
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0
+    },
+    "time": {},
+    "changes": {
+      "changes": [
+        "homeScore.current",
+        "homeScore.display"
+      ],
+      "changeTimestamp": 1790689427
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": true,
+    "id": 16982821,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "varInProgress": {
+      "homeTeam": false,
+      "awayTeam": false
+    },
+    "slug": "an-jedinstvo-bihac-nk-sloga-bosanska-otoka",
+    "startTimestamp": 1790686800,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "createdByNickname": "Ajdin Trnka",
+    "eventEditorName": "Ajdin Trnka",
+    "eventEditor": {
+      "id": "65edb199a8594c7fe5e9b2dc",
+      "name": "Ajdin Trnka"
+    },
+    "showTotoPromo": true,
+    "isEditor": true,
+    "crowdsourcingEnabled": true,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "contributor"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

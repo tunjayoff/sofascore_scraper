@@ -1,0 +1,361 @@
+{
+  "case_id": "B1_future_7d",
+  "event_id": 17211681,
+  "fetched_at_utc": "2026-09-29T15:53:00+00:00",
+  "source_endpoint": "/api/v1/event/17211681",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"09708052ec\"",
+    "date": "Tue, 29 Sep 2026 15:52:59 GMT"
+  },
+  "note": "Gelecek maç (7+ gün sonra); index source scan:2026-10-06",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "International Friendly Games",
+      "slug": "int-friendly-games",
+      "category": {
+        "name": "World",
+        "slug": "world",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 20,
+        "country": {},
+        "id": 1468,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "العالم",
+            "hi": "विश्व",
+            "bn": "বিশ্ব",
+            "ru": "Мир"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "International Friendly Games",
+        "slug": "int-friendly-games",
+        "primaryColorHex": "#25497d",
+        "secondaryColorHex": "#d38f1d",
+        "category": {
+          "name": "World",
+          "slug": "world",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 20,
+          "country": {},
+          "id": 1468,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "العالم",
+              "hi": "विश्व",
+              "bn": "বিশ্ব",
+              "ru": "Мир"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 120720,
+        "hasRounds": false,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": true,
+        "country": {},
+        "id": 851,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "مباريات ودية دولية",
+            "hi": "इंटरनेशनल फ्रेंडली गेम्स",
+            "bn": "ইন্টারন্যাশনাল ফ্রেন্ডলি গেমস",
+            "ru": "Международные товарищеские игры"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 89,
+      "isGroup": false,
+      "competitionType": 3,
+      "isLive": false,
+      "id": 66,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "hi": "इंटरनेशनल फ्रेंडली गेम्स",
+          "ar": "مباريات ودية دولية",
+          "bn": "ইন্টারন্যাশনাল ফ্রেন্ডলি গেমস",
+          "ru": "Международные товарищеские матчи"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Int. Friendly Games 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 87155
+    },
+    "customId": "UTbsKVb",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "homeTeam": {
+      "name": "Russia",
+      "slug": "russia",
+      "shortName": "Russia",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 74174,
+      "manager": {
+        "name": "Valeriy Karpin",
+        "slug": "valeri-georgievich-karpin",
+        "shortName": "V. Karpin",
+        "country": {
+          "alpha2": "RU",
+          "alpha3": "RUS",
+          "name": "Russia",
+          "slug": "russia"
+        },
+        "id": 591744,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "فاليري كاربين",
+            "bn": "ভ্যালেরি কার্পিন",
+            "hi": "वैलेरी कार्पिन",
+            "ru": "Валерий Карпин"
+          },
+          "shortNameTranslation": {
+            "ar": "ف. كاربين",
+            "hi": "वी. कार्पिन",
+            "bn": "ভি. কার্পিন",
+            "ru": "В. Карпин"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Moscow",
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 19072
+        },
+        "venueCoordinates": {
+          "latitude": 55.75222,
+          "longitude": 37.61556
+        },
+        "hidden": true,
+        "slug": "luzhniki-stadium",
+        "name": "Luzhniki Stadium",
+        "capacity": 81000,
+        "country": {
+          "alpha2": "RU",
+          "alpha3": "RUS",
+          "name": "Russia",
+          "slug": "russia"
+        },
+        "id": 949,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب لوجنيكي",
+            "hi": "लुज़्निकी स्टेडियम",
+            "bn": "লুঝনিকি স্টেডিয়াম",
+            "ru": "Лужники"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Luzhniki Stadium",
+          "capacity": 81000
+        }
+      },
+      "nameCode": "RUS",
+      "ranking": 35,
+      "class": 1,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "RU",
+        "alpha3": "RUS",
+        "name": "Russia",
+        "slug": "russia"
+      },
+      "id": 4694,
+      "fullName": "Russia",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#e20000",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "foundationDateTimestamp": -1828828800,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "روسيا",
+          "bn": "রাশিয়া",
+          "hi": "रूस",
+          "ru": "Россия"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Nigeria",
+      "slug": "nigeria",
+      "shortName": "Nigeria",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 398797,
+      "manager": {
+        "name": "Eric Chelle",
+        "slug": "eric-chelle",
+        "shortName": "E. Chelle",
+        "country": {
+          "alpha2": "ML",
+          "alpha3": "MLI",
+          "name": "Mali",
+          "slug": "mali"
+        },
+        "id": 787378,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "إريك شيل",
+            "bn": "এরিক চেল",
+            "hi": "एरिक चेल्ले",
+            "ru": "Эрик Шель"
+          },
+          "shortNameTranslation": {
+            "ar": "إ. شيل",
+            "hi": "ई. चेल्ले",
+            "bn": "ই. চেল",
+            "ru": "Э. Шель"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Abuja",
+          "country": {
+            "alpha2": "NG",
+            "alpha3": "NGA",
+            "name": "Nigeria",
+            "slug": "nigeria"
+          },
+          "id": 20132
+        },
+        "venueCoordinates": {
+          "latitude": 9.038015,
+          "longitude": 7.453426
+        },
+        "hidden": true,
+        "slug": "moshood-abiola-national-stadium",
+        "name": "Moshood Abiola National Stadium",
+        "capacity": 60491,
+        "country": {
+          "alpha2": "NG",
+          "alpha3": "NGA",
+          "name": "Nigeria",
+          "slug": "nigeria"
+        },
+        "id": 27313,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب موسهود أبيولا الوطني",
+            "hi": "मोषूद अबियोला नेशनल स्टेडियम",
+            "bn": "মসুদ আবেওলা ন্যাশনাল স্টেডিয়াম",
+            "ru": "Стадион Moshood Abiola National"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Moshood Abiola National Stadium",
+          "capacity": 60491
+        }
+      },
+      "nameCode": "NIG",
+      "ranking": 26,
+      "class": 4,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "NG",
+        "alpha3": "NGA",
+        "name": "Nigeria",
+        "slug": "nigeria"
+      },
+      "id": 4785,
+      "fullName": "Nigeria",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#39b54a",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "foundationDateTimestamp": -788918400,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "نيجيريا",
+          "bn": "নাইজেরিয়া",
+          "hi": "नाइजीरिया",
+          "ru": "Нигерия"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17211681,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "slug": "nigeria-russia",
+    "startTimestamp": 1791306000,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "national"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

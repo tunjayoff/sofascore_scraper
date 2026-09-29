@@ -1,0 +1,49 @@
+{
+  "case_id": "A_finished-100-ended",
+  "event_id": 17092269,
+  "fetched_at_utc": "2026-09-29T15:54:38+00:00",
+  "source_file": "data/status_samples/basketball/A_finished-100-ended__17092269.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 72,
+    "display": 72,
+    "period1": 17,
+    "period2": 15,
+    "period3": 19,
+    "period4": 21,
+    "normaltime": 72
+  },
+  "awayScore": {
+    "current": 65,
+    "display": 65,
+    "period1": 21,
+    "period2": 14,
+    "period3": 23,
+    "period4": 7,
+    "normaltime": 65
+  },
+  "startTimestamp": 1789455600,
+  "time": {
+    "played": 2400,
+    "periodLength": 600,
+    "overtimeLength": 300,
+    "totalPeriodCount": 4
+  },
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type",
+      "homeScore.normaltime",
+      "awayScore.normaltime",
+      "time.played",
+      "time.playedLastUpdated"
+    ],
+    "changeTimestamp": 1789460538
+  }
+}

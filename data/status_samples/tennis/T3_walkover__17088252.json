@@ -1,0 +1,340 @@
+{
+  "case_id": "T3_walkover",
+  "event_id": 17088252,
+  "fetched_at_utc": "2026-09-29T15:56:58+00:00",
+  "source_endpoint": "/api/v1/event/17088252",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"21f64f2d34\"",
+    "date": "Tue, 29 Sep 2026 15:56:58 GMT"
+  },
+  "note": "Walkover; index source scan:2026-09-15",
+  "event": {
+    "tournament": {
+      "name": "Valencia, Spain",
+      "slug": "valencia-spain",
+      "category": {
+        "name": "WTA 125",
+        "slug": "wta-125",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 5,
+        "country": {},
+        "id": 871,
+        "flag": "wta-125",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "رابطة محترفات التنس 125",
+            "ru": "WTA 125"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Valencia, Spain",
+        "slug": "valencia-spain",
+        "category": {
+          "name": "WTA 125",
+          "slug": "wta-125",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 5,
+          "country": {},
+          "id": 871,
+          "flag": "wta-125",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "رابطة محترفات التنس 125",
+              "ru": "WTA 125"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 190,
+        "groundType": "Red clay",
+        "tennisPoints": 125,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 18577,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "فالنسيا، إسبانيا",
+            "ru": "Валенсия, Испания"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "id": 199931,
+      "endTimestamp": 1789862400,
+      "startTimestamp": 1789344000
+    },
+    "season": {
+      "name": "WTA 125K Valencia, Spain Women Singles 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 97160
+    },
+    "roundInfo": {
+      "round": 5,
+      "name": "Round of 16",
+      "slug": "round-of-16",
+      "cupRoundType": 8
+    },
+    "customId": "kClbstGHb",
+    "status": {
+      "code": 91,
+      "description": "Walkover",
+      "type": "finished"
+    },
+    "winnerCode": 2,
+    "venue": {
+      "city": {
+        "name": "Valencia",
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 19162
+      },
+      "hidden": true,
+      "slug": "pista-central",
+      "name": "Pista Central",
+      "country": {
+        "alpha2": "ES",
+        "alpha3": "ESP",
+        "name": "Spain",
+        "slug": "spain"
+      },
+      "id": 29144,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "الملعب المركزي",
+          "hi": "पिस्ता सेंट्रल",
+          "bn": "পিস্তা সেন্ট্রাল"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Pista Central"
+      }
+    },
+    "homeTeam": {
+      "name": "Martina Trevisan",
+      "slug": "trevisan-martina",
+      "shortName": "M. Trevisan",
+      "gender": "F",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 3852,
+      "playerTeamInfo": {
+        "height": 1.6,
+        "plays": "left-handed",
+        "turnedPro": "2008",
+        "prizeCurrent": 105373,
+        "prizeTotal": 3800441,
+        "birthCity": {
+          "name": "Florence",
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 19275
+        },
+        "id": 508,
+        "birthplace": "Florence, Italy",
+        "birthDateTimestamp": 752284800,
+        "underage": false,
+        "prizeCurrentRaw": {
+          "value": 105373,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 3800441,
+          "currency": "EUR"
+        },
+        "currentRanking": 208
+      },
+      "nameCode": "TRE",
+      "ranking": 307,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "IT",
+        "alpha3": "ITA",
+        "name": "Italy",
+        "slug": "italy"
+      },
+      "id": 153860,
+      "fullName": "Martina Trevisan",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "مارتينا تريفيسان",
+          "bn": "মার্টিনা ট্রেভিসান",
+          "hi": "मार्टिना त्रेविसान",
+          "ru": "Тревисан, Мартина"
+        },
+        "shortNameTranslation": {
+          "ar": "م. تريفيسان"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Clara Burel",
+      "slug": "burel-clara",
+      "shortName": "C. Burel",
+      "gender": "F",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 2355,
+      "playerTeamInfo": {
+        "height": 1.76,
+        "plays": "right-handed",
+        "prizeCurrent": 164174,
+        "prizeTotal": 2390293,
+        "birthCity": {
+          "name": "Rennes",
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 19025
+        },
+        "id": 3385,
+        "birthplace": "Rennes, France",
+        "birthDateTimestamp": 985392000,
+        "underage": false,
+        "prizeCurrentRaw": {
+          "value": 164174,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 2390293,
+          "currency": "EUR"
+        },
+        "currentRanking": 109
+      },
+      "nameCode": "BUR",
+      "ranking": 218,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "FR",
+        "alpha3": "FRA",
+        "name": "France",
+        "slug": "france"
+      },
+      "id": 206568,
+      "fullName": "Clara Burel",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "كلارا بورييل",
+          "bn": "ক্লারা বুরেল",
+          "hi": "क्लारा बुरेल",
+          "ru": "Бурель, Клара"
+        },
+        "shortNameTranslation": {
+          "ar": "ك. بورييل"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {
+      "currentPeriodStartTimestamp": 1789554704
+    },
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type",
+        "time.currentPeriodStart"
+      ],
+      "changeTimestamp": 1789554707
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17088252,
+    "defaultPeriodCount": 3,
+    "slug": "clara-burel-martina-trevisan",
+    "currentPeriodStartTimestamp": 1789554704,
+    "startTimestamp": 1789555200,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "finalResultOnly": false,
+    "hasBet365LiveStream": true,
+    "bet365ExcludedCountryCodes": [
+      "",
+      "IR",
+      "GR",
+      "RU",
+      "CH",
+      "CA"
+    ],
+    "feedLocked": false,
+    "groundType": "Red clay",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "singles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "lower"
+      ],
+      "gender": [
+        "F"
+      ]
+    }
+  },
+  "error": null
+}

@@ -1,0 +1,182 @@
+{
+  "case_id": "A_finished-91-walkover",
+  "event_id": 17102381,
+  "fetched_at_utc": "2026-09-29T15:54:50+00:00",
+  "source_endpoint": "/api/v1/event/17102381",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"df37aaae2e\"",
+    "date": "Tue, 29 Sep 2026 15:54:50 GMT"
+  },
+  "note": "index source scan:2026-09-17",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "Women's FIBA 3x3 U23 World Cup, Group D",
+      "slug": "womens-fiba-3x3-u23-world-cup-group-d",
+      "category": {
+        "name": "3x3",
+        "slug": "3x3",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {},
+        "id": 2367,
+        "flag": "3x3"
+      },
+      "uniqueTournament": {
+        "name": "Women's FIBA 3x3 U23 World Cup",
+        "slug": "womens-fiba-3x3-u23-world-cup",
+        "category": {
+          "name": "3x3",
+          "slug": "3x3",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {},
+          "id": 2367,
+          "flag": "3x3"
+        },
+        "userCount": 8,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 37948,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false
+      },
+      "priority": 0,
+      "isGroup": true,
+      "groupName": "Group D",
+      "competitionType": 1,
+      "id": 200225
+    },
+    "season": {
+      "name": "2026",
+      "year": "2026",
+      "editor": false,
+      "id": 103680
+    },
+    "customId": "bRlksdRlk",
+    "status": {
+      "code": 91,
+      "description": "Walkover",
+      "type": "finished"
+    },
+    "winnerCode": 1,
+    "homeTeam": {
+      "name": "Australia 3x3 U23",
+      "slug": "australia-3x3-u23",
+      "shortName": " Australia 3x3 U23",
+      "gender": "F",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 5,
+      "nameCode": "A3U",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "AU",
+        "alpha3": "AUS",
+        "name": "Australia",
+        "slug": "australia"
+      },
+      "id": 1279603,
+      "fullName": "Australia 3x3 U23",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "USA 3x3 U23",
+      "slug": "usa-3x3-u23",
+      "shortName": "USA 3x3 U23",
+      "gender": "F",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 8,
+      "nameCode": "U3U",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "US",
+        "alpha3": "USA",
+        "name": "USA",
+        "slug": "usa"
+      },
+      "id": 1279601,
+      "fullName": "USA 3x3 U23",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "coverage": -1,
+    "time": {},
+    "changes": {
+      "changes": [
+        "providerLock.status",
+        "providerLock.statusSource"
+      ],
+      "changeTimestamp": 1789761287
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17102381,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "australia-3x3-u23-usa-3x3-u23",
+    "startTimestamp": 1789734300,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro",
+        "youth"
+      ],
+      "gender": [
+        "F"
+      ]
+    }
+  },
+  "error": null
+}

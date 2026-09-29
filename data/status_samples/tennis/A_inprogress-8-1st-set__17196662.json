@@ -1,0 +1,356 @@
+{
+  "case_id": "A_inprogress-8-1st-set",
+  "event_id": 17196662,
+  "fetched_at_utc": "2026-09-29T13:45:21+00:00",
+  "source_endpoint": "/api/v1/event/17196662",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"cd397ddfac\"",
+    "date": "Tue, 29 Sep 2026 13:45:21 GMT"
+  },
+  "note": "live snapshot 2026-09-29T13:43:27+00:00",
+  "event": {
+    "firstToServe": 2,
+    "awayTeamSeed": "A",
+    "tournament": {
+      "name": "Curitiba, Brazil",
+      "slug": "curitiba-brazil",
+      "category": {
+        "name": "Challenger",
+        "slug": "challenger",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 6,
+        "country": {},
+        "id": 72,
+        "flag": "challenger",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "চ্যালেঞ্জার",
+            "ar": "تحدي (تنس)",
+            "hi": "डेनमार्क",
+            "ru": "Challenger"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Curitiba, Brazil",
+        "slug": "curitiba-brazil",
+        "category": {
+          "name": "Challenger",
+          "slug": "challenger",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 6,
+          "country": {},
+          "id": 72,
+          "flag": "challenger",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "চ্যালেঞ্জার",
+              "ar": "تحدي (تنس)",
+              "hi": "डेनमार्क",
+              "ru": "Challenger"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 206,
+        "groundType": "Red clay",
+        "tennisPoints": 75,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 9366,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كوريتيبا، البرازيل",
+            "ru": "Куритиба, Бразилия"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "id": 201510,
+      "endTimestamp": 1791072000,
+      "startTimestamp": 1790553600
+    },
+    "season": {
+      "name": "ATP Challenger Curitiba, Brazil Men Singles 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 96692
+    },
+    "roundInfo": {
+      "round": 6,
+      "name": "Round of 32",
+      "slug": "round-of-32",
+      "cupRoundType": 16
+    },
+    "customId": "YznbscJee",
+    "status": {
+      "code": 8,
+      "description": "1st set",
+      "type": "inprogress"
+    },
+    "venue": {
+      "city": {
+        "name": "Curitiba",
+        "country": {
+          "alpha2": "BR",
+          "alpha3": "BRA",
+          "name": "Brazil",
+          "slug": "brazil"
+        },
+        "id": 19541
+      },
+      "hidden": true,
+      "slug": "quadra-1",
+      "name": "Quadra 1",
+      "country": {
+        "alpha2": "BR",
+        "alpha3": "BRA",
+        "name": "Brazil",
+        "slug": "brazil"
+      },
+      "id": 24737,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ملعب كوادرا 1",
+          "hi": "क्वाड्रा 1",
+          "bn": "কুয়াড্রা 1"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Quadra 1"
+      }
+    },
+    "homeTeam": {
+      "name": "Felipe Meligeni Alves",
+      "slug": "meligeni-alves-felipe",
+      "shortName": "F. Meligeni Alves",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 3071,
+      "playerTeamInfo": {
+        "height": 1.85,
+        "weight": 85,
+        "plays": "right-handed",
+        "prizeCurrent": 39983,
+        "prizeTotal": 1241413,
+        "birthCity": {
+          "name": "Campinas",
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 20687
+        },
+        "residenceCity": {
+          "name": "Sao Jose dos Campos",
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 20351
+        },
+        "id": 2299,
+        "birthplace": "Campinas, Brazil",
+        "birthDateTimestamp": 887846400,
+        "underage": false,
+        "residence": "Sao Jose dos Campos, Brazil",
+        "prizeCurrentRaw": {
+          "value": 39983,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 1241413,
+          "currency": "EUR"
+        },
+        "currentRanking": 333
+      },
+      "nameCode": "MEL",
+      "ranking": 463,
+      "disabled": false,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "BR",
+        "alpha3": "BRA",
+        "name": "Brazil",
+        "slug": "brazil"
+      },
+      "id": 158748,
+      "fullName": "Felipe Meligeni Alves",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "فيليبي ميليغيني ألفيس",
+          "ru": "Меллгени Родригес Алвеш, Фелипе"
+        },
+        "shortNameTranslation": {
+          "ar": "ف. ألفيس",
+          "bn": "এফ. মেলিগেনি আলভেস",
+          "hi": "एफ. मेलिगेनी अल्वेस"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Carlos Maria Zarate",
+      "slug": "zarate-carlos-maria",
+      "shortName": "C. Zarate",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 647,
+      "playerTeamInfo": {
+        "height": 1.91,
+        "weight": 82,
+        "plays": "right-handed",
+        "prizeCurrent": 18755,
+        "prizeTotal": 37982,
+        "birthCity": {
+          "name": "Corrientes",
+          "country": {
+            "alpha2": "AR",
+            "alpha3": "ARG",
+            "name": "Argentina",
+            "slug": "argentina"
+          },
+          "id": 18468
+        },
+        "id": 20726,
+        "birthplace": "Corrientes, Argentina",
+        "birthDateTimestamp": 1112140800,
+        "underage": false,
+        "prizeCurrentRaw": {
+          "value": 18755,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 37982,
+          "currency": "EUR"
+        },
+        "currentRanking": 344
+      },
+      "nameCode": "ZAR",
+      "ranking": 344,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "AR",
+        "alpha3": "ARG",
+        "name": "Argentina",
+        "slug": "argentina"
+      },
+      "id": 511702,
+      "fullName": "Carlos Maria Zarate",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "كارلوس ماريا زاراتي",
+          "ru": "Карлос Мария Сарате"
+        },
+        "shortNameTranslation": {
+          "ar": "ك. زاراتي",
+          "ru": "К. Сарате"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 4,
+      "point": "40"
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 4,
+      "point": "0"
+    },
+    "time": {
+      "currentPeriodStartTimestamp": 1790687468
+    },
+    "changes": {
+      "changes": [
+        "homeScore.point"
+      ],
+      "changeTimestamp": 1790689494
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17196662,
+    "defaultPeriodCount": 3,
+    "slug": "carlos-maria-zarate-felipe-meligeni-alves",
+    "currentPeriodStartTimestamp": 1790687468,
+    "startTimestamp": 1790686800,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "lastPeriod": "period1",
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "groundType": "Red clay",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "singles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "lower"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

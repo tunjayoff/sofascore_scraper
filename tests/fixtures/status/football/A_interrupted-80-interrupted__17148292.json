@@ -1,0 +1,37 @@
+{
+  "case_id": "A_interrupted-80-interrupted",
+  "event_id": 17148292,
+  "fetched_at_utc": "2026-09-29T15:52:48+00:00",
+  "source_file": "data/status_samples/football/A_interrupted-80-interrupted__17148292.json",
+  "status": {
+    "code": 80,
+    "description": "Interrupted",
+    "type": "interrupted"
+  },
+  "homeScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "normaltime": 0
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "normaltime": 0
+  },
+  "startTimestamp": 1789977600,
+  "time": {
+    "periodLength": 2700,
+    "overtimeLength": 900,
+    "totalPeriodCount": 2,
+    "currentPeriodStartTimestamp": 1790050130
+  },
+  "changes": {
+    "changes": [
+      "providerLock.status",
+      "providerLock.statusSource"
+    ],
+    "changeTimestamp": 1790056912
+  }
+}

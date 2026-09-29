@@ -1,0 +1,404 @@
+{
+  "case_id": "A_postponed-60-postponed",
+  "event_id": 16539815,
+  "fetched_at_utc": "2026-09-29T15:52:49+00:00",
+  "source_endpoint": "/api/v1/event/16539815",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"8cc071a74b\"",
+    "date": "Tue, 29 Sep 2026 15:52:48 GMT"
+  },
+  "note": "index source scan:2026-09-20",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "División de Honor Juvenil, Group 5",
+      "slug": "division-de-honor-juvenil-grupo-v",
+      "category": {
+        "name": "Spain",
+        "slug": "spain",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 9,
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 32,
+        "flag": "spain",
+        "alpha2": "ES",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "hi": "स्पेन",
+            "ar": "إسبانيا",
+            "bn": "স্পেন",
+            "ru": "Испания"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "División de Honor Juvenil",
+        "slug": "u19-division-de-honor-juvenil",
+        "category": {
+          "name": "Spain",
+          "slug": "spain",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 9,
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 32,
+          "flag": "spain",
+          "alpha2": "ES",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "स्पेन",
+              "ar": "إسبانيا",
+              "bn": "স্পেন",
+              "ru": "Испания"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 2173,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 28749,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دوري الشرف للشباب",
+            "ru": "Дивизион Почета среди юношей"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": true,
+      "groupName": "Group 5",
+      "competitionType": 1,
+      "isLive": false,
+      "id": 40256,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "دوري الشرف للشباب، المجموعة 5",
+          "ru": "Дивизион Почета Юниоров, Группа 5"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "U19 Division de Honor Juvenil 26/27",
+      "year": "26/27",
+      "editor": false,
+      "seasonCoverageInfo": {},
+      "id": 98508
+    },
+    "roundInfo": {
+      "round": 3
+    },
+    "customId": "erYsThad",
+    "status": {
+      "code": 60,
+      "description": "Postponed",
+      "type": "postponed"
+    },
+    "homeTeam": {
+      "name": "Real Madrid U19",
+      "slug": "real-madrid-u19",
+      "shortName": "Real Madrid U19",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 34256,
+      "manager": {
+        "name": "Álvaro López",
+        "slug": "alvaro-lopez",
+        "shortName": "Á. López",
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 817838,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ألفارو لوبيز",
+            "ru": "Альваро Лопес"
+          },
+          "shortNameTranslation": {
+            "ar": "أ. لوبيز",
+            "ru": "А. Лопес"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Madrid",
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 18283
+        },
+        "venueCoordinates": {
+          "latitude": 40.476937,
+          "longitude": -3.61506
+        },
+        "hidden": true,
+        "slug": "estadio-alfredo-di-stefano",
+        "name": "Estadio Alfredo di Stefano",
+        "capacity": 9000,
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 9601,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب ألفريدو دي ستيفانو",
+            "hi": "एस्टेडियो अल्फ्रेडो डि स्टेफानो",
+            "bn": "এস্তাদিও আলফ্রেডো ডি স্টেফানো",
+            "ru": "Стадион Estadio Alfredo di Stefano"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Estadio Alfredo di Stefano",
+          "capacity": 9000
+        }
+      },
+      "nameCode": "RMA",
+      "disabled": false,
+      "national": false,
+      "parentTeam": {
+        "name": "Real Madrid",
+        "slug": "real-madrid",
+        "shortName": "Real Madrid",
+        "gender": "M",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "userCount": 8353770,
+        "manager": {
+          "name": "José Mourinho",
+          "slug": "jose-mourinho",
+          "shortName": "J. Mourinho",
+          "country": {
+            "alpha2": "PT",
+            "alpha3": "PRT",
+            "name": "Portugal",
+            "slug": "portugal"
+          },
+          "id": 53418,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "جوزيه مورينيو",
+              "ru": "Жозе Моуринью"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. مورينيو",
+              "ru": "Ж. Моуринью"
+            }
+          }
+        },
+        "venue": {
+          "city": {
+            "name": "Madrid",
+            "country": {
+              "alpha2": "ES",
+              "alpha3": "ESP",
+              "name": "Spain",
+              "slug": "spain"
+            },
+            "id": 18283
+          },
+          "venueCoordinates": {
+            "latitude": 40.453,
+            "longitude": -3.6883
+          },
+          "hidden": false,
+          "slug": "santiago-bernab-u",
+          "name": "Bernabéu",
+          "capacity": 83186,
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 754,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "سانتياغو برنابيو",
+              "hi": "सैंटियागो बर्नबेउ",
+              "bn": "সান্তিয়াগো বার্নাব্যু",
+              "ru": "Стадион Бернабеу"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "Bernabéu",
+            "capacity": 83186
+          }
+        },
+        "nameCode": "RMA",
+        "class": 4,
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 2829,
+        "fullName": "Real Madrid",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#ffffff",
+          "secondary": "#004996",
+          "text": "#004996"
+        },
+        "foundationDateTimestamp": -2140387200,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ريال مدريد",
+            "bn": "রিয়াল মাদ্রিদ",
+            "hi": "रियल मैड्रिड",
+            "ru": "Реал Мадрид"
+          },
+          "shortNameTranslation": {}
+        },
+        "timeActive": []
+      },
+      "type": 0,
+      "country": {
+        "alpha2": "ES",
+        "alpha3": "ESP",
+        "name": "Spain",
+        "slug": "spain"
+      },
+      "id": 120854,
+      "fullName": "Real Madrid U19",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffffff",
+        "secondary": "#004996",
+        "text": "#004996"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ريال مدريدتحت 19",
+          "hi": "रियल माद्रिद U19",
+          "ru": "Реал Мадрид U19"
+        },
+        "shortNameTranslation": {
+          "ar": "ريال مدريدتحت 19"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Getafe U19",
+      "slug": "getafe-u19",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 661,
+      "nameCode": "GU1",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "ES",
+        "alpha3": "ESP",
+        "name": "Spain",
+        "slug": "spain"
+      },
+      "id": 375393,
+      "fullName": "Getafe U19",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#00369e",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "خيتافي تحت 19",
+          "ru": "Хетафе U19"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type"
+      ],
+      "changeTimestamp": 1788803830
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16539815,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "slug": "getafe-u19-real-madrid-u19",
+    "startTimestamp": 1789916400,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro",
+        "youth"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

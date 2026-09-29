@@ -1,0 +1,498 @@
+{
+  "case_id": "T5_live_tiebreak",
+  "event_id": 17202156,
+  "fetched_at_utc": "2026-09-29T15:57:00+00:00",
+  "source_endpoint": "/api/v1/event/17202156",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"4cf66e3ec0\"",
+    "date": "Tue, 29 Sep 2026 15:57:00 GMT"
+  },
+  "note": "Canlı tie-break; index source live:2026-09-29T15:02:42+00:00",
+  "event": {
+    "firstToServe": 2,
+    "awayTeamSeed": "2",
+    "tournament": {
+      "name": "Adana, Turkiye, Doubles",
+      "slug": "adana-turkiye-doubles",
+      "category": {
+        "name": "WTA 125",
+        "slug": "wta-125",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 5,
+        "country": {},
+        "id": 871,
+        "flag": "wta-125",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "رابطة محترفات التنس 125",
+            "ru": "WTA 125"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Adana, Turkiye, Doubles",
+        "slug": "adana-turkiye-doubles",
+        "category": {
+          "name": "WTA 125",
+          "slug": "wta-125",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 5,
+          "country": {},
+          "id": 871,
+          "flag": "wta-125",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "رابطة محترفات التنس 125",
+              "ru": "WTA 125"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 11,
+        "groundType": "Hardcourt outdoor",
+        "tennisPoints": 125,
+        "hasRounds": false,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 38330,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "id": 201518,
+      "endTimestamp": 1790985600,
+      "startTimestamp": 1790553600
+    },
+    "season": {
+      "name": "WTA 125K Adana, Turkiye Women Doubles 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 104442
+    },
+    "roundInfo": {
+      "round": 5,
+      "name": "Round of 16",
+      "slug": "round-of-16",
+      "cupRoundType": 8
+    },
+    "customId": "atlksTKpk",
+    "status": {
+      "code": 100,
+      "description": "Ended",
+      "type": "finished"
+    },
+    "winnerCode": 2,
+    "venue": {
+      "city": {
+        "name": "Adana",
+        "country": {
+          "alpha2": "TR",
+          "alpha3": "TUR",
+          "name": "Türkiye",
+          "slug": "turkiye"
+        },
+        "id": 18915
+      },
+      "hidden": true,
+      "slug": "cagla-court",
+      "name": "Cagla Court",
+      "country": {
+        "alpha2": "TR",
+        "alpha3": "TUR",
+        "name": "Türkiye",
+        "slug": "turkiye"
+      },
+      "id": 65378,
+      "stadium": {
+        "name": "Cagla Court"
+      }
+    },
+    "homeTeam": {
+      "name": "Drazic M / Mattel M",
+      "slug": "drazic-m-mattel-m",
+      "gender": "F",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 2,
+      "nameCode": "D/M",
+      "national": false,
+      "type": 2,
+      "country": {},
+      "id": 1278400,
+      "fullName": "Drazic M / Mattel M",
+      "subTeams": [
+        {
+          "name": "Mariana Drazic",
+          "slug": "drazic-mariana",
+          "shortName": "M. Drazic",
+          "gender": "F",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 227,
+          "playerTeamInfo": {
+            "prizeCurrent": 6841,
+            "prizeTotal": 58293,
+            "id": 2083,
+            "birthDateTimestamp": 789523200,
+            "underage": false,
+            "prizeCurrentRaw": {
+              "value": 6841,
+              "currency": "EUR"
+            },
+            "prizeTotalRaw": {
+              "value": 58293,
+              "currency": "EUR"
+            }
+          },
+          "nameCode": "DRA",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "HR",
+            "alpha3": "HRV",
+            "name": "Croatia",
+            "slug": "croatia"
+          },
+          "id": 61922,
+          "fullName": "Mariana Drazic",
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ماريانا درازيتش",
+              "ru": "Дражич, Марьяна"
+            },
+            "shortNameTranslation": {
+              "ar": "م. درازيتش"
+            }
+          },
+          "timeActive": []
+        },
+        {
+          "name": "Marie Mattel",
+          "slug": "mattel-marie",
+          "shortName": "M. Mattel",
+          "gender": "F",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 70,
+          "playerTeamInfo": {
+            "prizeCurrent": 4933,
+            "prizeTotal": 15183,
+            "id": 30558,
+            "underage": false,
+            "prizeCurrentRaw": {
+              "value": 4933,
+              "currency": "EUR"
+            },
+            "prizeTotalRaw": {
+              "value": 15183,
+              "currency": "EUR"
+            },
+            "currentRanking": 764
+          },
+          "nameCode": "MAT",
+          "ranking": 956,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 215417,
+          "fullName": "Marie Mattel",
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ماري ماتييل",
+              "ru": "Мари Маттель"
+            },
+            "shortNameTranslation": {
+              "ar": "م. ماتييل",
+              "ru": "М. Маттель"
+            }
+          },
+          "timeActive": []
+        }
+      ],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Hruncakova V / Siskova A",
+      "slug": "hruncakova-v-siskova-a",
+      "gender": "F",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 1,
+      "nameCode": "H/S",
+      "national": false,
+      "type": 2,
+      "country": {},
+      "id": 1289293,
+      "fullName": "Hruncakova V / Siskova A",
+      "subTeams": [
+        {
+          "name": "Viktoria Hrunčakova",
+          "slug": "hruncakova-viktoria",
+          "shortName": "V. Hrunčakova",
+          "gender": "F",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 1191,
+          "playerTeamInfo": {
+            "height": 1.8,
+            "plays": "right-handed",
+            "turnedPro": "2014",
+            "prizeCurrent": 180505,
+            "prizeTotal": 2664102,
+            "birthCity": {
+              "name": "Kosice",
+              "country": {
+                "alpha2": "SK",
+                "alpha3": "SVK",
+                "name": "Slovakia",
+                "slug": "slovakia"
+              },
+              "id": 19761
+            },
+            "residenceCity": {
+              "name": "Kosice",
+              "country": {
+                "alpha2": "SK",
+                "alpha3": "SVK",
+                "name": "Slovakia",
+                "slug": "slovakia"
+              },
+              "id": 19761
+            },
+            "id": 197,
+            "birthplace": "Kosice, Slovakia",
+            "birthDateTimestamp": 894844800,
+            "underage": false,
+            "residence": "Kosice, Slovakia",
+            "prizeCurrentRaw": {
+              "value": 180505,
+              "currency": "EUR"
+            },
+            "prizeTotalRaw": {
+              "value": 2664102,
+              "currency": "EUR"
+            },
+            "currentRanking": 204
+          },
+          "nameCode": "HRU",
+          "ranking": 211,
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "SK",
+            "alpha3": "SVK",
+            "name": "Slovakia",
+            "slug": "slovakia"
+          },
+          "id": 129534,
+          "fullName": "Viktoria Hrunčakova",
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فيكتوريا هروتشاكوفا",
+              "ru": "Кузмова, Виктория"
+            },
+            "shortNameTranslation": {
+              "ar": "ف. هروتشاكوفا",
+              "bn": "ভি. হ্রুনচ্যাকোভা",
+              "hi": "वी. ह्रुनचाकोवा"
+            }
+          },
+          "timeActive": []
+        },
+        {
+          "name": "Anna Siskova",
+          "slug": "siskova-anna",
+          "shortName": "A. Siskova",
+          "gender": "F",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 905,
+          "playerTeamInfo": {
+            "plays": "right-handed",
+            "prizeCurrent": 182235,
+            "prizeTotal": 536408,
+            "id": 3497,
+            "birthDateTimestamp": 993945600,
+            "underage": false,
+            "prizeCurrentRaw": {
+              "value": 182235,
+              "currency": "EUR"
+            },
+            "prizeTotalRaw": {
+              "value": 536408,
+              "currency": "EUR"
+            },
+            "currentRanking": 160
+          },
+          "nameCode": "SIS",
+          "ranking": 170,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 227014,
+          "fullName": "Anna Siskova",
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "آنا سيسكوفا",
+              "ru": "Анна Сискова"
+            },
+            "shortNameTranslation": {
+              "ar": "آ. سيسكوفا",
+              "ru": "А. Сискова"
+            }
+          },
+          "timeActive": []
+        }
+      ],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 1,
+      "display": 1,
+      "period1": 6,
+      "period2": 7,
+      "period3": 7,
+      "period1TieBreak": 3,
+      "period2TieBreak": 7,
+      "point": "7",
+      "normaltime": 1
+    },
+    "awayScore": {
+      "current": 2,
+      "display": 2,
+      "period1": 7,
+      "period2": 6,
+      "period3": 10,
+      "period1TieBreak": 7,
+      "period2TieBreak": 2,
+      "point": "9",
+      "normaltime": 2
+    },
+    "time": {
+      "period1": 3142,
+      "period2": 3123,
+      "period3": 845,
+      "currentPeriodStartTimestamp": 1790696249
+    },
+    "changes": {
+      "changes": [
+        "time.currentPeriodStart",
+        "time.period3"
+      ],
+      "changeTimestamp": 1790697149
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17202156,
+    "defaultPeriodCount": 3,
+    "slug": "hruncakova-siskova-drazic-mattel",
+    "currentPeriodStartTimestamp": 1790696249,
+    "startTimestamp": 1790689800,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "groundType": "Hardcourt outdoor",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "doubles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "lower"
+      ],
+      "gender": [
+        "F"
+      ]
+    }
+  },
+  "error": null
+}

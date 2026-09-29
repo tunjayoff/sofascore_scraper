@@ -1,0 +1,354 @@
+{
+  "case_id": "A_inprogress-7-2nd-half",
+  "event_id": 17018572,
+  "fetched_at_utc": "2026-09-29T13:44:06+00:00",
+  "source_endpoint": "/api/v1/event/17018572",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"edd85744dc\"",
+    "date": "Tue, 29 Sep 2026 13:44:06 GMT"
+  },
+  "note": "live snapshot 2026-09-29T13:43:27+00:00",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "Africa Cup of Nations, Qualification, Group G",
+      "slug": "africa-cup-of-nations-qualification-group-g",
+      "category": {
+        "name": "Africa",
+        "slug": "africa",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 16,
+        "country": {},
+        "id": 1466,
+        "flag": "africa",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أفريقيا",
+            "ru": "Африка"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Africa Cup of Nations Qual.",
+        "slug": "africa-cup-of-nations-qual",
+        "primaryColorHex": "#00752e",
+        "secondaryColorHex": "#edc73e",
+        "category": {
+          "name": "Africa",
+          "slug": "africa",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 16,
+          "country": {},
+          "id": 1466,
+          "flag": "africa",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "أفريقيا",
+              "ru": "Африка"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 81203,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 1848,
+        "hasEventPlayerStatistics": true,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "تصفيات كأس أمم أفريقيا",
+            "bn": "আফ্রিকা কাপ অফ নেশনস কোয়ালিফাইং.",
+            "hi": "अफ्रीका कप ऑफ नेशंस क्वालिफिकेशन.",
+            "ru": "Кубок африканских наций, квалификация"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 556,
+      "isGroup": true,
+      "groupName": "Group G",
+      "competitionType": 1,
+      "isLive": false,
+      "id": 59845,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "كأس الأمم الأفريقية، التصفيات، المجموعة G",
+          "bn": "আফ্রিকা কাপ অফ নেশনস, কোয়ালিফিকেশন, গ্রুপ জি",
+          "hi": "अफ्रीका कप ऑफ नेशंस, क्वालिफिकेशन, ग्रुप जी",
+          "ru": "Кубок африканских наций, Квалификация, Группа G"
+        },
+        "shortNameTranslation": {}
+      },
+      "qualificationOrPreliminary": true
+    },
+    "season": {
+      "name": "Africa Cup of Nations Qualification 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 90940
+    },
+    "roundInfo": {
+      "round": 2
+    },
+    "customId": "HWbsUuj",
+    "status": {
+      "code": 7,
+      "description": "2nd half",
+      "type": "inprogress"
+    },
+    "homeTeam": {
+      "name": "Comoros",
+      "slug": "comoros",
+      "shortName": "Comoros",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 26618,
+      "manager": {
+        "name": "Hubert Velud",
+        "slug": "hubert-velud",
+        "shortName": "H. Velud",
+        "country": {
+          "alpha2": "FR",
+          "alpha3": "FRA",
+          "name": "France",
+          "slug": "france"
+        },
+        "id": 792799,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "هوبرت فيلود",
+            "bn": "হুবার্ট ভেলুদ",
+            "hi": "ह्यूबर्ट वेलुड",
+            "ru": "Юбер Велюд"
+          },
+          "shortNameTranslation": {
+            "ar": "ه. فيلود",
+            "hi": "एच. वेलुड",
+            "bn": "এইচ. ভেলুদ",
+            "ru": "Ю. Велюд"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Mitsamiouli",
+          "country": {
+            "alpha2": "KM",
+            "alpha3": "COM",
+            "name": "Comoros",
+            "slug": "comoros"
+          },
+          "id": 21699
+        },
+        "hidden": true,
+        "slug": "said-mohamed-cheikh",
+        "name": "Said Mohamed Cheikh",
+        "capacity": 2000,
+        "country": {
+          "alpha2": "KM",
+          "alpha3": "COM",
+          "name": "Comoros",
+          "slug": "comoros"
+        },
+        "id": 37725,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب سعيد محمد شيخ",
+            "hi": "सईद मोहम्मद शेख",
+            "bn": "সাইদ মোহাম্মদ শেখ",
+            "ru": "Стадион Said Mohamed Cheikh"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Said Mohamed Cheikh",
+          "capacity": 2000
+        }
+      },
+      "nameCode": "COM",
+      "ranking": 108,
+      "class": 1,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "KM",
+        "alpha3": "COM",
+        "name": "Comoros",
+        "slug": "comoros"
+      },
+      "id": 23494,
+      "fullName": "Comoros",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#037a36",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "foundationDateTimestamp": 306460800,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "جزر القمر",
+          "bn": "কমোরোস",
+          "hi": "कोमोरोज़",
+          "ru": "Коморские острова"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Namibia",
+      "slug": "namibia",
+      "shortName": "Namibia",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 14432,
+      "manager": {
+        "name": "Collin Benjamin",
+        "slug": "collin-benjamin",
+        "shortName": "C. Benjamin",
+        "country": {
+          "alpha2": "NA",
+          "alpha3": "NAM",
+          "name": "Namibia",
+          "slug": "namibia"
+        },
+        "id": 800435,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كولين بنجامين",
+            "ru": "Коллин Бенжамин"
+          },
+          "shortNameTranslation": {
+            "ar": "ك. بنجامين",
+            "ru": "К. Бенжамин"
+          }
+        }
+      },
+      "nameCode": "NAM",
+      "ranking": 121,
+      "class": 1,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "NA",
+        "alpha3": "NAM",
+        "name": "Namibia",
+        "slug": "namibia"
+      },
+      "id": 4832,
+      "fullName": "Namibia",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ff0000",
+        "secondary": "#002d5f",
+        "text": "#002d5f"
+      },
+      "foundationDateTimestamp": 628387200,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ناميبيا",
+          "bn": "নামিবিয়া",
+          "hi": "नामीबिया",
+          "ru": "Намибия"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 1,
+      "display": 1,
+      "period1": 0,
+      "period2": 1,
+      "normaltime": 1
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 0,
+      "period2": 0,
+      "normaltime": 0
+    },
+    "time": {
+      "injuryTime1": 2,
+      "currentPeriodStartTimestamp": 1790687169,
+      "lastPeriodEndTimestamp": 1790686299,
+      "initial": 2700,
+      "max": 5400,
+      "extra": 540
+    },
+    "changes": {
+      "changes": [
+        "homeScore.normaltime"
+      ],
+      "changeTimestamp": 1790687855
+    },
+    "hasGlobalHighlights": false,
+    "hasEventPlayerStatistics": true,
+    "hasEventPlayerHeatMap": true,
+    "detailId": 1,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17018572,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "varInProgress": {
+      "homeTeam": false,
+      "awayTeam": false
+    },
+    "statusTime": {
+      "prefix": "",
+      "initial": 2700,
+      "max": 5400,
+      "timestamp": 1790687169,
+      "extra": 540
+    },
+    "slug": "comoros-namibia",
+    "currentPeriodStartTimestamp": 1790687169,
+    "startTimestamp": 1790683200,
+    "lastPeriod": "period2",
+    "finalResultOnly": false,
+    "feedLocked": true,
+    "seasonStatisticsType": "overall",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "national"
+      ],
+      "level": [
+        "top-competitions",
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

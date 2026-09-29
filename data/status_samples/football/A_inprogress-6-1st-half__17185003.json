@@ -1,0 +1,389 @@
+{
+  "case_id": "A_inprogress-6-1st-half",
+  "event_id": 17185003,
+  "fetched_at_utc": "2026-09-29T13:44:02+00:00",
+  "source_endpoint": "/api/v1/event/17185003",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"9b426920b8\"",
+    "date": "Tue, 29 Sep 2026 13:44:02 GMT"
+  },
+  "note": "live snapshot 2026-09-29T13:43:27+00:00",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "Club Friendly Games",
+      "slug": "club-friendly-games",
+      "category": {
+        "name": "World",
+        "slug": "world",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 20,
+        "country": {},
+        "id": 1468,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "العالم",
+            "hi": "विश्व",
+            "bn": "বিশ্ব",
+            "ru": "Мир"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Club Friendly Games",
+        "slug": "club-friendly-games",
+        "primaryColorHex": "#25497d",
+        "secondaryColorHex": "#d38f1d",
+        "category": {
+          "name": "World",
+          "slug": "world",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 20,
+          "country": {},
+          "id": 1468,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "العالم",
+              "hi": "विश्व",
+              "bn": "বিশ্ব",
+              "ru": "Мир"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 39847,
+        "hasRounds": false,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 853,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "ক্লাব ফ্রেন্ডলি গেমস",
+            "ar": "مباريات ودية للأندية",
+            "hi": "क्लब फ्रेंडली गेम्स",
+            "ru": "Товарищеские игры клубов"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 3,
+      "isLive": false,
+      "id": 86,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "hi": "क्लब फ्रेंडली गेम्स",
+          "ar": "مباريات ودية للأندية",
+          "bn": "ক্লাব ফ্রেন্ডলি গেমস",
+          "ru": "Кубок дружеских игр"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Club Friendly Games 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 87177
+    },
+    "customId": "TgcsQdd",
+    "status": {
+      "code": 6,
+      "description": "1st half",
+      "type": "inprogress"
+    },
+    "homeTeam": {
+      "name": "Jagiellonia Białystok",
+      "slug": "jagiellonia-bialystok",
+      "shortName": "Jagiellonia",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 50020,
+      "manager": {
+        "name": "Adrian Siemieniec",
+        "slug": "adrian-siemieniec",
+        "shortName": "A. Siemieniec",
+        "country": {
+          "alpha2": "PL",
+          "alpha3": "POL",
+          "name": "Poland",
+          "slug": "poland"
+        },
+        "id": 800552,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "Siemieniec, Adrian",
+            "ru": "Адриан Сиеменец"
+          },
+          "shortNameTranslation": {
+            "ar": "A. Siemieniec",
+            "ru": "А. Сиеменец"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Bialystok",
+          "country": {
+            "alpha2": "PL",
+            "alpha3": "POL",
+            "name": "Poland",
+            "slug": "poland"
+          },
+          "id": 23541
+        },
+        "venueCoordinates": {
+          "latitude": 53.105963,
+          "longitude": 23.149285
+        },
+        "hidden": true,
+        "slug": "bialystok-city-stadium",
+        "name": "Chorten Arena",
+        "capacity": 22372,
+        "country": {
+          "alpha2": "PL",
+          "alpha3": "POL",
+          "name": "Poland",
+          "slug": "poland"
+        },
+        "id": 2276,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب مدينة بياليستوك",
+            "hi": "बेल्यस्टोक सिटी स्टेडियम",
+            "bn": "বিয়ালস্টক সিটি স্টেডিয়াম",
+            "ru": "Арена Chorten"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Chorten Arena",
+          "capacity": 22372
+        }
+      },
+      "nameCode": "JAG",
+      "class": 0,
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "PL",
+        "alpha3": "POL",
+        "name": "Poland",
+        "slug": "poland"
+      },
+      "id": 7691,
+      "fullName": "Jagiellonia Białystok",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffff00",
+        "secondary": "#ff0000",
+        "text": "#ff0000"
+      },
+      "foundationDateTimestamp": -1564963200,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "جاجيلونيا بياليستوك",
+          "ru": "Ягеллония Билысток"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "FK Sūduva Marijampolė",
+      "slug": "fk-suduva-marijampole",
+      "shortName": "Sūduva",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 8125,
+      "manager": {
+        "name": "Donatas Vencevicius",
+        "slug": "donatas-vencevicius",
+        "shortName": "D. Vencevicius",
+        "country": {
+          "alpha2": "LT",
+          "alpha3": "LTU",
+          "name": "Lithuania",
+          "slug": "lithuania"
+        },
+        "id": 786044,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دوناتاس فنسيفيتشيوس",
+            "ru": "Донатас Венцевичус"
+          },
+          "shortNameTranslation": {
+            "ar": "د. فنسيفيتشيوس",
+            "ru": "Д. Венцевичус"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Marijampole",
+          "country": {
+            "alpha2": "LT",
+            "alpha3": "LTU",
+            "name": "Lithuania",
+            "slug": "lithuania"
+          },
+          "id": 19326
+        },
+        "venueCoordinates": {
+          "latitude": 54.574615,
+          "longitude": 23.36536
+        },
+        "hidden": true,
+        "slug": "arvi-arena",
+        "name": "Arvi arena",
+        "capacity": 6250,
+        "country": {
+          "alpha2": "LT",
+          "alpha3": "LTU",
+          "name": "Lithuania",
+          "slug": "lithuania"
+        },
+        "id": 3796,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أرڤي أرينا",
+            "hi": "अरवी एरिना",
+            "bn": "আরভি এরিনা",
+            "ru": "Арена Arvi"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Arvi arena",
+          "capacity": 6250
+        }
+      },
+      "nameCode": "SUD",
+      "class": 1,
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "LT",
+        "alpha3": "LTU",
+        "name": "Lithuania",
+        "slug": "lithuania"
+      },
+      "id": 5343,
+      "fullName": "FK Sūduva Marijampolė",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#cc0000",
+        "secondary": "#000000",
+        "text": "#000000"
+      },
+      "foundationDateTimestamp": -1546300800,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "إف كيه سودوفا ماريامبول",
+          "ru": "Судува Мариямполе"
+        },
+        "shortNameTranslation": {
+          "ar": "سودوفا",
+          "bn": "সুদুভা",
+          "hi": "सूडुवा"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 3,
+      "display": 3,
+      "period1": 3,
+      "normaltime": 3
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 0,
+      "normaltime": 0
+    },
+    "coverage": -1,
+    "time": {
+      "periodLength": 2700,
+      "overtimeLength": 900,
+      "totalPeriodCount": 2,
+      "currentPeriodStartTimestamp": 1790687100,
+      "initial": 0,
+      "max": 2700,
+      "extra": 540
+    },
+    "changes": {
+      "changes": [
+        "homeScore.current",
+        "homeScore.display",
+        "homeScore.period1",
+        "homeScore.normaltime"
+      ],
+      "changeTimestamp": 1790688729
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17185003,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "varInProgress": {
+      "homeTeam": false,
+      "awayTeam": false
+    },
+    "statusTime": {
+      "prefix": "",
+      "initial": 0,
+      "max": 2700,
+      "timestamp": 1790687100,
+      "extra": 540
+    },
+    "slug": "jagiellonia-bialystok-fk-suduva-marijampole",
+    "currentPeriodStartTimestamp": 1790687100,
+    "startTimestamp": 1790686800,
+    "lastPeriod": "period1",
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

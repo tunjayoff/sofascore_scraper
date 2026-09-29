@@ -1,0 +1,475 @@
+{
+  "case_id": "F2_penalties",
+  "event_id": 16950622,
+  "fetched_at_utc": "2026-09-29T15:53:35+00:00",
+  "source_endpoint": "/api/v1/event/16950622",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"153a965a7c\"",
+    "date": "Tue, 29 Sep 2026 15:53:34 GMT"
+  },
+  "note": "Penaltılarla bitmiş; index source scan:2026-09-15",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "EFL Cup",
+      "slug": "efl-cup",
+      "category": {
+        "name": "England",
+        "slug": "england",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 10,
+        "country": {
+          "alpha2": "EN",
+          "alpha3": "ENG",
+          "name": "England",
+          "slug": "england"
+        },
+        "id": 1,
+        "flag": "england",
+        "alpha2": "EN",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "إنجلترا",
+            "hi": "इंग्लैंड",
+            "bn": "ইংল্যান্ড",
+            "ru": "Англия"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "EFL Cup",
+        "slug": "efl-cup",
+        "primaryColorHex": "#203e93",
+        "secondaryColorHex": "#bc1723",
+        "category": {
+          "name": "England",
+          "slug": "england",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 10,
+          "country": {
+            "alpha2": "EN",
+            "alpha3": "ENG",
+            "name": "England",
+            "slug": "england"
+          },
+          "id": 1,
+          "flag": "england",
+          "alpha2": "EN",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إنجلترا",
+              "hi": "इंग्लैंड",
+              "bn": "ইংল্যান্ড",
+              "ru": "Англия"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 169261,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": true,
+        "country": {},
+        "id": 21,
+        "hasEventPlayerStatistics": true,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كأس رابطة الدوري الإنجليزي",
+            "bn": "ইএফএল কাপ",
+            "hi": "ईएफएल कप",
+            "ru": "Кубок EFL"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 488,
+      "isGroup": false,
+      "competitionType": 2,
+      "isLive": false,
+      "id": 17,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "كأس رابطة الدوري الإنجليزي",
+          "bn": "ইএফএল কাপ",
+          "hi": "ईएफएल कप",
+          "ru": "Кубок EFL"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "EFL Cup 26/27",
+      "year": "26/27",
+      "editor": false,
+      "id": 96185
+    },
+    "roundInfo": {
+      "round": 3,
+      "name": "Round 3",
+      "slug": "round-3"
+    },
+    "customId": "yseb",
+    "status": {
+      "code": 120,
+      "description": "AP",
+      "type": "finished"
+    },
+    "winnerCode": 1,
+    "venue": {
+      "city": {
+        "name": "Peterborough",
+        "country": {
+          "alpha2": "EN",
+          "alpha3": "ENG",
+          "name": "England",
+          "slug": "england"
+        },
+        "id": 19016
+      },
+      "venueCoordinates": {
+        "latitude": 52.56445,
+        "longitude": -0.240057
+      },
+      "hidden": true,
+      "slug": "weston-homes-stadium",
+      "name": "Weston Homes Stadium",
+      "capacity": 15314,
+      "country": {
+        "alpha2": "EN",
+        "alpha3": "ENG",
+        "name": "England",
+        "slug": "england"
+      },
+      "id": 2237,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ملعب ويستون هومز",
+          "hi": "वेस्टन होम्स स्टेडियम",
+          "bn": "ওয়েস্টন হোমস স্টেডিয়াম",
+          "ru": "Стадион Weston Homes"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Weston Homes Stadium",
+        "capacity": 15314
+      }
+    },
+    "referee": {
+      "name": "Thomas Parsons",
+      "slug": "thomas-parsons",
+      "yellowCards": 518,
+      "redCards": 14,
+      "yellowRedCards": 6,
+      "games": 118,
+      "sport": {
+        "id": 1,
+        "slug": "football",
+        "name": "Football"
+      },
+      "country": {
+        "alpha2": "EN",
+        "alpha3": "ENG",
+        "name": "England",
+        "slug": "england"
+      },
+      "id": 787404,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "توماس بارسونز",
+          "ru": "Томас Парсонс"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "homeTeam": {
+      "name": "Peterborough United",
+      "slug": "peterborough-united",
+      "shortName": "Peterborough Utd",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 13788,
+      "venue": {
+        "city": {
+          "name": "Peterborough",
+          "country": {
+            "alpha2": "EN",
+            "alpha3": "ENG",
+            "name": "England",
+            "slug": "england"
+          },
+          "id": 19016
+        },
+        "venueCoordinates": {
+          "latitude": 52.56445,
+          "longitude": -0.240057
+        },
+        "hidden": true,
+        "slug": "weston-homes-stadium",
+        "name": "Weston Homes Stadium",
+        "capacity": 15314,
+        "country": {
+          "alpha2": "EN",
+          "alpha3": "ENG",
+          "name": "England",
+          "slug": "england"
+        },
+        "id": 2237,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب ويستون هومز",
+            "hi": "वेस्टन होम्स स्टेडियम",
+            "bn": "ওয়েস্টন হোমস স্টেডিয়াম",
+            "ru": "Стадион Weston Homes"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Weston Homes Stadium",
+          "capacity": 15314
+        }
+      },
+      "nameCode": "PET",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "EN",
+        "alpha3": "ENG",
+        "name": "England",
+        "slug": "england"
+      },
+      "id": 54,
+      "fullName": "Peterborough United",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#0000cc",
+        "secondary": "#0000cc",
+        "text": "#0000cc"
+      },
+      "foundationDateTimestamp": -1124323200,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "بيتربورو يونايتد",
+          "hi": "पीटरब्रौह यूनाइटेड",
+          "ru": "Питерборо Юнайтед"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Barnsley",
+      "slug": "barnsley",
+      "shortName": "Barnsley",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 18684,
+      "manager": {
+        "name": "Daniel Stendel",
+        "slug": "daniel-stendel",
+        "shortName": "D. Stendel",
+        "country": {
+          "alpha2": "DE",
+          "alpha3": "DEU",
+          "name": "Germany",
+          "slug": "germany"
+        },
+        "id": 786760,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دانيال ستندل",
+            "ru": "Даниэль Стендель"
+          },
+          "shortNameTranslation": {
+            "ar": "د. ستندل",
+            "ru": "Д. Стендель"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Barnsley",
+          "country": {
+            "alpha2": "EN",
+            "alpha3": "ENG",
+            "name": "England",
+            "slug": "england"
+          },
+          "id": 32815
+        },
+        "venueCoordinates": {
+          "latitude": 53.739953,
+          "longitude": -1.671705
+        },
+        "hidden": true,
+        "slug": "oakwell-ground",
+        "name": "Oakwell Ground",
+        "capacity": 23287,
+        "country": {
+          "alpha2": "EN",
+          "alpha3": "ENG",
+          "name": "England",
+          "slug": "england"
+        },
+        "id": 713,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب أوكويل",
+            "hi": "ओकवेल ग्राउंड",
+            "bn": "ওকওয়েল গ্রাউন্ড",
+            "ru": "Спортивный комплекс Oakwell"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Oakwell Ground",
+          "capacity": 23287
+        }
+      },
+      "nameCode": "BAR",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "EN",
+        "alpha3": "ENG",
+        "name": "England",
+        "slug": "england"
+      },
+      "id": 23,
+      "fullName": "Barnsley",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ff3333",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "foundationDateTimestamp": -2619216000,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "بارنسلي",
+          "ru": "Барнсли"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 10,
+      "display": 3,
+      "period1": 2,
+      "period2": 1,
+      "normaltime": 3,
+      "penalties": 7
+    },
+    "awayScore": {
+      "current": 9,
+      "display": 3,
+      "period1": 2,
+      "period2": 1,
+      "normaltime": 3,
+      "penalties": 6
+    },
+    "time": {
+      "injuryTime1": 2,
+      "injuryTime2": 4,
+      "currentPeriodStartTimestamp": 1789500762,
+      "lastPeriodEndTimestamp": 1789499858
+    },
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description"
+      ],
+      "changeTimestamp": 1789504592
+    },
+    "hasGlobalHighlights": true,
+    "hasEventPlayerStatistics": true,
+    "hasEventPlayerHeatMap": true,
+    "detailId": 1,
+    "crowdsourcingDataDisplayEnabled": false,
+    "correctAiInsight": false,
+    "correctHalftimeAiInsight": true,
+    "id": 16950622,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "slug": "peterborough-united-barnsley",
+    "currentPeriodStartTimestamp": 1789500762,
+    "startTimestamp": 1789497000,
+    "finalResultOnly": false,
+    "hasBet365LiveStream": true,
+    "bet365ExcludedCountryCodes": [
+      "AE",
+      "BH",
+      "DZ",
+      "EG",
+      "EH",
+      "GB",
+      "GG",
+      "GI",
+      "IE",
+      "IL",
+      "IM",
+      "IQ",
+      "IR",
+      "JE",
+      "JO",
+      "KW",
+      "LB",
+      "LY",
+      "MA",
+      "OM",
+      "PS",
+      "QA",
+      "SA",
+      "SD",
+      "SY",
+      "TN",
+      "YE",
+      "GR",
+      "RU",
+      "CH",
+      "CA"
+    ],
+    "feedLocked": true,
+    "cupMatchesInRound": 1,
+    "seasonStatisticsType": "overall",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "top-competitions",
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

@@ -1,0 +1,314 @@
+{
+  "case_id": "A_canceled-70-canceled",
+  "event_id": 16994315,
+  "fetched_at_utc": "2026-09-29T15:54:49+00:00",
+  "source_endpoint": "/api/v1/event/16994315",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"970407ce1e\"",
+    "date": "Tue, 29 Sep 2026 15:54:48 GMT"
+  },
+  "note": "index source scan:2026-09-18",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "ABA Liga Preseason",
+      "slug": "aba-liga-preseason",
+      "category": {
+        "name": "International",
+        "slug": "international",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 11,
+        "country": {},
+        "id": 103,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دولي",
+            "hi": "अंतर्राष्ट्रीय",
+            "bn": "আন্তর্জাতিক",
+            "ru": "Международные"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "ABA Liga Preseason",
+        "slug": "aba-liga-preseason",
+        "category": {
+          "name": "International",
+          "slug": "international",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 11,
+          "country": {},
+          "id": 103,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دولي",
+              "hi": "अंतर्राष्ट्रीय",
+              "bn": "আন্তর্জাতিক",
+              "ru": "Международные"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 110,
+        "hasRounds": false,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 36655,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false
+      },
+      "priority": 0,
+      "isGroup": false,
+      "id": 194882
+    },
+    "season": {
+      "name": "ABA Liga Preseason 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 100050
+    },
+    "customId": "KHcspfF",
+    "status": {
+      "code": 70,
+      "description": "Canceled",
+      "type": "canceled"
+    },
+    "homeTeam": {
+      "name": "KK Budućnost VOLI",
+      "slug": "kk-buducnost-voli",
+      "shortName": "Budućnost",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 6110,
+      "manager": {
+        "name": "Andrej Žakelj",
+        "slug": "andrej-zakelj",
+        "shortName": "A. Žakelj",
+        "country": {
+          "alpha2": "SI",
+          "alpha3": "SVN",
+          "name": "Slovenia",
+          "slug": "slovenia"
+        },
+        "id": 803038,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أندريه زاكيلج",
+            "bn": "আন্দ্রেজ জাকেলজ",
+            "hi": "आंद्रेज ज़ाकेलज",
+            "ru": "Андрей Жакель"
+          },
+          "shortNameTranslation": {
+            "ar": "أ. زاكيلج",
+            "hi": "ए. ज़ाकेलज",
+            "bn": "এ. জাকেলজ",
+            "ru": "А. Жакель"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Podgorica",
+          "country": {
+            "alpha2": "ME",
+            "alpha3": "MNE",
+            "name": "Montenegro",
+            "slug": "montenegro"
+          },
+          "id": 18162
+        },
+        "hidden": true,
+        "slug": "sportski-centar-mora-a",
+        "name": "Sportski Centar Morača",
+        "capacity": 6000,
+        "country": {
+          "alpha2": "ME",
+          "alpha3": "MNE",
+          "name": "Montenegro",
+          "slug": "montenegro"
+        },
+        "id": 6726,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "مركز الرياضة في موراكا",
+            "hi": "स्पोर्ट्सकी सेंटर मोराका",
+            "bn": "স্পোর্টসকি সেন্টার মোরাকা",
+            "ru": "Спортивный комплекс Morača"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Sportski Centar Morača",
+          "capacity": 6000
+        }
+      },
+      "nameCode": "BUD",
+      "class": 1,
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "ME",
+        "alpha3": "MNE",
+        "name": "Montenegro",
+        "slug": "montenegro"
+      },
+      "id": 6635,
+      "fullName": "KK Budućnost VOLI",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#0000ff",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "كي كي بودوجنست فولي",
+          "ru": "Будучност Подгорица"
+        },
+        "shortNameTranslation": {
+          "ar": "بودوجنست",
+          "bn": "বুদুকনস",
+          "hi": "बुडुकनोस्ट"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "SCM OHMA Mozzart Bet Timișoara",
+      "slug": "scm-ohma-mozzart-bet-timisoara",
+      "shortName": "SCM Timișoara",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 326,
+      "venue": {
+        "city": {
+          "name": "Timisoara",
+          "country": {
+            "alpha2": "RO",
+            "alpha3": "ROU",
+            "name": "Romania",
+            "slug": "romania"
+          },
+          "id": 22190
+        },
+        "hidden": true,
+        "slug": "sala-constantin-jude",
+        "name": "Sala Constantin Jude",
+        "capacity": 1000,
+        "country": {
+          "alpha2": "RO",
+          "alpha3": "ROU",
+          "name": "Romania",
+          "slug": "romania"
+        },
+        "id": 9059,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "صالة كونستانتين جود",
+            "hi": "साला कॉन्स्टेंटिन जूड",
+            "bn": "সালা কনস্ট্যান্টিন জুড",
+            "ru": "Спортивный комплекс Sala Constantin Jude"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Sala Constantin Jude",
+          "capacity": 1000
+        }
+      },
+      "nameCode": "TIM",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "RO",
+        "alpha3": "ROU",
+        "name": "Romania",
+        "slug": "romania"
+      },
+      "id": 75265,
+      "fullName": "SCM OHMA Mozzart Bet Timișoara",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#800080",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "إس سي إم أوه ما موزارت بيت تيميشوارا",
+          "ru": "БК Тимишиора"
+        },
+        "shortNameTranslation": {
+          "ar": "إس سي إم تيميشوارا",
+          "bn": "এসসিএম টিমিসোরা",
+          "hi": "एससीएम तिमिसोरा"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type"
+      ],
+      "changeTimestamp": 1789760650
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16994315,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "scm-ohma-mozzart-bet-timisoara-kk-buducnost-voli",
+    "startTimestamp": 1789743600,
+    "finalResultOnly": true,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ]
+    }
+  },
+  "error": null
+}

@@ -1,0 +1,40 @@
+{
+  "case_id": "A_finished-100-ended",
+  "event_id": 17204710,
+  "fetched_at_utc": "2026-09-29T13:38:40+00:00",
+  "source_file": "data/status_samples/tennis/A_finished-100-ended__17204710.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 2,
+    "display": 2,
+    "period1": 6,
+    "period2": 6,
+    "point": "40",
+    "normaltime": 2
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 4,
+    "period2": 3,
+    "point": "30",
+    "normaltime": 0
+  },
+  "startTimestamp": 1790647200,
+  "time": {
+    "period1": 1796,
+    "period2": 2175,
+    "currentPeriodStartTimestamp": 1790649478
+  },
+  "changes": {
+    "changes": [
+      "time.currentPeriodStart"
+    ],
+    "changeTimestamp": 1790651755
+  }
+}

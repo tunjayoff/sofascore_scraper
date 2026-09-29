@@ -1,0 +1,300 @@
+{
+  "case_id": "B13_start_time_changed",
+  "event_id": 16867839,
+  "fetched_at_utc": "2026-09-29T16:02:17+00:00",
+  "source_endpoint": "/api/v1/event/16867839",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"c0c1271662\"",
+    "date": "Tue, 29 Sep 2026 16:02:17 GMT"
+  },
+  "note": "gözlenen startTimestamp değerleri: [1790688600, 1790688840]",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "Azadegan League",
+      "slug": "azadegan-league",
+      "category": {
+        "name": "Iran",
+        "slug": "iran",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "IR",
+          "alpha3": "IRN",
+          "name": "Iran",
+          "slug": "iran"
+        },
+        "id": 301,
+        "flag": "iran",
+        "alpha2": "IR",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "إيران",
+            "ru": "Иран"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Azadegan League",
+        "slug": "azadegan-league",
+        "primaryColorHex": "#d1162a",
+        "secondaryColorHex": "#47ad63",
+        "category": {
+          "name": "Iran",
+          "slug": "iran",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "IR",
+            "alpha3": "IRN",
+            "name": "Iran",
+            "slug": "iran"
+          },
+          "id": 301,
+          "flag": "iran",
+          "alpha2": "IR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إيران",
+              "ru": "Иран"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 1703,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": true,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 11338,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دوري أزادغان",
+            "ru": "Лига Азадеган"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 1,
+      "isLive": false,
+      "id": 40219,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "دوري أزادغان",
+          "ru": "Лига Азадеган"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Azadegan League 26/27",
+      "year": "26/27",
+      "editor": false,
+      "id": 100969
+    },
+    "roundInfo": {
+      "round": 3
+    },
+    "customId": "fiYbsmpHd",
+    "status": {
+      "code": 100,
+      "description": "Ended",
+      "type": "finished"
+    },
+    "winnerCode": 1,
+    "homeTeam": {
+      "name": "Mes Rafsanjan FC",
+      "slug": "mes-rafsanjan-fc",
+      "shortName": "Mes Rafsanjan FC",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 2666,
+      "venue": {
+        "city": {
+          "name": "Kerman",
+          "country": {
+            "alpha2": "IR",
+            "alpha3": "IRN",
+            "name": "Iran",
+            "slug": "iran"
+          },
+          "id": 30690
+        },
+        "venueCoordinates": {
+          "latitude": 29.75,
+          "longitude": 57.25
+        },
+        "hidden": true,
+        "slug": "shohadaye-mes-kerman-stadium",
+        "name": "Shohadaye Mes Kerman Stadium",
+        "capacity": 30000,
+        "country": {
+          "alpha2": "IR",
+          "alpha3": "IRN",
+          "name": "Iran",
+          "slug": "iran"
+        },
+        "id": 31061,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب شهداء مس كرمان",
+            "hi": "शोहाडे मेस केरमान स्टेडियम",
+            "bn": "শোহাদায়ে মেস কারমান স্টেডিয়াম",
+            "ru": "Стадион Shohadaye Mes Kerman"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Shohadaye Mes Kerman Stadium",
+          "capacity": 30000
+        }
+      },
+      "nameCode": "RAF",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "IR",
+        "alpha3": "IRN",
+        "name": "Iran",
+        "slug": "iran"
+      },
+      "id": 245405,
+      "fullName": "Mes Rafsanjan FC",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#f1771d",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "foundationDateTimestamp": 1504483200,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ميس رفسنجان إف سي",
+          "ru": "Мес Рафсанжан"
+        },
+        "shortNameTranslation": {
+          "ar": "ميس رفسنجان إف سي"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Beasat Kermanshah FC",
+      "slug": "beasat-kermanshah-fc",
+      "shortName": "Beasat Kermanshah",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 1518,
+      "nameCode": "BEK",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "IR",
+        "alpha3": "IRN",
+        "name": "Iran",
+        "slug": "iran"
+      },
+      "id": 455762,
+      "fullName": "Beasat Kermanshah FC",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "foundationDateTimestamp": 1466208000,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "بياسات كرمانشاه إف سي",
+          "ru": "Беасат Керманшах ФК"
+        },
+        "shortNameTranslation": {
+          "ar": "بياسات كرمانشاه",
+          "ru": "Беасат Керманшах"
+        }
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 1,
+      "display": 1,
+      "period1": 1,
+      "period2": 0,
+      "normaltime": 1
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 0,
+      "period2": 0,
+      "normaltime": 0
+    },
+    "time": {
+      "periodLength": 2700,
+      "overtimeLength": 900,
+      "totalPeriodCount": 2,
+      "currentPeriodStartTimestamp": 1790692620,
+      "lastPeriodEndTimestamp": 1790691908
+    },
+    "changes": {
+      "changes": [
+        "providerLock.status",
+        "providerLock.statusSource",
+        "status.code",
+        "status.description",
+        "status.type"
+      ],
+      "changeTimestamp": 1790696181
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16867839,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "slug": "beasat-kermanshah-fc-mes-rafsanjan-fc",
+    "currentPeriodStartTimestamp": 1790692620,
+    "startTimestamp": 1790688600,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

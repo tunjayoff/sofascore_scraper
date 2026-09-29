@@ -1,0 +1,23 @@
+{
+  "case_id": "B8_canceled",
+  "event_id": 17084262,
+  "fetched_at_utc": "2026-09-29T15:56:48+00:00",
+  "source_file": "data/status_samples/tennis/B8_canceled__17084262.json",
+  "status": {
+    "code": 70,
+    "description": "Canceled",
+    "type": "canceled"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1789390800,
+  "time": {},
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type"
+    ],
+    "changeTimestamp": 1789305649
+  }
+}

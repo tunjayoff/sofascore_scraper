@@ -1,0 +1,33 @@
+{
+  "case_id": "A_inprogress-8-1st-set",
+  "event_id": 17196662,
+  "fetched_at_utc": "2026-09-29T13:45:21+00:00",
+  "source_file": "data/status_samples/tennis/A_inprogress-8-1st-set__17196662.json",
+  "status": {
+    "code": 8,
+    "description": "1st set",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 4,
+    "point": "40"
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 4,
+    "point": "0"
+  },
+  "startTimestamp": 1790686800,
+  "time": {
+    "currentPeriodStartTimestamp": 1790687468
+  },
+  "changes": {
+    "changes": [
+      "homeScore.point"
+    ],
+    "changeTimestamp": 1790689494
+  }
+}

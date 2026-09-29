@@ -1,0 +1,43 @@
+{
+  "case_id": "B3_live_first_period",
+  "event_id": 17185003,
+  "fetched_at_utc": "2026-09-29T15:53:10+00:00",
+  "source_file": "data/status_samples/football/B3_live_first_period__17185003.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 5,
+    "display": 5,
+    "period1": 3,
+    "period2": 2,
+    "normaltime": 5
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "period2": 0,
+    "normaltime": 0
+  },
+  "startTimestamp": 1790686800,
+  "time": {
+    "periodLength": 2700,
+    "overtimeLength": 900,
+    "totalPeriodCount": 2,
+    "currentPeriodStartTimestamp": 1790690580
+  },
+  "changes": {
+    "changes": [
+      "providerLock.status",
+      "providerLock.statusSource",
+      "status.code",
+      "status.description",
+      "status.type"
+    ],
+    "changeTimestamp": 1790693299
+  }
+}

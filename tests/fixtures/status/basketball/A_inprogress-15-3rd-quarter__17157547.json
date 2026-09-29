@@ -1,0 +1,46 @@
+{
+  "case_id": "A_inprogress-15-3rd-quarter",
+  "event_id": 17157547,
+  "fetched_at_utc": "2026-09-29T15:51:38+00:00",
+  "source_file": "data/status_samples/basketball/A_inprogress-15-3rd-quarter__17157547.json",
+  "status": {
+    "code": 15,
+    "description": "3rd quarter",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 48,
+    "display": 48,
+    "period1": 18,
+    "period2": 16,
+    "period3": 14
+  },
+  "awayScore": {
+    "current": 52,
+    "display": 52,
+    "period1": 18,
+    "period2": 16,
+    "period3": 18
+  },
+  "startTimestamp": 1790693100,
+  "time": {
+    "played": 1627,
+    "periodLength": 600,
+    "overtimeLength": 300,
+    "totalPeriodCount": 4,
+    "clockRunning": false,
+    "clockRunningLastUpdated": "2026-09-29T15:50:20+00:00"
+  },
+  "changes": {
+    "changes": [
+      "awayScore.current",
+      "awayScore.display",
+      "time.played",
+      "time.playedLastUpdated",
+      "time.clockRunning",
+      "time.clockRunningLastUpdated",
+      "awayScore.period3"
+    ],
+    "changeTimestamp": 1790697021
+  }
+}

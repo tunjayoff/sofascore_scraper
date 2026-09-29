@@ -1,0 +1,389 @@
+{
+  "case_id": "B6_finished_regular",
+  "event_id": 17204710,
+  "fetched_at_utc": "2026-09-29T13:38:46+00:00",
+  "source_endpoint": "/api/v1/event/17204710",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"c02b032ad5\"",
+    "date": "Tue, 29 Sep 2026 13:38:46 GMT"
+  },
+  "note": "Normal bitmiş; index source scan:2026-09-29",
+  "event": {
+    "firstToServe": 1,
+    "homeTeamSeed": "2",
+    "tournament": {
+      "name": "Tokyo, Japan, Qualifying",
+      "slug": "tokyo-japan-qualifying",
+      "category": {
+        "name": "ATP",
+        "slug": "atp",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 8,
+        "country": {},
+        "id": 3,
+        "flag": "atp",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "এটিপি",
+            "hi": "डब्ल्यूटीए",
+            "ar": "رابطة محترفي التنس",
+            "ru": "ATP"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Tokyo",
+        "slug": "tokyo",
+        "primaryColorHex": "#b41e23",
+        "secondaryColorHex": "#939192",
+        "category": {
+          "name": "ATP",
+          "slug": "atp",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 8,
+          "country": {},
+          "id": 3,
+          "flag": "atp",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "এটিপি",
+              "hi": "डब्ल्यूटीए",
+              "ar": "رابطة محترفي التنس",
+              "ru": "ATP"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 2457,
+        "groundType": "Hardcourt outdoor",
+        "tennisPoints": 500,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": true,
+        "country": {},
+        "id": 2435,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "طوكيو",
+            "hi": "टोक्यो",
+            "bn": "টোকিও",
+            "ru": "Токио"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "id": 202266,
+      "endTimestamp": 1790640000,
+      "startTimestamp": 1790553600,
+      "qualificationOrPreliminary": true
+    },
+    "season": {
+      "name": "ATP Tokyo, Japan Men Singles 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 82373
+    },
+    "roundInfo": {
+      "round": 250,
+      "name": "Qualification Final",
+      "slug": "qualification-final"
+    },
+    "customId": "qXYscZUb",
+    "status": {
+      "code": 100,
+      "description": "Ended",
+      "type": "finished"
+    },
+    "winnerCode": 1,
+    "venue": {
+      "city": {
+        "name": "Tokyo",
+        "country": {
+          "alpha2": "JP",
+          "alpha3": "JPN",
+          "name": "Japan",
+          "slug": "japan"
+        },
+        "id": 18610
+      },
+      "hidden": true,
+      "slug": "coliseum",
+      "name": "Coliseum",
+      "country": {
+        "alpha2": "JP",
+        "alpha3": "JPN",
+        "name": "Japan",
+        "slug": "japan"
+      },
+      "id": 51577,
+      "stadium": {
+        "name": "Coliseum"
+      }
+    },
+    "homeTeam": {
+      "name": "Stefanos Tsitsipas",
+      "slug": "tsitsipas-stefanos",
+      "shortName": "S. Tsitsipas",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 50230,
+      "playerTeamInfo": {
+        "height": 1.93,
+        "weight": 90,
+        "plays": "right-handed",
+        "turnedPro": "2016",
+        "prizeCurrent": 1106704,
+        "prizeTotal": 33174891,
+        "birthCity": {
+          "name": "Athens",
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 18392
+        },
+        "residenceCity": {
+          "name": "Nicosia",
+          "country": {
+            "alpha2": "CY",
+            "alpha3": "CYP",
+            "name": "Cyprus",
+            "slug": "cyprus"
+          },
+          "id": 19410
+        },
+        "id": 11,
+        "birthplace": "Athens, Greece",
+        "birthDateTimestamp": 902880000,
+        "underage": false,
+        "residence": "Nicosia, Cyprus",
+        "prizeCurrentRaw": {
+          "value": 1106704,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 33174891,
+          "currency": "EUR"
+        },
+        "currentRanking": 29
+      },
+      "nameCode": "TSI",
+      "ranking": 44,
+      "class": 4,
+      "disabled": false,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "GR",
+        "alpha3": "GRC",
+        "name": "Greece",
+        "slug": "greece"
+      },
+      "id": 122366,
+      "fullName": "Stefanos Tsitsipas",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ستيفانوس تسيتسيباس",
+          "ru": "Стефанос Циципас"
+        },
+        "shortNameTranslation": {
+          "ar": "س. تسيتسيباس",
+          "bn": "এস সিটসিপাস",
+          "hi": "एस. त्सित्सिपास",
+          "ru": "С. Циципас"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Rinky Hijikata",
+      "slug": "hijikata-rinky",
+      "shortName": "R. Hijikata",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 4982,
+      "playerTeamInfo": {
+        "height": 1.78,
+        "weight": 72,
+        "plays": "right-handed",
+        "prizeCurrent": 615084,
+        "prizeTotal": 3707861,
+        "birthCity": {
+          "name": "Sydney",
+          "country": {
+            "alpha2": "AU",
+            "alpha3": "AUS",
+            "name": "Australia",
+            "slug": "australia"
+          },
+          "id": 19363
+        },
+        "residenceCity": {
+          "name": "Sydney",
+          "country": {
+            "alpha2": "AU",
+            "alpha3": "AUS",
+            "name": "Australia",
+            "slug": "australia"
+          },
+          "id": 19363
+        },
+        "id": 3906,
+        "birthplace": "Sydney, Australia",
+        "birthDateTimestamp": 982886400,
+        "underage": false,
+        "residence": "Sydney, Australia",
+        "prizeCurrentRaw": {
+          "value": 615084,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 3707861,
+          "currency": "EUR"
+        },
+        "currentRanking": 82
+      },
+      "nameCode": "HIJ",
+      "ranking": 82,
+      "class": 0,
+      "disabled": false,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "AU",
+        "alpha3": "AUS",
+        "name": "Australia",
+        "slug": "australia"
+      },
+      "id": 237452,
+      "fullName": "Rinky Hijikata",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "رينكي هيجيكاتا",
+          "bn": "রিঙ্কি হিজিকাটা",
+          "hi": "रिंकी हिजिकाता",
+          "ru": "Хиджиката, Ринки"
+        },
+        "shortNameTranslation": {
+          "ar": "ر. هيجيكاتا"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 2,
+      "display": 2,
+      "period1": 6,
+      "period2": 6,
+      "point": "40",
+      "normaltime": 2
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 4,
+      "period2": 3,
+      "point": "30",
+      "normaltime": 0
+    },
+    "time": {
+      "period1": 1796,
+      "period2": 2175,
+      "currentPeriodStartTimestamp": 1790649478
+    },
+    "changes": {
+      "changes": [
+        "time.currentPeriodStart"
+      ],
+      "changeTimestamp": 1790651755
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "correctAiInsight": true,
+    "id": 17204710,
+    "defaultPeriodCount": 3,
+    "slug": "rinky-hijikata-stefanos-tsitsipas",
+    "currentPeriodStartTimestamp": 1790649478,
+    "startTimestamp": 1790647200,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "finalResultOnly": false,
+    "hasBet365LiveStream": true,
+    "bet365ExcludedCountryCodes": [
+      "AN",
+      "CU",
+      "IR",
+      "KP",
+      "SY",
+      "VE",
+      "GR",
+      "RU",
+      "CH",
+      "CA"
+    ],
+    "feedLocked": false,
+    "groundType": "Hardcourt outdoor",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "singles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "p500"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

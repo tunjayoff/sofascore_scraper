@@ -1,0 +1,41 @@
+{
+  "case_id": "B4_live_break",
+  "event_id": 17157547,
+  "fetched_at_utc": "2026-09-29T15:55:01+00:00",
+  "source_file": "data/status_samples/basketball/B4_live_break__17157547.json",
+  "status": {
+    "code": 15,
+    "description": "3rd quarter",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 53,
+    "display": 53,
+    "period1": 18,
+    "period2": 16,
+    "period3": 19
+  },
+  "awayScore": {
+    "current": 54,
+    "display": 54,
+    "period1": 18,
+    "period2": 16,
+    "period3": 20
+  },
+  "startTimestamp": 1790693100,
+  "time": {
+    "played": 1771,
+    "periodLength": 600,
+    "overtimeLength": 300,
+    "totalPeriodCount": 4,
+    "clockRunning": true,
+    "clockRunningLastUpdated": "2026-09-29T15:54:20+00:00"
+  },
+  "changes": {
+    "changes": [
+      "time.played",
+      "time.playedLastUpdated"
+    ],
+    "changeTimestamp": 1790697280
+  }
+}

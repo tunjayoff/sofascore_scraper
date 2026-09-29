@@ -1,0 +1,36 @@
+{
+  "case_id": "B13_start_time_changed",
+  "event_id": 17196038,
+  "fetched_at_utc": "2026-09-29T16:02:22+00:00",
+  "source_file": "data/status_samples/tennis/B13_start_time_changed__17196038.json",
+  "status": {
+    "code": 8,
+    "description": "1st set",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 2,
+    "point": "0"
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 1,
+    "point": "0"
+  },
+  "startTimestamp": 1790697000,
+  "time": {
+    "currentPeriodStartTimestamp": 1790697037
+  },
+  "changes": {
+    "changes": [
+      "homeScore.point",
+      "awayScore.period1",
+      "awayScore.point",
+      "firstToServe"
+    ],
+    "changeTimestamp": 1790697699
+  }
+}

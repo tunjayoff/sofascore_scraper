@@ -1,0 +1,23 @@
+{
+  "case_id": "B8_canceled",
+  "event_id": 16741834,
+  "fetched_at_utc": "2026-09-29T15:53:28+00:00",
+  "source_file": "data/status_samples/football/B8_canceled__16741834.json",
+  "status": {
+    "code": 70,
+    "description": "Canceled",
+    "type": "canceled"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1789916400,
+  "time": {},
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type"
+    ],
+    "changeTimestamp": 1786887978
+  }
+}

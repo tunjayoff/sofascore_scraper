@@ -1,0 +1,36 @@
+{
+  "case_id": "A_inprogress-9-2nd-set",
+  "event_id": 17207615,
+  "fetched_at_utc": "2026-09-29T13:45:17+00:00",
+  "source_file": "data/status_samples/tennis/A_inprogress-9-2nd-set__17207615.json",
+  "status": {
+    "code": 9,
+    "description": "2nd set",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 1,
+    "display": 1,
+    "period1": 6,
+    "period2": 2,
+    "point": "15"
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 3,
+    "period2": 1,
+    "point": "0"
+  },
+  "startTimestamp": 1790685900,
+  "time": {
+    "period1": 2503,
+    "currentPeriodStartTimestamp": 1790688491
+  },
+  "changes": {
+    "changes": [
+      "homeScore.point"
+    ],
+    "changeTimestamp": 1790689515
+  }
+}

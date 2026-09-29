@@ -1,0 +1,415 @@
+{
+  "case_id": "B6_finished_regular",
+  "event_id": 16484334,
+  "fetched_at_utc": "2026-09-29T15:55:07+00:00",
+  "source_endpoint": "/api/v1/event/16484334",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"05a2a1f4a5\"",
+    "date": "Tue, 29 Sep 2026 15:55:06 GMT"
+  },
+  "note": "Normal bitmiş; index source scan:2026-09-15",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "Champions League, Qualification",
+      "slug": "champions-league-qualification",
+      "category": {
+        "name": "International",
+        "slug": "international",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 11,
+        "country": {},
+        "id": 103,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دولي",
+            "hi": "अंतर्राष्ट्रीय",
+            "bn": "আন্তর্জাতিক",
+            "ru": "Международные"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Champions League",
+        "slug": "champions-league",
+        "primaryColorHex": "#002b53",
+        "secondaryColorHex": "#00b4af",
+        "category": {
+          "name": "International",
+          "slug": "international",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 11,
+          "country": {},
+          "id": 103,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دولي",
+              "hi": "अंतर्राष्ट्रीय",
+              "bn": "আন্তর্জাতিক",
+              "ru": "Международные"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 4372,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 9357,
+        "hasEventPlayerStatistics": false,
+        "hasBoxScore": true,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دوري أبطال أوروبا",
+            "bn": "চ্যাম্পিয়ন্স লীগ",
+            "hi": "चैंपियंस लीग",
+            "ru": "Лига чемпионов"
+          },
+          "shortNameTranslation": {}
+        },
+        "hasRating": true,
+        "hasLiveRating": true
+      },
+      "priority": 117,
+      "isGroup": false,
+      "competitionType": 2,
+      "isLive": false,
+      "id": 54934,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "دوري أبطال أوروبا، التصفيات",
+          "bn": "চ্যাম্পিয়ন্স লীগ, কোয়ালিফিকেশন",
+          "hi": "चैंपियंस लीग, क्वालिफिकेशन",
+          "ru": "Лига чемпионов, Квалификация"
+        },
+        "shortNameTranslation": {}
+      },
+      "qualificationOrPreliminary": true
+    },
+    "season": {
+      "name": "Champions League 26/27",
+      "year": "26/27",
+      "editor": false,
+      "id": 98086
+    },
+    "roundInfo": {
+      "round": 5,
+      "name": "Round of 16",
+      "slug": "round-of-16",
+      "cupRoundType": 8
+    },
+    "customId": "UCjsfiVc",
+    "status": {
+      "code": 100,
+      "description": "Ended",
+      "type": "finished"
+    },
+    "winnerCode": 2,
+    "venue": {
+      "city": {
+        "name": "Opava",
+        "country": {
+          "alpha2": "CZ",
+          "alpha3": "CZE",
+          "name": "Czechia",
+          "slug": "czechia"
+        },
+        "id": 20674
+      },
+      "hidden": true,
+      "slug": "opava-hall",
+      "name": "Opava Hall",
+      "capacity": 3006,
+      "country": {
+        "alpha2": "CZ",
+        "alpha3": "CZE",
+        "name": "Czechia",
+        "slug": "czechia"
+      },
+      "id": 7734,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "قاعة أوفا",
+          "hi": "ओपवा हॉल",
+          "bn": "ওপাভা হল",
+          "ru": "Спортивный комплекс Opava"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Opava Hall",
+        "capacity": 3006
+      }
+    },
+    "homeTeam": {
+      "name": "BK Opava",
+      "slug": "bk-opava",
+      "shortName": "Opava",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 668,
+      "venue": {
+        "city": {
+          "name": "Opava",
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 20674
+        },
+        "hidden": true,
+        "slug": "opava-hall",
+        "name": "Opava Hall",
+        "capacity": 3006,
+        "country": {
+          "alpha2": "CZ",
+          "alpha3": "CZE",
+          "name": "Czechia",
+          "slug": "czechia"
+        },
+        "id": 7734,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "قاعة أوفا",
+            "hi": "ओपवा हॉल",
+            "bn": "ওপাভা হল",
+            "ru": "Спортивный комплекс Opava"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Opava Hall",
+          "capacity": 3006
+        }
+      },
+      "nameCode": "OPA",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "CZ",
+        "alpha3": "CZE",
+        "name": "Czechia",
+        "slug": "czechia"
+      },
+      "id": 23894,
+      "fullName": "BK Opava",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffff00",
+        "secondary": "#000066",
+        "text": "#000066"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "نادي أوبافا",
+          "bn": "বি কে ওপাভা",
+          "ru": "БК Опава"
+        },
+        "shortNameTranslation": {
+          "ar": "أوبافا",
+          "hi": "ओपावा"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Dziki Warszawa",
+      "slug": "dziki-warszawa",
+      "shortName": "Dziki Warszawa",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 942,
+      "manager": {
+        "name": "Marco Legovich",
+        "slug": "marco-legovich",
+        "shortName": "M. Legovich",
+        "country": {
+          "alpha2": "IT",
+          "alpha3": "ITA",
+          "name": "Italy",
+          "slug": "italy"
+        },
+        "id": 800217,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ماركو ليغوفيتش",
+            "bn": "মার্কো লেগোভিচ",
+            "hi": "मार्को लेगोविच",
+            "ru": "Марко Легович"
+          },
+          "shortNameTranslation": {
+            "ar": "م. ليغوفيتش",
+            "hi": "एम. लेगोविच",
+            "bn": "এম. লেগোভিচ",
+            "ru": "М. Легович"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Warsaw",
+          "country": {
+            "alpha2": "PL",
+            "alpha3": "POL",
+            "name": "Poland",
+            "slug": "poland"
+          },
+          "id": 18872
+        },
+        "hidden": true,
+        "slug": "sports-arena-kolo",
+        "name": "Sports Arena Kolo",
+        "country": {
+          "alpha2": "PL",
+          "alpha3": "POL",
+          "name": "Poland",
+          "slug": "poland"
+        },
+        "id": 30104,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أرينا الرياضة كولو",
+            "hi": "स्पोर्ट्स एरिना कोलो",
+            "bn": "স্পোর্টস এরিনা কোলো",
+            "ru": "Арена Kolo"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Sports Arena Kolo"
+        }
+      },
+      "nameCode": "DZW",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {},
+      "id": 362905,
+      "fullName": "Dziki Warszawa",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "دزيكي وارسزاوا",
+          "bn": "জিকি ওয়ারসজাওয়া",
+          "hi": "डिज़िकी वार्सज़ावा",
+          "ru": "Dziki Warshawa"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 99,
+      "display": 99,
+      "period1": 24,
+      "period2": 26,
+      "period3": 20,
+      "period4": 29,
+      "normaltime": 99
+    },
+    "awayScore": {
+      "current": 116,
+      "display": 116,
+      "period1": 24,
+      "period2": 26,
+      "period3": 30,
+      "period4": 36,
+      "normaltime": 116
+    },
+    "time": {
+      "periodLength": 600,
+      "overtimeLength": 300,
+      "totalPeriodCount": 4,
+      "clockRunning": false,
+      "clockRunningLastUpdated": "2026-09-14T15:33:41+00:00",
+      "currentPeriodStartTimestamp": 1789392658
+    },
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type",
+        "homeScore.normaltime",
+        "awayScore.normaltime"
+      ],
+      "changeTimestamp": 1789400081
+    },
+    "hasGlobalHighlights": true,
+    "hasEventPlayerStatistics": true,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16484334,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "dziki-warszawa-bk-opava",
+    "currentPeriodStartTimestamp": 1789392658,
+    "startTimestamp": 1789392600,
+    "finalResultOnly": false,
+    "hasBet365LiveStream": true,
+    "bet365ExcludedCountryCodes": [
+      "",
+      "IR",
+      "GR",
+      "RU",
+      "CH",
+      "CA"
+    ],
+    "feedLocked": false,
+    "cupMatchesInRound": 1,
+    "seasonStatisticsType": "overall",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "top-competitions",
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

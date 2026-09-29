@@ -1,0 +1,371 @@
+{
+  "case_id": "T6_suspended",
+  "event_id": 17201545,
+  "fetched_at_utc": "2026-09-29T15:57:04+00:00",
+  "source_endpoint": "/api/v1/event/17201545",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"b1b0a03b83\"",
+    "date": "Tue, 29 Sep 2026 15:57:04 GMT"
+  },
+  "note": "Ertesi güne kalmış / askıya alınmış; index source scan:2026-09-28",
+  "event": {
+    "firstToServe": 2,
+    "awayTeamSeed": "A",
+    "tournament": {
+      "name": "Porto 2, Portugal",
+      "slug": "porto-2-portugal",
+      "category": {
+        "name": "Challenger",
+        "slug": "challenger",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 6,
+        "country": {},
+        "id": 72,
+        "flag": "challenger",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "চ্যালেঞ্জার",
+            "ar": "تحدي (تنس)",
+            "hi": "डेनमार्क",
+            "ru": "Challenger"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Porto 2, Portugal",
+        "slug": "atp-challenger-porto-2-portugal-men-singles",
+        "category": {
+          "name": "Challenger",
+          "slug": "challenger",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 6,
+          "country": {},
+          "id": 72,
+          "flag": "challenger",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "চ্যালেঞ্জার",
+              "ar": "تحدي (تنس)",
+              "hi": "डेनमार्क",
+              "ru": "Challenger"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 167,
+        "groundType": "Hardcourt outdoor",
+        "hasRounds": false,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 23335,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "بطولة ATP تشالنجر بورتو 2، البرتغال، فردي الرجال",
+            "ru": "Челленджер АТП Порту 2, Португалия, одиночный разряд"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "id": 201503,
+      "endTimestamp": 1791072000,
+      "startTimestamp": 1790553600
+    },
+    "season": {
+      "name": "ATP Challenger Porto 2, Portugal Men Singles 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 96718
+    },
+    "roundInfo": {
+      "round": 6,
+      "name": "Round of 32",
+      "slug": "round-of-32",
+      "cupRoundType": 16
+    },
+    "customId": "hXRscjHc",
+    "status": {
+      "code": 80,
+      "description": "Interrupted",
+      "type": "interrupted"
+    },
+    "venue": {
+      "city": {
+        "name": "Porto",
+        "country": {
+          "alpha2": "PT",
+          "alpha3": "PRT",
+          "name": "Portugal",
+          "slug": "portugal"
+        },
+        "id": 18500
+      },
+      "hidden": true,
+      "slug": "court-3",
+      "name": "Court 3",
+      "country": {
+        "alpha2": "PT",
+        "alpha3": "PRT",
+        "name": "Portugal",
+        "slug": "portugal"
+      },
+      "id": 17582,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ملعب 3",
+          "hi": "कोर्ट 3",
+          "bn": "কোর্ট 3"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Court 3"
+      }
+    },
+    "homeTeam": {
+      "name": "Hugo Grenier",
+      "slug": "grenier-hugo",
+      "shortName": "H. Grenier",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 2238,
+      "playerTeamInfo": {
+        "height": 1.96,
+        "weight": 85,
+        "plays": "right-handed",
+        "prizeCurrent": 117389,
+        "prizeTotal": 1474980,
+        "birthCity": {
+          "name": "Montbrison",
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 26328
+        },
+        "residenceCity": {
+          "name": "Montbrison",
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 26328
+        },
+        "id": 556,
+        "birthplace": "Montbrison, France",
+        "birthDateTimestamp": 827539200,
+        "underage": false,
+        "residence": "Montbrison, France",
+        "prizeCurrentRaw": {
+          "value": 117389,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 1474980,
+          "currency": "EUR"
+        },
+        "currentRanking": 284
+      },
+      "nameCode": "GRE",
+      "ranking": 289,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "FR",
+        "alpha3": "FRA",
+        "name": "France",
+        "slug": "france"
+      },
+      "id": 107357,
+      "fullName": "Hugo Grenier",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "هوجو غرينير",
+          "bn": "হুগো গ্রেনিয়ার",
+          "hi": "ह्यूगो ग्रेनियर",
+          "ru": "Хуго Гренье"
+        },
+        "shortNameTranslation": {
+          "ar": "ه. غرينير"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Carl Emil Overbeck",
+      "slug": "overbeck-carl-emil",
+      "shortName": "C. E. Overbeck",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 775,
+      "playerTeamInfo": {
+        "height": 1.93,
+        "weight": 82,
+        "plays": "right-handed",
+        "prizeCurrent": 15041,
+        "prizeTotal": 42330,
+        "birthCity": {
+          "name": "Copenhagen",
+          "country": {
+            "alpha2": "DK",
+            "alpha3": "DNK",
+            "name": "Denmark",
+            "slug": "denmark"
+          },
+          "id": 19286
+        },
+        "id": 18100,
+        "birthplace": "Copenhagen, Denmark",
+        "birthDateTimestamp": 997488000,
+        "underage": false,
+        "prizeCurrentRaw": {
+          "value": 15041,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 42330,
+          "currency": "EUR"
+        },
+        "currentRanking": 290
+      },
+      "nameCode": "OVE",
+      "ranking": 290,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "DK",
+        "alpha3": "DNK",
+        "name": "Denmark",
+        "slug": "denmark"
+      },
+      "id": 330452,
+      "fullName": "Carl Emil Overbeck",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "كارل إميل أوفربك",
+          "ru": "Карл Эмиль Овербек"
+        },
+        "shortNameTranslation": {
+          "ar": "ك. أوفربك",
+          "ru": "К. Овербек"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 1,
+      "display": 1,
+      "period1": 6,
+      "period2": 5,
+      "point": "0"
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 4,
+      "period2": 2,
+      "point": "0"
+    },
+    "time": {
+      "period1": 2451,
+      "currentPeriodStartTimestamp": 1790691272
+    },
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type"
+      ],
+      "changeTimestamp": 1790692784
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17201545,
+    "defaultPeriodCount": 3,
+    "slug": "carl-emil-overbeck-hugo-grenier",
+    "currentPeriodStartTimestamp": 1790691272,
+    "startTimestamp": 1790688300,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "finalResultOnly": false,
+    "hasBet365LiveStream": true,
+    "bet365ExcludedCountryCodes": [
+      "AN",
+      "CU",
+      "IR",
+      "KP",
+      "SY",
+      "VE",
+      "GR",
+      "RU",
+      "CH",
+      "CA"
+    ],
+    "feedLocked": false,
+    "groundType": "Hardcourt outdoor",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "singles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "lower"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

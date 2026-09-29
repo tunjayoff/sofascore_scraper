@@ -1,0 +1,307 @@
+{
+  "case_id": "B13_start_time_changed",
+  "event_id": 16460608,
+  "fetched_at_utc": "2026-09-29T16:02:20+00:00",
+  "source_endpoint": "/api/v1/event/16460608",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"f3d719f638\"",
+    "date": "Tue, 29 Sep 2026 16:02:20 GMT"
+  },
+  "note": "gözlenen startTimestamp değerleri: [1790960400, 1791129600]",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "1. Liga, Group West",
+      "slug": "1-liga-group-west",
+      "category": {
+        "name": "Czech Republic",
+        "slug": "czech-republic",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "CZ",
+          "alpha3": "CZE",
+          "name": "Czechia",
+          "slug": "czechia"
+        },
+        "id": 154,
+        "flag": "czech-republic",
+        "alpha2": "CZ",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "التشيك",
+            "ru": "Чехия"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "1. Liga",
+        "slug": "1-liga",
+        "primaryColorHex": "#f29128",
+        "secondaryColorHex": "#d0740d",
+        "category": {
+          "name": "Czech Republic",
+          "slug": "czech-republic",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 154,
+          "flag": "czech-republic",
+          "alpha2": "CZ",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "التشيك",
+              "ru": "Чехия"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 114,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 1482,
+        "hasEventPlayerStatistics": false,
+        "hasBoxScore": true,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "الدوري التشيكي الدرجة الأولى لكرة السلة",
+            "ru": "Лига 1"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": true,
+      "groupName": "Group West",
+      "competitionType": 1,
+      "isLive": false,
+      "id": 38778,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "الدوري 1، المجموعة الغربية",
+          "ru": "Лига 1, Группа Запад"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "1. Liga 26/27",
+      "year": "26/27",
+      "editor": false,
+      "id": 97772
+    },
+    "roundInfo": {
+      "round": 3
+    },
+    "customId": "eLCsLVud",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "homeTeam": {
+      "name": "BA Lynx Liberec",
+      "slug": "ba-lynx-liberec",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 96,
+      "venue": {
+        "city": {
+          "name": "Liberec",
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 19020
+        },
+        "hidden": true,
+        "slug": "hala-kort",
+        "name": "Hala Kort",
+        "country": {
+          "alpha2": "CZ",
+          "alpha3": "CZE",
+          "name": "Czechia",
+          "slug": "czechia"
+        },
+        "id": 36619,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "قاعة كورت",
+            "hi": "हाला कोर्ट",
+            "bn": "হালা কোর্ট",
+            "ru": "Спортивный комплекс Kort"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Hala Kort"
+        }
+      },
+      "nameCode": "LYN",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "CZ",
+        "alpha3": "CZE",
+        "name": "Czechia",
+        "slug": "czechia"
+      },
+      "id": 424786,
+      "fullName": "BA Lynx Liberec",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "بي إيه لينكس ليبريتش",
+          "ru": "БА Рысь Либерец"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "BK Lions Jindrichuv Hradec",
+      "slug": "bk-lions-jindrichuv-hradec",
+      "shortName": "BK Lions",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 139,
+      "venue": {
+        "city": {
+          "name": "Jindrichuv Hradec",
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 19998
+        },
+        "hidden": true,
+        "slug": "jindrichuv-hradec-sportovni-hala",
+        "name": "Jindrichuv Hradec Sportovni hala",
+        "country": {
+          "alpha2": "CZ",
+          "alpha3": "CZE",
+          "name": "Czechia",
+          "slug": "czechia"
+        },
+        "id": 7796,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "جيندريتشوف هريدك سبورتوفني هالا",
+            "hi": "जिंदरीचुव ह्राडेक स्पोर्टोवनी हला",
+            "bn": "জিন্দ্রিচুভ হারাদেক স্পোর্টস হল",
+            "ru": "Спортивный комплекс Jindrichuv Hradec"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Jindrichuv Hradec Sportovni hala"
+        }
+      },
+      "nameCode": "JIN",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "CZ",
+        "alpha3": "CZE",
+        "name": "Czechia",
+        "slug": "czechia"
+      },
+      "id": 69304,
+      "fullName": "BK Lions Jindrichuv Hradec",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffbe00",
+        "secondary": "#161616",
+        "text": "#161616"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "بي كي ليونز جيندريتشوف هرايدس",
+          "ru": "БК Львы Йиндржихув Градец"
+        },
+        "shortNameTranslation": {
+          "ar": "بي كي ليونز",
+          "bn": "বিকে লায়ন্স",
+          "hi": "बीके लायंस",
+          "ru": "БК Львы"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16460608,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "ba-lynx-liberec-bk-lions-jindrichuv-hradec",
+    "startTimestamp": 1791129600,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "seasonStatisticsType": "overall",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

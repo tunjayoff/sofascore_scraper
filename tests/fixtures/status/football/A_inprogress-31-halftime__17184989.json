@@ -1,0 +1,37 @@
+{
+  "case_id": "A_inprogress-31-halftime",
+  "event_id": 17184989,
+  "fetched_at_utc": "2026-09-29T15:02:53+00:00",
+  "source_file": "data/status_samples/football/A_inprogress-31-halftime__17184989.json",
+  "status": {
+    "code": 31,
+    "description": "Halftime",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 2,
+    "display": 2,
+    "period1": 2
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0
+  },
+  "startTimestamp": 1790690400,
+  "time": {
+    "periodLength": 2700,
+    "overtimeLength": 900,
+    "totalPeriodCount": 2,
+    "currentPeriodStartTimestamp": 1790690518,
+    "lastPeriodEndTimestamp": 1790693344
+  },
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "time.lastPeriodEnd"
+    ],
+    "changeTimestamp": 1790693344
+  }
+}

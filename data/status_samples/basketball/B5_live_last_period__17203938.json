@@ -1,0 +1,259 @@
+{
+  "case_id": "B5_live_last_period",
+  "event_id": 17203938,
+  "fetched_at_utc": "2026-09-29T15:55:03+00:00",
+  "source_endpoint": "/api/v1/event/17203938",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"e867857f1b\"",
+    "date": "Tue, 29 Sep 2026 15:55:02 GMT"
+  },
+  "note": "Canlı, son periyot; index source live:2026-09-29T15:02:42+00:00",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "CBI U17, Fase Final",
+      "slug": "cbi-u17-fase-final",
+      "category": {
+        "name": "Brazil",
+        "slug": "brazil",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "BR",
+          "alpha3": "BRA",
+          "name": "Brazil",
+          "slug": "brazil"
+        },
+        "id": 263,
+        "flag": "brazil",
+        "alpha2": "BR",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "البرازيل",
+            "ru": "Бразилия"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "CBI U17",
+        "slug": "cbi-u17",
+        "category": {
+          "name": "Brazil",
+          "slug": "brazil",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 263,
+          "flag": "brazil",
+          "alpha2": "BR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "البرازيل",
+              "ru": "Бразилия"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 52,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 23955,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "CBI تحت 17",
+            "ru": "Лига CBI до 17 лет"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "id": 200366
+    },
+    "season": {
+      "name": "2026",
+      "year": "2026",
+      "editor": false,
+      "id": 94685
+    },
+    "customId": "YCyhshDyh",
+    "status": {
+      "code": 100,
+      "description": "Ended",
+      "type": "finished"
+    },
+    "winnerCode": 2,
+    "homeTeam": {
+      "name": "Fluminense U17",
+      "slug": "fluminense-u17",
+      "shortName": "Fluminense U17",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 50,
+      "nameCode": "FLU",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "BR",
+        "alpha3": "BRA",
+        "name": "Brazil",
+        "slug": "brazil"
+      },
+      "id": 933898,
+      "fullName": "Fluminense U17",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "فلومينينسي تحت 17",
+          "ru": "Флуминенсе U17"
+        },
+        "shortNameTranslation": {
+          "ar": "فلومينينسي تحت 17",
+          "ru": "Флуминенсе U17"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Flamengo U17",
+      "slug": "flamengo-u17",
+      "shortName": "Flamengo U17",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 333,
+      "nameCode": "FLA",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "BR",
+        "alpha3": "BRA",
+        "name": "Brazil",
+        "slug": "brazil"
+      },
+      "id": 933907,
+      "fullName": "Flamengo U17",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "فلامينغو تحت 17",
+          "ru": "Фламенго U17"
+        },
+        "shortNameTranslation": {
+          "ar": "فلامينغو تحت 17",
+          "ru": "Фламенго U17"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 49,
+      "display": 49,
+      "period1": 10,
+      "period2": 18,
+      "period3": 13,
+      "period4": 8,
+      "normaltime": 49
+    },
+    "awayScore": {
+      "current": 68,
+      "display": 68,
+      "period1": 21,
+      "period2": 8,
+      "period3": 17,
+      "period4": 22,
+      "normaltime": 68
+    },
+    "time": {
+      "played": 2400,
+      "periodLength": 600,
+      "overtimeLength": 300,
+      "totalPeriodCount": 4,
+      "clockRunning": false,
+      "clockRunningLastUpdated": "2026-09-29T15:09:53+00:00"
+    },
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type",
+        "homeScore.normaltime",
+        "awayScore.normaltime"
+      ],
+      "changeTimestamp": 1790694854
+    },
+    "hasGlobalHighlights": false,
+    "hasEventPlayerStatistics": true,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17203938,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "flamengo-u17-fluminense-u17",
+    "startTimestamp": 1790688600,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro",
+        "youth"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

@@ -1,0 +1,39 @@
+{
+  "case_id": "A_inprogress-30-pause",
+  "event_id": 17157547,
+  "fetched_at_utc": "2026-09-29T15:34:14+00:00",
+  "source_file": "data/status_samples/basketball/A_inprogress-30-pause__17157547.json",
+  "status": {
+    "code": 30,
+    "description": "Pause",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 34,
+    "display": 34,
+    "period1": 18,
+    "period2": 16
+  },
+  "awayScore": {
+    "current": 34,
+    "display": 34,
+    "period1": 18,
+    "period2": 16
+  },
+  "startTimestamp": 1790693100,
+  "time": {
+    "played": 1200,
+    "periodLength": 600,
+    "overtimeLength": 300,
+    "totalPeriodCount": 4,
+    "clockRunning": false,
+    "clockRunningLastUpdated": "2026-09-29T15:24:50+00:00"
+  },
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description"
+    ],
+    "changeTimestamp": 1790695510
+  }
+}

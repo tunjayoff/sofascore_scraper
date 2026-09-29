@@ -1,0 +1,372 @@
+{
+  "case_id": "A_notstarted-0-not-started",
+  "event_id": 17204702,
+  "fetched_at_utc": "2026-09-29T13:38:34+00:00",
+  "source_endpoint": "/api/v1/event/17204702",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"b4521dcafe\"",
+    "date": "Tue, 29 Sep 2026 13:38:34 GMT"
+  },
+  "note": "index source scan:2026-09-29",
+  "event": {
+    "tournament": {
+      "name": "Tokyo, Japan",
+      "slug": "tokyo-japan",
+      "category": {
+        "name": "ATP",
+        "slug": "atp",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 8,
+        "country": {},
+        "id": 3,
+        "flag": "atp",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "এটিপি",
+            "hi": "डब्ल्यूटीए",
+            "ar": "رابطة محترفي التنس",
+            "ru": "ATP"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Tokyo",
+        "slug": "tokyo",
+        "primaryColorHex": "#b41e23",
+        "secondaryColorHex": "#939192",
+        "category": {
+          "name": "ATP",
+          "slug": "atp",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 8,
+          "country": {},
+          "id": 3,
+          "flag": "atp",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "এটিপি",
+              "hi": "डब्ल्यूटीए",
+              "ar": "رابطة محترفي التنس",
+              "ru": "ATP"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 2649,
+        "groundType": "Hardcourt outdoor",
+        "tennisPoints": 500,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": true,
+        "country": {},
+        "id": 2435,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "طوكيو",
+            "hi": "टोक्यो",
+            "bn": "টোকিও",
+            "ru": "Токио"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "id": 201982,
+      "endTimestamp": 1791244800,
+      "startTimestamp": 1790726400
+    },
+    "season": {
+      "name": "ATP Tokyo, Japan Men Singles 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 82373
+    },
+    "roundInfo": {
+      "round": 6,
+      "name": "Round of 32",
+      "slug": "round-of-32",
+      "cupRoundType": 16
+    },
+    "customId": "WttbsRUbc",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "venue": {
+      "city": {
+        "name": "Tokyo",
+        "country": {
+          "alpha2": "JP",
+          "alpha3": "JPN",
+          "name": "Japan",
+          "slug": "japan"
+        },
+        "id": 18610
+      },
+      "hidden": true,
+      "slug": "kinoshita-group-arena",
+      "name": "Kinoshita Group Arena",
+      "country": {
+        "alpha2": "JP",
+        "alpha3": "JPN",
+        "name": "Japan",
+        "slug": "japan"
+      },
+      "id": 42056,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ساحة كينوشيتا غروب",
+          "hi": "किनोशिता ग्रुप एरिना",
+          "bn": "কিনোশিতা গ্রুপ এরিনা"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Kinoshita Group Arena"
+      }
+    },
+    "homeTeam": {
+      "name": "Jiri Lehečka",
+      "slug": "lehecka-jiri",
+      "shortName": "J. Lehečka",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 14760,
+      "playerTeamInfo": {
+        "height": 1.85,
+        "weight": 81,
+        "plays": "right-handed",
+        "prizeCurrent": 1632813,
+        "prizeTotal": 8074991,
+        "birthCity": {
+          "name": "Mlada Boleslav",
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 19171
+        },
+        "residenceCity": {
+          "name": "Knezmost",
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 36106
+        },
+        "id": 3050,
+        "birthplace": "Mlada Boleslav, Czechia",
+        "birthDateTimestamp": 1005177600,
+        "underage": false,
+        "residence": "Knezmost, Czechia",
+        "prizeCurrentRaw": {
+          "value": 1632813,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 8074991,
+          "currency": "EUR"
+        },
+        "currentRanking": 12
+      },
+      "nameCode": "LEH",
+      "ranking": 23,
+      "class": 0,
+      "disabled": false,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "CZ",
+        "alpha3": "CZE",
+        "name": "Czechia",
+        "slug": "czechia"
+      },
+      "id": 254742,
+      "fullName": "Jiri Lehečka",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ييري ليهتشكا",
+          "ru": "Иржи Лехечка"
+        },
+        "shortNameTranslation": {
+          "ar": "ي. ليهتشكا",
+          "bn": "জে. লেহেকা",
+          "hi": "जे. लेहका",
+          "ru": "И. Лехечка"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Zizou Bergs",
+      "slug": "bergs-zizou",
+      "shortName": "Z. Bergs",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 11277,
+      "playerTeamInfo": {
+        "height": 1.85,
+        "weight": 88,
+        "plays": "right-handed",
+        "turnedPro": "2017",
+        "prizeCurrent": 1195058,
+        "prizeTotal": 3813278,
+        "birthCity": {
+          "name": "Lommel",
+          "country": {
+            "alpha2": "BE",
+            "alpha3": "BEL",
+            "name": "Belgium",
+            "slug": "belgium"
+          },
+          "id": 19027
+        },
+        "residenceCity": {
+          "name": "Neerpelt",
+          "country": {
+            "alpha2": "BE",
+            "alpha3": "BEL",
+            "name": "Belgium",
+            "slug": "belgium"
+          },
+          "id": 25514
+        },
+        "id": 636,
+        "birthplace": "Lommel, Belgium",
+        "birthDateTimestamp": 928368000,
+        "underage": false,
+        "residence": "Neerpelt, Belgium",
+        "prizeCurrentRaw": {
+          "value": 1195058,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 3813278,
+          "currency": "EUR"
+        },
+        "currentRanking": 38
+      },
+      "nameCode": "BER",
+      "ranking": 38,
+      "class": 0,
+      "disabled": false,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "BE",
+        "alpha3": "BEL",
+        "name": "Belgium",
+        "slug": "belgium"
+      },
+      "id": 170946,
+      "fullName": "Zizou Bergs",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "زيزو بيرغس",
+          "bn": "জিজু ভার্গস",
+          "hi": "जिजू बर्ग्स",
+          "ru": "Зизу Бергс"
+        },
+        "shortNameTranslation": {
+          "ar": "ز. بيرغس",
+          "ru": "З. Бергс"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17204702,
+    "defaultPeriodCount": 3,
+    "slug": "jiri-lehecka-zizou-bergs",
+    "startTimestamp": 1790733600,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "finalResultOnly": false,
+    "hasBet365LiveStream": true,
+    "bet365ExcludedCountryCodes": [
+      "AN",
+      "CU",
+      "IR",
+      "KP",
+      "SY",
+      "VE",
+      "GR",
+      "RU",
+      "CH",
+      "CA"
+    ],
+    "feedLocked": false,
+    "groundType": "Hardcourt outdoor",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "singles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "p500"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

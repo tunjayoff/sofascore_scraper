@@ -1,0 +1,37 @@
+{
+  "case_id": "A_inprogress-20-started",
+  "event_id": 17207832,
+  "fetched_at_utc": "2026-09-29T15:51:42+00:00",
+  "source_file": "data/status_samples/tennis/A_inprogress-20-started__17207832.json",
+  "status": {
+    "code": 20,
+    "description": "Started",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0
+  },
+  "startTimestamp": 1790694000,
+  "time": {},
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type",
+      "homeScore.current",
+      "homeScore.display",
+      "homeScore.period1",
+      "awayScore.current",
+      "awayScore.display",
+      "awayScore.period1"
+    ],
+    "changeTimestamp": 1790696953
+  }
+}

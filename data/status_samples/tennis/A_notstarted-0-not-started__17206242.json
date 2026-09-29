@@ -1,0 +1,362 @@
+{
+  "case_id": "A_notstarted-0-not-started",
+  "event_id": 17206242,
+  "fetched_at_utc": "2026-09-29T13:38:37+00:00",
+  "source_endpoint": "/api/v1/event/17206242",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"1e91ce88c4\"",
+    "date": "Tue, 29 Sep 2026 13:38:37 GMT"
+  },
+  "note": "index source scan:2026-09-29",
+  "event": {
+    "awayTeamSeed": "2",
+    "tournament": {
+      "name": "Beijing, China",
+      "slug": "beijing-china",
+      "category": {
+        "name": "ATP",
+        "slug": "atp",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 8,
+        "country": {},
+        "id": 3,
+        "flag": "atp",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "এটিপি",
+            "hi": "डब्ल्यूटीए",
+            "ar": "رابطة محترفي التنس",
+            "ru": "ATP"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Beijing",
+        "slug": "beijing",
+        "primaryColorHex": "#bb141a",
+        "secondaryColorHex": "#636363",
+        "category": {
+          "name": "ATP",
+          "slug": "atp",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 8,
+          "country": {},
+          "id": 3,
+          "flag": "atp",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "এটিপি",
+              "hi": "डब्ल्यूटीए",
+              "ar": "رابطة محترفي التنس",
+              "ru": "ATP"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 2797,
+        "groundType": "Hardcourt outdoor",
+        "tennisPoints": 500,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": true,
+        "country": {},
+        "id": 2436,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "بكين",
+            "hi": "बीजिंग",
+            "bn": "বেইজিং",
+            "ru": "Пекин"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "id": 201984,
+      "endTimestamp": 1791244800,
+      "startTimestamp": 1790726400
+    },
+    "season": {
+      "name": "ATP Beijing, China Men Singles 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 82371
+    },
+    "roundInfo": {
+      "round": 6,
+      "name": "Round of 32",
+      "slug": "round-of-32",
+      "cupRoundType": 16
+    },
+    "customId": "FbLsnPBb",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "venue": {
+      "city": {
+        "name": "Beijing",
+        "country": {
+          "alpha2": "CN",
+          "alpha3": "CHN",
+          "name": "China",
+          "slug": "china"
+        },
+        "id": 19159
+      },
+      "hidden": true,
+      "slug": "diamond-court",
+      "name": "Diamond Court",
+      "country": {
+        "alpha2": "CN",
+        "alpha3": "CHN",
+        "name": "China",
+        "slug": "china"
+      },
+      "id": 26769,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "الماس الملعب",
+          "hi": "डायमंड कोर्ट",
+          "bn": "ডায়মন্ড কোর্ট"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Diamond Court"
+      }
+    },
+    "homeTeam": {
+      "name": "Karen Khachanov",
+      "slug": "khachanov-karen",
+      "shortName": "K. Khachanov",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 19837,
+      "playerTeamInfo": {
+        "height": 1.98,
+        "weight": 87,
+        "plays": "right-handed",
+        "turnedPro": "2013",
+        "prizeCurrent": 1163851,
+        "prizeTotal": 20329467,
+        "birthCity": {
+          "name": "Moscow",
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 19072
+        },
+        "residenceCity": {
+          "name": "Dubai",
+          "country": {
+            "alpha2": "AE",
+            "alpha3": "ARE",
+            "name": "United Arab Emirates",
+            "slug": "united-arab-emirates"
+          },
+          "id": 17965
+        },
+        "id": 12,
+        "birthplace": "Moscow, Russia",
+        "birthDateTimestamp": 832636800,
+        "underage": false,
+        "residence": "Dubai, United Arab Emirates",
+        "prizeCurrentRaw": {
+          "value": 1163851,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 20329467,
+          "currency": "EUR"
+        },
+        "currentRanking": 26
+      },
+      "nameCode": "KHA",
+      "ranking": 26,
+      "class": 0,
+      "disabled": false,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "RU",
+        "alpha3": "RUS",
+        "name": "Russia",
+        "slug": "russia"
+      },
+      "id": 90080,
+      "fullName": "Karen Khachanov",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "كارين خاشانوف",
+          "ru": "Карен Хачанов"
+        },
+        "shortNameTranslation": {
+          "ar": "ك. خاشانوف",
+          "bn": "কে. খাচানভ",
+          "hi": "के. खाचानोव",
+          "ru": "К. Хачанов"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Felix Auger-Aliassime",
+      "slug": "auger-aliassime-felix",
+      "shortName": "F. Auger-Aliassime",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 33667,
+      "playerTeamInfo": {
+        "height": 1.93,
+        "weight": 88,
+        "plays": "right-handed",
+        "turnedPro": "2017",
+        "prizeCurrent": 2405429,
+        "prizeTotal": 20312743,
+        "birthCity": {
+          "name": "Montreal",
+          "state": "CA-QC",
+          "country": {
+            "alpha2": "CA",
+            "alpha3": "CAN",
+            "name": "Canada",
+            "slug": "canada"
+          },
+          "id": 32944
+        },
+        "residenceCity": {
+          "name": "Monte Carlo",
+          "country": {
+            "alpha2": "MC",
+            "alpha3": "MCO",
+            "name": "Monaco",
+            "slug": "monaco"
+          },
+          "id": 21098
+        },
+        "id": 60,
+        "birthplace": "Montreal, Quebec, Canada",
+        "birthDateTimestamp": 965692800,
+        "underage": false,
+        "residence": "Monte Carlo, Monaco",
+        "prizeCurrentRaw": {
+          "value": 2405429,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 20312743,
+          "currency": "EUR"
+        },
+        "currentRanking": 5
+      },
+      "nameCode": "AUG",
+      "ranking": 5,
+      "class": 4,
+      "disabled": false,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "CA",
+        "alpha3": "CAN",
+        "name": "Canada",
+        "slug": "canada"
+      },
+      "id": 192013,
+      "fullName": "Felix Auger-Aliassime",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "فيليكس أوجر-علياسيم",
+          "ru": "Фе́ликс Оже-Альясси́м"
+        },
+        "shortNameTranslation": {
+          "ar": "ف. أوجر-علياسيم",
+          "bn": "এফ অগার-আলিয়াসিম",
+          "hi": "एफ. ऑगर-अलियासिम",
+          "ru": "Фе. Оже-Альясси́м"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17206242,
+    "defaultPeriodCount": 3,
+    "slug": "felix-auger-aliassime-karen-khachanov",
+    "startTimestamp": 1790737200,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "groundType": "Hardcourt outdoor",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "singles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "p500"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

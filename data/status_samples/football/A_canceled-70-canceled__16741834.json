@@ -1,0 +1,477 @@
+{
+  "case_id": "A_canceled-70-canceled",
+  "event_id": 16741834,
+  "fetched_at_utc": "2026-09-29T15:52:51+00:00",
+  "source_endpoint": "/api/v1/event/16741834",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"0ce4879d60\"",
+    "date": "Tue, 29 Sep 2026 15:52:50 GMT"
+  },
+  "note": "index source scan:2026-09-20",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "Segunda Federacion, Group III",
+      "slug": "segunda-federacion-group-iii",
+      "category": {
+        "name": "Spain",
+        "slug": "spain",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 9,
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 32,
+        "flag": "spain",
+        "alpha2": "ES",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "hi": "स्पेन",
+            "ar": "إسبانيا",
+            "bn": "স্পেন",
+            "ru": "Испания"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Segunda Federación",
+        "slug": "segunda-federacion",
+        "primaryColorHex": "#34cffa",
+        "secondaryColorHex": "#919191",
+        "category": {
+          "name": "Spain",
+          "slug": "spain",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 9,
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 32,
+          "flag": "spain",
+          "alpha2": "ES",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "स्पेन",
+              "ar": "إسبانيا",
+              "bn": "স্পেন",
+              "ru": "Испания"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 4365,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 544,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "الدوري الإسباني الدرجة الرابعة",
+            "bn": "সেগুন্ড্রা ফেডারেশন",
+            "hi": "सेगुंडा फेडरेशन",
+            "ru": "Дивизион 2 Федерация"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": true,
+      "groupName": "Group III",
+      "competitionType": 1,
+      "isLive": false,
+      "id": 93716,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "سيغوندا فيديراسيون، المجموعة III",
+          "bn": "সেগুন্ডা ফেডারেশন, গ্রুপ III",
+          "hi": "सेगुंडा फेडरेशन, ग्रुप III",
+          "ru": "Сегунда Федерасион, Группа III"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Segunda Federacion 26/27",
+      "year": "26/27",
+      "editor": false,
+      "id": 97389
+    },
+    "roundInfo": {
+      "round": 3
+    },
+    "customId": "MLjswcx",
+    "status": {
+      "code": 70,
+      "description": "Canceled",
+      "type": "canceled"
+    },
+    "homeTeam": {
+      "name": "Valencia Mestalla U21",
+      "slug": "valencia-b",
+      "shortName": "Valencia B U21",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 3109,
+      "manager": {
+        "name": "Óscar Sánchez",
+        "slug": "oscar-sanchez",
+        "shortName": "Ó. Sánchez",
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 802426,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أوسكار سانشيز",
+            "ru": "Оскар Санчес"
+          },
+          "shortNameTranslation": {
+            "ar": "أ. سانشيز",
+            "ru": "О. Санчес"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Valencia",
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 19162
+        },
+        "venueCoordinates": {
+          "latitude": 39.54307,
+          "longitude": -0.454581
+        },
+        "hidden": true,
+        "slug": "estadio-antonio-puchades",
+        "name": "Estadio Antonio Puchades",
+        "capacity": 3500,
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 26532,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب أنطونيو بوتشاديس",
+            "hi": "एस्टेडियो एंटोनियो पुचाडेस",
+            "bn": "এস্তাদিও অ্যান্টোনিও পুচাদেস",
+            "ru": "Спортивный комплекс Antonio Puchades"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Estadio Antonio Puchades",
+          "capacity": 3500
+        }
+      },
+      "nameCode": "VAM",
+      "disabled": false,
+      "national": false,
+      "parentTeam": {
+        "name": "Valencia",
+        "slug": "valencia",
+        "shortName": "Valencia",
+        "gender": "M",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "userCount": 282419,
+        "manager": {
+          "name": "Javier Aguirre",
+          "slug": "javier-aguirre",
+          "shortName": "J. Aguirre",
+          "country": {
+            "alpha2": "MX",
+            "alpha3": "MEX",
+            "name": "Mexico",
+            "slug": "mexico"
+          },
+          "id": 784504,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "خافيير أغيري",
+              "bn": "জাভিয়ার আগুয়েরে",
+              "hi": "जेवियर एगुइरे",
+              "ru": "Хавьер Агирре"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. أغيري",
+              "hi": "जे. एगुइरे",
+              "bn": "জে. আগুয়েরে",
+              "ru": "Х. Агирре"
+            }
+          }
+        },
+        "venue": {
+          "city": {
+            "name": "Valencia",
+            "country": {
+              "alpha2": "ES",
+              "alpha3": "ESP",
+              "name": "Spain",
+              "slug": "spain"
+            },
+            "id": 19162
+          },
+          "venueCoordinates": {
+            "latitude": 39.474528,
+            "longitude": -0.358157
+          },
+          "hidden": false,
+          "slug": "mestalla",
+          "name": "Mestalla",
+          "capacity": 49430,
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 691,
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ميستايا",
+              "hi": "मेस्टाला",
+              "bn": "মেস্তাল্লা",
+              "ru": "Стадион Mestalla"
+            },
+            "shortNameTranslation": {}
+          },
+          "stadium": {
+            "name": "Mestalla",
+            "capacity": 49430
+          }
+        },
+        "nameCode": "VAL",
+        "class": 0,
+        "disabled": false,
+        "national": false,
+        "type": 0,
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 2828,
+        "fullName": "Valencia",
+        "subTeams": [],
+        "teamColors": {
+          "primary": "#ffffff",
+          "secondary": "#000000",
+          "text": "#000000"
+        },
+        "foundationDateTimestamp": -1602892800,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "فالنسيا",
+            "bn": "ভ্যালেন্সিয়া",
+            "hi": "वेलेंसिया",
+            "ru": "Валенсия"
+          },
+          "shortNameTranslation": {}
+        },
+        "timeActive": []
+      },
+      "type": 0,
+      "country": {
+        "alpha2": "ES",
+        "alpha3": "ESP",
+        "name": "Spain",
+        "slug": "spain"
+      },
+      "id": 24337,
+      "fullName": "Valencia Mestalla U21",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffffff",
+        "secondary": "#000000",
+        "text": "#000000"
+      },
+      "foundationDateTimestamp": -1602892800,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "فالنسيا ميستايا تحت 21",
+          "ru": "КФ Валенсия Б"
+        },
+        "shortNameTranslation": {
+          "ar": "فالنسيا ب  تحت 21"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "FC La Union Atletico",
+      "slug": "cp-la-union",
+      "shortName": "La Unión",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 1014,
+      "manager": {
+        "name": "José Miguel Campos Rodríguez",
+        "slug": "jose-miguel-campos-rodriguez",
+        "shortName": "J. M. C. Rodríguez",
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 815597,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "خوسيه ميغيل كامبوس رودريغيز",
+            "ru": "Хосе Мигель Кампос Родригес"
+          },
+          "shortNameTranslation": {
+            "ar": "خ. رودريغيز",
+            "ru": "Х. Родригес"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "La Union",
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 32441
+        },
+        "venueCoordinates": {
+          "latitude": 15.022925,
+          "longitude": -86.709821
+        },
+        "hidden": true,
+        "slug": "municipal-de-la-union",
+        "name": "Municipal de La Union",
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 30846,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب لا يونيون البلدي",
+            "hi": "म्युनिसिपल डे ला यूनियन",
+            "bn": "মিউনিসিপাল ডে লা ইউনিয়ন",
+            "ru": "Спортивный комплекс La Union"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Municipal de La Union"
+        }
+      },
+      "nameCode": "LAU",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "ES",
+        "alpha3": "ESP",
+        "name": "Spain",
+        "slug": "spain"
+      },
+      "id": 55121,
+      "fullName": "FC La Union Atletico",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "foundationDateTimestamp": 806630400,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "إف سي لا أونيون أتلتيكو",
+          "ru": "ФК Ла Унион Атлетико"
+        },
+        "shortNameTranslation": {
+          "ar": "لا أونيون",
+          "ru": "Ла Унион"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type"
+      ],
+      "changeTimestamp": 1786887978
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16741834,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "slug": "fc-la-union-atletico-valencia-mestalla-u21",
+    "startTimestamp": 1789916400,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

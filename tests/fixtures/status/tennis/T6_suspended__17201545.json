@@ -1,0 +1,38 @@
+{
+  "case_id": "T6_suspended",
+  "event_id": 17201545,
+  "fetched_at_utc": "2026-09-29T15:57:04+00:00",
+  "source_file": "data/status_samples/tennis/T6_suspended__17201545.json",
+  "status": {
+    "code": 80,
+    "description": "Interrupted",
+    "type": "interrupted"
+  },
+  "homeScore": {
+    "current": 1,
+    "display": 1,
+    "period1": 6,
+    "period2": 5,
+    "point": "0"
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 4,
+    "period2": 2,
+    "point": "0"
+  },
+  "startTimestamp": 1790688300,
+  "time": {
+    "period1": 2451,
+    "currentPeriodStartTimestamp": 1790691272
+  },
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type"
+    ],
+    "changeTimestamp": 1790692784
+  }
+}

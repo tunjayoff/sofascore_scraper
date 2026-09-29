@@ -1,0 +1,23 @@
+{
+  "case_id": "B7_postponed",
+  "event_id": 16539815,
+  "fetched_at_utc": "2026-09-29T15:53:24+00:00",
+  "source_file": "data/status_samples/football/B7_postponed__16539815.json",
+  "status": {
+    "code": 60,
+    "description": "Postponed",
+    "type": "postponed"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1789916400,
+  "time": {},
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type"
+    ],
+    "changeTimestamp": 1788803830
+  }
+}

@@ -1,0 +1,267 @@
+{
+  "case_id": "B13_start_time_changed",
+  "event_id": 16460700,
+  "fetched_at_utc": "2026-09-29T16:02:19+00:00",
+  "source_endpoint": "/api/v1/event/16460700",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"9c737712d1\"",
+    "date": "Tue, 29 Sep 2026 16:02:19 GMT"
+  },
+  "note": "gözlenen startTimestamp değerleri: [1790956800, 1791126000]",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "1. Liga, Group East",
+      "slug": "1-liga-group-east",
+      "category": {
+        "name": "Czech Republic",
+        "slug": "czech-republic",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "CZ",
+          "alpha3": "CZE",
+          "name": "Czechia",
+          "slug": "czechia"
+        },
+        "id": 154,
+        "flag": "czech-republic",
+        "alpha2": "CZ",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "التشيك",
+            "ru": "Чехия"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "1. Liga",
+        "slug": "1-liga",
+        "primaryColorHex": "#f29128",
+        "secondaryColorHex": "#d0740d",
+        "category": {
+          "name": "Czech Republic",
+          "slug": "czech-republic",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 154,
+          "flag": "czech-republic",
+          "alpha2": "CZ",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "التشيك",
+              "ru": "Чехия"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 116,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 1482,
+        "hasEventPlayerStatistics": false,
+        "hasBoxScore": true,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "الدوري التشيكي الدرجة الأولى لكرة السلة",
+            "ru": "Лига 1"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": true,
+      "groupName": "Group East",
+      "competitionType": 1,
+      "isLive": false,
+      "id": 38777,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "الدوري 1، المجموعة الشرقية",
+          "ru": "Лига 1, Группа Восток"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "1. Liga 26/27",
+      "year": "26/27",
+      "editor": false,
+      "id": 97772
+    },
+    "roundInfo": {
+      "round": 3
+    },
+    "customId": "FJHbspAZd",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "homeTeam": {
+      "name": "BK Napos Vysoka Nad Labem",
+      "slug": "bk-napos-vysoka-nad-labem",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 24,
+      "nameCode": "NAP",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "CZ",
+        "alpha3": "CZE",
+        "name": "Czechia",
+        "slug": "czechia"
+      },
+      "id": 498765,
+      "fullName": "BK Napos Vysoka Nad Labem",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "بي كيه نابوس فيسوكه ناد لابيم",
+          "ru": "БК Напос Высока-Над-Лабем"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "BK Synthesia Pardubice",
+      "slug": "bk-synthesia-pardubice",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 58,
+      "venue": {
+        "city": {
+          "name": "Pardubice",
+          "country": {
+            "alpha2": "CZ",
+            "alpha3": "CZE",
+            "name": "Czechia",
+            "slug": "czechia"
+          },
+          "id": 20466
+        },
+        "hidden": true,
+        "slug": "sports-hall-dasicka",
+        "name": "Sports Hall Dasicka",
+        "country": {
+          "alpha2": "CZ",
+          "alpha3": "CZE",
+          "name": "Czechia",
+          "slug": "czechia"
+        },
+        "id": 29778,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "صالة الرياضة داسيكا",
+            "hi": "स्पोर्ट्स हॉल दासिका",
+            "bn": "স্পোর্টস হল দাসিকা",
+            "ru": "Спортивный комплекс Sports Hall Dasicka"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Sports Hall Dasicka"
+        }
+      },
+      "nameCode": "PAR",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "CZ",
+        "alpha3": "CZE",
+        "name": "Czechia",
+        "slug": "czechia"
+      },
+      "id": 206730,
+      "fullName": "BK Synthesia Pardubice",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffffff",
+        "secondary": "#ff0000",
+        "text": "#ff0000"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "بي كيه سينثيسيا باردوبيتش",
+          "ru": "БК Синтезия Пардубице"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16460700,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "bk-napos-vysoka-nad-labem-bk-synthesia-pardubice",
+    "startTimestamp": 1791126000,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "seasonStatisticsType": "overall",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

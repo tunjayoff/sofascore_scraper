@@ -1,0 +1,40 @@
+{
+  "case_id": "A_inprogress-13-1st-quarter",
+  "event_id": 17203938,
+  "fetched_at_utc": "2026-09-29T13:44:33+00:00",
+  "source_file": "data/status_samples/basketball/A_inprogress-13-1st-quarter__17203938.json",
+  "status": {
+    "code": 13,
+    "description": "1st quarter",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 8,
+    "display": 8,
+    "period1": 8
+  },
+  "awayScore": {
+    "current": 19,
+    "display": 19,
+    "period1": 19
+  },
+  "startTimestamp": 1790688600,
+  "time": {
+    "played": 515,
+    "periodLength": 600,
+    "overtimeLength": 300,
+    "totalPeriodCount": 4,
+    "clockRunning": true,
+    "clockRunningLastUpdated": "2026-09-29T13:43:31+00:00"
+  },
+  "changes": {
+    "changes": [
+      "awayScore.current",
+      "awayScore.display",
+      "time.played",
+      "time.playedLastUpdated",
+      "awayScore.period1"
+    ],
+    "changeTimestamp": 1790689452
+  }
+}

@@ -1,0 +1,41 @@
+[
+  {
+    "sport": "tennis",
+    "event_id": 17202152,
+    "checked_at_utc": "2026-09-29T13:37:43+00:00",
+    "event_status": [
+      "inprogress",
+      10,
+      "3rd set"
+    ],
+    "list_status": [
+      "inprogress",
+      10,
+      "3rd set"
+    ],
+    "live_status": [
+      "inprogress",
+      10,
+      "3rd set"
+    ],
+    "event_score": [
+      1,
+      1
+    ],
+    "list_score": [
+      1,
+      1
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"4b61df3ff4\"",
+      "date": "Tue, 29 Sep 2026 13:37:40 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"93130795ab\"",
+      "date": "Tue, 29 Sep 2026 13:37:42 GMT"
+    },
+    "list_endpoint": "/unique-tournament/38331/scheduled-events/2026-09-29"
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "case_id": "B13_start_time_changed",
+  "event_id": 16460700,
+  "fetched_at_utc": "2026-09-29T16:02:19+00:00",
+  "source_file": "data/status_samples/basketball/B13_start_time_changed__16460700.json",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1791126000,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 0
+  }
+}

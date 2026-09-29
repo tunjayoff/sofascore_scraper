@@ -1,0 +1,376 @@
+{
+  "case_id": "K3_two_halves",
+  "event_id": 16784560,
+  "fetched_at_utc": "2026-09-29T15:55:29+00:00",
+  "source_endpoint": "/api/v1/event/16784560",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"64758f6186\"",
+    "date": "Tue, 29 Sep 2026 15:55:29 GMT"
+  },
+  "note": "İki yarı formatı; index source scan:2026-09-26",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "Nationale 3 - Poule D",
+      "slug": "nationale-3-poule-d",
+      "category": {
+        "name": "France",
+        "slug": "france",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "FR",
+          "alpha3": "FRA",
+          "name": "France",
+          "slug": "france"
+        },
+        "id": 110,
+        "flag": "france",
+        "alpha2": "FR",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "فرنسا",
+            "ru": "Франция"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Nationale 3",
+        "slug": "nationale-3",
+        "category": {
+          "name": "France",
+          "slug": "france",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 110,
+          "flag": "france",
+          "alpha2": "FR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فرنسا",
+              "ru": "Франция"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 24,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 23300,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "الدوري الوطني 3",
+            "ru": "Лига 3"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": true,
+      "groupName": "Poule D",
+      "competitionType": 1,
+      "id": 137460,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "الدرجة الوطنية 3 - المجموعة D",
+          "ru": "Лига 3, Группа D"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Nationale 3 26/27",
+      "year": "26/27",
+      "editor": true,
+      "seasonCoverageInfo": {
+        "editorCoverageLevel": 1
+      },
+      "id": 100181
+    },
+    "roundInfo": {
+      "round": 4
+    },
+    "customId": "mGGiskZJi",
+    "status": {
+      "code": 100,
+      "description": "Ended",
+      "type": "finished"
+    },
+    "winnerCode": 1,
+    "venue": {
+      "city": {
+        "name": "Lorient",
+        "country": {
+          "alpha2": "FR",
+          "alpha3": "FRA",
+          "name": "France",
+          "slug": "france"
+        },
+        "id": 23613
+      },
+      "venueCoordinates": {
+        "latitude": 47.7474327,
+        "longitude": -3.3876922
+      },
+      "hidden": true,
+      "slug": "palais-des-sports-de-kervaric",
+      "name": "Palais des Sports de Kervaric",
+      "capacity": 3800,
+      "country": {
+        "alpha2": "FR",
+        "alpha3": "FRA",
+        "name": "France",
+        "slug": "france"
+      },
+      "id": 49486,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ru": "Palais des Sports de Kervaric"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Palais des Sports de Kervaric",
+        "capacity": 3800
+      }
+    },
+    "homeTeam": {
+      "name": "CEP Lorient BB II",
+      "slug": "cep-lorient-ii",
+      "shortName": "Lorient II",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 5,
+      "venue": {
+        "city": {
+          "name": "Lorient",
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 23613
+        },
+        "venueCoordinates": {
+          "latitude": 47.7474327,
+          "longitude": -3.3876922
+        },
+        "hidden": true,
+        "slug": "palais-des-sports-de-kervaric",
+        "name": "Palais des Sports de Kervaric",
+        "capacity": 3800,
+        "country": {
+          "alpha2": "FR",
+          "alpha3": "FRA",
+          "name": "France",
+          "slug": "france"
+        },
+        "id": 49486,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ru": "Palais des Sports de Kervaric"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Palais des Sports de Kervaric",
+          "capacity": 3800
+        }
+      },
+      "nameCode": "CLB",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "FR",
+        "alpha3": "FRA",
+        "name": "France",
+        "slug": "france"
+      },
+      "id": 1087460,
+      "fullName": "CEP Lorient BB II",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "سي إي بي لوريان بي بي 2",
+          "ru": "ЦЕП Лориан ББ II"
+        },
+        "shortNameTranslation": {
+          "ar": "سي إي بي لوريان 2",
+          "ru": "Лориан II"
+        }
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "UST Basket Équeurdreville",
+      "slug": "ust-basket-equeurdreville",
+      "shortName": "Équeurdreville",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 6,
+      "venue": {
+        "city": {
+          "name": "Cherbourg-en-Cotentin",
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 22566
+        },
+        "venueCoordinates": {
+          "latitude": 49.6476869,
+          "longitude": -1.6500792
+        },
+        "hidden": true,
+        "slug": "gymnase-leon-jouhaux",
+        "name": "Gymnase Léon Jouhaux",
+        "capacity": 300,
+        "country": {
+          "alpha2": "FR",
+          "alpha3": "FRA",
+          "name": "France",
+          "slug": "france"
+        },
+        "id": 53319,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ru": "Спортивный комплекс Gymnase Léon Jouhaux"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Gymnase Léon Jouhaux",
+          "capacity": 300
+        }
+      },
+      "nameCode": "UBQ",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "FR",
+        "alpha3": "FRA",
+        "name": "France",
+        "slug": "france"
+      },
+      "id": 1079062,
+      "fullName": "UST Basket Équeurdreville",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "يو إس تي باسكت إيكوردريفيل",
+          "ru": "УСТ Баскет Экердревиль"
+        },
+        "shortNameTranslation": {
+          "ar": "ي. إيكوردريفيل",
+          "ru": "Экердревиль"
+        }
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 63,
+      "display": 63,
+      "period2": 34,
+      "period4": 29,
+      "normaltime": 63
+    },
+    "awayScore": {
+      "current": 49,
+      "display": 49,
+      "period2": 24,
+      "period4": 25,
+      "normaltime": 49
+    },
+    "time": {},
+    "changes": {
+      "changes": [
+        "homeScore.period2",
+        "homeScore.period4",
+        "homeScore.normaltime",
+        "awayScore.period2",
+        "awayScore.period4",
+        "awayScore.normaltime"
+      ],
+      "changeTimestamp": 1790470221
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16784560,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "cep-lorient-bb-ii-ust-basket-equeurdreville",
+    "startTimestamp": 1790445600,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "createdByNickname": "Mister Raf",
+    "eventEditorName": "Mister Raf",
+    "eventEditor": {
+      "id": "5c438f0974f43427af1ef793",
+      "name": "Mister Raf"
+    },
+    "showTotoPromo": true,
+    "isEditor": true,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

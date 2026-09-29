@@ -1,0 +1,33 @@
+{
+  "case_id": "B9_interrupted",
+  "event_id": 17114923,
+  "fetched_at_utc": "2026-09-29T15:55:17+00:00",
+  "source_file": "data/status_samples/basketball/B9_interrupted__17114923.json",
+  "status": {
+    "code": 80,
+    "description": "Interrupted",
+    "type": "interrupted"
+  },
+  "homeScore": {
+    "current": 0,
+    "display": 0
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0
+  },
+  "startTimestamp": 1789916400,
+  "time": {},
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type",
+      "homeScore.current",
+      "homeScore.display",
+      "awayScore.current",
+      "awayScore.display"
+    ],
+    "changeTimestamp": 1789920059
+  }
+}

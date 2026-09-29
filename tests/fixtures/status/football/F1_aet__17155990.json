@@ -1,0 +1,47 @@
+{
+  "case_id": "F1_aet",
+  "event_id": 17155990,
+  "fetched_at_utc": "2026-09-29T15:53:33+00:00",
+  "source_file": "data/status_samples/football/F1_aet__17155990.json",
+  "status": {
+    "code": 110,
+    "description": "AET",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 1,
+    "display": 1,
+    "period1": 0,
+    "period2": 0,
+    "normaltime": 0,
+    "extra1": 0,
+    "extra2": 1,
+    "overtime": 1
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "period2": 0,
+    "normaltime": 0,
+    "extra1": 0,
+    "extra2": 0,
+    "overtime": 0
+  },
+  "startTimestamp": 1790316000,
+  "time": {
+    "currentPeriodStartTimestamp": 1790323980,
+    "lastPeriodEndTimestamp": 1790318783
+  },
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type",
+      "homeScore.extra2",
+      "homeScore.overtime"
+    ],
+    "changeTimestamp": 1790325042
+  }
+}

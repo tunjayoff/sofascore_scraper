@@ -1,0 +1,50 @@
+{
+  "case_id": "K1_overtime_finished",
+  "event_id": 17066086,
+  "fetched_at_utc": "2026-09-29T15:55:25+00:00",
+  "source_file": "data/status_samples/basketball/K1_overtime_finished__17066086.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 78,
+    "display": 78,
+    "period1": 16,
+    "period2": 19,
+    "period3": 11,
+    "period4": 18,
+    "normaltime": 64,
+    "overtime": 14
+  },
+  "awayScore": {
+    "current": 70,
+    "display": 70,
+    "period1": 20,
+    "period2": 18,
+    "period3": 21,
+    "period4": 5,
+    "normaltime": 64,
+    "overtime": 6
+  },
+  "startTimestamp": 1789504200,
+  "time": {
+    "periodLength": 600,
+    "overtimeLength": 300,
+    "totalPeriodCount": 4,
+    "clockRunning": false,
+    "clockRunningLastUpdated": "2026-09-15T22:42:03+00:00"
+  },
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type",
+      "homeScore.normaltime",
+      "awayScore.normaltime"
+    ],
+    "changeTimestamp": 1789512242
+  }
+}

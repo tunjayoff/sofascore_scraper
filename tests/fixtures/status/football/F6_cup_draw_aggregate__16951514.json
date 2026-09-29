@@ -1,0 +1,44 @@
+{
+  "case_id": "F6_cup_draw_aggregate",
+  "event_id": 16951514,
+  "fetched_at_utc": "2026-09-29T15:53:37+00:00",
+  "source_file": "data/status_samples/football/F6_cup_draw_aggregate__16951514.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 3,
+  "aggregatedWinnerCode": 2,
+  "homeScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "period2": 0,
+    "normaltime": 0,
+    "aggregated": 0
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "period2": 0,
+    "normaltime": 0,
+    "aggregated": 3
+  },
+  "startTimestamp": 1789614900,
+  "time": {
+    "periodLength": 2700,
+    "overtimeLength": 900,
+    "totalPeriodCount": 2,
+    "currentPeriodStartTimestamp": 1789618632,
+    "lastPeriodEndTimestamp": 1789617726
+  },
+  "changes": {
+    "changes": [
+      "providerLock.status",
+      "providerLock.statusSource"
+    ],
+    "changeTimestamp": 1789621625
+  }
+}

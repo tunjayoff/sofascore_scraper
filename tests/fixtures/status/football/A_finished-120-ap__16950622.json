@@ -1,0 +1,42 @@
+{
+  "case_id": "A_finished-120-ap",
+  "event_id": 16950622,
+  "fetched_at_utc": "2026-09-29T15:52:47+00:00",
+  "source_file": "data/status_samples/football/A_finished-120-ap__16950622.json",
+  "status": {
+    "code": 120,
+    "description": "AP",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 10,
+    "display": 3,
+    "period1": 2,
+    "period2": 1,
+    "normaltime": 3,
+    "penalties": 7
+  },
+  "awayScore": {
+    "current": 9,
+    "display": 3,
+    "period1": 2,
+    "period2": 1,
+    "normaltime": 3,
+    "penalties": 6
+  },
+  "startTimestamp": 1789497000,
+  "time": {
+    "injuryTime1": 2,
+    "injuryTime2": 4,
+    "currentPeriodStartTimestamp": 1789500762,
+    "lastPeriodEndTimestamp": 1789499858
+  },
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description"
+    ],
+    "changeTimestamp": 1789504592
+  }
+}

@@ -1,0 +1,362 @@
+{
+  "case_id": "B11_walkover_awarded",
+  "event_id": 17058663,
+  "fetched_at_utc": "2026-09-29T15:56:52+00:00",
+  "source_endpoint": "/api/v1/event/17058663",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"c7ff31c93f\"",
+    "date": "Tue, 29 Sep 2026 15:56:52 GMT"
+  },
+  "note": "Hükmen (walkover / awarded / forfeit); index source scan:2026-09-15",
+  "event": {
+    "tournament": {
+      "name": "Rennes, France",
+      "slug": "rennes-france",
+      "category": {
+        "name": "Challenger",
+        "slug": "challenger",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 6,
+        "country": {},
+        "id": 72,
+        "flag": "challenger",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "চ্যালেঞ্জার",
+            "ar": "تحدي (تنس)",
+            "hi": "डेनमार्क",
+            "ru": "Challenger"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Rennes, France",
+        "slug": "rennes-france",
+        "category": {
+          "name": "Challenger",
+          "slug": "challenger",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 6,
+          "country": {},
+          "id": 72,
+          "flag": "challenger",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "চ্যালেঞ্জার",
+              "ar": "تحدي (تنس)",
+              "hi": "डेनमार्क",
+              "ru": "Challenger"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 314,
+        "groundType": "Hardcourt indoor",
+        "tennisPoints": 100,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 3506,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "رين، فرنسا",
+            "ru": "Ренн, Франция"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "id": 199389,
+      "endTimestamp": 1789862400,
+      "startTimestamp": 1789344000
+    },
+    "season": {
+      "name": "ATP Challenger Rennes, France Men Singles 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 94936
+    },
+    "roundInfo": {
+      "round": 5,
+      "name": "Round of 16",
+      "slug": "round-of-16",
+      "cupRoundType": 8
+    },
+    "customId": "WBZbshkIc",
+    "status": {
+      "code": 91,
+      "description": "Walkover",
+      "type": "finished"
+    },
+    "winnerCode": 1,
+    "venue": {
+      "city": {
+        "name": "Rennes",
+        "country": {
+          "alpha2": "FR",
+          "alpha3": "FRA",
+          "name": "France",
+          "slug": "france"
+        },
+        "id": 19025
+      },
+      "hidden": true,
+      "slug": "le-liberte",
+      "name": "Le Liberte",
+      "country": {
+        "alpha2": "FR",
+        "alpha3": "FRA",
+        "name": "France",
+        "slug": "france"
+      },
+      "id": 28390,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "لي ليبرتي",
+          "hi": "ले लिबर्टी",
+          "bn": "লে লিবার্তে"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Le Liberte"
+      }
+    },
+    "homeTeam": {
+      "name": "Harold Mayot",
+      "slug": "mayot-harold",
+      "shortName": "H. Mayot",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 2341,
+      "playerTeamInfo": {
+        "height": 1.8,
+        "weight": 80,
+        "plays": "right-handed",
+        "prizeCurrent": 107583,
+        "prizeTotal": 1129033,
+        "birthCity": {
+          "name": "Metz",
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 20714
+        },
+        "residenceCity": {
+          "name": "Marly",
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 36095
+        },
+        "id": 4440,
+        "birthplace": "Metz, France",
+        "birthDateTimestamp": 1012780800,
+        "underage": false,
+        "residence": "Marly, France",
+        "prizeCurrentRaw": {
+          "value": 107583,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 1129033,
+          "currency": "EUR"
+        },
+        "currentRanking": 191
+      },
+      "nameCode": "MAY",
+      "ranking": 237,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "FR",
+        "alpha3": "FRA",
+        "name": "France",
+        "slug": "france"
+      },
+      "id": 248846,
+      "fullName": "Harold Mayot",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "هارولد مايو",
+          "bn": "হ্যারল্ড মায়োট",
+          "hi": "हेरोल्ड मायोट",
+          "ru": "Майот, Гарольд"
+        },
+        "shortNameTranslation": {
+          "ar": "ه. مايو"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Murphy Cassone",
+      "slug": "cassone-murphy",
+      "shortName": "M. Cassone",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 1429,
+      "playerTeamInfo": {
+        "height": 1.88,
+        "weight": 79,
+        "plays": "right-handed",
+        "prizeCurrent": 84545,
+        "prizeTotal": 299853,
+        "birthCity": {
+          "name": "Overland Park",
+          "state": "US-KS",
+          "country": {
+            "alpha2": "US",
+            "alpha3": "USA",
+            "name": "USA",
+            "slug": "usa"
+          },
+          "id": 33847
+        },
+        "id": 5417,
+        "birthplace": "Overland Park, Kansas, USA",
+        "birthDateTimestamp": 1029456000,
+        "underage": false,
+        "prizeCurrentRaw": {
+          "value": 84545,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 299853,
+          "currency": "EUR"
+        },
+        "currentRanking": 200
+      },
+      "nameCode": "CAS",
+      "ranking": 318,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "US",
+        "alpha3": "USA",
+        "name": "USA",
+        "slug": "usa"
+      },
+      "id": 333007,
+      "fullName": "Murphy Cassone",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "مورفي كاسون",
+          "bn": "মারফি ক্যাসোন",
+          "hi": "मर्फी कास्सोने",
+          "ru": "Мерфи Кассоне"
+        },
+        "shortNameTranslation": {
+          "ar": "م. كاسون",
+          "ru": "М. Кассоне"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {
+      "currentPeriodStartTimestamp": 1789556681
+    },
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type",
+        "time.currentPeriodStart"
+      ],
+      "changeTimestamp": 1789556684
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17058663,
+    "defaultPeriodCount": 3,
+    "slug": "murphy-cassone-harold-mayot",
+    "currentPeriodStartTimestamp": 1789556681,
+    "startTimestamp": 1789561800,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "finalResultOnly": false,
+    "hasBet365LiveStream": true,
+    "bet365ExcludedCountryCodes": [
+      "AN",
+      "CU",
+      "IR",
+      "KP",
+      "SY",
+      "VE",
+      "GR",
+      "RU",
+      "CH",
+      "CA"
+    ],
+    "feedLocked": false,
+    "groundType": "Hardcourt indoor",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "singles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "lower"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

@@ -1,0 +1,339 @@
+{
+  "case_id": "B13_start_time_changed",
+  "event_id": 16741904,
+  "fetched_at_utc": "2026-09-29T16:02:18+00:00",
+  "source_endpoint": "/api/v1/event/16741904",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"727a84044e\"",
+    "date": "Tue, 29 Sep 2026 16:02:18 GMT"
+  },
+  "note": "gözlenen startTimestamp değerleri: [1791108000, 1791118800]",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "Segunda Federacion, Group IV",
+      "slug": "segunda-federacion-group-iv",
+      "category": {
+        "name": "Spain",
+        "slug": "spain",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 9,
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 32,
+        "flag": "spain",
+        "alpha2": "ES",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "hi": "स्पेन",
+            "ar": "إسبانيا",
+            "bn": "স্পেন",
+            "ru": "Испания"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Segunda Federación",
+        "slug": "segunda-federacion",
+        "primaryColorHex": "#34cffa",
+        "secondaryColorHex": "#919191",
+        "category": {
+          "name": "Spain",
+          "slug": "spain",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 9,
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 32,
+          "flag": "spain",
+          "alpha2": "ES",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "hi": "स्पेन",
+              "ar": "إسبانيا",
+              "bn": "স্পেন",
+              "ru": "Испания"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 4350,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 544,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "الدوري الإسباني الدرجة الرابعة",
+            "bn": "সেগুন্ড্রা ফেডারেশন",
+            "hi": "सेगुंडा फेडरेशन",
+            "ru": "Дивизион 2 Федерация"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": true,
+      "groupName": "Group IV",
+      "competitionType": 1,
+      "isLive": false,
+      "id": 93717,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "سيغوندا فيديراسيون، المجموعة IV",
+          "bn": "সেগুন্ডা ফেডারেশন, গ্রুপ IV",
+          "hi": "सेगुंडा फेडरेशन, ग्रुप IV",
+          "ru": "Сегунда Федерасион, Группа IV"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Segunda Federacion 26/27",
+      "year": "26/27",
+      "editor": false,
+      "id": 97389
+    },
+    "roundInfo": {
+      "round": 5
+    },
+    "customId": "nYFsVqXd",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "homeTeam": {
+      "name": "Atlético Sanluqueño",
+      "slug": "atletico-sanluqueno",
+      "shortName": "Sanluqueño",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 1923,
+      "manager": {
+        "name": "Pedro Mateos",
+        "slug": "pedro-mateos",
+        "shortName": "P. Mateos",
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 817556,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "بيدرو ماتياس",
+            "ru": "Педро Матеос"
+          },
+          "shortNameTranslation": {
+            "ar": "ب. ماتياس",
+            "ru": "П. Матеос"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Sanlucar de Barrameda",
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 30839
+        },
+        "venueCoordinates": {
+          "latitude": 36.77808,
+          "longitude": -6.3515
+        },
+        "hidden": true,
+        "slug": "estadio-el-palmar",
+        "name": "Estadio El Palmar",
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 9435,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب إل بالمار",
+            "hi": "एस्टेडियो एल पाल्मार",
+            "bn": "ইস্তাদিও এল পালমার",
+            "ru": "Стадион El Palmar"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Estadio El Palmar"
+        }
+      },
+      "nameCode": "ASA",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "ES",
+        "alpha3": "ESP",
+        "name": "Spain",
+        "slug": "spain"
+      },
+      "id": 77413,
+      "fullName": "Atlético Sanluqueño",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#2bac2b",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "foundationDateTimestamp": -694310400,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "أتلتيكو سانلوكيينو",
+          "ru": "Атлетико Санлуквуено"
+        },
+        "shortNameTranslation": {
+          "ar": "سانلوكيينو"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Cp Mijas-Las Lagunas",
+      "slug": "cp-mijas-las-lagunas",
+      "shortName": "CP Mijas",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 665,
+      "manager": {
+        "name": "José Fiera",
+        "slug": "jose-fiera",
+        "shortName": "J. Fiera",
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 826709
+      },
+      "venue": {
+        "city": {
+          "name": "Malaga",
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 21370
+        },
+        "hidden": true,
+        "slug": "juan-gambero-culebra",
+        "name": "Juan Gambero Culebra",
+        "capacity": 2000,
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 64557,
+        "stadium": {
+          "name": "Juan Gambero Culebra",
+          "capacity": 2000
+        }
+      },
+      "nameCode": "MIJ",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "ES",
+        "alpha3": "ESP",
+        "name": "Spain",
+        "slug": "spain"
+      },
+      "id": 493345,
+      "fullName": "Cp Mijas-Las Lagunas",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "سي بي ميخاس-لاس لاجوناس",
+          "ru": "КП Михас-Лас Лагунас"
+        },
+        "shortNameTranslation": {
+          "ar": "سي بي ميخاس-لاس لاجوناس",
+          "ru": "КП Михас"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16741904,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "slug": "cp-mijas-las-lagunas-atletico-sanluqueno",
+    "startTimestamp": 1791118800,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

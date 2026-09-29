@@ -1,0 +1,25 @@
+{
+  "case_id": "A_canceled-70-canceled",
+  "event_id": 17110363,
+  "fetched_at_utc": "2026-09-29T15:54:48+00:00",
+  "source_file": "data/status_samples/basketball/A_canceled-70-canceled__17110363.json",
+  "status": {
+    "code": 70,
+    "description": "Canceled",
+    "type": "canceled"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1789574400,
+  "time": {},
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type",
+      "providerLock.status",
+      "providerLock.statusSource"
+    ],
+    "changeTimestamp": 1789626980
+  }
+}

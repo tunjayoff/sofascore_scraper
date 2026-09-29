@@ -1,0 +1,41 @@
+{
+  "case_id": "B3_live_first_period",
+  "event_id": 17196662,
+  "fetched_at_utc": "2026-09-29T15:56:44+00:00",
+  "source_file": "data/status_samples/tennis/B3_live_first_period__17196662.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 2,
+    "display": 2,
+    "period1": 6,
+    "period2": 6,
+    "point": "40",
+    "normaltime": 2
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 4,
+    "period2": 2,
+    "point": "0",
+    "normaltime": 0
+  },
+  "startTimestamp": 1790686800,
+  "time": {
+    "period1": 2279,
+    "period2": 1983,
+    "currentPeriodStartTimestamp": 1790689747
+  },
+  "changes": {
+    "changes": [
+      "time.currentPeriodStart",
+      "time.period2"
+    ],
+    "changeTimestamp": 1790691769
+  }
+}

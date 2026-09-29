@@ -1,0 +1,18 @@
+{
+  "case_id": "A_notstarted-0-not-started",
+  "event_id": 17184998,
+  "fetched_at_utc": "2026-09-29T15:52:56+00:00",
+  "source_file": "data/status_samples/football/A_notstarted-0-not-started__17184998.json",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1790686800,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 0
+  }
+}

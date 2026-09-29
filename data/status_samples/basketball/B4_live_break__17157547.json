@@ -1,0 +1,283 @@
+{
+  "case_id": "B4_live_break",
+  "event_id": 17157547,
+  "fetched_at_utc": "2026-09-29T15:55:01+00:00",
+  "source_endpoint": "/api/v1/event/17157547",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"aaedadf41f\"",
+    "date": "Tue, 29 Sep 2026 15:55:00 GMT"
+  },
+  "note": "Canlı, ara; index source live:2026-09-29T15:34:02+00:00",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "WASL Final 8, Group B",
+      "slug": "wasl-final-8-group-b",
+      "category": {
+        "name": "International",
+        "slug": "international",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 11,
+        "country": {},
+        "id": 103,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دولي",
+            "hi": "अंतर्राष्ट्रीय",
+            "bn": "আন্তর্জাতিক",
+            "ru": "Международные"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "WASL Final 8",
+        "slug": "wasl-final-8",
+        "category": {
+          "name": "International",
+          "slug": "international",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 11,
+          "country": {},
+          "id": 103,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دولي",
+              "hi": "अंतर्राष्ट्रीय",
+              "bn": "আন্তর্জাতিক",
+              "ru": "Международные"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 855,
+        "hasRounds": false,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 22534,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "النهائيات 8 (WASL)",
+            "ru": "Финал 8 WASL"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": true,
+      "groupName": "Group B",
+      "competitionType": 1,
+      "id": 130856,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "الرباعي الأفضل WASL، المجموعة B",
+          "ru": "Финал 8 WASL, Группа B"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "WASL Final 8 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 104326
+    },
+    "roundInfo": {
+      "round": 2
+    },
+    "customId": "ZBUbsiOWb",
+    "status": {
+      "code": 15,
+      "description": "3rd quarter",
+      "type": "inprogress"
+    },
+    "homeTeam": {
+      "name": "Al Arabi Doha",
+      "slug": "al-arabi-doha",
+      "shortName": "Al Arabi",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 352,
+      "nameCode": "ARA",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "QA",
+        "alpha3": "QAT",
+        "name": "Qatar",
+        "slug": "qatar"
+      },
+      "id": 241958,
+      "fullName": "Al Arabi Doha",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "العربي الدوحة",
+          "ru": "Аль-Араби Доха"
+        },
+        "shortNameTranslation": {
+          "ar": "العربي",
+          "ru": "Аль-Араби"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Shahrdari Gorgan",
+      "slug": "shahrdari-gorgan",
+      "shortName": "Shahrdari Gorgan",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 980,
+      "venue": {
+        "city": {
+          "name": "Gorgan",
+          "country": {
+            "alpha2": "IR",
+            "alpha3": "IRN",
+            "name": "Iran",
+            "slug": "iran"
+          },
+          "id": 26041
+        },
+        "hidden": true,
+        "slug": "gorgan-eagles-castle",
+        "name": "Gorgan Eagles Castle",
+        "country": {
+          "alpha2": "IR",
+          "alpha3": "IRN",
+          "name": "Iran",
+          "slug": "iran"
+        },
+        "id": 37400,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "قلعة جورجان إيغلز",
+            "hi": "गोरगन ईगल्स कैसल",
+            "bn": "গর্গ্যান ঈগল ক্যাসেল",
+            "ru": "Спортивный комплекс Gorgan Eagles Castle"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Gorgan Eagles Castle"
+        }
+      },
+      "nameCode": "SHA",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "IR",
+        "alpha3": "IRN",
+        "name": "Iran",
+        "slug": "iran"
+      },
+      "id": 236349,
+      "fullName": "Shahrdari Gorgan",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ff2222",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "شهرداري غورغان",
+          "ru": "Шахрдари Горган"
+        },
+        "shortNameTranslation": {
+          "ar": "شهرداري غورغان"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 53,
+      "display": 53,
+      "period1": 18,
+      "period2": 16,
+      "period3": 19
+    },
+    "awayScore": {
+      "current": 54,
+      "display": 54,
+      "period1": 18,
+      "period2": 16,
+      "period3": 20
+    },
+    "time": {
+      "played": 1771,
+      "periodLength": 600,
+      "overtimeLength": 300,
+      "totalPeriodCount": 4,
+      "clockRunning": true,
+      "clockRunningLastUpdated": "2026-09-29T15:54:20+00:00"
+    },
+    "changes": {
+      "changes": [
+        "time.played",
+        "time.playedLastUpdated"
+      ],
+      "changeTimestamp": 1790697280
+    },
+    "hasGlobalHighlights": false,
+    "hasEventPlayerStatistics": true,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17157547,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "al-arabi-doha-shahrdari-gorgan",
+    "startTimestamp": 1790693100,
+    "lastPeriod": "period3",
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ]
+    }
+  },
+  "error": null
+}

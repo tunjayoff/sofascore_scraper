@@ -1,0 +1,358 @@
+{
+  "case_id": "T2_retired",
+  "event_id": 17083330,
+  "fetched_at_utc": "2026-09-29T15:56:54+00:00",
+  "source_endpoint": "/api/v1/event/17083330",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"7302aa31f3\"",
+    "date": "Tue, 29 Sep 2026 15:56:54 GMT"
+  },
+  "note": "Retired; index source scan:2026-09-15",
+  "event": {
+    "firstToServe": 1,
+    "homeTeamSeed": "6",
+    "tournament": {
+      "name": "Szczecin, Poland",
+      "slug": "szczecin-poland",
+      "category": {
+        "name": "Challenger",
+        "slug": "challenger",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 6,
+        "country": {},
+        "id": 72,
+        "flag": "challenger",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "চ্যালেঞ্জার",
+            "ar": "تحدي (تنس)",
+            "hi": "डेनमार्क",
+            "ru": "Challenger"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Szczecin, Poland",
+        "slug": "szczecin-poland",
+        "category": {
+          "name": "Challenger",
+          "slug": "challenger",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 6,
+          "country": {},
+          "id": 72,
+          "flag": "challenger",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "চ্যালেঞ্জার",
+              "ar": "تحدي (تنس)",
+              "hi": "डेनमार्क",
+              "ru": "Challenger"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 327,
+        "groundType": "Red clay",
+        "tennisPoints": 125,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 3461,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "شتيتين، بولندا",
+            "ru": "Щецин, Польша"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "id": 199407,
+      "endTimestamp": 1789948800,
+      "startTimestamp": 1789344000
+    },
+    "season": {
+      "name": "ATP Challenger Szczecin, Poland Men Singles 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 94932
+    },
+    "roundInfo": {
+      "round": 6,
+      "name": "Round of 32",
+      "slug": "round-of-32",
+      "cupRoundType": 16
+    },
+    "customId": "JJpsuJTd",
+    "status": {
+      "code": 92,
+      "description": "Retired",
+      "type": "finished"
+    },
+    "winnerCode": 2,
+    "venue": {
+      "city": {
+        "name": "Szczecin",
+        "country": {
+          "alpha2": "PL",
+          "alpha3": "POL",
+          "name": "Poland",
+          "slug": "poland"
+        },
+        "id": 19461
+      },
+      "hidden": true,
+      "slug": "court-1",
+      "name": "Court 1",
+      "country": {
+        "alpha2": "PL",
+        "alpha3": "POL",
+        "name": "Poland",
+        "slug": "poland"
+      },
+      "id": 41569,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ملعب 1",
+          "hi": "कोर्ट 1",
+          "bn": "কোর্ট 1"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Court 1"
+      }
+    },
+    "homeTeam": {
+      "name": "Dušan Lajović",
+      "slug": "lajovic-dusan",
+      "shortName": "D. Lajović",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 6728,
+      "playerTeamInfo": {
+        "height": 1.83,
+        "weight": 83,
+        "plays": "right-handed",
+        "turnedPro": "2007",
+        "prizeCurrent": 279607,
+        "prizeTotal": 9337062,
+        "birthCity": {
+          "name": "Belgrade",
+          "country": {
+            "alpha2": "RS",
+            "alpha3": "SRB",
+            "name": "Serbia",
+            "slug": "serbia"
+          },
+          "id": 18126
+        },
+        "residenceCity": {
+          "name": "Stara Pazova",
+          "country": {
+            "alpha2": "RS",
+            "alpha3": "SRB",
+            "name": "Serbia",
+            "slug": "serbia"
+          },
+          "id": 21689
+        },
+        "id": 43,
+        "birthplace": "Belgrade, Serbia",
+        "birthDateTimestamp": 646704000,
+        "underage": false,
+        "residence": "Stara Pazova, Serbia",
+        "prizeCurrentRaw": {
+          "value": 279607,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 9337062,
+          "currency": "EUR"
+        },
+        "currentRanking": 146
+      },
+      "nameCode": "LAJ",
+      "ranking": 147,
+      "class": 0,
+      "disabled": false,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "RS",
+        "alpha3": "SRB",
+        "name": "Serbia",
+        "slug": "serbia"
+      },
+      "id": 39234,
+      "fullName": "Dušan Lajović",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "دوسان لايوفيتش",
+          "ru": "Душан Ладжович"
+        },
+        "shortNameTranslation": {
+          "ar": "د. لايوفيتش",
+          "bn": "ডি. লাজোভিচ",
+          "hi": "डी. लाजोविच"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Diego Dedura-Palomero",
+      "slug": "dedura-palomero-diego",
+      "shortName": "D. Dedura-Palomero",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 2678,
+      "playerTeamInfo": {
+        "height": 1.8,
+        "weight": 77,
+        "plays": "left-handed",
+        "prizeCurrent": 119981,
+        "prizeTotal": 231738,
+        "birthCity": {
+          "name": "Berlin",
+          "country": {
+            "alpha2": "DE",
+            "alpha3": "DEU",
+            "name": "Germany",
+            "slug": "germany"
+          },
+          "id": 18260
+        },
+        "id": 15334,
+        "birthplace": "Berlin, Germany",
+        "birthDateTimestamp": 1205280000,
+        "underage": false,
+        "prizeCurrentRaw": {
+          "value": 119981,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 231738,
+          "currency": "EUR"
+        },
+        "currentRanking": 186
+      },
+      "nameCode": "DED",
+      "ranking": 186,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "DE",
+        "alpha3": "DEU",
+        "name": "Germany",
+        "slug": "germany"
+      },
+      "id": 484219,
+      "fullName": "Diego Dedura-Palomero",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "دييغو ديدورا-بالوميرو",
+          "ru": "Диего Дедура-Паломеро"
+        },
+        "shortNameTranslation": {
+          "ar": "د. بالوميرو",
+          "ru": "Д. Дедура-Паломеро"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 1,
+      "point": "0"
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 5,
+      "point": "0"
+    },
+    "time": {
+      "currentPeriodStartTimestamp": 1789484237
+    },
+    "changes": {
+      "changes": [
+        "time.currentPeriodStart"
+      ],
+      "changeTimestamp": 1789485962
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17083330,
+    "defaultPeriodCount": 3,
+    "slug": "diego-dedura-palomero-dusan-lajovic",
+    "currentPeriodStartTimestamp": 1789484237,
+    "startTimestamp": 1789483800,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "groundType": "Red clay",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "singles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "lower"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

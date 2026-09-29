@@ -1,0 +1,246 @@
+{
+  "case_id": "A_inprogress-14-2nd-quarter",
+  "event_id": 17062025,
+  "fetched_at_utc": "2026-09-29T15:51:39+00:00",
+  "source_endpoint": "/api/v1/event/17062025",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"cfc23523d9\"",
+    "date": "Tue, 29 Sep 2026 15:51:39 GMT"
+  },
+  "note": "live snapshot 2026-09-29T15:51:18+00:00",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "Saku II Liiga ",
+      "slug": "round-robin",
+      "category": {
+        "name": "Estonia",
+        "slug": "estonia",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "EE",
+          "alpha3": "EST",
+          "name": "Estonia",
+          "slug": "estonia"
+        },
+        "id": 194,
+        "flag": "estonia",
+        "alpha2": "EE",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "إستونيا",
+            "ru": "Эстония"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Saku 2 Liiga",
+        "slug": "saku-2-liiga",
+        "category": {
+          "name": "Estonia",
+          "slug": "estonia",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "EE",
+            "alpha3": "EST",
+            "name": "Estonia",
+            "slug": "estonia"
+          },
+          "id": 194,
+          "flag": "estonia",
+          "alpha2": "EE",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إستونيا",
+              "ru": "Эстония"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 10,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {
+          "alpha2": "EE",
+          "alpha3": "EST",
+          "name": "Estonia",
+          "slug": "estonia"
+        },
+        "id": 35372,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ru": "Лига 2 Saku"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 1,
+      "id": 187839,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ru": "Лига Saku 2 26/27"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Saku 2 Liiga 26/27",
+      "year": "26/27",
+      "editor": true,
+      "id": 95983
+    },
+    "roundInfo": {
+      "round": 3
+    },
+    "customId": "jOeksmOek",
+    "status": {
+      "code": 14,
+      "description": "2nd quarter",
+      "type": "inprogress"
+    },
+    "homeTeam": {
+      "name": "Saku KK",
+      "slug": "saku-kk",
+      "shortName": "Saku KK",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 2,
+      "nameCode": "SKK",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "EE",
+        "alpha3": "EST",
+        "name": "Estonia",
+        "slug": "estonia"
+      },
+      "id": 1261959,
+      "fullName": "Saku KK",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "KK Askus Jetoil/Hiiumaa Spordikool",
+      "slug": "kk-askus-jetoilhiiumaa-spordikool",
+      "shortName": "KK Askus Jetoil/Hiiumaa Spordikool",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 1,
+      "nameCode": "KAJ",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "EE",
+        "alpha3": "EST",
+        "name": "Estonia",
+        "slug": "estonia"
+      },
+      "id": 1261962,
+      "fullName": "KK Askus Jetoil/Hiiumaa Spordikool",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 35,
+      "display": 35,
+      "period1": 26,
+      "period2": 9
+    },
+    "awayScore": {
+      "current": 21,
+      "display": 21,
+      "period1": 16,
+      "period2": 5
+    },
+    "time": {
+      "played": 857,
+      "periodLength": 600,
+      "overtimeLength": 300,
+      "totalPeriodCount": 4,
+      "clockRunning": false,
+      "clockRunningLastUpdated": "2026-09-29T15:50:40+00:00"
+    },
+    "changes": {
+      "changes": [
+        "time.played",
+        "time.playedLastUpdated"
+      ],
+      "changeTimestamp": 1790697060
+    },
+    "hasGlobalHighlights": false,
+    "hasEventPlayerStatistics": true,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17062025,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "kk-askus-jetoilhiiumaa-spordikool-saku-kk",
+    "startTimestamp": 1790695200,
+    "lastPeriod": "period2",
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "createdByNickname": "Hater Football",
+    "eventEditorName": "Hater Football",
+    "eventEditor": {
+      "id": "6a2828d0eb6cbf337facd000",
+      "name": "Hater Football"
+    },
+    "showTotoPromo": true,
+    "isEditor": true,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

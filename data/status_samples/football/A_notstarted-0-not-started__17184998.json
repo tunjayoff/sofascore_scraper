@@ -1,0 +1,217 @@
+{
+  "case_id": "A_notstarted-0-not-started",
+  "event_id": 17184998,
+  "fetched_at_utc": "2026-09-29T15:52:56+00:00",
+  "source_endpoint": "/api/v1/event/17184998",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"017d00a1c0\"",
+    "date": "Tue, 29 Sep 2026 15:52:55 GMT"
+  },
+  "note": "index source scan:2026-09-28",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "U18 Friendly Games",
+      "slug": "u18-friendly-games",
+      "category": {
+        "name": "World",
+        "slug": "world",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 20,
+        "country": {},
+        "id": 1468,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "العالم",
+            "hi": "विश्व",
+            "bn": "বিশ্ব",
+            "ru": "Мир"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "U18 Friendly Games",
+        "slug": "u18-friendly-games",
+        "primaryColorHex": "#25497d",
+        "secondaryColorHex": "#d38f1d",
+        "category": {
+          "name": "World",
+          "slug": "world",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 20,
+          "country": {},
+          "id": 1468,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "العالم",
+              "hi": "विश्व",
+              "bn": "বিশ্ব",
+              "ru": "Мир"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 1567,
+        "hasRounds": false,
+        "hasPerformanceGraphFeature": false,
+        "showBanner": true,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 857,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "مباريات ودية تحت 18 سنة",
+            "hi": "अंडर-18 फ्रेंडली गेम्स",
+            "bn": "আন্ডার18 ফ্রেন্ডলি গেমস",
+            "ru": "Товарищеские игры до 18 лет"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 3,
+      "isLive": false,
+      "id": 5896,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "hi": "अंडर-18 फ्रेंडली गेम्स",
+          "ar": "مباريات ودية تحت 18 سنة",
+          "bn": "আন্ডার18 ফ্রেন্ডলি গেমস",
+          "ru": "Товарищеские игры U18"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "U18 Friendly Games 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 90143
+    },
+    "customId": "Oejszipk",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "homeTeam": {
+      "name": "Hungary U18",
+      "slug": "hungary-u18",
+      "shortName": "Hungary U18",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 379,
+      "nameCode": "HUN",
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "HU",
+        "alpha3": "HUN",
+        "name": "Hungary",
+        "slug": "hungary"
+      },
+      "id": 22739,
+      "fullName": "Hungary U18",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#c61e29",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "المجر تحت 18",
+          "ru": "Венгрия"
+        },
+        "shortNameTranslation": {
+          "ar": "المجر تحت 18"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Qatar U18",
+      "slug": "qatar-u18",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 0,
+      "nameCode": "QU1",
+      "class": 1,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "QA",
+        "alpha3": "QAT",
+        "name": "Qatar",
+        "slug": "qatar"
+      },
+      "id": 1287924,
+      "fullName": "Qatar U18",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "coverage": -1,
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17184998,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "slug": "qatar-u18-hungary-u18",
+    "startTimestamp": 1790686800,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "national"
+      ],
+      "level": [
+        "pro",
+        "youth"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

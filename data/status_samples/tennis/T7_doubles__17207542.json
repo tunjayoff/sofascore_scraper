@@ -1,0 +1,385 @@
+{
+  "case_id": "T7_doubles",
+  "event_id": 17207542,
+  "fetched_at_utc": "2026-09-29T15:57:10+00:00",
+  "source_endpoint": "/api/v1/event/17207542",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"5e640e59ea\"",
+    "date": "Tue, 29 Sep 2026 15:57:10 GMT"
+  },
+  "note": "Çiftler; index source live:2026-09-29T13:43:27+00:00",
+  "event": {
+    "tournament": {
+      "name": "ITF M15 Šibenik Men Doubles",
+      "slug": "itf-m15-sibenik-men-doubles",
+      "category": {
+        "name": "ITF Men",
+        "slug": "itf-men",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 4,
+        "country": {},
+        "id": 785,
+        "flag": "itf-men",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "اتحاد التنس الدولي للرجال",
+            "ru": "Мужской мировой теннисный тур ITF"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "ITF M15 Šibenik Men Doubles",
+        "slug": "itf-m15-sibenik-men-doubles",
+        "category": {
+          "name": "ITF Men",
+          "slug": "itf-men",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 4,
+          "country": {},
+          "id": 785,
+          "flag": "itf-men",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "اتحاد التنس الدولي للرجال",
+              "ru": "Мужской мировой теннисный тур ITF"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 2,
+        "groundType": "Clay",
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 38302,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false
+      },
+      "priority": 0,
+      "competitionType": 2,
+      "id": 201432
+    },
+    "season": {
+      "name": "2026",
+      "year": "2026",
+      "editor": false,
+      "id": 104373
+    },
+    "roundInfo": {
+      "round": 5,
+      "name": "Round of 16",
+      "slug": "round-of-16",
+      "cupRoundType": 8
+    },
+    "customId": "gUpksCUpk",
+    "status": {
+      "code": 100,
+      "description": "Ended",
+      "type": "finished"
+    },
+    "winnerCode": 2,
+    "homeTeam": {
+      "name": "Jutreša H / Rakonić F",
+      "slug": "jutresa-h-rakonic-f",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 1,
+      "nameCode": "H/F",
+      "disabled": false,
+      "national": false,
+      "type": 2,
+      "country": {},
+      "id": 1289706,
+      "fullName": "Jutreša H / Rakonić F",
+      "subTeams": [
+        {
+          "name": "Hrvoje Jutreša",
+          "slug": "hrvoje-jutresa",
+          "shortName": "H. Jutreša",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 17,
+          "playerTeamInfo": {
+            "plays": "right-handed",
+            "id": 21481,
+            "birthDateTimestamp": 1222819200,
+            "underage": false
+          },
+          "nameCode": "HJU",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "HR",
+            "alpha3": "HRV",
+            "name": "Croatia",
+            "slug": "croatia"
+          },
+          "id": 1093318,
+          "fullName": "Hrvoje Jutreša",
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "هرفوي يوتريشا",
+              "ru": "Грвойе Ютреша"
+            },
+            "shortNameTranslation": {
+              "ar": "ه. يوتريشا",
+              "ru": "Г. Ютреша"
+            }
+          },
+          "createdByEditor": true,
+          "timeActive": []
+        },
+        {
+          "name": "Fran Rakonić",
+          "slug": "rakonic-fran",
+          "shortName": "F. Rakonić",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 62,
+          "playerTeamInfo": {
+            "id": 21814,
+            "underage": false,
+            "currentRanking": 3371
+          },
+          "nameCode": "RAK",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "HR",
+            "alpha3": "HRV",
+            "name": "Croatia",
+            "slug": "croatia"
+          },
+          "id": 465596,
+          "fullName": "Fran Rakonić",
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فران راكونيتش",
+              "ru": "Фран Раконич"
+            },
+            "shortNameTranslation": {
+              "ar": "ف. راكونيتش",
+              "ru": "Ф. Раконич"
+            }
+          },
+          "timeActive": []
+        }
+      ],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Behr R / Curavić L",
+      "slug": "behr-r-curavic-l",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 1,
+      "nameCode": "R/L",
+      "disabled": false,
+      "national": false,
+      "type": 2,
+      "country": {},
+      "id": 1289727,
+      "fullName": "Behr R / Curavić L",
+      "subTeams": [
+        {
+          "name": "Rafael Behr",
+          "slug": "rafael-behr",
+          "shortName": "R. Behr",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 12,
+          "playerTeamInfo": {
+            "id": 45144,
+            "underage": false
+          },
+          "nameCode": "BEH",
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "HR",
+            "alpha3": "HRV",
+            "name": "Croatia",
+            "slug": "croatia"
+          },
+          "id": 1227652,
+          "fullName": "Rafael Behr",
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ru": "Рафаэль Бехр"
+            },
+            "shortNameTranslation": {
+              "ru": "Р. Бехр"
+            }
+          },
+          "timeActive": []
+        },
+        {
+          "name": "Luka Curavić",
+          "slug": "curavic-luka",
+          "shortName": "L. Curavić",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 9,
+          "playerTeamInfo": {
+            "id": 45200,
+            "underage": false
+          },
+          "nameCode": "CUR",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "HR",
+            "alpha3": "HRV",
+            "name": "Croatia",
+            "slug": "croatia"
+          },
+          "id": 124754,
+          "fullName": "Luka Curavić",
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "لوكا كورافيتش",
+              "ru": "Лука Куравич"
+            },
+            "shortNameTranslation": {
+              "ar": "ل. كورافيتش",
+              "ru": "Л. Куравич"
+            }
+          },
+          "timeActive": []
+        }
+      ],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 3,
+      "period2": 4
+    },
+    "awayScore": {
+      "current": 2,
+      "display": 2,
+      "period1": 6,
+      "period2": 6
+    },
+    "time": {},
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type",
+        "awayScore.current",
+        "awayScore.display",
+        "awayScore.period2"
+      ],
+      "changeTimestamp": 1790690423
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17207542,
+    "defaultPeriodCount": 3,
+    "slug": "behr-curavic-jutresa-rakonic",
+    "startTimestamp": 1790686800,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "groundType": "Clay",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "doubles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "lower"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

@@ -1,0 +1,321 @@
+{
+  "case_id": "A_inprogress-20-started",
+  "event_id": 17202289,
+  "fetched_at_utc": "2026-09-29T13:44:20+00:00",
+  "source_endpoint": "/api/v1/event/17202289",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"65affbfdfc\"",
+    "date": "Tue, 29 Sep 2026 13:44:18 GMT"
+  },
+  "note": "live snapshot 2026-09-29T13:43:27+00:00",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "Grupo 1",
+      "slug": "grupo-1",
+      "category": {
+        "name": "Brazil Amateur",
+        "slug": "brazil-amateur",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "BR",
+          "alpha3": "BRA",
+          "name": "Brazil",
+          "slug": "brazil"
+        },
+        "id": 1694,
+        "flag": "brazil",
+        "alpha2": "BR",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "البرازيل هواة",
+            "ru": "Бразилия Любители"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "U17 Paraense",
+        "slug": "u17-paraense",
+        "category": {
+          "name": "Brazil Amateur",
+          "slug": "brazil-amateur",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 1694,
+          "flag": "brazil",
+          "alpha2": "BR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "البرازيل هواة",
+              "ru": "Бразилия Любители"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 14,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {
+          "alpha2": "BR",
+          "alpha3": "BRA",
+          "name": "Brazil",
+          "slug": "brazil"
+        },
+        "id": 37430,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false
+      },
+      "priority": 0,
+      "isGroup": true,
+      "groupName": "Grupo 1",
+      "competitionType": 1,
+      "id": 198167
+    },
+    "season": {
+      "name": "U17 Paraense 2026",
+      "year": "2026",
+      "editor": true,
+      "id": 102542
+    },
+    "roundInfo": {
+      "round": 4
+    },
+    "customId": "NfaesVfae",
+    "status": {
+      "code": 20,
+      "description": "Started",
+      "type": "inprogress"
+    },
+    "homeTeam": {
+      "name": "Remo U17",
+      "slug": "remo-u17",
+      "shortName": "Remo U17",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 163,
+      "venue": {
+        "city": {
+          "name": "Belem",
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 24116
+        },
+        "venueCoordinates": {
+          "latitude": -1.445102,
+          "longitude": -48.466101
+        },
+        "hidden": false,
+        "slug": "est-dio-evandro-almeida",
+        "name": "Estádio Banpará Baenão",
+        "capacity": 13792,
+        "country": {
+          "alpha2": "BR",
+          "alpha3": "BRA",
+          "name": "Brazil",
+          "slug": "brazil"
+        },
+        "id": 16530,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب بانبارا بايناو",
+            "hi": "एस्टेडियो बानपारा बाएनाओ",
+            "bn": "এস্তাদিও বানপারা বায়েনাও",
+            "ru": "Стадион Estádio Banpará Baenão"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Estádio Banpará Baenão",
+          "capacity": 13792
+        }
+      },
+      "nameCode": "REM",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "BR",
+        "alpha3": "BRA",
+        "name": "Brazil",
+        "slug": "brazil"
+      },
+      "id": 500295,
+      "fullName": "Remo U17",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ريمو تحت 17",
+          "ru": "Ремо U17"
+        },
+        "shortNameTranslation": {
+          "ar": "ريمو تحت 17",
+          "ru": "Ремо U17"
+        }
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Tesla FC U17",
+      "slug": "tesla-fc-u17",
+      "shortName": "Tesla",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 3,
+      "venue": {
+        "city": {
+          "name": "Apeú",
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 41769
+        },
+        "venueCoordinates": {
+          "latitude": -1.3006338598357,
+          "longitude": -47.988899810012
+        },
+        "hidden": true,
+        "slug": "arena-apeu-tesla",
+        "name": "Arena Apeú Tesla",
+        "capacity": 2000,
+        "country": {
+          "alpha2": "BR",
+          "alpha3": "BRA",
+          "name": "Brazil",
+          "slug": "brazil"
+        },
+        "id": 64823,
+        "stadium": {
+          "name": "Arena Apeú Tesla",
+          "capacity": 2000
+        }
+      },
+      "nameCode": "TES",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "BR",
+        "alpha3": "BRA",
+        "name": "Brazil",
+        "slug": "brazil"
+      },
+      "id": 500288,
+      "fullName": "Tesla FC U17",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "تسلا إف سي تحت 17",
+          "ru": "Тесла ФК U17"
+        },
+        "shortNameTranslation": {
+          "ar": "تسلا",
+          "ru": "Тесла"
+        }
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 0,
+      "display": 0
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0
+    },
+    "time": {},
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type",
+        "homeScore.current",
+        "homeScore.display",
+        "awayScore.current",
+        "awayScore.display"
+      ],
+      "changeTimestamp": 1790685002
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": true,
+    "id": 17202289,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "varInProgress": {
+      "homeTeam": false,
+      "awayTeam": false
+    },
+    "slug": "remo-u17-tesla-fc-u17",
+    "startTimestamp": 1790685000,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "createdByNickname": "Pedro Borges",
+    "eventEditorName": "Pedro Borges",
+    "eventEditor": {
+      "id": "6a445011f463165b282e35e2",
+      "name": "Pedro Borges"
+    },
+    "showTotoPromo": true,
+    "isEditor": true,
+    "crowdsourcingEnabled": true,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "contributor",
+        "youth"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

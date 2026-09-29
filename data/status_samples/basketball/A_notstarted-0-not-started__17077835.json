@@ -1,0 +1,271 @@
+{
+  "case_id": "A_notstarted-0-not-started",
+  "event_id": 17077835,
+  "fetched_at_utc": "2026-09-29T15:54:43+00:00",
+  "source_endpoint": "/api/v1/event/17077835",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"8f954216ba\"",
+    "date": "Tue, 29 Sep 2026 15:54:43 GMT"
+  },
+  "note": "index source scan:2026-09-18",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "4th Group",
+      "slug": "4th-group",
+      "category": {
+        "name": "Greece Amateur",
+        "slug": "greece-amateur",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "GR",
+          "alpha3": "GRC",
+          "name": "Greece",
+          "slug": "greece"
+        },
+        "id": 1707,
+        "flag": "greece",
+        "alpha2": "GR",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "اليونان هواة",
+            "ru": "Греция Любители"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "EKASTH Cup",
+        "slug": "ekasth-cup",
+        "category": {
+          "name": "Greece Amateur",
+          "slug": "greece-amateur",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 1707,
+          "flag": "greece",
+          "alpha2": "GR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "اليونان هواة",
+              "ru": "Греция Любители"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 3,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 32546,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كأس إكاست",
+            "ru": "Кубок EKASTH"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": true,
+      "groupName": "4th Group",
+      "competitionType": 1,
+      "id": 197120
+    },
+    "season": {
+      "name": "EKASTH Cup 26/27",
+      "year": "26/27",
+      "editor": true,
+      "id": 101806
+    },
+    "roundInfo": {
+      "round": 2
+    },
+    "customId": "ipkesEEuj",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "homeTeam": {
+      "name": "Makedonikos Litis",
+      "slug": "makedonikos-litis",
+      "shortName": "Makedonikos Litis",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 0,
+      "nameCode": "MLI",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "GR",
+        "alpha3": "GRC",
+        "name": "Greece",
+        "slug": "greece"
+      },
+      "id": 1173979,
+      "fullName": "Makedonikos Litis",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ماكدونيكوس ليتيس",
+          "ru": "Македоникос Литис"
+        },
+        "shortNameTranslation": {
+          "ar": "ماكدونيكوس ليتيس",
+          "ru": "Македоникос Литис"
+        }
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Keravnos Oraiokastrou",
+      "slug": "keravnos-oraiokastrou",
+      "shortName": "Keravnos Oraiokastrou",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 31,
+      "venue": {
+        "city": {
+          "name": "Oraiokastro",
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 32884
+        },
+        "venueCoordinates": {
+          "latitude": 40.730059,
+          "longitude": 22.921651
+        },
+        "hidden": true,
+        "slug": "kontaxopouleio-municipal-indoor-sports-hall",
+        "name": "\"Kontaxopouleio\" Municipal Indoor Sports Hall",
+        "capacity": 350,
+        "country": {
+          "alpha2": "GR",
+          "alpha3": "GRC",
+          "name": "Greece",
+          "slug": "greece"
+        },
+        "id": 56031,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ru": "Спортивный комплекс \"Kontaxopouleio\""
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "\"Kontaxopouleio\" Municipal Indoor Sports Hall",
+          "capacity": 350
+        }
+      },
+      "nameCode": "KOR",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "GR",
+        "alpha3": "GRC",
+        "name": "Greece",
+        "slug": "greece"
+      },
+      "id": 525758,
+      "fullName": "Keravnos Oraiokastrou",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "كيرافنوس أورايوكاسترو",
+          "ru": "Керавнос Орайокастру"
+        },
+        "shortNameTranslation": {
+          "ar": "كيرافنوس أورايوكاسترو",
+          "ru": "Керавнос Орайокастру"
+        }
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17077835,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "makedonikos-litis-keravnos-oraiokastrou",
+    "startTimestamp": 1789752603,
+    "finalResultOnly": true,
+    "feedLocked": false,
+    "createdByNickname": "Pan Mark",
+    "eventEditorName": "Pan Mark",
+    "eventEditor": {
+      "id": "5bb906feeee9d24cf679c397",
+      "name": "Pan Mark"
+    },
+    "showTotoPromo": true,
+    "isEditor": true,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

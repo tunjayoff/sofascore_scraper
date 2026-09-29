@@ -1,0 +1,403 @@
+{
+  "case_id": "T7_doubles",
+  "event_id": 17208585,
+  "fetched_at_utc": "2026-09-29T15:57:08+00:00",
+  "source_endpoint": "/api/v1/event/17208585",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"2df327bb3e\"",
+    "date": "Tue, 29 Sep 2026 15:57:08 GMT"
+  },
+  "note": "Çiftler; index source live:2026-09-29T13:43:27+00:00",
+  "event": {
+    "tournament": {
+      "name": "ITF M15 Monastir 32 Men Doubles",
+      "slug": "itf-m15-monastir-32-men-doubles",
+      "category": {
+        "name": "ITF Men",
+        "slug": "itf-men",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 4,
+        "country": {},
+        "id": 785,
+        "flag": "itf-men",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "اتحاد التنس الدولي للرجال",
+            "ru": "Мужской мировой теннисный тур ITF"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "ITF M15 Monastir 32 Men Doubles",
+        "slug": "itf-m15-monastir-32-men-doubles",
+        "category": {
+          "name": "ITF Men",
+          "slug": "itf-men",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 4,
+          "country": {},
+          "id": 785,
+          "flag": "itf-men",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "اتحاد التنس الدولي للرجال",
+              "ru": "Мужской мировой теннисный тур ITF"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 2,
+        "groundType": "Hardcourt outdoor",
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 38307,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false
+      },
+      "priority": 0,
+      "competitionType": 2,
+      "id": 201446
+    },
+    "season": {
+      "name": "2026",
+      "year": "2026",
+      "editor": false,
+      "id": 104385
+    },
+    "roundInfo": {
+      "round": 5,
+      "name": "Round of 16",
+      "slug": "round-of-16",
+      "cupRoundType": 8
+    },
+    "customId": "gYbjsIVpk",
+    "status": {
+      "code": 100,
+      "description": "Ended",
+      "type": "finished"
+    },
+    "winnerCode": 2,
+    "homeTeam": {
+      "name": "Dossetter C / Singh J",
+      "slug": "dossetter-c-singh-j",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 0,
+      "nameCode": "C/J",
+      "disabled": false,
+      "national": false,
+      "type": 2,
+      "country": {},
+      "id": 1289783,
+      "fullName": "Dossetter C / Singh J",
+      "subTeams": [
+        {
+          "name": "Charles Dossetter",
+          "slug": "dossetter-charles",
+          "shortName": "C. Dossetter",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 25,
+          "nameCode": "DOS",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "GB",
+            "alpha3": "GBR",
+            "name": "United Kingdom",
+            "slug": "united-kingdom"
+          },
+          "id": 269807,
+          "fullName": "Charles Dossetter",
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "تشارلز دوسيتير",
+              "ru": "Доссеттер, Чарльз"
+            },
+            "shortNameTranslation": {
+              "ar": "ت. دوسيتير"
+            }
+          },
+          "timeActive": []
+        },
+        {
+          "name": "Jay Singh",
+          "slug": "singh-jay",
+          "shortName": "J. Singh",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 4,
+          "nameCode": "SIN",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "AU",
+            "alpha3": "AUS",
+            "name": "Australia",
+            "slug": "australia"
+          },
+          "id": 500348,
+          "fullName": "Jay Singh",
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "جاي سينغ",
+              "ru": "Джей Сингх"
+            },
+            "shortNameTranslation": {
+              "ar": "ج. سينغ",
+              "ru": "Д. Сингх"
+            }
+          },
+          "timeActive": []
+        }
+      ],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Nagoudi A / Piatti R",
+      "slug": "nagoudi-a-piatti-r",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 1,
+      "nameCode": "NAP",
+      "disabled": false,
+      "national": false,
+      "type": 2,
+      "country": {},
+      "id": 1129906,
+      "fullName": "Nagoudi A / Piatti R",
+      "subTeams": [
+        {
+          "name": "Adam Nagoudi",
+          "slug": "nagoudi-adam",
+          "shortName": "A. Nagoudi",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 68,
+          "nameCode": "NAG",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "TN",
+            "alpha3": "TUN",
+            "name": "Tunisia",
+            "slug": "tunisia"
+          },
+          "id": 193252,
+          "fullName": "Adam Nagoudi",
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "آدم ناغودي",
+              "ru": "Адам Нагуди"
+            },
+            "shortNameTranslation": {
+              "ar": "آ. ناغودي",
+              "ru": "А. Нагуди"
+            }
+          },
+          "timeActive": []
+        },
+        {
+          "name": "Rocco Piatti",
+          "slug": "piatti-rocco",
+          "shortName": "R. Piatti",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 163,
+          "playerTeamInfo": {
+            "height": 1.88,
+            "weight": 88,
+            "plays": "right-handed",
+            "prizeCurrent": 4331,
+            "prizeTotal": 17567,
+            "birthCity": {
+              "name": "Como",
+              "country": {
+                "alpha2": "IT",
+                "alpha3": "ITA",
+                "name": "Italy",
+                "slug": "italy"
+              },
+              "id": 20688
+            },
+            "id": 12069,
+            "birthplace": "Como, Italy",
+            "birthDateTimestamp": 1091404800,
+            "underage": false,
+            "prizeCurrentRaw": {
+              "value": 4331,
+              "currency": "EUR"
+            },
+            "prizeTotalRaw": {
+              "value": 17567,
+              "currency": "EUR"
+            },
+            "currentRanking": 938
+          },
+          "nameCode": "PIA",
+          "ranking": 939,
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "MC",
+            "alpha3": "MCO",
+            "name": "Monaco",
+            "slug": "monaco"
+          },
+          "id": 333006,
+          "fullName": "Rocco Piatti",
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "روكو بياتي",
+              "ru": "Рокко Пиатты"
+            },
+            "shortNameTranslation": {
+              "ar": "ر. بياتي",
+              "ru": "Р. Пиатты"
+            }
+          },
+          "timeActive": []
+        }
+      ],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ناغودي أ / بياتي ر",
+          "ru": "Нагуди А / Пьятти Р"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 1,
+      "period2": 1
+    },
+    "awayScore": {
+      "current": 2,
+      "display": 2,
+      "period1": 6,
+      "period2": 6
+    },
+    "time": {},
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type",
+        "awayScore.current",
+        "awayScore.display",
+        "awayScore.period2"
+      ],
+      "changeTimestamp": 1790689678
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17208585,
+    "defaultPeriodCount": 3,
+    "slug": "dossetter-singh-nagoudi-piatti",
+    "startTimestamp": 1790681400,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "groundType": "Hardcourt outdoor",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "doubles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "lower"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

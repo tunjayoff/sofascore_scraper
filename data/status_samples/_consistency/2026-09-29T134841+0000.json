@@ -1,0 +1,821 @@
+[
+  {
+    "sport": "football",
+    "event_id": 17018554,
+    "checked_at_utc": "2026-09-29T13:45:53+00:00",
+    "event_status": [
+      "inprogress",
+      6,
+      "1st half"
+    ],
+    "list_status": [
+      "inprogress",
+      6,
+      "1st half"
+    ],
+    "live_status": [
+      "inprogress",
+      6,
+      "1st half"
+    ],
+    "event_score": [
+      0,
+      1
+    ],
+    "list_score": [
+      0,
+      1
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"72b0b9a955\"",
+      "date": "Tue, 29 Sep 2026 13:45:49 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"278849a91d\"",
+      "date": "Tue, 29 Sep 2026 13:45:53 GMT"
+    },
+    "list_endpoint": "/unique-tournament/1848/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "football",
+    "event_id": 17018559,
+    "checked_at_utc": "2026-09-29T13:46:01+00:00",
+    "event_status": [
+      "inprogress",
+      6,
+      "1st half"
+    ],
+    "list_status": [
+      "inprogress",
+      6,
+      "1st half"
+    ],
+    "live_status": [
+      "inprogress",
+      6,
+      "1st half"
+    ],
+    "event_score": [
+      0,
+      1
+    ],
+    "list_score": [
+      0,
+      1
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"8a23310e31\"",
+      "date": "Tue, 29 Sep 2026 13:45:57 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"278849a91d\"",
+      "date": "Tue, 29 Sep 2026 13:46:01 GMT"
+    },
+    "list_endpoint": "/unique-tournament/1848/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "football",
+    "event_id": 17018572,
+    "checked_at_utc": "2026-09-29T13:46:09+00:00",
+    "event_status": [
+      "inprogress",
+      7,
+      "2nd half"
+    ],
+    "list_status": [
+      "inprogress",
+      7,
+      "2nd half"
+    ],
+    "live_status": [
+      "inprogress",
+      7,
+      "2nd half"
+    ],
+    "event_score": [
+      1,
+      0
+    ],
+    "list_score": [
+      1,
+      0
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"edd85744dc\"",
+      "date": "Tue, 29 Sep 2026 13:46:05 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"278849a91d\"",
+      "date": "Tue, 29 Sep 2026 13:46:09 GMT"
+    },
+    "list_endpoint": "/unique-tournament/1848/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "football",
+    "event_id": 17018555,
+    "checked_at_utc": "2026-09-29T13:46:17+00:00",
+    "event_status": [
+      "inprogress",
+      6,
+      "1st half"
+    ],
+    "list_status": [
+      "inprogress",
+      6,
+      "1st half"
+    ],
+    "live_status": [
+      "inprogress",
+      6,
+      "1st half"
+    ],
+    "event_score": [
+      2,
+      1
+    ],
+    "list_score": [
+      2,
+      1
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"34ef5f41a7\"",
+      "date": "Tue, 29 Sep 2026 13:46:13 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"278849a91d\"",
+      "date": "Tue, 29 Sep 2026 13:46:17 GMT"
+    },
+    "list_endpoint": "/unique-tournament/1848/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "football",
+    "event_id": 17018602,
+    "checked_at_utc": "2026-09-29T13:46:25+00:00",
+    "event_status": [
+      "inprogress",
+      6,
+      "1st half"
+    ],
+    "list_status": [
+      "inprogress",
+      6,
+      "1st half"
+    ],
+    "live_status": [
+      "inprogress",
+      6,
+      "1st half"
+    ],
+    "event_score": [
+      0,
+      1
+    ],
+    "list_score": [
+      0,
+      1
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"869896f795\"",
+      "date": "Tue, 29 Sep 2026 13:46:21 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"278849a91d\"",
+      "date": "Tue, 29 Sep 2026 13:46:25 GMT"
+    },
+    "list_endpoint": "/unique-tournament/1848/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "football",
+    "event_id": 17018598,
+    "checked_at_utc": "2026-09-29T13:46:33+00:00",
+    "event_status": [
+      "inprogress",
+      6,
+      "1st half"
+    ],
+    "list_status": [
+      "inprogress",
+      6,
+      "1st half"
+    ],
+    "live_status": [
+      "inprogress",
+      6,
+      "1st half"
+    ],
+    "event_score": [
+      1,
+      0
+    ],
+    "list_score": [
+      1,
+      0
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"9276cf4802\"",
+      "date": "Tue, 29 Sep 2026 13:46:29 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"278849a91d\"",
+      "date": "Tue, 29 Sep 2026 13:46:33 GMT"
+    },
+    "list_endpoint": "/unique-tournament/1848/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "football",
+    "event_id": 17185003,
+    "checked_at_utc": "2026-09-29T13:46:41+00:00",
+    "event_status": [
+      "inprogress",
+      6,
+      "1st half"
+    ],
+    "list_status": [
+      "inprogress",
+      6,
+      "1st half"
+    ],
+    "live_status": [
+      "inprogress",
+      6,
+      "1st half"
+    ],
+    "event_score": [
+      3,
+      0
+    ],
+    "list_score": [
+      3,
+      0
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"f0054608c3\"",
+      "date": "Tue, 29 Sep 2026 13:46:37 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"9821decb09\"",
+      "date": "Tue, 29 Sep 2026 13:46:41 GMT"
+    },
+    "list_endpoint": "/unique-tournament/853/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "football",
+    "event_id": 17184988,
+    "checked_at_utc": "2026-09-29T13:46:50+00:00",
+    "event_status": [
+      "inprogress",
+      7,
+      "2nd half"
+    ],
+    "list_status": [
+      "inprogress",
+      7,
+      "2nd half"
+    ],
+    "live_status": [
+      "inprogress",
+      7,
+      "2nd half"
+    ],
+    "event_score": [
+      0,
+      0
+    ],
+    "list_score": [
+      0,
+      0
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"16b6a61158\"",
+      "date": "Tue, 29 Sep 2026 13:46:45 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"9b10562780\"",
+      "date": "Tue, 29 Sep 2026 13:46:49 GMT"
+    },
+    "list_endpoint": "/unique-tournament/856/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "football",
+    "event_id": 16461725,
+    "checked_at_utc": "2026-09-29T13:46:57+00:00",
+    "event_status": [
+      "inprogress",
+      7,
+      "2nd half"
+    ],
+    "list_status": [
+      "inprogress",
+      7,
+      "2nd half"
+    ],
+    "live_status": [
+      "inprogress",
+      7,
+      "2nd half"
+    ],
+    "event_score": [
+      1,
+      8
+    ],
+    "list_score": [
+      1,
+      9
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"9cae09a3f2\"",
+      "date": "Tue, 29 Sep 2026 13:46:53 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"36daca148d\"",
+      "date": "Tue, 29 Sep 2026 13:46:57 GMT"
+    },
+    "list_endpoint": "/unique-tournament/755/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "football",
+    "event_id": 16461724,
+    "checked_at_utc": "2026-09-29T13:47:05+00:00",
+    "event_status": [
+      "inprogress",
+      7,
+      "2nd half"
+    ],
+    "list_status": [
+      "inprogress",
+      7,
+      "2nd half"
+    ],
+    "live_status": [
+      "inprogress",
+      7,
+      "2nd half"
+    ],
+    "event_score": [
+      2,
+      3
+    ],
+    "list_score": [
+      2,
+      3
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"4bb53d7ead\"",
+      "date": "Tue, 29 Sep 2026 13:47:01 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"36daca148d\"",
+      "date": "Tue, 29 Sep 2026 13:47:05 GMT"
+    },
+    "list_endpoint": "/unique-tournament/755/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "basketball",
+    "event_id": 17203938,
+    "checked_at_utc": "2026-09-29T13:47:18+00:00",
+    "event_status": [
+      "inprogress",
+      30,
+      "Pause"
+    ],
+    "list_status": [
+      "inprogress",
+      30,
+      "Pause"
+    ],
+    "live_status": [
+      "inprogress",
+      30,
+      "Pause"
+    ],
+    "event_score": [
+      10,
+      21
+    ],
+    "list_score": [
+      10,
+      21
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"64aa0357a0\"",
+      "date": "Tue, 29 Sep 2026 13:47:13 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"16eadb056e\"",
+      "date": "Tue, 29 Sep 2026 13:47:17 GMT"
+    },
+    "list_endpoint": "/unique-tournament/23955/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "tennis",
+    "event_id": 17202152,
+    "checked_at_utc": "2026-09-29T13:47:29+00:00",
+    "event_status": [
+      "inprogress",
+      10,
+      "3rd set"
+    ],
+    "list_status": [
+      "inprogress",
+      10,
+      "3rd set"
+    ],
+    "live_status": [
+      "inprogress",
+      10,
+      "3rd set"
+    ],
+    "event_score": [
+      1,
+      1
+    ],
+    "list_score": [
+      1,
+      1
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"73d0acaebd\"",
+      "date": "Tue, 29 Sep 2026 13:47:25 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"036d29d252\"",
+      "date": "Tue, 29 Sep 2026 13:47:29 GMT"
+    },
+    "list_endpoint": "/unique-tournament/38331/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "tennis",
+    "event_id": 17208186,
+    "checked_at_utc": "2026-09-29T13:47:38+00:00",
+    "event_status": [
+      "inprogress",
+      9,
+      "2nd set"
+    ],
+    "list_status": [
+      "inprogress",
+      9,
+      "2nd set"
+    ],
+    "live_status": [
+      "inprogress",
+      9,
+      "2nd set"
+    ],
+    "event_score": [
+      0,
+      1
+    ],
+    "list_score": [
+      0,
+      1
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"7f224d5771\"",
+      "date": "Tue, 29 Sep 2026 13:47:33 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"abce255396\"",
+      "date": "Tue, 29 Sep 2026 13:47:38 GMT"
+    },
+    "list_endpoint": "/unique-tournament/5936/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "tennis",
+    "event_id": 17201991,
+    "checked_at_utc": "2026-09-29T13:47:45+00:00",
+    "event_status": [
+      "inprogress",
+      8,
+      "1st set"
+    ],
+    "list_status": [
+      "inprogress",
+      8,
+      "1st set"
+    ],
+    "live_status": [
+      "inprogress",
+      8,
+      "1st set"
+    ],
+    "event_score": [
+      0,
+      0
+    ],
+    "list_score": [
+      0,
+      0
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"8379b83abc\"",
+      "date": "Tue, 29 Sep 2026 13:47:41 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"f6166c1eb9\"",
+      "date": "Tue, 29 Sep 2026 13:47:45 GMT"
+    },
+    "list_endpoint": "/unique-tournament/6005/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "tennis",
+    "event_id": 17196662,
+    "checked_at_utc": "2026-09-29T13:47:54+00:00",
+    "event_status": [
+      "inprogress",
+      8,
+      "1st set"
+    ],
+    "list_status": [
+      "inprogress",
+      8,
+      "1st set"
+    ],
+    "live_status": [
+      "inprogress",
+      8,
+      "1st set"
+    ],
+    "event_score": [
+      0,
+      0
+    ],
+    "list_score": [
+      0,
+      0
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"df113b12ff\"",
+      "date": "Tue, 29 Sep 2026 13:47:49 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"adb6e36475\"",
+      "date": "Tue, 29 Sep 2026 13:47:53 GMT"
+    },
+    "list_endpoint": "/unique-tournament/9366/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "tennis",
+    "event_id": 17196655,
+    "checked_at_utc": "2026-09-29T13:48:01+00:00",
+    "event_status": [
+      "inprogress",
+      8,
+      "1st set"
+    ],
+    "list_status": [
+      "inprogress",
+      8,
+      "1st set"
+    ],
+    "live_status": [
+      "inprogress",
+      8,
+      "1st set"
+    ],
+    "event_score": [
+      0,
+      0
+    ],
+    "list_score": [
+      0,
+      0
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"6d8a6c951d\"",
+      "date": "Tue, 29 Sep 2026 13:47:57 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"8c68b81651\"",
+      "date": "Tue, 29 Sep 2026 13:48:01 GMT"
+    },
+    "list_endpoint": "/unique-tournament/9366/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "tennis",
+    "event_id": 17196661,
+    "checked_at_utc": "2026-09-29T13:48:09+00:00",
+    "event_status": [
+      "inprogress",
+      8,
+      "1st set"
+    ],
+    "list_status": [
+      "inprogress",
+      8,
+      "1st set"
+    ],
+    "live_status": [
+      "inprogress",
+      8,
+      "1st set"
+    ],
+    "event_score": [
+      0,
+      0
+    ],
+    "list_score": [
+      0,
+      0
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"6ab3a7337e\"",
+      "date": "Tue, 29 Sep 2026 13:48:05 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"8c68b81651\"",
+      "date": "Tue, 29 Sep 2026 13:48:09 GMT"
+    },
+    "list_endpoint": "/unique-tournament/9366/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "tennis",
+    "event_id": 17196654,
+    "checked_at_utc": "2026-09-29T13:48:17+00:00",
+    "event_status": [
+      "inprogress",
+      8,
+      "1st set"
+    ],
+    "list_status": [
+      "inprogress",
+      8,
+      "1st set"
+    ],
+    "live_status": [
+      "inprogress",
+      8,
+      "1st set"
+    ],
+    "event_score": [
+      0,
+      0
+    ],
+    "list_score": [
+      0,
+      0
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"d667103663\"",
+      "date": "Tue, 29 Sep 2026 13:48:13 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"eb6bdc3147\"",
+      "date": "Tue, 29 Sep 2026 13:48:17 GMT"
+    },
+    "list_endpoint": "/unique-tournament/9366/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "tennis",
+    "event_id": 17207615,
+    "checked_at_utc": "2026-09-29T13:48:25+00:00",
+    "event_status": [
+      "inprogress",
+      9,
+      "2nd set"
+    ],
+    "list_status": [
+      "inprogress",
+      9,
+      "2nd set"
+    ],
+    "live_status": [
+      "inprogress",
+      9,
+      "2nd set"
+    ],
+    "event_score": [
+      1,
+      0
+    ],
+    "list_score": [
+      1,
+      0
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"16fe9c6a14\"",
+      "date": "Tue, 29 Sep 2026 13:48:21 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"f98d9b7c5a\"",
+      "date": "Tue, 29 Sep 2026 13:48:25 GMT"
+    },
+    "list_endpoint": "/unique-tournament/17386/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "tennis",
+    "event_id": 17194803,
+    "checked_at_utc": "2026-09-29T13:48:33+00:00",
+    "event_status": [
+      "inprogress",
+      8,
+      "1st set"
+    ],
+    "list_status": [
+      "inprogress",
+      8,
+      "1st set"
+    ],
+    "live_status": [
+      "inprogress",
+      8,
+      "1st set"
+    ],
+    "event_score": [
+      0,
+      0
+    ],
+    "list_score": [
+      0,
+      0
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"f46c3d0076\"",
+      "date": "Tue, 29 Sep 2026 13:48:29 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"979b3dc8fd\"",
+      "date": "Tue, 29 Sep 2026 13:48:33 GMT"
+    },
+    "list_endpoint": "/unique-tournament/17386/scheduled-events/2026-09-29"
+  },
+  {
+    "sport": "tennis",
+    "event_id": 17195333,
+    "checked_at_utc": "2026-09-29T13:48:41+00:00",
+    "event_status": [
+      "inprogress",
+      9,
+      "2nd set"
+    ],
+    "list_status": [
+      "inprogress",
+      9,
+      "2nd set"
+    ],
+    "live_status": [
+      "inprogress",
+      9,
+      "2nd set"
+    ],
+    "event_score": [
+      0,
+      1
+    ],
+    "list_score": [
+      0,
+      1
+    ],
+    "event_headers": {
+      "cache-control": "max-age=10, public, s-maxage=172800",
+      "etag": "W/\"9d7fd07bb9\"",
+      "date": "Tue, 29 Sep 2026 13:48:37 GMT"
+    },
+    "list_headers": {
+      "cache-control": "max-age=10, public, s-maxage=86400",
+      "etag": "W/\"a25739dd91\"",
+      "date": "Tue, 29 Sep 2026 13:48:41 GMT"
+    },
+    "list_endpoint": "/unique-tournament/23335/scheduled-events/2026-09-29"
+  }
+]

@@ -1,0 +1,244 @@
+{
+  "case_id": "K3_four_quarters",
+  "event_id": 17092269,
+  "fetched_at_utc": "2026-09-29T15:55:32+00:00",
+  "source_endpoint": "/api/v1/event/17092269",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"9ad92538f8\"",
+    "date": "Tue, 29 Sep 2026 15:55:31 GMT"
+  },
+  "note": "Dört çeyrek formatı; index source scan:2026-09-15",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "Club Friendlies",
+      "slug": "club-friendlies",
+      "category": {
+        "name": "International",
+        "slug": "international",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 11,
+        "country": {},
+        "id": 103,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دولي",
+            "hi": "अंतर्राष्ट्रीय",
+            "bn": "আন্তর্জাতিক",
+            "ru": "Международные"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Club Friendly Games",
+        "slug": "club-friendly-games",
+        "primaryColorHex": "#151922",
+        "secondaryColorHex": "#ea181f",
+        "category": {
+          "name": "International",
+          "slug": "international",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 11,
+          "country": {},
+          "id": 103,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دولي",
+              "hi": "अंतर्राष्ट्रीय",
+              "bn": "আন্তর্জাতিক",
+              "ru": "Международные"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 723,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 1195,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "ক্লাব ফ্রেন্ডলি গেমস",
+            "ar": "مباريات ودية للأندية",
+            "hi": "क्लब फ्रेंडली गेम्स",
+            "ru": "Товарищеские матчи клубов"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "isLive": false,
+      "id": 4788,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "hi": "क्लब फ्रेंडलीज",
+          "ar": "مباريات ودية للأندية",
+          "bn": "ক্লাব ফ্রেন্ডলিনেস",
+          "ru": "Дружеские матчи"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Club Friendly Games 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 87164
+    },
+    "roundInfo": {
+      "round": 1
+    },
+    "customId": "JXajskvlk",
+    "status": {
+      "code": 100,
+      "description": "Ended",
+      "type": "finished"
+    },
+    "winnerCode": 1,
+    "homeTeam": {
+      "name": "Bangkok University",
+      "slug": "bangkok-university",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 12,
+      "nameCode": "BAN",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "TH",
+        "alpha3": "THA",
+        "name": "Thailand",
+        "slug": "thailand"
+      },
+      "id": 1127384,
+      "fullName": "Bangkok University",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "جامعة بانكوك",
+          "ru": "Бангкокский университет"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Tar Umt Wolverine",
+      "slug": "tar-umt-wolverine",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 4,
+      "nameCode": "TAR",
+      "national": false,
+      "type": 0,
+      "country": {},
+      "id": 1278510,
+      "fullName": "Tar Umt Wolverine",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 72,
+      "display": 72,
+      "period1": 17,
+      "period2": 15,
+      "period3": 19,
+      "period4": 21,
+      "normaltime": 72
+    },
+    "awayScore": {
+      "current": 65,
+      "display": 65,
+      "period1": 21,
+      "period2": 14,
+      "period3": 23,
+      "period4": 7,
+      "normaltime": 65
+    },
+    "time": {
+      "played": 2400,
+      "periodLength": 600,
+      "overtimeLength": 300,
+      "totalPeriodCount": 4
+    },
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type",
+        "homeScore.normaltime",
+        "awayScore.normaltime",
+        "time.played",
+        "time.playedLastUpdated"
+      ],
+      "changeTimestamp": 1789460538
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17092269,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "tar-umt-wolverine-bangkok-university",
+    "startTimestamp": 1789455600,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

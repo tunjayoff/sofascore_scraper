@@ -1,0 +1,338 @@
+{
+  "case_id": "K1_overtime_finished",
+  "event_id": 16346148,
+  "fetched_at_utc": "2026-09-29T15:55:27+00:00",
+  "source_endpoint": "/api/v1/event/16346148",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"f8ee017a2d\"",
+    "date": "Tue, 29 Sep 2026 15:55:26 GMT"
+  },
+  "note": "Uzatmalı bitmiş; index source scan:2026-09-15",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "Mexico LNBP",
+      "slug": "lnbp",
+      "category": {
+        "name": "Mexico",
+        "slug": "mexico",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "MX",
+          "alpha3": "MEX",
+          "name": "Mexico",
+          "slug": "mexico"
+        },
+        "id": 395,
+        "flag": "mexico",
+        "alpha2": "MX",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "المكسيك",
+            "ru": "Мексика"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Mexico LNBP",
+        "slug": "lnbp",
+        "primaryColorHex": "#045f5d",
+        "secondaryColorHex": "#bc272b",
+        "category": {
+          "name": "Mexico",
+          "slug": "mexico",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "MX",
+            "alpha3": "MEX",
+            "name": "Mexico",
+            "slug": "mexico"
+          },
+          "id": 395,
+          "flag": "mexico",
+          "alpha2": "MX",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "المكسيك",
+              "ru": "Мексика"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 956,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 1472,
+        "hasEventPlayerStatistics": false,
+        "hasBoxScore": true,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "الدوري المكسيكي لكرة السلة (LNBP)",
+            "ru": "Лига LNBP Мексики"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 1,
+      "isLive": false,
+      "id": 4849,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "الدوري الوطني لكرة السلة في المكسيك (LNBP)",
+          "ru": "ЛНБП Мексики"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "LNBP 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 96547
+    },
+    "roundInfo": {
+      "round": 1
+    },
+    "customId": "xYKseuhc",
+    "status": {
+      "code": 110,
+      "description": "AET",
+      "type": "finished"
+    },
+    "winnerCode": 2,
+    "homeTeam": {
+      "name": "Fuerza Regia de Monterrey",
+      "slug": "fuerza-regia-de-monterrey",
+      "shortName": "Fuerza Regia",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 1329,
+      "venue": {
+        "city": {
+          "name": "Monterrey",
+          "country": {
+            "alpha2": "MX",
+            "alpha3": "MEX",
+            "name": "Mexico",
+            "slug": "mexico"
+          },
+          "id": 18869
+        },
+        "hidden": true,
+        "slug": "gimnasio-nuevo-leon-independiente",
+        "name": "Gimnasio Nuevo Leon Independiente",
+        "country": {
+          "alpha2": "MX",
+          "alpha3": "MEX",
+          "name": "Mexico",
+          "slug": "mexico"
+        },
+        "id": 27051,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "صالة الألعاب الرياضية نويفو ليون إندبندينتي",
+            "hi": "जिम्नासियो नुएवो लियोन इंडिपेंडेंट",
+            "bn": "নুয়েভো লিওন ইন্ডিপেন্ডিয়েন্ট জিমনেসিয়াম",
+            "ru": "Спортивный комплекс Nuevo Leon Independiente"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Gimnasio Nuevo Leon Independiente"
+        }
+      },
+      "nameCode": "FUE",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "MX",
+        "alpha3": "MEX",
+        "name": "Mexico",
+        "slug": "mexico"
+      },
+      "id": 89922,
+      "fullName": "Fuerza Regia de Monterrey",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffffff",
+        "secondary": "#000000",
+        "text": "#000000"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "فويرزا ريجيا دي مونتيري",
+          "ru": "Фуерза Реджиа"
+        },
+        "shortNameTranslation": {
+          "ar": "فويرزا ريجيا",
+          "bn": "ফুয়েরজা রেগিয়া",
+          "hi": "फ़ुएर्ज़ा रेगिया"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Mineros Zacatecas",
+      "slug": "mineros-zacatecas",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 530,
+      "venue": {
+        "city": {
+          "name": "Zacatecas",
+          "country": {
+            "alpha2": "MX",
+            "alpha3": "MEX",
+            "name": "Mexico",
+            "slug": "mexico"
+          },
+          "id": 21472
+        },
+        "hidden": true,
+        "slug": "gimnasio-marcelino-gonzalez",
+        "name": "Gimnasio Marcelino Gonzalez",
+        "country": {
+          "alpha2": "MX",
+          "alpha3": "MEX",
+          "name": "Mexico",
+          "slug": "mexico"
+        },
+        "id": 28205,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "صالة مارسيلينو غونزاليس الرياضية",
+            "hi": "जिमनासियो मार्सेलिनो गोंजालेज",
+            "bn": "মার্সেলিনো গঞ্জালেজ জিমনেসিয়াম",
+            "ru": "Спортивный комплекс Marcelino Gonzalez"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Gimnasio Marcelino Gonzalez"
+        }
+      },
+      "nameCode": "MIN",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "MX",
+        "alpha3": "MEX",
+        "name": "Mexico",
+        "slug": "mexico"
+      },
+      "id": 268454,
+      "fullName": "Mineros Zacatecas",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#b51212",
+        "secondary": "#a9abae",
+        "text": "#a9abae"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "مينيروس زاكاتيكاس",
+          "bn": "মিনারস জাকাটেকাস",
+          "hi": "मिनेरोस ज़ाकाटेकस",
+          "ru": "Минерос Сакатекас"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 100,
+      "display": 100,
+      "period1": 24,
+      "period2": 21,
+      "period3": 25,
+      "period4": 22,
+      "normaltime": 92,
+      "overtime": 8
+    },
+    "awayScore": {
+      "current": 101,
+      "display": 101,
+      "period1": 20,
+      "period2": 26,
+      "period3": 22,
+      "period4": 24,
+      "normaltime": 92,
+      "overtime": 9
+    },
+    "time": {
+      "periodLength": 600,
+      "overtimeLength": 300,
+      "totalPeriodCount": 4
+    },
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type",
+        "homeScore.normaltime",
+        "awayScore.normaltime"
+      ],
+      "changeTimestamp": 1789533260
+    },
+    "hasGlobalHighlights": false,
+    "hasEventPlayerStatistics": true,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16346148,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "mineros-zacatecas-fuerza-regia-de-monterrey",
+    "startTimestamp": 1789524900,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "seasonStatisticsType": "overall",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

@@ -1,0 +1,320 @@
+{
+  "case_id": "F2_penalties",
+  "event_id": 17090707,
+  "fetched_at_utc": "2026-09-29T15:53:34+00:00",
+  "source_endpoint": "/api/v1/event/17090707",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"45bbfc026a\"",
+    "date": "Tue, 29 Sep 2026 15:53:33 GMT"
+  },
+  "note": "Penaltılarla bitmiş; index source scan:2026-09-15",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "U20 FIFA World Cup, Women, Knockout stage",
+      "slug": "u20-womens-world-championship-knockout-stage",
+      "category": {
+        "name": "World",
+        "slug": "world",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 20,
+        "country": {},
+        "id": 1468,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "العالم",
+            "hi": "विश्व",
+            "bn": "বিশ্ব",
+            "ru": "Мир"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "U-20 Women's World Championship",
+        "slug": "u20-world-championship-women",
+        "primaryColorHex": "#067f30",
+        "secondaryColorHex": "#00a935",
+        "category": {
+          "name": "World",
+          "slug": "world",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 20,
+          "country": {},
+          "id": 1468,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "العالم",
+              "hi": "विश्व",
+              "bn": "বিশ্ব",
+              "ru": "Мир"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 9230,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "showBanner": true,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 804,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كأس العالم للسيدات تحت 20 سنة",
+            "bn": "আন্ডার20 উইমেনস ওয়ার্ল্ড চ্যাম্পিয়নশিপ",
+            "hi": "U-20 वूमेन्स वर्ल्ड चैंपियनशिप",
+            "ru": "Чемпионат мира среди женщин до 20 лет"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "isLive": false,
+      "id": 13316,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "كأس العالم تحت 20 سنة لكرة القدم للسيدات، مرحلة الإقصاء",
+          "bn": "আন্ডার20 ফিফা ওয়ার্ল্ডকাপ, উইমেন, নকআউট স্টেজ",
+          "hi": "U20 फीफा वर्ल्ड कप, वूमेन, नॉकआउट स्टेज",
+          "ru": "до 20 лет, Кубок мира ФИФА, среди женщин, стадия плей-офф"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "U20 FIFA World Cup, Women 2026",
+      "year": "2026",
+      "editor": false,
+      "seasonCoverageInfo": {
+        "editorCoverageLevel": 1
+      },
+      "id": 95169
+    },
+    "roundInfo": {
+      "round": 5,
+      "name": "Round of 16",
+      "slug": "round-of-16",
+      "cupRoundType": 8
+    },
+    "customId": "qorsAor",
+    "status": {
+      "code": 120,
+      "description": "AP",
+      "type": "finished"
+    },
+    "winnerCode": 1,
+    "homeTeam": {
+      "name": "Brazil U20",
+      "slug": "brazil-u20",
+      "shortName": "Brazil U20",
+      "gender": "F",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 7863,
+      "manager": {
+        "name": "Camilla Orlando",
+        "slug": "camilla-orlando",
+        "shortName": "C. Orlando",
+        "country": {
+          "alpha2": "BR",
+          "alpha3": "BRA",
+          "name": "Brazil",
+          "slug": "brazil"
+        },
+        "id": 804329,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كاميلا أورلاندو",
+            "ru": "Камилла Орландо"
+          },
+          "shortNameTranslation": {
+            "ar": "ك. أورلاندو",
+            "ru": "К. Орландо"
+          }
+        }
+      },
+      "nameCode": "BRA",
+      "class": 1,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "BR",
+        "alpha3": "BRA",
+        "name": "Brazil",
+        "slug": "brazil"
+      },
+      "id": 43216,
+      "fullName": "Brazil U20",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffff00",
+        "secondary": "#009933",
+        "text": "#009933"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "البرازيل تحت 20",
+          "hi": "ब्राज़ील U20",
+          "ru": "Бразилия U20"
+        },
+        "shortNameTranslation": {
+          "ar": "البرازيل تحت 20"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "USA U20",
+      "slug": "usa-u20",
+      "shortName": "USA U20",
+      "gender": "F",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 1723,
+      "manager": {
+        "name": "Vicky Jepson",
+        "slug": "vicky-jepson",
+        "shortName": "V. Jepson",
+        "country": {
+          "alpha2": "EN",
+          "alpha3": "ENG",
+          "name": "England",
+          "slug": "england"
+        },
+        "id": 811061,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "فيكي جيبسون",
+            "ru": "Вики Джепсон"
+          },
+          "shortNameTranslation": {
+            "ar": "ف. جيبسون",
+            "ru": "В. Джепсон"
+          }
+        }
+      },
+      "nameCode": "UUU",
+      "class": 1,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "US",
+        "alpha3": "USA",
+        "name": "USA",
+        "slug": "usa"
+      },
+      "id": 43225,
+      "fullName": "USA U20",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffffff",
+        "secondary": "#ff0000",
+        "text": "#ff0000"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "الولايات المتحدة تحت 20",
+          "hi": "यूनाइटेड स्टेट्स U20",
+          "ru": "США U20"
+        },
+        "shortNameTranslation": {
+          "ar": "الولايات المتحدة تحت 20"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 6,
+      "display": 1,
+      "period1": 0,
+      "period2": 1,
+      "normaltime": 1,
+      "extra1": 0,
+      "extra2": 0,
+      "overtime": 0,
+      "penalties": 5
+    },
+    "awayScore": {
+      "current": 5,
+      "display": 1,
+      "period1": 0,
+      "period2": 1,
+      "normaltime": 1,
+      "extra1": 0,
+      "extra2": 0,
+      "overtime": 0,
+      "penalties": 4
+    },
+    "time": {
+      "currentPeriodStartTimestamp": 1789571688,
+      "lastPeriodEndTimestamp": 1789563607
+    },
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type",
+        "homeScore.extra1",
+        "homeScore.extra2",
+        "awayScore.extra1",
+        "awayScore.extra2"
+      ],
+      "changeTimestamp": 1789573621
+    },
+    "hasGlobalHighlights": true,
+    "hasXg": true,
+    "hasEventPlayerStatistics": true,
+    "hasEventPlayerHeatMap": true,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17090707,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "slug": "usa-u20-brazil-u20",
+    "currentPeriodStartTimestamp": 1789571688,
+    "startTimestamp": 1789563600,
+    "finalResultOnly": false,
+    "feedLocked": true,
+    "cupMatchesInRound": 1,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "national"
+      ],
+      "level": [
+        "pro",
+        "youth"
+      ],
+      "gender": [
+        "F"
+      ]
+    }
+  },
+  "error": null
+}

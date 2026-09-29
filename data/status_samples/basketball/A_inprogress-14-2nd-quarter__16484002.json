@@ -1,0 +1,347 @@
+{
+  "case_id": "A_inprogress-14-2nd-quarter",
+  "event_id": 16484002,
+  "fetched_at_utc": "2026-09-29T15:51:40+00:00",
+  "source_endpoint": "/api/v1/event/16484002",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"0cc57c0288\"",
+    "date": "Tue, 29 Sep 2026 15:51:40 GMT"
+  },
+  "note": "live snapshot 2026-09-29T15:51:18+00:00",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "Korisliiga",
+      "slug": "korisliiga",
+      "category": {
+        "name": "Finland",
+        "slug": "finland",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "FI",
+          "alpha3": "FIN",
+          "name": "Finland",
+          "slug": "finland"
+        },
+        "id": 149,
+        "flag": "finland",
+        "alpha2": "FI",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "فنلندا",
+            "ru": "Финляндия"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Korisliiga",
+        "slug": "korisliiga",
+        "primaryColorHex": "#003e77",
+        "secondaryColorHex": "#ff7a00",
+        "category": {
+          "name": "Finland",
+          "slug": "finland",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "FI",
+            "alpha3": "FIN",
+            "name": "Finland",
+            "slug": "finland"
+          },
+          "id": 149,
+          "flag": "finland",
+          "alpha2": "FI",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "فنلندا",
+              "ru": "Финляндия"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 358,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 226,
+        "hasEventPlayerStatistics": false,
+        "hasBoxScore": true,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "الدوري الفنلندي لكرة السلة",
+            "ru": "Корислига"
+          },
+          "shortNameTranslation": {}
+        },
+        "hasRating": true,
+        "hasLiveRating": true
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 1,
+      "isLive": false,
+      "id": 1069,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "دوري كرة السلة الفنلندي",
+          "ru": "Лига Корислиига"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Korisliiga 26/27",
+      "year": "26/27",
+      "editor": false,
+      "id": 98084
+    },
+    "roundInfo": {
+      "round": 1
+    },
+    "customId": "lFcsuWx",
+    "status": {
+      "code": 14,
+      "description": "2nd quarter",
+      "type": "inprogress"
+    },
+    "homeTeam": {
+      "name": "KTP Basket Kotka",
+      "slug": "ktp-basket-kotka",
+      "shortName": "KTP Basket",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 379,
+      "venue": {
+        "city": {
+          "name": "Kotka",
+          "country": {
+            "alpha2": "FI",
+            "alpha3": "FIN",
+            "name": "Finland",
+            "slug": "finland"
+          },
+          "id": 21378
+        },
+        "hidden": true,
+        "slug": "steveco-areena",
+        "name": "Steveco-areena",
+        "capacity": 1700,
+        "country": {
+          "alpha2": "FI",
+          "alpha3": "FIN",
+          "name": "Finland",
+          "slug": "finland"
+        },
+        "id": 6850,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أرينا ستيفكو",
+            "hi": "स्टीवको-एरिना",
+            "bn": "স্টিভেকো- এরিনা",
+            "ru": "Арена Steveco"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Steveco-areena",
+          "capacity": 1700
+        }
+      },
+      "nameCode": "KBK",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "FI",
+        "alpha3": "FIN",
+        "name": "Finland",
+        "slug": "finland"
+      },
+      "id": 6511,
+      "fullName": "KTP Basket Kotka",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#006600",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "كي تي بي باسكت كوتكا",
+          "ru": "Баскет Котка"
+        },
+        "shortNameTranslation": {
+          "ar": "كي تي بي باسكت",
+          "bn": "কেটিপি বাস্কেট",
+          "hi": "केटीपी बास्केट"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Bisons Loimaa",
+      "slug": "bisons-loimaa",
+      "shortName": "Bisons",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 259,
+      "venue": {
+        "city": {
+          "name": "Loimaa",
+          "country": {
+            "alpha2": "FI",
+            "alpha3": "FIN",
+            "name": "Finland",
+            "slug": "finland"
+          },
+          "id": 19214
+        },
+        "hidden": true,
+        "slug": "loimaan-liikuntahalli",
+        "name": "Loimaan liikuntahalli",
+        "country": {
+          "alpha2": "FI",
+          "alpha3": "FIN",
+          "name": "Finland",
+          "slug": "finland"
+        },
+        "id": 6860,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "صالة لويمان الرياضية",
+            "hi": "लोइमान लिकुंताहल्ली",
+            "bn": "লোইমান লিকুন্তহল্লি",
+            "ru": "Спортивный комплекс Loimaa"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Loimaan liikuntahalli"
+        }
+      },
+      "nameCode": "BIS",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "FI",
+        "alpha3": "FIN",
+        "name": "Finland",
+        "slug": "finland"
+      },
+      "id": 57319,
+      "fullName": "Bisons Loimaa",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "بايسونس لويما",
+          "ru": "Бизонз Лоайма"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 20,
+      "display": 20,
+      "period1": 20
+    },
+    "awayScore": {
+      "current": 17,
+      "display": 17,
+      "period1": 17
+    },
+    "time": {
+      "periodLength": 600,
+      "overtimeLength": 300,
+      "totalPeriodCount": 4
+    },
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "awayScore.current",
+        "awayScore.display",
+        "awayScore.period1",
+        "time.played",
+        "time.playedLastUpdated"
+      ],
+      "changeTimestamp": 1790697056
+    },
+    "hasGlobalHighlights": false,
+    "hasEventPlayerStatistics": true,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16484002,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "bisons-loimaa-ktp-basket-kotka",
+    "startTimestamp": 1790695800,
+    "lastPeriod": "period2",
+    "finalResultOnly": false,
+    "hasBet365LiveStream": true,
+    "bet365ExcludedCountryCodes": [
+      "AN",
+      "CU",
+      "FI",
+      "IR",
+      "KP",
+      "SY",
+      "VE",
+      "GR",
+      "RU",
+      "CH",
+      "CA"
+    ],
+    "feedLocked": false,
+    "seasonStatisticsType": "overall",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

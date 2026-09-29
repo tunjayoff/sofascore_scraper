@@ -1,0 +1,296 @@
+{
+  "case_id": "A_canceled-90-abandoned",
+  "event_id": 17100305,
+  "fetched_at_utc": "2026-09-29T15:54:40+00:00",
+  "source_endpoint": "/api/v1/event/17100305",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"41b457acd3\"",
+    "date": "Tue, 29 Sep 2026 15:54:40 GMT"
+  },
+  "note": "index source scan:2026-09-15",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "Club Friendlies",
+      "slug": "club-friendlies",
+      "category": {
+        "name": "International",
+        "slug": "international",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 11,
+        "country": {},
+        "id": 103,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دولي",
+            "hi": "अंतर्राष्ट्रीय",
+            "bn": "আন্তর্জাতিক",
+            "ru": "Международные"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Club Friendly Games",
+        "slug": "club-friendly-games",
+        "primaryColorHex": "#151922",
+        "secondaryColorHex": "#ea181f",
+        "category": {
+          "name": "International",
+          "slug": "international",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 11,
+          "country": {},
+          "id": 103,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دولي",
+              "hi": "अंतर्राष्ट्रीय",
+              "bn": "আন্তর্জাতিক",
+              "ru": "Международные"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 723,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 1195,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "ক্লাব ফ্রেন্ডলি গেমস",
+            "ar": "مباريات ودية للأندية",
+            "hi": "क्लब फ्रेंडली गेम्स",
+            "ru": "Товарищеские матчи клубов"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "isLive": false,
+      "id": 4788,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "hi": "क्लब फ्रेंडलीज",
+          "ar": "مباريات ودية للأندية",
+          "bn": "ক্লাব ফ্রেন্ডলিনেস",
+          "ru": "Дружеские матчи"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Club Friendly Games 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 87164
+    },
+    "customId": "LYvbsYLTb",
+    "status": {
+      "code": 90,
+      "description": "Abandoned",
+      "type": "canceled"
+    },
+    "homeTeam": {
+      "name": "Illiabum",
+      "slug": "illiabum",
+      "shortName": "Illiabum",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 121,
+      "venue": {
+        "city": {
+          "name": "Ilhavo",
+          "country": {
+            "alpha2": "PT",
+            "alpha3": "PRT",
+            "name": "Portugal",
+            "slug": "portugal"
+          },
+          "id": 23243
+        },
+        "hidden": true,
+        "slug": "capitao-adriano-nordeste",
+        "name": "Capitao Adriano Nordeste",
+        "country": {
+          "alpha2": "PT",
+          "alpha3": "PRT",
+          "name": "Portugal",
+          "slug": "portugal"
+        },
+        "id": 34547,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "الكابتن أدريانو نورديستي",
+            "hi": "कैपिटाओ एड्रियानो नॉर्डेस्ते",
+            "bn": "ক্যাপ্টেন আদ্রিয়ানো নরদেস্তে",
+            "ru": "Спортивный комплекс Capitao Adriano Nordeste"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Capitao Adriano Nordeste"
+        }
+      },
+      "nameCode": "ILB",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "PT",
+        "alpha3": "PRT",
+        "name": "Portugal",
+        "slug": "portugal"
+      },
+      "id": 177436,
+      "fullName": "Illiabum",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#951c7c",
+        "secondary": "#9f9e9d",
+        "text": "#9f9e9d"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "إليابوم",
+          "bn": "ইলিয়াবাম",
+          "hi": "इलियाबम",
+          "ru": "Иллиабум"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "SC Marinhense",
+      "slug": "sc-marinhense",
+      "shortName": "Marinhense",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 8,
+      "nameCode": "MAR",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "PT",
+        "alpha3": "PRT",
+        "name": "Portugal",
+        "slug": "portugal"
+      },
+      "id": 234348,
+      "fullName": "SC Marinhense",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "إس سي مارينهينسي",
+          "ru": "СК Мариньенсе"
+        },
+        "shortNameTranslation": {
+          "ar": "مارينهينسي",
+          "bn": "মেরিনহেনস",
+          "hi": "मैरिनहेंस",
+          "ru": "Мариньенсе"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 0
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 0
+    },
+    "coverage": -1,
+    "time": {
+      "played": 0,
+      "periodLength": 600,
+      "overtimeLength": 300,
+      "totalPeriodCount": 4
+    },
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "homeScore.current",
+        "homeScore.display",
+        "homeScore.period1",
+        "awayScore.current",
+        "awayScore.display",
+        "awayScore.period1",
+        "time.played",
+        "time.playedLastUpdated",
+        "time.periodLength",
+        "time.overtimeLength",
+        "time.totalPeriodCount",
+        "providerLock.status"
+      ],
+      "changeTimestamp": 1789543759
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17100305,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "sc-marinhense-illiabum",
+    "startTimestamp": 1789498800,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

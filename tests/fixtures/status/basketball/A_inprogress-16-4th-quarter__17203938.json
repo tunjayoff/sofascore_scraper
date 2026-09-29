@@ -1,0 +1,43 @@
+{
+  "case_id": "A_inprogress-16-4th-quarter",
+  "event_id": 17203938,
+  "fetched_at_utc": "2026-09-29T15:02:59+00:00",
+  "source_file": "data/status_samples/basketball/A_inprogress-16-4th-quarter__17203938.json",
+  "status": {
+    "code": 16,
+    "description": "4th quarter",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 48,
+    "display": 48,
+    "period1": 10,
+    "period2": 18,
+    "period3": 13,
+    "period4": 7
+  },
+  "awayScore": {
+    "current": 58,
+    "display": 58,
+    "period1": 21,
+    "period2": 8,
+    "period3": 17,
+    "period4": 12
+  },
+  "startTimestamp": 1790688600,
+  "time": {
+    "played": 2249,
+    "periodLength": 600,
+    "overtimeLength": 300,
+    "totalPeriodCount": 4,
+    "clockRunning": false,
+    "clockRunningLastUpdated": "2026-09-29T15:01:13+00:00"
+  },
+  "changes": {
+    "changes": [
+      "time.played",
+      "time.playedLastUpdated"
+    ],
+    "changeTimestamp": 1790694133
+  }
+}

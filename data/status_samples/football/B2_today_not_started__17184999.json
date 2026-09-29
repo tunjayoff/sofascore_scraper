@@ -1,0 +1,251 @@
+{
+  "case_id": "B2_today_not_started",
+  "event_id": 17184999,
+  "fetched_at_utc": "2026-09-29T15:53:06+00:00",
+  "source_endpoint": "/api/v1/event/17184999",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"6b6bf8792a\"",
+    "date": "Tue, 29 Sep 2026 15:53:06 GMT"
+  },
+  "note": "Bugün, henüz başlamamış; index source scan:2026-09-29",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "U18 Friendly Games",
+      "slug": "u18-friendly-games",
+      "category": {
+        "name": "World",
+        "slug": "world",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 20,
+        "country": {},
+        "id": 1468,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "العالم",
+            "hi": "विश्व",
+            "bn": "বিশ্ব",
+            "ru": "Мир"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "U18 Friendly Games",
+        "slug": "u18-friendly-games",
+        "primaryColorHex": "#25497d",
+        "secondaryColorHex": "#d38f1d",
+        "category": {
+          "name": "World",
+          "slug": "world",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 20,
+          "country": {},
+          "id": 1468,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "العالم",
+              "hi": "विश्व",
+              "bn": "বিশ্ব",
+              "ru": "Мир"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 1567,
+        "hasRounds": false,
+        "hasPerformanceGraphFeature": false,
+        "showBanner": true,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 857,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "مباريات ودية تحت 18 سنة",
+            "hi": "अंडर-18 फ्रेंडली गेम्स",
+            "bn": "আন্ডার18 ফ্রেন্ডলি গেমস",
+            "ru": "Товарищеские игры до 18 лет"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 3,
+      "isLive": false,
+      "id": 5896,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "hi": "अंडर-18 फ्रेंडली गेम्स",
+          "ar": "مباريات ودية تحت 18 سنة",
+          "bn": "আন্ডার18 ফ্রেন্ডলি গেমস",
+          "ru": "Товарищеские игры U18"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "U18 Friendly Games 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 90143
+    },
+    "customId": "YejszMac",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "homeTeam": {
+      "name": "Portugal U18",
+      "slug": "portugal-u18",
+      "shortName": "Portugal U18",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 3175,
+      "manager": {
+        "name": "Bino",
+        "slug": "bino",
+        "shortName": "Bino",
+        "country": {
+          "alpha2": "PT",
+          "alpha3": "PRT",
+          "name": "Portugal",
+          "slug": "portugal"
+        },
+        "id": 795763,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "بينو",
+            "ru": "Бино"
+          },
+          "shortNameTranslation": {
+            "ar": "بينو"
+          }
+        }
+      },
+      "nameCode": "POR",
+      "class": 1,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "PT",
+        "alpha3": "PRT",
+        "name": "Portugal",
+        "slug": "portugal"
+      },
+      "id": 22748,
+      "fullName": "Portugal U18",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#cc0000",
+        "secondary": "#66cc66",
+        "text": "#66cc66"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "البرتغال تحت 18",
+          "ru": "Португалия"
+        },
+        "shortNameTranslation": {
+          "ar": "البرتغال تحت 18",
+          "bn": "পর্তুগাল",
+          "hi": "पुर्तगाल"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Uzbekistan U18",
+      "slug": "uzbekistan-u18",
+      "shortName": "Uzbekistan U18",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 371,
+      "nameCode": "UZB",
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "UZ",
+        "alpha3": "UZB",
+        "name": "Uzbekistan",
+        "slug": "uzbekistan"
+      },
+      "id": 251874,
+      "fullName": "Uzbekistan U18",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#0080ff",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "أوزبكستان تحت 18",
+          "ru": "Узбекистан U18"
+        },
+        "shortNameTranslation": {
+          "ar": "أوزبكستان تحت 18",
+          "ru": "Узбекистан U18"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "coverage": -1,
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17184999,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "slug": "uzbekistan-u18-portugal-u18",
+    "startTimestamp": 1790702100,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "national"
+      ],
+      "level": [
+        "pro",
+        "youth"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

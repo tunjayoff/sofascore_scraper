@@ -1,0 +1,242 @@
+{
+  "case_id": "B9_interrupted",
+  "event_id": 17148292,
+  "fetched_at_utc": "2026-09-29T15:53:31+00:00",
+  "source_endpoint": "/api/v1/event/17148292",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"91ae61fc75\"",
+    "date": "Tue, 29 Sep 2026 15:53:30 GMT"
+  },
+  "note": "Yarıda kalmış: interrupted; index source scan:2026-09-20",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "Club Friendly Games",
+      "slug": "club-friendly-games",
+      "category": {
+        "name": "World",
+        "slug": "world",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 20,
+        "country": {},
+        "id": 1468,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "العالم",
+            "hi": "विश्व",
+            "bn": "বিশ্ব",
+            "ru": "Мир"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Club Friendly Games",
+        "slug": "club-friendly-games",
+        "primaryColorHex": "#25497d",
+        "secondaryColorHex": "#d38f1d",
+        "category": {
+          "name": "World",
+          "slug": "world",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 20,
+          "country": {},
+          "id": 1468,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "العالم",
+              "hi": "विश्व",
+              "bn": "বিশ্ব",
+              "ru": "Мир"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 40214,
+        "hasRounds": false,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 853,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "ক্লাব ফ্রেন্ডলি গেমস",
+            "ar": "مباريات ودية للأندية",
+            "hi": "क्लब फ्रेंडली गेम्स",
+            "ru": "Товарищеские игры клубов"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 3,
+      "isLive": false,
+      "id": 86,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "hi": "क्लब फ्रेंडली गेम्स",
+          "ar": "مباريات ودية للأندية",
+          "bn": "ক্লাব ফ্রেন্ডলি গেমস",
+          "ru": "Кубок дружеских игр"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Club Friendly Games 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 87177
+    },
+    "customId": "tCQgsrmxh",
+    "status": {
+      "code": 80,
+      "description": "Interrupted",
+      "type": "interrupted"
+    },
+    "homeTeam": {
+      "name": "Anstrengung United",
+      "slug": "anstrengung-united",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 237,
+      "nameCode": "AUN",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "IN",
+        "alpha3": "IND",
+        "name": "India",
+        "slug": "india"
+      },
+      "id": 930617,
+      "fullName": "Anstrengung United",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "أنتسرينغ يونيتد",
+          "ru": "Анстренгунг Юнайтед"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Oscar Foundation FC",
+      "slug": "oscar-foundation-fc",
+      "shortName": "Oscar Foundation FC",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 251,
+      "nameCode": "OFU",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "IN",
+        "alpha3": "IND",
+        "name": "India",
+        "slug": "india"
+      },
+      "id": 853868,
+      "fullName": "Oscar Foundation FC",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "أوسكار فاونديشن إف سي",
+          "ru": "ФК Оскар Фаундейшн"
+        },
+        "shortNameTranslation": {
+          "ar": "أوسكار فاونديشن إف سي",
+          "ru": "ФК Оскар"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 0,
+      "normaltime": 0
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 0,
+      "normaltime": 0
+    },
+    "coverage": -1,
+    "time": {
+      "periodLength": 2700,
+      "overtimeLength": 900,
+      "totalPeriodCount": 2,
+      "currentPeriodStartTimestamp": 1790050130
+    },
+    "changes": {
+      "changes": [
+        "providerLock.status",
+        "providerLock.statusSource"
+      ],
+      "changeTimestamp": 1790056912
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17148292,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "slug": "anstrengung-united-oscar-foundation-fc",
+    "currentPeriodStartTimestamp": 1790050130,
+    "startTimestamp": 1789977600,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

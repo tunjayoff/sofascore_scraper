@@ -1,0 +1,261 @@
+{
+  "case_id": "K1_overtime_finished",
+  "event_id": 17066086,
+  "fetched_at_utc": "2026-09-29T15:55:25+00:00",
+  "source_endpoint": "/api/v1/event/17066086",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"f113314712\"",
+    "date": "Tue, 29 Sep 2026 15:55:25 GMT"
+  },
+  "note": "Uzatmalı bitmiş; index source scan:2026-09-15",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "LDB, Fase Final",
+      "slug": "ldb-fase-final",
+      "category": {
+        "name": "Brazil",
+        "slug": "brazil",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "BR",
+          "alpha3": "BRA",
+          "name": "Brazil",
+          "slug": "brazil"
+        },
+        "id": 263,
+        "flag": "brazil",
+        "alpha2": "BR",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "البرازيل",
+            "ru": "Бразилия"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "LDB",
+        "slug": "ldb",
+        "primaryColorHex": "#004f9f",
+        "secondaryColorHex": "#fecc00",
+        "category": {
+          "name": "Brazil",
+          "slug": "brazil",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 263,
+          "flag": "brazil",
+          "alpha2": "BR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "البرازيل",
+              "ru": "Бразилия"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 185,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 22587,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دوري إل دي بي (LDB)",
+            "ru": "LDB"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "id": 199517
+    },
+    "season": {
+      "name": "LDB 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 96901
+    },
+    "customId": "rvucstvuc",
+    "status": {
+      "code": 100,
+      "description": "Ended",
+      "type": "finished"
+    },
+    "winnerCode": 1,
+    "homeTeam": {
+      "name": "Minas Tênis Clube U22",
+      "slug": "minas-tenis-clube-u22",
+      "shortName": "Minas U22",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 219,
+      "nameCode": "MTC",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "BR",
+        "alpha3": "BRA",
+        "name": "Brazil",
+        "slug": "brazil"
+      },
+      "id": 298518,
+      "fullName": "Minas Tênis Clube U22",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#004478",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ميناس تينيس كلوب تحت 22",
+          "ru": "Минус Тенис Клуб U22"
+        },
+        "shortNameTranslation": {
+          "ar": "ميناس تحت 22",
+          "ru": "Минус U22"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Paulistano U22",
+      "slug": "paulistano-sp-u22",
+      "shortName": "Paulistano U22",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 174,
+      "nameCode": "PAU",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "BR",
+        "alpha3": "BRA",
+        "name": "Brazil",
+        "slug": "brazil"
+      },
+      "id": 298517,
+      "fullName": "Paulistano U22",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#dd0000",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "باوليستانو تحت 22",
+          "ru": "Паулистано U22"
+        },
+        "shortNameTranslation": {
+          "ar": "باوليستانو تحت 22",
+          "ru": "Паулистано U22"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 78,
+      "display": 78,
+      "period1": 16,
+      "period2": 19,
+      "period3": 11,
+      "period4": 18,
+      "normaltime": 64,
+      "overtime": 14
+    },
+    "awayScore": {
+      "current": 70,
+      "display": 70,
+      "period1": 20,
+      "period2": 18,
+      "period3": 21,
+      "period4": 5,
+      "normaltime": 64,
+      "overtime": 6
+    },
+    "time": {
+      "periodLength": 600,
+      "overtimeLength": 300,
+      "totalPeriodCount": 4,
+      "clockRunning": false,
+      "clockRunningLastUpdated": "2026-09-15T22:42:03+00:00"
+    },
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type",
+        "homeScore.normaltime",
+        "awayScore.normaltime"
+      ],
+      "changeTimestamp": 1789512242
+    },
+    "hasGlobalHighlights": false,
+    "hasEventPlayerStatistics": true,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17066086,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "minas-tenis-clube-u22-paulistano-u22",
+    "startTimestamp": 1789504200,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

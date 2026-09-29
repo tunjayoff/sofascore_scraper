@@ -1,0 +1,240 @@
+{
+  "case_id": "B7_postponed",
+  "event_id": 16623552,
+  "fetched_at_utc": "2026-09-29T15:55:09+00:00",
+  "source_endpoint": "/api/v1/event/16623552",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"0529557029\"",
+    "date": "Tue, 29 Sep 2026 15:55:09 GMT"
+  },
+  "note": "Ertelenmiş; index source scan:2026-09-15",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "MPBL",
+      "slug": "mpbl",
+      "category": {
+        "name": "Philippines",
+        "slug": "philippines",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "PH",
+          "alpha3": "PHL",
+          "name": "Philippines",
+          "slug": "philippines"
+        },
+        "id": 539,
+        "flag": "philippines",
+        "alpha2": "PH",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "الفلبين",
+            "ru": "Филиппины"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "MPBL",
+        "slug": "mpbl",
+        "category": {
+          "name": "Philippines",
+          "slug": "philippines",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "PH",
+            "alpha3": "PHL",
+            "name": "Philippines",
+            "slug": "philippines"
+          },
+          "id": 539,
+          "flag": "philippines",
+          "alpha2": "PH",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "الفلبين",
+              "ru": "Филиппины"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 176,
+        "hasRounds": false,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 34113,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "الدوري الممتاز لكرة السلة (مپبل)",
+            "ru": "MPBL"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 1,
+      "isLive": false,
+      "id": 66714,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "MPBL",
+          "ru": "MPBL"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "MPBL 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 92986
+    },
+    "roundInfo": {
+      "round": 1
+    },
+    "customId": "PNpcsBFce",
+    "status": {
+      "code": 60,
+      "description": "Postponed",
+      "type": "postponed"
+    },
+    "homeTeam": {
+      "name": "Quezon Huskers",
+      "slug": "quezon-huskers",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 261,
+      "nameCode": "QUE",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "PH",
+        "alpha3": "PHL",
+        "name": "Philippines",
+        "slug": "philippines"
+      },
+      "id": 506526,
+      "fullName": "Quezon Huskers",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "كويزون هاسكرز",
+          "ru": "Кезон Хаскерс"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Rizal Xentromall Golden Coolers",
+      "slug": "rizal-crusaders",
+      "shortName": "Rizal Golden Coolers",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 111,
+      "nameCode": "RCR",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "PH",
+        "alpha3": "PHL",
+        "name": "Philippines",
+        "slug": "philippines"
+      },
+      "id": 289440,
+      "fullName": "Rizal Xentromall Golden Coolers",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#002b5c",
+        "secondary": "#ff5700",
+        "text": "#ff5700"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ريزال زينترومول غولدن كولرز",
+          "ru": "Ризал Ксентромолл Голден Кулеры"
+        },
+        "shortNameTranslation": {
+          "ar": "ريزال غولدن كولرز",
+          "ru": "Ризал Голден Кулеры"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changes": [
+        "providerLock.status",
+        "providerLock.statusSource",
+        "status.code",
+        "status.description",
+        "status.type"
+      ],
+      "changeTimestamp": 1789453925
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16623552,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "quezon-huskers-rizal-xentromall-golden-coolers",
+    "startTimestamp": 1789470000,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

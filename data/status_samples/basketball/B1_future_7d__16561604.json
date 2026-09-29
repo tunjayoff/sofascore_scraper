@@ -1,0 +1,410 @@
+{
+  "case_id": "B1_future_7d",
+  "event_id": 16561604,
+  "fetched_at_utc": "2026-09-29T15:54:52+00:00",
+  "source_endpoint": "/api/v1/event/16561604",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"8f01bf2966\"",
+    "date": "Tue, 29 Sep 2026 15:54:52 GMT"
+  },
+  "note": "Gelecek maç (7+ gün sonra); index source scan:2026-10-06",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "Eurocup, Group A",
+      "slug": "eurocup-group-a",
+      "category": {
+        "name": "International",
+        "slug": "international",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 11,
+        "country": {},
+        "id": 103,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دولي",
+            "hi": "अंतर्राष्ट्रीय",
+            "bn": "আন্তর্জাতিক",
+            "ru": "Международные"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Eurocup",
+        "slug": "eurocup",
+        "primaryColorHex": "#0072cd",
+        "secondaryColorHex": "#0072cd",
+        "category": {
+          "name": "International",
+          "slug": "international",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 11,
+          "country": {},
+          "id": 103,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دولي",
+              "hi": "अंतर्राष्ट्रीय",
+              "bn": "আন্তর্জাতিক",
+              "ru": "Международные"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 6403,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 141,
+        "hasEventPlayerStatistics": false,
+        "hasBoxScore": true,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كأس أوروبا",
+            "hi": "यूरोकप",
+            "bn": "ইউরোকাপ",
+            "ru": "Еврокубок"
+          },
+          "shortNameTranslation": {}
+        },
+        "hasRating": true,
+        "hasLiveRating": true
+      },
+      "priority": 148,
+      "isGroup": true,
+      "groupName": "Group A",
+      "groupSign": "A",
+      "competitionType": 1,
+      "isLive": false,
+      "id": 2560,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "hi": "यूरोकप, ग्रुप ए",
+          "ar": "كأس أوروبا، المجموعة أ",
+          "bn": "ইউরোকাপ, গ্রুপ এ",
+          "ru": "Еврокубок, Группа A"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Eurocup 26/27",
+      "year": "26/27",
+      "editor": false,
+      "id": 98669
+    },
+    "roundInfo": {
+      "round": 2
+    },
+    "customId": "YHcsHIc",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "venue": {
+      "city": {
+        "name": "Ljubljana",
+        "country": {
+          "alpha2": "SI",
+          "alpha3": "SVN",
+          "name": "Slovenia",
+          "slug": "slovenia"
+        },
+        "id": 19181
+      },
+      "venueCoordinates": {
+        "latitude": 46.081371,
+        "longitude": 14.52146
+      },
+      "hidden": true,
+      "slug": "arena-sto-ice",
+      "name": "Arena Stožice",
+      "capacity": 12480,
+      "country": {
+        "alpha2": "SI",
+        "alpha3": "SVN",
+        "name": "Slovenia",
+        "slug": "slovenia"
+      },
+      "id": 6728,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "أرينا ستوزيتشي",
+          "hi": "एरिना स्टोजिस",
+          "bn": "এরিনা স্টোজিস",
+          "ru": "Арена Stožice"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Arena Stožice",
+        "capacity": 12480
+      }
+    },
+    "homeTeam": {
+      "name": "KK Cedevita Olimpija",
+      "slug": "kk-cedevita-olimpija",
+      "shortName": "Cedevita Olimpija",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 5081,
+      "manager": {
+        "name": "Zvezdan Mitrović",
+        "slug": "zvezdan-mitrovic",
+        "shortName": "Z. Mitrović",
+        "country": {
+          "alpha2": "ME",
+          "alpha3": "MNE",
+          "name": "Montenegro",
+          "slug": "montenegro"
+        },
+        "id": 795415,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "زفزدان ميتروفيتش",
+            "ru": "Звездан Митрович"
+          },
+          "shortNameTranslation": {
+            "ar": "ز. ميتروفيتش",
+            "ru": "З. Митрович"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Ljubljana",
+          "country": {
+            "alpha2": "SI",
+            "alpha3": "SVN",
+            "name": "Slovenia",
+            "slug": "slovenia"
+          },
+          "id": 19181
+        },
+        "venueCoordinates": {
+          "latitude": 46.081371,
+          "longitude": 14.52146
+        },
+        "hidden": true,
+        "slug": "arena-sto-ice",
+        "name": "Arena Stožice",
+        "capacity": 12480,
+        "country": {
+          "alpha2": "SI",
+          "alpha3": "SVN",
+          "name": "Slovenia",
+          "slug": "slovenia"
+        },
+        "id": 6728,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أرينا ستوزيتشي",
+            "hi": "एरिना स्टोजिस",
+            "bn": "এরিনা স্টোজিস",
+            "ru": "Арена Stožice"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Arena Stožice",
+          "capacity": 12480
+        }
+      },
+      "nameCode": "CEO",
+      "class": 1,
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "SI",
+        "alpha3": "SVN",
+        "name": "Slovenia",
+        "slug": "slovenia"
+      },
+      "id": 6648,
+      "fullName": "KK Cedevita Olimpija",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#007a3f",
+        "secondary": "#f58233",
+        "text": "#f58233"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "كي كي سيديفيتا أوليمبيا",
+          "ru": "Олимпия Любляна"
+        },
+        "shortNameTranslation": {
+          "ar": "سيديفيتا أوليمبيا",
+          "bn": "কেদিভিটা অলিম্পিয়াক্সা",
+          "hi": "सेडेविटा ओलम्पिया"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Hapoel Jerusalem BC",
+      "slug": "hapoel-jerusalem-bc",
+      "shortName": "Hapoel Jerusalem",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 2198,
+      "manager": {
+        "name": "Saša Obradović",
+        "slug": "sasa-obradovic",
+        "shortName": "S. Obradović",
+        "country": {
+          "alpha2": "RS",
+          "alpha3": "SRB",
+          "name": "Serbia",
+          "slug": "serbia"
+        },
+        "id": 797516,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ساشا أوبراودوفيتش",
+            "bn": "সাশা ওব্রাদোভিচ",
+            "hi": "साशा ओब्राडोविक",
+            "ru": "Саша Обрадович"
+          },
+          "shortNameTranslation": {
+            "ar": "س. أوبراودوفيتش",
+            "hi": "एस. ओब्राडोविक",
+            "bn": "এস. ওব্রাডোভিচ",
+            "ru": "С. Обрадович"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Jerusalem",
+          "country": {
+            "alpha2": "IL",
+            "alpha3": "ISR",
+            "name": "Israel",
+            "slug": "israel"
+          },
+          "id": 19717
+        },
+        "hidden": true,
+        "slug": "pais-arena",
+        "name": "Pais Arena",
+        "capacity": 11000,
+        "country": {
+          "alpha2": "IL",
+          "alpha3": "ISR",
+          "name": "Israel",
+          "slug": "israel"
+        },
+        "id": 23957,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أرينا بايس",
+            "hi": "पेस एरिना",
+            "bn": "পায়েস এরিনা",
+            "ru": "Арена Pais"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Pais Arena",
+          "capacity": 11000
+        }
+      },
+      "nameCode": "HAP",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "IL",
+        "alpha3": "ISR",
+        "name": "Israel",
+        "slug": "israel"
+      },
+      "id": 6682,
+      "fullName": "Hapoel Jerusalem BC",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#cc0000",
+        "secondary": "#000000",
+        "text": "#000000"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "هابوعيل القدس بي سي",
+          "ru": "Хапоэль Иерусалим"
+        },
+        "shortNameTranslation": {
+          "ar": "هابوعيل القدس",
+          "bn": "হ্যাপোয়েল জেরুজালেম",
+          "hi": "हापोएल येरुशलम"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16561604,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "hapoel-jerusalem-bc-kk-cedevita-olimpija",
+    "startTimestamp": 1791304200,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "seasonStatisticsType": "regularSeason",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "top-competitions",
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

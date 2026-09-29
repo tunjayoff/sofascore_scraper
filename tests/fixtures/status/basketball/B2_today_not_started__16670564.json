@@ -1,0 +1,18 @@
+{
+  "case_id": "B2_today_not_started",
+  "event_id": 16670564,
+  "fetched_at_utc": "2026-09-29T15:54:54+00:00",
+  "source_file": "data/status_samples/basketball/B2_today_not_started__16670564.json",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1790697600,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 0
+  }
+}

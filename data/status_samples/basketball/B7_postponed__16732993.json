@@ -1,0 +1,332 @@
+{
+  "case_id": "B7_postponed",
+  "event_id": 16732993,
+  "fetched_at_utc": "2026-09-29T15:55:11+00:00",
+  "source_endpoint": "/api/v1/event/16732993",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"3db460db11\"",
+    "date": "Tue, 29 Sep 2026 15:55:11 GMT"
+  },
+  "note": "Ertelenmiş; index source scan:2026-09-17",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "ABA Liga Preseason",
+      "slug": "aba-liga-preseason",
+      "category": {
+        "name": "International",
+        "slug": "international",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 11,
+        "country": {},
+        "id": 103,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دولي",
+            "hi": "अंतर्राष्ट्रीय",
+            "bn": "আন্তর্জাতিক",
+            "ru": "Международные"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "ABA Liga Preseason",
+        "slug": "aba-liga-preseason",
+        "category": {
+          "name": "International",
+          "slug": "international",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 11,
+          "country": {},
+          "id": 103,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دولي",
+              "hi": "अंतर्राष्ट्रीय",
+              "bn": "আন্তর্জাতিক",
+              "ru": "Международные"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 110,
+        "hasRounds": false,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 36655,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false
+      },
+      "priority": 0,
+      "isGroup": false,
+      "id": 194882
+    },
+    "season": {
+      "name": "ABA Liga Preseason 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 100050
+    },
+    "customId": "cvbsdFy",
+    "status": {
+      "code": 60,
+      "description": "Postponed",
+      "type": "postponed"
+    },
+    "homeTeam": {
+      "name": "U-Banca Transilvania Cluj-Napoca",
+      "slug": "u-banca-transilvania-cluj-napoca",
+      "shortName": "U-BT Cluj-Napoca",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 2755,
+      "manager": {
+        "name": "Mihai Silvășan",
+        "slug": "mihai-silvasan",
+        "shortName": "M. Silvășan",
+        "country": {
+          "alpha2": "RO",
+          "alpha3": "ROU",
+          "name": "Romania",
+          "slug": "romania"
+        },
+        "id": 811288,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ميهاي سيلفاشان",
+            "ru": "Михай Силвашан"
+          },
+          "shortNameTranslation": {
+            "ar": "م. سيلفاشان",
+            "ru": "М. Силвашан"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Cluj Napoca",
+          "country": {
+            "alpha2": "RO",
+            "alpha3": "ROU",
+            "name": "Romania",
+            "slug": "romania"
+          },
+          "id": 20498
+        },
+        "hidden": true,
+        "slug": "sala-sporturilor-horia-demian",
+        "name": "Sala Sporturilor Horia Demian",
+        "capacity": 2525,
+        "country": {
+          "alpha2": "RO",
+          "alpha3": "ROU",
+          "name": "Romania",
+          "slug": "romania"
+        },
+        "id": 6712,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "صالة الرياضة هوريا ديميان",
+            "hi": "साला स्पोर्टुरिलोर होरिया डेमियन",
+            "bn": "সালা স্পোর্টুরিলার হোরিয়া ডেমিয়ান",
+            "ru": "Спортивный комплекс Horia Demian"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Sala Sporturilor Horia Demian",
+          "capacity": 2525
+        }
+      },
+      "nameCode": "UCN",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "RO",
+        "alpha3": "ROU",
+        "name": "Romania",
+        "slug": "romania"
+      },
+      "id": 59003,
+      "fullName": "U-Banca Transilvania Cluj-Napoca",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffffff",
+        "secondary": "#000000",
+        "text": "#000000"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "تحت بانكا ترانسيلفانيا كلوج-نابوكا",
+          "ru": "У-Банка Трансильвания"
+        },
+        "shortNameTranslation": {
+          "ar": "تحت بي تي كلوج-نابوكا",
+          "bn": "ইউ-বিটি ক্লুজ-নাপোকা",
+          "hi": "यू-बीटी क्लुज-नपोका"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "AEK BC",
+      "slug": "aek-athens-bc",
+      "shortName": "AEK",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 14138,
+      "manager": {
+        "name": "Dragan Sakota",
+        "slug": "sakota-dragan",
+        "shortName": "D. Sakota",
+        "country": {
+          "alpha2": "RS",
+          "alpha3": "SRB",
+          "name": "Serbia",
+          "slug": "serbia"
+        },
+        "id": 814390,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ساكوتا، دراغان",
+            "ru": "Сакота, Драган"
+          },
+          "shortNameTranslation": {
+            "ar": "د. ساكوتا",
+            "ru": "Д. Сакота"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Ano Liosia",
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 23835
+        },
+        "hidden": true,
+        "slug": "ano-liosia-olympic-hall",
+        "name": "SUNEL Arena",
+        "capacity": 8327,
+        "country": {
+          "alpha2": "GR",
+          "alpha3": "GRC",
+          "name": "Greece",
+          "slug": "greece"
+        },
+        "id": 41814,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "قاعة أولمبيك آنو ليكوس",
+            "hi": "एनो लिओसिया ओलंपिक हॉल",
+            "bn": "আনো লিওসিয়া অলিম্পিক হল",
+            "ru": "Арена SUNEL"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "SUNEL Arena",
+          "capacity": 8327
+        }
+      },
+      "nameCode": "AEK",
+      "class": 1,
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "GR",
+        "alpha3": "GRC",
+        "name": "Greece",
+        "slug": "greece"
+      },
+      "id": 3502,
+      "fullName": "AEK BC",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#fadf00",
+        "secondary": "#000000",
+        "text": "#000000"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "أيك أثينا",
+          "ru": "АЕК Афины"
+        },
+        "shortNameTranslation": {
+          "ar": "أيك أثينا",
+          "bn": "এইকে",
+          "hi": "एईके"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type"
+      ],
+      "changeTimestamp": 1789663861
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16732993,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "u-banca-transilvania-cluj-napoca-aek-bc",
+    "startTimestamp": 1789732800,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ]
+    }
+  },
+  "error": null
+}

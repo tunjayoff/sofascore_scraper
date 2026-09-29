@@ -1,0 +1,363 @@
+{
+  "case_id": "A_inprogress-8-1st-set",
+  "event_id": 17194803,
+  "fetched_at_utc": "2026-09-29T13:45:25+00:00",
+  "source_endpoint": "/api/v1/event/17194803",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"0db63558c7\"",
+    "date": "Tue, 29 Sep 2026 13:45:25 GMT"
+  },
+  "note": "live snapshot 2026-09-29T13:43:27+00:00",
+  "event": {
+    "firstToServe": 1,
+    "tournament": {
+      "name": "Bari, Italy",
+      "slug": "bari-italy",
+      "category": {
+        "name": "Challenger",
+        "slug": "challenger",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 6,
+        "country": {},
+        "id": 72,
+        "flag": "challenger",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "চ্যালেঞ্জার",
+            "ar": "تحدي (تنس)",
+            "hi": "डेनमार्क",
+            "ru": "Challenger"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Bari, Italy",
+        "slug": "atp-challenger-bari-italy-men-singles",
+        "category": {
+          "name": "Challenger",
+          "slug": "challenger",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 6,
+          "country": {},
+          "id": 72,
+          "flag": "challenger",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "চ্যালেঞ্জার",
+              "ar": "تحدي (تنس)",
+              "hi": "डेनमार्क",
+              "ru": "Challenger"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 88,
+        "groundType": "Red clay",
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 17386,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "تحدي ATP باري، إيطاليا فردي رجال",
+            "ru": "ATP Challenger Барии, Италия, мужчины, одиночный разряд"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "id": 201501,
+      "endTimestamp": 1791072000,
+      "startTimestamp": 1790553600
+    },
+    "season": {
+      "name": "ATP Challenger Bari, Italy Men Singles 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 96707
+    },
+    "roundInfo": {
+      "round": 6,
+      "name": "Round of 32",
+      "slug": "round-of-32",
+      "cupRoundType": 16
+    },
+    "customId": "pNjsHMad",
+    "status": {
+      "code": 8,
+      "description": "1st set",
+      "type": "inprogress"
+    },
+    "venue": {
+      "city": {
+        "name": "Bari",
+        "country": {
+          "alpha2": "IT",
+          "alpha3": "ITA",
+          "name": "Italy",
+          "slug": "italy"
+        },
+        "id": 18838
+      },
+      "hidden": true,
+      "slug": "court-1-san-marzano",
+      "name": "Court 1 - San Marzano",
+      "country": {
+        "alpha2": "IT",
+        "alpha3": "ITA",
+        "name": "Italy",
+        "slug": "italy"
+      },
+      "id": 49689,
+      "stadium": {
+        "name": "Court 1 - San Marzano"
+      }
+    },
+    "homeTeam": {
+      "name": "Samuele Pieri",
+      "slug": "pieri-samuele",
+      "shortName": "S. Pieri",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 610,
+      "playerTeamInfo": {
+        "height": 1.83,
+        "weight": 82,
+        "plays": "right-handed",
+        "prizeCurrent": 15430,
+        "prizeTotal": 50186,
+        "birthCity": {
+          "name": "Borgo San Lorenzo",
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 31118
+        },
+        "id": 5546,
+        "birthplace": "Borgo San Lorenzo, Italy",
+        "birthDateTimestamp": 1014854400,
+        "underage": false,
+        "prizeCurrentRaw": {
+          "value": 15430,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 50186,
+          "currency": "EUR"
+        },
+        "currentRanking": 395
+      },
+      "nameCode": "PIE",
+      "ranking": 395,
+      "disabled": false,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "IT",
+        "alpha3": "ITA",
+        "name": "Italy",
+        "slug": "italy"
+      },
+      "id": 376882,
+      "fullName": "Samuele Pieri",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "سامويل بييري",
+          "ru": "Самуэле Пиери"
+        },
+        "shortNameTranslation": {
+          "ar": "س. بييري",
+          "ru": "С. Пиери"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Andrej Martin",
+      "slug": "martin-andrej",
+      "shortName": "A. Martin",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 975,
+      "playerTeamInfo": {
+        "height": 1.83,
+        "weight": 83,
+        "plays": "right-handed",
+        "turnedPro": "2005",
+        "prizeCurrent": 13107,
+        "prizeTotal": 1452796,
+        "birthCity": {
+          "name": "Bratislava",
+          "country": {
+            "alpha2": "SK",
+            "alpha3": "SVK",
+            "name": "Slovakia",
+            "slug": "slovakia"
+          },
+          "id": 19128
+        },
+        "residenceCity": {
+          "name": "Bratislava",
+          "country": {
+            "alpha2": "SK",
+            "alpha3": "SVK",
+            "name": "Slovakia",
+            "slug": "slovakia"
+          },
+          "id": 19128
+        },
+        "id": 377,
+        "birthplace": "Bratislava, Slovakia",
+        "birthDateTimestamp": 622252800,
+        "underage": false,
+        "residence": "Bratislava, Slovakia",
+        "prizeCurrentRaw": {
+          "value": 13107,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 1452796,
+          "currency": "EUR"
+        },
+        "currentRanking": 371
+      },
+      "nameCode": "MAR",
+      "ranking": 371,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "SK",
+        "alpha3": "SVK",
+        "name": "Slovakia",
+        "slug": "slovakia"
+      },
+      "id": 24415,
+      "fullName": "Andrej Martin",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "أندريه مارتن",
+          "bn": "আন্দ্রেজ মার্টিন",
+          "hi": "आंद्रे मार्टिन",
+          "ru": "Мартин, Андрей"
+        },
+        "shortNameTranslation": {
+          "ar": "أ. مارتن"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 2,
+      "point": "0"
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 1,
+      "point": "0"
+    },
+    "time": {
+      "currentPeriodStartTimestamp": 1790688770
+    },
+    "changes": {
+      "changes": [
+        "homeScore.point",
+        "awayScore.period1",
+        "awayScore.point",
+        "firstToServe"
+      ],
+      "changeTimestamp": 1790689494
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17194803,
+    "defaultPeriodCount": 3,
+    "slug": "samuele-pieri-andrej-martin",
+    "currentPeriodStartTimestamp": 1790688770,
+    "startTimestamp": 1790688300,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "lastPeriod": "period1",
+    "finalResultOnly": false,
+    "hasBet365LiveStream": true,
+    "bet365ExcludedCountryCodes": [
+      "AN",
+      "CU",
+      "IR",
+      "KP",
+      "SY",
+      "VE",
+      "GR",
+      "RU",
+      "CH",
+      "CA"
+    ],
+    "feedLocked": false,
+    "groundType": "Red clay",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "singles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "lower"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

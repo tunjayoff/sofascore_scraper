@@ -1,0 +1,39 @@
+{
+  "case_id": "B8_canceled",
+  "event_id": 17060394,
+  "fetched_at_utc": "2026-09-29T15:55:15+00:00",
+  "source_file": "data/status_samples/basketball/B8_canceled__17060394.json",
+  "status": {
+    "code": 90,
+    "description": "Abandoned",
+    "type": "canceled"
+  },
+  "homeScore": {
+    "current": 59,
+    "display": 59,
+    "period1": 19,
+    "period2": 24,
+    "period3": 16,
+    "period4": 0,
+    "normaltime": 59
+  },
+  "awayScore": {
+    "current": 57,
+    "display": 57,
+    "period1": 23,
+    "period2": 14,
+    "period3": 20,
+    "period4": 0,
+    "normaltime": 57
+  },
+  "startTimestamp": 1789599600,
+  "time": {},
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type"
+    ],
+    "changeTimestamp": 1789629463
+  }
+}

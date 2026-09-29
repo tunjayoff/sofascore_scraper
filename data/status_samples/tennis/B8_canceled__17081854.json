@@ -1,0 +1,348 @@
+{
+  "case_id": "B8_canceled",
+  "event_id": 17081854,
+  "fetched_at_utc": "2026-09-29T15:56:49+00:00",
+  "source_endpoint": "/api/v1/event/17081854",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"e7e059e097\"",
+    "date": "Tue, 29 Sep 2026 15:56:49 GMT"
+  },
+  "note": "İptal; index source scan:2026-09-15",
+  "event": {
+    "tournament": {
+      "name": "Guangzhou, China",
+      "slug": "guangzhou-china",
+      "category": {
+        "name": "Challenger",
+        "slug": "challenger",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 6,
+        "country": {},
+        "id": 72,
+        "flag": "challenger",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "চ্যালেঞ্জার",
+            "ar": "تحدي (تنس)",
+            "hi": "डेनमार्क",
+            "ru": "Challenger"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Guangzhou, China",
+        "slug": "guangzhou-china",
+        "category": {
+          "name": "Challenger",
+          "slug": "challenger",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 6,
+          "country": {},
+          "id": 72,
+          "flag": "challenger",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "bn": "চ্যালেঞ্জার",
+              "ar": "تحدي (تنس)",
+              "hi": "डेनमार्क",
+              "ru": "Challenger"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 184,
+        "groundType": "Hardcourt outdoor",
+        "tennisPoints": 75,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 3701,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "قوانغتشو، الصين",
+            "ru": "Гуанчжоу, Китай"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "id": 199397,
+      "endTimestamp": 1789948800,
+      "startTimestamp": 1789344000
+    },
+    "season": {
+      "name": "ATP Challenger Guangzhou, China Men Singles 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 94944
+    },
+    "roundInfo": {
+      "round": 6,
+      "name": "Round of 32",
+      "slug": "round-of-32",
+      "cupRoundType": 16
+    },
+    "customId": "vLKsWzFc",
+    "status": {
+      "code": 70,
+      "description": "Canceled",
+      "type": "canceled"
+    },
+    "venue": {
+      "city": {
+        "name": "Guangzhou",
+        "country": {
+          "alpha2": "CN",
+          "alpha3": "CHN",
+          "name": "China",
+          "slug": "china"
+        },
+        "id": 18958
+      },
+      "hidden": true,
+      "slug": "court-2",
+      "name": "Court 2",
+      "country": {
+        "alpha2": "CN",
+        "alpha3": "CHN",
+        "name": "China",
+        "slug": "china"
+      },
+      "id": 51156,
+      "stadium": {
+        "name": "Court 2"
+      }
+    },
+    "homeTeam": {
+      "name": "Marat Sharipov",
+      "slug": "sharipov-marat",
+      "shortName": "M. Sharipov",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 1289,
+      "playerTeamInfo": {
+        "height": 1.88,
+        "weight": 77,
+        "plays": "right-handed",
+        "prizeCurrent": 18765,
+        "prizeTotal": 135971,
+        "birthCity": {
+          "name": "Cheboksary",
+          "country": {
+            "alpha2": "RU",
+            "alpha3": "RUS",
+            "name": "Russia",
+            "slug": "russia"
+          },
+          "id": 35216
+        },
+        "id": 4711,
+        "birthplace": "Cheboksary, Russia",
+        "birthDateTimestamp": 1034121600,
+        "underage": false,
+        "prizeCurrentRaw": {
+          "value": 18765,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 135971,
+          "currency": "EUR"
+        },
+        "currentRanking": 211
+      },
+      "nameCode": "SHA",
+      "ranking": 232,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "RU",
+        "alpha3": "RUS",
+        "name": "Russia",
+        "slug": "russia"
+      },
+      "id": 326246,
+      "fullName": "Marat Sharipov",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "مارات شاريبوف",
+          "ru": "Марат Шарипов"
+        },
+        "shortNameTranslation": {
+          "ar": "م. شاريبوف",
+          "ru": "М. Шарипов"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Ilya Ivashka",
+      "slug": "ivashka-ilya",
+      "shortName": "I. Ivashka",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 2177,
+      "playerTeamInfo": {
+        "height": 1.93,
+        "weight": 87,
+        "plays": "right-handed",
+        "turnedPro": "2013",
+        "prizeCurrent": 27950,
+        "prizeTotal": 2971925,
+        "birthCity": {
+          "name": "Minsk",
+          "country": {
+            "alpha2": "BY",
+            "alpha3": "BLR",
+            "name": "Belarus",
+            "slug": "belarus"
+          },
+          "id": 35011
+        },
+        "residenceCity": {
+          "name": "Minsk",
+          "country": {
+            "alpha2": "BY",
+            "alpha3": "BLR",
+            "name": "Belarus",
+            "slug": "belarus"
+          },
+          "id": 35011
+        },
+        "id": 98,
+        "birthplace": "Minsk, Belarus",
+        "birthDateTimestamp": 762048000,
+        "underage": false,
+        "residence": "Minsk, Belarus",
+        "prizeCurrentRaw": {
+          "value": 27950,
+          "currency": "EUR"
+        },
+        "prizeTotalRaw": {
+          "value": 2971925,
+          "currency": "EUR"
+        },
+        "currentRanking": 233
+      },
+      "nameCode": "IVA",
+      "ranking": 234,
+      "disabled": false,
+      "national": false,
+      "type": 1,
+      "country": {
+        "alpha2": "BY",
+        "alpha3": "BLR",
+        "name": "Belarus",
+        "slug": "belarus"
+      },
+      "id": 89320,
+      "fullName": "Ilya Ivashka",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "إيليا إيفاشكا",
+          "ru": "Ивашка, Илья"
+        },
+        "shortNameTranslation": {
+          "ar": "إ. إيفاشكا",
+          "bn": "আই. ইভাশকা",
+          "hi": "आई. इवाश्का"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type"
+      ],
+      "changeTimestamp": 1789459284
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17081854,
+    "defaultPeriodCount": 3,
+    "slug": "marat-sharipov-ilya-ivashka",
+    "startTimestamp": 1789461600,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "finalResultOnly": false,
+    "hasBet365LiveStream": true,
+    "bet365ExcludedCountryCodes": [
+      "AN",
+      "CU",
+      "IR",
+      "KP",
+      "SY",
+      "VE",
+      "GR",
+      "RU",
+      "CH",
+      "CA"
+    ],
+    "feedLocked": false,
+    "groundType": "Hardcourt outdoor",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "singles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "lower"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

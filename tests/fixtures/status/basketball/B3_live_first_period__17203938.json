@@ -1,0 +1,49 @@
+{
+  "case_id": "B3_live_first_period",
+  "event_id": 17203938,
+  "fetched_at_utc": "2026-09-29T15:54:57+00:00",
+  "source_file": "data/status_samples/basketball/B3_live_first_period__17203938.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {
+    "current": 49,
+    "display": 49,
+    "period1": 10,
+    "period2": 18,
+    "period3": 13,
+    "period4": 8,
+    "normaltime": 49
+  },
+  "awayScore": {
+    "current": 68,
+    "display": 68,
+    "period1": 21,
+    "period2": 8,
+    "period3": 17,
+    "period4": 22,
+    "normaltime": 68
+  },
+  "startTimestamp": 1790688600,
+  "time": {
+    "played": 2400,
+    "periodLength": 600,
+    "overtimeLength": 300,
+    "totalPeriodCount": 4,
+    "clockRunning": false,
+    "clockRunningLastUpdated": "2026-09-29T15:09:53+00:00"
+  },
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type",
+      "homeScore.normaltime",
+      "awayScore.normaltime"
+    ],
+    "changeTimestamp": 1790694854
+  }
+}

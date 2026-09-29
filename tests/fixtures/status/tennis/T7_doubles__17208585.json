@@ -1,0 +1,37 @@
+{
+  "case_id": "T7_doubles",
+  "event_id": 17208585,
+  "fetched_at_utc": "2026-09-29T15:57:08+00:00",
+  "source_file": "data/status_samples/tennis/T7_doubles__17208585.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 1,
+    "period2": 1
+  },
+  "awayScore": {
+    "current": 2,
+    "display": 2,
+    "period1": 6,
+    "period2": 6
+  },
+  "startTimestamp": 1790681400,
+  "time": {},
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type",
+      "awayScore.current",
+      "awayScore.display",
+      "awayScore.period2"
+    ],
+    "changeTimestamp": 1790689678
+  }
+}

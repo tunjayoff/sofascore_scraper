@@ -1,0 +1,412 @@
+{
+  "case_id": "B2_today_not_started",
+  "event_id": 16670564,
+  "fetched_at_utc": "2026-09-29T15:54:54+00:00",
+  "source_endpoint": "/api/v1/event/16670564",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"8d4d784f74\"",
+    "date": "Tue, 29 Sep 2026 15:54:53 GMT"
+  },
+  "note": "Bugün, henüz başlamamış; index source scan:2026-09-29",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "Euroleague",
+      "slug": "euroleague",
+      "category": {
+        "name": "International",
+        "slug": "international",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 11,
+        "country": {},
+        "id": 103,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "دولي",
+            "hi": "अंतर्राष्ट्रीय",
+            "bn": "আন্তর্জাতিক",
+            "ru": "Международные"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Euroleague",
+        "slug": "euroleague",
+        "primaryColorHex": "#f47321",
+        "secondaryColorHex": "#f47321",
+        "category": {
+          "name": "International",
+          "slug": "international",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 11,
+          "country": {},
+          "id": 103,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "دولي",
+              "hi": "अंतर्राष्ट्रीय",
+              "bn": "আন্তর্জাতিক",
+              "ru": "Международные"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 55003,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "showBanner": true,
+        "liveActivityEnabled": true,
+        "country": {},
+        "id": 138,
+        "hasEventPlayerStatistics": false,
+        "hasBoxScore": true,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "es-la": "EuroLiga",
+            "el": "Ευρωλίγκα",
+            "es": "EuroLiga",
+            "bn": "ইউরোলীগ",
+            "ar": "الدوري الأوروبي",
+            "hi": "यूरोलीग",
+            "ru": "Евролига",
+            "fr": "Euroligue",
+            "de": "EuroLeague",
+            "it": "Eurolega"
+          },
+          "shortNameTranslation": {}
+        },
+        "hasRating": true,
+        "hasLiveRating": true
+      },
+      "priority": 162,
+      "isGroup": false,
+      "competitionType": 1,
+      "isLive": false,
+      "id": 42527,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ru": "Евролига",
+          "de": "EuroLeague",
+          "el": "Ευρωλίγκα",
+          "es": "Euroliga",
+          "es-la": "Euroliga",
+          "fr": "Euroligue",
+          "it": "Eurolega",
+          "hi": "यूरोलिग",
+          "ar": "الدوري الأوروبي",
+          "bn": "ইউরোলীগ"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Euroleague 26/27",
+      "year": "26/27",
+      "editor": false,
+      "id": 99582
+    },
+    "roundInfo": {
+      "round": 2
+    },
+    "customId": "Tvbspyke",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "venue": {
+      "city": {
+        "name": "Dubai",
+        "country": {
+          "alpha2": "AE",
+          "alpha3": "ARE",
+          "name": "United Arab Emirates",
+          "slug": "united-arab-emirates"
+        },
+        "id": 17965
+      },
+      "hidden": true,
+      "slug": "coca-cola-arena",
+      "name": "Coca-Cola Arena",
+      "capacity": 17000,
+      "country": {
+        "alpha2": "AE",
+        "alpha3": "ARE",
+        "name": "United Arab Emirates",
+        "slug": "united-arab-emirates"
+      },
+      "id": 37648,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "كوكاكولا أرينا",
+          "hi": "कोका-कोला एरिना",
+          "bn": "কোকা-কোলা এরিনা",
+          "ru": "Арена Coca-Cola"
+        },
+        "shortNameTranslation": {}
+      },
+      "stadium": {
+        "name": "Coca-Cola Arena",
+        "capacity": 17000
+      }
+    },
+    "homeTeam": {
+      "name": "BC Dubai",
+      "slug": "bc-dubai",
+      "shortName": "Dubai",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 8663,
+      "manager": {
+        "name": "Xavi Pascual",
+        "slug": "xavi-pascual",
+        "shortName": "X. Pascual",
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 793892,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "خافيير باسكوال",
+            "bn": "জাভি প্যাসকুয়াল",
+            "hi": "ज़ावी पास्कुअल",
+            "ru": "Хави Паскуаль"
+          },
+          "shortNameTranslation": {
+            "ar": "خ. باسكوال",
+            "hi": "एक्स. पास्कुअल",
+            "bn": "এক্স প্যাসকুয়াল",
+            "ru": "Х. Паскуаль"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Dubai",
+          "country": {
+            "alpha2": "AE",
+            "alpha3": "ARE",
+            "name": "United Arab Emirates",
+            "slug": "united-arab-emirates"
+          },
+          "id": 17965
+        },
+        "hidden": true,
+        "slug": "coca-cola-arena",
+        "name": "Coca-Cola Arena",
+        "capacity": 17000,
+        "country": {
+          "alpha2": "AE",
+          "alpha3": "ARE",
+          "name": "United Arab Emirates",
+          "slug": "united-arab-emirates"
+        },
+        "id": 37648,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كوكاكولا أرينا",
+            "hi": "कोका-कोला एरिना",
+            "bn": "কোকা-কোলা এরিনা",
+            "ru": "Арена Coca-Cola"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Coca-Cola Arena",
+          "capacity": 17000
+        }
+      },
+      "nameCode": "DUB",
+      "class": 0,
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {},
+      "id": 526165,
+      "fullName": "BC Dubai",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "دبي لكرة السلة",
+          "ru": "БК Дубай"
+        },
+        "shortNameTranslation": {
+          "ar": "دبي"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Barça Basket",
+      "slug": "barca-basket",
+      "shortName": "Barça",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 69470,
+      "manager": {
+        "name": "Aleksander Sekulić",
+        "slug": "aleksander-sekulic",
+        "shortName": "A. Sekulić",
+        "country": {
+          "alpha2": "SI",
+          "alpha3": "SVN",
+          "name": "Slovenia",
+          "slug": "slovenia"
+        },
+        "id": 801514,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ألكساندر سيكوليتش",
+            "bn": "আলেকজান্ডার সেকুলিক",
+            "hi": "एलेक्ज़ेंडर सेकुलिक",
+            "ru": "Александр Секулич"
+          },
+          "shortNameTranslation": {
+            "ar": "أ. سيكوليتش",
+            "hi": "ए. सेकुलिक",
+            "bn": "এ. সেকুলিক",
+            "ru": "А. Секулич"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Barcelona",
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 18512
+        },
+        "hidden": true,
+        "slug": "palau-blaugrana",
+        "name": "Palau Blaugrana",
+        "capacity": 7585,
+        "country": {
+          "alpha2": "ES",
+          "alpha3": "ESP",
+          "name": "Spain",
+          "slug": "spain"
+        },
+        "id": 6400,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "بالاو بلافوغرانا",
+            "hi": "पलाऊ ब्लाउग्राना",
+            "bn": "পালাউ ব্লাউগ্রানা",
+            "ru": "Спортивный комплекс Palau Blaugrana"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Palau Blaugrana",
+          "capacity": 7585
+        }
+      },
+      "nameCode": "FCB",
+      "class": 4,
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "ES",
+        "alpha3": "ESP",
+        "name": "Spain",
+        "slug": "spain"
+      },
+      "id": 3543,
+      "fullName": "Barça Basket",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#c32148",
+        "secondary": "#26559b",
+        "text": "#26559b"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "بارسا باسكت",
+          "ru": "Барселона"
+        },
+        "shortNameTranslation": {
+          "ar": "بارسا",
+          "bn": "বার্সা",
+          "hi": "बार्सा"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "hasEventPlayerStatistics": true,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 16670564,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "bc-dubai-barca-basket",
+    "startTimestamp": 1790697600,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "seasonStatisticsType": "regularSeason",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "top-competitions",
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

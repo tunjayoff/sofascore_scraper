@@ -1,0 +1,274 @@
+{
+  "case_id": "A_inprogress-31-halftime",
+  "event_id": 17184989,
+  "fetched_at_utc": "2026-09-29T15:02:53+00:00",
+  "source_endpoint": "/api/v1/event/17184989",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"d619f4c25d\"",
+    "date": "Tue, 29 Sep 2026 15:02:53 GMT"
+  },
+  "note": "live snapshot 2026-09-29T15:02:42+00:00",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "U19 Friendly Games",
+      "slug": "u19-friendly-games",
+      "category": {
+        "name": "World",
+        "slug": "world",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 20,
+        "country": {},
+        "id": 1468,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "العالم",
+            "hi": "विश्व",
+            "bn": "বিশ্ব",
+            "ru": "Мир"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "U19 Friendly Games",
+        "slug": "u19-friendly-games",
+        "primaryColorHex": "#25497d",
+        "secondaryColorHex": "#d38f1d",
+        "category": {
+          "name": "World",
+          "slug": "world",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 20,
+          "country": {},
+          "id": 1468,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "العالم",
+              "hi": "विश्व",
+              "bn": "বিশ্ব",
+              "ru": "Мир"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 2340,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "showBanner": true,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 856,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "مباريات ودية تحت 19 سنة",
+            "hi": "अंडर-19 फ्रेंडली गेम्स",
+            "bn": "আন্ডার19 ফ্রেন্ডলি গেমস",
+            "ru": "Товарищеские игры до 19 лет"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 3,
+      "isLive": false,
+      "id": 5799,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "hi": "अंडर-19 फ्रेंडली गेम्स",
+          "ar": "مباريات ودية تحت 19 سنة",
+          "bn": "আন্ডার19 ফ্রেন্ডলি গেমস",
+          "ru": "Дружеские матчи до 19 лет"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "U19 Friendly Games 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 87180
+    },
+    "customId": "fajsVaj",
+    "status": {
+      "code": 31,
+      "description": "Halftime",
+      "type": "inprogress"
+    },
+    "homeTeam": {
+      "name": "England U19",
+      "slug": "england-u19",
+      "shortName": "England U19",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 8327,
+      "manager": {
+        "name": "Will Antwi",
+        "slug": "will-antwi",
+        "shortName": "W. Antwi",
+        "country": {
+          "alpha2": "EN",
+          "alpha3": "ENG",
+          "name": "England",
+          "slug": "england"
+        },
+        "id": 811222,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ويل أنتووي",
+            "ru": "Уилл Антви"
+          },
+          "shortNameTranslation": {
+            "ar": "و. أنتووي",
+            "ru": "У. Антви"
+          }
+        }
+      },
+      "nameCode": "ENG",
+      "class": 1,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "EN",
+        "alpha3": "ENG",
+        "name": "England",
+        "slug": "england"
+      },
+      "id": 22505,
+      "fullName": "England U19",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffffff",
+        "secondary": "#cc0000",
+        "text": "#cc0000"
+      },
+      "foundationDateTimestamp": -3350851200,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "إنجلترا تحت 19",
+          "hi": "इंग्लैंड U19",
+          "ru": "Англия U19"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Norway U19",
+      "slug": "norway-u19",
+      "shortName": "Norway U19",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 3573,
+      "nameCode": "NOR",
+      "class": 4,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "NO",
+        "alpha3": "NOR",
+        "name": "Norway",
+        "slug": "norway"
+      },
+      "id": 22545,
+      "fullName": "Norway U19",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ef2b2d",
+        "secondary": "#001f5b",
+        "text": "#001f5b"
+      },
+      "foundationDateTimestamp": -2135635200,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "النرويج تحت 19",
+          "hi": "नॉरवे U19",
+          "ru": "Норвегия U19"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 2,
+      "display": 2,
+      "period1": 2
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 0
+    },
+    "coverage": -1,
+    "time": {
+      "periodLength": 2700,
+      "overtimeLength": 900,
+      "totalPeriodCount": 2,
+      "currentPeriodStartTimestamp": 1790690518,
+      "lastPeriodEndTimestamp": 1790693344
+    },
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "time.lastPeriodEnd"
+      ],
+      "changeTimestamp": 1790693344
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17184989,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "varInProgress": {
+      "homeTeam": false,
+      "awayTeam": false
+    },
+    "slug": "norway-u19-england-u19",
+    "currentPeriodStartTimestamp": 1790690518,
+    "startTimestamp": 1790690400,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "national"
+      ],
+      "level": [
+        "pro",
+        "youth"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

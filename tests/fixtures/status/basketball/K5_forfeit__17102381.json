@@ -1,0 +1,23 @@
+{
+  "case_id": "K5_forfeit",
+  "event_id": 17102381,
+  "fetched_at_utc": "2026-09-29T15:55:35+00:00",
+  "source_file": "data/status_samples/basketball/K5_forfeit__17102381.json",
+  "status": {
+    "code": 91,
+    "description": "Walkover",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1789734300,
+  "time": {},
+  "changes": {
+    "changes": [
+      "providerLock.status",
+      "providerLock.statusSource"
+    ],
+    "changeTimestamp": 1789761287
+  }
+}

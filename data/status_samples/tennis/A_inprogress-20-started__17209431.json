@@ -1,0 +1,424 @@
+{
+  "case_id": "A_inprogress-20-started",
+  "event_id": 17209431,
+  "fetched_at_utc": "2026-09-29T13:45:29+00:00",
+  "source_endpoint": "/api/v1/event/17209431",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"f4b6bed73d\"",
+    "date": "Tue, 29 Sep 2026 13:45:29 GMT"
+  },
+  "note": "live snapshot 2026-09-29T13:43:27+00:00",
+  "event": {
+    "tournament": {
+      "name": "ITF M15 Monastir 32 Men Doubles",
+      "slug": "itf-m15-monastir-32-men-doubles",
+      "category": {
+        "name": "ITF Men",
+        "slug": "itf-men",
+        "sport": {
+          "name": "Tennis",
+          "slug": "tennis",
+          "id": 5
+        },
+        "priority": 4,
+        "country": {},
+        "id": 785,
+        "flag": "itf-men",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "اتحاد التنس الدولي للرجال",
+            "ru": "Мужской мировой теннисный тур ITF"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "ITF M15 Monastir 32 Men Doubles",
+        "slug": "itf-m15-monastir-32-men-doubles",
+        "category": {
+          "name": "ITF Men",
+          "slug": "itf-men",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "priority": 4,
+          "country": {},
+          "id": 785,
+          "flag": "itf-men",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "اتحاد التنس الدولي للرجال",
+              "ru": "Мужской мировой теннисный тур ITF"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 2,
+        "groundType": "Hardcourt outdoor",
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 38307,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false
+      },
+      "priority": 0,
+      "competitionType": 2,
+      "id": 201446
+    },
+    "season": {
+      "name": "2026",
+      "year": "2026",
+      "editor": false,
+      "id": 104385
+    },
+    "roundInfo": {
+      "round": 5,
+      "name": "Round of 16",
+      "slug": "round-of-16",
+      "cupRoundType": 8
+    },
+    "customId": "ppIjsLXpk",
+    "status": {
+      "code": 8,
+      "description": "1st set",
+      "type": "inprogress"
+    },
+    "homeTeam": {
+      "name": "Branger L / Dugardin R",
+      "slug": "branger-l-dugardin-r",
+      "shortName": "Branger L / Dugardin R",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 4,
+      "nameCode": "L/R",
+      "disabled": false,
+      "national": false,
+      "type": 2,
+      "country": {},
+      "id": 1208265,
+      "fullName": "Branger L / Dugardin R",
+      "subTeams": [
+        {
+          "name": "Liam Branger",
+          "slug": "branger-liam",
+          "shortName": "L. Branger",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 117,
+          "playerTeamInfo": {
+            "plays": "right-handed",
+            "prizeCurrent": 3943,
+            "prizeTotal": 12431,
+            "id": 18957,
+            "birthDateTimestamp": 980294400,
+            "underage": false,
+            "prizeCurrentRaw": {
+              "value": 3943,
+              "currency": "EUR"
+            },
+            "prizeTotalRaw": {
+              "value": 12431,
+              "currency": "EUR"
+            },
+            "currentRanking": 1022
+          },
+          "nameCode": "BRA",
+          "ranking": 1136,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 374077,
+          "fullName": "Liam Branger",
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ليام برانجر",
+              "ru": "Лиам Брангер"
+            },
+            "shortNameTranslation": {
+              "ar": "ل. برانجر",
+              "ru": "Л. Брангер"
+            }
+          },
+          "timeActive": []
+        },
+        {
+          "name": "Remy Dugardin",
+          "slug": "remy-dugardin",
+          "shortName": "R. Dugardin",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 61,
+          "playerTeamInfo": {
+            "prizeCurrent": 1901,
+            "prizeTotal": 3201,
+            "id": 29291,
+            "birthDateTimestamp": 1040342400,
+            "underage": false,
+            "prizeCurrentRaw": {
+              "value": 1901,
+              "currency": "EUR"
+            },
+            "prizeTotalRaw": {
+              "value": 3201,
+              "currency": "EUR"
+            },
+            "currentRanking": 1365
+          },
+          "nameCode": "RDU",
+          "ranking": 1365,
+          "disabled": false,
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "FR",
+            "alpha3": "FRA",
+            "name": "France",
+            "slug": "france"
+          },
+          "id": 1124199,
+          "fullName": "Remy Dugardin",
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "ريمي دوغاردان",
+              "ru": "Реми Дюгардэн"
+            },
+            "shortNameTranslation": {
+              "ru": "Р. Дюгардэн"
+            }
+          },
+          "timeActive": []
+        }
+      ],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "برانجر إل / دوغاردين آر",
+          "ru": "Бранжер Л / Дюгардэн Р"
+        },
+        "shortNameTranslation": {
+          "ar": "برانجر إل / دوغاردين آر",
+          "ru": "Б. Р"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Aunion P / de Felipe Garcia S",
+      "slug": "aunion-p-de-felipe-garcia-s",
+      "gender": "M",
+      "sport": {
+        "name": "Tennis",
+        "slug": "tennis",
+        "id": 5
+      },
+      "userCount": 0,
+      "nameCode": "P/S",
+      "disabled": false,
+      "national": false,
+      "type": 2,
+      "country": {},
+      "id": 1289886,
+      "fullName": "Aunion P / de Felipe Garcia S",
+      "subTeams": [
+        {
+          "name": "Pablo Aunion",
+          "slug": "aunion-pablo",
+          "shortName": "P. Aunion",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 125,
+          "playerTeamInfo": {
+            "id": 26797,
+            "underage": false,
+            "currentRanking": 1523
+          },
+          "nameCode": "AUN",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 493425,
+          "fullName": "Pablo Aunion",
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "بابلو أونيون",
+              "ru": "Пабло Аунион"
+            },
+            "shortNameTranslation": {
+              "ar": "ب. أونيون",
+              "ru": "П. Аунион"
+            }
+          },
+          "timeActive": []
+        },
+        {
+          "name": "Samuel de Felipe Garcia",
+          "slug": "de-felipe-garcia-samuel",
+          "shortName": "S. de Felipe García",
+          "gender": "M",
+          "sport": {
+            "name": "Tennis",
+            "slug": "tennis",
+            "id": 5
+          },
+          "userCount": 55,
+          "playerTeamInfo": {
+            "id": 36158,
+            "underage": false,
+            "currentRanking": 1971
+          },
+          "nameCode": "DE",
+          "national": false,
+          "type": 1,
+          "country": {
+            "alpha2": "ES",
+            "alpha3": "ESP",
+            "name": "Spain",
+            "slug": "spain"
+          },
+          "id": 231568,
+          "fullName": "Samuel de Felipe Garcia",
+          "subTeams": [],
+          "teamColors": {
+            "primary": "#374df5",
+            "secondary": "#374df5",
+            "text": "#ffffff"
+          },
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "س. دي فيليبي غارسيا",
+              "ru": "Самуэль де Фелипе Гарсия"
+            },
+            "shortNameTranslation": {
+              "ar": "س. غارسيا",
+              "ru": "С. Гарсия"
+            }
+          },
+          "timeActive": []
+        }
+      ],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 1,
+      "point": "0"
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 0,
+      "point": "0"
+    },
+    "time": {},
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "homeScore.current",
+        "homeScore.display",
+        "homeScore.period1",
+        "awayScore.current",
+        "awayScore.display",
+        "awayScore.period1",
+        "firstToServe"
+      ],
+      "changeTimestamp": 1790689523
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17209431,
+    "defaultPeriodCount": 3,
+    "slug": "aunion-de-felipe-garcia-branger-dugardin",
+    "startTimestamp": 1790688600,
+    "periods": {
+      "point": "Game",
+      "current": "Match",
+      "period1": "1st set",
+      "period2": "2nd set",
+      "period3": "3rd set",
+      "period4": "4th set",
+      "period5": "5th set"
+    },
+    "lastPeriod": "period1",
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "groundType": "Hardcourt outdoor",
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "doubles"
+      ],
+      "level": [
+        "pro"
+      ],
+      "tournament": [
+        "lower"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

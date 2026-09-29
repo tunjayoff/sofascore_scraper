@@ -1,0 +1,25 @@
+{
+  "case_id": "B7_postponed",
+  "event_id": 16623552,
+  "fetched_at_utc": "2026-09-29T15:55:09+00:00",
+  "source_file": "data/status_samples/basketball/B7_postponed__16623552.json",
+  "status": {
+    "code": 60,
+    "description": "Postponed",
+    "type": "postponed"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1789470000,
+  "time": {},
+  "changes": {
+    "changes": [
+      "providerLock.status",
+      "providerLock.statusSource",
+      "status.code",
+      "status.description",
+      "status.type"
+    ],
+    "changeTimestamp": 1789453925
+  }
+}

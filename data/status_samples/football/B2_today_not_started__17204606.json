@@ -1,0 +1,329 @@
+{
+  "case_id": "B2_today_not_started",
+  "event_id": 17204606,
+  "fetched_at_utc": "2026-09-29T15:53:04+00:00",
+  "source_endpoint": "/api/v1/event/17204606",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"e5c3fc8860\"",
+    "date": "Tue, 29 Sep 2026 15:53:03 GMT"
+  },
+  "note": "Bugün, henüz başlamamış; index source scan:2026-09-29",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "Club Friendly Games",
+      "slug": "club-friendly-games",
+      "category": {
+        "name": "World",
+        "slug": "world",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 20,
+        "country": {},
+        "id": 1468,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "العالم",
+            "hi": "विश्व",
+            "bn": "বিশ্ব",
+            "ru": "Мир"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Club Friendly Games",
+        "slug": "club-friendly-games",
+        "primaryColorHex": "#25497d",
+        "secondaryColorHex": "#d38f1d",
+        "category": {
+          "name": "World",
+          "slug": "world",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 20,
+          "country": {},
+          "id": 1468,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "العالم",
+              "hi": "विश्व",
+              "bn": "বিশ্ব",
+              "ru": "Мир"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 40214,
+        "hasRounds": false,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 853,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "bn": "ক্লাব ফ্রেন্ডলি গেমস",
+            "ar": "مباريات ودية للأندية",
+            "hi": "क्लब फ्रेंडली गेम्स",
+            "ru": "Товарищеские игры клубов"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 3,
+      "isLive": false,
+      "id": 86,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "hi": "क्लब फ्रेंडली गेम्स",
+          "ar": "مباريات ودية للأندية",
+          "bn": "ক্লাব ফ্রেন্ডলি গেমস",
+          "ru": "Кубок дружеских игр"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Club Friendly Games 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 87177
+    },
+    "customId": "DabstPpb",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "homeTeam": {
+      "name": "FC Hertha 03",
+      "slug": "hertha-zehlendorf",
+      "shortName": "Hertha 03",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 1704,
+      "venue": {
+        "city": {
+          "name": "Berlin",
+          "country": {
+            "alpha2": "DE",
+            "alpha3": "DEU",
+            "name": "Germany",
+            "slug": "germany"
+          },
+          "id": 18260
+        },
+        "venueCoordinates": {
+          "latitude": 52.52437,
+          "longitude": 13.41053
+        },
+        "hidden": true,
+        "slug": "ernst-reuter-stadion",
+        "name": "Ernst-Reuter-Stadion",
+        "capacity": 4500,
+        "country": {
+          "alpha2": "DE",
+          "alpha3": "DEU",
+          "name": "Germany",
+          "slug": "germany"
+        },
+        "id": 15118,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب إرنست رويتر",
+            "hi": "अर्न्स्ट-राउटर-स्टेडियन",
+            "bn": "আর্নস্ট রয়টার স্টেডিয়াম",
+            "ru": "Стадион Ernst-Reuter"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Ernst-Reuter-Stadion",
+          "capacity": 4500
+        }
+      },
+      "nameCode": "HEZ",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "DE",
+        "alpha3": "DEU",
+        "name": "Germany",
+        "slug": "germany"
+      },
+      "id": 164518,
+      "fullName": "FC Hertha 03",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#3f48cc",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "foundationDateTimestamp": -2108505600,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "هيرتا زيلندورف",
+          "ru": "ФК Герта 03 Ц."
+        },
+        "shortNameTranslation": {
+          "ar": "هيرتا 03"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Hertha BSC",
+      "slug": "hertha-bsc",
+      "shortName": "Hertha",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 46785,
+      "manager": {
+        "name": "Stefan Leitl",
+        "slug": "stefan-leitl",
+        "shortName": "S. Leitl",
+        "country": {
+          "alpha2": "DE",
+          "alpha3": "DEU",
+          "name": "Germany",
+          "slug": "germany"
+        },
+        "id": 786976,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ستيفان ليتل",
+            "ru": "Стефан Лейтл"
+          },
+          "shortNameTranslation": {
+            "ar": "س. ليتل",
+            "ru": "С. Лейтл"
+          }
+        }
+      },
+      "venue": {
+        "city": {
+          "name": "Berlin",
+          "country": {
+            "alpha2": "DE",
+            "alpha3": "DEU",
+            "name": "Germany",
+            "slug": "germany"
+          },
+          "id": 18260
+        },
+        "venueCoordinates": {
+          "latitude": 52.514585,
+          "longitude": 13.239814
+        },
+        "hidden": false,
+        "slug": "olympiastadion",
+        "name": "Olympiastadion",
+        "capacity": 74649,
+        "country": {
+          "alpha2": "DE",
+          "alpha3": "DEU",
+          "name": "Germany",
+          "slug": "germany"
+        },
+        "id": 966,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ملعب الأولمبي",
+            "hi": "ओलंपियास्टेडियन",
+            "bn": "অলিম্পিয়াস্টেডিয়ন",
+            "ru": "Стадион Olympiastadion"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Olympiastadion",
+          "capacity": 74649
+        }
+      },
+      "nameCode": "BSC",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "DE",
+        "alpha3": "DEU",
+        "name": "Germany",
+        "slug": "germany"
+      },
+      "id": 2528,
+      "fullName": "Hertha BSC",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffffff",
+        "secondary": "#0131ad",
+        "text": "#0131ad"
+      },
+      "foundationDateTimestamp": -2443651200,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "هيرتا برلين",
+          "hi": "हर्था बीएससी",
+          "ru": "Герта"
+        },
+        "shortNameTranslation": {
+          "ar": "هيرتا",
+          "bn": "হের্থা",
+          "hi": "हर्था"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17204606,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "slug": "fc-hertha-03-hertha-bsc",
+    "startTimestamp": 1790697600,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

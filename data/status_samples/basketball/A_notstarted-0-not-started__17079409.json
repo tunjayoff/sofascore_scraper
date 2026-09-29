@@ -1,0 +1,237 @@
+{
+  "case_id": "A_notstarted-0-not-started",
+  "event_id": 17079409,
+  "fetched_at_utc": "2026-09-29T15:54:42+00:00",
+  "source_endpoint": "/api/v1/event/17079409",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"b6f03b0f7c\"",
+    "date": "Tue, 29 Sep 2026 15:54:42 GMT"
+  },
+  "note": "index source scan:2026-09-15",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "ESKA Cup, Group 2 - B ESKA",
+      "slug": "eska-cup-group-2-b-eska",
+      "category": {
+        "name": "Greece",
+        "slug": "greece",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "GR",
+          "alpha3": "GRC",
+          "name": "Greece",
+          "slug": "greece"
+        },
+        "id": 108,
+        "flag": "greece",
+        "alpha2": "GR",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "اليونان",
+            "ru": "Греция"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "ESKA Cup",
+        "slug": "eska-cup",
+        "category": {
+          "name": "Greece",
+          "slug": "greece",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "GR",
+            "alpha3": "GRC",
+            "name": "Greece",
+            "slug": "greece"
+          },
+          "id": 108,
+          "flag": "greece",
+          "alpha2": "GR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "اليونان",
+              "ru": "Греция"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 9,
+        "hasRounds": false,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 32544,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "كأس إيسكا",
+            "ru": "Кубок ESKA"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": true,
+      "groupName": "Group 2 - B ESKA",
+      "competitionType": 2,
+      "id": 197429
+    },
+    "season": {
+      "name": "ESKA Cup 26/27",
+      "year": "26/27",
+      "editor": true,
+      "id": 102063
+    },
+    "roundInfo": {
+      "round": 27,
+      "name": "Quarterfinals",
+      "slug": "quarterfinals",
+      "cupRoundType": 4
+    },
+    "customId": "qNiesxjje",
+    "status": {
+      "code": 0,
+      "description": "Not started",
+      "type": "notstarted"
+    },
+    "homeTeam": {
+      "name": "Agios Nikolaos Pallinis",
+      "slug": "agios-nikolaos-pallinis",
+      "shortName": "Agios Nikolaos Pallinis",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 25,
+      "nameCode": "ANP",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "GR",
+        "alpha3": "GRC",
+        "name": "Greece",
+        "slug": "greece"
+      },
+      "id": 521916,
+      "fullName": "Agios Nikolaos Pallinis",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "أجيوا نيكولاوس بالينيس",
+          "ru": "Агиос Николаос Паллинис"
+        },
+        "shortNameTranslation": {
+          "ar": "أجيوا نيكولاوس بالينيس",
+          "ru": "Агиос Николаос Паллинис"
+        }
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "AO Leontiou Eurohoops",
+      "slug": "ao-leontiou-eurohoops",
+      "shortName": "Leontiou Eurohoops",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 26,
+      "nameCode": "ALE",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "GR",
+        "alpha3": "GRC",
+        "name": "Greece",
+        "slug": "greece"
+      },
+      "id": 522972,
+      "fullName": "AO Leontiou Eurohoops",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "AO ليونتيون يوروهوبس",
+          "ru": "АО Леонтиу Еврохупс"
+        },
+        "shortNameTranslation": {
+          "ar": "ليونتيون يوروهوبس",
+          "ru": "Леонтиу Еврохупс"
+        }
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "homeScore": {},
+    "awayScore": {},
+    "time": {},
+    "changes": {
+      "changeTimestamp": 0
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17079409,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "ao-leontiou-eurohoops-agios-nikolaos-pallinis",
+    "startTimestamp": 1789411500,
+    "finalResultOnly": true,
+    "feedLocked": false,
+    "createdByNickname": "Pan Mark",
+    "eventEditorName": "Pan Mark",
+    "eventEditor": {
+      "id": "5bb906feeee9d24cf679c397",
+      "name": "Pan Mark"
+    },
+    "showTotoPromo": true,
+    "isEditor": true,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

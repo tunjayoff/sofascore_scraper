@@ -1,0 +1,314 @@
+{
+  "case_id": "A_inprogress-7-2nd-half",
+  "event_id": 17184988,
+  "fetched_at_utc": "2026-09-29T13:44:11+00:00",
+  "source_endpoint": "/api/v1/event/17184988",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"16b6a61158\"",
+    "date": "Tue, 29 Sep 2026 13:44:10 GMT"
+  },
+  "note": "live snapshot 2026-09-29T13:43:27+00:00",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "U19 Friendly Games",
+      "slug": "u19-friendly-games",
+      "category": {
+        "name": "World",
+        "slug": "world",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 20,
+        "country": {},
+        "id": 1468,
+        "flag": "international",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "العالم",
+            "hi": "विश्व",
+            "bn": "বিশ্ব",
+            "ru": "Мир"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "U19 Friendly Games",
+        "slug": "u19-friendly-games",
+        "primaryColorHex": "#25497d",
+        "secondaryColorHex": "#d38f1d",
+        "category": {
+          "name": "World",
+          "slug": "world",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 20,
+          "country": {},
+          "id": 1468,
+          "flag": "international",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "العالم",
+              "hi": "विश्व",
+              "bn": "বিশ্ব",
+              "ru": "Мир"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 2340,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "showBanner": true,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 856,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "مباريات ودية تحت 19 سنة",
+            "hi": "अंडर-19 फ्रेंडली गेम्स",
+            "bn": "আন্ডার19 ফ্রেন্ডলি গেমস",
+            "ru": "Товарищеские игры до 19 лет"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 3,
+      "isLive": false,
+      "id": 5799,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "hi": "अंडर-19 फ्रेंडली गेम्स",
+          "ar": "مباريات ودية تحت 19 سنة",
+          "bn": "আন্ডার19 ফ্রেন্ডলি গেমস",
+          "ru": "Дружеские матчи до 19 лет"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "U19 Friendly Games 2026",
+      "year": "2026",
+      "editor": false,
+      "id": 87180
+    },
+    "customId": "TZiscbj",
+    "status": {
+      "code": 7,
+      "description": "2nd half",
+      "type": "inprogress"
+    },
+    "homeTeam": {
+      "name": "Bulgaria U19",
+      "slug": "bulgaria-u19",
+      "shortName": "Bulgaria U19",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 2379,
+      "manager": {
+        "name": "Atanas Ribarski",
+        "slug": "atanas-ribarski",
+        "shortName": "A. Ribarski",
+        "country": {
+          "alpha2": "BG",
+          "alpha3": "BGR",
+          "name": "Bulgaria",
+          "slug": "bulgaria"
+        },
+        "id": 800944,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أتاناس ريبارسكي",
+            "ru": "Атанас Рибарски"
+          },
+          "shortNameTranslation": {
+            "ar": "أ. ريبارسكي",
+            "ru": "А. Рибарски"
+          }
+        }
+      },
+      "nameCode": "BUL",
+      "class": 1,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "BG",
+        "alpha3": "BGR",
+        "name": "Bulgaria",
+        "slug": "bulgaria"
+      },
+      "id": 22493,
+      "fullName": "Bulgaria U19",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffffff",
+        "secondary": "#00924a",
+        "text": "#00924a"
+      },
+      "foundationDateTimestamp": -1483228800,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "بلغاريا دون 19 سنة",
+          "bn": "বুলগেরিয়া আন্ডার19",
+          "hi": "बुल्गारिया अंडर 19",
+          "ru": "Болгария U19"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Romania U19",
+      "slug": "romania-u19",
+      "shortName": "Romania U19",
+      "gender": "M",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 6052,
+      "manager": {
+        "name": "Pavel Adrian Dulcea",
+        "slug": "pavel-adrian-dulcea",
+        "shortName": "P. A. Dulcea",
+        "country": {
+          "alpha2": "RO",
+          "alpha3": "ROU",
+          "name": "Romania",
+          "slug": "romania"
+        },
+        "id": 795213,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "بافل أدريان دولسيا",
+            "ru": "Павел Адриан Дульчеа"
+          },
+          "shortNameTranslation": {
+            "ar": "ب. أ. دولسيا",
+            "ru": "П. Дульчеа"
+          }
+        }
+      },
+      "nameCode": "ROU",
+      "class": 1,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "RO",
+        "alpha3": "ROU",
+        "name": "Romania",
+        "slug": "romania"
+      },
+      "id": 22552,
+      "fullName": "Romania U19",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#f7bd00",
+        "secondary": "#ff0000",
+        "text": "#ff0000"
+      },
+      "foundationDateTimestamp": -1927756800,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "رومانيا تحت 19",
+          "hi": "रोमानिया U19",
+          "ru": "Румыния U19"
+        },
+        "shortNameTranslation": {
+          "ar": "رومانيا 19"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 0,
+      "period2": 0
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 0,
+      "period2": 0
+    },
+    "coverage": -1,
+    "time": {
+      "periodLength": 2700,
+      "overtimeLength": 900,
+      "totalPeriodCount": 2,
+      "currentPeriodStartTimestamp": 1790689246,
+      "lastPeriodEndTimestamp": 1790688094,
+      "initial": 2700,
+      "max": 5400,
+      "extra": 540
+    },
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "homeScore.period2",
+        "awayScore.period2",
+        "time.currentPeriodStart"
+      ],
+      "changeTimestamp": 1790689247
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17184988,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "varInProgress": {
+      "homeTeam": false,
+      "awayTeam": false
+    },
+    "statusTime": {
+      "prefix": "",
+      "initial": 2700,
+      "max": 5400,
+      "timestamp": 1790689246,
+      "extra": 540
+    },
+    "slug": "romania-u19-bulgaria-u19",
+    "currentPeriodStartTimestamp": 1790689246,
+    "startTimestamp": 1790685000,
+    "lastPeriod": "period2",
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "national"
+      ],
+      "level": [
+        "pro",
+        "youth"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

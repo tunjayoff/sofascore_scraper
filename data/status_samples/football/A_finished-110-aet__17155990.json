@@ -1,0 +1,298 @@
+{
+  "case_id": "A_finished-110-aet",
+  "event_id": 17155990,
+  "fetched_at_utc": "2026-09-29T15:52:54+00:00",
+  "source_endpoint": "/api/v1/event/17155990",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"da7c7dc215\"",
+    "date": "Tue, 29 Sep 2026 15:52:53 GMT"
+  },
+  "note": "index source scan:2026-09-24",
+  "event": {
+    "eventState": {},
+    "tournament": {
+      "name": "Asian Games, Women, Knockout stage",
+      "slug": "asian-games-women-knockout-stage",
+      "category": {
+        "name": "Asia",
+        "slug": "asia",
+        "sport": {
+          "name": "Football",
+          "slug": "football",
+          "id": 1
+        },
+        "priority": 17,
+        "country": {},
+        "id": 1467,
+        "flag": "asia",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "آسيا",
+            "ru": "Азия"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "Asian Games, Women",
+        "slug": "asian-games-women",
+        "primaryColorHex": "#da0e7d",
+        "secondaryColorHex": "#b225b7",
+        "category": {
+          "name": "Asia",
+          "slug": "asia",
+          "sport": {
+            "name": "Football",
+            "slug": "football",
+            "id": 1
+          },
+          "priority": 17,
+          "country": {},
+          "id": 1467,
+          "flag": "asia",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "آسيا",
+              "ru": "Азия"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 1176,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 11330,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "ألعاب آسيا، السيدات",
+            "ru": "Азиатские игры, среди женщин"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "competitionType": 2,
+      "isLive": false,
+      "id": 68381,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ألعاب آسيا، السيدات، مرحلة خروج المغلوب",
+          "ru": "Азиатские игры среди женщин, стадия плей-офф"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "Asian Games, Women 2026",
+      "year": "2026",
+      "editor": false,
+      "seasonCoverageInfo": {
+        "editorCoverageLevel": 5
+      },
+      "id": 101214
+    },
+    "roundInfo": {
+      "round": 27,
+      "name": "Quarterfinals",
+      "slug": "quarterfinals",
+      "cupRoundType": 4
+    },
+    "customId": "nYcsijdb",
+    "status": {
+      "code": 110,
+      "description": "AET",
+      "type": "finished"
+    },
+    "winnerCode": 1,
+    "homeTeam": {
+      "name": "China",
+      "slug": "china",
+      "shortName": "China",
+      "gender": "F",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 5143,
+      "manager": {
+        "name": "Ante Milicic",
+        "slug": "ante-milicic",
+        "shortName": "A. Milicic",
+        "country": {
+          "alpha2": "AU",
+          "alpha3": "AUS",
+          "name": "Australia",
+          "slug": "australia"
+        },
+        "id": 789569,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أنتي ميليتش",
+            "ru": "Анте Миличич"
+          },
+          "shortNameTranslation": {
+            "ar": "أ. ميليتش",
+            "ru": "А. Миличич"
+          }
+        }
+      },
+      "nameCode": "CHN",
+      "class": 1,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "CN",
+        "alpha3": "CHN",
+        "name": "China",
+        "slug": "china"
+      },
+      "id": 7413,
+      "fullName": "China",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ff0000",
+        "secondary": "#fff100",
+        "text": "#fff100"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "الصين",
+          "ru": "Китай"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Vietnam",
+      "slug": "vietnam",
+      "shortName": "Vietnam",
+      "gender": "F",
+      "sport": {
+        "name": "Football",
+        "slug": "football",
+        "id": 1
+      },
+      "userCount": 5990,
+      "manager": {
+        "name": "Hoang Van Phuc",
+        "slug": "hoang-van-phuc",
+        "shortName": "H. V. Phuc",
+        "country": {
+          "alpha2": "VN",
+          "alpha3": "VNM",
+          "name": "Vietnam",
+          "slug": "vietnam"
+        },
+        "id": 795534,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "هوانغ فان فوك",
+            "ru": "Хоанг Ван Фук"
+          },
+          "shortNameTranslation": {
+            "ar": "ه. ف. فوك",
+            "ru": "Х. Фук"
+          }
+        }
+      },
+      "nameCode": "VIE",
+      "class": 1,
+      "disabled": false,
+      "national": true,
+      "type": 0,
+      "country": {
+        "alpha2": "VN",
+        "alpha3": "VNM",
+        "name": "Vietnam",
+        "slug": "vietnam"
+      },
+      "id": 132958,
+      "fullName": "Vietnam",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ff0000",
+        "secondary": "#ffff00",
+        "text": "#ffff00"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "فيتنام",
+          "hi": "वियतनाम",
+          "ru": "Вьетнам"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 1,
+      "display": 1,
+      "period1": 0,
+      "period2": 0,
+      "normaltime": 0,
+      "extra1": 0,
+      "extra2": 1,
+      "overtime": 1
+    },
+    "awayScore": {
+      "current": 0,
+      "display": 0,
+      "period1": 0,
+      "period2": 0,
+      "normaltime": 0,
+      "extra1": 0,
+      "extra2": 0,
+      "overtime": 0
+    },
+    "time": {
+      "currentPeriodStartTimestamp": 1790323980,
+      "lastPeriodEndTimestamp": 1790318783
+    },
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type",
+        "homeScore.extra2",
+        "homeScore.overtime"
+      ],
+      "changeTimestamp": 1790325042
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17155990,
+    "defaultPeriodCount": 2,
+    "defaultPeriodLength": 45,
+    "defaultOvertimeLength": 15,
+    "slug": "vietnam-china",
+    "currentPeriodStartTimestamp": 1790323980,
+    "startTimestamp": 1790316000,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "cupMatchesInRound": 1,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "national"
+      ],
+      "level": [
+        "pro"
+      ],
+      "gender": [
+        "F"
+      ]
+    }
+  },
+  "error": null
+}
