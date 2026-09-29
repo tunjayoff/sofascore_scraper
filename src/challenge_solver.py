@@ -215,7 +215,9 @@ class BrowserBridge:
             if token and token != before:
                 return token
             await asyncio.sleep(0.5)
-        return await self._token_from_context() if before is None else None
+        # Değer değişmemiş olabilir (sunucu aynı cookie'yi geçerli saydı): başarısız sayma — asıl karar
+        # isteğin yeniden denenmesinde. Aksi halde _SOLVE_RETRY_AFTER boyunca hiç çözüm yapılmazdı.
+        return await self._token_from_context()
 
     def _set_token(self, token: str) -> None:
         global _cached_token, _cached_at
