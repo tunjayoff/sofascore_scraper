@@ -87,3 +87,26 @@ async def test_make_api_request_async_falls_back_to_browser_bridge_on_challenge(
     with patch("src.challenge_solver.fetch_api_via_browser", new_callable=AsyncMock, return_value=expected_data):
         res = await make_api_request_async(mock_session, "/sport/football/events/live")
         assert res == expected_data
+
+
+def test_browser_calls_share_one_event_loop_across_callers():
+    """Async çağrılar çağıranın döngüsünde değil, sync yol ile aynı arka plan döngüsünde çalışmalı."""
+    import asyncio
+    from src.challenge_solver import fetch_api_via_browser_sync
+
+    loops = []
+
+    class FakeBridge:
+        async def fetch_json(self, path_or_url):
+            loops.append(asyncio.get_running_loop())
+            return {"ok": path_or_url}
+
+    with patch.object(BrowserBridge, "get_instance", return_value=FakeBridge()):
+        # asyncio.run her seferinde geçici bir döngü açıp kapatır (sezon çekme akışı gibi)
+        assert asyncio.run(fetch_api_via_browser("/a")) == {"ok": "/a"}
+        assert asyncio.run(fetch_api_via_browser("/b")) == {"ok": "/b"}
+        assert fetch_api_via_browser_sync("/c") == {"ok": "/c"}
+
+    assert len(loops) == 3
+    assert loops[0] is loops[1] is loops[2]
+    assert loops[0].is_running()

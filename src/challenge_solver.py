@@ -329,20 +329,31 @@ def fetch_api_via_browser_sync(path_or_url: str, timeout: float = 35.0) -> Optio
     try:
         return fut.result(timeout=timeout)
     except Exception as e:
-        logger.error(f"fetch_api_via_browser_sync hatası: {e}")
+        fut.cancel()
+        logger.error(f"fetch_api_via_browser_sync hatası: {e!r}")
         return None
+
+
+async def _run_on_background_loop(coro) -> Any:
+    """
+    Coroutine'i BrowserBridge'in arka plan döngüsünde çalıştırır ve sonucu bekler.
+    Playwright nesneleri oluşturuldukları döngüye bağlıdır; çağıranın döngüsü
+    (örn. asyncio.run ile açılıp kapanan geçici döngü) kullanılırsa sonraki çağrılar askıda kalır.
+    """
+    loop = _get_background_loop()
+    return await asyncio.wrap_future(asyncio.run_coroutine_threadsafe(coro, loop))
 
 
 async def fetch_api_via_browser(path_or_url: str) -> Optional[Any]:
     """Asenkron API istek köprüsü."""
     bridge = BrowserBridge.get_instance()
-    return await bridge.fetch_json(path_or_url)
+    return await _run_on_background_loop(bridge.fetch_json(path_or_url))
 
 
 async def solve_turnstile_challenge(timeout_ms: int = 35000, headless: Optional[bool] = None) -> Optional[str]:
     """Turnstile challenge çözücü."""
     bridge = BrowserBridge.get_instance()
-    return await bridge.solve_challenge()
+    return await _run_on_background_loop(bridge.solve_challenge())
 
 
 def solve_turnstile_challenge_sync(timeout_ms: int = 30000) -> Optional[str]:
