@@ -1,0 +1,42 @@
+{"type": "stuck", "event_id": 17209424, "at_utc": "2026-09-29T18:35:38+00:00", "start_ts": 1790689500, "status_class": "live"}
+{"type": "score_changed", "event_id": 16561585, "at_utc": "2026-09-29T18:35:57+00:00", "from": [75, 56], "to": [77, 56], "change_ts": 1790706912, "source": "live"}
+{"type": "score_changed", "event_id": 16310084, "at_utc": "2026-09-29T18:35:57+00:00", "from": [75, 58], "to": [75, 60], "change_ts": 1790706934, "source": "live"}
+{"type": "score_changed", "event_id": 16561594, "at_utc": "2026-09-29T18:36:59+00:00", "from": [59, 53], "to": [60, 53], "change_ts": 1790706999, "source": "live"}
+{"type": "score_changed", "event_id": 17205033, "at_utc": "2026-09-29T18:36:59+00:00", "from": [82, 64], "to": [84, 64], "change_ts": 1790706958, "source": "live"}
+{"type": "score_changed", "event_id": 16310084, "at_utc": "2026-09-29T18:36:59+00:00", "from": [75, 60], "to": [75, 62], "change_ts": 1790706974, "source": "live"}
+{"type": "score_changed", "event_id": 16310082, "at_utc": "2026-09-29T18:36:59+00:00", "from": [52, 42], "to": [54, 42], "change_ts": 1790706996, "source": "live"}
+{"type": "score_changed", "event_id": 17189043, "at_utc": "2026-09-29T18:37:03+00:00", "from": [1, 0], "to": [1, 1], "change_ts": 1790707007, "source": "live"}
+{"type": "score_changed", "event_id": 16670547, "at_utc": "2026-09-29T18:37:26+00:00", "from": [71, 71], "to": [71, 72], "change_ts": 1790707023, "source": "live"}
+{"type": "score_changed", "event_id": 16561585, "at_utc": "2026-09-29T18:38:00+00:00", "from": [77, 56], "to": [79, 56], "change_ts": 1790707062, "source": "live"}
+{"type": "score_changed", "event_id": 17203942, "at_utc": "2026-09-29T18:38:00+00:00", "from": [22, 29], "to": [22, 31], "change_ts": 1790707066, "source": "live"}
+{"type": "status_changed", "event_id": 17207832, "from": "live", "to": "completed", "at_utc": "2026-09-29T18:38:08+00:00", "change_ts": 1790707072, "source": "event", "scores": {"sport": "tennis", "status_class": "completed", "winner_code": 2, "raw_change_ts": 1790707072, "raw_changed_fields": ["status.code", "status.description", "status.type", "homeScore.period3TieBreak", "awayScore.current", "awayScore.display", "awayScore.period3", "awayScore.period3TieBreak"], "sets_won": [1, 2], "games": [[6, 4], [2, 6], [6, 7]], "tiebreaks": {"3": [7, 9]}, "retired": false, "walkover": false, "match_tiebreak": false}, "provisional": true}
+{"type": "score_changed", "event_id": 16561585, "at_utc": "2026-09-29T18:38:33+00:00", "from": [79, 56], "to": [79, 57], "change_ts": 1790707095, "source": "live"}
+{"type": "score_changed", "event_id": 16310082, "at_utc": "2026-09-29T18:38:33+00:00", "from": [54, 42], "to": [54, 45], "change_ts": 1790707077, "source": "live"}
+{"type": "score_changed", "event_id": 16874950, "at_utc": "2026-09-29T18:38:33+00:00", "from": [24, 52], "to": [24, 55], "change_ts": 1790707089, "source": "live"}
+{"type": "status_changed", "event_id": 17202180, "from": "live", "to": "decided_without_play", "at_utc": "2026-09-29T18:38:36+00:00", "change_ts": 1790707090, "source": "event", "scores": {"sport": "tennis", "status_class": "decided_without_play", "winner_code": null, "raw_change_ts": 1790707090, "raw_changed_fields": ["status.code", "status.description", "status.type", "time.currentPeriodStart"], "sets_won": [1, 0], "games": [[6, 1], [0, 0]], "tiebreaks": {}, "retired": true, "walkover": false, "match_tiebreak": false}}
+{"type": "score_changed", "event_id": 16670547, "at_utc": "2026-09-29T18:38:58+00:00", "from": [71, 72], "to": [71, 74], "change_ts": 1790707120, "source": "live"}
+{"type": "score_changed", "event_id": 16561585, "at_utc": "2026-09-29T18:38:58+00:00", "from": [79, 57], "to": [79, 58], "change_ts": 1790707113, "source": "live"}
+{"type": "score_changed", "event_id": 17203942, "at_utc": "2026-09-29T18:38:58+00:00", "from": [22, 31], "to": [22, 33], "change_ts": 1790707126, "source": "live"}
+{"type": "score_changed", "event_id": 16310082, "at_utc": "2026-09-29T18:38:58+00:00", "from": [54, 45], "to": [56, 45], "change_ts": 1790707117, "source": "live"}
+{"type": "status_changed", "event_id": 17106170, "from": "live", "to": "completed", "at_utc": "2026-09-29T18:39:27+00:00", "change_ts": 1790707134, "source": "event", "scores": {"sport": "football", "status_class": "completed", "winner_code": 2, "raw_change_ts": 1790707134, "raw_changed_fields": ["status.code", "status.description", "status.type", "homeScore.normaltime", "awayScore.normaltime"], "ht": [0, 1], "ft90": [0, 1], "aet": null, "penalties": null, "aggregated": null, "aggregated_winner_code": 2}, "provisional": true}
+{"type": "score_changed", "event_id": 16561585, "at_utc": "2026-09-29T18:39:40+00:00", "from": [79, 58], "to": [83, 61], "change_ts": 1790707170, "source": "live"}
+{"type": "score_changed", "event_id": 17203942, "at_utc": "2026-09-29T18:39:40+00:00", "from": [22, 33], "to": [25, 33], "change_ts": 1790707166, "source": "live"}
+{"type": "score_changed", "event_id": 16310084, "at_utc": "2026-09-29T18:39:40+00:00", "from": [75, 62], "to": [77, 62], "change_ts": 1790707154, "source": "live"}
+{"type": "score_changed", "event_id": 16310084, "at_utc": "2026-09-29T18:40:39+00:00", "from": [77, 62], "to": [77, 64], "change_ts": 1790707214, "source": "live"}
+{"type": "score_changed", "event_id": 16310082, "at_utc": "2026-09-29T18:40:39+00:00", "from": [56, 45], "to": [58, 45], "change_ts": 1790707217, "source": "live"}
+{"type": "score_changed", "event_id": 16561585, "at_utc": "2026-09-29T18:41:06+00:00", "from": [83, 61], "to": [83, 63], "change_ts": 1790707233, "source": "live"}
+{"type": "score_changed", "event_id": 17205033, "at_utc": "2026-09-29T18:41:06+00:00", "from": [84, 64], "to": [84, 67], "change_ts": 1790707257, "source": "live"}
+{"type": "score_changed", "event_id": 16310084, "at_utc": "2026-09-29T18:41:06+00:00", "from": [77, 64], "to": [77, 66], "change_ts": 1790707234, "source": "live"}
+{"type": "score_changed", "event_id": 16310082, "at_utc": "2026-09-29T18:41:06+00:00", "from": [58, 45], "to": [61, 47], "change_ts": 1790707257, "source": "live"}
+{"type": "score_changed", "event_id": 16561585, "at_utc": "2026-09-29T18:41:44+00:00", "from": [83, 63], "to": [84, 63], "change_ts": 1790707293, "source": "live"}
+{"type": "score_changed", "event_id": 17205033, "at_utc": "2026-09-29T18:41:44+00:00", "from": [84, 67], "to": [88, 67], "change_ts": 1790707262, "source": "live"}
+{"type": "score_changed", "event_id": 16874950, "at_utc": "2026-09-29T18:41:44+00:00", "from": [24, 55], "to": [24, 57], "change_ts": 1790707290, "source": "live"}
+{"type": "score_changed", "event_id": 16561585, "at_utc": "2026-09-29T18:42:12+00:00", "from": [84, 63], "to": [85, 63], "change_ts": 1790707299, "source": "live"}
+{"type": "score_changed", "event_id": 16310084, "at_utc": "2026-09-29T18:42:12+00:00", "from": [77, 66], "to": [77, 68], "change_ts": 1790707314, "source": "live"}
+{"type": "score_changed", "event_id": 16310082, "at_utc": "2026-09-29T18:42:12+00:00", "from": [61, 47], "to": [64, 47], "change_ts": 1790707317, "source": "live"}
+{"type": "score_changed", "event_id": 16874950, "at_utc": "2026-09-29T18:42:43+00:00", "from": [24, 57], "to": [26, 57], "change_ts": 1790707351, "source": "live"}
+{"type": "score_changed", "event_id": 16670559, "at_utc": "2026-09-29T18:43:10+00:00", "from": [72, 65], "to": [75, 65], "change_ts": 1790707377, "source": "live"}
+{"type": "score_changed", "event_id": 16561585, "at_utc": "2026-09-29T18:43:10+00:00", "from": [85, 63], "to": [87, 65], "change_ts": 1790707377, "source": "live"}
+{"type": "score_changed", "event_id": 16670559, "at_utc": "2026-09-29T18:43:44+00:00", "from": [75, 65], "to": [75, 68], "change_ts": 1790707398, "source": "live"}
+{"type": "score_changed", "event_id": 16670547, "at_utc": "2026-09-29T18:43:44+00:00", "from": [71, 74], "to": [71, 76], "change_ts": 1790707401, "source": "live"}
+{"type": "score_changed", "event_id": 16561594, "at_utc": "2026-09-29T18:43:44+00:00", "from": [60, 53], "to": [60, 54], "change_ts": 1790707401, "source": "live"}

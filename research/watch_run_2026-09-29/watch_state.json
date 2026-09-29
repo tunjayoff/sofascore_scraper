@@ -1,0 +1,133 @@
+{
+  "17187725": {
+    "class": "live",
+    "done": false,
+    "last_event_poll": 1790706916.4409761,
+    "start_ts": 1790701800,
+    "tournament_id": 28147,
+    "score": [
+      1,
+      0
+    ],
+    "near_end": false,
+    "stuck": false
+  },
+  "17187731": {
+    "class": "live",
+    "done": false,
+    "last_event_poll": 1790707436.176016,
+    "start_ts": 1790696400,
+    "tournament_id": 28147,
+    "score": [
+      1,
+      1
+    ],
+    "near_end": true,
+    "stuck": false
+  },
+  "17189043": {
+    "class": "live",
+    "done": false,
+    "last_event_poll": 1790707434.7512157,
+    "start_ts": 1790701800,
+    "tournament_id": 25180,
+    "score": [
+      1,
+      1
+    ],
+    "near_end": true,
+    "stuck": false
+  },
+  "17196038": {
+    "class": "live",
+    "done": false,
+    "last_event_poll": 1790707438.5106375,
+    "start_ts": 1790697000,
+    "tournament_id": 5936,
+    "score": [
+      1,
+      1
+    ],
+    "near_end": true,
+    "stuck": false
+  },
+  "17202180": {
+    "class": "decided_without_play",
+    "done": true,
+    "last_event_poll": 1790707116.7084842,
+    "start_ts": 1790704800,
+    "tournament_id": 38331,
+    "score": [
+      1,
+      0
+    ],
+    "near_end": false,
+    "stuck": false
+  },
+  "17207832": {
+    "class": "completed",
+    "done": true,
+    "last_event_poll": 1790707088.4141634,
+    "start_ts": 1790694000,
+    "tournament_id": 29816,
+    "score": [
+      1,
+      2
+    ],
+    "near_end": false,
+    "stuck": false,
+    "completed_emitted": true
+  },
+  "17209270": {
+    "class": "live",
+    "done": false,
+    "last_event_poll": 1790707433.2708435,
+    "start_ts": 1790706600,
+    "tournament_id": 29841,
+    "score": [
+      1,
+      1
+    ],
+    "near_end": true,
+    "stuck": false
+  },
+  "17209418": {
+    "class": "live",
+    "done": false,
+    "last_event_poll": 1790706935.40105,
+    "start_ts": 1790704800,
+    "tournament_id": 29842,
+    "score": [
+      0,
+      0
+    ],
+    "near_end": false,
+    "stuck": false
+  },
+  "17209424": {
+    "class": "live",
+    "done": false,
+    "last_event_poll": 1790707247.324919,
+    "start_ts": 1790689500,
+    "tournament_id": 26617,
+    "score": [
+      0,
+      1
+    ],
+    "near_end": true,
+    "stuck": true
+  },
+  "17210464": {
+    "class": "live",
+    "done": false,
+    "last_event_poll": 1790707440.850197,
+    "start_ts": 1790699700,
+    "tournament_id": 6652,
+    "score": [
+      1,
+      1
+    ],
+    "near_end": true,
+    "stuck": false
+  }
+}
