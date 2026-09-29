@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from src.watcher import (EVENT_INTERVAL_SLOW_SECONDS, MatchWatcher, STUCK_INTERVAL_SECONDS, WATCH_EVENTS_FILE,
-                         near_end)
+                         near_end, play_start)
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
 
@@ -212,6 +212,35 @@ def test_stuck_match_is_reported_once_and_polled_every_five_minutes(tmp_path):
     w.tick()
     assert "/event/700" in api.calls[before + 1:]
     assert [e["type"] for e in _events(tmp_path)] == ["stuck"]
+
+
+def test_tennis_play_start_from_set_durations():
+    ev = _fx("tennis/A_inprogress-10-3rd-set__17202152")
+    t = ev["time"]
+    assert play_start(ev) == t["currentPeriodStartTimestamp"] - t["period1"] - t["period2"]
+    assert play_start(_fx("tennis/A_notstarted-0-not-started__17204702")) is None
+
+
+@pytest.mark.parametrize("hours_since_play_start,expected", [(5, []), (7, ["stuck"])])
+def test_tennis_stuck_uses_real_play_start_and_six_hours(tmp_path, hours_since_play_start, expected):
+    ev = _fx("tennis/A_inprogress-10-3rd-set__17202152", eid=810)
+    now = play_start(ev) + hours_since_play_start * 3600
+    ev["startTimestamp"] = int(now - 9 * 3600)  # planlanan saat çok daha erken: ölçü değil
+    api = FakeApi("tennis", [[ev]], {810: ev})
+    w = _watcher(tmp_path, api, Clock(now), event_ids=[810])
+    w.start()
+    assert [e["type"] for e in _events(tmp_path)] == expected
+
+
+def test_tennis_without_time_falls_back_to_start_timestamp(tmp_path):
+    ns = _fx("tennis/A_notstarted-0-not-started__17204702", eid=820)
+    api = FakeApi("tennis", [[]], {820: ns})
+    w = _watcher(tmp_path, api, Clock(ns["startTimestamp"] + 5 * 3600), event_ids=[820])
+    w.start()
+    assert _events(tmp_path) == []  # 6 sa dolmadı
+    w2 = _watcher(tmp_path / "b", api, Clock(ns["startTimestamp"] + 6.5 * 3600), event_ids=[820])
+    w2.start()
+    assert [e["type"] for e in _events(tmp_path / "b")] == ["stuck"]
 
 
 def test_void_with_moved_start_stays_tracked(tmp_path):

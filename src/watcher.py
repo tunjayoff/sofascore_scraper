@@ -32,6 +32,9 @@ EVENT_INTERVAL_SECONDS = 30
 EVENT_INTERVAL_SLOW_SECONDS = 60  # hız bütçesi aşılınca
 STUCK_INTERVAL_SECONDS = 300
 STUCK_AFTER_SECONDS = 4 * 3600
+# Tenis: startTimestamp planlanan saattir (aynı kortta sıra, yağmur); retro verisinde bitmiş 60 maçın 5'i
+# başlangıçtan > 4 sa sonra bitti (maks 5,46 sa). Ölçü gerçek oyun başlangıcı, eşik 6 sa.
+STUCK_AFTER_SECONDS_TENNIS = 6 * 3600
 EVENT_PAGES_PER_MINUTE = 40  # liste 2/dk + maç sayfaları ≤ 40/dk → < 1 istek/sn
 MIN_REQUEST_SPACING_SECONDS = 1.0
 WATCH_EVENTS_FILE = "watch_events.jsonl"
@@ -89,6 +92,19 @@ def near_end(event: Dict[str, Any], sport: str, now: float) -> bool:
         sets = event.get("defaultPeriodCount") or 3
         return isinstance(code, int) and 8 <= code <= 12 and code - 7 >= sets
     return False
+
+
+def play_start(event: Dict[str, Any]) -> Optional[float]:
+    """
+    Tenis: gerçek oyun başlangıcı = currentPeriodStartTimestamp − biten setlerin süreleri (time.periodN, sn);
+    set süreleri yoksa currentPeriodStartTimestamp. Zaman bilgisi yoksa None (çağıran startTimestamp'e düşer).
+    """
+    t = event.get("time") or {}
+    current = t.get("currentPeriodStartTimestamp")
+    if not isinstance(current, (int, float)) or not current:
+        return None
+    done = sum(v for k, v in t.items() if k.startswith("period") and k[6:].isdigit() and isinstance(v, (int, float)))
+    return current - done
 
 
 def _score_key(event: Dict[str, Any]) -> List[Any]:
@@ -239,11 +255,16 @@ class MatchWatcher:
         else:
             s["done"] = False
 
-        start = s.get("start_ts")
+        if self.sport == "tennis":
+            s["play_start"] = play_start(event) or s.get("play_start")
+            start = s.get("play_start") or s.get("start_ts")
+            limit = STUCK_AFTER_SECONDS_TENNIS
+        else:
+            start, limit = s.get("start_ts"), STUCK_AFTER_SECONDS
         stuck_now = (
             cls in (StatusClass.LIVE, StatusClass.NOT_STARTED)
             and isinstance(start, (int, float))
-            and now > start + STUCK_AFTER_SECONDS
+            and now > start + limit
         )
         if stuck_now and not s.get("stuck"):
             self._emit({"type": "stuck", "event_id": int(eid), "at_utc": _utc(now), "start_ts": start,
