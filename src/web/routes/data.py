@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import asyncio
 import glob
-import json
 import os
 import re
 import traceback
@@ -15,9 +14,9 @@ from pydantic import BaseModel
 
 from src.paths import env_file_path
 from src.web import league_sports
+from src.services import stats as stats_service
 from src.web.routes.common import (
     _SyncHttpError,
-    _find_league_seasons_json,
     config_manager,
     logger,
 )
@@ -26,219 +25,33 @@ router = APIRouter(prefix="/api", tags=["api"])
 
 
 def _build_dashboard_sync(data_dir: str, leagues: Dict[int, str]) -> dict:
-    seasons_dir = os.path.join(data_dir, "seasons")
-    matches_dir = os.path.join(data_dir, "matches")
-    details_dir = os.path.join(data_dir, "match_details")
-
-    league_cards = []
-    for lid, lname in leagues.items():
-        card = {"id": lid, "name": lname, "seasons": 0, "matches": 0, "details": 0, "coverage": 0, "last_update": None}
-        sf = _find_league_seasons_json(data_dir, lid)
-        if sf:
-            try:
-                with open(sf, "r") as f:
-                    d = json.load(f)
-                s = d.get("seasons", d) if isinstance(d, dict) else d
-                card["seasons"] = len(s) if isinstance(s, list) else 0
-            except Exception:
-                pass
-
-        match_pattern = os.path.join(matches_dir, f"{lid}_*", "*.csv")
-        for mf in glob.glob(match_pattern):
-            try:
-                with open(mf, "r") as f:
-                    rows = sum(1 for _ in f) - 1
-                if rows > 0:
-                    card["matches"] += rows
-            except Exception:
-                pass
-
-        detail_files = glob.glob(os.path.join(details_dir, f"{lid}_*", "season_*", "*", "basic.json"))
-        if not detail_files:
-            safe_name = lname.replace(" ", "_").replace("/", "_")
-            detail_files = glob.glob(os.path.join(details_dir, safe_name, "season_*", "*", "basic.json"))
-        card["details"] = len(detail_files)
-        card["coverage"] = round(card["details"] / card["matches"] * 100, 1) if card["matches"] > 0 else 0
-
-        if detail_files:
-            latest_mtime = max(os.path.getmtime(f) for f in detail_files)
-            import datetime as _dt
-
-            card["last_update"] = _dt.datetime.fromtimestamp(latest_mtime).isoformat()
-
-        league_cards.append(card)
-
-    def get_dir_size(path: str) -> int:
-        total = 0
-        if os.path.exists(path):
-            for dp, _, fns in os.walk(path):
-                for fn in fns:
-                    try:
-                        total += os.path.getsize(os.path.join(dp, fn))
-                    except Exception:
-                        pass
-        return total
-
-    s_size = get_dir_size(seasons_dir)
-    m_size = get_dir_size(matches_dir)
-    d_size = get_dir_size(details_dir)
-    total = s_size + m_size + d_size
-
-    size_fmt = total
-    formatted = "0 B"
-    for unit in ["B", "KB", "MB", "GB"]:
-        if size_fmt < 1024:
-            formatted = f"{size_fmt:.1f} {unit}"
-            break
-        size_fmt /= 1024
-    else:
-        formatted = f"{size_fmt:.1f} TB"
-
+    cards = []
+    for lid, name in leagues.items():
+        st = stats_service.league_stats(data_dir, lid, name)
+        cards.append({k: st[k] for k in ("id", "name", "seasons", "matches", "details", "coverage", "last_update")})
+    disk = stats_service.system_stats(data_dir, {})["disk_usage"]
     return {
-        "leagues": league_cards,
-        "disk_usage": {
-            "seasons": s_size,
-            "matches": m_size,
-            "details": d_size,
-            "total": total,
-            "formatted_total": formatted,
-        },
+        "leagues": cards,
+        "disk_usage": {k: disk[k] for k in ("seasons", "matches", "details", "total", "formatted_total")},
         "totals": {
             "leagues": len(leagues),
-            "matches": sum(c["matches"] for c in league_cards),
-            "details": sum(c["details"] for c in league_cards),
+            "matches": sum(c["matches"] for c in cards),
+            "details": sum(c["details"] for c in cards),
         },
     }
 
 
 def _compute_system_stats_sync(data_dir: str, leagues: Dict[int, str]) -> Dict[str, Any]:
-    logger.info(f"Generating stats from data_dir: {data_dir}")
-    league_stats: Dict[int, Dict[str, Any]] = {
-        league_id: {"name": league_name, "matches": 0, "details": 0}
-        for league_id, league_name in leagues.items()
-    }
-
-    stats: Dict[str, Any] = {
-        "leagues": len(leagues),
-        "seasons": 0,
-        "matches": 0,
-        "details": 0,
-        "league_breakdown": [],
-        "disk_usage": {
-            "seasons": 0,
-            "matches": 0,
-            "details": 0,
-            "total": 0,
-            "formatted_total": "0 B",
-        },
-    }
-
-    seasons_dir = os.path.join(data_dir, "seasons")
-    if os.path.exists(seasons_dir):
-        files = [f for f in os.listdir(seasons_dir) if f.endswith("_seasons.json")]
-        for f in files:
-            try:
-                with open(os.path.join(seasons_dir, f), "r") as fp:
-                    data = json.load(fp)
-                    if isinstance(data, dict) and "seasons" in data:
-                        stats["seasons"] += len(data["seasons"])
-                    elif isinstance(data, list):
-                        stats["seasons"] += len(data)
-            except Exception:
-                pass
-
-    matches_dir = os.path.join(data_dir, "matches")
-    if os.path.exists(matches_dir):
-        for root, dirs, files in os.walk(matches_dir):
-            parent_dir = os.path.basename(root)
-            current_l_id = None
-            if "_" in parent_dir:
-                try:
-                    current_l_id = int(parent_dir.split("_")[0])
-                except Exception:
-                    pass
-
-            for file in files:
-                if file.endswith("_matches.csv") or file.endswith("_summary.csv"):
-                    try:
-                        with open(os.path.join(root, file), "r", encoding="utf-8") as f:
-                            row_count = sum(1 for line in f) - 1
-                            if row_count > 0:
-                                stats["matches"] += row_count
-                                if current_l_id in league_stats:
-                                    league_stats[current_l_id]["matches"] += row_count
-                    except Exception:
-                        pass
-
-    match_details_dir = os.path.join(data_dir, "match_details")
-    if os.path.exists(match_details_dir):
-        league_name_to_id = {}
-        for lid, lname in leagues.items():
-            league_name_to_id[lname.replace(" ", "_").replace("/", "_").lower()] = lid
-
-        basic_files = glob.glob(os.path.join(match_details_dir, "*", "season_*", "*", "basic.json"))
-        for bf in basic_files:
-            stats["details"] += 1
-            rel = os.path.relpath(bf, match_details_dir)
-            lg_folder = rel.split(os.sep)[0]
-            current_l_id = None
-            try:
-                current_l_id = int(lg_folder.split("_")[0])
-            except (ValueError, IndexError):
-                clean = lg_folder.lower()
-                current_l_id = league_name_to_id.get(clean)
-                if current_l_id is None:
-                    for key, lid in league_name_to_id.items():
-                        if key in clean or clean in key:
-                            current_l_id = lid
-                            break
-            if current_l_id in league_stats:
-                league_stats[current_l_id]["details"] += 1
-
-    for l_id, data in league_stats.items():
-        if data["matches"] > 0 or data["details"] > 0:
-            stats["league_breakdown"].append(
-                {
-                    "id": l_id,
-                    "name": data["name"],
-                    "matches": data["matches"],
-                    "details": data["details"],
-                    "coverage": round((data["details"] / data["matches"] * 100), 1)
-                    if data["matches"] > 0
-                    else 0,
-                }
-            )
-
-    stats["league_breakdown"].sort(key=lambda x: x["matches"], reverse=True)
-
-    def get_dir_size(path: str) -> int:
-        total = 0
-        if os.path.exists(path):
-            for dirpath, _, filenames in os.walk(path):
-                for f in filenames:
-                    fp = os.path.join(dirpath, f)
-                    try:
-                        if os.path.exists(fp):
-                            total += os.path.getsize(fp)
-                    except Exception:
-                        pass
-        return total
-
-    stats["disk_usage"]["seasons"] = get_dir_size(seasons_dir)
-    stats["disk_usage"]["matches"] = get_dir_size(matches_dir)
-    stats["disk_usage"]["details"] = get_dir_size(match_details_dir)
-    stats["disk_usage"]["total"] = sum([stats["disk_usage"][k] for k in ["seasons", "matches", "details"]])
-
-    size = stats["disk_usage"]["total"]
-    for unit in ["B", "KB", "MB", "GB"]:
-        if size < 1024:
-            stats["disk_usage"]["formatted_total"] = f"{size:.2f} {unit}"
-            break
-        size /= 1024
-
-    if "formatted_total" not in stats["disk_usage"]:
-        stats["disk_usage"]["formatted_total"] = f"{size:.2f} TB"
-
+    stats = stats_service.system_stats(data_dir, leagues)
+    stats["league_breakdown"] = sorted(
+        (
+            {k: b[k] for k in ("id", "name", "matches", "details", "coverage")}
+            for b in stats["league_breakdown"]
+            if b["matches"] or b["details"]
+        ),
+        key=lambda b: b["matches"],
+        reverse=True,
+    )
     return stats
 
 
