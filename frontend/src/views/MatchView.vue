@@ -1,451 +1,338 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onUnmounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { apiGet, apiSend } from '@/api/client'
+import { api, ApiError } from '@/api/client'
 import {
   parseStatistics,
   parseIncidents,
   splitLineupPlayers,
   playerDisplayName,
   shirtOf,
-  formatKickoff,
   venueName,
-  possessionPair,
-  incidentLabel,
-  highlightIncidents,
   formSequence,
 } from '@/lib/matchDetail'
+import { sportKey, periodLabel } from '@/lib/sport'
+import { matchDate } from '@/lib/format'
+import { errorText, toastError } from '@/lib/toast'
+import { useScrapeStore } from '@/stores/scrape'
+import AppIcon from '@/components/AppIcon.vue'
+import SportBadge from '@/components/SportBadge.vue'
+
+type Tab = 'overview' | 'stats' | 'events' | 'lineups'
 
 const { t } = useI18n()
 const route = useRoute()
-const router = useRouter()
-const matchId = computed(() => String(route.params.id))
+const id = computed(() => String(route.params.id))
 
+const data = ref<any>(null)
 const loading = ref(true)
 const notFetched = ref(false)
-const error = ref('')
-const matchData = ref<any>(null)
+const err = ref('')
 const fetching = ref(false)
-const tab = ref<'overview' | 'stats' | 'events' | 'lineups'>('overview')
-const statsPeriod = ref(0)
+const tab = ref<Tab>('overview')
+const period = ref(0)
 
-const basic = computed(() => matchData.value?.basic || null)
-const homeName = computed(
-  () => basic.value?.homeTeam?.name || basic.value?.homeTeam?.shortName || '-',
+const basic = computed(() => data.value?.basic || null)
+const sport = computed(() =>
+  sportKey(basic.value?.tournament?.category?.sport?.slug || basic.value?.tournament?.category?.sport?.name || basic.value?.sport?.slug),
 )
-const awayName = computed(
-  () => basic.value?.awayTeam?.name || basic.value?.awayTeam?.shortName || '-',
-)
-const homeScore = computed(() => basic.value?.homeScore?.current ?? basic.value?.homeScore?.display ?? null)
-const awayScore = computed(() => basic.value?.awayScore?.current ?? basic.value?.awayScore?.display ?? null)
-const htScore = computed(() => {
-  const h = basic.value?.homeScore?.period1
-  const a = basic.value?.awayScore?.period1
-  if (h == null && a == null) return null
-  return `${h ?? '-'}–${a ?? '-'}`
+const home = computed(() => basic.value?.homeTeam?.name || basic.value?.homeTeam?.shortName || '—')
+const away = computed(() => basic.value?.awayTeam?.name || basic.value?.awayTeam?.shortName || '—')
+const homeSc = computed(() => basic.value?.homeScore || {})
+const awaySc = computed(() => basic.value?.awayScore || {})
+const mainScore = computed(() => {
+  const h = homeSc.value.display ?? homeSc.value.current
+  const a = awaySc.value.display ?? awaySc.value.current
+  return h == null && a == null ? null : `${h ?? '–'}–${a ?? '–'}`
 })
-const statusText = computed(() => basic.value?.status?.description || '')
-const tournamentName = computed(() => basic.value?.tournament?.name || '')
-const seasonName = computed(() => basic.value?.season?.name || basic.value?.season?.year || '')
-const kickoff = computed(() => formatKickoff(basic.value?.startTimestamp))
-const stadium = computed(() => venueName(basic.value))
-const referee = computed(() => basic.value?.referee?.name || '')
+const periods = computed(() => {
+  const keys = new Set<string>()
+  for (const s of [homeSc.value, awaySc.value]) for (const k of Object.keys(s)) if (/^period\d+$/.test(k)) keys.add(k)
+  const list = [...keys].sort((a, b) => Number(a.slice(6)) - Number(b.slice(6)))
+  const cols = list.map((k) => ({ key: k, label: periodLabel(sport.value, Number(k.slice(6)), t) }))
+  if (homeSc.value.overtime != null || awaySc.value.overtime != null) cols.push({ key: 'overtime', label: t('match.period.ot') })
+  return cols
+})
+const tournament = computed(() => basic.value?.tournament?.name || '')
+const season = computed(() => basic.value?.season?.name || basic.value?.season?.year || '')
+const info = computed(() =>
+  [
+    { k: t('match.info.date'), v: basic.value?.startTimestamp ? matchDate(basic.value.startTimestamp) : '' },
+    { k: t('match.info.status'), v: basic.value?.status?.description || '' },
+    { k: t('match.info.venue'), v: venueName(basic.value) },
+    { k: t('match.info.referee'), v: basic.value?.referee?.name || '' },
+  ].filter((x) => x.v),
+)
 
-const statistics = computed(() => parseStatistics(matchData.value?.statistics))
-const incidents = computed(() => parseIncidents(matchData.value?.incidents))
+const stats = computed(() => parseStatistics(data.value?.statistics))
+const groups = computed(() => stats.value[period.value]?.groups || stats.value[0]?.groups || [])
+const incidents = computed(() => parseIncidents(data.value?.incidents).filter((i) => i?.incidentType !== 'injuryTime'))
 const lineups = computed(() => {
-  const L = matchData.value?.lineups
-  if (!L || typeof L !== 'object') return null
-  const home = L.home?.players
-  const away = L.away?.players
-  if ((!Array.isArray(home) || !home.length) && (!Array.isArray(away) || !away.length)) return null
-  return L
+  const L = data.value?.lineups
+  const h = L?.home?.players
+  const a = L?.away?.players
+  return Array.isArray(h) && h.length && Array.isArray(a) && a.length ? L : null
 })
 const homeXi = computed(() => splitLineupPlayers(lineups.value?.home?.players))
 const awayXi = computed(() => splitLineupPlayers(lineups.value?.away?.players))
-const possession = computed(() => possessionPair(statistics.value))
-const highlights = computed(() => highlightIncidents(incidents.value))
-const h2h = computed(() => matchData.value?.h2h?.teamDuel || null)
-const homeForm = computed(() => formSequence(matchData.value?.pregame_form?.homeTeam))
-const awayForm = computed(() => formSequence(matchData.value?.pregame_form?.awayTeam))
-const homeFormMeta = computed(() => matchData.value?.pregame_form?.homeTeam || null)
-const awayFormMeta = computed(() => matchData.value?.pregame_form?.awayTeam || null)
-const streaks = computed(() => {
-  const raw = matchData.value?.team_streaks?.general
-  return Array.isArray(raw) ? raw.slice(0, 8) : []
-})
-
-const hasStats = computed(() => statistics.value.length > 0)
-const hasEvents = computed(() => incidents.value.length > 0)
-const hasLineups = computed(() => !!lineups.value)
+const duel = computed(() => data.value?.h2h?.teamDuel || null)
+const homeForm = computed(() => formSequence(data.value?.pregame_form?.homeTeam))
+const awayForm = computed(() => formSequence(data.value?.pregame_form?.awayTeam))
+const keyMoments = computed(() => incidents.value.filter((i) => ['goal', 'card', 'varDecision'].includes(String(i?.incidentType))).slice(0, 12))
 
 const tabs = computed(() => {
-  const list: { id: 'overview' | 'stats' | 'events' | 'lineups'; label: string }[] = [
-    { id: 'overview', label: t('match_tab_overview') },
-  ]
-  if (hasStats.value) list.push({ id: 'stats', label: t('match_tab_stats') })
-  if (hasEvents.value) list.push({ id: 'events', label: t('match_tab_events') })
-  if (hasLineups.value) list.push({ id: 'lineups', label: t('match_tab_lineups') })
+  const list: Tab[] = ['overview']
+  if (stats.value.length) list.push('stats')
+  if (incidents.value.length) list.push('events')
+  if (lineups.value) list.push('lineups')
   return list
 })
+const hasOverview = computed(() => keyMoments.value.length || homeForm.value.length || awayForm.value.length || duel.value || info.value.length)
 
-const activePeriod = computed(() => statistics.value[statsPeriod.value] || statistics.value[0] || null)
-const activeGroups = computed(() => {
-  const p = activePeriod.value
-  if (!p) return []
-  if (Array.isArray(p.groups) && p.groups.length) return p.groups
-  return []
-})
+function periodName(p: any, i: number) {
+  const raw = String(p?.period || '')
+  if (raw === 'ALL' || i === 0) return t('match.periodAll')
+  const m = raw.match(/(\d+)/)
+  return m ? periodLabel(sport.value, Number(m[1]), t) : raw
+}
 
-watch(tabs, (list) => {
-  if (!list.some((x) => x.id === tab.value)) tab.value = 'overview'
-})
-watch(statistics, () => {
-  statsPeriod.value = 0
-})
+function bar(item: any) {
+  const h = Number(item.homeValue ?? String(item.home ?? '').replace('%', ''))
+  const a = Number(item.awayValue ?? String(item.away ?? '').replace('%', ''))
+  const tot = (Number.isFinite(h) ? h : 0) + (Number.isFinite(a) ? a : 0)
+  if (!tot) return { h: 50, a: 50, lead: '' }
+  const hp = (h / tot) * 100
+  return { h: hp, a: 100 - hp, lead: h > a ? 'home' : a > h ? 'away' : '' }
+}
+
+function incident(i: any) {
+  const type = String(i?.incidentType || '')
+  const minute = i?.time != null ? `${i.time}${i.addedTime ? '+' + i.addedTime : ''}′` : ''
+  const side = i?.isHome === true ? 'home' : i?.isHome === false ? 'away' : ''
+  if (type === 'goal') {
+    const sc = i?.homeScore != null ? ` ${i.homeScore}–${i.awayScore}` : ''
+    return { minute, side, mark: 'goal', text: `${i?.player?.name || i?.playerName || '—'}${sc}` }
+  }
+  if (type === 'card') {
+    const red = i?.incidentClass === 'red' || i?.incidentClass === 'yellowRed'
+    return { minute, side, mark: red ? 'red' : 'yellow', text: i?.player?.name || i?.playerName || '—' }
+  }
+  if (type === 'substitution') {
+    return { minute, side, mark: 'sub', text: `${i?.playerIn?.name || '—'} ↔ ${i?.playerOut?.name || '—'}` }
+  }
+  if (type === 'period') return { minute: '', side: '', mark: 'period', text: String(i?.text || '') }
+  if (type === 'varDecision') return { minute, side, mark: 'var', text: `VAR · ${i?.player?.name || i?.incidentClass || ''}` }
+  return { minute, side, mark: 'other', text: String(i?.text || type) }
+}
+
+const formTone: Record<string, string> = { W: 'badge badge-ok', D: 'badge badge-neutral', L: 'badge badge-danger' }
 
 async function load() {
   loading.value = true
-  error.value = ''
+  err.value = ''
   notFetched.value = false
   try {
-    matchData.value = await apiGet(`/api/matches/${matchId.value}`)
+    data.value = await api.match(id.value)
     tab.value = 'overview'
-  } catch (e: any) {
-    const msg = String(e?.message || e)
-    if (msg.toLowerCase().includes('404') || msg.toLowerCase().includes('not found')) {
-      notFetched.value = true
-      matchData.value = null
-    } else {
-      error.value = msg
-    }
+    period.value = 0
+  } catch (e) {
+    data.value = null
+    if (e instanceof ApiError && e.status === 404) notFetched.value = true
+    else err.value = errorText(e)
   } finally {
     loading.value = false
   }
 }
 
-async function refresh() {
+async function fetchNow() {
   fetching.value = true
-  error.value = ''
   try {
-    await apiSend(`/api/matches/${matchId.value}/fetch`, 'POST')
+    await api.fetchMatch(id.value)
     await load()
-  } catch (e: any) {
-    error.value = String(e?.message || e)
+  } catch (e) {
+    toastError(e)
   } finally {
     fetching.value = false
   }
 }
 
-onMounted(load)
-watch(matchId, load)
+watch(id, load, { immediate: true })
+// If a running download fetches this match's details, show them as soon as it finishes.
+const scrape = useScrapeStore()
+onUnmounted(scrape.onFinished(() => notFetched.value && void load()))
 </script>
 
 <template>
-  <header class="mb-5">
-    <nav class="text-sm text-[var(--muted)] mb-3">
-      <button type="button" class="link-accent font-medium" @click="router.push('/matches')">{{ t('nav_matches') }}</button>
-      <span class="px-1">/</span>
-      <span>{{ t('match_detail_title') }}</span>
-    </nav>
-  </header>
+  <RouterLink to="/matches" class="btn btn-ghost btn-sm mb-3 -ml-3" style="color: var(--muted)"><AppIcon name="chevronLeft" :size="16" />{{ t('match.back') }}</RouterLink>
 
-  <div v-if="loading" class="panel p-10 text-center text-[var(--muted)]">{{ t('fetching_in_progress') }}</div>
-  <div v-else-if="error" class="panel p-6 text-red-600">{{ error }}</div>
-  <div v-else-if="notFetched" class="panel p-10 text-center space-y-4">
-    <h3 class="text-xl font-bold">{{ t('match_details_not_fetched') }}</h3>
-    <button type="button" class="btn btn-primary" :disabled="fetching" @click="refresh">
-      {{ fetching ? t('fetching_in_progress') : t('refresh_match_data') }}
+  <div v-if="loading" class="flex items-center gap-3 py-16" style="color: var(--muted)"><span class="spinner"></span>{{ t('common.loading') }}</div>
+
+  <div v-else-if="err" class="card p-8 flex flex-col items-start gap-3">
+    <span style="color: var(--danger)">{{ err }}</span>
+    <button type="button" class="btn" @click="load">{{ t('common.retry') }}</button>
+  </div>
+
+  <div v-else-if="notFetched" class="card p-12 flex flex-col items-center gap-4 text-center">
+    <h1 class="m-0 text-xl font-bold">{{ t('match.notFetched.title') }}</h1>
+    <p class="page-sub max-w-[460px]">{{ t('match.notFetched.body') }}</p>
+    <p v-if="scrape.isRunning" class="m-0 text-sm max-w-[460px] soft px-4 py-3">{{ t('match.notFetched.running') }}</p>
+    <button type="button" class="btn btn-primary" :disabled="fetching" @click="fetchNow">
+      <span v-if="fetching" class="spinner"></span><AppIcon v-else name="download" :size="16" />
+      {{ fetching ? t('match.notFetched.fetching') : t('match.notFetched.cta') }}
     </button>
   </div>
 
-  <div v-else class="space-y-4">
-    <!-- Scoreboard -->
-    <section class="panel overflow-hidden">
-      <div class="px-4 pt-4 pb-2 text-center">
-        <p class="text-xs font-bold uppercase tracking-[0.14em] link-accent">{{ tournamentName }}</p>
-        <p v-if="seasonName" class="text-xs text-[var(--muted)] mt-1">{{ seasonName }}</p>
+  <template v-else-if="data">
+    <!-- scoreboard -->
+    <section class="card p-6 md:p-8 flex flex-col gap-5 mb-5">
+      <div class="flex flex-wrap items-center gap-2 text-sm" style="color: var(--muted)">
+        <SportBadge :sport="sport" />
+        <span>{{ tournament }}</span><span v-if="season">· {{ season }}</span>
       </div>
-      <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-5">
-        <div class="text-right">
-          <p class="text-lg sm:text-2xl font-extrabold tracking-tight leading-tight">{{ homeName }}</p>
-        </div>
-        <div class="text-center min-w-[5.5rem]">
-          <p class="mono text-3xl sm:text-4xl font-extrabold tabular-nums link-accent leading-none">
-            <template v-if="homeScore != null && awayScore != null">{{ homeScore }}–{{ awayScore }}</template>
-            <template v-else>vs</template>
-          </p>
-          <p v-if="htScore" class="text-xs text-[var(--muted)] mt-2 mono">HT {{ htScore }}</p>
-          <p class="text-xs font-semibold text-[var(--muted)] mt-1">{{ statusText }}</p>
-        </div>
-        <div class="text-left">
-          <p class="text-lg sm:text-2xl font-extrabold tracking-tight leading-tight">{{ awayName }}</p>
-        </div>
+      <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-4 md:gap-8">
+        <h1 class="m-0 text-right text-xl md:text-[26px] font-bold leading-tight">{{ home }}</h1>
+        <div class="mono text-4xl md:text-[44px] font-bold tracking-tight">{{ mainScore ?? 'vs' }}</div>
+        <div class="text-xl md:text-[26px] font-bold leading-tight">{{ away }}</div>
       </div>
-      <div class="border-t border-[var(--border)] px-4 py-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--muted)] justify-center">
-        <span v-if="kickoff"><span class="font-bold text-[var(--text)]">{{ t('match_sidebar_date_label') }}:</span> {{ kickoff }}</span>
-        <span v-if="stadium"><span class="font-bold text-[var(--text)]">{{ t('match_sidebar_stadium_label') }}:</span> {{ stadium }}</span>
-        <span v-if="referee"><span class="font-bold text-[var(--text)]">{{ t('match_sidebar_referee_label') }}:</span> {{ referee }}</span>
-        <span class="mono">ID {{ matchId }}</span>
-      </div>
-      <div class="border-t border-[var(--border)] px-4 py-3 flex flex-wrap gap-2 justify-end">
-        <button type="button" class="btn btn-secondary text-sm min-h-[40px]" @click="router.push('/matches')">{{ t('back_to_schedule') }}</button>
-        <button type="button" class="btn btn-primary text-sm min-h-[40px]" :disabled="fetching" @click="refresh">
-          {{ fetching ? t('fetching_in_progress') : t('refresh_match_data') }}
-        </button>
+      <div v-if="periods.length" class="overflow-x-auto">
+        <table class="mx-auto text-sm mono" style="border-collapse: separate; border-spacing: 12px 4px">
+          <thead>
+            <tr style="color: var(--muted)">
+              <th class="text-left font-sans font-semibold text-xs"></th>
+              <th v-for="p in periods" :key="p.key" class="font-sans font-semibold text-xs">{{ p.label }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th class="text-left font-sans font-semibold pr-2">{{ home }}</th>
+              <td v-for="p in periods" :key="p.key" class="text-center">{{ homeSc[p.key] ?? '–' }}</td>
+            </tr>
+            <tr>
+              <th class="text-left font-sans font-semibold pr-2">{{ away }}</th>
+              <td v-for="p in periods" :key="p.key" class="text-center">{{ awaySc[p.key] ?? '–' }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
-    <div class="flex flex-wrap gap-1 border-b border-[var(--border)] pb-2">
-      <button
-        v-for="tb in tabs"
-        :key="tb.id"
-        type="button"
-        class="tab-btn"
-        :class="{ 'is-active': tab === tb.id }"
-        @click="tab = tb.id"
-      >
-        {{ tb.label }}
+    <div class="tabs mb-5" role="tablist">
+      <button v-for="k in tabs" :key="k" type="button" role="tab" class="tab" :class="{ 'is-active': tab === k }" :aria-selected="tab === k" @click="tab = k">
+        {{ t(`match.tabs.${k}`) }}
       </button>
     </div>
 
-    <!-- Overview -->
-    <div v-if="tab === 'overview'" class="grid gap-4 lg:grid-cols-2">
-      <section v-if="possession || highlights.length" class="panel p-5 space-y-4">
-        <h2 class="text-sm font-bold uppercase tracking-wider text-[var(--muted)]">{{ t('match_statistics_title') }}</h2>
-        <div v-if="possession" class="space-y-2">
-          <div class="flex justify-between text-sm font-bold mono">
-            <span>{{ possession.home }}%</span>
-            <span class="text-[var(--muted)] font-semibold">Ball possession</span>
-            <span>{{ possession.away }}%</span>
-          </div>
-          <div class="h-2.5 rounded-full overflow-hidden flex bg-[var(--surface-2)]">
-            <div class="h-full bg-[var(--accent)]" :style="{ width: possession.home + '%' }" />
-            <div class="h-full bg-[var(--muted)] opacity-50" :style="{ width: possession.away + '%' }" />
-          </div>
+    <!-- overview -->
+    <div v-if="tab === 'overview'" class="grid gap-5 lg:grid-cols-2">
+      <p v-if="!hasOverview" class="page-sub">{{ t('match.noOverview') }}</p>
+      <section v-if="info.length" class="card p-5 flex flex-col gap-3">
+        <div v-for="x in info" :key="x.k" class="flex justify-between gap-4 text-sm">
+          <span style="color: var(--muted)">{{ x.k }}</span><span class="text-right font-medium">{{ x.v }}</span>
         </div>
-        <ul v-if="highlights.length" class="space-y-1.5 text-sm">
-          <li
-            v-for="(inc, i) in highlights"
-            :key="'h'+i"
-            class="flex gap-3 border-b border-[var(--border)] py-2"
-            :class="inc.isHome === false ? 'flex-row-reverse text-right' : ''"
-          >
-            <span class="mono text-[var(--muted)] w-10 shrink-0">{{ inc.time }}′</span>
-            <span class="flex-1 font-medium">{{ incidentLabel(inc) }}</span>
-          </li>
-        </ul>
       </section>
-
-      <section class="panel p-5 space-y-5">
-        <div v-if="homeForm.length || awayForm.length">
-          <h2 class="text-sm font-bold uppercase tracking-wider text-[var(--muted)] mb-3">{{ t('match_section_pregame_form') }}</h2>
-          <div class="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p class="font-bold mb-1 truncate">{{ homeName }}</p>
-              <p v-if="homeFormMeta?.position" class="text-xs text-[var(--muted)] mb-2">
-                {{ t('match_form_position') }} {{ homeFormMeta.position }}
-                <span v-if="homeFormMeta.avgRating"> · {{ t('match_form_rating') }} {{ homeFormMeta.avgRating }}</span>
-              </p>
-              <div class="flex flex-wrap gap-1">
-                <span
-                  v-for="(f, i) in homeForm"
-                  :key="'hf'+i"
-                  class="form-chip"
-                  :class="{ 'form-w': f==='W', 'form-d': f==='D', 'form-l': f==='L' }"
-                >{{ f }}</span>
-              </div>
-            </div>
-            <div>
-              <p class="font-bold mb-1 truncate">{{ awayName }}</p>
-              <p v-if="awayFormMeta?.position" class="text-xs text-[var(--muted)] mb-2">
-                {{ t('match_form_position') }} {{ awayFormMeta.position }}
-                <span v-if="awayFormMeta.avgRating"> · {{ t('match_form_rating') }} {{ awayFormMeta.avgRating }}</span>
-              </p>
-              <div class="flex flex-wrap gap-1">
-                <span
-                  v-for="(f, i) in awayForm"
-                  :key="'af'+i"
-                  class="form-chip"
-                  :class="{ 'form-w': f==='W', 'form-d': f==='D', 'form-l': f==='L' }"
-                >{{ f }}</span>
-              </div>
-            </div>
-          </div>
+      <section v-if="keyMoments.length" class="card p-5 flex flex-col gap-2">
+        <h2 class="section-label m-0 mb-1">{{ t('match.keyEvents') }}</h2>
+        <div v-for="(i, n) in keyMoments" :key="n" class="flex items-center gap-3 text-sm min-h-[32px]">
+          <span class="mono w-12 shrink-0" style="color: var(--muted)">{{ incident(i).minute }}</span>
+          <span class="mark" :class="`mark-${incident(i).mark}`"></span>
+          <span class="flex-1" :class="incident(i).side === 'away' ? 'text-right' : ''">{{ incident(i).text }}</span>
         </div>
-
-        <div v-if="h2h">
-          <h2 class="text-sm font-bold uppercase tracking-wider text-[var(--muted)] mb-3">{{ t('match_section_h2h') }}</h2>
-          <div class="grid grid-cols-3 gap-2 text-center">
-            <div class="rounded-[var(--radius)] bg-[var(--surface-2)] p-3">
-              <p class="mono text-xl font-extrabold">{{ h2h.homeWins ?? 0 }}</p>
-              <p class="text-[10px] font-bold uppercase text-[var(--muted)] mt-1">{{ t('match_h2h_home_wins') }}</p>
-            </div>
-            <div class="rounded-[var(--radius)] bg-[var(--surface-2)] p-3">
-              <p class="mono text-xl font-extrabold">{{ h2h.draws ?? 0 }}</p>
-              <p class="text-[10px] font-bold uppercase text-[var(--muted)] mt-1">{{ t('match_h2h_draws') }}</p>
-            </div>
-            <div class="rounded-[var(--radius)] bg-[var(--surface-2)] p-3">
-              <p class="mono text-xl font-extrabold">{{ h2h.awayWins ?? 0 }}</p>
-              <p class="text-[10px] font-bold uppercase text-[var(--muted)] mt-1">{{ t('match_h2h_away_wins') }}</p>
-            </div>
-          </div>
+      </section>
+      <section v-if="homeForm.length || awayForm.length" class="card p-5 flex flex-col gap-3">
+        <h2 class="section-label m-0">{{ t('match.form') }}</h2>
+        <div v-for="side in [{ n: home, f: homeForm }, { n: away, f: awayForm }]" :key="side.n" class="flex items-center justify-between gap-3">
+          <span class="font-medium text-sm truncate">{{ side.n }}</span>
+          <span class="flex gap-1"><span v-for="(r, k) in side.f" :key="k" :class="formTone[r] || 'badge badge-neutral'" class="mono w-7 justify-center !px-0">{{ r }}</span></span>
         </div>
-
-        <div v-if="streaks.length">
-          <h2 class="text-sm font-bold uppercase tracking-wider text-[var(--muted)] mb-3">{{ t('match_section_team_streaks') }}</h2>
-          <ul class="space-y-2 text-sm">
-            <li v-for="(s, i) in streaks" :key="'st'+i" class="flex justify-between gap-3 border-b border-[var(--border)] py-1.5">
-              <span>
-                <span class="text-[var(--muted)]">{{ s.team === 'away' ? t('match_streak_team_away') : t('match_streak_team_home') }} · </span>
-                {{ s.name }}
-              </span>
-              <span class="mono font-bold">{{ s.value }}</span>
-            </li>
-          </ul>
+      </section>
+      <section v-if="duel" class="card p-5 flex flex-col gap-3">
+        <h2 class="section-label m-0">{{ t('match.h2h') }}</h2>
+        <div class="grid grid-cols-3 text-center">
+          <div><div class="mono text-2xl font-bold">{{ duel.homeWins ?? 0 }}</div><div class="text-xs truncate" style="color: var(--muted)">{{ home }}</div></div>
+          <div><div class="mono text-2xl font-bold">{{ duel.draws ?? 0 }}</div><div class="text-xs" style="color: var(--muted)">=</div></div>
+          <div><div class="mono text-2xl font-bold">{{ duel.awayWins ?? 0 }}</div><div class="text-xs truncate" style="color: var(--muted)">{{ away }}</div></div>
         </div>
       </section>
     </div>
 
-    <!-- Stats -->
-    <div v-else-if="tab === 'stats'" class="panel p-5 space-y-4">
-      <div v-if="statistics.length > 1" class="flex flex-wrap gap-1">
-        <button
-          v-for="(p, i) in statistics"
-          :key="'sp'+i"
-          type="button"
-          class="tab-btn text-xs"
-          :class="{ 'is-active': statsPeriod === i }"
-          @click="statsPeriod = i"
-        >
-          {{ p.period || i + 1 }}
-        </button>
+    <!-- stats -->
+    <section v-else-if="tab === 'stats'" class="card p-5 md:p-6 flex flex-col gap-5">
+      <div v-if="stats.length > 1" class="seg self-start flex-wrap" role="group">
+        <button v-for="(p, i) in stats" :key="i" type="button" :class="{ 'is-active': period === i }" @click="period = i">{{ periodName(p, i) }}</button>
       </div>
-      <div v-if="possession && statsPeriod === 0" class="space-y-2 mb-2">
-        <div class="flex justify-between text-sm font-bold mono">
-          <span>{{ possession.home }}%</span>
-          <span class="text-[var(--muted)] font-semibold">Ball possession</span>
-          <span>{{ possession.away }}%</span>
-        </div>
-        <div class="h-2.5 rounded-full overflow-hidden flex bg-[var(--surface-2)]">
-          <div class="h-full bg-[var(--accent)]" :style="{ width: possession.home + '%' }" />
-          <div class="h-full bg-[var(--muted)] opacity-50" :style="{ width: possession.away + '%' }" />
-        </div>
-      </div>
-      <div class="space-y-4 text-sm max-h-[36rem] overflow-y-auto">
-        <template v-for="(grp, gj) in activeGroups" :key="'g'+gj">
-          <div>
-            <p v-if="grp.groupName" class="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-2">
-              {{ grp.groupName }}
-            </p>
-            <div
-              v-for="(item, ii) in (grp.statisticsItems || [])"
-              :key="'si'+ii"
-              class="grid grid-cols-[1fr_auto_1fr] gap-2 py-2 border-b border-[var(--border)] items-center"
-            >
-              <span class="text-right mono font-semibold">{{ item.home }}</span>
-              <span class="text-center text-[var(--muted)] text-xs px-2 min-w-[7rem]">{{ item.name }}</span>
-              <span class="mono font-semibold">{{ item.away }}</span>
-            </div>
+      <div v-for="g in groups" :key="g.groupName" class="flex flex-col gap-4">
+        <h2 class="section-label m-0">{{ g.groupName }}</h2>
+        <div v-for="it in g.statisticsItems || []" :key="it.key || it.name" class="flex flex-col gap-1.5">
+          <div class="flex justify-between text-sm">
+            <span class="mono" :class="{ 'font-bold': bar(it).lead === 'home' }">{{ it.home }}</span>
+            <span style="color: var(--muted)">{{ it.name }}</span>
+            <span class="mono" :class="{ 'font-bold': bar(it).lead === 'away' }">{{ it.away }}</span>
           </div>
+          <div class="flex gap-1 h-1.5">
+            <div class="rounded" :style="{ flexGrow: bar(it).h, background: bar(it).lead === 'home' ? 'var(--ink)' : 'var(--border-2)' }"></div>
+            <div class="rounded" :style="{ flexGrow: bar(it).a, background: bar(it).lead === 'away' ? 'var(--accent)' : 'var(--border-2)' }"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- events -->
+    <section v-else-if="tab === 'events'" class="card p-5 flex flex-col">
+      <div v-for="(i, n) in incidents" :key="n" class="flex items-center gap-3 text-sm min-h-[40px]" style="border-bottom: 1px solid var(--line)">
+        <template v-if="incident(i).mark === 'period'">
+          <span class="section-label py-2 mx-auto">{{ incident(i).text }}</span>
         </template>
-        <p v-if="!hasStats" class="text-[var(--muted)]">{{ t('no_match_statistics') }}</p>
+        <template v-else>
+          <span class="mono w-12 shrink-0" style="color: var(--muted)">{{ incident(i).minute }}</span>
+          <span class="mark" :class="`mark-${incident(i).mark}`"></span>
+          <span class="flex-1" :class="incident(i).side === 'away' ? 'text-right' : ''">{{ incident(i).text }}</span>
+        </template>
       </div>
-    </div>
+    </section>
 
-    <!-- Events timeline -->
-    <div v-else-if="tab === 'events'" class="panel p-5">
-      <p class="text-xs text-[var(--muted)] mb-4">{{ t('match_incidents_timeline_hint') }}</p>
-      <ul class="space-y-0 max-h-[36rem] overflow-y-auto">
-        <li
-          v-for="(inc, i) in incidents"
-          :key="'e'+i"
-          class="relative grid grid-cols-[1fr_3rem_1fr] gap-2 py-2.5 border-b border-[var(--border)] text-sm"
-        >
-          <div class="text-right pr-2" :class="inc.isHome === true || inc.isHome == null && !inc.playerIn ? '' : 'opacity-40'">
-            <template v-if="inc.isHome !== false">
-              <span class="font-medium">{{ incidentLabel(inc) }}</span>
-            </template>
-          </div>
-          <div class="text-center mono text-[var(--muted)] font-bold relative">
-            <span class="relative z-[1]">{{ inc.time != null ? inc.time + '′' : '·' }}</span>
-          </div>
-          <div class="text-left pl-2" :class="inc.isHome === false ? '' : 'opacity-40'">
-            <template v-if="inc.isHome === false">
-              <span class="font-medium">{{ incidentLabel(inc) }}</span>
-            </template>
-          </div>
-        </li>
-      </ul>
+    <!-- lineups -->
+    <div v-else-if="tab === 'lineups' && lineups" class="grid gap-5 md:grid-cols-2">
+      <section v-for="side in [{ n: home, x: homeXi }, { n: away, x: awayXi }]" :key="side.n" class="card p-5 flex flex-col gap-3">
+        <h2 class="m-0 text-base font-bold">{{ side.n }}</h2>
+        <div class="section-label">{{ t('match.starters') }}</div>
+        <div v-for="(p, k) in side.x.starters" :key="'s' + k" class="flex gap-3 text-sm"><span class="mono w-7 text-right" style="color: var(--muted)">{{ shirtOf(p) }}</span>{{ playerDisplayName(p) }}</div>
+        <template v-if="side.x.subs.length">
+          <div class="section-label mt-2">{{ t('match.subs') }}</div>
+          <div v-for="(p, k) in side.x.subs" :key="'b' + k" class="flex gap-3 text-sm" style="color: var(--text-2)"><span class="mono w-7 text-right" style="color: var(--muted)">{{ shirtOf(p) }}</span>{{ playerDisplayName(p) }}</div>
+        </template>
+      </section>
     </div>
-
-    <!-- Lineups -->
-    <div v-else-if="tab === 'lineups' && lineups" class="space-y-4">
-      <p class="text-sm text-[var(--muted)]">
-        <span v-if="lineups.confirmed">{{ t('match_lineups_confirmed') }}</span>
-        <span v-else>{{ t('match_lineups_unconfirmed') }}</span>
-      </p>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <section class="panel p-5">
-          <div class="flex items-baseline justify-between gap-2 mb-3">
-            <h3 class="font-bold">{{ homeName }}</h3>
-            <span v-if="lineups.home?.formation" class="chip">{{ t('match_formation_label') }} {{ lineups.home.formation }}</span>
-          </div>
-          <p class="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)] mb-2">{{ t('match_starting_xi') }}</p>
-          <ul class="space-y-1 text-sm mb-4">
-            <li v-for="(p, i) in homeXi.starters" :key="'hs'+i" class="flex justify-between gap-2 border-b border-[var(--border)] py-1.5">
-              <span><span class="mono text-[var(--muted)] w-6 inline-block">{{ shirtOf(p) }}</span> {{ playerDisplayName(p) }}</span>
-              <span class="text-[var(--muted)] text-xs">{{ p.position || p.player?.position || '' }}</span>
-            </li>
-          </ul>
-          <p class="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)] mb-2">{{ t('match_substitutes') }}</p>
-          <ul class="space-y-1 text-sm">
-            <li v-for="(p, i) in homeXi.subs" :key="'hb'+i" class="flex justify-between gap-2 border-b border-[var(--border)] py-1.5">
-              <span><span class="mono text-[var(--muted)] w-6 inline-block">{{ shirtOf(p) }}</span> {{ playerDisplayName(p) }}</span>
-              <span class="text-[var(--muted)] text-xs">{{ p.position || p.player?.position || '' }}</span>
-            </li>
-          </ul>
-        </section>
-        <section class="panel p-5">
-          <div class="flex items-baseline justify-between gap-2 mb-3">
-            <h3 class="font-bold">{{ awayName }}</h3>
-            <span v-if="lineups.away?.formation" class="chip">{{ t('match_formation_label') }} {{ lineups.away.formation }}</span>
-          </div>
-          <p class="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)] mb-2">{{ t('match_starting_xi') }}</p>
-          <ul class="space-y-1 text-sm mb-4">
-            <li v-for="(p, i) in awayXi.starters" :key="'as'+i" class="flex justify-between gap-2 border-b border-[var(--border)] py-1.5">
-              <span><span class="mono text-[var(--muted)] w-6 inline-block">{{ shirtOf(p) }}</span> {{ playerDisplayName(p) }}</span>
-              <span class="text-[var(--muted)] text-xs">{{ p.position || p.player?.position || '' }}</span>
-            </li>
-          </ul>
-          <p class="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)] mb-2">{{ t('match_substitutes') }}</p>
-          <ul class="space-y-1 text-sm">
-            <li v-for="(p, i) in awayXi.subs" :key="'ab'+i" class="flex justify-between gap-2 border-b border-[var(--border)] py-1.5">
-              <span><span class="mono text-[var(--muted)] w-6 inline-block">{{ shirtOf(p) }}</span> {{ playerDisplayName(p) }}</span>
-              <span class="text-[var(--muted)] text-xs">{{ p.position || p.player?.position || '' }}</span>
-            </li>
-          </ul>
-        </section>
-      </div>
-    </div>
-  </div>
+  </template>
 </template>
 
 <style scoped>
-.form-chip {
-  @apply inline-flex items-center justify-center w-7 h-7 rounded-md text-xs font-extrabold;
-  background: var(--surface-2);
+.mark {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  background: var(--border-2);
 }
-.form-w {
-  background: rgba(15, 118, 110, 0.18);
-  color: var(--accent);
+.mark-goal {
+  border-radius: 50%;
+  background: var(--accent);
 }
-.form-d {
-  color: var(--muted);
+.mark-yellow {
+  width: 8px;
+  height: 11px;
+  background: #e3b203;
 }
-.form-l {
-  background: rgba(220, 38, 38, 0.12);
-  color: var(--danger);
+.mark-red {
+  width: 8px;
+  height: 11px;
+  background: #c8322a;
+}
+.mark-sub {
+  border-radius: 50%;
+  background: var(--info-fg);
+}
+.mark-var {
+  background: var(--ink);
 }
 </style>

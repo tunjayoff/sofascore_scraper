@@ -1,19 +1,31 @@
 import { createI18n } from 'vue-i18n'
-import en from '@locales/en.json'
-import tr from '@locales/tr.json'
+import tr from '@/locales/tr'
+import en from '@/locales/en'
 
-const saved = localStorage.getItem('ss_lang')
-const initial = saved === 'en' || saved === 'tr' ? saved : 'tr'
+export type Lang = 'tr' | 'en'
+
+function savedLang(): Lang {
+  try {
+    const v = localStorage.getItem('ss_lang')
+    return v === 'en' ? 'en' : 'tr'
+  } catch {
+    return 'tr'
+  }
+}
 
 export const i18n = createI18n({
   legacy: false,
-  locale: initial,
+  locale: savedLang(),
   fallbackLocale: 'en',
-  messages: { en, tr },
+  messages: { tr, en },
 })
 
-export function setLocale(lang: 'en' | 'tr') {
+export function setLocale(lang: Lang) {
   i18n.global.locale.value = lang
-  localStorage.setItem('ss_lang', lang)
   document.documentElement.lang = lang
+  try {
+    localStorage.setItem('ss_lang', lang)
+  } catch {
+    /* ignore */
+  }
 }
