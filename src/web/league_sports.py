@@ -37,12 +37,12 @@ def normalize_sport(raw: object) -> Optional[str]:
     return None
 
 
-def _path(league_config_path: str) -> str:
+def sidecar_path(league_config_path: str) -> str:
     return os.path.join(os.path.dirname(league_config_path) or ".", "league_sports.json")
 
 
 def load(league_config_path: str) -> Dict[int, str]:
-    p = _path(league_config_path)
+    p = sidecar_path(league_config_path)
     try:
         with open(p, "r", encoding="utf-8") as f:
             raw = json.load(f)
@@ -63,7 +63,7 @@ def load(league_config_path: str) -> Dict[int, str]:
 
 
 def _save(league_config_path: str, data: Dict[int, str]) -> None:
-    p = _path(league_config_path)
+    p = sidecar_path(league_config_path)
     tmp = p + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump({str(k): v for k, v in sorted(data.items())}, f, ensure_ascii=False, indent=2)

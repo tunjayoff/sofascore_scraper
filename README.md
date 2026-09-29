@@ -134,7 +134,7 @@ python main.py --config /path/to/leagues.txt --data-dir /path/to/data
 7. **Matches** — Filter by league, season, date and **Details** (with / missing). When a league has matches without details (typically after a stopped download), a banner offers **Download missing**. Click a row to open the match: score by period, overview, statistics, events and lineups.
 8. **Settings** — Language and theme; data folder, disk usage, **Back up** and **Delete all data**; advanced request settings (timeout, concurrency, waits, retries).
 
-> **Delete all data** removes every downloaded season, match and detail and cannot be undone. Take a backup first. A backup is a zip under `src/web/static/backups/` holding `data/`, `.env` and `leagues.txt`. To restore: stop the app, unzip `data/` into the project folder (or your `DATA_DIR`), and copy `leagues.txt` to `config/leagues.txt` and `.env` to the project root only if you want those back too.
+> **Delete all data** removes every downloaded season, match and detail and cannot be undone. Take a backup first. A backup is a zip under `data/backups/` (inside your `DATA_DIR`) holding `data/`, `leagues.txt` and `league_sports.json`. `.env` is left out because it can hold proxy credentials; add `?include_env=true` to `POST /api/data/backup` if you want it. To restore: stop the app, unzip `data/` into the project folder (or your `DATA_DIR`), and copy `leagues.txt` and `league_sports.json` to `config/` if you want those back too.
 
 **Terminal menu**
 
@@ -172,7 +172,7 @@ python main.py
 python main.py --web
 ```
 
-Default URL: `http://127.0.0.1:8000` (bind `0.0.0.0:8000`). Health: `GET /health`.
+Default URL: `http://127.0.0.1:8000`. The server only listens on this machine. `--host 0.0.0.0` opens it to your network, **with no login**: anyone who can reach it can change settings and delete data. `--port` changes the port and `--dev` reloads on code changes. Health: `GET /health`.
 
 Background jobs report status via `GET /api/scrape/status` and `GET /api/scrape/stream` (SSE). Heavy API work runs off the asyncio event loop so the UI stays responsive during long fetches.
 
@@ -264,10 +264,10 @@ On standard desktop environments (Linux X11/Wayland, Windows, macOS), BrowserBri
 
 ## Development
 
-Run the web app with auto-reload (as started by `main.py --web`):
+Run the web app with auto-reload:
 
 ```bash
-uvicorn src.web.app:app --reload --host 0.0.0.0 --port 8000
+python main.py --web --dev
 ```
 
 The web app is a Vue 3 + TypeScript + Vite project in `frontend/` (Pinia, vue-router, vue-i18n, Tailwind). The server serves the built files from `frontend/dist/`.

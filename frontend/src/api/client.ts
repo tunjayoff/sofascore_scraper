@@ -131,13 +131,7 @@ export const api = {
   stats: () => apiGet<SystemStats>('/api/stats/system'),
   settings: () => apiGet<Settings>('/api/settings'),
   saveSettings: (s: Partial<Settings>) => apiSend<{ status: string }>('/api/settings', 'POST', s),
-  // The backend writes backups under src/web/static/ but reports a /static/ URL; that folder is
-  // mounted at /legacy-static/ (src/web/app.py), so rewrite the prefix or the link 404s.
-  backup: () =>
-    apiSend<{ download_url: string; filename: string }>('/api/data/backup', 'POST').then((r) => ({
-      ...r,
-      download_url: r.download_url.replace(/^\/static\//, '/legacy-static/'),
-    })),
+  backup: () => apiSend<{ download_url: string; filename: string }>('/api/data/backup', 'POST'),
   clearData: (scope: 'all' | 'matches' | 'match_details' | 'seasons') =>
     apiSend<{ status: string }>('/api/data/clear', 'POST', { scope }),
 }

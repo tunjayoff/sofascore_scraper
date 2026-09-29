@@ -113,9 +113,11 @@ class BrowserBridge:
             args = [
                 "--disable-blink-features=AutomationControlled",
                 "--window-size=1920,1080",
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
             ]
+            # Sandbox yalnızca root/konteynerde çalışmaz; aksi halde açık kalmalı
+            is_root = hasattr(os, "geteuid") and os.geteuid() == 0
+            if is_root or os.getenv("SOFASCORE_NO_SANDBOX", "").lower() in ("1", "true", "yes"):
+                args += ["--no-sandbox", "--disable-setuid-sandbox"]
 
             headless = not bool(os.getenv("DISPLAY") or os.getenv("WAYLAND_DISPLAY"))
             chrome_path = _get_chrome_executable()

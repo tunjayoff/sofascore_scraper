@@ -132,7 +132,7 @@ python main.py --config /yol/leagues.txt --data-dir /yol/veri
 7. **Maçlar** — Lig, sezon, tarih ve **Detay** (olanlar / eksikler) ile süzün. Bir ligde detayı eksik maç varsa (genelde yarıda durdurulan bir indirmeden kalır) üstte **Eksikleri indir** şeridi çıkar. Bir satıra tıklayınca maç açılır: periyot skorları, özet, istatistikler, olaylar ve kadrolar.
 8. **Ayarlar** — Dil ve tema; veri klasörü, disk kullanımı, **Yedek al** ve **Tüm veriyi sil**; gelişmiş istek ayarları (zaman aşımı, eşzamanlılık, bekleme süreleri, deneme sayısı).
 
-> **Tüm veriyi sil** indirilmiş bütün sezon, maç ve detayları siler ve geri alınamaz. Önce yedek alın. Yedek, `src/web/static/backups/` altında `data/`, `.env` ve `leagues.txt` içeren bir zip’tir. Geri yüklemek için uygulamayı durdurun, `data/` klasörünü proje klasörüne (veya `DATA_DIR`’e) açın; `leagues.txt` ve `.env`’i de geri istiyorsanız sırasıyla `config/leagues.txt` ve proje köküne kopyalayın.
+> **Tüm veriyi sil** indirilmiş bütün sezon, maç ve detayları siler ve geri alınamaz. Önce yedek alın. Yedek, `data/backups/` (yani `DATA_DIR` içi) altında `data/`, `leagues.txt` ve `league_sports.json` içeren bir zip’tir. `.env` proxy kimlik bilgisi içerebileceği için dahil edilmez; isterseniz `POST /api/data/backup` isteğine `?include_env=true` ekleyin. Geri yüklemek için uygulamayı durdurun, `data/` klasörünü proje klasörüne (veya `DATA_DIR`’e) açın; `leagues.txt` ve `league_sports.json`’ı da geri istiyorsanız `config/` altına kopyalayın.
 
 **Terminal menüsü**
 
@@ -170,7 +170,7 @@ python main.py
 python main.py --web
 ```
 
-Varsayılan adres: `http://127.0.0.1:8000` (sunucu `0.0.0.0:8000` dinler). Sağlık kontrolü: `GET /health`.
+Varsayılan adres: `http://127.0.0.1:8000`. Sunucu yalnızca bu bilgisayarı dinler. `--host 0.0.0.0` onu ağa açar ve **giriş yoktur**: erişebilen herkes ayarları değiştirip veriyi silebilir. `--port` portu değiştirir, `--dev` kod değişince yeniden başlatır. Sağlık kontrolü: `GET /health`.
 
 Arka plan işlemleri `GET /api/scrape/status` ve `GET /api/scrape/stream` (SSE) ile izlenir. Ağır dosya/pandas işleri event loop dışına alındığından uzun çekimler sırasında arayüz genelde yanıt vermeye devam eder.
 
@@ -262,10 +262,10 @@ Masaüstü ortamında (Linux X11/Wayland, Windows, macOS) herhangi bir ek işlem
 
 ## Geliştirme
 
-Web’i doğrudan uvicorn ile:
+Web’i otomatik yeniden yükleme ile:
 
 ```bash
-uvicorn src.web.app:app --reload --host 0.0.0.0 --port 8000
+python main.py --web --dev
 ```
 
 Web uygulaması `frontend/` altında bir Vue 3 + TypeScript + Vite projesidir (Pinia, vue-router, vue-i18n, Tailwind). Sunucu derlenmiş dosyaları `frontend/dist/`’ten sunar.

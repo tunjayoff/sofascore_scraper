@@ -38,6 +38,8 @@ for _k in ("PROXY_URL", "USE_PROXY", "API_BASE_URL", "SOFA_CAPTCHA_TOKEN", "FETC
 os.environ["DATA_DIR"] = DATA_DIR
 os.environ["SOFASCORE_CONFIG_DIR"] = CONFIG_DIR
 os.environ["SOFASCORE_ENV_FILE"] = ENV_FILE
+# TestClient "testserver" Host başlığını kullanır
+os.environ["SOFASCORE_ALLOWED_HOSTS"] = "localhost,127.0.0.1,testserver"
 
 
 def _write_json(path: str, data) -> None:

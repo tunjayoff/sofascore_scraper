@@ -7,11 +7,13 @@ import os
 import re
 import traceback
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Literal, Optional, Set, Tuple
+from urllib.parse import quote, urlparse
 
 import pandas as pd
 from fastapi import APIRouter, HTTPException, Query, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 from src.config_manager import ConfigManager
 from src.logger import get_logger
@@ -130,36 +132,98 @@ class LeagueModel(BaseModel):
     sport: Optional[str] = None
 
 
+# leagues.txt satır biçimi "Ad: ID"; ad dizin adına da dönüşür (yeni satır, ':' ve yol ayırıcı yok)
+LeagueName = Field(min_length=1, max_length=80, pattern=r"^[^\r\n:/\\\x00]+$")
+
+
 class LeagueCreate(BaseModel):
-    id: int
-    name: str
+    id: int = Field(gt=0)
+    name: str = LeagueName
     sport: Optional[str] = None
+
+    @field_validator("name")
+    @classmethod
+    def _name_not_dots(cls, v: str) -> str:
+        v = v.strip()
+        if not v or v.strip(".") == "":
+            raise ValueError("invalid league name")
+        return v
 
 
 class LeagueUpdate(BaseModel):
     sport: Optional[str] = None
 
 
+_ALLOWED_API_HOSTS = {"www.sofascore.com", "api.sofascore.com"}
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+def _no_control_chars(v: Optional[str]) -> Optional[str]:
+    # .env satır tabanlı: yeni satır başka bir değişken enjekte eder
+    if v is not None and any(c in v for c in "\r\n\x00"):
+        raise ValueError("control characters are not allowed")
+    return v
+
+
 class SettingsUpdate(BaseModel):
     api_base_url: Optional[str] = None
     use_proxy: Optional[bool] = None
-    proxy_url: Optional[str] = None
-    data_dir: Optional[str] = None
+    proxy_url: Optional[str] = Field(default=None, max_length=500)
+    data_dir: Optional[str] = Field(default=None, max_length=500)
     use_color: Optional[bool] = None
-    date_format: Optional[str] = None
-    language: Optional[str] = None
-    max_concurrent: Optional[int] = None
-    wait_time_min: Optional[float] = None
-    wait_time_max: Optional[float] = None
-    request_timeout: Optional[int] = None
-    max_retries: Optional[int] = None
-    rate_limit_threshold_consecutive: Optional[int] = None
-    rate_limit_threshold_ratio: Optional[float] = None
-    server_error_threshold_consecutive: Optional[int] = None
+    date_format: Optional[str] = Field(default=None, max_length=50)
+    language: Optional[Literal["tr", "en"]] = None
+    max_concurrent: Optional[int] = Field(default=None, ge=1, le=50)
+    wait_time_min: Optional[float] = Field(default=None, ge=0, le=60)
+    wait_time_max: Optional[float] = Field(default=None, ge=0, le=60)
+    request_timeout: Optional[int] = Field(default=None, ge=1, le=300)
+    max_retries: Optional[int] = Field(default=None, ge=0, le=10)
+    rate_limit_threshold_consecutive: Optional[int] = Field(default=None, ge=1, le=1000)
+    rate_limit_threshold_ratio: Optional[float] = Field(default=None, gt=0, le=1)
+    server_error_threshold_consecutive: Optional[int] = Field(default=None, ge=1, le=1000)
     fetch_only_finished: Optional[bool] = None
     save_empty_rounds: Optional[bool] = None
-    log_level: Optional[str] = None
+    log_level: Optional[Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]] = None
     debug: Optional[bool] = None
+
+    _strip_controls = field_validator("api_base_url", "proxy_url", "data_dir", "date_format")(
+        classmethod(lambda cls, v: _no_control_chars(v))
+    )
+
+    @field_validator("api_base_url")
+    @classmethod
+    def _api_host_allowed(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        u = urlparse(v)
+        if u.scheme != "https" or u.hostname not in _ALLOWED_API_HOSTS:
+            raise ValueError(f"api_base_url must be https on {sorted(_ALLOWED_API_HOSTS)}")
+        return v
+
+    @field_validator("proxy_url")
+    @classmethod
+    def _proxy_scheme(cls, v: Optional[str]) -> Optional[str]:
+        if v:
+            u = urlparse(v)
+            if u.scheme not in ("http", "https", "socks5", "socks5h") or not u.hostname:
+                raise ValueError("proxy_url must be http(s):// or socks5://host:port")
+        return v
+
+    @field_validator("data_dir")
+    @classmethod
+    def _data_dir_contained(cls, v: Optional[str]) -> Optional[str]:
+        if v is None or v == config_manager.get_data_dir():
+            return v
+        resolved = Path(v).expanduser()
+        if not resolved.is_absolute():
+            resolved = _REPO_ROOT / resolved
+        resolved = resolved.resolve()
+        home = Path.home().resolve()
+        if resolved in (home, _REPO_ROOT) or not (
+            resolved.is_relative_to(_REPO_ROOT) or resolved.is_relative_to(home)
+        ):
+            raise ValueError("data_dir must be a folder inside the project or your home directory")
+        return v
 
 
 class FetchSelection(BaseModel):
@@ -170,7 +234,7 @@ class FetchSelection(BaseModel):
 
 class FetchRequest(BaseModel):
     league_id: Optional[int] = None
-    mode: str = "full"
+    mode: Literal["full", "details"] = "full"
     selections: Optional[List[FetchSelection]] = None
 
 
@@ -359,7 +423,7 @@ def _get_matches_sync(
 def _search_remote_leagues_sync(q: str) -> List[RemoteLeagueResult]:
     from src.utils import make_api_request
 
-    url = f"https://www.sofascore.com/api/v1/search/unique-tournaments/{q}"
+    url = f"https://www.sofascore.com/api/v1/search/unique-tournaments/{quote(q, safe='')}"
     try:
         data = make_api_request(url)
     except Exception as e:
@@ -534,8 +598,8 @@ def _fetch_single_match_sync(match_id: str) -> dict:
     except Exception as e:
         logger.error(f"Single match fetch failed for {match_id}: {e}")
         if "403" in str(e) or "rate" in str(e).lower():
-            raise _SyncHttpError(429, str(e))
-        raise _SyncHttpError(500, str(e))
+            raise _SyncHttpError(429, "SofaScore rate limit or block")
+        raise _SyncHttpError(500, "Match fetch failed")
 
 
 def _build_dashboard_sync(data_dir: str, leagues: Dict[int, str]) -> dict:
@@ -845,7 +909,7 @@ async def refresh_league_seasons(league_id: int):
         return await asyncio.to_thread(_refresh_league_seasons_sync, league_id)
     except Exception as e:
         logger.error(f"Failed to refresh seasons for league {league_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to refresh seasons")
 
 
 @router.get("/seasons/{season_id}/matches")
@@ -910,18 +974,18 @@ def _persist_scraper_fields(**kwargs: Any) -> None:
 
 
 @router.get("/matches/{match_id}")
-async def get_match_details(match_id: str):
+async def get_match_details(match_id: int):
     """Retrieve detailed JSON data for a specific match."""
     try:
-        return await asyncio.to_thread(_get_match_details_sync, match_id)
+        return await asyncio.to_thread(_get_match_details_sync, str(match_id))
     except _SyncHttpError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
 @router.post("/matches/{match_id}/fetch")
-async def fetch_single_match(match_id: str):
+async def fetch_single_match(match_id: int):
     """Tek bir maç için detayları senkron olarak çeker."""
     try:
-        return await asyncio.to_thread(_fetch_single_match_sync, match_id)
+        return await asyncio.to_thread(_fetch_single_match_sync, str(match_id))
     except _SyncHttpError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
@@ -1263,7 +1327,6 @@ async def bypass_status():
         "status": "ready",
         "has_token": bool(token),
         "is_valid": _is_token_valid(),
-        "token_preview": f"{token[:15]}...{token[-10:]}" if token else None,
         "mechanism": "BrowserBridge (Chrome persistent context + Turnstile auto-solve)",
     }
 
@@ -1364,7 +1427,7 @@ async def update_settings(settings: SettingsUpdate):
             
     except Exception as e:
         logger.error(f"Failed to update settings: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to update settings")
 
 # Stats API
 @router.get("/stats/system")
@@ -1386,20 +1449,28 @@ async def get_system_stats():
 
 # --- Data Management Endpoints (W10) ---
 
-def _create_backup_sync(scope: str) -> dict:
+BackupScope = Literal["all", "config", "seasons", "matches", "match_details"]
+DataScope = Literal["all", "seasons", "matches", "match_details"]
+_BACKUP_NAME_RE = re.compile(r"^backup_[a-z_]+_\d{8}_\d{6}\.zip$")
+
+
+def _backups_dir() -> str:
+    """Yedekler veri dizininde tutulur — web sunucusunun statik olarak servis ettiği bir yerde değil."""
+    return os.path.join(os.path.abspath(config_manager.get_data_dir()), "backups")
+
+
+def _create_backup_sync(scope: str, include_env: bool = False) -> dict:
     import zipfile
     import datetime as _dt
 
-    data_dir = config_manager.get_data_dir()
-    if not os.path.isabs(data_dir):
-        data_dir = os.path.abspath(data_dir)
+    data_dir = os.path.abspath(config_manager.get_data_dir())
 
     timestamp = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_filename = f"backup_{scope}_{timestamp}.zip"
 
-    static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "backups")
-    os.makedirs(static_dir, exist_ok=True)
-    zip_path = os.path.join(static_dir, backup_filename)
+    backups_dir = _backups_dir()
+    os.makedirs(backups_dir, exist_ok=True)
+    zip_path = os.path.join(backups_dir, backup_filename)
 
     try:
         with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -1408,7 +1479,11 @@ def _create_backup_sync(scope: str) -> dict:
                 config_path = config_manager.league_config_path
                 if os.path.exists(config_path):
                     zf.write(config_path, os.path.basename(config_path))
-                if os.path.exists(env_file_path()):
+                sports_path = league_sports.sidecar_path(config_path)
+                if os.path.exists(sports_path):
+                    zf.write(sports_path, os.path.basename(sports_path))
+                # .env proxy kimlik bilgisi ve captcha token taşıyabilir; yalnızca açıkça istenirse
+                if include_env and os.path.exists(env_file_path()):
                     zf.write(env_file_path(), ".env")
             if scope in ("all", "seasons"):
                 dirs_to_backup.append(os.path.join(data_dir, "seasons"))
@@ -1425,10 +1500,12 @@ def _create_backup_sync(scope: str) -> dict:
                             arcname = os.path.relpath(fp, os.path.dirname(data_dir))
                             zf.write(fp, arcname)
 
-        return {"download_url": f"/static/backups/{backup_filename}", "filename": backup_filename}
+        return {"download_url": f"/api/data/backups/{backup_filename}", "filename": backup_filename}
     except Exception as e:
         logger.error(f"Backup failed: {e}")
-        raise _SyncHttpError(500, str(e)) from e
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
+        raise _SyncHttpError(500, "Backup failed") from e
 
 
 def _clear_data_sync(scope: str) -> dict:
@@ -1461,7 +1538,7 @@ def _clear_data_sync(scope: str) -> dict:
         return {"status": "success", "cleared": cleared}
     except Exception as e:
         logger.error(f"Clear data failed: {e}")
-        raise _SyncHttpError(500, str(e)) from e
+        raise _SyncHttpError(500, "Clear data failed") from e
 
 
 def _export_csv_sync(league_id: Optional[int], data_dir: str):
@@ -1498,16 +1575,28 @@ def _export_csv_sync(league_id: Optional[int], data_dir: str):
 
 
 @router.post("/data/backup")
-async def create_backup(scope: str = "all"):
+async def create_backup(scope: BackupScope = "all", include_env: bool = False):
     """Veri yedeği oluşturur ve indirilebilir zip dosyası döndürür."""
     try:
-        return await asyncio.to_thread(_create_backup_sync, scope)
+        return await asyncio.to_thread(_create_backup_sync, scope, include_env)
     except _SyncHttpError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
 
+@router.get("/data/backups/{name}")
+async def download_backup(name: str):
+    from fastapi.responses import FileResponse
+
+    if not _BACKUP_NAME_RE.match(name):
+        raise HTTPException(status_code=404, detail="Not Found")
+    path = os.path.join(_backups_dir(), name)
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Not Found")
+    return FileResponse(path, filename=name, media_type="application/zip")
+
+
 class ClearRequest(BaseModel):
-    scope: str = "all"
+    scope: DataScope = "all"
 
 
 @router.post("/data/clear")

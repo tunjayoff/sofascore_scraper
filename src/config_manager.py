@@ -20,8 +20,14 @@ dotenv.load_dotenv(env_file_path())
 # Logger'ı alın
 logger = get_logger("ConfigManager")
 
-# Yapılandırma dizini için çevre değişkeni
-CONFIG_DIR = os.getenv("CONFIG_DIR", "config")
+_SECRET_KEYS = ("PROXY_URL", "SOFA_CAPTCHA_TOKEN")
+
+
+def mask_secret(key: str, value: str) -> str:
+    """Log'a yazılacak değeri maskeler (proxy kimlik bilgisi, captcha token)."""
+    if key in _SECRET_KEYS and value:
+        return "***"
+    return value
 
 
 @dataclass
@@ -624,34 +630,18 @@ class ConfigManager:
         Returns:
             bool: Başarılı olursa True, değilse False
         """
+        if any(c in value for c in "\r\n\x00"):
+            # .env satır tabanlı: yeni satır başka bir değişken enjekte eder
+            logger.error(f"Çevre değişkeni reddedildi (kontrol karakteri): {key}")
+            return False
         try:
-            # Çevre değişkenini güncelle
             os.environ[key] = value
-            
-            # .env dosyasını güncelle
+            # set_key yalnızca ilgili satırı değiştirir; yorumlar ve diğer satırlar korunur
             env_path = env_file_path()
-            env_vars = {}
-            
-            # Mevcut .env dosyasını oku
-            if os.path.exists(env_path):
-                with open(env_path, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        line = line.strip()
-                        if not line or line.startswith('#'):
-                            continue
-                        if '=' in line:
-                            k, v = line.split('=', 1)
-                            env_vars[k.strip()] = v.strip()
-            
-            # Değişkeni güncelle
-            env_vars[key] = value
-            
-            # .env dosyasını yeniden yaz
-            with open(env_path, 'w', encoding='utf-8') as f:
-                for k, v in env_vars.items():
-                    f.write(f"{k}={v}\n")
-            
-            logger.info(f"Çevre değişkeni güncellendi: {key}={value}")
+            if not os.path.exists(env_path):
+                open(env_path, "a", encoding="utf-8").close()
+            dotenv.set_key(env_path, key, value)
+            logger.info(f"Çevre değişkeni güncellendi: {key}={mask_secret(key, value)}")
             return True
         except Exception as e:
             logger.error(f"Çevre değişkeni güncellenirken hata: {str(e)}")

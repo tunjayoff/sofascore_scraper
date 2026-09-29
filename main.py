@@ -100,6 +100,21 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Web sunucusunun dinleyeceği adres (varsayılan: 127.0.0.1). "
+        "0.0.0.0 arayüzü kimlik doğrulaması olmadan tüm ağa açar.",
+    )
+
+    parser.add_argument("--port", type=int, default=8000, help="Web sunucusu portu (varsayılan: 8000)")
+
+    parser.add_argument(
+        "--dev",
+        action="store_true",
+        help="Web sunucusunu kod değişikliğinde yeniden başlatır (geliştirme)",
+    )
+
+    parser.add_argument(
         "--ignore-rate-limit",
         action="store_true",
         help="Rate-limit circuit breaker mekanizmasını devre dışı bırakır"
@@ -126,23 +141,27 @@ def main() -> int:
         if args.web:
             try:
                 import uvicorn
-                logger.info("Web arayüzü başlatılıyor: http://localhost:8000")
+                if args.host not in ("127.0.0.1", "localhost", "::1"):
+                    logger.warning(
+                        f"Web arayüzü {args.host} adresinde dinliyor: ağdaki herkes kimlik doğrulaması "
+                        "olmadan erişebilir (veri silme, ayarlar dahil)."
+                    )
+                    extra = "*" if args.host in ("0.0.0.0", "::") else args.host
+                    os.environ["SOFASCORE_ALLOWED_HOSTS"] = f"localhost,127.0.0.1,[::1],{extra}"
+                logger.info(f"Web arayüzü başlatılıyor: http://localhost:{args.port}")
                 i18n = get_i18n()
                 print(i18n.t('web_server_starting'))
                 print(i18n.t('go_to_address'))
                 print(i18n.t('press_ctrl_c'))
 
-                uvicorn.run(
-                    "src.web.app:app",
-                    host="0.0.0.0",
-                    port=8000,
-                    reload=True,
+                reload_opts = {}
+                if args.dev:
                     # Only watch app code — data/ match writes must not restart the server mid-scrape
-                    reload_dirs=[
-                        str(script_dir / "src"),
-                        str(script_dir / "locales"),
-                    ],
-                )
+                    reload_opts = {
+                        "reload": True,
+                        "reload_dirs": [str(script_dir / "src"), str(script_dir / "locales")],
+                    }
+                uvicorn.run("src.web.app:app", host=args.host, port=args.port, **reload_opts)
                 # ponytail: SPA assets live in frontend/dist — rebuild with `cd frontend && npm run build` after UI changes
             except ImportError:
                 i18n = get_i18n()

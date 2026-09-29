@@ -331,7 +331,7 @@ def make_api_request(
             
         except Exception as e:
             if "curl: (7)" in str(e) or "Failed to connect" in str(e):
-                logger.error(f"Proxy/Bağlantı hatası: {str(e)} - PROXY_URL: {proxy_url if use_proxy else 'Yok'}")
+                logger.error(f"Proxy/Bağlantı hatası: {str(e)} - proxy: {'açık' if use_proxy else 'yok'}")
             else:
                 logger.error(f"İstek hatası: {str(e)}")
             
@@ -467,7 +467,7 @@ async def make_api_request_async(
 
         except Exception as e:
             if "curl: (7)" in str(e) or "Failed to connect" in str(e):
-                logger.error(f"Proxy/Bağlantı hatası: {str(e)} - PROXY_URL: {proxy_url if use_proxy else 'Yok'}")
+                logger.error(f"Proxy/Bağlantı hatası: {str(e)} - proxy: {'açık' if use_proxy else 'yok'}")
             else:
                 logger.error(f"Asenkron hata: {str(e)}")
             
