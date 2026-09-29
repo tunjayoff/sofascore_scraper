@@ -6,9 +6,10 @@ import os
 import time
 import random
 import asyncio
+import contextvars
 from email.utils import parsedate_to_datetime
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional, Union, TypeVar, cast, Tuple
+from typing import Callable, Dict, Any, Optional, Union, TypeVar, cast, Tuple
 from pathlib import Path
 import dotenv
 
@@ -39,6 +40,58 @@ _cm = ConfigManager()
 # Tip tanımı
 JsonResponse = Dict[str, Any]
 T = TypeVar('T')
+
+
+# ---- İptal (web arka plan işi) ----
+
+class FetchCancelled(BaseException):
+    """
+    Çalışan iş iptal edildiğinde istek katmanında fırlatılır.
+    asyncio.CancelledError gibi bilerek BaseException: fetcher'lardaki geniş
+    `except Exception` blokları bunu yutup bir sonraki istekle devam etmesin.
+    """
+
+
+# İş başına ayarlanır (web/routes/api.py). ContextVar olduğu için yalnızca o işin
+# thread'ini ve onun asyncio.run / asyncio.to_thread çağrılarını etkiler; aynı anda
+# gelen diğer web istekleri (lig arama, tek maç çekme) etkilenmez.
+_cancel_check: "contextvars.ContextVar[Optional[Callable[[], bool]]]" = contextvars.ContextVar(
+    "fetch_cancel_check", default=None
+)
+
+
+def set_cancel_check(fn: Optional[Callable[[], bool]]) -> "contextvars.Token":
+    """Bu bağlamdaki istekler için iptal kontrolünü ayarlar."""
+    return _cancel_check.set(fn)
+
+
+def raise_if_cancelled() -> None:
+    """İş iptal edildiyse FetchCancelled fırlatır."""
+    fn = _cancel_check.get()
+    if fn is not None and fn():
+        raise FetchCancelled()
+
+
+def _sleep(seconds: float) -> None:
+    """time.sleep gibi, ama iptal istenirse beklemeyi hemen keser."""
+    end = time.monotonic() + max(0.0, float(seconds))
+    while True:
+        raise_if_cancelled()
+        left = end - time.monotonic()
+        if left <= 0:
+            return
+        time.sleep(min(0.25, left))
+
+
+async def _asleep(seconds: float) -> None:
+    """asyncio.sleep gibi, ama iptal istenirse beklemeyi hemen keser."""
+    end = time.monotonic() + max(0.0, float(seconds))
+    while True:
+        raise_if_cancelled()
+        left = end - time.monotonic()
+        if left <= 0:
+            return
+        await asyncio.sleep(min(0.25, left))
 
 
 # curl-cffi ile istekler (Cloudflare bypass için)
@@ -186,6 +239,7 @@ def make_api_request(
         full_url = url
 
     for attempt in range(max_retries):
+        raise_if_cancelled()
         try:
             logger.info(f"API İsteği ({attempt+1}/{max_retries}): {url}")
             
@@ -209,8 +263,8 @@ def make_api_request(
                 retry_after = response.headers.get("Retry-After")
                 wait_time = _parse_retry_after_seconds(retry_after, default_wait)
                 logger.warning(f"Rate limit/Sunucu meşgul. {wait_time} saniye bekleniyor... (Retry-After: {retry_after})")
-                time.sleep(wait_time)
-                
+                _sleep(wait_time)
+
                 if attempt == max_retries - 1:
                     raise RateLimitError(wait_time)
                 continue
@@ -226,6 +280,7 @@ def make_api_request(
                 )
                 logger.debug(f"cf-ray: {cf_ray}, cf-mitigated: {cf_status}")
 
+                raise_if_cancelled()
                 # Turnstile challenge kontrolü ve otomatik çözme denemesi
                 if "challenge" in response.text:
                     logger.info("Turnstile challenge tespit edildi. BrowserBridge üzerinden veri alınıyor...")
@@ -242,7 +297,7 @@ def make_api_request(
                     except Exception as te:
                         logger.debug(f"BrowserBridge hatası: {te}")
 
-                time.sleep(wait_time)
+                _sleep(wait_time)
                 if attempt < max_retries - 1:
                     continue
             
@@ -265,8 +320,12 @@ def make_api_request(
             _adaptive_limiter.success()
             wait_time = wait_time_min + random.uniform(0, wait_time_max)
             logger.info(f"Başarılı! Sonraki istek için {wait_time:.1f} saniye bekleniyor...")
-            time.sleep(wait_time)
-            
+            try:
+                _sleep(wait_time)
+            except FetchCancelled:
+                # Veri zaten elimizde: bu yanıtı döndür, iptal bir sonraki istekte işlensin.
+                pass
+
             return cast(JsonResponse, data)
             
         except Exception as e:
@@ -278,7 +337,7 @@ def make_api_request(
             if attempt < max_retries - 1:
                 wait_time = 3 * (2 ** attempt)
                 logger.info(f"{wait_time} saniye içinde yeniden deneniyor... ({attempt+1}/{max_retries})")
-                time.sleep(wait_time)
+                _sleep(wait_time)
             else:
                 logger.error(f"Tüm denemeler başarısız oldu: {url}")
                 return None
@@ -311,6 +370,7 @@ async def make_api_request_async(
     # headers = get_request_headers() 
     
     for attempt in range(max_retries):
+        raise_if_cancelled()
         try:
             logger.debug(f"Asenkron API İsteği ({attempt+1}/{max_retries}): {url}")
             
@@ -326,7 +386,7 @@ async def make_api_request_async(
                 retry_after = response.headers.get("Retry-After")
                 wait_time = _parse_retry_after_seconds(retry_after, default_wait)
                 logger.warning(f"Rate limit/Sunucu meşgul. {wait_time} saniye bekleniyor... (Retry-After: {retry_after})")
-                await asyncio.sleep(wait_time)
+                await _asleep(wait_time)
                 if attempt == max_retries - 1:
                     raise RateLimitError(wait_time)
                 continue
@@ -342,6 +402,7 @@ async def make_api_request_async(
                 )
                 logger.debug(f"cf-ray: {cf_ray}, cf-mitigated: {cf_status}")
 
+                raise_if_cancelled()
                 # Turnstile challenge kontrolü ve otomatik çözme denemesi
                 if "challenge" in response.text:
                     logger.info("Turnstile challenge tespit edildi. BrowserBridge üzerinden veri alınıyor...")
@@ -360,7 +421,7 @@ async def make_api_request_async(
                     except Exception as te:
                         logger.debug(f"BrowserBridge hatası: {te}")
 
-                await asyncio.sleep(wait_time)
+                await _asleep(wait_time)
                 if attempt < max_retries - 1:
                     continue
             
@@ -391,8 +452,12 @@ async def make_api_request_async(
             
             _adaptive_limiter.success()
             wait_time = wait_time_min + random.uniform(0, wait_time_max)
-            await asyncio.sleep(wait_time)
-            
+            try:
+                await _asleep(wait_time)
+            except FetchCancelled:
+                # Veri zaten elimizde: bu yanıtı döndür, iptal bir sonraki istekte işlensin.
+                pass
+
             return cast(JsonResponse, data)
                 
         except ResourceNotFoundError:
@@ -407,7 +472,7 @@ async def make_api_request_async(
             
             if attempt < max_retries - 1:
                 wait_time = 3 * (2 ** attempt)
-                await asyncio.sleep(wait_time)
+                await _asleep(wait_time)
             else:
                 return None
     

@@ -15,6 +15,8 @@ from pydantic import BaseModel
 
 from src.config_manager import ConfigManager
 from src.logger import get_logger
+from src.utils import FetchCancelled
+from src.web import league_sports
 
 router = APIRouter(prefix="/api", tags=["api"])
 logger = get_logger("WebAPI")
@@ -38,26 +40,30 @@ def _is_empty_schedule_val(v: Any) -> bool:
     return False
 
 
+def _parse_league_ids(league_id: Optional[str]) -> Optional[Set[int]]:
+    """`league_id` is one id ("17") or several, comma-separated ("17,8,132"). None = no filter."""
+    if not league_id:
+        return None
+    ids: Set[int] = set()
+    for part in str(league_id).split(","):
+        try:
+            ids.add(int(part.strip()))
+        except ValueError:
+            continue
+    return ids or None
+
+
 def _filter_matches_df_by_league(df: pd.DataFrame, league_id: Optional[str]) -> pd.DataFrame:
-    if df.empty or not league_id:
-        return df
-    try:
-        lid = int(league_id)
-    except (TypeError, ValueError):
+    ids = _parse_league_ids(league_id)
+    if df.empty or ids is None:
         return df
     if "league_id" in df.columns:
-        try:
-            return df[df["league_id"].astype(int) == lid]
-        except (ValueError, TypeError):
-            return df[df["league_id"] == lid]
+        return df[pd.to_numeric(df["league_id"], errors="coerce").isin(ids)]
     if "league_folder" in df.columns:
-        col = df["league_folder"].astype(str)
-        return df[col.str.startswith(f"{lid}_")]
+        prefix = df["league_folder"].astype(str).str.split("_").str[0]
+        return df[pd.to_numeric(prefix, errors="coerce").isin(ids)]
     if "tournament_id" in df.columns:
-        try:
-            return df[df["tournament_id"].astype(int) == lid]
-        except (ValueError, TypeError):
-            return df[df["tournament_id"] == lid]
+        return df[pd.to_numeric(df["tournament_id"], errors="coerce").isin(ids)]
     return df
 
 
@@ -120,11 +126,17 @@ def _find_league_seasons_json(data_dir: str, league_id: int) -> Optional[str]:
 class LeagueModel(BaseModel):
     id: int
     name: str
+    sport: Optional[str] = None
 
 
 class LeagueCreate(BaseModel):
     id: int
     name: str
+    sport: Optional[str] = None
+
+
+class LeagueUpdate(BaseModel):
+    sport: Optional[str] = None
 
 
 class SettingsUpdate(BaseModel):
@@ -193,41 +205,64 @@ def _schedule_match_date_sort_key(val: Any) -> float:
     return 0.0
 
 
+def _read_processed_matches(
+    data_dir: str,
+    league_id: Optional[str],
+    date: Optional[str],
+    season_id: Optional[int],
+) -> pd.DataFrame:
+    """The export CSV (match_details/processed/all_matches_*.csv), filtered like the summaries."""
+    csv_dir = os.path.join(data_dir, "match_details", "processed")
+    all_files = glob.glob(os.path.join(csv_dir, "all_matches_*.csv"))
+    if not all_files:
+        return pd.DataFrame()
+    latest_file = max(all_files, key=os.path.getctime)
+    try:
+        df = pd.read_csv(latest_file)
+    except Exception as e:
+        logger.error(f"Error reading export CSV: {e}")
+        return pd.DataFrame()
+    df = _filter_matches_df_by_league(df, league_id)
+    if date and "match_date" in df.columns:
+        df = df[df["match_date"].astype(str).str.contains(date, na=False)]
+    if season_id is not None:
+        sid = int(season_id)
+        if "season_id" in df.columns:
+            df = df[pd.to_numeric(df["season_id"], errors="coerce") == sid]
+        elif "season_folder" in df.columns:
+            df = df[df["season_folder"].astype(str).str.startswith(f"{sid}_")]
+        else:
+            return pd.DataFrame()
+    return df
+
+
 def _build_schedule_matches_dataframe(
     data_dir: str,
     league_id: Optional[str],
     date: Optional[str],
     season_id: Optional[int],
 ) -> pd.DataFrame:
-    csv_dir = os.path.join(data_dir, "match_details", "processed")
-    all_files = glob.glob(os.path.join(csv_dir, "all_matches_*.csv"))
-    if all_files:
-        latest_file = max(all_files, key=os.path.getctime)
-        try:
-            df = pd.read_csv(latest_file)
-            df = _filter_matches_df_by_league(df, league_id)
-            if date and "match_date" in df.columns:
-                df = df[df["match_date"].astype(str).str.contains(date, na=False)]
-            if season_id is not None:
-                sid = int(season_id)
-                if "season_id" in df.columns:
-                    df = df[pd.to_numeric(df["season_id"], errors="coerce") == sid]
-                elif "season_folder" in df.columns:
-                    sf = df["season_folder"].astype(str)
-                    df = df[sf.str.startswith(f"{sid}_")]
-                else:
-                    return pd.DataFrame()
-            return df
-        except Exception as e:
-            logger.error(f"Error reading export CSV: {e}")
+    """
+    Every downloaded match: the per-season summaries under data/matches are the source.
 
+    The export CSV used to win whenever it existed, but it is only rewritten when a job
+    finishes (a stopped job skips it) and only holds matches that have details, so a league
+    could show "380 matches" on the Leagues page and none in the list. It is now only the
+    fallback for data folders that have no summaries at all.
+    """
     summary_pattern = os.path.join(data_dir, "matches", "**", "*_summary.csv")
     summary_files = glob.glob(summary_pattern, recursive=True)
+    if not summary_files:
+        return _read_processed_matches(data_dir, league_id, date, season_id)
+
+    league_ids = _parse_league_ids(league_id)
+    league_prefixes = {str(i) for i in league_ids} if league_ids is not None else None
     all_summary_data: List[pd.DataFrame] = []
     for file in summary_files:
         try:
             parent_dir = os.path.basename(os.path.dirname(file))
-            if league_id and not parent_dir.startswith(f"{league_id}_"):
+            league_prefix = parent_dir.split("_")[0]
+            if league_prefixes is not None and league_prefix not in league_prefixes:
                 continue
             fname = os.path.basename(file)
             m = re.match(r"^(\d+)_", fname)
@@ -238,6 +273,7 @@ def _build_schedule_matches_dataframe(
             if df_part.empty:
                 continue
             df_part["_file_season_id"] = file_sid
+            df_part["league_folder"] = parent_dir
             all_summary_data.append(df_part)
         except Exception as e:
             logger.error(f"Error reading summary CSV {file}: {e}")
@@ -245,11 +281,39 @@ def _build_schedule_matches_dataframe(
     if not all_summary_data:
         return pd.DataFrame()
     df_total = pd.concat(all_summary_data, ignore_index=True)
+    if "match_id" in df_total.columns:
+        df_total = df_total.drop_duplicates(subset=["match_id"], keep="last")
     if date and "match_date" in df_total.columns:
         df_total = df_total[df_total["match_date"].astype(str).str.contains(date, na=False)]
     if season_id is not None and "_file_season_id" in df_total.columns:
         df_total = df_total[df_total["_file_season_id"] == int(season_id)]
     return df_total
+
+
+def _detail_match_ids(data_dir: str, league_id: Optional[str]) -> Set[str]:
+    """Ids of matches whose details are on disk: match_details/<league>/<season>/<id>/basic.json."""
+    base = os.path.join(data_dir, "match_details")
+    if not os.path.isdir(base):
+        return set()
+    ids = _parse_league_ids(league_id)
+    prefixes = {str(i) for i in ids} if ids is not None else None
+    found: Set[str] = set()
+    for league_dir in os.listdir(base):
+        if league_dir == "processed":
+            continue
+        if prefixes is not None and league_dir.split("_")[0] not in prefixes:
+            continue
+        league_path = os.path.join(base, league_dir)
+        if not os.path.isdir(league_path):
+            continue
+        for season_dir in os.listdir(league_path):
+            season_path = os.path.join(league_path, season_dir)
+            if not os.path.isdir(season_path):
+                continue
+            for mid in os.listdir(season_path):
+                if os.path.exists(os.path.join(season_path, mid, "basic.json")):
+                    found.add(mid)
+    return found
 
 
 def _get_matches_sync(
@@ -260,12 +324,21 @@ def _get_matches_sync(
     league_id: Optional[str],
     date: Optional[str],
     season_id: Optional[int],
+    details: Optional[str] = None,
 ) -> MatchListResponse:
     df = _build_schedule_matches_dataframe(data_dir, league_id, date, season_id)
     if df.empty:
         return MatchListResponse(items=[], total=0, limit=limit, offset=offset, sort=sort)
 
     df = df.copy()
+    if "match_id" in df.columns:
+        have = _detail_match_ids(data_dir, league_id)
+        mid = pd.to_numeric(df["match_id"], errors="coerce").astype("Int64").astype(str)
+        df["has_details"] = mid.isin(have)
+        if details == "present":
+            df = df[df["has_details"]]
+        elif details == "missing":
+            df = df[~df["has_details"]]
     if "match_date" in df.columns:
         df["_sort_ts"] = df["match_date"].map(_schedule_match_date_sort_key)
     else:
@@ -681,10 +754,17 @@ def _compute_system_stats_sync(data_dir: str, leagues: Dict[int, str]) -> Dict[s
     return stats
 
 
+def _leagues_with_sport_sync() -> List[LeagueModel]:
+    leagues = config_manager.get_leagues()
+    sports = league_sports.resolve_all(
+        config_manager.league_config_path, config_manager.get_data_dir(), leagues.keys()
+    )
+    return [LeagueModel(id=k, name=v, sport=sports.get(k)) for k, v in leagues.items()]
+
+
 @router.get("/leagues", response_model=List[LeagueModel])
 async def get_leagues() -> List[LeagueModel]:
-    leagues = config_manager.get_leagues()
-    return [LeagueModel(id=k, name=v) for k, v in leagues.items()]
+    return await asyncio.to_thread(_leagues_with_sport_sync)
 
 
 @router.post("/leagues", response_model=LeagueModel)
@@ -692,7 +772,23 @@ async def add_league(league: LeagueCreate) -> LeagueModel:
     success = config_manager.add_league(league.name, league.id)
     if not success:
         raise HTTPException(status_code=400, detail="League ID or Name already exists.")
-    return league
+    sport = league_sports.normalize_sport(league.sport)
+    if sport:
+        league_sports.set_sport(config_manager.league_config_path, league.id, sport)
+    return LeagueModel(id=league.id, name=league.name, sport=sport)
+
+
+@router.patch("/leagues/{league_id}", response_model=LeagueModel)
+async def update_league(league_id: int, body: LeagueUpdate) -> LeagueModel:
+    """Set (or clear, with sport=null) the sport of a configured league."""
+    leagues = config_manager.get_leagues()
+    if league_id not in leagues:
+        raise HTTPException(status_code=404, detail="League not found.")
+    sport = league_sports.normalize_sport(body.sport)
+    if body.sport and not sport:
+        raise HTTPException(status_code=422, detail=f"Unknown sport. Use one of: {', '.join(league_sports.SPORTS)}.")
+    league_sports.set_sport(config_manager.league_config_path, league_id, sport)
+    return LeagueModel(id=league_id, name=leagues[league_id], sport=sport)
 
 
 @router.delete("/leagues/{league_id}")
@@ -700,6 +796,7 @@ async def delete_league(league_id: int) -> Dict[str, str]:
     success = config_manager.remove_league(league_id)
     if not success:
         raise HTTPException(status_code=404, detail="League not found.")
+    league_sports.set_sport(config_manager.league_config_path, league_id, None)
     return {"status": "success", "message": f"League {league_id} deleted."}
 
 
@@ -772,7 +869,9 @@ async def get_matches(
     league_id: Optional[str] = None,
     date: Optional[str] = None,
     season_id: Optional[int] = None,
+    details: Optional[str] = Query(None, pattern="^(present|missing)$"),
 ) -> MatchListResponse:
+    """`league_id` may list several ids ("17,8"); `details` keeps only matches with/without details."""
     if sort not in ("asc", "desc"):
         sort = "desc"
     data_dir = config_manager.get_data_dir()
@@ -785,6 +884,7 @@ async def get_matches(
         league_id,
         date,
         season_id,
+        details,
     )
 
 # Global Scraper State (mirror of JobStore for legacy field access during a run)
@@ -916,6 +1016,13 @@ async def trigger_fetch(payload: FetchRequest):
         _refresh_scraper_state()
 
     def run_update():
+        from src.utils import set_cancel_check
+
+        # Every request this job makes (and its waits between retries) now checks the cancel
+        # flag, so "Stop" takes effect within a fraction of a second instead of after the
+        # current season or a 2-minute 403 back-off.
+        set_cancel_check(_job_store.cancel_requested)
+
         def web_detail_progress(lo: int, hi: int):
             """Terminal tqdm ile uyumlu ara adımlar: done/total → [lo, hi]."""
 
@@ -1110,7 +1217,10 @@ async def trigger_fetch(payload: FetchRequest):
                     update_state("Completed", 100, "Background Task Completed Successfully.")
                 print("--> Background Task Completed Successfully.")
                 logger.info("Background update and export completed.")
-            
+
+        except FetchCancelled:
+            logger.info("Background fetch cancelled. job_id=%s", job_id)
+            update_state("Cancelled", int(_job_store.snapshot().get("progress") or 0), "Cancelled")
         except Exception as e:
             error_msg = str(e)
             logger.error(f"Background update failed: {e}")
