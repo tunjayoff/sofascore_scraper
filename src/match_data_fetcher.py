@@ -180,6 +180,10 @@ class MatchDataFetcher:
 
             results = await asyncio.gather(*tasks, return_exceptions=True)
             for result in results:
+                # İş iptal edildiyse yarım maçı kaydetme; iptali yukarı taşı
+                if isinstance(result, BaseException) and not isinstance(result, Exception):
+                    raise result
+            for result in results:
                 # None da yazılır: _save_match_data boş gelen dilimi sayabilsin
                 if isinstance(result, tuple) and len(result) == 2:
                     match_data[result[0]] = result[1]
@@ -259,10 +263,15 @@ class MatchDataFetcher:
                         if cancelled or (should_cancel and should_cancel()):
                             cancelled = True
                             return None
+                        if breaker_triggered:
+                            # Devre kesildi: batch'te sırada bekleyen maçlar istek atmasın
+                            return None
                         try:
                             async with sem:
                                 if cancelled or (should_cancel and should_cancel()):
                                     cancelled = True
+                                    return None
+                                if breaker_triggered:
                                     return None
                                 total_attempts += 1
                                 need = self._needs_detail_fetch(str(match_id))
@@ -290,14 +299,11 @@ class MatchDataFetcher:
                                 break
                         except Exception as e:
                             err = str(e)
+                            code = getattr(e, "status_code", None)
                             status_key = "other"
-                            if "403" in err:
-                                status_key = "403"
-                            elif "429" in err:
-                                status_key = "429"
-                            elif "404" in err:
-                                status_key = "404"
-                            elif "5" in err and "HTTP" in err:
+                            if code in (403, 404, 429):
+                                status_key = str(code)
+                            elif isinstance(code, int) and code >= 500:
                                 status_key = "5xx"
                             elif "timeout" in err.lower():
                                 status_key = "timeout"
@@ -339,37 +345,42 @@ class MatchDataFetcher:
                 batch_tasks = [asyncio.create_task(fetch_one(match_id)) for match_id in batch]
                 batch_completed = 0
                 notify_stride = max(1, min(20, max(total_m // 50, 1)))
-                for coro in asyncio.as_completed(batch_tasks):
-                    if should_cancel and should_cancel():
-                        cancelled = True
-                        for t in batch_tasks:
-                            if not t.done():
-                                t.cancel()
-                        # Don't await remaining work — drop out of the batch
-                        break
-                    try:
-                        match_data = await coro
-                    except asyncio.CancelledError:
-                        continue
-                    if cancelled:
-                        break
-                    batch_completed += 1
-                    cumulative_done += 1
-                    if match_data and isinstance(match_data, dict) and "basic" in match_data:
-                        match_id_res = match_data["basic"].get("id")
-                        if match_id_res:
-                            results[str(match_id_res)] = match_data
-                    if progress_callback and total_m > 0:
-                        if (
-                            cumulative_done % notify_stride == 0
-                            or batch_completed == len(batch)
-                            or cumulative_done >= total_m
-                        ):
-                            progress_callback(
-                                min(cumulative_done, total_m),
-                                total_m,
-                                f"Match details {min(cumulative_done, total_m)}/{total_m} (parallel batch {batch_idx + 1}/{len(all_batches)})",
-                            )
+                try:
+                    for fut in asyncio.as_completed(batch_tasks):
+                        if should_cancel and should_cancel():
+                            cancelled = True
+                            break
+                        try:
+                            match_data = await fut
+                        except asyncio.CancelledError:
+                            continue
+                        if cancelled:
+                            break
+                        batch_completed += 1
+                        cumulative_done += 1
+                        if match_data and isinstance(match_data, dict) and "basic" in match_data:
+                            match_id_res = match_data["basic"].get("id")
+                            if match_id_res:
+                                results[str(match_id_res)] = match_data
+                        if progress_callback and total_m > 0:
+                            if (
+                                cumulative_done % notify_stride == 0
+                                or batch_completed == len(batch)
+                                or cumulative_done >= total_m
+                            ):
+                                progress_callback(
+                                    min(cumulative_done, total_m),
+                                    total_m,
+                                    f"Match details {min(cumulative_done, total_m)}/{total_m} (parallel batch {batch_idx + 1}/{len(all_batches)})",
+                                )
+                except BaseException:
+                    # FetchCancelled (iptal) veya beklenmeyen hata: kalan görevleri iptal edip bekle,
+                    # oturum kapanmadan ve döngü kapatılmadan önce hiçbiri askıda kalmasın
+                    pending = [t for t in batch_tasks if not t.done()]
+                    for t in pending:
+                        t.cancel()
+                    await asyncio.gather(*pending, return_exceptions=True)
+                    raise
 
                 if cancelled:
                     # Best-effort: cancel leftovers and don't wait on long sleeps
@@ -400,21 +411,13 @@ class MatchDataFetcher:
         print(f"Toplam {len(match_ids)} maç paralel olarak işleniyor...")
         progress = tqdm(total=len(match_ids), desc="Maç detayları çekiliyor")
         
-        # Create a new event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
         try:
-            # Run the async function with progress bar
-            results = loop.run_until_complete(self.fetch_matches_batch_async(
+            # asyncio.run: döngüyü kapatır, kalan görevleri iptal eder ve thread'e kapalı döngü bırakmaz
+            return asyncio.run(self.fetch_matches_batch_async(
                 match_ids, max_concurrent, progress, progress_callback, should_cancel
             ))
         finally:
-            # Close the loop
-            loop.close()
             progress.close()
-        
-        return results
 
     
     def __init__(self, config_manager: ConfigManager, data_dir: str = "data"):

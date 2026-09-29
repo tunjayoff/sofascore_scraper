@@ -33,6 +33,36 @@ _TOKEN_TTL_SECONDS = 3500
 
 DEFAULT_PROFILE_DIR = os.path.expanduser("~/.cache/sofascore_scraper/chrome_profile")
 
+# Zaman aşımları (saniye). Tarayıcı başlatma, istek başına zaman aşımının dışında tutulur:
+# soğuk bir başlatmayı yarıda kesmek profili kilitli bırakır.
+STARTUP_TIMEOUT = 90.0
+REQUEST_TIMEOUT = 60.0
+_JS_FETCH_TIMEOUT_MS = 20000
+# Başlatma başarısız olduysa (ör. Chrome yok) her 403'te yeniden denenmez
+_LAUNCH_RETRY_AFTER = 300.0
+# Yeni çözülmüş bir token, hemen ardından gelen 403 dalgası için yeniden kullanılır
+_FRESH_TOKEN_SECONDS = 30.0
+
+_FETCH_JS = """async ([targetUrl, xReq, xCap, timeoutMs]) => {
+    const headers = { "x-requested-with": xReq };
+    if (xCap) headers["x-captcha"] = xCap;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+        const resp = await fetch(targetUrl, { headers, signal: ctrl.signal });
+        return {
+            status: resp.status,
+            ok: resp.ok,
+            data: resp.ok ? await resp.json() : null,
+            text: !resp.ok ? await resp.text() : null
+        };
+    } catch (err) {
+        return { status: 0, ok: false, data: null, text: String(err) };
+    } finally {
+        clearTimeout(timer);
+    }
+}"""
+
 
 def _is_token_valid() -> bool:
     """Önbellekteki token hâlâ geçerli mi?"""
@@ -80,7 +110,6 @@ class BrowserBridge:
     """
 
     _instance: Optional["BrowserBridge"] = None
-    _lock = asyncio.Lock()
 
     def __init__(self, profile_dir: str = DEFAULT_PROFILE_DIR):
         self.profile_dir = profile_dir
@@ -88,7 +117,10 @@ class BrowserBridge:
         self.context = None
         self.page = None
         self.token: Optional[str] = None
+        self._token_at: float = 0.0
         self._init_lock = asyncio.Lock()
+        self._solve_task: Optional["asyncio.Future[Optional[str]]"] = None
+        self._launch_failed_at: float = 0.0
         os.makedirs(self.profile_dir, exist_ok=True)
 
     @classmethod
@@ -105,61 +137,96 @@ class BrowserBridge:
         async with self._init_lock:
             if self.page and not self.page.is_closed():
                 return
-
-            from playwright.async_api import async_playwright
-
-            self.pw = await async_playwright().start()
-
-            args = [
-                "--disable-blink-features=AutomationControlled",
-                "--window-size=1920,1080",
-            ]
-            # Sandbox yalnızca root/konteynerde çalışmaz; aksi halde açık kalmalı
-            is_root = hasattr(os, "geteuid") and os.geteuid() == 0
-            if is_root or os.getenv("SOFASCORE_NO_SANDBOX", "").lower() in ("1", "true", "yes"):
-                args += ["--no-sandbox", "--disable-setuid-sandbox"]
-
-            headless = not bool(os.getenv("DISPLAY") or os.getenv("WAYLAND_DISPLAY"))
-            chrome_path = _get_chrome_executable()
-
-            launch_kwargs: Dict[str, Any] = {
-                "user_data_dir": self.profile_dir,
-                "headless": headless,
-                "args": args,
-                "ignore_default_args": ["--enable-automation"],
-                "no_viewport": True,
-            }
-            if chrome_path:
-                launch_kwargs["executable_path"] = chrome_path
-            else:
-                launch_kwargs["channel"] = "chrome"
-
-            logger.info(f"Chrome oturumu başlatılıyor (headless={headless})...")
-            self.context = await self.pw.chromium.launch_persistent_context(**launch_kwargs)
-            self.page = self.context.pages[0] if self.context.pages else await self.context.new_page()
-
+            if self._launch_failed_at and time.time() - self._launch_failed_at < _LAUNCH_RETRY_AFTER:
+                raise RuntimeError("BrowserBridge başlatılamadı (yakın zamanda denendi); Chrome kurulu mu?")
+            # Sayfası kapanmış eski oturum: yeniden başlatmadan önce kapat (profil kilidi)
+            await self.close()
             try:
-                await self.page.goto("https://www.sofascore.com/tr", wait_until="domcontentloaded", timeout=30000)
-                await asyncio.sleep(1.5)
-            except Exception as e:
-                logger.warning(f"Sofascore anasayfa açılış uyarısı: {e}")
+                await self._launch()
+            except BaseException:
+                # Yarım kalan başlatma (hata veya iptal) Playwright sürecini ve profil kilidini bırakmasın
+                self._launch_failed_at = time.time()
+                await self.close()
+                raise
+            self._launch_failed_at = 0.0
 
-            # Önceki oturumdan kalan token varsa yükle
-            try:
-                t_raw = await self.page.evaluate("() => localStorage.getItem('sofa.captcha.token')")
-                if t_raw:
-                    try:
-                        self.token = json.loads(t_raw)
-                    except Exception:
-                        self.token = t_raw
-            except Exception:
-                pass
+    async def _launch(self) -> None:
+        from playwright.async_api import async_playwright
+
+        self.pw = await async_playwright().start()
+
+        args = [
+            "--disable-blink-features=AutomationControlled",
+            "--window-size=1920,1080",
+        ]
+        # Sandbox yalnızca root/konteynerde çalışmaz; aksi halde açık kalmalı
+        is_root = hasattr(os, "geteuid") and os.geteuid() == 0
+        if is_root or os.getenv("SOFASCORE_NO_SANDBOX", "").lower() in ("1", "true", "yes"):
+            args += ["--no-sandbox", "--disable-setuid-sandbox"]
+
+        headless = not bool(os.getenv("DISPLAY") or os.getenv("WAYLAND_DISPLAY"))
+        chrome_path = _get_chrome_executable()
+
+        launch_kwargs: Dict[str, Any] = {
+            "user_data_dir": self.profile_dir,
+            "headless": headless,
+            "args": args,
+            "ignore_default_args": ["--enable-automation"],
+            "no_viewport": True,
+        }
+        if chrome_path:
+            launch_kwargs["executable_path"] = chrome_path
+        else:
+            launch_kwargs["channel"] = "chrome"
+        proxy = _proxy_settings()
+        if proxy:
+            launch_kwargs["proxy"] = proxy
+
+        logger.info(f"Chrome oturumu başlatılıyor (headless={headless})...")
+        self.context = await self.pw.chromium.launch_persistent_context(**launch_kwargs)
+        self.page = self.context.pages[0] if self.context.pages else await self.context.new_page()
+
+        try:
+            await self.page.goto("https://www.sofascore.com/tr", wait_until="domcontentloaded", timeout=30000)
+            await asyncio.sleep(1.5)
+        except Exception as e:
+            logger.warning(f"Sofascore anasayfa açılış uyarısı: {e}")
+
+        # Önceki oturumdan kalan token varsa yükle
+        try:
+            t_raw = await self.page.evaluate("() => localStorage.getItem('sofa.captcha.token')")
+            if t_raw:
+                try:
+                    self._set_token(json.loads(t_raw))
+                except Exception:
+                    self._set_token(t_raw)
+        except Exception:
+            pass
+
+    def _set_token(self, token: str) -> None:
+        global _cached_token, _cached_at
+        self.token = token
+        self._token_at = time.time()
+        # curl_cffi istekleri de bu tokeni kullansın (get_request_headers → get_cached_token)
+        _cached_token = token
+        _cached_at = self._token_at
 
     async def solve_challenge(self) -> Optional[str]:
         """
-        Sayfa içinde Turnstile challenge'ını çözer ve geçerli JWT tokenı alır.
+        Turnstile challenge'ını çözer ve geçerli JWT tokenı alır.
+
+        Aynı anda gelen 403'lerin hepsi aynı çözümü bekler: paralel turnstile.execute
+        çağrıları birbirini bozar. Az önce çözülmüş bir token doğrudan döndürülür.
         """
         await self.ensure_ready()
+        if self.token and time.time() - self._token_at < _FRESH_TOKEN_SECONDS:
+            return self.token
+        if self._solve_task is None or self._solve_task.done():
+            self._solve_task = asyncio.ensure_future(self._solve_challenge())
+        # shield: bir bekleyenin iptali diğerlerinin beklediği çözümü iptal etmesin
+        return await asyncio.shield(self._solve_task)
+
+    async def _solve_challenge(self) -> Optional[str]:
         logger.info("Cloudflare Turnstile challenge çözülüyor...")
 
         try:
@@ -195,32 +262,36 @@ class BrowserBridge:
             }""", t_token)
 
             if jwt:
-                self.token = jwt
-                global _cached_token, _cached_at
-                _cached_token = jwt
-                _cached_at = time.time()
+                self._set_token(jwt)
                 logger.info("Turnstile challenge başarıyla çözüldü, yeni JWT token alındı.")
                 return jwt
 
         except Exception as e:
             logger.warning(f"Turnstile execute başarısız, captcha.html fallback deneniyor: {e}")
-            # Fallback: captcha.html sayfasına git
+            # Fallback: captcha.html'i ayrı bir sekmede aç. Ana sayfada goto, o sayfada
+            # süren fetch() çağrılarının bağlamını yok ederdi.
+            captcha_page = None
             try:
                 challenge_url = "https://www.sofascore.com/captcha.html?redirectUrl=https%3A%2F%2Fwww.sofascore.com%2Ftr"
-                await self.page.goto(challenge_url, wait_until="domcontentloaded", timeout=20000)
+                captcha_page = await self.context.new_page()
+                await captcha_page.goto(challenge_url, wait_until="domcontentloaded", timeout=20000)
                 for _ in range(10):
                     await asyncio.sleep(1)
-                    if "/captcha.html" not in self.page.url:
-                        t_raw = await self.page.evaluate("() => localStorage.getItem('sofa.captcha.token')")
+                    if "/captcha.html" not in captcha_page.url:
+                        t_raw = await captcha_page.evaluate("() => localStorage.getItem('sofa.captcha.token')")
                         if t_raw:
                             token = json.loads(t_raw) if t_raw.startswith('"') else t_raw
-                            self.token = token
-                            _cached_token = token
-                            _cached_at = time.time()
+                            self._set_token(token)
                             logger.info("captcha.html üzerinden token başarıyla alındı.")
                             return token
             except Exception as fe:
                 logger.error(f"captcha.html fallback hatası: {fe}")
+            finally:
+                if captcha_page is not None:
+                    try:
+                        await captcha_page.close()
+                    except Exception:
+                        pass
 
         return None
 
@@ -234,42 +305,14 @@ class BrowserBridge:
         url = path_or_url if path_or_url.startswith("http") else "https://www.sofascore.com/api/v1" + path_or_url
         x_req = hashlib.sha256(str(int(time.time()) // 1800).encode("utf-8")).hexdigest()[:6]
 
-        res = await self.page.evaluate("""async ([targetUrl, xReq, xCap]) => {
-            const headers = { "x-requested-with": xReq };
-            if (xCap) headers["x-captcha"] = xCap;
-            try {
-                const resp = await fetch(targetUrl, { headers });
-                return {
-                    status: resp.status,
-                    ok: resp.ok,
-                    data: resp.ok ? await resp.json() : null,
-                    text: !resp.ok ? await resp.text() : null
-                };
-            } catch (err) {
-                return { status: 0, ok: false, data: null, text: String(err) };
-            }
-        }""", [url, x_req, self.token])
+        res = await self.page.evaluate(_FETCH_JS, [url, x_req, self.token, _JS_FETCH_TIMEOUT_MS])
 
         # 403 Challenge alındıysa otomatik çöz ve tekrar dene
         if res.get("status") == 403 and "challenge" in (res.get("text") or ""):
             logger.info("API 403 challenge döndürdü, Turnstile otomatik çözülüyor...")
             new_token = await self.solve_challenge()
             if new_token:
-                res = await self.page.evaluate("""async ([targetUrl, xReq, xCap]) => {
-                    const headers = { "x-requested-with": xReq };
-                    if (xCap) headers["x-captcha"] = xCap;
-                    try {
-                        const resp = await fetch(targetUrl, { headers });
-                        return {
-                            status: resp.status,
-                            ok: resp.ok,
-                            data: resp.ok ? await resp.json() : null,
-                            text: !resp.ok ? await resp.text() : null
-                        };
-                    } catch (err) {
-                        return { status: 0, ok: false, data: null, text: String(err) };
-                    }
-                }""", [url, x_req, self.token])
+                res = await self.page.evaluate(_FETCH_JS, [url, x_req, self.token, _JS_FETCH_TIMEOUT_MS])
 
         if res.get("ok"):
             return res.get("data")
@@ -306,56 +349,96 @@ _loop_lock = threading.Lock()
 
 
 def _get_background_loop() -> asyncio.AbstractEventLoop:
+    """
+    BrowserBridge'in tek arka plan döngüsü. Döngü çalışmaya başlayana kadar kilit
+    bırakılmaz: aksi halde eşzamanlı ilk çağrılar ikinci bir döngü açar ve Playwright
+    nesneleri iki döngüden kullanılır.
+    """
     global _loop, _loop_thread
     with _loop_lock:
-        if _loop is None or not _loop.is_running():
-            _loop = asyncio.new_event_loop()
+        if _loop is None or _loop.is_closed() or _loop_thread is None or not _loop_thread.is_alive():
+            loop = asyncio.new_event_loop()
+            ready = threading.Event()
 
             def _run():
-                asyncio.set_event_loop(_loop)
-                _loop.run_forever()
+                asyncio.set_event_loop(loop)
+                loop.call_soon(ready.set)
+                loop.run_forever()
 
-            _loop_thread = threading.Thread(target=_run, daemon=True, name="BrowserBridgeLoop")
-            _loop_thread.start()
+            thread = threading.Thread(target=_run, daemon=True, name="BrowserBridgeLoop")
+            thread.start()
+            ready.wait()
+            _loop, _loop_thread = loop, thread
         return _loop
 
 
-def fetch_api_via_browser_sync(path_or_url: str, timeout: float = 35.0) -> Optional[Any]:
-    """
-    Senkron API istek köprüsü.
-    Arka planda BrowserBridge üzerinden Sofascore API'sine istek yapar.
-    """
-    loop = _get_background_loop()
-    bridge = BrowserBridge.get_instance()
-    fut = asyncio.run_coroutine_threadsafe(bridge.fetch_json(path_or_url), loop)
+def _proxy_settings() -> Optional[Dict[str, str]]:
+    """curl_cffi ile aynı proxy: tarayıcı da gerçek IP'yi göstermesin."""
+    if os.getenv("USE_PROXY", "false").lower() != "true":
+        return None
+    url = os.getenv("PROXY_URL", "").strip()
+    if not url:
+        return None
+    from urllib.parse import urlparse
+
+    u = urlparse(url)
+    settings = {"server": f"{u.scheme}://{u.hostname}:{u.port}" if u.port else f"{u.scheme}://{u.hostname}"}
+    if u.username:
+        settings["username"] = u.username
+    if u.password:
+        settings["password"] = u.password
+    return settings
+
+
+def _run_sync(coro, timeout: float) -> Any:
+    fut = asyncio.run_coroutine_threadsafe(coro, _get_background_loop())
     try:
         return fut.result(timeout=timeout)
-    except Exception as e:
+    except BaseException:
         fut.cancel()
-        logger.error(f"fetch_api_via_browser_sync hatası: {e!r}")
-        return None
+        raise
 
 
-async def _run_on_background_loop(coro) -> Any:
+async def _run_on_background_loop(coro, timeout: float = REQUEST_TIMEOUT) -> Any:
     """
     Coroutine'i BrowserBridge'in arka plan döngüsünde çalıştırır ve sonucu bekler.
     Playwright nesneleri oluşturuldukları döngüye bağlıdır; çağıranın döngüsü
     (örn. asyncio.run ile açılıp kapanan geçici döngü) kullanılırsa sonraki çağrılar askıda kalır.
     """
-    loop = _get_background_loop()
-    return await asyncio.wrap_future(asyncio.run_coroutine_threadsafe(coro, loop))
+    fut = asyncio.run_coroutine_threadsafe(coro, _get_background_loop())
+    try:
+        return await asyncio.wait_for(asyncio.wrap_future(fut), timeout)
+    except BaseException:
+        fut.cancel()
+        raise
+
+
+def fetch_api_via_browser_sync(path_or_url: str, timeout: float = REQUEST_TIMEOUT) -> Optional[Any]:
+    """
+    Senkron API istek köprüsü.
+    Arka planda BrowserBridge üzerinden Sofascore API'sine istek yapar.
+    """
+    bridge = BrowserBridge.get_instance()
+    try:
+        _run_sync(bridge.ensure_ready(), STARTUP_TIMEOUT)
+        return _run_sync(bridge.fetch_json(path_or_url), timeout)
+    except Exception as e:
+        logger.error(f"fetch_api_via_browser_sync hatası: {e!r}")
+        return None
 
 
 async def fetch_api_via_browser(path_or_url: str) -> Optional[Any]:
     """Asenkron API istek köprüsü."""
     bridge = BrowserBridge.get_instance()
-    return await _run_on_background_loop(bridge.fetch_json(path_or_url))
+    await _run_on_background_loop(bridge.ensure_ready(), STARTUP_TIMEOUT)
+    return await _run_on_background_loop(bridge.fetch_json(path_or_url), REQUEST_TIMEOUT)
 
 
 async def solve_turnstile_challenge(timeout_ms: int = 35000, headless: Optional[bool] = None) -> Optional[str]:
     """Turnstile challenge çözücü."""
     bridge = BrowserBridge.get_instance()
-    return await _run_on_background_loop(bridge.solve_challenge())
+    await _run_on_background_loop(bridge.ensure_ready(), STARTUP_TIMEOUT)
+    return await _run_on_background_loop(bridge.solve_challenge(), timeout_ms / 1000 + 10)
 
 
 def solve_turnstile_challenge_sync(timeout_ms: int = 30000) -> Optional[str]:
@@ -364,11 +447,10 @@ def solve_turnstile_challenge_sync(timeout_ms: int = 30000) -> Optional[str]:
     if cached:
         return cached
 
-    loop = _get_background_loop()
     bridge = BrowserBridge.get_instance()
-    fut = asyncio.run_coroutine_threadsafe(bridge.solve_challenge(), loop)
     try:
-        return fut.result(timeout=timeout_ms / 1000 + 10)
+        _run_sync(bridge.ensure_ready(), STARTUP_TIMEOUT)
+        return _run_sync(bridge.solve_challenge(), timeout_ms / 1000 + 10)
     except Exception as e:
         logger.error(f"solve_turnstile_challenge_sync hatası: {e}")
         return None
@@ -383,7 +465,8 @@ def _cleanup():
         try:
             bridge = BrowserBridge.get_instance()
             fut = asyncio.run_coroutine_threadsafe(bridge.close(), _loop)
-            fut.result(timeout=3.0)
+            # Chrome'un kapanmasına zaman tanı; yoksa süreç öksüz kalır
+            fut.result(timeout=10.0)
         except Exception:
             pass
         try:

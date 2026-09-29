@@ -30,12 +30,14 @@ class APIError(SofaScoreScraperError):
 class RateLimitError(APIError):
     """Rate limiting hatası için özel sınıf."""
     
-    def __init__(self, wait_time: int = None):
+    def __init__(self, wait_time: int = None, status_code: int = 429, url: str = ""):
         self.wait_time = wait_time
         message = "API istek limiti aşıldı"
+        if url:
+            message += f": {url}"
         if wait_time:
             message += f", {wait_time} saniye bekleniyor"
-        super().__init__(message, 429)
+        super().__init__(message, status_code)
 
 class ResourceNotFoundError(APIError):
     """İstenen kaynak bulunamadığında (404) oluşan hata."""

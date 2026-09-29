@@ -97,6 +97,9 @@ def test_browser_calls_share_one_event_loop_across_callers():
     loops = []
 
     class FakeBridge:
+        async def ensure_ready(self):
+            loops.append(asyncio.get_running_loop())
+
         async def fetch_json(self, path_or_url):
             loops.append(asyncio.get_running_loop())
             return {"ok": path_or_url}
@@ -107,6 +110,6 @@ def test_browser_calls_share_one_event_loop_across_callers():
         assert asyncio.run(fetch_api_via_browser("/b")) == {"ok": "/b"}
         assert fetch_api_via_browser_sync("/c") == {"ok": "/c"}
 
-    assert len(loops) == 3
-    assert loops[0] is loops[1] is loops[2]
+    assert len(loops) == 6
+    assert all(lp is loops[0] for lp in loops)
     assert loops[0].is_running()

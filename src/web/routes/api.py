@@ -425,7 +425,8 @@ def _search_remote_leagues_sync(q: str) -> List[RemoteLeagueResult]:
 
     url = f"https://www.sofascore.com/api/v1/search/unique-tournaments/{quote(q, safe='')}"
     try:
-        data = make_api_request(url)
+        # Etkileşimli arama: 403 bekleme döngüsüyle bir sunucu işçisini dakikalarca tutma
+        data = make_api_request(url, max_retries=1, timeout=10)
     except Exception as e:
         logger.error(f"Remote league search failed: {e}")
         return []
