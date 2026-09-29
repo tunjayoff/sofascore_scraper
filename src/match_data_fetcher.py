@@ -21,8 +21,10 @@ import pandas as pd
 from tqdm import tqdm
 
 from src.config_manager import ConfigManager
+from src.fsutil import atomic_write_json
 from src.utils import make_api_request, ensure_directory
 from src.season_fetcher import SeasonFetcher
+from src.match_fetcher import MatchFetcher
 
 # Loglama yapılandırması
 logging.basicConfig(
@@ -52,6 +54,17 @@ DETAIL_SLICE_KEYS = (
     "incidents",
 )
 
+# Bitmiş bir maçta bu kadar denemede de boş gelen dilim o maç için yok sayılır (ör. tenis
+# maçlarında kadro/olay yok). Bir kez daha denemek geçici hataları ayırır.
+UNAVAILABLE_AFTER_ATTEMPTS = 2
+UNAVAILABLE_FILE = "_unavailable.json"
+
+
+def _event_sport(basic: Dict[str, Any]) -> str:
+    sport = ((basic.get("tournament") or {}).get("category") or {}).get("sport") or {}
+    return str(sport.get("slug") or sport.get("name") or "").lower()
+
+
 class MatchDataFetcher:
     """SofaScore API'sinden detaylı maç verilerini çeken ve işleyen sınıf."""
 
@@ -66,7 +79,10 @@ class MatchDataFetcher:
             Optional[Tuple[str, str, str]]: Tuple of (league_dir, season_dir, full_path) if found, None otherwise
         """
         match_id = str(match_id)
-        
+        index = getattr(self, "_match_index", None)
+        if index is not None:
+            return index.get(match_id)
+
         # Search through the directory structure
         for league_name in os.listdir(self.match_details_dir):
             league_path = os.path.join(self.match_details_dir, league_name)
@@ -89,10 +105,40 @@ class MatchDataFetcher:
         
         return None
 
+    def _build_match_index(self) -> Dict[str, Tuple[Optional[str], Optional[str], str]]:
+        """match_id → konum; bir iş boyunca her maç için dizin ağacını baştan taramamak için."""
+        index: Dict[str, Tuple[Optional[str], Optional[str], str]] = {}
+        if not os.path.isdir(self.match_details_dir):
+            return index
+        for league_name in os.listdir(self.match_details_dir):
+            league_path = os.path.join(self.match_details_dir, league_name)
+            if not os.path.isdir(league_path) or league_name == "processed":
+                continue
+            if os.path.exists(os.path.join(league_path, "basic.json")):
+                index.setdefault(league_name, (None, None, league_path))  # eski düz yapı
+                continue
+            for season_name in os.listdir(league_path):
+                season_path = os.path.join(league_path, season_name)
+                if not os.path.isdir(season_path):
+                    continue
+                for mid in os.listdir(season_path):
+                    match_path = os.path.join(season_path, mid)
+                    if os.path.exists(os.path.join(match_path, "basic.json")):
+                        index.setdefault(mid, (league_name, season_name, match_path))
+        return index
+
+    def begin_job_cache(self) -> None:
+        """Bir iş boyunca maç konumlarını ve 'eksik mi' sonuçlarını önbelleğe al."""
+        self._match_index = self._build_match_index()
+        self._need_cache: Dict[str, str] = {}
+
+    def end_job_cache(self) -> None:
+        self._match_index = None
+        self._need_cache = {}
+
     async def _fetch_match_data_async(self, session, match_id):
         try:
             from src.utils import make_api_request_async, FETCH_ONLY_FINISHED
-            from src.match_fetcher import MatchFetcher
             from src.exceptions import ResourceNotFoundError
 
             # Temel veriyi çek (BrowserBridge / 404 korumalı)
@@ -124,12 +170,18 @@ class MatchDataFetcher:
                 self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/h2h", "h2h"),
                 self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/lineups", "lineups"),
                 self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/incidents", "incidents"),
-                self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/point-by-point", "point_by_point"),
             ]
+            if _event_sport(basic_data) == "tennis":
+                tasks.append(
+                    self._fetch_endpoint_async(
+                        session, f"{self.base_url}/event/{match_id}/point-by-point", "point_by_point"
+                    )
+                )
 
             results = await asyncio.gather(*tasks, return_exceptions=True)
             for result in results:
-                if isinstance(result, tuple) and len(result) == 2 and result[1] is not None:
+                # None da yazılır: _save_match_data boş gelen dilimi sayabilsin
+                if isinstance(result, tuple) and len(result) == 2:
                     match_data[result[0]] = result[1]
 
             # Verileri kaydet
@@ -488,14 +540,36 @@ class MatchDataFetcher:
             return self._has_incidents_data_dict(d)
         return bool(d.get(key))
 
+    def _load_unavailable(self, match_dir: str) -> Dict[str, int]:
+        try:
+            with open(os.path.join(match_dir, UNAVAILABLE_FILE), "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return {str(k): int(v) for k, v in data.items()} if isinstance(data, dict) else {}
+        except (OSError, ValueError, TypeError):
+            return {}
+
+    def _expected_slices(self, match_dir: str) -> List[str]:
+        """Beklenen dilimler: yeterince denenip hep boş gelenler hariç."""
+        unavailable = self._load_unavailable(match_dir)
+        return [k for k in DETAIL_SLICE_KEYS if unavailable.get(k, 0) < UNAVAILABLE_AFTER_ATTEMPTS]
+
     def _needs_detail_fetch(self, match_id: str) -> str:
         """
         Returns:
-            'none' — tüm dilimler tamam
+            'none' — beklenen tüm dilimler tamam
             'refill' — basic var, eksik dilim(ler) var
             'full' — kayıt yok veya basic yok
         """
         mid = str(match_id)
+        cache = getattr(self, "_need_cache", None)
+        if cache is not None and mid in cache:
+            return cache[mid]
+        need = self._compute_detail_need(mid)
+        if cache is not None:
+            cache[mid] = need
+        return need
+
+    def _compute_detail_need(self, mid: str) -> str:
         path_info = self._find_match_path(mid)
         if not path_info:
             return "full"
@@ -503,7 +577,7 @@ class MatchDataFetcher:
         data = self._load_match_data_from_dir(match_dir, mid)
         if not data.get("basic"):
             return "full"
-        for key in DETAIL_SLICE_KEYS:
+        for key in self._expected_slices(match_dir):
             if not self.match_detail_slice_present(key, data):
                 return "refill"
         return "none"
@@ -525,19 +599,15 @@ class MatchDataFetcher:
         if not basic_live:
             logger.warning(f"Maç {mid} refill: canlı basic alınamadı")
             return None
-        status = basic_live.get("status", {})
-        status_code = status.get("code", 0)
-        status_desc = status.get("description", "")
-        status_type = status.get("type", "")
-        if status_code == 0 or status_type in ("scheduled", "notstarted"):
-            logger.info(f"Maç {mid} henüz oynanmamış, refill atlanıyor.")
-            return None
-        if status_desc != "Ended" or status_type != "finished":
-            logger.info(f"Maç {mid} bitmemiş ({status_desc}/{status_type}), refill atlanıyor.")
+        if not MatchFetcher._is_finished_event(basic_live):
+            status = basic_live.get("status", {})
+            logger.info(f"Maç {mid} bitmemiş ({status.get('description')}/{status.get('type')}), refill atlanıyor.")
             return None
 
         match_data["basic"] = basic_live
-        missing = [k for k in DETAIL_SLICE_KEYS if not self.match_detail_slice_present(k, match_data)]
+        missing = [
+            k for k in self._expected_slices(match_dir) if not self.match_detail_slice_present(k, match_data)
+        ]
         if not missing:
             return match_data
 
@@ -571,20 +641,12 @@ class MatchDataFetcher:
             logger.warning(f"Maç ID {match_id} için temel veri bulunamadı")
             return None
         
-        # Maçın durumunu kontrol et
-        status = basic_data.get("status", {})
-        status_code = status.get("code", 0)
-        status_desc = status.get("description", "")
-        status_type = status.get("type", "")
-        
-        # Oynanmamış maçları atla
-        if status_code == 0 or status_type == "scheduled" or status_type == "notstarted":
-            logger.info(f"Maç ID {match_id} henüz oynanmamış, atlanıyor.")
-            return None
-        
-        # Sadece bitmiş maçları işle
-        if status_desc != "Ended" or status_type != "finished":
-            logger.info(f"Maç ID {match_id} henüz bitmemiş (Durum: {status_desc}/{status_type}), atlanıyor.")
+        # Sadece bitmiş maçları işle (uzatma/penaltı ile bitenler dahil)
+        if not MatchFetcher._is_finished_event(basic_data):
+            status = basic_data.get("status", {})
+            logger.info(
+                f"Maç ID {match_id} henüz bitmemiş (Durum: {status.get('description')}/{status.get('type')}), atlanıyor."
+            )
             return None
         
         # Diğer verileri çek
@@ -770,10 +832,29 @@ class MatchDataFetcher:
             # Her veri türünü ayrı ayrı kaydet
             for data_type, data in match_data.items():
                 if data is not None:
-                    type_path = os.path.join(match_dir, f"{data_type}.json")
-                    with open(type_path, 'w', encoding='utf-8') as f:
-                        json.dump(data, f, ensure_ascii=False, indent=2)
-                        
+                    atomic_write_json(os.path.join(match_dir, f"{data_type}.json"), data)
+
+            # Bitmiş maçta boş gelen dilimleri say; yeterince denenenler bir daha beklenmez
+            if MatchFetcher._is_finished_event(basic_data):
+                unavailable = self._load_unavailable(match_dir)
+                changed = False
+                for key in DETAIL_SLICE_KEYS:
+                    if key not in match_data:
+                        continue  # bu kayıtta istenmedi (refill yalnız eksikleri ister)
+                    if self.match_detail_slice_present(key, match_data):
+                        changed |= unavailable.pop(key, None) is not None
+                    else:
+                        unavailable[key] = unavailable.get(key, 0) + 1
+                        changed = True
+                if changed:
+                    atomic_write_json(os.path.join(match_dir, UNAVAILABLE_FILE), unavailable)
+
+            mid = str(match_id)
+            if getattr(self, "_match_index", None) is not None:
+                self._match_index[mid] = (safe_tournament_name, safe_season_name, match_dir)
+            if getattr(self, "_need_cache", None) is not None:
+                self._need_cache.pop(mid, None)
+
             logger.info(f"{safe_tournament_name}, {safe_season_name}, Maç ID {match_id} için veriler başarıyla kaydedildi: {match_dir}")
         except Exception as e:
             logger.error(f"Maç ID {match_id} için veriler kaydedilirken hata: {str(e)}")
@@ -993,13 +1074,19 @@ class MatchDataFetcher:
         should_cancel: Optional[Callable[[], bool]] = None,
     ) -> Dict[str, Dict[str, Any]]:
         """Bir grup maç için veri çeker."""
-        # tqdm modülünü ekleyelim
+        self.begin_job_cache()
         try:
-            use_tqdm = True
-        except ImportError:
-            use_tqdm = False
-            print(get_i18n().t('install_tqdm_for_progress'))
-        
+            return self._fetch_matches_batch(match_ids, progress_callback, should_cancel)
+        finally:
+            self.end_job_cache()
+
+    def _fetch_matches_batch(
+        self,
+        match_ids: List[Union[int, str]],
+        progress_callback: Optional[Callable[[int, int, str], None]],
+        should_cancel: Optional[Callable[[], bool]],
+    ) -> Dict[str, Dict[str, Any]]:
+        use_tqdm = True
         results = {}
         
         match_ids_to_process = [id for id in match_ids if self._needs_detail_fetch(str(id)) != "none"]
@@ -1035,7 +1122,7 @@ class MatchDataFetcher:
                 progress_callback(idx + 1, n, f"Match details {idx + 1}/{n}")
             
             # Sabit kısa bekleme (SofaScore saniyede 5 isteğe izin veriyor)
-            if match_id != match_ids_to_process[-1]:  # Son elemandan sonra bekleme yapma
+            if idx < n - 1:  # Son elemandan sonra bekleme yapma
                 time.sleep(0.2)  # Saniyede 5 istek için
         
         return results
@@ -1479,6 +1566,38 @@ class MatchDataFetcher:
         
         return match_ids
 
+    @staticmethod
+    def _season_summary_files(
+        league_path: str, only_season_ids: Optional[List[int]], max_seasons: int
+    ) -> List[str]:
+        """
+        Bir lig dizinindeki sezon özet CSV'leri (`{sid}_..._summary.csv`, eski `_matches.csv`
+        dahil), sezon ID'si sayısal olarak büyükten küçüğe. only_season_ids verilirse yalnızca
+        onlar; max_seasons > 0 ise en yeni N sezon.
+        """
+        by_season: Dict[int, List[str]] = {}
+
+        def add(path: str, sid_text: str) -> None:
+            if sid_text.isdigit():
+                by_season.setdefault(int(sid_text), []).append(path)
+
+        for name in os.listdir(league_path):
+            path = os.path.join(league_path, name)
+            if os.path.isfile(path) and name.endswith(("_summary.csv", "_matches.csv")):
+                add(path, name.split("_", 1)[0])
+            elif os.path.isdir(path):
+                for inner in os.listdir(path):
+                    if inner.endswith(("_summary.csv", "_matches.csv")):
+                        add(os.path.join(path, inner), name.split("_", 1)[0])
+
+        season_ids = sorted(by_season, reverse=True)
+        if only_season_ids is not None:
+            allowed = {int(s) for s in only_season_ids}
+            season_ids = [sid for sid in season_ids if sid in allowed]
+        if max_seasons > 0:
+            season_ids = season_ids[:max_seasons]
+        return [path for sid in season_ids for path in by_season[sid]]
+
     def fetch_all_match_details(
         self,
         league_id: Optional[str] = None,
@@ -1500,6 +1619,22 @@ class MatchDataFetcher:
         Returns:
             bool: İşlem başarılı ise True, değilse False
         """
+        self.begin_job_cache()
+        try:
+            return self._fetch_all_match_details(
+                league_id, max_seasons, only_season_ids, progress_callback, should_cancel
+            )
+        finally:
+            self.end_job_cache()
+
+    def _fetch_all_match_details(
+        self,
+        league_id: Optional[str],
+        max_seasons: int,
+        only_season_ids: Optional[List[int]],
+        progress_callback: Optional[Callable[[int, int, str], None]],
+        should_cancel: Optional[Callable[[], bool]],
+    ) -> bool:
         try:
             match_ids = []
             
@@ -1541,55 +1676,11 @@ class MatchDataFetcher:
                 current_league_id = league_dir.split('_')[0] if '_' in league_dir else None
                 print(f"\nLig dizini: {league_dir}")
                 
-                season_dirs_all: List[Tuple[str, str, Optional[str], str]] = []
-                for season_dir in os.listdir(league_path):
-                    season_path = os.path.join(league_path, season_dir)
-                    if os.path.isdir(season_path):
-                        season_parts = season_dir.split('_', 1)
-                        season_id = season_parts[0] if len(season_parts) > 0 else None
-                        season_name = season_parts[1] if len(season_parts) > 1 else season_dir
-                        season_dirs_all.append((season_path, season_dir, season_id, season_name))
-                
-                season_dirs_all.sort(
-                    key=lambda x: x[2] if x[2] and str(x[2]).isdigit() else '0',
-                    reverse=True,
-                )
-                
-                season_dirs = list(season_dirs_all)
-                if only_season_ids is not None:
-                    allowed_ids = {str(s) for s in only_season_ids}
-                    season_dirs = [sd for sd in season_dirs if sd[2] in allowed_ids]
-                
-                if max_seasons > 0 and len(season_dirs) > max_seasons:
-                    print(f"Son {max_seasons} sezon seçiliyor (toplam {len(season_dirs)} sezon mevcut)")
-                    season_dirs = season_dirs[:max_seasons]
-                
-                summary_files = []
-                if only_season_ids is not None:
-                    allowed_ids = {str(s) for s in only_season_ids}
-                    for file_name in os.listdir(league_path):
-                        if file_name.endswith('_matches.csv') or file_name.endswith('_summary.csv'):
-                            prefix = file_name.split('_', 1)[0]
-                            if prefix in allowed_ids:
-                                summary_files.append((os.path.join(league_path, file_name), file_name))
-                    subdirs_to_scan = season_dirs
-                else:
-                    for file_name in os.listdir(league_path):
-                        if file_name.endswith('_matches.csv') or file_name.endswith('_summary.csv'):
-                            summary_files.append((os.path.join(league_path, file_name), file_name))
-                    subdirs_to_scan = season_dirs_all
-                
-                for season_path, season_dir, season_id, season_name in subdirs_to_scan:
-                    league_summary = os.path.join(league_path, f"{season_id}_{season_name}_summary.csv")
-                    if os.path.exists(league_summary):
-                        summary_files.append((league_summary, os.path.basename(league_summary)))
-                    for file_name in os.listdir(season_path):
-                        if file_name.endswith('_matches.csv') or file_name.endswith('_summary.csv'):
-                            summary_files.append((os.path.join(season_path, file_name), file_name))
-                
+                summary_files = self._season_summary_files(league_path, only_season_ids, max_seasons)
+
                 # Özet dosyalarından maç ID'lerini çıkar
                 current_ids = []
-                for file_path, file_name in summary_files:
+                for file_path in summary_files:
                     if os.path.isfile(file_path):
                         ids_from_csv = self._extract_match_ids_from_csv(file_path)
                         if ids_from_csv:
@@ -1722,44 +1813,13 @@ class MatchDataFetcher:
                 match_data = self.fetch_match_data(match_id)
                 return bool(match_data)
             
-            # Maç verilerini çek
+            # Maç verilerini çek (fetch_match_data zaten match_details altına kaydeder)
             match_data = self.fetch_match_data(match_id)
-            
             if not match_data:
                 logger.warning(f"Maç ID {match_id} için veri bulunamadı veya maç henüz bitmemiş.")
                 return False
-            
-            # Maç verisini işle ve kaydet
-            # Temel bilgileri al
-            basic_data = match_data.get("basic", {})
-            tournament = basic_data.get("tournament", {})
-            season = basic_data.get("season", {})
-            
-            # Liga ve sezon adları
-            tournament_name = tournament.get("name", "Unknown")
-            tournament_id = tournament.get("id", "0")
-            season_name = season.get("name", "Unknown")
-            season_id = season.get("id", "0")
-            
-            # Dizin yapısı oluştur
-            league_dir_name = f"{tournament_id}_{tournament_name.replace(' ', '_').replace('/', '_')}"
-            season_dir_name = f"{season_id}_{season_name.replace(' ', '_').replace('/', '_')}"
-            
-            league_dir = os.path.join(self.match_details_dir, league_dir_name)
-            ensure_directory(league_dir)
-            
-            season_dir = os.path.join(league_dir, season_dir_name)
-            ensure_directory(season_dir)
-            
-            # Maç verilerini kaydet
-            match_file = os.path.join(season_dir, f"{match_id}.json")
-            
-            with open(match_file, "w", encoding="utf-8") as f:
-                json.dump(match_data, f, ensure_ascii=False, indent=2)
-            
-            logger.info(f"Maç ID {match_id} detayları başarıyla kaydedildi: {match_file}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Maç ID {match_id} için detay çekilirken hata: {str(e)}")
             import traceback

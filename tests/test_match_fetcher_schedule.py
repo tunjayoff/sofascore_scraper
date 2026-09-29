@@ -246,11 +246,19 @@ class TestFinishedAndSeasonYear(unittest.TestCase):
                 return []
 
             fetcher.fetch_all_rounds_for_season = MagicMock(side_effect=rounds_for)  # type: ignore
-            ok = fetcher.fetch_all_matches_for_season(17, 96668, 50, 0)
+            ok = fetcher.fetch_all_matches_for_season(17, 96668, 50, 0, allow_fallback=True)
             self.assertTrue(ok)
             self.assertEqual(
                 [c.args[1] for c in fetcher.fetch_all_rounds_for_season.call_args_list],
                 [96668, 76986],
+            )
+
+            # Açık seçimde (varsayılan) başka sezona geçilmez ve başarısız sayılır
+            fetcher.fetch_all_rounds_for_season.reset_mock()
+            self.assertFalse(fetcher.fetch_all_matches_for_season(17, 96668, 50, 0))
+            self.assertEqual(
+                [c.args[1] for c in fetcher.fetch_all_rounds_for_season.call_args_list],
+                [96668],
             )
 
 

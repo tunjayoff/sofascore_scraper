@@ -6,11 +6,10 @@ SofaScore API'sinden maç verilerini çeken modül.
 import os
 import json
 import csv
+import io
 import logging
 import datetime
 import asyncio
-import aiohttp
-import aiohttp
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeRemainingColumn
 from typing import Dict, List, Optional, Any, Tuple
 from pathlib import Path
@@ -20,7 +19,9 @@ from src.exceptions import ResourceNotFoundError
 from src.config_manager import ConfigManager
 from src.season_fetcher import SeasonFetcher
 from src.utils import make_api_request, make_api_request_async, get_request_headers, ensure_directory, FETCH_ONLY_FINISHED, SAVE_EMPTY_ROUNDS
+from src.fsutil import atomic_write_json, atomic_write_text
 from src.logger import get_logger
+from src.paths import matches_season_dir, safe_name, summary_paths
 
 logger = get_logger("MatchFetcher")
 
@@ -303,6 +304,7 @@ class MatchFetcher:
         async with create_session_async() as session:
             semaphore_limit = self.config_manager.get_max_concurrent()
             logger.info(f"{league_name}: {season_name} için eşzamanlı istek limiti: {semaphore_limit}")
+            round_semaphore = asyncio.Semaphore(max(1, semaphore_limit))
 
             rounds_meta = await self._fetch_rounds_metadata(session, league_id, season_id)
             use_weeks = self.is_week_based_rounds(rounds_meta, max_round=max_round)
@@ -323,7 +325,7 @@ class MatchFetcher:
                 tasks = [
                     asyncio.create_task(
                         self._fetch_and_save_round(
-                            semaphore_limit,
+                            round_semaphore,
                             session,
                             league_id,
                             season_id,
@@ -429,14 +431,12 @@ class MatchFetcher:
                 file_path = os.path.join(output_dir, f"events_{kind}_{page}.json")
                 to_save = self._apply_finished_filter(page_payload)
                 if to_save and to_save.get("events"):
-                    with open(file_path, "w", encoding="utf-8") as f:
-                        json.dump(to_save, f, ensure_ascii=False, indent=2)
+                    atomic_write_json(file_path, to_save)
                     chunk = dict(to_save)
                     chunk["round"] = f"{kind}_{page}"
                     results.append(chunk)
                 elif not FETCH_ONLY_FINISHED and events:
-                    with open(file_path, "w", encoding="utf-8") as f:
-                        json.dump(page_payload, f, ensure_ascii=False, indent=2)
+                    atomic_write_json(file_path, page_payload)
                     chunk = dict(page_payload)
                     chunk["round"] = f"{kind}_{page}"
                     results.append(chunk)
@@ -451,9 +451,57 @@ class MatchFetcher:
         )
         return results
 
+    # Bitmiş sayılan ve bir daha değişmeyecek durumlar (ertelenen maç yeniden planlanabilir)
+    _TERMINAL_STATUS_TYPES = ("finished", "canceled", "cancelled")
+    # Tamamlanmamış bir tur dosyası bu süre içinde yeniden kullanılır (aynı işte tekrar istek atmamak için)
+    ROUND_CACHE_TTL_SECONDS = 6 * 3600
+
+    @classmethod
+    def _round_is_complete(cls, data: Dict[str, Any]) -> bool:
+        events = data.get("events") or []
+        return bool(events) and all(
+            MatchFetcher._is_finished_event(ev) or (ev.get("status") or {}).get("type") in cls._TERMINAL_STATUS_TYPES
+            for ev in events
+        )
+
+    def _load_cached_round(self, file_path: str) -> Optional[Dict[str, Any]]:
+        """
+        Diskteki tur dosyasını yalnızca güncel olmaya devam ediyorsa döndürür.
+
+        Dosya ham API yanıtını tutar (_complete: tüm maçlar bitmiş mi). Bitmemiş maç içeren
+        bir tur, TTL dolunca yeniden çekilir — aksi halde sonradan biten maçlar özete hiç girmez.
+        Eski sürümlerin yazdığı (yalnız bitmiş maçları süzülmüş, _complete'siz) dosyalar bir kez
+        yeniden çekilir.
+        """
+        if not os.path.exists(file_path):
+            return None
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            logger.warning(f"Bozuk tur dosyası yeniden çekilecek: {file_path}")
+            return None
+        if not isinstance(data, dict) or "_complete" not in data:
+            return None
+        if data["_complete"]:
+            return data
+        age = datetime.datetime.now().timestamp() - os.path.getmtime(file_path)
+        return data if age < self.ROUND_CACHE_TTL_SECONDS else None
+
+    def _round_result(self, data: Dict[str, Any], round_num: int) -> Optional[Dict[str, Any]]:
+        """Ham tur verisinden özete girecek kısmı (FETCH_ONLY_FINISHED filtresiyle) üretir."""
+        if self._is_empty_round_data(data):
+            return None
+        result = self._apply_finished_filter({k: v for k, v in data.items() if k != "_complete"})
+        if not result:
+            return None
+        result = dict(result)
+        result["round"] = round_num
+        return result
+
     async def _fetch_and_save_round(
         self,
-        semaphore_limit: int,
+        semaphore: asyncio.Semaphore,
         session: Any,
         league_id: int,
         season_id: int,
@@ -462,73 +510,50 @@ class MatchFetcher:
         slug: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """Fetch and save one round (optional cup slug)."""
-        from src.utils import FETCH_ONLY_FINISHED, SAVE_EMPTY_ROUNDS, make_api_request_async
+        from src.utils import SAVE_EMPTY_ROUNDS, make_api_request_async
 
         url = self.build_round_events_url(league_id, season_id, round_num, slug)
         safe_slug = slug.replace("/", "-").replace("\\", "-") if slug else None
         suffix = f"_{safe_slug}" if safe_slug else ""
         file_path = os.path.join(output_dir, f"round_{round_num}{suffix}.json")
+        league_name = self.config_manager.get_leagues().get(league_id, f"Bilinmeyen Lig {league_id}")
 
-        if os.path.exists(file_path):
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    if self._is_empty_round_data(data):
-                        logger.debug(f"Tur {round_num} için yerel dosyada veri bulunamadı")
-                        return None
-                    return data
-            except json.JSONDecodeError:
-                logger.warning(f"Bozuk JSON dosyası: {file_path}, yeniden çekiliyor...")
-                os.remove(file_path)
+        cached = self._load_cached_round(file_path)
+        if cached is not None:
+            return self._round_result(cached, round_num)
 
         try:
-            data = await make_api_request_async(session, url)
+            async with semaphore:
+                data = await make_api_request_async(session, url)
 
             if self._is_empty_round_data(data):
-                league_name = self.config_manager.get_leagues().get(league_id, f"Bilinmeyen Lig {league_id}")
                 logger.debug(f"{league_name}: Tur {round_num} için maç bulunamadı, atlanıyor...")
                 if SAVE_EMPTY_ROUNDS and data:
-                    with open(file_path, "w", encoding="utf-8") as f:
-                        json.dump(data, f, ensure_ascii=False, indent=2)
+                    atomic_write_json(file_path, {**data, "_complete": False})
                 return None
 
-            filtered_data, total_events, finished_count = self._filter_finished_matches(data)
-            data_to_save = filtered_data if FETCH_ONLY_FINISHED else data
-
-            if finished_count == 0:
-                league_name = self.config_manager.get_leagues().get(league_id, f"Bilinmeyen Lig {league_id}")
-                logger.info(f"{league_name}: Tur {round_num} için bitmiş maç yok (Toplam: {total_events})")
-                if FETCH_ONLY_FINISHED:
-                    if SAVE_EMPTY_ROUNDS:
-                        with open(file_path, "w", encoding="utf-8") as f:
-                            json.dump(data_to_save, f, ensure_ascii=False, indent=2)
-                    return None
-                with open(file_path, "w", encoding="utf-8") as f:
-                    json.dump(data_to_save, f, ensure_ascii=False, indent=2)
-                data_to_save = dict(data_to_save)
-                data_to_save["round"] = round_num
-                return data_to_save
-
-            with open(file_path, "w", encoding="utf-8") as f:
-                json.dump(data_to_save, f, ensure_ascii=False, indent=2)
-            data_to_save = dict(data_to_save)
-            data_to_save["round"] = round_num
-            return data_to_save
+            atomic_write_json(file_path, {**data, "_complete": self._round_is_complete(data)})
+            result = self._round_result(data, round_num)
+            if result is None:
+                logger.info(f"{league_name}: Tur {round_num} için bitmiş maç yok (Toplam: {len(data.get('events') or [])})")
+            return result
 
         except ResourceNotFoundError:
-            league_name = self.config_manager.get_leagues().get(league_id, f"Bilinmeyen Lig {league_id}")
             logger.debug(f"{league_name}: Tur {round_num} bulunamadı")
             return None
         except Exception as e:
-            league_name = self.config_manager.get_leagues().get(league_id, f"Bilinmeyen Lig {league_id}")
             logger.error(f"{league_name}: Tur {round_num} çekilirken hata: {str(e)}")
             return None
 
     def fetch_all_rounds_parallel(self, league_id, season_id, max_round=50):
         """Paralel istekler için senkron wrapper."""
-        league_name_safe = self.config_manager.get_leagues().get(league_id, f"League_{league_id}").replace(' ', '_')
-        season_name_safe = self.season_fetcher.get_season_name(league_id, season_id).replace(' ', '_').replace('/', '_')
-        output_dir = os.path.join(self.matches_dir, f"{league_id}_{league_name_safe}", f"{season_id}_{season_name_safe}")
+        output_dir = matches_season_dir(
+            self.data_dir,
+            league_id,
+            self.config_manager.get_league_by_id(league_id),
+            season_id,
+            self.season_fetcher.get_season_name(league_id, season_id),
+        )
         ensure_directory(output_dir)
 
         logger.info(get_i18n().t('fetching_data_up_to_max_rounds', max_round=max_round))
@@ -682,20 +707,17 @@ class MatchFetcher:
                     logger.warning(f"Lig {league_id}, Sezon {season_id}: Hafta {round_num} birden fazla kez çekilmiş.")
                 round_counts[round_num] = round_counts.get(round_num, 0) + 1
         
-        league_name = self.config_manager.get_leagues().get(league_id, "Unknown_League")
-        league_name_safe = league_name.replace(' ', '_')
+        config_name = self.config_manager.get_league_by_id(league_id)
+        league_name = config_name or "Unknown_League"
         season_name = self.season_fetcher.get_season_name(league_id, season_id)
-        season_name_safe = season_name.replace(' ', '_').replace('/', '_')
+        json_summary_file, csv_summary_file = summary_paths(
+            self.data_dir, league_id, config_name, season_id, season_name
+        )
+        ensure_directory(os.path.dirname(json_summary_file))
 
-        # Dizin yapısı oluştur - ID'leri de ekle
-        league_dir = os.path.join(self.matches_dir, f"{league_id}_{league_name_safe}")
-        ensure_directory(league_dir)
-        
         # 1. Önce JSON olarak tüm veriyi kaydedelim (sorunsuz bir yedek olarak)
-        json_summary_file = os.path.join(league_dir, f"{season_id}_{season_name_safe}_summary.json")
         try:
-            with open(json_summary_file, 'w', encoding='utf-8') as f:
-                json.dump(results, f, ensure_ascii=False, indent=2)
+            atomic_write_json(json_summary_file, results)
             logger.info(f"{league_name}: Sezon {season_id} JSON özeti kaydedildi: {json_summary_file}")
         except Exception as e:
             logger.error(f"Sezon JSON özeti kaydedilirken hata: {str(e)}")
@@ -738,16 +760,14 @@ class MatchFetcher:
             except Exception as e:
                 logger.error(f"Maç verisi işlenirken hata: {str(e)}")
         
-        # Özet CSV dosyası
-        csv_summary_file = os.path.join(league_dir, f"{season_id}_{season_name_safe}_summary.csv")
-        
         try:
             if csv_data:
-                with open(csv_summary_file, 'w', encoding='utf-8', newline='') as f:
-                    writer = csv.DictWriter(f, fieldnames=csv_fields)
-                    writer.writeheader()
-                    writer.writerows(csv_data)
-            
+                buf = io.StringIO()
+                writer = csv.DictWriter(buf, fieldnames=csv_fields)
+                writer.writeheader()
+                writer.writerows(csv_data)
+                atomic_write_text(csv_summary_file, buf.getvalue())
+
                 logger.info(f"{league_name}: Sezon {season_id} CSV özeti kaydedildi: {csv_summary_file}")
             else:
                 logger.warning(f"{league_name}: Sezon {season_id} için CSV özeti oluşturulamadı - veri bulunamadı")
@@ -843,15 +863,25 @@ class MatchFetcher:
         except Exception as e:
             logger.error(f"Genel CSV özeti kaydedilirken hata: {str(e)}")
 
-    def fetch_all_matches_for_season(self, league_id: int, season_id: int, max_round: int = 50, retry_count: int = 0) -> bool:
+    def fetch_all_matches_for_season(
+        self,
+        league_id: int,
+        season_id: int,
+        max_round: int = 50,
+        retry_count: int = 0,
+        allow_fallback: bool = False,
+    ) -> bool:
         """
         Belirli bir lig ve sezon için tüm maç verilerini çeker.
-        
+
         Args:
             league_id: Lig ID'si
             season_id: Sezon ID'si
             max_round: Maksimum hafta sayısı
             retry_count: Deneme sayısı (iç kullanım için)
+            allow_fallback: Sezonda bitmiş maç yoksa önceki sezonu çek. Kullanıcı sezonu
+                açıkça seçtiyse False olmalı: aksi halde başka bir sezonun programı kaydedilir,
+                istenen sezonun detayları hiç çekilmez ve iş yine de "başarılı" görünür.
             
         Returns:
             bool: İşlem başarılı ise True, değilse False
@@ -888,8 +918,8 @@ class MatchFetcher:
                     elif season_year == current_year and current_date.month < 8:
                         is_future_or_unstarted = True
 
-                # Always try previous season once when finished filter emptied the schedule
-                if retry_count == 0:
+                # Açık seçim yoksa, bitmiş maç filtresi programı boşalttığında önceki sezonu bir kez dene
+                if allow_fallback and retry_count == 0:
                     prev_season = self._previous_season(league_id, season_id)
                     if prev_season:
                         prev_season_id = prev_season.get("id")
@@ -994,77 +1024,33 @@ class MatchFetcher:
         
         return matches
 
-    def fetch_matches_for_season(self, league_id: int, season_id: int = None) -> bool:
+    def fetch_matches_for_season(self, league_id: int, season_id: Optional[int] = None) -> bool:
         """
-        Belirli bir lig ve sezon için maç verilerini çeker.
+        Belirli bir lig ve sezon için maç programını çeker/günceller.
         Eğer sezon ID'si belirtilmezse, güncel sezon kullanılır.
-        
+
+        Tamamlanmış turlar diskten okunur (bkz. _load_cached_round); yalnızca bitmemiş maç
+        içeren turlar yeniden istenir, bu yüzden bitmiş bir sezonu güncellemek ucuzdur.
+
         Args:
             league_id: Lig ID'si
-            season_id: Sezon ID'si (Belirtilmezse güncel sezon kullanılır)
-            
+            season_id: Sezon ID'si (Belirtilmezse güncel sezon kullanılır; yalnızca bu durumda
+                bitmiş maçı olmayan sezon için önceki sezona geçilir)
+
         Returns:
             bool: İşlem başarılı ise True, değilse False
         """
         try:
-            if not season_id:
-                # Sezon ID belirtilmezse, güncel sezon ID'sini al
+            auto_selected = not season_id
+            if auto_selected:
                 season_id = self.season_fetcher.get_current_season_id(league_id)
                 if not season_id:
                     logger.error(f"Lig ID {league_id} için güncel sezon ID bulunamadı!")
                     return False
-                
+
             logger.info(get_i18n().t('fetching_matches_for_season', season_id=season_id, league_id=league_id))
-            
-            # Önce yerel dosyalara bakalım
-            league_name = self.config_manager.get_league_by_id(league_id) or f"Unknown_League_{league_id}"
-            league_dir = f"{league_id}_{league_name.replace(' ', '_')}"
-            season_name = self.season_fetcher.get_season_name(league_id, season_id)
-            season_dir = f"{season_id}_{season_name.replace(' ', '_')}"
-            matches_dir = os.path.join(self.config_manager.get_data_dir(), "matches", league_dir, season_dir)
-            
-            # Sezon dizini varsa, dosya sayısını kontrol et
-            if os.path.exists(matches_dir):
-                files = [f for f in os.listdir(matches_dir) if os.path.isfile(os.path.join(matches_dir, f))]
-                logger.info(f"Sezon dizininde {len(files)} dosya bulundu: {matches_dir}")
-                
-                # Özet dosyası var mı kontrol et
-                summary_json_path = os.path.join(self.config_manager.get_data_dir(), "matches", league_dir, f"{season_id}_{season_name.replace(' ', '_')}_summary.json")
-                summary_csv_path = os.path.join(self.config_manager.get_data_dir(), "matches", league_dir, f"{season_id}_{season_name.replace(' ', '_')}_summary.csv")
-                
-                if os.path.exists(summary_json_path) and os.path.exists(summary_csv_path):
-                    logger.info(f"Özet dosyaları mevcut: {summary_json_path}, {summary_csv_path}")
-                    return True
-                elif len(files) > 0:
-                    # Özet dosyası yoksa ama round dosyaları varsa, özet dosyası oluştur
-                    results = []
-                    # Tüm round dosyalarını oku
-                    for file in files:
-                        if file.startswith(f"{season_id}_") and file.endswith(".json") and "round" in file:
-                            file_path = os.path.join(matches_dir, file)
-                            try:
-                                with open(file_path, 'r', encoding='utf-8') as f:
-                                    try:
-                                        data = json.load(f)
-                                        results.append(data)
-                                    except json.JSONDecodeError:
-                                        logger.error(f"JSON okuma hatası: {file_path}")
-                            except Exception as e:
-                                logger.error(f"Dosya okuma hatası: {file_path} - {str(e)}")
-                    
-                    if results:
-                        # Sezon özeti oluştur
-                        self._save_season_summary(league_id, season_id, results)
-                        logger.info(f"Özet dosyaları oluşturuldu: {summary_json_path}, {summary_csv_path}")
-                        return True
-            
-            # Yerel dosya bulunamadı veya özet dosyası yoktu, maçları çekmeyi dene
-            logger.info(get_i18n().t('local_file_not_found_trying_fetch'))
-                
-            # Maçları çek
-            success = self.fetch_all_matches_for_season(league_id, season_id)
-            return success
-            
+            return self.fetch_all_matches_for_season(league_id, season_id, allow_fallback=auto_selected)
+
         except Exception as e:
             error_message = str(e)
             logger.error(f"Maç verileri çekilirken hata: {error_message}")

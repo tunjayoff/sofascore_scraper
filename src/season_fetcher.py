@@ -17,7 +17,9 @@ import re
 from src.config_manager import ConfigManager
 from src.utils import make_api_request, make_api_request_async, get_request_headers, ensure_directory
 
+from src.fsutil import atomic_write_json
 from src.logger import get_logger
+from src.paths import matches_season_dir, seasons_file, summary_paths
 
 logger = get_logger("SeasonFetcher")
 
@@ -266,19 +268,14 @@ class SeasonFetcher:
             season["has_matches"] = False
             season["match_count"] = 0
             
-            league_name = self.config_manager.get_league_by_id(league_id) or f"Unknown_League_{league_id}"
-            league_dir = f"{league_id}_{league_name.replace(' ', '_')}"
-            
-            # Matches dizini sabit olarak belirle
-            matches_dir = os.path.join("data/matches", league_dir)
-            match_file_pattern = f"{season_id}_{season_name.replace(' ', '_')}_round_*.json"
-            summary_json_path = os.path.join("data/matches", league_dir, f"{season_id}_{season_name.replace(' ', '_')}_summary.json")
-            
-            if os.path.exists(matches_dir):
-                import glob
-                match_files = glob.glob(os.path.join(matches_dir, match_file_pattern))
-                season["match_count"] = len(match_files)
-                season["has_matches"] = season["match_count"] > 0 or os.path.exists(summary_json_path)
+            league_name = self.config_manager.get_league_by_id(league_id)
+            season_dir = matches_season_dir(self.data_dir, league_id, league_name, season_id, season_name)
+            summary_json_path, _ = summary_paths(self.data_dir, league_id, league_name, season_id, season_name)
+            if os.path.isdir(season_dir):
+                season["match_count"] = len(
+                    [f for f in os.listdir(season_dir) if f.startswith(("round_", "events_")) and f.endswith(".json")]
+                )
+            season["has_matches"] = season["match_count"] > 0 or os.path.exists(summary_json_path)
             
             if season["has_matches"]:
                 logger.info(f"Sezon {season_name} (ID: {season_id}) için {season['match_count']} maç dosyası bulundu")
@@ -460,14 +457,9 @@ class SeasonFetcher:
             league_id: Lig ID'si
             data: API'den alınan sezon verileri
         """
-        league_name = self.config_manager.get_leagues().get(league_id, f"unknown_league_{league_id}")
-        league_name_safe = league_name.replace(' ', '_')
-        file_name = f"{league_id}_{league_name_safe}_seasons.json"
-        file_path = os.path.join(self.seasons_dir, file_name)
-        
+        file_path = seasons_file(self.data_dir, league_id, self.config_manager.get_league_by_id(league_id))
         try:
-            with open(file_path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+            atomic_write_json(file_path, data)
             logger.info(f"Sezon verileri JSON olarak kaydedildi: {file_path}")
         except Exception as e:
             logger.error(f"JSON dosyası kaydedilirken hata: {str(e)}")
@@ -565,16 +557,14 @@ class SeasonFetcher:
         try:
             # Lig adını alıp güvenli dosya adı oluşturuyoruz
             league_name = self.config_manager.get_league_by_id(league_id)
-            league_name_safe = league_name.replace(' ', '_') if league_name else f"League_{league_id}"
-            
-            # Doğru formatlı dosya adını oluştur - boşluk yerine alt çizgi içeren
-            file_path = os.path.join(self.seasons_dir, f"{league_id}_{league_name_safe}_seasons.json")
-            
+            file_path = seasons_file(self.data_dir, league_id, league_name)
+
             if not os.path.exists(file_path):
-                # Eski format dosyayı dene
+                # Eski biçimler: boşluklu ad, ID'siz ad, config'de olmayan lig için eski yer tutucu
                 alt_file_paths = [
-                    os.path.join(self.seasons_dir, f"{league_id}_{league_name}_seasons.json"),  # Boşluklu eski format
-                    os.path.join(self.seasons_dir, f"{league_name}_seasons.json")               # ID içermeyen eski format
+                    os.path.join(self.seasons_dir, f"{league_id}_{league_name}_seasons.json"),
+                    os.path.join(self.seasons_dir, f"{league_name}_seasons.json"),
+                    os.path.join(self.seasons_dir, f"{league_id}_unknown_league_{league_id}_seasons.json"),
                 ]
                 
                 for alt_path in alt_file_paths:

@@ -494,6 +494,9 @@ def _get_season_matches_sync(season_id: int, league_id: int, data_dir: str) -> d
     return {"matches": matches}
 
 
+_MISSING_LIST_LIMIT = 500
+
+
 def _get_missing_details_sync(league_id: int, season_id: Optional[int], data_dir: str) -> dict:
     matches_dir = os.path.join(data_dir, "matches")
     match_details_dir = os.path.join(data_dir, "match_details")
@@ -502,7 +505,9 @@ def _get_missing_details_sync(league_id: int, season_id: Optional[int], data_dir
     match_info = {}
 
     if os.path.exists(matches_dir):
-        pattern = os.path.join(matches_dir, f"{league_id}_*", "*.csv")
+        # Sezon özetleri `{season_id}_{ad}_summary.csv` adıyla lig dizininde durur
+        csv_glob = f"{season_id}_*.csv" if season_id else "*.csv"
+        pattern = os.path.join(matches_dir, f"{league_id}_*", csv_glob)
         for csv_file in glob.glob(pattern):
             try:
                 df = pd.read_csv(csv_file)
@@ -533,12 +538,14 @@ def _get_missing_details_sync(league_id: int, season_id: Optional[int], data_dir
                 pass
 
     missing_ids = all_match_ids - fetched_ids
-    missing = [match_info[mid] for mid in sorted(missing_ids) if mid in match_info][:500]
+    missing_all = [match_info[mid] for mid in sorted(missing_ids) if mid in match_info]
+    missing = missing_all[:_MISSING_LIST_LIMIT]
 
     return {
         "total_matches": len(all_match_ids),
         "missing_count": len(missing_ids),
         "missing": missing,
+        "truncated": len(missing_all) > len(missing),
     }
 
 
@@ -610,8 +617,8 @@ def _build_dashboard_sync(data_dir: str, leagues: Dict[int, str]) -> dict:
     league_cards = []
     for lid, lname in leagues.items():
         card = {"id": lid, "name": lname, "seasons": 0, "matches": 0, "details": 0, "coverage": 0, "last_update": None}
-        sf = os.path.join(seasons_dir, f"{lid}_seasons.json")
-        if os.path.exists(sf):
+        sf = _find_league_seasons_json(data_dir, lid)
+        if sf:
             try:
                 with open(sf, "r") as f:
                     d = json.load(f)
@@ -984,6 +991,9 @@ async def get_match_details(match_id: int):
 @router.post("/matches/{match_id}/fetch")
 async def fetch_single_match(match_id: int):
     """Tek bir maç için detayları senkron olarak çeker."""
+    if _job_store.snapshot().get("is_running"):
+        # Çalışan iş aynı dosyalara yazıyor ve istek hızını zaten kullanıyor
+        raise HTTPException(status_code=409, detail="A fetch job is running; try again when it finishes.")
     try:
         return await asyncio.to_thread(_fetch_single_match_sync, str(match_id))
     except _SyncHttpError as e:
@@ -1542,18 +1552,11 @@ def _clear_data_sync(scope: str) -> dict:
 
 
 def _export_csv_sync(league_id: Optional[int], data_dir: str):
-    from fastapi.responses import FileResponse
+    from fastapi.responses import FileResponse, Response
 
     csv_dir = os.path.join(data_dir, "match_details", "processed")
-
-    if league_id:
-        pattern = os.path.join(csv_dir, f"*league_{league_id}*.csv")
-        files = glob.glob(pattern)
-        if not files:
-            pattern = os.path.join(csv_dir, "all_matches_*.csv")
-            files = glob.glob(pattern)
-    else:
-        files = glob.glob(os.path.join(csv_dir, "all_matches_*.csv"))
+    pattern = os.path.join(csv_dir, "all_matches_*.csv")
+    files = glob.glob(pattern)
 
     if not files:
         from src.SofaScoreUi import SimpleSofaScoreUI
@@ -1561,7 +1564,7 @@ def _export_csv_sync(league_id: Optional[int], data_dir: str):
         try:
             ui = SimpleSofaScoreUI(config_manager=config_manager)
             ui.export_all_to_csv()
-            files = glob.glob(os.path.join(csv_dir, "all_matches_*.csv"))
+            files = glob.glob(pattern)
         except Exception as e:
             logger.error(f"CSV export failed: {e}")
             raise _SyncHttpError(500, "CSV generation failed") from e
@@ -1570,8 +1573,21 @@ def _export_csv_sync(league_id: Optional[int], data_dir: str):
         raise _SyncHttpError(404, "No CSV data available. Run a fetch first.")
 
     latest = max(files, key=os.path.getctime)
-    filename = os.path.basename(latest)
-    return FileResponse(latest, filename=filename, media_type="text/csv")
+    if not league_id:
+        return FileResponse(latest, filename=os.path.basename(latest), media_type="text/csv")
+
+    # Tek lig: birleşik dosyadan satırları lig klasörüne (`{id}_{ad}`) göre süz
+    df = pd.read_csv(latest, low_memory=False)
+    if "league_folder" in df.columns:
+        df = df[df["league_folder"].astype(str).str.startswith(f"{league_id}_")]
+    if df.empty:
+        raise _SyncHttpError(404, f"No exported matches for league {league_id}.")
+    filename = f"league_{league_id}_{os.path.basename(latest)}"
+    return Response(
+        content=df.to_csv(index=False),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.post("/data/backup")
