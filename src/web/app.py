@@ -6,8 +6,9 @@ from fastapi.staticfiles import StaticFiles
 import dotenv
 
 from src.logger import get_logger
+from src.paths import env_file_path
 
-dotenv.load_dotenv()
+dotenv.load_dotenv(env_file_path())
 logger = get_logger("WebApp")
 
 app = FastAPI(

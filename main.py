@@ -15,7 +15,9 @@ script_dir = Path(__file__).resolve().parent
 os.chdir(script_dir)
 
 # Çevre değişkenlerini yükle
-dotenv.load_dotenv()
+from src.paths import env_file_path  # noqa: E402
+
+dotenv.load_dotenv(env_file_path())
 
 from src.SofaScoreUi import SimpleSofaScoreUI
 from src.logger import get_logger
@@ -74,7 +76,7 @@ def parse_arguments() -> argparse.Namespace:
 
     parser.add_argument(
         "--config",
-        default="config/leagues.txt",
+        default=None,
         help="Lig listesi dosyası (varsayılan: config/leagues.txt)",
     )
 

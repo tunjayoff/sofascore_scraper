@@ -20,6 +20,8 @@ from src.utils import (
 
 import pytest
 
+pytestmark = pytest.mark.live
+
 
 def test_sync_live_request():
     """Senkron istek ile Premier League sezonlarını çek."""

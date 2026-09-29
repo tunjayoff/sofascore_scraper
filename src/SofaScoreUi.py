@@ -57,7 +57,7 @@ class SimpleSofaScoreUI:
     
     def __init__(
         self, 
-        config_path: str = "config/leagues.txt", 
+        config_path: Optional[str] = None, 
         data_dir: str = "data",
         config_manager: Optional[ConfigManager] = None,
         season_fetcher: Optional[SeasonFetcher] = None,

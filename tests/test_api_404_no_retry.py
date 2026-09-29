@@ -50,7 +50,7 @@ def test_sync_request_retries_transient_5xx():
         return FakeResp(200)
 
     with patch.object(utils.cffi_requests, "get", side_effect=fake_get), patch.object(
-        utils.time, "sleep"
+        utils, "_sleep"
     ), patch.object(utils, "_get_runtime_request_config", return_value={
         "max_retries": 3,
         "request_timeout": 5,

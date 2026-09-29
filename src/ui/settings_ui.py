@@ -11,6 +11,7 @@ from colorama import Fore, Style
 
 from src.config_manager import ConfigManager
 from src.logger import get_logger
+from src.paths import env_file_path
 from src.i18n import get_i18n
 
 # Logger'ı al
@@ -347,7 +348,7 @@ class SettingsMenuHandler:
                 print(f"{COLORS['SUCCESS']}{self.i18n.t('success_backup_league_config')}{league_backup}")
             
             # .env dosyasını yedekle
-            env_file = os.path.join(os.getcwd(), ".env")
+            env_file = env_file_path()
             if os.path.exists(env_file):
                 env_backup = os.path.join(backup_dir, "config", ".env")
                 shutil.copy2(env_file, env_backup)
@@ -415,7 +416,7 @@ class SettingsMenuHandler:
                     print(f"{COLORS['SUCCESS']}{self.i18n.t('success_backup_league_config')}{league_backup}")
                 
                 # .env dosyasını yedekle
-                env_file = os.path.join(os.getcwd(), ".env")
+                env_file = env_file_path()
                 if os.path.exists(env_file):
                     env_backup = os.path.join(backup_dir, "config", ".env")
                     shutil.copy2(env_file, env_backup)
@@ -501,7 +502,7 @@ class SettingsMenuHandler:
                 # .env dosyasını geri yükle
                 env_file = os.path.join(backup_dir, "config", ".env")
                 if os.path.exists(env_file):
-                    shutil.copy2(env_file, os.path.join(os.getcwd(), ".env"))
+                    shutil.copy2(env_file, env_file_path())
                     print(f"{COLORS['SUCCESS']}{self.i18n.t('success_restore_env_vars')}")
             
             # Lig ve sezon verilerini geri yükle

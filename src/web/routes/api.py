@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from src.config_manager import ConfigManager
 from src.logger import get_logger
+from src.paths import env_file_path
 from src.utils import FetchCancelled
 from src.web import league_sports
 
@@ -1407,8 +1408,8 @@ def _create_backup_sync(scope: str) -> dict:
                 config_path = config_manager.league_config_path
                 if os.path.exists(config_path):
                     zf.write(config_path, os.path.basename(config_path))
-                if os.path.exists(".env"):
-                    zf.write(".env", ".env")
+                if os.path.exists(env_file_path()):
+                    zf.write(env_file_path(), ".env")
             if scope in ("all", "seasons"):
                 dirs_to_backup.append(os.path.join(data_dir, "seasons"))
             if scope in ("all", "matches"):

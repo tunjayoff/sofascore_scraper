@@ -12,9 +12,10 @@ from dataclasses import dataclass
 
 from src.exceptions import ConfigError
 from src.logger import get_logger
+from src.paths import default_league_config_path, env_file_path
 
 # .env dosyasını yükle
-dotenv.load_dotenv()
+dotenv.load_dotenv(env_file_path())
 
 # Logger'ı alın
 logger = get_logger("ConfigManager")
@@ -60,7 +61,7 @@ class ConfigManager:
             return
         
         # Lig yapılandırma dosyası
-        self.league_config_path = config_path or "config/leagues.txt"
+        self.league_config_path = config_path or default_league_config_path()
         
         # Lig ve diğer yapılandırma verilerini tut
         self.leagues: Dict[int, str] = {}
@@ -189,7 +190,7 @@ class ConfigManager:
         """
         try:
             # Mevcut .env dosyasını oku
-            env_path = ".env"
+            env_path = env_file_path()
             env_vars = {}
             
             if os.path.exists(env_path):
@@ -463,7 +464,7 @@ class ConfigManager:
             self._load_leagues()
             
             # Çevre değişkenlerini yeniden yükle
-            dotenv.load_dotenv(override=True)
+            dotenv.load_dotenv(env_file_path(), override=True)
             
             # Debug için ligleri logla
             logger.debug(f"Yapılandırma yeniden yüklendi: {len(self.leagues)} lig bulundu")
@@ -628,7 +629,7 @@ class ConfigManager:
             os.environ[key] = value
             
             # .env dosyasını güncelle
-            env_path = ".env"
+            env_path = env_file_path()
             env_vars = {}
             
             # Mevcut .env dosyasını oku

@@ -1,6 +1,7 @@
 """Delivery readiness: every safe API route responds with expected shape."""
 from __future__ import annotations
 
+import pytest
 from fastapi.testclient import TestClient
 
 from src.web.app import app
@@ -42,23 +43,25 @@ def test_league_dependent_reads():
     r = client.get(f"/api/leagues/{lid}/missing-details")
     assert r.status_code == 200
     assert "missing" in r.json() or isinstance(r.json(), dict)
-    r = client.get(f"/api/leagues/search?q=Prem")
+    r = client.get("/api/leagues/search?q=Prem")
     assert r.status_code == 200
-    # remote search may hit network — tolerate 200 or 5xx without crashing suite
+
+
+@pytest.mark.live
+def test_remote_league_search():
     r = client.get("/api/leagues/search-remote?q=Premier")
-    assert r.status_code in (200, 429, 500, 502, 503)
+    assert r.status_code == 200
 
 
 def test_match_detail_or_404():
-    r = client.get("/api/matches?limit=1&offset=0")
+    r = client.get("/api/matches?limit=10&offset=0")
     items = r.json().get("items") or []
-    if not items:
-        r = client.get("/api/matches/0")
-        assert r.status_code in (404, 500)
-        return
-    mid = items[0].get("match_id") or items[0].get("id")
-    r = client.get(f"/api/matches/{mid}")
-    assert r.status_code in (200, 404)
+    assert items, "conftest seeds two matches"
+    by_id = {int(i["match_id"]): i for i in items}
+    from conftest import MATCH_IDS
+    assert client.get(f"/api/matches/{MATCH_IDS[0]}").status_code == 200
+    assert client.get("/api/matches/0").status_code == 404
+    assert set(MATCH_IDS) <= set(by_id)
 
 
 def test_export_csv_available():
@@ -93,10 +96,9 @@ def test_settings_roundtrip_safe():
 
 def test_backup_endpoint():
     r = client.post("/api/data/backup")
-    assert r.status_code in (200, 500)  # 500 if zip fails is env issue; must not hang
-    if r.status_code == 200:
-        body = r.json()
-        assert "path" in body or "status" in body or "download" in str(body).lower() or True
+    assert r.status_code == 200
+    body = r.json()
+    assert body.get("download_url")
 
 
 if __name__ == "__main__":

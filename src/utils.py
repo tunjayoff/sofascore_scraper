@@ -14,13 +14,14 @@ from pathlib import Path
 import dotenv
 
 from src.logger import get_logger
+from src.paths import env_file_path
 from src.exceptions import (
     APIError, RateLimitError, NetworkError, 
     DataParsingError, SofaScoreScraperError, ResourceNotFoundError
 )
 
 # .env dosyasını yükle
-dotenv.load_dotenv()
+dotenv.load_dotenv(env_file_path())
 
 # Logger'ı alın
 logger = get_logger("Utils")
