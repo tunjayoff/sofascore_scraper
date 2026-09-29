@@ -17,6 +17,7 @@ import asyncio
 import hashlib
 import json
 import os
+import re
 import threading
 import time
 from typing import Any, Dict, Optional
@@ -51,13 +52,25 @@ _FRESH_TOKEN_SECONDS = 30.0
 # Başarısız bir çözümden sonra bu süre yeniden denenmez (her istek 10-90 sn yakmasın)
 _SOLVE_RETRY_AFTER = 180.0
 
-_FETCH_JS = """async ([targetUrl, xReq, xCap, timeoutMs]) => {
+# Tarayıcının HTTP önbelleği: durum taşıyan yanıtlar (maç, canlı liste, sezon listeleri) max-age boyunca
+# (sezon listelerinde 60 sn) önbellekten dönerse biten maç o süre "devam ediyor" görünür (issue #6).
+# Yalnızca maçın durumundan bağımsız statik veri önbelleği kullanır.
+_STATIC_PATH_RE = re.compile(r"/(seasons|rounds)/?$")
+
+
+def cache_mode_for(url: str) -> str:
+    """fetch() cache seçeneği: statik veri için tarayıcı varsayılanı, diğer her şey için no-store."""
+    path = url.split("?", 1)[0]
+    return "default" if _STATIC_PATH_RE.search(path) else "no-store"
+
+
+_FETCH_JS = """async ([targetUrl, xReq, xCap, timeoutMs, cacheMode]) => {
     const headers = { "x-requested-with": xReq };
     if (xCap) headers["x-captcha"] = xCap;
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
-        const resp = await fetch(targetUrl, { headers, signal: ctrl.signal });
+        const resp = await fetch(targetUrl, { headers, signal: ctrl.signal, cache: cacheMode || "no-store" });
         return {
             status: resp.status,
             ok: resp.ok,
@@ -277,7 +290,7 @@ class BrowserBridge:
         if self.page is None or self.page.is_closed():
             return True
         x_req = hashlib.sha256(str(int(time.time()) // 1800).encode("utf-8")).hexdigest()[:6]
-        res = await self.evaluate(_FETCH_JS, [_PROBE_URL, x_req, self.token, _JS_FETCH_TIMEOUT_MS])
+        res = await self.evaluate(_FETCH_JS, [_PROBE_URL, x_req, self.token, _JS_FETCH_TIMEOUT_MS, "no-store"])
         return res.get("status") != 403
 
     async def _solve_challenge(self) -> Optional[str]:
@@ -316,14 +329,14 @@ class BrowserBridge:
         url = path_or_url if path_or_url.startswith("http") else "https://www.sofascore.com/api/v1" + path_or_url
         x_req = hashlib.sha256(str(int(time.time()) // 1800).encode("utf-8")).hexdigest()[:6]
 
-        res = await self.evaluate(_FETCH_JS, [url, x_req, self.token, _JS_FETCH_TIMEOUT_MS])
+        res = await self.evaluate(_FETCH_JS, [url, x_req, self.token, _JS_FETCH_TIMEOUT_MS, cache_mode_for(url)])
 
         # 403 Challenge alındıysa otomatik çöz ve tekrar dene
         if res.get("status") == 403 and "challenge" in (res.get("text") or ""):
             logger.info("API 403 challenge döndürdü, Turnstile otomatik çözülüyor...")
             new_token = await self.solve_challenge()
             if new_token:
-                res = await self.evaluate(_FETCH_JS, [url, x_req, self.token, _JS_FETCH_TIMEOUT_MS])
+                res = await self.evaluate(_FETCH_JS, [url, x_req, self.token, _JS_FETCH_TIMEOUT_MS, cache_mode_for(url)])
 
         if res.get("ok"):
             return res.get("data")

@@ -316,3 +316,27 @@ def test_evaluate_does_not_swallow_other_errors():
     bridge.page = page
     with pytest.raises(ValueError):
         _run(bridge.evaluate("js"))
+
+
+@pytest.mark.parametrize("url,mode", [
+    ("https://www.sofascore.com/api/v1/event/123", "no-store"),
+    ("https://www.sofascore.com/api/v1/sport/football/events/live", "no-store"),
+    ("https://www.sofascore.com/api/v1/unique-tournament/17/season/76986/events/round/3", "no-store"),
+    ("https://www.sofascore.com/api/v1/unique-tournament/17/season/76986/events/last/0", "no-store"),
+    ("https://www.sofascore.com/api/v1/unique-tournament/17/seasons", "default"),
+    ("https://www.sofascore.com/api/v1/unique-tournament/17/season/76986/rounds", "default"),
+    ("https://www.sofascore.com/api/v1/unique-tournament/17/seasons?x=1", "default"),
+])
+def test_cache_mode_for(url, mode):
+    assert cs.cache_mode_for(url) == mode
+
+
+def test_fetch_json_sends_cache_mode_to_page():
+    bridge = cs.BrowserBridge.__new__(cs.BrowserBridge)
+    bridge.token = None
+    bridge.ensure_ready = AsyncMock()
+    bridge.evaluate = AsyncMock(return_value={"ok": True, "status": 200, "data": {"x": 1}})
+    _run(bridge.fetch_json("/event/1"))
+    _run(bridge.fetch_json("/unique-tournament/17/seasons"))
+    modes = [c.args[1][4] for c in bridge.evaluate.await_args_list]
+    assert modes == ["no-store", "default"]
