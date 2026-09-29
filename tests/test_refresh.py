@@ -30,6 +30,7 @@ def _iso(ts: float) -> str:
 def _env(monkeypatch):
     monkeypatch.delenv("REFRESH_WINDOW_HOURS", raising=False)
     monkeypatch.delenv("REFRESH_LEGACY", raising=False)
+    monkeypatch.delenv("REFRESH_MIN_INTERVAL_HOURS", raising=False)
 
 
 def _fetcher(tmp_path) -> MatchDataFetcher:
@@ -87,6 +88,23 @@ def test_window_is_configurable(tmp_path, monkeypatch):
     f = _fetcher(tmp_path)
     _store(f, _fixture("football/F2_penalties__16950622"), observed_after_start_h=7)
     assert f._compute_detail_need(MID) == "none"
+
+
+@pytest.mark.parametrize("hours_since_observed,min_interval,expected", [
+    (1, None, "none"),  # varsayılan 6 sa dolmadı
+    (7, None, "refresh"),
+    (1, "0", "refresh"),  # alt sınır kapalı
+    (1, "0.5", "refresh"),
+])
+def test_min_interval_between_refreshes(tmp_path, monkeypatch, hours_since_observed, min_interval, expected):
+    if min_interval is not None:
+        monkeypatch.setenv("REFRESH_MIN_INTERVAL_HOURS", min_interval)
+    f = _fetcher(tmp_path)
+    basic = _fixture("football/F2_penalties__16950622")
+    now = dt.datetime.now(dt.timezone.utc).timestamp()
+    basic["startTimestamp"] = int(now - 10 * 3600)  # pencere açık: başlangıçtan 10 sa
+    _store(f, basic, observed_after_start_h=10 - hours_since_observed)
+    assert f._compute_detail_need(MID) == expected
 
 
 def test_missing_slices_still_come_before_refresh(tmp_path):
