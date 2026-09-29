@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { api, type JobRow } from '@/api/client'
 import { useScrapeStore } from '@/stores/scrape'
 import { useLeaguesStore } from '@/stores/leagues'
-import { jobTitle, jobStatus, toneBadge, formatWhen } from '@/lib/jobLabel'
+import { jobTitle, jobStatus, hasWarnings, toneBadge, formatWhen } from '@/lib/jobLabel'
 import { errorText } from '@/lib/toast'
 import JobCard from '@/components/JobCard.vue'
 
@@ -27,13 +27,18 @@ async function load() {
 }
 
 function row(j: JobRow) {
-  const st = jobStatus(j.status, false, 0, t)
+  const st = jobStatus(j.status, false, hasWarnings(j), t)
   return {
     title: jobTitle(j.payload, leagues.nameOf, t),
     status: st.text,
     badge: toneBadge[st.tone],
     when: formatWhen(j.started_at, String(locale.value)),
-    detail: j.matches_total ? t('job.matches', { done: j.matches_done ?? 0, total: j.matches_total }) : '',
+    detail: [
+      j.matches_total ? t('job.unit.details', { done: j.matches_done ?? 0, total: j.matches_total }) : '',
+      j.matches_failed ? t('job.failedN', { n: j.matches_failed }) : '',
+    ]
+      .filter(Boolean)
+      .join(' · '),
   }
 }
 

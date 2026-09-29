@@ -73,6 +73,28 @@ def raise_if_cancelled() -> None:
         raise FetchCancelled()
 
 
+# Uzun beklemeleri (429/403 geri çekilmesi) işin ilerleme kartına bildirmek için; iptal
+# kontrolü gibi iş başına ContextVar'dır.
+_wait_notifier: "contextvars.ContextVar[Optional[Callable[[str, float], None]]]" = contextvars.ContextVar(
+    "fetch_wait_notifier", default=None
+)
+
+
+def set_wait_notifier(fn: Optional[Callable[[str, float], None]]) -> "contextvars.Token":
+    """Bu bağlamdaki uzun beklemeler için (reason, seconds) bildirimini ayarlar."""
+    return _wait_notifier.set(fn)
+
+
+def _notify_wait(reason: str, seconds: float) -> None:
+    fn = _wait_notifier.get()
+    if fn is None:
+        return
+    try:
+        fn(reason, float(seconds))
+    except Exception:  # bildirim isteği asla bozmamalı
+        logger.debug("wait notifier failed", exc_info=True)
+
+
 def _sleep(seconds: float) -> None:
     """time.sleep gibi, ama iptal istenirse beklemeyi hemen keser."""
     end = time.monotonic() + max(0.0, float(seconds))
@@ -308,6 +330,7 @@ def make_api_request(
                 default_wait = min(60, 5 * (2 ** attempt))
                 wait_time = _parse_retry_after_seconds(response.headers.get("Retry-After"), default_wait)
                 logger.warning(f"Rate limit/Sunucu meşgul ({response.status_code}). {wait_time} saniye bekleniyor...")
+                _notify_wait("rate_limit", wait_time)
                 _sleep(wait_time)
                 continue
 
@@ -329,6 +352,7 @@ def make_api_request(
                 if last_attempt:
                     logger.error(f"403 Forbidden, denemeler tükendi: {url}")
                     return None
+                _notify_wait("forbidden", min(120, 10 * (2 ** attempt)))
                 _sleep(min(120, 10 * (2 ** attempt)))
                 continue
 
@@ -459,6 +483,7 @@ async def make_api_request_async(
             default_wait = min(60, 5 * (2 ** attempt))
             wait_time = _parse_retry_after_seconds(response.headers.get("Retry-After"), default_wait)
             logger.warning(f"Rate limit/Sunucu meşgul ({status}). {wait_time} saniye bekleniyor...")
+            _notify_wait("rate_limit", wait_time)
             await _asleep(wait_time)
             continue
 
@@ -482,6 +507,7 @@ async def make_api_request_async(
                     return cast(JsonResponse, browser_data)
             if last_attempt:
                 raise APIError(f"HTTP 403 Forbidden: {url}", status_code=403)
+            _notify_wait("forbidden", min(120, 10 * (2 ** attempt)))
             await _asleep(min(120, 10 * (2 ** attempt)))
             continue
 

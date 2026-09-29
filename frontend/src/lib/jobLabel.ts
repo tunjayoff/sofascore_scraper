@@ -26,8 +26,15 @@ export function jobTitle(payload: FetchPayload | null | undefined, nameOf: (id: 
 
 export type JobTone = 'running' | 'ok' | 'warn' | 'error' | 'neutral'
 
+type WarnFields = { schedule_empty_seasons?: number; circuit_breaker_triggered?: boolean; matches_failed?: number }
+
+/** A finished job worth a second look: empty seasons, failed matches, or stopped early by the breaker. */
+export function hasWarnings(j: WarnFields): boolean {
+  return !!(j.schedule_empty_seasons || j.circuit_breaker_triggered || j.matches_failed)
+}
+
 /** The backend mixes "Running"/"Completed" (live mirror) and "running"/"completed" (job rows). */
-export function jobStatus(status: string, cancelRequested: boolean | undefined, emptySeasons: number | undefined, t: T) {
+export function jobStatus(status: string, cancelRequested: boolean | undefined, warn: boolean, t: T) {
   const s = String(status || '').toLowerCase()
   if (s === 'running') {
     return cancelRequested
@@ -35,7 +42,7 @@ export function jobStatus(status: string, cancelRequested: boolean | undefined, 
       : { text: t('job.running'), tone: 'running' as JobTone }
   }
   if (s === 'completed') {
-    return emptySeasons
+    return warn
       ? { text: t('job.completedWarn'), tone: 'warn' as JobTone }
       : { text: t('job.completed'), tone: 'ok' as JobTone }
   }
