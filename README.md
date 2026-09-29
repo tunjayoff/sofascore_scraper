@@ -299,8 +299,10 @@ Contributions are welcome. You can help in several ways:
 - **Pull requests** — Fork the repo, use a focused branch, keep changes small and on-topic, and describe *what* and *why* in the PR. Match existing code style; avoid drive-by refactors. If you touch user-visible text, update both languages: `frontend/src/locales/tr.ts` and `en.ts` for the web app, `locales/en.json` and `locales/tr.json` for the terminal UI.
 - **Docs & translations** — Improvements to these READMEs or locale strings are appreciated.
 
-There is no separate contributor agreement beyond the MIT license on your submissions. Be respectful in issues and reviews. If you are unsure whether an idea fits, open an issue first.
+By submitting a contribution, you agree that it is licensed under the project's license and that the maintainer may also offer it under other terms (for example, a commercial license). Be respectful in issues and reviews. If you are unsure whether an idea fits, open an issue first.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+[PolyForm Noncommercial 1.0.0](LICENSE). You may use, modify and share this software for **noncommercial purposes** — personal use, study, research, hobby projects, and use by charities, educational institutions and public bodies. **Commercial use is not permitted** without a separate license; to ask about one, open an issue or contact [@tunjayoff](https://github.com/tunjayoff).
+
+Versions released before this change remain available under the MIT license.

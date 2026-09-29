@@ -678,7 +678,7 @@ class SettingsMenuHandler:
             print("-" * 50)
             print(f"{COLORS['INFO']}{self.i18n.t('version')} {COLORS['SUCCESS']}1.0.0")
             print(f"{COLORS['INFO']}{self.i18n.t('developer')} {COLORS['SUCCESS']}SofaScore Scraper Ekibi")
-            print(f"{COLORS['INFO']}{self.i18n.t('license')} {COLORS['SUCCESS']}MIT")
+            print(f"{COLORS['INFO']}{self.i18n.t('license')} {COLORS['SUCCESS']}PolyForm Noncommercial 1.0.0")
             print(f"{COLORS['INFO']}{self.i18n.t('description')} {COLORS['SUCCESS']}{self.i18n.t('app_description')}")
             
             print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('libraries')}")

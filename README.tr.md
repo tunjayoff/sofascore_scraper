@@ -297,8 +297,10 @@ Katkılarınızı memnuniyetle karşılıyoruz. Şu şekillerde destek olabilirs
 - **Pull request** — Repo’yu fork’layın, odaklı bir dal kullanın, değişiklikleri küçük ve tek konuda tutun; PR’da *ne* ve *neden* olduğunu açıklayın. Mevcut kod stiline uyun; gereksiz geniş refaktörden kaçının. Kullanıcıya dönük metin değiştiriyorsanız iki dili de güncelleyin: web uygulaması için `frontend/src/locales/tr.ts` ve `en.ts`, terminal arayüzü için `locales/tr.json` ve `locales/en.json`.
 - **Dokümantasyon ve çeviri** — Bu README’ler veya yerelleştirme metinleri için iyileştirmeler değerlidir.
 
-Katkılarınız MIT lisansı ile uyumlu kabul edilir; ayrı bir katılım sözleşmesi yoktur. Issue ve inceleme süreçlerinde saygılı iletişim rica edilir. Fikrin uyarlılığından emin değilseniz önce issue açmak iyi bir başlangıçtır.
+Katkı göndererek, katkınızın projenin lisansı altında sunulmasını ve proje sahibinin onu başka koşullarla da (örneğin ticari bir lisansla) sunabilmesini kabul etmiş olursunuz. Issue ve inceleme süreçlerinde saygılı iletişim rica edilir. Fikrin uyarlılığından emin değilseniz önce issue açmak iyi bir başlangıçtır.
 
 ## Lisans
 
-MIT — ayrıntılar için [LICENSE](LICENSE) dosyasına bakın.
+[PolyForm Noncommercial 1.0.0](LICENSE). Bu yazılımı **ticari olmayan amaçlarla** kullanabilir, değiştirebilir ve paylaşabilirsiniz: kişisel kullanım, öğrenim, araştırma, hobi projeleri ile hayır kurumları, eğitim kurumları ve kamu kurumlarının kullanımı buna dahildir. **Ticari kullanım**, ayrı bir lisans alınmadan **yasaktır**; bunun için bir issue açabilir ya da [@tunjayoff](https://github.com/tunjayoff) ile iletişime geçebilirsiniz.
+
+Bu değişiklikten önce yayımlanan sürümler MIT lisansı altında kalmaya devam eder.
