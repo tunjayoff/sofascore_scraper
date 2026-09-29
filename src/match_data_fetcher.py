@@ -12,6 +12,7 @@ import re
 from typing import Any, Callable, Dict, List, Optional, Union, Tuple
 from pathlib import Path
 import asyncio
+import threading
 from collections import Counter
 import pandas as pd
 from tqdm import tqdm
@@ -21,6 +22,7 @@ from src.fsutil import atomic_write_json
 from src.utils import make_api_request, ensure_directory
 from src.match_fetcher import MatchFetcher
 from src.status import OBSERVATION_KEY, observation_record
+from src.refresh import SCORE_CHANGES_FILE, change_row, diff_basic, refresh_due
 
 from src.logger import get_logger
 
@@ -51,6 +53,9 @@ DETAIL_SLICE_KEYS = (
 # maçlarında kadro/olay yok). Bir kez daha denemek geçici hataları ayırır.
 UNAVAILABLE_AFTER_ATTEMPTS = 2
 UNAVAILABLE_FILE = "_unavailable.json"
+
+# score_changes.jsonl'a paralel iş parçacıklarından ekleme
+_SCORE_CHANGES_LOCK = threading.Lock()
 
 
 def _event_sport(basic: Dict[str, Any]) -> str:
@@ -210,12 +215,14 @@ class MatchDataFetcher:
         logger.debug(f"Starting batch fetch for {len(match_ids)} matches")
         ignore_rate_limit = os.getenv("IGNORE_RATE_LIMIT", "false").lower() == "true"
 
-        match_ids_to_process = [id for id in match_ids if self._needs_detail_fetch(str(id)) != "none"]
+        match_ids_to_process, refresh_count = self._order_by_need(match_ids)
         skipped = len(match_ids) - len(match_ids_to_process)
         if skipped:
             logger.info(f"{skipped} maç detayları tamam, atlanıyor")
             if progress_bar:
                 progress_bar.update(skipped)
+        if refresh_count:
+            logger.info(f"{refresh_count} maç yenileniyor (geçici kayıt)")
 
         results: Dict[str, Dict[str, Any]] = {}
         status_counts: Counter = Counter()
@@ -272,7 +279,9 @@ class MatchDataFetcher:
                                     return None
                                 total_attempts += 1
                                 need = self._needs_detail_fetch(str(match_id))
-                                if need == "refill":
+                                if need == "refresh":
+                                    result = await asyncio.to_thread(self.refresh_match, str(match_id))
+                                elif need == "refill":
                                     result = await asyncio.to_thread(self.refill_missing_match_slices, str(match_id))
                                     if cancelled or (should_cancel and should_cancel()):
                                         cancelled = True
@@ -436,6 +445,9 @@ class MatchDataFetcher:
         self.rate_limit_breaker_triggered = False
         self.last_rate_limit_headers: List[Dict[str, str]] = []
         self.last_status_counts: Dict[str, int] = {}
+        # refresh_match her yenilemede (match_id, değişti_mi) ile çağırır (web iş kartı sayacı)
+        self.refresh_listener: Optional[Callable[[str, bool], None]] = None
+        self.last_refresh_changed = False
 
         # Veri dizinlerinin var olduğundan emin ol
         ensure_directory(self.data_dir)
@@ -565,6 +577,7 @@ class MatchDataFetcher:
         Returns:
             'none' — beklenen tüm dilimler tamam
             'refill' — basic var, eksik dilim(ler) var
+            'refresh' — dilimler tam ama kayıt geçici (yenileme penceresi kapanmadı; src/refresh.py)
             'full' — kayıt yok veya basic yok
         """
         mid = str(match_id)
@@ -587,7 +600,123 @@ class MatchDataFetcher:
         for key in self._expected_slices(match_dir):
             if not self.match_detail_slice_present(key, data):
                 return "refill"
+        if refresh_due(data["basic"], data.get(OBSERVATION_KEY) or {}):
+            return "refresh"
         return "none"
+
+    def _order_by_need(self, match_ids: List[Any]) -> Tuple[List[Any], int]:
+        """İşlenecek maçlar: önce full/refill, sonra refresh. İkinci değer yenilenecek maç sayısı."""
+        first, refresh = [], []
+        for mid in match_ids:
+            need = self._needs_detail_fetch(str(mid))
+            if need == "refresh":
+                refresh.append(mid)
+            elif need != "none":
+                first.append(mid)
+        return first + refresh, len(refresh)
+
+    def refresh_match(self, match_id: Union[int, str]) -> Optional[Dict[str, Any]]:
+        """
+        Geçici kaydı yeniler: yalnızca /event/{id} çekilir. Fark yoksa observation.json güncellenir;
+        fark varsa basic.json da yazılır ve değişim score_changes.jsonl'a eski/yeni değerle eklenir.
+        COMPLETED → VOID olursa kayıt silinmez, observation.json'a status_regressed: true yazılır.
+        """
+        mid = str(match_id)
+        path_info = self._find_match_path(mid)
+        if not path_info:
+            return None
+        _, _, match_dir = path_info
+        data = self._load_match_data_from_dir(match_dir, mid)
+        old = data.get("basic")
+        if not old:
+            return None
+        new = self._fetch_match_basic(mid)
+        if not new:
+            logger.warning(f"Maç {mid} yenileme: /event alınamadı")
+            return None
+
+        stored = data.get(OBSERVATION_KEY)
+        obs = observation_record(new)
+        if isinstance(stored, dict) and stored.get("status_regressed"):
+            obs["status_regressed"] = True
+        changed = diff_basic(old, new)
+        if changed:
+            row = change_row(old, new, changed, _event_sport(new) or _event_sport(old))
+            if row.get("status_regressed"):
+                obs["status_regressed"] = True
+                logger.warning(f"Maç {mid} oynanmış sayılıyordu, şimdi {new.get('status')}; kayıt silinmedi")
+            self._append_score_change(row)
+            atomic_write_json(os.path.join(match_dir, "basic.json"), new)
+            full_json_path = os.path.join(match_dir, f"{mid}.json")
+            if os.path.exists(full_json_path):  # eski tek dosyalı kayıt da güncel kalsın
+                with open(full_json_path, "r", encoding="utf-8") as f:
+                    full = json.load(f)
+                full["basic"] = new
+                atomic_write_json(full_json_path, full)
+            data["basic"] = new
+            logger.info(f"Maç {mid} yenilendi: {len(changed)} alan değişti ({', '.join(list(changed)[:5])})")
+        atomic_write_json(os.path.join(match_dir, f"{OBSERVATION_KEY}.json"), obs)
+        data[OBSERVATION_KEY] = obs
+
+        self.last_refresh_changed = bool(changed)
+        if getattr(self, "_need_cache", None) is not None:
+            self._need_cache.pop(mid, None)
+        listener = getattr(self, "refresh_listener", None)
+        if listener:
+            listener(mid, bool(changed))
+        return data
+
+    def _append_score_change(self, row: Dict[str, Any]) -> None:
+        path = os.path.join(self.data_dir, SCORE_CHANGES_FILE)
+        with _SCORE_CHANGES_LOCK:
+            with open(path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+    def refresh_due_ids(self, league_id: Optional[Union[int, str]] = None) -> List[str]:
+        """Kayıtlı maçlardan yenilenmesi gerekenler (--refresh-only). Eksik dilimli maçlar dahil değil."""
+        ids: List[str] = []
+        if not os.path.isdir(self.match_details_dir):
+            return ids
+        for league_name in sorted(os.listdir(self.match_details_dir)):
+            league_path = os.path.join(self.match_details_dir, league_name)
+            if league_name == "processed" or not os.path.isdir(league_path):
+                continue
+            if league_id is not None and not league_name.startswith(f"{league_id}_"):
+                continue
+            for season_name in sorted(os.listdir(league_path)):
+                season_path = os.path.join(league_path, season_name)
+                if not os.path.isdir(season_path):
+                    continue
+                for mid in sorted(os.listdir(season_path)):
+                    if os.path.isdir(os.path.join(season_path, mid)) and self._needs_detail_fetch(mid) == "refresh":
+                        ids.append(mid)
+        return ids
+
+    def refresh_matches(
+        self,
+        match_ids: List[str],
+        progress_callback: Optional[Callable[[int, int, str], None]] = None,
+        should_cancel: Optional[Callable[[], bool]] = None,
+    ) -> Dict[str, int]:
+        """Yalnızca yenileme (refresh-only): sırayla, istekler arası bekleme ile."""
+        stats = {"refreshed": 0, "changed": 0, "failed": 0}
+        n = len(match_ids)
+        if n:
+            logger.info(f"{n} maç yenileniyor")
+        for idx, mid in enumerate(match_ids):
+            if should_cancel and should_cancel():
+                break
+            result = self.refresh_match(mid)
+            if result is None:
+                stats["failed"] += 1
+            else:
+                stats["refreshed"] += 1
+                stats["changed"] += int(self.last_refresh_changed)
+            if progress_callback:
+                progress_callback(idx + 1, n, f"Refresh {idx + 1}/{n}")
+            if idx < n - 1:
+                time.sleep(1.0)
+        return stats
 
     def refill_missing_match_slices(self, match_id: Union[int, str]) -> Optional[Dict[str, Any]]:
         """
@@ -1100,10 +1229,12 @@ class MatchDataFetcher:
         use_tqdm = True
         results = {}
 
-        match_ids_to_process = [id for id in match_ids if self._needs_detail_fetch(str(id)) != "none"]
+        match_ids_to_process, refresh_count = self._order_by_need(match_ids)
         skipped = len(match_ids) - len(match_ids_to_process)
         if skipped:
             logger.info(f"{skipped} maç detayları tamam, atlanıyor")
+        if refresh_count:
+            logger.info(f"{refresh_count} maç yenileniyor (geçici kayıt)")
 
         n = len(match_ids_to_process)
         iterator: Any = tqdm(match_ids_to_process) if use_tqdm else match_ids_to_process
@@ -1119,7 +1250,10 @@ class MatchDataFetcher:
             else:
                 logger.info(f"Maç verisi çekiliyor: ID {match_id}")
 
-            if self._needs_detail_fetch(match_id) == "refill":
+            need = self._needs_detail_fetch(match_id)
+            if need == "refresh":
+                match_data = self.refresh_match(match_id)
+            elif need == "refill":
                 match_data = self.refill_missing_match_slices(match_id)
                 if not match_data:
                     match_data = self.fetch_match_data(match_id)
@@ -1613,8 +1747,8 @@ class MatchDataFetcher:
         return list(dict.fromkeys(match_ids))
 
     def pending_detail_ids(self, match_ids: List[str]) -> List[str]:
-        """Detay dilimleri eksik ya da kısmi olan maçlar."""
-        return [mid for mid in match_ids if self._needs_detail_fetch(str(mid)) != "none"]
+        """Detay dilimleri eksik ya da kısmi olan maçlar, ardından yenilenecek (geçici) maçlar."""
+        return self._order_by_need(match_ids)[0]
 
     def fetch_detail_ids(
         self,

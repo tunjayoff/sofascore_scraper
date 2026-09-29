@@ -34,6 +34,7 @@ const advancedFields: { key: keyof Settings; label: string; step: string; min: n
   { key: 'wait_time_min', label: 'settings.waitMin', step: '0.5', min: 0, max: 60 },
   { key: 'wait_time_max', label: 'settings.waitMax', step: '0.5', min: 0, max: 60 },
   { key: 'max_retries', label: 'settings.retries', step: '1', min: 0, max: 10 },
+  { key: 'refresh_window_hours', label: 'settings.refreshWindow', step: '1', min: 0, max: 720 },
 ]
 
 /** First out-of-range advanced field as a message, or '' when all are valid. */
@@ -72,6 +73,7 @@ async function load() {
       max_retries: s.max_retries,
       fetch_only_finished: s.fetch_only_finished,
       save_empty_rounds: s.save_empty_rounds,
+      refresh_window_hours: s.refresh_window_hours,
       log_level: s.log_level,
     })
     stats.value = st
@@ -211,6 +213,7 @@ onMounted(load)
     </div>
     <label class="flex items-center gap-3 text-sm cursor-pointer"><input v-model="form.fetch_only_finished" type="checkbox" class="check" />{{ t('settings.onlyFinished') }}</label>
     <label class="flex items-center gap-3 text-sm cursor-pointer"><input v-model="form.save_empty_rounds" type="checkbox" class="check" />{{ t('settings.emptyRounds') }}</label>
+    <p class="m-0 text-xs" style="color: var(--muted)">{{ t('settings.refreshWindowHint') }}</p>
     <div><button type="button" class="btn btn-primary" :disabled="!dirty || saving" @click="save">{{ t('common.save') }}</button></div>
   </section>
 </template>

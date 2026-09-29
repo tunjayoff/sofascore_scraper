@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, field_validator
 
+from src.refresh import refresh_window_hours
 from src.web.routes.common import (
     config_manager,
     logger,
@@ -48,6 +49,7 @@ class SettingsUpdate(BaseModel):
     server_error_threshold_consecutive: Optional[int] = Field(default=None, ge=1, le=1000)
     fetch_only_finished: Optional[bool] = None
     save_empty_rounds: Optional[bool] = None
+    refresh_window_hours: Optional[float] = Field(default=None, ge=0, le=720)
     log_level: Optional[Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]] = None
     debug: Optional[bool] = None
 
@@ -112,6 +114,7 @@ def get_all_settings():
         "server_error_threshold_consecutive": config_manager.get_server_error_threshold_consecutive(),
         "fetch_only_finished": os.getenv("FETCH_ONLY_FINISHED", "true").lower() == "true",
         "save_empty_rounds": os.getenv("SAVE_EMPTY_ROUNDS", "false").lower() == "true",
+        "refresh_window_hours": refresh_window_hours(),
         "log_level": os.getenv("LOG_LEVEL", "INFO"),
         "debug": os.getenv("DEBUG", "false").lower() == "true",
     }
@@ -140,6 +143,7 @@ def update_settings(settings: SettingsUpdate):
             "server_error_threshold_consecutive": ("SERVER_ERROR_THRESHOLD_CONSECUTIVE", lambda v: str(v)),
             "fetch_only_finished": ("FETCH_ONLY_FINISHED", lambda v: str(v).lower()),
             "save_empty_rounds": ("SAVE_EMPTY_ROUNDS", lambda v: str(v).lower()),
+            "refresh_window_hours": ("REFRESH_WINDOW_HOURS", lambda v: f"{float(v):g}"),
             "log_level": ("LOG_LEVEL", lambda v: v),
             "debug": ("DEBUG", lambda v: str(v).lower()),
         }

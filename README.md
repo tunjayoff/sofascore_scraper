@@ -151,6 +151,7 @@ See `.env.example` for all keys. Common ones:
 | `MAX_CONCURRENT` | Parallel detail requests cap. |
 | `USE_PROXY` / `PROXY_URL` | Optional HTTP proxy. |
 | `FETCH_ONLY_FINISHED` | Keep only finished matches (`status.type == finished`). Default `true`. Upcoming fixtures are dropped from schedule files. |
+| `REFRESH_WINDOW_HOURS` | Hours after kick-off during which a saved match is provisional and gets re-read (default `72`, `0` = off). See [Refresh policy](#refresh-policy). |
 | `RATE_LIMIT_*` / `SERVER_ERROR_*` | Circuit breaker thresholds when many errors occur. |
 
 Tuning for the web UI (timeouts, retries, logging) is exposed under **Settings**; writing settings updates `.env`.
@@ -238,6 +239,8 @@ At least one of `--update-all` or `--csv-export` is required with `--headless`. 
 | `--league-id ID` | Limit `--update-all` to one configured league |
 | `--csv-export` | Build/export processed CSV dataset |
 | `--ignore-rate-limit` | Disable circuit breaker (use with care) |
+| `--refresh-only` | Only re-read provisional records (no `--headless` needed); see [Refresh policy](#refresh-policy) |
+| `--refresh-legacy` | Also refresh records saved before `observation.json` existed, once |
 
 Examples:
 
@@ -265,7 +268,8 @@ data/
 ├── matches/           # Match list / summary CSVs by league & season
 ├── match_details/     # Per-match JSON folders (basic, stats, lineups, …)
 │   └── processed/     # Aggregated CSV exports
-└── datasets/          # Reserved / auxiliary
+├── datasets/          # Reserved / auxiliary
+└── score_changes.jsonl  # Post-finish changes found by refresh (see Refresh policy)
 ```
 
 Exact paths may vary slightly by league naming and migrations.
@@ -273,6 +277,34 @@ Exact paths may vary slightly by league naming and migrations.
 The match list reads the per-season summaries under `matches/`; the export CSV in `match_details/processed/` is only a fallback when no summaries exist.
 
 Next to `config/leagues.txt` (the `name: id` list the CLI also reads), `config/league_sports.json` stores each league's sport as `{"<id>": "football" | "basketball" | "tennis"}`. It is filled when a league is added from the web app, when you pick a sport in the UI, or from a downloaded match of that league.
+
+## Refresh policy
+
+SofaScore keeps editing some results after a match has finished. In the research run (`docs/status-matrix/README.md`, "Geriye dönük"), the final or period score changed after `finished` in 78 of 255 lower-tier basketball matches, 6 of 240 lower-tier football matches and 4 of 145 upper-tier basketball matches. The latest final-score change came 66.4 h after kick-off. A match downloaded once can therefore differ from SofaScore's own final state.
+
+- **When a record is refreshed.** Every saved match has `observation.json` next to `basic.json`, holding when we read it (`observed_at_utc`) and SofaScore's `changes.changeTimestamp`. A record is *provisional* while `observed_at_utc < startTimestamp + REFRESH_WINDOW_HOURS` (default **72**). On the next download (web job, `--update-all`, or `--refresh-only`), provisional records are re-read. Only `/event/{id}` is fetched; the stats and lineups are not. Refreshes run after new and incomplete matches, and the job card counts them separately ("N refreshed (M changed)"). A record is re-read at most once every `REFRESH_MIN_INTERVAL_HOURS` (default 6, advanced `.env` setting), so hourly downloads do not fetch the same match 72 times. Once a read lands after the window, the record is final and never fetched again.
+- **Older records.** Matches saved before this feature have no `observation.json`. They count as final, so the default setting adds **no** requests for existing data. `--refresh-legacy` re-reads each of them once.
+- **Turning it off.** Set `REFRESH_WINDOW_HOURS=0` (in `.env` or under **Settings**).
+- **Change log.** When the status triple, `winnerCode`, any `homeScore`/`awayScore` field or `startTimestamp` differs, `basic.json` is overwritten and one line is appended to `DATA_DIR/score_changes.jsonl` (ignored by git):
+
+```json
+{"ts_utc": "2026-09-30T08:00:00+00:00", "event_id": 16950622, "sport": "football",
+ "tournament": {"id": 17, "name": "Premier League"}, "tier_hint": true,
+ "start_ts": 1789497000, "hours_after_start": 2.1,
+ "changed": {"awayScore.penalties": [6, 5]}, "old_change_ts": 1789504592, "new_change_ts": 1789504600,
+ "status_class": ["completed", "completed"]}
+```
+
+  - `changed` gives the old and new value of each field. `changes` from SofaScore only names the fields, so this file is the first record of *how much* a result changed.
+  - `hours_after_start` is the new `changeTimestamp` minus kick-off.
+  - `tier_hint` is SofaScore's player-statistics coverage flag (tournament or event level). It shows how much SofaScore covers the league, not the league's real level.
+  - If a match that counted as played turns void (`completed` → `void`, e.g. cancelled afterwards), the line carries `"status_regressed": true`. The same flag goes into `observation.json`. The record is **not** deleted; that decision is yours.
+
+```bash
+python main.py --refresh-only                 # re-read provisional records only (e.g. a daily cron)
+python main.py --refresh-only --league-id 17  # one league
+python main.py --refresh-only --refresh-legacy
+```
 
 ## REST API (overview)
 

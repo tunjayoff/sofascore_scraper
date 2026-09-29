@@ -46,6 +46,8 @@ class JobProgress:
         self._context: Dict[str, Any] = {}
         self._failed: List[Dict[str, Any]] = []
         self._failed_count = 0
+        self._refreshed = 0  # yenilenen geçici kayıt (src/refresh.py)
+        self._refresh_changed = 0  # bunlardan SofaScore'da değişmiş olan
         self._details_done = 0
         self._details_total = 0
         self._wait: Optional[Dict[str, Any]] = None
@@ -119,6 +121,13 @@ class JobProgress:
                 self._failed.append(entry)
             self._emit()
 
+    def add_refreshed(self, match_id: str, changed: bool) -> None:
+        """Geçici bir kayıt yeniden okundu; changed: basic değişti (score_changes.jsonl'a yazıldı)."""
+        with self._lock:
+            self._refreshed += 1
+            self._refresh_changed += int(bool(changed))
+            self._emit()
+
     def wait(self, reason: str, seconds: float) -> None:
         """SofaScore geri çekilmesi: kart "{n} sn bekleniyor" gösterir. Daha uzun olan bekleme kazanır."""
         with self._lock:
@@ -169,6 +178,8 @@ class JobProgress:
                 "failed_count": self._failed_count,
                 "failed": list(self._failed),
                 "breaker": self._breaker,
+                "refreshed": self._refreshed,
+                "refresh_changed": self._refresh_changed,
             }
 
     def result(self) -> Dict[str, Any]:
@@ -180,6 +191,8 @@ class JobProgress:
                 "failed_count": self._failed_count,
                 "failed": list(self._failed),
                 "breaker": self._breaker,
+                "refreshed": self._refreshed,
+                "refresh_changed": self._refresh_changed,
             }
 
     def _emit(self, **extra: Any) -> None:

@@ -106,6 +106,9 @@ export type JobDetail = {
   failed: FailedMatch[]
   /** Why detail downloads stopped early: '403', '429', '5xx' or 'other'. */
   breaker: string | null
+  /** Provisional records re-read within the refresh window, and how many had changed on SofaScore. */
+  refreshed?: number
+  refresh_changed?: number
 }
 
 export type ScrapeState = {
@@ -140,6 +143,7 @@ export type JobRow = {
   schedule_empty_seasons?: number
   circuit_breaker_triggered?: boolean
   payload?: FetchPayload | null
+  result?: { refreshed?: number; refresh_changed?: number } | null
 }
 
 export type Settings = {
@@ -161,6 +165,7 @@ export type Settings = {
   max_retries: number
   fetch_only_finished: boolean
   save_empty_rounds: boolean
+  refresh_window_hours: number
   log_level: string
 }
 

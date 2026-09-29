@@ -149,6 +149,7 @@ Tüm anahtarlar `.env.example` içinde. Sık kullanılanlar:
 | `MAX_CONCURRENT` | Paralel detay isteği üst sınırı. |
 | `USE_PROXY` / `PROXY_URL` | İsteğe bağlı proxy. |
 | `FETCH_ONLY_FINISHED` | Yalnız bitmiş maçları tut (`status.type == finished`). Varsayılan `true`. Henüz oynanmamış fikstürler schedule dosyalarına yazılmaz. |
+| `REFRESH_WINDOW_HOURS` | Kaydedilen maçın başlangıçtan kaç saat boyunca geçici sayılıp yeniden okunacağı (varsayılan `72`, `0` = kapalı). Bkz. [Yenileme politikası](#yenileme-politikası). |
 | `RATE_LIMIT_*` / `SERVER_ERROR_*` | Çok hata durumunda devreye giren eşikler. |
 
 Web **Ayarlar** sayfasından birçok değer düzenlenir; kayıt `.env`’i günceller.
@@ -236,6 +237,8 @@ Arka plan işlemleri `GET /api/scrape/status` ve `GET /api/scrape/stream` (SSE) 
 | `--league-id ID` | `--update-all`’ı tek yapılandırılmış lige indir |
 | `--csv-export` | İşlenmiş CSV veri setini üret/aktar |
 | `--ignore-rate-limit` | Circuit breaker’ı kapatır (dikkatli kullanın) |
+| `--refresh-only` | Yalnızca geçici kayıtları yeniden okur (`--headless` gerekmez); bkz. [Yenileme politikası](#yenileme-politikası) |
+| `--refresh-legacy` | `observation.json` öncesi kaydedilmiş maçları da bir kez yeniler |
 
 Örnekler:
 
@@ -263,7 +266,8 @@ data/
 ├── matches/           # Lig ve sezona göre maç / özet CSV
 ├── match_details/     # Maç başına JSON (basic, statistics, …)
 │   └── processed/     # Birleştirilmiş CSV export
-└── datasets/          # Yardımcı / ayrılmış kullanım
+├── datasets/          # Yardımcı / ayrılmış kullanım
+└── score_changes.jsonl  # Yenilemede bulunan bitiş sonrası değişiklikler (bkz. Yenileme politikası)
 ```
 
 Lig adlandırma ve migrasyonlara göre alt yollar biraz farklı olabilir.
@@ -271,6 +275,25 @@ Lig adlandırma ve migrasyonlara göre alt yollar biraz farklı olabilir.
 Maç listesi `matches/` altındaki sezon özetlerinden okunur; `match_details/processed/` içindeki export CSV yalnızca hiç özet yoksa yedek olarak kullanılır.
 
 `config/leagues.txt`’nin (CLI’ın da okuduğu `ad: id` listesi) yanında `config/league_sports.json` her ligin sporunu `{"<id>": "football" | "basketball" | "tennis"}` olarak saklar. Lig web’den eklendiğinde, arayüzde spor seçildiğinde veya o ligin indirilmiş bir maçından doldurulur.
+
+## Yenileme politikası
+
+SofaScore bazı sonuçları maç bittikten sonra da düzenliyor. Araştırma ölçümünde (`docs/status-matrix/README.md`, "Geriye dönük") nihai ya da periyot skoru `finished` sonrasında değişti: alt lig basketbolda 255 maçın 78'inde, alt lig futbolda 240 maçın 6'sında, üst lig basketbolda 145 maçın 4'ünde. En geç nihai skor değişikliği başlangıçtan 66,4 sa sonra geldi. Bu yüzden bir kez indirilen maç, SofaScore'un son hâlinden farklı kalabilir.
+
+- **Kayıt ne zaman yenilenir?** Kaydedilen her maçta `basic.json` yanında bir `observation.json` bulunur. Bu dosya bizim okuduğumuz anı (`observed_at_utc`) ve SofaScore'un `changes.changeTimestamp` değerini tutar. `observed_at_utc < startTimestamp + REFRESH_WINDOW_HOURS` (varsayılan **72**) olduğu sürece kayıt *geçici* sayılır. Geçici kayıtlar sonraki indirmede (web işi, `--update-all` ya da `--refresh-only`) yeniden okunur. Bu sırada yalnızca `/event/{id}` çekilir, istatistik ve kadro çekilmez. Yenilemeler yeni ve eksik maçlardan sonra çalışır, iş kartında da ayrı sayılır ("N yenilendi (M değişti)"). Aynı kayıt en fazla `REFRESH_MIN_INTERVAL_HOURS` (varsayılan 6, ileri düzey `.env` ayarı) saatte bir yeniden okunur; saatlik indirmede aynı maç 72 kez çekilmez. Pencere kapandıktan sonra yapılan bir okumayla kayıt kesinleşir ve bir daha çekilmez.
+- **Eski kayıtlar.** Bu özellikten önce kaydedilen maçlarda `observation.json` yok. Bunlar kesin sayılır, yani varsayılan ayar mevcut veri için **hiç** ek istek yapmaz. `--refresh-legacy` bu kayıtların her birini bir kez yeniden okur.
+- **Kapatma.** `REFRESH_WINDOW_HOURS=0` (`.env` ya da **Ayarlar**).
+- **Değişiklik kaydı.** Status üçlüsü, `winnerCode`, `homeScore`/`awayScore` alt alanlarından biri ya da `startTimestamp` farklıysa `basic.json` üzerine yazılır. Ayrıca `DATA_DIR/score_changes.jsonl` dosyasına (git'e girmez) bir satır eklenir. Satır biçimi için İngilizce README'deki örneğe bakın.
+  - `changed`: her alanın eski ve yeni değeri. SofaScore'un `changes` alanı yalnızca değişen alanın adını verir; skorun *ne kadar* değiştiği ilk kez bu dosyada kayda geçer.
+  - `hours_after_start`: yeni `changeTimestamp` eksi başlangıç.
+  - `tier_hint`: SofaScore'un oyuncu istatistiği kapsam bayrağı. Ligin gerçek seviyesini değil, SofaScore'un kapsam seviyesini gösterir.
+  - Oynanmış sayılan bir maç sonradan iptale dönerse (`completed` → `void`) satıra `"status_regressed": true` yazılır. Aynı işaret `observation.json`'a da konur. Kayıt **silinmez**; silme kararı kullanıcınındır.
+
+```bash
+python main.py --refresh-only                 # yalnızca geçici kayıtları yenile (ör. günlük cron)
+python main.py --refresh-only --league-id 17  # tek lig
+python main.py --refresh-only --refresh-legacy
+```
 
 ## REST API (özet)
 
