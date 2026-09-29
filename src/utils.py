@@ -482,46 +482,6 @@ def ensure_directory(directory_path: Union[str, Path]) -> bool:
 
 
 
-class AdaptiveRateLimiter:
-    """Başarı/başarısızlık oranına göre dinamik bekleme süresi ayarlar."""
-
-    def __init__(self, base_delay: float = 1.0, max_delay: float = 30.0):
-        self.base_delay = base_delay
-        self.max_delay = max_delay
-        self.current_delay = base_delay
-        self.consecutive_success = 0
-        self.consecutive_fail = 0
-
-    def success(self) -> None:
-        self.consecutive_success += 1
-        self.consecutive_fail = 0
-        # 5 ardışık başarıdan sonra hafifçe hızlan
-        if self.consecutive_success > 5:
-            self.current_delay = max(self.base_delay, self.current_delay * 0.85)
-
-    def failure(self, status_code: int) -> None:
-        self.consecutive_fail += 1
-        self.consecutive_success = 0
-        if status_code == 429:
-            self.current_delay = min(self.max_delay, self.current_delay * 3)
-        elif status_code == 403:
-            self.current_delay = min(self.max_delay, self.current_delay * 2)
-        else:
-            self.current_delay = min(self.max_delay, self.current_delay * 1.5)
-
-    def get_delay(self) -> float:
-        return self.current_delay + random.uniform(0, self.current_delay * 0.3)
-
-
-# Modül düzeyinde paylaşılan adaptive rate limiter
-_adaptive_limiter = AdaptiveRateLimiter()
-
-
-def get_adaptive_limiter() -> AdaptiveRateLimiter:
-    """Paylaşılan AdaptiveRateLimiter instance'ını döndürür."""
-    return _adaptive_limiter
-
-
 async def _warmup_session(session: AsyncSession) -> None:
     """
     Ana sayfaya GET yaparak Cloudflare cookie'lerini toplar.

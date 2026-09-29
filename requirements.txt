@@ -1,26 +1,22 @@
-# HTTP istekleri
-requests>=2.31.0
-aiohttp>=3.9.1
-curl_cffi>=0.11.4
+# HTTP istekleri (Cloudflare TLS parmak izi taklidi)
+curl_cffi>=0.11.4,<1
 
 # Tarayıcı ve Challenge Bypass (Cloudflare Turnstile & Varnish)
-playwright>=1.40.0
-playwright-stealth>=1.0.6
+playwright>=1.40.0,<2
 
 # Veri işleme
-pandas>=2.1.0
+pandas>=2.1.0,<4
 
 # Terminal UI
-colorama>=0.4.6
-tqdm>=4.66.1
-rich>=13.0.0
+colorama>=0.4.6,<1
+tqdm>=4.66.1,<5
+rich>=13.0.0,<16
 
 # Konfigürasyon
-python-dotenv>=1.0.0
+python-dotenv>=1.0.0,<2
 
 # Web arayüzü
-fastapi>=0.109.0
-uvicorn>=0.27.0
-python-multipart>=0.0.9
-jinja2>=3.1.3
-sse-starlette>=1.6.0
+fastapi>=0.109.0,<1
+pydantic>=2.5,<3
+uvicorn>=0.27.0,<1
+sse-starlette>=1.6.0,<4

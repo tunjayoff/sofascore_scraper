@@ -201,7 +201,7 @@ class MatchMenuHandler:
                 print(self.i18n.t("matches_downloaded", league=league_name, season="selected seasons", total=total_matches, finished=total_matches))
                     
             except ValueError:
-                print(self.i18n.t("invalid_number_format_error"))
+                print(self.i18n.t("invalid_number_format"))
                 
         except Exception as e:
             logger.error(f"Error fetching matches: {str(e)}")

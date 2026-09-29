@@ -8,7 +8,6 @@ import csv
 import json
 import logging
 import asyncio
-import aiohttp
 from typing import Dict, List, Optional, Any, Tuple
 from pathlib import Path
 import datetime
@@ -82,97 +81,7 @@ class SeasonFetcher:
         logger.info(f"{league_name} için {len(seasons)} sezon bulundu")
         return seasons
     
-    async def _fetch_league_seasons_async(self, session, league_id):
-        """Bir lig için sezon verilerini asenkron olarak çeker."""
-        league_name = self.config_manager.get_leagues().get(league_id, f"Bilinmeyen Lig {league_id}")
-        logger.info(f"{league_name} (ID: {league_id}) için sezonlar asenkron olarak çekiliyor...")
-        
-        url = f"{self.base_url}/unique-tournament/{league_id}/seasons"
-        
-        try:
-            data = await make_api_request_async(session, url)
-            
-            if not data or "seasons" not in data:
-                logger.error(f"{league_name} için sezon verileri çekilemedi")
-                return None
-            
-            seasons = data.get("seasons", [])
-            
-            # Sezon verilerini kaydet
-            self._save_seasons_json(league_id, data)
-            
-            # Sezon verilerini global sözlüğe kaydet
-            self.league_seasons[league_id] = seasons
-            
-            logger.info(f"{league_name} için {len(seasons)} sezon bulundu")
-            return league_id, seasons
-        except Exception as e:
-            logger.error(f"Lig {league_id} için asenkron sezon çekme hatası: {str(e)}")
-            return None
-    
-    async def fetch_seasons_batch_async(self, league_ids, max_concurrent=10):
-        """Birden çok lig için sezon verilerini paralel olarak çeker."""
-        from src.utils import create_session_async
-        
-        results = {}
-        
-        # İlerleme çubuğu
-        try:
-            from tqdm.asyncio import tqdm as async_tqdm
-            use_tqdm = True
-        except ImportError:
-            use_tqdm = False
-            print(get_i18n().t('install_tqdm_for_progress'))
-        
-        # curl_cffi AsyncSession kullanımı
-        async with create_session_async() as session:
-            tasks = []
-            for league_id in league_ids:
-                tasks.append(self._fetch_league_seasons_async(session, league_id))
-            
-            if use_tqdm:
-                for task in async_tqdm.as_completed(tasks, total=len(tasks)):
-                    result = await task
-                    if result:
-                        league_id, seasons = result
-                        results[league_id] = seasons
-            else:
-                completed_tasks = await asyncio.gather(*tasks)
-                for result in completed_tasks:
-                    if result and isinstance(result, tuple):
-                        league_id, seasons = result
-                        results[league_id] = seasons
-        
-        return results
-    
     # Senkron wrapper
-    def fetch_seasons_batch(self, league_ids, max_concurrent=10):
-        """Paralel istekler için senkron wrapper."""
-        return asyncio.run(self.fetch_seasons_batch_async(league_ids, max_concurrent))
-    
-    def fetch_all_leagues_seasons(self) -> Dict[int, List[Dict[str, Any]]]:
-        """
-        Tüm ligler için sezon bilgilerini çeker ve CSV dosyası olarak kaydeder.
-        
-        Returns:
-            Dict[int, List[Dict[str, Any]]]: Lig ID'leri ve sezon listeleri içeren sözlük
-        """
-        leagues = self.config_manager.get_leagues()
-        
-        if not leagues:
-            logger.warning("Yapılandırılmış lig bulunamadı. Önce ligler ekleyin.")
-            return {}
-        
-        # Tüm liglerin sezon verilerini çek
-        league_ids = list(leagues.keys())
-        results = self.fetch_seasons_batch(league_ids)
-        
-        # Sonuçları CSV dosyasına kaydet
-        self._save_seasons_csv()
-        
-        logger.info(f"Toplam {len(leagues)} lig için sezon verileri çekildi")
-        return self.league_seasons
-    
     def get_current_season_id(self, league_id) -> int:
         """
         Belirli bir lig için en güncel sezon ID'sini döndürür.
@@ -463,34 +372,6 @@ class SeasonFetcher:
             logger.info(f"Sezon verileri JSON olarak kaydedildi: {file_path}")
         except Exception as e:
             logger.error(f"JSON dosyası kaydedilirken hata: {str(e)}")
-    
-    def _save_seasons_csv(self):
-        """Tüm lig ve sezon bilgilerini CSV formatında kaydeder."""
-        file_path = os.path.join(self.data_dir, "league_seasons.csv")
-        
-        try:
-            with open(file_path, 'w', encoding='utf-8', newline='') as f:
-                fieldnames = ["Liga Adı", "Lig ID", "Sezon ID", "Sezon Adı", "Sezon Yılı"]
-                writer = csv.DictWriter(f, fieldnames=fieldnames)
-                writer.writeheader()
-                
-                leagues = self.config_manager.get_leagues()
-                
-                for league_id, seasons in self.league_seasons.items():
-                    league_name = leagues.get(league_id, f"Bilinmeyen Lig {league_id}")
-                    
-                    for season in seasons:
-                        writer.writerow({
-                            "Liga Adı": league_name,
-                            "Lig ID": league_id,
-                            "Sezon ID": season.get("id", ""),
-                            "Sezon Adı": season.get("name", ""),
-                            "Sezon Yılı": season.get("year", "")
-                        })
-            
-            logger.info(f"Tüm ligler için sezon verileri CSV olarak kaydedildi: {file_path}")
-        except Exception as e:
-            logger.error(f"CSV dosyası kaydedilirken hata: {str(e)}")
     
     def _get_sortable_year_value(self, year_str: str) -> float:
         """

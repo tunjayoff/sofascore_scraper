@@ -110,7 +110,6 @@ venv.bak/
 *.sqlite
 /data/
 /logs/
-src/web/static/backups/
 # Kullanıcıya ait canlı config — şablon: config/leagues.example.txt
 /config/leagues.txt
 /config/league_sports.json
