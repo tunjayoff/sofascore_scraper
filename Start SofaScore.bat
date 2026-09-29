@@ -1,6 +1,6 @@
 @echo off
 REM Double-click to start SofaScore Scraper (Windows)
-cd /d "%~dp0.."
+cd /d "%~dp0"
 title SofaScore Scraper
 where py >nul 2>nul && (
   py -3 scripts\start_web.py

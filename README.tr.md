@@ -1,5 +1,7 @@
 # SofaScore Scraper
 
+[![CI](https://github.com/tunjayoff/sofascore_scraper/actions/workflows/ci.yml/badge.svg)](https://github.com/tunjayoff/sofascore_scraper/actions/workflows/ci.yml)
+
 **English:** [README.md](README.md)
 
 SofaScore’un herkese açık HTTP API’lerinden futbol, basketbol ve tenis maç verisi indiren, yerelde (JSON ve CSV) saklayan ve **web** veya **terminal** arayüzüyle sunan Python uygulaması.
@@ -43,6 +45,13 @@ chmod +x scripts/install.sh   # bir kez
 curl -fsSL https://raw.githubusercontent.com/tunjayoff/sofascore_scraper/main/scripts/install.sh | bash
 ```
 
+Betiği çalıştırmadan önce okumak isterseniz önce indirin:
+
+```bash
+curl -fsSLo install.sh https://raw.githubusercontent.com/tunjayoff/sofascore_scraper/main/scripts/install.sh
+less install.sh && bash install.sh
+```
+
 - İsteğe bağlı **ilk argüman** (URL değilse): hedef klasör adı (varsayılan `sofascore_scraper`); veya `SOFASCORE_SCRAPER_DIR`.
 - Başka bir çatalla varsayılan kaynak: `export SOFASCORE_SCRAPER_REPO=https://github.com/SIZ/fork.git` ardından yukarıdaki `curl | bash`, veya tam git URL’sini `bash -s` ile verin:  
   `curl ... | bash -s -- https://github.com/SIZ/fork.git [klasör]`
@@ -79,6 +88,7 @@ cd sofascore_scraper
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+python -m playwright install chromium   # yalnızca Google Chrome kurulu değilse gerekir
 ```
 
 Örnek ortam dosyasını kopyalayıp düzenleyin:
@@ -106,7 +116,7 @@ Web **Ayarlar** sayfasından birçok değer düzenlenir; kayıt `.env`’i günc
 
 ### Lig listesi (`config/leagues.txt`)
 
-Her satırda SofaScore **unique tournament** sayısal ID’si ve görünen ad (uygulama bu formatı yönetir). ID, SofaScore turnuva URL’sinde yer alır (ör. `.../premier-league/17` → `17`).
+Her satır `Ad: ID` biçimindedir; ID, SofaScore **unique tournament** sayısal ID’sidir (turnuva URL’sinde yer alır, ör. `.../premier-league/17` → `17`). Dosya size aittir ve git’te takip edilmez: ilk çalıştırmada `config/leagues.example.txt`’den oluşturulur. Web uygulamasında veya CLI’da lig ekleyip kaldırdığınızda satırları uygulama kendisi günceller.
 
 CLI ile özel yol:
 
@@ -279,14 +289,15 @@ npm run build    # tip kontrolü (vue-tsc) + frontend/dist/ içine üretim derle
 
 Yapı: `src/views/` her sayfa bir dosya, `src/components/` ortak parçalar, `src/stores/` (ligler, spor filtresi, çalışan iş), `src/api/client.ts` bütün backend çağrıları, `src/locales/{tr,en}.ts` bütün arayüz metinleri.
 
-Testler (ağa çıkmaz, `data/` klasörünüze yazmaz):
+Testler ve lint (CI aynısını Python 3.10 ve 3.14’te çalıştırır):
 
 ```bash
-python -m pytest tests --ignore=tests/live_smoke_test.py --ignore=tests/test_live_api_bypass.py \
-  --ignore=tests/test_browser_bridge.py --ignore=tests/test_delivery_api.py --ignore=tests/test_web_api_smoke.py
+pip install pytest pytest-asyncio httpx ruff
+ruff check .
+python -m pytest -q
 ```
 
-Hariç tutulan dosyalar SofaScore’la ya da bir tarayıcıyla konuşur veya gerçek `DATA_DIR` ve iş veritabanınızı okuyup yazar.
+`tests/conftest.py`, `DATA_DIR`, `config/` ve `.env`’i küçük sentetik bir veri setiyle geçici bir klasöre yönlendirir; testler verinize ve ayarlarınıza hiç dokunmaz. SofaScore’a istek atan testler `live` olarak işaretlidir ve varsayılan olarak atlanır; çalıştırmak için `python -m pytest -m live`.
 
 ## Katkıda bulunma
 

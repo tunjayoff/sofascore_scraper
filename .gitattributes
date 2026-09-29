@@ -1,0 +1,10 @@
+* text=auto
+
+# Windows betikleri CRLF ister (cmd'nin goto/label ayrıştırması LF ile bozulabilir)
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Unix betikleri LF olmalı (CRLF shebang'i bozar)
+*.sh text eol=lf
+*.command text eol=lf
+*.desktop text eol=lf

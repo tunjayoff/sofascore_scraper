@@ -111,6 +111,11 @@ if ! pip install -r requirements.txt; then
   exit 1
 fi
 
+echo "→ Tarayıcı bileşeni (Playwright Chromium) yükleniyor…"
+if ! python -m playwright install chromium; then
+  echo "Uyarı: playwright install chromium başarısız. Kurulu Google Chrome varsa yine çalışır." >&2
+fi
+
 if [[ ! -f ".env" ]] && [[ -f ".env.example" ]]; then
   echo "→ .env.example → .env kopyalandı (düzenleyebilirsiniz)."
   cp .env.example .env
@@ -118,6 +123,7 @@ fi
 
 echo ""
 echo "Kurulum tamam."
-echo "  Web arayüzü:  cd \"$ROOT\" && source .venv/bin/activate && python main.py --web  → http://127.0.0.1:8000"
+echo "  Web arayüzü:  cd \"$ROOT\" && ./start-sofascore.sh  → http://127.0.0.1:8000"
+echo "                (ilk çalıştırmada web arayüzü derlenir; Node.js 20+ gerekir)"
 echo "  TUI:          cd \"$ROOT\" && source .venv/bin/activate && python main.py"
 echo ""

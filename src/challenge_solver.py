@@ -174,16 +174,22 @@ class BrowserBridge:
             "ignore_default_args": ["--enable-automation"],
             "no_viewport": True,
         }
-        if chrome_path:
-            launch_kwargs["executable_path"] = chrome_path
-        else:
-            launch_kwargs["channel"] = "chrome"
         proxy = _proxy_settings()
         if proxy:
             launch_kwargs["proxy"] = proxy
 
         logger.info(f"Chrome oturumu başlatılıyor (headless={headless})...")
-        self.context = await self.pw.chromium.launch_persistent_context(**launch_kwargs)
+        if chrome_path:
+            launch_kwargs["executable_path"] = chrome_path
+            self.context = await self.pw.chromium.launch_persistent_context(**launch_kwargs)
+        else:
+            # Kurulu Google Chrome (Playwright standart konumlarda arar); yoksa
+            # `playwright install chromium` ile gelen Chromium
+            try:
+                self.context = await self.pw.chromium.launch_persistent_context(channel="chrome", **launch_kwargs)
+            except Exception as e:
+                logger.info(f"Google Chrome başlatılamadı ({e.__class__.__name__}); Playwright Chromium deneniyor")
+                self.context = await self.pw.chromium.launch_persistent_context(**launch_kwargs)
         self.page = self.context.pages[0] if self.context.pages else await self.context.new_page()
 
         try:

@@ -1,4 +1,4 @@
-# SofaScore Scraper — kurulum (Windows PowerShell 5.1+ / PowerShell 7+)
+﻿# SofaScore Scraper — kurulum (Windows PowerShell 5.1+ / PowerShell 7+)
 #
 # Resmi depo: https://github.com/tunjayoff/sofascore_scraper
 # Klonlu klasörde: .\scripts\install.ps1
@@ -33,7 +33,8 @@ function Assert-Git {
 }
 
 function Get-PythonCmd {
-    foreach ($name in @("python", "python3", "py")) {
+    # py (Python Launcher) önce: "python" Microsoft Store yönlendirme kısayolu olabilir
+    foreach ($name in @("py", "python", "python3")) {
         $cmd = Get-Command $name -ErrorAction SilentlyContinue
         if ($null -ne $cmd) {
             if ($name -eq "py") {
@@ -46,8 +47,9 @@ function Get-PythonCmd {
 }
 
 function Test-Python310 {
-    param($Exe, $Args)
-    & $Exe @Args -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)" 2>$null
+    # $Args PowerShell'in otomatik değişkeni: parametre adı olarak kullanılamaz
+    param($Exe, $PyArgs)
+    & $Exe @PyArgs -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)" 2>$null
     return $LASTEXITCODE -eq 0
 }
 
@@ -83,7 +85,7 @@ if (-not $py) {
     throw "Python bulunamadı. Python 3.10+ kurun: https://www.python.org/downloads/ — kurulumda 'Add python.exe to PATH' seçin."
 }
 
-if (-not (Test-Python310 -Exe $py.Exe -Args $py.Args)) {
+if (-not (Test-Python310 -Exe $py.Exe -PyArgs $py.Args)) {
     throw "Python 3.10+ gerekli. Seçilen: $($py.Exe) $($py.Args -join ' ') — `py -0` ile kurulu sürümleri görebilirsiniz."
 }
 
@@ -116,6 +118,12 @@ if ($LASTEXITCODE -ne 0) {
     throw "pip install -r requirements.txt başarısız — üstteki hata satırlarına bakın (bazı paketler için Visual C++ Build Tools gerekebilir)."
 }
 
+Write-Host "→ Tarayıcı bileşeni (Playwright Chromium) yükleniyor…"
+& $venvPy -m playwright install chromium
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Uyarı: playwright install chromium başarısız. Kurulu Google Chrome varsa yine çalışır." -ForegroundColor Yellow
+}
+
 $envFile = Join-Path $root ".env"
 $envEx = Join-Path $root ".env.example"
 if (-not (Test-Path $envFile) -and (Test-Path $envEx)) {
@@ -125,6 +133,7 @@ if (-not (Test-Path $envFile) -and (Test-Path $envEx)) {
 
 Write-Host ""
 Write-Host "Kurulum tamam." -ForegroundColor Green
-Write-Host "  Web:  cd `"$root`" ; .\.venv\Scripts\python.exe main.py --web  → http://127.0.0.1:8000"
+Write-Host "  Web:  cd `"$root`" ; .\.venv\Scripts\python.exe scripts\start_web.py  → http://127.0.0.1:8000"
+Write-Host "        (ilk çalıştırmada web arayüzü derlenir; Node.js 20+ gerekir)"
 Write-Host "  TUI:  cd `"$root`" ; .\.venv\Scripts\python.exe main.py"
 Write-Host ""

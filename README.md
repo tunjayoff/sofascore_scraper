@@ -1,5 +1,7 @@
 # SofaScore Scraper
 
+[![CI](https://github.com/tunjayoff/sofascore_scraper/actions/workflows/ci.yml/badge.svg)](https://github.com/tunjayoff/sofascore_scraper/actions/workflows/ci.yml)
+
 **Türkçe:** [README.tr.md](README.tr.md)
 
 Python tool to download football, basketball and tennis match data from [SofaScore](https://www.sofascore.com/) public HTTP APIs, store it locally (JSON and CSV), and browse it through a web app or a terminal UI.
@@ -45,6 +47,13 @@ chmod +x scripts/install.sh   # once
 curl -fsSL https://raw.githubusercontent.com/tunjayoff/sofascore_scraper/main/scripts/install.sh | bash
 ```
 
+Prefer to read a script before running it? Download it first:
+
+```bash
+curl -fsSLo install.sh https://raw.githubusercontent.com/tunjayoff/sofascore_scraper/main/scripts/install.sh
+less install.sh && bash install.sh
+```
+
 - Optional **first argument**: target folder name (default `sofascore_scraper`), or set `SOFASCORE_SCRAPER_DIR`.
 - To use another fork as default clone source: `export SOFASCORE_SCRAPER_REPO=https://github.com/YOU/fork.git` before `curl | bash`, or pass a **full git URL** as the first argument to `bash -s`:  
   `curl ... | bash -s -- https://github.com/YOU/fork.git [folder]`
@@ -81,6 +90,7 @@ cd sofascore_scraper
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+python -m playwright install chromium   # only needed if Google Chrome isn't installed
 ```
 
 Copy environment defaults and adjust:
@@ -108,7 +118,7 @@ Tuning for the web UI (timeouts, retries, logging) is exposed under **Settings**
 
 ### Leagues (`config/leagues.txt`)
 
-One line per league: numeric SofaScore **unique tournament ID** and a display name (format created/maintained by the app). The ID appears in SofaScore tournament URLs (e.g. `.../premier-league/17` → `17`).
+One line per league, `Name: ID`, where ID is the numeric SofaScore **unique tournament ID** (it appears in tournament URLs, e.g. `.../premier-league/17` → `17`). The file is yours and is not tracked by git: on first run it is created from `config/leagues.example.txt`. The app adds and removes lines itself when you manage leagues in the web app or the CLI.
 
 CLI override:
 
@@ -281,14 +291,15 @@ npm run build    # type-check (vue-tsc) + production build into frontend/dist/
 
 Layout: `src/views/` one file per page, `src/components/` shared pieces, `src/stores/` (leagues, sport filter, running job), `src/api/client.ts` every backend call, `src/locales/{tr,en}.ts` all UI text.
 
-Tests (no network, no writes to your `data/`):
+Tests and lint (CI runs the same on Python 3.10 and 3.14):
 
 ```bash
-python -m pytest tests --ignore=tests/live_smoke_test.py --ignore=tests/test_live_api_bypass.py \
-  --ignore=tests/test_browser_bridge.py --ignore=tests/test_delivery_api.py --ignore=tests/test_web_api_smoke.py
+pip install pytest pytest-asyncio httpx ruff
+ruff check .
+python -m pytest -q
 ```
 
-The excluded files talk to SofaScore or a browser, or read and write your real `DATA_DIR` and job database.
+`tests/conftest.py` points `DATA_DIR`, `config/` and `.env` at a temporary folder with a small synthetic data set, so the suite never touches your data or settings. Tests that call SofaScore are marked `live` and skipped by default; run them with `python -m pytest -m live`.
 
 ## Contributing
 
