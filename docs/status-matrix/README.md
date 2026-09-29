@@ -180,7 +180,7 @@ kaydedilen `A_inprogress-*` dosyalarıdır ve tabloda onlara referans verilir.
 | T5 | Canlı tie-break | Canlı liste yanıtında `period{n}TieBreak` alanı görüldü (14 maç, tarama indeksi); ham `/event` örneği maç bittikten sonra alındı: `tennis/T5_live_tiebreak__17201991.json` (`period3TieBreak=9-6`) |
 | T6 | Askıya alınmış / ertesi güne kalmış | `tennis/B9_suspended__17208583.json` (`suspended/81`, çiftler) — aynı id ile `startTimestamp` ertesi güne taşındı (B13). `tennis/T6_suspended__17201545.json`: `interrupted/80` |
 | T7 | Çiftler | `tennis/T7_doubles__17207542.json`: `homeTeam.subTeams` dolu; status davranışı teklerle aynı |
-| T8 | Maç tie-break (10 puan) | `tennis/T8_match_tiebreak__17078471.json`: 3. set `period3=10-4` olarak (oyun değil puan), `current=2-1` |
+| T8 | Maç tie-break (10 puan) | `tennis/T8_match_tiebreak__17078471.json`: 3. set `period3=10-4` olarak (oyun değil puan), `current=2-1`. Ayrı bir alan yok; `src/status.py` bunu **sezgisel** olarak tanır: 3. ya da 5. setin (son oynanan set) değeri ≥ 10 ise match tie-break (normal set en çok 7). Tie-break'siz uzun set formatında (ör. 10-8) yanlış sonuç verir. Fixture'larda işaretlenen: T8 ×2, T5 ×2 |
 | T9 | Challenger / ITF / UTR | `tennis/T9_challenger_itf__17208186.json`. Taranan Challenger/ITF/UTR maçlarında görülen ama ana turda (ATP, WTA, Grand Slam, WTA 125) görülmeyen üçlüler: `inprogress/20 Started`, `interrupted/80`, `suspended/81`. Ana turda görülen her üçlü Challenger/ITF/UTR'de de görüldü (taranan 16 UTR maçı yalnızca `inprogress` 8/9/10) |
 | T10 | Bye | **Bulunamadı.** Yöntem: 2.212 tenis maçında takım adında "bye" arandı; yok |
 

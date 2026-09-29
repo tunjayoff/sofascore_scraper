@@ -20,6 +20,7 @@ from src.config_manager import ConfigManager
 from src.fsutil import atomic_write_json
 from src.utils import make_api_request, ensure_directory
 from src.match_fetcher import MatchFetcher
+from src.status import OBSERVATION_KEY, observation_record
 
 from src.logger import get_logger
 
@@ -152,7 +153,7 @@ class MatchDataFetcher:
                 logger.debug(f"Maç ID {match_id} henüz bitmemiş (Durum: {status_desc}), atlanıyor.")
                 return None
 
-            match_data = {"basic": basic_data}
+            match_data = {"basic": basic_data, OBSERVATION_KEY: observation_record(basic_data)}
 
             # Spor türüne uygun endpoint'leri çağır (Futbol, Basketbol, Tenis)
             tasks = [
@@ -452,6 +453,10 @@ class MatchDataFetcher:
                 if os.path.exists(c_path):
                     with open(c_path, "r", encoding="utf-8") as f:
                         result[component] = json.load(f)
+            obs_path = os.path.join(match_dir, f"{OBSERVATION_KEY}.json")  # isteğe bağlı; eski kayıtlarda yok
+            if os.path.exists(obs_path):
+                with open(obs_path, "r", encoding="utf-8") as f:
+                    result[OBSERVATION_KEY] = json.load(f)
         except Exception as e:
             logger.warning(f"Maç {mid} dizininden yüklenirken hata: {e}")
         return result
@@ -601,6 +606,7 @@ class MatchDataFetcher:
             return None
 
         match_data["basic"] = basic_live
+        match_data[OBSERVATION_KEY] = observation_record(basic_live)
         missing = [
             k for k in self._expected_slices(match_dir) if not self.match_detail_slice_present(k, match_data)
         ]
@@ -648,6 +654,7 @@ class MatchDataFetcher:
         # Diğer verileri çek
         match_data = {
             "basic": basic_data,
+            OBSERVATION_KEY: observation_record(basic_data),
             "statistics": None,
             "team_streaks": None,
             "pregame_form": None,

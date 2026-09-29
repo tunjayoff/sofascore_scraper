@@ -16,6 +16,7 @@ from src.exceptions import ResourceNotFoundError
 
 from src.config_manager import ConfigManager
 from src.season_fetcher import SeasonFetcher
+from src.status import StatusClass, classify_status
 # İstek fonksiyonu ve FETCH_ONLY_FINISHED fonksiyon içinde import edilir: çağrı anındaki değer okunur (testler patch eder)
 from src.utils import ensure_directory
 from src.fsutil import atomic_write_json, atomic_write_text
@@ -60,14 +61,8 @@ class MatchFetcher:
 
     @staticmethod
     def _is_finished_event(event: Dict[str, Any]) -> bool:
-        """SofaScore finished: type/code matter more than description (AET/AP/Ended)."""
-        status = event.get("status") or {}
-        if status.get("type") == "finished":
-            return True
-        if status.get("code") == 100:
-            return True
-        desc = str(status.get("description") or "").lower()
-        return desc in ("ended", "aet", "after extra time", "ap", "penalties")
+        """SofaScore type finished: oynanıp biten maçlar ve hükmen/çekilme (src/status.py)."""
+        return classify_status(event) in (StatusClass.COMPLETED, StatusClass.DECIDED_WITHOUT_PLAY)
 
     @staticmethod
     def _parse_season_start_year(season_name: str, season_info: Optional[Dict[str, Any]] = None) -> Optional[int]:
