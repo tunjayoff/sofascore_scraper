@@ -241,6 +241,7 @@ At least one of `--update-all` or `--csv-export` is required with `--headless`. 
 | `--ignore-rate-limit` | Disable circuit breaker (use with care) |
 | `--refresh-only` | Only re-read provisional records (no `--headless` needed); see [Refresh policy](#refresh-policy) |
 | `--refresh-legacy` | Also refresh records saved before `observation.json` existed, once |
+| `--watch` | Live watcher with `--sport` and `--league-ids` or `--event-ids` (`--watch-hours` optional); see [Watch mode](#watch-mode) |
 
 Examples:
 
@@ -305,6 +306,34 @@ python main.py --refresh-only                 # re-read provisional records only
 python main.py --refresh-only --league-id 17  # one league
 python main.py --refresh-only --refresh-legacy
 ```
+
+## Watch mode
+
+`python main.py --watch` follows live matches and writes **events**; it does not settle anything. A consumer (a separate service, the web UI, or you with `tail -f`) decides what to do with them.
+
+```bash
+python main.py --watch --sport football --league-ids 17,8     # every live match of these leagues
+python main.py --watch --sport tennis --event-ids 17196038,17210464 --watch-hours 3
+```
+
+- **How it polls.** Every 30 s one request to `/sport/{sport}/events/live`, plus `/event/{id}`:
+  - immediately when a tracked live match drops out of the live list (the earliest end signal);
+  - every 30 s while a match is near its end;
+  - every 5 min for a stuck match.
+- **Near the end:**
+  - football: 2nd half from minute 80 or once `injuryTime2` appears;
+  - basketball: `played ≥ 90%` of regulation, or the last period when there is no clock data;
+  - tennis: the deciding set.
+- **Rate budget.** At most `WATCH_MAX_EVENT_POLLS` (default 20) match pages per round, requests at least 1 s apart. That is under 1 request/s in total. If more matches are near the end than that, match pages drop to every 60 s and a warning is logged.
+- **Stuck match.** Still live or not started 4 h after kick-off: one `stuck` event, then polled every 5 min. If it turns void and its start time has moved (suspended tennis continues the next day with the same id), it stays tracked.
+- **Events.** One JSON line per event in `DATA_DIR/watch_events.jsonl`:
+  - `status_changed` `{event_id, from, to, at_utc, change_ts, scores}`. `scores` comes from `extract_scores`. The first `completed` carries `provisional: true` until the refresh window closes; see [Refresh policy](#refresh-policy).
+  - `score_changed` for live scores `{event_id, from, to, at_utc}`.
+  - `stuck`.
+- **Restarts.** The last known class per match is kept in `DATA_DIR/watch_state.json`, so a restart does not emit the same transition twice. Ctrl+C stops cleanly.
+- **When it exits.** With `--event-ids`, the watcher exits when every tracked match is over.
+
+Why these numbers: `events/live` is cached for 5 s at the CDN, and whistle → `finished` took a median of 20 s (max 302 s) in the research (`docs/status-matrix/README.md`). Polling faster than 30 s gains nothing.
 
 ## REST API (overview)
 

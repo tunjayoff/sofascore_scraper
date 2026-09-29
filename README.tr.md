@@ -239,6 +239,7 @@ Arka plan işlemleri `GET /api/scrape/status` ve `GET /api/scrape/stream` (SSE) 
 | `--ignore-rate-limit` | Circuit breaker’ı kapatır (dikkatli kullanın) |
 | `--refresh-only` | Yalnızca geçici kayıtları yeniden okur (`--headless` gerekmez); bkz. [Yenileme politikası](#yenileme-politikası) |
 | `--refresh-legacy` | `observation.json` öncesi kaydedilmiş maçları da bir kez yeniler |
+| `--watch` | Canlı izleyici: `--sport` ve `--league-ids` ya da `--event-ids` (isteğe bağlı `--watch-hours`); bkz. [İzleme modu](#izleme-modu) |
 
 Örnekler:
 
@@ -294,6 +295,34 @@ python main.py --refresh-only                 # yalnızca geçici kayıtları ye
 python main.py --refresh-only --league-id 17  # tek lig
 python main.py --refresh-only --refresh-legacy
 ```
+
+## İzleme modu
+
+`python main.py --watch` canlı maçları takip edip **olay** üretir; hiçbir sonucu sonuçlandırmaz. Olaylarla ne yapılacağına tüketici karar verir: ayrı bir servis, web arayüzü ya da `tail -f` ile siz.
+
+```bash
+python main.py --watch --sport football --league-ids 17,8     # bu liglerin tüm canlı maçları
+python main.py --watch --sport tennis --event-ids 17196038,17210464 --watch-hours 3
+```
+
+- **Nasıl sorgular?** 30 sn'de bir `/sport/{sport}/events/live` (tek istek) çekilir. `/event/{id}` ise şu durumlarda çekilir:
+  - izlenen canlı maç listeden düşünce hemen (bitişin en erken sinyali);
+  - bitişe yakın maçta 30 sn'de bir;
+  - takılı maçta 5 dk'da bir.
+- **Bitişe yakın:**
+  - futbol: 2. yarıda 80. dk ya da `injuryTime2` görülünce;
+  - basketbol: normal sürenin `%90`'ı oynanınca, saat verisi yoksa son periyotta;
+  - tenis: son sette.
+- **Hız bütçesi.** Turda en fazla `WATCH_MAX_EVENT_POLLS` (varsayılan 20) maç sayfası çekilir, istekler arasında en az 1 sn bırakılır; toplam 1 istek/sn'nin altında kalır. Daha çok maç bitişe yakınsa maç sayfası aralığı 60 sn'ye iner ve uyarı loglanır.
+- **Takılı maç.** Başlangıçtan 4 sa sonra hâlâ canlı ya da başlamamış maç için bir kez `stuck` olayı üretilir, sonra 5 dk'da bir okunur. İptale dönüp başlangıç saati ileri alınmışsa izlemede kalır (askıya alınan tenis maçı aynı id ile ertesi güne taşınabiliyor).
+- **Olaylar.** `DATA_DIR/watch_events.jsonl` dosyasına satır başına bir JSON yazılır:
+  - `status_changed` `{event_id, from, to, at_utc, change_ts, scores}`. `scores` `extract_scores` çıktısıdır. İlk `completed` olayı, yenileme penceresi kapanana kadar `provisional: true` taşır; bkz. [Yenileme politikası](#yenileme-politikası).
+  - `score_changed` canlı skor içindir `{event_id, from, to, at_utc}`.
+  - `stuck`.
+- **Yeniden başlatma.** Her maçın son bilinen sınıfı `DATA_DIR/watch_state.json`'da tutulur; yeniden başlatmada aynı geçiş iki kez olay olmaz. Ctrl+C temiz kapatır.
+- **Ne zaman durur?** `--event-ids` ile izlenen maçların hepsi bitince izleyici kapanır.
+
+Neden bu sayılar: `events/live` CDN'de 5 sn önbellekte kalıyor; araştırmada düdük → `finished` medyan 20 sn, en fazla 302 sn sürdü (`docs/status-matrix/README.md`). 30 sn'den sık sorgulamak fayda getirmez.
 
 ## REST API (özet)
 
