@@ -25,6 +25,7 @@ import argparse
 import collections
 import datetime as dt
 import json
+import math
 import os
 import signal
 import statistics
@@ -57,6 +58,8 @@ def parse_args(argv=None):
     src = p.add_mutually_exclusive_group(required=True)
     src.add_argument("--event-ids", help="virgülle ayrılmış event id'leri")
     src.add_argument("--summarize", metavar="JSONL", help="ağa çıkmadan, kayıtlı gözlemlerden özeti yeniden üret")
+    src.add_argument("--retro-summarize", metavar="JSONL",
+                     help="ağa çıkmadan, kayıtlı --retro satırlarından özeti yeniden üret (istek sayıları eski özetten)")
     src.add_argument("--retro", action="store_true",
                      help="geriye dönük: tarama indeksindeki yakın zamanda bitmiş maçlarda son düdük → finished gecikmesi")
     p.add_argument("--hours", type=float, default=72, help="--retro: son kaç saatte başlamış maçlar (varsayılan 72)")
@@ -66,7 +69,7 @@ def parse_args(argv=None):
     p.add_argument("--interval", type=interval_arg, default=60, help="tur aralığı, sn (en az 30, varsayılan 60)")
     p.add_argument("--until", type=float, default=6.0, help="en fazla kaç saat izlenecek (varsayılan 6)")
     a = p.parse_args(argv)
-    if a.summarize:
+    if a.summarize or a.retro_summarize:
         return a
     if a.retro and not a.sport:
         p.error("--retro için --sport gerekli")
@@ -162,6 +165,8 @@ def main(argv=None) -> int:
     a = parse_args(argv)
     if a.summarize:
         return summarize_only(a.summarize)
+    if a.retro_summarize:
+        return retro_summarize_only(a.retro_summarize)
     if a.retro:
         return retro(a)
     signal.signal(signal.SIGTERM, _request_stop)
@@ -273,13 +278,54 @@ def main(argv=None) -> int:
         c.close()
 
 
+SCORE_FINAL_FIELDS = ("homeScore.current", "awayScore.current", "homeScore.display", "awayScore.display")
+
+
+def classify_last_update(fields: List[str]) -> str:
+    """
+    Bitmiş bir maçın son güncellemesi (changes.changes) neyi değiştirdi?
+      status_transition  status.* değişti: son güncelleme bitiş geçişinin kendisi
+      final_score        status değil, nihai skor (current/display) değişti: bitiş sonrası nihai skor güncellemesi
+      periods_only       status değil, yalnızca periyot/normaltime/uzatma skorları
+      other              status değil, skor dışı alan (ör. time.*, providerLock.*)
+      none               changes boş
+    changes yalnızca son güncellemeyi gösterdiği için "düzeltme" ile "geç tamamlama" ayrılamaz.
+    """
+    if not fields:
+        return "none"
+    if any(f.startswith("status.") for f in fields):
+        return "status_transition"
+    if any(f in SCORE_FINAL_FIELDS for f in fields):
+        return "final_score"
+    if any(f.startswith(("homeScore.", "awayScore.")) for f in fields):
+        return "periods_only"
+    return "other"
+
+
+def _dist(vals: List[float]) -> Dict[str, Any]:
+    v = sorted(vals)
+    if not v:
+        return {"n": 0}
+    d = {"n": len(v), "min": v[0], "median": statistics.median(v), "max": v[-1]}
+    if len(v) >= 10:  # daha küçük örneklemde p90 anlamsız; yakın sıra (nearest-rank) yöntemi
+        d["p90"] = v[math.ceil(0.9 * len(v)) - 1]
+    return d
+
+
 def retro(a) -> int:
     """
-    Canlı izleme olmadan, bitmiş maçın tek /event yanıtından:
-      transition_ts = changes.changeTimestamp (değişen alanlar status.* içeriyorsa: son değişiklik bitiş geçişi)
-      expected_ft   = time.clockRunningLastUpdated (saat durmuş ve oynanan süre normal süreye ulaşmışsa)
-      lag_whistle   = transition_ts − expected_ft
-    Liste kaynaklarının gecikmesi bu yolla ölçülemez (yalnızca canlı izlemeyle).
+    Canlı izleme olmadan, bitmiş maçların tek /event yanıtından (tarama indeksindeki en yeni N maç):
+      - son güncellemenin sınıfı (classify_last_update) ve maç başlangıcına göre zamanı
+        (change_ts − startTimestamp, saat): bitiş sonrası güncelleme oranı ve zamanlaması
+      - basketbol: lag_whistle = changes.changeTimestamp (status.* değiştiyse) − time.clockRunningLastUpdated
+        (saat durmuş ve oynanan süre normal süreye ulaşmışsa)
+    Lig seviyesi ("ust" = SofaScore'un oyuncu istatistiği yayınladığı turnuvalar): uniqueTournament.hasEventPlayerStatistics
+    veya event.hasEventPlayerStatistics true → "ust", aksi "alt". Basketbolda bayrak yalnızca event seviyesinde true
+    olur. Teniste bayrak hiçbir seviyede true gözlenmediği için ayrım isimle yapılır: tournament.category.name
+    (yoksa uniqueTournament.name öneki) ATP, WTA, Grand Slam veya WTA 125 → "ust"; Challenger, ITF, UTR ve
+    diğerleri → "alt". Satırdaki tier_basis hangi ölçütün kullanıldığını söyler. İki bayrak, userCount ve kategori
+    ayrı kaydedilir.
+    Bu SofaScore'un kapsam seviyesidir, ligin gerçek seviyesi değil. Liste kaynaklarının gecikmesi bu yolla ölçülemez.
     """
     index = os.path.join(ROOT, "data", "research_index", f"{a.sport}.jsonl")
     if not os.path.exists(index):
@@ -291,7 +337,7 @@ def retro(a) -> int:
             r = json.loads(line)
             latest[r["event_id"]] = r
     now = time.time()
-    cand = sorted((r for r in latest.values() if r["type"] == "finished" and r["code"] in (100, 110)
+    cand = sorted((r for r in latest.values() if r["type"] == "finished"
                    and now - a.hours * 3600 < (r["start_ts"] or 0) < now - 3 * 3600),
                   key=lambda r: -(r["start_ts"] or 0))[: a.max_events]
     c = Client()
@@ -307,41 +353,93 @@ def retro(a) -> int:
                 ch = ev.get("changes") or {}
                 fields = ch.get("changes") or []
                 t = ev.get("time") or {}
+                ut = (ev.get("tournament") or {}).get("uniqueTournament") or {}
+                last = classify_last_update(fields) if ev else f"http_{resp.get('status')}"
+                start = ev.get("startTimestamp")
+                change = ch.get("changeTimestamp")
                 regulation = (t.get("periodLength") or 0) * (t.get("totalPeriodCount") or 0)
-                transition = ch.get("changeTimestamp") if any(x.startswith("status.") for x in fields) else None
                 whistle = t.get("clockRunningLastUpdated") if (t.get("clockRunning") is False and regulation
                                                                and (t.get("played") or 0) >= regulation) else None
-                if not ev:
-                    reason = f"http_{resp.get('status')}"
-                elif transition is None:
-                    reason = "son_degisiklik_status_degil"
-                elif whistle is None:
-                    reason = "saat_verisi_yok"
-                else:
-                    reason = "ok"
-                lag = round(transition - _ts(whistle)) if reason == "ok" else None
-                row = {"event_id": r["event_id"], "fetched_at_utc": utc_now(), "ut": r["ut"], "ut_name": r["ut_name"],
-                       "status": list((ev.get("status") or {}).values()), "start_ts": ev.get("startTimestamp"),
-                       "changed_fields": fields, "change_ts": ch.get("changeTimestamp"), "time": t,
-                       "transition_ts": transition, "expected_ft": whistle, "lag_whistle": lag, "result": reason}
+                lag = round(change - _ts(whistle)) if last == "status_transition" and whistle and change else None
+                row = {"event_id": r["event_id"], "fetched_at_utc": utc_now(),
+                       "ut": ut.get("id"), "ut_name": ut.get("name"), "category": ((ev.get("tournament") or {}).get("category") or {}).get("name"),
+                       **_tier(a.sport, ev, ut),
+                       "ut_player_stats": ut.get("hasEventPlayerStatistics"), "event_player_stats": ev.get("hasEventPlayerStatistics"),
+                       "user_count": ut.get("userCount"),
+                       "status": [(ev.get("status") or {}).get(k) for k in ("type", "code", "description")],
+                       "start_ts": start, "change_ts": change, "changed_fields": fields, "last_update": last,
+                       "hours_after_start": round((change - start) / 3600, 2) if change and start else None,
+                       "time": t, "expected_ft": whistle, "lag_whistle": lag}
                 rows.append(row)
                 out.write(json.dumps(row, ensure_ascii=False) + "\n")
     finally:
         c.close()
-    lags = [x["lag_whistle"] for x in rows if x["lag_whistle"] is not None]
-    lags_sorted = sorted(lags)
-    summary = {
-        "method": retro.__doc__.strip(), "window_hours": a.hours, "events": len(rows),
-        "result": dict(collections.Counter(x["result"] for x in rows)),
-        "lag_whistle": {"n": len(lags), "median": statistics.median(lags) if lags else None,
-                        "p90": lags_sorted[int(0.9 * (len(lags) - 1))] if lags else None,
-                        "min": min(lags) if lags else None, "max": max(lags) if lags else None},
-        "negative_lag": sum(1 for x in lags if x < 0),
-        "requests_total": c.requests, "requests_by_status": c.by_status,
-    }
+    summary = retro_summary(rows, a.sport, a.hours, c.requests, c.by_status)
     write_json(out_path.replace(".jsonl", "_summary.json"), summary)
-    print(json.dumps(summary, ensure_ascii=False, indent=1))
+    print(json.dumps({k: summary[k] for k in ("all", "by_tier", "lag_whistle")}, ensure_ascii=False, indent=1))
     return 0
+
+
+def retro_summary(rows: List[Dict[str, Any]], sport: str, hours: float, requests_total: int,
+                  by_status: Dict[str, int]) -> Dict[str, Any]:
+    def block(rs):
+        post = [x for x in rs if x["last_update"] in ("final_score", "periods_only", "other")]
+        score = [x for x in rs if x["last_update"] in ("final_score", "periods_only")]
+        starts = [x["start_ts"] for x in rs if x["start_ts"]]
+        return {
+            "events": len(rs),
+            "start_span_utc": [utc_iso(min(starts)), utc_iso(max(starts))] if starts else None,
+            "last_update": dict(collections.Counter(x["last_update"] for x in rs)),
+            "post_finish_update_rate": round(len(post) / len(rs), 3) if rs else None,
+            "post_finish_score_update_rate": round(len(score) / len(rs), 3) if rs else None,
+            "other_fields": dict(collections.Counter(",".join(sorted({f.split(".")[0] if not f.startswith("time.") else "time.*"
+                                                                      for f in x["changed_fields"]}))
+                                                     for x in rs if x["last_update"] == "other").most_common(5)),
+            "final_score_hours_after_start": _dist([x["hours_after_start"] for x in rs
+                                                    if x["last_update"] == "final_score" and x["hours_after_start"] is not None]),
+            "periods_only_hours_after_start": _dist([x["hours_after_start"] for x in rs
+                                                     if x["last_update"] == "periods_only" and x["hours_after_start"] is not None]),
+        }
+
+    return {
+        "method": retro.__doc__.strip(), "sport": sport, "window_hours": hours,
+        "all": block(rows), "by_tier": {t: block([x for x in rows if x["tier"] == t]) for t in ("ust", "alt")},
+        "final_score_by_league": dict(collections.Counter(x["ut_name"] for x in rows if x["last_update"] == "final_score").most_common(15)),
+        "lag_whistle": _dist([x["lag_whistle"] for x in rows if x["lag_whistle"] is not None]),
+        "requests_total": requests_total, "requests_by_status": by_status,
+    }
+
+
+def retro_summarize_only(jsonl: str) -> int:
+    with open(jsonl, encoding="utf-8") as f:
+        rows = [json.loads(line) for line in f if line.strip()]
+    path = jsonl.replace(".jsonl", "_summary.json")
+    old = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
+    summary = retro_summary(rows, old.get("sport") or os.path.basename(jsonl).rsplit("_", 1)[-1].split(".")[0],
+                            old.get("window_hours"), old.get("requests_total"), old.get("requests_by_status"))
+    write_json(path, summary)
+    print(json.dumps({k: summary[k] for k in ("all", "by_tier", "lag_whistle")}, ensure_ascii=False, indent=1))
+    return 0
+
+
+TENNIS_UPPER_CATEGORIES = ("ATP", "WTA", "Grand Slam", "WTA 125")
+
+
+def _tier(sport: str, ev: Dict[str, Any], ut: Dict[str, Any]) -> Dict[str, str]:
+    """Tenis: kategori adı (yoksa turnuva adı öneki); diğer sporlar: oyuncu istatistiği kapsam bayrağı."""
+    if sport == "tennis":
+        cat = ((ev.get("tournament") or {}).get("category") or {}).get("name")
+        if cat:
+            return {"tier": "ust" if cat in TENNIS_UPPER_CATEGORIES else "alt", "tier_basis": "category.name"}
+        name = ut.get("name") or ""
+        upper = any(name == k or name.startswith(k + " ") for k in TENNIS_UPPER_CATEGORIES)
+        return {"tier": "ust" if upper else "alt", "tier_basis": "uniqueTournament.name"}
+    flag = ut.get("hasEventPlayerStatistics") or ev.get("hasEventPlayerStatistics")
+    return {"tier": "ust" if flag else "alt", "tier_basis": "hasEventPlayerStatistics"}
+
+
+def utc_iso(ts: float) -> str:
+    return dt.datetime.fromtimestamp(ts, dt.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
 
 
 def _ts(s: Optional[str]) -> Optional[float]:

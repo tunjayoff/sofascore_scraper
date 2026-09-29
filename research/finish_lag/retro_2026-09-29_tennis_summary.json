@@ -1,116 +1,90 @@
 {
   "method": "Canlı izleme olmadan, bitmiş maçların tek /event yanıtından (tarama indeksindeki en yeni N maç):\n  - son güncellemenin sınıfı (classify_last_update) ve maç başlangıcına göre zamanı\n    (change_ts − startTimestamp, saat): bitiş sonrası güncelleme oranı ve zamanlaması\n  - basketbol: lag_whistle = changes.changeTimestamp (status.* değiştiyse) − time.clockRunningLastUpdated\n    (saat durmuş ve oynanan süre normal süreye ulaşmışsa)\nLig seviyesi (\"ust\" = SofaScore'un oyuncu istatistiği yayınladığı turnuvalar): uniqueTournament.hasEventPlayerStatistics\nveya event.hasEventPlayerStatistics true → \"ust\", aksi \"alt\". Basketbolda bayrak yalnızca event seviyesinde true\nolur. Teniste bayrak hiçbir seviyede true gözlenmediği için ayrım isimle yapılır: tournament.category.name\n(yoksa uniqueTournament.name öneki) ATP, WTA, Grand Slam veya WTA 125 → \"ust\"; Challenger, ITF, UTR ve\ndiğerleri → \"alt\". Satırdaki tier_basis hangi ölçütün kullanıldığını söyler. İki bayrak, userCount ve kategori\nayrı kaydedilir.\nBu SofaScore'un kapsam seviyesidir, ligin gerçek seviyesi değil. Liste kaynaklarının gecikmesi bu yolla ölçülemez.",
-  "sport": "basketball",
+  "sport": "tennis",
   "window_hours": 336.0,
   "all": {
     "events": 400,
     "start_span_utc": [
-      "2026-09-26T12:30Z",
-      "2026-09-29T13:30Z"
+      "2026-09-25T13:30Z",
+      "2026-09-29T14:05Z"
     ],
     "last_update": {
-      "status_transition": 315,
-      "periods_only": 55,
-      "final_score": 27,
-      "other": 3
+      "other": 333,
+      "status_transition": 60,
+      "periods_only": 7
     },
-    "post_finish_update_rate": 0.212,
-    "post_finish_score_update_rate": 0.205,
+    "post_finish_update_rate": 0.85,
+    "post_finish_score_update_rate": 0.018,
     "other_fields": {
-      "time.*": 3
+      "time.*": 333
     },
     "final_score_hours_after_start": {
-      "n": 27,
-      "min": 2.4,
-      "median": 42.9,
-      "max": 66.4,
-      "p90": 64.31
+      "n": 0
     },
     "periods_only_hours_after_start": {
-      "n": 55,
-      "min": 1.98,
-      "median": 8.55,
-      "max": 24.5,
-      "p90": 19.45
+      "n": 7,
+      "min": 1.13,
+      "median": 1.67,
+      "max": 2.69
     }
   },
   "by_tier": {
     "ust": {
-      "events": 145,
+      "events": 189,
       "start_span_utc": [
-        "2026-09-26T13:00Z",
-        "2026-09-29T13:30Z"
+        "2026-09-25T13:30Z",
+        "2026-09-29T13:40Z"
       ],
       "last_update": {
-        "status_transition": 138,
-        "periods_only": 2,
-        "other": 3,
-        "final_score": 2
+        "status_transition": 28,
+        "other": 156,
+        "periods_only": 5
       },
-      "post_finish_update_rate": 0.048,
-      "post_finish_score_update_rate": 0.028,
+      "post_finish_update_rate": 0.852,
+      "post_finish_score_update_rate": 0.026,
       "other_fields": {
-        "time.*": 3
+        "time.*": 156
       },
       "final_score_hours_after_start": {
-        "n": 2,
-        "min": 2.95,
-        "median": 2.97,
-        "max": 2.99
+        "n": 0
       },
       "periods_only_hours_after_start": {
-        "n": 2,
-        "min": 2.29,
-        "median": 9.334999999999999,
-        "max": 16.38
+        "n": 5,
+        "min": 1.13,
+        "median": 1.55,
+        "max": 2.69
       }
     },
     "alt": {
-      "events": 255,
+      "events": 211,
       "start_span_utc": [
-        "2026-09-26T12:30Z",
-        "2026-09-28T23:30Z"
+        "2026-09-25T13:30Z",
+        "2026-09-29T14:05Z"
       ],
       "last_update": {
-        "status_transition": 177,
-        "periods_only": 53,
-        "final_score": 25
+        "other": 177,
+        "status_transition": 32,
+        "periods_only": 2
       },
-      "post_finish_update_rate": 0.306,
-      "post_finish_score_update_rate": 0.306,
-      "other_fields": {},
+      "post_finish_update_rate": 0.848,
+      "post_finish_score_update_rate": 0.009,
+      "other_fields": {
+        "time.*": 177
+      },
       "final_score_hours_after_start": {
-        "n": 25,
-        "min": 2.4,
-        "median": 43.82,
-        "max": 66.4,
-        "p90": 64.31
+        "n": 0
       },
       "periods_only_hours_after_start": {
-        "n": 53,
-        "min": 1.98,
-        "median": 8.55,
-        "max": 24.5,
-        "p90": 19.45
+        "n": 2,
+        "min": 1.67,
+        "median": 1.855,
+        "max": 2.04
       }
     }
   },
-  "final_score_by_league": {
-    "FIBA 3x3 Challenger Mataró": 11,
-    "FIBA 3x3 World Tour Deqing": 7,
-    "U19 Eccellenza": 2,
-    "Serie B": 2,
-    "Germany BBL": 1,
-    "Nationale 3": 1,
-    "Serie A2": 1,
-    "Pro B": 1,
-    "Serie B Interregionale": 1
-  },
+  "final_score_by_league": {},
   "lag_whistle": {
-    "n": 9,
-    "min": 0,
-    "median": 20,
-    "max": 302
+    "n": 0
   },
   "requests_total": 401,
   "requests_by_status": {
