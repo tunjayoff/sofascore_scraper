@@ -1,5 +1,4 @@
 # League configuration file
 # Format: League Name: ID
 
-
-
+Premier League: 17
