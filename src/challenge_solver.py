@@ -35,6 +35,8 @@ DEFAULT_PROFILE_DIR = os.getenv(
 )
 HOME_URL = "https://www.sofascore.com/tr"
 CAPTCHA_URL = "https://www.sofascore.com/captcha.html?redirectUrl=https%3A%2F%2Fwww.sofascore.com%2Ftr"
+# Çözümün API'yi gerçekten açtığını doğrulamak için küçük bir uç nokta
+_PROBE_URL = "https://www.sofascore.com/api/v1/unique-tournament/17/seasons"
 
 # Zaman aşımları (saniye). Tarayıcı başlatma (ilk challenge çözümü dahil), istek başına
 # zaman aşımının dışında tutulur: soğuk bir başlatmayı yarıda kesmek profili kilitli bırakır.
@@ -244,9 +246,29 @@ class BrowserBridge:
         # shield: bir bekleyenin iptali diğerlerinin beklediği çözümü iptal etmesin
         return await asyncio.shield(self._solve_task)
 
+    async def _api_unlocked(self) -> bool:
+        """Çözümden sonra API gerçekten açıldı mı? (Sayfa henüz yoksa doğrulanamaz: evet say.)"""
+        if self.page is None or self.page.is_closed():
+            return True
+        x_req = hashlib.sha256(str(int(time.time()) // 1800).encode("utf-8")).hexdigest()[:6]
+        res = await self.page.evaluate(_FETCH_JS, [_PROBE_URL, x_req, self.token, _JS_FETCH_TIMEOUT_MS])
+        return res.get("status") != 403
+
     async def _solve_challenge(self) -> Optional[str]:
         logger.info("Cloudflare Turnstile challenge çözülüyor (captcha.html)...")
         token = await self._solve_on_captcha_page()
+        if token:
+            self._set_token(token)
+        if token and not await self._api_unlocked():
+            # Profildeki süresi geçmiş cookie: captcha.html challenge göstermeden yönlenir ve yeni
+            # cookie üretilmez. Cookie silinip challenge baştan çözülür.
+            logger.info("sofa_captcha cookie'si hâlâ reddediliyor; silinip challenge yeniden çözülüyor")
+            await self.context.clear_cookies(name="sofa_captcha")
+            token = await self._solve_on_captcha_page()
+            if token:
+                self._set_token(token)
+            if token and not await self._api_unlocked():
+                token = None
         if token:
             self._set_token(token)
             self._solve_failed_at = 0.0
