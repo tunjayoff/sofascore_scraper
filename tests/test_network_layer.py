@@ -231,6 +231,7 @@ def test_concurrent_challenges_share_one_solve():
     bridge.token = None
     bridge._token_at = 0.0
     bridge._solve_task = None
+    bridge._solve_failed_at = 0.0
     bridge.ensure_ready = AsyncMock()
     solves = []
 
@@ -263,3 +264,33 @@ def test_failed_launch_cleans_up_and_backs_off(tmp_path):
     _run(run())
     assert bridge._launch.call_count == 1
     assert bridge.close.await_count >= 2  # önce eski oturum, sonra yarım başlatma temizliği
+
+
+def test_failed_solve_is_not_retried_for_a_while():
+    bridge = cs.BrowserBridge.__new__(cs.BrowserBridge)
+    bridge.token = None
+    bridge._token_at = 0.0
+    bridge._solve_task = None
+    bridge._solve_failed_at = 0.0
+    bridge.ensure_ready = AsyncMock()
+    bridge._solve_on_captcha_page = AsyncMock(return_value=None)
+
+    async def run():
+        assert await bridge.solve_challenge() is None
+        assert await bridge.solve_challenge() is None  # geri çekilme: yeniden denemez
+
+    _run(run())
+    assert bridge._solve_on_captcha_page.await_count == 1
+
+
+def test_browser_first_mode_skips_curl(monkeypatch):
+    """curl challenge'a takılıp tarayıcı başardıysa sonraki istek doğrudan tarayıcıya gider."""
+    session = _session(Resp(403, text="challenge"))
+    browser = AsyncMock(return_value={"ok": 1})
+    monkeypatch.setattr(utils, "_browser_first_until", 0.0)
+    with _patched(), patch("src.challenge_solver.fetch_api_via_browser", browser):
+        assert _run(utils.make_api_request_async(session, "/a")) == {"ok": 1}
+        assert utils._browser_first()
+        assert _run(utils.make_api_request_async(session, "/b")) == {"ok": 1}
+    assert session.get.call_count == 1  # ikinci istek curl'e hiç gitmedi
+    assert browser.await_count == 2

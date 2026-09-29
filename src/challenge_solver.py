@@ -1,15 +1,14 @@
 """
-Sofascore Turnstile Challenge Çözücü ve Tarayıcı Köprüsü (Browser Bridge).
+Sofascore Turnstile challenge çözücü ve tarayıcı köprüsü (BrowserBridge).
 
-Sofascore API korumasını (Cloudflare Turnstile + Varnish TLS/JA4 parmak izi)
-aşmak için headless/headed gerçek Chrome oturumunu yönetir.
+Sofascore API'si curl isteklerini (TLS/JA4 parmak izi) 403 + challenge ile reddeder;
+istekler gerçek bir tarayıcının içinden fetch() ile yapılmalıdır.
 
-Proje mimarisi:
-- Project 'c' (ps3838_site) kanıtlanmış Chrome başlatma bayrakları
-  (--disable-blink-features=AutomationControlled, ignore_default_args, no_viewport=True)
-- Sayfa içinde Turnstile challenge'ını otomatik çözme (turnstile.execute)
-- /api/v1/token/captcha üzerinden taze JWT sofa_captcha token değişimi
-- Chrome'un kendi HTTP/2 TLS oturumu üzerinden yüksek hızlı (2-10ms) JSON veri çekimi
+Tarayıcıyı Scrapling'in StealthySession'ı açar (patchright + gizlilik ayarları): her
+ortamda headless çalışır — masaüstünde ve ekranı olmayan sunucuda aynı yol. Challenge,
+sofascore.com/captcha.html sayfasındaki gömülü Turnstile'ı Scrapling'in solve_cloudflare
+özelliğiyle geçerek çözülür; sonuç sofa_captcha cookie'si ve JWT token'dır. Standart
+Playwright ile headless modda Turnstile hiç geçilemiyordu (ölçüm: 0/12 istek).
 """
 
 from __future__ import annotations
@@ -31,17 +30,24 @@ _cached_token: Optional[str] = None
 _cached_at: float = 0
 _TOKEN_TTL_SECONDS = 3500
 
-DEFAULT_PROFILE_DIR = os.path.expanduser("~/.cache/sofascore_scraper/chrome_profile")
+DEFAULT_PROFILE_DIR = os.getenv(
+    "SOFASCORE_BROWSER_PROFILE", os.path.expanduser("~/.cache/sofascore_scraper/chrome_profile")
+)
+HOME_URL = "https://www.sofascore.com/tr"
+CAPTCHA_URL = "https://www.sofascore.com/captcha.html?redirectUrl=https%3A%2F%2Fwww.sofascore.com%2Ftr"
 
-# Zaman aşımları (saniye). Tarayıcı başlatma, istek başına zaman aşımının dışında tutulur:
-# soğuk bir başlatmayı yarıda kesmek profili kilitli bırakır.
-STARTUP_TIMEOUT = 90.0
-REQUEST_TIMEOUT = 60.0
+# Zaman aşımları (saniye). Tarayıcı başlatma (ilk challenge çözümü dahil), istek başına
+# zaman aşımının dışında tutulur: soğuk bir başlatmayı yarıda kesmek profili kilitli bırakır.
+STARTUP_TIMEOUT = 150.0
+REQUEST_TIMEOUT = 120.0
+SOLVE_TIMEOUT = 90.0
 _JS_FETCH_TIMEOUT_MS = 20000
-# Başlatma başarısız olduysa (ör. Chrome yok) her 403'te yeniden denenmez
+# Başlatma başarısız olduysa her 403'te yeniden denenmez
 _LAUNCH_RETRY_AFTER = 300.0
 # Yeni çözülmüş bir token, hemen ardından gelen 403 dalgası için yeniden kullanılır
 _FRESH_TOKEN_SECONDS = 30.0
+# Başarısız bir çözümden sonra bu süre yeniden denenmez (her istek 10-90 sn yakmasın)
+_SOLVE_RETRY_AFTER = 180.0
 
 _FETCH_JS = """async ([targetUrl, xReq, xCap, timeoutMs]) => {
     const headers = { "x-requested-with": xReq };
@@ -87,40 +93,31 @@ def get_cached_token() -> Optional[str]:
     return None
 
 
-def _get_chrome_executable() -> Optional[str]:
-    """Sistemdeki Google Chrome / Chromium çalıştırılabilir dosyasını bulur."""
-    candidates = [
-        "/opt/google/chrome/chrome",
-        "/usr/bin/google-chrome",
-        "/usr/bin/google-chrome-stable",
-        "/usr/bin/chromium",
-        "/usr/bin/chromium-browser",
-    ]
-    for p in candidates:
-        if os.path.exists(p) and os.access(p, os.X_OK):
-            return p
-    return None
+def _headless() -> bool:
+    # Her ortamda aynı yol: headless. Hata ayıklamak için pencereyi görmek isterseniz 1 yapın.
+    return os.getenv("SOFASCORE_BROWSER_HEADED", "").lower() not in ("1", "true", "yes")
 
 
 class BrowserBridge:
     """
-    Playwright ve gerçek Google Chrome üzerinden Sofascore API köprüsü.
-    Turnstile challenge'larını arka planda otomatik çözer ve API isteklerini
-    tarayıcının geçerli TLS oturumu üzerinden yürütür.
+    Scrapling StealthySession üzerinden Sofascore API köprüsü.
+    Tek bir sayfayı açık tutar, API isteklerini o sayfadan fetch() ile yapar ve 403
+    challenge geldiğinde tek bir çözümü tüm bekleyen isteklerle paylaşır.
     """
 
     _instance: Optional["BrowserBridge"] = None
 
     def __init__(self, profile_dir: str = DEFAULT_PROFILE_DIR):
         self.profile_dir = profile_dir
-        self.pw = None
-        self.context = None
-        self.page = None
+        self.session: Any = None
+        self.context: Any = None
+        self.page: Any = None
         self.token: Optional[str] = None
         self._token_at: float = 0.0
         self._init_lock = asyncio.Lock()
         self._solve_task: Optional["asyncio.Future[Optional[str]]"] = None
         self._launch_failed_at: float = 0.0
+        self._solve_failed_at: float = 0.0
         os.makedirs(self.profile_dir, exist_ok=True)
 
     @classmethod
@@ -138,76 +135,87 @@ class BrowserBridge:
             if self.page and not self.page.is_closed():
                 return
             if self._launch_failed_at and time.time() - self._launch_failed_at < _LAUNCH_RETRY_AFTER:
-                raise RuntimeError("BrowserBridge başlatılamadı (yakın zamanda denendi); Chrome kurulu mu?")
+                raise RuntimeError(
+                    "BrowserBridge başlatılamadı (yakın zamanda denendi). "
+                    "Tarayıcı kurulu mu? `python -m playwright install chromium`"
+                )
             # Sayfası kapanmış eski oturum: yeniden başlatmadan önce kapat (profil kilidi)
             await self.close()
             try:
                 await self._launch()
             except BaseException:
-                # Yarım kalan başlatma (hata veya iptal) Playwright sürecini ve profil kilidini bırakmasın
+                # Yarım kalan başlatma (hata veya iptal) tarayıcı sürecini ve profil kilidini bırakmasın
                 self._launch_failed_at = time.time()
                 await self.close()
                 raise
             self._launch_failed_at = 0.0
 
     async def _launch(self) -> None:
-        from playwright.async_api import async_playwright
+        from scrapling.fetchers import AsyncStealthySession
 
-        self.pw = await async_playwright().start()
+        headless = _headless()
+        logger.info(f"Tarayıcı oturumu başlatılıyor (Scrapling StealthySession, headless={headless})...")
+        self.session = AsyncStealthySession(
+            headless=headless,
+            solve_cloudflare=True,
+            user_data_dir=self.profile_dir,
+            proxy=_proxy_settings(),
+            block_webrtc=True,
+            timeout=60000,
+            max_pages=2,
+        )
+        await self.session.start()
+        # Scrapling'in oturum bağlamı: kendi sayfamızı bunun içinde açıp tekrar tekrar kullanırız
+        self.context = getattr(self.session, "context", None)
+        if self.context is None:
+            raise RuntimeError("Scrapling oturumu tarayıcı bağlamı açmadı (sürüm uyumsuzluğu?)")
 
-        args = [
-            "--disable-blink-features=AutomationControlled",
-            "--window-size=1920,1080",
-        ]
-        # Sandbox yalnızca root/konteynerde çalışmaz; aksi halde açık kalmalı
-        is_root = hasattr(os, "geteuid") and os.geteuid() == 0
-        if is_root or os.getenv("SOFASCORE_NO_SANDBOX", "").lower() in ("1", "true", "yes"):
-            args += ["--no-sandbox", "--disable-setuid-sandbox"]
+        # Profilde çözüm yoksa challenge'ı API isteklerinden önce çöz
+        solved_now = None
+        if not await self._token_from_context():
+            solved_now = await self._solve_on_captcha_page()
 
-        headless = not bool(os.getenv("DISPLAY") or os.getenv("WAYLAND_DISPLAY"))
-        chrome_path = _get_chrome_executable()
-
-        launch_kwargs: Dict[str, Any] = {
-            "user_data_dir": self.profile_dir,
-            "headless": headless,
-            "args": args,
-            "ignore_default_args": ["--enable-automation"],
-            "no_viewport": True,
-        }
-        proxy = _proxy_settings()
-        if proxy:
-            launch_kwargs["proxy"] = proxy
-
-        logger.info(f"Chrome oturumu başlatılıyor (headless={headless})...")
-        if chrome_path:
-            launch_kwargs["executable_path"] = chrome_path
-            self.context = await self.pw.chromium.launch_persistent_context(**launch_kwargs)
-        else:
-            # Kurulu Google Chrome (Playwright standart konumlarda arar); yoksa
-            # `playwright install chromium` ile gelen Chromium
-            try:
-                self.context = await self.pw.chromium.launch_persistent_context(channel="chrome", **launch_kwargs)
-            except Exception as e:
-                logger.info(f"Google Chrome başlatılamadı ({e.__class__.__name__}); Playwright Chromium deneniyor")
-                self.context = await self.pw.chromium.launch_persistent_context(**launch_kwargs)
-        self.page = self.context.pages[0] if self.context.pages else await self.context.new_page()
-
+        self.page = await self.context.new_page()
         try:
-            await self.page.goto("https://www.sofascore.com/tr", wait_until="domcontentloaded", timeout=30000)
-            await asyncio.sleep(1.5)
+            await self.page.goto(HOME_URL, wait_until="domcontentloaded", timeout=30000)
         except Exception as e:
             logger.warning(f"Sofascore anasayfa açılış uyarısı: {e}")
+        token = await self._token_from_context()
+        if token:
+            self._set_token(token)
+            # Profilden gelen token süresi dolmuş olabilir: "az önce çözüldü" sayılmasın,
+            # yoksa ilk 403'te _FRESH_TOKEN_SECONDS boyunca yeni çözüm yapılmaz
+            if token != solved_now:
+                self._token_at = 0.0
 
-        # Önceki oturumdan kalan token varsa yükle
+    async def _token_from_context(self) -> Optional[str]:
+        """Çözümün sonucu: sofa_captcha cookie'si (sayfa içi fetch'ler onu kendiliğinden gönderir)."""
         try:
-            t_raw = await self.page.evaluate("() => localStorage.getItem('sofa.captcha.token')")
-            if t_raw:
-                try:
-                    self._set_token(json.loads(t_raw))
-                except Exception:
-                    self._set_token(t_raw)
+            cookies = await self.context.cookies("https://www.sofascore.com")
         except Exception:
-            pass
+            return None
+        return next((c["value"] for c in cookies if c.get("name") == "sofa_captcha" and c.get("value")), None)
+
+    async def _solve_on_captcha_page(self) -> Optional[str]:
+        """captcha.html'deki gömülü Turnstile'ı Scrapling'e çözdürür; token'ı (varsa) döndürür."""
+        before = await self._token_from_context()
+        try:
+            await asyncio.wait_for(
+                # network_idle kapalı: captcha sayfası ana sayfaya yönlenirse reklam/websocket trafiği
+                # ağı hiç boşaltmaz ve çözüm Scrapling'in tüm zaman aşımını bekler (ölçüm: 65 sn).
+                # Çözücü kendi içinde kısa bir networkidle beklemesi yapıyor.
+                self.session.fetch(CAPTCHA_URL, solve_cloudflare=True, network_idle=False, google_search=False),
+                SOLVE_TIMEOUT,
+            )
+        except Exception as e:
+            logger.warning(f"captcha.html çözümü hata verdi: {e.__class__.__name__}: {e}")
+        # Cookie, widget geçtikten kısa süre sonra yazılır
+        for _ in range(20):
+            token = await self._token_from_context()
+            if token and token != before:
+                return token
+            await asyncio.sleep(0.5)
+        return await self._token_from_context() if before is None else None
 
     def _set_token(self, token: str) -> None:
         global _cached_token, _cached_at
@@ -219,86 +227,33 @@ class BrowserBridge:
 
     async def solve_challenge(self) -> Optional[str]:
         """
-        Turnstile challenge'ını çözer ve geçerli JWT tokenı alır.
+        Turnstile challenge'ını çözer ve geçerli token'ı döndürür.
 
-        Aynı anda gelen 403'lerin hepsi aynı çözümü bekler: paralel turnstile.execute
-        çağrıları birbirini bozar. Az önce çözülmüş bir token doğrudan döndürülür.
+        Aynı anda gelen 403'lerin hepsi aynı çözümü bekler. Az önce çözülmüş bir token
+        doğrudan döndürülür; başarısız bir çözümden sonra bir süre yeniden denenmez.
         """
         await self.ensure_ready()
         if self.token and time.time() - self._token_at < _FRESH_TOKEN_SECONDS:
             return self.token
+        if self._solve_failed_at and time.time() - self._solve_failed_at < _SOLVE_RETRY_AFTER:
+            return None
         if self._solve_task is None or self._solve_task.done():
             self._solve_task = asyncio.ensure_future(self._solve_challenge())
         # shield: bir bekleyenin iptali diğerlerinin beklediği çözümü iptal etmesin
         return await asyncio.shield(self._solve_task)
 
     async def _solve_challenge(self) -> Optional[str]:
-        logger.info("Cloudflare Turnstile challenge çözülüyor...")
-
-        try:
-            # 1. Turnstile execute
-            t_token = await self.page.evaluate("""() => {
-                return new Promise((resolve, reject) => {
-                    const timeout = setTimeout(() => reject("turnstile_timeout"), 15000);
-                    if (typeof turnstile !== "undefined") {
-                        turnstile.execute(undefined, {
-                            callback: (token) => { clearTimeout(timeout); resolve(token); },
-                            "error-callback": (err) => { clearTimeout(timeout); reject(err); }
-                        });
-                    } else {
-                        reject("turnstile_undefined");
-                    }
-                });
-            }""")
-
-            # 2. Token captcha endpoint'inde takas et
-            jwt = await self.page.evaluate("""async (turnstileToken) => {
-                const resp = await fetch("https://www.sofascore.com/api/v1/token/captcha", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ response: turnstileToken, provider: "turnstile" })
-                });
-                const data = await resp.json();
-                if (data && data.token) {
-                    localStorage.setItem("sofa.captcha.token", JSON.stringify(data.token));
-                    document.cookie = "sofa_captcha=" + data.token + "; Path=/; Secure; SameSite=Lax";
-                    return data.token;
-                }
-                return null;
-            }""", t_token)
-
-            if jwt:
-                self._set_token(jwt)
-                logger.info("Turnstile challenge başarıyla çözüldü, yeni JWT token alındı.")
-                return jwt
-
-        except Exception as e:
-            logger.warning(f"Turnstile execute başarısız, captcha.html fallback deneniyor: {e}")
-            # Fallback: captcha.html'i ayrı bir sekmede aç. Ana sayfada goto, o sayfada
-            # süren fetch() çağrılarının bağlamını yok ederdi.
-            captcha_page = None
-            try:
-                challenge_url = "https://www.sofascore.com/captcha.html?redirectUrl=https%3A%2F%2Fwww.sofascore.com%2Ftr"
-                captcha_page = await self.context.new_page()
-                await captcha_page.goto(challenge_url, wait_until="domcontentloaded", timeout=20000)
-                for _ in range(10):
-                    await asyncio.sleep(1)
-                    if "/captcha.html" not in captcha_page.url:
-                        t_raw = await captcha_page.evaluate("() => localStorage.getItem('sofa.captcha.token')")
-                        if t_raw:
-                            token = json.loads(t_raw) if t_raw.startswith('"') else t_raw
-                            self._set_token(token)
-                            logger.info("captcha.html üzerinden token başarıyla alındı.")
-                            return token
-            except Exception as fe:
-                logger.error(f"captcha.html fallback hatası: {fe}")
-            finally:
-                if captcha_page is not None:
-                    try:
-                        await captcha_page.close()
-                    except Exception:
-                        pass
-
+        logger.info("Cloudflare Turnstile challenge çözülüyor (captcha.html)...")
+        token = await self._solve_on_captcha_page()
+        if token:
+            self._set_token(token)
+            self._solve_failed_at = 0.0
+            logger.info("Turnstile challenge çözüldü.")
+            return token
+        self._solve_failed_at = time.time()
+        logger.warning(
+            f"Turnstile challenge çözülemedi; {int(_SOLVE_RETRY_AFTER)} sn yeniden denenmeyecek."
+        )
         return None
 
     async def fetch_json(self, path_or_url: str) -> Optional[Any]:
@@ -327,24 +282,24 @@ class BrowserBridge:
             logger.debug(f"Kaynak bulunamadı (404): {url}")
             return {"__404__": True}
 
-        logger.warning(f"Tarayıcı fetch başarısız (status {res.get('status')}): {res.get('text', '')[:100]}")
+        logger.warning(f"Tarayıcı fetch başarısız (status {res.get('status')}): {(res.get('text') or '')[:100]}")
         return None
 
     async def close(self) -> None:
         """Tarayıcı oturumunu kapatır."""
-        if self.context:
+        if self.page is not None:
             try:
-                await self.context.close()
+                await self.page.close()
             except Exception:
                 pass
-            self.context = None
             self.page = None
-        if self.pw:
+        if self.session is not None:
             try:
-                await self.pw.stop()
+                await self.session.close()
             except Exception:
                 pass
-            self.pw = None
+        self.session = None
+        self.context = None
 
 
 # Senkron / Genel Kullanım Fonksiyonları

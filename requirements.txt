@@ -1,8 +1,9 @@
 # HTTP istekleri (Cloudflare TLS parmak izi taklidi)
 curl_cffi>=0.11.4,<1
 
-# Tarayıcı ve Challenge Bypass (Cloudflare Turnstile & Varnish)
-playwright>=1.40.0,<2
+# Tarayıcı ve Challenge Bypass (Cloudflare Turnstile): Scrapling StealthySession
+# (patchright + playwright ile gelir). Sürüm sabit: challenge çözümü bu sürümle doğrulandı.
+scrapling[fetchers]==0.4.15
 
 # Veri işleme
 pandas>=2.1.0,<4

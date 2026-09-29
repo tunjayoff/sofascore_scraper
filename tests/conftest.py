@@ -101,3 +101,24 @@ def _seed() -> None:
 
 
 _seed()
+
+
+import pytest  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _isolate_request_layer(request, monkeypatch):
+    """
+    Her test temiz bir istek katmanıyla başlar: "önce tarayıcı" modu bir testten diğerine
+    taşınmaz. `browser` işaretli olmayan testler gerçek bir tarayıcı başlatamaz.
+    """
+    import src.utils as utils
+    import src.challenge_solver as cs
+
+    monkeypatch.setattr(utils, "_browser_first_until", 0.0)
+    if request.node.get_closest_marker("browser") is None:
+        async def _no_real_browser(self):
+            raise RuntimeError("tests must not launch a real browser (mark the test with @pytest.mark.browser)")
+
+        monkeypatch.setattr(cs.BrowserBridge, "_launch", _no_real_browser)
+    yield

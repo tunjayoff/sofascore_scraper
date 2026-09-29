@@ -246,29 +246,26 @@ Web uygulaması kök yollarda; JSON API öneki **`/api`**.
 
 Sunucu çalışırken OpenAPI: `GET /docs`.
 
-## Anti-Bot Koruması ve Otonom Bypass (BrowserBridge)
+## Anti-Bot Koruması (BrowserBridge)
 
-Sofascore API'leri Cloudflare Turnstile CAPTCHA ve Varnish TLS/JA4 parmak izi denetimi ile korunmaktadır:
-1. **Dinamik Hash:** `X-Requested-With` başlığı 30 dakikalık zaman aralıklarıyla SHA-256 hash'i olarak otomatik üretilir.
-2. **Turnstile ve JWT Token:** API'ler ilk istekte `403 {"reason": "challenge"}` döndürür.
-3. **Otonom BrowserBridge:** Sistem arka planda çalışan kalıcı bir Chrome/Playwright oturumu üzerinden Turnstile challenge'ını 1-2 saniye içinde otomatik çözer, `sofa_captcha` JWT token'ını alır ve API isteklerini tarayıcının TLS oturumu üzerinden **2-10 milisaniye** hızında şeffafça tamamlar.
+SofaScore düz HTTP istemcilerini reddeder: `curl_cffi` hangi TLS parmak izini gösterirse göstersin API istekleri `403 {"reason": "challenge"}` alır. Bu yüzden uygulama API çağrılarını gerçek bir tarayıcı sayfasının içinden yapar:
 
-### Sunucu (Headless Linux) Gereksinimleri
+1. **BrowserBridge**, [Scrapling](https://github.com/D4Vinci/Scrapling)'in `StealthySession`'ı (gizlilik ayarlı patchright) ile headless bir Chromium başlatır ve tek bir sayfayı açık tutar.
+2. **Challenge:** 403 challenge gelince `sofascore.com/captcha.html` açılır; Scrapling gömülü Cloudflare Turnstile'ı geçer ve oluşan `sofa_captcha` cookie'si API'yi açar. Aynı anda gelen 403'ler tek çözümü paylaşır; başarısız bir çözüm 3 dakika yeniden denenmez.
+3. **Önce tarayıcı modu:** curl engellenip tarayıcı başarılı olunca istekler 10 dakika boyunca önce curl'de başarısız olmak yerine doğrudan tarayıcıdan yapılır.
 
-Headless bir Linux sunucuda veya Docker üzerinde çalışırken:
+Tarayıcı masaüstünde de sunucuda da **her zaman headless** çalışır; her yerde aynı kod yolu kullanılır. Ekran, Xvfb veya Google Chrome gerekmez. Üç sporda ölçüldü: Premier League (50 maç), Wimbledon (239) ve EuroBasket (76) tam sezonları ekransız ortamda %100 kapsamayla indi. Hata ayıklarken tarayıcıyı görmek için `SOFASCORE_BROWSER_HEADED=1`.
+
+Tarayıcı profili (cookie'ler, çözülmüş challenge) `~/.cache/sofascore_scraper/chrome_profile` altındadır; `SOFASCORE_BROWSER_PROFILE` ile değiştirilebilir. Var olan profille yeniden başlatmada ilk istek yaklaşık 1–6 sn'de yanıtlanır.
+
+### Sunucu kurulumu (Linux / Docker)
+
 ```bash
-# Playwright tarayıcı kütüphanesini kurun:
-playwright install chromium
-# veya doğrudan sistem Google Chrome'unu kurun (önerilir):
-sudo apt install google-chrome-stable  # Ubuntu/Debian
-sudo pacman -S google-chrome           # Arch Linux
+pip install -r requirements.txt
+python -m playwright install chromium
+# Yalnızca Debian/Ubuntu, bir kez: Chromium'un sistem kütüphaneleri (sudo kullanır)
+python -m playwright install-deps chromium
 ```
-Sunucuda ekran kartı/masaüstü yoksa sanal ekran ile çalıştırabilirsiniz:
-```bash
-xvfb-run python main.py --headless --update-all
-```
-Masaüstü ortamında (Linux X11/Wayland, Windows, macOS) herhangi bir ek işlem gerekmez; BrowserBridge arka planda otomatik çalışır.
-
 
 ## Geliştirme
 

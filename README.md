@@ -248,29 +248,26 @@ All routes are prefixed with `/api` unless noted.
 
 OpenAPI: `GET /docs` when the server is running.
 
-## Anti-Bot Protection & Autonomous Bypass (BrowserBridge)
+## Anti-Bot Protection (BrowserBridge)
 
-Sofascore API endpoints are protected by Cloudflare Turnstile CAPTCHA and Varnish TLS/JA4 fingerprinting:
-1. **Dynamic Hash:** The `X-Requested-With` header is dynamically generated as a SHA-256 hash using 30-minute timestamp intervals.
-2. **Turnstile & JWT Token:** Initial API requests trigger `403 {"reason": "challenge"}`.
-3. **Autonomous BrowserBridge:** When a challenge is received, a lightweight background Chrome/Playwright persistent session solves Turnstile automatically in 1–2 seconds, exchanges the JWT `sofa_captcha` token, and fulfills API requests directly through the authenticated TLS session at **2–10 ms** speeds.
+SofaScore rejects plain HTTP clients: API requests get `403 {"reason": "challenge"}` whatever TLS fingerprint `curl_cffi` presents. The app therefore makes API calls from inside a real browser page:
 
-### Headless Server Setup (Linux / Docker)
+1. **BrowserBridge** starts a headless Chromium through [Scrapling](https://github.com/D4Vinci/Scrapling)'s `StealthySession` (patchright with stealth settings) and keeps one page open.
+2. **Challenge:** on a 403 challenge it opens `sofascore.com/captcha.html`; Scrapling passes the embedded Cloudflare Turnstile and the resulting `sofa_captcha` cookie unlocks the API. Concurrent 403s share one solve; a failed solve is not retried for 3 minutes.
+3. **Browser-first mode:** once curl is blocked and the browser succeeds, requests go straight to the browser for 10 minutes instead of failing through curl first.
 
-When running on a headless Linux server or in a container:
+The browser always runs **headless**, on a desktop and on a server alike, so the same code path is used everywhere; no display, Xvfb or Google Chrome is needed. Measured on the three sports: full seasons of Premier League (50 matches), Wimbledon (239) and EuroBasket (76) downloaded at 100% coverage without a display. Set `SOFASCORE_BROWSER_HEADED=1` to watch the browser while debugging.
+
+The browser profile (cookies, solved challenge) lives in `~/.cache/sofascore_scraper/chrome_profile`; change it with `SOFASCORE_BROWSER_PROFILE`. A restart with an existing profile answers its first request in about 1–6 s.
+
+### Server setup (Linux / Docker)
+
 ```bash
-# Install Playwright browser dependencies:
-playwright install chromium
-# Or install Google Chrome package directly (recommended):
-sudo apt install google-chrome-stable  # Ubuntu/Debian
-sudo pacman -S google-chrome           # Arch Linux
+pip install -r requirements.txt
+python -m playwright install chromium
+# Debian/Ubuntu only, once: system libraries Chromium needs (uses sudo)
+python -m playwright install-deps chromium
 ```
-On servers without a physical display, run inside a virtual display:
-```bash
-xvfb-run python main.py --headless --update-all
-```
-On standard desktop environments (Linux X11/Wayland, Windows, macOS), BrowserBridge runs automatically without extra configuration.
-
 
 ## Development
 

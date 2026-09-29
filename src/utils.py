@@ -217,6 +217,32 @@ def _parse_retry_after_seconds(retry_after: Optional[str], default_wait: int) ->
             return default_wait
 
 
+# ---- Önce tarayıcı modu ----
+# curl isteği challenge'a takılıp tarayıcı köprüsü aynı isteği alabildiyse, bir süre boyunca
+# istekler doğrudan tarayıcıdan yapılır: her istekte önce reddedilecek bir curl isteği ve
+# ardından gelen bekleme olmasın. Süre dolunca curl yeniden denenir (engel kalkmış olabilir).
+BROWSER_FIRST_SECONDS = 600.0
+_browser_first_until = 0.0
+
+
+def _browser_first() -> bool:
+    return time.monotonic() < _browser_first_until
+
+
+def _mark_browser_first() -> None:
+    global _browser_first_until
+    if not _browser_first():
+        logger.info(f"curl engelleniyor; istekler {int(BROWSER_FIRST_SECONDS)} sn tarayıcıdan yapılacak")
+    _browser_first_until = time.monotonic() + BROWSER_FIRST_SECONDS
+
+
+def _browser_result(data: Any, url: str) -> Optional[JsonResponse]:
+    """Köprü sonucunu yorumla: veri, 404 (None) ya da başarısız (hata)."""
+    if isinstance(data, dict) and data.get("__404__"):
+        return None
+    return cast(JsonResponse, data)
+
+
 # 403/404/429 dışındaki 4xx yanıtlar kalıcıdır: yeniden denemek yalnızca zaman kaybettirir
 def _is_transient_status(status_code: int) -> bool:
     return status_code >= 500 or status_code in (403, 408, 429)
@@ -248,6 +274,15 @@ def make_api_request(
     wait_time_max = float(runtime_config["wait_time_max"])
     use_proxy, proxy_url = _get_proxy_config()
     full_url = _full_url(url)
+
+    if _browser_first():
+        raise_if_cancelled()
+        from src.challenge_solver import fetch_api_via_browser_sync
+        data = fetch_api_via_browser_sync(url)
+        if data is not None:
+            _sleep(wait_time_min + random.uniform(0, wait_time_max))
+            return _browser_result(data, url)
+        # Köprü başarısız: aşağıda curl ile normal yoldan dene
 
     for attempt in range(max_retries):
         raise_if_cancelled()
@@ -286,11 +321,9 @@ def make_api_request(
                         from src.challenge_solver import fetch_api_via_browser_sync
                         browser_data = fetch_api_via_browser_sync(url)
                         if browser_data is not None:
-                            if isinstance(browser_data, dict) and browser_data.get("__404__"):
-                                logger.debug(f"Kaynak bulunamadı (404): {url}")
-                                return None
-                            logger.info("Veri BrowserBridge üzerinden başarıyla alındı!")
-                            return cast(JsonResponse, browser_data)
+                            _mark_browser_first()
+                            logger.debug("Veri BrowserBridge üzerinden alındı")
+                            return _browser_result(browser_data, url)
                     except Exception as te:
                         logger.debug(f"BrowserBridge hatası: {te}")
                 if last_attempt:
@@ -379,6 +412,22 @@ async def make_api_request_async(
     full_url = _full_url(url)
     semaphore = _request_semaphore()
 
+    if _browser_first():
+        raise_if_cancelled()
+        browser_data = None
+        try:
+            from src.challenge_solver import fetch_api_via_browser
+            async with semaphore:
+                browser_data = await fetch_api_via_browser(url)
+        except Exception as e:
+            logger.debug(f"BrowserBridge hatası: {e!r}")
+        if isinstance(browser_data, dict) and browser_data.get("__404__"):
+            raise ResourceNotFoundError(f"Kaynak bulunamadı: {url}")
+        if browser_data is not None:
+            await _asleep(wait_time_min + random.uniform(0, wait_time_max))
+            return cast(JsonResponse, browser_data)
+        # Köprü başarısız: aşağıda curl ile normal yoldan dene
+
     for attempt in range(max_retries):
         raise_if_cancelled()
         last_attempt = attempt == max_retries - 1
@@ -428,7 +477,8 @@ async def make_api_request_async(
                 if isinstance(browser_data, dict) and browser_data.get("__404__"):
                     raise ResourceNotFoundError(f"Kaynak bulunamadı: {url}")
                 if browser_data is not None:
-                    logger.info("Veri BrowserBridge üzerinden başarıyla alındı!")
+                    _mark_browser_first()
+                    logger.debug("Veri BrowserBridge üzerinden alındı")
                     return cast(JsonResponse, browser_data)
             if last_attempt:
                 raise APIError(f"HTTP 403 Forbidden: {url}", status_code=403)
