@@ -44,7 +44,7 @@ async function stop() {
       <span class="mono text-[13px]" style="color: var(--muted)">{{ fmtPct(pct) }}</span>
     </div>
     <div :class="props.large ? 'text-xl font-bold' : 'text-sm font-semibold leading-snug'">{{ title }}</div>
-    <div class="track" :style="{ height: props.large ? '10px' : undefined }" role="progressbar" :aria-valuenow="pct" aria-valuemin="0" aria-valuemax="100">
+    <div class="track" :style="{ height: props.large ? '10px' : undefined }" role="progressbar" :aria-label="title" :aria-valuenow="pct" aria-valuemin="0" aria-valuemax="100">
       <div :style="{ width: pct + '%', background: barColor }"></div>
     </div>
     <div v-if="props.large && s.current_task" class="text-sm" style="color: var(--muted)">{{ s.current_task }}</div>

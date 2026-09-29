@@ -9,6 +9,7 @@ import { useSportStore } from '@/stores/sport'
 import { matchDate, num } from '@/lib/format'
 import { errorText, toast, toastError } from '@/lib/toast'
 import AppIcon from '@/components/AppIcon.vue'
+import { latestOnly } from '@/lib/latest'
 
 const PAGE = 25
 const { t } = useI18n()
@@ -59,7 +60,11 @@ async function loadSeasons() {
   }
 }
 
+const loads = latestOnly()
+const missingLoads = latestOnly()
+
 async function load() {
+  const token = loads.next()
   if (sportWithoutLeagues.value) {
     items.value = []
     total.value = 0
@@ -76,26 +81,30 @@ async function load() {
   void loadMissingCount()
   try {
     const r = await api.matches(p)
+    if (!loads.isCurrent(token)) return
     items.value = r.items || []
     total.value = r.total ?? items.value.length
   } catch (e) {
+    if (!loads.isCurrent(token)) return
     err.value = errorText(e)
     items.value = []
     total.value = 0
   } finally {
-    loading.value = false
+    if (loads.isCurrent(token)) loading.value = false
   }
 }
 
 async function loadMissingCount() {
+  const token = missingLoads.next()
   missingCount.value = 0
   if (!league.value) return
   const p = new URLSearchParams({ limit: '1', league_id: league.value, details: 'missing' })
   if (season.value) p.set('season_id', season.value)
   try {
-    missingCount.value = (await api.matches(p)).total || 0
+    const n = (await api.matches(p)).total || 0
+    if (missingLoads.isCurrent(token)) missingCount.value = n
   } catch {
-    missingCount.value = 0
+    if (missingLoads.isCurrent(token)) missingCount.value = 0
   }
 }
 
@@ -108,7 +117,7 @@ async function downloadMissing() {
     const ids = (r.missing || []).map((m) => Number(m.match_id)).filter(Number.isFinite)
     if (!ids.length) return
     await scrape.start({ mode: 'details', selections: [{ league_id: lid, season_ids: null, match_ids: ids }] })
-    toast(t('matches.missingStarted'))
+    toast(r.truncated ? t('matches.missingTruncated', { n: num(ids.length), total: num(r.missing_count) }) : t('matches.missingStarted'))
   } catch (e) {
     toastError(e)
   } finally {

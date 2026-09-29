@@ -8,6 +8,7 @@ import { SPORTS, sportKey, type SportKey } from '@/lib/sport'
 import { toast, toastError, errorText } from '@/lib/toast'
 import AppIcon from '@/components/AppIcon.vue'
 import SportBadge from '@/components/SportBadge.vue'
+import { trapFocus } from '@/lib/tabs'
 
 const emit = defineEmits<{ close: []; added: [id: number] }>()
 const { t } = useI18n()
@@ -70,20 +71,28 @@ async function add(r: RemoteLeague) {
   }
 }
 
+const dialog = ref<HTMLElement | null>(null)
+// Focus goes back to whatever opened the dialog when it closes
+const opener = document.activeElement as HTMLElement | null
+
 function onKey(e: KeyboardEvent) {
   if (e.key === 'Escape') emit('close')
+  else trapFocus(e, dialog.value)
 }
 
 onMounted(() => {
   document.addEventListener('keydown', onKey)
   void nextTick(() => input.value?.focus())
 })
-onUnmounted(() => document.removeEventListener('keydown', onKey))
+onUnmounted(() => {
+  document.removeEventListener('keydown', onKey)
+  opener?.focus?.()
+})
 </script>
 
 <template>
   <div class="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[12vh]" style="background: var(--overlay)" @click.self="emit('close')">
-    <div role="dialog" aria-modal="true" aria-labelledby="add-title" class="card w-full max-w-[580px] p-6 flex flex-col gap-4" style="box-shadow: var(--shadow)">
+    <div ref="dialog" role="dialog" aria-modal="true" aria-labelledby="add-title" class="card w-full max-w-[580px] p-6 flex flex-col gap-4" style="box-shadow: var(--shadow)">
       <div class="flex items-center justify-between">
         <h2 id="add-title" class="m-0 text-xl font-bold">{{ t('add.title') }}</h2>
         <button type="button" class="btn btn-ghost btn-icon" :aria-label="t('common.close')" @click="emit('close')"><AppIcon name="x" /></button>

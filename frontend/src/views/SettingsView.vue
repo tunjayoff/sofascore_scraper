@@ -5,10 +5,12 @@ import { api, type Settings, type SystemStats } from '@/api/client'
 import { setLocale, type Lang } from '@/i18n'
 import { themePref, setTheme, type ThemePref } from '@/lib/theme'
 import { num } from '@/lib/format'
+import { onTabKeydown } from '@/lib/tabs'
 import { toast, toastError } from '@/lib/toast'
 import { useLeaguesStore } from '@/stores/leagues'
 
 type Tab = 'general' | 'data' | 'advanced'
+const TABS: readonly Tab[] = ['general', 'data', 'advanced']
 const { t, locale } = useI18n()
 const leagues = useLeaguesStore()
 const tab = ref<Tab>('general')
@@ -25,13 +27,26 @@ const themes: { v: ThemePref; k: string }[] = [
   { v: 'dark', k: 'settings.themeDark' },
   { v: 'system', k: 'settings.themeSystem' },
 ]
-const advancedFields: { key: keyof Settings; label: string; step: string; min: number }[] = [
-  { key: 'request_timeout', label: 'settings.timeout', step: '1', min: 1 },
-  { key: 'max_concurrent', label: 'settings.concurrent', step: '1', min: 1 },
-  { key: 'wait_time_min', label: 'settings.waitMin', step: '0.5', min: 0 },
-  { key: 'wait_time_max', label: 'settings.waitMax', step: '0.5', min: 0 },
-  { key: 'max_retries', label: 'settings.retries', step: '1', min: 0 },
+// Bounds mirror SettingsUpdate in src/web/routes/settings.py
+const advancedFields: { key: keyof Settings; label: string; step: string; min: number; max: number }[] = [
+  { key: 'request_timeout', label: 'settings.timeout', step: '1', min: 1, max: 300 },
+  { key: 'max_concurrent', label: 'settings.concurrent', step: '1', min: 1, max: 50 },
+  { key: 'wait_time_min', label: 'settings.waitMin', step: '0.5', min: 0, max: 60 },
+  { key: 'wait_time_max', label: 'settings.waitMax', step: '0.5', min: 0, max: 60 },
+  { key: 'max_retries', label: 'settings.retries', step: '1', min: 0, max: 10 },
 ]
+
+/** First out-of-range advanced field as a message, or '' when all are valid. */
+function invalidField(): string {
+  for (const f of advancedFields) {
+    // v-model.number leaves '' in a cleared field
+    const v = form[f.key] as unknown
+    if (typeof v !== 'number' || !Number.isFinite(v) || v < f.min || v > f.max) {
+      return t('settings.invalidNumber', { field: t(f.label), min: f.min, max: f.max })
+    }
+  }
+  return ''
+}
 
 const changed = computed(() => {
   const o = original.value
@@ -67,6 +82,11 @@ async function load() {
 
 async function save() {
   if (!dirty.value) return
+  const invalid = invalidField()
+  if (invalid) {
+    toastError(new Error(invalid))
+    return
+  }
   saving.value = true
   try {
     const r = await api.saveSettings(changed.value)
@@ -119,12 +139,25 @@ onMounted(load)
   <h1 class="page-title mb-5">{{ t('settings.title') }}</h1>
 
   <div class="tabs mb-6" role="tablist">
-    <button v-for="k in (['general', 'data', 'advanced'] as Tab[])" :key="k" type="button" role="tab" class="tab" :class="{ 'is-active': tab === k }" :aria-selected="tab === k" @click="tab = k">
+    <button
+      v-for="k in TABS"
+      :id="`settings-tab-${k}`"
+      :key="k"
+      type="button"
+      role="tab"
+      class="tab"
+      :class="{ 'is-active': tab === k }"
+      :aria-selected="tab === k"
+      :aria-controls="`settings-panel-${k}`"
+      :tabindex="tab === k ? 0 : -1"
+      @click="tab = k"
+      @keydown="onTabKeydown($event, TABS, tab, (v) => (tab = v), 'settings')"
+    >
       {{ t(`settings.tabs.${k}`) }}
     </button>
   </div>
 
-  <section v-if="tab === 'general'" class="card p-6 flex flex-col gap-6 max-w-[560px]">
+  <section v-if="tab === 'general'" id="settings-panel-general" role="tabpanel" aria-labelledby="settings-tab-general" class="card p-6 flex flex-col gap-6 max-w-[560px]">
     <div>
       <span class="label">{{ t('settings.language') }}</span>
       <div class="seg" role="group" :aria-label="t('settings.language')">
@@ -140,7 +173,7 @@ onMounted(load)
     </div>
   </section>
 
-  <section v-else-if="tab === 'data'" class="card p-6 flex flex-col gap-6 max-w-[560px]">
+  <section v-else-if="tab === 'data'" id="settings-panel-data" role="tabpanel" aria-labelledby="settings-tab-data" class="card p-6 flex flex-col gap-6 max-w-[560px]">
     <div>
       <label class="label" for="s-dir">{{ t('settings.dataDir') }}</label>
       <div class="flex gap-2">
@@ -162,12 +195,12 @@ onMounted(load)
     <p v-if="backup" class="m-0 text-sm">{{ t('settings.backupReady') }} <a :href="backup.url" download class="font-semibold">{{ backup.name }}</a></p>
   </section>
 
-  <section v-else class="card p-6 flex flex-col gap-6 max-w-[640px]">
+  <section v-else id="settings-panel-advanced" role="tabpanel" aria-labelledby="settings-tab-advanced" class="card p-6 flex flex-col gap-6 max-w-[640px]">
     <p class="page-sub text-sm">{{ t('settings.advancedNote') }}</p>
     <div class="grid gap-4 sm:grid-cols-2">
       <div v-for="f in advancedFields" :key="f.key">
         <label class="label" :for="`s-${f.key}`">{{ t(f.label) }}</label>
-        <input :id="`s-${f.key}`" v-model.number="(form as any)[f.key]" type="number" :step="f.step" :min="f.min" class="field mono" />
+        <input :id="`s-${f.key}`" v-model.number="(form as any)[f.key]" type="number" :step="f.step" :min="f.min" :max="f.max" class="field mono" />
       </div>
       <div>
         <label class="label" for="s-log">{{ t('settings.logLevel') }}</label>

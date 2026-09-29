@@ -11,6 +11,7 @@ import { toast, toastError, errorText } from '@/lib/toast'
 import { num } from '@/lib/format'
 import AppIcon from '@/components/AppIcon.vue'
 import SportBadge from '@/components/SportBadge.vue'
+import { latestOnly } from '@/lib/latest'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -84,6 +85,8 @@ function normalize(raw: Season[] | undefined): Season[] {
 function select(id: number) {
   focusId.value = id
   missing.value = null
+  missingLeague.value = null
+  missingChecks.next() // drop any in-flight check for the previous league
   if (!seasons[id]) void loadSeasons(id)
 }
 
@@ -146,24 +149,33 @@ async function start() {
 }
 
 // ---- missing details for the focused league ----
+// The list remembers which league it belongs to: a slow response for league A must not
+// be downloaded as league B after the user switched.
 const missing = ref<number[] | null>(null)
+const missingLeague = ref<number | null>(null)
 const checkingMissing = ref(false)
+const missingChecks = latestOnly()
 async function checkMissing() {
-  if (focusId.value == null) return
+  const leagueId = focusId.value
+  if (leagueId == null) return
+  const token = missingChecks.next()
   checkingMissing.value = true
   try {
-    const r = await api.missingDetails(focusId.value)
+    const r = await api.missingDetails(leagueId)
+    if (!missingChecks.isCurrent(token) || focusId.value !== leagueId) return
     missing.value = (r.missing || []).map((m) => Number(m.match_id)).filter(Number.isFinite)
+    missingLeague.value = leagueId
   } catch (e) {
-    toastError(e)
+    if (missingChecks.isCurrent(token)) toastError(e)
   } finally {
-    checkingMissing.value = false
+    if (missingChecks.isCurrent(token)) checkingMissing.value = false
   }
 }
 async function runMissing() {
-  if (focusId.value == null || !missing.value?.length || scrape.isRunning) return
+  const leagueId = missingLeague.value
+  if (leagueId == null || leagueId !== focusId.value || !missing.value?.length || scrape.isRunning) return
   try {
-    await scrape.start({ mode: 'details', selections: [{ league_id: focusId.value, season_ids: null, match_ids: missing.value }] })
+    await scrape.start({ mode: 'details', selections: [{ league_id: leagueId, season_ids: null, match_ids: missing.value }] })
     missing.value = null
     toast(t('download.started'))
   } catch (e) {

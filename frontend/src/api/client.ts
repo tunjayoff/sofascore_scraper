@@ -1,7 +1,20 @@
+type ValidationIssue = { loc?: (string | number)[]; msg?: string }
+
+/** FastAPI 422: [{loc: ['body', 'max_concurrent'], msg: '...'}] → "max_concurrent: ..." */
+function formatValidation(issues: ValidationIssue[]): string {
+  return issues
+    .map((i) => {
+      const field = (i.loc || []).filter((p) => p !== 'body' && p !== 'query' && p !== 'path').join('.')
+      return field ? `${field}: ${i.msg ?? ''}` : (i.msg ?? '')
+    })
+    .join('; ')
+}
+
 async function parseError(res: Response): Promise<string> {
   try {
     const data = await res.json()
     if (typeof data?.detail === 'string') return data.detail
+    if (Array.isArray(data?.detail)) return formatValidation(data.detail)
     return JSON.stringify(data?.detail ?? data)
   } catch {
     return res.statusText || 'Request failed'
@@ -63,7 +76,10 @@ export type MatchRow = {
   league_folder?: string
   has_details?: boolean
 }
-export type MatchList = { items: MatchRow[]; total: number; limit: number; offset: number }
+export type MatchList = { items: MatchRow[]; total: number; limit: number; offset: number; sort: 'asc' | 'desc' }
+
+export type MissingMatch = { match_id: number; home?: string; away?: string; match_date?: string; season_name?: string }
+export type MissingDetails = { total_matches: number; missing_count: number; missing: MissingMatch[]; truncated: boolean }
 
 export type FetchSelection = { league_id: number; season_ids?: number[] | null; match_ids?: number[] | null }
 export type FetchPayload = { mode?: 'full' | 'details'; league_id?: number | null; selections?: FetchSelection[] | null }
@@ -97,6 +113,15 @@ export type JobRow = {
 
 export type Settings = {
   language: string
+  api_base_url?: string
+  use_proxy?: boolean
+  proxy_url?: string
+  use_color?: boolean
+  date_format?: string
+  rate_limit_threshold_consecutive?: number
+  rate_limit_threshold_ratio?: number
+  server_error_threshold_consecutive?: number
+  debug?: boolean
   data_dir: string
   max_concurrent: number
   wait_time_min: number
@@ -120,7 +145,7 @@ export const api = {
   seasons: (id: number) => apiGet<{ seasons: Season[]; fetched: boolean }>(`/api/leagues/${id}/seasons`),
   refreshSeasons: (id: number) => apiSend<{ seasons: Season[] }>(`/api/leagues/${id}/seasons/refresh`, 'POST'),
   missingDetails: (id: number, seasonId?: number) =>
-    apiGet<{ missing: { match_id: number }[] }>(
+    apiGet<MissingDetails>(
       `/api/leagues/${id}/missing-details${seasonId ? `?season_id=${seasonId}` : ''}`,
     ),
   matches: (params: URLSearchParams) => apiGet<MatchList>(`/api/matches?${params}`),

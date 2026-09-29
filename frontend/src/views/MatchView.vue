@@ -18,6 +18,8 @@ import { errorText, toastError } from '@/lib/toast'
 import { useScrapeStore } from '@/stores/scrape'
 import AppIcon from '@/components/AppIcon.vue'
 import SportBadge from '@/components/SportBadge.vue'
+import { latestOnly } from '@/lib/latest'
+import { onTabKeydown } from '@/lib/tabs'
 
 type Tab = 'overview' | 'stats' | 'events' | 'lineups'
 
@@ -128,20 +130,26 @@ function incident(i: any) {
 
 const formTone: Record<string, string> = { W: 'badge badge-ok', D: 'badge badge-neutral', L: 'badge badge-danger' }
 
+const loads = latestOnly()
+
 async function load() {
+  const token = loads.next()
   loading.value = true
   err.value = ''
   notFetched.value = false
   try {
-    data.value = await api.match(id.value)
+    const d = await api.match(id.value)
+    if (!loads.isCurrent(token)) return
+    data.value = d
     tab.value = 'overview'
     period.value = 0
   } catch (e) {
+    if (!loads.isCurrent(token)) return
     data.value = null
     if (e instanceof ApiError && e.status === 404) notFetched.value = true
     else err.value = errorText(e)
   } finally {
-    loading.value = false
+    if (loads.isCurrent(token)) loading.value = false
   }
 }
 
@@ -218,13 +226,26 @@ onUnmounted(scrape.onFinished(() => notFetched.value && void load()))
     </section>
 
     <div class="tabs mb-5" role="tablist">
-      <button v-for="k in tabs" :key="k" type="button" role="tab" class="tab" :class="{ 'is-active': tab === k }" :aria-selected="tab === k" @click="tab = k">
+      <button
+        v-for="k in tabs"
+        :id="`match-tab-${k}`"
+        :key="k"
+        type="button"
+        role="tab"
+        class="tab"
+        :class="{ 'is-active': tab === k }"
+        :aria-selected="tab === k"
+        :aria-controls="`match-panel-${k}`"
+        :tabindex="tab === k ? 0 : -1"
+        @click="tab = k"
+        @keydown="onTabKeydown($event, tabs, tab, (v) => (tab = v), 'match')"
+      >
         {{ t(`match.tabs.${k}`) }}
       </button>
     </div>
 
     <!-- overview -->
-    <div v-if="tab === 'overview'" class="grid gap-5 lg:grid-cols-2">
+    <div v-if="tab === 'overview'" id="match-panel-overview" role="tabpanel" aria-labelledby="match-tab-overview" class="grid gap-5 lg:grid-cols-2">
       <p v-if="!hasOverview" class="page-sub">{{ t('match.noOverview') }}</p>
       <section v-if="info.length" class="card p-5 flex flex-col gap-3">
         <div v-for="x in info" :key="x.k" class="flex justify-between gap-4 text-sm">
@@ -257,7 +278,7 @@ onUnmounted(scrape.onFinished(() => notFetched.value && void load()))
     </div>
 
     <!-- stats -->
-    <section v-else-if="tab === 'stats'" class="card p-5 md:p-6 flex flex-col gap-5">
+    <section v-else-if="tab === 'stats'" id="match-panel-stats" role="tabpanel" aria-labelledby="match-tab-stats" class="card p-5 md:p-6 flex flex-col gap-5">
       <div v-if="stats.length > 1" class="seg self-start flex-wrap" role="group">
         <button v-for="(p, i) in stats" :key="i" type="button" :class="{ 'is-active': period === i }" @click="period = i">{{ periodName(p, i) }}</button>
       </div>
@@ -278,7 +299,7 @@ onUnmounted(scrape.onFinished(() => notFetched.value && void load()))
     </section>
 
     <!-- events -->
-    <section v-else-if="tab === 'events'" class="card p-5 flex flex-col">
+    <section v-else-if="tab === 'events'" id="match-panel-events" role="tabpanel" aria-labelledby="match-tab-events" class="card p-5 flex flex-col">
       <div v-for="(i, n) in incidents" :key="n" class="flex items-center gap-3 text-sm min-h-[40px]" style="border-bottom: 1px solid var(--line)">
         <template v-if="incident(i).mark === 'period'">
           <span class="section-label py-2 mx-auto">{{ incident(i).text }}</span>
@@ -292,7 +313,7 @@ onUnmounted(scrape.onFinished(() => notFetched.value && void load()))
     </section>
 
     <!-- lineups -->
-    <div v-else-if="tab === 'lineups' && lineups" class="grid gap-5 md:grid-cols-2">
+    <div v-else-if="tab === 'lineups' && lineups" id="match-panel-lineups" role="tabpanel" aria-labelledby="match-tab-lineups" class="grid gap-5 md:grid-cols-2">
       <section v-for="side in [{ n: home, x: homeXi }, { n: away, x: awayXi }]" :key="side.n" class="card p-5 flex flex-col gap-3">
         <h2 class="m-0 text-base font-bold">{{ side.n }}</h2>
         <div class="section-label">{{ t('match.starters') }}</div>
