@@ -5,7 +5,7 @@ canlı API'den toplanmış örneklerle belgelenmesi. Her satırın arkasında `r
 altında ham bir API yanıtı (`event` + `fetched_at_utc` + `source_endpoint`) vardır; örneği
 olmayan durum "bulunamadı" olarak, arama yöntemiyle birlikte yazılmıştır.
 
-Veri toplama: 29.09.2026, 13:15–16:00 UTC. Tarama penceresi: 15.09.2026–06.10.2026.
+Veri toplama: 29.09.2026, 13:15–16:00 UTC; geriye dönük ölçüm 17:12–17:34 UTC. Tarama penceresi: 15.09.2026–06.10.2026.
 
 Script'ler (yeniden çalıştırılabilir): `scripts/discover_status_taxonomy.py` (A–C),
 `scripts/measure_finish_lag.py` (D), ortak parçalar `scripts/_research_common.py`.
@@ -14,7 +14,7 @@ Talimat 01 için kırpılmış kopyalar: `tests/fixtures/status/{sport}/`
 `startTimestamp`, `time`, `changes`).
 
 > **Basketbol canlı ölçümü tamamlanmadı.** Euroleague + Eurocup maçlarının bitmesi beklenmeden durduruldu
-> (süre kısıtı). Yerine geriye dönük ölçüm yapıldı (bkz. Gecikme ölçümü → Basketbol); liste kaynaklarının
+> (süre kısıtı). Yerine geriye dönük ölçüm yapıldı (bkz. Gecikme ölçümü → Geriye dönük); liste kaynaklarının
 > basketbol gecikmesi bu yüzden ölçülmedi.
 
 ---
@@ -181,7 +181,7 @@ kaydedilen `A_inprogress-*` dosyalarıdır ve tabloda onlara referans verilir.
 | T6 | Askıya alınmış / ertesi güne kalmış | `tennis/B9_suspended__17208583.json` (`suspended/81`, çiftler) — aynı id ile `startTimestamp` ertesi güne taşındı (B13). `tennis/T6_suspended__17201545.json`: `interrupted/80` |
 | T7 | Çiftler | `tennis/T7_doubles__17207542.json`: `homeTeam.subTeams` dolu; status davranışı teklerle aynı |
 | T8 | Maç tie-break (10 puan) | `tennis/T8_match_tiebreak__17078471.json`: 3. set `period3=10-4` olarak (oyun değil puan), `current=2-1` |
-| T9 | Challenger / ITF | `tennis/T9_challenger_itf__17208186.json`. Taranan Challenger/ITF maçlarında görülen ama ana turda (ATP, WTA, WTA 125, UTR) görülmeyen üçlüler: `inprogress/20 Started`, `interrupted/80`, `suspended/81`. Ana turda görülen her üçlü Challenger/ITF'te de görüldü |
+| T9 | Challenger / ITF / UTR | `tennis/T9_challenger_itf__17208186.json`. Taranan Challenger/ITF/UTR maçlarında görülen ama ana turda (ATP, WTA, Grand Slam, WTA 125) görülmeyen üçlüler: `inprogress/20 Started`, `interrupted/80`, `suspended/81`. Ana turda görülen her üçlü Challenger/ITF/UTR'de de görüldü (taranan 16 UTR maçı yalnızca `inprogress` 8/9/10) |
 | T10 | Bye | **Bulunamadı.** Yöntem: 2.212 tenis maçında takım adında "bye" arandı; yok |
 
 ---
@@ -283,11 +283,65 @@ yapılmadığı için kesin liste gecikmesi **ölçülmedi** (açık soru).
 Futbolda 2 maç (17206702, 17206703) için `lag_season_list` yok: maç bilgisinde sezon olmadığı için scraper'ın
 liste yolu kurulamıyor; bu maçlar scraper'ın listelerinde de görünmez.
 
-### Basketbol (geriye dönük)
+### Geriye dönük: bitiş sonrası güncellemeler (üç spor)
 
-Canlı izleme yerine yakın zamanda bitmiş maçların tek `/event` yanıtından (`python scripts/measure_finish_lag.py
---retro --sport basketball --hours 336 --max-events 400`; kayıt `research/finish_lag/retro_2026-09-29_basketball.jsonl`,
-özet `…_summary.json`):
+Canlı izleme yerine yakın zamanda bitmiş maçların tek `/event` yanıtı: `python scripts/measure_finish_lag.py
+--retro --sport {sport} --hours 336 --max-events 400` (29.09.2026, 17:12–17:34 UTC). Kayıt
+`research/finish_lag/retro_2026-09-29_{sport}.jsonl`, özet `…_summary.json`; özet ağa çıkmadan
+`--retro-summarize <jsonl>` ile yeniden üretilir. Aday maçlar tarama indeksinden (`data/research_index/`), 336 saat
+içinde ve en az 3 saat önce başlamış, `finished` görülmüş maçlar arasından en yeni 400'üdür; bu yüzden gerçek
+kapsam 336 saat değil, aşağıdaki başlangıç aralığıdır.
+
+Her maç için `changes.changes` (son güncellemede değişen alanlar) sınıflandırılır (`classify_last_update`):
+
+| Sınıf | Son güncellemede değişen |
+|---|---|
+| geçiş | `status.*` (son güncelleme bitiş geçişinin kendisi) |
+| nihai skor | status yok; `homeScore/awayScore.current` veya `display` |
+| yalnız periyot | status yok; yalnızca periyot / `normaltime` / `overtime` skorları |
+| skor dışı | status ve skor yok (`providerLock.*`, `time.*`, `cardsCode`) |
+
+Ölçü `post_finish_score_update_rate` = (nihai skor + yalnız periyot) / maç. Saatler `change_ts − startTimestamp`.
+
+**Üst lig / alt lig ayrımı sporlar arasında aynı ölçütle yapılmadı; karşılaştırırken akılda tutulmalı.**
+- Futbol ve basketbol: üst lig = SofaScore'un oyuncu istatistiği yayınladığı turnuvalar
+  (`uniqueTournament.hasEventPlayerStatistics` veya `event.hasEventPlayerStatistics` true). Bu SofaScore'un
+  kapsam seviyesidir, ligin gerçek seviyesi değil; ikisi çoğu zaman örtüşür ama aynı şey değildir. Basketbolda
+  bayrak turnuva seviyesinde hiç true değil, yalnızca event seviyesinde true (145 maç); futbolda 111 maç turnuva
+  bayrağıyla, 49 maç yalnızca event bayrağıyla üst.
+- Tenis: bayrak hiçbir seviyede true gözlenmediği için isimle: `tournament.category.name` ATP, WTA, Grand Slam
+  veya WTA 125 → üst; Challenger, ITF, UTR ve diğerleri → alt (T9 ile aynı sınıf listesi).
+
+| Spor | Seviye | Maç | Başlangıç aralığı (UTC) | Son güncelleme: geçiş / nihai skor / yalnız periyot / skor dışı | `post_finish_score_update_rate` | Nihai skor, saat: n; min / medyan / p90 / maks | Yalnız periyot, saat: n; min / medyan / p90 / maks |
+|---|---|---|---|---|---|---|---|
+| Futbol | üst | 160 | 25.09 10:00 – 29.09 13:00 | 124 / 0 / 0 / 36 | 0/160 (0,000) | 0 | 0 |
+| Futbol | alt | 240 | 25.09 09:00 – 29.09 13:00 | 118 / 3 / 3 / 116 | 6/240 (0,025) | 3; 1,21 / 2,21 / – / 5,37 | 3; 1,24 / 2,68 / – / 3,23 |
+| Tenis | üst | 189 | 25.09 13:30 – 29.09 13:40 | 28 / 0 / 5 / 156 | 5/189 (0,026) | 0 | 5; 1,13 / 1,55 / – / 2,69 |
+| Tenis | alt | 211 | 25.09 13:30 – 29.09 14:05 | 32 / 0 / 2 / 177 | 2/211 (0,009) | 0 | 2; 1,67 ve 2,04 |
+| Basketbol | üst | 145 | 26.09 13:00 – 29.09 13:30 | 138 / 2 / 2 / 3 | 4/145 (0,028) | 2; 2,95 ve 2,99 | 2; 2,29 ve 16,38 |
+| Basketbol | alt | 255 | 26.09 12:30 – 28.09 23:30 | 177 / 25 / 53 / 0 | 78/255 (0,306) | 25; 2,40 / 43,82 / 64,31 / 66,40 | 53; 1,98 / 8,55 / 19,45 / 24,50 |
+
+p90 yalnızca n ≥ 10 için (yakın sıra yöntemi); daha küçük örneklemde "–" ya da tek tek değerler.
+
+Okuma notları:
+- `changes` yalnızca **son** güncellemeyi gösterir. Skor düzeltmesiyle geç tamamlanan skor (ör. son periyodun
+  sonradan girilmesi) bu veriden ayrılamaz; önceki değer de bilinmediği için skorun ne kadar değiştiği bilinmez.
+- Oran bir **alt sınırdır**: skor güncellemesinden sonra skor dışı bir güncelleme geldiyse maç "skor dışı" sayılır.
+  Teniste son güncelleme 333/400 maçta `time.*` (`currentPeriodStart` + son setin süresi), futbolda 133/400 maçta
+  `providerLock.*`; bu maçlarda daha önce bir skor değişikliği olup olmadığı görünmez.
+- Nihai skoru değişen maçlar: futbolda ASEAN Cup, Club Friendly Games, Kings League MENA (birer); basketbolda
+  27 maçın 18'i FIBA 3x3 (Challenger Mataró 11, World Tour Deqing 7), üst tarafta Germany BBL 16738305
+  (`awayScore.current/display/period4/normaltime`, başlangıçtan 2,95 sa sonra) ve Pro B 16476744. Örnekler
+  `basketball/K6_score_changed_after_finished__17006066.json`, `…__17006262.json` (U19 Eccellenza),
+  `…__17204039.json` (yalnız periyot, FCB U15).
+- Kapsam bayrağı ile lig seviyesi farkının somut örneği: basketbolda "üst" tarafta CBI U17, EYBL U14,
+  U19 Eccellenza ve Poland 2nd Basketball League maçları var.
+- Futbol ve tenis canlı ölçümünde (bitişten sonra 2–50 dk izleme) skor değişikliği 0/22.
+- Liste kaynaklarının gecikmesi bu yöntemle ölçülemez.
+
+### Basketbol düdük → `finished` (geriye dönük)
+
+Aynı basketbol kaydından:
 
 - `transition_ts` = `changes.changeTimestamp`, yalnızca değişen alanlar `status.*` içeriyorsa (son güncelleme bitiş geçişi).
 - `expected_ft` = `time.clockRunningLastUpdated`, yalnızca `clockRunning=false` ve `played ≥ periodLength × totalPeriodCount`.
@@ -295,31 +349,18 @@ Canlı izleme yerine yakın zamanda bitmiş maçların tek `/event` yanıtından
 
 | | Değer |
 |---|---|
-| Sorgulanan bitmiş maç (son 14 gün, en yeni 400) | 400 |
-| Hesaplanabilen | 9 |
-| Saat verisi yok (`played`/`clockRunning` alanı yok) | 306 |
-| Son güncelleme bitiş geçişi değil (bitiş sonrası başka alan değişmiş) | 85 |
-| `lag_whistle` medyan / p90 / min / maks | 20 / 261 / 0 / 302 sn |
+| Sorgulanan bitmiş maç (26.09 12:30 – 29.09 13:30 UTC başlangıçlı en yeni 400) | 400 |
+| Hesaplanabilen | 9 (hepsi kapsam bayrağına göre üst) |
+| Son güncelleme geçiş ama saat verisi yok (`played`/`clockRunning` alanı yok) | 306 (üst 129, alt 177) |
+| Son güncelleme bitiş geçişi değil | 85 |
+| `lag_whistle` n / min / medyan / maks | 9 / 0 / 20 / 302 sn (n < 10, p90 yok) |
 | Negatif `lag_whistle` | 0 |
 
-Hesaplanabilen 9 maç alt lig/genç lig maçları (CBI U17, Israeli Women BPL, National League Tournament, EYBL U14);
-örnekler `basketball/K7_whistle_to_finished__17119137.json` (düdük 2026-09-27T17:45:59Z, geçiş +20 sn) ve
-`…__17203939.json` (+302 sn). Örneklem küçük; üst liglerde (Euroleague vb.) bu pencerede bitmiş maç yok denecek kadar azdı.
-`polling_lag`, `lag_live`, `lag_season_list`, `lag_scheduled` bu yöntemle ölçülemez.
-
-**Bitiş sonrası skor değişikliği (basketbol):** 85 maçın son güncellemesi `finished` geçişinden sonra yapılmış ve
-status içermiyor; 82'sinde skor alanları değişmiş:
-
-| Değişen | Maç | Örnek |
-|---|---|---|
-| Nihai skor (`homeScore/awayScore.current`, `display`) | 27 | `basketball/K6_score_changed_after_finished__17006066.json`, `…__17006262.json` (U19 Eccellenza); Germany BBL 16738305 (`awayScore.current/display/period4/normaltime`, retro kaydında) |
-| Yalnızca periyot skorları / `normaltime` | 55 | `basketball/K6_score_changed_after_finished__17204039.json` (FCB U15) |
-| Skor dışı (`time.currentPeriodStart`) | 3 | retro kaydında |
-
-Nihai skoru değişen 27 maçın 18'i FIBA 3x3 turnuvaları (Challenger Mataró 11, World Tour Deqing 7). Son değişiklik
-maç başlangıcından 1,9–66,4 saat sonra (medyan 14,2 sa). `changes.changes` hangi alanın değiştiğini söylüyor, önceki
-değeri söylemiyor: skorun ne kadar değiştiği bu veriden bilinmiyor. Futbol ve tenis canlı ölçümünde (bitişten sonra
-2–50 dk izleme) skor değişikliği 0/22.
+Hesaplanabilen 9 maç: National League Tournament 4, CBI U17 2, Israeli Women Basketball Premier League 2,
+EYBL U14 1. Örnekler `basketball/K7_whistle_to_finished__17119137.json` (düdük 2026-09-27T17:45:59Z, geçiş +20 sn)
+ve `…__17203939.json` (+302 sn). Örneklem küçük ve kapsam bayrağına göre "üst" olsa da gençlik/alt seviye
+ağırlıklı; Euroleague vb. bu pencerede yok denecek kadar azdı. `polling_lag`, `lag_live`, `lag_season_list`,
+`lag_scheduled` bu yöntemle ölçülemez.
 
 ---
 
@@ -354,8 +395,10 @@ değeri söylemiyor: skorun ne kadar değiştiği bu veriden bilinmiyor. Futbol 
 | B10/B12 yeniden kontrol + B13 örnekleri | 96 | — | `research/status_samples/_recheck_{sport}.json` |
 | D futbol | 626 (son tur sayacı) | 13:42–14:14 UTC | `…_football.jsonl` |
 | D tenis | 2.203 (son tur sayacı) | 13:42–15:02 UTC | `…_tennis.jsonl` |
-| Basketbol geriye dönük (`--retro`, 72 sa + 336 sa çalıştırması) + K6/K7 örnekleri | 151 + 401 + 5 | — | `research/finish_lag/retro_2026-09-29_basketball_summary.json` (son çalıştırma) |
-| **Toplam (kayıtlı)** | **5.778** | | |
+| Basketbol geriye dönük (`--retro`, 72 sa + 336 sa çalıştırması) + K6/K7 örnekleri | 151 + 401 + 5 | — | önceki çalıştırmalar; kayıt aşağıdaki çalıştırmayla değiştirildi |
+| Üç spor geriye dönük, ilk çalıştırma (16:50–17:11 UTC; tenis/basketbol seviye ayrımı hatalı olduğu için tekrarlandı) | 3 × 401 | 21 dk | kayıt üzerine yazıldı |
+| Üç spor geriye dönük, kayıtlı çalıştırma (17:12–17:34 UTC) | 3 × 401 | 21 dk | `research/finish_lag/retro_2026-09-29_{sport}_summary.json` |
+| **Toplam** | **8.184** | | |
 
 **Gizli bilgi kontrolü:** commit'lenen dosyalarda (`research/`, `tests/fixtures/status/`, `docs/`) `set-cookie`,
 `authorization`, `cookie`, `sofa_captcha`, `x-captcha` ve JWT biçimli değer (`eyJ…`) arandı: eşleşme yok. Yanıt

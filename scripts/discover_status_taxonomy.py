@@ -255,8 +255,8 @@ SPORT_CASES: Dict[str, List[Tuple[str, str, Callable[[Dict[str, Any]], bool]]]] 
         ("T7_doubles", "Çiftler", lambda r: r.get("doubles")),
         ("T8_match_tiebreak", "Maç tie-break (10 puan)", lambda r: r["type"] == "finished" and max(
             score(r, "homeScore", "period3") or 0, score(r, "awayScore", "period3") or 0) >= 10),
-        ("T9_challenger_itf", "Challenger / ITF", lambda r: any(k in (r.get("category") or "") + (r.get("tournament") or "")
-                                                             for k in ("Challenger", "ITF"))),
+        ("T9_challenger_itf", "Challenger / ITF / UTR", lambda r: any(k in (r.get("category") or "") + (r.get("tournament") or "")
+                                                                   for k in ("Challenger", "ITF", "UTR"))),
         ("T10_bye", "Bye", lambda r: "bye" in ((r.get("home") or "") + " " + (r.get("away") or "")).lower()),
     ],
 }
