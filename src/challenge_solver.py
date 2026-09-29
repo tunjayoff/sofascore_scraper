@@ -246,12 +246,38 @@ class BrowserBridge:
         # shield: bir bekleyenin iptali diğerlerinin beklediği çözümü iptal etmesin
         return await asyncio.shield(self._solve_task)
 
+    async def evaluate(self, script: str, arg: Any = None) -> Any:
+        """
+        Köprü sayfasında JS çalıştırır. Sayfa kendi kendine yönlenirse (SofaScore ana sayfası
+        zaman zaman yeniden yüklenir) süren çağrı "Execution context was destroyed" ile düşer:
+        sayfanın yüklenmesi beklenip bir kez daha denenir; sayfa sofascore.com dışına çıktıysa
+        ana sayfaya geri dönülür.
+        """
+        for attempt in range(3):
+            try:
+                return await self.page.evaluate(script, arg)
+            except Exception as e:
+                msg = str(e)
+                if attempt == 2 or not any(k in msg for k in ("Execution context was destroyed", "navigation", "Target page, context or browser has been closed")):
+                    raise
+                logger.info(f"Köprü sayfası yönlendi; yeniden deneniyor ({attempt + 1}/2)")
+                if self.page.is_closed():
+                    self.page = None
+                    await self.ensure_ready()
+                    continue
+                try:
+                    await self.page.wait_for_load_state("domcontentloaded", timeout=15000)
+                    if not self.page.url.startswith("https://www.sofascore.com"):
+                        await self.page.goto(HOME_URL, wait_until="domcontentloaded", timeout=30000)
+                except Exception as le:
+                    logger.warning(f"Köprü sayfası toparlanamadı: {le}")
+
     async def _api_unlocked(self) -> bool:
         """Çözümden sonra API gerçekten açıldı mı? (Sayfa henüz yoksa doğrulanamaz: evet say.)"""
         if self.page is None or self.page.is_closed():
             return True
         x_req = hashlib.sha256(str(int(time.time()) // 1800).encode("utf-8")).hexdigest()[:6]
-        res = await self.page.evaluate(_FETCH_JS, [_PROBE_URL, x_req, self.token, _JS_FETCH_TIMEOUT_MS])
+        res = await self.evaluate(_FETCH_JS, [_PROBE_URL, x_req, self.token, _JS_FETCH_TIMEOUT_MS])
         return res.get("status") != 403
 
     async def _solve_challenge(self) -> Optional[str]:
@@ -290,14 +316,14 @@ class BrowserBridge:
         url = path_or_url if path_or_url.startswith("http") else "https://www.sofascore.com/api/v1" + path_or_url
         x_req = hashlib.sha256(str(int(time.time()) // 1800).encode("utf-8")).hexdigest()[:6]
 
-        res = await self.page.evaluate(_FETCH_JS, [url, x_req, self.token, _JS_FETCH_TIMEOUT_MS])
+        res = await self.evaluate(_FETCH_JS, [url, x_req, self.token, _JS_FETCH_TIMEOUT_MS])
 
         # 403 Challenge alındıysa otomatik çöz ve tekrar dene
         if res.get("status") == 403 and "challenge" in (res.get("text") or ""):
             logger.info("API 403 challenge döndürdü, Turnstile otomatik çözülüyor...")
             new_token = await self.solve_challenge()
             if new_token:
-                res = await self.page.evaluate(_FETCH_JS, [url, x_req, self.token, _JS_FETCH_TIMEOUT_MS])
+                res = await self.evaluate(_FETCH_JS, [url, x_req, self.token, _JS_FETCH_TIMEOUT_MS])
 
         if res.get("ok"):
             return res.get("data")

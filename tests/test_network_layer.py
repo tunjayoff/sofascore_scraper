@@ -294,3 +294,25 @@ def test_browser_first_mode_skips_curl(monkeypatch):
         assert _run(utils.make_api_request_async(session, "/b")) == {"ok": 1}
     assert session.get.call_count == 1  # ikinci istek curl'e hiç gitmedi
     assert browser.await_count == 2
+
+
+def test_evaluate_retries_after_page_navigation():
+    bridge = cs.BrowserBridge.__new__(cs.BrowserBridge)
+    page = MagicMock()
+    page.is_closed.return_value = False
+    page.url = "https://www.sofascore.com/tr"
+    page.wait_for_load_state = AsyncMock()
+    page.evaluate = AsyncMock(side_effect=[Exception("Page.evaluate: Execution context was destroyed, most likely because of a navigation"), {"ok": 1}])
+    bridge.page = page
+    assert _run(bridge.evaluate("js", [1])) == {"ok": 1}
+    assert page.evaluate.await_count == 2
+    page.wait_for_load_state.assert_awaited_once()
+
+
+def test_evaluate_does_not_swallow_other_errors():
+    bridge = cs.BrowserBridge.__new__(cs.BrowserBridge)
+    page = MagicMock()
+    page.evaluate = AsyncMock(side_effect=ValueError("boom"))
+    bridge.page = page
+    with pytest.raises(ValueError):
+        _run(bridge.evaluate("js"))
