@@ -16,8 +16,8 @@ import dotenv
 from src.logger import get_logger
 from src.paths import env_file_path
 from src.exceptions import (
-    APIError, RateLimitError, NetworkError, 
-    DataParsingError, SofaScoreScraperError, ResourceNotFoundError
+    APIError, RateLimitError, NetworkError,
+    DataParsingError, ResourceNotFoundError
 )
 
 # .env dosyasını yükle

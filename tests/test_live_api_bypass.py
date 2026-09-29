@@ -14,7 +14,6 @@ from src.utils import (
     create_session_async,
     make_api_request_async,
     get_request_headers,
-    IMPERSONATE_PROFILES,
 )
 
 
@@ -51,36 +50,36 @@ def test_headers_display():
 def main():
     print("\n🔬 Sofascore API Bypass Canlı Test")
     print("=" * 60)
-    
+
     results = []
-    
+
     # Test 1: Header'lar (ağ gerektirmez)
     results.append(("Header Çeşitlendirme", test_headers_display()))
-    
+
     # Test 2: Senkron canlı istek
     results.append(("Senkron API İsteği", test_sync_live_request()))
-    
+
     # Test 3: Asenkron canlı istek + warm-up
     results.append(("Asenkron + Warm-up", asyncio.run(test_async_live_request())))
-    
+
     # Sonuçlar
     print("\n" + "=" * 60)
     print("📊 SONUÇLAR")
     print("=" * 60)
-    
+
     all_passed = True
     for name, passed in results:
         status = "✅ PASSED" if passed else "❌ FAILED"
         print(f"  {status} — {name}")
         if not passed:
             all_passed = False
-    
+
     print()
     if all_passed:
         print("🎉 Tüm canlı testler başarılı! API bypass çalışıyor.")
     else:
         print("⚠️  Bazı testler başarısız oldu.")
-    
+
     return 0 if all_passed else 1
 
 

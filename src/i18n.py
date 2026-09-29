@@ -32,7 +32,7 @@ class I18nManager:
     Manages internationalization (i18n) and localization (l10n).
     Loads JSON based locale files and provides string retrieval.
     """
-    
+
     def __init__(self, locale_dir: Optional[Union[str, Path]] = None, default_lang: str = "tr"):
         self.locale_dir = str(locale_dir) if locale_dir is not None else _default_locale_dir()
         self.current_lang = app_language(default_lang)

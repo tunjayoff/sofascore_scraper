@@ -9,8 +9,6 @@ from src.challenge_solver import (
     BrowserBridge,
     apply_token_to_headers,
     fetch_api_via_browser,
-    get_cached_token,
-    _is_token_valid,
 )
 from src.utils import make_api_request, make_api_request_async
 

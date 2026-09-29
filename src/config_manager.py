@@ -5,9 +5,7 @@ Lig bilgilerini okur ve yönetir.
 
 import os
 import dotenv
-import json
-from pathlib import Path
-from typing import Dict, List, Tuple, Optional, Set, Any
+from typing import Dict, Tuple, Optional, Set, Any
 from dataclasses import dataclass
 
 from src.exceptions import ConfigError
@@ -41,14 +39,14 @@ class League:
 
 class ConfigManager:
     """Lig yapılandırma dosyalarını yöneten sınıf. Singleton tasarım desenini uygular."""
-    
+
     # Singleton instance
     _instance = None
-    
+
     def __new__(cls, *args: Any, **kwargs: Any) -> 'ConfigManager':
         """
         Singleton deseni için yeni instance oluşturma kontrolü.
-        
+
         Returns:
             ConfigManager: Tek ConfigManager instance'ı
         """
@@ -56,44 +54,44 @@ class ConfigManager:
             cls._instance = super(ConfigManager, cls).__new__(cls)
             cls._instance._initialized = False
         return cls._instance
-    
+
     def __init__(self, config_path: Optional[str] = None):
         """
         ConfigManager sınıfını başlatır.
-        
+
         Args:
             config_path: Yapılandırma dosyası yolu (none ise varsayılan yol kullanılır)
         """
         # Eğer zaten başlatılmışsa tekrar başlatma
         if getattr(self, '_initialized', False):
             return
-        
+
         # Lig yapılandırma dosyası
         self.league_config_path = config_path or default_league_config_path()
-        
+
         # Lig ve diğer yapılandırma verilerini tut
         self.leagues: Dict[int, str] = {}
         self.leagues_by_name: Dict[str, int] = {}
-        
+
         # Yapılandırma dizinlerini kontrol et
         self._ensure_config_dir()
-        
+
         # Yapılandırma dosyaları yoksa örnek dosyaları oluştur
         if not os.path.exists(self.league_config_path):
             self._create_sample_league_config()
-        
+
         # Ligleri yükle
         self._load_leagues()
-        
+
         logger.info(f"Yapılandırma yöneticisi başlatıldı: {len(self.leagues)} lig yüklendi ({self.league_config_path})")
-        
+
         # Başlatma tamamlandı
         self._initialized = True
-    
+
     def _ensure_config_dir(self) -> None:
         """
         Yapılandırma dizininin var olduğundan emin olur.
-        
+
         Raises:
             OSError: Dizin oluşturulamazsa
         """
@@ -101,7 +99,7 @@ class ConfigManager:
         league_config_dir = os.path.dirname(self.league_config_path)
         if league_config_dir:
             os.makedirs(league_config_dir, exist_ok=True)
-    
+
     def _create_sample_league_config(self) -> None:
         """
         leagues.txt yoksa config/leagues.example.txt'den (yoksa gömülü örnekten) oluşturur.
@@ -125,7 +123,7 @@ class ConfigManager:
     def _load_leagues(self) -> None:
         """
         Lig bilgilerini yapılandırma dosyasından yükler.
-        
+
         Raises:
             ConfigError: Yapılandırma yüklenemezse
         """
@@ -133,16 +131,16 @@ class ConfigManager:
             # Önce temizle
             self.leagues.clear()
             self.leagues_by_name.clear()
-            
+
             # Ligleri metin dosyasından yükle
             self._load_leagues_from_text()
-            
+
             logger.info(f"{len(self.leagues)} lig yapılandırması yüklendi")
         except Exception as e:
             error_msg = f"Lig yapılandırması yüklenirken hata: {str(e)}"
             logger.error(error_msg)
             raise ConfigError(error_msg) from e
-    
+
     @staticmethod
     def _parse_league_line(line: str) -> Optional[Tuple[str, int]]:
         """'Ad: ID' (ad ':' içerebilir — son ':' ayırır) veya eski 'ID Ad' biçimi."""
@@ -206,142 +204,142 @@ class ConfigManager:
     def get_leagues(self) -> Dict[int, str]:
         """
         Tüm ligleri döndürür.
-        
+
         Returns:
             Dict[int, str]: Lig ID'leri ve isimleri içeren sözlük
         """
         self._refresh_if_changed()
         return self.leagues.copy()
-    
+
     def get_league_ids(self) -> Set[int]:
         """
         Tüm lig ID'lerini döndürür.
-        
+
         Returns:
             Set[int]: Lig ID'leri kümesi
         """
         self._refresh_if_changed()
         return set(self.leagues.keys())
-    
+
     def get_league_names(self) -> Set[str]:
         """
         Tüm lig isimlerini döndürür.
-        
+
         Returns:
             Set[str]: Lig isimleri kümesi
         """
         self._refresh_if_changed()
         return set(self.leagues.values())
-    
+
     def get_league_by_name(self, league_name: str) -> Optional[int]:
         """
         İsme göre lig ID'sini döndürür.
-        
+
         Args:
             league_name: Lig adı
-            
+
         Returns:
             Optional[int]: Lig ID'si veya bulunamazsa None
         """
         self._refresh_if_changed()
         return self.leagues_by_name.get(league_name)
-    
+
     def get_league_by_id(self, league_id: int) -> Optional[str]:
         """
         ID'ye göre lig adını döndürür.
-        
+
         Args:
             league_id: Lig ID'si
-            
+
         Returns:
             Optional[str]: Lig adı veya bulunamazsa None
         """
         self._refresh_if_changed()
         return self.leagues.get(league_id)
-    
+
     def get_league_name_by_id(self, league_id: int) -> Optional[str]:
         """
         ID'ye göre lig adını döndürür. get_league_by_id ile aynı işlevi görür.
-        
+
         Args:
             league_id: Lig ID'si
-            
+
         Returns:
             Optional[str]: Lig adı veya bulunamazsa None
         """
         return self.get_league_by_id(league_id)
-    
+
     def get_league_id_by_name(self, league_name: str) -> Optional[int]:
         """
         İsme göre lig ID'sini döndürür. get_league_by_name ile aynı işlevi görür.
-        
+
         Args:
             league_name: Lig adı
-            
+
         Returns:
             Optional[int]: Lig ID'si veya bulunamazsa None
         """
         return self.get_league_by_name(league_name)
-    
+
     def get_data_dir(self) -> str:
         """
         Veri dizinini döndürür.
-        
+
         Returns:
             str: Yapılandırmada tanımlanan veri dizini
         """
         return os.getenv("DATA_DIR", "data")
-    
+
     def get_match_data_dir(self) -> str:
         """
         Maç verilerinin saklandığı dizini döndürür.
-        
+
         Returns:
             str: Maç verilerinin saklandığı dizin
         """
         data_dir = self.get_data_dir()
         return os.path.join(data_dir, "matches")
-    
+
     def get_api_base_url(self) -> str:
         """
         API temel URL'sini döndürür.
-        
+
         Returns:
             str: API temel URL'si
         """
         return os.getenv("API_BASE_URL", "https://www.sofascore.com/api/v1")
-    
+
     def get_use_proxy(self) -> bool:
         """
         Proxy kullanımı ayarını döndürür.
-        
+
         Returns:
             bool: Proxy kullanılacaksa True, değilse False
         """
         return os.getenv("USE_PROXY", "false").lower() == "true"
-    
+
     def get_proxy_url(self) -> str:
         """
         Proxy URL'sini döndürür.
-        
+
         Returns:
             str: Proxy URL'si
         """
         return os.getenv("PROXY_URL", "")
-    
+
     def get_use_color(self) -> bool:
         """
         Renk kullanımı ayarını döndürür.
-        
+
         Returns:
             bool: Renk kullanılacaksa True, değilse False
         """
         return os.getenv("USE_COLOR", "true").lower() == "true"
-    
+
     def get_date_format(self) -> str:
         """
         Tarih formatını döndürür.
-        
+
         Returns:
             str: Tarih formatı
         """
@@ -414,28 +412,28 @@ class ConfigManager:
     def get_language(self) -> str:
         """
         Uygulama dilini döndürür.
-        
+
         Returns:
             str: Dil kodu (tr, en, vs.)
         """
         return app_language("tr")
-    
+
     def set_language(self, lang_code: str) -> bool:
         """
         Uygulama dilini ayarlar.
-        
+
         Args:
             lang_code: Dil kodu (tr, en)
-            
+
         Returns:
             bool: Başarılı olursa True
         """
         return self.update_env_variable("APP_LANGUAGE", lang_code)
-    
+
     def reload_config(self) -> bool:
         """
         Yapılandırmaları yeniden yükler.
-        
+
         Returns:
             bool: Başarılı olursa True, değilse False
         """
@@ -443,23 +441,23 @@ class ConfigManager:
             # Mevcut ligleri temizle
             self.leagues.clear()
             self.leagues_by_name.clear()
-            
+
             # Ligleri yeniden yükle
             self._load_leagues()
-            
+
             # Çevre değişkenlerini yeniden yükle
             dotenv.load_dotenv(env_file_path(), override=True)
-            
+
             # Debug için ligleri logla
             logger.debug(f"Yapılandırma yeniden yüklendi: {len(self.leagues)} lig bulundu")
             for league_id, league_name in self.leagues.items():
                 logger.debug(f"Yüklendi: {league_name} (ID: {league_id})")
-            
+
             return True
         except Exception as e:
             logger.error(f"Yapılandırma yeniden yüklenemedi: {str(e)}")
             return False
-    
+
     def add_league(self, league_name: str, league_id: int) -> bool:
         """
         Yeni bir ligi yapılandırmaya ekler.
@@ -548,11 +546,11 @@ class ConfigManager:
     def update_env_variable(self, key: str, value: str) -> bool:
         """
         Çevre değişkenini günceller ve .env dosyasına kaydeder.
-        
+
         Args:
             key: Değişken adı
             value: Yeni değer
-            
+
         Returns:
             bool: Başarılı olursa True, değilse False
         """

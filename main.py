@@ -30,7 +30,7 @@ logger = get_logger("Main")
 def parse_arguments() -> argparse.Namespace:
     """
     Komut satırı argümanlarını ayrıştırır.
-    
+
     Returns:
         argparse.Namespace: Ayrıştırılan argümanlar
     """
@@ -46,13 +46,13 @@ def parse_arguments() -> argparse.Namespace:
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    
+
     parser.add_argument(
-        "--headless", 
+        "--headless",
         action="store_true",
         help="Kullanıcı arayüzünü göstermeden toplu veri çekme işlemi yapar"
     )
-    
+
     parser.add_argument(
         "--update-all",
         action="store_true",
@@ -86,7 +86,7 @@ def parse_arguments() -> argparse.Namespace:
         dest="data_dir",
         help="Veri kök dizini (varsayılan: .env'deki DATA_DIR, o da yoksa data)",
     )
-    
+
     parser.add_argument(
         "--csv-export",
         action="store_true",
@@ -119,14 +119,14 @@ def parse_arguments() -> argparse.Namespace:
         action="store_true",
         help="Rate-limit circuit breaker mekanizmasını devre dışı bırakır"
     )
-    
+
     return parser.parse_args()
 
 
 def main() -> int:
     """
     Uygulamanın ana giriş noktası.
-    
+
     Returns:
         int: Çıkış kodu (0: başarılı, 1: hata)
     """
@@ -218,7 +218,7 @@ def main() -> int:
         i18n = get_i18n()
         print(i18n.t('prog_terminated_by_user'))
         return 0
-        
+
     except Exception as e:
         i18n = get_i18n()
         logger.exception(f"Beklenmeyen hata: {str(e)}")

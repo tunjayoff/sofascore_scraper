@@ -7,31 +7,30 @@ import os
 import json
 import csv
 import io
-import logging
 import datetime
 import asyncio
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeRemainingColumn
 from typing import Dict, List, Optional, Any, Tuple
-from pathlib import Path
 
 from src.exceptions import ResourceNotFoundError
 
 from src.config_manager import ConfigManager
 from src.season_fetcher import SeasonFetcher
-from src.utils import make_api_request, make_api_request_async, get_request_headers, ensure_directory, FETCH_ONLY_FINISHED, SAVE_EMPTY_ROUNDS
+# İstek fonksiyonu ve FETCH_ONLY_FINISHED fonksiyon içinde import edilir: çağrı anındaki değer okunur (testler patch eder)
+from src.utils import ensure_directory
 from src.fsutil import atomic_write_json, atomic_write_text
 from src.logger import get_logger
-from src.paths import matches_season_dir, safe_name, summary_paths
+from src.paths import matches_season_dir, summary_paths
 
 logger = get_logger("MatchFetcher")
 
 class MatchFetcher:
     """SofaScore API'sinden maç verilerini çeken ve yöneten sınıf."""
-    
+
     def __init__(self, config_manager: ConfigManager, season_fetcher: SeasonFetcher, data_dir: str = "data"):
         """
         MatchFetcher sınıfını başlatır.
-        
+
         Args:
             config_manager: Lig yapılandırmalarını yöneten ConfigManager örneği
             season_fetcher: Sezon verilerini yöneten SeasonFetcher örneği
@@ -42,7 +41,7 @@ class MatchFetcher:
         self.data_dir = data_dir
         self.matches_dir = os.path.join(data_dir, "matches")
         self.base_url = "https://www.sofascore.com/api/v1"
-        
+
         # Veri dizinlerinin var olduğundan emin ol
         ensure_directory(self.data_dir)
         ensure_directory(self.matches_dir)
@@ -58,7 +57,7 @@ class MatchFetcher:
         except ValueError:
             logger.warning(f"Geçersiz DATE_FORMAT '{date_format}'. Varsayılan format kullanılacak.")
             return dt.strftime(default_format)
-    
+
     @staticmethod
     def _is_finished_event(event: Dict[str, Any]) -> bool:
         """SofaScore finished: type/code matter more than description (AET/AP/Ended)."""
@@ -117,58 +116,58 @@ class MatchFetcher:
     def _filter_finished_matches(self, data: Dict[str, Any]) -> Tuple[Dict[str, Any], int, int]:
         """
         Veri setinden sadece bitmiş maçları filtreler.
-        
+
         Args:
             data: API'den alınan orijinal veri
-            
+
         Returns:
-            Tuple[Dict[str, Any], int, int]: 
+            Tuple[Dict[str, Any], int, int]:
                 - Sadece bitmiş maçları içeren filtrelenmiş veri
                 - Toplam maç sayısı
                 - Bitmiş maç sayısı
         """
         if not data or "events" not in data:
             return data, 0, 0
-            
+
         total_events = len(data.get("events", []))
-        
+
         finished_events = [
             event for event in data.get("events", [])
             if self._is_finished_event(event)
         ]
-        
+
         # Orijinal veriyi bozmadan yeni obje oluştur
         filtered_data = data.copy()
         filtered_data["events"] = finished_events
-        
+
         # Ensure round information is preserved
         if "roundInfo" in data and "round" in data.get("roundInfo", {}):
             filtered_data["round"] = data["roundInfo"]["round"]
-        
+
         return filtered_data, total_events, len(finished_events)
-    
+
     def _is_empty_round_data(self, data: Optional[Dict[str, Any]]) -> bool:
         """
         Hafta verisinin boş olup olmadığını kontrol eder.
-        
+
         Args:
             data: API'den alınan veri
-            
+
         Returns:
             bool: Veri boşsa True, değilse False
         """
         if not data:
             return True
-            
+
         events = data.get("events", [])
-        
+
         # 1. Hiç events yoksa
         # 2. Events boş ise ve başka sayfa yoksa
         if not events and not data.get("hasNextPage", False):
             return True
-            
+
         return False
-    
+
     @staticmethod
     def build_round_events_url(
         league_id: int, season_id: int, round_num: int, slug: Optional[str] = None
@@ -516,14 +515,14 @@ class MatchFetcher:
             List[Dict[str, Any]]: Her hafta için özet bilgi içeren liste
         """
         return self.fetch_all_rounds_parallel(league_id, season_id, max_round)
-    
+
     def _save_season_summary(self, league_id: int, season_id: int, results: List[Dict[str, Any]]) -> None:
         """
         Bir sezon için özet bilgileri CSV dosyası olarak kaydeder.
         """
         if not results:
             return
-        
+
         # Tekrarlanan hafta kontrolü
         round_counts = {}
         for result in results:
@@ -532,7 +531,7 @@ class MatchFetcher:
                 if round_num in round_counts:
                     logger.warning(f"Lig {league_id}, Sezon {season_id}: Hafta {round_num} birden fazla kez çekilmiş.")
                 round_counts[round_num] = round_counts.get(round_num, 0) + 1
-        
+
         config_name = self.config_manager.get_league_by_id(league_id)
         league_name = config_name or "Unknown_League"
         season_name = self.season_fetcher.get_season_name(league_id, season_id)
@@ -547,17 +546,17 @@ class MatchFetcher:
             logger.info(f"{league_name}: Sezon {season_id} JSON özeti kaydedildi: {json_summary_file}")
         except Exception as e:
             logger.error(f"Sezon JSON özeti kaydedilirken hata: {str(e)}")
-        
+
         # 2. CSV için gerekli alanları çıkaralım - sonuçlar karmaşık nesne yapısına sahip olabilir
         csv_data = []
-        csv_fields = ["round", "match_id", "home_team", "away_team", "home_score", "away_score", 
+        csv_fields = ["round", "match_id", "home_team", "away_team", "home_score", "away_score",
                       "match_date", "status", "tournament", "season"]
-        
+
         for result in results:
             try:
                 # Get the round number from the result
                 round_number = result.get("round", "")
-                
+
                 # Events listesi içindeki herbir maç için basitleştirilmiş veri oluştur
                 events = result.get("events", [])
                 if isinstance(events, list):
@@ -567,7 +566,7 @@ class MatchFetcher:
                         if not round_number:
                             # Try to get round from roundInfo in the event object
                             round_number = self._get_nested_value(event, ["roundInfo", "round"], "")
-                        
+
                         match_data = {
                             "round": round_number,  # Use the round number we found
                             "match_id": event.get("id", ""),
@@ -582,10 +581,10 @@ class MatchFetcher:
                         }
                         csv_data.append(match_data)
                 else:
-                    logger.warning(f"Beklenmedik veri formatı: events bir liste değil")
+                    logger.warning("Beklenmedik veri formatı: events bir liste değil")
             except Exception as e:
                 logger.error(f"Maç verisi işlenirken hata: {str(e)}")
-        
+
         try:
             if csv_data:
                 buf = io.StringIO()
@@ -599,7 +598,7 @@ class MatchFetcher:
                 logger.warning(f"{league_name}: Sezon {season_id} için CSV özeti oluşturulamadı - veri bulunamadı")
         except Exception as e:
             logger.error(f"Sezon CSV özeti kaydedilirken hata: {str(e)}")
-    
+
     def _get_nested_value(self, data, keys, default=None):
         """Nested dict/json yapılardan güvenli bir şekilde değer çekmek için yardımcı method"""
         current = data
@@ -609,7 +608,7 @@ class MatchFetcher:
             else:
                 return default
         return current
-    
+
     def fetch_all_matches_for_season(
         self,
         league_id: int,
@@ -629,7 +628,7 @@ class MatchFetcher:
             allow_fallback: Sezonda bitmiş maç yoksa önceki sezonu çek. Kullanıcı sezonu
                 açıkça seçtiyse False olmalı: aksi halde başka bir sezonun programı kaydedilir,
                 istenen sezonun detayları hiç çekilmez ve iş yine de "başarılı" görünür.
-            
+
         Returns:
             bool: İşlem başarılı ise True, değilse False
         """
@@ -638,16 +637,16 @@ class MatchFetcher:
             if retry_count >= 2:
                 logger.warning(f"Maksimum deneme sayısına ulaşıldı ({retry_count}). İşlem durduruldu.")
                 return False
-            
+
             # Lig ve sezon adını al
             league_name = self.config_manager.get_league_by_id(league_id) or f"Bilinmeyen Lig {league_id}"
             season_name = self.season_fetcher.get_season_name(league_id, season_id)
-            
+
             logger.info(get_i18n().t('fetching_all_matches_for_league_season', league_name=league_name, season_name=season_name))
-            
+
             # Tüm haftaları asenkron çek
             results = self.fetch_all_rounds_for_season(league_id, season_id, max_round)
-            
+
             if not results:
                 # Hiç bitmiş maç yok: fixtures-only upcoming (örn. PL 26/27) veya boş sezon
                 logger.warning(f"{league_name} - {season_name} için bitmiş maç bulunamadı")
@@ -687,13 +686,13 @@ class MatchFetcher:
 
                 self._save_season_summary(league_id, season_id, [])
                 return False
-            
+
             # Sezon özeti oluştur
             self._save_season_summary(league_id, season_id, results)
-            
+
             logger.info(f"{league_name} - {season_name} için {len(results)} hafta verisi çekildi")
             return True
-            
+
         except Exception as e:
             error_message = str(e)
             logger.error(f"Sezon maçları çekilirken hata: {error_message}")

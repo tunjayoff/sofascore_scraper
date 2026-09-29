@@ -1,7 +1,7 @@
 """404 must not be retried — blocks cancel and wastes minutes on missing slices."""
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import src.utils as utils
 

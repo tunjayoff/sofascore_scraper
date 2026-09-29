@@ -5,9 +5,8 @@ API bypass iyileştirmelerinin birim testleri.
 - WarmableAsyncSession context manager uyumu
 """
 
-import asyncio
 import random
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 

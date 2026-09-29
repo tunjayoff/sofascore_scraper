@@ -20,7 +20,7 @@ import json
 import os
 import threading
 import time
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 from src.logger import get_logger
 

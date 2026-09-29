@@ -28,4 +28,6 @@ extend-exclude = ["frontend", "data", "logs"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "B"]
-ignore = ["E501", "E402"]
+# B007 (kullanılmayan döngü değişkeni) ve B904 (except içinde from olmadan raise) kod tabanına
+# yayılmış stil konuları; gerçek hata yakalayan kurallar açık kalır.
+ignore = ["E501", "E402", "B007", "B904"]
