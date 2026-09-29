@@ -7,8 +7,9 @@ Sonuçlandırma bu repoda yapılmaz; kurallar için docs/settlement-notes.md.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, NamedTuple, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -102,3 +103,149 @@ def classify_status(event: Optional[Dict[str, Any]]) -> StatusClass:
 def is_played(event: Optional[Dict[str, Any]]) -> bool:
     """Maç oynandı ve bitti (hükmen / çekilme / iptal değil)."""
     return classify_status(event) is StatusClass.COMPLETED
+
+
+# --- Skor çıkarımı ---------------------------------------------------------------------
+
+
+class Pair(NamedTuple):
+    home: Optional[Any]
+    away: Optional[Any]
+
+
+def _pair(home: Dict[str, Any], away: Dict[str, Any], key: str) -> Optional[Pair]:
+    h, a = home.get(key), away.get(key)
+    return None if h is None and a is None else Pair(h, a)
+
+
+@dataclass
+class ScoreSheet:
+    sport: Optional[str]
+    status_class: StatusClass
+    winner_code: Optional[int]  # 1 ev, 2 deplasman, 3 berabere
+    raw_change_ts: Optional[int]  # changes.changeTimestamp
+    raw_changed_fields: List[str]  # changes.changes (yalnızca son güncelleme)
+
+    @property
+    def settleable(self) -> bool:
+        """Yalnızca oynanıp biten maç; hükmen/çekilme ve iptal elle ya da kurala göre işlenir."""
+        return self.status_class is StatusClass.COMPLETED
+
+
+@dataclass
+class FootballScores(ScoreSheet):
+    """`current` kullanılmaz: AP'de penaltıları içerir (10-9), `display` içermez (3-3)."""
+    ht: Optional[Pair] = None  # period1
+    ft90: Optional[Pair] = None  # normaltime
+    aet: Optional[Pair] = None  # display; yalnızca code 110/120
+    penalties: Optional[Pair] = None
+    aggregated: Optional[Pair] = None
+    aggregated_winner_code: Optional[int] = None
+
+
+@dataclass
+class BasketballScores(ScoreSheet):
+    format: Optional[str] = None  # "quarters" | "halves" (yalnızca period2/period4) | None (periyot yok)
+    periods: Dict[str, Pair] = field(default_factory=dict)
+    regulation: Optional[Pair] = None  # normaltime
+    overtime: Optional[Pair] = None
+    final: Optional[Pair] = None  # current
+
+
+@dataclass
+class TennisScores(ScoreSheet):
+    """`normaltime` kullanılmaz: Retired maçlarda yok."""
+    sets_won: Optional[Pair] = None  # current
+    games: List[Pair] = field(default_factory=list)  # period1..period5 (match tie-break setinde puan)
+    tiebreaks: Dict[int, Pair] = field(default_factory=dict)  # set no → periodNTieBreak
+    retired: bool = False  # code 92
+    walkover: bool = False  # code 91
+    match_tiebreak: bool = False  # sezgisel, bkz. _is_match_tiebreak
+
+
+def _event_sport_slug(event: Dict[str, Any]) -> Optional[str]:
+    sport = (((event.get("tournament") or {}).get("category") or {}).get("sport") or {})
+    slug = sport.get("slug") or sport.get("name")
+    return str(slug).lower() if slug else None
+
+
+def _is_match_tiebreak(games: List[Pair]) -> bool:
+    """
+    Sezgisel: 3. ya da 5. set (son oynanan set) ≥ 10 ise normal set olamaz (normal set en çok 7),
+    10 puanlık match tie-break sayılır. Tie-break'siz uzun set formatında (ör. 10-8) yanlış sonuç verir.
+    """
+    if len(games) not in (3, 5):
+        return False
+    last = games[-1]
+    return max(last.home or 0, last.away or 0) >= 10
+
+
+def extract_scores(event: Dict[str, Any], sport: Optional[str] = None) -> ScoreSheet:
+    """Spor parametre ile verilirse o kullanılır; yoksa event.tournament.category.sport.slug."""
+    sport = (sport or _event_sport_slug(event) or "").lower() or None
+    status = event.get("status") or {}
+    code = status.get("code")
+    home = event.get("homeScore") or {}
+    away = event.get("awayScore") or {}
+    changes = event.get("changes") or {}
+    common = dict(
+        sport=sport,
+        status_class=classify_status(event),
+        winner_code=event.get("winnerCode"),
+        raw_change_ts=changes.get("changeTimestamp"),
+        raw_changed_fields=list(changes.get("changes") or []),
+    )
+
+    if sport == "football":
+        ft90 = _pair(home, away, "normaltime")
+        display = _pair(home, away, "display")
+        if code == 100 and display is not None and ft90 is not None and display != ft90:
+            logger.warning(f"Futbol {event.get('id')}: code 100 ama display {display} != normaltime {ft90}")
+        return FootballScores(
+            **common,
+            ht=_pair(home, away, "period1"),
+            ft90=ft90,
+            aet=display if code in (110, 120) else None,
+            penalties=_pair(home, away, "penalties"),
+            aggregated=_pair(home, away, "aggregated"),
+            aggregated_winner_code=event.get("aggregatedWinnerCode"),
+        )
+
+    if sport == "basketball":
+        periods = {k: p for k in ("period1", "period2", "period3", "period4") if (p := _pair(home, away, k))}
+        # İki yarı formatında period1/period3 hiç gelmez; biri varsa çeyrek (maç sürüyor ya da yarıda kalmış olsa da)
+        if {"period1", "period3"} & set(periods):
+            fmt: Optional[str] = "quarters"
+        elif periods:
+            fmt = "halves"
+        else:
+            fmt = None
+        return BasketballScores(
+            **common,
+            format=fmt,
+            periods=periods,
+            regulation=_pair(home, away, "normaltime"),
+            overtime=_pair(home, away, "overtime"),
+            final=_pair(home, away, "current"),
+        )
+
+    if sport == "tennis":
+        games = []
+        for n in range(1, 6):
+            p = _pair(home, away, f"period{n}")
+            if p is None:
+                break
+            games.append(p)
+        tiebreaks = {n: p for n in range(1, 6) if (p := _pair(home, away, f"period{n}TieBreak"))}
+        return TennisScores(
+            **common,
+            sets_won=_pair(home, away, "current"),
+            games=games,
+            tiebreaks=tiebreaks,
+            retired=code == 92,
+            walkover=code == 91,
+            match_tiebreak=_is_match_tiebreak(games),
+        )
+
+    logger.warning(f"extract_scores: desteklenmeyen spor {sport!r} (event {event.get('id')})")
+    return ScoreSheet(**common)
