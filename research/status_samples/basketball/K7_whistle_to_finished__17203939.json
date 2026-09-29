@@ -1,0 +1,259 @@
+{
+  "case_id": "K7_whistle_to_finished",
+  "event_id": 17203939,
+  "fetched_at_utc": "2026-09-29T16:40:58+00:00",
+  "source_endpoint": "/api/v1/event/17203939",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"40223c1c9e\"",
+    "date": "Tue, 29 Sep 2026 16:40:58 GMT"
+  },
+  "note": "time.clockRunningLastUpdated → changes.changeTimestamp (status.*)",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "CBI U17, Fase Final",
+      "slug": "cbi-u17-fase-final",
+      "category": {
+        "name": "Brazil",
+        "slug": "brazil",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "BR",
+          "alpha3": "BRA",
+          "name": "Brazil",
+          "slug": "brazil"
+        },
+        "id": 263,
+        "flag": "brazil",
+        "alpha2": "BR",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "البرازيل",
+            "ru": "Бразилия"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "CBI U17",
+        "slug": "cbi-u17",
+        "category": {
+          "name": "Brazil",
+          "slug": "brazil",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 263,
+          "flag": "brazil",
+          "alpha2": "BR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "البرازيل",
+              "ru": "Бразилия"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 52,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 23955,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "CBI تحت 17",
+            "ru": "Лига CBI до 17 лет"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": false,
+      "id": 200366
+    },
+    "season": {
+      "name": "2026",
+      "year": "2026",
+      "editor": false,
+      "id": 94685
+    },
+    "customId": "oDyhstDyh",
+    "status": {
+      "code": 100,
+      "description": "Ended",
+      "type": "finished"
+    },
+    "winnerCode": 1,
+    "homeTeam": {
+      "name": "Olympico Club U17",
+      "slug": "olympico-club-u17",
+      "shortName": "Olympico U17",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 20,
+      "nameCode": "OLY",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "BR",
+        "alpha3": "BRA",
+        "name": "Brazil",
+        "slug": "brazil"
+      },
+      "id": 933914,
+      "fullName": "Olympico Club U17",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "أوليمبيكو كلوب تحت 17",
+          "ru": "Олимпико Клуб U17"
+        },
+        "shortNameTranslation": {
+          "ar": "أوليمبيكو تحت 17",
+          "ru": "Олимпико U17"
+        }
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Sociedade Thalia U17",
+      "slug": "sociedade-thalia-u17",
+      "shortName": "Thalia U17",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 18,
+      "nameCode": "THA",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "BR",
+        "alpha3": "BRA",
+        "name": "Brazil",
+        "slug": "brazil"
+      },
+      "id": 933918,
+      "fullName": "Sociedade Thalia U17",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "سوسيداد ثاليا تحت 17",
+          "ru": "Общество Талия U17"
+        },
+        "shortNameTranslation": {
+          "ar": "ثاليا تحت 17",
+          "ru": "Талия U17"
+        }
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 81,
+      "display": 81,
+      "period1": 28,
+      "period2": 24,
+      "period3": 18,
+      "period4": 11,
+      "normaltime": 81
+    },
+    "awayScore": {
+      "current": 62,
+      "display": 62,
+      "period1": 6,
+      "period2": 19,
+      "period3": 19,
+      "period4": 18,
+      "normaltime": 62
+    },
+    "time": {
+      "played": 2400,
+      "periodLength": 600,
+      "overtimeLength": 300,
+      "totalPeriodCount": 4,
+      "clockRunning": false,
+      "clockRunningLastUpdated": "2026-09-29T13:01:50+00:00"
+    },
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type",
+        "homeScore.normaltime",
+        "awayScore.normaltime"
+      ],
+      "changeTimestamp": 1790687212
+    },
+    "hasGlobalHighlights": false,
+    "hasEventPlayerStatistics": true,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17203939,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "sociedade-thalia-u17-olympico-club-u17",
+    "startTimestamp": 1790681400,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro",
+        "youth"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

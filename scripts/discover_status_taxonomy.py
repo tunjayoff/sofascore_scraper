@@ -157,7 +157,8 @@ def triple_id(t: Tuple[Any, Any, Any]) -> str:
 
 
 def existing_sample(sport: str, case_id: str) -> List[str]:
-    return glob.glob(os.path.join(SAMPLES, sport, f"{case_id}__*.json"))
+    # Sıralı: rapor ve CSV her çalıştırmada aynı örnek dosyayı göstersin
+    return sorted(glob.glob(os.path.join(SAMPLES, sport, f"{case_id}__*.json")))
 
 
 def cmd_live_snapshot(a) -> None:

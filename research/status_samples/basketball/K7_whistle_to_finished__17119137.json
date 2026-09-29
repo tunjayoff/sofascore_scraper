@@ -1,0 +1,310 @@
+{
+  "case_id": "K7_whistle_to_finished",
+  "event_id": 17119137,
+  "fetched_at_utc": "2026-09-29T16:40:57+00:00",
+  "source_endpoint": "/api/v1/event/17119137",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"8e7e4a7b33\"",
+    "date": "Tue, 29 Sep 2026 16:40:57 GMT"
+  },
+  "note": "time.clockRunningLastUpdated → changes.changeTimestamp (status.*)",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "National League Tournament",
+      "slug": "national-league-tournament-twrnyr-lygh-lwmyt",
+      "category": {
+        "name": "Israel",
+        "slug": "israel",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "IL",
+          "alpha3": "ISR",
+          "name": "Israel",
+          "slug": "israel"
+        },
+        "id": 188,
+        "flag": "israel",
+        "alpha2": "IL",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "إسرائيل",
+            "ru": "Израиль"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "National League Tournament",
+        "slug": "national-league-tournament",
+        "category": {
+          "name": "Israel",
+          "slug": "israel",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "IL",
+            "alpha3": "ISR",
+            "name": "Israel",
+            "slug": "israel"
+          },
+          "id": 188,
+          "flag": "israel",
+          "alpha2": "IL",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إسرائيل",
+              "ru": "Израиль"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 6,
+        "hasRounds": false,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {},
+        "id": 38095,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false
+      },
+      "priority": 0,
+      "isGroup": false,
+      "id": 200669
+    },
+    "season": {
+      "name": "26/27",
+      "year": "26/27",
+      "editor": false,
+      "id": 103943
+    },
+    "customId": "lEicsYYic",
+    "status": {
+      "code": 100,
+      "description": "Ended",
+      "type": "finished"
+    },
+    "winnerCode": 1,
+    "homeTeam": {
+      "name": "Hapoel Haifa BC",
+      "slug": "hapoel-haifa-bc",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 419,
+      "venue": {
+        "city": {
+          "name": "Haifa",
+          "country": {
+            "alpha2": "IL",
+            "alpha3": "ISR",
+            "name": "Israel",
+            "slug": "israel"
+          },
+          "id": 24103
+        },
+        "hidden": true,
+        "slug": "romema-arena",
+        "name": "Romema Arena",
+        "capacity": 5000,
+        "country": {
+          "alpha2": "IL",
+          "alpha3": "ISR",
+          "name": "Israel",
+          "slug": "israel"
+        },
+        "id": 9975,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "أرينا روميما",
+            "hi": "रोमेमा एरिना",
+            "bn": "রোমেনা এরিনা",
+            "ru": "Арена Romema"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Romema Arena",
+          "capacity": 5000
+        }
+      },
+      "nameCode": "HAP",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "IL",
+        "alpha3": "ISR",
+        "name": "Israel",
+        "slug": "israel"
+      },
+      "id": 272448,
+      "fullName": "Hapoel Haifa BC",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#ffffff",
+        "secondary": "#ff0000",
+        "text": "#ff0000"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "هابويل حيفا ق",
+          "ru": "Хапоэль Хайфа БК"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Maccabi Raanana",
+      "slug": "maccabi-raanana",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 489,
+      "venue": {
+        "city": {
+          "name": "Raanana",
+          "country": {
+            "alpha2": "IL",
+            "alpha3": "ISR",
+            "name": "Israel",
+            "slug": "israel"
+          },
+          "id": 21789
+        },
+        "hidden": true,
+        "slug": "mor-metro-west-high-school",
+        "name": "Mor Metro-West High School",
+        "country": {
+          "alpha2": "IL",
+          "alpha3": "ISR",
+          "name": "Israel",
+          "slug": "israel"
+        },
+        "id": 28036,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "مدرسة مور ميترو-ويست الثانوية",
+            "hi": "मोर मेट्रो-वेस्ट हाई स्कूल",
+            "bn": "মোর মেট্রো-ওয়েস্ট হাই স্কুল",
+            "ru": "Спортивный комплекс Mor Metro-West High School"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Mor Metro-West High School"
+        }
+      },
+      "nameCode": "MAC",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "IL",
+        "alpha3": "ISR",
+        "name": "Israel",
+        "slug": "israel"
+      },
+      "id": 271461,
+      "fullName": "Maccabi Raanana",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#3366cc",
+        "secondary": "#ffffff",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "مكابي رعنانا",
+          "bn": "মক্কাবি রানানা",
+          "hi": "मक्काबी रानाना",
+          "ru": "Маккаби Раанана"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 96,
+      "display": 96,
+      "period1": 27,
+      "period2": 25,
+      "period3": 19,
+      "period4": 25,
+      "normaltime": 96
+    },
+    "awayScore": {
+      "current": 62,
+      "display": 62,
+      "period1": 11,
+      "period2": 10,
+      "period3": 20,
+      "period4": 21,
+      "normaltime": 62
+    },
+    "time": {
+      "played": 2400,
+      "periodLength": 600,
+      "overtimeLength": 300,
+      "totalPeriodCount": 4,
+      "clockRunning": false,
+      "clockRunningLastUpdated": "2026-09-27T17:45:59+00:00"
+    },
+    "changes": {
+      "changes": [
+        "status.code",
+        "status.description",
+        "status.type",
+        "homeScore.normaltime",
+        "awayScore.normaltime"
+      ],
+      "changeTimestamp": 1790531179
+    },
+    "hasGlobalHighlights": false,
+    "hasEventPlayerStatistics": true,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17119137,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "hapoel-haifa-bc-maccabi-raanana",
+    "startTimestamp": 1790524800,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "showTotoPromo": true,
+    "isEditor": false,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "pro"
+      ]
+    }
+  },
+  "error": null
+}

@@ -1,0 +1,349 @@
+{
+  "case_id": "K6_score_changed_after_finished",
+  "event_id": 17006066,
+  "fetched_at_utc": "2026-09-29T16:40:54+00:00",
+  "source_endpoint": "/api/v1/event/17006066",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"c4324d5e4d\"",
+    "date": "Tue, 29 Sep 2026 16:40:54 GMT"
+  },
+  "note": "son güncelleme skor alanlarını değiştirdi (status değil)",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "U19 Eccellenza - Girone 1",
+      "slug": "u19-eccellenza-girone-a",
+      "category": {
+        "name": "Italy Amateur",
+        "slug": "italy-amateur",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "IT",
+          "alpha3": "ITA",
+          "name": "Italy",
+          "slug": "italy"
+        },
+        "id": 2310,
+        "flag": "italy",
+        "alpha2": "IT",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "إيطاليا",
+            "bn": "ইতালি",
+            "hi": "इटली",
+            "ru": "Италия Любители"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "U19 Eccellenza",
+        "slug": "u19-eccellenza",
+        "category": {
+          "name": "Italy Amateur",
+          "slug": "italy-amateur",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 2310,
+          "flag": "italy",
+          "alpha2": "IT",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إيطاليا",
+              "bn": "ইতালি",
+              "hi": "इटली",
+              "ru": "Италия Любители"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 9,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {
+          "alpha2": "IT",
+          "alpha3": "ITA",
+          "name": "Italy",
+          "slug": "italy"
+        },
+        "id": 33926,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "تحت 19 سنة إكسيليزا",
+            "ru": "до 19 лет Eccellenza"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": true,
+      "groupName": "- Girone A",
+      "competitionType": 1,
+      "id": 179910,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "تحت 19 - الدوري الممتاز - المجموعة ا",
+          "ru": "до 19 лет Eccellenza - Группа A"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "U19 Eccellenza 26/27",
+      "year": "26/27",
+      "editor": true,
+      "id": 102342
+    },
+    "roundInfo": {
+      "round": 1
+    },
+    "customId": "PAJjsUAJj",
+    "status": {
+      "code": 110,
+      "description": "AET",
+      "type": "finished"
+    },
+    "winnerCode": 2,
+    "homeTeam": {
+      "name": "Derthona Basket U19",
+      "slug": "derthona-basket-u19",
+      "shortName": "Derthona Basket U19",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 3,
+      "venue": {
+        "city": {
+          "name": "Tortona",
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 27187
+        },
+        "venueCoordinates": {
+          "latitude": 44.8953368,
+          "longitude": 8.8607765
+        },
+        "hidden": true,
+        "slug": "palazzetto-dello-sport-uccio-camagna",
+        "name": "Palazzetto dello Sport \"Uccio Camagna\"",
+        "country": {
+          "alpha2": "IT",
+          "alpha3": "ITA",
+          "name": "Italy",
+          "slug": "italy"
+        },
+        "id": 54630,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ru": "Спортивный комплекс Palazzetto dello Sport \"Uccio Camagna\""
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Palazzetto dello Sport \"Uccio Camagna\""
+        }
+      },
+      "nameCode": "DBU",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "IT",
+        "alpha3": "ITA",
+        "name": "Italy",
+        "slug": "italy"
+      },
+      "id": 1211290,
+      "fullName": "Derthona Basket U19",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "ديرثونا باسكت تحت 19",
+          "ru": "Дертон Баскет U19"
+        },
+        "shortNameTranslation": {
+          "ar": "ديرثونا باسكت تحت 19",
+          "ru": "Дертон Баскет U19"
+        }
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Grantorino Basketball Draft U19",
+      "slug": "grantorino-basketball-draft-u19",
+      "shortName": "Grantorino Basketball Draft U19",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 2,
+      "venue": {
+        "city": {
+          "name": "Moncalieri",
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 23721
+        },
+        "hidden": true,
+        "slug": "palasport-comunale-luigi-einaudi",
+        "name": "Palasport Comunale Luigi Einaudi",
+        "capacity": 400,
+        "country": {
+          "alpha2": "IT",
+          "alpha3": "ITA",
+          "name": "Italy",
+          "slug": "italy"
+        },
+        "id": 36807,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "قاعة الرياضة البلدية لويجي إينوديي",
+            "hi": "पालास्पोर्ट कोमुनले लुइगी इनौदी",
+            "bn": "পালাসপোর্ট কমুনালে লুইগি এইনাউদি",
+            "ru": "Спортивный комплекс Comunale Luigi Einaudi"
+          },
+          "shortNameTranslation": {}
+        },
+        "stadium": {
+          "name": "Palasport Comunale Luigi Einaudi",
+          "capacity": 400
+        }
+      },
+      "nameCode": "GBD",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "IT",
+        "alpha3": "ITA",
+        "name": "Italy",
+        "slug": "italy"
+      },
+      "id": 1211294,
+      "fullName": "Grantorino Basketball Draft U19",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "غرانتورينو باسكتبال درافت تحت 19",
+          "ru": "Гранторино Баскетбол Драфт U19"
+        },
+        "shortNameTranslation": {
+          "ar": "غرانتورينو باسكتبال درافت تحت 19",
+          "ru": "Гранторино Баскетбол Драфт U19"
+        }
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 88,
+      "display": 88,
+      "period1": 24,
+      "period2": 21,
+      "period3": 29,
+      "period4": 8,
+      "normaltime": 82,
+      "overtime": 6
+    },
+    "awayScore": {
+      "current": 94,
+      "display": 94,
+      "period1": 16,
+      "period2": 26,
+      "period3": 17,
+      "period4": 23,
+      "normaltime": 82,
+      "overtime": 12
+    },
+    "time": {},
+    "changes": {
+      "changes": [
+        "homeScore.current",
+        "homeScore.display",
+        "homeScore.period1",
+        "homeScore.normaltime"
+      ],
+      "changeTimestamp": 1790693661
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17006066,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "grantorino-basketball-draft-u19-derthona-basket-u19",
+    "startTimestamp": 1790620200,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "createdByNickname": "Leonardo Stefansson",
+    "eventEditorName": "Leonardo Stefansson",
+    "eventEditor": {
+      "id": "615af8db98a19a706940a530",
+      "name": "Leonardo Stefansson"
+    },
+    "showTotoPromo": true,
+    "isEditor": true,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "youth"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

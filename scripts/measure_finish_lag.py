@@ -57,6 +57,9 @@ def parse_args(argv=None):
     src = p.add_mutually_exclusive_group(required=True)
     src.add_argument("--event-ids", help="virgülle ayrılmış event id'leri")
     src.add_argument("--summarize", metavar="JSONL", help="ağa çıkmadan, kayıtlı gözlemlerden özeti yeniden üret")
+    src.add_argument("--retro", action="store_true",
+                     help="geriye dönük: tarama indeksindeki yakın zamanda bitmiş maçlarda son düdük → finished gecikmesi")
+    p.add_argument("--hours", type=float, default=72, help="--retro: son kaç saatte başlamış maçlar (varsayılan 72)")
     src.add_argument("--league-id", type=int, help="unique-tournament id (--date ile)")
     p.add_argument("--date", help="YYYY-MM-DD (--league-id ile; UTC gün)")
     p.add_argument("--max-events", type=int, default=20, help="--league-id ile en fazla kaç maç (varsayılan 20)")
@@ -64,6 +67,11 @@ def parse_args(argv=None):
     p.add_argument("--until", type=float, default=6.0, help="en fazla kaç saat izlenecek (varsayılan 6)")
     a = p.parse_args(argv)
     if a.summarize:
+        return a
+    if a.retro and not a.sport:
+        p.error("--retro için --sport gerekli")
+    if a.retro:
+        a.max_events = a.max_events if a.max_events != 20 else 150
         return a
     if not a.sport:
         p.error("--sport gerekli")
@@ -154,6 +162,8 @@ def main(argv=None) -> int:
     a = parse_args(argv)
     if a.summarize:
         return summarize_only(a.summarize)
+    if a.retro:
+        return retro(a)
     signal.signal(signal.SIGTERM, _request_stop)
     c = Client()
     started = time.monotonic()
@@ -261,6 +271,77 @@ def main(argv=None) -> int:
         return 0
     finally:
         c.close()
+
+
+def retro(a) -> int:
+    """
+    Canlı izleme olmadan, bitmiş maçın tek /event yanıtından:
+      transition_ts = changes.changeTimestamp (değişen alanlar status.* içeriyorsa: son değişiklik bitiş geçişi)
+      expected_ft   = time.clockRunningLastUpdated (saat durmuş ve oynanan süre normal süreye ulaşmışsa)
+      lag_whistle   = transition_ts − expected_ft
+    Liste kaynaklarının gecikmesi bu yolla ölçülemez (yalnızca canlı izlemeyle).
+    """
+    index = os.path.join(ROOT, "data", "research_index", f"{a.sport}.jsonl")
+    if not os.path.exists(index):
+        print(f"Tarama indeksi yok: {index} (önce discover_status_taxonomy.py scan)", file=sys.stderr)
+        return 1
+    latest: Dict[int, Dict[str, Any]] = {}
+    with open(index, encoding="utf-8") as f:
+        for line in f:
+            r = json.loads(line)
+            latest[r["event_id"]] = r
+    now = time.time()
+    cand = sorted((r for r in latest.values() if r["type"] == "finished" and r["code"] in (100, 110)
+                   and now - a.hours * 3600 < (r["start_ts"] or 0) < now - 3 * 3600),
+                  key=lambda r: -(r["start_ts"] or 0))[: a.max_events]
+    c = Client()
+    day = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d")
+    out_path = os.path.join(OUT_DIR, f"retro_{day}_{a.sport}.jsonl")
+    os.makedirs(OUT_DIR, exist_ok=True)
+    rows = []
+    try:
+        with open(out_path, "w", encoding="utf-8") as out:
+            for r in cand:
+                resp = c.get(f"/event/{r['event_id']}")
+                ev = (resp.get("body") or {}).get("event") or {}
+                ch = ev.get("changes") or {}
+                fields = ch.get("changes") or []
+                t = ev.get("time") or {}
+                regulation = (t.get("periodLength") or 0) * (t.get("totalPeriodCount") or 0)
+                transition = ch.get("changeTimestamp") if any(x.startswith("status.") for x in fields) else None
+                whistle = t.get("clockRunningLastUpdated") if (t.get("clockRunning") is False and regulation
+                                                               and (t.get("played") or 0) >= regulation) else None
+                if not ev:
+                    reason = f"http_{resp.get('status')}"
+                elif transition is None:
+                    reason = "son_degisiklik_status_degil"
+                elif whistle is None:
+                    reason = "saat_verisi_yok"
+                else:
+                    reason = "ok"
+                lag = round(transition - _ts(whistle)) if reason == "ok" else None
+                row = {"event_id": r["event_id"], "fetched_at_utc": utc_now(), "ut": r["ut"], "ut_name": r["ut_name"],
+                       "status": list((ev.get("status") or {}).values()), "start_ts": ev.get("startTimestamp"),
+                       "changed_fields": fields, "change_ts": ch.get("changeTimestamp"), "time": t,
+                       "transition_ts": transition, "expected_ft": whistle, "lag_whistle": lag, "result": reason}
+                rows.append(row)
+                out.write(json.dumps(row, ensure_ascii=False) + "\n")
+    finally:
+        c.close()
+    lags = [x["lag_whistle"] for x in rows if x["lag_whistle"] is not None]
+    lags_sorted = sorted(lags)
+    summary = {
+        "method": retro.__doc__.strip(), "window_hours": a.hours, "events": len(rows),
+        "result": dict(collections.Counter(x["result"] for x in rows)),
+        "lag_whistle": {"n": len(lags), "median": statistics.median(lags) if lags else None,
+                        "p90": lags_sorted[int(0.9 * (len(lags) - 1))] if lags else None,
+                        "min": min(lags) if lags else None, "max": max(lags) if lags else None},
+        "negative_lag": sum(1 for x in lags if x < 0),
+        "requests_total": c.requests, "requests_by_status": c.by_status,
+    }
+    write_json(out_path.replace(".jsonl", "_summary.json"), summary)
+    print(json.dumps(summary, ensure_ascii=False, indent=1))
+    return 0
 
 
 def _ts(s: Optional[str]) -> Optional[float]:

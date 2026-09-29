@@ -1,0 +1,250 @@
+{
+  "case_id": "K6_score_changed_after_finished",
+  "event_id": 17204039,
+  "fetched_at_utc": "2026-09-29T16:40:56+00:00",
+  "source_endpoint": "/api/v1/event/17204039",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"f5e3886af0\"",
+    "date": "Tue, 29 Sep 2026 16:40:56 GMT"
+  },
+  "note": "son güncelleme skor alanlarını değiştirdi (status değil)",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "Quartas de Final - Chave D",
+      "slug": "quartas-de-final-grupo-d",
+      "category": {
+        "name": "Brazil Amateur",
+        "slug": "brazil-amateur",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "BR",
+          "alpha3": "BRA",
+          "name": "Brazil",
+          "slug": "brazil"
+        },
+        "id": 1789,
+        "flag": "brazil",
+        "alpha2": "BR",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "البرازيل هواة",
+            "ru": "Бразилия Любители"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "FCB U15",
+        "slug": "campeonato-catarinense-sub-15",
+        "category": {
+          "name": "Brazil Amateur",
+          "slug": "brazil-amateur",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "BR",
+            "alpha3": "BRA",
+            "name": "Brazil",
+            "slug": "brazil"
+          },
+          "id": 1789,
+          "flag": "brazil",
+          "alpha2": "BR",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "البرازيل هواة",
+              "ru": "Бразилия Любители"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 1,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {
+          "alpha2": "BR",
+          "alpha3": "BRA",
+          "name": "Brazil",
+          "slug": "brazil"
+        },
+        "id": 38437,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false
+      },
+      "priority": 0,
+      "isGroup": true,
+      "groupName": "Quartas de Final - Grupo D",
+      "competitionType": 1,
+      "id": 202133
+    },
+    "season": {
+      "name": "2026",
+      "year": "2026",
+      "editor": true,
+      "id": 104701
+    },
+    "roundInfo": {
+      "round": 1
+    },
+    "customId": "OYWisDtpk",
+    "status": {
+      "code": 100,
+      "description": "Ended",
+      "type": "finished"
+    },
+    "winnerCode": 1,
+    "homeTeam": {
+      "name": "Xaxim U15",
+      "slug": "xaxim-u15",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 10,
+      "nameCode": "XU1",
+      "disabled": false,
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "BR",
+        "alpha3": "BRA",
+        "name": "Brazil",
+        "slug": "brazil"
+      },
+      "id": 1117439,
+      "fullName": "Xaxim U15",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "زاكيم تحت 15",
+          "ru": "Ксаксим U15"
+        },
+        "shortNameTranslation": {}
+      },
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "AJOBB U15",
+      "slug": "ajobb-u15",
+      "shortName": "AJOBB U15",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 0,
+      "nameCode": "AU1",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "BR",
+        "alpha3": "BRA",
+        "name": "Brazil",
+        "slug": "brazil"
+      },
+      "id": 1288428,
+      "fullName": "AJOBB U15",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 60,
+      "display": 60,
+      "period1": 15,
+      "period2": 13,
+      "period3": 17,
+      "period4": 15,
+      "normaltime": 60
+    },
+    "awayScore": {
+      "current": 50,
+      "display": 50,
+      "period1": 15,
+      "period2": 13,
+      "period3": 7,
+      "period4": 15,
+      "normaltime": 50
+    },
+    "time": {},
+    "changes": {
+      "changes": [
+        "homeScore.period1",
+        "homeScore.period2",
+        "homeScore.period3",
+        "homeScore.period4",
+        "homeScore.normaltime",
+        "awayScore.period1",
+        "awayScore.period2",
+        "awayScore.period3",
+        "awayScore.period4",
+        "awayScore.normaltime"
+      ],
+      "changeTimestamp": 1790648183
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17204039,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "ajobb-u15-xaxim-u15",
+    "startTimestamp": 1790634600,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "createdByNickname": "Luiz Carlos Silveira",
+    "eventEditorName": "Luiz Carlos Silveira",
+    "eventEditor": {
+      "id": "6ab76cac944d7dc09ed88761",
+      "name": "Luiz Carlos Silveira"
+    },
+    "showTotoPromo": true,
+    "isEditor": true,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "youth"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

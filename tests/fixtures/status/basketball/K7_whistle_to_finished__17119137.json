@@ -1,0 +1,49 @@
+{
+  "case_id": "K7_whistle_to_finished",
+  "event_id": 17119137,
+  "fetched_at_utc": "2026-09-29T16:40:57+00:00",
+  "source_file": "research/status_samples/basketball/K7_whistle_to_finished__17119137.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 96,
+    "display": 96,
+    "period1": 27,
+    "period2": 25,
+    "period3": 19,
+    "period4": 25,
+    "normaltime": 96
+  },
+  "awayScore": {
+    "current": 62,
+    "display": 62,
+    "period1": 11,
+    "period2": 10,
+    "period3": 20,
+    "period4": 21,
+    "normaltime": 62
+  },
+  "startTimestamp": 1790524800,
+  "time": {
+    "played": 2400,
+    "periodLength": 600,
+    "overtimeLength": 300,
+    "totalPeriodCount": 4,
+    "clockRunning": false,
+    "clockRunningLastUpdated": "2026-09-27T17:45:59+00:00"
+  },
+  "changes": {
+    "changes": [
+      "status.code",
+      "status.description",
+      "status.type",
+      "homeScore.normaltime",
+      "awayScore.normaltime"
+    ],
+    "changeTimestamp": 1790531179
+  }
+}

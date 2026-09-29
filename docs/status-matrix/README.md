@@ -13,8 +13,9 @@ Talimat 01 için kırpılmış kopyalar: `tests/fixtures/status/{sport}/`
 (yalnızca `status`, `winnerCode`, `aggregatedWinnerCode`, `homeScore`, `awayScore`,
 `startTimestamp`, `time`, `changes`).
 
-> **Açık iş:** Basketbol bitiş gecikmesi ölçümü (Euroleague + Eurocup, 13 maç) bu belge yazılırken
-> sürüyordu; sonuçlar ayrı commit'le eklenecek.
+> **Basketbol canlı ölçümü tamamlanmadı.** Euroleague + Eurocup maçlarının bitmesi beklenmeden durduruldu
+> (süre kısıtı). Yerine geriye dönük ölçüm yapıldı (bkz. Gecikme ölçümü → Basketbol); liste kaynaklarının
+> basketbol gecikmesi bu yüzden ölçülmedi.
 
 ---
 
@@ -165,6 +166,8 @@ kaydedilen `A_inprogress-*` dosyalarıdır ve tabloda onlara referans verilir.
 | K3 | İki yarı formatı | `basketball/K3_two_halves__16694075.json`: skorlar **`period2` ve `period4`** alanlarında (38+43=81), `period1/period3` yok. Dört çeyrek: `basketball/K3_four_quarters__16484334.json` |
 | K4 | Devre arası vs çeyrek arası | `basketball/A_inprogress-30-pause__17157547.json`: `inprogress/30 Pause`, skorda yalnızca `period1`/`period2` → 2. çeyrekten sonraki ara (devre arası) da `Pause`. `31 Halftime` basketbolda görülmedi; 1.–2. veya 3.–4. çeyrek arası örneği **bulunamadı** (3 canlı anlık görüntü) |
 | K5 | Hükmen | `basketball/K5_forfeit__17102381.json` = B11: `finished/91 Walkover`, skor `{}` (20-0 gibi bir skor yok) |
+| K6 | Bitiş sonrası skor değişikliği (talimatta yok) | `basketball/K6_score_changed_after_finished__17006066.json`: `finished/110 AET`, son güncelleme `changes.changes=[homeScore.current, homeScore.display, homeScore.period1, homeScore.normaltime]`; `…__17006262.json` (aynı alanlar, `finished/100`); `…__17204039.json`: yalnızca periyot skorları ve `normaltime`. Ayrıntı: Gecikme ölçümü → Basketbol |
+| K7 | Son düdük → finished (talimatta yok) | `basketball/K7_whistle_to_finished__17119137.json`: `time.clockRunningLastUpdated` 2026-09-27T17:45:59Z, `changes.changeTimestamp` 20 sn sonra (`status.*` değişmiş); `…__17203939.json`: 302 sn |
 
 ### Tenis (T)
 
@@ -202,7 +205,7 @@ Değerler yukarıdaki örnek dosyalardan.
 | `period{n}TieBreak` | Tenis tie-break puanları. |
 | `aggregated` | Kupa toplam skoru (F6). |
 | `time` | `currentPeriodStartTimestamp`, `lastPeriodEndTimestamp`, futbolda `injuryTime1/2`, basketbolda `played/clockRunning`; ertelenmiş/iptal maçlarda `{}`. |
-| `changes.changeTimestamp` / `changes.changes` | Son değişikliğin zamanı ve değişen alanların listesi (ör. `status.code`, `homeScore.normaltime`, `providerLock.status`). Gelecek maçta `changeTimestamp=0`. Bitişten saatler sonra değişen alanlar gözlenen örnekte `providerLock.*` (skor değil). Bitiş sonrası skor düzeltmesi tespiti için kullanılabilir, ancak skor düzeltmesi içeren bir örnek **bulunamadı**. |
+| `changes.changeTimestamp` / `changes.changes` | Son değişikliğin zamanı ve değişen alanların listesi (ör. `status.code`, `homeScore.normaltime`, `providerLock.status`). Gelecek maçta `changeTimestamp=0`. Bitişten saatler sonra değişen alanlar gözlenen örnekte `providerLock.*` (skor değil). Bitiş sonrası skor düzeltmesi tespiti için kullanılabilir: basketbolda 400 bitmiş maçın 82'sinde son güncelleme (status değil) skor alanlarını değiştirmiş, 27'sinde nihai skoru (`K6_*`, bkz. Gecikme ölçümü → Basketbol). Önceki değeri içermiyor. |
 | `startTimestamp` | Değişebiliyor (B13: +240 sn ile +47 sa arası); askıya alınan tenis maçında aynı id ile ertesi güne taşındı. |
 
 ---
@@ -274,12 +277,49 @@ basketbol ölçümü bununla yapılıyor.
 
 Sonuç: futbolda 8, tenis'te 9 maçta SofaScore'un `finished` geçişi, bizim bir sonraki gözlemimizden 3–77 sn
 önceydi; bu süre tamamen tur aralığımızdan geliyor. Liste kaynaklarının maç sayfasının gerisinde kaldığına dair
-bu kayıtlarda kanıt yok (negatif değerler yukarıdaki artefakt); kesin liste gecikmesi basketbol ölçümünden gelecek.
+bu kayıtlarda kanıt yok (negatif değerler yukarıdaki artefakt). İstek bazlı zaman damgalı bir canlı ölçüm
+yapılmadığı için kesin liste gecikmesi **ölçülmedi** (açık soru).
 
 Futbolda 2 maç (17206702, 17206703) için `lag_season_list` yok: maç bilgisinde sezon olmadığı için scraper'ın
 liste yolu kurulamıyor; bu maçlar scraper'ın listelerinde de görünmez.
 
-**Basketbol:** ölçüm sürüyor (açık iş); `fetched_at_utc` ve `time` bloğu ile.
+### Basketbol (geriye dönük)
+
+Canlı izleme yerine yakın zamanda bitmiş maçların tek `/event` yanıtından (`python scripts/measure_finish_lag.py
+--retro --sport basketball --hours 336 --max-events 400`; kayıt `research/finish_lag/retro_2026-09-29_basketball.jsonl`,
+özet `…_summary.json`):
+
+- `transition_ts` = `changes.changeTimestamp`, yalnızca değişen alanlar `status.*` içeriyorsa (son güncelleme bitiş geçişi).
+- `expected_ft` = `time.clockRunningLastUpdated`, yalnızca `clockRunning=false` ve `played ≥ periodLength × totalPeriodCount`.
+- `lag_whistle = transition_ts − expected_ft`.
+
+| | Değer |
+|---|---|
+| Sorgulanan bitmiş maç (son 14 gün, en yeni 400) | 400 |
+| Hesaplanabilen | 9 |
+| Saat verisi yok (`played`/`clockRunning` alanı yok) | 306 |
+| Son güncelleme bitiş geçişi değil (bitiş sonrası başka alan değişmiş) | 85 |
+| `lag_whistle` medyan / p90 / min / maks | 20 / 261 / 0 / 302 sn |
+| Negatif `lag_whistle` | 0 |
+
+Hesaplanabilen 9 maç alt lig/genç lig maçları (CBI U17, Israeli Women BPL, National League Tournament, EYBL U14);
+örnekler `basketball/K7_whistle_to_finished__17119137.json` (düdük 2026-09-27T17:45:59Z, geçiş +20 sn) ve
+`…__17203939.json` (+302 sn). Örneklem küçük; üst liglerde (Euroleague vb.) bu pencerede bitmiş maç yok denecek kadar azdı.
+`polling_lag`, `lag_live`, `lag_season_list`, `lag_scheduled` bu yöntemle ölçülemez.
+
+**Bitiş sonrası skor değişikliği (basketbol):** 85 maçın son güncellemesi `finished` geçişinden sonra yapılmış ve
+status içermiyor; 82'sinde skor alanları değişmiş:
+
+| Değişen | Maç | Örnek |
+|---|---|---|
+| Nihai skor (`homeScore/awayScore.current`, `display`) | 27 | `basketball/K6_score_changed_after_finished__17006066.json`, `…__17006262.json` (U19 Eccellenza); Germany BBL 16738305 (`awayScore.current/display/period4/normaltime`, retro kaydında) |
+| Yalnızca periyot skorları / `normaltime` | 55 | `basketball/K6_score_changed_after_finished__17204039.json` (FCB U15) |
+| Skor dışı (`time.currentPeriodStart`) | 3 | retro kaydında |
+
+Nihai skoru değişen 27 maçın 18'i FIBA 3x3 turnuvaları (Challenger Mataró 11, World Tour Deqing 7). Son değişiklik
+maç başlangıcından 1,9–66,4 saat sonra (medyan 14,2 sa). `changes.changes` hangi alanın değiştiğini söylüyor, önceki
+değeri söylemiyor: skorun ne kadar değiştiği bu veriden bilinmiyor. Futbol ve tenis canlı ölçümünde (bitişten sonra
+2–50 dk izleme) skor değişikliği 0/22.
 
 ---
 
@@ -297,7 +337,7 @@ liste yolu kurulamıyor; bu maçlar scraper'ın listelerinde de görünmez.
 - Scraper'ın liste yolu için iki farklı `s-maxage` (86400 ve 60) görüldü; gözlemlerde yol kaydedilmediği
   için hangisinin hangi yola ait olduğu bu veriden ayrılamıyor. `s-maxage=86400` görülmesine rağmen
   futbol/tenis kayıtlarında listenin maç sayfasının gerisinde kaldığına dair kanıt yok (bkz. Gecikme ölçümü,
-  artefakt notu); kesin değer basketbol ölçümünden gelecek.
+  artefakt notu); kesin liste gecikmesi ölçülmedi.
 - Tenis programı ~2 gün ileriyi gösteriyor (03.10 sonrası boş).
 - 16 günlük pencerede ertelenmiş/iptal 90 maçın hiçbiri yeniden programlanmadı ya da 404 olmadı.
 - Tenis bye'ları event olarak hiç listelenmiyor olabilir.
@@ -314,7 +354,8 @@ liste yolu kurulamıyor; bu maçlar scraper'ın listelerinde de görünmez.
 | B10/B12 yeniden kontrol + B13 örnekleri | 96 | — | `research/status_samples/_recheck_{sport}.json` |
 | D futbol | 626 (son tur sayacı) | 13:42–14:14 UTC | `…_football.jsonl` |
 | D tenis | 2.203 (son tur sayacı) | 13:42–15:02 UTC | `…_tennis.jsonl` |
-| **Toplam (kayıtlı)** | **5.221** | | |
+| Basketbol geriye dönük (`--retro`, 72 sa + 336 sa çalıştırması) + K6/K7 örnekleri | 151 + 401 + 5 | — | `research/finish_lag/retro_2026-09-29_basketball_summary.json` (son çalıştırma) |
+| **Toplam (kayıtlı)** | **5.778** | | |
 
 **Gizli bilgi kontrolü:** commit'lenen dosyalarda (`research/`, `tests/fixtures/status/`, `docs/`) `set-cookie`,
 `authorization`, `cookie`, `sofa_captcha`, `x-captcha` ve JWT biçimli değer (`eyJ…`) arandı: eşleşme yok. Yanıt
@@ -322,5 +363,5 @@ başlıklarından yalnızca izin listesindekiler (`cache-control`, `age`, `etag`
 gelenler `cache-control`, `etag`, `date`) kaydediliyor; `_requests.jsonl` yalnızca sayaç içeriyor. Temizlenecek bir şey
 çıkmadı.
 
-Ek olarak kayda geçmeyen istekler: uç nokta keşfi, script kabul testleri ve iptal edilen ilk ölçüm
-denemeleri (tahmin yazılmadı). Hız sınırı: tüm süreçlerde toplam ≤ 1 istek/sn. Devre kesici tetiklenmedi.
+Ek olarak kayda geçmeyen istekler: uç nokta keşfi, script kabul testleri, iptal edilen ilk ölçüm
+denemeleri ve durdurulan canlı basketbol ölçümü (tahmin yazılmadı). Hız sınırı: tüm süreçlerde toplam ≤ 1 istek/sn. Devre kesici tetiklenmedi.

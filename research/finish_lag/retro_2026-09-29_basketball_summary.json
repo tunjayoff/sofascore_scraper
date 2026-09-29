@@ -1,0 +1,22 @@
+{
+  "method": "Canlı izleme olmadan, bitmiş maçın tek /event yanıtından:\n  transition_ts = changes.changeTimestamp (değişen alanlar status.* içeriyorsa: son değişiklik bitiş geçişi)\n  expected_ft   = time.clockRunningLastUpdated (saat durmuş ve oynanan süre normal süreye ulaşmışsa)\n  lag_whistle   = transition_ts − expected_ft\nListe kaynaklarının gecikmesi bu yolla ölçülemez (yalnızca canlı izlemeyle).",
+  "window_hours": 336.0,
+  "events": 400,
+  "result": {
+    "ok": 9,
+    "saat_verisi_yok": 306,
+    "son_degisiklik_status_degil": 85
+  },
+  "lag_whistle": {
+    "n": 9,
+    "median": 20,
+    "p90": 261,
+    "min": 0,
+    "max": 302
+  },
+  "negative_lag": 0,
+  "requests_total": 401,
+  "requests_by_status": {
+    "200": 400
+  }
+}

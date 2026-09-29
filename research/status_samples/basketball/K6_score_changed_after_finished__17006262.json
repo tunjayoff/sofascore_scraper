@@ -1,0 +1,338 @@
+{
+  "case_id": "K6_score_changed_after_finished",
+  "event_id": 17006262,
+  "fetched_at_utc": "2026-09-29T16:40:56+00:00",
+  "source_endpoint": "/api/v1/event/17006262",
+  "http_status": 200,
+  "cache_headers": {
+    "cache-control": "max-age=10, public, s-maxage=172800",
+    "etag": "W/\"107e631fb2\"",
+    "date": "Tue, 29 Sep 2026 16:40:55 GMT"
+  },
+  "note": "son güncelleme skor alanlarını değiştirdi (status değil)",
+  "event": {
+    "officials": [],
+    "tournament": {
+      "name": "U19 Eccellenza - Girone 2",
+      "slug": "u19-eccellenza-girone-b",
+      "category": {
+        "name": "Italy Amateur",
+        "slug": "italy-amateur",
+        "sport": {
+          "name": "Basketball",
+          "slug": "basketball",
+          "id": 2
+        },
+        "priority": 0,
+        "country": {
+          "alpha2": "IT",
+          "alpha3": "ITA",
+          "name": "Italy",
+          "slug": "italy"
+        },
+        "id": 2310,
+        "flag": "italy",
+        "alpha2": "IT",
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "إيطاليا",
+            "bn": "ইতালি",
+            "hi": "इटली",
+            "ru": "Италия Любители"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "uniqueTournament": {
+        "name": "U19 Eccellenza",
+        "slug": "u19-eccellenza",
+        "category": {
+          "name": "Italy Amateur",
+          "slug": "italy-amateur",
+          "sport": {
+            "name": "Basketball",
+            "slug": "basketball",
+            "id": 2
+          },
+          "priority": 0,
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 2310,
+          "flag": "italy",
+          "alpha2": "IT",
+          "fieldTranslations": {
+            "nameTranslation": {
+              "ar": "إيطاليا",
+              "bn": "ইতালি",
+              "hi": "इटली",
+              "ru": "Италия Любители"
+            },
+            "shortNameTranslation": {}
+          }
+        },
+        "userCount": 9,
+        "hasRounds": true,
+        "hasPerformanceGraphFeature": false,
+        "liveActivityEnabled": false,
+        "country": {
+          "alpha2": "IT",
+          "alpha3": "ITA",
+          "name": "Italy",
+          "slug": "italy"
+        },
+        "id": 33926,
+        "hasEventPlayerStatistics": false,
+        "displayInverseHomeAwayTeams": false,
+        "fieldTranslations": {
+          "nameTranslation": {
+            "ar": "تحت 19 سنة إكسيليزا",
+            "ru": "до 19 лет Eccellenza"
+          },
+          "shortNameTranslation": {}
+        }
+      },
+      "priority": 0,
+      "isGroup": true,
+      "groupName": "- Girone B",
+      "competitionType": 1,
+      "id": 179911,
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "تحت 19 - الدوري الممتاز - المجموعة ب",
+          "ru": "до 19 лет Eccellenza - Группа B"
+        },
+        "shortNameTranslation": {}
+      }
+    },
+    "season": {
+      "name": "U19 Eccellenza 26/27",
+      "year": "26/27",
+      "editor": true,
+      "id": 102342
+    },
+    "roundInfo": {
+      "round": 1
+    },
+    "customId": "IAJjsJAJj",
+    "status": {
+      "code": 100,
+      "description": "Ended",
+      "type": "finished"
+    },
+    "winnerCode": 1,
+    "venue": {
+      "city": {
+        "name": "Seveso",
+        "country": {
+          "alpha2": "IT",
+          "alpha3": "ITA",
+          "name": "Italy",
+          "slug": "italy"
+        },
+        "id": 41284
+      },
+      "venueCoordinates": {
+        "latitude": 45.6424181,
+        "longitude": 9.1684951
+      },
+      "hidden": true,
+      "slug": "palaprealpi",
+      "name": "PalaPrealpi",
+      "capacity": 553,
+      "country": {
+        "alpha2": "IT",
+        "alpha3": "ITA",
+        "name": "Italy",
+        "slug": "italy"
+      },
+      "id": 64050,
+      "stadium": {
+        "name": "PalaPrealpi",
+        "capacity": 553
+      }
+    },
+    "homeTeam": {
+      "name": "Pallacanestro Cantù U19",
+      "slug": "pallacanestro-cantu-u19",
+      "shortName": "Pallacanestro Cantù U19",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 8,
+      "venue": {
+        "city": {
+          "name": "Seveso",
+          "country": {
+            "alpha2": "IT",
+            "alpha3": "ITA",
+            "name": "Italy",
+            "slug": "italy"
+          },
+          "id": 41284
+        },
+        "venueCoordinates": {
+          "latitude": 45.6424181,
+          "longitude": 9.1684951
+        },
+        "hidden": true,
+        "slug": "palaprealpi",
+        "name": "PalaPrealpi",
+        "capacity": 553,
+        "country": {
+          "alpha2": "IT",
+          "alpha3": "ITA",
+          "name": "Italy",
+          "slug": "italy"
+        },
+        "id": 64050,
+        "stadium": {
+          "name": "PalaPrealpi",
+          "capacity": 553
+        }
+      },
+      "nameCode": "PCU",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "IT",
+        "alpha3": "ITA",
+        "name": "Italy",
+        "slug": "italy"
+      },
+      "id": 1211284,
+      "fullName": "Pallacanestro Cantù U19",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "بالاكانسترو كانتو تحت 19",
+          "ru": "Палланкестро Кантù U19"
+        },
+        "shortNameTranslation": {
+          "ar": "بالاكانسترو كانتو تحت 19",
+          "ru": "Палланкестро Кантù U19"
+        }
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "awayTeam": {
+      "name": "Robur et Fides Varese U19",
+      "slug": "robur-et-fides-varese-u19",
+      "shortName": "Robur et Fides Varese U19",
+      "gender": "M",
+      "sport": {
+        "name": "Basketball",
+        "slug": "basketball",
+        "id": 2
+      },
+      "userCount": 5,
+      "nameCode": "REF",
+      "national": false,
+      "type": 0,
+      "country": {
+        "alpha2": "IT",
+        "alpha3": "ITA",
+        "name": "Italy",
+        "slug": "italy"
+      },
+      "id": 1211283,
+      "fullName": "Robur et Fides Varese U19",
+      "subTeams": [],
+      "teamColors": {
+        "primary": "#374df5",
+        "secondary": "#374df5",
+        "text": "#ffffff"
+      },
+      "fieldTranslations": {
+        "nameTranslation": {
+          "ar": "روبر إت فيدس فاريسي تحت 19",
+          "ru": "Робур эт Фидес Варезе U19"
+        },
+        "shortNameTranslation": {
+          "ar": "روبر إت فيدس فاريسي تحت 19",
+          "ru": "Робур эт Фидес Варезе U19"
+        }
+      },
+      "createdByEditor": true,
+      "timeActive": []
+    },
+    "homeScore": {
+      "current": 106,
+      "display": 106,
+      "period1": 26,
+      "period2": 28,
+      "period3": 24,
+      "period4": 28,
+      "normaltime": 106
+    },
+    "awayScore": {
+      "current": 71,
+      "display": 71,
+      "period1": 19,
+      "period2": 23,
+      "period3": 18,
+      "period4": 11,
+      "normaltime": 71
+    },
+    "time": {},
+    "changes": {
+      "changes": [
+        "homeScore.current",
+        "homeScore.display",
+        "homeScore.period1",
+        "homeScore.normaltime"
+      ],
+      "changeTimestamp": 1790689769
+    },
+    "hasGlobalHighlights": false,
+    "crowdsourcingDataDisplayEnabled": false,
+    "id": 17006262,
+    "defaultPeriodCount": 4,
+    "defaultPeriodLength": 10,
+    "defaultOvertimeLength": 5,
+    "periods": {
+      "current": "Score",
+      "period1": "1st quarter",
+      "period2": "2nd quarter",
+      "period3": "3rd quarter",
+      "period4": "4th quarter",
+      "overtime": "Overtime"
+    },
+    "slug": "pallacanestro-cantu-u19-robur-et-fides-varese-u19",
+    "startTimestamp": 1790616600,
+    "finalResultOnly": false,
+    "feedLocked": false,
+    "createdByNickname": "Leonardo Stefansson",
+    "eventEditorName": "Leonardo Stefansson",
+    "eventEditor": {
+      "id": "615af8db98a19a706940a530",
+      "name": "Leonardo Stefansson"
+    },
+    "showTotoPromo": true,
+    "isEditor": true,
+    "eventFilters": {
+      "category": [
+        "club"
+      ],
+      "level": [
+        "youth"
+      ],
+      "gender": [
+        "M"
+      ]
+    }
+  },
+  "error": null
+}

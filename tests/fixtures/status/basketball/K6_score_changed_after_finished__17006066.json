@@ -1,0 +1,43 @@
+{
+  "case_id": "K6_score_changed_after_finished",
+  "event_id": 17006066,
+  "fetched_at_utc": "2026-09-29T16:40:54+00:00",
+  "source_file": "research/status_samples/basketball/K6_score_changed_after_finished__17006066.json",
+  "status": {
+    "code": 110,
+    "description": "AET",
+    "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {
+    "current": 88,
+    "display": 88,
+    "period1": 24,
+    "period2": 21,
+    "period3": 29,
+    "period4": 8,
+    "normaltime": 82,
+    "overtime": 6
+  },
+  "awayScore": {
+    "current": 94,
+    "display": 94,
+    "period1": 16,
+    "period2": 26,
+    "period3": 17,
+    "period4": 23,
+    "normaltime": 82,
+    "overtime": 12
+  },
+  "startTimestamp": 1790620200,
+  "time": {},
+  "changes": {
+    "changes": [
+      "homeScore.current",
+      "homeScore.display",
+      "homeScore.period1",
+      "homeScore.normaltime"
+    ],
+    "changeTimestamp": 1790693661
+  }
+}
