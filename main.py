@@ -115,6 +115,19 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--refresh-only",
+        action="store_true",
+        help="Yalnızca geçici kayıtları yeniler (REFRESH_WINDOW_HOURS içindeki maçların /event'i); "
+        "günlük cron için. --league-id ile tek lig",
+    )
+
+    parser.add_argument(
+        "--refresh-legacy",
+        action="store_true",
+        help="observation.json'ı olmayan eski kayıtları da bir kez yeniler (varsayılan: kesin sayılır)",
+    )
+
+    parser.add_argument(
         "--ignore-rate-limit",
         action="store_true",
         help="Rate-limit circuit breaker mekanizmasını devre dışı bırakır"
@@ -173,7 +186,25 @@ def main() -> int:
         if args.data_dir:
             # Açıkça verilen --data-dir bu çalıştırma için DATA_DIR'i ezer (tüm modüller aynısını görsün)
             os.environ["DATA_DIR"] = args.data_dir
+        if args.refresh_legacy:
+            os.environ["REFRESH_LEGACY"] = "true"
+
         ui = SimpleSofaScoreUI(config_path=args.config, data_dir=args.data_dir)
+
+        if args.refresh_only:
+            md = ui.match_data_fetcher
+            md.begin_job_cache()
+            try:
+                ids = md.refresh_due_ids(league_id=args.league_id)
+                logger.info(f"Yenileme: {len(ids)} geçici kayıt")
+                stats = md.refresh_matches(ids)
+            finally:
+                md.end_job_cache()
+            print(
+                f"Yenileme: {stats['refreshed']} maç yenilendi, {stats['changed']} değişti, "
+                f"{stats['failed']} başarısız (değişiklikler: data/score_changes.jsonl)"
+            )
+            return 1 if stats["failed"] and not stats["refreshed"] else 0
 
         if args.headless:
             logger.info("Headless modda çalışılıyor")

@@ -173,7 +173,12 @@ def run_fetch_job(job_id: str, payload: "FetchRequest") -> None:
 
         # 3. Maç detayları
         if not cancelled():
-            _run_details(ui, tracker, detail_plan, explicit_match_ids, payload, lname)
+            # Geçici kayıtların yenilenmesi kartta ayrı sayılır (JobProgress.detail()["refreshed"])
+            ui.match_data_fetcher.refresh_listener = tracker.add_refreshed
+            try:
+                _run_details(ui, tracker, detail_plan, explicit_match_ids, payload, lname)
+            finally:
+                ui.match_data_fetcher.refresh_listener = None
 
         if cancelled():
             update_state("Cancelled", tracker.percent(), "Cancelled")

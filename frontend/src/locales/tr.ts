@@ -60,6 +60,7 @@ export default {
     },
     counting: 'Eksik maçlar sayılıyor…',
     failedN: '{n} hata',
+    refreshedN: '{n} yenilendi ({changed} değişti)',
     eta: '~{time} kaldı',
     elapsed: '{time} geçti',
     took: '{time} sürdü',
@@ -235,6 +236,9 @@ export default {
     retries: 'Deneme sayısı',
     onlyFinished: 'Sadece bitmiş maçları kaydet',
     emptyRounds: 'Boş haftaları da kaydet',
+    refreshWindow: 'Yenileme penceresi (saat)',
+    refreshWindowHint:
+      'Bitmiş bir maç, başlangıcından bu kadar saat geçene kadar geçici sayılır; sonraki indirmelerde yeniden okunur ve değişiklikler data/score_changes.jsonl dosyasına yazılır. 0 = kapalı.',
     logLevel: 'Log seviyesi',
     saved: 'Ayarlar kaydedildi.',
     noChange: 'Değişiklik yok.',

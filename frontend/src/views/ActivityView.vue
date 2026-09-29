@@ -36,6 +36,7 @@ function row(j: JobRow) {
     detail: [
       j.matches_total ? t('job.unit.details', { done: j.matches_done ?? 0, total: j.matches_total }) : '',
       j.matches_failed ? t('job.failedN', { n: j.matches_failed }) : '',
+      j.result?.refreshed ? t('job.refreshedN', { n: j.result.refreshed, changed: j.result.refresh_changed ?? 0 }) : '',
     ]
       .filter(Boolean)
       .join(' · '),

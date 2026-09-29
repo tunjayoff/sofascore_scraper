@@ -67,6 +67,11 @@ const counts = computed(() => {
 
 const failed = computed(() => s.value.matches_failed || 0)
 
+const refreshedText = computed(() => {
+  const n = d.value?.refreshed || 0
+  return n ? t('job.refreshedN', { n, changed: d.value?.refresh_changed ?? 0 }) : ''
+})
+
 const eta = computed(() => (running.value && d.value?.eta_seconds ? t('job.eta', { time: duration(d.value.eta_seconds) }) : ''))
 
 const waitText = computed(() => {
@@ -162,9 +167,10 @@ async function stop() {
       <AppIcon name="alert" :size="14" class="shrink-0 mt-px" /><span>{{ waitText }}</span>
     </div>
 
-    <div v-if="counts || failed || eta" class="flex items-baseline justify-between gap-2 text-xs mono" style="color: var(--muted)">
+    <div v-if="counts || failed || refreshedText || eta" class="flex items-baseline justify-between gap-2 text-xs mono" style="color: var(--muted)">
       <span>
         {{ counts }}<template v-if="counts && failed"> · </template><span v-if="failed" style="color: var(--danger)">{{ t('job.failedN', { n: failed }) }}</span>
+        <template v-if="refreshedText && (counts || failed)"> · </template>{{ refreshedText }}
       </span>
       <span v-if="eta" class="shrink-0">{{ eta }}</span>
     </div>

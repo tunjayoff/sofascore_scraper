@@ -62,6 +62,7 @@ const en: typeof tr = {
     },
     counting: 'Counting matches that need details…',
     failedN: '{n} failed',
+    refreshedN: '{n} refreshed ({changed} changed)',
     eta: '~{time} left',
     elapsed: '{time} elapsed',
     took: 'took {time}',
@@ -237,6 +238,9 @@ const en: typeof tr = {
     retries: 'Retries',
     onlyFinished: 'Save finished matches only',
     emptyRounds: 'Also save empty rounds',
+    refreshWindow: 'Refresh window (hours)',
+    refreshWindowHint:
+      'A finished match stays provisional until this many hours after kick-off; later downloads re-read it and write changes to data/score_changes.jsonl. 0 = off.',
     logLevel: 'Log level',
     saved: 'Settings saved.',
     noChange: 'Nothing changed.',
