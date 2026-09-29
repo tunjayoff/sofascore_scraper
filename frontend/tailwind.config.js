@@ -4,15 +4,9 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
-      colors: {
-        primary: {
-          DEFAULT: '#059669',
-          hover: '#047857',
-          soft: '#d1fae5',
-        },
-      },
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        sans: ['Geist', 'system-ui', 'sans-serif'],
+        mono: ['"Geist Mono"', 'ui-monospace', 'monospace'],
       },
     },
   },

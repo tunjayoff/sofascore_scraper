@@ -2,16 +2,17 @@
 
 **Türkçe:** [README.tr.md](README.tr.md)
 
-Python tool to download football match data from [SofaScore](https://www.sofascore.com/) public HTTP APIs, store it locally (JSON and CSV), and browse it through a terminal UI or a web dashboard.
+Python tool to download football, basketball and tennis match data from [SofaScore](https://www.sofascore.com/) public HTTP APIs, store it locally (JSON and CSV), and browse it through a web app or a terminal UI.
 
 This project is not affiliated with SofaScore. Use reasonable request rates and comply with applicable terms and laws.
 
 ## Features
 
-- **Leagues** — Configure tournament IDs; optional remote search when adding leagues (web).
-- **Seasons & schedule** — Fetch season lists and match lists; filter by league, season, date.
-- **Match details** — Statistics, lineups, incidents, H2H, and related JSON slices; optional parallel fetching with progress and cancel (web).
-- **Web UI** — Dashboard, leagues, schedule (with fetch wizard), match view, stats, settings (env-backed, tabs, backup/restore/clear), real-time scraper status (SSE).
+- **Three sports** — Football, basketball and tennis. Every league remembers its sport, and the whole web app can be switched to one sport at a time.
+- **Leagues** — Add tournaments by searching SofaScore (web) or by ID (`config/leagues.txt`).
+- **Seasons & matches** — Pick seasons from one or several leagues and download them in one go; browse matches by league, season, date and whether details are downloaded.
+- **Match details** — Statistics (per period), incidents, lineups, H2H and form; score lines per half, quarter or set depending on the sport.
+- **Web app** — Leagues, Download, Matches, Activity and Settings pages; live progress (SSE) with a Stop that takes effect immediately; Turkish and English; light, dark or system theme.
 - **Terminal UI** — Interactive menu for the same operations without the browser.
 - **Automation** — Headless flags for CI/scripts (`--update-all`, `--fetch-mode`, `--league-id`, `--csv-export`, paths).
 - **Export** — Processed “all matches” CSV and API export endpoints.
@@ -19,6 +20,7 @@ This project is not affiliated with SofaScore. Use reasonable request rates and 
 ## Requirements
 
 - Python **3.10+** (3.11+ recommended).
+- **Node.js 20.19+ or 22.12+ and npm** — to build the web app (`frontend/`). `scripts/start_web.py` builds it on the first run.
 - **Git** — required for the one-line `curl | bash` installer (clones this repo); optional if you already extracted or cloned the project manually.
 - Network access to SofaScore.
 
@@ -96,7 +98,7 @@ See `.env.example` for all keys. Common ones:
 | Variable | Purpose |
 |----------|---------|
 | `DATA_DIR` | Root folder for stored data (default `data`). Web app reads this via `ConfigManager`. |
-| `LANGUAGE` | `en` or `tr` for UI strings. |
+| `LANGUAGE` | `en` or `tr`: language of the terminal UI and server messages. The web app has its own switch under **Settings** (changing it there also updates this value). |
 | `MAX_CONCURRENT` | Parallel detail requests cap. |
 | `USE_PROXY` / `PROXY_URL` | Optional HTTP proxy. |
 | `FETCH_ONLY_FINISHED` | Keep only finished matches (`status.type == finished`). Default `true`. Upcoming fixtures are dropped from schedule files. |
@@ -122,24 +124,29 @@ python main.py --config /path/to/leagues.txt --data-dir /path/to/data
 
 **Web (recommended for most users)**
 
-1. Finish **Installation** and **Configuration** (`pip install`, `cp .env.example .env`). Optionally set `LANGUAGE=en` or `tr` and `DATA_DIR` if you want data somewhere other than `./data`.
-2. Start the server: `python main.py --web` and open `http://127.0.0.1:8000`.
-3. **Leagues** — Add at least one tournament: use search (SofaScore) or enter the numeric tournament ID from the SofaScore URL. Save.
-4. **Schedule** — Choose a league (and season if needed). Use **Fetch** (wizard) for a guided run—pick leagues, seasons, and whether you want full sync or details only—or use the buttons for broader one-shot updates.
-5. While data is downloading, a **progress** card shows status; you can usually still navigate the site. If something stays stuck, check **Settings → performance** (concurrency, timeouts) and logs.
-6. Click a **match row** to open the match page (stats, lineups, etc.). If details are missing, use the actions on that page or run another **details** fetch from Schedule.
-7. **Stats** summarises disk usage and coverage; **Settings** edits `.env` (tabs for general, network, performance, data tools). Use backup/restore before risky clean operations.
+1. Finish **Installation** and **Configuration** (`pip install`, `cp .env.example .env`). Optionally set `DATA_DIR` if you want data somewhere other than `./data`.
+2. Start the app: `./start-sofascore.sh` (or `python scripts/start_web.py`). On the first run it builds the web app, then it opens `http://127.0.0.1:8000`. `python main.py --web` starts the server alone.
+   After updating the code (`git pull`), rebuild the web app yourself: `cd frontend && npm install && npm run build`. The start script only builds when `frontend/dist/` is missing, so otherwise you keep seeing the old interface.
+3. **Sport** — The switch at the top of the sidebar (All / Football / Basketball / Tennis) filters every page. Pick the sport you are working on.
+4. **Leagues** — **Add league** searches SofaScore; filter the results by sport and press **Add**. A league whose sport is unknown (for example one added to `config/leagues.txt` by hand) shows a **Pick sport** box; choose once and it is saved.
+5. **Download** — Left column: pick a league. Middle: tick seasons (the season list is fetched automatically the first time; **Latest season** / **Last 3 seasons** are shortcuts). You can pick seasons from several leagues; they collect in the **Download list** on the right. Press **Download N seasons**. Matches and their details (statistics, events, lineups) are downloaded together.
+6. While a download runs, the card at the bottom left of the sidebar shows progress; **Stop** takes effect right away: no new requests are sent and retry waits are cut short; a request already in flight can take up to the request timeout (`REQUEST_TIMEOUT`) to return. Only one download runs at a time. **Activity** lists the current and past downloads.
+7. **Matches** — Filter by league, season, date and **Details** (with / missing). When a league has matches without details (typically after a stopped download), a banner offers **Download missing**. Click a row to open the match: score by period, overview, statistics, events and lineups.
+8. **Settings** — Language and theme; data folder, disk usage, **Back up** and **Delete all data**; advanced request settings (timeout, concurrency, waits, retries).
+
+> **Delete all data** removes every downloaded season, match and detail and cannot be undone. Take a backup first. A backup is a zip under `src/web/static/backups/` holding `data/`, `.env` and `leagues.txt`. To restore: stop the app, unzip `data/` into the project folder (or your `DATA_DIR`), and copy `leagues.txt` to `config/leagues.txt` and `.env` to the project root only if you want those back too.
 
 **Terminal menu**
 
-Run `python main.py` and work through the numbered menus: manage leagues, refresh seasons, fetch match lists, fetch details, run stats, or export CSV. The flow matches the web conceptually but without the wizard—use prompts to choose leagues and options.
+Run `python main.py` and work through the numbered menus: manage leagues, refresh seasons, fetch match lists, fetch details, run stats, or export CSV. There is no counterpart of the web Download page; use the prompts to choose leagues and options.
 
 **Tips**
 
-- First-time **full** fetch for a big league can take a long time; start with one league and a few recent seasons from the wizard.
+- The first download of a big league can take a long time; start with one league and a few recent seasons.
 - If you hit rate limits or many errors, lower **MAX_CONCURRENT** and raise waits slightly in **Settings**; avoid `--ignore-rate-limit` unless you know what you are doing.
 - For the same dataset in **web** and **CLI/headless**, keep `DATA_DIR` in `.env` aligned with `--data-dir` when you use the command line.
-- Prefer a season that already has finished matches. The newest label (e.g. European `26/27`) is often fixtures-only; the UI prefers the previous season when possible, and the scraper can fall back automatically.
+- Prefer a season that already has finished matches. The newest label (e.g. European `26/27`) is often fixtures-only; the scraper can fall back automatically.
+- Stopping a download keeps everything fetched so far. Matches whose details were not reached show **Details: No** in Matches; use **Download missing** there (or on the Download page) to complete them.
 
 ### Troubleshooting
 
@@ -151,7 +158,7 @@ Run `python main.py` and work through the numbered menus: manage leagues, refres
    - The scraper must use paginated **`events/last` + `events/next`** for those seasons.
    - Older builds that only probed weeks `1..50` therefore downloaded PL fine but returned **zero MLS matches**. Update to a release that includes the event-list fallback, refresh seasons, and re-run the fetch.
 3. With `FETCH_ONLY_FINISHED=true` (default), not-yet-played fixtures are ignored. If a brand-new season has no finished games yet, pick the previous season (or wait / set `FETCH_ONLY_FINISHED=false` if you intentionally want fixtures).
-4. Stale season IDs (SofaScore retired the ID after a refresh) also yield empty schedules — use **Refresh seasons** on that league, then fetch again.
+4. Stale season IDs (SofaScore retired the ID after a refresh) also yield empty schedules — open the league on the **Download** page, press **Refresh** above its seasons, then download again.
 
 ### Interactive terminal
 
@@ -214,17 +221,46 @@ data/
 
 Exact paths may vary slightly by league naming and migrations.
 
+The match list reads the per-season summaries under `matches/`; the export CSV in `match_details/processed/` is only a fallback when no summaries exist.
+
+Next to `config/leagues.txt` (the `name: id` list the CLI also reads), `config/league_sports.json` stores each league's sport as `{"<id>": "football" | "basketball" | "tennis"}`. It is filled when a league is added from the web app, when you pick a sport in the UI, or from a downloaded match of that league.
+
 ## REST API (overview)
 
 All routes are prefixed with `/api` unless noted.
 
-- **Leagues**: list, create, delete, search (local / remote), seasons, refresh seasons, missing-details.
-- **Matches**: paginated schedule, single-match JSON, on-demand fetch for one match.
-- **Scraper**: `POST /api/fetch` (body: mode `full` or `details`, optional league and wizard `selections`), cancel, status, SSE stream.
+- **Leagues**: list (each with `sport`), create (optional `sport`), `PATCH /api/leagues/{id}` to set the sport, delete, search (local / remote, remote results carry `sport`), seasons, refresh seasons, missing-details.
+- **Matches**: `GET /api/matches` — paginated, filters `league_id` (one id or several comma-separated, e.g. `17,8`), `season_id`, `date`, `details=present|missing`, `sort=asc|desc`; every row has `has_details`. Also single-match JSON and on-demand fetch for one match.
+- **Scraper**: `POST /api/fetch` (body: mode `full` or `details`, `selections: [{league_id, season_ids, match_ids}]`), `POST /api/scrape/cancel` (no new requests after it; retry waits are cut short), status, SSE stream.
 - **Dashboard / stats / settings**: JSON for the web UI; settings mirror `.env` keys.
 - **Data**: backup zip, clear scopes, CSV export.
+- **Bypass Status**: `GET /api/bypass/status` and live test `POST /api/bypass/test`.
 
 OpenAPI: `GET /docs` when the server is running.
+
+## Anti-Bot Protection & Autonomous Bypass (BrowserBridge)
+
+Sofascore API endpoints are protected by Cloudflare Turnstile CAPTCHA and Varnish TLS/JA4 fingerprinting:
+1. **Dynamic Hash:** The `X-Requested-With` header is dynamically generated as a SHA-256 hash using 30-minute timestamp intervals.
+2. **Turnstile & JWT Token:** Initial API requests trigger `403 {"reason": "challenge"}`.
+3. **Autonomous BrowserBridge:** When a challenge is received, a lightweight background Chrome/Playwright persistent session solves Turnstile automatically in 1–2 seconds, exchanges the JWT `sofa_captcha` token, and fulfills API requests directly through the authenticated TLS session at **2–10 ms** speeds.
+
+### Headless Server Setup (Linux / Docker)
+
+When running on a headless Linux server or in a container:
+```bash
+# Install Playwright browser dependencies:
+playwright install chromium
+# Or install Google Chrome package directly (recommended):
+sudo apt install google-chrome-stable  # Ubuntu/Debian
+sudo pacman -S google-chrome           # Arch Linux
+```
+On servers without a physical display, run inside a virtual display:
+```bash
+xvfb-run python main.py --headless --update-all
+```
+On standard desktop environments (Linux X11/Wayland, Windows, macOS), BrowserBridge runs automatically without extra configuration.
+
 
 ## Development
 
@@ -234,13 +270,33 @@ Run the web app with auto-reload (as started by `main.py --web`):
 uvicorn src.web.app:app --reload --host 0.0.0.0 --port 8000
 ```
 
+The web app is a Vue 3 + TypeScript + Vite project in `frontend/` (Pinia, vue-router, vue-i18n, Tailwind). The server serves the built files from `frontend/dist/`.
+
+```bash
+cd frontend
+npm install
+npm run dev      # http://localhost:5173, proxies /api to 127.0.0.1:8000
+npm run build    # type-check (vue-tsc) + production build into frontend/dist/
+```
+
+Layout: `src/views/` one file per page, `src/components/` shared pieces, `src/stores/` (leagues, sport filter, running job), `src/api/client.ts` every backend call, `src/locales/{tr,en}.ts` all UI text.
+
+Tests (no network, no writes to your `data/`):
+
+```bash
+python -m pytest tests --ignore=tests/live_smoke_test.py --ignore=tests/test_live_api_bypass.py \
+  --ignore=tests/test_browser_bridge.py --ignore=tests/test_delivery_api.py --ignore=tests/test_web_api_smoke.py
+```
+
+The excluded files talk to SofaScore or a browser, or read and write your real `DATA_DIR` and job database.
+
 ## Contributing
 
 Contributions are welcome. You can help in several ways:
 
 - **Bug reports** — Open an issue with steps to reproduce, expected vs actual behaviour, OS/Python version, and relevant `.env` flags (redact secrets).
 - **Feature ideas** — Suggest use cases and constraints; maintainers may triage and discuss scope in the issue.
-- **Pull requests** — Fork the repo, use a focused branch, keep changes small and on-topic, and describe *what* and *why* in the PR. Match existing code style; avoid drive-by refactors. If you touch user-visible text, consider `locales/en.json` and `locales/tr.json`.
+- **Pull requests** — Fork the repo, use a focused branch, keep changes small and on-topic, and describe *what* and *why* in the PR. Match existing code style; avoid drive-by refactors. If you touch user-visible text, update both languages: `frontend/src/locales/tr.ts` and `en.ts` for the web app, `locales/en.json` and `locales/tr.json` for the terminal UI.
 - **Docs & translations** — Improvements to these READMEs or locale strings are appreciated.
 
 There is no separate contributor agreement beyond the MIT license on your submissions. Be respectful in issues and reviews. If you are unsure whether an idea fits, open an issue first.

@@ -22,6 +22,6 @@ def test_matches_items_have_match_id_for_navigation():
 
 def test_spa_client_routes_served():
     client = TestClient(app)
-    for path in ("/", "/matches", "/advanced/jobs", "/advanced/settings", "/advanced/leagues", "/advanced/stats"):
+    for path in ("/", "/download", "/matches", "/match/1", "/activity", "/settings", "/advanced/jobs"):
         r = client.get(path)
         assert r.status_code == 200, path

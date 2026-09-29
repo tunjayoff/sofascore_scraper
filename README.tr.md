@@ -2,16 +2,17 @@
 
 **English:** [README.md](README.md)
 
-SofaScore’un herkese açık HTTP API’lerinden futbol maç verisi indiren, yerelde (JSON ve CSV) saklayan ve **terminal** veya **web** arayüzüyle sunan Python uygulaması.
+SofaScore’un herkese açık HTTP API’lerinden futbol, basketbol ve tenis maç verisi indiren, yerelde (JSON ve CSV) saklayan ve **web** veya **terminal** arayüzüyle sunan Python uygulaması.
 
 Bu proje SofaScore ile bağlantılı değildir. İstek hızına dikkat edin ve ilgili kullanım koşullarına uyun.
 
 ## Özellikler
 
-- **Ligler** — Turnuva ID yapılandırması; web’de lig eklerken uzaktan arama.
-- **Sezon ve fikstür** — Sezon listesi ve maç listeleri; lig, sezon, tarih filtreleri.
-- **Maç detayları** — İstatistik, kadro, olaylar, H2H vb. JSON dilimleri; isteğe bağlı paralel çekim, ilerleme ve iptal (web).
-- **Web arayüzü** — Pano, ligler, fikstür (sihirbazlı çekim), maç sayfası, istatistikler, ayarlar (`.env` tabanlı, yedek/geri yükleme/temizleme), arka plan işlem durumu (SSE).
+- **Üç spor** — Futbol, basketbol ve tenis. Her lig kendi sporunu hatırlar; web uygulamasının tamamı tek bir spora göre süzülebilir.
+- **Ligler** — SofaScore’da arayarak (web) veya ID ile (`config/leagues.txt`) turnuva ekleme.
+- **Sezonlar ve maçlar** — Bir veya birden fazla ligden sezon seçip tek seferde indirme; maçlara lig, sezon, tarih ve detayın inip inmediğine göre göz atma.
+- **Maç detayları** — İstatistikler (periyot bazında), olaylar, kadrolar, aralarındaki maçlar ve form; spora göre yarı, çeyrek veya set bazında skor.
+- **Web uygulaması** — Ligler, Maç indir, Maçlar, Etkinlik ve Ayarlar sayfaları; canlı ilerleme (SSE) ve anında etki eden Durdur; Türkçe ve İngilizce; açık, koyu veya sisteme uyan tema.
 - **Terminal arayüzü** — Tarayıcı olmadan etkileşimli menü.
 - **Otomasyon** — CI/script için headless bayrakları (`--update-all`, `--fetch-mode`, `--league-id`, `--csv-export`, yollar).
 - **Dışa aktarım** — İşlenmiş “tüm maçlar” CSV’si ve API üzerinden export.
@@ -19,6 +20,7 @@ Bu proje SofaScore ile bağlantılı değildir. İstek hızına dikkat edin ve i
 ## Gereksinimler
 
 - Python **3.10+** (önerilen: 3.11+).
+- **Node.js 20.19+ veya 22.12+ ve npm** — web uygulamasını (`frontend/`) derlemek için. `scripts/start_web.py` ilk çalıştırmada kendisi derler.
 - **Git** — `curl | bash` ile tek satır kurulum için gerekli (depoyu klonlar); elle indiriyorsanız isteğe bağlı.
 - SofaScore’a ağ erişimi.
 
@@ -94,7 +96,7 @@ Tüm anahtarlar `.env.example` içinde. Sık kullanılanlar:
 | Değişken | Açıklama |
 |----------|----------|
 | `DATA_DIR` | Verinin kök dizini (varsayılan `data`). Web `ConfigManager` üzerinden okur. |
-| `LANGUAGE` | Arayüz dili: `en` veya `tr`. |
+| `LANGUAGE` | `en` veya `tr`: terminal arayüzünün ve sunucu mesajlarının dili. Web uygulamasının dili **Ayarlar**’dan seçilir (orada değiştirmek bu değeri de günceller). |
 | `MAX_CONCURRENT` | Paralel detay isteği üst sınırı. |
 | `USE_PROXY` / `PROXY_URL` | İsteğe bağlı proxy. |
 | `FETCH_ONLY_FINISHED` | Yalnız bitmiş maçları tut (`status.type == finished`). Varsayılan `true`. Henüz oynanmamış fikstürler schedule dosyalarına yazılmaz. |
@@ -120,24 +122,29 @@ python main.py --config /yol/leagues.txt --data-dir /yol/veri
 
 **Web (çoğu kullanıcı için uygun)**
 
-1. **Kurulum** ve **Yapılandırma** adımlarını tamamlayın (`pip install`, `cp .env.example .env`). İsterseniz `LANGUAGE=tr` veya `en` ve veriyi başka yere almak için `DATA_DIR` ayarlayın.
-2. Sunucuyu başlatın: `python main.py --web`, tarayıcıda `http://127.0.0.1:8000` açın.
-3. **Ligler** — En az bir turnuva ekleyin: SofaScore üzerinden arama veya turnuva URL’sindeki sayısal ID ile kayıt.
-4. **Fikstür** — Lig (ve gerekirse sezon) seçin. **Çek / Fetch** sihirbazıyla lig ve sezonları seçip tam senkron veya sadece detay çekimini başlatabilirsiniz; tek tuşlu geniş güncellemeler de vardır.
-5. İndirme sürerken **ilerleme** kartı görünür; sayfalar arasında genelde gezinebilirsiniz. Takılma olursa **Ayarlar → performans** (eşzamanlılık, zaman aşımı) ve günlüklere bakın.
-6. **Maç satırına** tıklayarak detay sayfasına gidin. Veri eksikse sayfadaki aksiyonlar veya fikstürden tekrar **detay** çekimi kullanılabilir.
-7. **İstatistikler** özet ve kapsam gösterir; **Ayarlar** `.env` ile uyumlu sekmeler (genel, ağ, performans, veri araçları). Riskli temizlik öncesi yedek alın.
+1. **Kurulum** ve **Yapılandırma** adımlarını tamamlayın (`pip install`, `cp .env.example .env`). Veriyi `./data` dışında tutmak isterseniz `DATA_DIR` ayarlayın.
+2. Uygulamayı başlatın: `./start-sofascore.sh` (veya `python scripts/start_web.py`). İlk çalıştırmada web uygulamasını derler, sonra `http://127.0.0.1:8000` adresini açar. Sadece sunucu için: `python main.py --web`.
+   Kodu güncelledikten sonra (`git pull`) web uygulamasını kendiniz yeniden derleyin: `cd frontend && npm install && npm run build`. Başlatma betiği sadece `frontend/dist/` yoksa derler; aksi halde eski arayüzü görmeye devam edersiniz.
+3. **Spor** — Kenar menünün üstündeki seçici (Tümü / Futbol / Basketbol / Tenis) bütün sayfaları süzer. Üzerinde çalıştığınız sporu seçin.
+4. **Ligler** — **Lig ekle** SofaScore’da arar; sonuçları spora göre süzüp **Ekle**’ye basın. Sporu bilinmeyen bir ligde (örneğin `config/leagues.txt`’ye elle eklenmiş) **Spor seç** kutusu çıkar; bir kez seçmeniz yeterli, kaydedilir.
+5. **Maç indir** — Sol sütunda lig seçin, ortada sezonları işaretleyin (sezon listesi ilk seferde kendiliğinden gelir; **Son sezon** / **Son 3 sezon** kısayolları vardır). Birden fazla ligden sezon seçebilirsiniz; hepsi sağdaki **İndirme listesi**’nde toplanır. **N sezonu indir**’e basın. Maçlar ve maç detayları (istatistik, olaylar, kadrolar) birlikte indirilir.
+6. İndirme sürerken kenar menünün altındaki kart ilerlemeyi gösterir; **Durdur** hemen etki eder: yeni istek gönderilmez, yeniden deneme beklemeleri kesilir; o an havada olan bir istek zaman aşımı (`REQUEST_TIMEOUT`) kadar sürebilir. Aynı anda tek indirme çalışır. **Etkinlik** şimdiki ve geçmiş indirmeleri listeler.
+7. **Maçlar** — Lig, sezon, tarih ve **Detay** (olanlar / eksikler) ile süzün. Bir ligde detayı eksik maç varsa (genelde yarıda durdurulan bir indirmeden kalır) üstte **Eksikleri indir** şeridi çıkar. Bir satıra tıklayınca maç açılır: periyot skorları, özet, istatistikler, olaylar ve kadrolar.
+8. **Ayarlar** — Dil ve tema; veri klasörü, disk kullanımı, **Yedek al** ve **Tüm veriyi sil**; gelişmiş istek ayarları (zaman aşımı, eşzamanlılık, bekleme süreleri, deneme sayısı).
+
+> **Tüm veriyi sil** indirilmiş bütün sezon, maç ve detayları siler ve geri alınamaz. Önce yedek alın. Yedek, `src/web/static/backups/` altında `data/`, `.env` ve `leagues.txt` içeren bir zip’tir. Geri yüklemek için uygulamayı durdurun, `data/` klasörünü proje klasörüne (veya `DATA_DIR`’e) açın; `leagues.txt` ve `.env`’i de geri istiyorsanız sırasıyla `config/leagues.txt` ve proje köküne kopyalayın.
 
 **Terminal menüsü**
 
-`python main.py` ile numaralı menülerden ilerleyin: lig, sezon, maç listesi, detay, istatistik, CSV. Web’deki sihirbazın karşılığı yok; istemlerle lig ve seçenek belirlersiniz.
+`python main.py` ile numaralı menülerden ilerleyin: lig, sezon, maç listesi, detay, istatistik, CSV. Web’deki Maç indir sayfasının karşılığı yok; istemlerle lig ve seçenek belirlersiniz.
 
 **İpuçları**
 
-- Büyük ligde ilk **tam** çekim uzun sürebilir; önce tek lig ve sihirbazla az sayıda sezon deneyin.
+- Büyük ligde ilk indirme uzun sürebilir; önce tek lig ve az sayıda sezonla deneyin.
 - Hız sınırı veya çok hata görürseniz **Ayarlar**’dan **MAX_CONCURRENT** düşürüp bekleme sürelerini hafif artırın; `--ignore-rate-limit` yalnız bilinçli kullanımda.
 - **Web** ile **CLI/headless** aynı veriyi paylaşacaksa `.env` içindeki `DATA_DIR` ile komut satırındaki `--data-dir` değerini hizalayın.
-- Mümkünse içinde bitmiş maç olan sezonu seçin. En yeni etiket (ör. Avrupa `26/27`) çoğu zaman yalnızca fikstürdür; arayüz önceki sezonu tercih eder, scraper da gerekirse otomatik düşer.
+- Mümkünse içinde bitmiş maç olan sezonu seçin. En yeni etiket (ör. Avrupa `26/27`) çoğu zaman yalnızca fikstürdür; scraper gerekirse otomatik düşer.
+- İndirmeyi durdurmak o ana kadar inenleri korur. Detayına sıra gelmeyen maçlar Maçlar’da **Detay: Yok** görünür; Maçlar’daki (veya Maç indir’deki) **Eksikleri indir** ile tamamlanır.
 
 ### Sorun giderme
 
@@ -149,7 +156,7 @@ python main.py --config /yol/leagues.txt --data-dir /yol/veri
    - Bu sezonlarda scraper sayfalı **`events/last` + `events/next`** kullanmalıdır.
    - Yalnız `1..50` hafta tarayan eski sürümler PL’yi indirir ama **MLS’te 0 maç** döner. Event-list yedeklemesini içeren sürüme güncelleyin, sezonları yenileyin ve çekimi tekrarlayın.
 3. `FETCH_ONLY_FINISHED=true` (varsayılan) iken oynanmamış maçlar atılır. Yeni sezonda henüz bitmiş maç yoksa önceki sezonu seçin (veya bilerek fikstür istiyorsanız `FETCH_ONLY_FINISHED=false`).
-4. Eski/retired sezon ID’leri de boş schedule üretir — ligde **Sezonları yenile**, sonra tekrar çekin.
+4. Eski/retired sezon ID’leri de boş schedule üretir — ligi **Maç indir** sayfasında açıp sezonların üstündeki **Yenile**’ye basın, sonra tekrar indirin.
 
 ### Etkileşimli terminal
 
@@ -212,17 +219,46 @@ data/
 
 Lig adlandırma ve migrasyonlara göre alt yollar biraz farklı olabilir.
 
+Maç listesi `matches/` altındaki sezon özetlerinden okunur; `match_details/processed/` içindeki export CSV yalnızca hiç özet yoksa yedek olarak kullanılır.
+
+`config/leagues.txt`’nin (CLI’ın da okuduğu `ad: id` listesi) yanında `config/league_sports.json` her ligin sporunu `{"<id>": "football" | "basketball" | "tennis"}` olarak saklar. Lig web’den eklendiğinde, arayüzde spor seçildiğinde veya o ligin indirilmiş bir maçından doldurulur.
+
 ## REST API (özet)
 
-HTML sayfaları kök yollarla; JSON API öneki **`/api`**.
+Web uygulaması kök yollarda; JSON API öneki **`/api`**.
 
-- **Ligler**: listele, ekle, sil, ara (yerel/uzak), sezonlar, sezon yenileme, eksik detay listesi.
-- **Maçlar**: sayfalı fikstür, tek maç JSON, tek maç çekme.
-- **Scraper**: `POST /api/fetch` (gövde: `full` | `details`, isteğe bağlı lig ve sihirbaz `selections`), iptal, durum, SSE akışı.
+- **Ligler**: listele (her ligde `sport`), ekle (isteğe bağlı `sport`), sporu ayarlamak için `PATCH /api/leagues/{id}`, sil, ara (yerel/uzak; uzak sonuçlarda `sport`), sezonlar, sezon yenileme, eksik detay listesi.
+- **Maçlar**: `GET /api/matches` — sayfalı; filtreler `league_id` (tek ID ya da virgülle birden fazla, ör. `17,8`), `season_id`, `date`, `details=present|missing`, `sort=asc|desc`; her satırda `has_details`. Ayrıca tek maç JSON ve tek maç çekme.
+- **Scraper**: `POST /api/fetch` (gövde: `full` | `details`, `selections: [{league_id, season_ids, match_ids}]`), `POST /api/scrape/cancel` (sonrasında yeni istek gönderilmez, yeniden deneme beklemeleri kesilir), durum, SSE akışı.
 - **Pano / istatistik / ayarlar**: Web panellerine JSON; ayarlar `.env` ile uyumlu.
 - **Veri**: yedek zip, kapsam seçerek temizleme, CSV export.
+- **Bypass Durumu**: `GET /api/bypass/status` ve canlı test `POST /api/bypass/test`.
 
 Sunucu çalışırken OpenAPI: `GET /docs`.
+
+## Anti-Bot Koruması ve Otonom Bypass (BrowserBridge)
+
+Sofascore API'leri Cloudflare Turnstile CAPTCHA ve Varnish TLS/JA4 parmak izi denetimi ile korunmaktadır:
+1. **Dinamik Hash:** `X-Requested-With` başlığı 30 dakikalık zaman aralıklarıyla SHA-256 hash'i olarak otomatik üretilir.
+2. **Turnstile ve JWT Token:** API'ler ilk istekte `403 {"reason": "challenge"}` döndürür.
+3. **Otonom BrowserBridge:** Sistem arka planda çalışan kalıcı bir Chrome/Playwright oturumu üzerinden Turnstile challenge'ını 1-2 saniye içinde otomatik çözer, `sofa_captcha` JWT token'ını alır ve API isteklerini tarayıcının TLS oturumu üzerinden **2-10 milisaniye** hızında şeffafça tamamlar.
+
+### Sunucu (Headless Linux) Gereksinimleri
+
+Headless bir Linux sunucuda veya Docker üzerinde çalışırken:
+```bash
+# Playwright tarayıcı kütüphanesini kurun:
+playwright install chromium
+# veya doğrudan sistem Google Chrome'unu kurun (önerilir):
+sudo apt install google-chrome-stable  # Ubuntu/Debian
+sudo pacman -S google-chrome           # Arch Linux
+```
+Sunucuda ekran kartı/masaüstü yoksa sanal ekran ile çalıştırabilirsiniz:
+```bash
+xvfb-run python main.py --headless --update-all
+```
+Masaüstü ortamında (Linux X11/Wayland, Windows, macOS) herhangi bir ek işlem gerekmez; BrowserBridge arka planda otomatik çalışır.
+
 
 ## Geliştirme
 
@@ -232,13 +268,33 @@ Web’i doğrudan uvicorn ile:
 uvicorn src.web.app:app --reload --host 0.0.0.0 --port 8000
 ```
 
+Web uygulaması `frontend/` altında bir Vue 3 + TypeScript + Vite projesidir (Pinia, vue-router, vue-i18n, Tailwind). Sunucu derlenmiş dosyaları `frontend/dist/`’ten sunar.
+
+```bash
+cd frontend
+npm install
+npm run dev      # http://localhost:5173, /api isteklerini 127.0.0.1:8000'e yönlendirir
+npm run build    # tip kontrolü (vue-tsc) + frontend/dist/ içine üretim derlemesi
+```
+
+Yapı: `src/views/` her sayfa bir dosya, `src/components/` ortak parçalar, `src/stores/` (ligler, spor filtresi, çalışan iş), `src/api/client.ts` bütün backend çağrıları, `src/locales/{tr,en}.ts` bütün arayüz metinleri.
+
+Testler (ağa çıkmaz, `data/` klasörünüze yazmaz):
+
+```bash
+python -m pytest tests --ignore=tests/live_smoke_test.py --ignore=tests/test_live_api_bypass.py \
+  --ignore=tests/test_browser_bridge.py --ignore=tests/test_delivery_api.py --ignore=tests/test_web_api_smoke.py
+```
+
+Hariç tutulan dosyalar SofaScore’la ya da bir tarayıcıyla konuşur veya gerçek `DATA_DIR` ve iş veritabanınızı okuyup yazar.
+
 ## Katkıda bulunma
 
 Katkılarınızı memnuniyetle karşılıyoruz. Şu şekillerde destek olabilirsiniz:
 
 - **Hata bildirimi** — Sorunu yeniden üreten adımlar, beklenen / gerçek davranış, işletim sistemi ve Python sürümü ile ilgili `.env` anahtarlarını (gizli bilgi paylaşmadan) bir issue’da paylaşın.
 - **Özellik önerisi** — Kullanım senaryosu ve kısıtları yazın; bakıcılar kapsamı issue üzerinde değerlendirebilir.
-- **Pull request** — Repo’yu fork’layın, odaklı bir dal kullanın, değişiklikleri küçük ve tek konuda tutun; PR’da *ne* ve *neden* olduğunu açıklayın. Mevcut kod stiline uyun; gereksiz geniş refaktörden kaçının. Kullanıcıya dönük metin değiştiriyorsanız `locales/en.json` ve `locales/tr.json` dosyalarını güncellemeyi düşünün.
+- **Pull request** — Repo’yu fork’layın, odaklı bir dal kullanın, değişiklikleri küçük ve tek konuda tutun; PR’da *ne* ve *neden* olduğunu açıklayın. Mevcut kod stiline uyun; gereksiz geniş refaktörden kaçının. Kullanıcıya dönük metin değiştiriyorsanız iki dili de güncelleyin: web uygulaması için `frontend/src/locales/tr.ts` ve `en.ts`, terminal arayüzü için `locales/tr.json` ve `locales/en.json`.
 - **Dokümantasyon ve çeviri** — Bu README’ler veya yerelleştirme metinleri için iyileştirmeler değerlidir.
 
 Katkılarınız MIT lisansı ile uyumlu kabul edilir; ayrı bir katılım sözleşmesi yoktur. Issue ve inceleme süreçlerinde saygılı iletişim rica edilir. Fikrin uyarlılığından emin değilseniz önce issue açmak iyi bir başlangıçtır.

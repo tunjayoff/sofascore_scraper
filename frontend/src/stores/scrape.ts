@@ -1,170 +1,87 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { apiGet, apiSend, type ScrapeState } from '@/api/client'
-import { progressBarMode } from '@/lib/progressBarMode'
+import { api, apiGet, apiSend, type FetchPayload, type ScrapeState } from '@/api/client'
 
-const idle: ScrapeState = {
-  job_id: null,
-  is_running: false,
-  status: 'Idle',
-  progress: 0,
-  current_task: '',
-}
+const idle: ScrapeState = { job_id: null, is_running: false, status: 'Idle', progress: 0, current_task: '' }
 
-const TERMINAL = new Set(['Completed', 'Failed', 'Cancelled'])
-const AUTO_DISMISS_MS = 6000
-
+/** The one background job the backend runs at a time: status via SSE, polling as fallback. */
 export const useScrapeStore = defineStore('scrape', () => {
   const state = ref<ScrapeState>({ ...idle })
-  const minimized = ref(false)
-  const dismissed = ref(false)
+  const dismissedJob = ref<string | null>(null)
   let sse: EventSource | null = null
   let poll: ReturnType<typeof setInterval> | null = null
-  let autoDismissTimer: ReturnType<typeof setTimeout> | null = null
+  const finishedListeners = new Set<() => void>()
 
   const isRunning = computed(() => !!state.value.is_running)
-  const barMode = computed(() =>
-    progressBarMode({
-      isRunning: isRunning.value,
-      status: String(state.value.status || 'Idle'),
-      dismissed: dismissed.value,
-      minimized: minimized.value,
-    }),
+  const visible = computed(
+    () => !!state.value.job_id && state.value.status !== 'Idle' && dismissedJob.value !== state.value.job_id,
   )
-  const showBar = computed(() => barMode.value !== 'hidden')
 
-  function clearAutoDismiss() {
-    if (autoDismissTimer) {
-      clearTimeout(autoDismissTimer)
-      autoDismissTimer = null
-    }
-  }
-
-  function scheduleAutoDismiss() {
-    clearAutoDismiss()
-    autoDismissTimer = setTimeout(() => {
-      dismissed.value = true
-      minimized.value = false
-      autoDismissTimer = null
-    }, AUTO_DISMISS_MS)
-  }
-
-  function applyStatus(s: ScrapeState) {
+  function apply(s: ScrapeState) {
     const wasRunning = !!state.value.is_running
-    const prev = String(state.value.status || 'Idle')
-    const next = String(s.status || 'Idle')
     state.value = s
-
-    if (s.is_running) {
-      dismissed.value = false
-      clearAutoDismiss()
-      connectSSE()
-      return
-    }
-
-    // Only on transition into a finished state (not every 5s poll)
-    if (TERMINAL.has(next) && (wasRunning || prev !== next) && !dismissed.value) {
-      scheduleAutoDismiss()
-    }
+    if (s.is_running) connectSSE()
+    else if (wasRunning) finishedListeners.forEach((fn) => fn())
   }
 
-  async function checkStatus() {
+  async function check() {
     try {
-      const s = await apiGet<ScrapeState>('/api/scrape/status')
-      applyStatus(s)
+      apply(await apiGet<ScrapeState>('/api/scrape/status'))
     } catch {
-      /* ignore */
+      /* server briefly unavailable: keep last state */
     }
   }
 
   function connectSSE() {
     if (sse) return
-    if (poll) {
-      clearInterval(poll)
-      poll = null
-    }
     try {
       sse = new EventSource('/api/scrape/stream')
-      sse.addEventListener('update', (e) => {
-        applyStatus(JSON.parse((e as MessageEvent).data))
-      })
+      sse.addEventListener('update', (e) => apply(JSON.parse((e as MessageEvent).data)))
       sse.addEventListener('done', (e) => {
-        applyStatus(JSON.parse((e as MessageEvent).data))
+        apply(JSON.parse((e as MessageEvent).data))
         closeSSE()
       })
-      sse.onerror = () => {
-        closeSSE()
-        poll = setInterval(() => checkStatus(), 3000)
-      }
+      sse.onerror = () => closeSSE()
     } catch {
-      poll = setInterval(() => checkStatus(), 3000)
-    }
-  }
-
-  function closeSSE() {
-    if (sse) {
-      sse.close()
       sse = null
     }
   }
 
-  function wake() {
-    void checkStatus().then(() => {
-      if (state.value.is_running) connectSSE()
-    })
+  function closeSSE() {
+    sse?.close()
+    sse = null
+  }
+
+  async function start(payload: FetchPayload) {
+    await api.fetch(payload)
+    dismissedJob.value = null
+    await check()
+    connectSSE()
   }
 
   async function cancel() {
-    try {
-      await apiSend('/api/scrape/cancel', 'POST')
-      state.value = { ...state.value, cancel_requested: true, current_task: 'Cancellation requested...' }
-      connectSSE()
-    } catch (e) {
-      state.value = {
-        ...state.value,
-        current_task: String(e),
-      }
-    }
-  }
-
-  function minimize() {
-    minimized.value = true
-  }
-
-  function expand() {
-    minimized.value = false
-    if (!isRunning.value) clearAutoDismiss()
+    await apiSend('/api/scrape/cancel', 'POST')
+    state.value = { ...state.value, cancel_requested: true }
+    connectSSE()
   }
 
   function dismiss() {
-    clearAutoDismiss()
-    dismissed.value = true
-    minimized.value = false
+    dismissedJob.value = state.value.job_id ?? null
+  }
+
+  function onFinished(fn: () => void) {
+    finishedListeners.add(fn)
+    return () => finishedListeners.delete(fn)
   }
 
   function init() {
-    void checkStatus()
-    poll = setInterval(() => checkStatus(), 5000)
+    void check()
+    poll = setInterval(check, 5000)
     window.addEventListener('pagehide', () => {
       closeSSE()
-      clearAutoDismiss()
       if (poll) clearInterval(poll)
     })
   }
 
-  return {
-    state,
-    isRunning,
-    showBar,
-    barMode,
-    minimized,
-    checkStatus,
-    wake,
-    cancel,
-    init,
-    connectSSE,
-    minimize,
-    expand,
-    dismiss,
-  }
+  return { state, isRunning, visible, start, cancel, dismiss, onFinished, init, check }
 })

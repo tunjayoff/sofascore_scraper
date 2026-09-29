@@ -3,6 +3,10 @@ requests>=2.31.0
 aiohttp>=3.9.1
 curl_cffi>=0.11.4
 
+# Tarayıcı ve Challenge Bypass (Cloudflare Turnstile & Varnish)
+playwright>=1.40.0
+playwright-stealth>=1.0.6
+
 # Veri işleme
 pandas>=2.1.0
 
