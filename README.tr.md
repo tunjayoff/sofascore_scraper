@@ -19,6 +19,45 @@ Bu proje SofaScore ile bağlantılı değildir. İstek hızına dikkat edin ve i
 - **Otomasyon** — CI/script için headless bayrakları (`--update-all`, `--fetch-mode`, `--league-id`, `--csv-export`, yollar).
 - **Dışa aktarım** — İşlenmiş “tüm maçlar” CSV’si ve API üzerinden export.
 
+## Ekran görüntüleri
+
+İki futbol ligi indirilmiş haliyle web uygulaması. Görseller GitHub temanıza (açık ya da koyu) uyar.
+
+**Ligler — takip edilen ligler, indirilen maç sayısı ve detay kapsamı**
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/leagues-tr-dark.png">
+  <img src="docs/screenshots/leagues-tr-light.png" alt="Ligler sayfası">
+</picture>
+
+**Maç indir — birden fazla ligden sezon seçip tek indirme listesinde topla**
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/download-tr-dark.png">
+  <img src="docs/screenshots/download-tr-light.png" alt="Maç indir sayfası">
+</picture>
+
+**Maçlar — lige, sezona, tarihe ve detay durumuna göre filtrele**
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/matches-tr-dark.png">
+  <img src="docs/screenshots/matches-tr-light.png" alt="Maçlar sayfası">
+</picture>
+
+**Maç — periyot skorları, önemli anlar, form ve aralarındaki maçlar**
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/match-tr-dark.png">
+  <img src="docs/screenshots/match-tr-light.png" alt="Maç özeti">
+</picture>
+
+**Maç istatistikleri — maç geneli ya da periyot bazında**
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/match-stats-tr-dark.png">
+  <img src="docs/screenshots/match-stats-tr-light.png" alt="Maç istatistikleri">
+</picture>
+
 ## Gereksinimler
 
 - Python **3.10+** (önerilen: 3.11+).

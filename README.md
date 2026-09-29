@@ -19,6 +19,45 @@ This project is not affiliated with SofaScore. Use reasonable request rates and 
 - **Automation** — Headless flags for CI/scripts (`--update-all`, `--fetch-mode`, `--league-id`, `--csv-export`, paths).
 - **Export** — Processed “all matches” CSV and API export endpoints.
 
+## Screenshots
+
+The web app with two football leagues downloaded. The images follow your GitHub theme (light or dark).
+
+**Leagues — followed leagues with downloaded match counts and detail coverage**
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/leagues-en-dark.png">
+  <img src="docs/screenshots/leagues-en-light.png" alt="Leagues page">
+</picture>
+
+**Download — pick seasons from several leagues into one download list**
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/download-en-dark.png">
+  <img src="docs/screenshots/download-en-light.png" alt="Download page">
+</picture>
+
+**Matches — filter by league, season, date and details**
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/matches-en-dark.png">
+  <img src="docs/screenshots/matches-en-light.png" alt="Matches page">
+</picture>
+
+**Match — score by period, key moments, form and head to head**
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/match-en-dark.png">
+  <img src="docs/screenshots/match-en-light.png" alt="Match overview">
+</picture>
+
+**Match statistics — whole match or per period**
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/match-stats-en-dark.png">
+  <img src="docs/screenshots/match-stats-en-light.png" alt="Match statistics">
+</picture>
+
 ## Requirements
 
 - Python **3.10+** (3.11+ recommended).
