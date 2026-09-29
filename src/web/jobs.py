@@ -55,6 +55,8 @@ class JobStore:
             "log": [],
             "payload": None,
             "result": None,
+            # JobProgress.detail(): aşama, sayaç, hatalar, bekleme (yalnızca canlı yansıda)
+            "detail": None,
         }
 
     @contextlib.contextmanager
@@ -181,6 +183,7 @@ class JobStore:
         eta_seconds: Optional[float] = None,
         current_batch: Optional[str] = None,
         result: Optional[Dict[str, Any]] = None,
+        detail: Optional[Dict[str, Any]] = None,
         finished: bool = False,
     ) -> None:
         with self._lock:
@@ -218,6 +221,8 @@ class JobStore:
                 m["current_batch"] = current_batch
             if result is not None:
                 m["result"] = result
+            if detail is not None:
+                m["detail"] = detail
 
             db_status = m["status"]
             if finished:

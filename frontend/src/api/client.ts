@@ -84,6 +84,30 @@ export type MissingDetails = { total_matches: number; missing_count: number; mis
 export type FetchSelection = { league_id: number; season_ids?: number[] | null; match_ids?: number[] | null }
 export type FetchPayload = { mode?: 'full' | 'details'; league_id?: number | null; selections?: FetchSelection[] | null }
 
+export type JobPhase = 'seasons' | 'matches' | 'details' | 'export'
+
+export type FailedMatch = { match_id: string; league_id?: number }
+
+/** Structured progress of the running job (src/web/progress.py). */
+export type JobDetail = {
+  phases: JobPhase[]
+  phase: JobPhase | null
+  phase_index: number
+  phase_count: number
+  done: number
+  total: number
+  league_id?: number | null
+  league_name?: string
+  season_name?: string
+  eta_seconds: number | null
+  /** SofaScore back-off; `until` is Unix seconds. */
+  wait: { reason: 'rate_limit' | 'forbidden' | string; until: number } | null
+  failed_count: number
+  failed: FailedMatch[]
+  /** Why detail downloads stopped early: '403', '429', '5xx' or 'other'. */
+  breaker: string | null
+}
+
 export type ScrapeState = {
   job_id?: string | null
   is_running: boolean
@@ -94,9 +118,13 @@ export type ScrapeState = {
   schedule_empty_seasons?: number
   matches_done?: number
   matches_total?: number
+  matches_failed?: number
+  circuit_breaker_triggered?: boolean
+  circuit_breaker_reason?: string | null
   started_at?: string | null
   finished_at?: string | null
   payload?: FetchPayload | null
+  detail?: JobDetail | null
 }
 
 export type JobRow = {
@@ -108,6 +136,9 @@ export type JobRow = {
   finished_at?: string | null
   matches_done?: number
   matches_total?: number
+  matches_failed?: number
+  schedule_empty_seasons?: number
+  circuit_breaker_triggered?: boolean
   payload?: FetchPayload | null
 }
 

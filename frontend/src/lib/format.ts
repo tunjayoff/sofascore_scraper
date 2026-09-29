@@ -25,3 +25,17 @@ export function matchDate(v: string | number | null | undefined): string {
   if (Number.isNaN(d.getTime())) return String(v)
   return d.toLocaleString(loc(), { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
+
+/** A short human duration: "35 sn", "4 dk", "1 sa 5 dk". Minutes and seconds only under 10 minutes. */
+export function duration(seconds: number | null | undefined): string {
+  const t = i18n.global.t
+  const n = Math.max(0, Math.round(Number(seconds || 0)))
+  if (n < 60) return t('job.time.s', { n })
+  const m = Math.floor(n / 60)
+  if (m < 10) {
+    const s = n % 60
+    return s ? t('job.time.ms', { m, s }) : t('job.time.m', { n: m })
+  }
+  if (m < 60) return t('job.time.m', { n: m })
+  return t('job.time.hm', { h: Math.floor(m / 60), m: m % 60 })
+}

@@ -201,8 +201,12 @@ class MatchDataFetcher:
             logger.debug(f"{url} için asenkron istek hatası: {str(e)}")
         return key, None
 
-    async def fetch_matches_batch_async(self, match_ids, max_concurrent=30, progress_bar=None, progress_callback=None, should_cancel=None):
-        """Birden çok maç için veri çeker (circuit breaker destekli)."""
+    async def fetch_matches_batch_async(self, match_ids, max_concurrent=30, progress_bar=None, progress_callback=None, should_cancel=None, failed_callback=None):
+        """Birden çok maç için veri çeker (circuit breaker destekli).
+
+        failed_callback(match_id): denemeleri tükenen her maç için çağrılır (devre kesilince
+        hiç denenmeyenler ve iptal edilenler başarısız sayılmaz).
+        """
         logger.debug(f"Starting batch fetch for {len(match_ids)} matches")
         ignore_rate_limit = os.getenv("IGNORE_RATE_LIMIT", "false").lower() == "true"
 
@@ -332,6 +336,8 @@ class MatchDataFetcher:
                             break
 
                     batch_failed += 1
+                    if failed_callback:
+                        failed_callback(str(match_id))
                     if progress_bar:
                         progress_bar.update(1)
                     return None
@@ -400,7 +406,7 @@ class MatchDataFetcher:
         return results
 
     # Main metodunda çağırmak için senkron wrapper
-    def fetch_matches_batch_parallel(self, match_ids, max_concurrent=10, progress_callback=None, should_cancel=None):
+    def fetch_matches_batch_parallel(self, match_ids, max_concurrent=10, progress_callback=None, should_cancel=None, failed_callback=None):
         """Paralel istekler için senkron wrapper."""
         print(f"Toplam {len(match_ids)} maç paralel olarak işleniyor...")
         progress = tqdm(total=len(match_ids), desc="Maç detayları çekiliyor")
@@ -408,7 +414,7 @@ class MatchDataFetcher:
         try:
             # asyncio.run: döngüyü kapatır, kalan görevleri iptal eder ve thread'e kapalı döngü bırakmaz
             return asyncio.run(self.fetch_matches_batch_async(
-                match_ids, max_concurrent, progress, progress_callback, should_cancel
+                match_ids, max_concurrent, progress, progress_callback, should_cancel, failed_callback
             ))
         finally:
             progress.close()
@@ -1075,11 +1081,12 @@ class MatchDataFetcher:
         match_ids: List[Union[int, str]],
         progress_callback: Optional[Callable[[int, int, str], None]] = None,
         should_cancel: Optional[Callable[[], bool]] = None,
+        failed_callback: Optional[Callable[[str], None]] = None,
     ) -> Dict[str, Dict[str, Any]]:
         """Bir grup maç için veri çeker."""
         self.begin_job_cache()
         try:
-            return self._fetch_matches_batch(match_ids, progress_callback, should_cancel)
+            return self._fetch_matches_batch(match_ids, progress_callback, should_cancel, failed_callback)
         finally:
             self.end_job_cache()
 
@@ -1088,6 +1095,7 @@ class MatchDataFetcher:
         match_ids: List[Union[int, str]],
         progress_callback: Optional[Callable[[int, int, str], None]],
         should_cancel: Optional[Callable[[], bool]],
+        failed_callback: Optional[Callable[[str], None]] = None,
     ) -> Dict[str, Dict[str, Any]]:
         use_tqdm = True
         results = {}
@@ -1120,6 +1128,8 @@ class MatchDataFetcher:
 
             if match_data:
                 results[match_id] = match_data
+            elif failed_callback:
+                failed_callback(match_id)
 
             if progress_callback and n > 0:
                 progress_callback(idx + 1, n, f"Match details {idx + 1}/{n}")
@@ -1519,71 +1529,16 @@ class MatchDataFetcher:
         should_cancel: Optional[Callable[[], bool]],
     ) -> bool:
         try:
-            match_ids = []
-
-            # "matches" dizini içindeki tüm maç ID'lerini bul
-            matches_dir = os.path.join(self.data_dir, "matches")
-            if not os.path.exists(matches_dir):
-                logger.warning("Maç dizini bulunamadı!")
+            match_ids = self.collect_detail_match_ids(league_id, max_seasons, only_season_ids)
+            if match_ids is None:
                 return False
-
-            # Tüm ligleri ve sezonları tara
-            league_dirs = []
-
-            # Belirli bir lig seçilmişse sadece o ligi işle
-            if league_id:
-                print(f"Lig ID {league_id} için maç detayları çekiliyor...")
-                for dir_name in os.listdir(matches_dir):
-                    if dir_name.startswith(f"{league_id}_"):
-                        league_dirs.append(dir_name)
-                        break
-
-                if not league_dirs:
-                    print(f"Lig ID {league_id} için maç dizini bulunamadı!")
-                    return False
-            else:
-                print("Tüm ligler için maç detayları çekiliyor...")
-                # Tüm ligleri işle
-                league_dirs = [dir_name for dir_name in os.listdir(matches_dir)
-                              if os.path.isdir(os.path.join(matches_dir, dir_name))]
-
-            # Toplam işlenecek lig sayısını göster
-            print(f"Toplam {len(league_dirs)} lig işlenecek...")
-
-            # Her lig için işlem yap
-            for league_dir in league_dirs:
-                league_path = os.path.join(matches_dir, league_dir)
-                if not os.path.isdir(league_path):
-                    continue
-
-                print(f"\nLig dizini: {league_dir}")
-
-                summary_files = self._season_summary_files(league_path, only_season_ids, max_seasons)
-
-                # Özet dosyalarından maç ID'lerini çıkar
-                current_ids = []
-                for file_path in summary_files:
-                    if os.path.isfile(file_path):
-                        ids_from_csv = self._extract_match_ids_from_csv(file_path)
-                        if ids_from_csv:
-                            current_ids.extend(ids_from_csv)
-
-                if current_ids:
-                    print(f"Lig için {len(current_ids)} maç ID'si bulundu.")
-                    match_ids.extend(current_ids)
-
-            # Tekrarlanan ID'leri temizle
-            match_ids = list(set(match_ids))
             print(f"Toplam {len(match_ids)} benzersiz maç ID'si bulundu.")
 
             if not match_ids:
                 print("Hiç maç ID'si bulunamadı!")
                 return False
 
-            match_ids_to_process = [
-                id for id in match_ids
-                if self._needs_detail_fetch(str(id)) != "none"
-            ]
+            match_ids_to_process = self.pending_detail_ids(match_ids)
             complete_count = len(match_ids) - len(match_ids_to_process)
             if complete_count:
                 print(f"{complete_count} maçta tüm detay dilimleri hazır; eksik/kısmi olanlar işlenecek.")
@@ -1592,77 +1547,7 @@ class MatchDataFetcher:
                 print("Tüm maçların detayları tam!")
                 return True
 
-            # Maç detaylarını paralel olarak çek
-            batch_size = 100  # Her seferde kaç maç işleneceği
-            total_success = 0
-            total_attempts = len(match_ids_to_process)
-            print(f"\nToplam {total_attempts} maç için detaylar çekilecek...")
-            if progress_callback:
-                progress_callback(0, total_attempts, f"Match details 0/{total_attempts}")
-
-            # İlerleme gösterimi için daha temiz bir format
-            for i in range(0, len(match_ids_to_process), batch_size):
-                if should_cancel and should_cancel():
-                    logger.info("fetch_all_match_details cancelled before batch at index %s", i)
-                    break
-                batch = match_ids_to_process[i:i+batch_size]
-                current_batch = i // batch_size + 1
-                total_batches = (len(match_ids_to_process) - 1) // batch_size + 1
-                start_index = i + 1
-                end_index = min(i + len(batch), total_attempts)
-
-                print(f"\nBatch {current_batch}/{total_batches}: {len(batch)} maç işleniyor ({start_index}-{end_index}/{total_attempts})...")
-
-                nested_cb: Optional[Callable[[int, int, str], None]] = None
-                if progress_callback:
-                    batch_base = i
-
-                    def nested_cb(
-                        done_l: int,
-                        total_l: int,
-                        _msg: str,
-                        _base: int = batch_base,
-                        _tb: int = total_batches,
-                        _cb: int = current_batch,
-                    ) -> None:
-                        global_done = min(_base + done_l, total_attempts)
-                        progress_callback(
-                            global_done,
-                            total_attempts,
-                            f"Match details {global_done}/{total_attempts} (batch {_cb}/{_tb})",
-                        )
-
-                # Paralel katman fetch_matches_batch_async zaten alt batch'lerde ilerleme verir;
-                # web UI'da 0/total takılı kalmaması için buraya bağlıyoruz.
-                results = self.fetch_matches_batch_parallel(
-                    batch,
-                    max_concurrent=self.config_manager.get_max_concurrent(),
-                    progress_callback=nested_cb,
-                    should_cancel=should_cancel,
-                )
-
-                if results:
-                    success_count = len(results)
-                    total_success += success_count
-                    print(f"✓ Batch {current_batch}: {success_count}/{len(batch)} başarılı")
-                if self.rate_limit_breaker_triggered:
-                    i18n = get_i18n()
-                    print(i18n.t("error_rate_limit_detected", count=len(results) if results else 0))
-                    if self.last_rate_limit_headers:
-                        logger.warning("Son başarısız isteklerden header/debug özeti:")
-                        for idx, header_info in enumerate(self.last_rate_limit_headers[-20:], start=1):
-                            logger.warning(f"{idx}. match_id={header_info.get('match_id')} error={header_info.get('error')}")
-                    os.environ["APP_EXIT_CODE"] = "2"
-                    break
-
-                # Her batch arasında kısa bir bekleme
-                if i + batch_size < len(match_ids_to_process):
-                    time.sleep(1.0)
-
-            # Genel başarı oranı
-            success_rate = (total_success / total_attempts) * 100 if total_attempts > 0 else 0
-            print(f"\nİşlem tamamlandı: {total_success}/{total_attempts} maç (% {success_rate:.1f}) başarıyla işlendi.")
-
+            total_success = self.fetch_detail_ids(match_ids_to_process, progress_callback, should_cancel)
             return total_success > 0
 
         except Exception as e:
@@ -1670,6 +1555,149 @@ class MatchDataFetcher:
             import traceback
             logger.error(traceback.format_exc())
             return False
+
+    def collect_detail_match_ids(
+        self,
+        league_id: Optional[str] = None,
+        max_seasons: int = 0,
+        only_season_ids: Optional[List[int]] = None,
+    ) -> Optional[List[str]]:
+        """Sezon özet CSV'lerindeki benzersiz maç ID'leri; maç ya da lig dizini yoksa None."""
+        matches_dir = os.path.join(self.data_dir, "matches")
+        if not os.path.exists(matches_dir):
+            logger.warning("Maç dizini bulunamadı!")
+            return None
+
+        league_dirs = []
+        # Belirli bir lig seçilmişse sadece o ligi işle
+        if league_id:
+            print(f"Lig ID {league_id} için maç detayları çekiliyor...")
+            for dir_name in os.listdir(matches_dir):
+                if dir_name.startswith(f"{league_id}_"):
+                    league_dirs.append(dir_name)
+                    break
+
+            if not league_dirs:
+                print(f"Lig ID {league_id} için maç dizini bulunamadı!")
+                return None
+        else:
+            print("Tüm ligler için maç detayları çekiliyor...")
+            league_dirs = [dir_name for dir_name in os.listdir(matches_dir)
+                          if os.path.isdir(os.path.join(matches_dir, dir_name))]
+
+        print(f"Toplam {len(league_dirs)} lig işlenecek...")
+
+        match_ids: List[str] = []
+        for league_dir in league_dirs:
+            league_path = os.path.join(matches_dir, league_dir)
+            if not os.path.isdir(league_path):
+                continue
+
+            print(f"\nLig dizini: {league_dir}")
+
+            summary_files = self._season_summary_files(league_path, only_season_ids, max_seasons)
+
+            # Özet dosyalarından maç ID'lerini çıkar
+            current_ids = []
+            for file_path in summary_files:
+                if os.path.isfile(file_path):
+                    ids_from_csv = self._extract_match_ids_from_csv(file_path)
+                    if ids_from_csv:
+                        current_ids.extend(ids_from_csv)
+
+            if current_ids:
+                print(f"Lig için {len(current_ids)} maç ID'si bulundu.")
+                match_ids.extend(current_ids)
+
+        # Tekrarlanan ID'leri temizle (sırayı koru)
+        return list(dict.fromkeys(match_ids))
+
+    def pending_detail_ids(self, match_ids: List[str]) -> List[str]:
+        """Detay dilimleri eksik ya da kısmi olan maçlar."""
+        return [mid for mid in match_ids if self._needs_detail_fetch(str(mid)) != "none"]
+
+    def fetch_detail_ids(
+        self,
+        match_ids_to_process: List[str],
+        progress_callback: Optional[Callable[[int, int, str], None]] = None,
+        should_cancel: Optional[Callable[[], bool]] = None,
+        failed_callback: Optional[Callable[[str], None]] = None,
+    ) -> int:
+        """Verilen maçların detaylarını 100'lük paralel batch'lerle çeker; başarılı maç sayısını döndürür.
+
+        Devre kesilirse (rate limit) kalan batch'ler atlanır ve rate_limit_breaker_triggered True kalır.
+        """
+        self.rate_limit_breaker_triggered = False
+        batch_size = 100  # Her seferde kaç maç işleneceği
+        total_success = 0
+        total_attempts = len(match_ids_to_process)
+        print(f"\nToplam {total_attempts} maç için detaylar çekilecek...")
+        if progress_callback:
+            progress_callback(0, total_attempts, f"Match details 0/{total_attempts}")
+
+        for i in range(0, len(match_ids_to_process), batch_size):
+            if should_cancel and should_cancel():
+                logger.info("fetch_detail_ids cancelled before batch at index %s", i)
+                break
+            batch = match_ids_to_process[i:i+batch_size]
+            current_batch = i // batch_size + 1
+            total_batches = (len(match_ids_to_process) - 1) // batch_size + 1
+            start_index = i + 1
+            end_index = min(i + len(batch), total_attempts)
+
+            print(f"\nBatch {current_batch}/{total_batches}: {len(batch)} maç işleniyor ({start_index}-{end_index}/{total_attempts})...")
+
+            nested_cb: Optional[Callable[[int, int, str], None]] = None
+            if progress_callback:
+                batch_base = i
+
+                def nested_cb(
+                    done_l: int,
+                    total_l: int,
+                    _msg: str,
+                    _base: int = batch_base,
+                    _tb: int = total_batches,
+                    _cb: int = current_batch,
+                ) -> None:
+                    global_done = min(_base + done_l, total_attempts)
+                    progress_callback(
+                        global_done,
+                        total_attempts,
+                        f"Match details {global_done}/{total_attempts} (batch {_cb}/{_tb})",
+                    )
+
+            # Paralel katman fetch_matches_batch_async zaten alt batch'lerde ilerleme verir;
+            # web UI'da 0/total takılı kalmaması için buraya bağlıyoruz.
+            results = self.fetch_matches_batch_parallel(
+                batch,
+                max_concurrent=self.config_manager.get_max_concurrent(),
+                progress_callback=nested_cb,
+                should_cancel=should_cancel,
+                failed_callback=failed_callback,
+            )
+
+            if results:
+                success_count = len(results)
+                total_success += success_count
+                print(f"✓ Batch {current_batch}: {success_count}/{len(batch)} başarılı")
+            if self.rate_limit_breaker_triggered:
+                i18n = get_i18n()
+                print(i18n.t("error_rate_limit_detected", count=len(results) if results else 0))
+                if self.last_rate_limit_headers:
+                    logger.warning("Son başarısız isteklerden header/debug özeti:")
+                    for idx, header_info in enumerate(self.last_rate_limit_headers[-20:], start=1):
+                        logger.warning(f"{idx}. match_id={header_info.get('match_id')} error={header_info.get('error')}")
+                os.environ["APP_EXIT_CODE"] = "2"
+                break
+
+            # Her batch arasında kısa bir bekleme
+            if i + batch_size < len(match_ids_to_process):
+                time.sleep(1.0)
+
+        # Genel başarı oranı
+        success_rate = (total_success / total_attempts) * 100 if total_attempts > 0 else 0
+        print(f"\nİşlem tamamlandı: {total_success}/{total_attempts} maç (% {success_rate:.1f}) başarıyla işlendi.")
+        return total_success
 
     def fetch_match_details(self, match_id: Union[int, str]) -> bool:
         """
