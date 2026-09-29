@@ -96,7 +96,7 @@ Tüm anahtarlar `.env.example` içinde. Sık kullanılanlar:
 | Değişken | Açıklama |
 |----------|----------|
 | `DATA_DIR` | Verinin kök dizini (varsayılan `data`). Web `ConfigManager` üzerinden okur. |
-| `LANGUAGE` | `en` veya `tr`: terminal arayüzünün ve sunucu mesajlarının dili. Web uygulamasının dili **Ayarlar**’dan seçilir (orada değiştirmek bu değeri de günceller). |
+| `APP_LANGUAGE` | `en` veya `tr`: terminal arayüzünün ve sunucu mesajlarının dili. Web uygulamasının dili **Ayarlar**’dan seçilir (orada değiştirmek bu değeri de günceller). |
 | `MAX_CONCURRENT` | Paralel detay isteği üst sınırı. |
 | `USE_PROXY` / `PROXY_URL` | İsteğe bağlı proxy. |
 | `FETCH_ONLY_FINISHED` | Yalnız bitmiş maçları tut (`status.type == finished`). Varsayılan `true`. Henüz oynanmamış fikstürler schedule dosyalarına yazılmaz. |

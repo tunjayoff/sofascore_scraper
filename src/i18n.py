@@ -7,6 +7,21 @@ from src.logger import get_logger
 logger = get_logger("I18n")
 
 
+SUPPORTED_LANGUAGES = ("tr", "en")
+
+
+def app_language(default: str = "tr") -> str:
+    """
+    APP_LANGUAGE; yoksa eski LANGUAGE — ama yalnızca desteklenen bir koda eşitse.
+    LANGUAGE aynı zamanda GNU gettext değişkenidir (ör. "en_US:en") ve kabuktan gelir.
+    """
+    for key in ("APP_LANGUAGE", "LANGUAGE"):
+        value = (os.getenv(key) or "").strip().lower()
+        if value in SUPPORTED_LANGUAGES:
+            return value
+    return default
+
+
 def _default_locale_dir() -> str:
     """Proje kökündeki locales/ dizini (cwd'ye bağlı değil)."""
     return str(Path(__file__).resolve().parent.parent / "locales")
@@ -20,8 +35,7 @@ class I18nManager:
     
     def __init__(self, locale_dir: Optional[Union[str, Path]] = None, default_lang: str = "tr"):
         self.locale_dir = str(locale_dir) if locale_dir is not None else _default_locale_dir()
-        # Try to load from env var first (set by ConfigManager)
-        self.current_lang = os.getenv("LANGUAGE", default_lang)
+        self.current_lang = app_language(default_lang)
         self.translations: Dict[str, Dict[str, str]] = {}
         self._load_locales()
 

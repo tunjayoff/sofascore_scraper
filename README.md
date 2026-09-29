@@ -98,7 +98,7 @@ See `.env.example` for all keys. Common ones:
 | Variable | Purpose |
 |----------|---------|
 | `DATA_DIR` | Root folder for stored data (default `data`). Web app reads this via `ConfigManager`. |
-| `LANGUAGE` | `en` or `tr`: language of the terminal UI and server messages. The web app has its own switch under **Settings** (changing it there also updates this value). |
+| `APP_LANGUAGE` | `en` or `tr`: language of the terminal UI and server messages. The web app has its own switch under **Settings** (changing it there also updates this value). |
 | `MAX_CONCURRENT` | Parallel detail requests cap. |
 | `USE_PROXY` / `PROXY_URL` | Optional HTTP proxy. |
 | `FETCH_ONLY_FINISHED` | Keep only finished matches (`status.type == finished`). Default `true`. Upcoming fixtures are dropped from schedule files. |

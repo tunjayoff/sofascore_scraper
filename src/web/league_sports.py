@@ -16,6 +16,7 @@ import os
 import threading
 from typing import Dict, Optional
 
+from src.fsutil import atomic_write_json, file_lock
 from src.logger import get_logger
 
 logger = get_logger("LeagueSports")
@@ -63,16 +64,12 @@ def load(league_config_path: str) -> Dict[int, str]:
 
 
 def _save(league_config_path: str, data: Dict[int, str]) -> None:
-    p = sidecar_path(league_config_path)
-    tmp = p + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump({str(k): v for k, v in sorted(data.items())}, f, ensure_ascii=False, indent=2)
-    os.replace(tmp, p)
+    atomic_write_json(sidecar_path(league_config_path), {str(k): v for k, v in sorted(data.items())})
 
 
 def set_sport(league_config_path: str, league_id: int, sport: Optional[str]) -> None:
     """Store (or with sport=None, forget) a league's sport."""
-    with _lock:
+    with _lock, file_lock(sidecar_path(league_config_path)):
         data = load(league_config_path)
         if sport:
             data[int(league_id)] = sport
@@ -111,7 +108,7 @@ def resolve_all(league_config_path: str, data_dir: str, league_ids) -> Dict[int,
                 learned[lid] = sport
         out[lid] = sport
     if learned:
-        with _lock:
+        with _lock, file_lock(sidecar_path(league_config_path)):
             data = load(league_config_path)
             data.update(learned)
             _save(league_config_path, data)

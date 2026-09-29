@@ -1,0 +1,5 @@
+# League configuration file
+# Format: League Name: ID  (the ID is the SofaScore unique-tournament id)
+# Copied to config/leagues.txt on first run; edit that file, not this one.
+
+Premier League: 17

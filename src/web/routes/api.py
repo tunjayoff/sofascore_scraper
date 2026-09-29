@@ -1391,7 +1391,7 @@ async def update_settings(settings: SettingsUpdate):
     try:
         updated = False
         env_map = {
-            "language": ("LANGUAGE", lambda v: v),
+            "language": ("APP_LANGUAGE", lambda v: v),
             "api_base_url": ("API_BASE_URL", lambda v: v),
             "use_proxy": ("USE_PROXY", lambda v: str(v).lower()),
             "proxy_url": ("PROXY_URL", lambda v: v),

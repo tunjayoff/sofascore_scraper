@@ -58,7 +58,7 @@ class SimpleSofaScoreUI:
     def __init__(
         self, 
         config_path: Optional[str] = None, 
-        data_dir: str = "data",
+        data_dir: Optional[str] = None,
         config_manager: Optional[ConfigManager] = None,
         season_fetcher: Optional[SeasonFetcher] = None,
         match_fetcher: Optional[MatchFetcher] = None,
@@ -75,6 +75,10 @@ class SimpleSofaScoreUI:
             match_fetcher: Maç veri çekici (opsiyonel)
             match_data_fetcher: Maç detayları veri çekici (opsiyonel)
         """
+        self.config_manager = config_manager or ConfigManager(config_path)
+        # Web ve CLI aynı veri dizinini kullanmalı: verilmezse DATA_DIR
+        data_dir = data_dir or self.config_manager.get_data_dir()
+
         # Dizinlerin varlığını kontrol et ve oluştur
         self._ensure_directory(data_dir)
         self._ensure_directory(os.path.join(data_dir, "seasons"))
@@ -82,8 +86,6 @@ class SimpleSofaScoreUI:
         self._ensure_directory(os.path.join(data_dir, "match_details"))
         self._ensure_directory(os.path.join(data_dir, "datasets"))
         
-        # Ana sınıfları başlat (dependency injection)
-        self.config_manager = config_manager or ConfigManager(config_path)
         self.data_dir = data_dir
         
         # USE_COLOR kontrolü

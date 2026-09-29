@@ -11,6 +11,8 @@ from typing import Dict, List, Tuple, Optional, Set, Any
 from dataclasses import dataclass
 
 from src.exceptions import ConfigError
+from src.fsutil import atomic_write_text, file_lock
+from src.i18n import app_language
 from src.logger import get_logger
 from src.paths import default_league_config_path, env_file_path
 
@@ -102,23 +104,24 @@ class ConfigManager:
     
     def _create_sample_league_config(self) -> None:
         """
-        Örnek bir lig yapılandırma dosyası oluşturur.
-        
+        leagues.txt yoksa config/leagues.example.txt'den (yoksa gömülü örnekten) oluşturur.
+
         Raises:
             OSError: Dosya oluşturulamazsa
         """
+        example = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "leagues.example.txt")
         try:
-            with open(self.league_config_path, 'w', encoding='utf-8') as f:
-                f.write("# League configuration file\n")
-                f.write("# Format: League Name: ID\n")
-                f.write("Premier League: 17\n")
-                f.write("LaLiga: 8\n")
-                f.write("Serie A: 23\n")
+            if os.path.exists(example):
+                with open(example, "r", encoding="utf-8-sig") as f:
+                    text = f.read()
+            else:
+                text = "# League configuration file\n# Format: League Name: ID\n\nPremier League: 17\n"
+            atomic_write_text(self.league_config_path, text)
             logger.info(f"Örnek lig yapılandırma dosyası oluşturuldu: {self.league_config_path}")
         except OSError as e:
             logger.error(f"Örnek lig yapılandırma dosyası oluşturulamadı: {str(e)}")
             raise
-    
+
     def _load_leagues(self) -> None:
         """
         Lig bilgilerini yapılandırma dosyasından yükler.
@@ -140,96 +143,66 @@ class ConfigManager:
             logger.error(error_msg)
             raise ConfigError(error_msg) from e
     
+    @staticmethod
+    def _parse_league_line(line: str) -> Optional[Tuple[str, int]]:
+        """'Ad: ID' (ad ':' içerebilir — son ':' ayırır) veya eski 'ID Ad' biçimi."""
+        if ":" in line:
+            name, id_str = (part.strip() for part in line.rsplit(":", 1))
+            return name, int(id_str)
+        parts = line.split(None, 1)
+        if len(parts) != 2:
+            raise ValueError(line)
+        return parts[1].strip(), int(parts[0])
+
+    def _league_file_mtime(self) -> Optional[float]:
+        try:
+            return os.stat(self.league_config_path).st_mtime_ns
+        except OSError:
+            return None
+
     def _load_leagues_from_text(self) -> None:
         """Ligleri metin dosyasından yükler."""
+        self._leagues_mtime = self._league_file_mtime()
         if not os.path.exists(self.league_config_path):
             logger.warning(f"Lig yapılandırma dosyası bulunamadı: {self.league_config_path}")
             return
-            
+
         try:
-            # Metin dosyasından ligleri oku
-            with open(self.league_config_path, 'r', encoding='utf-8') as f:
+            # utf-8-sig: Windows editörlerinin eklediği BOM ilk lig adına karışmasın
+            with open(self.league_config_path, 'r', encoding='utf-8-sig') as f:
                 lines = f.readlines()
-            
+
             for line in lines:
                 line = line.strip()
-                
-                # Yorum satırlarını ve boş satırları atla
                 if not line or line.startswith('#'):
                     continue
-                
-                # Lig adı ve ID'sini ayır
                 try:
-                    if ":" in line:
-                        league_name, league_id_str = map(str.strip, line.split(':', 1))
-                        league_id = int(league_id_str)
-                    else:
-                        # Alternatif format (ID ad)
-                        parts = line.split(None, 1)
-                        if len(parts) != 2:
-                            logger.warning(f"Geçersiz lig formatı: {line}")
-                            continue
-                            
-                        league_id_str, league_name = parts
-                        league_id = int(league_id_str)
-                    
-                    self.leagues[league_id] = league_name
-                    self.leagues_by_name[league_name] = league_id
-                    
+                    league_name, league_id = self._parse_league_line(line)
                 except ValueError:
-                    # Geçersiz sayı formatı
-                    logger.warning(f"Geçersiz lig ID formatı: {line}")
-                except Exception as e:
-                    # Diğer hatalar
-                    logger.warning(f"Lig verisi ayrıştırılırken hata: {str(e)} - {line}")
-                    
+                    logger.warning(f"Geçersiz lig satırı atlandı: {line}")
+                    continue
+                if not league_name:
+                    logger.warning(f"Adsız lig satırı atlandı: {line}")
+                    continue
+                if league_id in self.leagues:
+                    logger.warning(
+                        f"Yinelenen lig ID {league_id}: '{self.leagues[league_id]}' yerine '{league_name}' kullanılıyor"
+                    )
+                    self.leagues_by_name.pop(self.leagues[league_id], None)
+                self.leagues[league_id] = league_name
+                self.leagues_by_name[league_name] = league_id
+
             logger.debug(f"Metin dosyasından {len(self.leagues)} lig yüklendi")
         except Exception as e:
             logger.error(f"Metin dosyasından ligler yüklenirken hata: {str(e)}")
-    
-    def save_config(self) -> bool:
-        """
-        Çevre değişkenlerini .env dosyasına kaydeder.
-        
-        Returns:
-            bool: Başarılı olursa True, değilse False
-        """
-        try:
-            # Mevcut .env dosyasını oku
-            env_path = env_file_path()
-            env_vars = {}
-            
-            if os.path.exists(env_path):
-                with open(env_path, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        line = line.strip()
-                        if not line or line.startswith('#'):
-                            continue
-                        if '=' in line:
-                            key, value = line.split('=', 1)
-                            env_vars[key.strip()] = value.strip()
-            
-            # Güncellenmiş değerleri ekle
-            env_vars["API_BASE_URL"] = os.getenv("API_BASE_URL", "https://www.sofascore.com/api/v1")
-            env_vars["USE_PROXY"] = os.getenv("USE_PROXY", "false")
-            env_vars["PROXY_URL"] = os.getenv("PROXY_URL", "")
-            env_vars["DATA_DIR"] = os.getenv("DATA_DIR", "data")
-            env_vars["USE_COLOR"] = os.getenv("USE_COLOR", "true")
-            env_vars["USE_COLOR"] = os.getenv("USE_COLOR", "true")
-            env_vars["DATE_FORMAT"] = os.getenv("DATE_FORMAT", "%Y-%m-%d %H:%M:%S")
-            env_vars["LANGUAGE"] = os.getenv("LANGUAGE", "tr")
-            
-            # .env dosyasını yeniden yaz
-            with open(env_path, 'w', encoding='utf-8') as f:
-                for key, value in env_vars.items():
-                    f.write(f"{key}={value}\n")
-            
-            logger.info(f"Çevre değişkenleri .env dosyasına kaydedildi")
-            return True
-        except Exception as e:
-            logger.error(f"Çevre değişkenleri kaydedilirken hata: {str(e)}")
-            return False
-    
+
+    def _refresh_if_changed(self) -> None:
+        """Başka bir süreç (CLI/web) leagues.txt'i değiştirdiyse yeniden yükle."""
+        if self._league_file_mtime() != getattr(self, "_leagues_mtime", None):
+            self.leagues.clear()
+            self.leagues_by_name.clear()
+            self._load_leagues_from_text()
+
     def get_leagues(self) -> Dict[int, str]:
         """
         Tüm ligleri döndürür.
@@ -237,6 +210,7 @@ class ConfigManager:
         Returns:
             Dict[int, str]: Lig ID'leri ve isimleri içeren sözlük
         """
+        self._refresh_if_changed()
         return self.leagues.copy()
     
     def get_league_ids(self) -> Set[int]:
@@ -246,6 +220,7 @@ class ConfigManager:
         Returns:
             Set[int]: Lig ID'leri kümesi
         """
+        self._refresh_if_changed()
         return set(self.leagues.keys())
     
     def get_league_names(self) -> Set[str]:
@@ -255,6 +230,7 @@ class ConfigManager:
         Returns:
             Set[str]: Lig isimleri kümesi
         """
+        self._refresh_if_changed()
         return set(self.leagues.values())
     
     def get_league_by_name(self, league_name: str) -> Optional[int]:
@@ -267,6 +243,7 @@ class ConfigManager:
         Returns:
             Optional[int]: Lig ID'si veya bulunamazsa None
         """
+        self._refresh_if_changed()
         return self.leagues_by_name.get(league_name)
     
     def get_league_by_id(self, league_id: int) -> Optional[str]:
@@ -279,6 +256,7 @@ class ConfigManager:
         Returns:
             Optional[str]: Lig adı veya bulunamazsa None
         """
+        self._refresh_if_changed()
         return self.leagues.get(league_id)
     
     def get_league_name_by_id(self, league_id: int) -> Optional[str]:
@@ -440,7 +418,7 @@ class ConfigManager:
         Returns:
             str: Dil kodu (tr, en, vs.)
         """
-        return os.getenv("LANGUAGE", "tr")
+        return app_language("tr")
     
     def set_language(self, lang_code: str) -> bool:
         """
@@ -452,7 +430,7 @@ class ConfigManager:
         Returns:
             bool: Başarılı olursa True
         """
-        return self.update_env_variable("LANGUAGE", lang_code)
+        return self.update_env_variable("APP_LANGUAGE", lang_code)
     
     def reload_config(self) -> bool:
         """
@@ -485,140 +463,88 @@ class ConfigManager:
     def add_league(self, league_name: str, league_id: int) -> bool:
         """
         Yeni bir ligi yapılandırmaya ekler.
-        
+
         Args:
-            league_name: Lig adı
+            league_name: Lig adı (yeni satır içeremez)
             league_id: Lig ID'si
-        
+
         Returns:
-            bool: Başarılı olursa True, değilse False
-        
-        Raises:
-            ConfigError: Lig eklenemezse
+            bool: Başarılı olursa True; ID/ad zaten varsa veya ad geçersizse False
         """
-        try:
-            # Lig zaten varsa hata ver
-            if league_id in self.leagues:
-                logger.warning(f"Lig ID zaten var: {league_id}")
-                return False
-                
-            if league_name in self.leagues_by_name:
-                logger.warning(f"Lig adı zaten var: {league_name}")
-                return False
-            
-            # Lig bilgilerini sakla
-            self.leagues[league_id] = league_name
-            self.leagues_by_name[league_name] = league_id
-            
-            # Metin dosyasına lig ekle
-            try:
-                # Var olan dosyayı oku
-                lines = []
-                try:
-                    with open(self.league_config_path, 'r', encoding='utf-8') as f:
-                        lines = f.readlines()
-                except FileNotFoundError:
-                    # Dosya yoksa boş liste ile devam et
-                    pass
-                
-                # Yeni lig satırını oluştur
-                new_line = f"\n{league_name}: {league_id}"
-                
-                # Dosyayı yeniden yaz ve yeni lig ekle
-                with open(self.league_config_path, 'w', encoding='utf-8') as f:
-                    # Mevcut satırları yaz
-                    for line in lines:
-                        f.write(line)
-                    
-                    # Yeni satırı ekle (dosya boşsa başına yorum ekle)
-                    if not lines:
-                        f.write("# League configuration file\n")
-                        f.write("# Format: League Name: ID\n")
-                    f.write(new_line)
-                
-                logger.info(f"Lig eklendi: {league_name} (ID: {league_id})")
-                return True
-                
-            except Exception as e:
-                logger.error(f"Lig eklenirken metin dosyası hatası: {str(e)}")
-                raise ConfigError(f"Lig eklenirken metin dosyası hatası: {str(e)}") from e
-            
-        except Exception as e:
-            logger.error(f"Lig eklenirken beklenmeyen hata: {str(e)}")
+        league_name = league_name.strip()
+        if not league_name or any(c in league_name for c in "\r\n\x00"):
+            logger.warning(f"Geçersiz lig adı reddedildi: {league_name!r}")
             return False
-    
+        try:
+            with file_lock(self.league_config_path):
+                # Kilit altında diskteki güncel hali oku: başka süreç arada eklemiş olabilir
+                self._refresh_if_changed()
+                if league_id in self.leagues:
+                    logger.warning(f"Lig ID zaten var: {league_id}")
+                    return False
+                if league_name in self.leagues_by_name:
+                    logger.warning(f"Lig adı zaten var: {league_name}")
+                    return False
+
+                try:
+                    with open(self.league_config_path, 'r', encoding='utf-8-sig') as f:
+                        text = f.read()
+                except FileNotFoundError:
+                    text = "# League configuration file\n# Format: League Name: ID\n"
+                if text and not text.endswith("\n"):
+                    text += "\n"
+                atomic_write_text(self.league_config_path, f"{text}{league_name}: {league_id}\n")
+
+                self.leagues[league_id] = league_name
+                self.leagues_by_name[league_name] = league_id
+                self._leagues_mtime = self._league_file_mtime()
+            logger.info(f"Lig eklendi: {league_name} (ID: {league_id})")
+            return True
+        except Exception as e:
+            logger.error(f"Lig eklenirken hata: {str(e)}")
+            return False
+
     def remove_league(self, league_id: int) -> bool:
         """
         Bir ligi yapılandırmadan kaldırır.
-        
+
         Args:
             league_id: Kaldırılacak ligin ID'si
-        
+
         Returns:
             bool: Başarılı olursa True, değilse False
-        
-        Raises:
-            ConfigError: Lig kaldırılamazsa
         """
         try:
-            # Lig yoksa hata ver
-            if league_id not in self.leagues:
-                logger.warning(f"Kaldırılacak lig bulunamadı: {league_id}")
-                return False
-            
-            league_name = self.leagues[league_id]
-            
-            # Metin dosyasından ligi kaldır
-            try:
-                # Dosyayı oku
-                with open(self.league_config_path, 'r', encoding='utf-8') as f:
+            with file_lock(self.league_config_path):
+                self._refresh_if_changed()
+                if league_id not in self.leagues:
+                    logger.warning(f"Kaldırılacak lig bulunamadı: {league_id}")
+                    return False
+                league_name = self.leagues[league_id]
+
+                with open(self.league_config_path, 'r', encoding='utf-8-sig') as f:
                     lines = f.readlines()
-                
-                # Yeni satırları oluştur (ligi hariç tut)
                 new_lines = []
                 for line in lines:
-                    line_stripped = line.strip()
-                    
-                    # Yorum satırlarını ve boş satırları tut
-                    if not line_stripped or line_stripped.startswith('#'):
-                        new_lines.append(line)
-                        continue
-                    
-                    # Mevcut lig satırını kontrol et
-                    try:
-                        if ":" in line_stripped:
-                            name, id_str = map(str.strip, line_stripped.split(':', 1))
-                            id_val = int(id_str)
-                            
-                            # Kaldırılacak ligi atlat
-                            if id_val == league_id:
+                    stripped = line.strip()
+                    if stripped and not stripped.startswith('#'):
+                        try:
+                            if self._parse_league_line(stripped)[1] == league_id:
                                 continue
-                        
-                        # Diğer satırları tut
-                        new_lines.append(line)
-                    except ValueError:
-                        # Geçersiz satırları da tut
-                        new_lines.append(line)
-                
-                # Dosyayı güncelle
-                with open(self.league_config_path, 'w', encoding='utf-8') as f:
-                    f.writelines(new_lines)
-                
-                # Lig bilgilerini kaldır
+                        except ValueError:
+                            pass
+                    new_lines.append(line)
+                atomic_write_text(self.league_config_path, "".join(new_lines))
+
                 del self.leagues[league_id]
-                del self.leagues_by_name[league_name]
-                
-                logger.info(f"Lig kaldırıldı: {league_name} (ID: {league_id})")
-                return True
-                
-            except Exception as e:
-                logger.error(f"Lig kaldırılırken metin dosyası hatası: {str(e)}")
-                raise ConfigError(f"Lig kaldırılırken metin dosyası hatası: {str(e)}") from e
-            
+                self.leagues_by_name.pop(league_name, None)
+                self._leagues_mtime = self._league_file_mtime()
+            logger.info(f"Lig kaldırıldı: {league_name} (ID: {league_id})")
+            return True
         except Exception as e:
-            logger.error(f"Lig kaldırılırken beklenmeyen hata: {str(e)}")
+            logger.error(f"Lig kaldırılırken hata: {str(e)}")
             return False
-    
+
     def update_env_variable(self, key: str, value: str) -> bool:
         """
         Çevre değişkenini günceller ve .env dosyasına kaydeder.

@@ -82,9 +82,9 @@ def parse_arguments() -> argparse.Namespace:
 
     parser.add_argument(
         "--data-dir",
-        default="data",
+        default=None,
         dest="data_dir",
-        help="Veri kök dizini",
+        help="Veri kök dizini (varsayılan: .env'deki DATA_DIR, o da yoksa data)",
     )
     
     parser.add_argument(
@@ -170,6 +170,9 @@ def main() -> int:
                 return 1
             return 0
 
+        if args.data_dir:
+            # Açıkça verilen --data-dir bu çalıştırma için DATA_DIR'i ezer (tüm modüller aynısını görsün)
+            os.environ["DATA_DIR"] = args.data_dir
         ui = SimpleSofaScoreUI(config_path=args.config, data_dir=args.data_dir)
 
         if args.headless:
