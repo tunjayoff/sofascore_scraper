@@ -179,8 +179,11 @@ class MatchWatcher:
             return {}
 
     def _save_state(self) -> None:
+        """Dosyadaki diğer izleyicilerin (başka spor/süreç) maçlarını koruyarak yalnızca kendi maçlarını yazar."""
         os.makedirs(self.data_dir, exist_ok=True)
-        atomic_write_json(self.state_path, self.state)
+        merged = self._load_state()
+        merged.update(self.state)
+        atomic_write_json(self.state_path, merged)
 
     def _emit(self, event: Dict[str, Any]) -> None:
         line = json.dumps(event, ensure_ascii=False)
