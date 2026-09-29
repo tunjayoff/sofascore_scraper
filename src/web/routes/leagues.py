@@ -114,7 +114,7 @@ async def get_leagues() -> List[LeagueModel]:
 
 
 @router.post("/leagues", response_model=LeagueModel)
-async def add_league(league: LeagueCreate) -> LeagueModel:
+def add_league(league: LeagueCreate) -> LeagueModel:
     success = config_manager.add_league(league.name, league.id)
     if not success:
         raise HTTPException(status_code=400, detail="League ID or Name already exists.")
@@ -125,7 +125,7 @@ async def add_league(league: LeagueCreate) -> LeagueModel:
 
 
 @router.patch("/leagues/{league_id}", response_model=LeagueModel)
-async def update_league(league_id: int, body: LeagueUpdate) -> LeagueModel:
+def update_league(league_id: int, body: LeagueUpdate) -> LeagueModel:
     """Set (or clear, with sport=null) the sport of a configured league."""
     leagues = config_manager.get_leagues()
     if league_id not in leagues:
@@ -138,7 +138,7 @@ async def update_league(league_id: int, body: LeagueUpdate) -> LeagueModel:
 
 
 @router.delete("/leagues/{league_id}")
-async def delete_league(league_id: int) -> Dict[str, str]:
+def delete_league(league_id: int) -> Dict[str, str]:
     success = config_manager.remove_league(league_id)
     if not success:
         raise HTTPException(status_code=404, detail="League not found.")
@@ -147,7 +147,7 @@ async def delete_league(league_id: int) -> Dict[str, str]:
 
 
 @router.get("/leagues/search", response_model=List[LeagueModel])
-async def search_leagues(q: str = Query(..., min_length=2)) -> List[LeagueModel]:
+def search_leagues(q: str = Query(..., min_length=2)) -> List[LeagueModel]:
     leagues = config_manager.get_leagues()
     return [LeagueModel(id=lid, name=name) for lid, name in leagues.items() if q.lower() in name.lower()]
 
@@ -167,7 +167,7 @@ async def search_remote_leagues(q: str = Query(..., min_length=2)):
 
 
 @router.get("/leagues/{league_id}/seasons")
-async def get_league_seasons(league_id: int):
+def get_league_seasons(league_id: int):
     """Bir ligin yerel olarak kayıtlı sezon listesini döndürür."""
     data_dir = config_manager.get_data_dir()
     seasons_file = _find_league_seasons_json(data_dir, league_id)

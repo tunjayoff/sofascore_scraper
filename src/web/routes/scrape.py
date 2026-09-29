@@ -36,13 +36,13 @@ async def get_scrape_status():
 
 
 @router.get("/jobs")
-async def list_jobs(limit: int = Query(20, ge=1, le=100)):
+def list_jobs(limit: int = Query(20, ge=1, le=100)):
     """Recent scrape jobs (newest first)."""
     return {"jobs": _job_store.list_jobs(limit=limit)}
 
 
 @router.get("/jobs/{job_id}")
-async def get_job(job_id: str):
+def get_job(job_id: str):
     job = _job_store.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -76,7 +76,7 @@ async def scrape_status_stream(request: Request):
 
 
 @router.post("/scrape/cancel")
-async def cancel_scrape():
+def cancel_scrape():
     """Çalışan background fetch işlemini iptal eder."""
     if not _job_store.request_cancel():
         raise HTTPException(status_code=400, detail="No scraping process is running.")
@@ -87,6 +87,8 @@ async def cancel_scrape():
 @router.post("/fetch")
 async def trigger_fetch(payload: FetchRequest):
     """Trigger a background fetch operation. Mode 'full' or 'details'."""
+    # async kalmalı: "çalışıyor mu" kontrolü ile create_running arasında await yok, bu yüzden
+    # olay döngüsünde atomik. Threadpool'da iki eşzamanlı istek iki iş başlatabilirdi.
     import threading
 
     from src.web.fetch_job import run_fetch_job

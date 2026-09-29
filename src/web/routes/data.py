@@ -230,7 +230,7 @@ async def create_backup(scope: BackupScope = "all", include_env: bool = False):
 
 
 @router.get("/data/backups/{name}")
-async def download_backup(name: str):
+def download_backup(name: str):
     from fastapi.responses import FileResponse
 
     if not _BACKUP_NAME_RE.match(name):

@@ -1,13 +1,14 @@
 """SQLite-backed scrape job store (one active job at a time)."""
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import sqlite3
 import threading
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 
 
 def _utc_now() -> str:
@@ -56,10 +57,16 @@ class JobStore:
             "result": None,
         }
 
-    def _conn(self) -> sqlite3.Connection:
+    @contextlib.contextmanager
+    def _conn(self) -> Iterator[sqlite3.Connection]:
+        # `with sqlite3.connect()` yalnızca commit eder, kapatmaz: bağlantıyı burada kapat
         conn = sqlite3.connect(self.db_path, check_same_thread=False)
         conn.row_factory = sqlite3.Row
-        return conn
+        try:
+            with conn:
+                yield conn
+        finally:
+            conn.close()
 
     def _init_db(self) -> None:
         with self._lock:

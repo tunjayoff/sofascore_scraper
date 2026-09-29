@@ -92,7 +92,7 @@ class SettingsUpdate(BaseModel):
 
 
 @router.get("/settings")
-async def get_all_settings():
+def get_all_settings():
     """Get all current settings."""
     return {
         "language": config_manager.get_language(),
@@ -118,7 +118,7 @@ async def get_all_settings():
 
 
 @router.post("/settings")
-async def update_settings(settings: SettingsUpdate):
+def update_settings(settings: SettingsUpdate):
     """Update application settings."""
     try:
         updated = False
