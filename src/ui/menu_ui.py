@@ -81,7 +81,7 @@ class LeagueMenuHandler:
 
         except Exception as e:
             logger.error(f"Lig eklenirken hata: {str(e)}")
-            print(f"\n{self.colors['WARNING']}Hata: {str(e)}")
+            print(f"\n{self.colors['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
     def reload_leagues(self) -> None:
         """Lig yapılandırmasını yeniden yükler."""
@@ -90,13 +90,13 @@ class LeagueMenuHandler:
             leagues = self.config_manager.get_leagues()
 
             if success:
-                print(f"\n{self.colors['SUCCESS']}✅ {self.i18n.t('league_config_reloaded')} ({len(leagues)} lig)")
+                print(f"\n{self.colors['SUCCESS']}✅ {self.i18n.t('league_config_reloaded')} {self.i18n.t('league_count_suffix', count=len(leagues))}")
             else:
                 print(f"\n{self.colors['WARNING']}❌ {self.i18n.t('config_reload_error')}")
 
         except Exception as e:
             logger.error(f"Ligler yeniden yüklenirken hata: {str(e)}")
-            print(f"\n{self.colors['WARNING']}Hata: {str(e)}")
+            print(f"\n{self.colors['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
     def search_leagues(self) -> None:
         """Ligleri arama işlemi."""
@@ -125,7 +125,7 @@ class LeagueMenuHandler:
 
         except Exception as e:
             logger.error(f"Lig arama işlemi sırasında hata: {str(e)}")
-            print(f"\n{self.colors['WARNING']}Hata: {str(e)}")
+            print(f"\n{self.colors['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
 
 class SeasonMenuHandler:
@@ -183,7 +183,7 @@ class SeasonMenuHandler:
                         )
                 except Exception as e:
                     logger.error(f"{league_name} için sezon verisi çekilirken hata: {str(e)}")
-                    print(f"    ✗ Hata: {str(e)}")
+                    print(f"    ✗ {self.i18n.t('error_with_message', error=str(e))}")
                     if progress_callback and n_leagues > 0:
                         progress_callback(
                             idx + 1,
@@ -195,7 +195,7 @@ class SeasonMenuHandler:
 
         except Exception as e:
             logger.error(f"Tüm sezon verileri güncellenirken hata: {str(e)}")
-            print(f"\n{self.colors['WARNING']}❌ Hata: {str(e)}")
+            print(f"\n{self.colors['WARNING']}❌ {self.i18n.t('error_with_message', error=str(e))}")
 
     def update_league_seasons(self) -> None:
         """Belirli bir lig için sezon verilerini günceller."""
@@ -238,11 +238,11 @@ class SeasonMenuHandler:
                 print(f"\n{self.colors['WARNING']}{self.i18n.t('invalid_number_format')}")
             except Exception as e:
                 logger.error(f"Lig sezonları güncellenirken hata: {str(e)}")
-                print(f"\n{self.colors['WARNING']}❌ Hata: {str(e)}")
+                print(f"\n{self.colors['WARNING']}❌ {self.i18n.t('error_with_message', error=str(e))}")
 
         except Exception as e:
             logger.error(f"Lig sezonları güncellenirken hata: {str(e)}")
-            print(f"\n{self.colors['WARNING']}❌ Hata: {str(e)}")
+            print(f"\n{self.colors['WARNING']}❌ {self.i18n.t('error_with_message', error=str(e))}")
 
     def list_seasons(self) -> None:
         """Ligler ve sezonları listeler."""
@@ -271,4 +271,4 @@ class SeasonMenuHandler:
 
         except Exception as e:
             logger.error(f"Sezonları listelerken hata: {str(e)}")
-            print(f"\n{self.colors['WARNING']}Hata: {str(e)}")
+            print(f"\n{self.colors['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")

@@ -61,7 +61,7 @@ class StatsMenuHandler:
         except Exception as e:
             logger.error(f"Sistem istatistikleri görüntülenirken hata: {str(e)}")
             logger.error(traceback.format_exc())
-            print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+            print(f"\n{COLORS['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
     def show_league_stats(self, league_id):
         """
@@ -70,7 +70,7 @@ class StatsMenuHandler:
         COLORS = self.colors  # Kısa erişim için
 
         try:
-            league_name = self.config_manager.get_leagues().get(league_id, f"Lig {league_id}")
+            league_name = self.config_manager.get_leagues().get(league_id, self.i18n.t("league_fallback_name", league_id=league_id))
             print(f"\n{COLORS['INFO']}● {league_name} {COLORS['DIM']}(ID: {league_id})")
 
             st = stats_service.league_stats(self.data_dir, league_id, league_name)
@@ -86,7 +86,7 @@ class StatsMenuHandler:
         except Exception as e:
             logger.error(f"Lig istatistikleri görüntülenirken hata: {str(e)}")
             logger.error(traceback.format_exc())
-            print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+            print(f"\n{COLORS['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
 
     def generate_report(self) -> None:
@@ -113,7 +113,7 @@ class StatsMenuHandler:
 
         except Exception as e:
             logger.error(f"Rapor oluşturulurken hata: {str(e)}")
-            print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+            print(f"\n{COLORS['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
     def _system_report_stats(self) -> Dict[str, Any]:
         stats = stats_service.system_stats(self.data_dir, self.config_manager.get_leagues())
@@ -168,7 +168,7 @@ class StatsMenuHandler:
             self._write_report("system", report, "system_report_created")
         except Exception as e:
             logger.error(f"Sistem raporu oluşturulurken hata: {str(e)}")
-            print(f"\n{self.colors['WARNING']}Hata: {str(e)}")
+            print(f"\n{self.colors['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
 
     def _generate_league_report(self) -> None:
@@ -181,7 +181,7 @@ class StatsMenuHandler:
             self._write_report("league", report, "league_report_created")
         except Exception as e:
             logger.error(f"Lig raporu oluşturulurken hata: {str(e)}")
-            print(f"\n{self.colors['WARNING']}Hata: {str(e)}")
+            print(f"\n{self.colors['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
 
     def _generate_detailed_report(self) -> None:
@@ -195,7 +195,7 @@ class StatsMenuHandler:
             self._write_report("detailed", report, "detailed_report_created")
         except Exception as e:
             logger.error(f"Detaylı rapor oluşturulurken hata: {str(e)}")
-            print(f"\n{self.colors['WARNING']}Hata: {str(e)}")
+            print(f"\n{self.colors['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
 
 

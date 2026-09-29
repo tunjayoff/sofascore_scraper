@@ -169,11 +169,11 @@ class SimpleSofaScoreUI:
                     self.shell.invalid_choice()
 
         except KeyboardInterrupt:
-            print(f"\n\n{COLORS['INFO']}Program kullanıcı tarafından sonlandırıldı.")
+            print(f"\n\n{COLORS['INFO']}{self.i18n.t('prog_terminated_by_user')}")
         except Exception as e:
             logger.error(f"Kullanıcı arayüzünde hata: {str(e)}")
-            print(f"\n{COLORS['ERROR']}Hata: {str(e)}")
-            input("Devam etmek için Enter'a basın...")
+            print(f"\n{COLORS['ERROR']}{self.i18n.t('error_with_message', error=str(e))}")
+            input(self.i18n.t("press_enter_to_continue"))
 
     def show_league_menu(self) -> None:
         """Lig yönetimi menüsünü görüntüler."""
@@ -333,7 +333,7 @@ class SimpleSofaScoreUI:
             if mode == "full":
                 self.update_all_leagues(progress_factory=progress_factory)
             else:
-                print(f"\n{COLORS['INFO']}Headless: Tüm ligler için maç detayları çekiliyor...")
+                print(f"\n{COLORS['INFO']}{self.i18n.t('headless_fetching_details_all')}")
                 cb = progress_factory(10, 89) if progress_factory else None
                 self.match_data_fetcher.fetch_all_match_details(
                     max_seasons=0,
@@ -344,7 +344,7 @@ class SimpleSofaScoreUI:
         lid = league_id
         lids = str(lid)
         if mode == "details":
-            print(f"\n{COLORS['INFO']}Headless: Lig {lid} maç detayları çekiliyor...")
+            print(f"\n{COLORS['INFO']}{self.i18n.t('headless_fetching_details_league', league_id=lid)}")
             cb = progress_factory(60, 89) if progress_factory else None
             self.match_data_fetcher.fetch_all_match_details(
                 league_id=lids,
@@ -353,7 +353,7 @@ class SimpleSofaScoreUI:
             )
             return
 
-        print(f"\n{COLORS['INFO']}Headless: Lig {lid} tam güncelleme (sezon → maç → detay)...")
+        print(f"\n{COLORS['INFO']}{self.i18n.t('headless_full_update_league', league_id=lid)}")
         self.season_fetcher.fetch_seasons_for_league(lid)
         seasons = self.season_fetcher.get_seasons_for_league(lid)
         for season in seasons:
@@ -372,26 +372,26 @@ class SimpleSofaScoreUI:
         progress_factory: Optional[Callable[[int, int], Callable[[int, int, str], None]]] = None,
     ) -> None:
         """Tüm ligler için verileri (sezon, maç, detay) günceller (Headless / web arka plan)."""
-        print(f"\n{COLORS['INFO']}Headless Mod: Tüm veriler güncelleniyor...")
+        print(f"\n{COLORS['INFO']}{self.i18n.t('headless_updating_all')}")
 
         # 1. Sezonları güncelle (~%10–28 web bandı)
-        print(f"\n{COLORS['SUBTITLE']}1. Sezon Verileri Güncelleniyor...")
+        print(f"\n{COLORS['SUBTITLE']}1. {self.i18n.t('headless_step_seasons')}")
         cb_seasons = progress_factory(10, 28) if progress_factory else None
         self.season_menu.update_all_seasons(progress_callback=cb_seasons)
 
         # 2. Maçları çek (~%28–55)
-        print(f"\n{COLORS['SUBTITLE']}2. Maç Verileri Çekiliyor...")
+        print(f"\n{COLORS['SUBTITLE']}2. {self.i18n.t('headless_step_matches')}")
         cb_matches = progress_factory(28, 55) if progress_factory else None
         self.match_menu.fetch_matches_for_all_leagues(max_seasons=0, progress_callback=cb_matches)
 
         # 3. Maç detaylarını çek (~%55–89, içte batch ilerlemesi)
-        print(f"\n{COLORS['SUBTITLE']}3. Maç Detayları Çekiliyor...")
+        print(f"\n{COLORS['SUBTITLE']}3. {self.i18n.t('headless_step_details')}")
         cb_details = progress_factory(55, 89) if progress_factory else None
         self.match_data_menu.fetch_all_match_details(max_seasons=0, progress_callback=cb_details)
 
-        print(f"\n{COLORS['SUCCESS']}Tüm işlemler tamamlandı.")
+        print(f"\n{COLORS['SUCCESS']}{self.i18n.t('all_operations_completed')}")
 
     def export_all_to_csv(self) -> None:
         """Tüm verileri CSV'ye aktarır (Headless mod için)."""
-        print(f"\n{COLORS['INFO']}Headless Mod: CSV dışa aktarılıyor...")
+        print(f"\n{COLORS['INFO']}{self.i18n.t('headless_exporting_csv')}")
         self.match_data_menu.convert_to_csv(scope="all")

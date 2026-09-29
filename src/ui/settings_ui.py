@@ -65,7 +65,7 @@ class SettingsMenuHandler:
 
         except Exception as e:
             logger.error(f"Yapılandırma düzenlenirken hata: {str(e)}")
-            print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+            print(f"\n{COLORS['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
     def _edit_api_config(self) -> None:
         """API yapılandırmasını düzenler."""
@@ -86,7 +86,7 @@ class SettingsMenuHandler:
             # Mevcut yapılandırmayı göster
             print(f"{COLORS['INFO']}{self.i18n.t('current_config')}")
             print(f"  {self.i18n.t('base_url')} {COLORS['SUCCESS']}{base_url}")
-            print(f"  {self.i18n.t('request_timeout')} {COLORS['SUCCESS']}{request_timeout} saniye")
+            print(f"  {self.i18n.t('request_timeout')} {COLORS['SUCCESS']}{self.i18n.t('value_seconds', value=request_timeout)}")
             print(f"  {self.i18n.t('max_retries')} {COLORS['SUCCESS']}{max_retries}")
             print(f"  {self.i18n.t('max_concurrent')} {COLORS['SUCCESS']}{max_concurrent}")
             print(f"  {self.i18n.t('use_proxy')} {COLORS['SUCCESS']}{use_proxy}")
@@ -125,7 +125,7 @@ class SettingsMenuHandler:
 
             # Proxy Ayarları
             print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('proxy_settings')}")
-            use_proxy_input = input(f"{self.i18n.t('use_proxy')} (e/h) [{use_proxy}]: ").strip().lower()
+            use_proxy_input = input(f"{self.i18n.t('use_proxy')} {self.i18n.t('yes_no_hint')} [{use_proxy}]: ").strip().lower()
             if use_proxy_input:
                 new_use_proxy = use_proxy_input in ["e", "evet", "y", "yes", "true", "1"]
             else:
@@ -151,7 +151,7 @@ class SettingsMenuHandler:
 
         except Exception as e:
             logger.error(f"API yapılandırması düzenlenirken hata: {str(e)}")
-            print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+            print(f"\n{COLORS['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
     def _change_data_directory(self) -> None:
         """Veri dizinini değiştirir."""
@@ -209,7 +209,7 @@ class SettingsMenuHandler:
 
         except Exception as e:
             logger.error(f"Veri dizini değiştirilirken hata: {str(e)}")
-            print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+            print(f"\n{COLORS['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
     def _edit_display_settings(self) -> None:
         """Görüntüleme ayarlarını düzenler."""
@@ -231,7 +231,7 @@ class SettingsMenuHandler:
             # Yeni değerleri al
             print(f"\n{COLORS['INFO']}{self.i18n.t('enter_new_values_prompt')}")
 
-            use_color_input = input(f"{self.i18n.t('use_color')} (e/h) [{use_color}]: ").strip().lower()
+            use_color_input = input(f"{self.i18n.t('use_color')} {self.i18n.t('yes_no_hint')} [{use_color}]: ").strip().lower()
             if use_color_input:
                 new_use_color = use_color_input in ["e", "evet", "y", "yes", "true", "1"]
             else:
@@ -251,7 +251,7 @@ class SettingsMenuHandler:
 
         except Exception as e:
             logger.error(f"Görüntüleme ayarları düzenlenirken hata: {str(e)}")
-            print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+            print(f"\n{COLORS['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
     def _change_language(self) -> None:
         """Dil değiştirme işlemi."""
@@ -292,14 +292,14 @@ class SettingsMenuHandler:
 
         except Exception as e:
             logger.error(f"Dil değiştirilirken hata: {str(e)}")
-            print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+            print(f"\n{COLORS['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
     def backup_data(self) -> None:
         """Veri yedekleme işlemleri."""
         COLORS = self.colors  # Kısa erişim için
 
         try:
-            print(f"\n{COLORS['SUBTITLE']}Veri Yedekleme:")
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('title_backup_data')}")
             print("-" * 50)
             print(f"{self.i18n.t('menu_backup_all')}")
             print(f"{self.i18n.t('menu_backup_selected')}")
@@ -315,7 +315,7 @@ class SettingsMenuHandler:
 
         except Exception as e:
             logger.error(f"Veri yedekleme işlemi sırasında hata: {str(e)}")
-            print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+            print(f"\n{COLORS['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
     def _backup_all_data(self) -> None:
         """Tüm verileri yedekler."""
@@ -326,7 +326,7 @@ class SettingsMenuHandler:
             print("-" * 50)
 
             # Yedekleme dizinini al
-            backup_dir = input("Yedekleme Dizini [backup]: ").strip() or "backup"
+            backup_dir = input(f"{self.i18n.t('backup_dir_prompt')} [backup]: ").strip() or "backup"
 
             # Yedekleme dizinini oluştur
             os.makedirs(backup_dir, exist_ok=True)
@@ -353,7 +353,7 @@ class SettingsMenuHandler:
                 print(f"{COLORS['SUCCESS']}{self.i18n.t('success_backup_env_vars')}{env_backup}")
 
             # Veri dizinini yedekle
-            print(f"\n{COLORS['INFO']}Veri dizini yedekleniyor...")
+            print(f"\n{COLORS['INFO']}{self.i18n.t('info_backing_up_data_dir')}")
 
             # Alt dizinleri yedekle
             for subdir in ["seasons", "matches", "match_details"]:
@@ -362,15 +362,15 @@ class SettingsMenuHandler:
                     dst_dir = os.path.join(backup_dir, "data", subdir)
 
                     # Dizini kopyala
-                    print(f"{COLORS['INFO']}'{subdir}' dizini yedekleniyor...")
+                    print(f"{COLORS['INFO']}{self.i18n.t('info_backing_up_subdir', name=subdir)}")
                     shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
-                    print(f"{COLORS['SUCCESS']}✓ '{subdir}' dizini yedeklendi: {dst_dir}")
+                    print(f"{COLORS['SUCCESS']}{self.i18n.t('success_backup_subdir', name=subdir, path=dst_dir)}")
 
             print(f"\n{COLORS['SUCCESS']}{self.i18n.t('success_backup_all')}{os.path.abspath(backup_dir)}")
 
         except Exception as e:
             logger.error(f"Veri yedeklenirken hata: {str(e)}")
-            print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+            print(f"\n{COLORS['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
     def _backup_selected_data(self) -> None:
         """Seçili veri tiplerini yedekler."""
@@ -381,7 +381,7 @@ class SettingsMenuHandler:
             print("-" * 50)
 
             # Yedekleme dizinini al
-            backup_dir = input("Yedekleme Dizini [backup]: ").strip() or "backup"
+            backup_dir = input(f"{self.i18n.t('backup_dir_prompt')} [backup]: ").strip() or "backup"
 
             # Yedekleme dizinini oluştur
             os.makedirs(backup_dir, exist_ok=True)
@@ -389,7 +389,7 @@ class SettingsMenuHandler:
             # Yedeklenecek veri tiplerini seç
             print(f"\n{COLORS['INFO']}{self.i18n.t('prompt_select_backup_types')}")
             print(f"{self.i18n.t('menu_config_files')}")
-            print("2. 🏆 Lig ve Sezon Verileri")
+            print(f"2. 🏆 {self.i18n.t('menu_league_season_data')}")
             print(f"{self.i18n.t('menu_match_data')}")
             print(f"{self.i18n.t('menu_match_details')}")
 
@@ -425,12 +425,12 @@ class SettingsMenuHandler:
 
             # Lig ve sezon verilerini yedekle
             if 2 in selected:
-                print(f"\n{COLORS['INFO']}Lig ve sezon verileri yedekleniyor...")
+                print(f"\n{COLORS['INFO']}{self.i18n.t('info_backing_up_league_season_data')}")
                 src_dir = os.path.join(self.data_dir, "seasons")
                 if os.path.exists(src_dir) and os.path.isdir(src_dir):
                     dst_dir = os.path.join(backup_dir, "data", "seasons")
                     shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
-                    print(f"{COLORS['SUCCESS']}✓ Sezon verileri yedeklendi: {dst_dir}")
+                    print(f"{COLORS['SUCCESS']}{self.i18n.t('success_backup_season_data', path=dst_dir)}")
 
             # Maç verilerini yedekle
             if 3 in selected:
@@ -454,7 +454,7 @@ class SettingsMenuHandler:
 
         except Exception as e:
             logger.error(f"Veri yedeklenirken hata: {str(e)}")
-            print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+            print(f"\n{COLORS['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
     def restore_data(self) -> None:
         """Veri geri yükleme işlemleri."""
@@ -465,7 +465,7 @@ class SettingsMenuHandler:
             print("-" * 50)
 
             # Yedek dizinini al
-            backup_dir = input("Yedek Dizini [backup]: ").strip() or "backup"
+            backup_dir = input(f"{self.i18n.t('backup_dir_prompt')} [backup]: ").strip() or "backup"
 
             # Yedek dizini kontrol et
             if not os.path.exists(backup_dir) or not os.path.isdir(backup_dir):
@@ -475,7 +475,7 @@ class SettingsMenuHandler:
             # Geri yüklenecek veri tiplerini seç
             print(f"\n{COLORS['INFO']}{self.i18n.t('prompt_select_restore_types')}")
             print(f"{self.i18n.t('menu_config_files')}")
-            print("2. 🏆 Lig ve Sezon Verileri")
+            print(f"2. 🏆 {self.i18n.t('menu_league_season_data')}")
             print(f"{self.i18n.t('menu_match_data')}")
             print(f"{self.i18n.t('menu_match_details')}")
 
@@ -546,14 +546,14 @@ class SettingsMenuHandler:
 
         except Exception as e:
             logger.error(f"Veri geri yüklenirken hata: {str(e)}")
-            print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+            print(f"\n{COLORS['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
     def clear_data(self) -> None:
         """Veri temizleme işlemleri."""
         COLORS = self.colors  # Kısa erişim için
 
         try:
-            print(f"\n{COLORS['SUBTITLE']}Veri Temizleme:")
+            print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('title_clear_data')}")
             print("-" * 50)
             print(f"{self.i18n.t('menu_clear_all')}")
             print(f"{self.i18n.t('menu_clear_selected')}")
@@ -569,7 +569,7 @@ class SettingsMenuHandler:
 
         except Exception as e:
             logger.error(f"Veri temizleme işlemi sırasında hata: {str(e)}")
-            print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+            print(f"\n{COLORS['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
     def _clear_all_data(self) -> None:
         """Tüm verileri temizler."""
@@ -602,13 +602,13 @@ class SettingsMenuHandler:
                             shutil.rmtree(item_path)
                         else:
                             os.remove(item_path)
-                    print(f"{COLORS['SUCCESS']}✓ {dir_name} dizini temizlendi.")
+                    print(f"{COLORS['SUCCESS']}{self.i18n.t('success_dir_cleared', name=dir_name)}")
 
             print(f"\n{COLORS['SUCCESS']}{self.i18n.t('success_clear_all')}")
 
         except Exception as e:
             logger.error(f"Tüm veriler temizlenirken hata: {str(e)}")
-            print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+            print(f"\n{COLORS['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
     def _clear_selected_data(self) -> None:
         """Seçili veri türlerini temizler."""
@@ -617,11 +617,11 @@ class SettingsMenuHandler:
         try:
             print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('title_clear_selected')}")
             print("-" * 50)
-            print("1. 📅 Sezon Verileri")
+            print(f"1. 📅 {self.i18n.t('menu_season_data')}")
             print(f"{self.i18n.t('menu_clear_match_data')}")
             print(f"{self.i18n.t('menu_clear_match_details')}")
-            print("4. 📊 CSV Veri Setleri")
-            print("5. 📝 Raporlar")
+            print(f"4. 📊 {self.i18n.t('menu_csv_datasets')}")
+            print(f"5. 📝 {self.i18n.t('menu_reports')}")
 
             data_types = []
             selections = input(f"\n{self.i18n.t('prompt_selections_comma')}").strip()
@@ -660,13 +660,13 @@ class SettingsMenuHandler:
                             shutil.rmtree(item_path)
                         else:
                             os.remove(item_path)
-                    print(f"{COLORS['SUCCESS']}✓ {dir_name} dizini temizlendi.")
+                    print(f"{COLORS['SUCCESS']}{self.i18n.t('success_dir_cleared', name=dir_name)}")
 
             print(f"\n{COLORS['SUCCESS']}{self.i18n.t('success_clear_selected')}")
 
         except Exception as e:
             logger.error(f"Seçili veri türleri temizlenirken hata: {str(e)}")
-            print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+            print(f"\n{COLORS['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
     def show_about(self) -> None:
         """Program hakkında bilgi gösterir."""
@@ -676,7 +676,7 @@ class SettingsMenuHandler:
             print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('about_title')}")
             print("-" * 50)
             print(f"{COLORS['INFO']}{self.i18n.t('version')} {COLORS['SUCCESS']}1.0.0")
-            print(f"{COLORS['INFO']}{self.i18n.t('developer')} {COLORS['SUCCESS']}SofaScore Scraper Ekibi")
+            print(f"{COLORS['INFO']}{self.i18n.t('developer')} {COLORS['SUCCESS']}{self.i18n.t('developer_team')}")
             print(f"{COLORS['INFO']}{self.i18n.t('license')} {COLORS['SUCCESS']}PolyForm Noncommercial 1.0.0")
             print(f"{COLORS['INFO']}{self.i18n.t('description')} {COLORS['SUCCESS']}{self.i18n.t('app_description')}")
 
@@ -687,7 +687,7 @@ class SettingsMenuHandler:
 
         except Exception as e:
             logger.error(f"Hakkında bilgisi görüntülenirken hata: {str(e)}")
-            print(f"\n{COLORS['WARNING']}Hata: {str(e)}")
+            print(f"\n{COLORS['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
 
     def _move_directory_contents(self, src_dir: str, dest_dir: str) -> None:
         """Bir dizinin içeriğini başka bir dizine taşır."""

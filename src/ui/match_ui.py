@@ -64,8 +64,8 @@ class MatchMenuHandler:
         table.add_column(self.i18n.t("id"), style="green")
 
         for i, season in enumerate(seasons, 1):
-            name = season.get("name", "Bilinmeyen")
-            year = season.get("year", "Yok")
+            name = season.get("name", self.i18n.t("unknown_season"))
+            year = season.get("year", self.i18n.t("no_year_info"))
             sid = str(season.get("id", ""))
             table.add_row(str(i), name, year, sid)
 
@@ -92,7 +92,7 @@ class MatchMenuHandler:
             try:
                 league_index = int(league_choice) - 1
                 if league_index < 0 or league_index >= len(leagues):
-                    print("\nGeçersiz lig numarası!")
+                    print(f"\n{self.i18n.t('invalid_league_num')}")
                     return
 
                 # Seçilen ligi al
@@ -168,7 +168,7 @@ class MatchMenuHandler:
                             return
 
                         selected_seasons = [sorted_seasons[season_index]]
-                        print(self.i18n.t("season_selected", season_name=selected_seasons[0].get('name', 'Sezon')))
+                        print(self.i18n.t("season_selected", season_name=selected_seasons[0].get('name', self.i18n.t('unknown_season'))))
                     except ValueError:
                         print(self.i18n.t("invalid_number_format"))
                         return
@@ -181,14 +181,14 @@ class MatchMenuHandler:
                 total_matches = 0
                 for season in selected_seasons:
                     season_id = season.get("id")
-                    season_name = season.get("name", "Bilinmeyen Sezon")
+                    season_name = season.get("name", self.i18n.t("unknown_season"))
 
                     print(self.i18n.t('fetching_match_data_for_league_season', league_name=league_name, season_name=season_name))
 
                     success = self.match_fetcher.fetch_matches_for_season(league_id, season_id)
 
                     if success:
-                        print("  ✓ Maç verileri başarıyla çekildi.")
+                        print(f"  {self.i18n.t('matches_fetched_successfully')}")
                         total_matches += 1
                     else:
                         print(f"  {self.i18n.t('matches_not_found')}")
@@ -197,7 +197,7 @@ class MatchMenuHandler:
                 # but the instruction implies a summary.
                 # For now, we'll use total_matches as the 'total' and 'finished' count for simplicity
                 # as the original code only tracked total_matches.
-                print(self.i18n.t("matches_downloaded", league=league_name, season="selected seasons", total=total_matches, finished=total_matches))
+                print(self.i18n.t("matches_downloaded", league=league_name, season=self.i18n.t("selected_seasons_label"), total=total_matches, finished=total_matches))
 
             except ValueError:
                 print(self.i18n.t("invalid_number_format"))
@@ -234,7 +234,7 @@ class MatchMenuHandler:
                 max_seasons = -1
                 while max_seasons < 0:
                     try:
-                        print("\nKaç sezon çekmek istiyorsunuz?")
+                        print(f"\n{self.i18n.t('how_many_seasons_to_fetch')}")
                         print(f"{self.i18n.t('all_seasons_0_last_n')}")
                         max_seasons_input = input(f"{self.i18n.t('season_count')} ")
                         max_seasons = int(max_seasons_input)
@@ -255,7 +255,7 @@ class MatchMenuHandler:
                     print(f"\n  🏆 {league_name} (ID: {league_id})")
 
                     # Ligi çekmeden önce kontrol et
-                    print("  ○ Sezonlar kontrol ediliyor...")
+                    print(f"  {self.i18n.t('checking_seasons_progress')}")
                     # Önce yerel veriyi kontrol et
                     seasons = self.season_fetcher.get_seasons_for_league(league_id)
 
@@ -289,17 +289,17 @@ class MatchMenuHandler:
                     # Sezon sayısını sınırla
                     if max_seasons > 0 and len(sorted_seasons) > max_seasons:
                         seasons_to_fetch = sorted_seasons[:max_seasons]
-                        print(f"  ℹ️ Toplam {len(sorted_seasons)} sezon arasından son {max_seasons} {self.i18n.t('info_last_seasons_suffix')}")
+                        print(f"  {self.i18n.t('info_seasons_limited', count=max_seasons, total=len(sorted_seasons))}")
                     else:
                         seasons_to_fetch = sorted_seasons
-                        print(f"  ℹ️ Toplam {len(sorted_seasons)} {self.i18n.t('info_last_seasons_suffix')}")
+                        print(f"  {self.i18n.t('info_seasons_total', total=len(sorted_seasons))}")
 
                     league_matches = 0
 
                     # Her sezon için maç verilerini çek
                     for season in seasons_to_fetch:
                         season_id = season.get("id")
-                        season_name = season.get("name", "Bilinmeyen Sezon")
+                        season_name = season.get("name", self.i18n.t("unknown_season"))
 
                         print(f"  ○ {season_name} {self.i18n.t('fetching_matches_for_season')}")
 
@@ -310,13 +310,13 @@ class MatchMenuHandler:
                                 print(f"    {self.i18n.t('matches_fetched_successfully')}")
                                 league_matches += 1
                             else:
-                                print("    Maç bulunamadı.")
+                                print(f"    {self.i18n.t('matches_not_found')}")
                         except Exception as e:
                             logger.error(f"{league_name} - {season_name} için maç verisi çekilirken hata: {str(e)}")
-                            print(f"    Hata: {str(e)}")
+                            print(f"    {self.i18n.t('error_with_message', error=str(e))}")
 
                     total_matches += league_matches
-                    print(f"  {league_name} {self.i18n.t('total_matches_fetched_for_league')} {league_matches} maç verisi çekildi.")
+                    print(f"  {self.i18n.t('league_matches_fetched_total', league_name=league_name, count=league_matches)}")
                     if progress_callback and n_leagues > 0:
                         progress_callback(
                             li + 1,
@@ -326,7 +326,7 @@ class MatchMenuHandler:
 
                 except Exception as e:
                     logger.error(f"{league_name} için maç verisi çekilirken hata: {str(e)}")
-                    print(f"  Hata: {str(e)}")
+                    print(f"  {self.i18n.t('error_with_message', error=str(e))}")
                     if progress_callback and n_leagues > 0:
                         progress_callback(
                             li + 1,
@@ -338,7 +338,7 @@ class MatchMenuHandler:
 
         except Exception as e:
             logger.error(f"Tüm ligler için maç verileri çekilirken hata: {str(e)}")
-            print(f"\nHata: {str(e)}")
+            print(f"\n{self.i18n.t('error_with_message', error=str(e))}")
 
     def list_matches(self) -> None:
         """Çekilen maçları listeler."""
@@ -360,7 +360,7 @@ class MatchMenuHandler:
             # Ligi seç
             leagues = self.config_manager.get_leagues()
 
-            print("\nLigler:")
+            print(f"\n{self.i18n.t('league_list')}")
             for i, (league_id, league_name) in enumerate(leagues.items(), 1):
                 print(f"{i}. {league_name} (ID: {league_id or '?'})")
 
@@ -369,7 +369,7 @@ class MatchMenuHandler:
             try:
                 league_index = int(league_choice) - 1
                 if league_index < 0 or league_index >= len(leagues):
-                    print("\nGeçersiz lig numarası!")
+                    print(f"\n{self.i18n.t('invalid_league_num')}")
                     return
 
                 league_id = list(leagues.keys())[league_index]
@@ -382,10 +382,10 @@ class MatchMenuHandler:
                     print(f"\n{self.i18n.t('season_data_not_found_for_league')}")
                     return
 
-                print("\nSezonlar:")
+                print(f"\n{self.i18n.t('seasons_heading')}")
                 for i, season in enumerate(seasons, 1):
                     season_id = season.get("id", "?")
-                    season_name = season.get("name", "Bilinmeyen Sezon")
+                    season_name = season.get("name", self.i18n.t("unknown_season"))
                     print(f"{i}. {season_name} (ID: {season_id})")
 
                 season_choice = input(f"\n{self.i18n.t('season_number_to_view_matches')} ").strip()
@@ -398,7 +398,7 @@ class MatchMenuHandler:
 
                     season = seasons[season_index]
                     season_id = season.get("id")
-                    season_name = season.get("name", "Bilinmeyen Sezon")
+                    season_name = season.get("name", self.i18n.t("unknown_season"))
 
                     # Maç dizinini kontrol et - farklı klasör düzeni formatlarını dene
                     possible_dirs = []
@@ -466,11 +466,11 @@ class MatchMenuHandler:
                     print(f"\n{self.i18n.t('invalid_season_number')}")
 
             except ValueError:
-                print("\nGeçersiz lig numarası!")
+                print(f"\n{self.i18n.t('invalid_league_num')}")
 
         except Exception as e:
             logger.error(f"Maçları listelerken hata: {str(e)}")
-            print(f"\nHata: {str(e)}")
+            print(f"\n{self.i18n.t('error_with_message', error=str(e))}")
 
 
 class MatchDataMenuHandler:
@@ -515,20 +515,20 @@ class MatchDataMenuHandler:
                     result = self.match_data_fetcher.fetch_match_details(match_id)
 
                     if result:
-                        print(f"✓ Maç ID {match_id}")
+                        print(self.i18n.t("match_details_fetched_id", match_id=match_id))
                         success_count += 1
                     else:
-                        print(f"{self.i18n.t('fetch_details_error')} {match_id}: Detaylar çekilemedi.")
+                        print(self.i18n.t("match_details_fetch_failed_id", match_id=match_id))
 
                 except Exception as e:
                     logger.error(f"Maç {match_id} için detay çekilirken hata: {str(e)}")
-                    print(f"{self.i18n.t('fetch_details_error')} {match_id}: Hata: {str(e)}")
+                    print(self.i18n.t("match_details_fetch_error_id", match_id=match_id, error=str(e)))
 
             print(f"\n{self.i18n.t('info_match_details_completed')} {success_count}/{len(match_ids)} {self.i18n.t('info_match_successful')}")
 
         except Exception as e:
             logger.error(f"Maç detaylarını çekerken hata: {str(e)}")
-            print(f"\nHata: {str(e)}")
+            print(f"\n{self.i18n.t('error_with_message', error=str(e))}")
 
     def fetch_all_match_details(
         self,
@@ -556,11 +556,11 @@ class MatchDataMenuHandler:
             if max_seasons is not None:
                 # Belirli bir lig için
                 if league_id:
-                    print(f"\nLig ID {league_id} {self.i18n.t('fetching_match_details_for')}")
+                    print(f"\n{self.i18n.t('fetching_match_details_for_league_id', league_id=league_id)}")
                     if max_seasons > 0:
-                        print(f"Son {max_seasons} {self.i18n.t('info_last_seasons_suffix')}")
+                        print(self.i18n.t("last_n_seasons_will_be_fetched", count=max_seasons))
                     else:
-                        print("Tüm sezonlar çekilecek")
+                        print(self.i18n.t("all_seasons_will_be_fetched"))
 
                     result = self.match_data_fetcher.fetch_all_match_details(
                         league_id=league_id,
@@ -590,11 +590,11 @@ class MatchDataMenuHandler:
             # Filtreleme seçenekleri
             print(f"\n{self.i18n.t('title_filter_options')}")
             print("-" * 50)
-            print(f"{self.i18n.t('menu_all_leagues')}")
-            print("2. Belirli Bir Lig")
-            print(f"{self.i18n.t('menu_cancel')}")
+            print(f"1. {self.i18n.t('menu_all_leagues')}")
+            print(f"2. {self.i18n.t('menu_specific_league')}")
+            print(f"0. {self.i18n.t('menu_cancel')}")
 
-            filter_choice = input("\nSeçiminiz (0-2): ").strip()
+            filter_choice = input(f"\n{self.i18n.t('selection_prompt_range', range='0-2')} ").strip()
 
             if filter_choice == "0":
                 return
@@ -632,7 +632,7 @@ class MatchDataMenuHandler:
             # Belirli bir lig
             elif filter_choice == "2":
                 # Lig listesini görüntüle
-                print("\nLig Listesi:")
+                print(f"\n{self.i18n.t('league_list')}")
                 for i, (league_id, league_name) in enumerate(leagues.items(), 1):
                     print(f"{i}. {league_name} (ID: {league_id})")
 
@@ -645,7 +645,7 @@ class MatchDataMenuHandler:
                 try:
                     league_index = int(league_choice) - 1
                     if league_index < 0 or league_index >= len(leagues):
-                        print("\nGeçersiz lig numarası!")
+                        print(f"\n{self.i18n.t('invalid_league_num')}")
                         return
 
                     # Seçilen ligi al
@@ -666,11 +666,11 @@ class MatchDataMenuHandler:
                         print(f"{self.i18n.t('enter_valid_number')}")
                         return
 
-                    print(f"\n{league_name} {self.i18n.t('fetching_match_details_for')}")
+                    print(f"\n{self.i18n.t('fetching_match_details_for_league', league_name=league_name)}")
                     if max_seasons > 0:
-                        print(f"Son {max_seasons} {self.i18n.t('info_last_seasons_suffix')}")
+                        print(self.i18n.t("last_n_seasons_will_be_fetched", count=max_seasons))
                     else:
-                        print("Tüm sezonlar çekilecek")
+                        print(self.i18n.t("all_seasons_will_be_fetched"))
 
                     # Bu noktada fetch_all_match_details'ı çağır
                     result = self.match_data_fetcher.fetch_all_match_details(league_id=league_id, max_seasons=max_seasons)
@@ -689,7 +689,7 @@ class MatchDataMenuHandler:
 
         except Exception as e:
             logger.error(f"Tüm maç detaylarını çekerken hata: {str(e)}")
-            print(f"\nHata: {str(e)}")
+            print(f"\n{self.i18n.t('error_with_message', error=str(e))}")
 
     def convert_to_csv(self, scope: str = "interactive") -> None:
         """
@@ -708,7 +708,7 @@ class MatchDataMenuHandler:
                 print(f"{self.i18n.t('specific_league_csv')}")
                 print(f"{self.i18n.t('all_leagues_csv')}")
 
-                option = input("\nSeçiminiz (1-3): ").strip()
+                option = input(f"\n{self.i18n.t('selection_prompt_range', range='1-3')} ").strip()
             elif scope == "single":
                 option = "1"
             elif scope == "league":
@@ -721,7 +721,7 @@ class MatchDataMenuHandler:
                 match_id = input(f"\n{self.i18n.t('csv_match_id')} ").strip()
 
                 if not match_id:
-                    print("\n❌ Geçerli maç ID'si bulunamadı")
+                    print(f"\n❌ {self.i18n.t('valid_match_id_not_found')}")
                     return
 
                 result = self.match_data_fetcher.convert_match_to_csv(match_id)
@@ -740,7 +740,7 @@ class MatchDataMenuHandler:
                     print(f"\n❌ {self.i18n.t('error_no_saved_league')}")
                     return
 
-                print("\nLig Listesi:")
+                print(f"\n{self.i18n.t('league_list')}")
                 for i, (league_id, league_name) in enumerate(leagues.items(), 1):
                     print(f"{i}. {league_name} (ID: {league_id})")
 
@@ -753,7 +753,7 @@ class MatchDataMenuHandler:
                 try:
                     league_index = int(league_choice) - 1
                     if league_index < 0 or league_index >= len(leagues):
-                        print("\n❌ Geçersiz lig numarası!")
+                        print(f"\n❌ {self.i18n.t('invalid_league_num')}")
                         return
 
                     # Seçilen ligi al
@@ -781,7 +781,7 @@ class MatchDataMenuHandler:
                 result = self.match_data_fetcher.convert_all_matches_to_csv()
 
                 if isinstance(result, list):
-                    print(f"\n✅ {len(result)} lig için CSV dosyaları başarıyla oluşturuldu:")
+                    print(f"\n{self.i18n.t('csv_files_created_for_leagues', count=len(result))}")
                     for csv_path in result:
                         print(f"  - {csv_path}")
                 elif result:
@@ -793,7 +793,7 @@ class MatchDataMenuHandler:
 
         except Exception as e:
             logger.error(f"CSV dönüştürürken hata: {str(e)}")
-            print(f"\nHata: {str(e)}")
+            print(f"\n{self.i18n.t('error_with_message', error=str(e))}")
 
     def show_menu(self) -> None:
         """Menüyü gösterir ve seçimleri işler."""
@@ -808,7 +808,7 @@ class MatchDataMenuHandler:
             print(f"{self.i18n.t('menu_generate_analysis_report')}")
             print(f"{self.i18n.t('menu_return_main')}")
 
-            choice = input("\nSeçiminiz: ").strip()
+            choice = input(f"\n{self.i18n.t('selection_prompt')} ").strip()
 
             if choice == "1":
                 self.fetch_single_match()
@@ -854,4 +854,4 @@ class MatchDataMenuHandler:
             logger.error(f"Rapor oluştururken hata: {str(e)}")
             import traceback
             logger.error(traceback.format_exc())
-            print(f"\n❌ Hata: {str(e)}")
+            print(f"\n❌ {self.i18n.t('error_with_message', error=str(e))}")
