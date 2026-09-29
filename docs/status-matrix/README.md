@@ -1,7 +1,7 @@
 # SofaScore `status` taksonomisi ve bitiş gecikmesi
 
 Futbol, basketbol ve tenis için SofaScore `status` nesnesinin (`type`, `code`, `description`)
-canlı API'den toplanmış örneklerle belgelenmesi. Her satırın arkasında `data/status_samples/`
+canlı API'den toplanmış örneklerle belgelenmesi. Her satırın arkasında `research/status_samples/`
 altında ham bir API yanıtı (`event` + `fetched_at_utc` + `source_endpoint`) vardır; örneği
 olmayan durum "bulunamadı" olarak, arama yöntemiyle birlikte yazılmıştır.
 
@@ -28,11 +28,11 @@ Talimat 01 için kırpılmış kopyalar: `tests/fixtures/status/{sport}/`
 | Devre kesici | Mevcut mantık açık kalsın | Araştırma istemcisinde: 10 ardışık hata → 5 dk bekleme, 3 beklemeden sonra dur | Repodaki devre kesici yalnızca maç detayı toplu çekiminde; senkron yolda yok. Çalışma boyunca tetiklenmedi. |
 | Tarama genişliği | Her gün tüm maçlar | Her spor/gün için kategori önceliğine göre ilk 25 turnuvanın maçları | Futbolda günde 741–2.043 turnuva; tamamı saatler sürerdi. Taranan: futbol 2.406, basketbol 2.542, tenis 2.212 farklı maç. |
 | Canlı anlık görüntü | 3 farklı bölge saati | 13:43, 15:02, 15:34/15:51 UTC | Süre kısıtı; Asya sabahı / Amerika gecesi görüntüsü yok. |
-| D dosya adları | `data/finish_lag/{date}.jsonl` | `{date}_{sport}.jsonl`, `{date}_{sport}_summary.json` | Üç spor aynı anda yazıyor. |
+| D dosya adları | `research/finish_lag/{date}.jsonl` | `{date}_{sport}.jsonl`, `{date}_{sport}_summary.json` | Üç spor aynı anda yazıyor. |
 | D maç seçimi | Maç günü, 10–20 maç, 6 saat | Hafta içi; futbol ve tenis için **bitmeye yakın canlı maçlar** (futbol 2. yarı 32–43. dk, tenis son set), basketbol için akşam maçları | Süre kısıtı. `last_inprogress_seen` ve bitiş gözlendi; maçların başı gözlenmedi. |
 | D bitiş sonrası izleme | 6 saate kadar | Futbol son bitişten ~2 dk, tenis ~50 dk sonra durduruldu; özet `--summarize` ile kayıtlardan üretildi | Süre kısıtı. `score_changed_after_finished` bu pencereyle sınırlı. |
 | "Gecikme ölçümü" bölümü | Proje README'si | Bu belge | Talimat mevcut dosyaların değişmemesini de istiyor. |
-| `data/` dosyaları | PR'a dahil | `git add -f` | `data/` `.gitignore`'da; `.gitignore` değiştirilmedi. `data/status_samples/_index/` (8,5 MB tarama indeksi) PR'a eklenmedi; `scan` ile yeniden üretilebilir. |
+| Ham veri konumu | `data/status_samples/`, `data/finish_lag/` | `research/status_samples/`, `research/finish_lag/` | `data/` `.gitignore`'da ve çalışma zamanı verisine ayrılmış (`git add -A`/`git clean` tuzağı). `.gitignore` değiştirilmedi. Tarama indeksi (8,5 MB) `data/research_index/` altında, PR'da yok; `scan` ile yeniden üretilir. |
 
 ---
 
@@ -117,7 +117,7 @@ Görülen kodlar ve sporları (bir kod birden çok sporda görüldüyse descript
 
 ## Edge case tablosu
 
-Dosya yolları `data/status_samples/` altındadır. Kaynak: `data/status_samples/_cases_{sport}.json`.
+Dosya yolları `research/status_samples/` altındadır. Kaynak: `research/status_samples/_cases_{sport}.json`.
 **Canlı durumlar:** örnek toplama adımı canlı maçları sonradan çektiği için `B3_*`/`B4_*`/`T5_*`
 dosyalarının bazıları maç bitmiş haliyle kaydedildi; canlı durumun kanıtı anlık görüntü sırasında
 kaydedilen `A_inprogress-*` dosyalarıdır ve tabloda onlara referans verilir.
@@ -133,10 +133,10 @@ kaydedilen `A_inprogress-*` dosyalarıdır ve tabloda onlara referans verilir.
 | B5 | Canlı, son periyot | `football/A_inprogress-7-2nd-half__17018572.json` | `basketball/A_inprogress-16-4th-quarter__17203938.json` | `tennis/A_inprogress-10-3rd-set__17202152.json` |
 | B6 | Normal bitmiş | `football/B6_finished_regular__16837335.json`: `finished/100`, `winnerCode=1` | `basketball/B6_finished_regular__16484334.json` | `tennis/B6_finished_regular__17204710.json` |
 | B7 | Ertelenmiş | `football/B7_postponed__16539815.json`: `postponed/60`, skor `{}`, `time={}` | `basketball/B7_postponed__16623552.json` | **Bulunamadı** (2.212 tenis maçında `postponed` yok) |
-| B8 | İptal | `football/B8_canceled__16425949.json`: `canceled/70`, skor `{}` | `basketball/B8_canceled__17060394.json` (**`canceled/90 Abandoned`**, skor dolu) | `tennis/B8_canceled__17081854.json`: `canceled/70`, skor `{}` |
+| B8 | İptal | `football/B8_canceled__16425949.json`: `canceled/70`, skor `{}` | `basketball/A_canceled-70-canceled__17110363.json`: `canceled/70`; ayrıca `basketball/B8_canceled__17060394.json` = `canceled/90 Abandoned` (bkz. B9) | `tennis/B8_canceled__17081854.json`: `canceled/70`, skor `{}` |
 | B9 | Interrupted | `football/B9_interrupted__17148292.json`: `interrupted/80`, skor `0-0` | `basketball/B9_interrupted__17114923.json` | `tennis/B9_interrupted__17201545.json`: set skorları duruyor |
 | B9 | Suspended | **Bulunamadı** | **Bulunamadı** | `tennis/B9_suspended__17208583.json`: `suspended/81` |
-| B9 | Abandoned | **Bulunamadı** | `basketball/B9_abandoned__17100305.json`: **type `canceled`**, code 90, skor dolu (59-57, 4. çeyrek 0-0) | **Bulunamadı** |
+| B9 | Abandoned | **Bulunamadı** | İki örnek, ikisi de **`canceled/90 Abandoned`**: `basketball/B9_abandoned__17100305.json` (Illiabum – SC Marinhense): `current=0-0`, skorda yalnızca `period1=0-0`; `basketball/B8_canceled__17060394.json` (Colo Colo – Universidad Católica) 3 çeyrek oynandıktan sonra: `current=normaltime=59-57`, `period4=0-0` | **Bulunamadı** |
 | B10 | Ertelenip yeniden programlanmış (aynı id?) | **Bulunamadı.** Yöntem: taramada `postponed/canceled` görülen 30 maç 16:0x UTC'de yeniden çekildi; 30/30 aynı durum, aynı `startTimestamp` (`_recheck_football.json`) | **Bulunamadı**, aynı yöntem, 30/30 değişmedi | **Bulunamadı**, aynı yöntem, 30/30 değişmedi. Ancak bkz. B13/T6: askıya alınan maç aynı id ile ertesi güne taşındı |
 | B11 | Hükmen | **Bulunamadı** (`walkover/awarded/forfeit` içeren durum yok) | `basketball/B11_walkover_awarded__17102381.json`: `finished/91 Walkover`, `winnerCode=1`, skor `{}` | `tennis/B11_walkover_awarded__17058663.json`: `finished/91`, `winnerCode=1`, skor `{}` |
 | B12 | Listelenip sonra 404 | **Bulunamadı.** Yöntem: B10'daki 30 maç; 30/30 HTTP 200 | **Bulunamadı**, 30/30 HTTP 200 | **Bulunamadı**, 30/30 HTTP 200 |
@@ -224,7 +224,7 @@ Değerler yukarıdaki örnek dosyalardan.
    | 404 | `public, max-age=3600` |
 
 3. **`Age` başlığı hiç gelmedi** (4.386 gözlemin hiçbirinde). ETag ve Date var.
-4. **Aynı dakikada maç sayfası ve turnuva listesi** (`data/status_samples/_consistency/2026-09-29T134841+0000.json`):
+4. **Aynı dakikada maç sayfası ve turnuva listesi** (`research/status_samples/_consistency/2026-09-29T134841+0000.json`):
    21 canlı maçta (10 futbol, 10 tenis, 1 basketbol) status üçlüsü 21/21 aynı. Skor 1 maçta farklı:
    futbol 16461725, `/event` 1-8, liste 1-9 (istekler arası ~1 sn).
 5. **Token olmadan her istek 403**, önbellekli olması beklenen `/unique-tournament/17/seasons` dahil.
@@ -233,31 +233,53 @@ Değerler yukarıdaki örnek dosyalardan.
 
 ## Gecikme ölçümü
 
-Ham gözlemler: `data/finish_lag/2026-09-29_{sport}.jsonl`; özetler: `…_summary.json`.
-Birim saniye. `lag_*` tanımları talimattaki gibi.
+Ham gözlemler: `research/finish_lag/2026-09-29_{sport}.jsonl`; özetler: `…_summary.json`
+(`python scripts/measure_finish_lag.py --summarize <jsonl>` ile kayıtlardan yeniden üretilir). Birim saniye.
 
-**Çözünürlük sınırı:** Bu iki çalıştırmada her gözleme turun başlangıç zamanı yazıldı ve dört kaynak
-aynı turda sırayla (önce maç sayfaları, ~15–30 sn sonra listeler) sorgulandı. Bu yüzden:
-`lag_event`/`lag_live` tur aralığına eşit çıkıyor (gerçek gecikme 0 ile bu değer arasında) ve liste
-kaynakları maç sayfasından **bir tur önce** "finished" görünebiliyor (negatif değerler). Script artık
-her yanıtın geldiği anı (`fetched_at_utc`) kaydediyor; basketbol ölçümü bununla yapılıyor.
+**Geçişin gerçek anı (`transition_ts`):** ilk `finished` gözlemindeki `changes.changeTimestamp`. Son `inprogress`
+gözlemi ile ilk `finished` gözlemi arasında kalıyorsa `gecerli`, kalmıyorsa `belirsiz` sayılır ve o maç için
+geçişe göre gecikme hesaplanmaz. Tanımlar:
+
+| Alan | Tanım |
+|---|---|
+| `polling_lag` | `first_finished_seen − transition_ts`: bizim durumu ne kadar geç gördüğümüz (tur aralığına bağlı) |
+| `lag_live` | `dropped_from_live − transition_ts` |
+| `lag_season_list` | scraper'ın liste yolunda ilk `finished` − `transition_ts` |
+| `lag_scheduled` | turnuva `scheduled-events` listesinde ilk `finished` − `transition_ts` |
+| `lag_whistle` | `transition_ts − expected_ft` (yalnızca `time` bloğu kaydedilen basketbol ölçümünde) |
+| `lag_event` | `first_finished_seen − last_inprogress_seen` (tura bağlı; eski tanım) |
+
+**Futbol ve tenis kayıtlarındaki artefakt:** bu iki ölçümde her gözleme turun **başlangıç** zamanı yazıldı; dört
+kaynak aynı turda sırayla sorgulandı (önce maç sayfaları, ~15–30 sn sonra listeler). Sonuçları:
+(1) bazı maçlarda `change_ts` ilk `finished` gözleminden sonra görünüyor → `belirsiz` (futbol 3, tenis 2);
+(2) liste kaynaklarının zamanı, gerçekte sorgulandıkları andan 15–30 sn erken yazılı olduğu için geçişe göre
+**negatif** gecikmeler çıkıyor (ör. `lag_scheduled` medyanı). Bu negatif değerler listelerin maç sayfasından önce
+güncellendiği anlamına gelmez. Script artık her yanıtın geldiği anı (`fetched_at_utc`) ve `time` bloğunu kaydediyor;
+basketbol ölçümü bununla yapılıyor.
 
 | | Futbol (11 maç) | Tenis (12 maç) |
 |---|---|---|
 | Tam yaşam döngüsü (inprogress → finished) | 11 | 11 (1 maç durdurulduğunda 2. setteydi) |
-| Gerçek tur aralığı | 60 sn | 93–130 sn (3 süreç hız bütçesini paylaştı) |
-| `lag_event` medyan / maks | 60 / 81 | 93 / 130 |
-| `lag_live` medyan / maks | 60 / 81 | 94 / 186 |
-| `lag_season_list` medyan / maks | 0 / 60 (n=9) | −93 / 60 |
-| `lag_scheduled` medyan / maks | −60 / 0 | −93 / 0 |
+| `transition_state` | 8 geçerli, 3 belirsiz | 9 geçerli, 2 belirsiz, 1 bitmedi |
+| Tur aralığı | 60 sn | 93–130 sn (3 süreç hız bütçesini paylaştı) |
+| `polling_lag` medyan / maks (n) | 19 / 33 (8) | 48 / 77 (9) |
+| `lag_live` medyan / maks (n) | 19 / 33 (8) | 48 / 77 (9) |
+| `lag_season_list` medyan / maks (n) | 19 / 71 (6) | −33 / 96 (9) |
+| `lag_scheduled` medyan / maks (n) | −38,5 / 11 (8) | −45 / 3 (9) |
+| `lag_event` medyan / maks (n) | 60 / 81 (11) | 93 / 130 (11) |
+| `lag_whistle` | hesaplanamadı (`time` kaydedilmedi) | hesaplanamadı |
 | `score_changed_after_finished` | 0/11 | 0/11 |
 | `status_code_at_finish` | 100 ×11 | 100 ×11 |
 | `Age` başlığı | hiç | hiç |
 
-Futbolda 2 maç (17206702, 17206703) için `lag_season_list` yok: maç bilgisinde sezon olmadığı için
-scraper'ın liste yolu kurulamıyor; bu maçlar scraper'ın listelerinde de görünmez.
+Sonuç: futbolda 8, tenis'te 9 maçta SofaScore'un `finished` geçişi, bizim bir sonraki gözlemimizden 3–77 sn
+önceydi; bu süre tamamen tur aralığımızdan geliyor. Liste kaynaklarının maç sayfasının gerisinde kaldığına dair
+bu kayıtlarda kanıt yok (negatif değerler yukarıdaki artefakt); kesin liste gecikmesi basketbol ölçümünden gelecek.
 
-**Basketbol:** ölçüm sürüyor (açık iş).
+Futbolda 2 maç (17206702, 17206703) için `lag_season_list` yok: maç bilgisinde sezon olmadığı için scraper'ın
+liste yolu kurulamıyor; bu maçlar scraper'ın listelerinde de görünmez.
+
+**Basketbol:** ölçüm sürüyor (açık iş); `fetched_at_utc` ve `time` bloğu ile.
 
 ---
 
@@ -266,14 +288,16 @@ scraper'ın liste yolu kurulamıyor; bu maçlar scraper'ın listelerinde de gör
 - `inprogress/20 Started`: periyot bilgisi olmayan canlı durum; canlı futbol maçlarının 16/44 (13:43 UTC)
   ve 30/56'sında (15:02 UTC), tenis'te yalnızca Challenger/ITF maçlarında. Hangi kapsam seviyesinde
   görüldüğü açık soru.
-- Basketbolda `Abandoned` `canceled` türünde (code 90) ve yarım kalan skor dolu.
+- Basketbolda `Abandoned` `canceled` türünde (code 90); skor bir maçta 0-0 ve yalnızca `period1` (17100305), 3 çeyrek oynanmış maçta
+  yarım kalan skorla (17060394, 59-57) duruyor. Aynı durum, sonuçlandırmada farklı iki gerçeklik.
 - Basketbol uzatması `AET` (code 110) olarak geçiyor.
 - Futbol AP'de `current` penaltıları içeriyor, `display` içermiyor.
 - Futbol 16867839'un `startTimestamp`'i gözlemler arasında 1790688600 ve 1790688840 olarak görüldü; hangi
   kaynağın hangisini verdiği ayrıştırılmadı.
 - Scraper'ın liste yolu için iki farklı `s-maxage` (86400 ve 60) görüldü; gözlemlerde yol kaydedilmediği
   için hangisinin hangi yola ait olduğu bu veriden ayrılamıyor. `s-maxage=86400` görülmesine rağmen
-  liste, maç sayfasından geride kalmadı (medyan `lag_season_list` 0 / −93).
+  futbol/tenis kayıtlarında listenin maç sayfasının gerisinde kaldığına dair kanıt yok (bkz. Gecikme ölçümü,
+  artefakt notu); kesin değer basketbol ölçümünden gelecek.
 - Tenis programı ~2 gün ileriyi gösteriyor (03.10 sonrası boş).
 - 16 günlük pencerede ertelenmiş/iptal 90 maçın hiçbiri yeniden programlanmadı ya da 404 olmadı.
 - Tenis bye'ları event olarak hiç listelenmiyor olabilir.
@@ -286,11 +310,17 @@ scraper'ın liste yolu kurulamıyor; bu maçlar scraper'ın listelerinde de gör
 
 | Kalem | İstek | Süre | Kaynak |
 |---|---|---|---|
-| Keşif (scan, live-snapshot, headers, samples) | 2.296 | 3.653 sn | `data/status_samples/_requests.jsonl` |
-| B10/B12 yeniden kontrol + B13 örnekleri | 96 | — | `data/status_samples/_recheck_{sport}.json` |
+| Keşif (scan, live-snapshot, headers, samples) | 2.296 | 3.653 sn | `research/status_samples/_requests.jsonl` |
+| B10/B12 yeniden kontrol + B13 örnekleri | 96 | — | `research/status_samples/_recheck_{sport}.json` |
 | D futbol | 626 (son tur sayacı) | 13:42–14:14 UTC | `…_football.jsonl` |
 | D tenis | 2.203 (son tur sayacı) | 13:42–15:02 UTC | `…_tennis.jsonl` |
 | **Toplam (kayıtlı)** | **5.221** | | |
+
+**Gizli bilgi kontrolü:** commit'lenen dosyalarda (`research/`, `tests/fixtures/status/`, `docs/`) `set-cookie`,
+`authorization`, `cookie`, `sofa_captcha`, `x-captcha` ve JWT biçimli değer (`eyJ…`) arandı: eşleşme yok. Yanıt
+başlıklarından yalnızca izin listesindekiler (`cache-control`, `age`, `etag`, `date`, `expires`, `last-modified`;
+gelenler `cache-control`, `etag`, `date`) kaydediliyor; `_requests.jsonl` yalnızca sayaç içeriyor. Temizlenecek bir şey
+çıkmadı.
 
 Ek olarak kayda geçmeyen istekler: uç nokta keşfi, script kabul testleri ve iptal edilen ilk ölçüm
 denemeleri (tahmin yazılmadı). Hız sınırı: tüm süreçlerde toplam ≤ 1 istek/sn. Devre kesici tetiklenmedi.

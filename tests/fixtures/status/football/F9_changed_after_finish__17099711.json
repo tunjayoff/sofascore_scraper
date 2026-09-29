@@ -2,7 +2,7 @@
   "case_id": "F9_changed_after_finish",
   "event_id": 17099711,
   "fetched_at_utc": "2026-09-29T15:53:38+00:00",
-  "source_file": "data/status_samples/football/F9_changed_after_finish__17099711.json",
+  "source_file": "research/status_samples/football/F9_changed_after_finish__17099711.json",
   "status": {
     "code": 100,
     "description": "Ended",

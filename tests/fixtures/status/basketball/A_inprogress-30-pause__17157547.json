@@ -2,7 +2,7 @@
   "case_id": "A_inprogress-30-pause",
   "event_id": 17157547,
   "fetched_at_utc": "2026-09-29T15:34:14+00:00",
-  "source_file": "data/status_samples/basketball/A_inprogress-30-pause__17157547.json",
+  "source_file": "research/status_samples/basketball/A_inprogress-30-pause__17157547.json",
   "status": {
     "code": 30,
     "description": "Pause",

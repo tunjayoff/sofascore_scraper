@@ -2,7 +2,7 @@
   "case_id": "A_inprogress-14-2nd-quarter",
   "event_id": 17062025,
   "fetched_at_utc": "2026-09-29T15:51:39+00:00",
-  "source_file": "data/status_samples/basketball/A_inprogress-14-2nd-quarter__17062025.json",
+  "source_file": "research/status_samples/basketball/A_inprogress-14-2nd-quarter__17062025.json",
   "status": {
     "code": 14,
     "description": "2nd quarter",

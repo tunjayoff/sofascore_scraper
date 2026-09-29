@@ -2,7 +2,7 @@
   "case_id": "A_canceled-70-canceled",
   "event_id": 16994315,
   "fetched_at_utc": "2026-09-29T15:54:49+00:00",
-  "source_file": "data/status_samples/basketball/A_canceled-70-canceled__16994315.json",
+  "source_file": "research/status_samples/basketball/A_canceled-70-canceled__16994315.json",
   "status": {
     "code": 70,
     "description": "Canceled",

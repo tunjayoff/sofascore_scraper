@@ -2,7 +2,7 @@
   "case_id": "B1_future_7d",
   "event_id": 16611486,
   "fetched_at_utc": "2026-09-29T15:54:53+00:00",
-  "source_file": "data/status_samples/basketball/B1_future_7d__16611486.json",
+  "source_file": "research/status_samples/basketball/B1_future_7d__16611486.json",
   "status": {
     "code": 0,
     "description": "Not started",

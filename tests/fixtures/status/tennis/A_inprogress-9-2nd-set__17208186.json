@@ -2,7 +2,7 @@
   "case_id": "A_inprogress-9-2nd-set",
   "event_id": 17208186,
   "fetched_at_utc": "2026-09-29T13:45:13+00:00",
-  "source_file": "data/status_samples/tennis/A_inprogress-9-2nd-set__17208186.json",
+  "source_file": "research/status_samples/tennis/A_inprogress-9-2nd-set__17208186.json",
   "status": {
     "code": 9,
     "description": "2nd set",

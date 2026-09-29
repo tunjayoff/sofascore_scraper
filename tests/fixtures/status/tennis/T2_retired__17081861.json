@@ -2,7 +2,7 @@
   "case_id": "T2_retired",
   "event_id": 17081861,
   "fetched_at_utc": "2026-09-29T15:56:55+00:00",
-  "source_file": "data/status_samples/tennis/T2_retired__17081861.json",
+  "source_file": "research/status_samples/tennis/T2_retired__17081861.json",
   "status": {
     "code": 92,
     "description": "Retired",

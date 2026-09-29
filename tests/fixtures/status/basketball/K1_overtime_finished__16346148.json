@@ -2,7 +2,7 @@
   "case_id": "K1_overtime_finished",
   "event_id": 16346148,
   "fetched_at_utc": "2026-09-29T15:55:27+00:00",
-  "source_file": "data/status_samples/basketball/K1_overtime_finished__16346148.json",
+  "source_file": "research/status_samples/basketball/K1_overtime_finished__16346148.json",
   "status": {
     "code": 110,
     "description": "AET",

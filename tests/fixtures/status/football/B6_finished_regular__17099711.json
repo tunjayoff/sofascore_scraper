@@ -2,7 +2,7 @@
   "case_id": "B6_finished_regular",
   "event_id": 17099711,
   "fetched_at_utc": "2026-09-29T15:53:20+00:00",
-  "source_file": "data/status_samples/football/B6_finished_regular__17099711.json",
+  "source_file": "research/status_samples/football/B6_finished_regular__17099711.json",
   "status": {
     "code": 100,
     "description": "Ended",

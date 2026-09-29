@@ -2,7 +2,7 @@
   "case_id": "B5_live_last_period",
   "event_id": 17203938,
   "fetched_at_utc": "2026-09-29T15:55:03+00:00",
-  "source_file": "data/status_samples/basketball/B5_live_last_period__17203938.json",
+  "source_file": "research/status_samples/basketball/B5_live_last_period__17203938.json",
   "status": {
     "code": 100,
     "description": "Ended",

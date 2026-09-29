@@ -2,7 +2,7 @@
   "case_id": "B9_interrupted",
   "event_id": 17148292,
   "fetched_at_utc": "2026-09-29T15:53:31+00:00",
-  "source_file": "data/status_samples/football/B9_interrupted__17148292.json",
+  "source_file": "research/status_samples/football/B9_interrupted__17148292.json",
   "status": {
     "code": 80,
     "description": "Interrupted",

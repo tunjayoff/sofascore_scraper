@@ -2,7 +2,7 @@
   "case_id": "A_interrupted-80-interrupted",
   "event_id": 17114923,
   "fetched_at_utc": "2026-09-29T15:54:51+00:00",
-  "source_file": "data/status_samples/basketball/A_interrupted-80-interrupted__17114923.json",
+  "source_file": "research/status_samples/basketball/A_interrupted-80-interrupted__17114923.json",
   "status": {
     "code": 80,
     "description": "Interrupted",

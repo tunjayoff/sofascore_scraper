@@ -2,7 +2,7 @@
   "case_id": "A_finished-91-walkover",
   "event_id": 17058663,
   "fetched_at_utc": "2026-09-29T15:56:38+00:00",
-  "source_file": "data/status_samples/tennis/A_finished-91-walkover__17058663.json",
+  "source_file": "research/status_samples/tennis/A_finished-91-walkover__17058663.json",
   "status": {
     "code": 91,
     "description": "Walkover",

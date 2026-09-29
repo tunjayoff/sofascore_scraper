@@ -2,7 +2,7 @@
   "case_id": "B13_start_time_changed",
   "event_id": 17196038,
   "fetched_at_utc": "2026-09-29T16:02:22+00:00",
-  "source_file": "data/status_samples/tennis/B13_start_time_changed__17196038.json",
+  "source_file": "research/status_samples/tennis/B13_start_time_changed__17196038.json",
   "status": {
     "code": 8,
     "description": "1st set",

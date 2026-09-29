@@ -2,7 +2,7 @@
   "case_id": "B1_future_7d",
   "event_id": 13500881,
   "fetched_at_utc": "2026-09-29T15:53:02+00:00",
-  "source_file": "data/status_samples/football/B1_future_7d__13500881.json",
+  "source_file": "research/status_samples/football/B1_future_7d__13500881.json",
   "status": {
     "code": 0,
     "description": "Not started",

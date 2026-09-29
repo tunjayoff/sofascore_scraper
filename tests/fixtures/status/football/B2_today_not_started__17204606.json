@@ -2,7 +2,7 @@
   "case_id": "B2_today_not_started",
   "event_id": 17204606,
   "fetched_at_utc": "2026-09-29T15:53:04+00:00",
-  "source_file": "data/status_samples/football/B2_today_not_started__17204606.json",
+  "source_file": "research/status_samples/football/B2_today_not_started__17204606.json",
   "status": {
     "code": 0,
     "description": "Not started",

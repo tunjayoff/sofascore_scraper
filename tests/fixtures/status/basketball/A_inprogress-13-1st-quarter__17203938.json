@@ -2,7 +2,7 @@
   "case_id": "A_inprogress-13-1st-quarter",
   "event_id": 17203938,
   "fetched_at_utc": "2026-09-29T13:44:33+00:00",
-  "source_file": "data/status_samples/basketball/A_inprogress-13-1st-quarter__17203938.json",
+  "source_file": "research/status_samples/basketball/A_inprogress-13-1st-quarter__17203938.json",
   "status": {
     "code": 13,
     "description": "1st quarter",

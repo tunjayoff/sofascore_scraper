@@ -2,7 +2,7 @@
   "case_id": "B5_live_last_period",
   "event_id": 17207437,
   "fetched_at_utc": "2026-09-29T15:56:47+00:00",
-  "source_file": "data/status_samples/tennis/B5_live_last_period__17207437.json",
+  "source_file": "research/status_samples/tennis/B5_live_last_period__17207437.json",
   "status": {
     "code": 100,
     "description": "Ended",

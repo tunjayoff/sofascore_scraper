@@ -2,7 +2,7 @@
   "case_id": "K3_two_halves",
   "event_id": 16694075,
   "fetched_at_utc": "2026-09-29T15:55:31+00:00",
-  "source_file": "data/status_samples/basketball/K3_two_halves__16694075.json",
+  "source_file": "research/status_samples/basketball/K3_two_halves__16694075.json",
   "status": {
     "code": 100,
     "description": "Ended",

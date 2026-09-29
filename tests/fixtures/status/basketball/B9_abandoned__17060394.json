@@ -2,7 +2,7 @@
   "case_id": "B9_abandoned",
   "event_id": 17060394,
   "fetched_at_utc": "2026-09-29T15:55:21+00:00",
-  "source_file": "data/status_samples/basketball/B9_abandoned__17060394.json",
+  "source_file": "research/status_samples/basketball/B9_abandoned__17060394.json",
   "status": {
     "code": 90,
     "description": "Abandoned",

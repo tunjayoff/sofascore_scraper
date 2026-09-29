@@ -4,8 +4,8 @@
     "title": "Gelecek maç (7+ gün sonra)",
     "candidates": 86,
     "files": [
-      "data/status_samples/basketball/B1_future_7d__16561604.json",
-      "data/status_samples/basketball/B1_future_7d__16611486.json"
+      "research/status_samples/basketball/B1_future_7d__16561604.json",
+      "research/status_samples/basketball/B1_future_7d__16611486.json"
     ]
   },
   "basketball:B2_today_not_started": {
@@ -13,8 +13,8 @@
     "title": "Bugün, henüz başlamamış",
     "candidates": 131,
     "files": [
-      "data/status_samples/basketball/B2_today_not_started__16670564.json",
-      "data/status_samples/basketball/B2_today_not_started__16561585.json"
+      "research/status_samples/basketball/B2_today_not_started__16670564.json",
+      "research/status_samples/basketball/B2_today_not_started__16561585.json"
     ]
   },
   "basketball:B3_live_first_period": {
@@ -22,8 +22,8 @@
     "title": "Canlı, ilk periyot",
     "candidates": 13,
     "files": [
-      "data/status_samples/basketball/B3_live_first_period__17203938.json",
-      "data/status_samples/basketball/B3_live_first_period__17157547.json"
+      "research/status_samples/basketball/B3_live_first_period__17203938.json",
+      "research/status_samples/basketball/B3_live_first_period__17157547.json"
     ]
   },
   "basketball:B4_live_break": {
@@ -31,7 +31,7 @@
     "title": "Canlı, ara",
     "candidates": 3,
     "files": [
-      "data/status_samples/basketball/B4_live_break__17157547.json"
+      "research/status_samples/basketball/B4_live_break__17157547.json"
     ]
   },
   "basketball:B5_live_last_period": {
@@ -39,7 +39,7 @@
     "title": "Canlı, son periyot",
     "candidates": 1,
     "files": [
-      "data/status_samples/basketball/B5_live_last_period__17203938.json"
+      "research/status_samples/basketball/B5_live_last_period__17203938.json"
     ]
   },
   "basketball:B6_finished_regular": {
@@ -47,8 +47,8 @@
     "title": "Normal bitmiş",
     "candidates": 2627,
     "files": [
-      "data/status_samples/basketball/B6_finished_regular__17092269.json",
-      "data/status_samples/basketball/B6_finished_regular__16484334.json"
+      "research/status_samples/basketball/B6_finished_regular__17092269.json",
+      "research/status_samples/basketball/B6_finished_regular__16484334.json"
     ]
   },
   "basketball:B7_postponed": {
@@ -56,8 +56,8 @@
     "title": "Ertelenmiş",
     "candidates": 56,
     "files": [
-      "data/status_samples/basketball/B7_postponed__16623552.json",
-      "data/status_samples/basketball/B7_postponed__16732993.json"
+      "research/status_samples/basketball/B7_postponed__16623552.json",
+      "research/status_samples/basketball/B7_postponed__16732993.json"
     ]
   },
   "basketball:B8_canceled": {
@@ -65,8 +65,8 @@
     "title": "İptal",
     "candidates": 37,
     "files": [
-      "data/status_samples/basketball/B8_canceled__17100305.json",
-      "data/status_samples/basketball/B8_canceled__17060394.json"
+      "research/status_samples/basketball/B8_canceled__17100305.json",
+      "research/status_samples/basketball/B8_canceled__17060394.json"
     ]
   },
   "basketball:B9_interrupted": {
@@ -74,7 +74,7 @@
     "title": "Yarıda kalmış: interrupted",
     "candidates": 1,
     "files": [
-      "data/status_samples/basketball/B9_interrupted__17114923.json"
+      "research/status_samples/basketball/B9_interrupted__17114923.json"
     ]
   },
   "basketball:B9_suspended": {
@@ -87,8 +87,8 @@
     "title": "Yarıda kalmış: abandoned",
     "candidates": 4,
     "files": [
-      "data/status_samples/basketball/B9_abandoned__17100305.json",
-      "data/status_samples/basketball/B9_abandoned__17060394.json"
+      "research/status_samples/basketball/B9_abandoned__17100305.json",
+      "research/status_samples/basketball/B9_abandoned__17060394.json"
     ]
   },
   "basketball:B11_walkover_awarded": {
@@ -96,7 +96,7 @@
     "title": "Hükmen (walkover / awarded / forfeit)",
     "candidates": 3,
     "files": [
-      "data/status_samples/basketball/B11_walkover_awarded__17102381.json"
+      "research/status_samples/basketball/B11_walkover_awarded__17102381.json"
     ]
   },
   "basketball:K1_overtime_finished": {
@@ -104,8 +104,8 @@
     "title": "Uzatmalı bitmiş",
     "candidates": 63,
     "files": [
-      "data/status_samples/basketball/K1_overtime_finished__17066086.json",
-      "data/status_samples/basketball/K1_overtime_finished__16346148.json"
+      "research/status_samples/basketball/K1_overtime_finished__17066086.json",
+      "research/status_samples/basketball/K1_overtime_finished__16346148.json"
     ]
   },
   "basketball:K2_live_overtime": {
@@ -118,8 +118,8 @@
     "title": "İki yarı formatı",
     "candidates": 4,
     "files": [
-      "data/status_samples/basketball/K3_two_halves__16784560.json",
-      "data/status_samples/basketball/K3_two_halves__16694075.json"
+      "research/status_samples/basketball/K3_two_halves__16784560.json",
+      "research/status_samples/basketball/K3_two_halves__16694075.json"
     ]
   },
   "basketball:K3_four_quarters": {
@@ -127,8 +127,8 @@
     "title": "Dört çeyrek formatı",
     "candidates": 1981,
     "files": [
-      "data/status_samples/basketball/K3_four_quarters__17092269.json",
-      "data/status_samples/basketball/K3_four_quarters__16484334.json"
+      "research/status_samples/basketball/K3_four_quarters__17092269.json",
+      "research/status_samples/basketball/K3_four_quarters__16484334.json"
     ]
   },
   "basketball:K4_halftime": {
@@ -141,7 +141,7 @@
     "title": "Çeyrek arası",
     "candidates": 3,
     "files": [
-      "data/status_samples/basketball/K4_quarter_break__17157547.json"
+      "research/status_samples/basketball/K4_quarter_break__17157547.json"
     ]
   },
   "basketball:K5_forfeit": {
@@ -149,7 +149,7 @@
     "title": "Hükmen",
     "candidates": 3,
     "files": [
-      "data/status_samples/basketball/K5_forfeit__17102381.json"
+      "research/status_samples/basketball/K5_forfeit__17102381.json"
     ]
   }
 }

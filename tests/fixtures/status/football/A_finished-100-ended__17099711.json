@@ -2,7 +2,7 @@
   "case_id": "A_finished-100-ended",
   "event_id": 17099711,
   "fetched_at_utc": "2026-09-29T15:52:44+00:00",
-  "source_file": "data/status_samples/football/A_finished-100-ended__17099711.json",
+  "source_file": "research/status_samples/football/A_finished-100-ended__17099711.json",
   "status": {
     "code": 100,
     "description": "Ended",

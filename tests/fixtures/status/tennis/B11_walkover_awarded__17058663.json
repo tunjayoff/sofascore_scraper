@@ -2,7 +2,7 @@
   "case_id": "B11_walkover_awarded",
   "event_id": 17058663,
   "fetched_at_utc": "2026-09-29T15:56:52+00:00",
-  "source_file": "data/status_samples/tennis/B11_walkover_awarded__17058663.json",
+  "source_file": "research/status_samples/tennis/B11_walkover_awarded__17058663.json",
   "status": {
     "code": 91,
     "description": "Walkover",

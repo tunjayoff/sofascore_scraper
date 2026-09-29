@@ -2,7 +2,7 @@
   "case_id": "A_inprogress-20-started",
   "event_id": 17202289,
   "fetched_at_utc": "2026-09-29T13:44:20+00:00",
-  "source_file": "data/status_samples/football/A_inprogress-20-started__17202289.json",
+  "source_file": "research/status_samples/football/A_inprogress-20-started__17202289.json",
   "status": {
     "code": 20,
     "description": "Started",

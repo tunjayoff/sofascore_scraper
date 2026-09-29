@@ -2,7 +2,7 @@
   "case_id": "B8_canceled",
   "event_id": 17100305,
   "fetched_at_utc": "2026-09-29T15:55:13+00:00",
-  "source_file": "data/status_samples/basketball/B8_canceled__17100305.json",
+  "source_file": "research/status_samples/basketball/B8_canceled__17100305.json",
   "status": {
     "code": 90,
     "description": "Abandoned",

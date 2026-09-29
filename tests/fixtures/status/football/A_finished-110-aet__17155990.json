@@ -2,7 +2,7 @@
   "case_id": "A_finished-110-aet",
   "event_id": 17155990,
   "fetched_at_utc": "2026-09-29T15:52:54+00:00",
-  "source_file": "data/status_samples/football/A_finished-110-aet__17155990.json",
+  "source_file": "research/status_samples/football/A_finished-110-aet__17155990.json",
   "status": {
     "code": 110,
     "description": "AET",

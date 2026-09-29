@@ -1,12 +1,12 @@
 type,code,description,count,first_example_event_id,sample_file
-finished,100,Ended,3092,17204710,data/status_samples/tennis/A_finished-100-ended__17204710.json
-notstarted,0,Not started,507,17204702,data/status_samples/tennis/A_notstarted-0-not-started__17204702.json
-canceled,70,Canceled,97,17084262,data/status_samples/tennis/A_canceled-70-canceled__17084262.json
-finished,92,Retired,94,17083330,data/status_samples/tennis/A_finished-92-retired__17083330.json
-inprogress,9,2nd set,72,17208186,data/status_samples/tennis/A_inprogress-9-2nd-set__17208186.json
-inprogress,8,1st set,46,17196662,data/status_samples/tennis/A_inprogress-8-1st-set__17196662.json
-finished,91,Walkover,40,17058663,data/status_samples/tennis/A_finished-91-walkover__17058663.json
-inprogress,10,3rd set,18,17202152,data/status_samples/tennis/A_inprogress-10-3rd-set__17202152.json
-interrupted,80,Interrupted,5,17201545,data/status_samples/tennis/A_interrupted-80-interrupted__17201545.json
-inprogress,20,Started,2,17209431,data/status_samples/tennis/A_inprogress-20-started__17209431.json
-suspended,81,Suspended,1,17208583,data/status_samples/tennis/A_suspended-81-suspended__17208583.json
+finished,100,Ended,3092,17204710,research/status_samples/tennis/A_finished-100-ended__17204710.json
+notstarted,0,Not started,507,17204702,research/status_samples/tennis/A_notstarted-0-not-started__17204702.json
+canceled,70,Canceled,97,17084262,research/status_samples/tennis/A_canceled-70-canceled__17084262.json
+finished,92,Retired,94,17083330,research/status_samples/tennis/A_finished-92-retired__17083330.json
+inprogress,9,2nd set,72,17208186,research/status_samples/tennis/A_inprogress-9-2nd-set__17208186.json
+inprogress,8,1st set,46,17196662,research/status_samples/tennis/A_inprogress-8-1st-set__17196662.json
+finished,91,Walkover,40,17058663,research/status_samples/tennis/A_finished-91-walkover__17058663.json
+inprogress,10,3rd set,18,17202152,research/status_samples/tennis/A_inprogress-10-3rd-set__17202152.json
+interrupted,80,Interrupted,5,17201545,research/status_samples/tennis/A_interrupted-80-interrupted__17201545.json
+inprogress,20,Started,2,17209431,research/status_samples/tennis/A_inprogress-20-started__17209431.json
+suspended,81,Suspended,1,17208583,research/status_samples/tennis/A_suspended-81-suspended__17208583.json

@@ -2,7 +2,7 @@
   "case_id": "A_inprogress-20-started",
   "event_id": 17209431,
   "fetched_at_utc": "2026-09-29T13:45:29+00:00",
-  "source_file": "data/status_samples/tennis/A_inprogress-20-started__17209431.json",
+  "source_file": "research/status_samples/tennis/A_inprogress-20-started__17209431.json",
   "status": {
     "code": 8,
     "description": "1st set",

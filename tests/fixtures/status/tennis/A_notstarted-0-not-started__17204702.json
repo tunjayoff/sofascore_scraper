@@ -2,7 +2,7 @@
   "case_id": "A_notstarted-0-not-started",
   "event_id": 17204702,
   "fetched_at_utc": "2026-09-29T13:38:34+00:00",
-  "source_file": "data/status_samples/tennis/A_notstarted-0-not-started__17204702.json",
+  "source_file": "research/status_samples/tennis/A_notstarted-0-not-started__17204702.json",
   "status": {
     "code": 0,
     "description": "Not started",

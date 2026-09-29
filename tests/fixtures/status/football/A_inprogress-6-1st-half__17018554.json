@@ -2,7 +2,7 @@
   "case_id": "A_inprogress-6-1st-half",
   "event_id": 17018554,
   "fetched_at_utc": "2026-09-29T13:43:58+00:00",
-  "source_file": "data/status_samples/football/A_inprogress-6-1st-half__17018554.json",
+  "source_file": "research/status_samples/football/A_inprogress-6-1st-half__17018554.json",
   "status": {
     "code": 6,
     "description": "1st half",

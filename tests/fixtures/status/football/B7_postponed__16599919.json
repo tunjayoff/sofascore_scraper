@@ -2,7 +2,7 @@
   "case_id": "B7_postponed",
   "event_id": 16599919,
   "fetched_at_utc": "2026-09-29T15:53:26+00:00",
-  "source_file": "data/status_samples/football/B7_postponed__16599919.json",
+  "source_file": "research/status_samples/football/B7_postponed__16599919.json",
   "status": {
     "code": 60,
     "description": "Postponed",

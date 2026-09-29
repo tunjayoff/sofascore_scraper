@@ -2,7 +2,7 @@
   "case_id": "T9_challenger_itf",
   "event_id": 17196662,
   "fetched_at_utc": "2026-09-29T15:57:18+00:00",
-  "source_file": "data/status_samples/tennis/T9_challenger_itf__17196662.json",
+  "source_file": "research/status_samples/tennis/T9_challenger_itf__17196662.json",
   "status": {
     "code": 100,
     "description": "Ended",

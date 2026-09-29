@@ -2,7 +2,7 @@
   "case_id": "A_finished-110-aet",
   "event_id": 16346148,
   "fetched_at_utc": "2026-09-29T15:54:44+00:00",
-  "source_file": "data/status_samples/basketball/A_finished-110-aet__16346148.json",
+  "source_file": "research/status_samples/basketball/A_finished-110-aet__16346148.json",
   "status": {
     "code": 110,
     "description": "AET",

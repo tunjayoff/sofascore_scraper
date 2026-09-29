@@ -2,7 +2,7 @@
   "case_id": "T1_finished",
   "event_id": 17206241,
   "fetched_at_utc": "2026-09-29T13:38:57+00:00",
-  "source_file": "data/status_samples/tennis/T1_finished__17206241.json",
+  "source_file": "research/status_samples/tennis/T1_finished__17206241.json",
   "status": {
     "code": 100,
     "description": "Ended",

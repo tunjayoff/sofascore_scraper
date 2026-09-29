@@ -2,7 +2,7 @@
   "case_id": "A_canceled-70-canceled",
   "event_id": 17084262,
   "fetched_at_utc": "2026-09-29T15:56:34+00:00",
-  "source_file": "data/status_samples/tennis/A_canceled-70-canceled__17084262.json",
+  "source_file": "research/status_samples/tennis/A_canceled-70-canceled__17084262.json",
   "status": {
     "code": 70,
     "description": "Canceled",

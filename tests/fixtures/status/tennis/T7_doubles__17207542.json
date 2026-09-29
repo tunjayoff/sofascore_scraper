@@ -2,7 +2,7 @@
   "case_id": "T7_doubles",
   "event_id": 17207542,
   "fetched_at_utc": "2026-09-29T15:57:10+00:00",
-  "source_file": "data/status_samples/tennis/T7_doubles__17207542.json",
+  "source_file": "research/status_samples/tennis/T7_doubles__17207542.json",
   "status": {
     "code": 100,
     "description": "Ended",

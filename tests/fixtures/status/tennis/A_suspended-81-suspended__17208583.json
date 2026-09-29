@@ -2,7 +2,7 @@
   "case_id": "A_suspended-81-suspended",
   "event_id": 17208583,
   "fetched_at_utc": "2026-09-29T15:56:41+00:00",
-  "source_file": "data/status_samples/tennis/A_suspended-81-suspended__17208583.json",
+  "source_file": "research/status_samples/tennis/A_suspended-81-suspended__17208583.json",
   "status": {
     "code": 81,
     "description": "Suspended",

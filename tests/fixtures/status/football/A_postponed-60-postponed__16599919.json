@@ -2,7 +2,7 @@
   "case_id": "A_postponed-60-postponed",
   "event_id": 16599919,
   "fetched_at_utc": "2026-09-29T15:52:50+00:00",
-  "source_file": "data/status_samples/football/A_postponed-60-postponed__16599919.json",
+  "source_file": "research/status_samples/football/A_postponed-60-postponed__16599919.json",
   "status": {
     "code": 60,
     "description": "Postponed",

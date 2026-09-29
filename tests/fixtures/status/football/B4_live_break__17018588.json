@@ -2,7 +2,7 @@
   "case_id": "B4_live_break",
   "event_id": 17018588,
   "fetched_at_utc": "2026-09-29T15:53:12+00:00",
-  "source_file": "data/status_samples/football/B4_live_break__17018588.json",
+  "source_file": "research/status_samples/football/B4_live_break__17018588.json",
   "status": {
     "code": 7,
     "description": "2nd half",

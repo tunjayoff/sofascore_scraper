@@ -2,7 +2,7 @@
   "case_id": "F6_cup_draw_aggregate",
   "event_id": 16951514,
   "fetched_at_utc": "2026-09-29T15:53:37+00:00",
-  "source_file": "data/status_samples/football/F6_cup_draw_aggregate__16951514.json",
+  "source_file": "research/status_samples/football/F6_cup_draw_aggregate__16951514.json",
   "status": {
     "code": 100,
     "description": "Ended",

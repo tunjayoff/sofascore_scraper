@@ -2,7 +2,7 @@
   "case_id": "K4_quarter_break",
   "event_id": 17157547,
   "fetched_at_utc": "2026-09-29T15:55:34+00:00",
-  "source_file": "data/status_samples/basketball/K4_quarter_break__17157547.json",
+  "source_file": "research/status_samples/basketball/K4_quarter_break__17157547.json",
   "status": {
     "code": 15,
     "description": "3rd quarter",

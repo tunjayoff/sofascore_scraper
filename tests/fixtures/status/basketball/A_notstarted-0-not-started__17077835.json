@@ -2,7 +2,7 @@
   "case_id": "A_notstarted-0-not-started",
   "event_id": 17077835,
   "fetched_at_utc": "2026-09-29T15:54:43+00:00",
-  "source_file": "data/status_samples/basketball/A_notstarted-0-not-started__17077835.json",
+  "source_file": "research/status_samples/basketball/A_notstarted-0-not-started__17077835.json",
   "status": {
     "code": 0,
     "description": "Not started",

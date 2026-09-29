@@ -4,8 +4,8 @@
     "title": "Gelecek maç (7+ gün sonra)",
     "candidates": 379,
     "files": [
-      "data/status_samples/football/B1_future_7d__17211681.json",
-      "data/status_samples/football/B1_future_7d__13500881.json"
+      "research/status_samples/football/B1_future_7d__17211681.json",
+      "research/status_samples/football/B1_future_7d__13500881.json"
     ]
   },
   "football:B2_today_not_started": {
@@ -13,8 +13,8 @@
     "title": "Bugün, henüz başlamamış",
     "candidates": 82,
     "files": [
-      "data/status_samples/football/B2_today_not_started__17204606.json",
-      "data/status_samples/football/B2_today_not_started__17184999.json"
+      "research/status_samples/football/B2_today_not_started__17204606.json",
+      "research/status_samples/football/B2_today_not_started__17184999.json"
     ]
   },
   "football:B3_live_first_period": {
@@ -22,8 +22,8 @@
     "title": "Canlı, ilk periyot",
     "candidates": 39,
     "files": [
-      "data/status_samples/football/B3_live_first_period__17018554.json",
-      "data/status_samples/football/B3_live_first_period__17185003.json"
+      "research/status_samples/football/B3_live_first_period__17018554.json",
+      "research/status_samples/football/B3_live_first_period__17185003.json"
     ]
   },
   "football:B4_live_break": {
@@ -31,8 +31,8 @@
     "title": "Canlı, ara",
     "candidates": 17,
     "files": [
-      "data/status_samples/football/B4_live_break__17018588.json",
-      "data/status_samples/football/B4_live_break__17184989.json"
+      "research/status_samples/football/B4_live_break__17018588.json",
+      "research/status_samples/football/B4_live_break__17184989.json"
     ]
   },
   "football:B5_live_last_period": {
@@ -40,8 +40,8 @@
     "title": "Canlı, son periyot",
     "candidates": 50,
     "files": [
-      "data/status_samples/football/B5_live_last_period__17018572.json",
-      "data/status_samples/football/B5_live_last_period__17184988.json"
+      "research/status_samples/football/B5_live_last_period__17018572.json",
+      "research/status_samples/football/B5_live_last_period__17184988.json"
     ]
   },
   "football:B6_finished_regular": {
@@ -49,8 +49,8 @@
     "title": "Normal bitmiş",
     "candidates": 2208,
     "files": [
-      "data/status_samples/football/B6_finished_regular__17099711.json",
-      "data/status_samples/football/B6_finished_regular__16837335.json"
+      "research/status_samples/football/B6_finished_regular__17099711.json",
+      "research/status_samples/football/B6_finished_regular__16837335.json"
     ]
   },
   "football:B7_postponed": {
@@ -58,8 +58,8 @@
     "title": "Ertelenmiş",
     "candidates": 52,
     "files": [
-      "data/status_samples/football/B7_postponed__16539815.json",
-      "data/status_samples/football/B7_postponed__16599919.json"
+      "research/status_samples/football/B7_postponed__16539815.json",
+      "research/status_samples/football/B7_postponed__16599919.json"
     ]
   },
   "football:B8_canceled": {
@@ -67,8 +67,8 @@
     "title": "İptal",
     "candidates": 38,
     "files": [
-      "data/status_samples/football/B8_canceled__16741834.json",
-      "data/status_samples/football/B8_canceled__16425949.json"
+      "research/status_samples/football/B8_canceled__16741834.json",
+      "research/status_samples/football/B8_canceled__16425949.json"
     ]
   },
   "football:B9_interrupted": {
@@ -76,7 +76,7 @@
     "title": "Yarıda kalmış: interrupted",
     "candidates": 2,
     "files": [
-      "data/status_samples/football/B9_interrupted__17148292.json"
+      "research/status_samples/football/B9_interrupted__17148292.json"
     ]
   },
   "football:B9_suspended": {
@@ -99,8 +99,8 @@
     "title": "Uzatmada bitmiş",
     "candidates": 4,
     "files": [
-      "data/status_samples/football/F1_aet__17148332.json",
-      "data/status_samples/football/F1_aet__17155990.json"
+      "research/status_samples/football/F1_aet__17148332.json",
+      "research/status_samples/football/F1_aet__17155990.json"
     ]
   },
   "football:F2_penalties": {
@@ -108,8 +108,8 @@
     "title": "Penaltılarla bitmiş",
     "candidates": 59,
     "files": [
-      "data/status_samples/football/F2_penalties__17090707.json",
-      "data/status_samples/football/F2_penalties__16950622.json"
+      "research/status_samples/football/F2_penalties__17090707.json",
+      "research/status_samples/football/F2_penalties__16950622.json"
     ]
   },
   "football:F3_live_extra_time": {
@@ -132,8 +132,8 @@
     "title": "Kupa: 90 dk berabere, toplamla bitmiş",
     "candidates": 6,
     "files": [
-      "data/status_samples/football/F6_cup_draw_aggregate__16872361.json",
-      "data/status_samples/football/F6_cup_draw_aggregate__16951514.json"
+      "research/status_samples/football/F6_cup_draw_aggregate__16872361.json",
+      "research/status_samples/football/F6_cup_draw_aggregate__16951514.json"
     ]
   },
   "football:F7_will_continue": {
@@ -151,8 +151,8 @@
     "title": "Bitiş sonrası değişiklik",
     "candidates": 430,
     "files": [
-      "data/status_samples/football/F9_changed_after_finish__17099711.json",
-      "data/status_samples/football/F9_changed_after_finish__16837335.json"
+      "research/status_samples/football/F9_changed_after_finish__17099711.json",
+      "research/status_samples/football/F9_changed_after_finish__16837335.json"
     ]
   }
 }

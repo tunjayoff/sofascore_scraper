@@ -2,7 +2,7 @@
   "case_id": "F2_penalties",
   "event_id": 16950622,
   "fetched_at_utc": "2026-09-29T15:53:35+00:00",
-  "source_file": "data/status_samples/football/F2_penalties__16950622.json",
+  "source_file": "research/status_samples/football/F2_penalties__16950622.json",
   "status": {
     "code": 120,
     "description": "AP",

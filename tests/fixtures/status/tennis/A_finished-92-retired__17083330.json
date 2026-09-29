@@ -2,7 +2,7 @@
   "case_id": "A_finished-92-retired",
   "event_id": 17083330,
   "fetched_at_utc": "2026-09-29T15:56:36+00:00",
-  "source_file": "data/status_samples/tennis/A_finished-92-retired__17083330.json",
+  "source_file": "research/status_samples/tennis/A_finished-92-retired__17083330.json",
   "status": {
     "code": 92,
     "description": "Retired",

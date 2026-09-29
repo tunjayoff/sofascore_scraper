@@ -9,8 +9,8 @@
     "title": "Bugün, henüz başlamamış",
     "candidates": 31,
     "files": [
-      "data/status_samples/tennis/B2_today_not_started__17211226.json",
-      "data/status_samples/tennis/B2_today_not_started__17197568.json"
+      "research/status_samples/tennis/B2_today_not_started__17211226.json",
+      "research/status_samples/tennis/B2_today_not_started__17197568.json"
     ]
   },
   "tennis:B3_live_first_period": {
@@ -18,8 +18,8 @@
     "title": "Canlı, ilk periyot",
     "candidates": 46,
     "files": [
-      "data/status_samples/tennis/B3_live_first_period__17196662.json",
-      "data/status_samples/tennis/B3_live_first_period__17194803.json"
+      "research/status_samples/tennis/B3_live_first_period__17196662.json",
+      "research/status_samples/tennis/B3_live_first_period__17194803.json"
     ]
   },
   "tennis:B4_live_break": {
@@ -32,8 +32,8 @@
     "title": "Canlı, son periyot",
     "candidates": 18,
     "files": [
-      "data/status_samples/tennis/B5_live_last_period__17202152.json",
-      "data/status_samples/tennis/B5_live_last_period__17207437.json"
+      "research/status_samples/tennis/B5_live_last_period__17202152.json",
+      "research/status_samples/tennis/B5_live_last_period__17207437.json"
     ]
   },
   "tennis:B6_finished_regular": {
@@ -41,8 +41,8 @@
     "title": "Normal bitmiş",
     "candidates": 3092,
     "files": [
-      "data/status_samples/tennis/B6_finished_regular__17204710.json",
-      "data/status_samples/tennis/B6_finished_regular__17206241.json"
+      "research/status_samples/tennis/B6_finished_regular__17204710.json",
+      "research/status_samples/tennis/B6_finished_regular__17206241.json"
     ]
   },
   "tennis:B7_postponed": {
@@ -55,8 +55,8 @@
     "title": "İptal",
     "candidates": 97,
     "files": [
-      "data/status_samples/tennis/B8_canceled__17084262.json",
-      "data/status_samples/tennis/B8_canceled__17081854.json"
+      "research/status_samples/tennis/B8_canceled__17084262.json",
+      "research/status_samples/tennis/B8_canceled__17081854.json"
     ]
   },
   "tennis:B9_interrupted": {
@@ -64,7 +64,7 @@
     "title": "Yarıda kalmış: interrupted",
     "candidates": 5,
     "files": [
-      "data/status_samples/tennis/B9_interrupted__17201545.json"
+      "research/status_samples/tennis/B9_interrupted__17201545.json"
     ]
   },
   "tennis:B9_suspended": {
@@ -72,7 +72,7 @@
     "title": "Yarıda kalmış: suspended",
     "candidates": 1,
     "files": [
-      "data/status_samples/tennis/B9_suspended__17208583.json"
+      "research/status_samples/tennis/B9_suspended__17208583.json"
     ]
   },
   "tennis:B9_abandoned": {
@@ -85,8 +85,8 @@
     "title": "Hükmen (walkover / awarded / forfeit)",
     "candidates": 40,
     "files": [
-      "data/status_samples/tennis/B11_walkover_awarded__17058663.json",
-      "data/status_samples/tennis/B11_walkover_awarded__17088252.json"
+      "research/status_samples/tennis/B11_walkover_awarded__17058663.json",
+      "research/status_samples/tennis/B11_walkover_awarded__17088252.json"
     ]
   },
   "tennis:T1_finished": {
@@ -94,8 +94,8 @@
     "title": "Normal bitmiş",
     "candidates": 3092,
     "files": [
-      "data/status_samples/tennis/T1_finished__17204710.json",
-      "data/status_samples/tennis/T1_finished__17206241.json"
+      "research/status_samples/tennis/T1_finished__17204710.json",
+      "research/status_samples/tennis/T1_finished__17206241.json"
     ]
   },
   "tennis:T2_retired": {
@@ -103,8 +103,8 @@
     "title": "Retired",
     "candidates": 94,
     "files": [
-      "data/status_samples/tennis/T2_retired__17083330.json",
-      "data/status_samples/tennis/T2_retired__17081861.json"
+      "research/status_samples/tennis/T2_retired__17083330.json",
+      "research/status_samples/tennis/T2_retired__17081861.json"
     ]
   },
   "tennis:T3_walkover": {
@@ -112,8 +112,8 @@
     "title": "Walkover",
     "candidates": 40,
     "files": [
-      "data/status_samples/tennis/T3_walkover__17058663.json",
-      "data/status_samples/tennis/T3_walkover__17088252.json"
+      "research/status_samples/tennis/T3_walkover__17058663.json",
+      "research/status_samples/tennis/T3_walkover__17088252.json"
     ]
   },
   "tennis:T4_defaulted": {
@@ -126,8 +126,8 @@
     "title": "Canlı tie-break",
     "candidates": 14,
     "files": [
-      "data/status_samples/tennis/T5_live_tiebreak__17202156.json",
-      "data/status_samples/tennis/T5_live_tiebreak__17201991.json"
+      "research/status_samples/tennis/T5_live_tiebreak__17202156.json",
+      "research/status_samples/tennis/T5_live_tiebreak__17201991.json"
     ]
   },
   "tennis:T6_suspended": {
@@ -135,8 +135,8 @@
     "title": "Ertesi güne kalmış / askıya alınmış",
     "candidates": 6,
     "files": [
-      "data/status_samples/tennis/T6_suspended__17201545.json",
-      "data/status_samples/tennis/T6_suspended__17208583.json"
+      "research/status_samples/tennis/T6_suspended__17201545.json",
+      "research/status_samples/tennis/T6_suspended__17208583.json"
     ]
   },
   "tennis:T7_doubles": {
@@ -144,8 +144,8 @@
     "title": "Çiftler",
     "candidates": 879,
     "files": [
-      "data/status_samples/tennis/T7_doubles__17208585.json",
-      "data/status_samples/tennis/T7_doubles__17207542.json"
+      "research/status_samples/tennis/T7_doubles__17208585.json",
+      "research/status_samples/tennis/T7_doubles__17207542.json"
     ]
   },
   "tennis:T8_match_tiebreak": {
@@ -153,8 +153,8 @@
     "title": "Maç tie-break (10 puan)",
     "candidates": 290,
     "files": [
-      "data/status_samples/tennis/T8_match_tiebreak__17078471.json",
-      "data/status_samples/tennis/T8_match_tiebreak__17079873.json"
+      "research/status_samples/tennis/T8_match_tiebreak__17078471.json",
+      "research/status_samples/tennis/T8_match_tiebreak__17079873.json"
     ]
   },
   "tennis:T9_challenger_itf": {
@@ -162,8 +162,8 @@
     "title": "Challenger / ITF",
     "candidates": 2305,
     "files": [
-      "data/status_samples/tennis/T9_challenger_itf__17208186.json",
-      "data/status_samples/tennis/T9_challenger_itf__17196662.json"
+      "research/status_samples/tennis/T9_challenger_itf__17208186.json",
+      "research/status_samples/tennis/T9_challenger_itf__17196662.json"
     ]
   },
   "tennis:T10_bye": {

@@ -1,12 +1,12 @@
 type,code,description,count,first_example_event_id,sample_file
-finished,100,Ended,2208,17099711,data/status_samples/football/A_finished-100-ended__17099711.json
-notstarted,0,Not started,1765,17184998,data/status_samples/football/A_notstarted-0-not-started__17184998.json
-inprogress,20,Started,92,16982821,data/status_samples/football/A_inprogress-20-started__16982821.json
-finished,120,AP,59,17090707,data/status_samples/football/A_finished-120-ap__17090707.json
-postponed,60,Postponed,52,16539815,data/status_samples/football/A_postponed-60-postponed__16539815.json
-inprogress,7,2nd half,50,17018572,data/status_samples/football/A_inprogress-7-2nd-half__17018572.json
-inprogress,6,1st half,39,17018554,data/status_samples/football/A_inprogress-6-1st-half__17018554.json
-canceled,70,Canceled,38,16741834,data/status_samples/football/A_canceled-70-canceled__16741834.json
-inprogress,31,Halftime,17,17018588,data/status_samples/football/A_inprogress-31-halftime__17018588.json
-finished,110,AET,4,17148332,data/status_samples/football/A_finished-110-aet__17148332.json
-interrupted,80,Interrupted,2,17148292,data/status_samples/football/A_interrupted-80-interrupted__17148292.json
+finished,100,Ended,2208,17099711,research/status_samples/football/A_finished-100-ended__17099711.json
+notstarted,0,Not started,1765,17184998,research/status_samples/football/A_notstarted-0-not-started__17184998.json
+inprogress,20,Started,92,16982821,research/status_samples/football/A_inprogress-20-started__16982821.json
+finished,120,AP,59,17090707,research/status_samples/football/A_finished-120-ap__17090707.json
+postponed,60,Postponed,52,16539815,research/status_samples/football/A_postponed-60-postponed__16539815.json
+inprogress,7,2nd half,50,17018572,research/status_samples/football/A_inprogress-7-2nd-half__17018572.json
+inprogress,6,1st half,39,17018554,research/status_samples/football/A_inprogress-6-1st-half__17018554.json
+canceled,70,Canceled,38,16741834,research/status_samples/football/A_canceled-70-canceled__16741834.json
+inprogress,31,Halftime,17,17018588,research/status_samples/football/A_inprogress-31-halftime__17018588.json
+finished,110,AET,4,17148332,research/status_samples/football/A_finished-110-aet__17148332.json
+interrupted,80,Interrupted,2,17148292,research/status_samples/football/A_interrupted-80-interrupted__17148292.json

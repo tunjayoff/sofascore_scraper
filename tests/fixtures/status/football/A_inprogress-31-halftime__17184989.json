@@ -2,7 +2,7 @@
   "case_id": "A_inprogress-31-halftime",
   "event_id": 17184989,
   "fetched_at_utc": "2026-09-29T15:02:53+00:00",
-  "source_file": "data/status_samples/football/A_inprogress-31-halftime__17184989.json",
+  "source_file": "research/status_samples/football/A_inprogress-31-halftime__17184989.json",
   "status": {
     "code": 31,
     "description": "Halftime",

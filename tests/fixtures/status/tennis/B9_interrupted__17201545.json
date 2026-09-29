@@ -2,7 +2,7 @@
   "case_id": "B9_interrupted",
   "event_id": 17201545,
   "fetched_at_utc": "2026-09-29T15:56:50+00:00",
-  "source_file": "data/status_samples/tennis/B9_interrupted__17201545.json",
+  "source_file": "research/status_samples/tennis/B9_interrupted__17201545.json",
   "status": {
     "code": 80,
     "description": "Interrupted",

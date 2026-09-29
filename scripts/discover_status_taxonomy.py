@@ -2,17 +2,17 @@
 """
 SofaScore `status` taksonomisi keşfi (futbol, basketbol, tenis).
 
-Alt komutlar (her biri yeniden çalıştırılabilir; çıktılar yalnızca data/status_samples/ ve docs/):
+Alt komutlar (her biri yeniden çalıştırılabilir; çıktılar yalnızca research/status_samples/ ve docs/):
 
   scan           A1 — /sport/{sport}/scheduled-tournaments/{gün}/page/N ile günün turnuvaları,
                  /unique-tournament/{ut}/scheduled-events/{gün} ile maçları; son 14 gün + gelecek 7 gün.
-                 Her maçın özeti data/status_samples/_index/{sport}.jsonl'a eklenir.
+                 Her maçın özeti data/research_index/{sport}.jsonl'a eklenir.
                  (Talimattaki /sport/{sport}/scheduled-events/{gün} artık 404; bkz. docs/status-matrix.)
   live-snapshot  A1 — /sport/{sport}/events/live; görülen her yeni (spor, üçlü) için /event/{id} örneği.
   samples        A2 + B/F/K/T — her üçlü için ham /event/{id} örneği (farklı ligden ikinci örnek) ve
-                 edge case kuralları; data/status_samples/{sport}/{case_id}__{event_id}.json
+                 edge case kuralları; research/status_samples/{sport}/{case_id}__{event_id}.json
   headers        C — 10'ar maç: /event/{id} ile aynı dakikada turnuva listesi; durum ve önbellek başlıkları.
-  report         docs/status-matrix/{sport}-triples.csv ve data/status_samples/_report.json
+  report         docs/status-matrix/{sport}-triples.csv ve research/status_samples/_report.json
 
 Tüm istekler scripts/_research_common.py üzerinden: en fazla 1 istek/sn, devre kesici açık.
 """
@@ -33,8 +33,9 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _research_common import ROOT, SPORTS, Client, cache_headers, status_triple, utc_now, write_json  # noqa: E402
 
-SAMPLES = os.path.join(ROOT, "data", "status_samples")
-INDEX = os.path.join(SAMPLES, "_index")
+SAMPLES = os.path.join(ROOT, "research", "status_samples")
+# Tarama indeksi büyük (MB'lar) ve yeniden üretilebilir: git'te yok sayılan data/ altında durur
+INDEX = os.path.join(ROOT, "data", "research_index")
 DOCS = os.path.join(ROOT, "docs", "status-matrix")
 REQUEST_LOG = os.path.join(SAMPLES, "_requests.jsonl")
 FIXTURES = os.path.join(ROOT, "tests", "fixtures", "status")

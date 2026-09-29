@@ -2,7 +2,7 @@
   "case_id": "B7_postponed",
   "event_id": 16732993,
   "fetched_at_utc": "2026-09-29T15:55:11+00:00",
-  "source_file": "data/status_samples/basketball/B7_postponed__16732993.json",
+  "source_file": "research/status_samples/basketball/B7_postponed__16732993.json",
   "status": {
     "code": 60,
     "description": "Postponed",

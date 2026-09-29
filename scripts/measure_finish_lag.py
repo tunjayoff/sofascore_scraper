@@ -2,7 +2,7 @@
 """
 Maçın gerçekten bitmesi ile SofaScore'un "finished" demesi arasındaki gecikmeyi ölçer.
 
-Her turda dört kaynak sorgulanır ve her gözlem data/finish_lag/{tarih}_{spor}.jsonl'a yazılır:
+Her turda dört kaynak sorgulanır ve her gözlem research/finish_lag/{tarih}_{spor}.jsonl'a yazılır:
   event        /event/{id}
   live         /sport/{sport}/events/live                  (tur başına 1 istek)
   season_list  scraper'ın kendi liste yolu: tur bazlı liglerde
@@ -13,7 +13,7 @@ Her turda dört kaynak sorgulanır ve her gözlem data/finish_lag/{tarih}_{spor}
                sitenin kendisi tarih listesi için scheduled-tournaments + turnuva bazlı
                scheduled-events kullanıyor. Başlangıçta eski yol bir kez denenip sonucu özete yazılır.
 
-Bitince her maç için özet: stdout + data/finish_lag/{tarih}_{spor}_summary.json.
+Bitince her maç için özet: stdout + research/finish_lag/{tarih}_{spor}_summary.json.
 
 Örnek:
   python scripts/measure_finish_lag.py --sport football --league-id 17 --date 2026-10-03
@@ -22,6 +22,7 @@ Bitince her maç için özet: stdout + data/finish_lag/{tarih}_{spor}_summary.js
 from __future__ import annotations
 
 import argparse
+import collections
 import datetime as dt
 import json
 import os
@@ -36,7 +37,7 @@ from _research_common import ROOT, SPORTS, Client, cache_headers, utc_now, write
 
 from src.match_fetcher import MatchFetcher  # noqa: E402
 
-OUT_DIR = os.path.join(ROOT, "data", "finish_lag")
+OUT_DIR = os.path.join(ROOT, "research", "finish_lag")
 SCORE_KEYS = ("current", "display", "normaltime", "period1", "period2", "period3", "period4", "period5",
               "overtime", "extra1", "extra2", "penalties", "aggregated")
 # Hepsi bitince skor düzeltmesi görmek için bu kadar daha izlenir
@@ -85,6 +86,9 @@ def observation(ts, eid, source, ev, resp, present) -> Dict[str, Any]:
         "present_in_source": present, "http_status": resp.get("status"),
         "score_json": {"home": score_of((ev or {}).get("homeScore")), "away": score_of((ev or {}).get("awayScore"))} if ev else None,
         "change_ts": ((ev or {}).get("changes") or {}).get("changeTimestamp"),
+        "changed_fields": ((ev or {}).get("changes") or {}).get("changes"),
+        # Maç saati (periyot başlangıcı, uzatma dakikaları vb.): beklenen bitiş anı buradan hesaplanır
+        "time": (ev or {}).get("time") if source == "event" else None,
         "start_ts": (ev or {}).get("startTimestamp"),
         "cache_headers_json": cache_headers(resp),
     }
@@ -294,6 +298,36 @@ def summarize(jsonl: str, ids: List[int], meta: Dict[int, Dict[str, Any]]) -> Di
         ff_season = first([r for r in rows if r["source"] == "season_list"], lambda r: r["status_type"] == "finished")
         ff_sched = first([r for r in rows if r["source"] == "scheduled"], lambda r: r["status_type"] == "finished")
         finished_scores = [json.dumps(r["score_json"], sort_keys=True) for r in ev if r["status_type"] == "finished"]
+
+        # Geçişin gerçek anı: ilk "finished" gözlemindeki changes.changeTimestamp. Geçerli sayılması için
+        # son "inprogress" gözlemi ile ilk "finished" gözlemi arasında kalmalı. Eski kayıtlarda gözleme
+        # turun başlangıç zamanı yazıldığından change_ts ilk "finished" gözleminden sonra görünebilir:
+        # bu durum "belirsiz" işaretlenir (artefakt), gecikmeler hesaplanmaz.
+        ff_row = next((r for r in ev if r["status_type"] == "finished"), None)
+        transition = ff_row.get("change_ts") if ff_row else None
+        status_fields = ff_row.get("changed_fields") if ff_row else None
+        if transition is None:
+            transition_state = None
+        elif status_fields is not None and not any(f.startswith("status.") for f in status_fields):
+            transition_state = "son_degisiklik_status_degil"
+        elif last_inprogress and _ts(last_inprogress) <= transition <= _ts(first_finished):
+            transition_state = "gecerli"
+        else:
+            transition_state = "belirsiz"
+        tr = transition if transition_state == "gecerli" else None
+
+        def since_transition(ts_iso, _tr=tr):
+            return round(_ts(ts_iso) - _tr) if _tr is not None and ts_iso else None
+
+        # Basketbol: son düdük = "finished"tan önceki son saat durması (oynanan süre normal süreye ulaşmışsa)
+        whistle = None
+        for r in ev:
+            if first_finished and at(r) > first_finished:
+                break
+            t = r.get("time") or {}
+            regulation = (t.get("periodLength") or 0) * (t.get("totalPeriodCount") or 0)
+            if t.get("clockRunning") is False and regulation and (t.get("played") or 0) >= regulation and t.get("clockRunningLastUpdated"):
+                whistle = t["clockRunningLastUpdated"]
         max_age = {}
         for r in rows:
             age = (r.get("cache_headers_json") or {}).get("age")
@@ -308,10 +342,19 @@ def summarize(jsonl: str, ids: List[int], meta: Dict[int, Dict[str, Any]]) -> Di
             "dropped_from_live": dropped,
             "first_finished_seen_season_list": ff_season,
             "first_finished_seen_scheduled": ff_sched,
+            "transition_ts": transition,
+            "transition_state": transition_state,
+            "polling_lag": since_transition(first_finished),
             "lag_event": diff(first_finished, last_inprogress),
-            "lag_live": diff(dropped, last_inprogress),
-            "lag_season_list": diff(ff_season, first_finished),
-            "lag_scheduled": diff(ff_sched, first_finished),
+            "lag_live": since_transition(dropped),
+            "lag_season_list": since_transition(ff_season),
+            "lag_scheduled": since_transition(ff_sched),
+            "expected_ft": whistle,
+            "lag_whistle": round(tr - _ts(whistle)) if tr is not None and whistle else None,
+            # Tur zamanına göre (eski tanım; karşılaştırma için)
+            "lag_live_turn": diff(dropped, last_inprogress),
+            "lag_season_list_turn": diff(ff_season, first_finished),
+            "lag_scheduled_turn": diff(ff_sched, first_finished),
             "max_age_header_seen": max_age,
             "cache_control_seen": sorted({(r.get("cache_headers_json") or {}).get("cache-control") or "-" for r in rows}),
             "score_changed_after_finished": len(set(finished_scores)) > 1,
@@ -326,14 +369,17 @@ def summarize(jsonl: str, ids: List[int], meta: Dict[int, Dict[str, Any]]) -> Di
 
     return {
         "events": events,
-        "aggregate": {k: stats(k) for k in ("lag_event", "lag_live", "lag_season_list", "lag_scheduled")}
+        "aggregate": {k: stats(k) for k in ("polling_lag", "lag_event", "lag_live", "lag_season_list", "lag_scheduled",
+                                            "lag_whistle", "lag_live_turn", "lag_season_list_turn", "lag_scheduled_turn")}
         | {"full_lifecycle": sum(e["full_lifecycle"] for e in events),
+           "transition_state": dict(collections.Counter(e["transition_state"] for e in events)),
            "score_changed_after_finished": sum(e["score_changed_after_finished"] for e in events)},
     }
 
 
 def print_table(summary: Dict[str, Any]) -> None:
-    cols = ("event_id", "lag_event", "lag_live", "lag_season_list", "lag_scheduled", "status_code_at_finish", "score_changed_after_finished")
+    cols = ("event_id", "transition_state", "polling_lag", "lag_event", "lag_live", "lag_season_list", "lag_scheduled",
+            "lag_whistle", "status_code_at_finish", "score_changed_after_finished")
     print("\t".join(cols))
     for e in summary["events"]:
         print("\t".join(str(e[c]) for c in cols))

@@ -2,7 +2,7 @@
   "case_id": "A_finished-100-ended",
   "event_id": 16484334,
   "fetched_at_utc": "2026-09-29T15:54:39+00:00",
-  "source_file": "data/status_samples/basketball/A_finished-100-ended__16484334.json",
+  "source_file": "research/status_samples/basketball/A_finished-100-ended__16484334.json",
   "status": {
     "code": 100,
     "description": "Ended",

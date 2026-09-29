@@ -1,14 +1,14 @@
 type,code,description,count,first_example_event_id,sample_file
-finished,100,Ended,2627,17092269,data/status_samples/basketball/A_finished-100-ended__17092269.json
-notstarted,0,Not started,1678,17079409,data/status_samples/basketball/A_notstarted-0-not-started__17079409.json
-finished,110,AET,62,16346148,data/status_samples/basketball/A_finished-110-aet__16346148.json
-postponed,60,Postponed,56,16623552,data/status_samples/basketball/A_postponed-60-postponed__16623552.json
-canceled,70,Canceled,33,17110363,data/status_samples/basketball/A_canceled-70-canceled__17110363.json
-inprogress,13,1st quarter,13,17203938,data/status_samples/basketball/A_inprogress-13-1st-quarter__17203938.json
-canceled,90,Abandoned,4,17100305,data/status_samples/basketball/A_canceled-90-abandoned__17100305.json
-inprogress,14,2nd quarter,4,17062025,data/status_samples/basketball/A_inprogress-14-2nd-quarter__17062025.json
-finished,91,Walkover,3,17102381,data/status_samples/basketball/A_finished-91-walkover__17102381.json
-inprogress,30,Pause,3,17157547,data/status_samples/basketball/A_inprogress-30-pause__17157547.json
-inprogress,15,3rd quarter,1,17157547,data/status_samples/basketball/A_inprogress-15-3rd-quarter__17157547.json
-inprogress,16,4th quarter,1,17203938,data/status_samples/basketball/A_inprogress-16-4th-quarter__17203938.json
-interrupted,80,Interrupted,1,17114923,data/status_samples/basketball/A_interrupted-80-interrupted__17114923.json
+finished,100,Ended,2627,17092269,research/status_samples/basketball/A_finished-100-ended__17092269.json
+notstarted,0,Not started,1678,17079409,research/status_samples/basketball/A_notstarted-0-not-started__17079409.json
+finished,110,AET,62,16346148,research/status_samples/basketball/A_finished-110-aet__16346148.json
+postponed,60,Postponed,56,16623552,research/status_samples/basketball/A_postponed-60-postponed__16623552.json
+canceled,70,Canceled,33,17110363,research/status_samples/basketball/A_canceled-70-canceled__17110363.json
+inprogress,13,1st quarter,13,17203938,research/status_samples/basketball/A_inprogress-13-1st-quarter__17203938.json
+canceled,90,Abandoned,4,17100305,research/status_samples/basketball/A_canceled-90-abandoned__17100305.json
+inprogress,14,2nd quarter,4,17062025,research/status_samples/basketball/A_inprogress-14-2nd-quarter__17062025.json
+finished,91,Walkover,3,17102381,research/status_samples/basketball/A_finished-91-walkover__17102381.json
+inprogress,30,Pause,3,17157547,research/status_samples/basketball/A_inprogress-30-pause__17157547.json
+inprogress,15,3rd quarter,1,17157547,research/status_samples/basketball/A_inprogress-15-3rd-quarter__17157547.json
+inprogress,16,4th quarter,1,17203938,research/status_samples/basketball/A_inprogress-16-4th-quarter__17203938.json
+interrupted,80,Interrupted,1,17114923,research/status_samples/basketball/A_interrupted-80-interrupted__17114923.json

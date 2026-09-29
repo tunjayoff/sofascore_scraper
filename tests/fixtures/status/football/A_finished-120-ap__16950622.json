@@ -2,7 +2,7 @@
   "case_id": "A_finished-120-ap",
   "event_id": 16950622,
   "fetched_at_utc": "2026-09-29T15:52:47+00:00",
-  "source_file": "data/status_samples/football/A_finished-120-ap__16950622.json",
+  "source_file": "research/status_samples/football/A_finished-120-ap__16950622.json",
   "status": {
     "code": 120,
     "description": "AP",

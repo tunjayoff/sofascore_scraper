@@ -2,7 +2,7 @@
   "case_id": "T5_live_tiebreak",
   "event_id": 17202156,
   "fetched_at_utc": "2026-09-29T15:57:00+00:00",
-  "source_file": "data/status_samples/tennis/T5_live_tiebreak__17202156.json",
+  "source_file": "research/status_samples/tennis/T5_live_tiebreak__17202156.json",
   "status": {
     "code": 100,
     "description": "Ended",
