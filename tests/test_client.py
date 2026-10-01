@@ -5,9 +5,12 @@ Ağ yok: istekler tests/fakes/sofascore.py'deki sahte taşıyıcıya gider; iste
 """
 from __future__ import annotations
 
+import ast
 import asyncio
 import datetime as dt
 import json
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any, Dict, Iterator, List
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -875,3 +878,46 @@ def test_no_module_of_the_request_path_hard_codes_the_api_base() -> None:
 
     assert "client/endpoints.py" in hard_coded
     assert hard_coded - {"client/endpoints.py"} <= known_elsewhere
+
+
+# --- katman ve içe aktarma sırası ---------------------------------------------------------------------
+
+def _imports_of(path: Path) -> List[str]:
+    found: List[str] = []
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.Import):
+            found.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            found.extend([node.module, *(f"{node.module}.{alias.name}" for alias in node.names)])
+    return found
+
+
+def test_the_client_package_imports_neither_the_store_nor_a_face() -> None:
+    """docs/design/02-services.md 2.1: src/client ve src/store birbirini içe aktarmaz; istemci yüzleri de bilmez."""
+    forbidden = ("src.store", "src.web", "src.ui", "src.services", "src.jobs", "src.utils", "src.fsutil")
+    problems = [
+        f"{path.name}: {module}"
+        for path in sorted((SRC / "client").glob("*.py"))
+        for module in _imports_of(path)
+        if any(module == name or module.startswith(name + ".") for name in forbidden)
+    ]
+
+    assert problems == []
+
+
+@pytest.mark.parametrize("module", ["src.client.transport", "src.client.context", "src.client.endpoints", "src.utils"])
+def test_any_of_the_modules_can_be_the_first_one_imported(module: str) -> None:
+    """src.utils ↔ src.client arasında içe aktarma döngüsü yok: hangisi önce yüklenirse yüklensin çalışır."""
+    code = (
+        f"import {module}\n"
+        "import src.utils as utils\n"
+        "from src.client import transport\n"
+        "assert utils.make_api_request is transport.make_api_request\n"
+        "assert type(utils).__name__ == '_UtilsModule'\n"
+        "print('ok')\n"
+    )
+
+    result = subprocess.run([sys.executable, "-c", code], cwd=SRC.parent, capture_output=True, text=True, timeout=120)
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip().endswith("ok")
