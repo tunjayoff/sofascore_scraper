@@ -1,6 +1,6 @@
 """
-src/store/indexer.py: maçların ve dilimlerinin dizinlenmesi ve kataloğun yeniden kurulması
-(plan maddesi ST-07; docs/design/01-storage.md bölüm 3.4, 5.2).
+src/store/indexer.py ve src/store/verify.py: maçların ve dilimlerinin dizinlenmesi, yeniden kurma, doğrulama
+(plan maddesi ST-07; docs/design/01-storage.md bölüm 3.4, 3.6, 5.2).
 
 Altın dosyalar tests/golden/catalog/<dizin>.json, `tests/store_fixtures.py`'nin kurduğu her veri dizini
 için yeniden kurmanın yazdığı satırları tutar (`sig` hariç: dizin mtime'ına bağlıdır). Çıktı bilerek
@@ -17,6 +17,7 @@ modülleriyle kendisi kurar.
 from __future__ import annotations
 
 import datetime as dt
+import gzip
 import json
 import os
 import sqlite3
@@ -29,7 +30,7 @@ import pytest
 
 import store_fixtures as sf
 from src.store import catalog as catalog_mod
-from src.store import codec, derive, files, indexer, layout, manifest
+from src.store import codec, derive, files, indexer, layout, manifest, verify
 from src.store.catalog import Catalog
 from src.store.errors import CatalogCorrupt, StoreBusy, StoreError
 from src.store.indexer import CatalogAdmin, IndexProblem, SupersededDir
@@ -218,6 +219,10 @@ def tree_state(root: Path, skip: Tuple[str, ...] = ()) -> Dict[str, Tuple[str, i
     return out
 
 
+def issues(report: verify.VerifyReport) -> List[Tuple[str, str, Optional[int]]]:
+    return [(issue.invariant, issue.kind, issue.event_id) for issue in report.issues]
+
+
 # --- altın satırlar: her fixture dizini ---------------------------------------------------------------
 
 def _compact(row: Dict[str, Any]) -> Dict[str, Any]:
@@ -338,6 +343,9 @@ def test_choice_between_copies_is_the_readers_choice(tmp_path: Path, make_admin)
         (flat[sf.PL_ARS], chosen[sf.event_id(sf.PL_ARS)], "legacy"),
         (f"{PL_DIR}/{sf.event_id(sf.PL_LIV)}", flat[sf.PL_LIV], "legacy"),
     ]
+    quick = admin.verify()
+    assert quick.ok and quick.events_read == 2  # okunamayan en yeni kopyası olan iki maç her seferinde okunur
+    assert sorted((p.path, p.kind) for p in quick.problems) == sorted((p.path, p.kind) for p in report.problems)
 
 
 def test_event_rows_are_the_derived_rows(fx: sf.LegacyFixture, make_admin) -> None:
@@ -683,6 +691,7 @@ def test_rebuild_waits_for_the_write_lock(canonical: sf.LegacyFixture, make_admi
                     blocked.rebuild(mode="in_place")
                 with pytest.raises(StoreBusy):
                     blocked.index_event(ARS)
+                assert blocked.verify(repair=True).ok  # onarılacak bir şey yok: yazma kilidi beklenmez
         assert CatalogAdmin(canonical.data_dir, impatient).rebuild(mode="in_place").completed
     assert snapshot(admin.catalog) == before
 
@@ -800,6 +809,7 @@ def test_corrupt_payloads_are_reported_and_do_not_abort(old_forms: sf.LegacyFixt
     assert all(s["state"] == "ok" for key, s in slice_rows(admin.catalog, 17185003).items() if key != "statistics")
     # yan dosyaları bozuk maç: gözlemsiz ve işaretsiz sayılır, satırı yine yazılır
     assert event_row(admin.catalog, 17099711)["observed_at"] is None
+    assert admin.verify(deep=True).ok
 
 
 def test_unstorable_values_do_not_abort(tmp_path: Path, make_admin) -> None:
@@ -821,6 +831,7 @@ def test_unstorable_values_do_not_abort(tmp_path: Path, make_admin) -> None:
     assert marks["lineups"]["unverified_empty_count"] == 2 ** 63 - 1 and "incidents" not in marks
     assert (marks["h2h"]["error_status"], marks["h2h"]["error_count"], marks["h2h"]["error_at"]) == (
         2 ** 63 - 1, 2 ** 63 - 1, None)
+    assert admin.verify(deep=True).ok  # doğrulama aynı satırları türetir
 
 
 # --- v3 dizinleri ---------------------------------------------------------------------------------------
@@ -880,6 +891,7 @@ def test_v3_event_rows_come_from_manifest_and_event_payload(tmp_path: Path, make
             lineups["error_at"], lineups["error_count"]) == ("error", 1, "429", 429, int(at.timestamp()), 3)
     assert slices["schedule/round_3_final"]["meta_json"] == '{"b":[1],"complete":true}'
     assert rows(admin.catalog, "participants")[0]["updated_at"] == int(T1.timestamp())
+    assert admin.verify(deep=True).ok and admin.verify().events_read == 0
 
 
 def test_event_in_both_layouts_resolves_to_v3_with_legacy_path(old_forms: sf.LegacyFixture, make_admin) -> None:
@@ -905,6 +917,7 @@ def test_event_in_both_layouts_resolves_to_v3_with_legacy_path(old_forms: sf.Leg
     assert admin.catalog.connection().execute(
         "SELECT count(*) FROM events WHERE layout = 'legacy' OR legacy_path IS NOT NULL").fetchone()[0] == count(
         admin.catalog)
+    assert admin.verify().ok and admin.verify(deep=True).ok
 
 
 def test_promoted_events_keep_the_facts_of_the_legacy_rows(fx: sf.LegacyFixture, make_admin) -> None:
@@ -930,6 +943,7 @@ def test_promoted_events_keep_the_facts_of_the_legacy_rows(fx: sf.LegacyFixture,
         assert set(slices) == set(legacy_slices[event_id])
         for key, entry in slices.items():
             assert {n: entry[n] for n in facts} == {n: legacy_slices[event_id][key][n] for n in facts}, (event_id, key)
+    assert admin.verify(deep=True).ok
 
 
 def test_unreadable_v3_copy_falls_back_to_the_legacy_copy(canonical: sf.LegacyFixture, make_admin) -> None:
@@ -962,6 +976,7 @@ def test_unreadable_v3_copy_falls_back_to_the_legacy_copy(canonical: sf.LegacyFi
     assert event_row(admin.catalog, ids[4])["layout"] == "v3"
     assert (report.events_v3, report.events_legacy) == (1, len(events) - 1)
     assert not [s for s in report.superseded if s.event_id != ids[4]]
+    assert admin.verify().ok and admin.verify(deep=False).problems  # sorunlar doğrulamada da bildirilir
 
 
 def test_v3_event_without_a_usable_copy_is_not_indexed(tmp_path: Path, make_admin) -> None:
@@ -1036,13 +1051,14 @@ def test_index_event_follows_the_event_between_layouts(canonical: sf.LegacyFixtu
     assert admin.index_event(ARS) is None and event_row(admin.catalog, ARS) is None
     assert count(admin.catalog) == before - 1 and slice_rows(admin.catalog, ARS) == {}
     assert admin.index_event(ARS) is None  # olmayan maç: yapılacak bir şey yok
+    assert admin.verify(deep=True).ok
 
     # katalogda olmayan bir eski düzen maçı: yazıcı dizini söyler (başka maçın dizini sayılmaz)
     new_dir = legacy_detail(data, sf.PL_FUTURE)
     future = sf.event_id(sf.PL_FUTURE)
     assert admin.index_event(future) is None and admin.index_event(future, paths=[f"{PL_DIR}/17099711"]) is None
     assert admin.index_event(future, paths=[new_dir + "/", "match_details/nowhere/else/1"]) == "legacy"
-    assert event_row(admin.catalog, future)["path"] == new_dir
+    assert event_row(admin.catalog, future)["path"] == new_dir and admin.verify().ok
     files.remove_tree(data / new_dir)
     assert admin.index_event(future) is None and event_row(admin.catalog, future) is None
 
@@ -1053,6 +1069,365 @@ def test_index_event_follows_the_event_between_layouts(canonical: sf.LegacyFixtu
     v3_file(data, future, "event.json.gz").write_bytes(b"")
     assert admin.index_event(future, problems=problems) is None
     assert [(p.layout, p.kind) for p in problems] == [("v3", "corrupt")]
+
+
+# --- doğrulama -------------------------------------------------------------------------------------------
+
+def test_verify_is_clean_after_a_rebuild_and_reads_nothing(fx: sf.LegacyFixture, make_admin,
+                                                           monkeypatch: pytest.MonkeyPatch) -> None:
+    admin = make_admin(fx.data_dir)
+    built = admin.rebuild()
+    deep = admin.verify(deep=True)
+    assert deep.ok and deep.issues == [] and deep.checked == verify.DEEP_CHECKS
+    assert (deep.events, deep.events_read) == (built.events, built.events)
+    assert deep.problems == built.problems and deep.superseded == built.superseded
+
+    def no_reads(*args: Any, **kwargs: Any) -> Any:
+        raise AssertionError("hızlı doğrulama yük dosyası okumamalı")
+
+    monkeypatch.setattr(codec, "read_payload", no_reads)
+    monkeypatch.setattr(files, "read_bytes", no_reads)
+    state = tree_state(fx.data_dir, skip=(".meta",))  # .meta: SQLite'ın kendi WAL / paylaşılan bellek dosyaları
+    quick = admin.verify()
+    assert quick.ok and quick.checked == verify.QUICK_CHECKS and not quick.repair
+    assert (quick.events, quick.events_read, quick.superseded) == (built.events, 0, built.superseded)
+    assert tree_state(fx.data_dir, skip=(".meta",)) == state  # doğrulama veri dosyalarına dokunmaz
+
+
+def test_verify_without_a_usable_catalog(canonical: sf.LegacyFixture, make_admin) -> None:
+    admin = make_admin(canonical.data_dir)
+    state = tree_state(canonical.data_dir)
+
+    report = admin.verify(repair=True)
+    assert issues(report) == [("catalog", "missing", None)] and not report.ok and report.events == 0
+    assert report.checked == ("quick_check",) and report.issues[0].path == ".meta/catalog.db"
+    assert tree_state(canonical.data_dir) == state  # katalog da yaratılmaz
+
+    admin.rebuild()
+    admin.catalog.close()
+    _foreign_file(admin.catalog.path, "DELETE FROM meta WHERE key = 'derive_version'")
+    assert issues(admin.verify()) == [("catalog", "derive_version", None)]
+    Path(admin.catalog.path).write_bytes(b"garbage" * 100)
+    assert issues(admin.verify(deep=True)) == [("catalog", "corrupt", None)]
+
+
+def test_verify_runs_quick_check_on_the_state_db(canonical: sf.LegacyFixture, make_admin) -> None:
+    admin = make_admin(canonical.data_dir)
+    admin.rebuild()
+    state_db = Path(layout.resolve(canonical.data_dir, layout.STATE_DB))
+    assert verify.quick_check_file(str(state_db)) is None and not state_db.exists()  # yoksa yaratılmaz
+
+    conn = sqlite3.connect(state_db)
+    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("CREATE TABLE jobs (id TEXT PRIMARY KEY)")
+    conn.commit()
+    conn.close()
+    assert verify.quick_check_file(str(state_db)) == [] and admin.verify().ok
+
+    state_db.write_bytes(b"SQLite format 3\x00" + b"\x01" * 4000)
+    report = admin.verify()
+    assert [(i.invariant, i.kind, i.path) for i in report.issues] == [("state", "quick_check", ".meta/state.db")]
+    assert not report.ok and report.events == len(canonical.detail_ids)  # katalog yine de denetlenir
+
+
+def test_quick_verify_finds_what_changed_behind_the_catalog(canonical: sf.LegacyFixture, make_admin) -> None:
+    data = canonical.data_dir
+    admin = make_admin(data)
+    admin.rebuild()
+    clean = snapshot(admin.catalog, sig=False)
+
+    new_dir = legacy_detail(data, sf.PL_FUTURE)  # I3: dizin var, satır yok
+    files.remove_tree(data / PL_DIR / str(ARS))  # I1: satır var, dizin yok
+    base = f"{PL_DIR}/17018572"
+    write(data, f"{base}/statistics.json", sf.slice_payload("statistics", sf.basic_payload(sf.PL_NEW)))  # I3: yeni dilim
+    edited = sf.basic_payload(sf.PL_LIV)
+    edited["homeScore"]["current"] = 7
+    write(data, f"{PL_DIR}/17099711/basic.json", edited)  # I4: olay yükü değişti
+    (data / PL_DIR / "16951514" / "statistics.json").unlink()  # I2: katalog yükü var diyor
+    bump(data / PL_DIR / "16951514")
+    untouched = data / PL_DIR / "17184988"
+    bump(untouched)  # yalnızca imza eskidi: tutarsızlık değil
+
+    report = admin.verify()
+
+    assert sorted(issues(report)) == sorted([
+        ("I3", "unindexed", sf.event_id(sf.PL_FUTURE)), ("I1", "no_event_directory", ARS),
+        ("I3", "slices", 17018572), ("I4", "event_row", 17099711), ("I2", "slices", 16951514)])
+    by_id = {i.event_id: i for i in report.issues}
+    assert by_id[sf.event_id(sf.PL_FUTURE)].path == new_dir and by_id[ARS].path == f"{PL_DIR}/{ARS}"
+    assert "statistics: state" in by_id[17018572].detail and "has_payload" in by_id[17018572].detail
+    assert by_id[17099711].detail == "farklı sütunlar: home_score_current"
+    assert by_id[16951514].detail == "statistics: dosyalarda yok"
+    assert report.events_read == 6 and not report.ok and len(report.open_issues) == 5
+    assert snapshot(admin.catalog, sig=False) == clean  # onarım istenmedi: katalog değişmedi
+
+    repaired = admin.verify(repair=True)
+    assert sorted(issues(repaired)) == sorted(issues(report))
+    assert repaired.ok and all(i.repaired for i in repaired.issues)
+    after = admin.verify()
+    assert after.ok and after.issues == [] and after.events_read == 0  # eskimiş imza da tazelendi
+    assert admin.verify(deep=True).ok
+    repaired_rows = snapshot(admin.catalog)
+    admin.rebuild()
+    assert repaired_rows == snapshot(admin.catalog)  # onarım, yeniden kurmanın yazacağını yazar
+
+
+def test_quick_verify_sees_layout_changes(canonical: sf.LegacyFixture, make_admin) -> None:
+    data = canonical.data_dir
+    admin = make_admin(data)
+    admin.rebuild()
+    events = {e.event_id: e for e in LegacyReader(data).iter_events(payloads=True)}
+    promote(data, events[ARS])  # I5: katalog legacy diyor, v3 kopyası var
+    assert issues(admin.verify()) == [("I5", "layout", ARS)]
+    assert admin.verify(repair=True).ok and event_row(admin.catalog, ARS)["layout"] == "v3"
+
+    files.remove_tree(layout.resolve(data, layout.event_dir(ARS)))  # I5: katalog v3 diyor, yalnızca eski dizin var
+    report = admin.verify()
+    assert issues(report) == [("I5", "layout", ARS)] and "'v3'" in report.issues[0].detail
+    assert admin.verify(repair=True).ok
+    row = event_row(admin.catalog, ARS)
+    assert (row["layout"], row["path"], row["legacy_path"]) == ("legacy", events[ARS].path, None)
+
+    # v3 satırının eski dizini silindi: legacy_path eskidi (satır farkı olarak bildirilir)
+    promote(data, events[17099711])
+    admin.index_event(17099711)
+    files.remove_tree(data / events[17099711].path)
+    report = admin.verify()
+    assert issues(report) == [("I4", "event_row", 17099711)] and report.issues[0].detail.endswith("legacy_path")
+    assert admin.verify(repair=True).ok and admin.verify().ok
+
+
+def test_newer_duplicate_is_found_by_the_quick_check(old_forms: sf.LegacyFixture, make_admin) -> None:
+    data = old_forms.data_dir
+    admin = make_admin(data)
+    admin.rebuild()
+    assert event_row(admin.catalog, ARS)["path"] == f"{PL_DIR}/{ARS}"
+    # düz dizindeki kopya yenilendi: artık geçerli olan o
+    newer = sf.basic_payload(sf.PL_ARS)
+    write(data, f"match_details/{ARS}/basic.json", newer, mtime=sf.BASE_MTIME + 100)
+
+    report = admin.verify()
+    # satır başka dizini gösteriyor; yeni geçerli kopyada eski dizinin dilimleri yok
+    assert issues(report) == [("I4", "event_row", ARS), ("I2", "slices", ARS)]
+    assert "path" in report.issues[0].detail and "statistics: dosyalarda yok" in report.issues[1].detail
+    assert admin.verify(repair=True).ok
+    assert event_row(admin.catalog, ARS)["path"] == f"match_details/{ARS}"
+    assert set(slice_rows(admin.catalog, ARS)) == {"event"}
+    after = admin.verify()
+    assert after.ok and after.superseded == [SupersededDir(ARS, f"{PL_DIR}/{ARS}", f"match_details/{ARS}", "legacy")]
+
+    # en yeni kopya okunamıyorsa sıradaki dizinlenir; hızlı doğrulama onu her seferinde yeniden okur
+    write(data, f"match_details/{ARS}/basic.json", b"{", mtime=sf.BASE_MTIME + 200)
+    assert admin.verify(repair=True).ok and event_row(admin.catalog, ARS)["path"] == f"{PL_DIR}/{ARS}"
+    again = admin.verify()
+    assert again.ok and again.events_read == 1
+    assert [(p.path, p.kind) for p in again.problems if str(ARS) in p.path] == [(f"match_details/{ARS}", "corrupt")]
+
+
+def test_deep_verify_finds_what_signatures_cannot(canonical: sf.LegacyFixture, make_admin) -> None:
+    data = canonical.data_dir
+    admin = make_admin(data)
+    admin.rebuild()
+    with admin.catalog.write() as conn:  # katalog kendi kendine bozuldu: dosyalar ve imzalar aynı
+        conn.execute("UPDATE events SET home_score = 99, status_class = 'void' WHERE id = ?", (ARS,))
+        conn.execute("UPDATE event_slices SET empty_count = 5 WHERE event_id = 16867839 AND key = 'h2h'")
+        conn.execute("DELETE FROM event_participants WHERE event_id = 17099711 AND side = 2")
+    # dosya yerinde değiştirildi ve dizinin mtime'ı aynı kaldı (os.replace kullanmayan bir düzenleme)
+    target = data / PL_DIR / "17184988" / "lineups.json"
+    directory = target.parent.stat()
+    target.write_bytes(b"{ truncated")
+    os.utime(target, (sf.BASE_MTIME, sf.BASE_MTIME))
+    os.utime(target.parent, ns=(directory.st_atime_ns, directory.st_mtime_ns))
+
+    assert admin.verify().ok  # hızlı kip imzalara bakar
+    report = admin.verify(deep=True)
+    assert sorted(issues(report)) == [
+        ("I2", "slices", 17184988), ("I3", "slices", 16867839), ("I4", "event_participants", 17099711),
+        ("I4", "event_row", ARS)]
+    assert {i.event_id: i.detail for i in report.issues}[ARS] == "farklı sütunlar: status_class, home_score"
+    assert [(p.path, p.kind) for p in report.problems] == [(f"{PL_DIR}/17184988/lineups.json", "corrupt")]
+
+    assert admin.verify(deep=True, repair=True).ok
+    assert admin.verify(deep=True).ok
+    broken = slice_rows(admin.catalog, 17184988)["lineups"]
+    assert (broken["state"], broken["has_payload"], broken["error_reason"]) == ("error", 0, "corrupt")
+    assert target.read_bytes() == b"{ truncated"  # eski düzen dosyalarına dokunulmaz
+
+
+def _v3_tree(data: Path) -> Dict[int, LegacyEvent]:
+    events = {e.event_id: e for e in LegacyReader(data).iter_events(payloads=True)}
+    for event in events.values():
+        promote(data, event)
+    return events
+
+
+def test_deep_verify_checks_v3_payloads_against_the_manifest(canonical: sf.LegacyFixture, make_admin) -> None:
+    data = canonical.data_dir
+    events = _v3_tree(data)
+    ids = sorted(events)
+    admin = make_admin(data)
+    admin.rebuild()
+    assert admin.verify(deep=True).ok
+
+    missing, corrupt, swapped, resized, bad_event = ids[0], ids[1], ids[2], ids[3], ids[4]
+    v3_file(data, missing, "statistics.json.gz").unlink()
+    v3_file(data, corrupt, "statistics.json.gz").write_bytes(b"\x1f\x8b\x08 not gzip at all")
+    v3_file(data, swapped, "h2h.json.gz").write_bytes(codec.compress(codec.canonical_bytes({"other": 1})))
+    payload = codec.read_raw(v3_file(data, resized, "h2h.json.gz"))
+    v3_file(data, resized, "h2h.json.gz").write_bytes(gzip.compress(payload, 1, mtime=0))
+    v3_file(data, bad_event, "event.json.gz").write_bytes(codec.compress(b"[1, 2"))
+    # manifestin adını vermediği dosyalar ve yarım kalmış geçici dosya
+    v3_file(data, ids[5], "notes.txt").write_text("x", encoding="utf-8")
+    (v3_file(data, ids[5], "odds_all")).mkdir()
+    v3_file(data, ids[5], "odds_all/1.json.gz").write_bytes(codec.compress(b"{}"))
+    v3_file(data, ids[5], ".manifest.json.abc123.tmp").write_bytes(b"half")
+    history = v3_file(data, ids[5], "_history/odds_all")
+    history.mkdir(parents=True)
+    (history / "_.jsonl.gz").write_bytes(b"")  # geçmiş dosyaları bu denetimin konusu değil
+    manifests = {i: v3_file(data, i, "manifest.json").read_bytes() for i in ids}
+
+    assert admin.verify().ok  # manifestler değişmedi: hızlı kip bunları görmez
+    report = admin.verify(deep=True)
+
+    found = {(i.invariant, i.kind, i.event_id, i.path.rsplit("/", 1)[-1], i.detail.split(":")[0].split(" (")[0])
+             for i in report.issues}
+    resized_ok = len(v3_file(data, resized, "h2h.json.gz").read_bytes()) == manifest.read_manifest(
+        v3_file(data, resized, "manifest.json")).slices["h2h"].stored_bytes
+    expected = {
+        ("I2", "payload", missing, "statistics.json.gz", "statistics"),
+        ("I2", "payload", corrupt, "statistics.json.gz", "statistics"),
+        ("I2", "payload", swapped, "h2h.json.gz", "h2h"),
+        ("I2", "payload", bad_event, "event.json.gz", "event"),
+        # olay yükü okunamayan v3 dizini geçerli bir maç değil: diskte geçerli olan eski kopya
+        ("I5", "layout", bad_event, events[bad_event].path.rsplit("/", 1)[-1], "katalog 'v3' diyor, diskte geçerli olan 'legacy'"),
+        ("I9", "unknown_file", ids[5], "notes.txt", "manifestin adını vermediği dosya"),
+        ("I9", "unknown_file", ids[5], "1.json.gz", "manifestin adını vermediği dosya"),
+    }
+    if not resized_ok:  # aynı içerik, başka sıkıştırma: sha256 tutar, dosya boyutu tutmaz
+        expected.add(("I2", "payload", resized, "h2h.json.gz", "h2h"))
+    assert found == expected
+    details = {(i.event_id, i.kind): i.detail for i in report.issues}
+    assert details[(missing, "payload")] == "statistics: dosya yok"
+    assert details[(corrupt, "payload")].startswith("statistics: açılamıyor")
+    assert details[(swapped, "payload")] == "h2h: sha256 manifesttekinden farklı"
+    assert details[(bad_event, "payload")].startswith("event: JSON değil")
+    assert report.leftovers == [f"{layout.event_dir(ids[5])}/.manifest.json.abc123.tmp"]
+    assert report.leftovers_removed == 0 and v3_file(data, ids[5], ".manifest.json.abc123.tmp").exists()
+    assert {i: v3_file(data, i, "manifest.json").read_bytes() for i in ids} == manifests  # yalnızca okundu
+
+    repaired = admin.verify(deep=True, repair=True)
+
+    assert [i for i in repaired.open_issues if i.invariant != "I9"] == []
+    assert repaired.leftovers_removed == 1 and not v3_file(data, ids[5], ".manifest.json.abc123.tmp").exists()
+    # okunamayan yükler manifestte error / corrupt oldu; dosyalar silinmedi
+    for event_id, name in ((missing, "statistics"), (corrupt, "statistics"), (swapped, "h2h")):
+        entry = manifest.read_manifest(v3_file(data, event_id, "manifest.json")).slices[name]
+        assert (entry.state, entry.has_payload, entry.error.reason, entry.error.count, entry.fetched_at) == (
+            "error", False, "corrupt", 1, None)
+        assert entry.error.at == entry.checked_at == dt.datetime.fromtimestamp(NOW, UTC)
+        row = slice_rows(admin.catalog, event_id)[name]
+        assert (row["state"], row["has_payload"], row["error_reason"], row["error_at"]) == (
+            "error", 0, "corrupt", NOW)
+    assert v3_file(data, corrupt, "statistics.json.gz").exists() and v3_file(data, swapped, "h2h.json.gz").exists()
+    assert event_row(admin.catalog, missing)["updated_at"] == NOW
+    # olay yükü okunamayan v3 dizini artık geçerli bir maç değil: eski kopyası dizinlenir
+    row = event_row(admin.catalog, bad_event)
+    assert (row["layout"], row["path"]) == ("legacy", events[bad_event].path)
+    assert manifest.read_manifest(v3_file(data, bad_event, "manifest.json")).slices["event"].state == "error"
+    # dokunulmayan dilimler ve manifestler aynen duruyor
+    assert v3_file(data, ids[6], "manifest.json").read_bytes() == manifests[ids[6]]
+
+    again = admin.verify(deep=True)
+    assert sorted(issues(again)) == [("I9", "unknown_file", ids[5]), ("I9", "unknown_file", ids[5])]
+    assert again.leftovers == [] and admin.verify().ok
+    assert [p.kind for p in again.problems if p.layout == "v3"] == ["no_event_payload"]
+
+
+def test_v3_event_that_lost_its_payload_is_removed_by_repair(tmp_path: Path, make_admin) -> None:
+    data = tmp_path / "data"
+    payload = sf.basic_payload(sf.PL_ARS)
+    write_v3(data, payload, slices={"statistics": sf.slice_payload("statistics", payload)})
+    write_v3(data, sf.basic_payload(sf.PL_LIV))
+    admin = make_admin(data)
+    admin.rebuild()
+
+    assert verify.mark_corrupt(admin, ARS, ["statistics", "lineups"]) == []  # sağlam ya da olmayan dilim: dokunulmaz
+    before = v3_file(data, ARS, "manifest.json").read_bytes()
+    v3_file(data, ARS, "event.json.gz").unlink()
+    assert admin.verify().ok  # manifest aynı: hızlı kip görmez
+
+    report = admin.verify(deep=True)
+    assert issues(report) == [("I2", "payload", ARS), ("I1", "no_event_directory", ARS)]
+    assert "no_event_payload" in report.issues[1].detail and report.issues[1].path == layout.event_dir(ARS)
+    assert v3_file(data, ARS, "manifest.json").read_bytes() == before
+
+    assert admin.verify(deep=True, repair=True).ok
+    assert [r["id"] for r in rows(admin.catalog, "events")] == [sf.event_id(sf.PL_LIV)]
+    assert slice_rows(admin.catalog, ARS) == {} and count(admin.catalog, "event_participants") == 2
+    found = manifest.read_manifest(v3_file(data, ARS, "manifest.json"))
+    assert (found.slices["event"].state, found.slices["event"].error.reason) == ("error", "corrupt")
+    assert found.slices["statistics"].state == "ok" and v3_file(data, ARS, "statistics.json.gz").exists()
+    again = admin.verify(deep=True)  # dizin duruyor ama geçerli bir maç değil: sorun olarak bildirilir
+    assert again.ok and [(p.layout, p.kind) for p in again.problems] == [("v3", "no_event_payload")]
+
+    # ikinci kez bozulan yük: hata sayacı artar; manifestte yükü olmayan dilime dokunulmaz
+    liv = sf.event_id(sf.PL_LIV)
+    write_v3(data, sf.basic_payload(sf.PL_LIV), slices={"h2h": {"a": 1}}, entries={
+        "lineups": SliceEntry(state="error", error=ErrorMark(reason="429", count=4))})
+    found = manifest.read_manifest(v3_file(data, liv, "manifest.json"))
+    found.slices["h2h"].error = ErrorMark(reason="corrupt", count=2)  # önceki bozulmadan kalan işaret
+    manifest.write_manifest(v3_file(data, liv, "manifest.json"), found)
+    v3_file(data, liv, "h2h.json.gz").write_bytes(b"x")
+    codec.write_payload(v3_file(data, liv, "lineups.json.gz"), {"x": 1})
+    assert verify.mark_corrupt(admin, liv, ["h2h", "lineups"]) == ["h2h"]
+    found = manifest.read_manifest(v3_file(data, liv, "manifest.json"))
+    assert (found.slices["h2h"].state, found.slices["h2h"].error.count) == ("error", 3)
+    assert (found.slices["lineups"].error.reason, found.slices["lineups"].error.count) == ("429", 4)
+
+
+def test_pending_writes_are_reported_and_cleared_by_repair(canonical: sf.LegacyFixture, make_admin) -> None:
+    admin = make_admin(canonical.data_dir)
+    admin.rebuild()
+    with admin.catalog.write():
+        admin.catalog.upsert("pending_writes", [
+            {"kind": "event", "entity_id": ARS, "started_at": NOW},
+            {"kind": "season", "entity_id": 96668, "started_at": NOW}])
+    # yarım kalmış yazma: dosya değişti, katalog değişmedi
+    write(canonical.data_dir, f"{PL_DIR}/{ARS}/incidents.json", {"incidents": []})
+
+    report = admin.verify()
+    assert issues(report) == [("I3", "slices", ARS), ("I6", "pending_write", ARS), ("I6", "pending_write", None)]
+    repaired = admin.verify(repair=True)
+    assert [(i.invariant, i.event_id, i.repaired) for i in repaired.issues] == [
+        ("I3", ARS, True), ("I6", ARS, True), ("I6", None, False)]
+    assert rows(admin.catalog, "pending_writes", order="kind") == [
+        {"kind": "season", "entity_id": 96668, "started_at": NOW}]  # maç dışı varlıklar sonraki adımın işi
+    assert issues(admin.verify()) == [("I6", "pending_write", None)]
+    assert slice_rows(admin.catalog, ARS)["incidents"]["state"] == "empty"
+
+
+def test_listing_only_rows_are_left_alone(canonical: sf.LegacyFixture, make_admin) -> None:
+    """Liste satırları (sonraki adım) maç dizini olmadan durur: doğrulama onları eksik saymaz."""
+    admin = make_admin(canonical.data_dir)
+    admin.rebuild()
+    listed = derive.event_row(sf.event_payload(sf.PL_NOT_STARTED), "listing")
+    with admin.catalog.write():
+        admin.catalog.upsert("events", [{**listed, "first_seen_at": NOW, "updated_at": NOW}])
+
+    assert admin.verify().ok and admin.verify(deep=True, repair=True).ok
+    assert admin.index_event(listed["id"]) is None  # dizini yok: dizinlenecek bir şey de, silinecek bir şey de yok
+    row = event_row(admin.catalog, listed["id"])
+    assert (row["row_source"], row["has_event_payload"], row["layout"]) == ("listing", 0, None)
+
+    # maç dizini gelince satır olay yükünden yazılır; liste sütunlarına (listed_in, stale) dokunulmaz
+    with admin.catalog.write() as conn:
+        conn.execute("UPDATE events SET listed_in = 'round_2', stale = 1 WHERE id = ?", (listed["id"],))
+    legacy_detail(canonical.data_dir, sf.PL_NOT_STARTED)
+    assert issues(admin.verify()) == [("I3", "unindexed", listed["id"])]
+    assert admin.verify(repair=True).ok
+    row = event_row(admin.catalog, listed["id"])
+    assert (row["row_source"], row["has_event_payload"], row["layout"], row["listed_in"], row["stale"]) == (
+        "event", 1, "legacy", "round_2", 1)
 
 
 # --- sayımlar ------------------------------------------------------------------------------------------
@@ -1091,7 +1466,7 @@ def test_stats(old_forms: sf.LegacyFixture, make_admin) -> None:
 def test_modules_import_only_what_the_store_may_import() -> None:
     """Bölüm 2.1: Store yalnızca src.sports, src.status, src.slices, src.exceptions ve src.version'ı içe aktarabilir."""
     code = (
-        "import sys, json; import src.store.indexer; "
+        "import sys, json; import src.store.indexer, src.store.verify; "
         "print(json.dumps(sorted(m for m in sys.modules if m == 'src' or m.startswith('src.'))))"
     )
     out = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, check=True)
@@ -1099,7 +1474,7 @@ def test_modules_import_only_what_the_store_may_import() -> None:
 
     assert {m for m in loaded if not m.startswith("src.store")} == {
         "src", "src.exceptions", "src.slices", "src.sports", "src.status", "src.version"}
-    assert {"src.store.indexer", "src.store.legacy", "src.store.catalog"} <= loaded
+    assert {"src.store.indexer", "src.store.verify", "src.store.legacy", "src.store.catalog"} <= loaded
 
 
 def test_store_package_root_is_unchanged() -> None:

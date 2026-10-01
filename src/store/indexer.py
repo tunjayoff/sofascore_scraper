@@ -40,7 +40,7 @@ import logging
 import os
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 from src.store import catalog as catalog_mod
 from src.store import codec, derive, files, layout, legacy
@@ -57,6 +57,9 @@ from src.store.errors import (
 from src.store.legacy import LegacyEvent, LegacyEventDir, LegacyProblem, LegacyReader, LegacySlice
 from src.store.manifest import Manifest, SliceEntry
 from src.version import __version__ as APP_VERSION
+
+if TYPE_CHECKING:
+    from src.store.verify import VerifyReport
 
 logger = logging.getLogger(__name__)
 
@@ -650,10 +653,10 @@ def delete_event(cat: Catalog, event_id: int) -> bool:
 
 class CatalogAdmin:
     """
-    Kataloğun yönetimi (bölüm 2.3): yeniden kurma, tek maçı yeniden dizinleme, sayımlar.
+    Kataloğun yönetimi (bölüm 2.3): yeniden kurma, tek maçı yeniden dizinleme, doğrulama, sayımlar.
 
     catalog: paylaşılan Catalog nesnesi (Store cephesi verir); verilmezse DATA_DIR/.meta/catalog.db için
-    yenisi açılır ve `close()` onu kapatır. clock: `built_at` için saat.
+    yenisi açılır ve `close()` onu kapatır. clock: `built_at` ve onarım işaretleri için saat.
     """
 
     def __init__(self, data_dir: PathLike, catalog: Optional[Catalog] = None, *,
@@ -872,7 +875,13 @@ class CatalogAdmin:
             writer.flush()
             return record.layout
 
-    # -- sayımlar ----------------------------------------------------------------------------------
+    # -- doğrulama ve sayımlar ---------------------------------------------------------------------
+
+    def verify(self, *, deep: bool = False, repair: bool = False) -> "VerifyReport":
+        """Tutarlılık denetimi (bölüm 3.6); ayrıntı src/store/verify.py'de. VerifyReport döndürür."""
+        from src.store import verify as verify_mod  # döngüsel içe aktarma: verify bu modülü kullanır
+
+        return verify_mod.verify(self, deep=deep, repair=repair)
 
     def stats(self) -> Dict[str, Any]:
         """
