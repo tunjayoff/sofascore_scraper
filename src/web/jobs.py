@@ -167,6 +167,29 @@ class JobStore:
             with self._lock:
                 self._exclusive = None
 
+    def rebind(self, db_path: str) -> bool:
+        """
+        Depoyu başka bir veritabanı dosyasına taşır (DATA_DIR değişince iş geçmişi yeni dizini izler).
+        Çalışan iş varken yapılamaz. Yol aynıysa hiçbir şey yapmaz ve False döner.
+        """
+        with self._lock:
+            if self._mirror.get("is_running"):
+                raise JobRunningError()
+            if os.path.abspath(db_path) == os.path.abspath(self.db_path):
+                return False
+            previous = self.db_path
+            os.makedirs(os.path.dirname(db_path) or ".", exist_ok=True)
+            self.db_path = db_path
+            try:
+                self._init_db()
+                # Bu süreçte çalışan iş yok: yeni dizindeki "running" satırları eski bir çöküşten kalmadır.
+                # Yansı da boşa döner; önceki dizinin son işi yeni dizinin işi gibi görünmez.
+                self.mark_stale_running_interrupted()
+            except Exception:
+                self.db_path = previous
+                raise
+            return True
+
     def create_running(self, payload: Any) -> str:
         job_id = str(uuid.uuid4())
         now = _utc_now()

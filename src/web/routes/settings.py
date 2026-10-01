@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import sqlite3
 from pathlib import Path
 from typing import Literal, Optional
 from urllib.parse import urlparse
@@ -10,8 +11,10 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, field_validator
 
 from src.refresh import refresh_window_hours
+from src.web.jobs import default_db_path
 from src.web.routes.common import (
     _job_store,
+    _refresh_scraper_state,
     config_manager,
     logger,
 )
@@ -134,14 +137,39 @@ def update_settings(settings: SettingsUpdate):
     Update application settings.
 
     DATA_DIR değişimi çalışan iş varken reddedilir (409 job_running; hiçbir ayar yazılmaz): iş eski
-    dizine yazmayı sürdürürken yeni istekler yeni dizini okur ve veri iki dizine bölünür.
+    dizine yazmayı sürdürürken yeni istekler yeni dizini okur ve veri iki dizine bölünür. İş yokken
+    değişim hemen geçerlidir ve iş deposu (jobs.db) yeni dizine taşınır; yeniden başlatma gerekmez.
     """
     new_dir = settings.data_dir
     if new_dir is None or _abs_data_dir(new_dir) == _abs_data_dir(config_manager.get_data_dir()):
         return _apply_settings(settings)
 
     with _job_store.exclusive("data_dir_change"):
-        return _apply_settings(settings)
+        try:
+            # Önce depo: dizin oluşturulamıyor ya da yazılamıyorsa .env'e hiç dokunulmaz
+            _job_store.rebind(default_db_path(_abs_data_dir(new_dir)))
+        except (OSError, sqlite3.Error) as e:
+            logger.error(f"Yeni veri dizini kullanılamıyor: {new_dir}: {e}")
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "data_dir_unusable",
+                    "message": "The data folder cannot be created or written to; nothing was changed.",
+                },
+            )
+        try:
+            result = _apply_settings(settings)
+        finally:
+            # .env yazılamadıysa depo geçerli DATA_DIR'e geri döner; yazıldıysa bu çağrı bir şey yapmaz
+            moved = not _job_store.rebind(default_db_path(_abs_data_dir(config_manager.get_data_dir())))
+            _refresh_scraper_state()
+    if moved:
+        result["data_dir_changed"] = True
+        result["message"] = (
+            "Settings updated successfully. The data folder changed: downloads and the job history "
+            "now use the new folder; files in the old folder were not moved."
+        )
+    return result
 
 
 def _apply_settings(settings: SettingsUpdate) -> dict:
