@@ -893,6 +893,12 @@ def _new_env_layer(environ: Mapping[str, str], base: Optional[Path]) -> _Layer:
             raise ConfigError(f"{name}: {e}") from None
         if f.metadata["kind"] == model.KIND_PATH:
             value = _resolve_path(value, base)
+        if f.metadata["secret"]:
+            # Boş bırakılmış gizli değer "verilmemiş"tir: boş bir SOFASCORE_SERVER__TOKEN, bugünkü adla verilmiş
+            # belirteci silip korumayı kapatmaz
+            value = value.strip()
+            if not value:
+                continue
         out.values[f"{section}.{key}"] = value
         out.sources[f"{section}.{key}"] = Source(LAYER_ENV, name)
 

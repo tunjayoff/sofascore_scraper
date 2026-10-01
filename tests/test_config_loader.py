@@ -724,6 +724,9 @@ def test_new_style_environment_variables(tmp_path):
         "tennis": model.SliceOverride(disable=("lineups",)), "football": model.SliceOverride(disable=("h2h",)),
     }
     assert s.schedule.tasks[0].every_seconds == 3600.0
+    # Boş bırakılan gizli değer verilmemiş sayılır: bugünkü adla verilen belirteci silmez
+    kept = _load(env={"SOFASCORE_SERVER__TOKEN": " ", "SOFASCORE_API_TOKEN": "legacy-token"})
+    assert kept.settings.server.token == "legacy-token"
     assert loaded.source("follows") == loader.Source("env", "SOFASCORE_FOLLOWS")
     assert loaded.source("client.rate") == loader.Source("env", "SOFASCORE_CLIENT__RATE")
     assert loader.env_name("client.rate") == "SOFASCORE_CLIENT__RATE"
