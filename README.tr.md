@@ -14,7 +14,7 @@ Bu proje SofaScore ile bağlantılı değildir. İstek hızına dikkat edin ve i
 - **Ligler** — SofaScore’da arayarak (web) veya ID ile (`config/leagues.txt`) turnuva ekleme.
 - **Sezonlar ve maçlar** — Bir veya birden fazla ligden sezon seçip tek seferde indirme; maçlara lig, sezon, tarih ve detayın inip inmediğine göre göz atma.
 - **Maç detayları** — İstatistikler (periyot bazında), olaylar, kadrolar, aralarındaki maçlar ve form; spora göre yarı, çeyrek veya set bazında skor.
-- **Web uygulaması** — Ligler, Maç indir, Maçlar, Etkinlik ve Ayarlar sayfaları; canlı ilerleme (SSE) ve anında etki eden Durdur; Türkçe ve İngilizce; açık, koyu veya sisteme uyan tema.
+- **Web uygulaması** — Ligler, Maç indir, Maçlar, Etkinlik ve Ayarlar sayfaları; canlı ilerleme (SSE) ve anında etki eden Durdur; İngilizce ve Türkçe, ilk ziyarette tarayıcınızın diline göre; açık, koyu veya sisteme uyan tema.
 - **Terminal arayüzü** — Tarayıcı olmadan etkileşimli menü.
 - **Otomasyon** — CI/script için headless bayrakları (`--update-all`, `--fetch-mode`, `--league-id`, `--csv-export`, yollar).
 - **Dışa aktarım** — İşlenmiş “tüm maçlar” CSV’si ve API üzerinden export.
@@ -230,7 +230,7 @@ Denetim SofaScore'a hiç bağlanmaz. Her satır `OK`, `WARN` ya da `FAIL` olur; 
 ```
 
 - **Çıkış kodu:** hiçbir denetim başarısız değilse `0` (uyarı olabilir), en az biri başarısızsa `1`. `--strict` uyarılarda da `1` ile çıkar.
-- `--only python,browser` / `--skip frontend` denetim seçer; `--lang en|tr` dili belirler (varsayılan: `APP_LANGUAGE`).
+- `--only python,browser` / `--skip frontend` denetim seçer; `--lang en|tr` dili belirler (varsayılan: uygulamanın dili, bkz. [Dil](#dil)).
 - Uygulamanın kendi import'larından önce çalışır; paketler eksikken de çalışır (bildirdiği şeylerden biri de budur).
 - `--live` ek olarak tarayıcı köprüsü üzerinden SofaScore'a **tek** gerçek istek atar. Başka hiçbir durumda atılmaz. Önce web uygulamasını durdurun: iki süreç aynı tarayıcı profilini açamaz.
 - Başlatıcı (`scripts/start_web.py`) aynı denetimi her açılışta çalıştırır, eksik paketleri ve eksik tarayıcıyı kendisi kurar. Başka kod `src.doctor.run_checks()` / `src.doctor.report()` çağırabilir.
@@ -244,7 +244,7 @@ Tüm anahtarlar `.env.example` içinde. Sık kullanılanlar:
 | Değişken | Açıklama |
 |----------|----------|
 | `DATA_DIR` | Verinin kök dizini (varsayılan `data`). Web `ConfigManager` üzerinden okur. |
-| `APP_LANGUAGE` | `en` veya `tr`: terminal arayüzünün ve sunucu mesajlarının dili. Web uygulamasının dili **Ayarlar**’dan seçilir (orada değiştirmek bu değeri de günceller). |
+| `APP_LANGUAGE` | `en` veya `tr`. Boş (varsayılan) bırakılırsa dil sabitlenmez: sistem dili Türkçeyse Türkçe, değilse İngilizce kullanılır. Web uygulamasında **Ayarlar**’daki dil seçimi bu değeri yazar. Bkz. [Dil](#dil). |
 | `MAX_CONCURRENT` | Paralel detay isteği üst sınırı. |
 | `REQUEST_RATE_LIMIT` | **Tüm süreçlerin toplamı** için SofaScore'a saniyede istek sayısı (web uygulaması, CLI, her `--watch`, `--refresh-only`). Varsayılan `5`; daha yüksek bir değer ya da `0` / `off` (sınırsız) daha hızlıdır ama engellenme riskini artırır. Bkz. [Ortak istek bütçesi](#ortak-istek-bütçesi-tüm-süreçler). |
 | `USE_PROXY` / `PROXY_URL` | İsteğe bağlı proxy: `http://`, `https://` ya da `socks5://`; örn. `http://kullanici:parola@sunucu:8080`. Web uygulamasında **Ayarlar → Bağlantı** altından da ayarlanır; kayıtlı parola bir daha gösterilmez (form ve API `***` gösterir, öyle bırakılırsa parola korunur). Yerleşik tarayıcı değişen proxy’yi uygulama yeniden başlayınca kullanır. |
@@ -254,6 +254,18 @@ Tüm anahtarlar `.env.example` içinde. Sık kullanılanlar:
 | `LOG_LEVEL` / `LOG_DIR` / `LOG_TO_FILE` / `LOG_MAX_MB` / `LOG_BACKUP_COUNT` | Log seviyesi, log dosyasının yeri ve çevrilmesi. Bkz. [Loglar ve tanılama](#loglar-ve-tanılama). |
 
 Web **Ayarlar** sayfasından birçok değer düzenlenir; kayıt `.env`’i günceller.
+
+### Dil
+
+Uygulama İngilizce ve Türkçe konuşur. Terminal, `--doctor`, kurulum betikleri, başlatıcı ve web uygulaması dili aynı kuralla seçer:
+
+1. **Sizin seçtiğiniz dil kazanır.** Bu, `.env` içindeki (ya da ortamdaki) `APP_LANGUAGE=en` veya `tr` değeridir; **Ayarlar** sayfasındaki dil seçimi de bu değeri yazar. Tarayıcı ayrıca kendisinde yapılan seçimi hatırlar.
+2. **Seçim yoksa sistem dili kullanılır.** Terminal tarafı `LC_ALL`, `LC_MESSAGES` ve `LANG` değişkenlerine bakar (Windows’ta bunlar yoksa görüntüleme diline); web uygulaması tarayıcının dil listesine bakar ve elinde olan ilk dili alır.
+3. **O da yoksa İngilizce.** Türkçe dışındaki her dil için de sonuç İngilizcedir.
+
+Yeni kurulum hiçbir dili sabitlemez: `.env.example` içinde `APP_LANGUAGE` boş gelir; sistemi ya da tarayıcısı Türkçe olan Türkçe, diğer herkes İngilizce görür. Her yerde tek bir dili zorlamak için `APP_LANGUAGE` değerini ayarlayın. `.env` dosyasında `APP_LANGUAGE=tr` olan mevcut kurulum Türkçe kalır.
+
+Log satırları (konsol ve log dosyası) dil ne olursa olsun şimdilik Türkçe yazılır; `--help` çıktısında `argparse`’ın kendi sözcükleri (`usage:`, `options:`) İngilizce kalır.
 
 ### Ortak istek bütçesi (tüm süreçler)
 

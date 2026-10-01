@@ -681,10 +681,15 @@ def test_text_output_in_both_languages(make_ctx):
 
 
 def test_language_follows_app_language_like_the_app(make_ctx):
-    assert make_ctx(lang=None).lang == "tr"  # src/i18n.py ile aynı varsayılan
-    assert make_ctx(lang=None, environ={"APP_LANGUAGE": "en"}).lang == "en"
-    assert make_ctx(lang=None, environ={"LANGUAGE": "en_US:en"}).lang == "tr"  # gettext değişkeni: yok sayılır
-    assert make_ctx(lang=None, env_text="APP_LANGUAGE=en\n").lang == "en"
+    assert make_ctx(lang=None).lang == "en"  # src/language.py ile aynı varsayılan
+    assert make_ctx(lang=None, environ={"APP_LANGUAGE": "tr"}).lang == "tr"
+    assert make_ctx(lang=None, environ={"LANGUAGE": "tr_TR:tr"}).lang == "en"  # gettext değişkeni: yok sayılır
+    # Açık ayar yoksa sistem dili; .env'deki açık ayar sistem dilinin önündedir
+    assert make_ctx(lang=None, environ={"LANG": "tr_TR.UTF-8"}).lang == "tr"
+    assert make_ctx(lang=None, environ={"LANG": "de_DE.UTF-8"}).lang == "en"
+    assert make_ctx(lang=None, env_text="APP_LANGUAGE=tr\n").lang == "tr"
+    assert make_ctx(lang=None, environ={"LANG": "tr_TR.UTF-8"}, env_text="APP_LANGUAGE=en\n").lang == "en"
+    assert make_ctx(lang=None, environ={"LANG": "tr_TR.UTF-8"}, env_text="APP_LANGUAGE=\n").lang == "tr"
 
 
 def test_locale_keys_exist_in_both_languages_and_cover_the_code():
@@ -766,7 +771,7 @@ def test_main_py_doctor_works_without_any_third_party_package(tmp_path):
     """
     env = {k: v for k, v in os.environ.items() if k not in ("PYTHONPATH", "APP_LANGUAGE")}
     env_file = tmp_path / ".env"
-    env_file.write_text("MAX_CONCURRENT=5\nAPP_LANGUAGE=en\n", encoding="utf-8")
+    env_file.write_text("MAX_CONCURRENT=5\nAPP_LANGUAGE=tr\n", encoding="utf-8")
     env["SOFASCORE_ENV_FILE"] = str(env_file)
     env["DATA_DIR"] = str(tmp_path / "data")
     proc = subprocess.run(
@@ -779,7 +784,7 @@ def test_main_py_doctor_works_without_any_third_party_package(tmp_path):
     assert by_id["python"]["status"] == OK
     assert by_id["packages"]["code"] == "packages_missing" and by_id["packages"]["fix_command"][1:4] == ["-m", "pip", "install"]
     assert by_id["data_dir"]["status"] == OK
-    assert by_id["env"]["status"] == OK and out["language"] == "en"  # .env, dotenv olmadan okundu
+    assert by_id["env"]["status"] == OK and out["language"] == "tr"  # .env, dotenv olmadan okundu
 
 
 def test_main_py_lists_doctor_in_help():

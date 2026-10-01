@@ -179,6 +179,8 @@ export type JobRow = {
 
 export type Settings = {
   language: string
+  /** true when APP_LANGUAGE is set on the server; false: the server follows its system language */
+  language_explicit?: boolean
   api_base_url?: string
   use_proxy?: boolean
   proxy_url?: string

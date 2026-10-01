@@ -2,24 +2,17 @@ import json
 import os
 from typing import Dict, Optional, Union
 from pathlib import Path
+from src.language import DEFAULT_LANGUAGE, resolve_language
 from src.logger import get_logger
 
 logger = get_logger("I18n")
 
 
-SUPPORTED_LANGUAGES = ("tr", "en")
-
-
-def app_language(default: str = "tr") -> str:
+def app_language(default: str = DEFAULT_LANGUAGE) -> str:
     """
-    APP_LANGUAGE; yoksa eski LANGUAGE — ama yalnızca desteklenen bir koda eşitse.
-    LANGUAGE aynı zamanda GNU gettext değişkenidir (ör. "en_US:en") ve kabuktan gelir.
+    Uygulama dili: açık ayar (APP_LANGUAGE) > sistem dili > İngilizce. Kural src/language.py'de.
     """
-    for key in ("APP_LANGUAGE", "LANGUAGE"):
-        value = (os.getenv(key) or "").strip().lower()
-        if value in SUPPORTED_LANGUAGES:
-            return value
-    return default
+    return resolve_language(default=default)
 
 
 def _default_locale_dir() -> str:
@@ -33,7 +26,7 @@ class I18nManager:
     Loads JSON based locale files and provides string retrieval.
     """
 
-    def __init__(self, locale_dir: Optional[Union[str, Path]] = None, default_lang: str = "tr"):
+    def __init__(self, locale_dir: Optional[Union[str, Path]] = None, default_lang: str = DEFAULT_LANGUAGE):
         self.locale_dir = str(locale_dir) if locale_dir is not None else _default_locale_dir()
         self.current_lang = app_language(default_lang)
         self.translations: Dict[str, Dict[str, str]] = {}

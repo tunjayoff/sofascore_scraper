@@ -35,6 +35,12 @@ MATCH_IDS = (9000001, 9000002)
 # Kullanıcının kabuğundan veya gerçek .env'den gelebilecek ayarları temizle
 for _k in ("PROXY_URL", "USE_PROXY", "API_BASE_URL", "SOFA_CAPTCHA_TOKEN", "FETCH_ONLY_FINISHED"):
     os.environ.pop(_k, None)
+# Dil, testleri çalıştıranın kabuğuna bağlı olmasın (kural: açık ayar > sistem dili > İngilizce,
+# src/language.py): açık ayar yok, ileti dili "C" → her makinede varsayılan dil (İngilizce).
+# LC_MESSAGES yalnızca ileti dilidir; LANG'e dokunulmaz (karakter kodlaması ondan gelir).
+for _k in ("APP_LANGUAGE", "LANGUAGE", "LC_ALL"):
+    os.environ.pop(_k, None)
+os.environ["LC_MESSAGES"] = "C"
 # Log dosyası da geçici dizine: testler projedeki logs/ dizinine yazmaz (src/logger.py)
 for _k in ("LOG_TO_FILE", "LOG_MAX_MB", "LOG_BACKUP_COUNT"):
     os.environ.pop(_k, None)

@@ -3,6 +3,7 @@ Version=1.0
 Type=Application
 Name=SofaScore Scraper
 Comment=Open the local match data web UI
+Comment[tr]=Yerel maç verisi web arayüzünü aç
 TryExec=bash
 Exec=bash -c 'DIR="$(dirname "$(readlink -f "%k")")"; cd "$DIR" && exec ./start-sofascore.sh'
 Terminal=true

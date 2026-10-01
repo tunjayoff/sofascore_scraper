@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, field_validator
 
+from src.language import explicit_language
 from src.refresh import refresh_window_hours
 from src.web.jobs import default_db_path
 from src.web.routes.common import (
@@ -163,6 +164,9 @@ def get_all_settings():
     """Get all current settings."""
     return {
         "language": config_manager.get_language(),
+        # Dil açıkça ayarlanmış mı (APP_LANGUAGE)? Değilse `language` sunucunun sistem dilidir ve
+        # arayüz ilk ziyarette onu değil, tarayıcının dilini izler.
+        "language_explicit": explicit_language() is not None,
         "api_base_url": config_manager.get_api_base_url(),
         "use_proxy": config_manager.get_use_proxy(),
         # Parola maskeli döner (kullanıcı adı ve sunucu görünür kalır); tam değer yalnızca .env'de

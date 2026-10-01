@@ -18,11 +18,15 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
 
-    environment:
-      APP_LANGUAGE: en # or tr
-      # SOFASCORE_ALLOWED_HOSTS: "localhost,127.0.0.1,my-server.lan"
-      # USE_PROXY: "true"
-      # PROXY_URL: "http://user:pass@host:port"
+    # Optional settings: uncomment `environment:` together with the lines you need.
+    # APP_LANGUAGE pins the language (en or tr) and, set here, wins over the choice made on the
+    # Settings page at every start. Left out, each browser's language decides (Turkish for a
+    # Turkish browser, English otherwise).
+    # environment:
+    #   APP_LANGUAGE: tr
+    #   SOFASCORE_ALLOWED_HOSTS: "localhost,127.0.0.1,my-server.lan"
+    #   USE_PROXY: "true"
+    #   PROXY_URL: "http://user:pass@host:port"
 
     # Chromium needs more shared memory than Docker's 64 MB default
     shm_size: "1gb"
