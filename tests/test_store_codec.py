@@ -248,7 +248,7 @@ def test_reader_accepts_legacy_plain_json(tmp_path):
     """Eski düzen: girintili, sıkıştırılmamış `basic.json` (src/fsutil.py'nin yazdığı biçim)."""
     target = tmp_path / "basic.json"
     text = json.dumps(PAYLOAD, ensure_ascii=False, indent=2)
-    target.write_text(text, encoding="utf-8")
+    target.write_bytes(text.encode("utf-8"))  # write_text Windows'ta satır sonlarını çevirirdi
 
     assert codec.read_payload(target) == PAYLOAD
     assert codec.read_raw(target) == text.encode("utf-8")  # dosyadaki baytlar, yeniden yazılmadan
