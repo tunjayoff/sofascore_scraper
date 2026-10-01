@@ -40,7 +40,8 @@ jobs:
       - name: CHANGELOG.md has a section for this version
         run: python scripts/release.py notes
 
-  # The CI workflow itself (frontend lint/test/build, ruff + pytest on 3.10 and 3.14);
+  # The CI workflow itself (frontend lint/test/build; ruff + pytest on Linux 3.10 and 3.14,
+  # Windows and macOS; the offline browser-bridge test);
   # it also uploads the built web app as the `frontend-dist` artifact used below.
   checks:
     needs: verify
