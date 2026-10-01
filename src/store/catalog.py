@@ -5,7 +5,7 @@ Katalog, yük dosyalarının türetilmiş SQLite dizinidir: silinebilir ve dosya
 yüzden göç betiği yoktur; dosyanın şema sürümü (PRAGMA user_version) ya da türetme sürümü
 (`meta.derive_version`) koddakinden farklıysa katalog yeniden kurulur (kuran: dizinleyici).
 
-Bağlantı kuralları (bölüm 3.2):
+Bağlantı kuralları (bölüm 3.2); state.db ile ortak olan kısım src/store/sqlite.py'de durur:
   * İş parçacığı başına bir bağlantı (thread-local), `isolation_level=None`, işlemler açıkça başlatılır.
   * Her yeni bağlantıya `configure` PRAGMA'ları uygular: WAL, busy_timeout 5 sn, foreign_keys,
     temp_store MEMORY, journal_size_limit 64 MB, synchronous NORMAL.
@@ -16,13 +16,13 @@ Bağlantı kuralları (bölüm 3.2):
     bütün yük yazımlarının süreçler arası kilididir (bölüm 6.2).
   * Okuyucular kilit almaz; WAL her okuma işlemine tutarlı bir anlık görüntü verir (bölüm 6.3).
 
-`configure`, `check_sqlite_version`, `is_busy_error` ve `to_store_error` state.db için de kullanılabilir
-(orada synchronous FULL).
+`configure`, `check_sqlite_version`, `is_busy_error` ve `to_store_error` src/store/sqlite.py'den gelir ve
+eski adlarıyla buradan da içe aktarılabilir. `split_statements` aynı bölücüdür; yarım betikte ValueError
+yerine StoreError verir.
 """
 from __future__ import annotations
 
 import contextlib
-import errno
 import functools
 import logging
 import os
@@ -34,8 +34,25 @@ from dataclasses import dataclass
 from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Tuple, Union
 
 from src.store import layout
+from src.store import sqlite as _sqlite
 from src.store.derive import DERIVE_VERSION
-from src.store.errors import CatalogCorrupt, StoreBusy, StoreError
+from src.store.errors import CatalogCorrupt, StoreError
+from src.store.sqlite import (
+    BUSY_TIMEOUT_MS,
+    JOURNAL_SIZE_LIMIT,
+    MIN_SQLITE,
+    Connection,
+    ThreadConnections,
+    begin_immediate,
+    check_sqlite_version,
+    close_quietly,
+    configure,
+    connect,
+    is_busy_error,
+    rollback,
+    to_store_error,
+    warn_no_wal,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -43,9 +60,6 @@ PathLike = Union[str, "os.PathLike[str]"]
 
 CATALOG_SCHEMA = 1  # PRAGMA user_version; src/store/schema/catalog.sql değişince artırılır
 APPLICATION_ID = 0x53464331  # "SFC1": dosyanın bir SofaScore kataloğu olduğunu işaretler
-MIN_SQLITE: Tuple[int, int, int] = (3, 24, 0)  # UPSERT, satır değerleri, kısmi dizin, WITHOUT ROWID
-BUSY_TIMEOUT_MS = 5000
-JOURNAL_SIZE_LIMIT = 64 * 1024 * 1024  # denetim noktasından sonra WAL bu boyuta kırpılır
 REOPEN_CHECK_SECONDS = 1.0  # dosyanın yerine yenisi konmuş mu: en çok bu sıklıkta bakılır (bölüm 6.3)
 
 SCHEMA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "schema", "catalog.sql")
@@ -59,115 +73,23 @@ REBUILD_SCHEMA = "schema_version"  # user_version farklı (eski ya da daha yeni)
 REBUILD_DERIVE = "derive_version"  # şema uyuyor; satırlar başka bir türetme sürümüyle yazılmış ya da hiç kurulmamış
 REBUILD_CORRUPT = "corrupt"  # dosya SQLite veritabanı olarak okunamıyor
 
-_SQLITE_BUSY = 5
-_SQLITE_ERRNO = {3: errno.EPERM, 8: errno.EROFS, 13: errno.ENOSPC}  # PERM, READONLY, FULL
-_SQLITE_CORRUPT_CODES = frozenset({11, 26})  # CORRUPT, NOTADB
 _SCHEMA_NAME_RE = re.compile(r"[a-z][a-z0-9_]{0,30}")
 
 
 # --- bağlantıdan bağımsız yardımcılar -----------------------------------------------------------------
 
-def check_sqlite_version(version: Optional[Tuple[int, ...]] = None) -> None:
-    """Python'la gelen SQLite en az 3.24 olmalı; değilse StoreError."""
-    found = tuple(version) if version is not None else sqlite3.sqlite_version_info
-    if found < MIN_SQLITE:
-        need = ".".join(str(n) for n in MIN_SQLITE[:2])
-        have = ".".join(str(n) for n in found)
-        raise StoreError(f"SQLite {need} ya da daha yenisi gerekli; bu Python'daki sürüm {have}")
-
-
-def _primary_code(exc: BaseException) -> Optional[int]:
-    code = getattr(exc, "sqlite_errorcode", None)  # Python 3.11+
-    return code & 0xFF if isinstance(code, int) else None
-
-
-def is_busy_error(exc: BaseException) -> bool:
-    """SQLITE_BUSY: başka bir bağlantı kilidi `busy_timeout` boyunca bırakmadı."""
-    if not isinstance(exc, sqlite3.OperationalError):
-        return False
-    code = _primary_code(exc)
-    if code is not None:
-        return code == _SQLITE_BUSY
-    return "database is locked" in str(exc).lower()  # Python 3.10: hata kodu yok
-
-
-def to_store_error(exc: sqlite3.Error, path: Optional[PathLike] = None) -> StoreError:
-    """
-    sqlite3 hatası → StoreError. Kilit zaman aşımı StoreBusy, okunamayan dosya CatalogCorrupt olur;
-    disk dolu / salt okunur hataları errno taşır, böylece `fatal` özelliği "işi durdur" der.
-    """
-    where = os.fspath(path) if path is not None else None
-    detail = str(exc) or type(exc).__name__
-    suffix = f": {where}" if where else ""
-    if is_busy_error(exc):
-        return StoreBusy(f"Depo meşgul: veritabanı kilidi alınamadı ({detail}){suffix}", path=where, detail=detail)
-    code = _primary_code(exc)
-    text = detail.lower()
-    corrupt = code in _SQLITE_CORRUPT_CODES if code is not None else (
-        "not a database" in text or "malformed" in text)
-    if corrupt:
-        return CatalogCorrupt(f"Veritabanı okunamıyor ({detail}){suffix}", path=where, detail=detail)
-    errno_code = _SQLITE_ERRNO.get(code) if code is not None else (
-        errno.ENOSPC if "disk is full" in text else errno.EROFS if "readonly database" in text else None)
-    return StoreError(f"Veritabanı işlemi başarısız ({detail}){suffix}", path=where, errno_code=errno_code,
-                      detail=detail)
-
-
-def configure(conn: sqlite3.Connection, *, synchronous: str = "NORMAL",
-              busy_timeout_ms: int = BUSY_TIMEOUT_MS) -> str:
-    """
-    Bölüm 3.2'deki PRAGMA'ları yeni bir bağlantıya uygular ve geçerli günlük kipini döndürür: "wal" ya da,
-    WAL açılamadıysa, "delete" (bellekteki veritabanında "memory"). synchronous: catalog.db için NORMAL
-    (elektrik kesintisinde son işlemler kaybolabilir, uzlaştırma dosyalardan onarır), state.db için FULL.
-    """
-    if synchronous not in ("NORMAL", "FULL"):
-        raise ValueError(f"Geçersiz synchronous değeri: {synchronous!r}")
-    conn.execute(f"PRAGMA busy_timeout = {int(busy_timeout_ms)}")
-    mode = _set_journal_mode(conn, "WAL", busy_timeout_ms)
-    if mode != "wal":
-        mode = _set_journal_mode(conn, "DELETE", busy_timeout_ms) or "delete"
-    conn.execute("PRAGMA foreign_keys = ON")
-    conn.execute("PRAGMA temp_store = MEMORY")
-    conn.execute(f"PRAGMA journal_size_limit = {JOURNAL_SIZE_LIMIT}")
-    conn.execute(f"PRAGMA synchronous = {synchronous}")
-    return mode
-
-
-def _set_journal_mode(conn: sqlite3.Connection, mode: str, busy_timeout_ms: int) -> str:
-    """
-    Günlük kipini ayarlar ve geçerli kipi döndürür. Dosya henüz o kipte değilse SQLite paylaşımlı kilidi
-    özel kilide yükseltir; iki bağlantı bunu aynı anda denerse kilitlenmeyi önlemek için `busy_timeout`'u
-    beklemeden SQLITE_BUSY döner (yeni bir veri dizinini aynı anda açan iki süreç). O durumda burada,
-    aynı süre sınırıyla, yeniden denenir.
-    """
-    deadline = time.monotonic() + busy_timeout_ms / 1000.0
-    delay = 0.005
-    while True:
-        try:
-            row = conn.execute(f"PRAGMA journal_mode = {mode}").fetchone()
-            return str(row[0]).lower() if row and row[0] is not None else ""
-        except sqlite3.OperationalError as exc:
-            if not is_busy_error(exc) or time.monotonic() >= deadline:
-                raise
-            time.sleep(delay)
-            delay = min(delay * 2, 0.1)
+_set_journal_mode = _sqlite.set_journal_mode  # ST-06'daki adı; WAL'a geçişi yeniden deneyen ortak işlev
 
 
 def split_statements(script: str) -> List[str]:
     """
-    SQL betiğini tek tek çalıştırılabilir deyimlere böler (yorumlar ve metin içindeki `;` sayılmaz).
+    SQL betiğini tek tek çalıştırılabilir deyimlere böler (src/store/sqlite.py); yarım kalan betik StoreError.
     `executescript` açık işlemi kendiliğinden bitirdiği için DDL bir işlemin içinde deyim deyim çalıştırılır.
     """
-    statements: List[str] = []
-    buffer = ""
-    for line in script.splitlines():
-        buffer += line + "\n"
-        if sqlite3.complete_statement(buffer):
-            statements.append(buffer.strip())
-            buffer = ""
-    if buffer.strip() and any(ln.strip() and not ln.strip().startswith("--") for ln in buffer.splitlines()):
-        raise StoreError(f"SQL betiği yarım bir deyimle bitiyor: {buffer.strip()[:80]!r}")
-    return statements
+    try:
+        return _sqlite.split_statements(script)
+    except ValueError as exc:
+        raise StoreError(str(exc), detail=str(exc)) from exc
 
 
 @functools.lru_cache(maxsize=1)
@@ -201,14 +123,6 @@ def _file_identity(path: str) -> Optional[Tuple[int, int]]:
     return (st.st_dev, st.st_ino) if st.st_ino else None
 
 
-def _rollback(conn: sqlite3.Connection) -> None:
-    if conn.in_transaction:
-        try:
-            conn.execute("ROLLBACK")
-        except sqlite3.Error:  # bağlantı kullanılamaz durumda: asıl hata zaten yükseliyor
-            pass
-
-
 # --- durum ------------------------------------------------------------------------------------------
 
 @dataclass(frozen=True)
@@ -236,8 +150,7 @@ class CatalogState:
 class _Slot:
     """Bir iş parçacığının bağlantısı ve işlem durumu."""
 
-    conn: sqlite3.Connection
-    generation: int
+    conn: Connection
     identity: Optional[Tuple[int, int]]
     checked_at: float
     depth: int = 0  # iç içe write() derinliği; 0: yazma işlemi yok
@@ -264,12 +177,10 @@ class Catalog:
             if not _SCHEMA_NAME_RE.fullmatch(name) or name in ("main", "temp"):
                 raise ValueError(f"Geçersiz ATTACH adı: {name!r}")
             self._attach[name] = os.path.abspath(os.fspath(other))
-        self._local = threading.local()
+        self._local = threading.local()  # iş parçacığının _Slot'u; bağlantının kendisi _connections'ta
         self._lock = threading.Lock()
-        self._connections: Dict[threading.Thread, sqlite3.Connection] = {}
-        self._generation = 0
+        self._connections = ThreadConnections()
         self._journal_mode: Optional[str] = None
-        self._warned_no_wal = False
         # tablo → (sütunlar, birincil anahtar sütunları, varsayılanı olmayan anahtar sütunları)
         self._tables: Dict[str, Tuple[Tuple[str, ...], Tuple[str, ...], Tuple[str, ...]]] = {}
 
@@ -298,30 +209,19 @@ class Catalog:
     def close(self) -> None:
         """Bütün iş parçacıklarının bağlantılarını kapatır. Başka bir iş parçacığı o an sorgu çalıştırmamalı."""
         with self._lock:
-            self._generation += 1
-            connections = list(self._connections.values())
-            self._connections.clear()
             self._tables.clear()
-        for conn in connections:
-            self._close_quietly(conn)
-
-    @staticmethod
-    def _close_quietly(conn: sqlite3.Connection) -> None:
-        try:
-            conn.close()
-        except sqlite3.Error:
-            pass
+        self._connections.close_all()
 
     def _slot(self) -> _Slot:
         slot: Optional[_Slot] = getattr(self._local, "slot", None)
-        if slot is not None and slot.generation != self._generation:
+        if slot is not None and self._connections.current() is not slot.conn:
             slot = None  # close() çağrılmış: bağlantı kapalı
         if slot is not None and not slot.conn.in_transaction and self._replaced(slot):
             # Başka bir süreç kataloğu yeniden yaratıp yerine koydu; eski bağlantı silinmiş dosyayı okur
+            self._connections.release()
             with self._lock:
-                self._connections.pop(threading.current_thread(), None)
                 self._tables.clear()
-            self._close_quietly(slot.conn)
+            close_quietly(slot.conn)
             slot = None
         if slot is None:
             slot = self._open_slot()
@@ -337,7 +237,7 @@ class Catalog:
         return current is not None and slot.identity is not None and current != slot.identity
 
     def _open_slot(self) -> _Slot:
-        conn: Optional[sqlite3.Connection] = None
+        conn: Optional[Connection] = None
         identity: Optional[Tuple[int, int]] = None
         for _ in range(3):
             before = _file_identity(self.path)
@@ -346,19 +246,16 @@ class Catalog:
             if before is None or before == identity:
                 break
             # Bağlanırken dosya değiştirildi: hangi dosyanın açıldığı belirsiz, yeniden dene
-            self._close_quietly(conn)
+            close_quietly(conn)
             conn = None
         if conn is None:
             conn = self._connect()
             identity = _file_identity(self.path)
-        with self._lock:
-            generation = self._generation
-            for thread in [t for t in self._connections if not t.is_alive()]:
-                self._close_quietly(self._connections.pop(thread))  # biten iş parçacıklarının bağlantıları
-            self._connections[threading.current_thread()] = conn
-        return _Slot(conn=conn, generation=generation, identity=identity, checked_at=time.monotonic())
+        self._connections.close_finished()  # biten iş parçacıklarının bağlantıları
+        self._connections.adopt(conn)
+        return _Slot(conn=conn, identity=identity, checked_at=time.monotonic())
 
-    def _connect(self) -> sqlite3.Connection:
+    def _connect(self) -> Connection:
         directory = os.path.dirname(self.path)
         try:
             os.makedirs(directory, exist_ok=True)
@@ -368,26 +265,19 @@ class Catalog:
             if not os.path.isfile(other):
                 raise StoreError(f"ATTACH edilecek veritabanı yok ({name}): {other}", path=other)
         try:
-            # check_same_thread=False: close() ve biten iş parçacıklarının temizliği başka iş parçacığından yapılır
-            conn = sqlite3.connect(self.path, timeout=self.busy_timeout_ms / 1000.0, isolation_level=None,
-                                   check_same_thread=False)
+            conn = connect(self.path, busy_timeout_ms=self.busy_timeout_ms)
         except sqlite3.Error as exc:
             raise to_store_error(exc, self.path) from exc
         try:
-            conn.row_factory = sqlite3.Row
             mode = configure(conn, synchronous="NORMAL", busy_timeout_ms=self.busy_timeout_ms)
             for name, other in self._attach.items():
                 conn.execute(f"ATTACH DATABASE ? AS {name}", (other,))
         except sqlite3.Error as exc:
-            self._close_quietly(conn)
+            close_quietly(conn)
             raise to_store_error(exc, self.path) from exc
         self._journal_mode = mode
-        if mode != "wal" and not self._warned_no_wal:
-            self._warned_no_wal = True
-            logger.warning(
-                f"catalog.db WAL kipine geçirilemedi (ağ dosya sistemi olabilir); {mode.upper()} günlük kipiyle "
-                f"açıldı. Bu veri dizinini aynı anda yalnızca bir süreç kullanmalı: {self.path}"
-            )
+        if mode != "wal":
+            warn_no_wal(logger, self.path, mode)
         return conn
 
     # -- işlemler ------------------------------------------------------------------------------------
@@ -429,7 +319,7 @@ class Catalog:
             # Okuma işlemini yazmaya yükseltmek tam da kaçınılan şey: ortada SQLITE_BUSY alınabilir
             raise StoreError("Açık bir okuma işleminin içinde yazma işlemi başlatılamaz", path=self.path)
         try:
-            conn.execute("BEGIN IMMEDIATE")
+            begin_immediate(conn, self.path)
         except sqlite3.Error as exc:
             raise to_store_error(exc, self.path) from exc
         slot.depth = 1
@@ -437,7 +327,7 @@ class Catalog:
             yield conn
             conn.execute("COMMIT")
         except BaseException as exc:
-            _rollback(conn)
+            rollback(conn)
             if isinstance(exc, sqlite3.Error):
                 raise to_store_error(exc, self.path) from exc
             raise
@@ -460,7 +350,7 @@ class Catalog:
             raise to_store_error(exc, self.path) from exc
         finally:
             if not joined:
-                _rollback(conn)  # salt okuma: COMMIT ile ROLLBACK aynı
+                rollback(conn)  # salt okuma: COMMIT ile ROLLBACK aynı
 
     def _require_write(self) -> sqlite3.Connection:
         slot = self._slot()
@@ -503,7 +393,7 @@ class Catalog:
                 return CatalogState(exists=True, rebuild_reason=REBUILD_CORRUPT, detail=str(exc))
             raise error from exc
         finally:
-            self._close_quietly(conn)
+            close_quietly(conn)
 
         if application_id == 0 and schema_version == 0 and objects == 0:
             reason: Optional[str] = REBUILD_MISSING

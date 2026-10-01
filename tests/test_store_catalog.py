@@ -984,4 +984,4 @@ def test_module_imports_only_what_the_store_may_import():
 
     assert set(json.loads(out.stdout)) == {
         "src", "src.exceptions", "src.sports", "src.status", "src.store", "src.store.catalog", "src.store.derive",
-        "src.store.errors", "src.store.layout"}
+        "src.store.errors", "src.store.layout", "src.store.sqlite"}

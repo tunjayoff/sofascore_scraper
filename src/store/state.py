@@ -17,8 +17,12 @@ Geçişler bölüm 7.3'e göre `maintenance` kilidi altında çalışır: kilidi
 (src/store/lease.py). Verilmediğinde süreçler arası sıralamayı geçiş işleminin kendisi sağlar
 (BEGIN IMMEDIATE, sürüm işlem içinde yeniden okunur).
 
+Bağlantı kuralları (iş parçacığı başına bağlantı, PRAGMA'lar, WAL'a geçişin yeniden denenmesi, kendini
+kapatan bağlantı) catalog.db ile ortaktır ve src/store/sqlite.py'de durur.
+
 SQLite hataları (bozuk dosya, açılamayan yol) burada çevrilmez, `sqlite3.Error` olarak çıkar: iş deposunun
-bugünkü çağıranları bunları öyle yakalar (src/web/routes/settings.py).
+bugünkü çağıranları bunları öyle yakalar (src/web/routes/settings.py). Tek istisna kilit zaman aşımıdır:
+StoreBusy.
 """
 from __future__ import annotations
 
@@ -28,24 +32,38 @@ import logging
 import os
 import re
 import sqlite3
-import threading
 import time
 import uuid
-import weakref
 from dataclasses import dataclass
-from typing import Any, Callable, ContextManager, Iterator, List, Mapping, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Callable, ContextManager, Iterator, List, Mapping, Optional, Union
 
 from src.store import files
-from src.store.errors import SchemaTooNew, StoreBusy, StoreError
+from src.store.errors import SchemaTooNew, StoreError
+from src.store.sqlite import (
+    BUSY_TIMEOUT_MS,
+    JOURNAL_SIZE_LIMIT,
+    MIN_SQLITE,
+    WAL_RETRY_PAUSE,
+    Connection,
+    ThreadConnections,
+    begin_immediate,
+    check_sqlite_version,
+    configure,
+    connect,
+    is_busy_error,
+    rollback,
+    set_journal_mode,
+    split_statements,
+    strip_comments,
+    to_store_error,
+    warn_no_wal,
+)
 
 logger = logging.getLogger("Store")
 
 PathLike = Union[str, "os.PathLike[str]"]
 
 APPLICATION_ID = 0x53465331  # "SFS1": dosyanın bir state.db olduğunu işaretler (catalog.db: 0x53464331)
-MIN_SQLITE: Tuple[int, int, int] = (3, 24, 0)  # UPSERT, satır değerleri, kısmi dizinler, WITHOUT ROWID
-BUSY_TIMEOUT_MS = 5000
-JOURNAL_SIZE_LIMIT = 64 * 1024 * 1024  # denetim noktasından sonra WAL en çok 64 MB kalır
 MIGRATIONS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "migrations", "state")
 BACKUP_SUFFIX = ".bak-v"  # state.db.bak-v<eski sürüm>
 
@@ -53,57 +71,7 @@ _MIGRATION_FILE_RE = re.compile(r"(\d{4})_([a-z0-9_]+)\.sql")
 _ADD_COLUMN_RE = re.compile(
     r"ALTER\s+TABLE\s+[\"`\[]?(\w+)[\"`\]]?\s+ADD\s+(?:COLUMN\s+)?[\"`\[]?(\w+)[\"`\]]?", re.IGNORECASE
 )
-_LINE_COMMENT_RE = re.compile(r"--[^\n]*")
-_BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
-_SQLITE_BUSY, _SQLITE_LOCKED = 5, 6
-_WAL_RETRY_PAUSE = 0.01  # saniye
-
-_wal_warned: Set[str] = set()
-_wal_warned_lock = threading.Lock()
-
-
-def check_sqlite_version(version: Optional[Sequence[int]] = None) -> None:
-    """Kütüphanedeki SQLite 3.24'ten eskiyse StoreError (bölüm 3.2)."""
-    found = tuple(version if version is not None else sqlite3.sqlite_version_info)
-    if found < MIN_SQLITE:
-        need = ".".join(str(n) for n in MIN_SQLITE[:2])
-        have = ".".join(str(n) for n in found)
-        raise StoreError(f"SQLite {need} ya da daha yenisi gerekli; bu Python {have} ile derlenmiş", detail=have)
-
-
-def is_busy_error(exc: BaseException) -> bool:
-    """Hata "veritabanı kilitli" mi (SQLITE_BUSY / SQLITE_LOCKED)? Python 3.10'da hata kodu yok: iletiye bakılır."""
-    if not isinstance(exc, sqlite3.OperationalError):
-        return False
-    code = getattr(exc, "sqlite_errorcode", None)
-    if code is not None:
-        return (code & 0xFF) in (_SQLITE_BUSY, _SQLITE_LOCKED)
-    text = str(exc).lower()
-    return "locked" in text or "busy" in text
-
-
-def _strip_comments(sql: str) -> str:
-    """Yorumları atar. Tırnak içini ayırt etmez: yalnızca "boş mu" ve "ALTER ile mi başlıyor" sorularında kullanılır."""
-    return _LINE_COMMENT_RE.sub("", _BLOCK_COMMENT_RE.sub("", sql)).strip()
-
-
-def split_statements(script: str) -> List[str]:
-    """
-    SQL betiğini deyimlere böler. Sınırı `sqlite3.complete_statement` belirler, bu yüzden dize içindeki
-    noktalı virgül ve CREATE TRIGGER ... BEGIN ... END gövdesi bölünmez. Sonda yarım kalan deyim ValueError.
-    """
-    statements: List[str] = []
-    pieces = script.split(";")
-    buffer = ""
-    for piece in pieces[:-1]:
-        buffer += piece + ";"
-        if sqlite3.complete_statement(buffer):
-            if _strip_comments(buffer) != ";":
-                statements.append(buffer.strip())
-            buffer = ""
-    if _strip_comments(buffer + pieces[-1]):
-        raise ValueError("betik yarım bir deyimle bitiyor (noktalı virgül eksik)")
-    return statements
+_WAL_RETRY_PAUSE = WAL_RETRY_PAUSE  # saniye; WAL isteği yeniden denenirken ilk bekleme
 
 
 @dataclass(frozen=True)
@@ -149,18 +117,6 @@ def load_migrations(directory: Optional[PathLike] = None) -> List[Migration]:
     return found
 
 
-class _Connection(sqlite3.Connection):
-    """
-    Açıkça kapatılmadan bırakılan bağlantı (iş parçacığı bitti ya da depo çöpe gitti) kendini kapatır.
-    Python alt sınıfı olduğu için zayıf başvuruyla izlenebilir: StateDb.close() başka iş parçacıklarının
-    bağlantılarını böyle bulur, bitmiş iş parçacıklarınınkini ise canlı tutmaz.
-    """
-
-    def __del__(self) -> None:
-        with contextlib.suppress(Exception):
-            self.close()
-
-
 class StateDb:
     """
     Bir state.db dosyası. Kurulurken dosya (yoksa) oluşturulur ve eksik geçişler uygulanır.
@@ -177,9 +133,7 @@ class StateDb:
         self._migration_guard = migration_guard
         self.journal_mode = ""  # "wal", ya da WAL kurulamadıysa "delete" (tek süreç kipi)
         self._migrations = load_migrations(migrations_dir)
-        self._local = threading.local()
-        self._connections: "weakref.WeakSet[_Connection]" = weakref.WeakSet()
-        self._connections_lock = threading.Lock()
+        self._connections = ThreadConnections()
         self._closed = False
         try:
             self._check_identity()
@@ -202,82 +156,44 @@ class StateDb:
 
     def _request_wal(self, conn: sqlite3.Connection) -> str:
         """
-        WAL kipini ister ve SQLite'ın yanıtını döndürür. Kip değişimi dosyada tek başına olmayı gerektirir ve
-        SQLite bu kilit için `busy_timeout`u beklemez: aynı anda açılan başka bir bağlantı varsa hemen
-        "database is locked" verir. Bu yüzden bekleme burada yapılır; süre dolarsa StoreBusy.
+        WAL kipini ister ve SQLite'ın yanıtını döndürür. Kip değişimi `busy_timeout`u beklemez; bekleme
+        `set_journal_mode`dadır (src/store/sqlite.py). Süre dolarsa StoreBusy.
         """
-        deadline = time.monotonic() + BUSY_TIMEOUT_MS / 1000
-        while True:
-            try:
-                return str(conn.execute("PRAGMA journal_mode = WAL").fetchone()[0]).lower()
-            except sqlite3.OperationalError as e:
-                if not is_busy_error(e):
-                    raise
-                if time.monotonic() >= deadline:
-                    raise StoreBusy(f"state.db meşgul: {BUSY_TIMEOUT_MS} ms içinde açılamadı: {self.path}",
-                                    path=self.path, detail=str(e)) from e
-                time.sleep(_WAL_RETRY_PAUSE)
-
-    def _connect(self) -> _Connection:
-        # isolation_level=None: Python kendiliğinden BEGIN atmaz, işlemler açıkça yönetilir.
-        # check_same_thread=False: close() başka iş parçacığının bağlantısını kapatabilsin.
-        conn = sqlite3.connect(self.path, timeout=BUSY_TIMEOUT_MS / 1000, isolation_level=None,
-                               check_same_thread=False, factory=_Connection)
         try:
-            conn.row_factory = sqlite3.Row
-            conn.execute(f"PRAGMA busy_timeout = {BUSY_TIMEOUT_MS}")
-            answer = mode = self._request_wal(conn)
-            if mode != "wal":
-                # Ağ dosya sistemi: WAL paylaşımlı bellek ister. Tek süreç kipine düş (bölüm 3.2, 6.4).
-                mode = str(conn.execute("PRAGMA journal_mode = DELETE").fetchone()[0]).lower()
-                with _wal_warned_lock:
-                    first = self.path not in _wal_warned
-                    _wal_warned.add(self.path)
-                if first:
-                    logger.warning(
-                        "state.db WAL kipine alınamadı (%s); DELETE kipiyle açıldı: veri dizinini aynı anda "
-                        "yalnızca bir süreç kullanmalı: %s", answer, self.path,
-                    )
-            self.journal_mode = mode
-            conn.execute("PRAGMA foreign_keys = ON")
-            conn.execute("PRAGMA temp_store = MEMORY")
-            conn.execute(f"PRAGMA journal_size_limit = {JOURNAL_SIZE_LIMIT}")
-            conn.execute("PRAGMA synchronous = FULL")  # state.db'yi hiçbir şey onaramaz
+            return set_journal_mode(conn, "WAL", BUSY_TIMEOUT_MS, pause=_WAL_RETRY_PAUSE)
+        except sqlite3.OperationalError as e:
+            if is_busy_error(e):
+                raise to_store_error(e, self.path) from e
+            raise
+
+    def _connect(self) -> Connection:
+        conn = connect(self.path, busy_timeout_ms=BUSY_TIMEOUT_MS)
+        try:
+            # synchronous = FULL: state.db'yi hiçbir şey onaramaz
+            mode = configure(conn, synchronous="FULL", busy_timeout_ms=BUSY_TIMEOUT_MS,
+                             request_wal=self._request_wal)
         except BaseException:
             conn.close()
             raise
+        if mode != "wal":
+            warn_no_wal(logger, self.path, mode)
+        self.journal_mode = mode
         return conn
 
     def connection(self) -> sqlite3.Connection:
         """Çağıran iş parçacığının bağlantısı (ilk çağrıda açılır). İşlem dışında otomatik kayıt kipindedir."""
         if self._closed:
             raise StoreError(f"state.db kapatılmış: {self.path}", path=self.path)
-        conn: Optional[_Connection] = getattr(self._local, "conn", None)
+        conn = self._connections.current()
         if conn is None:
             conn = self._connect()
-            self._local.conn = conn
-            with self._connections_lock:
-                self._connections.add(conn)
+            self._connections.adopt(conn)
         return conn
 
     def close(self) -> None:
         """Bütün iş parçacıklarının bağlantılarını kapatır. Sonrasında nesne kullanılamaz."""
         self._closed = True
-        with self._connections_lock:
-            connections = list(self._connections)
-            self._connections.clear()
-        for conn in connections:
-            with contextlib.suppress(sqlite3.Error):
-                conn.close()
-
-    def _begin_immediate(self, conn: sqlite3.Connection) -> None:
-        try:
-            conn.execute("BEGIN IMMEDIATE")
-        except sqlite3.OperationalError as e:
-            if is_busy_error(e):
-                raise StoreBusy(f"state.db meşgul: yazma kilidi {BUSY_TIMEOUT_MS} ms içinde alınamadı: {self.path}",
-                                path=self.path, detail=str(e)) from e
-            raise
+        self._connections.close_all()
 
     @contextlib.contextmanager
     def write(self) -> Iterator[sqlite3.Connection]:
@@ -290,14 +206,12 @@ class StateDb:
         if conn.in_transaction:
             yield conn
             return
-        self._begin_immediate(conn)
+        begin_immediate(conn, self.path)
         try:
             yield conn
             conn.execute("COMMIT")
         except BaseException:
-            if conn.in_transaction:
-                with contextlib.suppress(sqlite3.Error):
-                    conn.execute("ROLLBACK")
+            rollback(conn)
             raise
 
     # --- kimlik ve geçişler -----------------------------------------------------------------
@@ -316,8 +230,7 @@ class StateDb:
             probe.execute("COMMIT")
         except sqlite3.OperationalError as e:
             if is_busy_error(e):
-                raise StoreBusy(f"state.db meşgul: {BUSY_TIMEOUT_MS} ms içinde okunamadı: {self.path}",
-                                path=self.path, detail=str(e)) from e
+                raise to_store_error(e, self.path) from e
             raise
         finally:
             probe.close()
@@ -372,7 +285,7 @@ class StateDb:
     @staticmethod
     def _column_exists(conn: sqlite3.Connection, statement: str) -> bool:
         """`ALTER TABLE t ADD COLUMN c` deyiminin sütunu zaten var mı (betik yeniden çalıştırılabilsin)."""
-        match = _ADD_COLUMN_RE.match(_strip_comments(statement))
+        match = _ADD_COLUMN_RE.match(strip_comments(statement))
         if not match:
             return False
         table, column = match.group(1), match.group(2)
@@ -382,7 +295,7 @@ class StateDb:
     def _apply(self, conn: sqlite3.Connection, migration: Migration) -> bool:
         """Bir geçişi tek işlemde uygular. Başka bir süreç araya girip uyguladıysa False döner."""
         statements = migration.statements()
-        self._begin_immediate(conn)
+        begin_immediate(conn, self.path)
         try:
             current = int(conn.execute("PRAGMA user_version").fetchone()[0])
             if current >= migration.version:
@@ -395,9 +308,7 @@ class StateDb:
             conn.execute(f"PRAGMA user_version = {migration.version}")
             conn.execute("COMMIT")
         except BaseException as e:
-            if conn.in_transaction:
-                with contextlib.suppress(sqlite3.Error):
-                    conn.execute("ROLLBACK")
+            rollback(conn)
             # sqlite3.Warning: Python 3.11 ve öncesinde "aynı anda tek deyim" hatası bu sınıfla gelir
             if isinstance(e, (sqlite3.Error, sqlite3.Warning)):
                 raise StoreError(f"state.db geçişi başarısız, geri alındı: {migration.name} ({e})",
@@ -470,6 +381,9 @@ class RuntimeFacts:
 
 __all__ = [
     "APPLICATION_ID",
+    "BUSY_TIMEOUT_MS",
+    "JOURNAL_SIZE_LIMIT",
+    "MIN_SQLITE",
     "MIGRATIONS_DIR",
     "Migration",
     "RuntimeFact",
