@@ -1,9 +1,10 @@
 """
 Dizinleyici: yük dosyalarından katalog satırları (docs/design/01-storage.md, bölüm 3.4 ve 5.2).
 
-Bu modül maçları ve dilimlerini dizinler: `events`, `event_slices`, `event_participants`,
-`participants` ve olay yükünde geçen `sports` / `categories` / `tournaments` / `seasons` satırları.
-Program sayfaları, sezon listeleri, değişiklik günlüğü ve uzlaştırma (reconcile) sonraki adımda eklenir.
+Bu modül maçları ve dilimlerini dizinler (`events`, `event_slices`, `event_participants`, `participants` ve
+olay yükünde geçen `sports` / `categories` / `tournaments` / `seasons` satırları) ve öteki kaynakların
+dizinlenmesini sıraya koyar: sezon listeleri, program sayfaları ve liste satırları (src/store/entities.py),
+değişiklik günlüğü (src/store/changes.py). Uzlaştırma (reconcile) sonraki adımda eklenir.
 
 Kaynaklar ve öncelik:
 
@@ -30,20 +31,41 @@ Yeniden kurma (`CatalogAdmin.rebuild`) iki kiptedir (bölüm 3.4):
     commit'e kadar eski, tutarlı kataloğu görür; hata olursa eski katalog kalır.
   * yeniden yaratma: `catalog.db.build` kurulur, sonra `catalog.db`'nin yerine konur.
 
-Yeniden kurma `maintenance` kilidini (bölüm 6.1) gerektirir; kilitler Store cephesiyle gelir, burada
-alınmaz. O zamana kadar çağıran, aynı anda başka yazar olmadığından emin olmalıdır.
+Yeniden kurmanın tarama sırası (bölüm 3.4): sezon listeleri; tur / sayfa dosyası olan sezonların
+listeleri; v3 maçları; eski düzen maçları; yalnızca özet CSV'si olan sezonlar; değişiklik günlüğü. Listeler
+maçlardan önce yazılır, çünkü turnuva ve sezon satırlarının asıl kaynağı onlardır (olay yükü satırı yalnızca
+yoksa ekler). Özet CSV'sinden gelen sezonlar maçlardan sonra yazılır: o satırlar sporunu söylemez, spor
+turnuvanın katalogdaki satırından alınır.
+
+Yeniden kurma `maintenance` kilidini (bölüm 6.1) gerektirir; kilitler Store cephesindedir, burada alınmaz:
+çağıran, aynı anda başka yazar olmadığından emin olmalıdır.
 """
 from __future__ import annotations
 
 import json
 import logging
 import os
+import re
 import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 from src.store import catalog as catalog_mod
-from src.store import codec, derive, files, layout, legacy
+from src.store import changes as changes_mod
+from src.store import codec, derive, entities, files, layout, legacy
 from src.store import manifest as manifest_mod
 from src.store.catalog import Catalog
 from src.store.errors import (
@@ -54,7 +76,18 @@ from src.store.errors import (
     SchemaTooNew,
     StoreError,
 )
-from src.store.legacy import LegacyEvent, LegacyEventDir, LegacyProblem, LegacyReader, LegacySlice
+from src.store.entities import ListingMark, SeasonKey
+from src.store.legacy import (
+    LegacyEvent,
+    LegacyEventDir,
+    LegacyProblem,
+    LegacyReader,
+    LegacySchedulePage,
+    LegacySeasonList,
+    LegacySlice,
+    LegacySummaryFile,
+    LegacySuperseded,
+)
 from src.store.manifest import Manifest, SliceEntry
 from src.version import __version__ as APP_VERSION
 
@@ -66,6 +99,7 @@ logger = logging.getLogger(__name__)
 PathLike = Union[str, "os.PathLike[str]"]
 Row = Dict[str, Any]
 Progress = Callable[[str, int, int], None]
+LeagueNames = Union[Mapping[int, str], Callable[[], Mapping[int, str]]]
 
 LAYOUT_V3 = "v3"
 LAYOUT_LEGACY = "legacy"
@@ -79,6 +113,7 @@ EVENT_KEY = legacy.EVENT_KEY
 
 # rebuild(progress=...) aşama adları
 STAGE_SCAN = "scan"
+STAGE_LISTINGS = "listings"  # yalnızca tur / sayfa dosyası olan sezon varsa bildirilir
 STAGE_V3_EVENTS = "v3_events"
 STAGE_LEGACY_EVENTS = "legacy_events"
 STAGE_FINISH = "finish"
@@ -97,6 +132,13 @@ PROBLEM_NO_EVENT = legacy.PROBLEM_NO_EVENT
 PROBLEM_UNREADABLE = legacy.PROBLEM_UNREADABLE
 PROBLEM_NAME = legacy.PROBLEM_NAME
 PROBLEM_TOO_NEW = "schema_too_new"  # manifest bu sürümün bildiğinden yeni bir biçimde
+PROBLEM_SEASON_MISMATCH = entities.PROBLEM_SEASON_MISMATCH
+
+# legacy_roots.kind: imzası tutulan eski düzen kökleri (bölüm 3.5). Maç dizinlerinin imzası `events.sig`'dedir.
+ROOT_LEAGUE_DIR = "league_dir"  # matches/<turnuva>_<ad>: sezon dizinleri ve özet dosyaları
+ROOT_SCHEDULE_DIR = "schedule_dir"  # matches/<turnuva>_<ad>/<sezon>_<ad>: tur ve sayfa dosyaları
+ROOT_SEASONS_FILE = "seasons_file"  # seasons/*_seasons.json ve league_seasons.csv
+ROOT_CHANGES_FILE = "changes_file"  # score_changes.jsonl
 
 SUPERSEDED_BY_V3 = "v3"
 SUPERSEDED_BY_LEGACY = "legacy"
@@ -110,10 +152,8 @@ SLICE_COLUMNS: Tuple[str, ...] = (
     "empty_count", "unverified_empty_count", "error_reason", "error_status", "error_at", "error_count",
     "stored_bytes", "raw_bytes", "history_count", "meta_json",
 )
-_PARTICIPANT_COLUMNS: Tuple[str, ...] = (
-    "id", "sport", "name", "name_folded", "short_name", "slug", "name_code", "country", "gender", "type",
-    "national", "updated_at",
-)
+_SCHEDULE_DIR_RE = re.compile(rf"{re.escape(legacy.MATCHES_DIR)}/([0-9]+)_[^/]*/([0-9]+)_[^/]*")
+_LEAGUE_DIR_RE = re.compile(rf"{re.escape(legacy.MATCHES_DIR)}/([0-9]+)_[^/]*")
 
 _BATCH_EVENTS = 500  # bu kadar maçta bir satırlar veritabanına yazılır
 _PROGRESS_EVERY = 100
@@ -165,6 +205,8 @@ class EventRecord:
     slices: Tuple[Row, ...]  # `event_slices` satırları (SLICE_COLUMNS)
     links: Tuple[Row, ...]  # `event_participants` satırları
     entities: derive.EntityRows
+    digest: bytes = b""  # olay yükünün listelerle karşılaştırılan alanlarının özeti (entities.compare_digest)
+    compared_at: Optional[int] = None  # olay yükünün zamanı: gözlem anı, yoksa olay diliminin fetched_at'i
 
 
 @dataclass
@@ -180,6 +222,25 @@ class RebuildReport:
     problems: List[IndexProblem] = field(default_factory=list)
     superseded: List[SupersededDir] = field(default_factory=list)
     seconds: float = 0.0
+    season_lists: int = 0  # dizinlenen sezon listesi (turnuva başına bir tane)
+    schedules: int = 0  # dizinlenen tur / sayfa dosyası (`entity_slices` satırı)
+    listed: int = 0  # olay yükü olmayan, yalnızca listelerden gelen maç satırı
+    changes: int = 0  # değişiklik günlüğü satırı
+    superseded_files: List[LegacySuperseded] = field(default_factory=list)  # geçersiz sayfa / sezon listesi kopyaları
+
+
+@dataclass
+class _ListingScan:
+    """Eski düzendeki liste kaynaklarının taraması: yalnızca dizin listeleme ve `stat` (sezon listeleri okunur)."""
+
+    pages: Dict[SeasonKey, List[LegacySchedulePage]] = field(default_factory=dict)  # okuyucunun sırasıyla
+    summaries: Dict[SeasonKey, List[LegacySummaryFile]] = field(default_factory=dict)
+    season_lists: List[LegacySeasonList] = field(default_factory=list)
+    roots: Dict[str, Tuple[str, str]] = field(default_factory=dict)  # yol → (tür, imza)
+
+    @property
+    def seasons(self) -> List[SeasonKey]:
+        return sorted(set(self.pages) | set(self.summaries))
 
 
 class _Stopped(Exception):
@@ -195,21 +256,7 @@ def _i64(value: Optional[int]) -> Optional[int]:
     return min(max(int(value), _INT64_MIN), _INT64_MAX)
 
 
-def _clean(value: str) -> str:
-    """UTF-8'e çevrilemeyen metin (JSON'daki eşsiz vekil kod noktası) SQLite'a yazılamaz: '?' ile değiştirilir."""
-    try:
-        value.encode("utf-8")
-    except UnicodeEncodeError:
-        return value.encode("utf-8", "replace").decode("utf-8")
-    return value
-
-
-def _storable(row: Row) -> Row:
-    """Satırı yazılabilir hale getirir (yerinde): yalnızca ASCII olmayan metinlere bakılır."""
-    for name, value in row.items():
-        if type(value) is str and not value.isascii():
-            row[name] = _clean(value)
-    return row
+_storable = entities.storable  # satırı SQLite'a yazılabilir hale getirir (eşsiz vekil kod noktaları)
 
 
 def _detail(exc: BaseException) -> str:
@@ -365,10 +412,7 @@ def read_v3_event(data_dir: PathLike, event_id: int) -> V3Event:
     return V3Event(event_id=event_id, path=rel, manifest=found, event=payload, sig=sig)
 
 
-def _meta_json(meta: Optional[Dict[str, Any]]) -> Optional[str]:
-    if meta is None:
-        return None
-    return json.dumps(meta, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+_meta_json = entities.meta_json
 
 
 def _v3_slice_row(event_id: int, name: str, entry: SliceEntry) -> Row:
@@ -433,17 +477,22 @@ def _record(event_id: int, layout_name: str, payload: Dict[str, Any], *, observe
         raise LayoutError(f"Olay yükündeki id ({row['id']!r}) dizine ({event_id}) eşit değil",
                           detail=f"id {row['id']!r}, dizin {event_id}")
     row.update(storage)
-    entities = derive.event_entity_rows(payload, updated_at=payload_at)
-    for found in (entities.sport, entities.category, entities.tournament, entities.season, *entities.participants):
+    entity_rows = derive.event_entity_rows(payload, updated_at=payload_at)
+    for found in (entity_rows.sport, entity_rows.category, entity_rows.tournament, entity_rows.season,
+                  *entity_rows.participants):
         if found is not None:
             _storable(found)
+    slice_rows = tuple(_storable(s) for s in slices)
+    fetched = next((s["fetched_at"] for s in slice_rows if s["key"] == EVENT_KEY and s["sub"] == ""), None)
     return EventRecord(
         event_id=event_id,
         layout=layout_name,
         event=_storable(row),
-        slices=tuple(_storable(s) for s in slices),
+        slices=slice_rows,
         links=tuple(derive.event_participant_rows(row)),
-        entities=entities,
+        entities=entity_rows,
+        digest=entities.compare_digest(payload),
+        compared_at=row["observed_at"] if row["observed_at"] is not None else fetched,
     )
 
 
@@ -581,20 +630,13 @@ def event_record(data_dir: PathLike, reader: LegacyReader, event_id: int, *, has
 
 # --- kataloğa yazma -----------------------------------------------------------------------------------
 
-_PARTICIPANT_UPSERT = (
-    "INSERT INTO participants ({columns}) VALUES ({marks}) ON CONFLICT(id) DO UPDATE SET {updates} "
-    "WHERE excluded.updated_at >= participants.updated_at"
-).format(
-    columns=", ".join(_PARTICIPANT_COLUMNS),
-    marks=", ".join("?" for _ in _PARTICIPANT_COLUMNS),
-    updates=", ".join(f"{name} = excluded.{name}" for name in _PARTICIPANT_COLUMNS if name != "id"),
-)
-
-
 class RowWriter:
     """
     Kayıtları kataloğa yazar; `Catalog.write()` bloğunun içinde kullanılır. Satırlar toplu yazılır
     (`flush`). `fresh=True`: tablolar boş (yeniden kurma), maçın eski satırları silinmez.
+
+    Olay satırının `listed_in` ve `stale` sütunları kayıtta yoksa yazılmaz, yani var olan satırdaki değer
+    kalır; onları listeleri bilen çağıran yazar (yeniden kurma, `CatalogAdmin.index_event`).
     """
 
     def __init__(self, cat: Catalog, *, fresh: bool = False, batch: int = _BATCH_EVENTS) -> None:
@@ -625,20 +667,14 @@ class RowWriter:
         cat.upsert("events", (r.event for r in records))
         cat.upsert("event_slices", (s for r in records for s in r.slices))
         cat.upsert("event_participants", (link for r in records for link in r.links))
-        for table, pick in (("sports", lambda e: e.sport), ("categories", lambda e: e.category),
-                            ("tournaments", lambda e: e.tournament), ("seasons", lambda e: e.season)):
-            rows = [row for row in (pick(r.entities) for r in records) if row is not None]
-            cat.upsert(table, rows, on_conflict="ignore")
-        conn.executemany(
-            _PARTICIPANT_UPSERT,
-            [tuple(row[name] for name in _PARTICIPANT_COLUMNS) for r in records for row in r.entities.participants],
-        )
+        entities.write_entity_rows(cat, (r.entities for r in records))
 
 
 def delete_event(cat: Catalog, event_id: int) -> bool:
     """
     Maç dizini kalmayan maçın `events`, `event_slices` ve `event_participants` satırlarını siler; `write()`
-    bloğunun içinde çağrılır. Yalnızca listeden gelen satıra (maç dizini hiç olmamış) dokunmaz.
+    bloğunun içinde çağrılır. Yalnızca listeden gelen satıra (maç dizini hiç olmamış) dokunmaz. Maç bir
+    program sayfasında hâlâ listeleniyorsa liste satırını `CatalogAdmin.index_event` geri kurar.
     """
     conn = cat.connection()
     conn.execute("DELETE FROM event_slices WHERE event_id = ?", (event_id,))
@@ -656,16 +692,21 @@ class CatalogAdmin:
     Kataloğun yönetimi (bölüm 2.3): yeniden kurma, tek maçı yeniden dizinleme, doğrulama, sayımlar.
 
     catalog: paylaşılan Catalog nesnesi (Store cephesi verir); verilmezse DATA_DIR/.meta/catalog.db için
-    yenisi açılır ve `close()` onu kapatır. clock: `built_at` ve onarım işaretleri için saat.
+    yenisi açılır ve `close()` onu kapatır. clock: `built_at`, `scanned_at` ve onarım işaretleri için saat.
+    league_names: turnuva kimliği → ad eşlemesi ya da onu döndüren bir işlev. Yalnızca adında kimlik olmayan
+    sezon listesi dosyalarının (`<ad>_seasons.json`) turnuvasını bulmak için kullanılır; Store lig
+    yapılandırmasını okuyamadığı için çağıran verir. Verilmezse o dosyalar `unresolved_tournament` olarak
+    bildirilir ve dizinlenmez.
     """
 
     def __init__(self, data_dir: PathLike, catalog: Optional[Catalog] = None, *,
-                 clock: Callable[[], float] = time.time) -> None:
+                 clock: Callable[[], float] = time.time, league_names: Optional[LeagueNames] = None) -> None:
         self.data_dir = os.path.abspath(os.fspath(data_dir))
         self._owns_catalog = catalog is None
         self.catalog = catalog if catalog is not None else Catalog(catalog_mod.catalog_path(self.data_dir))
         self.reader = LegacyReader(self.data_dir)
         self._clock = clock
+        self._league_names_source = league_names
 
     def __enter__(self) -> "CatalogAdmin":
         return self
@@ -784,7 +825,7 @@ class CatalogAdmin:
 
     def _fill(self, cat: Catalog, report: RebuildReport, progress: Optional[Progress],
               should_stop: Optional[Callable[[], bool]]) -> None:
-        """Boş tabloları doldurur (bölüm 3.4, adım 4, 5 ve 8); `cat.write()` bloğunun içinde çağrılır."""
+        """Boş tabloları doldurur (bölüm 3.4, adım 2, 4, 5, 6 ve 8); `cat.write()` bloğunun içinde çağrılır."""
 
         def tick(stage: str, done: int, total: int, *, force: bool = False) -> None:
             if should_stop is not None and should_stop():
@@ -795,14 +836,26 @@ class CatalogAdmin:
         tick(STAGE_SCAN, 0, 1, force=True)
         v3_dirs = scan_v3_events(self.data_dir, report.problems)
         groups = legacy_candidates(self.reader, report.problems)
+        scan = self._scan_listings(report.problems, report.superseded_files)
         tick(STAGE_SCAN, 1, 1, force=True)
 
-        writer = RowWriter(cat, fresh=True)
+        # Adım 2: sezon listeleri, sonra tur / sayfa dosyası olan sezonlar. Listelenen her maç bir liste satırı
+        # alır; olay yükü olanların satırı aşağıda o yükten yeniden yazılır ve `marks`'tan listed_in / stale alır.
+        marks: Dict[int, ListingMark] = {}
+        report.season_lists = entities.apply_season_lists(cat, self.reader, scan.season_lists, fresh=True)
+        paged = [key for key in scan.seasons if key in scan.pages]
+        for done, key in enumerate(paged, start=1):
+            report.schedules += self._index_season(cat, scan, key, report.problems, fresh=True, marks=marks).pages
+            tick(STAGE_LISTINGS, done, len(paged))
+
+        # Liste satırı yazıldıysa tablolar artık boş değil: maçın liste satırından kalan bağlar silinmeli
+        writer = RowWriter(cat, fresh=not marks)
         indexed_v3 = set()
         for done, (event_id, _rel) in enumerate(v3_dirs, start=1):
             record = v3_record(self.data_dir, event_id, candidates=groups.get(str(event_id), ()),
                                problems=report.problems, superseded=report.superseded)
             if record is not None:
+                self._apply_mark(record, marks, report.problems)
                 writer.add(record)
                 indexed_v3.add(event_id)
                 report.events_v3 += 1
@@ -815,15 +868,30 @@ class CatalogAdmin:
                 record = legacy_record(self.reader, candidates, problems=report.problems,
                                        superseded=report.superseded)
                 if record is not None:
+                    self._apply_mark(record, marks, report.problems)
                     writer.add(record)
                     report.events_legacy += 1
             tick(STAGE_LEGACY_EVENTS, done, len(groups))
         writer.flush()
 
+        # Yalnızca özet CSV'si olan sezonlar maçlardan sonra: turnuvanın sporu artık katalogda
+        for key in scan.seasons:
+            if key not in scan.pages:
+                self._index_season(cat, scan, key, report.problems)
+        self._fill_sports(cat, scan)
+
+        # Adım 6: değişiklik günlüğü; sonra uzlaştırmanın karşılaştıracağı imzalar
+        notes: List[LegacyProblem] = []
+        report.changes = changes_mod.index_all(cat, self.reader, notes)
+        report.problems.extend(_from_legacy(notes))
+        self._write_roots(cat, scan.roots, list(scan.roots))
+
         tick(STAGE_FINISH, 0, 1, force=True)
         report.events = writer.events
         report.slices = writer.slices
         conn = cat.connection()
+        report.listed = int(conn.execute(
+            "SELECT count(*) FROM events WHERE has_event_payload = 0 AND layout IS NULL").fetchone()[0])
         conn.execute("ANALYZE main")  # yalnızca katalog: ATTACH edilmiş state.db'nin istatistikleri değişmesin
         report.counts = self._counts(cat)
         cat.set_meta(META_BUILT_AT, str(int(self.now())))
@@ -832,6 +900,133 @@ class CatalogAdmin:
         cat.set_meta(META_COUNTS, json.dumps(report.counts, sort_keys=True))
         cat.stamp_derive_version()
         tick(STAGE_FINISH, 1, 1, force=True)
+
+    @staticmethod
+    def _apply_mark(record: EventRecord, marks: Mapping[int, ListingMark], problems: List[IndexProblem]) -> None:
+        """
+        Yeniden kurma: olay satırının `listed_in` ve `stale` sütunları, maçı listeleyen en yeni sayfadan
+        (bölüm 8.2). Maç, yalnızca olay yükü de sayfanın turnuvasını ve sezonunu söylüyorsa o sayfaya bağlanır.
+        """
+        row = record.event
+        mark = marks.get(record.event_id)
+        if mark is not None and (row["tournament_id"], row["season_id"]) == (mark.tournament_id, mark.season_id):
+            row["listed_in"] = mark.sub
+            row["stale"] = int(entities.is_stale(mark.fetched_at, mark.digest, record.compared_at, record.digest))
+            return
+        row["listed_in"], row["stale"] = None, 0
+        if mark is not None:
+            problems.append(IndexProblem(
+                record.layout, row["path"] or layout.event_dir(record.event_id), PROBLEM_SEASON_MISMATCH,
+                f"{mark.tournament_id}/{mark.season_id} sezonunda listeleniyor, olay yükü "
+                f"{row['tournament_id']}/{row['season_id']} diyor"))
+
+    # -- listeler ----------------------------------------------------------------------------------
+
+    def _league_names(self) -> Optional[Mapping[int, str]]:
+        source = self._league_names_source
+        return source() if callable(source) else source
+
+    def _root_signature(self, rel: str, newest: Iterable[int] = ()) -> Optional[str]:
+        """
+        Bir kökün imzası (bölüm 3.5): dosyada "<mtime_ns>:<boyut>"; dizinde "<mtime_ns>:<girdi sayısı>" ve
+        zaman, dizinin kendi mtime'ı ile `newest` (içindeki kaynak dosyaların mtime'ları) arasında en yenisi.
+        Böylece yerinde yeniden yazılan bir dosya da (dizinin mtime'ını değiştirmez) imzayı değiştirir.
+        """
+        try:
+            own = self.reader.signature(rel)
+        except StoreError:
+            return None
+        if own is None:
+            return None
+        stamp, _, count = own.partition(":")
+        return f"{max([int(stamp), *newest])}:{count}"
+
+    def _scan_listings(self, problems: List[IndexProblem],
+                       superseded: Optional[List[LegacySuperseded]] = None) -> _ListingScan:
+        """
+        Eski düzendeki liste kaynaklarını tarar: `matches/` altındaki tur / sayfa ve özet dosyaları (yalnızca
+        dizin listeleme ve `stat`), sezon listeleri (dosyalar küçüktür, okunur) ve değişiklik günlüğünün
+        imzası. Sonuçtaki `roots`, `legacy_roots` tablosunda durması gereken satırlardır.
+        """
+        reader = self.reader
+        found = legacy.LegacyReport()
+        scan = _ListingScan()
+        schedule_dirs: Dict[str, List[int]] = {}  # sezon dizini → içindeki kaynak dosyaların mtime'ları
+        league_dirs: Dict[str, List[int]] = {}
+
+        for page in reader.schedule_pages(found):
+            scan.pages.setdefault((page.tournament_id, page.season_id), []).append(page)
+            directory = page.path.rsplit("/", 1)[0]
+            schedule_dirs.setdefault(directory, []).append(page.mtime_ns)
+            league_dirs.setdefault(directory.rsplit("/", 1)[0], [])
+        for summary in reader.summary_files(found):
+            directory = summary.path.rsplit("/", 1)[0]
+            if summary.season_id is not None:
+                scan.summaries.setdefault((summary.tournament_id, summary.season_id), []).append(summary)
+            if not summary.nested:
+                league_dirs.setdefault(directory, []).append(summary.mtime_ns)
+            elif summary.season_id is not None:
+                schedule_dirs.setdefault(directory, []).append(summary.mtime_ns)
+                league_dirs.setdefault(directory.rsplit("/", 1)[0], [])
+        scan.season_lists = reader.season_lists(self._league_names(), found)
+
+        roots = scan.roots
+        for kind, directories in ((ROOT_LEAGUE_DIR, league_dirs), (ROOT_SCHEDULE_DIR, schedule_dirs)):
+            for directory, newest in directories.items():
+                signature = self._root_signature(directory, newest)
+                if signature is not None:
+                    roots[directory] = (kind, signature)
+        for item in scan.season_lists:
+            if item.path in roots:
+                continue  # league_seasons.csv turnuva başına bir kayıt verir
+            signature = self._root_signature(item.path)
+            if signature is None:
+                continue
+            stem = item.path.rsplit("/", 1)[-1][: -len(legacy.SEASONS_SUFFIX)]
+            if item.kind == "json" and not re.fullmatch(r"[0-9]+(?:_.*)?", stem):
+                # Turnuvası addan bulunan dosya: eşleme değişince (dosya değişmese de) yeniden dizinlenmeli
+                signature = f"{signature}:{item.tournament_id}"
+            roots[item.path] = (ROOT_SEASONS_FILE, signature)
+        signature = self._root_signature(legacy.CHANGES_FILE)
+        if signature is not None:
+            roots[legacy.CHANGES_FILE] = (ROOT_CHANGES_FILE, signature)
+
+        problems.extend(_from_legacy(found.problems))
+        if superseded is not None:
+            superseded.extend(found.superseded)
+        return scan
+
+    def _index_season(self, cat: Catalog, scan: _ListingScan, key: SeasonKey, problems: Optional[List[IndexProblem]],
+                      *, fresh: bool = False, marks: Optional[Dict[int, ListingMark]] = None) -> entities.SeasonCounts:
+        """Bir sezonun dosyalarını okur ve listesini kataloğa uygular (src/store/entities.py)."""
+        listing = entities.read_season(self.reader, key[0], key[1], scan.pages.get(key, ()),
+                                       scan.summaries.get(key, ()))
+        notes: List[LegacyProblem] = []
+        counts = entities.apply_season(cat, self.reader, listing, fresh=fresh, marks=marks, problems=notes)
+        if problems is not None:
+            problems.extend(_from_legacy(notes))
+        return counts
+
+    def _fill_sports(self, cat: Catalog, scan: _ListingScan) -> List[SeasonKey]:
+        """
+        Sporunu söylemeyen liste öğeleri sporu turnuvanın satırından alır; o satır listeden sonra yazıldıysa
+        (başka bir sezonun sayfasından ya da bir olay yükünden) sezon bir kez daha dizinlenir. Böylece sonuç,
+        kaynakların hangi sırayla görüldüğüne bağlı kalmaz. Yeniden dizinlenen sezonları döndürür.
+        """
+        keys = entities.seasons_missing_sport(cat)
+        for key in keys:
+            self._index_season(cat, scan, key, None)
+        return keys
+
+    def _write_roots(self, cat: Catalog, roots: Mapping[str, Tuple[str, str]], changed: Iterable[str]) -> None:
+        """`legacy_roots`: `changed` içindeki yolların satırı yenilenir; artık var olmayan kökün satırı silinir."""
+        now = int(self.now())
+        paths = list(changed)
+        cat.connection().executemany("DELETE FROM legacy_roots WHERE path = ?",
+                                     [(path,) for path in paths if path not in roots])
+        cat.upsert("legacy_roots", [
+            {"path": path, "kind": roots[path][0], "sig": roots[path][1], "scanned_at": now}
+            for path in paths if path in roots])
 
     @staticmethod
     def _counts(cat: Catalog) -> Dict[str, int]:
@@ -846,34 +1041,84 @@ class CatalogAdmin:
                     problems: Optional[List[IndexProblem]] = None) -> Optional[str]:
         """
         Bir maçı dosyalardan yeniden dizinler ve düzenini döndürür ("v3" | "legacy"); maçın geçerli bir
-        dizini kalmadıysa satırlarını siler ve None döner. Kendi yazma işlemini açar (açık bir `write()`
+        dizini kalmadıysa olay satırlarını siler ve None döner. Kendi yazma işlemini açar (açık bir `write()`
         bloğunun içinde çağrılırsa ona katılır).
 
         Maçın eski düzen dizinleri bütün ağaç taranmadan bulunur: katalog satırındaki `path` ve
         `legacy_path` ile çağıranın bildiği dizinler (`paths`, DATA_DIR'e göre; ör. yazıcının az önce yazdığı
         dizin). Başka bir yerdeki yeni kopyayı bulmak tam taramanın işidir. candidates: tam tarama yapmış
         çağıranın verdiği, öncelik sırasındaki adaylar; verilirse yalnızca onlar kullanılır.
+
+        Listeler (bölüm 8.2): satırın `listed_in` sütunu korunur ve `stale` yeniden hesaplanır (olay yükü
+        listeden eskiyse liste sayfası okunur). Dizini kalmayan maç bir sayfada hâlâ listeleniyorsa satırı
+        silinmez, liste satırına döner: o sezonun listesi yeniden dizinlenir.
         """
+        with self.catalog.write():
+            relist: Set[SeasonKey] = set()
+            found = self._index_event(event_id, paths, candidates, problems, relist)
+            if relist:
+                scan = self._scan_listings(problems if problems is not None else [])
+                for key in sorted(relist):
+                    self._index_season(self.catalog, scan, key, problems)
+            return found
+
+    def _index_event(self, event_id: int, paths: Sequence[str], candidates: Optional[Sequence[LegacyEventDir]],
+                     problems: Optional[List[IndexProblem]], relist: Set[SeasonKey]) -> Optional[str]:
+        """`index_event`in gövdesi; açık bir `write()` bloğunun içinde çağrılır. Listesi yeniden dizinlenmesi
+        gereken sezonu (maç liste satırına dönecekse) `relist`e ekler, kendisi dizinlemez."""
         cat = self.catalog
-        with cat.write():
-            if candidates is None:
-                row = cat.connection().execute(
-                    "SELECT path, legacy_path FROM events WHERE id = ?", (event_id,)).fetchone()
-                known = list(paths) + ([row["path"], row["legacy_path"]] if row is not None else [])
-                found = [self.reader.event_dir_at(path) for path in dict.fromkeys(p.strip("/") for p in known if p)]
-                candidates = sorted((c for c in found if c is not None and c.name == str(event_id)),
-                                    key=legacy_order)
-            manifest_file = layout.resolve(self.data_dir, layout.manifest_path(layout.event_dir(event_id)))
-            has_v3 = file_signature(manifest_file) is not None
-            record = event_record(self.data_dir, self.reader, event_id, has_v3=has_v3, candidates=candidates,
-                                  problems=problems)
-            if record is None:
-                delete_event(cat, event_id)
-                return None
-            writer = RowWriter(cat)
-            writer.add(record)
-            writer.flush()
-            return record.layout
+        conn = cat.connection()
+        old = conn.execute(
+            "SELECT path, legacy_path, tournament_id, season_id, listed_in FROM events WHERE id = ?",
+            (event_id,)).fetchone()
+        if candidates is None:
+            known = list(paths) + ([old["path"], old["legacy_path"]] if old is not None else [])
+            found = [self.reader.event_dir_at(path) for path in dict.fromkeys(p.strip("/") for p in known if p)]
+            candidates = sorted((c for c in found if c is not None and c.name == str(event_id)),
+                                key=legacy_order)
+        manifest_file = layout.resolve(self.data_dir, layout.manifest_path(layout.event_dir(event_id)))
+        has_v3 = file_signature(manifest_file) is not None
+        record = event_record(self.data_dir, self.reader, event_id, has_v3=has_v3, candidates=candidates,
+                              problems=problems)
+        if record is None:
+            if (delete_event(cat, event_id) and old["listed_in"] is not None
+                    and old["tournament_id"] is not None and old["season_id"] is not None):
+                relist.add((int(old["tournament_id"]), int(old["season_id"])))
+            return None
+        writer = RowWriter(cat)
+        writer.add(record)
+        writer.flush()
+        if old is not None and old["listed_in"] is not None:
+            self._refresh_listing(record, old["tournament_id"], old["season_id"], old["listed_in"])
+        return record.layout
+
+    def _refresh_listing(self, record: EventRecord, tournament_id: Optional[int], season_id: Optional[int],
+                         listed_in: str) -> None:
+        """
+        Yeniden dizinlenen maçın liste sütunları. `listed_in` bir sayfanın bu maçı listelediğini söyler; olay
+        yükü artık başka bir turnuva / sezon söylüyorsa bağ kopar. `stale`: sayfa olay yükünden yeni değilse 0;
+        yeniyse sayfa okunur ve karşılaştırılır. Sayfanın katalogda satırı yoksa (özet CSV'sinden gelen
+        `listed_in`) ya da sayfa okunamıyorsa sütunlara dokunulmaz: o sezonu uzlaştırma düzeltir.
+        """
+        conn = self.catalog.connection()
+        row = record.event
+        if (row["tournament_id"], row["season_id"]) != (tournament_id, season_id):
+            conn.execute("UPDATE events SET listed_in = NULL, stale = 0 WHERE id = ?", (record.event_id,))
+            return
+        page = conn.execute(
+            "SELECT fetched_at, path FROM entity_slices WHERE kind = ? AND entity_id = ? AND key = ? AND sub = ? "
+            "AND layout = ? AND has_payload = 1",
+            (entities.KIND_SEASON, season_id, entities.KEY_SCHEDULE, listed_in, LAYOUT_LEGACY)).fetchone()
+        if page is None or page["fetched_at"] is None:
+            return
+        stale = False
+        if record.compared_at is not None and page["fetched_at"] > record.compared_at:
+            listed = entities.find_listed(self.reader, page["path"], record.event_id)
+            if listed is None:
+                return
+            stale = entities.is_stale(page["fetched_at"], entities.compare_digest(listed), record.compared_at,
+                                      record.digest)
+        conn.execute("UPDATE events SET stale = ? WHERE id = ?", (int(stale), record.event_id))
 
     # -- doğrulama ve sayımlar ---------------------------------------------------------------------
 

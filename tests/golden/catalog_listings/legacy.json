@@ -1,0 +1,65 @@
+{
+ "derive_version": 1,
+ "report": {
+  "counts": {"events": 9, "listed": 4, "schedules": 3, "season_lists": 3, "changes": 0},
+  "problems": [
+   ["legacy", "match_details/17_Premier_League/season_Premier_League_26_27/17018572", "no_event_payload"],
+   ["legacy", "match_details/17_Premier_League/season_Premier_League_26_27/17185003/statistics.json", "corrupt"]
+  ],
+  "superseded_files": [
+   ["schedule", "17/96668/round_1", "matches/17_Premier_League/96668_Season_96668/round_1.json", "matches/17_Premier_League/96668_Premier_League_26_27/round_1.json"],
+   ["season_list", "8", "league_seasons.csv", "seasons/LaLiga_seasons.json"],
+   ["season_list", "17", "league_seasons.csv", "seasons/17_Premier_League_seasons.json"],
+   ["season_list", "17", "seasons/17_seasons.json", "seasons/17_Premier_League_seasons.json"]
+  ]
+ },
+ "tables": {
+  "listing_events": [
+   {"id": 14025001, "sport": "football", "tournament_id": 17, "stage_name": "Premier League", "season_id": 76986, "round": 38, "start_ts": 1779595200, "status_description": "Ended", "status_class": "completed", "home_name": "Southampton", "away_name": "Leicester City", "home_score": 2, "away_score": 1, "home_score_current": 2, "away_score_current": 1, "scores_json": "{\"aet\":null,\"aggregated\":null,\"aggregated_winner_code\":null,\"family\":\"football\",\"ft90\":null,\"ht\":null,\"penalties\":null}", "status_regressed": 0, "stale": 0, "row_source": "listing", "listed_in": "round_38", "has_event_payload": 0, "first_seen_at": 1790769600, "updated_at": 1790769600},
+   {"id": 14025002, "sport": "football", "tournament_id": 17, "stage_name": "Premier League", "season_id": 76986, "round": 38, "start_ts": 1779602400, "status_description": "Ended", "status_class": "completed", "home_name": "Watford", "away_name": "Norwich City", "home_score": 2, "away_score": 1, "home_score_current": 2, "away_score_current": 1, "scores_json": "{\"aet\":null,\"aggregated\":null,\"aggregated_winner_code\":null,\"family\":\"football\",\"ft90\":null,\"ht\":null,\"penalties\":null}", "status_regressed": 0, "stale": 0, "row_source": "listing", "listed_in": "round_38", "has_event_payload": 0, "first_seen_at": 1790769600, "updated_at": 1790769600},
+   {"id": 15000002, "sport": "football", "tournament_id": 8, "stage_name": "LaLiga", "season_id": 77559, "round": 1, "start_ts": 1779246900, "status_type": "finished", "status_code": 100, "status_description": "Ended", "status_class": "completed", "home_id": 4110, "away_id": 1196, "home_name": "Real Betis", "away_name": "Valencia", "home_score": 0, "away_score": 0, "home_score_current": 0, "away_score_current": 0, "winner_code": 3, "scores_json": "{\"aet\":null,\"aggregated\":[0,3],\"aggregated_winner_code\":2,\"family\":\"football\",\"ft90\":[0,0],\"ht\":[0,0],\"penalties\":null}", "slug": "real-betis-valencia", "change_ts": 1779253625, "status_regressed": 0, "tier_hint": 1, "stale": 0, "row_source": "listing", "listed_in": "round_1_full", "has_event_payload": 0, "first_seen_at": 1790769600, "updated_at": 1790769600},
+   {"id": 17018572, "sport": "football", "tournament_id": 17, "stage_name": "Premier League", "season_id": 96668, "round": 2, "start_ts": 1790683200, "status_type": "finished", "status_code": 100, "status_description": "Ended", "status_class": "completed", "home_id": 9843, "away_id": 8714, "home_name": "Newcastle United", "away_name": "Sunderland", "home_score": 1, "away_score": 0, "home_score_current": 1, "away_score_current": 0, "winner_code": 1, "scores_json": "{\"aet\":null,\"aggregated\":null,\"aggregated_winner_code\":null,\"family\":\"football\",\"ft90\":[1,0],\"ht\":[0,0],\"penalties\":null}", "slug": "newcastle-united-sunderland", "change_ts": 1790690140, "status_regressed": 0, "tier_hint": 1, "stale": 0, "row_source": "listing", "listed_in": "round_2", "has_event_payload": 0, "first_seen_at": 1790769600, "updated_at": 1790769600}
+  ],
+  "listed_event_rows": [
+   {"id": 15000001, "listed_in": "round_1_full", "stale": 0},
+   {"id": 16837335, "listed_in": "round_1", "stale": 0},
+   {"id": 16867839, "listed_in": "round_2", "stale": 0},
+   {"id": 17018554, "listed_in": "round_2", "stale": 0},
+   {"id": 17099711, "listed_in": "round_1", "stale": 0},
+   {"id": 17185003, "listed_in": "round_2", "stale": 0}
+  ],
+  "entity_slices": [
+   {"kind": "season", "entity_id": 77559, "key": "schedule", "sub": "round_1_full", "state": "ok", "has_payload": 1, "fetched_at": 1790769600, "checked_at": 1790769600, "empty_count": 0, "unverified_empty_count": 0, "error_count": 0, "stored_bytes": 3986, "history_count": 0, "meta_json": "{\"filtered\":true}", "layout": "legacy", "path": "matches/8_LaLiga/77559_LaLiga_25_26/round_1_full.json"},
+   {"kind": "season", "entity_id": 96668, "key": "schedule", "sub": "round_1", "state": "ok", "has_payload": 1, "fetched_at": 1790769600, "checked_at": 1790769600, "empty_count": 0, "unverified_empty_count": 0, "error_count": 0, "stored_bytes": 3994, "history_count": 0, "meta_json": "{\"filtered\":true}", "layout": "legacy", "path": "matches/17_Premier_League/96668_Premier_League_26_27/round_1.json"},
+   {"kind": "season", "entity_id": 96668, "key": "schedule", "sub": "round_2", "state": "ok", "has_payload": 1, "fetched_at": 1790769600, "checked_at": 1790769600, "empty_count": 0, "unverified_empty_count": 0, "error_count": 0, "stored_bytes": 8095, "history_count": 0, "meta_json": "{\"complete\":true}", "layout": "legacy", "path": "matches/17_Premier_League/96668_Premier_League_26_27/round_2.json"},
+   {"kind": "tournament", "entity_id": 8, "key": "seasons", "sub": "", "state": "ok", "has_payload": 1, "fetched_at": 1790769600, "checked_at": 1790769600, "empty_count": 0, "unverified_empty_count": 0, "error_count": 0, "stored_bytes": 235, "history_count": 0, "layout": "legacy", "path": "seasons/LaLiga_seasons.json"},
+   {"kind": "tournament", "entity_id": 17, "key": "seasons", "sub": "", "state": "ok", "has_payload": 1, "fetched_at": 1790769600, "checked_at": 1790769600, "empty_count": 0, "unverified_empty_count": 0, "error_count": 0, "stored_bytes": 366, "history_count": 0, "layout": "legacy", "path": "seasons/17_Premier_League_seasons.json"},
+   {"kind": "tournament", "entity_id": 2361, "key": "seasons", "sub": "", "state": "ok", "has_payload": 1, "fetched_at": 1790769600, "checked_at": 1790769600, "empty_count": 0, "unverified_empty_count": 0, "error_count": 0, "stored_bytes": 141, "history_count": 0, "layout": "legacy", "path": "seasons/2361_Wimbledon, Men_seasons.json"}
+  ],
+  "seasons": [
+   {"id": 61627, "tournament_id": 17, "name": "Premier League 24/25", "year": "24/25", "sort_key": 2024.0, "listed": 1, "position": 2, "updated_at": 1790769600},
+   {"id": 76986, "tournament_id": 17, "name": "Premier League 25/26", "year": "25/26", "sort_key": 2025.0, "listed": 1, "position": 1, "updated_at": 1790769600},
+   {"id": 77559, "tournament_id": 8, "name": "LaLiga 25/26", "year": "25/26", "sort_key": 2025.0, "listed": 1, "position": 1, "updated_at": 1790769600},
+   {"id": 79116, "tournament_id": 2361, "name": "Wimbledon Men Singles 2026", "year": "2026", "sort_key": 2026.0, "listed": 1, "position": 0, "updated_at": 1790769600},
+   {"id": 96668, "tournament_id": 17, "name": "Premier League 26/27", "year": "26/27", "sort_key": 2026.0, "listed": 1, "position": 0, "updated_at": 1790769600},
+   {"id": 97532, "tournament_id": 8, "name": "LaLiga 26/27", "year": "26/27", "sort_key": 2026.0, "listed": 1, "position": 0, "updated_at": 1790769600}
+  ],
+  "tournaments": [
+   {"id": 8, "sport": "football", "name": "LaLiga", "name_folded": "laliga", "slug": "laliga", "updated_at": 1790769600},
+   {"id": 17, "sport": "football", "name": "Premier League", "name_folded": "premier league", "slug": "premier-league", "updated_at": 1790769600}
+  ],
+  "changes": [],
+  "legacy_roots": [
+   {"path": "league_seasons.csv", "kind": "seasons_file"},
+   {"path": "matches/17_Premier_League", "kind": "league_dir"},
+   {"path": "matches/17_Premier_League/96668_Premier_League_26_27", "kind": "schedule_dir"},
+   {"path": "matches/17_Premier_League/96668_Season_96668", "kind": "schedule_dir"},
+   {"path": "matches/8_LaLiga", "kind": "league_dir"},
+   {"path": "matches/8_LaLiga/77559_LaLiga_25_26", "kind": "schedule_dir"},
+   {"path": "seasons/17_Premier_League_seasons.json", "kind": "seasons_file"},
+   {"path": "seasons/17_seasons.json", "kind": "seasons_file"},
+   {"path": "seasons/2361_Wimbledon, Men_seasons.json", "kind": "seasons_file"},
+   {"path": "seasons/LaLiga_seasons.json", "kind": "seasons_file"}
+  ]
+ }
+}

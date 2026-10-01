@@ -1,0 +1,17 @@
+{
+ "derive_version": 1,
+ "report": {
+  "counts": {"events": 0, "listed": 0, "schedules": 0, "season_lists": 0, "changes": 0},
+  "problems": [],
+  "superseded_files": []
+ },
+ "tables": {
+  "listing_events": [],
+  "listed_event_rows": [],
+  "entity_slices": [],
+  "seasons": [],
+  "tournaments": [],
+  "changes": [],
+  "legacy_roots": []
+ }
+}

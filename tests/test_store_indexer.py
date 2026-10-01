@@ -80,19 +80,32 @@ def make_admin() -> Iterator[Callable[..., CatalogAdmin]]:
         admin.close()
 
 
+def details_only(fixture: sf.LegacyFixture) -> sf.LegacyFixture:
+    """
+    Bu dosyanın testleri maç dizinlerini sınar: öteki kaynaklar (`matches/`, `seasons/`, `league_seasons.csv`,
+    `score_changes.jsonl`) ağaçtan çıkarılır. Yeniden kurma onları da dizinler (ST-08); tam ağaçların
+    satırları tests/test_store_indexer_listings.py ve tests/golden/catalog_listings/ altındadır.
+    """
+    for name in ("matches", "seasons"):
+        files.remove_tree(fixture.data_dir / name)
+    for name in ("league_seasons.csv", "score_changes.jsonl"):
+        files.remove(fixture.data_dir / name)
+    return fixture
+
+
 @pytest.fixture(params=sf.FIXTURE_NAMES)
 def fx(request: pytest.FixtureRequest, tmp_path: Path) -> sf.LegacyFixture:
-    return sf.build_fixture(request.param, tmp_path / "data")
+    return details_only(sf.build_fixture(request.param, tmp_path / "data"))
 
 
 @pytest.fixture
 def canonical(tmp_path: Path) -> sf.LegacyFixture:
-    return sf.build_fixture("canonical", tmp_path / "data")
+    return details_only(sf.build_fixture("canonical", tmp_path / "data"))
 
 
 @pytest.fixture
 def old_forms(tmp_path: Path) -> sf.LegacyFixture:
-    return sf.build_fixture("legacy", tmp_path / "data")
+    return details_only(sf.build_fixture("legacy", tmp_path / "data"))
 
 
 def rows(cat: Catalog, table: str, order: Optional[str] = None, where: str = "") -> List[Dict[str, Any]]:
