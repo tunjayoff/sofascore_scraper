@@ -99,6 +99,8 @@ def play_start(event: Dict[str, Any]) -> Optional[float]:
     """
     Tenis: gerçek oyun başlangıcı = currentPeriodStartTimestamp − biten setlerin süreleri (time.periodN, sn);
     set süreleri yoksa currentPeriodStartTimestamp. Zaman bilgisi yoksa None (çağıran startTimestamp'e düşer).
+    time.periodN oyun süresidir, yağmur arası gibi duraklamalar dahil değildir; bu yüzden hesaplanan başlangıç
+    gerçek olandan geç çıkabilir ve stuck olayı biraz geç tetiklenir (zararsız yönde hata).
     """
     t = event.get("time") or {}
     current = t.get("currentPeriodStartTimestamp")

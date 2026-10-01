@@ -325,7 +325,7 @@ python main.py --watch --sport tennis --event-ids 17196038,17210464 --watch-hour
   - basketball: `played ≥ 90%` of regulation, or the last period when there is no clock data;
   - tennis: the deciding set.
 - **Rate budget.** At most `WATCH_MAX_EVENT_POLLS` (default 20) match pages per round, requests at least 1 s apart. That is under 1 request/s in total. If more matches are near the end than that, match pages drop to every 60 s and a warning is logged.
-- **Stuck match.** Still live or not started 4 h after kick-off (tennis: 6 h after the real first-set start, since its `startTimestamp` is only the scheduled slot): one `stuck` event, then polled every 5 min. If it turns void and its start time has moved (suspended tennis continues the next day with the same id), it stays tracked.
+- **Stuck match.** Still live or not started 4 h after kick-off (tennis: 6 h after the real first-set start, since its `startTimestamp` is only the scheduled slot; set durations exclude breaks such as rain delays, so this start can come out late and `stuck` fires a little later): one `stuck` event, then polled every 5 min. If it turns void and its start time has moved (suspended tennis continues the next day with the same id), it stays tracked.
 - **Events.** One JSON line per event in `DATA_DIR/watch_events.jsonl`:
   - `status_changed` `{event_id, from, to, at_utc, change_ts, scores}`. `scores` comes from `extract_scores`. The first `completed` carries `provisional: true` until the refresh window closes; see [Refresh policy](#refresh-policy).
   - `score_changed` for live scores `{event_id, from, to, at_utc}`.
