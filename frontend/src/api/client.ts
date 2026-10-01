@@ -163,6 +163,7 @@ export type Settings = {
   debug?: boolean
   data_dir: string
   max_concurrent: number
+  request_rate_limit: number
   wait_time_min: number
   wait_time_max: number
   request_timeout: number

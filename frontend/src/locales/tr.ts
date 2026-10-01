@@ -234,6 +234,7 @@ export default {
     advancedNote: 'Bu ayarları değiştirmen genelde gerekmez.',
     timeout: 'İstek zaman aşımı (sn)',
     concurrent: 'Eşzamanlı istek',
+    rateLimit: 'Ortak istek bütçesi (istek/sn, 0 = kapalı)',
     waitMin: 'En kısa bekleme (sn)',
     waitMax: 'En uzun bekleme (sn)',
     retries: 'Deneme sayısı',

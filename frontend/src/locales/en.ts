@@ -236,6 +236,7 @@ const en: typeof tr = {
     advancedNote: 'You rarely need to change these.',
     timeout: 'Request timeout (s)',
     concurrent: 'Concurrent requests',
+    rateLimit: 'Shared request budget (req/s, 0 = off)',
     waitMin: 'Shortest wait (s)',
     waitMax: 'Longest wait (s)',
     retries: 'Retries',

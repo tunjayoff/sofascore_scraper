@@ -38,6 +38,10 @@ for _k in ("PROXY_URL", "USE_PROXY", "API_BASE_URL", "SOFA_CAPTCHA_TOKEN", "FETC
 os.environ["DATA_DIR"] = DATA_DIR
 os.environ["SOFASCORE_CONFIG_DIR"] = CONFIG_DIR
 os.environ["SOFASCORE_ENV_FILE"] = ENV_FILE
+# Ortak istek bütçesi (src/throttle.py) testlerde kapalı ve yalıtılmış: testler makinedeki gerçek
+# süreçlerin bütçe dosyasına dokunmaz, sahte uyku sayaçlarına fazladan bekleme girmez.
+os.environ["REQUEST_RATE_LIMIT"] = "0"
+os.environ["SOFASCORE_THROTTLE_DIR"] = os.path.join(_TMP, "throttle")
 # TestClient "testserver" Host başlığını kullanır
 os.environ["SOFASCORE_ALLOWED_HOSTS"] = "localhost,127.0.0.1,testserver"
 
