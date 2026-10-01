@@ -50,18 +50,21 @@ const from = computed(() => (total.value ? (page.value - 1) * PAGE + 1 : 0))
 const to = computed(() => Math.min(total.value, page.value * PAGE))
 const cols = 'grid-template-columns: 72px 150px minmax(0, 1fr) 84px minmax(0, 1fr) 72px'
 
+const loads = latestOnly()
+const missingLoads = latestOnly()
+const seasonLoads = latestOnly()
+
 async function loadSeasons() {
+  const token = seasonLoads.next()
   seasons.value = []
   if (!league.value) return
   try {
-    seasons.value = (await api.seasons(Number(league.value))).seasons || []
+    const list = (await api.seasons(Number(league.value))).seasons || []
+    if (seasonLoads.isCurrent(token)) seasons.value = list
   } catch {
-    seasons.value = []
+    if (seasonLoads.isCurrent(token)) seasons.value = []
   }
 }
-
-const loads = latestOnly()
-const missingLoads = latestOnly()
 
 async function load() {
   const token = loads.next()
@@ -164,11 +167,10 @@ watch([league, season, date, sort, details, page], () => {
 watch(
   () => sport.current,
   () => {
+    // Each branch reloads once: clearing the league or going back to page 1 trips the watchers above
     if (league.value && !leagues.rows.some((l) => String(l.id) === league.value)) league.value = ''
-    else {
-      page.value = 1
-      void load()
-    }
+    else if (page.value !== 1) page.value = 1
+    else void load()
   },
 )
 
