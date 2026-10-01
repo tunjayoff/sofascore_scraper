@@ -5,13 +5,22 @@ Her kod yolu kendi isteklerini kendi sınırlıyordu (izleyici: istekler arası 
 indirme: MAX_CONCURRENT; program çekme: kendi semaforu). Aynı anda çalışan süreçler (spor
 başına bir `--watch`, web işi, cron'dan `--refresh-only`) birbirini görmediği için toplam
 hız süreç sayısıyla çarpılıyordu. Buradaki sınırlayıcı, SofaScore'a giden her isteğin
-geçtiği en alt noktalardan çağrılır (src/utils.py: curl istekleri; src/challenge_solver.py:
-tarayıcı köprüsünün fetch'i) ve durumunu bir dosyada tutar: aynı kullanıcının tüm süreçleri
+geçtiği en alt noktalardan çağrılır (src/client/transport.py: curl istekleri;
+src/challenge_solver.py: tarayıcı köprüsünün fetch'i) ve durumunu bir dosyada tutar: aynı kullanıcının tüm süreçleri
 tek bütçeyi paylaşır.
 
-Algoritma (GCRA): dosyada tek sayı durur — "sıradaki boş an" (tat). Her istek kilidi alır,
-kendi anını ayırır, tat'ı bir aralık ileri iter ve kilidi HEMEN bırakır; bekleme kilit
-dışında yapılır. Böylece kilit yalnızca birkaç mikrosaniye tutulur.
+Algoritma (GCRA): dosyada "sıradaki boş an" (tat) durur. Her istek kilidi alır, kendi anını
+ayırır, tat'ı bir aralık ileri iter ve kilidi HEMEN bırakır; bekleme kilit dışında yapılır.
+Böylece kilit yalnızca birkaç mikrosaniye tutulur.
+
+Geri verme: sırasını beklerken iptal edilen istek (durdurulan iş, zaman aşımı, Ctrl-C) hiç
+gönderilmez; ayırdığı sıra kuyrukta kalırsa sonraki istek, hangi süreçten gelirse gelsin, o
+boş sıraların arkasında bekler. `reserve()` bu yüzden bir `Reservation` döndürür: değeri
+beklenecek saniyedir, `give_back()` ile sıra bütçeye iade edilir. Kuyruğun sonundaki sıra
+iade edilince tat geri çekilir; aradaki bir sıra dosyadaki "free" listesine yazılır ve
+sonraki isteğe verilir. Her sıra en çok bir isteğe verildiği için bütçenin sınırı (herhangi
+bir T saniyelik pencerede en çok hız × T + patlama payı kadar istek) iadelerle de aşılmaz.
+Yalnızca zamanı henüz gelmemiş sıralar iade edilir (bkz. RequestThrottle.give_back).
 
 Dayanıklılık:
   - Kilit işletim sistemi kilididir (POSIX flock / Windows msvcrt.locking): süreç çökerse
@@ -35,7 +44,7 @@ import math
 import os
 import threading
 import time
-from typing import Any, Callable, Dict, Iterator, Optional, Tuple
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +72,14 @@ _CLOCK_SKEW_TOLERANCE_SECONDS = 1.0
 # Hiçbir istek bir aralık + bu süreden uzun bekletilmez (bozuk durum / saat sıçramasına karşı son emniyet)
 _MAX_WAIT_SECONDS = 300.0
 
-State = Dict[str, float]
+# İade edilen sıralar karşılaştırılırken hoş görülen fark (epoch büyüklüğündeki sayılarda kayan
+# nokta çözünürlüğü ~2e-7 sn); çok yüksek hızlarda aralığın dörtte biriyle sınırlanır
+_POSITION_EPSILON = 1e-6
+# Dosyadaki "free" listesinin üst sınırı; dolunca yeni iadeler yok sayılır (sıra boşa gider, bütçe aşılmaz)
+_MAX_FREE_POSITIONS = 1024
+
+# {"tat": sıradaki boş an, "at": yazıldığı an, "free": iade edilmiş ara sıralar (yoksa anahtar da yok)}
+State = Dict[str, Any]
 
 _warned_invalid_rate: Optional[str] = None
 
@@ -148,28 +164,139 @@ def file_lock(path: str, timeout: float = _LOCK_TIMEOUT_SECONDS) -> Iterator[Non
 
 # --- GCRA -----------------------------------------------------------------------------------
 
-def advance(state: State, now: float, interval: float, burst: int = 1) -> Tuple[float, float, State]:
-    """
-    Bir istek için sıradaki anı ayırır. (bekleme_sn, ayrılan_an, yeni_durum) döndürür.
-
-    `interval` = 1 / hız. `burst`: boşta geçen süreden sonra art arda beklemeden geçebilecek
-    istek sayısı (1 = istekler arası her zaman en az `interval`).
-    """
+def _load(state: State, now: float) -> Tuple[float, List[float]]:
+    """Durumu okur: (tat ≥ şimdi, hâlâ kullanılabilir iade edilmiş sıralar — küçükten büyüğe)."""
     tat = state.get("tat", 0.0)
     written_at = state.get("at", 0.0)
+    free = state.get("free")
     if not _is_number(tat) or not _is_number(written_at):
-        tat, written_at = 0.0, 0.0
+        tat, written_at, free = 0.0, 0.0, None
     if written_at > now + _CLOCK_SKEW_TOLERANCE_SECONDS:
-        tat = now  # durum "gelecekte" yazılmış: sistem saati geri alınmış
+        tat, free = now, None  # durum "gelecekte" yazılmış: sistem saati geri alınmış
     tat = max(tat, now)
-    slot = max(now, tat - (max(1, burst) - 1) * interval)
+    return tat, _free_positions(free, now, tat)
+
+
+def _free_positions(free: Any, now: float, tat: float) -> List[float]:
+    """Geçerli iade listesi: sayı olan, zamanı geçmemiş (≥ şimdi) ve kuyruğun içinde kalan (< tat) sıralar."""
+    if not isinstance(free, list):
+        return []
+    return sorted({float(p) for p in free if _is_number(p) and now <= p < tat})
+
+
+def _state(tat: float, now: float, free: List[float]) -> State:
+    state: State = {"tat": tat, "at": now}
+    if free:
+        state["free"] = free
+    return state
+
+
+def take(state: State, now: float, interval: float, burst: int = 1) -> Tuple[float, float, float, State]:
+    """
+    Bir istek için sıra ayırır. (bekleme_sn, ayrılan_an, sıra, yeni_durum) döndürür.
+
+    `interval` = 1 / hız. `burst`: boşta geçen süreden sonra art arda beklemeden geçebilecek
+    istek sayısı (1 = istekler arası her zaman en az `interval`). `sıra`, isteğin kuyruktaki
+    yeridir (GCRA'nın "teorik varış anı"); istek `sıra - (burst - 1) × interval` anından önce
+    gönderilmez. İade edilmiş bir sıra varsa önce o verilir (`put_back`), yoksa kuyruğun sonu.
+    Zamanı geçmiş iadeler kullanılmaz: sırasından sonra gönderilen istek komşusuna yaklaşırdı.
+    """
+    tat, free = _load(state, now)
+    tolerance = (max(1, burst) - 1) * interval
+    if free:
+        position, free, new_tat = free[0], free[1:], tat
+    else:
+        position, new_tat = tat, tat + interval
+    slot = max(now, position - tolerance)
     if slot - now > _MAX_WAIT_SECONDS + interval:  # + interval: çok düşük hızlarda tek aralık meşrudur
-        tat = slot = now
-    return slot - now, slot, {"tat": tat + interval, "at": now}
+        position = slot = now
+        free, new_tat = [], now + interval
+    return slot - now, slot, position, _state(new_tat, now, free)
+
+
+def advance(state: State, now: float, interval: float, burst: int = 1) -> Tuple[float, float, State]:
+    """`take` ile aynı, sıra olmadan: (bekleme_sn, ayrılan_an, yeni_durum)."""
+    delay, slot, _, new_state = take(state, now, interval, burst)
+    return delay, slot, new_state
+
+
+def put_back(state: State, now: float, position: float, interval: float) -> Tuple[bool, State]:
+    """
+    Kullanılmayan bir sırayı (`take`'in döndürdüğü `sıra`, ayrıldığı andaki `interval` ile) bütçeye
+    geri verir: (geri alındı mı, yeni_durum).
+
+    Kuyruğun sonundaki sıra geri gelince tat o sıraya çekilir ve hemen altındaki iade edilmiş
+    sıralar da birlikte kapanır (iptal edilen bir işin sıraları hangi düzende dönerse dönsün
+    kuyruk sonunda tamamen kısalır). Aradaki bir sıra "free" listesine girer. Durum bu arada
+    sıfırlandıysa (bozuk dosya, geri alınan saat, emniyet sınırı) ya da sıra tanınmıyorsa
+    hiçbir şey değişmez.
+    """
+    tat = state.get("tat")
+    written_at = state.get("at")
+    if not (_is_number(tat) and _is_number(written_at) and _is_number(position) and _is_number(interval)):
+        return False, state
+    if interval <= 0 or written_at > now + _CLOCK_SKEW_TOLERANCE_SECONDS:
+        return False, state
+    free = _free_positions(state.get("free"), -math.inf, tat)
+    epsilon = min(_POSITION_EPSILON, interval / 4)
+    if abs(position + interval - tat) <= epsilon:
+        # Kuyruğun sonu: zamanı geçmiş olsa da geri alınır (tat şimdinin gerisine düşerse sonraki
+        # ayırma zaten şimdiden başlar)
+        tat = position
+        while free and abs(free[-1] + interval - tat) <= epsilon:
+            tat = free.pop()
+    elif (
+        now <= position < tat
+        and len(free) < _MAX_FREE_POSITIONS
+        and all(abs(position - p) > epsilon for p in free)
+    ):
+        free = sorted([*free, float(position)])
+    else:
+        return False, state
+    return True, _state(tat, now, [p for p in free if now <= p < tat])
 
 
 def _is_number(v: Any) -> bool:
     return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+
+
+class Reservation(float):
+    """
+    Bütçeden ayrılmış bir sıra. Sayı olarak değeri, isteği göndermeden önce beklenmesi gereken
+    saniyedir: `reserve()`'ün sonucunu düz sayı gibi kullanan kod (ve testlerdeki düz sayı
+    döndüren sahteler) değişmeden çalışır. İstek gönderilmeden vazgeçilirse `give_back()` sırayı
+    bütçeye iade eder; bir sıra yalnızca bir kez iade edilir.
+
+    slot: isteğin gönderilebileceği an. position: kuyruktaki yeri (bkz. `take`).
+    """
+
+    __slots__ = ("slot", "position", "_interval", "_lane", "_in_file", "_returned")
+
+    slot: float
+    position: float
+
+    def __new__(
+        cls,
+        delay: float,
+        *,
+        slot: float,
+        position: float,
+        interval: float = 0.0,
+        lane: "Optional[RequestThrottle]" = None,
+        in_file: bool = False,
+    ) -> "Reservation":
+        self = super().__new__(cls, delay)
+        self.slot = slot
+        self.position = position
+        self._interval = interval
+        self._lane = lane  # None: bütçe kapalıyken alınmış, iade edilecek bir şey yok
+        self._in_file = in_file  # ortak dosyadan mı, süreç içi sayaçtan mı ayrıldı
+        self._returned = False
+        return self
+
+    def give_back(self) -> bool:
+        """Sırayı bütçeye geri verir; geri alındıysa True. Hata fırlatmaz."""
+        return self._lane.give_back(self) if self._lane is not None else False
 
 
 class RequestThrottle:
@@ -252,25 +379,40 @@ class RequestThrottle:
 
     # -- ayırma --
 
-    def reserve_slot(self) -> Tuple[float, float]:
-        """Sıradaki anı ayırır: (beklenmesi gereken sn, ayrılan an). Beklemez."""
+    def _update_shared(self, step: "Callable[[State], Tuple[Any, State]]") -> Any:
+        """Ortak durumu kilit altında okur, `step` ile değiştirir ve yazar; `step`'in sonucunu döndürür."""
+        lock_path, state_path = self._paths()
+        os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+        with file_lock(lock_path, self._lock_timeout):
+            result, state = step(self._read(state_path))
+            self._write(state_path, state)
+        if self._shared_failed_at is not None:
+            logger.info(f"Ortak istek bütçesi ({self.name}) yeniden kullanılıyor.")
+        self._shared_failed_at, self.shared_error = None, None
+        self._local = state  # dosya kaybolursa süreç içi sayaç kaldığı yerden sürsün
+        return result
+
+    def reserve(self) -> Reservation:
+        """
+        Sıradaki anı ayırır. Dönen değer beklenmesi gereken saniyedir (çağıran bekler); istek
+        gönderilmeden vazgeçilirse `give_back` ile iade edilir.
+        """
         rate = self.rate()
         if rate <= 0:
-            return 0.0, self._clock()
+            now = self._clock()
+            return Reservation(0.0, slot=now, position=now)
         interval, burst = 1.0 / rate, self.burst()
+
+        def step(state: State) -> Tuple[Tuple[float, float, float], State]:
+            delay, slot, position, new_state = take(state, self._clock(), interval, burst)
+            return (delay, slot, position), new_state
+
         with self._thread_lock:
+            in_file = False
             if self._shared_usable():
-                lock_path, state_path = self._paths()
                 try:
-                    os.makedirs(os.path.dirname(lock_path), exist_ok=True)
-                    with file_lock(lock_path, self._lock_timeout):
-                        delay, slot, state = advance(self._read(state_path), self._clock(), interval, burst)
-                        self._write(state_path, state)
-                    if self._shared_failed_at is not None:
-                        logger.info(f"Ortak istek bütçesi ({self.name}) yeniden kullanılıyor.")
-                    self._shared_failed_at, self.shared_error = None, None
-                    self._local = state  # dosya kaybolursa süreç içi sayaç kaldığı yerden sürsün
-                    return delay, slot
+                    delay, slot, position = self._update_shared(step)
+                    in_file = True
                 except (OSError, TimeoutError) as e:
                     if self._shared_failed_at is None:
                         logger.warning(
@@ -278,25 +420,66 @@ class RequestThrottle:
                             f"sayacıyla devam ediyor; {int(_SHARED_RETRY_AFTER_SECONDS)} sn sonra yeniden denenecek."
                         )
                     self._shared_failed_at, self.shared_error = time.monotonic(), str(e)
-            delay, slot, self._local = advance(self._local, self._clock(), interval, burst)
-            return delay, slot
+            if not in_file:
+                (delay, slot, position), self._local = step(self._local)
+            return Reservation(delay, slot=slot, position=position, interval=interval, lane=self, in_file=in_file)
 
-    def reserve(self) -> float:
-        """Sıradaki anı ayırır ve beklenmesi gereken saniyeyi döndürür (çağıran bekler)."""
-        return self.reserve_slot()[0]
+    def reserve_slot(self) -> Tuple[float, float]:
+        """Sıradaki anı ayırır: (beklenmesi gereken sn, ayrılan an). Beklemez."""
+        reservation = self.reserve()
+        return float(reservation), reservation.slot
+
+    def give_back(self, reservation: Reservation) -> bool:
+        """
+        Kullanılmayan bir sırayı bütçeye geri verir: isteği, sırasını beklerken iptal edilen çağıran
+        çağırır. Geri alındıysa True. İptal yolunda çağrıldığı için hata fırlatmaz; ortak dosyaya
+        ulaşılamazsa sıra iade edilmeden kalır (eski davranış: kuyruk kendi kendine erir).
+
+        Zamanı gelmiş bir sıra (slot ≤ şimdi) iade edilmez, kullanılmış sayılır: geri verilseydi
+        sıradaki çağıran onu hiç beklemeden alırdı, ve durdurulan bir işin istek katmanında bekleyen
+        öteki istekleri (iptale yalnızca beklerken bakarlar) durdurmadan sonra gönderilirdi. Zamanı
+        gelmemiş bir sırayı alan istek ise bekler ve beklerken iptal edilir.
+        """
+        with self._thread_lock:
+            if reservation._lane is not self or reservation._returned:
+                return False
+            reservation._returned = True
+            if reservation.slot <= self._clock() + _POSITION_EPSILON:
+                return False
+
+            def step(state: State) -> Tuple[bool, State]:
+                return put_back(state, self._clock(), reservation.position, reservation._interval)
+
+            if not reservation._in_file:
+                returned, self._local = step(self._local)
+                return returned
+            if not self._shared_usable():
+                return False
+            try:
+                return bool(self._update_shared(step))
+            except (OSError, TimeoutError) as e:
+                if self._shared_failed_at is None:
+                    logger.warning(
+                        f"Shared request budget ({self.name}) is unavailable: {e}. A cancelled reservation was "
+                        f"not returned; retrying the file in {int(_SHARED_RETRY_AFTER_SECONDS)} s."
+                    )
+                self._shared_failed_at, self.shared_error = time.monotonic(), str(e)
+                return False
 
     def wait(self) -> float:
-        """Sıra gelene kadar bekler (engelleyici)."""
+        """Sıra gelene kadar bekler (engelleyici). Bekleme yarıda kesilirse sıra iade edilir."""
         delay = self.reserve()
         if delay > 0:
-            self._sleep(delay)
+            with give_back_if_interrupted(delay):
+                self._sleep(delay)
         return delay
 
     async def wait_async(self) -> float:
-        """Sıra gelene kadar bekler (olay döngüsünü engellemeden)."""
+        """Sıra gelene kadar bekler (olay döngüsünü engellemeden). Bekleme iptal edilirse sıra iade edilir."""
         delay = self.reserve()
         if delay > 0:
-            await asyncio.sleep(delay)
+            with give_back_if_interrupted(delay):
+                await asyncio.sleep(delay)
         return delay
 
 
@@ -316,22 +499,48 @@ def api_throttle() -> RequestThrottle:
         return _api
 
 
-def reserve() -> float:
-    """Ortak bütçeden sıradaki anı ayırır; beklenmesi gereken saniyeyi döndürür (çağıran bekler)."""
+def reserve() -> Reservation:
+    """
+    Ortak bütçeden sıradaki anı ayırır; beklenmesi gereken saniyeyi döndürür (çağıran bekler).
+    Bekleme iptal edilebiliyorsa `give_back_if_interrupted` bloğunda yapılır.
+    """
     return api_throttle().reserve()
+
+
+def give_back(delay: float) -> bool:
+    """
+    `reserve()`'ün döndürdüğü sırayı, isteği gönderilmeden bütçeye geri verir; geri alındıysa True.
+    Düz bir sayı (testlerde `reserve` yerine konan sahtelerin döndürdüğü) için hiçbir şey yapmaz.
+    """
+    return delay.give_back() if isinstance(delay, Reservation) else False
+
+
+@contextlib.contextmanager
+def give_back_if_interrupted(delay: float) -> Iterator[None]:
+    """
+    Sıra beklemesini saran blok: bekleme bir istisnayla kesilirse (iş iptali, asyncio iptali,
+    zaman aşımı, Ctrl-C) istek gönderilmeyecektir; sıra bütçeye geri verilir ve istisna sürer.
+    """
+    try:
+        yield
+    except BaseException:
+        give_back(delay)
+        raise
 
 
 def wait() -> float:
     delay = reserve()
     if delay > 0:
-        time.sleep(delay)
+        with give_back_if_interrupted(delay):
+            time.sleep(delay)
     return delay
 
 
 async def wait_async() -> float:
     delay = reserve()
     if delay > 0:
-        await asyncio.sleep(delay)
+        with give_back_if_interrupted(delay):
+            await asyncio.sleep(delay)
     return delay
 
 

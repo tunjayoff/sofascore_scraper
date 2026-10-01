@@ -111,18 +111,21 @@ async def _asleep(seconds: float) -> None:
 
 # ---- Ortak istek bütçesi (src/throttle.py, issue #16) ----
 # SofaScore'a giden her curl isteğinin hemen öncesinde çağrılır; tarayıcı köprüsü kendi
-# isteklerinde aynı bütçeyi kullanır (BrowserBridge._api_fetch). Bekleme iptal edilebilir.
+# isteklerinde aynı bütçeyi kullanır (BrowserBridge._api_fetch). Bekleme iptal edilebilir; iptal
+# edilen istek gönderilmediği için sırası bütçeye geri verilir (sonraki istek onun arkasında beklemez).
 
 def _throttle() -> None:
     delay = throttle.reserve()
     if delay > 0:
-        _sleep(delay)
+        with throttle.give_back_if_interrupted(delay):
+            _sleep(delay)
 
 
 async def _athrottle() -> None:
     delay = throttle.reserve()
     if delay > 0:
-        await _asleep(delay)
+        with throttle.give_back_if_interrupted(delay):
+            await _asleep(delay)
 
 
 IMPERSONATE_PROFILES = [

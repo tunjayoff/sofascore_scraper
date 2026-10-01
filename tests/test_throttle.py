@@ -5,6 +5,7 @@ import asyncio
 import concurrent.futures
 import json
 import os
+import random
 import subprocess
 import sys
 import textwrap
@@ -16,7 +17,8 @@ import pytest
 import src.challenge_solver as cs
 import src.utils as utils
 from src import throttle
-from src.throttle import RequestThrottle, advance
+from src.client import request_context
+from src.throttle import RequestThrottle, Reservation, advance, put_back, take
 from src.watcher import MatchWatcher
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -410,6 +412,333 @@ def test_two_processes_share_the_budget(tmp_path):
     assert merged[-1] - merged[0] >= (2 * count - 1) * interval - eps  # 400 istek, tek sıra
 
 
+# --- GCRA: kullanılmayan sıranın geri verilmesi (FX-6) -----------------------------------------
+# İptal edilen isteğin sırası kuyrukta kalırsa sonraki istek onun arkasında bekler (PR #33'ün
+# açık bıraktığı durum). put_back sırayı geri alır; hiçbir sıra iki isteğe verilmez.
+
+def _queue(count, now=100.0, interval=0.5, burst=1):
+    """Aynı anda gelen `count` istek: ([(bekleme, an, sıra), ...], durum)."""
+    state, taken = {}, []
+    for _ in range(count):
+        delay, slot, position, state = take(state, now, interval, burst)
+        taken.append((delay, slot, position))
+    return taken, state
+
+
+def test_take_is_advance_plus_the_position_in_the_queue():
+    state_a, state_t = {}, {}
+    for now in (100.0, 100.0, 100.0, 100.1, 107.0):
+        delay, slot, state_a = advance(state_a, now, 0.5, burst=2)
+        t_delay, t_slot, position, state_t = take(state_t, now, 0.5, burst=2)
+        assert (t_delay, t_slot, state_t) == (delay, slot, state_a)
+        assert position == state_t["tat"] - 0.5 and position - 0.5 <= slot <= position
+    assert "free" not in state_t  # iade yokken dosyanın biçimi eskisiyle aynı
+
+
+def test_giving_back_the_last_slot_shortens_the_queue():
+    taken, state = _queue(3)
+    returned, state = put_back(state, 100.0, taken[2][2], 0.5)
+    assert returned and state == {"tat": 101.0, "at": 100.0}
+    assert take(state, 100.0, 0.5)[:2] == (1.0, 101.0)  # sonraki istek iade edilen anı alır
+
+
+def test_a_slot_given_back_from_the_middle_goes_to_the_next_request_once():
+    taken, state = _queue(4)  # anlar: 100, 100.5, 101, 101.5
+    returned, state = put_back(state, 100.0, taken[1][2], 0.5)
+    assert returned and state == {"tat": 102.0, "at": 100.0, "free": [100.5]}
+    delay, slot, position, state = take(state, 100.0, 0.5)
+    assert (delay, slot, position) == (0.5, 100.5, 100.5) and "free" not in state
+    assert take(state, 100.0, 0.5)[:2] == (2.0, 102.0)  # ikinci istek kuyruğun sonuna
+
+
+def test_slots_given_back_in_any_order_free_the_whole_queue():
+    """Durdurulan iş: varsayılan ayarla 70 istek kuyrukta (5'i gitti); 65 sıra karışık düzende geri gelir."""
+    taken, state = _queue(70, interval=0.2, burst=5)
+    assert take(state, 100.0, 0.2, burst=5)[0] == pytest.approx(13.2)  # iade olmasaydı sonraki istek
+    waiting = [t for t in taken if t[0] > 1e-9]  # beşinci isteğin beklemesi kayan nokta artığı (1e-14)
+    assert len(waiting) == 65
+    random.Random(16).shuffle(waiting)
+    for _, _, position in waiting:
+        returned, state = put_back(state, 100.0, position, 0.2)
+        assert returned
+    assert state == {"tat": pytest.approx(101.0), "at": 100.0}
+    assert take(state, 100.0, 0.2, burst=5)[0] == pytest.approx(0.2)  # yalnızca giden 5 isteğin arkasında
+
+
+def test_a_given_back_slot_whose_time_has_passed_is_not_reused():
+    """Geç kalan istek iade edilmiş eski sırayı alsaydı bir sonraki sıranın sahibine aralıktan fazla yaklaşırdı."""
+    taken, state = _queue(4)
+    _, state = put_back(state, 100.0, taken[1][2], 0.5)  # 100.5 boşta
+    delay, slot, position, state = take(state, 100.7, 0.5)
+    assert (slot, position) == (102.0, 102.0) and "free" not in state
+    # Zamanı geçmiş bir sıra aradan geri de verilemez
+    taken, state = _queue(4)
+    assert put_back(state, 100.7, taken[1][2], 0.5) == (False, state)
+
+
+def test_giving_back_a_stale_last_slot_still_shortens_the_queue():
+    taken, state = _queue(2)  # 100, 100.5; tat 101
+    returned, state = put_back(state, 100.8, taken[1][2], 0.5)
+    assert returned and take(state, 100.8, 0.5)[:2] == (0.0, 100.8)
+
+
+def test_burst_slots_keep_their_send_time_when_reused():
+    taken, state = _queue(8, interval=0.1, burst=3)  # bekleme: 0, 0, 0, 0.1, ..., 0.5
+    _, state = put_back(state, 100.0, taken[4][2], 0.1)
+    delay, slot, position, _ = take(state, 100.05, 0.1, burst=3)
+    assert position == taken[4][2] and slot == pytest.approx(taken[4][1]) and delay == pytest.approx(0.15)
+
+
+@pytest.mark.parametrize("state", [
+    {},
+    {"tat": "x", "at": 1.0},
+    {"tat": 103.0, "at": 5000.0},  # sistem saati geri alınmış: sonraki ayırma durumu sıfırlar
+    {"tat": 100.0, "at": 100.0},  # durum sıfırlanmış: sıra artık kuyruğun dışında
+])
+def test_put_back_leaves_an_unknown_state_alone(state):
+    assert put_back(state, 100.0, 101.0, 0.5) == (False, state)
+
+
+def test_put_back_ignores_bad_arguments_and_repeats():
+    taken, state = _queue(4)
+    assert put_back(state, 100.0, float("nan"), 0.5) == (False, state)
+    assert put_back(state, 100.0, taken[1][2], 0.0) == (False, state)
+    _, state = put_back(state, 100.0, taken[1][2], 0.5)
+    assert put_back(state, 100.0, taken[1][2], 0.5) == (False, state)  # aynı sıra listeye iki kez girmez
+
+
+def test_corrupt_free_list_is_ignored():
+    for free in ("x", [None, "y", float("nan"), True], [99.0, 500.0]):  # sayı değil / zamanı geçmiş / kuyruk dışı
+        delay, slot, position, state = take({"tat": 102.0, "at": 100.0, "free": free}, 100.0, 0.5)
+        assert (slot, position) == (102.0, 102.0) and "free" not in state
+
+
+def test_free_list_is_bounded(monkeypatch):
+    monkeypatch.setattr(throttle, "_MAX_FREE_POSITIONS", 3)
+    taken, state = _queue(10)
+    for _, _, position in taken[1:4]:
+        returned, state = put_back(state, 100.0, position, 0.5)
+        assert returned
+    assert put_back(state, 100.0, taken[5][2], 0.5) == (False, state)  # liste dolu: sıra boşa gider
+    returned, state = put_back(state, 100.0, taken[9][2], 0.5)  # kuyruğun sonu listeye girmez
+    assert returned and len(state["free"]) == 3
+
+
+def test_cap_reset_drops_the_free_list():
+    cap = throttle._MAX_WAIT_SECONDS
+    far = {"tat": 100.0 + cap + 50, "at": 100.0, "free": [100.0 + cap + 20]}
+    assert take(far, 100.0, 1.0) == (0.0, 100.0, 100.0, {"tat": 101.0, "at": 100.0})
+
+
+@pytest.mark.parametrize("burst", [1, 5])
+def test_given_back_slots_never_let_the_budget_be_exceeded(burst):
+    """
+    Rastgele ayırma ve iade: gönderilen istekler (iade edilmeyen sıralar, ayrılan anlarında) bütçeye
+    uyar — art arda gelen her n + 1 istek en az (n - burst + 1) aralığa yayılır (iade olmadan GCRA'nın
+    verdiği sınır). Bir sıra iki isteğe verilseydi ya da zamanı geçmiş bir sıra kullanılsaydı bozulurdu.
+    """
+    rng = random.Random(6)
+    interval, now, state = 0.2, 1_000_000.0, {}
+    waiting, sent, reused, given_back = [], [], 0, 0
+    for _ in range(4000):
+        now += rng.choice([0.0, 0.0, 0.0, 0.01, 0.07, 0.2, 0.9])
+        sent += [slot for slot, _ in waiting if slot <= now]  # sırası gelen istek gider
+        waiting = [w for w in waiting if w[0] > now]
+        if rng.random() < 0.6 or not waiting:
+            had_free = bool(state.get("free"))
+            _, slot, position, state = take(state, now, interval, burst)
+            reused += had_free
+            waiting.append((slot, position))
+        else:
+            slot, position = waiting.pop(rng.randrange(len(waiting)))  # sırasını beklerken iptal edildi
+            returned, state = put_back(state, now, position, interval)
+            given_back += returned
+    sent.sort()
+    assert given_back > 300 and reused > 100 and len(sent) > 1000
+    eps = 1e-6
+    for n in range(1, 40):
+        spans = [b - a for a, b in zip(sent, sent[n:], strict=False)]
+        assert min(spans) >= (n - burst + 1) * interval - eps, n
+
+
+# --- sınırlayıcı: iade ------------------------------------------------------------------------
+
+def test_reservation_is_the_delay_for_callers_that_only_wait(tmp_path):
+    clock = Clock()
+    t = RequestThrottle("api", 2.0, burst=1, clock=clock, directory=str(tmp_path))
+    first, second = t.reserve(), t.reserve()
+    assert isinstance(second, float) and second == 0.5 and second + 1 == 1.5
+    assert json.loads(json.dumps([first, second])) == [0.0, 0.5]
+    assert (second.slot, second.position) == (clock.t + 0.5, clock.t + 0.5)
+
+
+def test_given_back_reservation_is_free_for_the_next_caller(tmp_path):
+    clock = Clock()
+    job = RequestThrottle("api", 1.0, clock=clock, directory=str(tmp_path))
+    other = RequestThrottle("api", 1.0, clock=clock, directory=str(tmp_path))  # başka bir süreç gibi
+    queued = [job.reserve() for _ in range(5)]
+    assert [float(r) for r in queued] == [0.0, 1.0, 2.0, 3.0, 4.0]
+    assert [r.give_back() for r in queued[1:]] == [True] * 4
+    assert other.reserve() == 1.0  # iade olmasaydı 5.0
+    assert json.loads((tmp_path / "api.json").read_text(encoding="utf-8")) == {"tat": clock.t + 2, "at": clock.t}
+
+
+def test_a_reservation_is_given_back_only_once(tmp_path):
+    clock = Clock()
+    t = RequestThrottle("api", 1.0, clock=clock, directory=str(tmp_path))
+    t.reserve()
+    queued = t.reserve()
+    assert queued.give_back() is True
+    again = t.reserve()  # aynı an artık bu isteğin
+    assert again == 1.0 and queued.give_back() is False
+    assert t.reserve() == 2.0
+    stranger = RequestThrottle("api", 1.0, clock=clock, directory=str(tmp_path))
+    assert stranger.give_back(again) is False  # başka bir örneğin verdiği sıra
+
+
+def test_a_slot_whose_time_has_come_is_not_given_back(tmp_path):
+    """Zamanı gelmiş sıra kullanılmış sayılır: geri verilseydi sıradaki çağıran hiç beklemeden alırdı."""
+    clock = Clock()
+    t = RequestThrottle("api", 1.0, clock=clock, directory=str(tmp_path))
+    now = t.reserve()
+    assert now == 0.0 and now.give_back() is False  # beklemeden geçen istek: sırası zaten geldi
+    queued = t.reserve()
+    clock.t += 1.0
+    assert queued.give_back() is False
+    assert t.reserve() == 1.0
+
+
+def test_disabled_throttle_has_nothing_to_give_back(tmp_path):
+    t = RequestThrottle("api", 0.0, directory=str(tmp_path / "t"))
+    reservation = t.reserve()
+    assert reservation == 0.0 and reservation.give_back() is False and not (tmp_path / "t").exists()
+
+
+def test_give_back_works_without_the_shared_file(tmp_path):
+    clock = Clock()
+    t = RequestThrottle("watch", 1.0, burst=1, shared=False, clock=clock, directory=str(tmp_path / "t"))
+    queued = [t.reserve() for _ in range(3)]
+    assert queued[1].give_back() is True
+    assert [t.reserve(), t.reserve()] == [1.0, 3.0]
+    assert not (tmp_path / "t").exists()
+
+
+def test_give_back_never_raises_when_the_file_is_unusable(tmp_path, caplog):
+    clock = Clock()
+    t = RequestThrottle("api", 1.0, clock=clock, directory=str(tmp_path), lock_timeout=0.05)
+    t.reserve()
+    queued, last = t.reserve(), t.reserve()
+    with caplog.at_level("WARNING", logger="src.throttle"), throttle.file_lock(str(tmp_path / "api.lock")):
+        assert queued.give_back() is False  # kilit başkasında: sıra iade edilemez, hata da yok
+        assert last.give_back() is False  # dosya bir süre yeniden denenmez: her iade zaman aşımı beklemez
+    assert t.shared_error and caplog.text.count("was not returned") == 1
+    assert t.reserve() == 3.0  # süreç içi sayaç, paylaşılan durumun son kopyasıyla sürer
+
+
+def test_interrupted_wait_gives_the_slot_back(tmp_path):
+    clock = Clock()
+
+    def interrupted(seconds):
+        raise KeyboardInterrupt
+
+    t = RequestThrottle("api", 1.0, clock=clock, sleep=interrupted, directory=str(tmp_path))
+    assert t.wait() == 0.0
+    for _ in range(3):
+        with pytest.raises(KeyboardInterrupt):
+            t.wait()
+    assert t.reserve() == 1.0  # üç yarım kalan bekleme kuyrukta yer tutmuyor
+
+
+def test_cancelled_wait_async_gives_the_slot_back(tmp_path):
+    t = RequestThrottle("api", 0.1, directory=str(tmp_path))  # 10 sn'de bir istek
+
+    async def run():
+        assert await t.wait_async() == 0.0
+        waiting = [asyncio.ensure_future(t.wait_async()) for _ in range(3)]
+        await asyncio.sleep(0.01)
+        for task in waiting:
+            task.cancel()
+        return await asyncio.gather(*waiting, return_exceptions=True)
+
+    results = asyncio.run(run())
+    assert all(isinstance(r, asyncio.CancelledError) for r in results)
+    assert 9.0 < t.reserve() <= 10.0  # iade olmasaydı ~40 sn
+
+
+def test_module_level_give_back_ignores_plain_numbers(shared_dir):
+    """Testlerde throttle.reserve yerine konan sahteler düz sayı döndürür; istek katmanı onlarla da çalışır."""
+    assert throttle.give_back(1.5) is False
+    with pytest.raises(ValueError), throttle.give_back_if_interrupted(1.5):
+        raise ValueError
+    assert isinstance(throttle.reserve(), Reservation)
+
+
+def test_interrupted_block_gives_the_slot_back_and_a_finished_one_keeps_it(shared_dir, monkeypatch):
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0.1")
+    assert throttle.reserve() == 0.0
+    kept = throttle.reserve()
+    with throttle.give_back_if_interrupted(kept):
+        pass  # bekleme bitti: istek gönderilecek, sıra kullanıldı
+    dropped = throttle.reserve()
+    assert 19.0 < dropped <= 20.0
+    with pytest.raises(utils.FetchCancelled), throttle.give_back_if_interrupted(dropped):
+        raise utils.FetchCancelled()
+    assert 19.0 < throttle.reserve() <= 20.0  # aynı an yeniden verildi
+    assert kept.give_back() is True  # hâlâ beklenebilirdi: blok onu iade etmedi
+
+
+_CANCELLED_JOB = """
+import json, os, random, sys, time
+sys.path.insert(0, {root!r})
+from src.throttle import RequestThrottle
+t = RequestThrottle("api", 5.0, clock=lambda: {now!r}, directory={directory!r}, lock_timeout=60.0)
+queued = [t.reserve() for _ in range(70)]
+open({ready!r}, "w").close()
+while not os.path.exists({go!r}):
+    time.sleep(0.002)
+waiting = [r for r in queued if r > 0]
+random.Random(7).shuffle(waiting)
+print(json.dumps([r.give_back() for r in waiting]))
+assert t.shared_error is None, t.shared_error
+"""
+
+
+def test_cancelled_job_in_another_process_frees_its_queue(tmp_path):
+    """
+    Bir süreçte toplu iş 70 isteği kuyruğa koyar (varsayılan MAX_CONCURRENT × 7 dilim, 5 istek/sn) ve
+    durdurulur; başka bir sürecin sonraki isteği o 65 boş sıranın arkasında 13 sn beklemez. Saat iki
+    süreçte de sabittir: sonuç zamanlamaya değil dosyaya yazılan duruma bağlıdır.
+    """
+    now, directory = 1_000_000.0, tmp_path / "t"
+    ready, go = str(tmp_path / "ready"), str(tmp_path / "go")
+    code = _CANCELLED_JOB.format(root=ROOT, now=now, directory=str(directory), ready=ready, go=go)
+    proc = subprocess.Popen(
+        [sys.executable, "-c", textwrap.dedent(code)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+    )
+    try:
+        _wait_for(ready, proc)
+        mine = RequestThrottle("api", 5.0, clock=lambda: now, directory=str(directory), lock_timeout=60.0)
+        behind = mine.reserve()
+        assert behind == pytest.approx(70 / 5 - 0.8)  # iş sürerken: kuyruğun sonu
+        open(go, "w").close()  # iş durduruldu
+        out, err = proc.communicate(timeout=120)
+        assert proc.returncode == 0, err
+        assert json.loads(out) == [True] * 65
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait(timeout=30)
+        for stream in (proc.stdout, proc.stderr):
+            if stream:
+                stream.close()
+
+    assert mine.reserve() == pytest.approx(0.2)  # giden 5 isteğin hemen arkası; iade olmasaydı 13.4
+    assert behind.give_back() is True  # kuyruğun sonu da dönünce aradaki boş sıralar birlikte kapanır
+    state = json.loads((directory / "api.json").read_text(encoding="utf-8"))
+    assert state == {"tat": pytest.approx(now + 1.2), "at": now}
+    assert mine.reserve() == pytest.approx(0.4)
+
+
 # --- isteklerin geçtiği noktalar --------------------------------------------------------------
 
 class Resp:
@@ -643,6 +972,139 @@ def test_calls_do_not_share_their_slot_wait(monkeypatch):
         assert await first == "ok"
 
     asyncio.run(run())
+
+
+# --- iptal: istek katmanı ve köprü sırayı geri verir, köprünün beklemesi kesilir (FX-6) ---------
+
+def _queued_seconds():
+    """Ortak durum dosyasına göre kuyruğun sonu şimdiden kaç saniye ileride."""
+    with open(os.path.join(throttle.state_dir(), "api.json"), encoding="utf-8") as f:
+        return json.load(f)["tat"] - time.time()
+
+
+def test_cancelled_sync_request_gives_its_slot_back(shared_dir, monkeypatch):
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0.1")  # 10 sn'de bir istek
+    assert throttle.reserve() == 0.0
+    answers = iter([False])  # deneme başındaki kontrol geçer, sıra beklenirken iptal gelir
+
+    with request_context(cancel=lambda: next(answers, True)), \
+            patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(utils, "_get_proxy_config", return_value=(False, "")), \
+            patch.object(utils.cffi_requests, "get") as get, \
+            pytest.raises(utils.FetchCancelled):
+        utils.make_api_request("/x")
+    assert get.call_count == 0
+    assert 9.0 < throttle.reserve() <= 10.0  # iade olmasaydı ~20 sn
+
+
+def test_stopped_bulk_job_leaves_no_queue_behind(shared_dir, monkeypatch):
+    """
+    Uçtan uca: 70 eşzamanlı istek (10 maç × 7 dilim) başlar, ilki gidince iş durdurulur. O anda
+    MAX_CONCURRENT kadarı sırasını bekliyor, gerisi istek semaforunda; iptal edilince hepsi sırayla
+    bütçeden geçer. Eskiden her biri kuyrukta bir sıra bırakırdı: sonraki istek, hangi süreçten gelirse
+    gelsin, burada (1 istek/sn) 69 sn, varsayılan 5 istek/sn ile 13 sn beklerdi. Şimdi hiçbiri gönderilmez
+    ve kuyrukta sıra kalmaz.
+    """
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", "1")
+    session = MagicMock()
+    session.get = AsyncMock(return_value=Resp(200, {"ok": 1}))
+    stopped = []
+
+    async def stop():  # bütün istekler yola çıktıktan sonra: "Durdur"
+        stopped.append(True)
+
+    async def job():
+        return await asyncio.gather(
+            *[utils.make_api_request_async(session, f"/event/{n}") for n in range(70)], stop(),
+            return_exceptions=True,
+        )
+
+    with request_context(cancel=lambda: bool(stopped)), \
+            patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(utils, "_get_proxy_config", return_value=(False, "")):
+        results = asyncio.run(job())
+
+    assert session.get.await_count == 1  # durdurmadan sonra hiçbir istek gitmedi
+    assert sum(isinstance(r, utils.FetchCancelled) for r in results) == 69
+    assert _queued_seconds() <= 1.0 + 1e-3  # yalnızca giden isteğin aralığı
+    assert throttle.reserve() <= 1.0
+
+
+@pytest.mark.parametrize("sync", [True, False])
+def test_bridge_slot_wait_stops_when_the_job_is_cancelled(shared_dir, monkeypatch, sync):
+    """
+    Köprünün içindeki sıra beklemesi çağıranın iptal kontrolüne bakar: iş durdurulunca bir kontrol
+    aralığı içinde kesilir, istek gönderilmez ve sıra geri verilir. Eskiden sync yolda çağıran thread
+    bekleme bitene kadar (burada 10 sn) köprüde kalırdı.
+    """
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0.1")
+    assert throttle.reserve() == 0.0
+    bridge = _bridge(AsyncMock(return_value=_OK))
+    stop_at = time.monotonic() + 0.1
+
+    def call():
+        if sync:
+            return cs.fetch_api_via_browser_sync("/event/1")
+        return asyncio.run(cs.fetch_api_via_browser("/event/1"))
+
+    with request_context(cancel=lambda: time.monotonic() >= stop_at), \
+            patch.object(cs.BrowserBridge, "get_instance", return_value=bridge):
+        start = time.monotonic()
+        with pytest.raises(utils.FetchCancelled):
+            call()
+        elapsed = time.monotonic() - start
+    assert elapsed < 0.1 + cs._CANCEL_CHECK_SECONDS + 2.0  # + yavaş makine payı; 10 sn değil
+    assert bridge.evaluate.await_count == 0
+    assert 9.0 - elapsed < throttle.reserve() <= 10.0  # iade olmasaydı ~20 sn
+
+
+def test_bridge_slot_wait_without_a_cancel_check_is_unchanged(shared_dir, monkeypatch):
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", "4")
+    monkeypatch.setattr(throttle.api_throttle(), "_burst", 1)
+    bridge = _bridge(AsyncMock(return_value=_OK))
+    with request_context(), patch.object(cs.BrowserBridge, "get_instance", return_value=bridge):
+        start = time.monotonic()
+        assert [cs.fetch_api_via_browser_sync("/event/1") for _ in range(3)] == [{"a": 1}] * 3
+    assert time.monotonic() - start >= 0.45  # iki bekleme, 0,25'er sn
+
+
+def test_cancelled_bridge_call_gives_its_slot_back(shared_dir, monkeypatch):
+    """Sıra beklerken asyncio iptali (zaman aşımı, kapanan çağıran) da sırayı geri verir."""
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0.1")
+    assert throttle.reserve() == 0.0
+
+    async def run():
+        waiting = asyncio.ensure_future(cs._wait_for_slot())
+        await asyncio.sleep(0.05)
+        waiting.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await waiting
+
+    with request_context():
+        asyncio.run(run())
+    assert 9.0 < throttle.reserve() <= 10.0
+
+
+def test_one_cancelled_job_does_not_stop_a_shared_solve(monkeypatch):
+    """
+    Ortak challenge çözümünü başlatan işin iptali, çözümün doğrulama isteğini sıra beklerken kesmez:
+    aynı çözümü başka çağıranlar da bekliyor olabilir (çözüm görevi, başlatanın bağlamını kopyalar).
+    """
+    _slot_delays(monkeypatch, 0.3, 0.3)
+    bridge = cs.BrowserBridge.__new__(cs.BrowserBridge)
+    bridge.token, bridge._token_at = None, 0.0
+    bridge._solve_task, bridge._solve_wait, bridge._solve_failed_at = None, None, 0.0
+    bridge.ensure_ready = AsyncMock()
+
+    async def solve():
+        await cs._wait_for_slot()  # _api_unlocked'ın doğrulama isteği
+        return "jwt"
+
+    bridge._solve_challenge = solve
+    with request_context(cancel=lambda: True):
+        assert cs._run_sync(bridge.solve_challenge(), 5.0) == "jwt"
+        with pytest.raises(utils.FetchCancelled):  # işin kendi isteği ise kesilir
+            cs._run_sync(cs._wait_for_slot(), 5.0)
 
 
 # --- izleyici: 1 sn aralık ortak bütçenin "watch" şeridinden gelir -----------------------------
