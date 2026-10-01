@@ -12,9 +12,11 @@ services:
     build: .
     restart: unless-stopped
 
-    # The web app has NO login. Published on this machine only; change the left side to
-    # "8000:8000" to open it to your network, and then also list the name or IP you use to
-    # reach it in SOFASCORE_ALLOWED_HOSTS below (other Host headers are rejected).
+    # The web app has no user accounts. Published on this machine only; change the left side to
+    # "8000:8000" to open it to your network, and then also set SOFASCORE_API_TOKEN (without it
+    # anyone who can reach the port can read and delete data and change settings) and list the
+    # name or IP you use to reach it in SOFASCORE_ALLOWED_HOSTS below (other Host headers are
+    # rejected). See "Security model" in the README.
     ports:
       - "127.0.0.1:8000:8000"
 
@@ -25,6 +27,7 @@ services:
     # environment:
     #   APP_LANGUAGE: tr
     #   SOFASCORE_ALLOWED_HOSTS: "localhost,127.0.0.1,my-server.lan"
+    #   SOFASCORE_API_TOKEN: "a-long-random-value"
     #   USE_PROXY: "true"
     #   PROXY_URL: "http://user:pass@host:port"
 

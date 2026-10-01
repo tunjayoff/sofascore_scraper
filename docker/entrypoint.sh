@@ -4,12 +4,14 @@
 #   (argümansız) | web   → web arayüzü, 0.0.0.0:${PORT:-8000}
 #   başka her şey        → python main.py "$@"   (örn. --version, --help, --headless --update-all)
 #
-# Web sunucusu `main.py --web --host 0.0.0.0` ile DEĞİL, doğrudan uvicorn ile başlatılır:
-# main.py yerel olmayan bir --host gördüğünde Host başlığı kontrolünü herkese açar
-# (SOFASCORE_ALLOWED_HOSTS=...,*). Konteynerde 0.0.0.0 yalnızca konteynerin kendi ağ
-# arayüzüdür; dışarıya ne açılacağına `-p` karar verir. Bu yüzden DNS rebinding koruması
-# varsayılan haliyle (localhost, 127.0.0.1) açık kalır. Arayüze başka bir adla ya da
-# IP ile erişilecekse SOFASCORE_ALLOWED_HOSTS ortam değişkeniyle o ad eklenir.
+# Web sunucusu `main.py --web --host 0.0.0.0` ile DEĞİL, doğrudan uvicorn ile başlatılır.
+# Konteynerde 0.0.0.0 yalnızca konteynerin kendi ağ arayüzüdür; dışarıya ne açılacağına `-p`
+# karar verir. main.py ise 0.0.0.0'ı "ağa açıldı" sayar: SOFASCORE_ALLOWED_HOSTS verilmeden
+# başlamaz ve erişim belirteci yoksa her başlangıçta uyarır; yalnızca 127.0.0.1'de yayımlanan
+# bir konteyner için ikisi de yanlış olurdu. Doğrudan uvicorn ile DNS rebinding koruması
+# varsayılan haliyle (localhost, 127.0.0.1) açık kalır. Arayüze başka bir adla ya da IP ile
+# erişilecekse SOFASCORE_ALLOWED_HOSTS ortam değişkeniyle o ad eklenir; port ağa açılıyorsa
+# SOFASCORE_API_TOKEN da ayarlanmalıdır (uygulama konteynerde bunu kendisi uyaramaz).
 set -eu
 
 cd /app

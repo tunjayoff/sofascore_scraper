@@ -76,7 +76,8 @@ def test_entrypoint_is_a_valid_lf_shell_script():
     assert raw.startswith(b"#!/bin/sh\n")
     assert b"\r" not in raw, "CRLF breaks the shebang inside the container"
     text = raw.decode("utf-8")
-    # Web sunucusu main.py --host 0.0.0.0 ile başlatılmaz (o yol Host kontrolünü '*' yapar)
+    # Web sunucusu main.py --host 0.0.0.0 ile başlatılmaz (o yol 0.0.0.0'ı ağa açılmış sayar:
+    # SOFASCORE_ALLOWED_HOSTS ister ve belirteç yoksa uyarır; bkz. docker/entrypoint.sh)
     assert "uvicorn src.web.app:app" in text
     assert "--web" not in [w for ln in text.splitlines() if not ln.lstrip().startswith("#") for w in ln.split()]
     sh = shutil.which("sh")
