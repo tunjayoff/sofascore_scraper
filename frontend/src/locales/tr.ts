@@ -273,6 +273,12 @@ export default {
     timeout: 'İstek zaman aşımı (sn)',
     concurrent: 'Eşzamanlı istek',
     rateLimit: 'Ortak istek bütçesi (istek/sn, 0 = kapalı)',
+    rateLimitHint:
+      'Bu bilgisayarın SofaScore’a toplamda saniyede kaç istek göndereceği: web uygulaması, komut satırı ve tüm izleyiciler bu bütçeyi paylaşır. Varsayılan {n}. Daha yüksek bir sayı ya da 0 (sınırsız) indirmeyi hızlandırır ama SofaScore’un seni engelleme olasılığını artırır.',
+    rateLimitWarn: {
+      high: 'Varsayılan olan saniyede {n} isteğin üstünde. İndirme hızlanır, ama SofaScore’un seni engelleme olasılığı artar.',
+      off: 'Sınır kapalı: istekler uygulamanın gönderebildiği kadar hızlı gider ve SofaScore’un seni engelleme olasılığı artar. Varsayılan saniyede {n} istektir.',
+    },
     waitMin: 'En kısa bekleme (sn)',
     waitMax: 'En uzun bekleme (sn)',
     retries: 'Deneme sayısı',

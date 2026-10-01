@@ -274,6 +274,12 @@ const en: typeof tr = {
     timeout: 'Request timeout (s)',
     concurrent: 'Concurrent requests',
     rateLimit: 'Shared request budget (req/s, 0 = off)',
+    rateLimitHint:
+      'How many requests per second this computer sends to SofaScore in total: the web app, the command line and every watcher share it. The default is {n}. A higher number, or 0 (no limit), downloads faster but makes it more likely that SofaScore blocks you.',
+    rateLimitWarn: {
+      high: 'Above the default of {n} requests per second. Downloads get faster, but SofaScore is more likely to block you.',
+      off: 'The limit is off: requests go out as fast as the app can send them, and SofaScore is more likely to block you. The default is {n} requests per second.',
+    },
     waitMin: 'Shortest wait (s)',
     waitMax: 'Longest wait (s)',
     retries: 'Retries',
