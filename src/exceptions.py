@@ -77,3 +77,14 @@ class ValidationError(SofaScoreScraperError):
         if field:
             message = f"{field} alanı için {message}"
         super().__init__(message)
+
+
+class CircuitOpenError(SofaScoreScraperError):
+    """Devre kesici açık (src/breaker.py): istek SofaScore'a hiç gönderilmedi."""
+
+    def __init__(self, url: str = ""):
+        message = "Devre kesici açık, istek gönderilmedi"
+        if url:
+            message += f": {url}"
+        super().__init__(message)
+

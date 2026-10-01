@@ -13,12 +13,13 @@ from typing import Callable, Dict, Any, Optional, Union, TypeVar, cast, Tuple
 from pathlib import Path
 import dotenv
 
-from src import throttle
+from src import breaker, throttle
 from src.logger import get_logger
 from src.paths import env_file_path
 from src.exceptions import (
     APIError, RateLimitError, NetworkError,
-    DataParsingError, ResourceNotFoundError
+    DataParsingError, ResourceNotFoundError,
+    SofaScoreScraperError, CircuitOpenError,
 )
 
 # .env dosyasını yükle
@@ -276,9 +277,9 @@ def _mark_browser_first() -> None:
 
 
 def _browser_result(data: Any, url: str) -> Optional[JsonResponse]:
-    """Köprü sonucunu yorumla: veri, 404 (None) ya da başarısız (hata)."""
+    """Köprü sonucunu yorumla: veri ya da 404 (ResourceNotFoundError)."""
     if isinstance(data, dict) and data.get("__404__"):
-        return None
+        raise ResourceNotFoundError(f"Kaynak bulunamadı: {url}")
     return cast(JsonResponse, data)
 
 
@@ -298,14 +299,32 @@ def _retry_wait(attempt: int) -> float:
 def make_api_request(
     url: str,
     max_retries: Optional[int] = None,
-    timeout: Optional[int] = None
+    timeout: Optional[int] = None,
+    raise_on_failure: bool = False,
 ) -> Optional[JsonResponse]:
     """
     Belirtilen URL'ye API isteği yapar (curl_cffi kullanarak).
 
     404 ve tüm denemeler tükendiğinde None döner (senkron çağıranlar None bekler).
+    raise_on_failure=True ise None yerine asenkron sürümle aynı tipli hatalar fırlatılır
+    (404 → ResourceNotFoundError, 429/503 → RateLimitError, diğer HTTP → APIError, bağlantı →
+    NetworkError, bozuk yanıt → DataParsingError): çağıran "kaynak yok" ile "istek başarısız"ı
+    ayırabilsin. Her iki durumda isteğin son hali işin devre kesicisine bildirilir (src/breaker.py).
     Son denemeden sonra beklenmez; kalıcı 4xx hataları yeniden denenmez.
     """
+    try:
+        data = _request_sync(url, max_retries, timeout)
+    except SofaScoreScraperError as e:
+        breaker.report_exception(e)
+        if raise_on_failure:
+            raise
+        return None
+    breaker.report_ok()
+    return data
+
+
+def _request_sync(url: str, max_retries: Optional[int], timeout: Optional[int]) -> Optional[JsonResponse]:
+    """make_api_request'in gövdesi: veri döndürür ya da isteği bitiren tipli hatayı fırlatır."""
     runtime_config = _get_runtime_request_config()
     max_retries = max(1, max_retries if max_retries is not None else int(runtime_config["max_retries"]))
     timeout = timeout if timeout is not None else int(runtime_config["request_timeout"])
@@ -314,6 +333,7 @@ def make_api_request(
     use_proxy, proxy_url = _get_proxy_config()
     full_url = _full_url(url)
 
+    breaker.check(url)
     if _browser_first():
         raise_if_cancelled()
         from src.challenge_solver import fetch_api_via_browser_sync
@@ -323,8 +343,12 @@ def make_api_request(
             return _browser_result(data, url)
         # Köprü başarısız: aşağıda curl ile normal yoldan dene
 
+    # İsteği bitiren hata: döngüden `break` ile çıkılır ve sonda fırlatılır (try içinde fırlatılsa
+    # aşağıdaki geniş except onu bağlantı hatası sanıp yeniden denerdi)
+    failure: Exception = NetworkError(f"İstek başarısız: {url}")
     for attempt in range(max_retries):
         raise_if_cancelled()
+        breaker.check(url)  # devre açıksa istek gönderilmez, ortak bütçeden sıra ayrılmaz
         last_attempt = attempt == max_retries - 1
         try:
             logger.debug(f"API İsteği ({attempt+1}/{max_retries}): {url}")
@@ -344,7 +368,8 @@ def make_api_request(
             if response.status_code in (429, 503):
                 if last_attempt:
                     logger.error(f"Rate limit/Sunucu meşgul, denemeler tükendi: {url}")
-                    return None
+                    failure = RateLimitError(status_code=response.status_code, url=url)
+                    break
                 default_wait = min(60, 5 * (2 ** attempt))
                 wait_time = _parse_retry_after_seconds(response.headers.get("Retry-After"), default_wait)
                 logger.warning(f"Rate limit/Sunucu meşgul ({response.status_code}). {wait_time} saniye bekleniyor...")
@@ -364,12 +389,18 @@ def make_api_request(
                         if browser_data is not None:
                             _mark_browser_first()
                             logger.debug("Veri BrowserBridge üzerinden alındı")
-                            return _browser_result(browser_data, url)
                     except Exception as te:
                         logger.debug(f"BrowserBridge hatası: {te}")
+                        browser_data = None
+                    if isinstance(browser_data, dict) and browser_data.get("__404__"):
+                        failure = ResourceNotFoundError(f"Kaynak bulunamadı: {url}")
+                        break
+                    if browser_data is not None:
+                        return cast(JsonResponse, browser_data)
                 if last_attempt:
                     logger.error(f"403 Forbidden, denemeler tükendi: {url}")
-                    return None
+                    failure = APIError(f"HTTP 403 Forbidden: {url}", status_code=403)
+                    break
                 _notify_wait("forbidden", min(120, 10 * (2 ** attempt)))
                 _sleep(min(120, 10 * (2 ** attempt)))
                 continue
@@ -377,12 +408,16 @@ def make_api_request(
             # 404 = missing resource (e.g. pregame-form). Never retry — burns cancel latency.
             if response.status_code == 404:
                 logger.debug(f"Kaynak bulunamadı (404): {url}")
-                return None
+                failure = ResourceNotFoundError(f"Kaynak bulunamadı: {url}")
+                break
 
             if response.status_code >= 400:
                 if last_attempt or not _is_transient_status(response.status_code):
                     logger.error(f"HTTP hata: {response.status_code} {response.reason} — {url}")
-                    return None
+                    failure = APIError(
+                        f"HTTP {response.status_code} {response.reason}: {url}", status_code=response.status_code
+                    )
+                    break
                 logger.warning(f"HTTP {response.status_code}, {_retry_wait(attempt)} sn sonra yeniden denenecek: {url}")
                 _sleep(_retry_wait(attempt))
                 continue
@@ -409,11 +444,16 @@ def make_api_request(
                 logger.error(f"İstek hatası: {str(e)}")
             if last_attempt:
                 logger.error(f"Tüm denemeler başarısız oldu: {url}")
-                return None
+                if isinstance(e, DataParsingError):
+                    failure = e
+                else:
+                    failure = NetworkError(f"İstek başarısız: {url}: {e}")
+                    failure.__cause__ = e
+                break
             logger.info(f"{_retry_wait(attempt)} saniye içinde yeniden deneniyor... ({attempt+1}/{max_retries})")
             _sleep(_retry_wait(attempt))
 
-    return None
+    raise failure
 
 
 # Döngü başına istek sınırı: maç/tur sayısı değil, aynı anda uçuşan HTTP isteği sayısı.
@@ -440,11 +480,27 @@ async def make_api_request_async(
     """
     Belirtilen URL'ye asenkron API isteği yapar (curl_cffi AsyncSession ile).
 
-    Denemeler tükendiğinde tipli hata fırlatır — çağıranın devre kesicisi 403/429/5xx
-    serisini görebilsin: 404 → ResourceNotFoundError, 429/503 → RateLimitError,
-    diğer HTTP hataları → APIError(status_code), bağlantı hataları → NetworkError.
+    Denemeler tükendiğinde tipli hata fırlatır: 404 → ResourceNotFoundError, 429/503 →
+    RateLimitError, diğer HTTP hataları → APIError(status_code), bağlantı hataları → NetworkError.
+    İsteğin son hali (başarı, 404 ya da hata) işin devre kesicisine bildirilir (src/breaker.py);
+    kesici açıksa istek gönderilmez (CircuitOpenError).
     Son denemeden sonra beklenmez; kalıcı 4xx hataları yeniden denenmez.
     """
+    try:
+        data = await _request_async(session, url, max_retries)
+    except SofaScoreScraperError as e:
+        breaker.report_exception(e)
+        raise
+    breaker.report_ok()
+    return data
+
+
+async def _request_async(
+    session: AsyncSession,
+    url: str,
+    max_retries: Optional[int] = None
+) -> Optional[JsonResponse]:
+    """make_api_request_async'in gövdesi."""
     runtime_config = _get_runtime_request_config()
     max_retries = max(1, max_retries if max_retries is not None else int(runtime_config["max_retries"]))
     request_timeout = int(runtime_config["request_timeout"])
@@ -454,6 +510,7 @@ async def make_api_request_async(
     full_url = _full_url(url)
     semaphore = _request_semaphore()
 
+    breaker.check(url)
     if _browser_first():
         raise_if_cancelled()
         browser_data = None
@@ -482,8 +539,12 @@ async def make_api_request_async(
                 kwargs["proxy"] = proxy_url
 
             async with semaphore:
+                # Sıra beklerken devre kesilmiş olabilir: istek gönderilmez, ortak bütçeden sıra ayrılmaz
+                breaker.check(url)
                 await _athrottle()
                 response = await session.get(full_url, **kwargs)
+        except CircuitOpenError:
+            raise
         except Exception as e:
             if "curl: (7)" in str(e) or "Failed to connect" in str(e):
                 logger.error(f"Proxy/Bağlantı hatası: {str(e)} - proxy: {'açık' if use_proxy else 'yok'}")
