@@ -23,6 +23,8 @@ if __name__ == "__main__" and "--version" in sys.argv[1:]:
 
 # Çalışma dizinini modülün dizinine ayarla
 script_dir = Path(__file__).resolve().parent
+# Kullanıcının komutu çalıştırdığı dizin: --diagnostics YOL göreli yolu buna göre çözülür
+invoked_cwd = Path.cwd()
 os.chdir(script_dir)
 
 # --doctor aşağıdaki import'lardan önce yanıtlanır: eksik paket (dotenv dahil) tam da onun bulması
@@ -41,7 +43,7 @@ dotenv.load_dotenv(env_file_path())
 
 from src.SofaScoreUi import SimpleSofaScoreUI
 from src.exceptions import StorageError
-from src.logger import get_logger
+from src.logger import get_logger, log_file_path
 from src.i18n import get_i18n
 from src.sports import sport_slugs
 
@@ -194,6 +196,16 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--diagnostics",
+        nargs="?",
+        const="",
+        default=None,
+        metavar="YOL",
+        help="Tanılama paketini (zip: sürümler, gizli değerleri maskelenmiş ayarlar, son iş, log sonu) "
+        "yazar ve çıkar. YOL verilmezse log dizinine yazılır",
+    )
+
+    parser.add_argument(
         "--ignore-rate-limit",
         action="store_true",
         help="Rate-limit circuit breaker mekanizmasını devre dışı bırakır"
@@ -230,6 +242,20 @@ def _run_watch(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_diagnostics(target: str) -> int:
+    """Tanılama paketini yazar (src/diagnostics.py); web arayüzündeki indirmeyle aynı içerik."""
+    from src import diagnostics
+
+    path = str(invoked_cwd / Path(target).expanduser()) if target else None
+    try:
+        written = diagnostics.write_bundle(path, source="cli")
+    except OSError as e:
+        print(get_i18n().t("diagnostics_failed", error=str(e)), file=sys.stderr)
+        return 1
+    print(get_i18n().t("diagnostics_written", path=written))
+    return 0
+
+
 def main() -> int:
     """
     Uygulamanın ana giriş noktası.
@@ -240,6 +266,9 @@ def main() -> int:
     try:
         # Komut satırı argümanlarını ayrıştır
         args = parse_arguments()
+
+        if args.diagnostics is not None:
+            return _run_diagnostics(args.diagnostics)
 
         if args.ignore_rate_limit:
             os.environ["IGNORE_RATE_LIMIT"] = "true"
@@ -394,7 +423,11 @@ def main() -> int:
         logger.exception(f"Beklenmeyen hata: {str(e)}")
         print(i18n.t('unexpected_error_occurred', error=str(e)))
         traceback.print_exc()
-        print(i18n.t('check_log_for_details'))
+        log_path = log_file_path()
+        if log_path:
+            print(i18n.t('check_log_for_details', path=log_path))
+        else:
+            print(i18n.t('check_console_for_details'))
         return 1  # Hata çıkışı
 
 
