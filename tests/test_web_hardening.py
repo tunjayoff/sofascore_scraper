@@ -19,6 +19,7 @@ import json
 import logging
 import os
 import re
+import sqlite3
 import stat
 import zipfile
 from html.parser import HTMLParser
@@ -166,6 +167,7 @@ def test_cross_site_reads_are_not_refused():
 
 # Salt okunur olduğu elle doğrulanmış GET uç noktaları. Yeni bir GET eklendiğinde bu liste bilinçli
 # olarak güncellenir: disk yazan, iş başlatan ya da SofaScore'a istek atan bir uç nokta GET olamaz.
+# Bilinen tek istisna GETS_THAT_MAY_WRITE_A_CACHE'te, gerekçesiyle durur.
 READ_ONLY_GETS = {
     "/api/auth",
     "/api/bypass/status",
@@ -193,15 +195,50 @@ READ_ONLY_GETS = {
 }
 
 
+# Listede olup yine de bir dosya yazabilen GET uç noktaları ve nedeni. Buraya ekleme, bir GET'in durum
+# değiştirmesine bilerek izin vermektir; liste boş kalmaya yakın tutulur.
+GETS_THAT_MAY_WRITE_A_CACHE = {
+    "/api/leagues": (
+        "config/league_sports.json: sporu kayıtlı olmayan bir ligin sporu yerel maç verisinden çıkarılır ve "
+        "saklanır (src/web/league_sports.resolve_all). Yazma idempotenttir, içeriğini çağıran belirlemez ve "
+        "arayüz bu uca bağlıdır; bilerek GET bırakıldı. Aşağıdaki özet sınamasında bu dosya da değişmez: "
+        "conftest'in tohumladığı ligin sporu kayıtlıdır, çıkarılacak bir şey yoktur."
+    ),
+}
+
+_STATE_DB = "state.db"  # iş deposu (src/store/jobs.py): DATA_DIR/.meta/state.db
+
+
+def _sqlite_content_digest(path: str) -> str:
+    """Bir SQLite dosyasının mantıksal içeriği (şema, satırlar, sürüm); salt okunur bağlantıyla okunur."""
+    conn = sqlite3.connect(f"{Path(path).as_uri()}?mode=ro", uri=True)
+    try:
+        lines = [f"user_version={conn.execute('PRAGMA user_version').fetchone()[0]}", *conn.iterdump()]
+    finally:
+        conn.close()
+    return hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()
+
+
 def _tree_digest() -> dict:
-    """Veri ve yapılandırma dosyalarının içerik özeti (iş deposu ve kilit dosyaları hariç)."""
+    """
+    Veri ve yapılandırma dosyalarının içerik özeti (kilit dosyaları hariç).
+
+    İş deposu state.db WAL kipinde bir SQLite dosyasıdır (src/store/state.py). Baytları değil mantıksal
+    içeriği özetlenir: WAL'da kayıt varken salt okunur bir bağlantı bile `state.db-shm` dizinine okuyucu
+    işareti yazar (ör. GET /api/diagnostics), bir checkpoint de satırları değiştirmeden `state.db-wal`'dan
+    ana dosyaya taşır. Böylece iş deposuna satır yazan bir GET yakalanır, SQLite'ın kendi defter tutması
+    yakalanmaz.
+    """
     out = {}
     for root in (conftest.DATA_DIR, conftest.CONFIG_DIR):
         for folder, _dirs, files in os.walk(root):
             for name in files:
-                if name.startswith("jobs.db") or name.endswith(".lock"):
+                if name in (_STATE_DB + "-wal", _STATE_DB + "-shm") or name.endswith(".lock"):
                     continue
                 path = os.path.join(folder, name)
+                if name == _STATE_DB:
+                    out[path] = _sqlite_content_digest(path)
+                    continue
                 with open(path, "rb") as f:
                     out[path] = hashlib.sha256(f.read()).hexdigest()
     with open(conftest.ENV_FILE, "rb") as f:
@@ -211,6 +248,7 @@ def _tree_digest() -> dict:
 
 def test_get_routes_are_the_reviewed_read_only_set():
     assert set(GET_ROUTES) == READ_ONLY_GETS
+    assert set(GETS_THAT_MAY_WRITE_A_CACHE) <= READ_ONLY_GETS
 
 
 def test_no_get_route_writes_files_or_sends_requests(monkeypatch):
