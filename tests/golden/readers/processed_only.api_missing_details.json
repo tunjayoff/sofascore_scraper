@@ -1,0 +1,25 @@
+{
+ "league_id=17": {"status": 200, "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}},
+ "league_id=17&season_id=96668": {
+  "status": 200,
+  "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}
+ },
+ "league_id=17&season_id=1": {
+  "status": 200,
+  "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}
+ },
+ "league_id=8": {"status": 200, "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}},
+ "league_id=8&season_id=77559": {
+  "status": 200,
+  "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}
+ },
+ "league_id=8&season_id=1": {
+  "status": 200,
+  "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}
+ },
+ "league_id=999": {"status": 200, "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}},
+ "league_id=999&season_id=1": {
+  "status": 200,
+  "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}
+ }
+}

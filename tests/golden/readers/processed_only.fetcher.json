@@ -1,0 +1,25 @@
+{
+ "_needs_detail_fetch": {"15000001": "full", "16837335": "none", "16837399": "full", "17099711": "refill", "1": "full"},
+ "refresh_due_ids()": [],
+ "refresh_due_ids(league_id=17)": [],
+ "refresh_due_ids(league_id=8)": [],
+ "REFRESH_LEGACY=true": {"_needs_detail_fetch (only where it differs from the default)": {}, "refresh_due_ids()": []},
+ "REFRESH_WINDOW_HOURS=0": {
+  "_needs_detail_fetch (only where it differs from the default)": {},
+  "refresh_due_ids()": []
+ },
+ "REFRESH_MIN_INTERVAL_HOURS=0": {
+  "_needs_detail_fetch (only where it differs from the default)": {},
+  "refresh_due_ids()": []
+ },
+ "collect_detail_match_ids() sorted": null,
+ "collect_detail_match_ids(league_id='17')": null,
+ "collect_detail_match_ids(league_id='17', max_seasons=1)": null,
+ "collect_detail_match_ids(league_id='17', only_season_ids=[96668])": null,
+ "collect_detail_match_ids(league_id='8')": null,
+ "collect_detail_match_ids(league_id='8', max_seasons=1)": null,
+ "collect_detail_match_ids(league_id='8', only_season_ids=[77559])": null,
+ "collect_detail_match_ids(league_id='999')": null,
+ "collect_detail_match_ids(league_id='999', max_seasons=1)": null,
+ "pending_detail_ids(all ids ascending)": ["15000001", "16837399", "17099711", "1"]
+}
