@@ -1,0 +1,43 @@
+# SofaScore Scraper — example Compose file.
+#
+#   docker compose up -d          # web app at http://127.0.0.1:8000
+#   docker compose logs -f        # the app logs to stdout
+#   docker compose run --rm --no-deps sofascore-scraper --version
+#
+# Without a published image, `docker compose up -d --build` builds it from this checkout.
+
+services:
+  sofascore-scraper:
+    image: ghcr.io/tunjayoff/sofascore_scraper:latest
+    build: .
+    restart: unless-stopped
+
+    # The web app has NO login. Published on this machine only; change the left side to
+    # "8000:8000" to open it to your network, and then also list the name or IP you use to
+    # reach it in SOFASCORE_ALLOWED_HOSTS below (other Host headers are rejected).
+    ports:
+      - "127.0.0.1:8000:8000"
+
+    environment:
+      APP_LANGUAGE: en # or tr
+      # SOFASCORE_ALLOWED_HOSTS: "localhost,127.0.0.1,my-server.lan"
+      # USE_PROXY: "true"
+      # PROXY_URL: "http://user:pass@host:port"
+
+    # Chromium needs more shared memory than Docker's 64 MB default
+    shm_size: "1gb"
+
+    volumes:
+      - data:/app/data # downloaded seasons, matches, details, backups, job history
+      - config:/app/config # leagues.txt, league_sports.json and .env (settings saved in the UI)
+      - browser-profile:/app/browser-profile # solved challenge; makes restarts fast
+      # To keep the files in folders next to this file instead, replace the two lines above
+      # with bind mounts. The container runs as uid 1000, so the folders must be writable
+      # by it: mkdir -p data config && sudo chown -R 1000:1000 data config
+      # - ./data:/app/data
+      # - ./config:/app/config
+
+volumes:
+  data:
+  config:
+  browser-profile:

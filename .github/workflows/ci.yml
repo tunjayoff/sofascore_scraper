@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # release.yml runs these same jobs on the tagged commit before publishing
+  workflow_call:
 
 jobs:
   frontend:

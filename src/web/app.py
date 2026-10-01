@@ -10,6 +10,7 @@ import dotenv
 
 from src.logger import get_logger
 from src.paths import env_file_path
+from src.version import __version__
 
 dotenv.load_dotenv(env_file_path())
 logger = get_logger("WebApp")
@@ -17,7 +18,7 @@ logger = get_logger("WebApp")
 app = FastAPI(
     title="SofaScore Scraper Web UI",
     description="Web interface for SofaScore Scraper",
-    version="2.0.0",
+    version=__version__,
 )
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -61,7 +62,7 @@ async def health_check():
 
     return {
         "status": "ok",
-        "version": "2.0.0",
+        "version": __version__,
         "ui": "vue-spa" if FRONTEND_DIST.is_dir() else "missing-dist",
         "bridge": bridge_health.snapshot(),
         "throttle": throttle.status(),
