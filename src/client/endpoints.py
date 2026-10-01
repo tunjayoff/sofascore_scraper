@@ -1,0 +1,82 @@
+"""
+SofaScore API'sinin uç noktaları: her URL şablonu tek yerde (docs/design/02-services.md 2.4).
+
+Buradaki her işlev API köküne göre bir YOL döndürür ("/event/123"); kök adres (`API_BASE_URL`) yola yalnızca
+istek katmanında eklenir (src/client/transport.py: base_url / _full_url). Saf modül: istek atmaz, ayar okumaz.
+
+Maç detay dilimlerinin yolları (istatistik, kadro, ...) src/sports.py'deki dilim tablosundadır; `event_slice`
+onu kullanır, böylece dilim yolları iki yerde tutulmaz.
+"""
+from __future__ import annotations
+
+from typing import Optional, Union
+from urllib.parse import quote
+
+from src.sports import get_slice
+
+# Ayar verilmediğinde (ya da boş verildiğinde) kullanılan API kökü
+DEFAULT_BASE_URL = "https://www.sofascore.com/api/v1"
+
+Id = Union[int, str]
+
+# --- şablonlar ---------------------------------------------------------------------------------------
+
+EVENT = "/event/{event_id}"
+LIVE_EVENTS = "/sport/{sport}/events/live"
+SEASONS = "/unique-tournament/{tournament_id}/seasons"
+ROUNDS = "/unique-tournament/{tournament_id}/season/{season_id}/rounds"
+ROUND_EVENTS = "/unique-tournament/{tournament_id}/season/{season_id}/events/round/{round_number}"
+ROUND_EVENTS_SLUG = ROUND_EVENTS + "/slug/{slug}"
+SEASON_EVENTS_PAGE = "/unique-tournament/{tournament_id}/season/{season_id}/events/{kind}/{page}"
+SEARCH_UNIQUE_TOURNAMENTS = "/search/unique-tournaments/{query}"
+
+# events/{kind}/{page}: oynanmış maçlar sondan başa, gelecek maçlar baştan sona sayfalanır
+SEASON_EVENT_KINDS = ("last", "next")
+
+
+# --- yollar ------------------------------------------------------------------------------------------
+
+def event(event_id: Id) -> str:
+    """Maçın kendisi (durum, skor, takımlar)."""
+    return EVENT.format(event_id=event_id)
+
+
+def event_slice(key: str, event_id: Id) -> str:
+    """Maçın bir detay dilimi; `key` src/sports.py'deki dilim anahtarıdır ("statistics", "lineups", ...)."""
+    spec = get_slice(key)
+    if spec is None:
+        raise KeyError(f"unknown event slice: {key!r}")
+    return spec.path.format(event_id=event_id)
+
+
+def live_events(sport: str) -> str:
+    """Bir sporun şu an oynanan maçları."""
+    return LIVE_EVENTS.format(sport=sport)
+
+
+def seasons(tournament_id: Id) -> str:
+    """Bir ligin sezon listesi."""
+    return SEASONS.format(tournament_id=tournament_id)
+
+
+def rounds(tournament_id: Id, season_id: Id) -> str:
+    """Bir sezonun tur listesi."""
+    return ROUNDS.format(tournament_id=tournament_id, season_id=season_id)
+
+
+def round_events(tournament_id: Id, season_id: Id, round_number: Id, slug: Optional[str] = None) -> str:
+    """Bir turun maçları; kupa turlarında `slug` eklenir."""
+    template = ROUND_EVENTS_SLUG if slug else ROUND_EVENTS
+    return template.format(tournament_id=tournament_id, season_id=season_id, round_number=round_number, slug=slug)
+
+
+def season_events_page(tournament_id: Id, season_id: Id, kind: str, page: int) -> str:
+    """Turları olmayan sezonların maç sayfaları; `kind`: "last" ya da "next"."""
+    if kind not in SEASON_EVENT_KINDS:
+        raise ValueError(f"kind must be one of {SEASON_EVENT_KINDS}: {kind!r}")
+    return SEASON_EVENTS_PAGE.format(tournament_id=tournament_id, season_id=season_id, kind=kind, page=page)
+
+
+def search_unique_tournaments(query: str) -> str:
+    """Ada göre lig araması; sorgu yolun parçasıdır ve tümüyle kodlanır ("/" dahil)."""
+    return SEARCH_UNIQUE_TOURNAMENTS.format(query=quote(query, safe=""))

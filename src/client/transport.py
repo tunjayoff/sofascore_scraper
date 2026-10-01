@@ -16,9 +16,10 @@ import os
 import random
 import time
 import weakref
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
-from typing import Any, Dict, Optional, Tuple, Union, cast
+from typing import Any, Dict, Final, Optional, Tuple, Union, cast
 
 # curl-cffi ile istekler (Cloudflare bypass için)
 from curl_cffi import requests as cffi_requests
@@ -39,6 +40,7 @@ from src.exceptions import (
     SofaScoreScraperError,
 )
 from src.logger import get_logger
+from src.slices import OutcomeVia
 
 # Günlükçü adı taşınmadan önceki gibi: log satırlarındaki ad değişmesin
 logger = get_logger("Utils")
@@ -51,6 +53,32 @@ _cm = ConfigManager()
 
 # Tip tanımı
 JsonResponse = Dict[str, Any]
+
+VIA_CURL: Final = "curl"
+VIA_BRIDGE: Final = "bridge"
+
+
+@dataclass
+class RequestTrace:
+    """
+    Bir isteğin nasıl sonuçlandığının izi; gövde doldurur, Client okur (Outcome.via / http_status).
+
+    via          yanıtı getiren yol: "curl" ya da "bridge"; hiç yanıt alınmadıysa (bağlantı hatası, açık devre) None
+    http_status  curl'den gelen son yanıtın durum kodu; yanıt köprüden geldiyse None (köprü kodu bildirmez)
+    """
+
+    via: Optional[OutcomeVia] = None
+    http_status: Optional[int] = None
+
+    def attempt(self) -> None:
+        """Yeni bir deneme başlıyor: önceki denemenin izi son hali anlatmaz."""
+        self.via, self.http_status = None, None
+
+    def curl(self, status_code: int) -> None:
+        self.via, self.http_status = VIA_CURL, status_code
+
+    def bridge(self) -> None:
+        self.via, self.http_status = VIA_BRIDGE, None
 
 
 def _sleep(seconds: float) -> None:
@@ -237,8 +265,18 @@ def _is_transient_status(status_code: int) -> bool:
     return status_code >= 500 or status_code in (403, 408, 429)
 
 
+def base_url() -> str:
+    """API kökü: göreli her yola eklenen adres (süreç başlarken okunan API_BASE_URL)."""
+    return API_BASE_URL
+
+
+def api_url(path: str) -> str:
+    """API köküne göre yol ("/event/1") → tam adres."""
+    return f"{API_BASE_URL}{path}"
+
+
 def _full_url(url: str) -> str:
-    return url if url.startswith("http") else f"{API_BASE_URL}{url}"
+    return url if url.startswith("http") else api_url(url)
 
 
 def _retry_wait(attempt: int) -> float:
@@ -248,9 +286,10 @@ def _retry_wait(attempt: int) -> float:
 def make_api_request(
     url: str,
     max_retries: Optional[int] = None,
-    timeout: Optional[int] = None,
+    timeout: Optional[float] = None,
     raise_on_failure: bool = False,
     raise_errors: bool = False,
+    trace: Optional[RequestTrace] = None,
 ) -> Optional[JsonResponse]:
     """
     Belirtilen URL'ye API isteği yapar (curl_cffi kullanarak).
@@ -265,9 +304,11 @@ def make_api_request(
     raise_errors, raise_on_failure ile aynı anahtardır (ikisinden biri True ise hata fırlatılır):
     nedeni kullanıcıya göstermesi gereken çağıranlar bu adı kullanır (web: lig arama, sezon
     yenileme; src/web/upstream.py hatayı `reason`a çevirir).
+
+    trace verilirse yanıtı getiren yol ve HTTP durum kodu ona yazılır (RequestTrace).
     """
     try:
-        data = _request_sync(url, max_retries, timeout)
+        data = _request_sync(url, max_retries, timeout, trace)
     except SofaScoreScraperError as e:
         breaker.report_exception(e)
         if raise_on_failure or raise_errors:
@@ -277,8 +318,11 @@ def make_api_request(
     return data
 
 
-def _request_sync(url: str, max_retries: Optional[int], timeout: Optional[int]) -> Optional[JsonResponse]:
+def _request_sync(
+    url: str, max_retries: Optional[int], timeout: Optional[float], trace: Optional[RequestTrace] = None
+) -> Optional[JsonResponse]:
     """make_api_request'in gövdesi: veri döndürür ya da isteği bitiren tipli hatayı fırlatır."""
+    trace = trace if trace is not None else RequestTrace()
     runtime_config = _get_runtime_request_config()
     max_retries = max(1, max_retries if max_retries is not None else int(runtime_config["max_retries"]))
     timeout = timeout if timeout is not None else int(runtime_config["request_timeout"])
@@ -293,6 +337,7 @@ def _request_sync(url: str, max_retries: Optional[int], timeout: Optional[int]) 
         from src.challenge_solver import fetch_api_via_browser_sync
         data = fetch_api_via_browser_sync(url)
         if data is not None:
+            trace.bridge()
             _sleep(wait_time_min + random.uniform(0, wait_time_max))
             return _browser_result(data, url)
         # Köprü başarısız: aşağıda curl ile normal yoldan dene
@@ -303,6 +348,7 @@ def _request_sync(url: str, max_retries: Optional[int], timeout: Optional[int]) 
     for attempt in range(max_retries):
         raise_if_cancelled()
         breaker.check(url)  # devre açıksa istek gönderilmez, ortak bütçeden sıra ayrılmaz
+        trace.attempt()
         last_attempt = attempt == max_retries - 1
         try:
             logger.debug(f"API İsteği ({attempt+1}/{max_retries}): {url}")
@@ -318,6 +364,7 @@ def _request_sync(url: str, max_retries: Optional[int], timeout: Optional[int]) 
 
             _throttle()
             response = cffi_requests.get(full_url, **kwargs)
+            trace.curl(response.status_code)
 
             if response.status_code in (429, 503):
                 if last_attempt:
@@ -341,6 +388,7 @@ def _request_sync(url: str, max_retries: Optional[int], timeout: Optional[int]) 
                         from src.challenge_solver import fetch_api_via_browser_sync
                         browser_data = fetch_api_via_browser_sync(url)
                         if browser_data is not None:
+                            trace.bridge()
                             _mark_browser_first()
                             logger.debug("Veri BrowserBridge üzerinden alındı")
                     except Exception as te:
@@ -429,7 +477,10 @@ def _request_semaphore() -> asyncio.Semaphore:
 async def make_api_request_async(
     session: AsyncSession,
     url: str,
-    max_retries: Optional[int] = None
+    max_retries: Optional[int] = None,
+    *,
+    timeout: Optional[float] = None,
+    trace: Optional[RequestTrace] = None,
 ) -> Optional[JsonResponse]:
     """
     Belirtilen URL'ye asenkron API isteği yapar (curl_cffi AsyncSession ile).
@@ -439,9 +490,12 @@ async def make_api_request_async(
     İsteğin son hali (başarı, 404 ya da hata) işin devre kesicisine bildirilir (src/breaker.py);
     kesici açıksa istek gönderilmez (CircuitOpenError).
     Son denemeden sonra beklenmez; kalıcı 4xx hataları yeniden denenmez.
+
+    timeout verilmezse REQUEST_TIMEOUT ayarı kullanılır. trace verilirse yanıtı getiren yol ve HTTP durum
+    kodu ona yazılır (RequestTrace).
     """
     try:
-        data = await _request_async(session, url, max_retries)
+        data = await _request_async(session, url, max_retries, timeout, trace)
     except SofaScoreScraperError as e:
         breaker.report_exception(e)
         raise
@@ -452,12 +506,15 @@ async def make_api_request_async(
 async def _request_async(
     session: AsyncSession,
     url: str,
-    max_retries: Optional[int] = None
+    max_retries: Optional[int] = None,
+    timeout: Optional[float] = None,
+    trace: Optional[RequestTrace] = None,
 ) -> Optional[JsonResponse]:
     """make_api_request_async'in gövdesi."""
+    trace = trace if trace is not None else RequestTrace()
     runtime_config = _get_runtime_request_config()
     max_retries = max(1, max_retries if max_retries is not None else int(runtime_config["max_retries"]))
-    request_timeout = int(runtime_config["request_timeout"])
+    request_timeout = timeout if timeout is not None else int(runtime_config["request_timeout"])
     wait_time_min = float(runtime_config["wait_time_min"])
     wait_time_max = float(runtime_config["wait_time_max"])
     use_proxy, proxy_url = _get_proxy_config()
@@ -474,6 +531,8 @@ async def _request_async(
                 browser_data = await fetch_api_via_browser(url)
         except Exception as e:
             logger.debug(f"BrowserBridge hatası: {e!r}")
+        if browser_data is not None:
+            trace.bridge()
         if isinstance(browser_data, dict) and browser_data.get("__404__"):
             raise ResourceNotFoundError(f"Kaynak bulunamadı: {url}")
         if browser_data is not None:
@@ -483,6 +542,7 @@ async def _request_async(
 
     for attempt in range(max_retries):
         raise_if_cancelled()
+        trace.attempt()
         last_attempt = attempt == max_retries - 1
         try:
             logger.debug(f"Asenkron API İsteği ({attempt+1}/{max_retries}): {url}")
@@ -510,6 +570,7 @@ async def _request_async(
             continue
 
         status = response.status_code
+        trace.curl(status)
 
         if status in (429, 503):
             if last_attempt:
@@ -533,6 +594,8 @@ async def _request_async(
                     browser_data = await fetch_api_via_browser(url)
                 except Exception as te:
                     logger.debug(f"BrowserBridge hatası: {te!r}")
+                if browser_data is not None:
+                    trace.bridge()
                 if isinstance(browser_data, dict) and browser_data.get("__404__"):
                     raise ResourceNotFoundError(f"Kaynak bulunamadı: {url}")
                 if browser_data is not None:
