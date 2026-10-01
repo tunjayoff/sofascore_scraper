@@ -51,6 +51,9 @@ os.environ["LOG_DIR"] = os.path.join(_TMP, "logs")
 os.environ["DATA_DIR"] = DATA_DIR
 os.environ["SOFASCORE_CONFIG_DIR"] = CONFIG_DIR
 os.environ["SOFASCORE_ENV_FILE"] = ENV_FILE
+# Yapılandırma dosyası (sofascore.toml) aranmaz: proje kökündeki gerçek bir dosya testleri etkilemesin.
+# Dosyayı sınayan testler SOFASCORE_CONFIG'i kendi geçici dosyalarına çevirir (tests/test_config_loader.py).
+os.environ["SOFASCORE_CONFIG"] = "none"
 # Ortak istek bütçesi (src/throttle.py) testlerde kapalı ve yalıtılmış: testler makinedeki gerçek
 # süreçlerin bütçe dosyasına dokunmaz, sahte uyku sayaçlarına fazladan bekleme girmez.
 os.environ["REQUEST_RATE_LIMIT"] = "0"
