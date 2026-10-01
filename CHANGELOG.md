@@ -248,8 +248,6 @@ section is what the first tagged release will contain.
   well. Until now only the fixture requests (rounds and event pages) used it; the others
   always went to `https://www.sofascore.com/api/v1`. An empty `API_BASE_URL` means the
   default address, and a trailing slash is ignored. The value is read once at start-up.
-  One request still uses the default address whatever the setting says: league search in
-  the web app.
 - One data folder has one writer at a time, across processes too. A running download holds a
   lock file under `DATA_DIR/.meta/locks/`. A second web server on the same folder now answers
   `409 job_running` to `POST /api/fetch`, to clearing data and to a backup that includes data,
@@ -258,6 +256,24 @@ section is what the first tagged release will contain.
   free again when the process ends, however it ends. On a file system without lock support
   (some network shares) a warning is logged and the folder must be used by one process, as
   before. `python main.py` runs do not take the lock yet.
+- **Store layer: file modes and sub names.** Payload files, manifests and `.meta/schema.json`
+  written by the new Store layer get the mode the process umask gives (0644 with the usual umask
+  022) instead of 0600, so a Docker bind mount read by another user, or a backup tool running
+  under another account, can read the data. Files written by today's code keep mode 0600, and
+  `.env` and the browser profile stay private. Slice sub names are lower-case only
+  (`[a-z0-9_.-]`), because Windows and default macOS file systems do not distinguish case.
+  Nothing in the application writes through the Store layer yet (FX-4, #53).
+- League search in the web app now follows `API_BASE_URL` like every other request. It was
+  the one request that still went to `https://www.sofascore.com/api/v1` whatever the setting
+  said. With the default setting nothing changes (#57).
+- The CSV step of a web download and `POST /api/export/csv` no longer print the terminal
+  menu's lines (`Headless Mode: Exporting CSV...`, `CSV Conversion:`, `CSV file successfully
+  created: …`) to the server console. The job log and the files are unchanged (#57).
+- `--watch` keeps its state in the data directory's `state.db` and also stores every event with
+  a sequence number in the durable `live` stream. `watch_events.jsonl` and
+  `watch_state_<sport>.json` are still written; the state file is now a copy that is read only
+  once, on the first run after the upgrade. On Windows `watch_events.jsonl` now gets LF line
+  endings like every other data file (#59).
 
 ### Fixed
 
@@ -332,6 +348,16 @@ section is what the first tagged release will contain.
   the write is retried (up to 10 times, 20 ms apart) instead of failing at the first attempt.
 - An unanchored `lib/` rule in `.gitignore` kept `frontend/src/lib/` out of the repository,
   so a fresh clone could not build the web app.
+- `GET /api/status` reports the application version; it returned a fixed `1.0.0` (#54).
+- Changing the data folder in Settings to a folder the app cannot open (for example one
+  written by a newer version, or one whose database is locked by another process) answers
+  `400 data_dir_unusable` and changes nothing, instead of an internal error (#54).
+- Stopping a job no longer slows down what comes next. A stopped job used to leave the slots it
+  had reserved in the shared request budget, so the next request from any process waited behind
+  them: about 13 seconds with the default settings, about 70 seconds at `MAX_CONCURRENT=50`.
+  Requests that are cancelled before they are sent now give their slot back (#58).
+- A request that is waiting for its turn inside the browser bridge now stops within a quarter of
+  a second when its job is stopped. It used to wait until its turn came (#58).
 
 ### Removed
 
@@ -370,6 +396,9 @@ section is what the first tagged release will contain.
   bridge's last error detail (in `/health`) are masked like log lines, so a proxy password
   inside an error message is not returned (#43).
 - `npm audit fix` for a transitive frontend dependency (nanoid, #15).
+- The saved proxy password is put back in place of `***` only when the proxy's user, scheme,
+  host and port are all unchanged. Changing the scheme or the port now asks for the password
+  again; before, the saved password was sent to the changed address (#54).
 
 ## Earlier history
 
