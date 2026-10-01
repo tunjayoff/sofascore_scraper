@@ -1,5 +1,9 @@
 {
  "processed_files_before": [],
+ "get_before_create": {
+  "status": 404,
+  "body": {"detail": "No CSV export yet. Create it with POST /api/export/csv or run a download."}
+ },
  "all": {
   "status": 200,
   "content_type": "text/csv; charset=utf-8",

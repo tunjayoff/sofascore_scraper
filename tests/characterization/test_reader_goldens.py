@@ -10,7 +10,7 @@ altında `<dizin>.<okuyucu>.json` olarak durur:
   api_match_detail       GET /api/matches/{id}
   api_dashboard          GET /api/dashboard
   api_stats_system       GET /api/stats/system
-  api_export_csv         GET /api/export/csv (birleşik ve lig süzgeçli)
+  api_export_csv         POST /api/export/csv (üretir), GET /api/export/csv (birleşik ve lig süzgeçli)
   fetcher                _needs_detail_fetch, refresh_due_ids, collect_detail_match_ids, pending_detail_ids
   reset_markers          reset_unavailable_markers ve ardından işaret dosyaları
 
@@ -361,9 +361,9 @@ def _processed_files(fixture: sf.LegacyFixture) -> List[str]:
     return sorted(name if name == sf.PROCESSED_CSV_NAME else _TIMESTAMP.sub("<ts>", name) for name in names)
 
 
-def _export(url: str) -> Dict[str, Any]:
+def _export(url: str, method: str = "GET") -> Dict[str, Any]:
     """CSV yanıtı: sütunlar sırasıyla, satırlar sıralanmış (bugün dizin listeleme sırasıyla yazılır)."""
-    r = client.get(url)
+    r = client.request(method, url)
     if r.status_code != 200:
         return {"status": r.status_code, "body": r.json()}
     table = list(csv.reader(io.StringIO(r.content.decode("utf-8"), newline="")))
@@ -381,11 +381,14 @@ def _export(url: str) -> Dict[str, Any]:
 
 def test_api_export_csv(fx: sf.LegacyFixture) -> None:
     """
-    İlk istek, dışa aktarma dosyası yoksa onu `match_details/processed/` altına üretir (bugünkü yan etki;
-    EX-1 kaldırır); sonraki istekler aynı dosyayı okur. Lig süzgeci dosyayı pandas'tan geçirir.
+    GET yalnızca var olan dışa aktarma dosyasını okur; dosya yoksa 404 döner ve hiçbir şey üretmez (bir GET
+    durum değiştirmez: başka bir sitedeki <img> onu tetikleyebilir). Dosyayı POST üretir (`match_details/
+    processed/` altına; EX-1 dosya yazmayı kaldırır); sonraki GET'ler aynı dosyayı okur. Lig süzgeci dosyayı
+    pandas'tan geçirir. `all`, eskiden üreten GET'in yanıtıydı; şimdi POST'un yanıtıdır (içerik aynı).
     """
     golden: Dict[str, Any] = {"processed_files_before": _processed_files(fx)}
-    golden["all"] = _export("/api/export/csv")
+    golden["get_before_create"] = _export("/api/export/csv")
+    golden["all"] = _export("/api/export/csv", method="POST")
     golden["processed_files_after"] = _processed_files(fx)
     for league_id in list(fx.leagues) + [UNKNOWN_LEAGUE]:
         golden[f"league_id={league_id}"] = _export(f"/api/export/csv?league_id={league_id}")
