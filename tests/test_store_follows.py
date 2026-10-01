@@ -7,6 +7,7 @@ plan maddesi ST-17).
   * `apply_follows`: deposu açık olmayan çağıranların yolu; state.db yoksa hiçbir şeye dokunmaz.
   * ConfigManager ve league_sports: `leagues.txt` ile `league_sports.json` doğruluk kaynağı olarak kalır,
     tablo onların aynasıdır; dosyalar tablodan asla yeniden yazılmaz.
+  * build_context: yapılandırma dosyasının `[[follow]]` girdileri "config" kaynağıyla uygulanır.
 
 Tümü çevrimdışı ve geçici dizinlerde.
 """
@@ -26,7 +27,9 @@ from typing import Callable, Dict, Iterator, List, Optional, Tuple
 import pytest
 
 from src.config import FollowSpec as ConfigFollowSpec
+from src.config import loader
 from src.config_manager import ConfigManager, mirror_league_follows
+from src.services.context import build_context
 from src.store import (
     ApplyResult,
     Follow,
@@ -954,3 +957,172 @@ def test_a_league_that_is_also_in_the_config_origin_stays_there(setup: Setup):
     ]
     assert cm.get_leagues() == {17: "Premier League", 8: "LaLiga"}
 
+
+# === build_context: yapılandırma dosyasının [[follow]] girdileri =====================================
+
+CONFIG_WITH_FOLLOWS = """
+[[follow]]
+name = "premier-league"
+sport = "football"
+tournament = 17
+seasons = "last:2"
+slices = ["core", "odds"]
+live = true
+
+[[follow]]
+event = 17124861
+
+[[follow]]
+team = 42
+name = "Arsenal"
+enabled = false
+"""
+
+
+@pytest.fixture
+def config_file(setup: Setup, monkeypatch: pytest.MonkeyPatch) -> Iterator[Callable[[Optional[str]], None]]:
+    """`write(toml)` yapılandırma dosyasını yazıp ayarları yeniden yükler; `write(None)` dosyayı kaldırır."""
+    path = setup.config_dir / "sofascore.toml"
+    loader.reset()
+
+    def write(toml: Optional[str]) -> None:
+        if toml is None:
+            path.unlink()
+            monkeypatch.setenv(loader.CONFIG_ENV, "none")
+        else:
+            path.write_text(toml, encoding="utf-8")
+            monkeypatch.setenv(loader.CONFIG_ENV, str(path))
+        loader.reload()
+
+    yield write
+    monkeypatch.setenv(loader.CONFIG_ENV, "none")
+    loader.reset()
+
+
+def test_build_context_applies_the_follows_of_the_config_file(setup: Setup, config_file):
+    setup.write_leagues("LaLiga: 8\n")
+    setup.write_sports({8: "football"})
+    cm = setup.manager()
+    config_file(CONFIG_WITH_FOLLOWS)
+
+    build_context(cm, data_dir=str(setup.data_dir))
+
+    assert api_mod._registry == {}  # bağlam kurulurken depo açık bırakılmaz
+    meta = sorted(p.name for p in (setup.data_dir / ".meta").iterdir())
+    assert "state.db" in meta and "schema.json" not in meta and "catalog.db" not in meta
+    follows = open_store(setup.data_dir).follows
+    assert [(f.kind, f.entity_id, f.name, f.origin, f.position) for f in follows.list()] == [
+        ("tournament", 17, "premier-league", "config", 0),
+        ("tournament", 8, "LaLiga", "legacy", 0),
+        ("event", 17124861, "event-17124861", "config", 1),
+        ("team", 42, "Arsenal", "config", 2),
+    ]
+    league = follows.get("tournament", 17)
+    assert (league.sport, league.seasons, league.slices, league.live, league.enabled) == (
+        "football", "last:2", {"include": ["core", "odds"]}, True, True,
+    )
+    assert follows.get("team", 42).enabled is False
+    assert follows.get("tournament", 8).sport == "football"
+
+    with pytest.raises(FollowManaged):
+        follows.update("tournament", 17, enabled=False)
+    with pytest.raises(FollowManaged):
+        follows.remove("event", 17124861)
+
+
+def test_build_context_follows_the_config_file_when_it_changes(setup: Setup, config_file):
+    setup.write_leagues("Premier League: 17\n")
+    cm = setup.manager()
+    config_file(CONFIG_WITH_FOLLOWS)
+    build_context(cm, data_dir=str(setup.data_dir))
+    assert open_store(setup.data_dir).follows.get("tournament", 17).origin == "config"
+
+    # Dosyadan iki girdi çıkar: turnuva lig dosyasında da olduğu için legacy olarak kalır
+    config_file("[[follow]]\nteam = 42\nname = \"Arsenal FC\"\n")
+    build_context(cm, data_dir=str(setup.data_dir))
+    assert setup.table() == [
+        ("team", 42, "Arsenal FC", None, "config", 0),
+        ("tournament", 17, "Premier League", None, "legacy", 0),
+    ]
+
+    # Yapılandırma dosyası kaldırılır: config satırları gider, dosyalar olduğu gibi kalır
+    before = {name: data for name, data in setup.files().items() if name != "sofascore.toml"}
+    config_file(None)
+    build_context(cm, data_dir=str(setup.data_dir))
+    assert setup.table() == [("tournament", 17, "Premier League", None, "legacy", 0)]
+    assert setup.files() == before
+
+
+def test_build_context_is_idempotent(setup: Setup, config_file):
+    setup.write_leagues("LaLiga: 8\n")
+    cm = setup.manager()
+    config_file(CONFIG_WITH_FOLLOWS)
+    build_context(cm, data_dir=str(setup.data_dir))
+    follows = open_store(setup.data_dir).follows  # açılış state.db'ye yazar: sayaçtan önce
+    before = follows.list()
+    version = _data_version(setup.data_dir)
+    seen = version()
+
+    build_context(cm, data_dir=str(setup.data_dir))
+    build_context(cm, data_dir=str(setup.data_dir))
+
+    assert version() == seen
+    assert follows.list() == before
+    version.close()
+
+
+def test_build_context_without_follows_does_not_create_a_store(setup: Setup, config_file):
+    """Bugünkü kurulum (yapılandırma dosyası yok) ve `[[follow]]` içermeyen dosya: `.meta/` kurulmaz."""
+    setup.write_leagues("Premier League: 17\n")
+    cm = setup.manager()
+
+    build_context(cm, data_dir=str(setup.data_dir))
+    config_file("[client]\nretries = 2\n")
+    build_context(cm, data_dir=str(setup.data_dir))
+
+    assert sorted(p.name for p in setup.data_dir.iterdir()) == ["datasets", "match_details", "matches", "seasons"]
+    assert api_mod._registry == {}
+
+
+def test_build_context_mirrors_the_league_files_into_an_existing_store(setup: Setup):
+    """ConfigManager kurulduğunda depo yoktu (yeni kurulum); iş başlarken tablo dolar."""
+    setup.write_leagues("Premier League: 17\n")
+    setup.write_sports({17: "football"})
+    cm = setup.manager()
+    setup.make_store()
+
+    build_context(cm, data_dir=str(setup.data_dir))
+
+    assert setup.table() == [("tournament", 17, "Premier League", "football", "legacy", 0)]
+
+
+def test_build_context_reports_a_follow_it_cannot_apply_once(setup: Setup, config_file,
+                                                             caplog: pytest.LogCaptureFixture,
+                                                             monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr("src.services.context._reported_conflicts", set())
+    setup.write_leagues("Premier League: 17\n")
+    setup.make_store()
+    cm = setup.manager()
+    config_file("[[follow]]\ntournament = 99\nname = \"Premier League\"\n")
+
+    with caplog.at_level(logging.WARNING):
+        build_context(cm, data_dir=str(setup.data_dir))
+        build_context(cm, data_dir=str(setup.data_dir))
+
+    reports = [r.getMessage() for r in caplog.records if "not applied" in r.getMessage()]
+    assert reports == ["Follow of the config file not applied: tournament 99 (Premier League): name_taken"]
+    assert setup.table() == [("tournament", 17, "Premier League", None, "legacy", 0)]
+
+
+def test_build_context_survives_an_unusable_state_db(setup: Setup, config_file, caplog: pytest.LogCaptureFixture):
+    setup.write_leagues("Premier League: 17\n")
+    cm = setup.manager()
+    config_file(CONFIG_WITH_FOLLOWS)
+    (setup.data_dir / ".meta").mkdir(parents=True)
+    _state_path(setup.data_dir).write_bytes(b"this is not a database, " * 64)
+
+    with caplog.at_level(logging.WARNING):
+        ctx = build_context(cm, data_dir=str(setup.data_dir))
+
+    assert ctx.data_dir == str(setup.data_dir)
+    assert any("Follows of the config file could not be applied" in r.getMessage() for r in caplog.records)
