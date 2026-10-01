@@ -813,6 +813,30 @@ def test_corrupt_payloads_are_reported_and_do_not_abort(old_forms: sf.LegacyFixt
     assert admin.verify(deep=True).ok
 
 
+def test_payload_that_derive_cannot_handle_is_reported_and_skipped(canonical: sf.LegacyFixture, make_admin,
+                                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+    write_v3(canonical.data_dir, sf.basic_payload(sf.PL_FUTURE))
+    real = derive.event_row
+    broken = {ARS, sf.event_id(sf.PL_FUTURE)}
+
+    def picky(payload: Any, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+        if payload["id"] in broken:
+            raise TypeError("beklenmeyen biçim")
+        return real(payload, *args, **kwargs)
+
+    monkeypatch.setattr(derive, "event_row", picky)
+    admin = make_admin(canonical.data_dir)
+
+    report = admin.rebuild()
+
+    assert report.completed and report.events == len(canonical.detail_ids) - 1
+    assert [(p.layout, p.path, p.kind, p.detail) for p in report.problems] == [
+        ("v3", layout.event_dir(sf.event_id(sf.PL_FUTURE)), "malformed", "beklenmeyen biçim"),
+        ("legacy", f"{PL_DIR}/{ARS}", "malformed", "beklenmeyen biçim")]
+    assert event_row(admin.catalog, ARS) is None and event_row(admin.catalog, sf.event_id(sf.PL_FUTURE)) is None
+    assert indexer.problem_of(StoreError("disk"), "x", "legacy").kind == "unreadable"
+
+
 def test_unstorable_values_do_not_abort(tmp_path: Path, make_admin) -> None:
     data = tmp_path / "data"
     base = f"{PL_DIR}/{ARS}"
@@ -978,6 +1002,12 @@ def test_unreadable_v3_copy_falls_back_to_the_legacy_copy(canonical: sf.LegacyFi
     assert (report.events_v3, report.events_legacy) == (1, len(events) - 1)
     assert not [s for s in report.superseded if s.event_id != ids[4]]
     assert admin.verify().ok and admin.verify(deep=False).problems  # sorunlar doğrulamada da bildirilir
+    # deep: manifesti okunamayan dizinde karşılaştırılacak bir şey yok; manifesti okunan dizinlerin yükleri denetlenir
+    deep = admin.verify(deep=True)
+    assert {i.event_id for i in deep.issues if i.invariant == "I2"} == {ids[1], ids[2], ids[3]}
+    # başka maçın manifesti: bu dizindeki öteki dosyaların adını vermiyor
+    assert {i.event_id for i in deep.issues if i.invariant != "I2"} <= {ids[3]}
+    assert {i.invariant for i in deep.issues} <= {"I2", "I9"}
 
 
 def test_v3_event_without_a_usable_copy_is_not_indexed(tmp_path: Path, make_admin) -> None:
@@ -1274,8 +1304,9 @@ def test_deep_verify_checks_v3_payloads_against_the_manifest(canonical: sf.Legac
     v3_file(data, missing, "statistics.json.gz").unlink()
     v3_file(data, corrupt, "statistics.json.gz").write_bytes(b"\x1f\x8b\x08 not gzip at all")
     v3_file(data, swapped, "h2h.json.gz").write_bytes(codec.compress(codec.canonical_bytes({"other": 1})))
-    payload = codec.read_raw(v3_file(data, resized, "h2h.json.gz"))
-    v3_file(data, resized, "h2h.json.gz").write_bytes(gzip.compress(payload, 1, mtime=0))
+    # aynı içerik, başka baytlar (sona boş bir gzip üyesi): sha256 tutar, dosya boyutu tutmaz
+    stored = v3_file(data, resized, "h2h.json.gz").read_bytes()
+    v3_file(data, resized, "h2h.json.gz").write_bytes(stored + gzip.compress(b"", mtime=0))
     v3_file(data, bad_event, "event.json.gz").write_bytes(codec.compress(b"[1, 2"))
     # manifestin adını vermediği dosyalar ve yarım kalmış geçici dosya
     v3_file(data, ids[5], "notes.txt").write_text("x", encoding="utf-8")
@@ -1292,25 +1323,23 @@ def test_deep_verify_checks_v3_payloads_against_the_manifest(canonical: sf.Legac
 
     found = {(i.invariant, i.kind, i.event_id, i.path.rsplit("/", 1)[-1], i.detail.split(":")[0].split(" (")[0])
              for i in report.issues}
-    resized_ok = len(v3_file(data, resized, "h2h.json.gz").read_bytes()) == manifest.read_manifest(
-        v3_file(data, resized, "manifest.json")).slices["h2h"].stored_bytes
     expected = {
         ("I2", "payload", missing, "statistics.json.gz", "statistics"),
         ("I2", "payload", corrupt, "statistics.json.gz", "statistics"),
         ("I2", "payload", swapped, "h2h.json.gz", "h2h"),
+        ("I2", "payload", resized, "h2h.json.gz", "h2h"),
         ("I2", "payload", bad_event, "event.json.gz", "event"),
         # olay yükü okunamayan v3 dizini geçerli bir maç değil: diskte geçerli olan eski kopya
         ("I5", "layout", bad_event, events[bad_event].path.rsplit("/", 1)[-1], "katalog 'v3' diyor, diskte geçerli olan 'legacy'"),
         ("I9", "unknown_file", ids[5], "notes.txt", "manifestin adını vermediği dosya"),
         ("I9", "unknown_file", ids[5], "1.json.gz", "manifestin adını vermediği dosya"),
     }
-    if not resized_ok:  # aynı içerik, başka sıkıştırma: sha256 tutar, dosya boyutu tutmaz
-        expected.add(("I2", "payload", resized, "h2h.json.gz", "h2h"))
     assert found == expected
     details = {(i.event_id, i.kind): i.detail for i in report.issues}
     assert details[(missing, "payload")] == "statistics: dosya yok"
     assert details[(corrupt, "payload")].startswith("statistics: açılamıyor")
     assert details[(swapped, "payload")] == "h2h: sha256 manifesttekinden farklı"
+    assert details[(resized, "payload")].startswith("h2h: boyut manifesttekinden farklı (dosya ")
     assert details[(bad_event, "payload")].startswith("event: JSON değil")
     assert report.leftovers == [f"{layout.event_dir(ids[5])}/.manifest.json.abc123.tmp"]
     assert report.leftovers_removed == 0 and v3_file(data, ids[5], ".manifest.json.abc123.tmp").exists()
@@ -1321,7 +1350,7 @@ def test_deep_verify_checks_v3_payloads_against_the_manifest(canonical: sf.Legac
     assert [i for i in repaired.open_issues if i.invariant != "I9"] == []
     assert repaired.leftovers_removed == 1 and not v3_file(data, ids[5], ".manifest.json.abc123.tmp").exists()
     # okunamayan yükler manifestte error / corrupt oldu; dosyalar silinmedi
-    for event_id, name in ((missing, "statistics"), (corrupt, "statistics"), (swapped, "h2h")):
+    for event_id, name in ((missing, "statistics"), (corrupt, "statistics"), (swapped, "h2h"), (resized, "h2h")):
         entry = manifest.read_manifest(v3_file(data, event_id, "manifest.json")).slices[name]
         assert (entry.state, entry.has_payload, entry.error.reason, entry.error.count, entry.fetched_at) == (
             "error", False, "corrupt", 1, None)
@@ -1384,6 +1413,37 @@ def test_v3_event_that_lost_its_payload_is_removed_by_repair(tmp_path: Path, mak
     found = manifest.read_manifest(v3_file(data, liv, "manifest.json"))
     assert (found.slices["h2h"].state, found.slices["h2h"].error.count) == ("error", 3)
     assert (found.slices["lineups"].error.reason, found.slices["lineups"].error.count) == ("429", 4)
+
+
+def test_quick_verify_sees_a_changed_v3_manifest(tmp_path: Path, make_admin) -> None:
+    data = tmp_path / "data"
+    payload = sf.basic_payload(sf.PL_ARS)
+    write_v3(data, payload)
+    admin = make_admin(data)
+    admin.rebuild()
+    assert admin.verify().ok
+
+    write_v3(data, payload, slices={"statistics": sf.slice_payload("statistics", payload)},
+             updated=T1 + dt.timedelta(hours=1))
+    report = admin.verify()
+    assert issues(report) == [("I4", "event_row", ARS), ("I3", "slices", ARS)] and report.events_read == 1
+    assert report.issues[0].detail == "farklı sütunlar: updated_at"
+    assert report.issues[1].detail.startswith("event: fetched_at, checked_at; statistics: katalogda yok")
+    assert admin.verify(repair=True).ok and admin.verify().events_read == 0
+    assert set(slice_rows(admin.catalog, ARS)) == {"event", "statistics"}
+
+
+def test_failed_quick_check_stops_the_comparison(canonical: sf.LegacyFixture, make_admin,
+                                                 monkeypatch: pytest.MonkeyPatch) -> None:
+    admin = make_admin(canonical.data_dir)
+    admin.rebuild()
+    monkeypatch.setattr(Catalog, "quick_check", lambda self: ["row 3 missing from index events_start"])
+
+    report = admin.verify(deep=True, repair=True)
+
+    assert [(i.invariant, i.kind, i.detail, i.path, i.repaired) for i in report.issues] == [
+        ("catalog", "quick_check", "row 3 missing from index events_start", ".meta/catalog.db", False)]
+    assert (report.ok, report.events, report.checked) == (False, 0, ("quick_check",))  # bozuk dizinle satır okunmaz
 
 
 def test_pending_writes_are_reported_and_cleared_by_repair(canonical: sf.LegacyFixture, make_admin) -> None:
