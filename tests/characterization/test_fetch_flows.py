@@ -222,6 +222,28 @@ def test_fake_skips_only_the_application_sleeps(fake: FakeSofaScore) -> None:
     assert fake.sleeps == []
 
 
+def _sleep_as(module: str, seconds: float) -> None:
+    """`module` adlı modülün içinden çağrılmış gibi time.sleep (sahte, çağıranı modül adından tanır)."""
+    exec("import time\ntime.sleep(seconds)", {"__name__": module, "seconds": seconds})
+
+
+def test_fake_leaves_storage_waits_real(fake: FakeSofaScore) -> None:
+    """
+    Depolama katmanı (src.store) SofaScore'u değil dosya sistemini bekler (Windows'ta meşgul hedefe
+    yeniden deneme): beklemesi atlanmaz ve kaydedilmez. Diğer uygulama modüllerininki atlanır.
+    """
+    started = time.monotonic()
+    _sleep_as("src.match_data_fetcher", 30.0)
+    assert time.monotonic() - started < 2
+    assert [(s.source, s.seconds) for s in fake.sleeps] == [("src.match_data_fetcher", 30.0)]
+
+    fake.reset_log()
+    started = time.monotonic()
+    _sleep_as("src.store.files", 0.05)
+    assert time.monotonic() - started >= 0.03  # saat çözünürlüğü kaba olabilir (Windows: ~16 ms)
+    assert fake.sleeps == []
+
+
 def test_fake_world_and_log_round_trip_through_json(tmp_path: Path) -> None:
     """Dünya ve hatalar JSON'dan kurulabilir, kayıt JSON'a yazılabilir: alt süreçte çalışan testler için."""
     source = FakeSofaScore.from_file(WORLD)

@@ -7,8 +7,9 @@ Ne yapar:
   - hazır yanıt sunar: API yolu ("/event/1") → JSON; tanımadığı yol SofaScore gibi 404 döner
   - her isteği sırasıyla kaydeder (sync / async, yol, sonuç, oturum, TLS profili, eşzamanlılık)
   - hata enjekte eder: 403, 429, 5xx (herhangi bir durum kodu), zaman aşımı, bağlantı hatası
-  - beklemeleri kaydeder ve atlar: istek katmanının geri çekilmeleri, uygulama kodundaki
-    time.sleep / asyncio.sleep (yalnızca `src.*` ve `main` çağıranlar; diğerleri gerçekten bekler)
+  - beklemeleri kaydeder ve atlar: istek katmanının beklemeleri (geri çekilme, istek sonrası bekleme,
+    ortak istek bütçesinin sırası), uygulama kodundaki time.sleep / asyncio.sleep (yalnızca `src.*` ve
+    `main` çağıranlar; diğerleri ve depolama katmanı (`src.store`) gerçekten bekler)
 
 Kurulum süreç içi ve geri alınabilir (`install()` / `uninstall()` ya da `with`); hiçbir üretim
 dosyası değişmez. Dünya (yollar ve hatalar) JSON'dan yüklenebilir (`from_file`), kayıt JSON'a
@@ -45,8 +46,14 @@ SITE_ROOT = "https://www.sofascore.com/"
 # değiştirilir. Gövde başka bir modüle taşınırsa (plan: P05, src/client/transport.py) o modül eklenir.
 REQUEST_LAYER_MODULES: Tuple[str, ...] = ("src.utils",)
 
-# Beklemenin kaynağı: istek katmanı (yeniden deneme geri çekilmesi, istek sonrası kısa bekleme)
+# Beklemenin kaynağı: istek katmanı (yeniden deneme geri çekilmesi, istek sonrası kısa bekleme ve
+# ortak istek bütçesi açıksa isteğin bütçede beklediği sıra: src/throttle.py)
 REQUEST_LAYER = "request-layer"
+
+# Uygulama modülü oldukları halde beklemeleri gerçek kalanlar (ad ya da paket öneki): SofaScore'u değil
+# işletim sistemini beklerler. src/store/files.py, Windows'ta hedef dosya başka bir yerde açıkken yerine
+# koymayı kısa aralıklarla yeniden dener; bekleme atlanırsa denemeler bir anda tükenir.
+REAL_SLEEP_MODULES: Tuple[str, ...] = ("src.store",)
 
 # Detay dilimlerinin uç noktaları. src/sports.py'den bilerek türetilmez: sahte, SofaScore'un bağımsız
 # bir modelidir; koddaki tablo değişirse goldenlardaki istek yolları değişir ve fark görünür.
@@ -73,6 +80,13 @@ _REASONS = {200: "OK", 403: "Forbidden", 404: "Not Found", 429: "Too Many Reques
 
 def _is_app_module(name: str) -> bool:
     return name in ("main", "__main__", "src") or name.startswith("src.")
+
+
+def _skips_sleep_of(name: str) -> bool:
+    """`name` modülünün time.sleep / asyncio.sleep çağrısı kaydedilip atlanır mı?"""
+    if any(name == real or name.startswith(real + ".") for real in REAL_SLEEP_MODULES):
+        return False
+    return _is_app_module(name)
 
 
 @dataclass(frozen=True)
@@ -372,14 +386,14 @@ class FakeSofaScore:
 
     def _time_sleep(self, seconds: float) -> None:
         caller = sys._getframe(1).f_globals.get("__name__", "")
-        if not _is_app_module(caller):
+        if not _skips_sleep_of(caller):
             _REAL_TIME_SLEEP(seconds)
             return
         self._record_sleep(caller, seconds, "sync")
 
     def _asyncio_sleep(self, delay: float, result: Any = None) -> Any:
         caller = sys._getframe(1).f_globals.get("__name__", "")
-        if not _is_app_module(caller):
+        if not _skips_sleep_of(caller):
             return _REAL_ASYNCIO_SLEEP(delay, result)
         self._record_sleep(caller, delay, "async")
         return _REAL_ASYNCIO_SLEEP(0, result)
