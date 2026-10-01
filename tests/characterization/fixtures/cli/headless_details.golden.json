@@ -1,0 +1,210 @@
+{
+ "all_leagues": {
+  "argv": [
+   "--headless",
+   "--update-all",
+   "--fetch-mode",
+   "details"
+  ],
+  "exit_code": 0,
+  "files": {
+   "added": {
+    "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/statistics.json": "sha256:461cc83fd197",
+    "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/basic.json": "sha256:badb7cb6e291",
+    "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/h2h.json": "sha256:d70f49116a50",
+    "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/incidents.json": "sha256:a2597c3a4cd2",
+    "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/lineups.json": "sha256:8638bfb622ea",
+    "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/observation.json": {
+     "change_ts": 1725112000,
+     "observed_at_utc": "<volatile>"
+    },
+    "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/pregame_form.json": "sha256:23d266be170d",
+    "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/statistics.json": "sha256:6fec673fa7f1",
+    "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/team_streaks.json": "sha256:875eb2f1ef52",
+    "data/score_changes.jsonl": [
+     {
+      "changed": {
+       "homeScore.current": [
+        2,
+        3
+       ],
+       "homeScore.display": [
+        2,
+        3
+       ],
+       "homeScore.normaltime": [
+        2,
+        3
+       ]
+      },
+      "event_id": 9100010,
+      "hours_after_start": 3.0,
+      "new_change_ts": 1716141600,
+      "old_change_ts": 1716138000,
+      "sport": "football",
+      "start_ts": 1716130800,
+      "status_class": [
+       "completed",
+       "completed"
+      ],
+      "tier_hint": null,
+      "tournament": {
+       "id": 17,
+       "name": "Premier League"
+      },
+      "ts_utc": "<volatile>"
+     }
+    ],
+    "logs/sofascore_scraper.log": "<binary>"
+   },
+   "changed": {
+    "data/match_details/17_Premier_League/season_Premier_League_23_24/9100010/basic.json": "sha256:e91503b4d55a",
+    "data/match_details/17_Premier_League/season_Premier_League_23_24/9100010/observation.json": {
+     "change_ts": 1716141600,
+     "observed_at_utc": "<volatile>"
+    },
+    "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/_slice_status.json": {
+     "lineups": {
+      "empty": {
+       "at": "<volatile>",
+       "count": 2
+      }
+     },
+     "pregame_form": {
+      "empty": {
+       "at": "<volatile>",
+       "count": 2
+      }
+     }
+    },
+    "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/_unavailable.json": {
+     "lineups": 2,
+     "pregame_form": 2
+    }
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [
+   {
+    "concurrent": [
+     "async /event/9100003 200",
+     "async /event/9100003/h2h 200",
+     "async /event/9100003/incidents 200",
+     "async /event/9100003/lineups 200",
+     "async /event/9100003/pregame-form 200",
+     "async /event/9100003/statistics 200",
+     "async /event/9100003/team-streaks 200",
+     "async https://www.sofascore.com/ 200",
+     "sync /event/9100001 200",
+     "sync /event/9100001/statistics 200",
+     "sync /event/9100002 200",
+     "sync /event/9100002/lineups 200",
+     "sync /event/9100002/pregame-form 404",
+     "sync /event/9100010 200"
+    ]
+   }
+  ],
+  "sleeps": {
+   "request-layer": 12,
+   "src.client.transport": 1
+  },
+  "stderr": [
+   "<progress> Fetching match details: 4/4"
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Headless modda çalışılıyor",
+   "LOG INFO Main: Headless güncelleme: league_id=None mode=details",
+   "",
+   "Headless: Fetching match details for all leagues...",
+   "Fetching match details for all leagues...",
+   "1 leagues to process...",
+   "",
+   "League folder: 17_Premier_League",
+   "Found 4 match IDs for the league.",
+   "Found 4 unique match IDs.",
+   "",
+   "Details will be fetched for 4 matches...",
+   "",
+   "Batch 1/1: processing 4 matches (1-4/4)...",
+   "Processing 4 matches in parallel...",
+   "LOG INFO MatchDataFetcher: 1 maç yenileniyor (geçici kayıt)",
+   {
+    "concurrent": [
+     "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100001 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100001",
+     "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100002 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100002",
+     "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100003 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003",
+     "LOG INFO MatchDataFetcher: Batch 1/1: 4 başarılı, 0 başarısız (hata yok)",
+     "LOG INFO MatchDataFetcher: Maç 9100010 yenilendi: 3 alan değişti (homeScore.current, homeScore.display, homeScore.normaltime)",
+     "LOG INFO MatchDataFetcher: Processing batch 1/1 (4 matches)"
+    ]
+   },
+   "✓ Batch 1: 4/4 succeeded",
+   "",
+   "Done: 4/4 matches (100.0%) processed successfully."
+  ]
+ },
+ "one_league": {
+  "argv": [
+   "--headless",
+   "--update-all",
+   "--fetch-mode",
+   "details",
+   "--league-id",
+   "17"
+  ],
+  "exit_code": 0,
+  "files": "<same as all_leagues>",
+  "request_layer_loaded": true,
+  "requests": "<same as all_leagues>",
+  "sleeps": {
+   "request-layer": 12,
+   "src.client.transport": 1
+  },
+  "stderr": [
+   "<progress> Fetching match details: 4/4"
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Headless modda çalışılıyor",
+   "LOG INFO Main: Headless güncelleme: league_id=17 mode=details",
+   "",
+   "Headless: Fetching match details for league 17...",
+   "Fetching match details for league ID 17...",
+   "1 leagues to process...",
+   "",
+   "League folder: 17_Premier_League",
+   "Found 4 match IDs for the league.",
+   "Found 4 unique match IDs.",
+   "",
+   "Details will be fetched for 4 matches...",
+   "",
+   "Batch 1/1: processing 4 matches (1-4/4)...",
+   "Processing 4 matches in parallel...",
+   "LOG INFO MatchDataFetcher: 1 maç yenileniyor (geçici kayıt)",
+   {
+    "concurrent": [
+     "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100001 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100001",
+     "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100002 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100002",
+     "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100003 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003",
+     "LOG INFO MatchDataFetcher: Batch 1/1: 4 başarılı, 0 başarısız (hata yok)",
+     "LOG INFO MatchDataFetcher: Maç 9100010 yenilendi: 3 alan değişti (homeScore.current, homeScore.display, homeScore.normaltime)",
+     "LOG INFO MatchDataFetcher: Processing batch 1/1 (4 matches)"
+    ]
+   },
+   "✓ Batch 1: 4/4 succeeded",
+   "",
+   "Done: 4/4 matches (100.0%) processed successfully."
+  ]
+ }
+}

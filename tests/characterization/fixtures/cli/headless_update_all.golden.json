@@ -1,0 +1,248 @@
+{
+ "argv": [
+  "--headless",
+  "--update-all"
+ ],
+ "exit_code": 0,
+ "files": {
+  "added": {
+   "data/datasets/": "<empty dir>",
+   "data/match_details/17_Premier_League/season_Premier_League_23_24/9100010/basic.json": "sha256:c30a4892cbe3",
+   "data/match_details/17_Premier_League/season_Premier_League_23_24/9100010/h2h.json": "sha256:d70f49116a50",
+   "data/match_details/17_Premier_League/season_Premier_League_23_24/9100010/incidents.json": "sha256:a2597c3a4cd2",
+   "data/match_details/17_Premier_League/season_Premier_League_23_24/9100010/lineups.json": "sha256:8638bfb622ea",
+   "data/match_details/17_Premier_League/season_Premier_League_23_24/9100010/observation.json": {
+    "change_ts": 1716138000,
+    "observed_at_utc": "<volatile>"
+   },
+   "data/match_details/17_Premier_League/season_Premier_League_23_24/9100010/pregame_form.json": "sha256:23d266be170d",
+   "data/match_details/17_Premier_League/season_Premier_League_23_24/9100010/statistics.json": "sha256:9be2383ec321",
+   "data/match_details/17_Premier_League/season_Premier_League_23_24/9100010/team_streaks.json": "sha256:875eb2f1ef52",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/basic.json": "sha256:b1915a025fe7",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/h2h.json": "sha256:d70f49116a50",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/incidents.json": "sha256:a2597c3a4cd2",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/lineups.json": "sha256:8638bfb622ea",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/observation.json": {
+    "change_ts": 1724507200,
+    "observed_at_utc": "<volatile>"
+   },
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/pregame_form.json": "sha256:23d266be170d",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/statistics.json": "sha256:461cc83fd197",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/team_streaks.json": "sha256:875eb2f1ef52",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/_slice_status.json": {
+    "lineups": {
+     "empty": {
+      "at": "<volatile>",
+      "count": 1
+     }
+    },
+    "pregame_form": {
+     "empty": {
+      "at": "<volatile>",
+      "count": 1
+     }
+    }
+   },
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/_unavailable.json": {
+    "lineups": 1,
+    "pregame_form": 1
+   },
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/basic.json": "sha256:f01370edebc5",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/h2h.json": "sha256:d70f49116a50",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/incidents.json": "sha256:a2597c3a4cd2",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/lineups.json": "sha256:0aaeb8655485",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/observation.json": {
+    "change_ts": 1724514400,
+    "observed_at_utc": "<volatile>"
+   },
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/statistics.json": "sha256:b72fef1ea76e",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/team_streaks.json": "sha256:875eb2f1ef52",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/basic.json": "sha256:badb7cb6e291",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/h2h.json": "sha256:d70f49116a50",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/incidents.json": "sha256:a2597c3a4cd2",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/lineups.json": "sha256:8638bfb622ea",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/observation.json": {
+    "change_ts": 1725112000,
+    "observed_at_utc": "<volatile>"
+   },
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/pregame_form.json": "sha256:23d266be170d",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/statistics.json": "sha256:6fec673fa7f1",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/team_streaks.json": "sha256:875eb2f1ef52",
+   "data/match_details/processed/": "<empty dir>",
+   "data/matches/17_Premier_League/52186_Premier_League_23_24/events_last_0.json": "sha256:5f55caf4b15c",
+   "data/matches/17_Premier_League/52186_Premier_League_23_24_summary.csv": "sha256:3faf0d3448a3",
+   "data/matches/17_Premier_League/52186_Premier_League_23_24_summary.json": "sha256:35551700e5b8",
+   "data/matches/17_Premier_League/61627_Premier_League_24_25/round_1.json": "sha256:3ee61c05e56c",
+   "data/matches/17_Premier_League/61627_Premier_League_24_25/round_2.json": "sha256:c4513ef32663",
+   "data/matches/17_Premier_League/61627_Premier_League_24_25_summary.csv": "sha256:275d72357445",
+   "data/matches/17_Premier_League/61627_Premier_League_24_25_summary.json": "sha256:67fa6332404c",
+   "data/seasons/17_Premier_League_seasons.json": "sha256:0a0f8a9f191b",
+   "logs/sofascore_scraper.log": "<binary>"
+  }
+ },
+ "request_layer_loaded": true,
+ "requests": [
+  "sync /unique-tournament/17/seasons 200",
+  {
+   "concurrent": [
+    "async /unique-tournament/17/season/61627/events/round/1 200",
+    "async /unique-tournament/17/season/61627/events/round/2 200",
+    "async /unique-tournament/17/season/61627/rounds 200",
+    "async https://www.sofascore.com/ 200"
+   ]
+  },
+  {
+   "concurrent": [
+    "async /unique-tournament/17/season/52186/events/last/0 200",
+    "async /unique-tournament/17/season/52186/events/next/0 404",
+    "async /unique-tournament/17/season/52186/rounds 200",
+    "async https://www.sofascore.com/ 200"
+   ]
+  },
+  {
+   "concurrent": [
+    "async /event/9100001 200",
+    "async /event/9100001/h2h 200",
+    "async /event/9100001/incidents 200",
+    "async /event/9100001/lineups 200",
+    "async /event/9100001/pregame-form 200",
+    "async /event/9100001/statistics 200",
+    "async /event/9100001/team-streaks 200",
+    "async /event/9100002 200",
+    "async /event/9100002/h2h 200",
+    "async /event/9100002/incidents 200",
+    "async /event/9100002/lineups 200",
+    "async /event/9100002/pregame-form 404",
+    "async /event/9100002/statistics 200",
+    "async /event/9100002/team-streaks 200",
+    "async /event/9100003 200",
+    "async /event/9100003/h2h 200",
+    "async /event/9100003/incidents 200",
+    "async /event/9100003/lineups 200",
+    "async /event/9100003/pregame-form 200",
+    "async /event/9100003/statistics 200",
+    "async /event/9100003/team-streaks 200",
+    "async /event/9100010 200",
+    "async /event/9100010/h2h 200",
+    "async /event/9100010/incidents 200",
+    "async /event/9100010/lineups 200",
+    "async /event/9100010/pregame-form 200",
+    "async /event/9100010/statistics 200",
+    "async /event/9100010/team-streaks 200",
+    "async https://www.sofascore.com/ 200"
+   ]
+  }
+ ],
+ "sleeps": {
+  "request-layer": 33,
+  "src.client.transport": 3
+ },
+ "stderr": [
+  "<progress> Fetching match details: 4/4"
+ ],
+ "stdout": [
+  "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+  "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+  "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data",
+  "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/seasons",
+  "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/matches",
+  "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/match_details",
+  "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/datasets",
+  "LOG INFO SeasonFetcher: Mevcut sezon verisi bulunamadı",
+  "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+  "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+  "LOG INFO Main: Headless modda çalışılıyor",
+  "LOG INFO Main: Headless güncelleme: league_id=None mode=full",
+  "",
+  "Headless Mode: Updating all data...",
+  "",
+  "1. Updating Season Data...",
+  "",
+  "Fetching season data for all leagues...",
+  "  - Fetching seasons for Premier League (ID: 17)...",
+  "LOG INFO SeasonFetcher: Premier League (ID: 17) için sezonlar çekiliyor...",
+  "LOG INFO SeasonFetcher: Sezon verileri JSON olarak kaydedildi: <SANDBOX>/data/seasons/17_Premier_League_seasons.json",
+  "LOG INFO SeasonFetcher: Premier League için 2 sezon bulundu",
+  "    ✓ 2 seasons found",
+  "",
+  "✅ Successfully fetched total 2 seasons for all leagues.",
+  "",
+  "2. Fetching Match Data...",
+  "Fetching match data for all leagues...",
+  "All seasons will be fetched for each league",
+  "",
+  "  🏆 Premier League (ID: 17)",
+  "  ○ Checking seasons...",
+  "  ℹ️ 2 seasons will be fetched",
+  "  ○ Premier League 24/25 Fetching matches for season",
+  "LOG INFO MatchFetcher: Fetching matches for season",
+  "LOG INFO MatchFetcher: Fetching all matches for Premier League - Premier League 24/25...",
+  "LOG INFO MatchFetcher: Fetching data up to 50 rounds for the season...",
+  "LOG INFO MatchFetcher: Premier League: Premier League 24/25 için maç programı çekiliyor...",
+  {
+   "concurrent": [
+    "",
+    "LOG INFO MatchFetcher: Premier League: Premier League 24/25 için 2/2 tur çekildi",
+    "LOG INFO MatchFetcher: Premier League: Premier League 24/25 için eşzamanlı istek limiti: 5"
+   ]
+  },
+  "LOG INFO MatchFetcher: Premier League: Sezon 61627 JSON özeti kaydedildi: <SANDBOX>/data/matches/17_Premier_League/61627_Premier_League_24_25_summary.json",
+  "LOG INFO MatchFetcher: Premier League: Sezon 61627 CSV özeti kaydedildi: <SANDBOX>/data/matches/17_Premier_League/61627_Premier_League_24_25_summary.csv",
+  "LOG INFO MatchFetcher: Premier League - Premier League 24/25 için 2 hafta verisi çekildi",
+  "    Matches successfully fetched.",
+  "  ○ Premier League 23/24 Fetching matches for season",
+  "LOG INFO MatchFetcher: Fetching matches for season",
+  "LOG INFO MatchFetcher: Fetching all matches for Premier League - Premier League 23/24...",
+  "LOG INFO MatchFetcher: Fetching data up to 50 rounds for the season...",
+  "LOG INFO MatchFetcher: Premier League: Premier League 23/24 için maç programı çekiliyor...",
+  {
+   "concurrent": [
+    "LOG INFO MatchFetcher: Premier League: Premier League 23/24 için eşzamanlı istek limiti: 5",
+    "LOG INFO MatchFetcher: Premier League: Premier League 23/24 — round schedule unavailable (rounds=1), using event list",
+    "LOG INFO MatchFetcher: Premier League: event listesinden 1 benzersiz maç, 1 sayfa kaydedildi"
+   ]
+  },
+  "LOG INFO MatchFetcher: Premier League: Sezon 52186 JSON özeti kaydedildi: <SANDBOX>/data/matches/17_Premier_League/52186_Premier_League_23_24_summary.json",
+  "LOG INFO MatchFetcher: Premier League: Sezon 52186 CSV özeti kaydedildi: <SANDBOX>/data/matches/17_Premier_League/52186_Premier_League_23_24_summary.csv",
+  "LOG INFO MatchFetcher: Premier League - Premier League 23/24 için 1 hafta verisi çekildi",
+  "    Matches successfully fetched.",
+  "  Premier League: match data fetched for 2 seasons in total.",
+  "",
+  "Total matches successfully fetched for all leagues: 2 match data successfully fetched.",
+  "",
+  "3. Fetching Match Details...",
+  "",
+  "Fetching Details for All Matches:",
+  "",
+  "Fetching match details for all leagues...",
+  "All seasons will be fetched for each league",
+  "Fetching match details for all leagues...",
+  "1 leagues to process...",
+  "",
+  "League folder: 17_Premier_League",
+  "Found 4 match IDs for the league.",
+  "Found 4 unique match IDs.",
+  "",
+  "Details will be fetched for 4 matches...",
+  "",
+  "Batch 1/1: processing 4 matches (1-4/4)...",
+  "Processing 4 matches in parallel...",
+  {
+   "concurrent": [
+    "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_23_24, Maç ID 9100010 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_23_24/9100010",
+    "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100001 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100001",
+    "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100002 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100002",
+    "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100003 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003",
+    "LOG INFO MatchDataFetcher: Batch 1/1: 4 başarılı, 0 başarısız (hata yok)",
+    "LOG INFO MatchDataFetcher: Processing batch 1/1 (4 matches)"
+   ]
+  },
+  "✓ Batch 1: 4/4 succeeded",
+  "",
+  "Done: 4/4 matches (100.0%) processed successfully.",
+  "",
+  "Operation completed successfully.",
+  "",
+  "All operations completed."
+ ]
+}

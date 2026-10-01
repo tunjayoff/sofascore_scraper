@@ -41,6 +41,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 import pytest
 
 from characterization import STATE_DIR, UPDATE_ENV, WORLD, snapshot_tree
+from characterization.test_fetch_flows import _change_score, _make_provisional, _match_dir
 from fakes.sofascore import REQUEST_LAYER_MODULES, FakeSofaScore
 from src.version import __version__
 
@@ -619,3 +620,169 @@ def test_interactive_menu_is_the_default_mode(box: Sandbox) -> None:
     assert run.exit_code == 0
     assert "LOG INFO Main: İnteraktif mod başlatılıyor" in run.stdout
     assert run.requests == []
+
+
+# --- --headless --update-all ----------------------------------------------------------------
+
+SAME_AS_ALL_LEAGUES = "<same as headless_update_all>"
+
+
+def test_headless_update_all(seed: Seed) -> None:
+    """Tüm ligler, boş veri dizini: sezonlar → maç programı → detaylar."""
+    assert seed.run.exit_code == 0
+    assert_cli_golden("headless_update_all", seed.run.golden())
+
+
+def test_headless_update_one_league(box: Sandbox, seed: Seed) -> None:
+    """--league-id: aynı istekler ve aynı dosyalar; kullanıcıya yazılan metin başka bir koddan gelir."""
+    run = run_cli(box, "--headless", "--update-all", "--league-id", str(LEAGUE))
+
+    assert run.requests == seed.run.requests
+    assert run.files == seed.run.files
+    assert_cli_golden(
+        "headless_update_league", {**run.golden(), "requests": SAME_AS_ALL_LEAGUES, "files": SAME_AS_ALL_LEAGUES}
+    )
+
+
+def test_headless_update_all_again(seeded: Sandbox) -> None:
+    """İkinci çalıştırma: program yeniden istenir, boş gelen dilimler bir kez daha denenir; üçüncüde detay isteği kalmaz."""
+    second = run_cli(seeded, "--headless", "--update-all")
+    third = run_cli(seeded, "--headless", "--update-all")
+
+    assert (second.exit_code, third.exit_code) == (0, 0)
+    assert_cli_golden("headless_update_all_again", {"second_run": second.golden(), "third_run": third.golden()})
+
+
+def test_headless_details_only(new_box: NewBox, world: FakeSofaScore) -> None:
+    """
+    --fetch-mode details: program istenmez; tüm ligler ve --league-id aynı istekleri atar, aynı dosyaları yazar.
+    Her ihtiyaçtan bir maç vardır (fetch goldenlarındaki job_details_league ile aynı kurulum).
+    """
+    _change_score(world, 9100010, home=3)
+    runs: Dict[str, CliRun] = {}
+    for name, extra in (("all_leagues", []), ("one_league", ["--league-id", str(LEAGUE)])):
+        box = new_box(name, data="seed")
+        (_match_dir(box.data, 9100001) / "statistics.json").unlink()  # kısmi → refill
+        shutil.rmtree(_match_dir(box.data, 9100003))  # kayıt yok → full
+        _make_provisional(box.data, world, 9100010)  # geçici → refresh (skoru SofaScore'da düzeltilmiş)
+        # 9100002: ilk çalıştırmada iki dilimi boş geldi → refill
+        runs[name] = run_cli(box, "--headless", "--update-all", "--fetch-mode", "details", *extra, world=world)
+
+    assert runs["one_league"].requests == runs["all_leagues"].requests
+    assert runs["one_league"].files == runs["all_leagues"].files
+    assert_cli_golden("headless_details", {
+        "all_leagues": runs["all_leagues"].golden(),
+        "one_league": {**runs["one_league"].golden(), "requests": "<same as all_leagues>", "files": "<same as all_leagues>"},
+    })
+
+
+def test_headless_update_stopped_by_the_breaker(new_box: NewBox, world: FakeSofaScore) -> None:
+    """
+    SofaScore maç isteklerini 403 ile reddediyor: devre kesilir, neden stderr'e yazılır, çıkış kodu 2.
+    Eşik, başarısız olacak istek sayısına (4 maç) eşittir: devre son istekte kesilir ve sonuç, eşzamanlı
+    görevlerin sırasına bağlı kalmaz (devre kesilince kalan isteklerin gönderilmediğini fetch testleri sabitler).
+    """
+    world.fail("/event/*", 403)
+    runs = {
+        name: run_cli(
+            new_box(name, env_lines=["RATE_LIMIT_THRESHOLD_CONSECUTIVE=4"]), "--headless", "--update-all", *extra,
+            world=world,
+        )
+        for name, extra in (("all_leagues", []), ("one_league", ["--league-id", str(LEAGUE)]))
+    }
+
+    assert {name: run.exit_code for name, run in runs.items()} == {"all_leagues": 2, "one_league": 2}
+    assert_cli_golden("headless_update_breaker", {name: run.golden() for name, run in runs.items()})
+
+
+def test_headless_update_blocked_from_the_first_request(new_box: NewBox, world: FakeSofaScore) -> None:
+    """
+    SofaScore her isteği 403 ile reddediyor, eşikler varsayılan: sezon listesi alınamaz, yapılacak iş kalmaz.
+    Devre kesilmez (bir ligde tek istek başarısız olur; eşik 20) ve çıkış kodu 0'dır.
+    """
+    world.fail("*", 403)
+    runs = {
+        name: run_cli(new_box(name), "--headless", "--update-all", *extra, world=world)
+        for name, extra in (("all_leagues", []), ("one_league", ["--league-id", str(LEAGUE)]))
+    }
+
+    assert {name: run.exit_code for name, run in runs.items()} == {"all_leagues": 0, "one_league": 0}
+    assert_cli_golden("headless_update_blocked", {name: run.golden() for name, run in runs.items()})
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX izin bitleri gerekir (Windows'ta dizin salt okunur yapılamaz)")
+def test_headless_storage_error_exits_with_1(new_box: NewBox) -> None:
+    """
+    Detaylar diske yazılamıyor (izin yok): iş durur, neden stderr'e yazılır, çıkış kodu 1. --league-id yolunda
+    hata doğrudan yükselir; tüm ligler yolunda menü katmanı yutar ve main.py `last_storage_error`dan okur.
+    """
+    if os.geteuid() == 0:
+        pytest.skip("root her dizine yazabilir")
+    runs: Dict[str, CliRun] = {}
+    for name, extra in (("all_leagues", []), ("one_league", ["--league-id", str(LEAGUE)])):
+        box = new_box(name, data="settled")  # yapılacak tek iş, yazılamayacak olan maç
+        season_dir = _match_dir(box.data, 9100003).parent
+        shutil.rmtree(season_dir / "9100003")
+        os.chmod(season_dir, 0o555)
+        try:
+            runs[name] = run_cli(box, "--headless", "--update-all", "--fetch-mode", "details", *extra)
+        finally:
+            os.chmod(season_dir, 0o755)
+
+    assert {name: run.exit_code for name, run in runs.items()} == {"all_leagues": 1, "one_league": 1}
+    assert_cli_golden("headless_storage_error", {name: run.golden() for name, run in runs.items()})
+
+
+def test_unexpected_error_exits_with_1(box: Sandbox) -> None:
+    """
+    Beklenmeyen hata (burada: veri dizininin yerinde bir dosya var): ileti ve log dosyasının yolu stdout'a,
+    iz dökümü stderr'e yazılır, çıkış kodu 1. İşletim sisteminin hata metni goldena girmez.
+    """
+    box.data.write_text("not a directory", encoding="utf-8")
+
+    run = run_cli(box, "--headless", "--update-all")
+
+    assert run.exit_code == 1
+    assert any(line.startswith("An unexpected error occurred: ") for line in run.printed())
+    assert "Please check the log file for details: <SANDBOX>/logs/sofascore_scraper.log" in run.printed()
+    assert "Traceback (most recent call last):" in run.stderr
+    assert run.requests == []
+
+
+# --- --headless --csv-export ----------------------------------------------------------------
+
+def test_headless_csv_export(new_box: NewBox) -> None:
+    with_data = run_cli(new_box("with-data", data="seed"), "--headless", "--csv-export")
+    empty = run_cli(new_box("empty"), "--headless", "--csv-export")
+
+    assert (with_data.exit_code, empty.exit_code) == (0, 0)
+    assert (with_data.requests, empty.requests) == ([], [])
+    assert_cli_golden("headless_csv_export", {"with_data": with_data.golden(), "empty_data_dir": empty.golden()})
+
+
+# --- --config ve --data-dir -----------------------------------------------------------------
+
+def test_config_flag_is_ignored(box: Sandbox, seed: Seed) -> None:
+    """
+    --config bugün ölü bir bayraktır (docs/design/02-services.md 1.7): ConfigManager tekildir ve main.py yolu
+    vermeden önce src/utils.py tarafından kurulmuştur. Başka bir lig dosyası gösterilse de sonuç değişmez.
+    """
+    other = box.root / "other-leagues.txt"
+    other.write_text("LaLiga: 8\n", encoding="utf-8")
+
+    run = run_cli(box, "--headless", "--update-all", "--config", str(other))
+
+    assert run.argv[-2:] == ["--config", "<SANDBOX>/other-leagues.txt"]
+    assert {**run.golden(), "argv": seed.run.argv} == seed.run.golden()
+
+
+def test_data_dir_flag_overrides_the_environment(box: Sandbox, seed: Seed) -> None:
+    """--data-dir, DATA_DIR'in önündedir: aynı istekler, aynı dosyalar, başka dizinde."""
+    run = run_cli(box, "--headless", "--update-all", "--data-dir", str(box.root / "alt-data"))
+
+    def moved(text: str) -> str:
+        return text.replace("alt-data/", "data/", 1) if text.startswith("alt-data/") else text
+
+    assert (run.exit_code, run.requests) == (0, seed.run.requests)
+    assert {moved(path): summary for path, summary in run.files["added"].items()} == seed.run.files["added"]
+    assert _map_lines(run.stdout, lambda line: line.replace("<SANDBOX>/alt-data", "<SANDBOX>/data")) == seed.run.stdout

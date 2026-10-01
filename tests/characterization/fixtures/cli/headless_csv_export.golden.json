@@ -1,0 +1,83 @@
+{
+ "empty_data_dir": {
+  "argv": [
+   "--headless",
+   "--csv-export"
+  ],
+  "exit_code": 0,
+  "files": {
+   "added": {
+    "data/datasets/": "<empty dir>",
+    "data/match_details/processed/": "<empty dir>",
+    "data/matches/": "<empty dir>",
+    "data/seasons/": "<empty dir>",
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "<progress> Maçlar işleniyor: 0"
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/seasons",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/matches",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/match_details",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/datasets",
+   "LOG INFO SeasonFetcher: Mevcut sezon verisi bulunamadı",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Headless modda çalışılıyor",
+   "LOG INFO Main: CSV dışa aktarma işlemi başlatılıyor",
+   "",
+   "Headless Mode: Exporting CSV...",
+   "",
+   "CSV Conversion:",
+   "LOG INFO MatchDataFetcher: Toplam 0 maç CSV'ye dönüştürülüyor...",
+   "LOG WARNING MatchDataFetcher: İşlenecek maç verisi bulunamadı",
+   "",
+   "Error occurred while creating CSV file."
+  ]
+ },
+ "with_data": {
+  "argv": [
+   "--headless",
+   "--csv-export"
+  ],
+  "exit_code": 0,
+  "files": {
+   "added": {
+    "data/match_details/processed/all_matches_<epoch>.csv": "sha256:bbb79fb45fde",
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "<progress> Maçlar işleniyor: 4/4"
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Headless modda çalışılıyor",
+   "LOG INFO Main: CSV dışa aktarma işlemi başlatılıyor",
+   "",
+   "Headless Mode: Exporting CSV...",
+   "",
+   "CSV Conversion:",
+   "LOG INFO MatchDataFetcher: Toplam 4 maç CSV'ye dönüştürülüyor...",
+   "LOG INFO MatchDataFetcher: Tüm maçlar için CSV dosyası oluşturuldu: <SANDBOX>/data/match_details/processed/all_matches_<epoch>.csv",
+   "",
+   "CSV file successfully created: <SANDBOX>/data/match_details/processed/all_matches_<epoch>.csv"
+  ]
+ }
+}
