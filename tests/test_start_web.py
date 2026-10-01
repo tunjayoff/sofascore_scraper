@@ -185,7 +185,7 @@ def test_shell_launchers_keep_the_window_open_on_failure():
         assert 'exit "$status"' in text and "Press Enter" in text
 
 
-@pytest.mark.parametrize("name", ["scripts/install.sh", "scripts/install.ps1"])
+@pytest.mark.parametrize("name", ["scripts/install.sh", "scripts/install.ps1", "README.md", "README.tr.md"])
 def test_installers_and_readme_install_the_browser_the_bridge_uses(name):
     text = (REPO / name).read_text(encoding="utf-8-sig")
     assert "-m patchright install chromium" in text

@@ -61,7 +61,8 @@ The web app with two football leagues downloaded. The images follow your GitHub 
 ## Requirements
 
 - Python **3.10+** (3.11+ recommended).
-- **Node.js 20.19+ or 22.12+ and npm** — to build the web app (`frontend/`). `scripts/start_web.py` builds it on the first run.
+- **Chromium for patchright** — the browser the app reaches SofaScore through. A one-time download made by the install scripts and by the launcher (`python -m patchright install chromium --no-shell`). A Google Chrome or Chromium already on the machine is **not** used.
+- **Node.js 20.19+ or 22.12+ and npm** — to build the web app (`frontend/`). The install scripts and `scripts/start_web.py` build it when Node.js is installed. Without it the terminal modes still work, and the web address shows a help page instead of the app.
 - **Git** — required for the one-line `curl | bash` installer (clones this repo); optional if you already extracted or cloned the project manually.
 - Network access to SofaScore.
 
@@ -93,7 +94,7 @@ chmod +x scripts/install.sh   # once
 ./scripts/install.sh
 ```
 
-**One-liner** (clones [tunjayoff/sofascore_scraper](https://github.com/tunjayoff/sofascore_scraper), creates `.venv`, installs dependencies, copies `.env`):
+**One-liner** (clones [tunjayoff/sofascore_scraper](https://github.com/tunjayoff/sofascore_scraper), creates `.venv`, installs the dependencies and the browser, builds the web app if Node.js is installed, copies `.env`, then runs the [setup check](#check-your-setup-doctor)):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/tunjayoff/sofascore_scraper/main/scripts/install.sh | bash
@@ -132,7 +133,7 @@ Explicit clone URL / folder:
 
 From CMD: `scripts\install.bat`. Environment overrides: `SOFASCORE_SCRAPER_REPO`, `SOFASCORE_SCRAPER_DIR`, `SOFASCORE_SCRAPER_DEFAULT_REPO`.
 
-**Prerequisites:** **Git** (for the one-liner / clone path), **Python 3.10+** on `PATH`. The scripts print clear errors if `git`, `python`, `venv`, or `pip install` fails (e.g. missing `python3-venv` on Debian/Ubuntu).
+**Prerequisites:** **Git** (for the one-liner / clone path), **Python 3.10+** on `PATH`. The scripts print clear errors if `git`, `python`, `venv`, or `pip install` fails (e.g. missing `python3-venv` on Debian/Ubuntu). A missing or too old Node.js is reported and is not fatal. The script ends with the setup check and exits with 1 if something the app needs is missing.
 
 ### Docker
 
@@ -184,7 +185,15 @@ cd sofascore_scraper
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-python -m playwright install chromium   # only needed if Google Chrome isn't installed
+python -m patchright install chromium --no-shell   # required: the browser the app drives
+```
+
+The browser step is required even when Google Chrome is installed. The bridge starts patchright's own Chromium build (through Scrapling's `StealthySession`), not the system browser. Use `patchright` in this command, not `playwright`: each of the two packages downloads the build its own version expects. `--no-shell` leaves out the separate headless shell, which the bridge never uses.
+
+Build the web app (needs Node.js 20.19+ or 22.12+; skip it if you only use the terminal modes):
+
+```bash
+cd frontend && npm install && npm run build && cd ..
 ```
 
 Copy environment defaults and adjust:
@@ -192,6 +201,40 @@ Copy environment defaults and adjust:
 ```bash
 cp .env.example .env
 ```
+
+### Check your setup (doctor)
+
+```bash
+python main.py --doctor          # readable report
+python main.py --doctor --json   # the same as JSON, for scripts and servers
+```
+
+The check never contacts SofaScore. Each line is `OK`, `WARN` or `FAIL`, and every problem comes with a one-line fix:
+
+| Check | What it looks at |
+|-------|------------------|
+| `python` | Python 3.10 or newer. |
+| `packages` | Every package in `requirements.txt` can be imported; pinned versions match. |
+| `browser` | The Chromium build the bridge starts is installed **and starts** (headless, on `about:blank`, with a temporary profile). |
+| `profile` | The browser profile folder is writable and not locked by another machine, a leftover browser or a dead process. |
+| `data_dir`, `config_dir` | `DATA_DIR` and `config/` are writable. |
+| `frontend` | `frontend/dist/` exists. Missing is a warning: the terminal modes work without it. |
+| `env` | `.env` parses and its values are valid (numbers, `true`/`false`, proxy address, language, log level). |
+
+```text
+[ OK ] Python: 3.14.0
+[ OK ] Packages: all 13 required packages can be imported
+[FAIL] Browser: the Chromium build of patchright 1.63.0 is not installed (expected at ...); an installed Google Chrome is not used
+       Fix: Run: .venv/bin/python -m patchright install chromium --no-shell
+[WARN] Web UI: not built (frontend/dist is missing): the web app shows a help page instead; the terminal modes work without it
+       Fix: cd frontend && npm install && npm run build   (or start with scripts/start_web.py, which builds it)
+```
+
+- **Exit code:** `0` when nothing failed (warnings allowed), `1` when at least one check failed. `--strict` also exits with `1` on warnings.
+- `--only python,browser` / `--skip frontend` choose checks; `--lang en|tr` sets the language (default: `APP_LANGUAGE`).
+- It runs before the app's own imports, so it also works when packages are missing (that is one of the things it reports).
+- `--live` additionally makes **one** real request to SofaScore through the browser bridge. It is never made otherwise. Stop the web app first: two processes cannot open the same browser profile.
+- The launcher (`scripts/start_web.py`) runs the same check on every start and installs missing packages and the missing browser itself. Other code can call `src.doctor.run_checks()` / `src.doctor.report()`.
 
 ## Configuration
 
@@ -225,7 +268,7 @@ Every code path limits itself (`MAX_CONCURRENT`, the waits, the watcher's 1 s sp
 
 ### Leagues (`config/leagues.txt`)
 
-One line per league, `Name: ID`, where ID is the numeric SofaScore **unique tournament ID** (it appears in tournament URLs, e.g. `.../premier-league/17` → `17`). The file is yours and is not tracked by git: on first run it is created from `config/leagues.example.txt`. The app adds and removes lines itself when you manage leagues in the web app or the CLI.
+One line per league, `Name: ID`, where ID is the numeric SofaScore **unique tournament ID** (it appears in tournament URLs, e.g. `.../premier-league/17` → `17`). The file is yours and is not tracked by git: on first run it is created from `config/leagues.example.txt`, which contains no league. A new install starts empty: add leagues in the web app (**Leagues → Add league**, which also records each league's sport) or in the terminal menu. The app adds and removes lines itself when you manage leagues in the web app or the CLI.
 
 CLI override:
 
@@ -242,10 +285,10 @@ python main.py --config /path/to/leagues.txt --data-dir /path/to/data
 **Web (recommended for most users)**
 
 1. Finish **Installation** and **Configuration** (`pip install`, `cp .env.example .env`). Optionally set `DATA_DIR` if you want data somewhere other than `./data`.
-2. Start the app: `./start-sofascore.sh` (or `python scripts/start_web.py`). On the first run it builds the web app, then it opens `http://127.0.0.1:8000`. `python main.py --web` starts the server alone.
+2. Start the app: `./start-sofascore.sh` (or `python scripts/start_web.py`; on Windows double-click `Start SofaScore.bat`, on macOS `Start SofaScore.command`). The launcher creates `.venv` if it is missing, runs the [setup check](#check-your-setup-doctor), installs what is missing (Python packages, the browser), builds the web app when `frontend/dist/` is missing and Node.js is installed, then opens `http://127.0.0.1:8000`. `python main.py --web` starts the server alone and installs nothing.
    After updating the code (`git pull`), rebuild the web app yourself: `cd frontend && npm install && npm run build`. The start script only builds when `frontend/dist/` is missing, so otherwise you keep seeing the old interface.
 3. **Sport** — The switch at the top of the sidebar (All / Football / Basketball / Tennis) filters every page. Pick the sport you are working on.
-4. **Leagues** — **Add league** searches SofaScore; filter the results by sport and press **Add**. A league whose sport is unknown (for example one added to `config/leagues.txt` by hand) shows a **Pick sport** box; choose once and it is saved.
+4. **Leagues** — A new install has no leagues; the page opens with an **Add league** button. **Add league** searches SofaScore; filter the results by sport and press **Add**. A league whose sport is unknown (for example one added to `config/leagues.txt` by hand) shows a **Pick sport** box; choose once and it is saved.
 5. **Download** — Left column: pick a league. Middle: tick seasons (the season list is fetched automatically the first time; **Latest season** / **Last 3 seasons** are shortcuts). You can pick seasons from several leagues; they collect in the **Download list** on the right. Press **Download N seasons**. Matches and their details (statistics, events, lineups) are downloaded together.
 6. While a download runs, the card at the bottom left of the sidebar shows progress; **Stop** takes effect right away: no new requests are sent and retry waits are cut short; a request already in flight can take up to the request timeout (`REQUEST_TIMEOUT`) to return. Only one download runs at a time. **Activity** lists the current and past downloads.
 7. **Matches** — Filter by league, season, date and **Details** (with / missing). When a league has matches without details (typically after a stopped download), a banner offers **Download missing**. Click a row to open the match: score by period, overview, statistics, events and lineups.
@@ -266,6 +309,14 @@ Run `python main.py` and work through the numbered menus: manage leagues, refres
 - Stopping a download keeps everything fetched so far. Matches whose details were not reached show **Details: No** in Matches; use **Download missing** there (or on the Download page) to complete them.
 
 ### Troubleshooting
+
+**Something does not start, or every download fails**
+
+Run `python main.py --doctor`. It names what is missing (most often the browser: `python -m patchright install chromium --no-shell`) and prints the fix. When the browser cannot start, the app does not retry for 5 minutes, so fix the cause and restart the app. See [Check your setup](#check-your-setup-doctor).
+
+**The browser shows "The web interface is not built"**
+
+`frontend/dist/` is missing. Build it with `cd frontend && npm install && npm run build` (Node.js 20.19+ or 22.12+) and reload the page; the server does not need a restart. Without Node.js, use a release archive from the [Releases page](https://github.com/tunjayoff/sofascore_scraper/releases) once one is published (it ships with the web app built), or copy a `frontend/dist/` folder built on another machine. The API and the terminal modes work in the meantime.
 
 **Seasons appear but fetch finds 0 matches** (`İşlenecek maç verisi bulunamadı` / `0it`)
 
@@ -309,6 +360,7 @@ At least one of `--update-all` or `--csv-export` is required with `--headless`. 
 | `--refresh-only` | Only re-read provisional records (no `--headless` needed); see [Refresh policy](#refresh-policy) |
 | `--refresh-legacy` | Also refresh records saved before `observation.json` existed, once |
 | `--watch` | Live watcher with `--sport` and `--league-ids` or `--event-ids` (`--watch-hours` optional); see [Watch mode](#watch-mode) |
+| `--doctor` | Check the environment and exit, `0` = ready, `1` = something failed (no `--headless` needed); see [Check your setup](#check-your-setup-doctor) |
 
 Examples:
 
@@ -456,9 +508,11 @@ The [Docker image](#docker) already contains the browser and its system librarie
 
 ```bash
 pip install -r requirements.txt
-python -m playwright install chromium
+python -m patchright install chromium --no-shell
 # Debian/Ubuntu only, once: system libraries Chromium needs (uses sudo)
-python -m playwright install-deps chromium
+python -m patchright install-deps chromium
+# exit code 0 = ready; starts the browser once on about:blank, makes no request to SofaScore
+python main.py --doctor --skip frontend
 ```
 
 ## Development
