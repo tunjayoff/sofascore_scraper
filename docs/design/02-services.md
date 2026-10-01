@@ -1,9 +1,17 @@
 # 02 — Service layer and the three faces
 
 Status: design, reconciled with `01-storage.md` on 2026-10-01. Baseline: `origin/main` at `3ae2599`.
-Every `file:line` reference below is to that commit. Companion documents: `00-platform.md` (the owner's
-platform design), `01-storage.md` (Store and catalog) and `03-implementation-plan.md` (the one ordered PR
-list). Section 11 lists what changed in this document during reconciliation and why.
+Every `file:line` reference below is to that commit, unless it is marked `0aa73b4`. Companion documents:
+`00-platform.md` (the owner's platform design), `01-storage.md` (Store and catalog) and
+`03-implementation-plan.md` (the one ordered PR list). Section 11 lists what changed in this document during
+reconciliation and why.
+
+Revised on 2026-10-01 after the first two implementation batches (PRs #33 to #47) and after the owner's
+decisions on live watching: live data is a CLI service with sinks, not part of the web UI and not an HTTP
+endpoint, and it has two selectable push sources (`page`, and `direct` as an explicit opt-in) next to polling.
+Sections 2.2, 2.7, 4.1, 4.3, 5, 6 and 8 changed for that; section 11 lists every other correction. Main has
+moved since the baseline (#23, #24, #32, #33, #43 and the first batches), so line numbers at `3ae2599` are a
+starting point, not an address.
 
 Conventions used here: "event" is a SofaScore match; "slice" is one data type of an owner entity
 (event, season, team, player); "face" is one of Python library, CLI, HTTP API.
@@ -77,7 +85,7 @@ reports a tripped breaker through an environment variable read back at exit (`ma
 | `/event` failure | exception → up to 3 attempts per match with back-off (`:338-413`), each attempt already retried by the request layer (`max_retries=2`, `:200`) | swallowed into `None` (`:1075-1080`); no per-match retry; request-layer default retries |
 | Slice retries | `max_retries=1` (`:257`) | request-layer default (`:1117`) |
 | Concurrency | matches and slices concurrent (`:320`, `:225`) | strictly sequential |
-| Pacing on top of the throttle | 1 s between batches, twice (`:477-478`, `:2105-2107`) | 0.2 s per match (`:1527-1528`); refresh-only 1 s (`:977-978`) |
+| Pacing on top of the throttle | at `3ae2599`: 1 s between batches in two places (`:477-478`, `:2105-2107`; the inner one could not run through `fetch_detail_ids`, which hands over at most 100 matches per call). Since PR #33: none | at `3ae2599`: 0.2 s per match (`:1527-1528`); refresh-only 1 s (`:977-978`). Since PR #33: none. The row is no longer a divergence: the shared budget paces both paths (G-01 `test_row07_pacing`) |
 | HTTP session | warmed session, one TLS profile per session | no session, random TLS profile per request (`utils.py:360`) |
 | Refill that returns `None` | falls through to a full fetch, repeating `/event` (`:361-362`) | same (`:1503-1505`) |
 | Breaker scope | job breaker via `scope()` (`:286`) | batch has one (`:1483`); the single-match route has none |
@@ -94,7 +102,7 @@ with different files, and `FETCH_ONLY_FINISHED=false` works on one path only.
 | `routes/matches.py:134-281` | building the match list from summary CSVs with pandas, de-duplication, date parsing, `has_details` by walking `match_details` (`:219-242`) |
 | `routes/matches.py:309-358` | "missing details" = CSV ids minus a recursive glob of `basic.json` |
 | `routes/matches.py:361-393` | assembling a match from slice files (third copy of `match_data_fetcher.py:534-557`) |
-| `routes/matches.py:396-418` | single-event fetch policy (refill, then full), error-to-status mapping by substring (`:416-417`) |
+| `routes/matches.py:396-418` | single-event fetch policy (refill, then full), error-to-status mapping by substring (`:416-417`). The mapping is not reached for a blocked upstream: `_fetch_match_basic` swallows the error, so the route answers 404 for a blocked `/event` and 200 when only the slices are blocked (pinned by G-01; plan item FX-1) |
 | `routes/data.py:103-149`, `:152-182` | backup (zip) and clear |
 | `routes/data.py:185-221` | CSV export; a **GET** that generates files when none exist (`:192-198`) |
 | `routes/leagues.py:51-86` | remote tournament search incl. parsing SofaScore's payload, with a hard-coded URL (`:54`) |
@@ -146,15 +154,17 @@ with different files, and `FETCH_ONLY_FINISHED=false` works on one path only.
   (`match_fetcher.py:471`); only the summary and the event pages are filtered. In 184 locally stored football
   events, the object in a round listing lacks only `venue`, `referee`, `attendance`, period defaults and a few
   promo flags compared with `/event/{id}`; status, teams, scores and start time are present.
-- **Default language is Turkish today** (`src/i18n.py:13`, `:36`) and the default request rate is 10 per
-  second per concurrent request, 100 with default settings (`throttle.py:55-57`). Both defaults change in
-  wave 3 (plan items X-01, X-02).
-- **Open PRs.** #24 (`feat/log-files-diagnostics`), #23 (`fix/blocked-state-ux`, stacked on #24) and #32
-  (`chore/post-wave2`, stacked on both) are open. Together they change `main.py`, `src/config_manager.py`,
-  `src/logger.py`, `src/utils.py`, `src/season_fetcher.py`, `src/doctor.py`, `src/web/app.py`, four route
-  modules (`api.py`, `leagues.py`, `scrape.py`, `settings.py`), `tests/conftest.py`, the installers, the CI
-  workflow and the changelog, and add `src/diagnostics.py`, `src/redact.py`, `src/web/upstream.py`. This design
-  assumes all three are merged first; the plan marks which PRs must wait for them.
+- **Defaults.** At `3ae2599` the default language was Turkish (`src/i18n.py:13`, `:36`) and the default
+  request rate was 10 per second per concurrent request, 100 with default settings (`throttle.py:55-57`). Both
+  changed since: the rate is 5 requests per second in total (PR #33, `src/throttle.py:54` at `0aa73b4`) and
+  the language is English unless the system language is Turkish (PR #39, `src/language.py`).
+- **Pull requests merged since the baseline.** #24 (`feat/log-files-diagnostics`), #23
+  (`fix/blocked-state-ux`) and #32 (`chore/post-wave2`), which this design assumed, are merged. Together they
+  changed `main.py`, `src/config_manager.py`, `src/logger.py`, `src/utils.py`, `src/season_fetcher.py`,
+  `src/doctor.py`, `src/web/app.py`, four route modules (`api.py`, `leagues.py`, `scrape.py`, `settings.py`),
+  `tests/conftest.py`, the installers, the CI workflow and the changelog, and added `src/diagnostics.py`,
+  `src/redact.py`, `src/web/upstream.py` and the routes of `src/web/routes/diagnostics.py`. PR #43 (web
+  security hardening) followed; what it changed is in `03-implementation-plan.md` section 1.
 
 ---
 
@@ -170,7 +180,9 @@ with different files, and `FETCH_ONLY_FINISHED=false` works on one path only.
    return typed results and raise `PlatformError` subclasses.
 4. Domain modules (`sports`, `status`, `refresh`, `slices`, `schema`) are pure and import nothing above them.
 5. `src/client` and `src/store` do not import each other. `src/jobs` uses `src/store` for persistence and
-   leases and contains no SQL and no file access.
+   leases and contains no SQL and no access to the data directory. The test enforces what imports can show:
+   no face module and no `sqlite3` in `src/jobs` (`tests/test_jobs_model.py`); the manager may use `os` for
+   the pid.
 
 ### 2.2 Module layout
 
@@ -200,7 +212,8 @@ src/
     listing.py              season lists and schedules as pipeline work
     sync.py                 SyncService
     refresh.py              RefreshService
-    live/                   supervisor.py, reducer.py, poll_source.py, push_source.py, arbiter.py
+    live/                   supervisor.py, reducer.py, poll_source.py, push_source.py (page listening, frame
+                            parser and merge), direct_source.py (opt-in), arbiter.py
     export.py               ExportService
     backup.py               BackupService
     maintenance.py          MaintenanceService
@@ -208,7 +221,7 @@ src/
     follows.py              FollowsService
     query.py tournaments.py QueryService (read side), incl. the legacy response shapes
   jobs/
-    model.py                Job, JobKind, JobState, JobEvent
+    model.py                Job, JobKind, JobState, Origin, ErrorInfo (P07); JobEvent (P11)
     manager.py              JobManager, JobHandle
     progress.py             JobProgress               (from web/progress.py)
     scheduler.py            optional in-app scheduler
@@ -217,8 +230,8 @@ src/
   cli/
     main.py output.py exit_codes.py signals.py legacy_flags.py commands/*.py
   web/
-    app.py errors.py deps.py sse.py
-    api/v1/*.py             one router per resource
+    app.py errors.py deps.py sse.py (job events only) security.py (PR #43)
+    api/v1/*.py             one router per resource; no live router
     api/legacy.py           the old /api paths as adapters
 ```
 
@@ -269,7 +282,7 @@ class Outcome:                 # generalises SliceOutcome (match_data_fetcher.py
     reason: str | None       # failed: 403|429|5xx|timeout|network|parse|other
                              # empty: 404|empty   skipped: not_selected|not_applicable|not_due|unavailable|breaker|cancelled
     http_status: int | None
-    fetched_at: datetime
+    fetched_at: datetime | None    # None means "now" to the consumer; it is not filled at construction
     via: Literal["curl", "bridge"] | None
     meta: Mapping[str, Any] | None
 
@@ -293,13 +306,19 @@ Semantics:
   everything else → `failed/<kind>` is today's `SliceOutcome.from_error` plus `breaker.failure_kind`
   (`breaker.py:70-88`). Today the open breaker is reported as a *failed* outcome with reason `breaker`
   (`match_data_fetcher.py:71`, `:693-694`); it becomes `skipped`, which the Store ignores in the same way.
+  `_update_slice_markers` relies on the failed form today, so the switch and that check change in one PR (P05
+  or P13). Today's `from_error` treats only `ResourceNotFoundError` as a definitive empty: an `APIError` with
+  status 404 of another class becomes `failed/404` (pinned in `tests/test_slices.py`); the client maps every
+  404 to `empty/404`. `Outcome` exists since ST-02 (PR #36) in `src/slices.py`; `fetched_at`, `via` and `meta`
+  are left None by `from_error` and filled by the client.
 - One transport implementation (async); `get_sync` drives it on the bridge's background loop. The duplicated
   sync body `utils.py:326-456` is deleted. The path at the end of the async body that returns `None` without
   an exception (`utils.py:624`) is mapped to `failed/other`.
 - Paths are always relative; `endpoints.py` builds them, `ClientSettings.base_url` is applied in one place.
 - The throttle stays where it is: every request reserves a slot (`utils.py:126-135`,
-  `challenge_solver.py:297`). The default rate becomes 5 req/s in plan item X-01; `0`/`off` removes the limit
-  (`throttle.py:83-100` already supports it).
+  `challenge_solver.py:297`). The default rate is 5 req/s since PR #33; `0`/`off` removes the limit. After
+  idle time up to one second of budget goes out at once (decision D14), and a cancelled job does not yet
+  return its reservations (plan item FX-6).
 - The client writes nothing under `DATA_DIR`. It reports each bridge-health transition through
   `on_health_change`; `build_context` stores the snapshot with `store.runtime.set("bridge_health", ...)`, so
   another process (`ssc status`, a second server) can read the last known state.
@@ -414,11 +433,13 @@ class RefreshService:
 
 # services/live/supervisor.py
 class LiveService:
-    def run(self, scope: LiveScope | None = None, *, until: float | None = None, stop: StopToken | None = None) -> LiveSummary: ...
-    def start(self) -> None ; def stop(self, timeout: float = 10.0) -> None      # background hosting inside `serve`
-    def status(self) -> LiveStatus: ...
+    def run(self, scope: LiveScope | None = None, *, source: Literal["page", "direct", "poll"] = "page",
+            until: float | None = None, stop: StopToken | None = None) -> LiveSummary: ...
+        # foreground only (`ssc watch`, or a library caller's own thread); there is no hosting inside `serve`.
+        # "direct" is never chosen by the service itself: only an explicit argument selects it (section 8.3)
+    def status(self) -> LiveStatus: ...          # lease held or not, leading source per sport, last heartbeat
     def events(self, after: int = 0, *, follow: bool = False, flt: StreamFilter | None = None) -> Iterator[LiveEvent]: ...
-        # reads the stream log; works without a running service
+        # reads the stream log; works without a running service. Used by `ssc events` and the library, not by HTTP
 
 # services/export.py
 @dataclass(frozen=True)
@@ -479,14 +500,16 @@ class JobState(str, Enum): QUEUED, RUNNING, SUCCEEDED, PARTIAL, FAILED, CANCELLE
 
 @dataclass(frozen=True)
 class Job:
-    id: str                    # sortable (ULID)
+    id: str                    # a plain string; uuid4 today (src/store/jobs.py:278 at 0aa73b4), sortable from P11 on
     kind: JobKind; state: JobState
-    origin: Origin             # face: cli|api|scheduler|library, pid, host
+    origin: Origin             # face: cli|api|scheduler|library, pid, host (pure data; the caller fills pid and host)
     spec: Mapping[str, Any]    # the service spec, JSON
     progress: Mapping[str, Any] | None      # JobProgress.detail()
     result: Mapping[str, Any] | None
-    error: ErrorInfo | None    # code from 2.6 + message
-    created_at; started_at; finished_at; heartbeat_at; cancel_requested: bool
+    error: ErrorInfo | None    # code from 2.6 + message + details
+    created_at: str | None; started_at: str | None; finished_at: str | None   # ISO-8601 UTC, as in today's rows
+    heartbeat_at: int | None   # epoch milliseconds
+    cancel_requested: bool
 
 class JobManager:
     def submit(self, kind: JobKind, spec: Mapping, fn: Callable[[JobHandle], Any], *, origin: Origin,
@@ -510,8 +533,10 @@ Mechanics:
 
 - **Storage.** The `jobs` and `job_events` tables of `DATA_DIR/.meta/state.db`, reached through `store.jobs`
   (`01-storage.md` 3.3). Today's columns are kept, so old rows stay readable; `.meta/jobs.db` is imported once
-  and left in place. State names are normalised on read (today's `Completed` with a breaker text becomes
-  `partial`).
+  and left in place. State names are normalised on read: a completed row whose `circuit_breaker_triggered`
+  column is set becomes `partial` (the column, not the text, because the text is localised). `created_at` has
+  no column until migration 0002 (P11); rows written before it read `started_at`. `Origin` and `ErrorInfo`
+  are defined in `src/jobs/model.py` (P07, PR #35); `JobEvent` comes with P11.
 - **Leases** are the Store's (`01-storage.md` 6.1), taken with `store.lease(name)`:
 
   | Job kind | Lease |
@@ -664,8 +689,9 @@ What unification settles (each line is a deliberate behaviour change against one
 - One finished-only rule, applied in the planner. Until wave 4 it still honours `FETCH_ONLY_FINISHED`; in
   wave 4 every status is stored and the flag becomes a read filter.
 - An event that is not due is `skipped/not_due`, not "failed" (`match_data_fetcher.py:368-379`, `:1519-1521`).
-- No sleeps outside the client (`:477-478`, `:977-978`, `:1527-1528`, `:2105-2107` go away). The shared
-  throttle is the only governor.
+- No sleeps outside the client. The four fixed pauses (`:477-478`, `:977-978`, `:1527-1528`, `:2105-2107` at
+  `3ae2599`) were already removed by PR #33; the shared throttle is the only governor, and the pipeline keeps
+  it that way.
 - A refill that cannot proceed does not issue a second `/event` (`:361-362`).
 - Every request of a job runs under the job's breaker and cancel check, including single-event fetches.
 - Listings have typed outcomes: a failed season list or round is a failed item, not "no seasons"
@@ -706,10 +732,10 @@ is safe to repeat; exit codes are part of the contract.
 | `ssc sync` | bring every follow up to date (listings, missing data, non-match data, refresh) | `--follow NAME...`, `--only listing,events,non-match,refresh`, `--slices`, `--force`, `--recheck-unavailable[=legacy\|all]`, `--limit N`, `--dry-run` |
 | `ssc fetch event ID...` / `fetch tournament ID [--season ID\|current\|all\|last:N]` | fetch explicit targets without a follow | `--sport`, `--slices`, `--force`, `--dry-run` |
 | `ssc refresh` | re-read provisional events only | `--tournament ID`, `--include-legacy` |
-| `ssc watch` | run the live service in the foreground | `--sport`, `--tournament ID...`, `--event ID...`, `--for DURATION`, `--source push,poll`, `--stdout` (NDJSON events) |
+| `ssc watch` | run the live service in the foreground; the only way to run it | `--sport`, `--tournament ID...`, `--event ID...`, `--for DURATION`, `--source page\|direct\|poll` (default `page`; `direct` is an explicit opt-in with risks, section 8.3), `--stdout` (NDJSON events) |
 | `ssc events` | read the stream log (no service needed) | `--stream live\|job\|change\|system`, `--after SEQ`, `--follow`, `--type`, `--event`, `--limit` |
 | `ssc export` | write a dataset in an open format | `--dataset`, `--format jsonl\|csv\|parquet\|sqlite\|json`, `--schema normalized\|raw`, `--out PATH\|-`, filters `--sport --tournament --season --from --to --status` |
-| `ssc serve` | HTTP API and web UI | `--host`, `--port`, `--allowed-hosts`, `--live`, `--scheduler`, `--dev` |
+| `ssc serve` | HTTP API and web UI (no live service) | `--host`, `--port`, `--allowed-hosts`, `--allow-any-host`, `--scheduler`, `--dev` |
 | `ssc status` | data summary, health, leases, last job, live state | `--check` (exit code only), `--coverage` |
 | `ssc doctor` | environment check (`src/doctor.py`) | `--strict`, `--live`, `--only`, `--skip` |
 | `ssc describe [sports\|slices\|commands\|schemas\|config\|errors\|exit-codes]` | machine-readable self-description for agents | always JSON |
@@ -777,7 +803,10 @@ window_hours = 72
 min_interval_hours = 6
 
 [live]
-sources = ["push", "poll"]
+source = "page"           # page | direct | poll. Polling is always the fallback of page and direct.
+                          # "direct" uses SofaScore's own client credential outside its client, may break
+                          # without notice, may get the IP address blocked and is a terms-of-use grey area:
+                          # read section 8.3 before choosing it. It is never the default.
 poll_interval_seconds = 30
 detail_slices = []        # e.g. ["incidents", "statistics"] while an event is live
 detail_interval_seconds = 20
@@ -805,7 +834,7 @@ every = "6h"              # or cron = "15 */6 * * *"
 host = "127.0.0.1"
 port = 8000
 allowed_hosts = ["localhost", "127.0.0.1"]
-token_env = ""            # name of the env var holding the optional access token
+token_env = ""            # name of the env var holding the optional access token (PR #43: SOFASCORE_API_TOKEN)
 
 [log]
 level = "info"
@@ -892,8 +921,13 @@ Codes 0 to 6 are the owner's (`00-platform.md` section 6); 130/143 are an additi
 - Service operation: `docs/` ships two systemd units (`sofascore-serve.service`, `sofascore-watch.service`,
   `Restart=on-failure`, `KillSignal=SIGTERM`) and a timer example for `ssc sync`. The Docker entrypoint
   becomes `ssc serve --host 0.0.0.0` and passes any other arguments to `ssc`; `serve` never widens
-  `allowed_hosts` on its own (today `main.py:251-257` sets `*`; the entrypoint avoids that path,
+  `allowed_hosts` on its own (at `3ae2599` `main.py:251-257` set `*`; the entrypoint avoids that path,
   `docker/entrypoint.sh:7-12`) and prints a warning when bound to a non-loopback address without a token.
+  PR #43 implements this rule for `main.py --web`: a wildcard bind refuses to start until the allowed
+  hosts are set (`--allow-any-host` is the explicit opt-out), one concrete non-loopback address allows the
+  loopback names plus that address, and the warning is printed. `serve` keeps those rules (P25); what the
+  Docker entrypoint does is decision D17. The live service is a separate unit (`sofascore-watch.service`);
+  its page lists the memory each source needs (section 8.5).
 
 ### 4.7 Mapping from today's flags
 
@@ -904,14 +938,14 @@ translated by `src/cli/legacy_flags.py`, which prints one deprecation line to st
 |---|---|---|
 | `--version` (`:20-22`) | `ssc version`, `ssc --version` | kept permanently |
 | no arguments → interactive menu (`:371-374`) | prints help, exit 2 | removed in 3.0.0 |
-| `--web --host --port --dev` | `ssc serve …` | alias, removed in 3.1 |
+| `--web --host --port --dev`, `--allow-any-host` (PR #43) | `ssc serve …` | alias, removed in 3.1 |
 | `--headless --update-all` (`:330-353`) | `ssc sync` | alias |
 | `… --league-id N` (`:99-105`) | `ssc sync --follow <name of N>` or `ssc fetch tournament N --season all` | alias |
 | `… --fetch-mode details` (`:92-97`) | `ssc sync --only events` | alias |
 | `--headless --csv-export` (`:355-358`) | `ssc export --dataset events --format csv --profile legacy-wide-csv` | alias |
 | `--refresh-only` (`:308-328`), `--refresh-legacy` (`:293-294`) | `ssc refresh [--include-legacy]` | alias |
 | `--recheck-unavailable[=legacy\|all]` (`:298-306`) | `ssc data recheck-unavailable [--all]`; combined with a download: `ssc sync --recheck-unavailable` | alias |
-| `--watch --sport --league-ids --event-ids --watch-hours` (`:205-230`) | `ssc watch --sport S --tournament … --event … --for 2h --stdout` | alias |
+| `--watch --sport --league-ids --event-ids --watch-hours` (`:205-230`) | `ssc watch --sport S --tournament … --event … --for 2h --source poll --stdout` (polling only, as today: the alias never starts a browser) | alias |
 | `--doctor …` (`:30-33`) | `ssc doctor …` | alias; installers (`scripts/install.sh:144`) switch in the same PR |
 | `--diagnostics [PATH]` (PR #24) | `ssc diagnostics [--out PATH]` | alias |
 | `--ignore-rate-limit` (`:196-200`) | `--ignore-breaker` (it disables the breaker, not the rate limit) | alias |
@@ -927,15 +961,17 @@ Aliases use the new exit codes and the new output rules (decision D5).
 ### 5.1 Streams
 
 Producers never call a sink. They append to a durable stream through `store.streams.append` and get a sequence
-number; every consumer (SSE, `ssc events`, `watch --stdout`, webhooks, file sinks) reads the same log by
-sequence number.
+number; every consumer (`ssc events`, `watch --stdout`, webhooks, file sinks) reads the same log by
+sequence number. No HTTP route serves these streams: live data is delivered by the CLI and by sinks only
+(owner decision of 2026-10-01), and a program on another machine uses the webhook sink. The job progress
+shown by the web UI comes from the `job_events` table through `/api/v1/jobs/{id}/events`, not from here.
 
 | Stream | Producer | Types |
 |---|---|---|
 | `live` | live service | `live.status_changed`, `live.score_changed`, `live.stuck`, `live.odds_changed` (later), `live.detail_updated` (optional) |
 | `change` | pipeline (refresh), live confirmation | `change.recorded` (announces a change-log row; carries its `change_seq`) |
 | `job` | job manager | `job.started`, `job.finished` (with state, counts, error code) |
-| `system` | client health, live supervisor, dispatcher | `system.blocked`, `system.recovered`, `system.live_source_changed`, `system.sink_dropped` |
+| `system` | client health, live supervisor, dispatcher | `system.blocked`, `system.recovered`, `system.live_source_changed` (data: sport, `from`, `to`, each one of `page`, `direct`, `poll`), `system.sink_dropped` |
 
 Envelope (schema `sofascore.event/1`):
 
@@ -945,7 +981,9 @@ Envelope (schema `sofascore.event/1`):
  "data": {"from": "live", "to": "completed", "provisional": true, "change_ts": 1790856421, "score": {}}}
 ```
 
-`seq` is one sequence across all streams of a data directory. It identifies a message for as long as the
+`source` is `push` or `poll`; which push source produced an event is not part of the envelope (the
+`system.live_source_changed` events say which source leads). `seq` is one sequence across all streams of a data
+directory. It identifies a message for as long as the
 stream id (`store.streams.head().stream_id`) stays the same; consumers de-duplicate on `seq`. Numbers increase
 strictly but are not consecutive within a stream.
 
@@ -1010,7 +1048,13 @@ prefix, resources, envelopes, error model, streaming, raw access, aliases.
   `{"data": […], "page": {"limit": 50, "next_cursor": "…"}}` with cursor pagination.
 - State-changing requests are never GET. The origin check (`web/app.py:37-47`) and host check
   (`web/app.py:51`) stay. With a token configured, every `/api/*` route requires
-  `Authorization: Bearer <token>` (decision D13).
+  `Authorization: Bearer <token>` (decision D13). PR #43 implements the token for the existing routes
+  (`SOFASCORE_API_TOKEN`; a session cookie set by `POST /api/auth/login` is accepted as well, for the web UI
+  and its SSE stream; `/health` stays open), moves the origin check to `src/web/security.py`, and adds the
+  response headers and the Content-Security-Policy.
+- No live data over HTTP. There is no `/live/*` resource and no live SSE stream (owner decision of
+  2026-10-01). `/status` reports whether a live service is running (lease, leading source, last heartbeat),
+  which is service health, not live data.
 
 | Resource | Methods | Service |
 |---|---|---|
@@ -1027,20 +1071,22 @@ prefix, resources, envelopes, error model, streaming, raw access, aliases.
 | `/jobs` body `{kind, spec}` | POST | starts `sync`, `fetch`, `refresh`, `export`, `backup`, `clear`, `rebuild` |
 | `/exports`, `/exports/{id}/download` | GET | export results |
 | `/backups`, `/backups/{name}` | GET | backup |
-| `/live/status`, `/live/events?after=&limit=` | GET | live (pull) |
-| `/live/stream?after=&types=&sport=&tournament=&event=` | GET (SSE) | live (push) |
 | `/settings` | GET, PATCH | settings; locked fields flagged |
 | `/health`, `/status`, `/diagnostics`, `/diagnostics/bundle`, `/logs` | GET | status |
 
-SSE (`/live/stream`, `/jobs/{id}/events`): each message has `id: <seq>`, `event: <type>`, `data: <envelope>`.
-Resume with the standard `Last-Event-ID` header or `?after=`. A comment line is sent every 15 s. If `after`
-is older than the retained range (`StreamBatch.gap`) the server sends one `stream.gap` event with `oldest_seq`
-and closes; the client resynchronises through `/live/events` or a fresh list request.
+SSE (`/jobs/{id}/events` only): each message has `id: <seq>`, `event: <type>`, `data: <JobEvent>`, where
+`seq` is the job's own event number. Resume with the standard `Last-Event-ID` header or `?after=`. A comment
+line is sent every 15 s. If `after` is older than the retained events of the job (the last 2,000 are kept), the
+server sends one `stream.gap` event with `oldest_seq` and closes; the client resynchronises through
+`/jobs/{id}`.
 
 Errors: `{"error": {"code": "job_running", "message": "…", "details": {…}, "request_id": "…"}}` with the
 status from the table in 2.6. `message` is English; clients translate by `code`. Upstream trouble during a
-request that calls SofaScore is 503 `blocked`/`rate_limited` or 502 `upstream_error`, never 429 (today
-`routes/matches.py:416-417` answers 429).
+request that calls SofaScore is 503 `blocked`/`rate_limited` or 502 `upstream_error`, never 429. Today the
+single-match route would answer 429 from a substring match (`routes/matches.py:416-417`), but that code is not
+reached for a blocked `/event`: the route answers 404, and 200 when only the slices are blocked (pinned by
+G-01; FX-1 makes it answer the typed upstream error of `src/web/upstream.py`, which the league routes use
+since PR #23).
 
 ### 6.1 Existing `/api` routes
 
@@ -1049,26 +1095,30 @@ goldens of plan items G-02 and G-04), implemented on the same services, marked `
 answered with `Deprecation: true` and `Link: <…>; rel="successor-version"`. The web UI moves to v1 with the
 frontend update.
 
+The line numbers in this table are at `0aa73b4`.
+
 | Today | v1 successor |
 |---|---|
-| `GET /api/leagues`, `POST /api/leagues`, `PATCH/DELETE /api/leagues/{id}` (`routes/leagues.py:112-150`) | `/follows` |
-| `GET /api/leagues/search` (`:153`) | `/follows?q=` |
-| `GET /api/leagues/search-remote` (`:167`) | `/tournaments/search` |
-| `GET /api/leagues/{id}/seasons` (`:173`), `POST …/seasons/refresh` (`:190`) | `/tournaments/{id}/seasons`; `POST /jobs {kind:"sync", spec:{phases:["listing"]}}` |
+| `GET /api/leagues`, `POST /api/leagues`, `PATCH/DELETE /api/leagues/{id}` (`routes/leagues.py:143-181`) | `/follows` |
+| `GET /api/leagues/search` (`:184`) | `/follows?q=` |
+| `POST /api/leagues/search-remote` (`:198`; a GET before PR #43) | `/tournaments/search` |
+| `GET /api/leagues/{id}/seasons` (`:214`), `POST …/seasons/refresh` (`:231`) | `/tournaments/{id}/seasons`; `POST /jobs {kind:"sync", spec:{phases:["listing"]}}` |
 | `GET /api/seasons/{sid}/matches` (`routes/matches.py:421`), `GET /api/matches` (`:435`) | `/events?season=` , `/events` |
 | `GET /api/leagues/{id}/missing-details` (`:428`) | `/events?tournament=&has=missing` |
 | `GET /api/matches/{id}` (`:462`) | `/events/{id}` + `/events/{id}/slices/{key}`; the legacy shape (dict of raw slices with the `basic` key) is built from the raw payloads |
 | `POST /api/matches/{id}/fetch` (`:471`) | `POST /jobs {kind:"fetch", spec:{events:[id]}}`; the alias waits for the job |
-| `POST /api/fetch` (`routes/scrape.py:87`) | `POST /jobs {kind:"sync"\|"fetch"}` |
-| `GET /api/scrape/status` (`:32`), `GET /api/scrape/stream` (`:52`) | `/jobs?state=running`, `/jobs/{id}/events` |
-| `POST /api/scrape/cancel` (`:78`) | `POST /jobs/{id}/cancel` |
-| `GET /api/jobs`, `/api/jobs/{id}` (`:38-49`) | `/jobs`, `/jobs/{id}` |
-| `GET /api/status` (`:107`), `GET /api/bypass/status` (`:117`), `POST /api/bypass/test` (`:133`) | `/status`; `POST /status/check` |
-| `GET/POST /api/settings` (`routes/settings.py:101`, `:134`) | `GET/PATCH /settings` |
-| `GET /api/dashboard`, `/api/stats/system` (`routes/data.py:59`, `:70`) | `/status` (summary and coverage) |
-| `POST /api/data/backup`, `GET /api/data/backups/{name}`, `POST /api/data/clear` (`:234-276`) | `POST /jobs {kind:"backup"\|"clear"}`, `/backups/{name}` |
-| `GET /api/export/csv` (`:282`) | `POST /jobs {kind:"export"}` + `/exports/{id}/download`; the alias streams the `legacy-wide-csv` profile and no longer writes a file into the data directory |
+| `POST /api/fetch` (`routes/scrape.py:88`) | `POST /jobs {kind:"sync"\|"fetch"}` |
+| `GET /api/scrape/status` (`:33`), `GET /api/scrape/stream` (`:53`) | `/jobs?state=running`, `/jobs/{id}/events` |
+| `POST /api/scrape/cancel` (`:79`) | `POST /jobs/{id}/cancel` |
+| `GET /api/jobs`, `/api/jobs/{id}` (`:39-50`) | `/jobs`, `/jobs/{id}` |
+| `GET /api/status` (`:108`), `GET /api/bypass/status` (`:118`), `POST /api/bypass/test` (`:145`) | `/status`; `POST /status/check` |
+| `GET/POST /api/settings` (`routes/settings.py:162`, `:199`) | `GET/PATCH /settings` |
+| `GET /api/dashboard`, `/api/stats/system` (`routes/data.py:60`, `:71`) | `/status` (summary and coverage) |
+| `POST /api/data/backup`, `GET /api/data/backups/{name}`, `POST /api/data/clear` (`:243-285`) | `POST /jobs {kind:"backup"\|"clear"}`, `/backups/{name}` |
+| `GET /api/export/csv` (`:291`), `POST /api/export/csv` (`:304`). Since PR #43 the GET only downloads an existing export and the POST creates it | `POST /jobs {kind:"export"}` + `/exports/{id}/download`; the alias streams the `legacy-wide-csv` profile and no longer writes a file into the data directory (EX-1, decision D16) |
 | `GET /api/sports` (`routes/sports.py:43`) | `/sports` |
+| `GET /api/logs`, `GET /api/diagnostics`, `GET /api/diagnostics/bundle` (`routes/diagnostics.py:18`, `:29`, `:35`; added by PR #24) | `/logs`, `/diagnostics`, `/diagnostics/bundle` |
+| `GET /api/auth`, `POST /api/auth/login`, `POST /api/auth/logout` (`routes/auth.py:29`, `:38`, `:63`; PR #43) | the same paths under `/api/v1`; the token check covers both prefixes |
 
 ---
 
@@ -1114,38 +1164,46 @@ exits 2.
 
 ---
 
-## 8. Live: one supervised service
+## 8. Live: one supervised CLI service
+
+Two owner decisions of 2026-10-01, taken after the push channel was measured
+(`docs/push-channel/README.md`, PR #42), shape this section:
+
+1. **Live data is not part of the web UI and is not exposed over HTTP.** A person at a screen can watch live
+   scores on SofaScore itself; the value of the live stream is for servers and programs. Live watching is a
+   CLI service (`ssc watch`) that delivers events to sinks: stdout as NDJSON, a file, a webhook. A program
+   that wants live data over the network uses the webhook sink. The event streams stay in `state.db` and the
+   sink design of section 5 is unchanged.
+2. **Two selectable push sources, and polling as the fallback that is always there.** `page` (the default)
+   listens to the push connection of a real browser page and handles no credential. `direct` (an explicit
+   opt-in) connects a lightweight client to the push server itself, with the credential read at runtime from
+   the bridge page's own connection. `direct` is never the default and is never enabled implicitly.
 
 ### 8.1 Shape
 
 ```
-            ┌──────────────── LiveService (supervisor) ────────────────┐
- follows →  │ scope      PushSource ─┐                                 │
- (live=true)│            PollSource ─┼→ observations → Reducer → store.streams.append("live") → sinks, SSE, CLI
-            │ arbiter (which source leads per sport)   │               │
-            │ confirm/detail fetcher ──────────────────┴→ store.events.observe / put
-            └──────────────────────────────────────────────────────────┘
+            ┌────────── LiveService (supervisor), run by `ssc watch` ──────────┐
+ follows →  │ scope      PageSource (default) or DirectSource (opt-in) ─┐      │
+ (live=true)│            PollSource (always present) ───────────────────┼→ observations → Reducer → store.streams.append("live") → sinks, `ssc events`
+            │ arbiter (which source leads per sport)                    │      │
+            │ confirm/detail fetcher ───────────────────────────────────┴→ store.events.observe / put
+            └──────────────────────────────────────────────────────────────────┘
 ```
 
 - **Independent of download jobs.** It holds the `live` lease, never `writer`; it has its own request context
   (no job breaker), its own throttle lane (today `watcher.py:43-44`, `:170-172`), and writes only through
-  `store.events.observe/put` and `store.streams.append`. A sync job and the live service can run at the same
-  time in one process (`serve --live`) or in two (`serve` + `watch`); the Store's write protocol serialises
-  their writes per entity, and an older observation never replaces a newer one.
+  `store.events.observe/put` and `store.streams.append`. A sync job (in `serve` or in a CLI run) and the live
+  service are separate processes; the Store's write protocol serialises their writes per entity, and an older
+  observation never replaces a newer one.
 - **Sources produce observations, not events.** An observation is `(event_id, partial or full event object,
-  source, received_at)`.
-  - `PollSource` is today's `MatchWatcher.tick` (`watcher.py:337-380`): the live list per sport every
-    `poll_interval`, event pages for dropped, near-end and stuck events, with the per-sport rules from
-    `sports.WatcherParams` (`sports.py:40-48`).
-  - `PushSource` listens to the frames of the connection that SofaScore's own page opens (`sport.{sport}`
-    and `event.{id}` subjects; `docs/all-sports/README.md`, "Push kanalı"). It opens no connection of its
-    own, sends no subscription, and never reads or stores the connection's credentials. Frames carry changed
-    fields as dotted paths; the source merges them into the last known event object. Page requests are
-    routed through the shared throttle or aborted; images, media and fonts are blocked.
+  source, received_at)`. The three sources are described in 8.2.
 - **Reducer** is the pure core of `MatchWatcher._observe` (`watcher.py:232-307`):
   `(LiveState, Observation) → (LiveState, [LiveEvent])`. It emits `status_changed`, `score_changed`, `stuck`,
   sets `provisional` by the refresh window, and de-duplicates across sources with the stream's `dedup_key`
   `(event_id, type, change_ts or state hash)`, so a transition seen by push and by poll is stored once.
+  It keeps the last known state per event and derives events from the difference between that state and the
+  observation. It must tolerate gaps: a source can miss intermediate states (the push connection is dropped
+  about every 30 minutes), so a status may jump and a score may move by more than one step.
 - **State** moves from `watch_state_{sport}.json` (`watcher.py:46`, `:204-214`) into `store.watch`, so a
   restart does not re-emit and one service covers all sports (today: one process per sport).
 - **Confirmation.** A terminal status from push is emitted immediately, then confirmed by one `/event/{id}`
@@ -1153,28 +1211,119 @@ exits 2.
   slices; the live service does not download details unless `live.detail_slices` asks for them.
 - **Arbitration and fallback.** Per sport the arbiter tracks push health (connection open, last frame, last
   ping). Push healthy: polling drops to a slow safety interval. Push silent beyond the threshold or
-  disconnected: polling returns to `poll_interval` (30 s, `watcher.py:33`). Every switch appends
-  `system.live_source_changed`. Events in scope that push never mentions are covered by polling.
+  disconnected: polling returns to `poll_interval` (30 s, `watcher.py:33`). After every reconnect one poll
+  round runs, because a transition that happened while the connection was down is not repeated on push.
+  Every switch appends `system.live_source_changed`. Events in scope that push never mentions are covered by
+  polling. The fallback is polling and only polling: a failing `page` source never makes the service try
+  `direct`.
 - **Supervision.** The supervisor restarts a crashed source with back-off, records heartbeats and counters
   for `LiveService.status()`, pauses and backs off when the client reports `blocked` (it never "trips and
   stops"), and reloads the scope when follows change or on SIGHUP.
 
-### 8.2 Hosting
+### 8.2 The sources
 
-- `ssc watch`: foreground process for systemd or a container.
-- `ssc serve --live` (or `[live] enabled` with serve): the same supervisor in a background thread with its
-  own event loop.
+| | `page` (default) | `direct` (explicit opt-in) | `poll` (the fallback; also selectable alone) |
+|---|---|---|---|
+| How it works | keeps one real browser page open per watched sport and listens to the frames of the push connection that SofaScore's own page opens | a lightweight client connects to the push server itself (NATS over WebSocket) and subscribes to `sport.{sport}` | requests the live list per sport every poll interval, and event pages for dropped, near-end and stuck events |
+| Credential | none handled: the connection is the page's own; the source opens no connection, sends no subscription and never reads the credential | the site's own client credential, read at runtime from the `CONNECT` frame of the bridge page's connection; in memory only | none |
+| Delay of a match end, median (measured) | 0.6 to 1.0 s after SofaScore's own change time | 0.7 s | 32 to 52 s at a one-minute interval |
+| Coverage (measured) | about 100 %: football 234 of 234 status changes, tennis 92 of 92, basketball 128 of 129 | identical to the page in a shared window of about 30 minutes (225 of 225 frames) | the baseline; a match that finishes between two polls can drop off the live list unseen |
+| Memory (measured, RSS) | 1.8 to 2.6 GB per sport page with ads, analytics and images blocked; 2 to 3 GB without blocking | about 0.2 GB for the client; an idle bridge tab, if the browser is kept open, about 1.1 GB | nothing beyond the process |
+| Breaks when | the page shows a captcha, the site changes its page, memory runs out | the credential changes, the server starts refusing non-browser clients, the IP address is blocked | SofaScore blocks the requests |
+
+Facts both push sources rest on (`docs/push-channel/README.md`; one evening, one region, three sports):
+
+- Only a sport page (or its live filter) subscribes to `sport.{sport}`, which carries a whole sport. A match
+  page subscribes to `event.{id}` for that match only; favourites, news, tournament and trend pages subscribe
+  to `event.{id}` for the matches they show. The `page` source therefore opens one sport page per watched
+  sport, whatever the scope, and filters.
+- A frame carries only the changed fields of an event, as dotted paths with their new values
+  (`docs/all-sports/README.md`, "Push kanalı"); it is not a whole event object. The source keeps the last
+  known state per event, seeds it from the polling list at start and after every reconnect, and merges each
+  frame into it. A finish arrives with status, score and `winnerCode` in one frame.
+- The connection is dropped about every 30 minutes and established again (three or four cycles per sport in
+  99 minutes). The site's code reconnects and subscribes again by itself; the `direct` client has to do the
+  same. Of 36 transitions that fell into such windows, 22 were not seen on push at all (an upper bound: the
+  windows were measured approximately). This is why the polling fallback is mandatory and why the reducer
+  tolerates gaps.
+- The site's client sends a PING every 120 s; the arbiter uses that cadence for its silence threshold.
+- Push also carried finished matches that one-minute polling never listed (football 74, basketball 25).
+
+`PollSource` is today's `MatchWatcher.tick` (`watcher.py:337-380`) with the per-sport rules from
+`sports.WatcherParams` (`sports.py:40-48`). `PageSource` routes the page's requests through the shared
+throttle or aborts them, and blocks ads, analytics, images, media and fonts. Everything downstream of the
+reducer is identical for the three sources.
+
+### 8.3 The `direct` source: opt-in, and what the user is told
+
+`direct` exists because it needs a tenth of the memory. It is offered, not recommended. The rules:
+
+- **Opt-in only.** The source is used only when the configuration says `direct` literally: `--source direct`,
+  `[live] source = "direct"` or `SOFASCORE_LIVE__SOURCE=direct`. The default is `page`. No code path selects
+  `direct` by itself: not a fallback, not an "auto" value, not an error handler. P31 has an acceptance test
+  for this.
+- **The credential stays in memory.** It is read from the `CONNECT` frame of the connection that the bridge
+  page opens itself, kept in the process, and never written to disk, to `state.db`, to a log line, to a
+  stream event, to the diagnostics bundle or to the repository. When the server rejects it, it is read again
+  from a fresh page; after repeated failures the source reports unhealthy and the service stays on polling.
+  The browser is needed for that read only.
+- **Minimal behaviour on the wire.** One connection, subscribe only, no publish, no wildcard subjects, the
+  site's own PING cadence.
+- **Warnings.** Wherever the source is configured or documented (the `--help` text of `--source`, `describe`,
+  `config validate` and `config show`, the comment in the config example of 4.3, both READMEs, the page of the
+  watch unit under `docs/deploy/`) and in the log at every start with this source, the user is told:
+  1. it uses the site's own client credential outside the site's client;
+  2. it may break without notice if the credential or the server changes;
+  3. it may get the IP address blocked;
+  4. it is a terms-of-use grey area that the user chooses knowingly.
+- **What was measured, and what was not.** One connection, the single subject `sport.football`, about 38
+  minutes, one reconnect, 216 to 226 MB of memory; the plain client was accepted without imitating a
+  browser's TLS fingerprint. Not measured: several subjects on one connection, runs of hours, several sports,
+  how often the credential changes. The documentation of the source says so.
+
+### 8.4 Hosting
+
+- `ssc watch` is the only host: a foreground process for systemd or a container. There is no live service
+  inside `ssc serve` and no `[live] enabled` key; a library caller can run `LiveService.run` in a thread of
+  its own.
 - A second live service on the same data directory exits 6 (`instance_running`). Until the live service
   exists, the current watcher takes `watcher:<sport>` leases, so one process per sport keeps working.
 - Browser profile: Chromium allows one process per profile (`doctor.py:71-72`, `docker/entrypoint.sh:17-39`).
-  A push listener keeps a browser open permanently, so it uses its own profile directory by default
-  (`<profile>-live`) to leave the bridge profile free for jobs in other processes (decision D10).
+  The `page` source keeps a browser open permanently, so it uses its own profile directory by default
+  (`<profile>-live`) to leave the bridge profile free for jobs in other processes (decision D10). The `direct`
+  source uses the bridge page only to read the credential and needs no second profile.
+- The legacy `main.py --watch` alias runs `ssc watch --source poll`, so that existing cron and systemd setups
+  keep polling and do not start a browser (decision D18).
 
-### 8.3 Order of delivery
+### 8.5 Operational notes: memory
 
-Polling first (P23): supervisor, reducer, state in the Store, sequence-numbered events, SSE, `watch`,
-sinks. Push second (P24), after the endurance results are in. Everything downstream of the reducer is
-identical for both, so P24 adds one source and the arbiter.
+Measured on 2026-10-01 (`docs/push-channel/README.md` sections 6 and 7); RSS is the sum of all Chrome
+processes of the profile.
+
+| Configuration | RSS | Note |
+|---|---|---|
+| idle bridge tab (`robots.txt`), bridge open | about 1.1 GB | the base cost of keeping Chrome up |
+| one sport page, blocked, first minute | 1.8 GB | push connection and `sport.football` subscription being set up |
+| the same after 30 minutes | 2.6 GB | grows by about 0.8 GB in 30 minutes |
+| the same after the reconnect | 1.6 to 2.0 GB | the 30-minute drop gives the memory back; growth is not monotonic |
+| one sport page without blocking | 2 to 3 GB | blocking ads saves 0.5 to 1 GB per page |
+| `direct` client | about 0.2 GB | flat; 173 MB after a reconnect |
+
+- Plan for the peak, not the average: `page` needs about 2.6 GB per watched sport. Three sports are about
+  8 GB; each further page adds its own renderer processes (14 to 43 renderers in the three-sport run, which is
+  not a leak).
+- A container or systemd unit for `ssc watch --source page` gets a memory limit above that peak; below it the
+  kernel kills the browser at the worst moment, about every 30 minutes.
+- `ssc watch --source poll` needs no browser. `ssc watch --source direct` needs the browser only while it
+  reads the credential.
+- `ssc status` shows the leading source per sport and the last source switch, so a service that silently
+  fell back to polling is visible.
+
+### 8.6 Order of delivery
+
+Polling first (P23): supervisor, reducer, state in the Store, sequence-numbered events, `watch`, sinks. The
+`page` source and the arbiter second (P24). The `direct` source third (P31), with its warnings and its opt-in
+test. Everything downstream of the reducer is identical for all three, so P24 and P31 each add one source.
 
 ---
 
@@ -1199,11 +1348,15 @@ document map to it as follows:
 | P27 | ST-27 (all statuses, stale-listing refresh) and P27 (slice selection) |
 | P28, P29, P30 | same ids |
 
+Added to the plan after the drafts: P31 (the `direct` live source, section 8.3) and the fix items FX-1 to FX-7
+(`03-implementation-plan.md` sections 10 and 15).
+
 ## 10. Testing strategy
 
-- A fake SofaScore transport (`tests/fakes/sofascore.py`) installed at the client boundary serves canned
-  payloads, records every request and can inject 403/429/5xx/timeouts. All golden tests use it; none touches
-  the network.
+- A fake SofaScore transport (`tests/fakes/sofascore.py`, G-01) serves canned payloads, records every request
+  and can inject 403/429/5xx/timeouts. It is installed one level below the request functions, at the curl
+  calls, so that the request layer's own retry and error handling run in the tests. All golden tests use it;
+  none touches the network.
 - Goldens before refactoring: request sequence and resulting store state for each flow (G-01), JSON of every
   current route plus the OpenAPI document (G-02, G-04), stdout/stderr/exit code of each current flag (G-03).
 - The divergences in 1.4 are pinned as tests first, then flipped one by one in P13 with the change named in
@@ -1257,27 +1410,63 @@ Changes that come from reconciling with the storage design:
 14. **"The catalog is a queryable database" sink** was replaced by the SQLite export; the catalog's schema is
     internal (decision S5).
 
+Changes after the first two implementation batches and the owner's decisions of 2026-10-01:
+
+15. **Live is a CLI service.** The SSE route `/live/stream`, the pull routes `/live/status` and `/live/events`,
+    `serve --live` and `[live] enabled` were removed (sections 2.7, 4.1, 4.3, 5.1, 6, 8). Live events leave the
+    process through sinks and `ssc events` only.
+16. **Two push sources.** `page` (default) and `direct` (explicit opt-in with warnings) replace the single
+    "push" source; `[live] sources` became `[live] source`; section 8 was rewritten around the measurements of
+    `docs/push-channel/README.md` and carries the memory figures.
+17. **Pacing.** The fixed pauses of row "Pacing" in 1.4 were removed by PR #33; the row is no longer a
+    divergence.
+18. **Single-match route.** It does not answer 429 for a blocked upstream; it answers 404, or 200 when only
+    the slices are blocked (1.5, 6). Plan item FX-1.
+19. **Outcome.** `fetched_at` is optional (None means now); `from_error` maps only `ResourceNotFoundError` to
+    empty; the breaker switch to `skipped` moves together with `_update_slice_markers` (2.4).
+20. **Job model.** `Origin` and `ErrorInfo` exist in `src/jobs/model.py`; timestamps are typed; ids are uuid4
+    until P11; a breaker-stopped job is recognised by its column, not its text; `created_at` gets a column in
+    migration 0002 (2.8).
+21. **Layer rule 5** says what the test can enforce (2.1).
+22. **Legacy routes.** The table of 6.1 has the three diagnostics routes of PR #24 and the auth routes of
+    PR #43, and its line numbers are at `0aa73b4`.
+23. **Defaults and security done.** 5 requests per second (PR #33), English by default (PR #39); the access
+    token, the Host allow-list rule and the response headers came with PR #43 (1.7, 2.4, 4.6, 6).
+24. **Fake transport boundary.** One level below the request functions (10).
+
 ---
 
 ## 12. Risks
 
-- Open PRs #23, #24 and #32 edit files that P05, P08, P09, P18 and others need. Starting those before the
-  three are merged guarantees large conflicts.
+- Pull requests merged after the briefs were written changed files that plan items own: #23, #24, #32 and
+  #43 (web security hardening: `main.py`, `src/config_manager.py`, three route modules and more). The line
+  numbers in the briefs of G-03, P05, P08, P09, ST-10 and FX-6 are older than those changes. #47 (the boundary
+  ratchet) makes every later PR that moves a file-system call edit a baseline file, and #41 makes every PR
+  that changes a route regenerate the legacy OpenAPI snapshot (`03-implementation-plan.md` section 1).
 - Existing tests pin private names of the fetchers (for example `_LEGACY_SLICE_FETCHERS` at
   `match_data_fetcher.py:106-113`, patched in `tests/test_breaker_phases.py` and `tests/test_storage_errors.py`).
   P13 must port these tests; if they are simply deleted, coverage of breaker, storage-error and cancel
   behaviour is lost exactly where the code changes most.
-- P13 changes request volume and timing: it removes the triple per-match retry and the fixed sleeps and
-  fetches optional slices on every path. With today's default rate (100 req/s) this could raise burst load;
-  P13 must not merge before the 5 req/s default (X-01).
+- P13 changes request volume and timing: it removes the triple per-match retry and fetches optional slices
+  on every path. The fixed sleeps are already gone and the default rate is 5 req/s (PR #33), so the budget
+  bounds the load; what remains is the burst after idle time (decision D14).
 - Cross-process leases rely on OS file locks. They work on local file systems and Docker volumes on one host;
   on NFS/SMB or across hosts they may silently not exclude. Windows and macOS are best-effort.
 - Chromium allows one process per profile directory. A permanently open push-listening browser plus on-demand
-  bridge launches from other processes will conflict unless the live service uses its own profile (D10); a
+  bridge launches from other processes will conflict unless the `page` source uses its own profile (D10); a
   second profile means a second challenge solve and extra memory.
-- The push source depends on undocumented behaviour of SofaScore's page (subjects, frame format, whether
-  `sport.{sport}` carries all events). It can change without notice; polling stays a complete fallback, but
-  live latency would silently degrade from about 1 s to the poll interval.
+- The `page` source is expensive: 1.8 to 2.6 GB of memory per watched sport page even with ads, analytics and
+  images blocked (measured, `docs/push-channel/README.md`). Three sports need a host with 8 GB to spare. A
+  small server runs `--source poll`, or the user chooses `direct` knowingly.
+- Both push sources depend on undocumented behaviour of SofaScore's page and server (subjects, frame format,
+  the 30-minute reconnect, whether `sport.{sport}` carries all events at all hours). It can change without
+  notice; polling stays a complete fallback, but live latency would silently degrade from about 1 s to the poll
+  interval. `system.live_source_changed` events and `ssc status` make the degradation visible.
+- The `direct` source uses the site's own client credential outside the site's client. The credential can
+  change, the server can start refusing non-browser clients, the IP address can be blocked, and the use is a
+  terms-of-use grey area. It is opt-in for those reasons; the risk the design must prevent is enabling it by
+  accident (a default, a fallback, a copied config line), which is why P31 has an acceptance test for exactly
+  that and why the config example carries the warning next to the key.
 - Moving CLI logs from stdout to stderr and changing exit codes (breaker 2 → 4, storage 1 → 5, Ctrl+C 0 → 130)
   breaks cron jobs and scripts that parse today's output or test for specific codes. It is a major release,
   but it needs a prominent changelog entry.
