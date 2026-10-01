@@ -1,15 +1,15 @@
 """
 İş deposu src/store/jobs.py'ye taşındı (state.db üzerinde). Bu modül eski içe aktarma yolunu korur:
-buradan alınan her ad, Store'daki aynı nesnedir.
+buradan alınan her ad, Store'daki aynı nesnedir. Adlar Store'un kökünden alınır (paketin dışındaki kod alt
+modüllerini içe aktarmaz; docs/design/01-storage.md bölüm 2.4).
 """
 from __future__ import annotations
 
-from src.store.jobs import (
+from src.store import (
     DataOperationRunningError,
     JobRunningError,
     JobStore,
     JobStoreConflict,
-    _utc_now,
     default_db_path,
     get_job_store,
 )
@@ -19,7 +19,6 @@ __all__ = [
     "JobRunningError",
     "JobStore",
     "JobStoreConflict",
-    "_utc_now",
     "default_db_path",
     "get_job_store",
 ]
