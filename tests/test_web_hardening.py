@@ -497,6 +497,33 @@ def test_unknown_api_paths_also_need_the_token(token):
     assert TestClient(app).get("/api").status_code == 401
 
 
+def test_token_check_uses_the_routed_path_not_the_url_built_from_the_host_header(token):
+    """
+    Host izin listesi "*" iken Host başlığı serbesttir. Denetim yolu URL'den okusaydı, "x/y?" gibi
+    bir Host ile kurulan adresin yolu "/y" olur ve /api isteği belirteçsiz geçerdi.
+    """
+    import asyncio
+
+    from starlette.requests import Request
+
+    from src.web.app import security_boundary
+
+    reached = []
+
+    async def call_next(request):
+        reached.append(request.scope["path"])
+        return PlainTextResponse("handler")
+
+    for host in (b"evil.example/y?", b"evil.example/y#", b"evil.example"):
+        scope = {
+            "type": "http", "method": "GET", "path": "/api/leagues", "raw_path": b"/api/leagues", "query_string": b"",
+            "headers": [(b"host", host)], "scheme": "http", "server": ("127.0.0.1", 8000), "root_path": "",
+        }
+        response = asyncio.run(security_boundary(Request(scope), call_next))
+        assert response.status_code == 401, host
+    assert reached == []
+
+
 def test_bearer_token_for_programs(token):
     c = TestClient(app)
     assert c.get("/api/leagues", headers={"authorization": f"Bearer {TOKEN}"}).status_code == 200

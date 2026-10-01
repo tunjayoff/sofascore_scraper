@@ -53,7 +53,10 @@ async def security_boundary(request: Request, call_next):
          ya da oturum cookie'si taşımalıdır (SSE başlık gönderemez; cookie ile çalışır).
       3. Güvenlik başlıkları: ret yanıtları dahil her yanıta eklenir.
     """
-    path = request.url.path
+    # Yönlendiricinin eşleştirdiği yolun kendisi. request.url, Host başlığıyla birleştirilerek kurulur:
+    # "*" izin listesinde "x/y?" gibi bir Host, oradan okunan yolu değiştirip belirteç denetimini
+    # atlatabilirdi.
+    path = request.scope["path"]
     if security.is_cross_origin_write(request.method, request.headers):
         response = JSONResponse({"detail": "Cross-origin request rejected"}, status_code=403)
     elif security.requires_token(path) and not security.is_authenticated(request.headers, request.cookies):
