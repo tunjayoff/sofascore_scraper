@@ -1,19 +1,22 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { api, type Settings, type SystemStats } from '@/api/client'
+import { api, ApiError, type BypassTest, type Settings, type SystemStats } from '@/api/client'
 import { setLocale, type Lang } from '@/i18n'
 import { themePref, setTheme, type ThemePref } from '@/lib/theme'
 import { appVersion } from '@/lib/appVersion'
-import { num } from '@/lib/format'
+import { matchDate, num } from '@/lib/format'
 import { onTabKeydown } from '@/lib/tabs'
 import { errorText, toast, toastError } from '@/lib/toast'
+import { UPSTREAM_REASONS } from '@/lib/upstream'
+import { useBridgeStore } from '@/stores/bridge'
 import { useLeaguesStore } from '@/stores/leagues'
 
-type Tab = 'general' | 'data' | 'advanced'
-const TABS: readonly Tab[] = ['general', 'data', 'advanced']
+type Tab = 'general' | 'data' | 'connection' | 'advanced'
+const TABS: readonly Tab[] = ['general', 'data', 'connection', 'advanced']
 const { t, locale } = useI18n()
 const leagues = useLeaguesStore()
+const bridge = useBridgeStore()
 const tab = ref<Tab>('general')
 
 const original = ref<Settings | null>(null)
@@ -51,6 +54,62 @@ function invalidField(): string {
   return ''
 }
 
+/** Proxy fields as a message, or '' when they can be saved. Mirrors the proxy_url check of SettingsUpdate. */
+function invalidProxy(): string {
+  const url = String(form.proxy_url ?? '').trim()
+  if (form.use_proxy && !url) return t('settings.proxy.required')
+  if (url && !/^(https?|socks5h?):\/\/[^\s/]+/i.test(url)) return t('settings.proxy.invalid')
+  return ''
+}
+
+// ---- connection check: one real request to SofaScore, sent by the button and by nothing else ----
+const testing = ref(false)
+const test = ref<BypassTest | null>(null)
+const testError = ref('')
+
+const health = computed(() => bridge.health)
+const healthBadge = computed(
+  () => ({ ok: 'badge-ok', degraded: 'badge-warn', blocked: 'badge-danger' })[health.value?.state ?? 'ok'] ?? 'badge-neutral',
+)
+/** Why the bridge is not healthy, in the banner's words; nothing while it is ok. */
+const healthReason = computed(() => {
+  const h = health.value
+  if (!h || h.state === 'ok' || !h.last_error) return ''
+  const k = h.last_error.kind
+  return t(`bridge.reason.${k === 'challenge' || k === 'browser' ? k : 'forbidden'}`)
+})
+const testText = computed(() => {
+  const r = test.value
+  if (!r || r.success) return ''
+  return r.reason && UPSTREAM_REASONS.includes(r.reason) ? t(`upstream.${r.reason}`) : r.message
+})
+/**
+ * Did the request get past the anti-bot check? Judged by the outcome, not by has_token: no token
+ * is cached when SofaScore never asked for a challenge. Unknown when the request never got there.
+ */
+const challengeKey = computed(() => {
+  const r = test.value
+  if (!r) return ''
+  if (r.success) return 'passed'
+  return r.reason === 'blocked' ? 'failed' : ''
+})
+
+async function runTest() {
+  if (testing.value) return
+  testing.value = true
+  test.value = null
+  testError.value = ''
+  try {
+    const r = await api.bypassTest()
+    test.value = r
+    bridge.apply(r.health) // the banner and the state above follow the test right away
+  } catch (e) {
+    testError.value = errorText(e)
+  } finally {
+    testing.value = false
+  }
+}
+
 const changed = computed(() => {
   const o = original.value
   if (!o) return {}
@@ -85,6 +144,9 @@ async function load() {
       save_empty_rounds: s.save_empty_rounds,
       refresh_window_hours: s.refresh_window_hours,
       log_level: s.log_level,
+      // proxy_url arrives with its password masked (***); sent back unchanged, the server keeps the real one
+      use_proxy: s.use_proxy,
+      proxy_url: s.proxy_url,
     })
     stats.value = st
     // The settings loaded; the disk/totals box is just missing, so say why
@@ -96,7 +158,8 @@ async function load() {
 
 async function save() {
   if (!dirty.value) return
-  const invalid = invalidField()
+  const proxyTouched = 'use_proxy' in changed.value || 'proxy_url' in changed.value
+  const invalid = invalidField() || (proxyTouched ? invalidProxy() : '')
   if (invalid) {
     toastError(new Error(invalid))
     return
@@ -108,7 +171,8 @@ async function save() {
     // The other folder has its own files: league counts come from there now
     await Promise.all([load(), r.data_dir_changed ? leagues.load() : null])
   } catch (e) {
-    toastError(e)
+    const retype = e instanceof ApiError && e.reason === 'proxy_password_required'
+    toastError(retype ? new Error(t('settings.proxy.retypePassword')) : e)
   } finally {
     saving.value = false
   }
@@ -210,6 +274,58 @@ onMounted(load)
     <p v-if="backup" class="m-0 text-sm">{{ t('settings.backupReady') }} <a :href="backup.url" download class="font-semibold">{{ backup.name }}</a></p>
   </section>
 
+  <section v-else-if="tab === 'connection'" id="settings-panel-connection" role="tabpanel" aria-labelledby="settings-tab-connection" class="card p-6 flex flex-col gap-6 max-w-[640px]">
+    <div class="flex flex-col gap-3">
+      <h2 class="m-0 text-base font-bold">{{ t('settings.connection.title') }}</h2>
+      <p class="page-sub text-sm">{{ t('settings.connection.note') }}</p>
+      <dl class="conn-facts soft p-4 text-sm" data-testid="bridge-state">
+        <dt>{{ t('settings.connection.state') }}</dt>
+        <dd>
+          <span class="badge" :class="health ? healthBadge : 'badge-neutral'">{{ t(`settings.connection.stateValue.${health?.state ?? 'unknown'}`) }}</span>
+        </dd>
+        <dt>{{ t('settings.connection.lastSuccess') }}</dt>
+        <dd>{{ health?.last_success_at ? matchDate(health.last_success_at) : t('settings.connection.never') }}</dd>
+        <template v-if="health && health.consecutive_failures > 0">
+          <dt>{{ t('settings.connection.failures') }}</dt>
+          <dd class="mono">{{ num(health.consecutive_failures) }}</dd>
+        </template>
+      </dl>
+      <p v-if="healthReason" class="m-0 text-sm" style="color: var(--muted)">{{ healthReason }}</p>
+      <div>
+        <button type="button" class="btn" :disabled="testing" data-testid="connection-test" @click="runTest">
+          <span v-if="testing" class="spinner"></span>{{ testing ? t('settings.connection.running') : t('settings.connection.run') }}
+        </button>
+      </div>
+      <div v-if="test" class="soft p-4 flex flex-col gap-2 text-sm" :role="test.success ? 'status' : 'alert'" data-testid="connection-result">
+        <p class="m-0 font-semibold" :style="{ color: test.success ? 'var(--ok-fg)' : 'var(--danger)' }">
+          {{ test.success ? t('settings.connection.success', { n: num(test.events_count) }) : t('settings.connection.failed') }}
+        </p>
+        <p v-if="testText" class="m-0">{{ testText }}</p>
+        <dl class="conn-facts">
+          <dt>{{ t('settings.connection.browser') }}</dt>
+          <dd>{{ t(`settings.connection.browserValue.${test.browser_ready ? 'ready' : 'down'}`) }}</dd>
+          <template v-if="challengeKey">
+            <dt>{{ t('settings.connection.challenge') }}</dt>
+            <dd>{{ t(`settings.connection.challengeValue.${challengeKey}`) }}</dd>
+          </template>
+        </dl>
+      </div>
+      <p v-else-if="testError" class="m-0 text-sm" role="alert" style="color: var(--danger)">{{ testError }}</p>
+    </div>
+
+    <div class="flex flex-col gap-3 pt-6" style="border-top: 1px solid var(--border)">
+      <h2 class="m-0 text-base font-bold">{{ t('settings.proxy.title') }}</h2>
+      <p class="page-sub text-sm">{{ t('settings.proxy.note') }}</p>
+      <label class="flex items-center gap-3 text-sm cursor-pointer"><input id="s-use-proxy" v-model="form.use_proxy" type="checkbox" class="check" />{{ t('settings.proxy.use') }}</label>
+      <div>
+        <label class="label" for="s-proxy">{{ t('settings.proxy.url') }}</label>
+        <input id="s-proxy" v-model.trim="form.proxy_url" class="field mono" placeholder="http://user:password@host:8080" autocomplete="off" autocapitalize="off" spellcheck="false" />
+        <p class="hint">{{ t('settings.proxy.hint') }}</p>
+      </div>
+      <div><button type="button" class="btn btn-primary" :disabled="!dirty || saving" @click="save">{{ t('common.save') }}</button></div>
+    </div>
+  </section>
+
   <section v-else id="settings-panel-advanced" role="tabpanel" aria-labelledby="settings-tab-advanced" class="card p-6 flex flex-col gap-6 max-w-[640px]">
     <p class="page-sub text-sm">{{ t('settings.advancedNote') }}</p>
     <div class="grid gap-4 sm:grid-cols-2">
@@ -232,3 +348,19 @@ onMounted(load)
 
   <p v-if="appVersion" class="app-version mt-6 mb-0 text-xs" style="color: var(--muted)">{{ t('settings.version', { version: appVersion }) }}</p>
 </template>
+
+<style scoped>
+.conn-facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 16px;
+  align-items: center;
+  margin: 0;
+}
+.conn-facts dt {
+  color: var(--muted);
+}
+.conn-facts dd {
+  margin: 0;
+}
+</style>
