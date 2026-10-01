@@ -8,6 +8,8 @@ src/store/legacy.py: eski düzenin salt okunur okuyucusu (plan maddesi ST-05).
      aşağıda adıyla yazılıdır), beklenen dilimler `_expected_slices` ile aynıdır, ve bugünkü ağaç
      gezginlerinin hangisinin daha az ya da daha çok maç bulduğu `WALKER_DIFFERENCES` tablosunda durur.
   3. Modül yalnızca okur ve katman kuralına uyar.
+
+Mantıksal döküm (`tests/store_dump.py`) de burada sınanır.
 """
 from __future__ import annotations
 
@@ -25,6 +27,7 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import pytest
 
+import store_dump
 import store_fixtures as sf
 from src import match_data_fetcher as mdf
 from src import refresh, sports, status, watcher
@@ -1163,6 +1166,7 @@ def exercise_every_reader(data_dir: Path, leagues: Dict[int, str]) -> None:
     reader.change_log(report)
     reader.watch_events(report)
     reader.watch_states(report)
+    store_dump.dump(data_dir, leagues)
 
 
 def test_reading_changes_nothing_on_disk(fx: sf.LegacyFixture) -> None:
@@ -1179,7 +1183,7 @@ def _everything(data_dir: Path, leagues: Dict[int, str]) -> List[Any]:
     return [
         list(reader.iter_events(report=report)), reader.event_dirs(report), reader.schedule_pages(report),
         reader.summary_files(report), reader.season_lists(leagues, report), reader.change_log(report),
-        reader.watch_states(report), report,
+        reader.watch_states(report), report, store_dump.dump(data_dir, leagues),
     ]
 
 
@@ -1272,3 +1276,140 @@ def test_import_is_light() -> None:
     result = subprocess.run([sys.executable, "-c", code], cwd=ROOT, capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stderr
 
+
+# --- mantıksal döküm ----------------------------------------------------------------------------
+
+
+def test_dump_of_the_canonical_fixture(canonical: sf.LegacyFixture) -> None:
+    dump = store_dump.dump(canonical.data_dir)
+    assert list(dump) == ["events", "schedules", "season_lists", "changes"]
+    assert sorted(map(int, dump["events"])) == canonical.detail_ids and len(dump["events"]) == 23
+    assert json.loads(json.dumps(dump)) == dump  # yalnızca JSON türleri
+    cry = dump["events"]["16951514"]
+    basic = json.loads((canonical.data_dir / PL_DIR / "16951514" / "basic.json").read_bytes())
+    assert cry["observation"] == {"observed_at_utc": "2026-09-17T06:00:00+00:00",
+                                  "change_ts": basic["changes"]["changeTimestamp"], "status_regressed": False}
+    assert cry["slices"]["event"] == {"state": "ok", "sha256": store_dump.payload_hash(basic), "empty_count": 0,
+                                      "unverified_empty_count": 0, "error": None}
+    assert cry["slices"]["lineups"] == {"state": "empty", "sha256": None, "empty_count": 1,
+                                        "unverified_empty_count": 1, "error": None}
+    assert cry["slices"]["incidents"] == {"state": "error", "sha256": None, "empty_count": 1,
+                                          "unverified_empty_count": 0,
+                                          "error": {"reason": "5xx", "status": 503, "count": 1}}
+    assert dump["events"]["16867839"]["observation"] is None
+    assert {season: sorted(pages) for season, pages in dump["schedules"].items()} == {
+        "17/96668": ["round_1", "round_2", "round_3"], "17/76986": ["round_38"],
+        "19/97110": ["round_28_semifinals", "round_29_final"], "132/80229": ["last_0", "last_1"],
+        "2361/79116": ["last_0"], "8/97532": ["last_0", "next_0"],
+    }
+    round_1 = json.loads((canonical.data_dir / "matches/17_Premier_League/96668_Premier_League_26_27/round_1.json")
+                         .read_bytes())
+    assert round_1.pop("_complete") is True
+    assert dump["schedules"]["17/96668"]["round_1"] == {"sha256": store_dump.payload_hash(round_1),
+                                                        "meta": {"complete": True}}
+    assert {tid: entry["seasons"] for tid, entry in dump["season_lists"].items()} == {
+        "8": 2, "17": 3, "19": 2, "132": 2, "2361": 2}
+    assert dump["changes"] == [{"seq": 1, "row": sf.SCORE_CHANGES[0]}, {"seq": 2, "row": sf.SCORE_CHANGES[1]}]
+
+
+def test_dump_is_deterministic_and_ignores_file_times(fx: sf.LegacyFixture, tmp_path: Path) -> None:
+    first = store_dump.dump(fx.data_dir, fx.leagues)
+    again = sf.build_fixture(fx.name, tmp_path / "again")
+    for path in again.data_dir.rglob("*"):
+        if path.is_file():
+            os.utime(path, (sf.BASE_MTIME + 5, sf.BASE_MTIME + 5))  # sıra değişmeden bütün zamanlar kayar
+    assert store_dump.diff(first, store_dump.dump(again.data_dir, again.leagues)) == []
+    assert first == store_dump.dump(fx.data_dir, fx.leagues)
+    if fx.name == "empty":
+        assert first == {"events": {}, "schedules": {}, "season_lists": {}, "changes": []}
+
+
+def test_dump_of_the_legacy_fixture(old_forms: sf.LegacyFixture) -> None:
+    dump = store_dump.dump(old_forms.data_dir, old_forms.leagues)
+    assert sorted(map(int, dump["events"])) == [15000001, 15500001, 15500002, 15500003, 16837335, 16867839, 17018554,
+                                                 17099711, 17185003]
+    # yarım dilim dosyası: yükü yok, durum error/corrupt
+    assert dump["events"]["17185003"]["slices"]["statistics"] == {
+        "state": "error", "sha256": None, "empty_count": 0, "unverified_empty_count": 0,
+        "error": {"reason": "corrupt", "status": None, "count": 1}}
+    assert dump["schedules"] == {
+        "17/96668": {"round_1": dump["schedules"]["17/96668"]["round_1"],
+                     "round_2": dump["schedules"]["17/96668"]["round_2"]},
+        "8/77559": {"round_1_full": dump["schedules"]["8/77559"]["round_1_full"]},
+    }
+    assert dump["schedules"]["17/96668"]["round_1"]["meta"] == {"filtered": True}
+    assert {tid: entry["seasons"] for tid, entry in dump["season_lists"].items()} == {"8": 2, "17": 3, "2361": 1}
+    # Lig adları olmadan LaLiga'nın listesi `league_seasons.csv`'den gelir
+    assert store_dump.dump(old_forms.data_dir)["season_lists"]["8"]["seasons"] == 1
+
+
+def _one_event(root: Path, base: str, combined: bool, eid: int = 7) -> None:
+    event = {**sf.basic_payload(sf.PL_LIV), "id": eid}
+    slices = {key: sf.slice_payload(key, event) for key in ("statistics", "h2h")}
+    slices["lineups"] = sf.slice_payload("lineups", event, empty=True)
+    if combined:
+        write(root, f"{base}/{eid}.json", {"basic": event, **slices})
+    else:
+        write(root, f"{base}/basic.json", event)
+        for key, payload in slices.items():
+            write(root, f"{base}/{key}.json", payload)
+    write(root, f"{base}/observation.json", sf.observation_payload(event, "2026-09-15T13:10:00+00:00"))
+    write(root, f"{base}/_unavailable.json", {"lineups": 2, "incidents": 1})
+    write(root, f"{base}/_slice_status.json", {"lineups": sf.empty_marker(2), "incidents": sf.error_marker("403", 403)})
+
+
+@pytest.mark.parametrize("base, combined", [
+    ("match_details/8_LaLiga/season_x/7", True), ("match_details/LaLiga/season_x/7", False),
+    ("match_details/7", False), ("match_details/7", True), ("match_details/_no_tournament/football/7", False),
+])
+def test_dump_is_the_same_for_every_legacy_form(tmp_path: Path, base: str, combined: bool) -> None:
+    _one_event(tmp_path / "reference", "match_details/17_Premier_League/season_x/7", combined=False)
+    _one_event(tmp_path / "other", base, combined=combined)
+    reference = store_dump.dump(tmp_path / "reference")
+    assert store_dump.diff(reference, store_dump.dump(tmp_path / "other")) == []
+    assert reference["events"]["7"]["slices"]["lineups"]["state"] == "empty"
+    assert reference["events"]["7"]["slices"]["lineups"]["sha256"] is not None
+    assert reference["events"]["7"]["slices"]["incidents"]["error"] == {"reason": "403", "status": 403, "count": 1}
+
+
+def test_dump_sees_every_logical_change(canonical: sf.LegacyFixture) -> None:
+    before = store_dump.dump(canonical.data_dir)
+    base = canonical.data_dir / PL_DIR / "16837335"
+    basic = json.loads((base / "basic.json").read_bytes())
+    basic["homeScore"]["current"] += 1
+    (base / "basic.json").write_bytes(sf.dump_json(basic))
+    (base / "lineups.json").unlink()
+    (base / "_unavailable.json").write_bytes(sf.dump_json({"lineups": 1}))
+    (base / "observation.json").unlink()
+    with open(canonical.data_dir / "score_changes.jsonl", "ab") as f:
+        f.write(b'{"event_id": 1}\n')
+    (canonical.data_dir / "seasons" / "8_LaLiga_seasons.json").write_bytes(sf.dump_json({"seasons": []}))
+    (canonical.data_dir / "matches/19_FA_Cup/97110_FA_Cup_26_27/round_29_final.json").unlink()
+    changed = store_dump.diff(before, store_dump.dump(canonical.data_dir))
+    assert [line.split(":")[0] for line in changed] == [
+        "$.changes", "$.events.16837335.observation", "$.events.16837335.slices.event.sha256",
+        "$.events.16837335.slices.lineups.sha256", "$.events.16837335.slices.lineups.state",
+        "$.events.16837335.slices.lineups.unverified_empty_count", "$.schedules.19/97110.round_29_final",
+        "$.season_lists.8.seasons", "$.season_lists.8.sha256",
+    ]
+    # Yalnızca biçim değişirse (girinti, sıkıştırma) döküm değişmez
+    same = json.loads((base / "statistics.json").read_bytes())
+    (base / "statistics.json").write_bytes(json.dumps(same, separators=(",", ":")).encode("utf-8"))
+    assert store_dump.diff(store_dump.dump(canonical.data_dir), store_dump.dump(canonical.data_dir)) == []
+    assert store_dump.dump(canonical.data_dir)["events"]["16837335"]["slices"]["statistics"] == \
+        before["events"]["16837335"]["slices"]["statistics"]
+
+
+def test_dump_writes_observation_times_in_utc(tmp_path: Path) -> None:
+    for name, observed in (("a", "2026-09-19T09:00:00+03:00"), ("b", "2026-09-19T06:00:00Z")):
+        write(tmp_path / name, "match_details/7/basic.json", event_of(7))
+        write(tmp_path / name, "match_details/7/observation.json", {"observed_at_utc": observed, "change_ts": 1})
+    first = store_dump.dump(tmp_path / "a")
+    assert first == store_dump.dump(tmp_path / "b")
+    assert first["events"]["7"]["observation"]["observed_at_utc"] == "2026-09-19T06:00:00+00:00"
+
+
+def test_diff_reports_paths() -> None:
+    assert store_dump.diff({"a": 1, "b": [1, 2], "c": {"d": None}}, {"a": 1.0, "b": [1], "e": 0, "c": {"d": None}}) == [
+        "$.a: 1 -> 1.0", "$.b: uzunluk 2 -> 1", "$.e: eklendi"]
+    assert store_dump.diff({"a": 1}, {}) == ["$.a: silindi"]
