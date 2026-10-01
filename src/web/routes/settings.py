@@ -60,24 +60,41 @@ def mask_proxy_url(url: str) -> str:
     return f"{head}{user}:{PROXY_PASSWORD_MASK}{tail}"
 
 
+def _proxy_endpoint(url: str) -> Optional[tuple[str, str, Optional[int]]]:
+    """
+    Parolanın gönderildiği uç: (şema, sunucu, port). Şema ve sunucu küçük harfe çevrilir; yazılmamış port
+    None'dır ve yazılmış hiçbir porta eşit sayılmaz (varsayılan port istemciye göre değişir). Sunucusu
+    okunamayan ya da portu geçersiz bir adres için None.
+    """
+    try:
+        parsed = urlparse(url)
+        scheme, hostname, port = parsed.scheme.lower(), (parsed.hostname or "").lower(), parsed.port
+    except ValueError:  # .env'e elle yazılmış bozuk bir değer, ya da sayı olmayan bir port
+        return None
+    if not hostname:
+        return None
+    return scheme, hostname, port
+
+
 def _restore_proxy_password(submitted: str, stored: str) -> str:
     """
     Form maskeli adresi geri gönderdiyse (parola = yer tutucu) saklanan parolayı yerine koyar.
-    Yalnızca kullanıcı adı ve sunucu aynıysa: adres değiştiyse saklanan parola başka bir sunucuya
-    gönderilmez, parolanın yeniden yazılması istenir.
+    Yalnızca kullanıcı adı, şema, sunucu ve port aynıysa: bunlardan biri değiştiyse saklanan parola yeni
+    adrese gönderilmez, parolanın yeniden yazılması istenir. Şema da sayılır: aynı sunucuda https'ten
+    http'ye geçmek parolayı ağda açık taşır; başka bir port da başka bir dinleyicidir.
     """
     new = _split_proxy_userinfo(submitted)
     if new is None or new[2] != PROXY_PASSWORD_MASK:
         return submitted
 
-    def host(url: str) -> str:
-        try:
-            return (urlparse(url).hostname or "").lower()
-        except ValueError:  # .env'e elle yazılmış bozuk bir değer
-            return ""
-
     old = _split_proxy_userinfo(stored)
-    same_target = old is not None and old[1] == new[1] and host(stored) != "" and host(stored) == host(submitted)
+    stored_endpoint = _proxy_endpoint(stored)
+    same_target = (
+        old is not None
+        and old[1] == new[1]
+        and stored_endpoint is not None
+        and stored_endpoint == _proxy_endpoint(submitted)
+    )
     if not same_target:
         raise HTTPException(
             status_code=422,
