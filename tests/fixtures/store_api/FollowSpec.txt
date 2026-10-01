@@ -1,0 +1,12 @@
+# src.store.FollowSpec
+# kaynak: src/store/follows.py
+@dataclass(frozen=True)
+class FollowSpec:
+    kind: str
+    entity_id: int
+    name: str
+    sport: Optional[str] = None
+    seasons: Seasons = 'all'
+    slices: Optional[Mapping[str, Any]] = None
+    live: bool = False
+    enabled: bool = True

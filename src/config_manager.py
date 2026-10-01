@@ -6,21 +6,29 @@ Ayar getter'ları (get_data_dir, get_max_concurrent...) etkin `Settings`ten okur
 P09). Yapılandırma dosyası (sofascore.toml) yokken her değer eskisi gibi `.env` ve ortam değişkenlerinden,
 aynı kurallarla çözülür; dosya varsa onun değerleri de hesaba katılır. `.env` yazımı ve lig dosyası
 (leagues.txt) işlemleri değişmedi.
+
+Lig dosyası doğruluk kaynağı olmayı sürdürür: bugünkü gibi okunur ve yazılır. Her yüklemeden ve her
+değişiklikten sonra içeriği (league_sports.json'daki sporlarla birlikte) veri dizininin `follows` tablosuna
+"legacy" kaynağıyla yansıtılır (src/store/follows.py; plan maddesi ST-17). Dosyalar tablodan asla yeniden
+yazılmaz; ayna yazılamazsa lig işlemleri etkilenmez.
 """
 
 import os
 import dotenv
-from typing import Dict, Tuple, Optional, Set, Any
+from typing import TYPE_CHECKING, Dict, List, Tuple, Optional, Set, Any
 from dataclasses import dataclass
 
 from src.config import Settings
 from src.config import loader as settings_loader
-from src.exceptions import ConfigError
+from src.exceptions import ConfigError, StorageError
 from src.fsutil import atomic_write_text, file_lock
 from src import redact
 from src.logger import apply_log_level, get_logger
 from src.paths import default_league_config_path, env_file_path
 from src.private_files import PRIVATE_FILE_MODE, create_private_file, restrict_permissions
+
+if TYPE_CHECKING:
+    from src.store import ApplyResult, FollowSpec
 
 # .env dosyasını yükle
 dotenv.load_dotenv(env_file_path())
@@ -151,6 +159,7 @@ class ConfigManager:
 
             # Ligleri metin dosyasından yükle
             self._load_leagues_from_text()
+            self._mirror_follows()
 
             logger.info(f"{len(self.leagues)} lig yapılandırması yüklendi")
         except Exception as e:
@@ -211,12 +220,69 @@ class ConfigManager:
         except Exception as e:
             logger.error(f"Metin dosyasından ligler yüklenirken hata: {str(e)}")
 
-    def _refresh_if_changed(self) -> None:
-        """Başka bir süreç (CLI/web) leagues.txt'i değiştirdiyse yeniden yükle."""
-        if self._league_file_mtime() != getattr(self, "_leagues_mtime", None):
-            self.leagues.clear()
-            self.leagues_by_name.clear()
-            self._load_leagues_from_text()
+    def _refresh_if_changed(self, mirror: bool = True) -> bool:
+        """
+        Başka bir süreç (CLI/web) ya da bir editör leagues.txt'i değiştirdiyse yeniden yükler ve (mirror=True
+        ise) `follows` tablosuna yansıtır. Yeniden yüklendiyse True döner.
+        """
+        if self._league_file_mtime() == getattr(self, "_leagues_mtime", None):
+            return False
+        self.leagues.clear()
+        self.leagues_by_name.clear()
+        self._load_leagues_from_text()
+        if mirror:
+            self._mirror_follows()
+        return True
+
+    def _mirror_follows(self, data_dir: Optional[str] = None) -> Optional["ApplyResult"]:
+        """
+        Bellekteki ligleri ve league_sports.json'daki sporları `follows` tablosuna "legacy" kaynağıyla uygular.
+
+        Yön tektir: dosyalar tabloya. Veri dizininde henüz state.db yoksa hiçbir şeye dokunulmaz (None): ayna
+        bir dizini depoya çevirmez; tablo, depo kurulduktan sonraki ilk yüklemede, değişiklikte ya da iş
+        başlangıcında (build_context) dolar. Depo okunamıyor ya da meşgulse uyarı yazılır ve lig işlemi
+        etkilenmez: ligler dosyadan okunmaya devam eder.
+        """
+        try:
+            # Geç içe aktarma: bu modül Store'un SQLite katmanını kendi yüklenişinde getirmez
+            from src.store import FollowSpec, apply_follows
+            from src.web import league_sports
+
+            def desired() -> List["FollowSpec"]:
+                # Yalnızca yazılacak bir tablo varsa çağrılır: depo yokken league_sports.json okunmaz
+                sports = league_sports.load(self.league_config_path)
+                return [
+                    FollowSpec(kind="tournament", entity_id=league_id, name=league_name, sport=sports.get(league_id))
+                    for league_id, league_name in list(self.leagues.items())
+                ]
+
+            result = apply_follows(data_dir or self.get_data_dir(), desired, origin="legacy")
+        except Exception as e:
+            # Ayna ikincil bir kayıttır: hangi nedenle olursa olsun (dolu disk, kilitli ya da daha yeni bir
+            # state.db, bozuk bir ayar) yazılamaması lig listesini okuyan ya da değiştiren çağrıyı düşürmez
+            level = logger.warning if isinstance(e, (StorageError, OSError)) else logger.error
+            level(f"Leagues could not be mirrored into the follows table: {e}")
+            return None
+        if result is not None and (result.changed or result.conflicts):
+            logger.debug(
+                "Follows mirror (legacy): %d added, %d updated, %d removed, %d not applied",
+                len(result.added), len(result.updated), len(result.removed), len(result.conflicts),
+            )
+            for conflict in result.conflicts:
+                # Beklenen durumlar: lig yapılandırma dosyasında da var (satır "config" kaynağının) ya da
+                # leagues.txt'de aynı ad iki kimlikte geçiyor (tabloda turnuva adı tekildir)
+                logger.debug("Follows mirror (legacy): %s (ID: %s) not applied: %s",
+                             conflict.name, conflict.entity_id, conflict.reason)
+        return result
+
+    def mirror_follows(self, data_dir: Optional[str] = None) -> Optional["ApplyResult"]:
+        """
+        leagues.txt'in (elle düzenlenmişse yeniden okunarak) ve league_sports.json'ın güncel halini
+        `follows` tablosuna yansıtır. data_dir verilmezse yapılandırmadaki veri dizini kullanılır.
+        Tablo zaten güncelse hiçbir şey yazılmaz; ayrıntılar: `_mirror_follows`.
+        """
+        self._refresh_if_changed(mirror=False)
+        return self._mirror_follows(data_dir)
 
     def get_leagues(self) -> Dict[int, str]:
         """
@@ -491,10 +557,11 @@ class ConfigManager:
         if not league_name or any(c in league_name for c in "\r\n\x00"):
             logger.warning(f"Geçersiz lig adı reddedildi: {league_name!r}")
             return False
+        changed = False
         try:
             with file_lock(self.league_config_path):
                 # Kilit altında diskteki güncel hali oku: başka süreç arada eklemiş olabilir
-                self._refresh_if_changed()
+                changed = self._refresh_if_changed(mirror=False)
                 if league_id in self.leagues:
                     logger.warning(f"Lig ID zaten var: {league_id}")
                     return False
@@ -514,11 +581,16 @@ class ConfigManager:
                 self.leagues[league_id] = league_name
                 self.leagues_by_name[league_name] = league_id
                 self._leagues_mtime = self._league_file_mtime()
+                changed = True
             logger.info(f"Lig eklendi: {league_name} (ID: {league_id})")
             return True
         except Exception as e:
             logger.error(f"Lig eklenirken hata: {str(e)}")
             return False
+        finally:
+            if changed:
+                # Dosya kilidi bırakıldıktan sonra: dosya yazıldı (ya da yeniden okundu), tablo ona eşitlenir
+                self._mirror_follows()
 
     def remove_league(self, league_id: int) -> bool:
         """
@@ -530,9 +602,10 @@ class ConfigManager:
         Returns:
             bool: Başarılı olursa True, değilse False
         """
+        changed = False
         try:
             with file_lock(self.league_config_path):
-                self._refresh_if_changed()
+                changed = self._refresh_if_changed(mirror=False)
                 if league_id not in self.leagues:
                     logger.warning(f"Kaldırılacak lig bulunamadı: {league_id}")
                     return False
@@ -555,11 +628,15 @@ class ConfigManager:
                 del self.leagues[league_id]
                 self.leagues_by_name.pop(league_name, None)
                 self._leagues_mtime = self._league_file_mtime()
+                changed = True
             logger.info(f"Lig kaldırıldı: {league_name} (ID: {league_id})")
             return True
         except Exception as e:
             logger.error(f"Lig kaldırılırken hata: {str(e)}")
             return False
+        finally:
+            if changed:
+                self._mirror_follows()
 
     def update_env_variable(self, key: str, value: str) -> bool:
         """
@@ -595,3 +672,22 @@ class ConfigManager:
         except Exception as e:
             logger.error(f"Çevre değişkeni güncellenirken hata: {str(e)}")
             return False
+
+
+def mirror_league_follows(league_config_path: str) -> None:
+    """
+    league_sports.json değişti (src/web/league_sports.py): sporlar `follows` tablosuna da yansısın.
+
+    Lig adlarını ConfigManager bilir; bu yüzden ayna onun üzerinden yapılır. Süreçte kurulu bir ConfigManager
+    yoksa ya da başka bir lig dosyasına bakıyorsa yapılacak bir şey yoktur: sporlar, o dosyanın
+    ConfigManager'ı ligleri bir sonraki kez yansıttığında tabloya girer.
+    """
+    manager = ConfigManager._instance
+    if manager is None or not getattr(manager, "_initialized", False):
+        return
+
+    def _normal(path: str) -> str:
+        return os.path.normcase(os.path.abspath(path))
+
+    if _normal(manager.league_config_path) == _normal(league_config_path):
+        manager.mirror_follows()
