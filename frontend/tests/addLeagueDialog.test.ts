@@ -8,7 +8,7 @@ import { i18n, setLocale } from '@/i18n'
 import { callsTo, json, mockFetch } from './helpers'
 
 const t = i18n.global.t
-const SEARCH = 'GET /api/leagues/search-remote'
+const SEARCH = 'POST /api/leagues/search-remote'
 const PREMIER = { id: 17, name: 'Premier League', country: 'England', slug: 'premier-league', sport: 'Football' }
 
 /** The typed error body of src/web/upstream.py. */

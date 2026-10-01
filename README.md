@@ -167,7 +167,7 @@ Images are published to `ghcr.io/tunjayoff/sofascore_scraper` with each tagged r
 
 Things to know:
 
-- **There is no login.** The examples publish the port on `127.0.0.1` only. If you publish it to your network (`-p 8000:8000`), anyone who can reach it can change settings and delete data, and you must also list the name or IP you open it with: `-e SOFASCORE_ALLOWED_HOSTS=localhost,127.0.0.1,my-server.lan` (requests with any other `Host` header are rejected).
+- **There are no user accounts.** The examples publish the port on `127.0.0.1` only. If you publish it to your network (`-p 8000:8000`), set an access token (`-e SOFASCORE_API_TOKEN=<long random value>`): without it anyone who can reach the port can read and delete data and change settings, and the container cannot warn you about it (inside the container the app always listens on every interface). You must also list the name or IP you open it with: `-e SOFASCORE_ALLOWED_HOSTS=localhost,127.0.0.1,my-server.lan` (requests with any other `Host` header are rejected). See [Security model](#security-model).
 - **Settings:** every variable in `.env.example` can be passed with `-e` / `environment:`. On every start a variable set that way wins over the value saved on the Settings page, so only set the ones you want fixed (for example `APP_LANGUAGE=en`, `USE_PROXY` / `PROXY_URL`). `PORT` changes the port inside the container.
 - **Shared memory:** Chromium needs more than Docker's 64 MB default, hence `--shm-size=1g` (`shm_size` in Compose).
 - **Bind mounts** (`-v ./data:/app/data`) work when the folder is writable by uid 1000: `mkdir -p data config && sudo chown -R 1000:1000 data config`. To use another uid, build with `--build-arg APP_UID=$(id -u) --build-arg APP_GID=$(id -g)`.
@@ -254,6 +254,8 @@ See `.env.example` for all keys. Common ones:
 | `REFRESH_WINDOW_HOURS` | Hours after kick-off during which a saved match is provisional and gets re-read (default `72`, `0` = off). See [Refresh policy](#refresh-policy). |
 | `RATE_LIMIT_*` / `SERVER_ERROR_*` | Circuit breaker thresholds, counted per request across all phases of a job. See [Missing slices, failed requests and the circuit breaker](#missing-slices-failed-requests-and-the-circuit-breaker). |
 | `LOG_LEVEL` / `LOG_DIR` / `LOG_TO_FILE` / `LOG_MAX_MB` / `LOG_BACKUP_COUNT` | Log level, log file location and rotation. See [Logs and diagnostics](#logs-and-diagnostics). |
+| `SOFASCORE_API_TOKEN` | Optional access token for the web app and its API. Empty (the default) = off. See [Security model](#security-model). |
+| `SOFASCORE_ALLOWED_HOSTS` | Host names the web app answers to, comma-separated (default `localhost,127.0.0.1,[::1]`). See [Security model](#security-model). |
 
 Tuning for the web UI (timeouts, retries, logging) is exposed under **Settings**; writing settings updates `.env`.
 
@@ -309,7 +311,7 @@ python main.py --config /path/to/leagues.txt --data-dir /path/to/data
 7. **Matches** — Filter by league, season, date and **Details** (with / missing). When a league has matches without details (typically after a stopped download), a banner offers **Download missing**. Click a row to open the match: score by period, overview, statistics, events and lineups.
 8. **Settings** — Language and theme; data folder, disk usage, **Back up** and **Delete all data**; **Connection**: a connection check (**Test connection** sends one request to SofaScore, only when you press it, and says what happened) and the proxy; advanced request settings (timeout, concurrency, waits, retries).
 
-> **Delete all data** removes every downloaded season, match and detail and cannot be undone. Take a backup first. A backup is a zip under `data/backups/` (inside your `DATA_DIR`) holding `data/`, `leagues.txt` and `league_sports.json`. `.env` is left out because it can hold proxy credentials; add `?include_env=true` to `POST /api/data/backup` if you want it. To restore: stop the app, unzip `data/` into the project folder (or your `DATA_DIR`), and copy `leagues.txt` and `league_sports.json` to `config/` if you want those back too.
+> **Delete all data** removes every downloaded season, match and detail and cannot be undone. Take a backup first. A backup is a zip under `data/backups/` (inside your `DATA_DIR`) holding `data/`, `leagues.txt` and `league_sports.json`. `.env` is left out because it can hold proxy credentials and the access token; add `?include_env=true` to `POST /api/data/backup` if you want it (such a backup has `_with_env` in its file name and is readable by its owner only). To restore: stop the app, unzip `data/` into the project folder (or your `DATA_DIR`), and copy `leagues.txt` and `league_sports.json` to `config/` if you want those back too.
 
 > **While a download is running**, **Back up**, **Delete all data**, removing a league and changing the data folder are refused with a message: stop the download or wait for it to finish. A download cannot start while a backup or delete is still in progress either. Changing the data folder takes effect immediately (no restart): downloads and the **Activity** history then use the new folder (each data folder keeps its own history in `.meta/jobs.db`); files in the old folder are not moved.
 
@@ -376,9 +378,33 @@ python main.py
 python main.py --web
 ```
 
-Default URL: `http://127.0.0.1:8000`. The server only listens on this machine. `--host 0.0.0.0` opens it to your network, **with no login**: anyone who can reach it can change settings and delete data. `--port` changes the port and `--dev` reloads on code changes. Health: `GET /health` (also reports the version).
+Default URL: `http://127.0.0.1:8000`. The server only listens on this machine. `--host` opens it to your network; read [Security model](#security-model) first. One address (`--host 192.168.1.5`) works as it is. `--host 0.0.0.0` (every interface) also needs `SOFASCORE_ALLOWED_HOSTS`, and without `SOFASCORE_API_TOKEN` the app warns at startup that anyone who can reach the port can read and delete data and change settings. `--port` changes the port and `--dev` reloads on code changes. Health: `GET /health` (also reports the version).
 
 Background jobs report status via `GET /api/scrape/status` and `GET /api/scrape/stream` (SSE). Heavy API work runs off the asyncio event loop so the UI stays responsive during long fetches.
+
+### Security model
+
+The web app has **no user accounts**. By default it listens on this computer only, and that is the setup it is made for. Opening it to a network is your decision as the administrator, and so is limiting who can reach it (firewall, VPN, reverse proxy). The app does not undo that work, and it defends against attacks that arrive through your own browser, which no firewall stops.
+
+**What the app does**
+
+- **Answers to known host names only** (DNS rebinding). A request is served only if its `Host` header is on the allow-list: `localhost`, `127.0.0.1` and `[::1]` by default. `SOFASCORE_ALLOWED_HOSTS` (comma-separated, in `.env` or the environment) replaces the list and is always used exactly as written. `--host 192.168.1.5` adds that one address by itself. `--host 0.0.0.0` (every interface) does not start until `SOFASCORE_ALLOWED_HOSTS` says which names to answer to. `--allow-any-host` (or `SOFASCORE_ALLOWED_HOSTS=*`) answers to any name; this is **insecure** and turns the protection off.
+- **Refuses writes triggered by other sites** (CSRF). No `GET` endpoint changes anything. Every state-changing request (start or stop a download, save settings, delete data, back up, search SofaScore) is answered with `403` when the browser reports that another site sent it (`Sec-Fetch-Site`, `Origin`). Programs that send neither header, such as curl, are not affected.
+- **Sends security headers** with every response: a Content-Security-Policy (scripts, styles, fonts and requests only from the app itself; no inline script, no `eval`, no framing), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` and `Cross-Origin-Resource-Policy: same-origin`. Two exceptions: a web app build made before this policy existed still needs `eval`, so it is served with `'unsafe-eval'` (and a warning in the log) until you rebuild it; and the API documentation pages `/docs` and `/redoc` load their scripts from a CDN and get a policy of their own.
+- **Optional access token.** Off by default. Set `SOFASCORE_API_TOKEN` to a long random value and restart the app; `python -c "import secrets; print(secrets.token_urlsafe(32))"` makes one. From then on every `/api` request needs it. Programs send `Authorization: Bearer <token>`. The web app asks for it once and keeps an `HttpOnly`, `SameSite=Strict` session cookie for 30 days (the live status stream uses the same cookie); **Settings → General → Sign out** ends the session, and changing the token ends all of them. `GET /health` stays open for health checks, but without the token it answers only `{"status": "ok"}`. The token is compared in constant time and never appears in the log, the diagnostics bundle or an API response.
+- **Warns once at startup** when it listens on a non-local address without a token.
+- **Keeps secrets private on disk.** `.env` (proxy password, tokens) is created with mode `0600` and the browser profile folder (SofaScore cookies) with `0700`; existing ones are tightened at every start. A backup that includes `.env` says so in its file name (`backup_…_with_env_….zip`) and is readable by its owner only. On Windows the files rely on the permissions of your user folder instead. The proxy password is masked in the settings API, the logs, the diagnostics bundle and in error messages returned by the API.
+
+**What you must do before opening it to a network**
+
+- Set `SOFASCORE_API_TOKEN`. Without it, anyone who can reach the port can read and delete your data and change the settings.
+- Limit who can reach the port (firewall, VPN). The app does not limit login attempts, so the token must be long and random.
+- Put TLS in front of it. The app speaks plain HTTP: without a reverse proxy that terminates TLS, the token and the session cookie cross the network unencrypted. The proxy must pass the original `Host` header on, or the name it sends must be in `SOFASCORE_ALLOWED_HOSTS`.
+- With Docker, the container always listens on every interface inside its own network and `-p` decides who can reach it, so the startup warning does not exist there: if you publish the port beyond `127.0.0.1`, set the token and `SOFASCORE_ALLOWED_HOSTS` yourself.
+
+```bash
+curl -H "Authorization: Bearer $SOFASCORE_API_TOKEN" http://127.0.0.1:8000/api/leagues
+```
 
 ### Headless / automation
 
@@ -522,17 +548,18 @@ Why these numbers: `events/live` is cached for 5 s at the CDN, and whistle → `
 
 All routes are prefixed with `/api` unless noted.
 
-- **Leagues**: list (each with `sport`), create (optional `sport`), `PATCH /api/leagues/{id}` to set the sport, delete, search (local / remote, remote results carry `sport`), seasons, refresh seasons, missing-details.
+- **Leagues**: list (each with `sport`), create (optional `sport`), `PATCH /api/leagues/{id}` to set the sport, delete, search (local: `GET /api/leagues/search`; remote: `POST /api/leagues/search-remote?q=…`, a `POST` because every call sends a request to SofaScore; remote results carry `sport`), seasons, refresh seasons, missing-details.
   - Remote search and season refresh say why they failed instead of answering with an empty list. The error body is `{"detail": {"reason": "...", "message": "..."}}`, with `reason` one of `blocked` (SofaScore answered 403), `browser` (it asked for the challenge and the built-in browser could not start), `rate_limited` (429/503), `network` (no connection, timeout, proxy), `not_found` (season refresh: no league with that ID) or `upstream` (an answer the app did not expect). The status is 502, except 503 for `rate_limited` and 404 for `not_found`. An empty list with 200 means SofaScore really found nothing. The web app shows each reason with a next step.
 - **Sports**: `GET /api/sports` — the supported sports and, for each, the match-detail slices requested for it (read-only view of the registry in `src/sports.py`).
 - **Matches**: `GET /api/matches` — paginated, filters `league_id` (one id or several comma-separated, e.g. `17,8`), `season_id`, `date`, `details=present|missing`, `sort=asc|desc`; every row has `has_details`. Also single-match JSON and on-demand fetch for one match.
 - **Scraper**: `POST /api/fetch` (body: mode `full` or `details`, `selections: [{league_id, season_ids, match_ids}]`), `POST /api/scrape/cancel` (no new requests after it; retry waits are cut short), status, SSE stream.
 - **Dashboard / stats / settings**: JSON for the web UI; settings mirror `.env` keys.
-- **Data**: backup zip, clear scopes, CSV export.
+- **Data**: backup zip, clear scopes, CSV export (`GET /api/export/csv` downloads the existing export and answers `404` when there is none; `POST /api/export/csv` creates it first).
+- **Access**: no `GET` endpoint changes anything, and state-changing requests that another site triggered are refused with `403`. With `SOFASCORE_API_TOKEN` set, every `/api` request needs `Authorization: Bearer <token>` or the web app's session cookie (`POST /api/auth/login` with `{"token": "..."}`, `POST /api/auth/logout`, `GET /api/auth` for the state); otherwise the answer is `401` with `{"detail": {"code": "auth_required", "message": "..."}}`. See [Security model](#security-model).
 - **Refusals while a download runs**: `POST /api/data/clear`, `POST /api/data/backup` (except `scope=config`), `DELETE /api/leagues/{id}` and a `POST /api/settings` that changes `data_dir` answer `409` with `{"detail": {"code": "job_running", "message": "..."}}`. While one of these is in progress, they and `POST /api/fetch` answer `409` with code `data_operation_running`. A successful `data_dir` change answers `"data_dir_changed": true`; a folder that cannot be created answers `400` with code `data_dir_unusable`.
 - **Bypass Status**: `GET /api/bypass/status` (with `health`: `ok` / `degraded` / `blocked`, see [Is SofaScore blocking us?](#is-sofascore-blocking-us-bridge-health)) and live test `POST /api/bypass/test`: one request through the browser, answered with `success`, `reason` (as above, when it failed), `browser_ready`, `has_token` / `is_valid` and `health`. Nothing calls it on its own; in the web app it is the **Test connection** button under **Settings → Connection**.
 - **Logs / diagnostics** (read-only, see [Logs and diagnostics](#logs-and-diagnostics)): `GET /api/logs` (`limit` 1–2000, `level` = minimum level), `GET /api/diagnostics` (the summary as JSON), `GET /api/diagnostics/bundle` (zip download). None of them takes a file path.
-- **Health**: `GET /health` (no `/api` prefix) answers `status`, `version`, `ui`, plus `bridge` (the same health block) and `throttle` (the shared [request budget](#request-budget-all-processes)).
+- **Health**: `GET /health` (no `/api` prefix) answers `status`, `version`, `ui`, plus `bridge` (the same health block) and `throttle` (the shared [request budget](#request-budget-all-processes)). With an access token set, a caller without it gets only `{"status": "ok"}`.
 
 OpenAPI: `GET /docs` when the server is running.
 

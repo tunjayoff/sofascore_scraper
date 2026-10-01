@@ -87,7 +87,7 @@ def _failing_requests_through(proxy_url: str, extra: str = "") -> dict:
         raise ConnectionError(f"curl: (56) CONNECT tunnel failed, response 407 via {proxy_url}{extra}")
 
     with patch.object(utils, "_sleep"), patch.object(utils.cffi_requests, "get", side_effect=curl):
-        search = client.get("/api/leagues/search-remote", params={"q": "premier"})
+        search = client.post("/api/leagues/search-remote", params={"q": "premier"})
         refresh = client.post(f"/api/leagues/{LEAGUE_ID}/seasons/refresh")
     # İstekler gerçekten kayıtlı proxy ile (parolası tam) gönderildi: maskelenen şey kullanılan değer
     assert seen and all(p == {"http": proxy_url, "https": proxy_url} for p in seen), seen

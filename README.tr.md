@@ -165,7 +165,7 @@ docker compose logs -f      # uygulama stdout'a log yazar
 
 Bilinmesi gerekenler:
 
-- **Giriş (parola) yoktur.** Örnekler portu yalnızca `127.0.0.1` üzerinde açar. Portu ağa açarsanız (`-p 8000:8000`) erişebilen herkes ayarları değiştirip veriyi silebilir; ayrıca arayüzü açtığınız adı ya da IP’yi de bildirmeniz gerekir: `-e SOFASCORE_ALLOWED_HOSTS=localhost,127.0.0.1,sunucum.lan` (başka `Host` başlığıyla gelen istekler reddedilir).
+- **Kullanıcı hesabı yoktur.** Örnekler portu yalnızca `127.0.0.1` üzerinde açar. Portu ağa açarsanız (`-p 8000:8000`) bir erişim belirteci ayarlayın (`-e SOFASCORE_API_TOKEN=<uzun rastgele değer>`): o olmadan porta ulaşabilen herkes veriyi okuyup silebilir ve ayarları değiştirebilir; konteyner de sizi bu konuda uyaramaz (uygulama konteynerin içinde her zaman tüm arayüzleri dinler). Ayrıca arayüzü açtığınız adı ya da IP’yi de bildirmeniz gerekir: `-e SOFASCORE_ALLOWED_HOSTS=localhost,127.0.0.1,sunucum.lan` (başka `Host` başlığıyla gelen istekler reddedilir). Bkz. [Güvenlik modeli](#güvenlik-modeli).
 - **Ayarlar:** `.env.example` içindeki her değişken `-e` / `environment:` ile verilebilir. Bu şekilde verilen değişken her başlangıçta Ayarlar sayfasında kaydedilen değerin önüne geçer; bu yüzden yalnızca sabit kalmasını istediklerinizi verin (ör. `APP_LANGUAGE=tr`, `USE_PROXY` / `PROXY_URL`). `PORT` konteyner içindeki portu değiştirir.
 - **Paylaşımlı bellek:** Chromium, Docker’ın 64 MB’lık varsayılanından fazlasına ihtiyaç duyar; `--shm-size=1g` (Compose’da `shm_size`) bunun içindir.
 - **Klasör bağlama** (`-v ./data:/app/data`), klasör uid 1000 tarafından yazılabiliyorsa çalışır: `mkdir -p data config && sudo chown -R 1000:1000 data config`. Başka bir uid için imajı `--build-arg APP_UID=$(id -u) --build-arg APP_GID=$(id -g)` ile derleyin.
@@ -252,6 +252,8 @@ Tüm anahtarlar `.env.example` içinde. Sık kullanılanlar:
 | `REFRESH_WINDOW_HOURS` | Kaydedilen maçın başlangıçtan kaç saat boyunca geçici sayılıp yeniden okunacağı (varsayılan `72`, `0` = kapalı). Bkz. [Yenileme politikası](#yenileme-politikası). |
 | `RATE_LIMIT_*` / `SERVER_ERROR_*` | Devre kesicinin eşikleri; işin tüm aşamalarında istek başına sayılır. Bkz. [Eksik dilimler, başarısız istekler ve devre kesici](#eksik-dilimler-başarısız-istekler-ve-devre-kesici). |
 | `LOG_LEVEL` / `LOG_DIR` / `LOG_TO_FILE` / `LOG_MAX_MB` / `LOG_BACKUP_COUNT` | Log seviyesi, log dosyasının yeri ve çevrilmesi. Bkz. [Loglar ve tanılama](#loglar-ve-tanılama). |
+| `SOFASCORE_API_TOKEN` | Web uygulaması ve API’si için isteğe bağlı erişim belirteci. Boş (varsayılan) = kapalı. Bkz. [Güvenlik modeli](#güvenlik-modeli). |
+| `SOFASCORE_ALLOWED_HOSTS` | Web uygulamasının yanıt verdiği ana makine adları, virgülle ayrılmış (varsayılan `localhost,127.0.0.1,[::1]`). Bkz. [Güvenlik modeli](#güvenlik-modeli). |
 
 Web **Ayarlar** sayfasından birçok değer düzenlenir; kayıt `.env`’i günceller.
 
@@ -307,7 +309,7 @@ python main.py --config /yol/leagues.txt --data-dir /yol/veri
 7. **Maçlar** — Lig, sezon, tarih ve **Detay** (olanlar / eksikler) ile süzün. Bir ligde detayı eksik maç varsa (genelde yarıda durdurulan bir indirmeden kalır) üstte **Eksikleri indir** şeridi çıkar. Bir satıra tıklayınca maç açılır: periyot skorları, özet, istatistikler, olaylar ve kadrolar.
 8. **Ayarlar** — Dil ve tema; veri klasörü, disk kullanımı, **Yedek al** ve **Tüm veriyi sil**; **Bağlantı**: bağlantı testi (**Bağlantıyı sına**, yalnızca bastığınızda SofaScore’a tek bir istek gönderir ve ne olduğunu söyler) ve proxy; gelişmiş istek ayarları (zaman aşımı, eşzamanlılık, bekleme süreleri, deneme sayısı).
 
-> **Tüm veriyi sil** indirilmiş bütün sezon, maç ve detayları siler ve geri alınamaz. Önce yedek alın. Yedek, `data/backups/` (yani `DATA_DIR` içi) altında `data/`, `leagues.txt` ve `league_sports.json` içeren bir zip’tir. `.env` proxy kimlik bilgisi içerebileceği için dahil edilmez; isterseniz `POST /api/data/backup` isteğine `?include_env=true` ekleyin. Geri yüklemek için uygulamayı durdurun, `data/` klasörünü proje klasörüne (veya `DATA_DIR`’e) açın; `leagues.txt` ve `league_sports.json`’ı da geri istiyorsanız `config/` altına kopyalayın.
+> **Tüm veriyi sil** indirilmiş bütün sezon, maç ve detayları siler ve geri alınamaz. Önce yedek alın. Yedek, `data/backups/` (yani `DATA_DIR` içi) altında `data/`, `leagues.txt` ve `league_sports.json` içeren bir zip’tir. `.env` proxy kimlik bilgisi ve erişim belirteci içerebileceği için dahil edilmez; isterseniz `POST /api/data/backup` isteğine `?include_env=true` ekleyin (böyle bir yedeğin dosya adında `_with_env` bulunur ve dosyayı yalnızca sahibi okuyabilir). Geri yüklemek için uygulamayı durdurun, `data/` klasörünü proje klasörüne (veya `DATA_DIR`’e) açın; `leagues.txt` ve `league_sports.json`’ı da geri istiyorsanız `config/` altına kopyalayın.
 
 > **İndirme sürerken** **Yedek al**, **Tüm veriyi sil**, lig kaldırma ve veri klasörünü değiştirme bir mesajla reddedilir: indirmeyi durdurun ya da bitmesini bekleyin. Yedekleme ya da silme sürerken de indirme başlatılamaz. Veri klasörü değişikliği hemen geçerli olur (yeniden başlatma gerekmez): indirmeler ve **Etkinlik** geçmişi artık yeni klasörü kullanır (her veri klasörü kendi geçmişini `.meta/jobs.db` içinde tutar); eski klasördeki dosyalar taşınmaz.
 
@@ -374,9 +376,33 @@ python main.py
 python main.py --web
 ```
 
-Varsayılan adres: `http://127.0.0.1:8000`. Sunucu yalnızca bu bilgisayarı dinler. `--host 0.0.0.0` onu ağa açar ve **giriş yoktur**: erişebilen herkes ayarları değiştirip veriyi silebilir. `--port` portu değiştirir, `--dev` kod değişince yeniden başlatır. Sağlık kontrolü: `GET /health` (sürümü de bildirir).
+Varsayılan adres: `http://127.0.0.1:8000`. Sunucu yalnızca bu bilgisayarı dinler. `--host` onu ağa açar; önce [Güvenlik modeli](#güvenlik-modeli) bölümünü okuyun. Tek bir adres (`--host 192.168.1.5`) olduğu gibi çalışır. `--host 0.0.0.0` (tüm arayüzler) ayrıca `SOFASCORE_ALLOWED_HOSTS` ister; `SOFASCORE_API_TOKEN` yoksa uygulama başlangıçta, porta ulaşabilen herkesin veriyi okuyup silebileceği ve ayarları değiştirebileceği konusunda uyarır. `--port` portu değiştirir, `--dev` kod değişince yeniden başlatır. Sağlık kontrolü: `GET /health` (sürümü de bildirir).
 
 Arka plan işlemleri `GET /api/scrape/status` ve `GET /api/scrape/stream` (SSE) ile izlenir. Ağır dosya/pandas işleri event loop dışına alındığından uzun çekimler sırasında arayüz genelde yanıt vermeye devam eder.
+
+### Güvenlik modeli
+
+Web uygulamasında **kullanıcı hesabı yoktur**. Varsayılan olarak yalnızca bu bilgisayarı dinler; bunun için tasarlanmıştır. Onu ağa açmak yönetici olarak sizin kararınızdır; kimlerin ulaşabileceğini sınırlamak da (güvenlik duvarı, VPN, ters vekil / reverse proxy) size düşer. Uygulama bu önlemleri boşa çıkarmaz ve hiçbir güvenlik duvarının durduramadığı, kendi tarayıcınız üzerinden gelen saldırılara karşı korur.
+
+**Uygulamanın yaptıkları**
+
+- **Yalnızca bildiği adlara yanıt verir** (DNS rebinding). Bir istek ancak `Host` başlığı izin listesindeyse yanıtlanır: varsayılan liste `localhost`, `127.0.0.1` ve `[::1]`. `SOFASCORE_ALLOWED_HOSTS` (virgülle ayrılmış; `.env`’de ya da ortamda) listenin yerine geçer ve her zaman yazıldığı gibi kullanılır. `--host 192.168.1.5` o adresi kendiliğinden ekler. `--host 0.0.0.0` (tüm arayüzler), `SOFASCORE_ALLOWED_HOSTS` hangi adlara yanıt verileceğini söyleyene kadar başlamaz. `--allow-any-host` (ya da `SOFASCORE_ALLOWED_HOSTS=*`) her ada yanıt verir; bu **güvensizdir** ve korumayı kapatır.
+- **Başka sitelerin tetiklediği yazmaları reddeder** (CSRF). Hiçbir `GET` uç noktası bir şey değiştirmez. Durum değiştiren her istek (indirme başlatma ya da durdurma, ayar kaydetme, veri silme, yedek alma, SofaScore’da arama), tarayıcı onu başka bir sitenin gönderdiğini bildirdiğinde (`Sec-Fetch-Site`, `Origin`) `403` ile yanıtlanır. Bu başlıkların hiçbirini göndermeyen programlar (ör. curl) etkilenmez.
+- **Her yanıtla güvenlik başlıkları gönderir**: Content-Security-Policy (betik, stil, yazı tipi ve istekler yalnızca uygulamanın kendisinden; satır içi betik, `eval` ve çerçeveleme yok), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` ve `Cross-Origin-Resource-Policy: same-origin`. İki istisna: bu politikadan önce derlenmiş bir web arayüzü hâlâ `eval` ister; yeniden derleyene kadar `'unsafe-eval'` ile (ve log’da bir uyarıyla) sunulur. API belge sayfaları `/docs` ve `/redoc` ise betiklerini bir CDN’den yükler ve kendilerine özel bir politika alır.
+- **İsteğe bağlı erişim belirteci.** Varsayılan olarak kapalıdır. `SOFASCORE_API_TOKEN`’a uzun, rastgele bir değer verip uygulamayı yeniden başlatın; `python -c "import secrets; print(secrets.token_urlsafe(32))"` bir tane üretir. Bundan sonra her `/api` isteği belirteci ister. Programlar `Authorization: Bearer <belirteç>` gönderir. Web uygulaması onu bir kez sorar ve 30 gün geçerli, `HttpOnly`, `SameSite=Strict` bir oturum cookie’si tutar (canlı durum akışı da aynı cookie’yi kullanır); **Ayarlar → Genel → Oturumu kapat** oturumu bitirir, belirteci değiştirmek tüm oturumları bitirir. `GET /health` sağlık denetimleri için açık kalır, ama belirteç olmadan yalnızca `{"status": "ok"}` döndürür. Belirteç sabit sürede karşılaştırılır; log’da, tanılama paketinde ve API yanıtlarında hiç geçmez.
+- **Başlangıçta bir kez uyarır**: yerel olmayan bir adresi belirteç olmadan dinliyorsa.
+- **Gizli değerleri diskte özel tutar.** `.env` (proxy parolası, belirteçler) `0600`, tarayıcı profili klasörü (SofaScore cookie’leri) `0700` izinleriyle oluşturulur; var olanlar her başlangıçta daraltılır. `.env` içeren bir yedek bunu dosya adında söyler (`backup_…_with_env_….zip`) ve yalnızca sahibince okunur. Windows’ta dosyalar bunun yerine kullanıcı klasörünüzün izinlerine dayanır. Proxy parolası ayarlar API’sinde, log’larda, tanılama paketinde ve API’nin döndürdüğü hata iletilerinde maskelenir.
+
+**Ağa açmadan önce sizin yapmanız gerekenler**
+
+- `SOFASCORE_API_TOKEN` ayarlayın. O olmadan porta ulaşabilen herkes verinizi okuyup silebilir ve ayarları değiştirebilir.
+- Porta kimlerin ulaşabileceğini sınırlayın (güvenlik duvarı, VPN). Uygulama giriş denemelerini sınırlamaz; bu yüzden belirteç uzun ve rastgele olmalıdır.
+- Önüne TLS koyun. Uygulama düz HTTP konuşur: TLS’i sonlandıran bir ters vekil olmadan belirteç ve oturum cookie’si ağdan şifresiz geçer. Vekil özgün `Host` başlığını iletmelidir; iletmiyorsa gönderdiği ad `SOFASCORE_ALLOWED_HOSTS` içinde olmalıdır.
+- Docker’da konteyner kendi ağı içinde her zaman tüm arayüzleri dinler ve kimin ulaşabileceğine `-p` karar verir; bu yüzden başlangıç uyarısı orada çıkmaz: portu `127.0.0.1` dışına açıyorsanız belirteci ve `SOFASCORE_ALLOWED_HOSTS`’u kendiniz ayarlayın.
+
+```bash
+curl -H "Authorization: Bearer $SOFASCORE_API_TOKEN" http://127.0.0.1:8000/api/leagues
+```
 
 ### Headless / otomasyon
 
@@ -511,17 +537,18 @@ Neden bu sayılar: `events/live` CDN'de 5 sn önbellekte kalıyor; araştırmada
 
 Web uygulaması kök yollarda; JSON API öneki **`/api`**.
 
-- **Ligler**: listele (her ligde `sport`), ekle (isteğe bağlı `sport`), sporu ayarlamak için `PATCH /api/leagues/{id}`, sil, ara (yerel/uzak; uzak sonuçlarda `sport`), sezonlar, sezon yenileme, eksik detay listesi.
+- **Ligler**: listele (her ligde `sport`), ekle (isteğe bağlı `sport`), sporu ayarlamak için `PATCH /api/leagues/{id}`, sil, ara (yerel: `GET /api/leagues/search`; uzak: `POST /api/leagues/search-remote?q=…`, her çağrı SofaScore’a istek attığı için `POST`; uzak sonuçlarda `sport`), sezonlar, sezon yenileme, eksik detay listesi.
   - Uzak arama ve sezon yenileme, başarısız olduğunda boş liste döndürmek yerine nedenini söyler. Hata gövdesi `{"detail": {"reason": "...", "message": "..."}}` biçimindedir; `reason` şunlardan biridir: `blocked` (SofaScore 403 yanıtladı), `browser` (challenge istedi ama yerleşik tarayıcı başlatılamadı), `rate_limited` (429/503), `network` (bağlantı yok, zaman aşımı, proxy), `not_found` (sezon yenileme: bu ID’de lig yok) ya da `upstream` (uygulamanın beklemediği bir yanıt). Durum kodu 502’dir; `rate_limited` için 503, `not_found` için 404. 200 ile gelen boş liste, SofaScore’un gerçekten bir şey bulamadığı anlamına gelir. Web uygulaması her nedeni bir sonraki adımla birlikte gösterir.
 - **Sporlar**: `GET /api/sports` — desteklenen sporlar ve her biri için istenen maç detay dilimleri (`src/sports.py`’deki kayıt defterinin salt okunur görünümü).
 - **Maçlar**: `GET /api/matches` — sayfalı; filtreler `league_id` (tek ID ya da virgülle birden fazla, ör. `17,8`), `season_id`, `date`, `details=present|missing`, `sort=asc|desc`; her satırda `has_details`. Ayrıca tek maç JSON ve tek maç çekme.
 - **Scraper**: `POST /api/fetch` (gövde: `full` | `details`, `selections: [{league_id, season_ids, match_ids}]`), `POST /api/scrape/cancel` (sonrasında yeni istek gönderilmez, yeniden deneme beklemeleri kesilir), durum, SSE akışı.
 - **Pano / istatistik / ayarlar**: Web panellerine JSON; ayarlar `.env` ile uyumlu.
-- **Veri**: yedek zip, kapsam seçerek temizleme, CSV export.
+- **Veri**: yedek zip, kapsam seçerek temizleme, CSV export (`GET /api/export/csv` var olan dışa aktarımı indirir, yoksa `404` döndürür; `POST /api/export/csv` önce onu oluşturur).
+- **Erişim**: hiçbir `GET` uç noktası bir şey değiştirmez; başka bir sitenin tetiklediği durum değiştiren istekler `403` ile reddedilir. `SOFASCORE_API_TOKEN` ayarlıysa her `/api` isteği `Authorization: Bearer <belirteç>` ya da web uygulamasının oturum cookie’sini ister (`{"token": "..."}` ile `POST /api/auth/login`, `POST /api/auth/logout`, durum için `GET /api/auth`); aksi halde yanıt `401` ve `{"detail": {"code": "auth_required", "message": "..."}}` olur. Bkz. [Güvenlik modeli](#güvenlik-modeli).
 - **İndirme sürerken reddedilenler**: `POST /api/data/clear`, `POST /api/data/backup` (`scope=config` hariç), `DELETE /api/leagues/{id}` ve `data_dir`’i değiştiren `POST /api/settings`, `409` ve `{"detail": {"code": "job_running", "message": "..."}}` döndürür. Bunlardan biri sürerken hem bunlar hem `POST /api/fetch`, `data_operation_running` koduyla `409` döndürür. Başarılı `data_dir` değişikliği `"data_dir_changed": true` içerir; oluşturulamayan klasör `data_dir_unusable` koduyla `400` döndürür.
 - **Bypass Durumu**: `GET /api/bypass/status` (`health` ile: `ok` / `degraded` / `blocked`, bkz. [SofaScore bizi engelliyor mu?](#sofascore-bizi-engelliyor-mu-köprü-sağlığı)) ve canlı test `POST /api/bypass/test`: tarayıcı üzerinden tek bir istek; yanıtta `success`, `reason` (başarısızsa, yukarıdaki gibi), `browser_ready`, `has_token` / `is_valid` ve `health` bulunur. Hiçbir şey bunu kendiliğinden çağırmaz; web uygulamasında **Ayarlar → Bağlantı** altındaki **Bağlantıyı sına** düğmesidir.
 - **Loglar / tanılama** (salt okunur, bkz. [Loglar ve tanılama](#loglar-ve-tanılama)): `GET /api/logs` (`limit` 1–2000, `level` = en düşük seviye), `GET /api/diagnostics` (özet, JSON), `GET /api/diagnostics/bundle` (zip indirme). Hiçbiri dosya yolu almaz.
-- **Sağlık**: `GET /health` (`/api` öneki yok) `status`, `version`, `ui` alanlarının yanında `bridge` (aynı sağlık bloğu) ve `throttle` ([ortak istek bütçesi](#ortak-istek-bütçesi-tüm-süreçler)) döndürür.
+- **Sağlık**: `GET /health` (`/api` öneki yok) `status`, `version`, `ui` alanlarının yanında `bridge` (aynı sağlık bloğu) ve `throttle` ([ortak istek bütçesi](#ortak-istek-bütçesi-tüm-süreçler)) döndürür. Erişim belirteci ayarlıysa, belirteci taşımayan çağıran yalnızca `{"status": "ok"}` alır.
 
 Sunucu çalışırken OpenAPI: `GET /docs`.
 

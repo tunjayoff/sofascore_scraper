@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.svg" />
+    <!-- Tells the server this build needs no eval (vite.config.ts: __INTLIFY_JIT_COMPILATION__), so it
+         can send the strict Content-Security-Policy (src/web/security.py: CSP_MARKER). -->
+    <meta name="sofascore-csp" content="no-eval" />
     <title>SofaScore Scraper</title>
   </head>
   <body>

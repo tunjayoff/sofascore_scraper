@@ -83,6 +83,19 @@ section is what the first tagged release will contain.
 - `GET /api/sports` lists the supported sports and, for each, the match-detail slices
   requested for it (#18).
 - `main.py --web` options `--host`, `--port` and `--dev`.
+- **Optional access token.** `SOFASCORE_API_TOKEN` (off by default) protects the web app and
+  its API. Once it is set, every `/api` request needs `Authorization: Bearer <token>` or the
+  web app's session cookie; the web app asks for the token once (`POST /api/auth/login`, an
+  `HttpOnly`, `SameSite=Strict` cookie) and **Settings → General → Sign out** ends the
+  session. The live status stream works with the cookie, and `GET /health` answers only
+  `{"status": "ok"}` to callers without the token. The token never appears in the log, the
+  diagnostics bundle or an API response (#43).
+- `main.py --web --allow-any-host`: answer to any `Host` header instead of requiring
+  `SOFASCORE_ALLOWED_HOSTS` for `--host 0.0.0.0`. Insecure; see "Security model" in the
+  README (#43).
+- `POST /api/export/csv` creates the CSV export when there is none yet (#43).
+- A "Security model" section in both READMEs: what the app does and what you must do before
+  opening it to a network (#43).
 - `main.py --version`; the version is also reported by `GET /health` and shown on the
   Settings page. `pyproject.toml` is the single place it is written.
 - **Docker image** (`Dockerfile`, `docker-compose.yml`): the web app together with the
@@ -120,6 +133,17 @@ section is what the first tagged release will contain.
   separate licence. Versions published before this change remain available under MIT.
 - `main.py --web` listens on `127.0.0.1` only (it used to bind `0.0.0.0` with reload on).
   Opening it to the network is an explicit `--host`, and logs a warning.
+- `main.py --web --host 0.0.0.0` (every interface) does not start until
+  `SOFASCORE_ALLOWED_HOSTS` lists the names or addresses you open the app with, or
+  `--allow-any-host` is given. It used to accept every `Host` header without saying so, and it
+  replaced a `SOFASCORE_ALLOWED_HOSTS` you had set; that value is now always used as written.
+  `--host <one address>` works as before. On a non-local address without
+  `SOFASCORE_API_TOKEN` the app prints and logs one warning: anyone who can reach the port
+  can read and delete data and change settings (#43).
+- The remote league search is `POST /api/leagues/search-remote` (it was a `GET`), and
+  `GET /api/export/csv` no longer creates a missing export: it answers `404` and
+  `POST /api/export/csv` creates it. No `GET` endpoint changes anything any more (#43).
+- A backup that includes `.env` (`?include_env=true`) has `_with_env` in its file name (#43).
 - The interface language variable is `APP_LANGUAGE`. `LANGUAGE` clashed with GNU gettext;
   a legacy `LANGUAGE` value is only honoured when it is `tr` or `en`.
 - **English by default.** One rule chooses the language everywhere (terminal, `--doctor`,
@@ -299,6 +323,22 @@ section is what the first tagged release will contain.
   key that looks like a secret are masked (`***`) in the log file, on the console and in the
   diagnostics bundle (#24). 500 responses no longer echo exception text.
 - `GET /api/settings` no longer returns the proxy password (`***` instead) (#23).
+- Requests that another site triggers through your browser: two `GET` endpoints had side
+  effects (the remote league search sends a request to SofaScore, the CSV export wrote a
+  file) and were not covered by the cross-site check; they are `POST` now. The check also
+  reads `Sec-Fetch-Site`, so it no longer depends on `Origin` matching `Host` alone (#43).
+- Every response carries security headers: a Content-Security-Policy (scripts, styles, fonts
+  and requests only from the app itself; no inline script, no `eval`, no framing),
+  `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`
+  and `Cross-Origin-Resource-Policy: same-origin`. The web app build no longer needs `eval`;
+  a build made before this change is served with `'unsafe-eval'` and a warning in the log
+  until you rebuild it (`cd frontend && npm install && npm run build`) (#43).
+- `.env` is created with mode `0600` and the browser profile folder with `0700`, and
+  existing ones are tightened at every start (POSIX; nothing changes on Windows). A backup
+  that includes `.env` is readable by its owner only (#43).
+- The error text of a failed download (in `/api/scrape/status` and `/api/jobs`) and the
+  bridge's last error detail (in `/health`) are masked like log lines, so a proxy password
+  inside an error message is not returned (#43).
 - `npm audit fix` for a transitive frontend dependency (nanoid, #15).
 
 ## Earlier history

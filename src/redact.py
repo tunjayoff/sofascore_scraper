@@ -5,7 +5,8 @@ Log dosyası ve tanılama paketi hata bildirimine eklenmek içindir; içlerinde 
 ya da proxy parolası bulunmamalı. İki katman birlikte çalışır:
 
   1. Bilinen değerler: .env dosyasındaki, adı gizli bir şeye benzeyen anahtarların değerleri
-     (TOKEN, SECRET, PASSWORD, KEY, COOKIE...), ayrıca SOFA_CAPTCHA_TOKEN ve URL biçimli
+     (TOKEN, SECRET, PASSWORD, KEY, COOKIE...), ayrıca SOFA_CAPTCHA_TOKEN, web erişim belirteci
+     SOFASCORE_API_TOKEN (yalnızca ortamda ayarlı olsa da) ve URL biçimli
      değerlerin (PROXY_URL) içindeki kullanıcı adı/parola; adres şemasız yazılmış olsa da
      ("kullanıcı:parola@host:8080"). Metinde geçtikleri her yerde, hangi biçimde yazılmış
      olurlarsa olsunlar `***` olur.
@@ -31,7 +32,7 @@ from src.paths import env_file_path
 MASK = "***"
 
 # .env'de adı ne olursa olsun gizli sayılan uygulama anahtarları (ortamdan da okunur: Docker -e)
-KNOWN_SECRET_KEYS = ("SOFA_CAPTCHA_TOKEN",)
+KNOWN_SECRET_KEYS = ("SOFA_CAPTCHA_TOKEN", "SOFASCORE_API_TOKEN")
 # Değeri URL olan ve içinde kimlik bilgisi taşıyabilen uygulama anahtarları
 KNOWN_URL_KEYS = ("PROXY_URL", "API_BASE_URL")
 

@@ -35,9 +35,9 @@ describe('api client errors', () => {
 
   it('keeps the reason of a typed error and uses its message as the text', async () => {
     mockFetch({
-      'GET /api/leagues/search-remote': json({ detail: { reason: 'blocked', message: 'SofaScore refused the request (HTTP 403).' } }, 502),
+      'POST /api/leagues/search-remote': json({ detail: { reason: 'blocked', message: 'SofaScore refused the request (HTTP 403).' } }, 502),
     })
-    const e = (await apiGet('/api/leagues/search-remote?q=premier').catch((x) => x)) as ApiError
+    const e = (await apiSend('/api/leagues/search-remote?q=premier', 'POST').catch((x) => x)) as ApiError
     expect(e).toBeInstanceOf(ApiError)
     expect(e).toMatchObject({ status: 502, reason: 'blocked', message: 'SofaScore refused the request (HTTP 403).' })
     expect(upstreamReason(e)).toBe('blocked')

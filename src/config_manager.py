@@ -14,6 +14,7 @@ from src import redact
 from src.i18n import app_language
 from src.logger import apply_log_level, get_logger
 from src.paths import default_league_config_path, env_file_path
+from src.private_files import PRIVATE_FILE_MODE, create_private_file, restrict_permissions
 
 # .env dosyasını yükle
 dotenv.load_dotenv(env_file_path())
@@ -578,9 +579,11 @@ class ConfigManager:
             os.environ[key] = value
             # set_key yalnızca ilgili satırı değiştirir; yorumlar ve diğer satırlar korunur
             env_path = env_file_path()
-            if not os.path.exists(env_path):
-                open(env_path, "a", encoding="utf-8").close()
+            # .env gizli değer taşır (proxy parolası, belirteçler): yalnızca sahibince okunur (0600).
+            # set_key dosyayı yeniden yazar; python-dotenv sürümüne göre izinler korunmayabilir.
+            create_private_file(env_path)
             dotenv.set_key(env_path, key, value)
+            restrict_permissions(env_path, PRIVATE_FILE_MODE)
             redact.refresh()
             if key in _LOG_LEVEL_KEYS:
                 # Seviye yeniden başlatmayı beklemeden uygulanır

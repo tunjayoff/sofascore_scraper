@@ -4,6 +4,7 @@ SofaScore Scraper uygulaması ana giriş noktası.
 """
 
 import json
+import logging
 import sys
 import traceback
 import os
@@ -43,6 +44,7 @@ dotenv.load_dotenv(env_file_path())
 
 from src.SofaScoreUi import SimpleSofaScoreUI
 from src.exceptions import StorageError
+from src.private_files import harden_secret_paths
 from src.logger import get_logger, log_file_path
 from src.i18n import get_i18n
 from src.sports import sport_slugs
@@ -89,6 +91,8 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--web", action="store_true", help=t("cli_help_web"))
 
     parser.add_argument("--host", default="127.0.0.1", help=t("cli_help_host"))
+
+    parser.add_argument("--allow-any-host", action="store_true", help=t("cli_help_allow_any_host"))
 
     parser.add_argument("--port", type=int, default=8000, help=t("cli_help_port"))
 
@@ -185,6 +189,9 @@ def main() -> int:
         # Komut satırı argümanlarını ayrıştır
         args = parse_arguments()
 
+        # .env ve tarayıcı profili yalnızca sahibince okunur (POSIX); her çalışma kipinde denetlenir
+        harden_secret_paths()
+
         if args.diagnostics is not None:
             return _run_diagnostics(args.diagnostics)
 
@@ -195,15 +202,27 @@ def main() -> int:
         if args.web:
             try:
                 import uvicorn
-                if args.host not in ("127.0.0.1", "localhost", "::1"):
-                    logger.warning(
-                        f"Web arayüzü {args.host} adresinde dinliyor: ağdaki herkes kimlik doğrulaması "
-                        "olmadan erişebilir (veri silme, ayarlar dahil)."
-                    )
-                    extra = "*" if args.host in ("0.0.0.0", "::") else args.host
-                    os.environ["SOFASCORE_ALLOWED_HOSTS"] = f"localhost,127.0.0.1,[::1],{extra}"
-                logger.info(f"Web arayüzü başlatılıyor: http://localhost:{args.port}")
+                from src.web import security
+
                 i18n = get_i18n()
+                # Host izin listesi açıktır: kullanıcının SOFASCORE_ALLOWED_HOSTS değeri her zaman
+                # geçerlidir; yerel olmayan bir --host onu hiçbir zaman sessizce "*" yapmaz.
+                try:
+                    hosts = security.allowed_hosts_for_bind(
+                        args.host, os.environ.get(security.ALLOWED_HOSTS_ENV), allow_any=args.allow_any_host
+                    )
+                except security.AllowedHostsRequired:
+                    print(i18n.t("web_allowed_hosts_required", host=args.host), file=sys.stderr)
+                    return 2
+                if hosts is not None:
+                    os.environ[security.ALLOWED_HOSTS_ENV] = hosts
+                if not security.is_loopback_bind(args.host) and not security.api_token():
+                    # Tek ve açık uyarı: konsola ve log dosyasına (log seviyesi kapatmışsa yine de konsola)
+                    exposed = i18n.t("web_exposed_without_token", host=args.host, port=args.port)
+                    logger.warning(exposed)
+                    if not logger.isEnabledFor(logging.WARNING):
+                        print(exposed, file=sys.stderr)
+                logger.info(f"Web arayüzü başlatılıyor: http://localhost:{args.port}")
                 print(i18n.t('web_server_starting'))
                 print(i18n.t('go_to_address'))
                 print(i18n.t('press_ctrl_c'))

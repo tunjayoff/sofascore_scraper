@@ -1,6 +1,4 @@
-import os
 from pathlib import Path
-from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
@@ -8,15 +6,23 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 import dotenv
 
+from src.private_files import harden_secret_paths
 from src.logger import attach_file_handler, get_logger
 from src.paths import env_file_path
 from src.version import __version__
+from src.web import security
 from src.web.missing_ui import MISSING_UI_HTML
 
 dotenv.load_dotenv(env_file_path())
 logger = get_logger("WebApp")
 # uvicorn kendi logger'ını köke iletmez: sunucu hataları log dosyasına da yazılsın (erişim logu hariç)
 attach_file_handler("uvicorn")
+# .env ve tarayıcı profili yalnızca sahibince okunur (POSIX); sunucu hangi yoldan başlatılırsa başlatılsın
+harden_secret_paths()
+if 0 < len(security.api_token()) < security.MIN_TOKEN_LENGTH:
+    logger.warning(
+        f"{security.TOKEN_ENV} çok kısa, tahmin edilebilir: en az {security.MIN_TOKEN_LENGTH} rastgele karakter kullanın."
+    )
 
 app = FastAPI(
     title="SofaScore Scraper Web UI",
@@ -28,28 +34,45 @@ BASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BASE_DIR.parent.parent
 FRONTEND_DIST = REPO_ROOT / "frontend" / "dist"
 
-# DNS rebinding: yalnızca yerel host adlarına yanıt ver. main.py --host ile LAN'a açıldığında
-# SOFASCORE_ALLOWED_HOSTS genişletilir ("*" = hepsi).
-_DEFAULT_HOSTS = "localhost,127.0.0.1,[::1]"
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("SOFASCORE_ALLOWED_HOSTS", _DEFAULT_HOSTS).split(",") if h.strip()]
-
-_UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+# DNS rebinding: yalnızca bilinen Host adlarına yanıt verilir (varsayılan: yerel adlar). Liste
+# açıktır: SOFASCORE_ALLOWED_HOSTS ne diyorsa odur; hiçbir başlatma yolu onu sessizce "*" yapmaz
+# (bkz. security.allowed_hosts_for_bind).
+ALLOWED_HOSTS = security.allowed_hosts()
+if "*" in ALLOWED_HOSTS:
+    logger.warning("Host izin listesi kapalı (*): her Host başlığına yanıt veriliyor, DNS rebinding koruması yok.")
 
 
 @app.middleware("http")
-async def reject_cross_origin_writes(request: Request, call_next):
+async def security_boundary(request: Request, call_next):
     """
-    CSRF: tarayıcılar cross-origin POST'larda Origin gönderir. Origin, isteğin Host'u ile
-    eşleşmiyorsa başka bir sitenin tetiklediği istektir — veri silme, yedek, ayar yazma engellenir.
+    Her isteğin geçtiği tek güvenlik katmanı (kurallar: src/web/security.py).
+
+      1. CSRF: başka bir sitenin tetiklediği durum değiştiren istek (veri silme, yedek, ayar yazma,
+         iş başlatma) reddedilir. Tarayıcı dışı istemciler (Origin göndermeyen curl) etkilenmez.
+      2. Erişim belirteci (SOFASCORE_API_TOKEN ayarlıysa): /api istekleri `Authorization: Bearer`
+         ya da oturum cookie'si taşımalıdır (SSE başlık gönderemez; cookie ile çalışır).
+      3. Güvenlik başlıkları: ret yanıtları dahil her yanıta eklenir.
     """
-    if request.method in _UNSAFE_METHODS:
-        origin = request.headers.get("origin")
-        if origin and urlparse(origin).netloc != request.headers.get("host", ""):
-            return JSONResponse({"detail": "Cross-origin request rejected"}, status_code=403)
-    return await call_next(request)
+    # Yönlendiricinin eşleştirdiği yolun kendisi. request.url, Host başlığıyla birleştirilerek kurulur:
+    # "*" izin listesinde "x/y?" gibi bir Host, oradan okunan yolu değiştirip belirteç denetimini
+    # atlatabilirdi.
+    path = request.scope["path"]
+    if security.is_cross_origin_write(request.method, request.headers):
+        response = JSONResponse({"detail": "Cross-origin request rejected"}, status_code=403)
+    elif security.requires_token(path) and not security.is_authenticated(request.headers, request.cookies):
+        response = JSONResponse(
+            {"detail": {"code": "auth_required", "message": "An access token is required."}},
+            status_code=401,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    else:
+        response = await call_next(request)
+    for name, value in security.security_headers(path, FRONTEND_DIST):
+        response.headers[name] = value
+    return response
 
 
-# Eklenen son middleware en dışta çalışır: Host kontrolü Origin kontrolünden önce
+# Eklenen son middleware en dışta çalışır: Host kontrolü diğer her şeyden önce
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
 
 from src.web.jobs import JobStoreConflict  # noqa: E402
@@ -68,10 +91,15 @@ async def job_store_conflict(_request: Request, exc: JobStoreConflict):
 
 
 @app.get("/health")
-async def health_check():
+async def health_check(request: Request):
     # status/version/ui: sunucunun kendisi (başlatıcı ve arayüz bunlara bakar). bridge: SofaScore'a
     # erişimin durumu (ok / degraded / blocked); throttle: süreçler arası ortak istek bütçesi.
     from src import bridge_health, throttle
+
+    if not security.is_authenticated(request.headers, request.cookies):
+        # Belirteç ayarlı ve çağıran onu taşımıyor: yalnızca "sunucu ayakta" (sağlık denetimleri
+        # çalışmaya devam eder); sürüm, köprü hatası ve istek bütçesi ayrıntıları verilmez
+        return {"status": "ok"}
 
     return {
         "status": "ok",

@@ -35,6 +35,8 @@ import threading
 import time
 from typing import Any, Callable, Dict, List, Optional
 
+from src.redact import redact_text
+
 logger = logging.getLogger(__name__)
 
 OK = "ok"
@@ -117,13 +119,16 @@ class BridgeHealth:
 
     def record_failure(self, kind: str, detail: str = "") -> None:
         """Köprü bir isteği alamadı: reddedildi (403/challenge) ya da tarayıcı açılamadı."""
+        # Ayrıntı /health ve /api/bypass/status ile dışarı verilir: tarayıcı hata metni proxy
+        # adresini (parolasıyla) taşıyabilir, bu yüzden log satırları gibi maskelenir
+        detail = redact_text(str(detail))[:200]
         with self._lock:
             now = self._clock()
             self.last_failure_at = now
             self.consecutive_failures += 1
             if self.failing_since is None:
                 self.failing_since = now
-            self.last_error = {"kind": kind, "detail": str(detail)[:200], "at": now}
+            self.last_error = {"kind": kind, "detail": detail, "at": now}
             th = self._thresholds()
             target = OK
             if self.consecutive_failures >= th["degraded_after"]:

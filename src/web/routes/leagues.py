@@ -195,11 +195,15 @@ class RemoteLeagueResult(BaseModel):
     sport: Optional[str] = "Football"
 
 
-@router.get("/leagues/search-remote", response_model=List[RemoteLeagueResult])
+@router.post("/leagues/search-remote", response_model=List[RemoteLeagueResult])
 async def search_remote_leagues(q: str = Query(..., min_length=2)):
     """
     SofaScore'dan lig ara. Kullanıcının yeni eklemek istediği ligleri bulması için.
     Başarısızlıkta {"detail": {"reason", "message"}}: blocked / browser / rate_limited / network / upstream.
+
+    POST: her çağrı SofaScore'a canlı istek atar (istek bütçesini harcar, tarayıcıyı başlatabilir).
+    GET olsaydı başka bir sitedeki <img> bunu kullanıcının adına, kaynak denetimine takılmadan
+    tetikleyebilirdi.
     """
     try:
         return await asyncio.to_thread(_search_remote_leagues_sync, q)
