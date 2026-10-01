@@ -264,5 +264,6 @@ export default {
     saved: 'Ayarlar kaydedildi.',
     noChange: 'Değişiklik yok.',
     invalidNumber: '{field}: {min} ile {max} arasında bir sayı girin.',
+    version: 'Sürüm {version}',
   },
 }

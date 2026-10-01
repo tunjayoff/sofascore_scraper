@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { api, type Settings, type SystemStats } from '@/api/client'
 import { setLocale, type Lang } from '@/i18n'
 import { themePref, setTheme, type ThemePref } from '@/lib/theme'
+import { appVersion } from '@/lib/appVersion'
 import { num } from '@/lib/format'
 import { onTabKeydown } from '@/lib/tabs'
 import { errorText, toast, toastError } from '@/lib/toast'
@@ -227,4 +228,6 @@ onMounted(load)
     <p class="m-0 text-xs" style="color: var(--muted)">{{ t('settings.refreshWindowHint') }}</p>
     <div><button type="button" class="btn btn-primary" :disabled="!dirty || saving" @click="save">{{ t('common.save') }}</button></div>
   </section>
+
+  <p v-if="appVersion" class="app-version mt-6 mb-0 text-xs" style="color: var(--muted)">{{ t('settings.version', { version: appVersion }) }}</p>
 </template>

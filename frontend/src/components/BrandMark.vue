@@ -2,6 +2,7 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { noteHealth } from '@/lib/appVersion'
 
 /** App identity plus a live "is the backend there?" line, which is what people actually need up here. */
 const { t } = useI18n()
@@ -12,6 +13,8 @@ async function ping() {
   try {
     const r = await fetch('/health', { cache: 'no-store' })
     up.value = r.ok
+    // The body also carries the app version (shown on Settings); a body we can't read is not "down"
+    if (r.ok) noteHealth(await r.json().catch(() => null))
   } catch {
     up.value = false
   }

@@ -265,6 +265,7 @@ const en: typeof tr = {
     saved: 'Settings saved.',
     noChange: 'Nothing changed.',
     invalidNumber: '{field}: enter a number between {min} and {max}.',
+    version: 'Version {version}',
   },
 }
 

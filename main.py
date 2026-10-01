@@ -8,8 +8,20 @@ import sys
 import traceback
 import os
 import argparse
-import dotenv
 from pathlib import Path
+
+from src.version import __version__
+
+VERSION_TEXT = f"SofaScore Scraper {__version__}"
+
+# --version ağır modüller yüklenmeden yanıtlanır: aşağıdaki import'lar config/ dosyalarını
+# oluşturur ve log yazar; sürüm sorgusu yan etkisiz ve yalnızca tek satır çıktı olmalı
+# (bağımlılıklar kurulmadan da çalışır: yalnızca standart kütüphane).
+if __name__ == "__main__" and "--version" in sys.argv[1:]:
+    print(VERSION_TEXT)
+    sys.exit(0)
+
+import dotenv
 
 # Çalışma dizinini modülün dizinine ayarla
 script_dir = Path(__file__).resolve().parent
@@ -47,6 +59,13 @@ def parse_arguments() -> argparse.Namespace:
             "TUI ve headless için geçerlidir (.env / DATA_DIR ile web hizalanabilir)."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=VERSION_TEXT,
+        help="Sürümü yazdırır ve çıkar",
     )
 
     parser.add_argument(

@@ -14,6 +14,7 @@ import src.challenge_solver as cs
 from src import bridge_health
 from src.bridge_health import BLOCKED, DEGRADED, OK, BridgeHealth
 from src.i18n import I18nManager
+from src.version import __version__
 
 TH = {"degraded_after": 3, "blocked_after": 5, "blocked_min_seconds": 200.0}
 
@@ -293,7 +294,7 @@ HEALTH_KEYS = {
 
 def test_health_endpoint_keeps_its_fields_and_adds_bridge(client):
     body = client.get("/health").json()
-    assert body["status"] == "ok" and body["version"] == "2.0.0" and body["ui"] in ("vue-spa", "missing-dist")
+    assert body["status"] == "ok" and body["version"] == __version__ and body["ui"] in ("vue-spa", "missing-dist")
     assert set(body["bridge"]) == HEALTH_KEYS
     assert body["bridge"]["state"] == "ok"
     assert body["throttle"] == {"enabled": False, "requests_per_second": 0.0, "shared": False, "error": None}
