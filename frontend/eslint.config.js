@@ -27,9 +27,9 @@ export default tseslint.config(
     },
     rules: {
       ...vueLayoutOff,
-      // The match detail JSON (SofaScore pass-through) is not fully typed yet. A warning
-      // keeps each remaining `any` visible and countable while it is typed step by step.
-      '@typescript-eslint/no-explicit-any': 'warn',
+      // The match detail JSON is typed (lib/matchDetail.ts) and no `any` is left; keep it
+      // that way. Shapes we don't know take `unknown` and a parser, as parseStatistics does.
+      '@typescript-eslint/no-explicit-any': 'error',
     },
   },
   {
