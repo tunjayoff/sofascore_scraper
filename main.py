@@ -3,14 +3,16 @@
 SofaScore Scraper uygulaması ana giriş noktası.
 """
 
+import contextlib
 import json
 import logging
 import sys
+import time
 import traceback
 import os
 import argparse
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterator
 
 from src.version import __version__
 
@@ -48,6 +50,7 @@ dotenv.load_dotenv(env_file_path())
 # dalda, servisler ve istek katmanı yalnızca kendi dallarında içe aktarılır.
 from src.config_manager import ConfigManager
 from src.exceptions import StorageError
+from src.store import LeaseHeld
 from src.private_files import harden_secret_paths
 from src.logger import get_logger, log_file_path
 from src.i18n import get_i18n
@@ -64,6 +67,10 @@ ConfigManager()
 
 # Logger'ı al
 logger = get_logger("Main")
+
+# Veri dizini başka bir sürecin kilidinde (docs/design/02-services.md 4.5'teki kod). Diğer çıkış kodları
+# bugünkü gibidir: 0 başarı, 1 hata, 2 kullanım hatası ya da devre kesici.
+EXIT_LEASE_HELD = 6
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -147,6 +154,39 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
+@contextlib.contextmanager
+def _data_dir_lease(data_dir: str, name: str, purpose: str) -> Iterator[None]:
+    """
+    Blok boyunca veri dizininin `name` kilidini tutar (docs/design/01-storage.md 6.1): aynı dizine yazan ikinci
+    bir süreç (başka bir komut satırı çalıştırması ya da web işi) reddedilir. Kilit başkasındaysa LeaseHeld
+    fırlar; main() onu sahibin bilgisiyle kullanıcıya söyler. Depo bu süreçte kilit için açılır ve blok
+    bitince kapatılır.
+    """
+    from src.store import open_store
+
+    store = open_store(data_dir)
+    try:
+        with store.lease(name, purpose=purpose):
+            yield
+    finally:
+        store.close()
+
+
+def _lease_held_text(held: LeaseHeld) -> str:
+    """Reddedilen kilidin sahibi, kullanıcının dilinde; bilinmeyen alanlar "?" olarak yazılır."""
+    since = "?"
+    if held.started_at is not None:
+        since = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime(held.started_at))
+    return get_i18n().t(
+        "cli_lease_held",
+        lease=held.name or "?",
+        pid=held.pid if held.pid is not None else "?",
+        host=held.host or "?",
+        purpose=held.purpose or "?",
+        since=since,
+    )
+
+
 def _run_watch(args: argparse.Namespace) -> int:
     """Canlı izleyici (src/watcher.py): olay üretir, sonuçlandırmaz."""
     from src.watcher import MatchWatcher
@@ -158,21 +198,24 @@ def _run_watch(args: argparse.Namespace) -> int:
         print(get_i18n().t("cli_watch_usage"), file=sys.stderr)
         return 2
     data_dir = args.data_dir or ConfigManager().get_data_dir()
-    watcher = MatchWatcher(
-        args.sport,
-        event_ids=ids(args.event_ids),
-        league_ids=ids(args.league_ids),
-        on_event=lambda ev: print(json.dumps(ev, ensure_ascii=False)),
-        data_dir=data_dir,
-    )
-    try:
-        watcher.run(until_seconds=args.watch_hours * 3600 if args.watch_hours else None)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        print(
-            get_i18n().t("cli_watch_stopped", requests=watcher.requests, path=watcher.events_path), file=sys.stderr
+    # Aynı dizinde aynı sporu izleyen ikinci bir süreç aynı durum ve olay dosyalarına yazardı: reddedilir
+    with _data_dir_lease(data_dir, f"watcher:{args.sport}", "watch"):
+        watcher = MatchWatcher(
+            args.sport,
+            event_ids=ids(args.event_ids),
+            league_ids=ids(args.league_ids),
+            on_event=lambda ev: print(json.dumps(ev, ensure_ascii=False)),
+            data_dir=data_dir,
         )
+        try:
+            watcher.run(until_seconds=args.watch_hours * 3600 if args.watch_hours else None)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            print(
+                get_i18n().t("cli_watch_stopped", requests=watcher.requests, path=watcher.events_path),
+                file=sys.stderr,
+            )
     return 0
 
 
@@ -269,30 +312,42 @@ def _run_services(args: argparse.Namespace) -> int:
     """
     Terminal arayüzü olmadan çalışan kipler: --recheck-unavailable, --refresh-only, --headless.
 
-    Hepsi aynı servis bağlamını kurar (src/services/context.py).
+    Hepsi aynı servis bağlamını kurar (src/services/context.py). Veri dizinine yazanlar (yeniden denetim,
+    yenileme, indirme) çalışma boyunca dizinin yazar kilidini tutar; yalnızca CSV dışa aktarma kilit almaz.
     """
     from src.services.context import build_context
 
     # Tekil yapılandırma nesnesi (yukarıda kuruldu); --config bugünkü gibi okunmaz
     ctx = build_context(ConfigManager(), data_dir=args.data_dir)
 
-    if args.recheck_unavailable:
-        from src.services.maintenance import MaintenanceService
-
-        # Ağ isteği yok: yalnızca işaretler geri alınır; dilimler sonraki indirmede yeniden istenir
-        reset = MaintenanceService(ctx).recheck_unavailable(
-            args.league_id, include_confirmed=args.recheck_unavailable == "all"
-        )
-        print(
-            get_i18n().t(
-                "recheck_unavailable_done", matches=reset.matches, slices=reset.slices, scanned=reset.scanned
-            )
-        )
-        if not (args.headless or args.refresh_only):
-            return 0
+    downloads = bool(args.headless and args.update_all)
     if args.refresh_only:
-        return _run_refresh_only(args, ctx)
-    return _run_headless(args, ctx)
+        purpose = "refresh"
+    elif downloads:
+        purpose = "headless"
+    elif args.recheck_unavailable:
+        purpose = "recheck-unavailable"
+    else:
+        return _run_headless(args, ctx)
+
+    with _data_dir_lease(ctx.data_dir, "writer", purpose):
+        if args.recheck_unavailable:
+            from src.services.maintenance import MaintenanceService
+
+            # Ağ isteği yok: yalnızca işaretler geri alınır; dilimler sonraki indirmede yeniden istenir
+            reset = MaintenanceService(ctx).recheck_unavailable(
+                args.league_id, include_confirmed=args.recheck_unavailable == "all"
+            )
+            print(
+                get_i18n().t(
+                    "recheck_unavailable_done", matches=reset.matches, slices=reset.slices, scanned=reset.scanned
+                )
+            )
+            if not (args.headless or args.refresh_only):
+                return 0
+        if args.refresh_only:
+            return _run_refresh_only(args, ctx)
+        return _run_headless(args, ctx)
 
 
 def main() -> int:
@@ -300,7 +355,8 @@ def main() -> int:
     Uygulamanın ana giriş noktası.
 
     Returns:
-        int: Çıkış kodu (0: başarılı, 1: hata, 2: kullanım hatası ya da devre kesici)
+        int: Çıkış kodu (0: başarılı, 1: hata, 2: kullanım hatası ya da devre kesici, 6: veri dizini
+        başka bir sürecin kilidinde)
     """
     try:
         # Komut satırı argümanlarını ayrıştır
@@ -397,6 +453,15 @@ def main() -> int:
         i18n = get_i18n()
         print(i18n.t('prog_terminated_by_user'))
         return 0
+
+    except LeaseHeld as e:
+        # Veri dizini başka bir sürecin elinde. LeaseHeld bir StorageError'dır: bu dal ondan önce gelmeli.
+        logger.error(
+            "Data directory is in use by another process: lease=%s pid=%s host=%s purpose=%s",
+            e.name, e.pid, e.host, e.purpose,
+        )
+        print(_lease_held_text(e), file=sys.stderr)
+        return EXIT_LEASE_HELD
 
     except StorageError as e:
         # Kayıt diske yazılamadı (disk dolu, izin yok): iz dökümü yerine nedeni söyle

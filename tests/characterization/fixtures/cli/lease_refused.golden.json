@@ -1,0 +1,170 @@
+{
+ "after_the_lease_is_released": {
+  "argv": [
+   "--refresh-only"
+  ],
+  "exit_code": 0,
+  "files": {},
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SyncService: Refreshing 0 provisional records...",
+   "Refresh: 0 matches refreshed, 0 changed, 0 failed (changes: data/score_changes.jsonl)"
+  ]
+ },
+ "csv_export_is_not_refused": {
+  "argv": [
+   "--headless",
+   "--csv-export"
+  ],
+  "exit_code": 0,
+  "files": {
+   "added": {
+    "data/match_details/processed/all_matches_<epoch>.csv": "sha256:bbb79fb45fde"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "<progress> Maçlar işleniyor: 4/4"
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO Main: Running in headless mode",
+   "LOG INFO Main: Starting CSV export",
+   "LOG INFO MatchDataFetcher: Toplam 4 maç CSV'ye dönüştürülüyor...",
+   "LOG INFO MatchDataFetcher: Tüm maçlar için CSV dosyası oluşturuldu: <SANDBOX>/data/match_details/processed/all_matches_<epoch>.csv",
+   "CSV file successfully created: <SANDBOX>/data/match_details/processed/all_matches_<epoch>.csv"
+  ]
+ },
+ "recheck_then_update": {
+  "argv": [
+   "--recheck-unavailable",
+   "all",
+   "--headless",
+   "--update-all"
+  ],
+  "exit_code": 6,
+  "files": {},
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "Stopped: this data folder is in use by another process (lock writer: pid <pid>, host <host>, purpose job, since <time>). Wait for it to finish or stop it, then run this again."
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG ERROR Main: Data directory is in use by another process: lease=writer pid=<pid> host=<host> purpose=job"
+  ]
+ },
+ "recheck_unavailable": {
+  "argv": [
+   "--recheck-unavailable"
+  ],
+  "exit_code": 6,
+  "files": {},
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "Stopped: this data folder is in use by another process (lock writer: pid <pid>, host <host>, purpose job, since <time>). Wait for it to finish or stop it, then run this again."
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG ERROR Main: Data directory is in use by another process: lease=writer pid=<pid> host=<host> purpose=job"
+  ]
+ },
+ "refresh_only": {
+  "argv": [
+   "--refresh-only"
+  ],
+  "exit_code": 6,
+  "files": {},
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "Stopped: this data folder is in use by another process (lock writer: pid <pid>, host <host>, purpose job, since <time>). Wait for it to finish or stop it, then run this again."
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG ERROR Main: Data directory is in use by another process: lease=writer pid=<pid> host=<host> purpose=job"
+  ]
+ },
+ "update_all": {
+  "argv": [
+   "--headless",
+   "--update-all"
+  ],
+  "exit_code": 6,
+  "files": {
+   "added": {
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "Stopped: this data folder is in use by another process (lock writer: pid <pid>, host <host>, purpose job, since <time>). Wait for it to finish or stop it, then run this again."
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG ERROR Main: Data directory is in use by another process: lease=writer pid=<pid> host=<host> purpose=job"
+  ]
+ },
+ "update_all_tr": {
+  "argv": [
+   "--headless",
+   "--update-all"
+  ],
+  "exit_code": 6,
+  "files": {
+   "added": {
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "Durduruldu: bu veri klasörünü başka bir süreç kullanıyor (kilit writer: pid <pid>, makine <host>, amaç job, başlangıç <time>). Bitmesini bekleyin ya da onu durdurun, sonra yeniden çalıştırın."
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG ERROR Main: Data directory is in use by another process: lease=writer pid=<pid> host=<host> purpose=job"
+  ]
+ }
+}

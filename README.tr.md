@@ -431,7 +431,9 @@ python main.py --headless --update-all --fetch-mode details --league-id 52
 python main.py --headless --csv-export --data-dir ./data
 ```
 
-Çıkış kodları: **0** başarı (veya scraper’ın set ettiği `APP_EXIT_CODE`), **1** beklenmeyen hata ya da veri diske yazılamadı, **2** headless’te işlem belirtilmedi ya da devre kesici çalışmayı durdurdu.
+Çıkış kodları: **0** başarı, **1** beklenmeyen hata ya da veri diske yazılamadı, **2** headless’te işlem belirtilmedi ya da devre kesici çalışmayı durdurdu, **6** aynı veri klasörüne başka bir süreç zaten yazıyor.
+
+Bir veri klasörüne aynı anda yalnızca bir süreç yazar. Web uygulamasında ya da başka bir headless çalıştırmada bir indirme sürerken `--headless --update-all`, `--refresh-only` ve `--recheck-unavailable` başlamaz: kilidi kimin tuttuğunu (süreç numarası, makine, amaç, başlangıç) yazar ve **6** ile çıkar. Aynı sporun ikinci `--watch` çalıştırması için de böyledir. Tek başına `--headless --csv-export` bundan etkilenmez.
 
 ### Yardım
 

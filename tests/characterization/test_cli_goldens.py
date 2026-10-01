@@ -15,7 +15,9 @@ söylemez. `main.py`nin davranışını değiştiren iş (plan: P10, P19) golden
 PR metninde sayar.
 
 P10'dan beri headless kipler (--headless, --refresh-only, --recheck-unavailable) terminal arayüzünü kurmaz:
-servis bağlamını kurar, SyncService ve MaintenanceService'i çağırır.
+servis bağlamını kurar, SyncService ve MaintenanceService'i çağırır ve veri dizinine yazarken dizinin yazar
+kilidini tutar (--watch: `watcher:<spor>` kilidi). Kilit başka bir süreçteyse çıkış kodu 6'dır
+(lease_refused.golden.json).
 
 Karşılaştırmadan önce çıktıdan çalıştırma anına bağlı kısımlar ayıklanır:
   - log satırlarının zamanı ve süreç numarası ("LOG INFO Main: ..." kalır)
@@ -28,6 +30,7 @@ durumla farkı (eklenen / değişen / silinen) goldena yazılır; `.meta/` altı
 """
 from __future__ import annotations
 
+import contextlib
 import copy
 import hashlib
 import importlib.util
@@ -36,11 +39,12 @@ import os
 import re
 import shutil
 import site
+import socket
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Sequence, Union
+from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Union
 
 import pytest
 
@@ -890,6 +894,99 @@ def test_recheck_unavailable(new_box: NewBox, settled: Seed) -> None:
     assert_cli_golden("recheck_unavailable", steps)
 
 
+# --- veri dizini başka bir sürecin kilidinde ------------------------------------------------
+
+# Veri dizininin bir kilidini alıp "ready <pid>" yazan ve stdin kapanana kadar tutan süreç
+_LEASE_HOLDER = """
+import os, sys
+from src.store import open_store
+
+store = open_store(sys.argv[1])
+with store.lease(sys.argv[2], purpose=sys.argv[3]):
+    print("ready", os.getpid(), flush=True)
+    sys.stdin.readline()
+store.close()
+"""
+_LEASE_TIME = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC")
+
+
+@contextlib.contextmanager
+def lease_held_elsewhere(data_dir: Path, name: str, purpose: str) -> Iterator[int]:
+    """Blok boyunca `data_dir`in `name` kilidini başka bir süreç tutar; o sürecin pid'ini verir."""
+    proc = subprocess.Popen(
+        [sys.executable, "-c", _LEASE_HOLDER, str(data_dir), name, purpose],
+        cwd=REPO, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+    )
+    try:
+        assert proc.stdout is not None
+        ready = proc.stdout.readline().split()
+        if ready[:1] != ["ready"]:
+            proc.kill()
+            pytest.fail(f"the lease holder did not start: {proc.communicate()[1]}")
+        yield int(ready[1])
+    finally:
+        if proc.poll() is None:
+            try:
+                _out, err = proc.communicate("\n", timeout=TIMEOUT_SECONDS)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                _out, err = proc.communicate()
+            assert proc.returncode == 0, err
+        else:
+            proc.communicate()
+
+
+def _refused_golden(run: CliRun, holder_pid: int) -> Dict[str, Any]:
+    """Reddedilen çalıştırmanın goldenı: sahibin pid'i, makine adı ve kilidin alındığı an adlarıyla."""
+    host = re.escape(socket.gethostname())
+
+    def mask(line: str) -> str:
+        line = re.sub(rf"\bpid([ =]){holder_pid}\b", r"pid\1<pid>", line)
+        line = re.sub(rf"\b(host|makine)([ =]){host}(?=[, ]|$)", r"\1\2<host>", line)
+        return _LEASE_TIME.sub("<time>", line)
+
+    golden = run.golden()
+    golden["stdout"] = _map_lines(run.stdout, mask)
+    golden["stderr"] = _map_lines(run.stderr, mask)
+    return golden
+
+
+def test_a_second_writer_is_refused_with_exit_code_6(new_box: NewBox) -> None:
+    """
+    Veri dizininin yazar kilidi başka bir süreçteyken (bir web işi ya da başka bir komut satırı çalıştırması)
+    indirme, yenileme ve yeniden denetim başlamaz: kilidi kimin tuttuğu (pid, makine, amaç, başlangıç)
+    stderr'e uygulamanın dilinde yazılır, çıkış kodu 6'dır, istek atılmaz ve veri değişmez. CSV dışa aktarma
+    yazar kilidi almaz ve çalışır. Kilit bırakılınca aynı komut çalışır.
+    """
+    box = new_box("en", data="seed")
+    turkish = new_box("tr", data="seed", env_lines=["APP_LANGUAGE=tr"])
+    refused: Dict[str, CliRun] = {}
+    cases: Dict[str, Dict[str, Any]] = {}
+
+    with lease_held_elsewhere(box.data, "writer", "job") as pid:
+        refused["update_all"] = run_cli(box, "--headless", "--update-all")
+        refused["refresh_only"] = run_cli(box, "--refresh-only")
+        refused["recheck_unavailable"] = run_cli(box, "--recheck-unavailable")
+        refused["recheck_then_update"] = run_cli(box, "--recheck-unavailable", "all", "--headless", "--update-all")
+        for name, run in refused.items():
+            cases[name] = _refused_golden(run, pid)
+        csv_export = run_cli(box, "--headless", "--csv-export")
+    with lease_held_elsewhere(turkish.data, "writer", "job") as pid:
+        refused["update_all_tr"] = run_cli(turkish, "--headless", "--update-all")
+        cases["update_all_tr"] = _refused_golden(refused["update_all_tr"], pid)
+    released = run_cli(box, "--refresh-only")
+
+    for name, run in refused.items():
+        assert (run.exit_code, run.requests) == (6, []), name
+        assert not any(path.startswith("data/") for kind in run.files.values() for path in kind), name
+        assert "Traceback" not in "\n".join(line for line in run.stderr if isinstance(line, str)), name
+    assert (csv_export.exit_code, released.exit_code) == (0, 0)
+    assert list(csv_export.files["added"]) == ["data/match_details/processed/all_matches_<epoch>.csv"]
+    cases["csv_export_is_not_refused"] = csv_export.golden()
+    cases["after_the_lease_is_released"] = released.golden()
+    assert_cli_golden("lease_refused", cases)
+
+
 # --- --watch --------------------------------------------------------------------------------
 
 LIVE_EVENT = 9300001
@@ -924,6 +1021,22 @@ def test_watch_event_ids(box: Sandbox, world: FakeSofaScore) -> None:
         )
     assert (first.exit_code, second.exit_code) == (0, 0)
     assert_cli_golden("watch_event_ids", {"match_in_play": first.golden(), "restart_after_the_match": second.golden()})
+
+
+def test_a_second_watcher_for_the_same_sport_is_refused(box: Sandbox) -> None:
+    """
+    Aynı veri dizininde aynı sporun izleyicisi zaten çalışıyorsa ikincisi başlamaz (çıkış kodu 6, istek yok);
+    yazar kilidi ise başka bir kilittir: bir izleyici çalışırken yenileme reddedilmez.
+    """
+    argv = ["--watch", "--sport", "football", "--event-ids", str(LIVE_EVENT)]
+
+    with lease_held_elsewhere(box.data, "watcher:football", "watch") as pid:
+        watch = run_cli(box, *argv)
+        refresh = run_cli(box, "--refresh-only")
+
+    assert (watch.exit_code, watch.requests) == (6, [])
+    assert refresh.exit_code == 0
+    assert_cli_golden("lease_refused_watch", _refused_golden(watch, pid))
 
 
 # --- --diagnostics --------------------------------------------------------------------------

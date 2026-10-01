@@ -472,6 +472,7 @@
     "cli_refresh_summary": "Refresh: {refreshed} matches refreshed, {changed} changed, {failed} failed (changes: data/score_changes.jsonl)",
     "cli_sync_summary": "Download finished. Matches that needed details: {total} ({ok} fetched, {failed} failed). Provisional records refreshed: {refreshed} ({changed} changed).",
     "cli_sync_empty_schedules": "No match list for {count} season(s): the list came back empty or could not be fetched.",
+    "cli_lease_held": "Stopped: this data folder is in use by another process (lock {lease}: pid {pid}, host {host}, purpose {purpose}, since {since}). Wait for it to finish or stop it, then run this again.",
     "cli_headless_usage": "--headless needs --update-all and/or --csv-export. Examples:\n  python main.py --headless --update-all\n  python main.py --headless --update-all --fetch-mode details --league-id 52\n  python main.py --headless --csv-export --data-dir ./data",
     "details_processing_parallel": "Processing {count} matches in parallel...",
     "details_progress_label": "Fetching match details",
