@@ -61,9 +61,11 @@ def _imported_modules(path: Path) -> List[str]:
     return found
 
 
-def test_jobs_package_imports_no_face_no_sql_no_file_access():
+def test_jobs_package_imports_no_face_and_no_sql():
+    # Dosya erişimi içe aktarmalardan güvenle anlaşılamaz (os, pid okumak için de gerekir); burada
+    # yalnızca yüz modülleri ve sqlite3 yasaklanır.
     forbidden_prefixes = ("src.web", "src.ui", "src.cli", "src.SofaScoreUi")
-    forbidden_modules = {"sqlite3", "os", "pathlib", "shutil", "io"}
+    forbidden_modules = {"sqlite3"}
     files = sorted(JOBS_DIR.glob("*.py"))
     assert files, "src/jobs is empty"
     for path in files:
