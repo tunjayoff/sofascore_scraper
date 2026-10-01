@@ -27,8 +27,7 @@
    "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
    "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
    "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
-   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
-   "LOG INFO Main: Yenileme: 1 geçici kayıt",
+   "LOG INFO SyncService: Refreshing 1 provisional records...",
    "LOG INFO MatchDataFetcher: 1 maç yenileniyor",
    "Refresh: 1 matches refreshed, 0 changed, 0 failed (changes: data/score_changes.jsonl)"
   ]
@@ -50,8 +49,7 @@
    "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
    "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
    "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
-   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
-   "LOG INFO Main: Yenileme: 0 geçici kayıt",
+   "LOG INFO SyncService: Refreshing 0 provisional records...",
    "Refresh: 0 matches refreshed, 0 changed, 0 failed (changes: data/score_changes.jsonl)"
   ]
  },
@@ -75,8 +73,7 @@
    "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
    "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
    "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
-   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
-   "LOG INFO Main: Yenileme: 0 geçici kayıt",
+   "LOG INFO SyncService: Refreshing 0 provisional records...",
    "Refresh: 0 matches refreshed, 0 changed, 0 failed (changes: data/score_changes.jsonl)"
   ]
  }

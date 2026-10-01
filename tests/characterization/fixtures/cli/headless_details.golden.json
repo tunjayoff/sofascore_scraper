@@ -117,17 +117,15 @@
    "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
    "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
    "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
-   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
-   "LOG INFO Main: Headless modda çalışılıyor",
-   "LOG INFO Main: Headless güncelleme: league_id=None mode=details",
-   "",
-   "Headless: Fetching match details for all leagues...",
+   "LOG INFO Main: Running in headless mode",
+   "LOG INFO Main: Headless update: league_id=None mode=details",
+   "LOG INFO SyncService: Checking which matches need details...",
    "Fetching match details for all leagues...",
    "1 leagues to process...",
    "",
    "League folder: 17_Premier_League",
    "Found 4 match IDs for the league.",
-   "Found 4 unique match IDs.",
+   "LOG INFO SyncService: Fetching match details: league all (4 matches)…",
    "",
    "Details will be fetched for 4 matches...",
    "",
@@ -146,7 +144,8 @@
    },
    "✓ Batch 1: 4/4 succeeded",
    "",
-   "Done: 4/4 matches (100.0%) processed successfully."
+   "Done: 4/4 matches (100.0%) processed successfully.",
+   "Download finished. Matches that needed details: 4 (4 fetched, 0 failed). Provisional records refreshed: 1 (1 changed)."
   ]
  },
  "one_league": {
@@ -175,17 +174,15 @@
    "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
    "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
    "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
-   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
-   "LOG INFO Main: Headless modda çalışılıyor",
-   "LOG INFO Main: Headless güncelleme: league_id=17 mode=details",
-   "",
-   "Headless: Fetching match details for league 17...",
+   "LOG INFO Main: Running in headless mode",
+   "LOG INFO Main: Headless update: league_id=17 mode=details",
+   "LOG INFO SyncService: Checking which matches need details...",
    "Fetching match details for league ID 17...",
    "1 leagues to process...",
    "",
    "League folder: 17_Premier_League",
    "Found 4 match IDs for the league.",
-   "Found 4 unique match IDs.",
+   "LOG INFO SyncService: Fetching match details: league 17 (4 matches)…",
    "",
    "Details will be fetched for 4 matches...",
    "",
@@ -204,7 +201,8 @@
    },
    "✓ Batch 1: 4/4 succeeded",
    "",
-   "Done: 4/4 matches (100.0%) processed successfully."
+   "Done: 4/4 matches (100.0%) processed successfully.",
+   "Download finished. Matches that needed details: 4 (4 fetched, 0 failed). Provisional records refreshed: 1 (1 changed)."
   ]
  }
 }

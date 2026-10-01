@@ -1,0 +1,26 @@
+{
+ "argv": [
+  "--watch",
+  "--sport",
+  "football",
+  "--event-ids",
+  "9300001"
+ ],
+ "exit_code": 6,
+ "files": {
+  "added": {
+   "logs/sofascore_scraper.log": "<binary>"
+  }
+ },
+ "request_layer_loaded": false,
+ "requests": [],
+ "sleeps": {},
+ "stderr": [
+  "Stopped: this data folder is in use by another process (lock watcher:football: pid <pid>, host <host>, purpose watch, since <time>). Wait for it to finish or stop it, then run this again."
+ ],
+ "stdout": [
+  "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+  "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+  "LOG ERROR Main: Data directory is in use by another process: lease=watcher:football pid=<pid> host=<host> purpose=watch"
+ ]
+}

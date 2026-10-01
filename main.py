@@ -3,13 +3,16 @@
 SofaScore Scraper uygulaması ana giriş noktası.
 """
 
+import contextlib
 import json
 import logging
 import sys
+import time
 import traceback
 import os
 import argparse
 from pathlib import Path
+from typing import TYPE_CHECKING, Iterator
 
 from src.version import __version__
 
@@ -42,15 +45,32 @@ from src.paths import env_file_path  # noqa: E402
 
 dotenv.load_dotenv(env_file_path())
 
-from src.SofaScoreUi import SimpleSofaScoreUI
+# Yapılandırma her kipte burada, diğer modüllerden (ve Main logger'ından) önce yüklenir: sofascore.toml bu içe
+# aktarmada okunur ve bozuksa uygulama burada durur. Terminal arayüzü (src/SofaScoreUi.py) yalnızca etkileşimli
+# dalda, servisler ve istek katmanı yalnızca kendi dallarında içe aktarılır.
+from src.config_manager import ConfigManager
 from src.exceptions import StorageError
+from src.store import LeaseHeld
 from src.private_files import harden_secret_paths
 from src.logger import get_logger, log_file_path
 from src.i18n import get_i18n
 from src.sports import sport_slugs
 
+if TYPE_CHECKING:
+    from src.services.context import ServiceContext
+    from src.services.sync import SyncResult
+
+# Lig yapılandırması her kipte başlangıçta kurulur: config/ dizini ve örnek lig dosyası ilk çalıştırmada burada
+# oluşur. Eskiden bunu terminal arayüzünün içe aktarılması yan etki olarak yapıyordu. Tekil nesne yolsuz
+# kurulduğu için --config bugünkü gibi etkisizdir (docs/design/02-services.md 1.7).
+ConfigManager()
+
 # Logger'ı al
 logger = get_logger("Main")
+
+# Veri dizini başka bir sürecin kilidinde (docs/design/02-services.md 4.5'teki kod). Diğer çıkış kodları
+# bugünkü gibidir: 0 başarı, 1 hata, 2 kullanım hatası ya da devre kesici.
+EXIT_LEASE_HELD = 6
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -134,9 +154,41 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
+@contextlib.contextmanager
+def _data_dir_lease(data_dir: str, name: str, purpose: str) -> Iterator[None]:
+    """
+    Blok boyunca veri dizininin `name` kilidini tutar (docs/design/01-storage.md 6.1): aynı dizine yazan ikinci
+    bir süreç (başka bir komut satırı çalıştırması ya da web işi) reddedilir. Kilit başkasındaysa LeaseHeld
+    fırlar; main() onu sahibin bilgisiyle kullanıcıya söyler. Depo bu süreçte kilit için açılır ve blok
+    bitince kapatılır.
+    """
+    from src.store import open_store
+
+    store = open_store(data_dir)
+    try:
+        with store.lease(name, purpose=purpose):
+            yield
+    finally:
+        store.close()
+
+
+def _lease_held_text(held: LeaseHeld) -> str:
+    """Reddedilen kilidin sahibi, kullanıcının dilinde; bilinmeyen alanlar "?" olarak yazılır."""
+    since = "?"
+    if held.started_at is not None:
+        since = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime(held.started_at))
+    return get_i18n().t(
+        "cli_lease_held",
+        lease=held.name or "?",
+        pid=held.pid if held.pid is not None else "?",
+        host=held.host or "?",
+        purpose=held.purpose or "?",
+        since=since,
+    )
+
+
 def _run_watch(args: argparse.Namespace) -> int:
     """Canlı izleyici (src/watcher.py): olay üretir, sonuçlandırmaz."""
-    from src.config_manager import ConfigManager
     from src.watcher import MatchWatcher
 
     def ids(raw):
@@ -146,21 +198,24 @@ def _run_watch(args: argparse.Namespace) -> int:
         print(get_i18n().t("cli_watch_usage"), file=sys.stderr)
         return 2
     data_dir = args.data_dir or ConfigManager().get_data_dir()
-    watcher = MatchWatcher(
-        args.sport,
-        event_ids=ids(args.event_ids),
-        league_ids=ids(args.league_ids),
-        on_event=lambda ev: print(json.dumps(ev, ensure_ascii=False)),
-        data_dir=data_dir,
-    )
-    try:
-        watcher.run(until_seconds=args.watch_hours * 3600 if args.watch_hours else None)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        print(
-            get_i18n().t("cli_watch_stopped", requests=watcher.requests, path=watcher.events_path), file=sys.stderr
+    # Aynı dizinde aynı sporu izleyen ikinci bir süreç aynı durum ve olay dosyalarına yazardı: reddedilir
+    with _data_dir_lease(data_dir, f"watcher:{args.sport}", "watch"):
+        watcher = MatchWatcher(
+            args.sport,
+            event_ids=ids(args.event_ids),
+            league_ids=ids(args.league_ids),
+            on_event=lambda ev: print(json.dumps(ev, ensure_ascii=False)),
+            data_dir=data_dir,
         )
+        try:
+            watcher.run(until_seconds=args.watch_hours * 3600 if args.watch_hours else None)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            print(
+                get_i18n().t("cli_watch_stopped", requests=watcher.requests, path=watcher.events_path),
+                file=sys.stderr,
+            )
     return 0
 
 
@@ -178,12 +233,130 @@ def _run_diagnostics(target: str) -> int:
     return 0
 
 
+def _report_sync(result: "SyncResult") -> int:
+    """
+    Bir indirmenin sonucunu kullanıcıya söyler ve çıkış kodunu döndürür (0; devre kesildiyse 2).
+
+    Maç listesi alınamayan sezonlar stderr'e yazılır. Devre kesildiyse yalnızca neden söylenir: yarıda kalan
+    bir çalışmada indirici, denenmeyen maçları başarısız diye bildirmez ve sayılar yanıltıcı olurdu.
+    """
+    t = get_i18n().t
+    if result.schedule_empty_seasons:
+        print(t("cli_sync_empty_schedules", count=result.schedule_empty_seasons), file=sys.stderr)
+    if result.breaker:
+        print(t("fetch_stopped_by_breaker", reason=result.breaker), file=sys.stderr)
+        return 2
+    progress = result.progress
+    total = int(progress.get("details_total", 0))
+    failed = int(progress.get("failed_count", 0))
+    print(
+        t(
+            "cli_sync_summary",
+            total=total,
+            ok=max(total - failed, 0),
+            failed=failed,
+            refreshed=progress.get("refreshed", 0),
+            changed=progress.get("refresh_changed", 0),
+        )
+    )
+    return 0
+
+
+def _run_refresh_only(args: argparse.Namespace, ctx: "ServiceContext") -> int:
+    """--refresh-only. 0: en az bir kayıt yenilendi ya da iş yok; 1: hepsi başarısız; 2: devre kesildi."""
+    from src.services.sync import RefreshCounts, SyncService, SyncSpec
+
+    result = SyncService(ctx).run(SyncSpec(mode="refresh", league_id=args.league_id))
+    counts = result.refresh or RefreshCounts()
+    t = get_i18n().t
+    print(t("cli_refresh_summary", refreshed=counts.refreshed, changed=counts.changed, failed=counts.failed))
+    if result.breaker:
+        # Devre kesildi: kalan maçlar denenmedi; cron bunu sıfırdan farklı çıkış koduyla görsün
+        print(t("refresh_stopped_by_breaker", reason=result.breaker, skipped=counts.skipped), file=sys.stderr)
+        return 2
+    return 1 if counts.failed and not counts.refreshed else 0
+
+
+def _run_headless(args: argparse.Namespace, ctx: "ServiceContext") -> int:
+    """--headless: --update-all (indirme) ve/veya --csv-export. 2: eylem verilmedi ya da devre kesildi."""
+    from src.services.export import export_all_csv
+    from src.services.sync import SyncService, SyncSpec
+
+    t = get_i18n().t
+    logger.info("Running in headless mode")
+    exit_code = 0
+    ran = False
+
+    if args.update_all:
+        logger.info("Headless update: league_id=%s mode=%s", args.league_id, args.fetch_mode)
+        # Web işiyle aynı akış (sezon listeleri → maç listeleri → detaylar), tek devre kesiciyle. CSV aşaması
+        # istenmez: komut satırında o, --csv-export'un ayrı adımıdır.
+        result = SyncService(ctx).run(SyncSpec(mode=args.fetch_mode, league_id=args.league_id, export=False))
+        exit_code = _report_sync(result)
+        ran = True
+
+    if args.csv_export:
+        logger.info("Starting CSV export")
+        csv_path = export_all_csv(ctx)
+        print(f"{t('csv_created_success')} {csv_path}" if csv_path else t("csv_created_error"))
+        ran = True
+
+    if not ran:
+        logger.error("Headless needs at least one of --update-all and --csv-export")
+        print(t("cli_headless_usage"), file=sys.stderr)
+        return 2
+    return exit_code
+
+
+def _run_services(args: argparse.Namespace) -> int:
+    """
+    Terminal arayüzü olmadan çalışan kipler: --recheck-unavailable, --refresh-only, --headless.
+
+    Hepsi aynı servis bağlamını kurar (src/services/context.py). Veri dizinine yazanlar (yeniden denetim,
+    yenileme, indirme) çalışma boyunca dizinin yazar kilidini tutar; yalnızca CSV dışa aktarma kilit almaz.
+    """
+    from src.services.context import build_context
+
+    # Tekil yapılandırma nesnesi (yukarıda kuruldu); --config bugünkü gibi okunmaz
+    ctx = build_context(ConfigManager(), data_dir=args.data_dir)
+
+    downloads = bool(args.headless and args.update_all)
+    if args.refresh_only:
+        purpose = "refresh"
+    elif downloads:
+        purpose = "headless"
+    elif args.recheck_unavailable:
+        purpose = "recheck-unavailable"
+    else:
+        return _run_headless(args, ctx)
+
+    with _data_dir_lease(ctx.data_dir, "writer", purpose):
+        if args.recheck_unavailable:
+            from src.services.maintenance import MaintenanceService
+
+            # Ağ isteği yok: yalnızca işaretler geri alınır; dilimler sonraki indirmede yeniden istenir
+            reset = MaintenanceService(ctx).recheck_unavailable(
+                args.league_id, include_confirmed=args.recheck_unavailable == "all"
+            )
+            print(
+                get_i18n().t(
+                    "recheck_unavailable_done", matches=reset.matches, slices=reset.slices, scanned=reset.scanned
+                )
+            )
+            if not (args.headless or args.refresh_only):
+                return 0
+        if args.refresh_only:
+            return _run_refresh_only(args, ctx)
+        return _run_headless(args, ctx)
+
+
 def main() -> int:
     """
     Uygulamanın ana giriş noktası.
 
     Returns:
-        int: Çıkış kodu (0: başarılı, 1: hata)
+        int: Çıkış kodu (0: başarılı, 1: hata, 2: kullanım hatası ya da devre kesici, 6: veri dizini
+        başka bir sürecin kilidinde)
     """
     try:
         # Komut satırı argümanlarını ayrıştır
@@ -259,85 +432,18 @@ def main() -> int:
         if args.refresh_legacy:
             os.environ["REFRESH_LEGACY"] = "true"
 
+        if args.recheck_unavailable or args.refresh_only or args.headless:
+            return _run_services(args)
+
+        # Normal interaktif mod: terminal arayüzü yalnızca burada yüklenir
+        from src.SofaScoreUi import SimpleSofaScoreUI
+
         ui = SimpleSofaScoreUI(config_path=args.config, data_dir=args.data_dir)
+        logger.info("İnteraktif mod başlatılıyor")
+        ui.run()
 
-        if args.recheck_unavailable:
-            # Ağ isteği yok: yalnızca işaretler geri alınır; dilimler sonraki indirmede yeniden istenir
-            reset = ui.match_data_fetcher.reset_unavailable_markers(
-                league_id=args.league_id, include_confirmed=args.recheck_unavailable == "all"
-            )
-            logger.info(f"Yeniden denetim: {reset}")
-            print(get_i18n().t("recheck_unavailable_done", **reset))
-            if not (args.headless or args.refresh_only):
-                return 0
-
-        if args.refresh_only:
-            md = ui.match_data_fetcher
-            md.begin_job_cache()
-            try:
-                ids = md.refresh_due_ids(league_id=args.league_id)
-                logger.info(f"Yenileme: {len(ids)} geçici kayıt")
-                stats = md.refresh_matches(ids)
-            finally:
-                md.end_job_cache()
-            print(
-                get_i18n().t(
-                    "cli_refresh_summary",
-                    refreshed=stats["refreshed"],
-                    changed=stats["changed"],
-                    failed=stats["failed"],
-                )
-            )
-            if stats.get("breaker"):
-                # Devre kesildi: kalan maçlar denenmedi; cron bunu sıfırdan farklı çıkış koduyla görsün
-                print(
-                    get_i18n().t("refresh_stopped_by_breaker", reason=stats["breaker"], skipped=stats.get("skipped", 0)),
-                    file=sys.stderr,
-                )
-                return 2
-            return 1 if stats["failed"] and not stats["refreshed"] else 0
-
-        if args.headless:
-            logger.info("Headless modda çalışılıyor")
-            ran = False
-
-            if args.update_all:
-                logger.info(
-                    "Headless güncelleme: league_id=%s mode=%s",
-                    args.league_id,
-                    args.fetch_mode,
-                )
-                # Tüm aşamalar (sezon, maç programı, detay, yenileme) tek devre kesiciyi paylaşır: açıldığında
-                # istek katmanı bu çalıştırma için SofaScore'a yeni istek göndermez.
-                from src import breaker as request_breaker
-
-                with request_breaker.scope(ui.config_manager) as job_breaker:
-                    ui.run_headless_fetch(league_id=args.league_id, mode=args.fetch_mode)
-                if job_breaker.tripped:
-                    print(get_i18n().t("fetch_stopped_by_breaker", reason=job_breaker.reason()), file=sys.stderr)
-                    os.environ["APP_EXIT_CODE"] = "2"
-                # Tüm ligler yolunda menü katmanı hatayı yakalayıp yalnızca "hata" yazar: nedeni burada söyle
-                storage_error = getattr(ui.match_data_fetcher, "last_storage_error", None)
-                if storage_error is not None:
-                    raise storage_error
-                ran = True
-
-            if args.csv_export:
-                logger.info("CSV dışa aktarma işlemi başlatılıyor")
-                ui.export_all_to_csv()
-                ran = True
-
-            if not ran:
-                logger.error(
-                    "Headless için en az biri gerekli: --update-all ve/veya --csv-export"
-                )
-                print(get_i18n().t("cli_headless_usage"), file=sys.stderr)
-                return 2
-        else:
-            # Normal interaktif mod
-            logger.info("İnteraktif mod başlatılıyor")
-            ui.run()
-
+        # Menüden başlatılan bir indirmede devre kesildiyse indirici bunu ortam değişkeniyle bildirir; menünün
+        # türü belli bir sonucu yoktur. Servis kipleri bu değişkeni okumaz: onların sonucu SyncResult'tır.
         forced_exit_code = os.getenv("APP_EXIT_CODE")
         if forced_exit_code and forced_exit_code.isdigit():
             return int(forced_exit_code)
@@ -347,6 +453,15 @@ def main() -> int:
         i18n = get_i18n()
         print(i18n.t('prog_terminated_by_user'))
         return 0
+
+    except LeaseHeld as e:
+        # Veri dizini başka bir sürecin elinde. LeaseHeld bir StorageError'dır: bu dal ondan önce gelmeli.
+        logger.error(
+            "Data directory is in use by another process: lease=%s pid=%s host=%s purpose=%s",
+            e.name, e.pid, e.host, e.purpose,
+        )
+        print(_lease_held_text(e), file=sys.stderr)
+        return EXIT_LEASE_HELD
 
     except StorageError as e:
         # Kayıt diske yazılamadı (disk dolu, izin yok): iz dökümü yerine nedeni söyle

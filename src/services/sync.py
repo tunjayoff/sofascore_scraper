@@ -5,6 +5,10 @@ Bugünkü web işinin akışını taşır (src/web/fetch_job.py'den buraya geldi
 maç detayları → CSV. Akış modül değişkenleri yerine bir iş tutamacıyla (JobHandle) konuşur: iptal sorusu,
 ilerleme (JobProgress), iş günlüğü satırı. Tutamaç verilmezse iş kaydı olmadan çalışır.
 
+Komut satırı da aynı servisi çağırır (main.py: `--headless --update-all` ve `--refresh-only`). Onun iki farkı
+belirtimdedir: CSV aşaması istenmedikçe çalışmaz (`SyncSpec.export`) ve yalnızca yenileme ayrı bir kiptir
+(`mode="refresh"`: kayıtlı geçici maçların /event'i yeniden okunur, başka istek atılmaz).
+
 İşin tek bir devre kesicisi vardır (src/breaker.py). İstek katmanı her isteğin sonucunu ona bildirir; her aşama
 döngüsünde ona bakar. SofaScore engellediğinde kalan lig/sezon/maç için istek atılmaz ve neden iş kartına
 yazılır. Servis SofaScore kaynaklı hiçbir durumda fırlatmaz; kalıcı depolama hatası (StorageError: disk dolu,
@@ -28,12 +32,15 @@ from src.services.export import export_all_csv
 
 logger = get_logger("SyncService")
 
-SyncMode = Literal["full", "details"]
+SyncMode = Literal["full", "details", "refresh"]
 SyncState = Literal["succeeded", "partial", "cancelled"]
 
 # JobProgress aşamaları, çalıştıkları sırayla
 FULL_PHASES: Tuple[str, ...] = ("seasons", "matches", "details", "export")
 DETAILS_PHASES: Tuple[str, ...] = ("details", "export")
+# Yalnızca yenileme: kayıtlı maçlar yeniden okunur; ilerleme detay aşamasının sayacıyla gösterilir
+REFRESH_PHASES: Tuple[str, ...] = ("details",)
+EXPORT_PHASE = "export"
 
 # (lig, sezon, sezon adı): maç listesi aşamasının bir adımı
 SeasonStep = Tuple[int, int, Optional[str]]
@@ -60,19 +67,45 @@ class SyncSpec:
     """
     Ne indirilecek.
 
-    mode        "full": sezon listeleri + maç listeleri + detaylar + CSV; "details": yalnızca detaylar + CSV
+    mode        "full": sezon listeleri + maç listeleri + detaylar + CSV; "details": yalnızca detaylar + CSV;
+                "refresh": yalnızca kayıtlı geçici maçların yenilenmesi (`selections` ve `export` okunmaz)
     league_id   tek lig; yoksa yapılandırılmış bütün ligler. `selections` varsa okunmaz.
     selections  hedefli seçimler; boşsa `league_id` geçerlidir
+    export      son aşamada birleşik CSV yazılsın mı. Web işi her zaman yazar; komut satırı yalnızca
+                `--csv-export` verildiğinde, kendi adımı olarak yazar.
     """
 
     mode: SyncMode = "full"
     league_id: Optional[int] = None
     selections: Tuple[SyncSelection, ...] = ()
+    export: bool = True
 
     @property
     def job_phases(self) -> Tuple[str, ...]:
         """Bu işin geçeceği JobProgress aşamaları (tutamacın ilerleme nesnesi bunlarla kurulur)."""
-        return DETAILS_PHASES if self.mode == "details" else FULL_PHASES
+        if self.mode == "refresh":
+            return REFRESH_PHASES
+        phases = DETAILS_PHASES if self.mode == "details" else FULL_PHASES
+        return phases if self.export else tuple(p for p in phases if p != EXPORT_PHASE)
+
+
+@dataclass(frozen=True)
+class RefreshCounts:
+    """
+    Yalnızca yenileme kipinin sayıları (MatchDataFetcher.refresh_matches'in döndürdükleri).
+
+    due        yenilenmesi gereken kayıt (denenmeyenler dahil)
+    refreshed  yeniden okunan kayıt
+    changed    bunlardan SofaScore'da değişmiş olan (score_changes.jsonl'a yazılan)
+    failed     /event'i alınamayan ya da yazılamayan kayıt
+    skipped    devre kesildiği için hiç denenmeyen kayıt
+    """
+
+    due: int = 0
+    refreshed: int = 0
+    changed: int = 0
+    failed: int = 0
+    skipped: int = 0
 
 
 @dataclass(frozen=True)
@@ -81,16 +114,20 @@ class SyncResult:
     Bir eşitlemenin sonucu.
 
     state                    "cancelled": iptal edildi; "partial": devre kesici durdurdu ya da en az bir maç
-                             indirilemedi; "succeeded": diğer her durum (02-services.md 2.8, bitiş durumu kuralı)
+                             indirilemedi / yenilenemedi; "succeeded": diğer her durum (02-services.md 2.8,
+                             bitiş durumu kuralı)
     schedule_empty_seasons   maç listesi boş dönen ya da çekilemeyen sezon sayısı (tam kip)
     breaker                  devre kesildiyse neden: "403" | "429" | "5xx" | "other"; yoksa None
     progress                 JobProgress.result(): detay sayaçları, başarısız maçlar, yenileme sayıları
+    refresh                  yalnızca yenileme kipinde: o çalıştırmanın sayıları; diğer kiplerde ve yenileme
+                             başlamadan iptal edildiyse None
     """
 
     state: SyncState
     schedule_empty_seasons: int
     breaker: Optional[str]
     progress: Mapping[str, Any]
+    refresh: Optional[RefreshCounts] = None
 
 
 class JobHandle(Protocol):
@@ -209,18 +246,22 @@ class _SyncRun:
             return self.breaker.reason()
         return _status_counts_reason(self.ctx.match_data_fetcher.last_status_counts)
 
-    def result(self, *, cancelled: bool) -> SyncResult:
+    def result(self, *, cancelled: bool, refresh: Optional[RefreshCounts] = None) -> SyncResult:
         progress = self.tracker.result()
         breaker = progress.get("breaker")
         state: SyncState
         if cancelled:
             state = "cancelled"
-        elif breaker or progress.get("failed_count"):
+        elif breaker or progress.get("failed_count") or (refresh is not None and refresh.failed):
             state = "partial"
         else:
             state = "succeeded"
         return SyncResult(
-            state=state, schedule_empty_seasons=self.empty_schedule, breaker=breaker, progress=progress
+            state=state,
+            schedule_empty_seasons=self.empty_schedule,
+            breaker=breaker,
+            progress=progress,
+            refresh=refresh,
         )
 
     # --- akış ----------------------------------------------------------------------------------------
@@ -228,6 +269,8 @@ class _SyncRun:
     def execute(self) -> SyncResult:
         spec, job, tracker = self.spec, self.job, self.tracker
         cancelled = job.cancelled
+        if spec.mode == "refresh":
+            return self._refresh()
         self.league_names = self.ctx.config.get_leagues()
 
         detail_plan: DetailPlan = {}
@@ -257,12 +300,48 @@ class _SyncRun:
         if cancelled():
             return self.result(cancelled=True)
 
-        # 4. CSV
-        tracker.start_phase("export", 1)
-        job.log("Exporting data to CSV...")
-        export_all_csv(self.ctx)
-        tracker.advance(1)
+        # 4. CSV (komut satırı bu aşamayı istemez: `--csv-export` onun ayrı adımıdır)
+        if spec.export:
+            tracker.start_phase(EXPORT_PHASE, 1)
+            job.log("Exporting data to CSV...")
+            export_all_csv(self.ctx)
+            tracker.advance(1)
         return self.result(cancelled=False)
+
+    def _refresh(self) -> SyncResult:
+        """
+        Yalnızca yenileme: yenilenmesi gereken kayıtlı maçlar bulunur ve her biri için yalnızca /event istenir.
+
+        Çağrı sırası `main.py --refresh-only`nin satır içi kodundan taşındı ve G-01 goldenıyla sabittir:
+        begin_job_cache → refresh_due_ids → refresh_matches → end_job_cache. Devre kesilirse kalan maçlar
+        denenmez (`RefreshCounts.skipped`); kalıcı depolama hatası StorageError olarak çağırana çıkar.
+        """
+        md = self.ctx.match_data_fetcher
+        job, tracker = self.job, self.tracker
+        md.refresh_listener = tracker.add_refreshed
+        md.begin_job_cache()
+        try:
+            ids = md.refresh_due_ids(league_id=self.spec.league_id)
+            tracker.start_phase("details", len(ids))
+            job.log(f"Refreshing {len(ids)} provisional records...")
+            stats = md.refresh_matches(
+                ids,
+                progress_callback=lambda done, _total, _msg: tracker.advance(done),
+                should_cancel=job.cancelled,
+            )
+        finally:
+            md.end_job_cache()
+            md.refresh_listener = None
+        if stats.get("breaker"):
+            self.report_breaker(str(stats["breaker"]), "provisional records")
+        counts = RefreshCounts(
+            due=len(ids),
+            refreshed=int(stats.get("refreshed", 0)),
+            changed=int(stats.get("changed", 0)),
+            failed=int(stats.get("failed", 0)),
+            skipped=int(stats.get("skipped", 0)),
+        )
+        return self.result(cancelled=job.cancelled(), refresh=counts)
 
     def _listings(self) -> DetailPlan:
         """Tam kipin ilk iki aşaması: sezon listeleri ve maç listeleri. Detay aşamasının planını döndürür."""

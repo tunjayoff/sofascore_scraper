@@ -433,7 +433,9 @@ python main.py --headless --update-all --fetch-mode details --league-id 52
 python main.py --headless --csv-export --data-dir ./data
 ```
 
-Exit codes: **0** success (or `APP_EXIT_CODE` if set by scraper), **1** unexpected error or data could not be written, **2** headless with no action, or the circuit breaker stopped the run.
+Exit codes: **0** success, **1** unexpected error or data could not be written, **2** headless with no action, or the circuit breaker stopped the run, **6** another process is already writing to the same data folder.
+
+Only one process writes to a data folder at a time. While a download runs in the web app or in another headless run, `--headless --update-all`, `--refresh-only` and `--recheck-unavailable` do not start: they print who holds the lock (process id, host, purpose, since when) and exit with **6**. The same goes for a second `--watch` of the same sport. `--headless --csv-export` on its own is not affected.
 
 ### Command-line help
 
