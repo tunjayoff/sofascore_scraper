@@ -20,6 +20,7 @@ export default {
     all: 'Tümü',
     unknownError: 'Bir şeyler ters gitti.',
     serverDown: 'Sunucuya ulaşılamıyor. Uygulama çalışıyor mu?',
+    statsFailed: 'İstatistikler yüklenemedi: {error}',
   },
   sport: {
     all: 'Tüm sporlar',
@@ -88,6 +89,7 @@ export default {
     title: 'Ligler',
     sub: 'Takip ettiğin ligler. Maç indirmek için bir ligde Maç indir’e bas.',
     add: 'Lig ekle',
+    loadFailed: 'Ligler yüklenemedi.',
     col: { league: 'Lig', matches: 'İndirilen maç', details: 'Detay kapsamı' },
     download: 'Maç indir',
     view: 'Maçları gör',
@@ -153,6 +155,7 @@ export default {
     title: 'Maçlar',
     sub: 'İndirdiğin maçlar. Yenilerini eklemek için Maç indir’e git.',
     goDownload: 'Maç indir',
+    seasonsFailed: 'Sezonlar yüklenemedi: {error}',
     league: 'Lig',
     season: 'Sezon',
     date: 'Tarih',

@@ -22,6 +22,7 @@ const en: typeof tr = {
     all: 'All',
     unknownError: 'Something went wrong.',
     serverDown: 'Can’t reach the server. Is the app running?',
+    statsFailed: 'Statistics could not be loaded: {error}',
   },
   sport: {
     all: 'All sports',
@@ -90,6 +91,7 @@ const en: typeof tr = {
     title: 'Leagues',
     sub: 'The leagues you follow. Press Download on a league to get its matches.',
     add: 'Add league',
+    loadFailed: 'Leagues could not be loaded.',
     col: { league: 'League', matches: 'Matches downloaded', details: 'Detail coverage' },
     download: 'Download',
     view: 'View matches',
@@ -155,6 +157,7 @@ const en: typeof tr = {
     title: 'Matches',
     sub: 'The matches you downloaded. Go to Download to add more.',
     goDownload: 'Download',
+    seasonsFailed: 'Seasons could not be loaded: {error}',
     league: 'League',
     season: 'Season',
     date: 'Date',

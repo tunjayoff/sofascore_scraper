@@ -6,7 +6,7 @@ import { setLocale, type Lang } from '@/i18n'
 import { themePref, setTheme, type ThemePref } from '@/lib/theme'
 import { num } from '@/lib/format'
 import { onTabKeydown } from '@/lib/tabs'
-import { toast, toastError } from '@/lib/toast'
+import { errorText, toast, toastError } from '@/lib/toast'
 import { useLeaguesStore } from '@/stores/leagues'
 
 type Tab = 'general' | 'data' | 'advanced'
@@ -54,7 +54,7 @@ const changed = computed(() => {
   if (!o) return {}
   const out: Partial<Settings> = {}
   for (const k of Object.keys(form) as (keyof Settings)[]) {
-    if (form[k] !== o[k]) (out as any)[k] = form[k]
+    if (form[k] !== o[k]) (out as Record<string, unknown>)[k] = form[k]
   }
   return out
 })
@@ -62,7 +62,14 @@ const dirty = computed(() => Object.keys(changed.value).length > 0)
 
 async function load() {
   try {
-    const [s, st] = await Promise.all([api.settings(), api.stats().catch(() => null)])
+    let statsError: unknown = null
+    const [s, st] = await Promise.all([
+      api.settings(),
+      api.stats().catch((e) => {
+        statsError = e
+        return null
+      }),
+    ])
     original.value = s
     Object.assign(form, {
       data_dir: s.data_dir,
@@ -77,6 +84,8 @@ async function load() {
       log_level: s.log_level,
     })
     stats.value = st
+    // The settings loaded; the disk/totals box is just missing, so say why
+    if (statsError) toastError(new Error(t('common.statsFailed', { error: errorText(statsError) })))
   } catch (e) {
     toastError(e)
   }
@@ -163,8 +172,8 @@ onMounted(load)
     <div>
       <span class="label">{{ t('settings.language') }}</span>
       <div class="seg" role="group" :aria-label="t('settings.language')">
-        <button type="button" :class="{ 'is-active': locale === 'tr' }" @click="changeLang('tr')">Türkçe</button>
-        <button type="button" :class="{ 'is-active': locale === 'en' }" @click="changeLang('en')">English</button>
+        <button type="button" :class="{ 'is-active': locale === 'tr' }" :aria-pressed="locale === 'tr'" @click="changeLang('tr')">Türkçe</button>
+        <button type="button" :class="{ 'is-active': locale === 'en' }" :aria-pressed="locale === 'en'" @click="changeLang('en')">English</button>
       </div>
     </div>
     <div>
@@ -202,7 +211,7 @@ onMounted(load)
     <div class="grid gap-4 sm:grid-cols-2">
       <div v-for="f in advancedFields" :key="f.key">
         <label class="label" :for="`s-${f.key}`">{{ t(f.label) }}</label>
-        <input :id="`s-${f.key}`" v-model.number="(form as any)[f.key]" type="number" :step="f.step" :min="f.min" :max="f.max" class="field mono" />
+        <input :id="`s-${f.key}`" v-model.number="form[f.key]" type="number" :step="f.step" :min="f.min" :max="f.max" class="field mono" />
       </div>
       <div>
         <label class="label" for="s-log">{{ t('settings.logLevel') }}</label>

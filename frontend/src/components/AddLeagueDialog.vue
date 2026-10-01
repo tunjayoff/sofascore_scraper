@@ -107,8 +107,8 @@ onUnmounted(() => {
       </div>
 
       <div class="seg" role="group" :aria-label="t('sport.all')">
-        <button type="button" :class="{ 'is-active': sport === 'all' }" @click="sport = 'all'">{{ t('common.all') }}</button>
-        <button v-for="s in SPORTS" :key="s" type="button" :class="{ 'is-active': sport === s }" @click="sport = s">{{ t(`sport.${s}`) }}</button>
+        <button type="button" :class="{ 'is-active': sport === 'all' }" :aria-pressed="sport === 'all'" @click="sport = 'all'">{{ t('common.all') }}</button>
+        <button v-for="s in SPORTS" :key="s" type="button" :class="{ 'is-active': sport === s }" :aria-pressed="sport === s" @click="sport = s">{{ t(`sport.${s}`) }}</button>
       </div>
 
       <div class="rounded-[10px] overflow-hidden" style="border: 1px solid var(--border); min-height: 120px">

@@ -27,6 +27,7 @@ const details = ref<'' | 'present' | 'missing'>(route.query.details === 'present
 const page = ref(Math.max(1, Number(route.query.page) || 1))
 
 const seasons = ref<Season[]>([])
+const seasonsErr = ref('')
 const items = ref<MatchRow[]>([])
 const total = ref(0)
 const loading = ref(true)
@@ -50,18 +51,22 @@ const from = computed(() => (total.value ? (page.value - 1) * PAGE + 1 : 0))
 const to = computed(() => Math.min(total.value, page.value * PAGE))
 const cols = 'grid-template-columns: 72px 150px minmax(0, 1fr) 84px minmax(0, 1fr) 72px'
 
-async function loadSeasons() {
-  seasons.value = []
-  if (!league.value) return
-  try {
-    seasons.value = (await api.seasons(Number(league.value))).seasons || []
-  } catch {
-    seasons.value = []
-  }
-}
-
 const loads = latestOnly()
 const missingLoads = latestOnly()
+const seasonLoads = latestOnly()
+
+async function loadSeasons() {
+  const token = seasonLoads.next()
+  seasons.value = []
+  seasonsErr.value = ''
+  if (!league.value) return
+  try {
+    const list = (await api.seasons(Number(league.value))).seasons || []
+    if (seasonLoads.isCurrent(token)) seasons.value = list
+  } catch (e) {
+    if (seasonLoads.isCurrent(token)) seasonsErr.value = errorText(e)
+  }
+}
 
 async function load() {
   const token = loads.next()
@@ -164,11 +169,10 @@ watch([league, season, date, sort, details, page], () => {
 watch(
   () => sport.current,
   () => {
+    // Each branch reloads once: clearing the league or going back to page 1 trips the watchers above
     if (league.value && !leagues.rows.some((l) => String(l.id) === league.value)) league.value = ''
-    else {
-      page.value = 1
-      void load()
-    }
+    else if (page.value !== 1) page.value = 1
+    else void load()
   },
 )
 
@@ -229,6 +233,11 @@ onUnmounted(scrape.onFinished(() => void load()))
       </select>
     </div>
     <button v-if="hasFilters" type="button" class="btn btn-ghost" @click="clearFilters">{{ t('matches.clearFilters') }}</button>
+  </div>
+
+  <div v-if="seasonsErr" class="flex flex-wrap items-center gap-3 mb-5 text-sm" role="alert">
+    <span style="color: var(--danger)">{{ t('matches.seasonsFailed', { error: seasonsErr }) }}</span>
+    <button type="button" class="btn btn-sm" @click="loadSeasons">{{ t('common.retry') }}</button>
   </div>
 
   <div v-if="missingCount" class="card soft px-5 py-4 mb-5 flex flex-wrap items-center gap-3" style="border-color: var(--warn-bg)">

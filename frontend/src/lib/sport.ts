@@ -12,7 +12,7 @@ export function sportKey(raw: unknown): SportKey | null {
 }
 
 /** Column labels for the per-period score line, by sport. */
-export function periodLabel(sport: SportKey | null, n: number, t: (k: string, v?: any) => string): string {
+export function periodLabel(sport: SportKey | null, n: number, t: (k: string, v?: Record<string, unknown>) => string): string {
   if (sport === 'tennis') return t('match.period.set', { n })
   if (sport === 'basketball') return t('match.period.quarter', { n })
   return t('match.period.half', { n })

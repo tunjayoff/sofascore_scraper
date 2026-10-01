@@ -11,6 +11,10 @@ import {
   shirtOf,
   venueName,
   formSequence,
+  type Incident,
+  type MatchDetail,
+  type StatItem,
+  type StatPeriod,
 } from '@/lib/matchDetail'
 import { sportKey, periodLabel } from '@/lib/sport'
 import { matchDate } from '@/lib/format'
@@ -27,7 +31,7 @@ const { t } = useI18n()
 const route = useRoute()
 const id = computed(() => String(route.params.id))
 
-const data = ref<any>(null)
+const data = ref<MatchDetail | null>(null)
 const loading = ref(true)
 const notFetched = ref(false)
 const err = ref('')
@@ -92,14 +96,14 @@ const tabs = computed(() => {
 })
 const hasOverview = computed(() => keyMoments.value.length || homeForm.value.length || awayForm.value.length || duel.value || info.value.length)
 
-function periodName(p: any, i: number) {
+function periodName(p: StatPeriod, i: number) {
   const raw = String(p?.period || '')
   if (raw === 'ALL' || i === 0) return t('match.periodAll')
   const m = raw.match(/(\d+)/)
   return m ? periodLabel(sport.value, Number(m[1]), t) : raw
 }
 
-function bar(item: any) {
+function bar(item: StatItem) {
   const h = Number(item.homeValue ?? String(item.home ?? '').replace('%', ''))
   const a = Number(item.awayValue ?? String(item.away ?? '').replace('%', ''))
   const tot = (Number.isFinite(h) ? h : 0) + (Number.isFinite(a) ? a : 0)
@@ -108,7 +112,7 @@ function bar(item: any) {
   return { h: hp, a: 100 - hp, lead: h > a ? 'home' : a > h ? 'away' : '' }
 }
 
-function incident(i: any) {
+function incident(i: Incident) {
   const type = String(i?.incidentType || '')
   const minute = i?.time != null ? `${i.time}${i.addedTime ? '+' + i.addedTime : ''}′` : ''
   const side = i?.isHome === true ? 'home' : i?.isHome === false ? 'away' : ''

@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import { api, type League, type LeagueBreakdown, type RemoteLeague } from '@/api/client'
 import { sportKey, type SportKey } from '@/lib/sport'
 import { useSportStore } from '@/stores/sport'
+import { errorText, toastError } from '@/lib/toast'
+import { i18n } from '@/i18n'
 
 export type LeagueView = { id: number; name: string; sport: SportKey | null; matches: number; details: number; coverage: number }
 
@@ -11,6 +13,8 @@ export const useLeaguesStore = defineStore('leagues', () => {
   const breakdown = ref<Record<number, LeagueBreakdown>>({})
   const loaded = ref(false)
   const loading = ref(false)
+  /** Why the last load failed ('' after a successful one); App shows it with a retry. */
+  const error = ref('')
   const sport = useSportStore()
 
   const all = computed<LeagueView[]>(() =>
@@ -48,11 +52,24 @@ export const useLeaguesStore = defineStore('leagues', () => {
 
   async function load() {
     loading.value = true
+    error.value = ''
+    let statsError: unknown = null
     try {
-      const [list, stats] = await Promise.all([api.leagues(), api.stats().catch(() => null)])
+      const [list, stats] = await Promise.all([
+        api.leagues(),
+        api.stats().catch((e) => {
+          statsError = e
+          return null
+        }),
+      ])
       leagues.value = list
       breakdown.value = Object.fromEntries((stats?.league_breakdown || []).map((b) => [Number(b.id), b]))
       loaded.value = true
+      // Leagues still show without counts; only say so when the leagues themselves loaded
+      if (statsError) toastError(new Error(i18n.global.t('common.statsFailed', { error: errorText(statsError) })))
+    } catch (e) {
+      error.value = errorText(e)
+      throw e
     } finally {
       loading.value = false
     }
@@ -73,5 +90,5 @@ export const useLeaguesStore = defineStore('leagues', () => {
     await load()
   }
 
-  return { leagues, all, rows, unknown, countBySport, loaded, loading, isEmpty, nameOf, sportOf, load, add, setSport, remove }
+  return { leagues, all, rows, unknown, countBySport, loaded, loading, error, isEmpty, nameOf, sportOf, load, add, setSport, remove }
 })
