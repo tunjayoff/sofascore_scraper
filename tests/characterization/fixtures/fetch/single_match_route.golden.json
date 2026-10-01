@@ -1,0 +1,242 @@
+{
+ "files": {
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/basic.json": "sha256:b1915a025fe7",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/h2h.json": "sha256:d70f49116a50",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/incidents.json": "sha256:a2597c3a4cd2",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/lineups.json": "sha256:8638bfb622ea",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/observation.json": {
+   "change_ts": 1724507200,
+   "observed_at_utc": "<volatile>"
+  },
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/pregame_form.json": "sha256:23d266be170d",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/statistics.json": "sha256:461cc83fd197",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/team_streaks.json": "sha256:875eb2f1ef52",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/_slice_status.json": {
+   "lineups": {
+    "empty": {
+     "at": "<volatile>",
+     "count": 2
+    }
+   },
+   "pregame_form": {
+    "empty": {
+     "at": "<volatile>",
+     "count": 2
+    }
+   }
+  },
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/_unavailable.json": {
+   "lineups": 2,
+   "pregame_form": 2
+  },
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/basic.json": "sha256:f01370edebc5",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/h2h.json": "sha256:d70f49116a50",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/incidents.json": "sha256:a2597c3a4cd2",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/lineups.json": "sha256:0aaeb8655485",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/observation.json": {
+   "change_ts": 1724514400,
+   "observed_at_utc": "<volatile>"
+  },
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/statistics.json": "sha256:b72fef1ea76e",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/team_streaks.json": "sha256:875eb2f1ef52",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100003/_slice_status.json": {
+   "h2h": {
+    "error": {
+     "at": "<volatile>",
+     "count": 1,
+     "reason": "403",
+     "status": 403
+    }
+   },
+   "incidents": {
+    "error": {
+     "at": "<volatile>",
+     "count": 1,
+     "reason": "403",
+     "status": 403
+    }
+   },
+   "lineups": {
+    "error": {
+     "at": "<volatile>",
+     "count": 1,
+     "reason": "403",
+     "status": 403
+    }
+   },
+   "pregame_form": {
+    "error": {
+     "at": "<volatile>",
+     "count": 1,
+     "reason": "403",
+     "status": 403
+    }
+   },
+   "statistics": {
+    "error": {
+     "at": "<volatile>",
+     "count": 1,
+     "reason": "403",
+     "status": 403
+    }
+   },
+   "team_streaks": {
+    "error": {
+     "at": "<volatile>",
+     "count": 1,
+     "reason": "403",
+     "status": 403
+    }
+   }
+  },
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100003/basic.json": "sha256:badb7cb6e291",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100003/observation.json": {
+   "change_ts": 1725112000,
+   "observed_at_utc": "<volatile>"
+  }
+ },
+ "steps": {
+  "blocked": {
+   "body": {
+    "detail": "Match data could not be fetched (may be unfinished or unavailable)."
+   },
+   "requests": [
+    "sync /event/9100003 403",
+    "sync /event/9100003 403",
+    "sync /event/9100003 403"
+   ],
+   "status": 404
+  },
+  "blocked_slices_only": {
+   "body": {
+    "match_id": "9100003",
+    "status": "success"
+   },
+   "requests": [
+    "sync /event/9100003 200",
+    "sync /event/9100003/statistics 403",
+    "sync /event/9100003/statistics 403",
+    "sync /event/9100003/statistics 403",
+    "sync /event/9100003/team-streaks 403",
+    "sync /event/9100003/team-streaks 403",
+    "sync /event/9100003/team-streaks 403",
+    "sync /event/9100003/pregame-form 403",
+    "sync /event/9100003/pregame-form 403",
+    "sync /event/9100003/pregame-form 403",
+    "sync /event/9100003/h2h 403",
+    "sync /event/9100003/h2h 403",
+    "sync /event/9100003/h2h 403",
+    "sync /event/9100003/lineups 403",
+    "sync /event/9100003/lineups 403",
+    "sync /event/9100003/lineups 403",
+    "sync /event/9100003/incidents 403",
+    "sync /event/9100003/incidents 403",
+    "sync /event/9100003/incidents 403"
+   ],
+   "status": 200
+  },
+  "complete_match_again": {
+   "body": {
+    "match_id": "9100001",
+    "status": "success"
+   },
+   "requests": [
+    "sync /event/9100001 200"
+   ],
+   "status": 200
+  },
+  "empty_slices": {
+   "body": {
+    "match_id": "9100002",
+    "status": "success"
+   },
+   "requests": [
+    "sync /event/9100002 200",
+    "sync /event/9100002/statistics 200",
+    "sync /event/9100002/team-streaks 200",
+    "sync /event/9100002/pregame-form 404",
+    "sync /event/9100002/h2h 200",
+    "sync /event/9100002/lineups 200",
+    "sync /event/9100002/incidents 200"
+   ],
+   "status": 200
+  },
+  "empty_slices_again": {
+   "body": {
+    "match_id": "9100002",
+    "status": "success"
+   },
+   "requests": [
+    "sync /event/9100002 200",
+    "sync /event/9100002/pregame-form 404",
+    "sync /event/9100002/lineups 200"
+   ],
+   "status": 200
+  },
+  "empty_slices_third_time": {
+   "body": {
+    "match_id": "9100002",
+    "status": "success"
+   },
+   "requests": [
+    "sync /event/9100002 200"
+   ],
+   "status": 200
+  },
+  "missing_slice": {
+   "body": {
+    "match_id": "9100001",
+    "status": "success"
+   },
+   "requests": [
+    "sync /event/9100001 200",
+    "sync /event/9100001/h2h 200"
+   ],
+   "status": 200
+  },
+  "new_match": {
+   "body": {
+    "match_id": "9100001",
+    "status": "success"
+   },
+   "requests": [
+    "sync /event/9100001 200",
+    "sync /event/9100001/statistics 200",
+    "sync /event/9100001/team-streaks 200",
+    "sync /event/9100001/pregame-form 200",
+    "sync /event/9100001/h2h 200",
+    "sync /event/9100001/lineups 200",
+    "sync /event/9100001/incidents 200"
+   ],
+   "status": 200
+  },
+  "not_started": {
+   "body": {
+    "detail": "Match data could not be fetched (may be unfinished or unavailable)."
+   },
+   "requests": [
+    "sync /event/9100004 200"
+   ],
+   "status": 404
+  },
+  "stored_match_now_live": {
+   "body": {
+    "detail": "Match data could not be fetched (may be unfinished or unavailable)."
+   },
+   "requests": [
+    "sync /event/9100001 200",
+    "sync /event/9100001 200"
+   ],
+   "status": 404
+  },
+  "unknown_event": {
+   "body": {
+    "detail": "Match data could not be fetched (may be unfinished or unavailable)."
+   },
+   "requests": [
+    "sync /event/1 404"
+   ],
+   "status": 404
+  }
+ }
+}

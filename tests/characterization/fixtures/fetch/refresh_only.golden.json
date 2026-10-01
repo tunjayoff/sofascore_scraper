@@ -1,0 +1,70 @@
+{
+ "due_ids": [
+  "9100010",
+  "9100001",
+  "9100003"
+ ],
+ "files": {
+  "match_details/17_Premier_League/season_Premier_League_23_24/9100010/basic.json": "sha256:c30a4892cbe3",
+  "match_details/17_Premier_League/season_Premier_League_23_24/9100010/observation.json": {
+   "change_ts": 1716138000,
+   "observed_at_utc": "<volatile>"
+  },
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/basic.json": "sha256:b1915a025fe7",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/observation.json": {
+   "change_ts": 1724507200,
+   "observed_at_utc": "<volatile>"
+  },
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100003/basic.json": "sha256:fe7505d70347",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100003/observation.json": {
+   "change_ts": 1725115600,
+   "observed_at_utc": "<volatile>"
+  },
+  "score_changes.jsonl": [
+   {
+    "changed": {
+     "homeScore.current": [
+      1,
+      2
+     ],
+     "homeScore.display": [
+      1,
+      2
+     ],
+     "homeScore.normaltime": [
+      1,
+      2
+     ]
+    },
+    "event_id": 9100003,
+    "hours_after_start": 3.0,
+    "new_change_ts": 1725115600,
+    "old_change_ts": 1725112000,
+    "sport": "football",
+    "start_ts": 1725104800,
+    "status_class": [
+     "completed",
+     "completed"
+    ],
+    "tier_hint": null,
+    "tournament": {
+     "id": 17,
+     "name": "Premier League"
+    },
+    "ts_utc": "<volatile>"
+   }
+  ]
+ },
+ "pause_seconds": [],
+ "request_layer_waits": 2,
+ "requests": [
+  "sync /event/9100010 404",
+  "sync /event/9100001 200",
+  "sync /event/9100003 200"
+ ],
+ "stats": {
+  "changed": 1,
+  "failed": 1,
+  "refreshed": 2
+ }
+}
