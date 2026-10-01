@@ -1,0 +1,172 @@
+{
+ "match_in_play": {
+  "argv": [
+   "--watch",
+   "--sport",
+   "football",
+   "--event-ids",
+   "9300001",
+   "--watch-hours",
+   "0.000000001"
+  ],
+  "exit_code": 0,
+  "files": {
+   "added": {
+    "data/watch_events.jsonl": [
+     {
+      "at_utc": "<volatile>",
+      "event_id": 9300001,
+      "start_ts": 1725700000,
+      "status_class": "live",
+      "type": "stuck"
+     },
+     {
+      "at_utc": "<volatile>",
+      "change_ts": 1725701200,
+      "event_id": 9300001,
+      "from": [
+       1,
+       0
+      ],
+      "source": "live",
+      "to": [
+       2,
+       0
+      ],
+      "type": "score_changed"
+     }
+    ],
+    "data/watch_state_football.json": {
+     "9300001": {
+      "class": "live",
+      "done": false,
+      "last_event_poll": "<volatile>",
+      "near_end": false,
+      "score": [
+       2,
+       0
+      ],
+      "start_ts": 1725700000,
+      "stuck": true,
+      "tournament_id": 17
+     }
+    },
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [
+   "sync /event/9300001 200",
+   "sync /sport/football/events/live 200"
+  ],
+  "sleeps": {
+   "request-layer": 2
+  },
+  "stderr": [
+   "Watcher stopped: 2 requests; events in <SANDBOX>/data/watch_events.jsonl"
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "{\"type\": \"stuck\", \"event_id\": 9300001, \"at_utc\": \"<volatile>\", \"start_ts\": 1725700000, \"status_class\": \"live\"}",
+   "{\"type\": \"score_changed\", \"event_id\": 9300001, \"at_utc\": \"<volatile>\", \"from\": [1, 0], \"to\": [2, 0], \"change_ts\": 1725701200, \"source\": \"live\"}"
+  ]
+ },
+ "restart_after_the_match": {
+  "argv": [
+   "--watch",
+   "--sport",
+   "football",
+   "--event-ids",
+   "9300001"
+  ],
+  "exit_code": 0,
+  "files": {
+   "changed": {
+    "data/watch_events.jsonl": [
+     {
+      "at_utc": "<volatile>",
+      "event_id": 9300001,
+      "start_ts": 1725700000,
+      "status_class": "live",
+      "type": "stuck"
+     },
+     {
+      "at_utc": "<volatile>",
+      "change_ts": 1725701200,
+      "event_id": 9300001,
+      "from": [
+       1,
+       0
+      ],
+      "source": "live",
+      "to": [
+       2,
+       0
+      ],
+      "type": "score_changed"
+     },
+     {
+      "at_utc": "<volatile>",
+      "change_ts": 1725706600,
+      "event_id": 9300001,
+      "from": "live",
+      "provisional": false,
+      "scores": {
+       "aet": null,
+       "aggregated": null,
+       "aggregated_winner_code": null,
+       "ft90": null,
+       "ht": [
+        2,
+        0
+       ],
+       "penalties": null,
+       "raw_change_ts": 1725706600,
+       "raw_changed_fields": [],
+       "sport": "football",
+       "status_class": "completed",
+       "winner_code": 1
+      },
+      "source": "event",
+      "to": "completed",
+      "type": "status_changed"
+     }
+    ],
+    "data/watch_state_football.json": {
+     "9300001": {
+      "class": "completed",
+      "completed_emitted": true,
+      "done": true,
+      "last_event_poll": "<volatile>",
+      "near_end": false,
+      "score": [
+       2,
+       0
+      ],
+      "start_ts": 1725700000,
+      "stuck": false,
+      "tournament_id": 17
+     }
+    }
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [
+   "sync /sport/football/events/live 200",
+   "sync /event/9300001 200"
+  ],
+  "sleeps": {
+   "request-layer": 2
+  },
+  "stderr": [
+   "Watcher stopped: 2 requests; events in <SANDBOX>/data/watch_events.jsonl"
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "{\"type\": \"status_changed\", \"event_id\": 9300001, \"from\": \"live\", \"to\": \"completed\", \"at_utc\": \"<volatile>\", \"change_ts\": 1725706600, \"source\": \"event\", \"scores\": {\"sport\": \"football\", \"status_class\": \"completed\", \"winner_code\": 1, \"raw_change_ts\": 1725706600, \"raw_changed_fields\": [], \"ht\": [2, 0], \"ft90\": null, \"aet\": null, \"penalties\": null, \"aggregated\": null, \"aggregated_winner_code\": null}, \"provisional\": false}",
+   "LOG INFO src.watcher: İzlenen tüm maçlar bitti"
+  ]
+ }
+}

@@ -25,6 +25,7 @@ durumla farkı (eklenen / değişen / silinen) goldena yazılır; `.meta/` altı
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import importlib.util
 import json
@@ -786,3 +787,133 @@ def test_data_dir_flag_overrides_the_environment(box: Sandbox, seed: Seed) -> No
     assert (run.exit_code, run.requests) == (0, seed.run.requests)
     assert {moved(path): summary for path, summary in run.files["added"].items()} == seed.run.files["added"]
     assert _map_lines(run.stdout, lambda line: line.replace("<SANDBOX>/alt-data", "<SANDBOX>/data")) == seed.run.stdout
+
+
+# --- --refresh-only -------------------------------------------------------------------------
+
+def test_refresh_only(seeded: Sandbox, world: FakeSofaScore) -> None:
+    """Geçici kayıtlar için yalnızca /event: biri aynı, birinin skoru düzeltilmiş, biri artık 404. Çıkış kodu 0."""
+    for event_id in (9100001, 9100003, 9100010):
+        _make_provisional(seeded.data, world, event_id)
+    _change_score(world, 9100003, home=2)
+    world.remove("/event/9100010")
+
+    run = run_cli(seeded, "--refresh-only", world=world)
+
+    assert run.exit_code == 0
+    assert_cli_golden("refresh_only", run.golden())
+
+
+def test_refresh_only_exit_codes(new_box: NewBox, world: FakeSofaScore) -> None:
+    """0: yenilenecek kayıt yok ya da en az biri yenilendi; 1: hepsi başarısız; 2: devre kesildi (kalanlar denenmedi)."""
+    nothing_due = run_cli(new_box("nothing-due", data="seed"), "--refresh-only")
+
+    gone = FakeSofaScore.from_file(WORLD)
+    all_failed_box = new_box("all-failed", data="seed")
+    _make_provisional(all_failed_box.data, gone, 9100001)
+    gone.remove("/event/9100001")
+    all_failed = run_cli(all_failed_box, "--refresh-only", world=gone)
+
+    blocked_box = new_box("blocked", data="seed", env_lines=["RATE_LIMIT_THRESHOLD_CONSECUTIVE=2"])
+    for event_id in (9100001, 9100003, 9100010):
+        _make_provisional(blocked_box.data, world, event_id)
+    world.fail("/event/*", 403)
+    breaker = run_cli(blocked_box, "--refresh-only", world=world)
+    # --ignore-rate-limit devre kesiciyi kapatır: aynı durumda her maç denenir, sonuç "hepsi başarısız" olur
+    ignored = run_cli(blocked_box, "--refresh-only", "--ignore-rate-limit", world=world)
+
+    assert (nothing_due.exit_code, all_failed.exit_code, breaker.exit_code, ignored.exit_code) == (0, 1, 2, 1)
+    assert_cli_golden("refresh_only_exit_codes", {
+        "nothing_due": nothing_due.golden(),
+        "all_failed": all_failed.golden(),
+        "stopped_by_breaker": breaker.golden(),
+        "breaker_ignored": ignored.golden(),
+    })
+
+
+def test_refresh_legacy_flag(seeded: Sandbox) -> None:
+    """observation.json'ı olmayan eski kayıt kesin sayılır; --refresh-legacy ile bir kez yenilenir."""
+    (_match_dir(seeded.data, 9100001) / "observation.json").unlink()
+
+    without_flag = run_cli(seeded, "--refresh-only")
+    with_flag = run_cli(seeded, "--refresh-only", "--refresh-legacy")
+    again = run_cli(seeded, "--refresh-only", "--refresh-legacy")
+
+    assert (without_flag.requests, again.requests) == ([], [])
+    assert_cli_golden("refresh_legacy", {
+        "without_flag": without_flag.golden(), "with_flag": with_flag.golden(), "with_flag_again": again.golden(),
+    })
+
+
+# --- --recheck-unavailable ------------------------------------------------------------------
+
+def test_recheck_unavailable(new_box: NewBox, settled: Seed) -> None:
+    """
+    İşaretleri geri almak istek atmaz. Varsayılan kip yalnızca eski sürümden kalan (doğrulanmamış) işaretleri
+    açar; `all` kesinleşmiş olanları da. --headless ile birlikte verilirse önce işaretler açılır, sonra indirilir.
+    """
+    # 9100002'nin iki dilimi ikinci kez boş geldi: kesin "yok"
+    steps: Dict[str, Dict[str, Any]] = {"details_run_confirms_markers": settled.run.golden()}
+    seeded = new_box(data="settled")
+    # Eski sürümden kalma işaret: 9100001'in statistics dilimi doğrulanmadan "yok" sayılmış
+    legacy_dir = _match_dir(seeded.data, 9100001)
+    (legacy_dir / "statistics.json").unlink()
+    (legacy_dir / "_unavailable.json").write_text(json.dumps({"statistics": 2}), encoding="utf-8")
+
+    steps["default"] = run_cli(seeded, "--recheck-unavailable").golden()
+    steps["default_again"] = run_cli(seeded, "--recheck-unavailable", "--league-id", str(LEAGUE)).golden()
+    steps["other_league"] = run_cli(seeded, "--recheck-unavailable", "all", "--league-id", "8").golden()
+    steps["all_then_download"] = run_cli(
+        seeded, "--recheck-unavailable", "all", "--headless", "--update-all", "--fetch-mode", "details"
+    ).golden()
+
+    for name in ("default", "default_again", "other_league"):
+        assert (steps[name]["exit_code"], steps[name]["requests"]) == (0, []), name
+    assert_cli_golden("recheck_unavailable", steps)
+
+
+# --- --watch --------------------------------------------------------------------------------
+
+LIVE_EVENT = 9300001
+
+
+def test_watch_event_ids(box: Sandbox, world: FakeSofaScore) -> None:
+    """
+    Olaylar stdout'a satır satır JSON olarak, özet stderr'e yazılır; durum veri dizininde kalır ve yeniden
+    başlatmada kaldığı yerden sürer. İlk çalıştırma: maç oynanıyor, --watch-hours dolunca çıkılır. İkinci
+    çalıştırma: maç canlı listeden düşmüş ve bitmiş; izlenen tüm maçlar bitince izleyici kendiliğinden çıkar.
+    """
+    listed = world.event(LIVE_EVENT)
+    listed["homeScore"].update(current=2, display=2, period1=2)  # /event ile canlı liste arasında gol
+    world.add("/sport/football/events/live", {"events": [listed]})
+    argv = ["--watch", "--sport", "football", "--event-ids", str(LIVE_EVENT)]
+
+    # Süre her turun sonunda denetlenir: sınır ne kadar kısa olursa olsun ilk tur tamamlanır
+    first = run_cli(box, *argv, "--watch-hours", "0.000000001", world=world)
+
+    finished = copy.deepcopy(listed)
+    finished["status"] = {"code": 100, "description": "Ended", "type": "finished"}
+    finished["winnerCode"] = 1
+    finished["changes"]["changeTimestamp"] += 5400
+    world.add_event(finished)
+    world.add("/sport/football/events/live", {"events": []})
+    second = run_cli(box, *argv, world=world)
+
+    for run in (first, second):  # olay satırlarındaki zaman
+        run.stdout = _map_lines(
+            run.stdout, lambda line: json.dumps(_mask(json.loads(line))) if line.startswith("{") else line
+        )
+    assert (first.exit_code, second.exit_code) == (0, 0)
+    assert_cli_golden("watch_event_ids", {"match_in_play": first.golden(), "restart_after_the_match": second.golden()})
+
+
+# --- --diagnostics --------------------------------------------------------------------------
+
+def test_diagnostics_writes_a_bundle_relative_to_the_invoking_directory(box: Sandbox) -> None:
+    """Göreli yol, kullanıcının komutu çalıştırdığı dizine göre çözülür (main.py depo köküne chdir etse de)."""
+    run = run_cli(box, "--diagnostics", "out/bundle.zip")
+
+    assert (run.exit_code, run.requests) == (0, [])
+    assert run.printed() == ["Diagnostics bundle written: <SANDBOX>/cwd/out/bundle.zip"]
+    assert run.files["added"]["cwd/out/bundle.zip"] == "<binary>"
+    assert_cli_golden("diagnostics", run.golden())

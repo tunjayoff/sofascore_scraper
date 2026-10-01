@@ -1,0 +1,75 @@
+{
+ "argv": [
+  "--refresh-only"
+ ],
+ "exit_code": 0,
+ "files": {
+  "added": {
+   "data/score_changes.jsonl": [
+    {
+     "changed": {
+      "homeScore.current": [
+       1,
+       2
+      ],
+      "homeScore.display": [
+       1,
+       2
+      ],
+      "homeScore.normaltime": [
+       1,
+       2
+      ]
+     },
+     "event_id": 9100003,
+     "hours_after_start": 3.0,
+     "new_change_ts": 1725115600,
+     "old_change_ts": 1725112000,
+     "sport": "football",
+     "start_ts": 1725104800,
+     "status_class": [
+      "completed",
+      "completed"
+     ],
+     "tier_hint": null,
+     "tournament": {
+      "id": 17,
+      "name": "Premier League"
+     },
+     "ts_utc": "<volatile>"
+    }
+   ],
+   "logs/sofascore_scraper.log": "<binary>"
+  },
+  "changed": {
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/basic.json": "sha256:fe7505d70347",
+   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/observation.json": {
+    "change_ts": 1725115600,
+    "observed_at_utc": "<volatile>"
+   }
+  }
+ },
+ "request_layer_loaded": true,
+ "requests": [
+  "sync /event/9100010 404",
+  "sync /event/9100001 200",
+  "sync /event/9100003 200"
+ ],
+ "sleeps": {
+  "request-layer": 2
+ },
+ "stderr": [],
+ "stdout": [
+  "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+  "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+  "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+  "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+  "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+  "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+  "LOG INFO Main: Yenileme: 3 geçici kayıt",
+  "LOG INFO MatchDataFetcher: 3 maç yenileniyor",
+  "LOG WARNING MatchDataFetcher: Maç 9100010 yenileme: /event alınamadı",
+  "LOG INFO MatchDataFetcher: Maç 9100003 yenilendi: 3 alan değişti (homeScore.current, homeScore.display, homeScore.normaltime)",
+  "Refresh: 2 matches refreshed, 1 changed, 1 failed (changes: data/score_changes.jsonl)"
+ ]
+}

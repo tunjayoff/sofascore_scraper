@@ -1,0 +1,83 @@
+{
+ "with_flag": {
+  "argv": [
+   "--refresh-only",
+   "--refresh-legacy"
+  ],
+  "exit_code": 0,
+  "files": {
+   "added": {
+    "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/observation.json": {
+     "change_ts": 1724507200,
+     "observed_at_utc": "<volatile>"
+    }
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [
+   "sync /event/9100001 200"
+  ],
+  "sleeps": {
+   "request-layer": 1
+  },
+  "stderr": [],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Yenileme: 1 geçici kayıt",
+   "LOG INFO MatchDataFetcher: 1 maç yenileniyor",
+   "Refresh: 1 matches refreshed, 0 changed, 0 failed (changes: data/score_changes.jsonl)"
+  ]
+ },
+ "with_flag_again": {
+  "argv": [
+   "--refresh-only",
+   "--refresh-legacy"
+  ],
+  "exit_code": 0,
+  "files": {},
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Yenileme: 0 geçici kayıt",
+   "Refresh: 0 matches refreshed, 0 changed, 0 failed (changes: data/score_changes.jsonl)"
+  ]
+ },
+ "without_flag": {
+  "argv": [
+   "--refresh-only"
+  ],
+  "exit_code": 0,
+  "files": {
+   "added": {
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Yenileme: 0 geçici kayıt",
+   "Refresh: 0 matches refreshed, 0 changed, 0 failed (changes: data/score_changes.jsonl)"
+  ]
+ }
+}
