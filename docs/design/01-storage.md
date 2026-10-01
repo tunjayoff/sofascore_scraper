@@ -14,6 +14,12 @@ ST-05 #45, ST-06 #46, ST-09 #44). Where they found the design wrong or silent, t
 and says "as built"; section 12 lists the corrections. References marked `0aa73b4` are to `origin/main` at
 that commit; all others are still at `3ae2599`, and main has moved since.
 
+Revised again on 2026-10-02 after the next Store pull requests were merged (ST-07 #49, ST-10 #50, FX-4 #53,
+FX-3 #55, ST-18 #59, ST-08 #61, ST-17 #62, and FX-1 #60 and P10 #64 for the leases outside the Store). The
+leases, the shared SQLite module, the file modes, the stream log, the watcher state, the follows table, the
+event and listing indexers, reconcile and verify are described as built; section 12 lists the corrections.
+References marked `f286723` are to `origin/main` at that commit.
+
 Terms used throughout:
 
 - **payload**: one SofaScore JSON response, stored as a file.
@@ -65,7 +71,7 @@ Items 2, 3, 4, 7 and several smaller points are listed in the "Decisions needed"
 | `match_details/<eid>/` (flat) and `<eid>/<eid>.json` (one combined file) | two older forms, still read | combined file is still *updated* by refresh at `:889-894` | `src/match_data_fetcher.py:154-157`, `:170-171`, `:538-542`; `src/web/routes/matches.py:375-378` |
 | `match_details/processed/all_matches_<ts>.csv`, `<league>_<ts>.csv`, `match_files_stats.json`, `match_files_report.csv` | derived exports and reports | `src/match_data_fetcher.py:518` (directory), `:1535-1820`, `:2323-2482` | `src/web/routes/data.py:185-221`, `src/web/routes/matches.py:134-150` |
 | `score_changes.jsonl` | one line per post-finish change | `src/match_data_fetcher.py:911-915` (name at `src/refresh.py:21`) | no reader in `src/` |
-| `watch_events.jsonl`, `watch_state_<sport>.json` | watcher event stream and last known state | `src/watcher.py:45-46`, `:177-179`, `:212-222` | `src/watcher.py:204-210` |
+| `watch_events.jsonl`, `watch_state_<sport>.json` | watcher event stream and last known state. Since ST-18 (PR #59) the state is authoritative in the `watch_state` table of `state.db`: the state file is read once, on the first run, and afterwards written as a copy; each event is also appended to the `live` stream | `src/watcher.py:45-46`, `:177-179`, `:212-222`; since PR #59 through `store.watch` (`src/store/watch.py`) | `src/watcher.py:204-210`; since PR #59 only the one-time import |
 | `.meta/jobs.db` | SQLite job history, rollback journal mode, `user_version` 0 (checked on the local file). Since ST-09 (PR #44) the history is in `.meta/state.db`; `jobs.db` is imported once and left in place | `src/web/jobs.py:18-21`, `:100-127`, `:193-223`, `:322-362` | `src/web/jobs.py:388-402`; the diagnostics bundle (`src/diagnostics.py:389-398` at `0aa73b4`, read-only; `state.db` first, `jobs.db` for a directory 3.x has not opened) |
 | `backups/backup_<scope>_<ts>.zip` | zip of `seasons/`, `matches/`, `match_details/` and optionally the league config and `.env`; does **not** contain `.meta`, `score_changes.jsonl` or watcher files | `src/web/routes/data.py:103-149` | `src/web/routes/data.py:251-260` |
 | `datasets/`, `reports/<kind>_report_<ts>.json` | terminal-UI leftovers | `src/SofaScoreUi.py:79-83`, `src/ui/stats_ui.py:157-161` | `src/services/stats.py:139` (size only) |
@@ -146,10 +152,21 @@ only in its payload.
 the only code that opens `catalog.db` or `state.db`. Everything else imports from `src.store` (the package
 root) and nothing from its submodules.
 
-Two imports of submodules exist during the transition and are entries of the ratchet (2.4): the shim
-`src/fsutil.py` imports `src.store.files` until ST-28 deletes it, and `src/web/jobs.py` imports
-`src.store.jobs` until the package root exports the facade (ST-10). The root exports only the error classes
-so far.
+One import of a submodule exists during the transition: the shim `src/fsutil.py` imports `src.store.files`
+until ST-28 deletes it. `src/web/jobs.py` imported `src.store.jobs` until FX-1 (PR #60) switched it to the
+root; its ratchet file is gone.
+
+The root as built (`src/store/__init__.py` at `f286723`) exports the error classes, the facade (`open_store`,
+`Store`, `StoreInfo`), `Lease` and `LeaseInfo`, the job store names (`JobStore`, `JobStoreConflict`,
+`JobRunningError`, `DataOperationRunningError`, `default_db_path`, `get_job_store`), since ST-18 the stream
+types and `WatchStateStore`, and since ST-17 the follows names (`FollowStore`, `Follow`, `FollowSpec`,
+`FollowConflict`, `ApplyResult`, `apply_follows`). Every name except the error classes is loaded on first
+use (a module
+`__getattr__`, with a `TYPE_CHECKING` block for static tools and the API snapshot). The reason: importing a
+submodule runs the package root first, `src/fsutil.py` imports `src.store.files` from the lowest layers of
+the application, and `tests/test_store_catalog.py` pins the exact set of modules that importing a store
+submodule loads. A new public name therefore goes into three places of that file: the `TYPE_CHECKING` import,
+`_LAZY` and `__all__`.
 
 The Store contains no network code and no policy. It does not know which slices a sport needs, how long the
 refresh window is, or what "finished" means for a job. Callers pass those in as arguments. It may import
@@ -162,7 +179,7 @@ onto the API below; the API-surface test (2.4) pins it.
 
 ```
 src/store/
-  __init__.py     public names only (see 2.3)
+  __init__.py     public names only (see 2.3), loaded on first use (2.1)
   api.py          Store facade, open_store(), per-data-dir registry, clear, info
   errors.py       StoreError and subclasses
   codec.py        canonical JSON bytes, gzip read/write, sha256
@@ -172,11 +189,14 @@ src/store/
   legacy.py       read-only discovery and readers for every legacy form
   catalog.py      catalog.db connections, DDL, upserts, queries
   state.py        state.db connections, migration runner, runtime key/value
-  sqlite.py       connection handling shared by catalog.py and state.py (plan item FX-3; until then each has its own)
+  sqlite.py       connection handling shared by catalog.py and state.py (FX-3, PR #55; see 3.2)
   derive.py       payload -> catalog row (pure)
-  indexer.py      build, rebuild, reconcile
-  verify.py       consistency checks
+  indexer.py      events and slices from files, rebuild, reconcile; orders the other sources (3.4, 3.5)
+  verify.py       consistency checks (3.6)
   events.py  entities.py  history.py  changes.py  streams.py  follows.py  jobs.py  watch.py
+                  (as built so far: entities.py and changes.py hold the listing and change-log indexers of
+                  ST-08; streams.py, watch.py, follows.py and jobs.py are complete; the others come with
+                  their items)
   lease.py        OS-lock based leases
   migrate.py      legacy -> v3
   export.py  backup.py
@@ -286,6 +306,39 @@ class EventQuery:
     offset: int | None = None               # only for the old /api/matches paging
 ```
 
+The facade as built so far (ST-10 #50, ST-18 #59, ST-17 #62; `src/store/api.py` at `f286723`). The block
+above is the target; this is the part of it that exists:
+
+- `Store` has `data_dir`, `readonly`, `store_id`, `closed`, `lease(name, purpose=, wait=)`,
+  `lease_holder(name)` (the holder of a lease in any process, without taking it), `info(sizes=True)`,
+  `runtime`, `streams`, `watch`, `follows` and `close()`. `events`, `entities`, `history`, `changes`,
+  `catalog`, `migrate`, `export`, `backup` and `clear` arrive with their plan items.
+- `jobs` is not attached. Today's `JobStore` is a process-wide object that rebinds between directories
+  (`get_job_store`), which a per-directory attribute cannot express; the job manager (P11) attaches it.
+- The registry is keyed by the real path of the directory **and** `readonly`, so a read-only and a writable
+  Store of one directory are two objects. `close()` closes the connections and removes the Store from the
+  registry; leases that were taken stay with their holders.
+- `open_store` creates the catalog schema and never builds or reconciles. `info().catalog_rebuild_reason`
+  stays `derive_version` until a build stamps it; the build and the reconcile on open are wired by ST-11
+  (3.4, 3.5).
+- `info()` returns `StoreInfo`: the versions of `schema.json`, the schema versions of both databases,
+  `catalog_rebuild_reason`, `last_rebuild` (the catalog's `meta.built_at` as written), `journal_modes`
+  (`delete` means single-process mode, 6.4), row counts per table, `events_by_layout`, bytes per top-level
+  entry of the data directory, and the leases held by any process. Summing the bytes walks the whole
+  directory; `info(sizes=False)` skips the walk (15 ms against 0.5 ms on a copy of the owner's data).
+- Inside the package a Store gives `_state` (the `StateDb`), `_catalog` (the shared `Catalog` with `state`
+  attached) and `_leases`. The sub-APIs take the Store in their constructors (`StreamLog(store)`,
+  `WatchStateStore(store)`, `FollowStore(store)`), not the `StateDb`: with `StateDb` in a public signature
+  the API snapshot would start tracking `StateDb` itself, and with it the internal `Connection` class (the
+  snapshot's scanner matches the identifier `Connection` in `sqlite3.Connection` to
+  `src.store.sqlite.Connection`). A new attribute is one line in `Store.__init__`, after `_state` exists.
+- `open_store(create=False)` refuses a directory that has no `schema.json`. The web application's job store
+  creates `.meta/state.db` alone, without `schema.json` and `catalog.db`, so a web installation's directory
+  is "not a store yet" for that call. Code that only wants to know whether a `state.db` exists checks the
+  file itself (`apply_follows` does); the gap closes when the web opens the Store (P11).
+- `main.py` opens the Store only to take a lease and closes it when the block ends (P10), so a test that
+  calls `main.main()` in process and holds the same Store object finds it closed.
+
 **Events and their slices**
 
 ```python
@@ -338,13 +391,15 @@ class PutResult:
 
 Semantics of `put` (the only way event payloads reach the disk):
 
-1. Keys are validated: `key` matches `[a-z][a-z0-9_]{0,39}`, `sub` matches `[A-Za-z0-9_.-]{0,80}`. As built
-   (ST-03, `src/store/layout.py:47-76` at `0aa73b4`) two more rules apply: Windows device names (`con`, `nul`,
-   `aux`, `prn`, `com1`-`com9`, `lpt1`-`lpt9`) are rejected as a key or as the stem of a sub, and the sub `_`
-   is rejected, because `_history/<key>/_.jsonl.gz` is the history file of the slice without a sub. The sub
-   pattern is case-sensitive while Windows and default macOS file systems are not; plan item FX-4 restricts
-   subs to lower case (decision S13). An `"event"` outcome must be `ok` and its payload's `id` must equal
-   `event_id`.
+1. Keys are validated: `key` matches `[a-z][a-z0-9_]{0,39}`, `sub` matches `[a-z0-9_.-]{0,80}`. As built
+   (ST-03 and FX-4, `src/store/layout.py` at `f286723`) two more rules apply: Windows device names (`con`,
+   `nul`, `aux`, `prn`, `com1`-`com9`, `lpt1`-`lpt9`) are rejected as a key or as the stem of a sub, and the
+   sub `_` is rejected, because `_history/<key>/_.jsonl.gz` is the history file of the slice without a sub.
+   Subs are lower-case only (decision S13, FX-4, PR #53), because Windows and default macOS file systems do
+   not distinguish case: a sub with an upper-case letter is rejected with `LayoutError`, it is not folded. A
+   caller that builds a sub from a SofaScore slug lowers it first; a provider id as sub is its decimal
+   digits. A manifest whose slice name carries an upper-case sub (`odds_all/A`) is invalid. An `"event"`
+   outcome must be `ok` and its payload's `id` must equal `event_id`.
 2. An event is created by the first `put` that carries an `"event"` outcome or by a listing (see
    `EntityStore.put`). A `put` without `"event"` for an id the catalog does not know raises `UnknownEvent`.
 3. Per outcome:
@@ -358,9 +413,9 @@ Semantics of `put` (the only way event payloads reach the disk):
    - `failed`: stored as state `error` with `{reason, status, at, count + 1}`; `empty_count` is not touched
      (`:696-703`). An error never downgrades a slice that is `ok`.
    - `skipped`: ignored, nothing is stored. This covers the open circuit breaker, where no request was sent
-     (`:693-694`). Today's code still reports the open breaker as failed with reason `breaker`, and
-     `_update_slice_markers` relies on that; the switch to `skipped` is made by P05 or P13 together with that
-     check.
+     (`:693-694`). The client returns `skipped`/`breaker` since P05 (PR #48). `Outcome.from_error` and
+     `MatchDataFetcher` still report the open breaker as failed with reason `breaker`, and
+     `_update_slice_markers` relies on that; P13 switches both together.
 4. An `"event"` outcome whose `fetched_at` is older than the stored observation is ignored
    (`PutResult.superseded`). Two writers (a job and the live service) can therefore never replace a newer
    event payload with an older one.
@@ -475,22 +530,46 @@ One durable log carries every stream that consumers follow by sequence number: `
 live source switched, sink dropped).
 
 ```python
-class StreamLog:
+@dataclass(frozen=True)
+class StreamEvent:          # what a producer appends
+    type: str                                   # "live.status_changed", "job.finished", ...
+    data: Mapping[str, Any] = {}                # must be JSON-serialisable
+    event_id: int | None = None; sport: str | None = None; tournament_id: int | None = None
+    source: str | None = None                   # push | poll | job | system
+    dedup_key: str | None = None                # None = no de-duplication
+    ts: float | None = None                     # epoch seconds; None = the moment of the append
+
+@dataclass(frozen=True)
+class StreamRecord:         # a stored event: the fields of StreamEvent plus
+    seq: int; stream: str; ts: float            # ts in epoch seconds, millisecond resolution
+
+@dataclass(frozen=True)
+class StreamBatch:
+    stream_id: str; events: tuple[StreamRecord, ...]; last_seq: int; gap: bool
+
+@dataclass(frozen=True)
+class StreamHead:
+    stream_id: str; first_seq: int; last_seq: int
+
+class StreamLog:            # StreamLog(store)
     def append(self, stream: str, events: Sequence[StreamEvent]) -> list[int | None]
         # One transaction; returns the seq numbers. An event whose dedup_key already exists in the stream is not
-        # stored again and yields None.
+        # stored again and yields None. Raises StoreBusy when the write lock is not free within busy_timeout.
     def read(self, *, after: int = 0, limit: int = 500, streams: Sequence[str] = (), types: Sequence[str] = (),
              event_ids: Sequence[int] = (), sport: str | None = None, tournament_ids: Sequence[int] = ()) -> StreamBatch
-        # StreamBatch(stream_id, events, last_seq, gap). gap=True: rows after `after` were already pruned.
     def wait(self, *, after: int, timeout: float) -> bool   # true as soon as a row with seq > after exists
-    def head(self) -> StreamHead                            # stream_id, first_seq, last_seq
+    def head(self) -> StreamHead
     def prune(self, *, max_age_s: float | None = None, max_rows: int | None = None) -> int
     def cursor(self, sink: str) -> int                      # last delivered seq of a sink (0 = none)
     def set_cursor(self, sink: str, seq: int, *, error: str | None = None) -> None
 
-class WatchStateStore:      # replaces watch_state_{sport}.json (src/watcher.py:204-214)
+class WatchStateStore:      # WatchStateStore(store); replaces watch_state_{sport}.json (src/watcher.py:204-214)
     def load(self, watcher: str) -> dict[str, dict[str, Any]]
     def save(self, watcher: str, state: Mapping[str, Mapping[str, Any]], *, changed: Iterable[str] | None = None) -> None
+    # for the 2.x files, because only the Store touches DATA_DIR (removed with the 2.x watcher, P23 and P30):
+    def import_legacy(self, sport: str, *, watcher: str | None = None) -> int | None   # once; None = done before
+    def mirror_legacy_state(self, sport: str, state: Mapping[str, Mapping[str, Any]]) -> None
+    def append_legacy_events(self, lines: Sequence[str]) -> None       # bytes, LF on every platform
 
 class RuntimeFacts:         # last known facts of other processes, e.g. "bridge_health"
     def get(self, key: str) -> RuntimeFact | None           # value, pid, updated_at
@@ -505,10 +584,27 @@ Sequence numbers:
   a number.)
 - Every append runs in a `BEGIN IMMEDIATE` transaction, so numbers are assigned in commit order: a reader
   never sees a row while a lower-numbered row is still uncommitted.
-- `stream_id` is a UUID stored in `state.db`; it changes only if the state db is recreated, which tells a
-  consumer that its saved position is no longer meaningful.
+- `stream_id` is a UUID stored in `state.db` (meta key `stream_id`); it changes only if the state db is
+  recreated, which tells a consumer that its saved position is no longer meaningful. It is created by the
+  first `head()` or `read()`, not when the database is created.
+- `StreamBatch.last_seq` is the position to resume from: pass it as `after` to the next read. With a filter
+  it moves past the rows the filter skipped; when the limit was reached it stops at the last returned row; it
+  is never below `after`.
+- `StreamBatch.gap` is kept per stream. `prune` writes the highest deleted number of each stream to the meta
+  key `stream_pruned`; a read reports `gap` when `after` is below that mark for one of the requested streams
+  (for any stream when the read is unfiltered). The other filters (`types`, `event_ids`, `sport`,
+  `tournament_ids`) are not considered, so a consumer of one event type can be told of a gap that held none of
+  its events. `types` is an exact match; glob patterns are the sink's job.
+- `head()` on an empty log gives `first_seq` 0, and `last_seq` stays at the last number that was handed out
+  (`sqlite_sequence`).
 - `wait` uses an in-process condition for events appended by the same process and polls `PRAGMA data_version`
   (every 200 ms) for events appended by another process; SQLite has no cross-process notification.
+- Not in the API yet: a method that lists the sink cursors with their `last_error`, which the status command
+  needs (ST-24 adds it, `03-implementation-plan.md` section 16). Nothing calls `prune` yet (9.3).
+- Measured (ST-18; tmpfs, so without fsync cost; a log of 200,200 rows in four streams): an append 0.04 ms, a
+  read of 500 rows 2.7 ms whether one, two or all streams are asked for, `wait` woke 0.5 ms after an append of
+  the same process, pruning 100,201 rows 165 ms. Watcher state of 2,000 rows: a full save 9.5 ms, one changed
+  row 0.9 ms, a load 5 ms.
 
 **Follows**
 
@@ -549,20 +645,84 @@ working exactly as today, a hand edit of `leagues.txt` is picked up as today
 current. The uniqueness rules of today's file are kept: one row per id and one row per tournament name
 (`src/config_manager.py:490-495`).
 
+As built (ST-17, PR #62; `src/store/follows.py` at `f286723`). `FollowStore(store)` is `store.follows`; the
+table mirrors the two league files, and nothing reads it yet.
+
+- **Types.** `FollowSpec` is what is asked for. P09 defined a class with the same fields in
+  `src/config/settings.py`, because the Store may not import `src.config`; both exist, `apply` reads the
+  fields, and `build_context` converts explicitly. `Follow` is a row: `id`, `kind`, `entity_id`, `name`,
+  `sport`, `seasons`, `slices`, `live`, `enabled`, `origin`, `position`, `created_at`, `updated_at`, and
+  `spec()`. `ApplyResult` has `origin`, `added`, `updated`, `removed`, `unchanged`, `conflicts` and
+  `changed`; `FollowConflict(kind, entity_id, name, reason)` is one request that was not applied.
+- **`apply` is idempotent and cheap.** When the table already equals the list it takes no write lock and
+  writes nothing (0.68 ms measured), so the signature of the files that the first version kept in `meta`
+  (`legacy_follows_sig`) is not needed and is not written.
+- **Two origins ask for the same entity:** `config` > `api` > `legacy`. The stronger origin takes the row
+  over (its id and `created_at` are kept); the weaker request is not applied and is reported in
+  `ApplyResult.conflicts` (`owned_by_config`, `owned_by_api`). A league that is in `leagues.txt` and in
+  `[[follow]]` is one row, the config row; when it leaves the config file it is pruned, and the mirror of
+  the league files, which runs right after, adds it back as `legacy`. A config follow that took over an
+  `api` row deletes it when it later leaves the config file; the row the API created is not restored.
+- **A tournament name that another row holds:** the request is reported (`name_taken`) and not applied; no
+  origin deletes another origin's row for its name. `apply` never raises for this; `add` and `update` raise
+  `FollowExists`. A list that repeats an id or a tournament name keeps the later entry (`duplicate_id`,
+  `duplicate_name`), as `leagues.txt` does today. A hand-edited `leagues.txt` can carry one name under two
+  ids: `get_leagues()` returns both, the table keeps the later one, and `FollowStore.leagues()` then has one
+  entry fewer.
+- **`update` and `remove`.** `update` raises `KeyError` for a row that does not exist and `FollowManaged`
+  for a config row; `remove` returns False for a missing row. Both accept `legacy` rows, but the next mirror
+  overwrites what they did: a legacy follow is changed through `ConfigManager.add_league` / `remove_league`
+  and `league_sports.set_sport`, and the mirror follows by itself.
+- **`position`** is the index in the origin's own list; `add` appends after the highest position; `list()`
+  orders by `(position, id)`, so rows of different origins interleave.
+- **`leagues()`** includes every origin and disabled follows. With a config file, a tournament that is in
+  both sources carries the config name (`premier-league`), not the `leagues.txt` name. Directory names on
+  disk are built from the `leagues.txt` name, so a reader that resolves `<name>_seasons.json` must take the
+  names from `ConfigManager` until the readers stop depending on directory names (ST-11, RD-5).
+- **When the mirror runs.** `ConfigManager` mirrors the leagues (origin `legacy`, with the sports of
+  `league_sports.json`) after every load, including a hand edit of `leagues.txt` that it notices on the next
+  read, and after `add_league` / `remove_league`; `league_sports.set_sport` and `resolve_all` mirror after
+  they wrote the sidecar. A hand edit of `league_sports.json` is not noticed by itself, as today; it reaches
+  the table with the next mirror. The `[[follow]]` entries (origin `config`) are applied by every
+  `build_context` call, that is by each job, season refresh and CSV export request, and since P10 by each
+  headless run; not at process start and not by `ConfigManager.reload_config()`. `build_context` then
+  mirrors the league files, so both origins are in the table when a config file exists.
+- **No open Store is needed, and none is left open.** `ConfigManager` and `build_context` call
+  `apply_follows(data_dir, desired, origin=, prune=, create=False)`, which runs the same `FollowStore.apply`
+  over a short-lived connection. Opening the Store there would keep a Store open for the life of the
+  process and create `schema.json` and `catalog.db` in every directory a `ConfigManager` is constructed
+  for. The mirror writes only into a data directory that already has a `state.db`; otherwise it does
+  nothing (the sidecar is not even read) and the table fills at the next load, change or `build_context`.
+  Only `build_context` with `[[follow]]` entries creates `.meta/state.db`. `desired` may be a function,
+  which is called only when there is a table.
+- **Failures do not stop the caller.** A mirror that cannot be written (a locked, newer or damaged
+  `state.db`) is logged as a warning and the league operation or the job continues; with a config file that
+  has follows, `build_context` then logs two warnings per call. An entry that cannot be applied is logged
+  once per process.
+- Measured on a copy of the owner's `jobs.db` (63 job rows, imported into a new `state.db`): a
+  `ConfigManager` start with the first mirror 1.6 ms, a repeat without changes 0.68 ms, `add_league` with its
+  mirror 1.1 ms; the job rows were unchanged afterwards.
+
 **Jobs, administration, export, backup, migrate**
 
 ```python
 class JobStore:      # today's methods (src/web/jobs.py:49-402), on state.db, plus what the job manager needs
     create_running, update, snapshot, request_cancel, cancel_requested, list_jobs, get_job,
     exclusive, mark_stale_running_interrupted
+    writer_busy          # ST-10: a job of this store runs, or another process holds the writer lease (6.1)
     # added with the job manager (02-services.md 2.8): heartbeat, cancel by id from another process,
     # append_event / read_events (job_events table), reap_stale (row says running but the lease is free)
 
-class CatalogAdmin:
+class CatalogAdmin:      # as built (ST-07, ST-08)
+    def __init__(self, data_dir, catalog: Catalog | None = None, *, clock=time.time, league_names=None)
+    def ensure(self, *, progress=None) -> RebuildReport | None        # rebuild only if the catalog is not usable
     def rebuild(self, *, progress: Callable[[str, int, int], None] | None = None,
-                should_stop: Callable[[], bool] | None = None) -> RebuildReport                     # 3.4
-    def reconcile(self, *, deep: bool = False) -> ReconcileReport                                    # 3.5
+                should_stop: Callable[[], bool] | None = None,
+                mode: Literal["auto", "in_place", "recreate"] = "auto") -> RebuildReport             # 3.4
+    def index_event(self, event_id: int, *, paths: Sequence[str] = (), ...) -> str | None   # one event
+    def reconcile(self, *, deep: bool = False, v3: bool = False) -> ReconcileReport                  # 3.5
     def verify(self, *, deep: bool = False, repair: bool = False) -> VerifyReport                    # 3.6
+    def stats(self) -> dict[str, Any]                                 # counts and meta keys, for Store.info
 
 class Migrator:
     def plan(self, *, scope: Scope | None = None, exact: bool = False) -> MigrationPlan              # dry run
@@ -585,6 +745,17 @@ class BackupManager:
     def prune(self, *, keep: int | None = None, max_age_days: float | None = None) -> int
 ```
 
+`CatalogAdmin` as built. It is constructed with the Store's shared `Catalog` (an attached `state.db` is fine)
+or opens its own, which `close()` then closes. `league_names` is a mapping from tournament id to name, or a
+function that returns one and is asked on every scan; it is needed only to resolve a season-list file that is
+named after the league alone (5.1), and the caller supplies it because the Store may not read the league
+configuration (the follows' map since ST-17; see the note on names under "Follows" above). Without it such
+a file is reported as `unresolved_tournament`. `RebuildReport` carries the mode, the reason, the counts per
+table, the problems (`IndexProblem`: layout, path, kind, detail), the superseded directories and files and,
+since ST-08, `season_lists`, `schedules`, `listed` and `changes`. `ReconcileReport` is described in 3.5.
+`CatalogAdmin`, `RebuildReport` and `VerifyReport` are not exported from the root yet; ST-11, which wires
+the admin into the facade as `store.catalog`, exports them.
+
 Errors: `StoreError(StorageError)` keeps the `fatal` property of today's `StorageError`
 (`src/exceptions.py:109-137`), so callers that stop a job on a full disk keep working. Subclasses: `LeaseHeld`,
 `StoreBusy`, `UnknownEvent`, `PayloadMissing`, `PayloadCorrupt`, `CatalogCorrupt`, `SchemaTooNew`, `LayoutError`,
@@ -605,6 +776,10 @@ Error types as built (ST-03, ST-06, ST-09), where the first version of this sect
 | a payload that cannot be serialised | a non-fatal `StoreError` |
 | a replace that still fails after the Windows retries | Store-layer functions: a non-fatal `StoreError`; the 2.x helpers of `src/fsutil.py`: `ReplaceBusy`, a `PermissionError` subclass, which 2.x callers treat as fatal (4.4) |
 | a SQLite lock that outlasts `busy_timeout`, including the switch to WAL | `StoreBusy` |
+| the SQLite library is older than 3.24 | a plain `StoreError`, one wording for both files, with the found version in `detail` (FX-3) |
+| a `sub` with an upper-case letter (FX-4) | `LayoutError` |
+| no free temporary name after 100 attempts (`.<name>.<8 random characters>.tmp` is opened with `os.open` since FX-4) | a non-fatal `StoreError` (EEXIST) |
+| a lease that another holder has | `LeaseHeld`, with the holder found by probing the OS locks (6.1) |
 | an unreadable database file | `CatalogCorrupt` |
 | SQLite reports 'disk full' or 'read-only' | a `StoreError` with the errno, so that `fatal` is true |
 
@@ -694,9 +869,13 @@ _dir_state:tempfile.mkstemp
   never adds. `STORE_BOUNDARY_UPDATE=rewrite python -m pytest` regenerates the files and can add entries; it is
   for code that moves between modules or for a renamed function, and the added lines show in the diff.
   `STORE_API_UPDATE=1 python -m pytest tests/test_store_api_surface.py` regenerates the API snapshot.
-- Today's debt (at `0aa73b4`): 23 files, 166 static entries covering 291 calls in 21 modules, 3 runtime
-  entries (`src/match_data_fetcher.py` 105 calls, `src/ui/settings_ui.py` 67, `src/web/routes/matches.py` 26,
+- The debt at `0aa73b4`: 23 files, 166 static entries covering 291 calls in 21 modules, 3 runtime entries
+  (`src/match_data_fetcher.py` 105 calls, `src/ui/settings_ui.py` 67, `src/web/routes/matches.py` 26,
   `src/web/routes/data.py` 24, `src/services/stats.py` 17, `src/season_fetcher.py` 11, the rest 6 or fewer).
+  At `f286723`: 22 files, 163 static entries covering 288 calls in 20 modules, 3 runtime entries. The file of
+  `src/watcher.py` is gone (ST-18 moved its four accesses into the Store), the file of `src/web/jobs.py` is
+  gone (FX-1), and `src/services/context.py` has a new one with the two directory calls that moved there
+  from the terminal UI's constructor (P08).
 
 Open points that ST-28 has to settle before the baseline directory can be deleted:
 
@@ -745,7 +924,8 @@ What is authoritative where:
 
 ### 3.2 Connection settings
 
-Applied by `catalog.py` and `state.py` on every new connection:
+Applied on every new connection by the shared module `src/store/sqlite.py` (FX-3, PR #55), which
+`catalog.py` and `state.py` both use:
 
 ```sql
 PRAGMA journal_mode = WAL;        -- persistent; verified after setting (see below)
@@ -766,18 +946,34 @@ PRAGMA synchronous = FULL;        -- state.db
   writers of high-volume rows (live events) batch one transaction per poll round.
 - If `PRAGMA journal_mode = WAL` does not return `wal` (network file systems), the Store falls back to
   `DELETE` journal mode, logs a warning, and the doctor reports it: only one process may use the directory.
+  The warning is logged once per file per process, in English (`<file> could not be switched to WAL mode (a
+  network file system?); opened in DELETE journal mode. Only one process at a time may use this data
+  directory: <path>`), through the logger of the module that opened the file.
 - `busy_timeout` does not cover the switch to WAL. When two connections switch a new file at once, SQLite
   returns `SQLITE_BUSY` immediately instead of waiting (found independently by ST-06 and ST-09: 'database is
-  locked' in at least 14 of 300 and in 11 of 100 stress rounds). Both `catalog.configure()` and `StateDb`
-  retry the switch for up to `busy_timeout` and then raise `StoreBusy`. Reading a file's identity
-  (`application_id`, `user_version`, table count) happens in one read transaction, so that a concurrent
-  schema creation is never seen half done.
+  locked' in at least 14 of 300 and in 11 of 100 stress rounds; with eight threads and no retry, 16 of 100
+  rounds on Python 3.14.7 and SQLite 3.53.4, 0 of 100 with the shared code). `sqlite.configure()` retries
+  the switch for up to `busy_timeout`, pausing 5 ms and doubling up to 100 ms, and at the deadline lets the
+  `sqlite3.OperationalError` out; the callers turn it into `StoreBusy` (`Catalog._connect` through
+  `to_store_error`, `StateDb._request_wal`). The fall-back to `DELETE` mode goes through the same retried
+  call. Reading a file's identity (`application_id`, `user_version`, table count) happens in one read
+  transaction, so that a concurrent schema creation is never seen half done.
 - Connections close themselves. `sqlite3.Connection` emits a ResourceWarning from its own finalizer on
   Python 3.13+, and for cyclic garbage that finalizer can run before a wrapper's `__del__`; the thread-local
-  connections are therefore instances of a Connection subclass that closes itself.
-- sqlite3 errors inside a read or write helper are converted to `StoreError` (table in 2.3).
-- The two modules were written in parallel and each has its own copy of this connection handling; plan item
-  FX-3 moves it into one shared module.
+  connections are therefore instances of a Connection subclass that closes itself. They are kept in a
+  `ThreadConnections` object per file; the connection of a thread that has ended is closed when the thread
+  ends, not when the next thread opens one.
+- Error mapping differs between the two files, as before FX-3. `catalog.py` converts every sqlite3 error
+  inside a read or write helper to `StoreError` (table in 2.3). `state.py` converts only the lock timeout
+  (to `StoreBusy`, with SQLite's own text `database is locked` in `detail`); other sqlite3 errors leave it
+  as `sqlite3.Error`, because the job store's callers catch them as such.
+- Only `SQLITE_BUSY` counts as busy (on Python 3.10, which has no error codes, the text `database is
+  locked`). `SQLITE_LOCKED` (code 6, 'database table is locked') is a plain error for both files since FX-3;
+  no path of `state.py` or `jobs.py` produces it.
+- One statement splitter for the catalog DDL and the state migrations: it splits at semicolons, so several
+  statements may share a line, and a `--` comment after a statement on the same line stays with that
+  statement. (The two old splitters disagreed on both points; the SQL executed from the two shipped scripts
+  is unchanged.)
 - Minimum SQLite: 3.24 (UPSERT, row values, partial indexes, `WITHOUT ROWID`). Checked on open. No `STRICT`
   tables, no generated columns, no FTS, so the SQLite bundled with every supported Python works.
 - `PRAGMA application_id` marks the two files (`0x53464331` catalog, `0x53465331` state); `PRAGMA user_version`
@@ -1016,8 +1212,22 @@ CREATE TABLE legacy_roots (                        -- legacy directories seen by
 ) WITHOUT ROWID;
 ```
 
+`legacy_roots` as built (ST-08). Four kinds are written: `league_dir` (`matches/<league>`: its season
+directories and summary files), `schedule_dir` (a season directory with round and page files), `seasons_file`
+(each season-list file and `league_seasons.csv`) and `changes_file` (`score_changes.jsonl`). `season_dir` and
+`flat_event` are not used: the signature of an event directory is `events.sig`. `sig` formats are in 3.5.
+`scanned_at` is the clock, like `meta.built_at`, so a rebuild does not reproduce it.
+
+The catalog's `meta` table holds `derive_version` and, written by a build, `built_at` (epoch seconds),
+`built_by` (the application version), `build_mode` and `counts` (JSON, rows per table). `built_at` and
+`counts` describe the build: single-event writes (`index_event`, a repair, a reconcile) do not update them.
+
 `state.db`. Migration `0001_initial` (plan item ST-09). The file as built writes every statement as
-`CREATE TABLE IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS`, as 7.3 requires; the DDL is otherwise as printed:
+`CREATE TABLE IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS`, as 7.3 requires; the DDL is otherwise as printed.
+The keys of `meta` as built are `imported_jobs_db` (7.3), `stream_id` and `stream_pruned` (2.3) and
+`imported_watch_state:<sport>` (ST-18). `legacy_follows_sig`, which the comment below still names, is not
+written: ST-17 needs no signature of the league files, because a repeated `apply` is one SELECT and no
+write (2.3):
 
 ```sql
 CREATE TABLE meta (
@@ -1173,26 +1383,47 @@ Notes on the event row:
 - When an event has an `/event/{id}` payload, its row always equals `derive(event payload)`. A listing never
   overwrites such a row (8.2).
 - `first_seen_at` and `updated_at` are taken from the manifest (`created_at`, `updated_at`) or, for a listing
-  row, from the `fetched_at` of the listing payloads, so a rebuild reproduces them. Only `sig` differs.
+  row, from the `fetched_at` of the listing payloads, so a rebuild reproduces them. A legacy event has no
+  manifest: its `first_seen_at` and `updated_at` are the oldest and the newest mtime of its payload files.
+  For a legacy slice, `fetched_at` is the file's mtime, `checked_at` is the newest of the payload's mtime,
+  the empty mark's time and the error mark's time, `raw_bytes` is NULL, and `stored_bytes` is the size of the
+  `.json` file (NULL for a slice that lives in the combined file); the slice's `path` is the event directory
+  and its `sub` is empty. For a v3 row `path` is NULL and `legacy_path` names a superseded legacy directory.
+  What a rebuild does not reproduce: `sig` when files were touched, `legacy_roots.scanned_at` and the build
+  facts in `meta`.
+- Values SQLite cannot store would abort a build: a lone surrogate from a JSON escape (UnicodeEncodeError
+  when the value is bound) and integers beyond 64 bits (for example a huge count in `_unavailable.json`). The
+  indexer replaces the former with `?` and clamps the latter; `verify` derives the same values, so such a
+  row is not reported as a mismatch.
 
 ### 3.4 Rebuild
 
-`CatalogAdmin.rebuild()` needs the `maintenance` lease (6.1). Two modes:
+`CatalogAdmin.rebuild()` needs the `maintenance` lease (6.1). As built the indexer takes no lease itself:
+leases belong to the facade, and the caller holds `store.lease('maintenance', purpose='op:rebuild')` around
+the call (ST-11 wires this; until then the caller must make sure that no other writer runs). Two modes,
+chosen by `mode="auto"` or forced with `"in_place"` / `"recreate"`:
 
 - **In place** (catalog opens, schema matches): one `BEGIN IMMEDIATE` transaction deletes all rows and
   re-inserts them. Readers in other processes keep seeing the old, consistent catalog through WAL snapshot
   isolation until the commit. A failure rolls back to the old catalog. No file is swapped, so this works on
   Windows too.
-- **Recreate** (catalog missing, corrupt, or from another schema version): build `catalog.db.build`, then
-  `os.replace` it over `catalog.db` and remove stale `-wal`/`-shm` files. On Windows this fails while another
-  process has the old file open; the error says so.
+- **Recreate** (catalog missing, corrupt, or from another schema version): build `catalog.db.build`, close
+  every connection of the catalog, remove the old `-wal`/`-shm` files, then `os.replace` the build over
+  `catalog.db`. The sidecars go first: SQLite opens an existing `-wal` file whichever database it was written
+  for, so a stale one must never sit next to the new file (reasoned from SQLite's behaviour, not reproduced).
+  On Windows the replace fails while another process has the old file open; the error says so. A shared
+  catalog reopens on its next use.
+
+`ensure()` is the call for an open: it rebuilds only when the catalog is not usable and otherwise does
+nothing. `should_stop` ends a build early and leaves the old catalog as it was (`RebuildReport.completed` is
+false). `progress(stage, done, total)` reports the stages `scan`, `listings`, `v3_events`, `legacy_events`
+and `finish`.
 
 Scan order (deterministic, so two rebuilds of the same tree give the same rows):
 
-1. `v3/tournaments/**`: tournament and season manifests, season lists, schedule pages. Listing rows are
-   upserted in `fetched_at` order.
-2. Legacy `seasons/*.json`, then legacy `matches/**` round and page files in mtime order. Summary CSVs are read
-   only for a season directory that has no round or page JSON at all (old `_matches.csv` data).
+1. `v3/tournaments/**`: tournament and season manifests, season lists, schedule pages.
+2. Legacy `seasons/*.json`, then legacy `matches/**` round and page files. Summary CSVs are read only for a
+   season that has no round or page JSON at all (old `_matches.csv` data).
 3. `v3/teams/**`, `v3/players/**`, `v3/sports/**`.
 4. `v3/events/**/manifest.json`: event row from `event.json.gz`, slice rows from the manifest, participants,
    and tournament/season rows where none exists yet.
@@ -1200,10 +1431,43 @@ Scan order (deterministic, so two rebuilds of the same tree give the same rows):
    legacy directory is recorded as `legacy_path` (superseded).
 6. Change log: legacy `score_changes.jsonl`, then `changes/*.jsonl` in name order.
 7. History files: one `slice_history` row per gzip member.
-8. `stale` flags (8.2), `ANALYZE`, `meta` (`built_at`, `built_by`, `derive_version`, counts).
+8. `stale` flags (8.2), `ANALYZE`, `meta` (`built_at`, `built_by`, `build_mode`, `derive_version`, counts).
 
-A file that cannot be read or parsed does not stop the rebuild. It is listed in the report and its slice row
-gets `state = 'error'`, `error_reason = 'corrupt'`, which makes it a re-fetch candidate.
+As built (ST-07 #49, ST-08 #61) the order is: season lists; the listings of the seasons that have round or
+page files; v3 events; legacy events; the seasons that have only a summary CSV; the change log. Details that
+the list above does not say:
+
+- **Only what has a writer is indexed.** Steps 1 and 3 (v3 entity directories) and the `changes/*.jsonl`
+  segments of step 6 have no writer yet and are not scanned; they come with ST-22 and ST-20. Step 7 is ST-26.
+- **Listings are written per season, before the events.** Tournament and season rows from an event payload
+  are written 'only where none exists', so the listings, which are their real source, go first. Inside a
+  season the pages are applied in the reader's order (mtime, then path); a global `fetched_at` order over
+  the whole tree could not hold together with re-listing one season in a reconcile. Rows from listings
+  follow 'the newest page wins' for tournaments and for seasons that are not in a season list; participants
+  and participant links are written for listing rows too.
+- **Summary-only seasons come after the events**, not in step 2: their rows do not name a sport and take it
+  from the tournament row. "No round or page JSON" means no such file for that season in any directory (the
+  fixture's season has no directory at all). Only the CSV is read, not `*_summary.json`. A summary row
+  carries no team ids, no status type or code and no score detail, and its `match_date` is read back as
+  local time (the inverse of today's writer), so its `start_ts` is right only when the process runs in the
+  time zone the file was written in.
+- **A valid v3 event** is a directory whose manifest can be read, whose `event` slice is `ok` and whose
+  `event.json.gz` can be read and carries the same id. A directory that fails this is reported as a problem
+  and the legacy copy, if there is one, is indexed instead: there is no event row to hang an `error` /
+  `corrupt` slice on. A rebuild reads only the manifest and the event payload of a v3 event, so a broken
+  payload of another v3 slice is found by `verify(deep=True)`, not by a rebuild.
+- **Several legacy directories of one id.** The one the duplicate rule prefers (5.1) is indexed; when a v3
+  copy exists, `legacy_path` is that preferred directory. The choice is made from `stat` only, without
+  reading the files, so that quick verify can repeat it. The rule is repeated in `indexer.legacy_order`
+  (the reader's `iter_events` cannot give it without reading); a test pins that the two agree on every
+  fixture and on a tree with ties and unreadable copies.
+- **Participants.** A participant row is replaced only by an event payload that is at least as new
+  (`updated_at`, which for a v3 event is the `fetched_at` of its `event` slice), so the result does not
+  depend on the scan order. Sport, category, tournament and season rows are inserted only where none exists.
+
+A file that cannot be read or parsed does not stop the rebuild. It is listed in the report and, for a legacy
+slice file, its slice row gets `state = 'error'`, `error_reason = 'corrupt'`, which makes it a re-fetch
+candidate.
 
 A rebuild runs automatically on open when the catalog is missing, its `user_version` differs, its
 `derive_version` in `meta` differs from the code's, or `PRAGMA quick_check` fails after an unclean shutdown.
@@ -1213,10 +1477,14 @@ reporting `derive_version` until `stamp_derive_version()` is called as the last 
 interrupted build never looks usable. The final `ANALYZE` of a build is `ANALYZE main`: with `state.db`
 attached, a plain `ANALYZE` would also write statistics for `state.db` (see 3.7).
 
-Measured cost (warm page cache): the local legacy tree (90 schedule files, 423 event directories, 1,051 events
-in total) indexes in 0.22 s. Reading one v3 event for the rebuild (manifest + `event.json.gz`) takes 0.11 ms.
-From that, 100,000 v3 events are roughly 15–30 s of CPU; with a cold cache the 200,000 file opens dominate and
-the time depends on the disk. This was not measured at that scale (open question).
+Measured cost (warm page cache). The prototype indexed the local legacy tree (90 schedule files, 423 event
+directories, 1,051 events in total) in 0.22 s and read one v3 event (manifest + `event.json.gz`) in 0.11 ms,
+from which 100,000 v3 events were estimated at 15–30 s of CPU. As built the numbers are higher. The 423 legacy
+event directories alone take 0.56–0.69 s, because the state of a legacy slice needs the file's content (the
+presence predicate), so every slice file is read; with the listings the whole tree takes 0.7–1.0 s. A
+synthetic v3 tree of 20,000 events with 7 slice entries each rebuilds in 7.0 s in either mode, 0.35 ms per
+event, which is about 35 s per 100,000; about a third of that is manifest validation and derive. With a cold
+cache the 200,000 file opens dominate and the time depends on the disk. That was not measured (open question).
 
 ### 3.5 Reconcile (incremental)
 
@@ -1231,6 +1499,51 @@ Cheaper than a rebuild; brings the catalog up to date with files that changed be
   removes it on a clean release. If the file exists when a lease is taken, every v3 manifest is `stat`-ed and
   compared with `events.sig`. Measured: 4 µs per event with a warm cache, so 0.4 s per 100,000 events.
 - `reconcile(deep=True)` also compares payload hashes (same work as `verify(deep=True)`).
+
+As built (ST-08 #61): `CatalogAdmin.reconcile(*, deep=False, v3=False) -> ReconcileReport`, one write
+transaction.
+
+- **What it does, in order.** Pending writes of kind `event` are re-indexed and removed (rows of other kinds
+  are counted and left for the v3 entity writer). Legacy event directories whose signature or preferred
+  directory changed, that are new or that are gone are re-indexed. If any season-list file changed, all
+  season lists are rewritten. Every season whose schedule directory changed is re-listed, and so are the
+  summary-only seasons of a league directory that changed. A season that has listing rows without a sport is
+  re-listed when its tournament has become known. `score_changes.jsonl` is indexed again from the start when
+  it changed (line numbers, and so `seq`, stay the same).
+- **`v3`.** The comparison of every v3 manifest with `events.sig` is asked for by the caller with `v3=True`,
+  when the writer lease reports an unclean predecessor (`Lease.unclean`, 6.1). Without it only the
+  `legacy_path` column of v3 events is checked. `deep=True` implies it, ignores signatures, reads every event
+  and every listing again, and then runs `verify(deep=True, repair=True)`, whose report is in
+  `ReconcileReport.verify`.
+- **Signatures.** A legacy event directory: `<mtime_ns>:<entry count>` in `events.sig`. A v3 event: the
+  manifest file, `<mtime_ns>:<size>`. A root in `legacy_roots`: for a file `<mtime_ns>:<size>`; for a
+  directory `<mtime_ns>:<entry count>`, where the time is the newest of the directory's own mtime and the
+  mtimes of the source files in it, so that a page rewritten in place is seen. A season-list file that was
+  resolved through the name map has `:<tournament id>` appended, so a changed map re-lists it.
+- **Signatures are coarse.** A file of a legacy event directory that is edited in place does not change the
+  directory's mtime, and two changes within one clock tick can leave the same signature. A quick reconcile
+  and a quick verify do not see such a change; the deep forms do. A test pins this limit. Tests that change a
+  tree bump the mtimes explicitly, with a value that never repeats for a path.
+- **`ReconcileReport`** has `events_checked`, `events_indexed`, `events_removed`, `pending`,
+  `pending_skipped`, `season_lists` and `changes` (None when unchanged), `seasons` (the re-listed seasons),
+  `problems`, `verify`, `seconds` and the property `changed`. An event whose newest legacy copy cannot be read
+  cannot be called unchanged by signature (the catalog points at the second copy), so it is read again on
+  every reconcile and counted in `events_indexed`: `changed` is true every time for such a tree.
+- **Entity tables only grow.** A reconcile never deletes a tournament, season, participant, sport or
+  category row, and rows written 'only where none exists' keep the first writer's values. After files were
+  deleted these tables can hold rows a rebuild would not write, and a summary-only listing row keeps a sport
+  learned from a tournament whose files are gone (pinned by a test). Apart from that the result equals a
+  rebuild of the same tree. ST-11, which compares the catalog with a rebuild after every test, decides
+  whether the comparison leaves such rows out or the reconcile removes them
+  (`03-implementation-plan.md` section 16).
+- **Not handled.** An event listed under two different seasons, or two tournament directories that hold the
+  same season id: the last one applied wins, and a reconcile of one season can then differ from a rebuild.
+  Neither occurs in the owner's data (1,051 listed events checked).
+- **Nothing calls it yet.** ST-11 calls `ensure()` and then `reconcile()` on open, under the `maintenance`
+  lease. It raises `StoreError` when the catalog is not usable. Cost on the owner's data: 13 ms.
+- After a legacy event write, `index_event(event_id, paths=[directory])` re-indexes that event and maintains
+  `listed_in` and `stale`. After a legacy schedule or season-list write there is no single-season entry
+  point; `reconcile()` does it (the listing scan walks the whole `matches/` tree, 0.08 s for 3,800 pages).
 
 ### 3.6 Consistency checks (`verify`)
 
@@ -1252,6 +1565,34 @@ Invariants:
 `verify()` checks I1, I3 (by signature), I5, I6, I7 and `PRAGMA quick_check` on both files. `verify(deep=True)`
 checks all of them by reading every payload. `repair=True` re-indexes mismatching entities from the files,
 removes leftover temporary files, and marks unreadable payloads as `error/corrupt`. It never deletes a payload.
+
+As built (ST-07 #49, `src/store/verify.py` at `f286723`):
+
+- The quick form checks `quick_check` on both files, I1, I3, I5 and I6; the deep form adds I2, I4 and I9.
+  `VerifyReport.checked` names what was checked. **I7 and I8 are not checked**: the change-log index and the
+  history index were not filled when the module was written, and with only the legacy change log `seq` has
+  legitimate gaps, so I7 as worded applies to v3 segments. ST-20 adds I7 and ST-26 adds I8
+  (`03-implementation-plan.md` section 16). Listing state (`listed_in`, `stale`, listing rows) is not
+  verified either.
+- I3 by signature covers legacy events as well as v3 ones: an event whose `sig` equals the signature of its
+  directory (legacy) or of its manifest file (v3), and whose preferred directory did not change, counts as
+  unchanged and none of its files is read. An event whose signature differs is derived again from its files
+  and compared with its rows. The limits of signatures (3.5) apply.
+- An unreadable file (`problems`) and an unused copy (`superseded`) are information in the report, not
+  inconsistencies. An event whose newest legacy copy is unreadable fails the signature comparison every time
+  and is read again on every quick verify; it is reported as a problem.
+- `repair=True` also needs `deep=True` to mark unreadable v3 payloads. `verify.mark_corrupt` sets the slice
+  to `error` with reason `corrupt`, drops its sha256 and both sizes and keeps the file; I9 tolerates the file
+  of a slice marked that way. When the marked payload is the event payload of a v3-only event, the directory
+  stays on disk, is no valid v3 event any more (3.4) and is reported as a problem by every rebuild and verify
+  until the event is fetched again.
+- In a v3 event directory any file the manifest does not name, outside `_history/`, is `unknown_file`;
+  `.<name>.<random>.tmp` is a leftover that a repair removes.
+- A damaged database is not repaired: the catalog is rebuilt.
+- Measured on the owner's data (423 events, all legacy; 2,453 slice rows, 2,342 `ok` and 111 `empty`; 69 with
+  an observation; no problems, no duplicates): quick verify 0.02 s without reading a file, deep verify 0.59 s,
+  catalog 676 KB. On the synthetic tree of 20,000 v3 events: quick verify 0.26 s (13 µs per event), catalog
+  18.7 MB.
 
 ### 3.7 Query plans for the hot paths
 
@@ -1314,7 +1655,9 @@ SQLite planner gets smarter; the rule can then be relaxed and the assertion dele
 
 One condition on the stream read: the plan uses `stream_events_stream` only while `state.db` has no
 statistics. After `ANALYZE` with evenly filled streams, SQLite 3.53.4 picks the rowid range and filters on
-`stream`. No code runs `ANALYZE` on `state.db`, and the test pins the index under that condition.
+`stream`. No code runs `ANALYZE` on `state.db`, and the test pins the index under that condition. Since FX-3
+its fixture builds `state.db` from the migration file and fails if the file has `sqlite_stat` tables;
+`tests/test_store_streams.py` asserts the same for the single-stream read.
 
 Catalog size at that scale: 230 MB for 301,000 events and 2.1 million slice rows, about 0.8 KB per event
 (`events` 54 MB, `event_slices` 114 MB, indexes the rest; the indexes and the four columns added after the
@@ -1521,11 +1864,29 @@ Conclusions:
   the writers use the Store (ST-21, ST-22).
 - The retries do not help against a reader that holds the file open in a tight loop: the test
   `test_reader_never_sees_a_partial_file_while_it_is_rewritten` still fails on the Windows runner (an expected
-  failure). The design relies on the first sentence above: Store readers read in one call and close.
+  failure). The six-concurrent-writers test of `tests/test_fsutil.py`, which shares the marker, passes there
+  since the retry exists; the marker stays shared and non-strict, with a reason that says so (FX-4). The
+  design relies on the first sentence above: Store readers read in one call and close.
 - `files.publish_dir` refuses an existing target, even an empty directory, on every platform.
-- File mode. Files written through `atomic_write_*` get mode 0600, because `tempfile.mkstemp` creates them
-  that way, and payloads written through `files.write_bytes` inherit it. That matters for a Docker bind mount
-  read by another user. Decision S12 and plan item FX-4 make Store-layer payload files follow the umask.
+- File mode (decision S12, FX-4, PR #53). Files written by the Store layer follow the process umask: 0644
+  under 022, 0600 under 077, 0664 under 002. That covers `files.write_bytes` and so `codec.write_payload`,
+  `manifest.write_manifest` and `.meta/schema.json`; since ST-18 also `watch_state_<sport>.json`, which is
+  written through the Store. The mode is set when the temporary file is created (`os.open` with 0666,
+  `files.STORE_FILE_MODE`); there is no `chmod`, and the umask is never read, because reading it is only
+  possible by setting it, which is not thread-safe. A rewrite gives the file the umask mode again; the old
+  file's mode is not kept. The 2.x helpers (`atomic_write_*`) keep 0600, as `tempfile.mkstemp` creates them,
+  and files that hold secrets (`.env`, the browser profile) are not written through the Store.
+- `publish_dir` cannot normalise a directory that was staged by other means (`mkdtemp`, `mkstemp`, the
+  `atomic_write_*` helpers, a copy): such a tree is published with the modes it has (pinned by a test). A
+  writer builds an entity directory with `files.new_staging_dir` and fills it through the Store-layer
+  functions, so that the published tree follows the umask at every level. A file appended with a plain
+  `open(path, 'ab')` follows the umask too; with `os.open`, pass `files.STORE_FILE_MODE`.
+- Lock files are an exception so far: `src/store/lease.py` creates them with mode 0644, whatever the umask,
+  so under umask 002 a second account of the group cannot take a lease on a lock file the first account
+  created (plan item FX-8, decision S15). A `.meta/schema.json` written by a build from before FX-4 stays
+  0600 until it is next rewritten; nothing changes the mode of existing files.
+- Temporary files are named `.<name>.<8 random characters>.tmp` and opened with `os.open`; after 100 taken
+  names the write fails with a non-fatal `StoreError`.
 
 ### 4.5 Raw export, uncompressed
 
@@ -1583,6 +1944,12 @@ this rule are corrections of today's behaviour, not descriptions of it (ST-05):
 
 A round file named `<n>_matches.json`, which only the terminal UI accepts (`src/ui/match_ui.py:442-448`), is
 not a form the Store reads: the reader reports it as `unknown_name`.
+
+Since FX-4 a legacy round file whose slug has an upper-case letter (`round_1_Final.json`) is not a schedule
+page for the reader either: `legacy.schedule_sub` validates the file's stem as a v3 sub, which is lower-case
+only, and returns None, and the indexer reports the file as `unknown_name`. SofaScore's slugs are lower-case
+and neither the fixtures nor the owner's data (38 distinct `round_*.json` names) have such a file, but
+nothing pins it. FX-5 folds the name to lower case when it derives the sub (the file keeps its name).
 
 When one event id is found in more than one legacy place, the directory with the newest `basic.json` mtime
 wins and the others are reported by `verify`. When one schedule page is stored in two directories of the same
@@ -1688,7 +2055,7 @@ directories, season-list files and the change log. There is no separate journal:
 
 | Crash after | State on disk | Next run or next open |
 |---|---|---|
-| step 1–3 | leftover staging directory | `.meta/tmp/` is emptied when the writer lease is taken; event still legacy |
+| step 1–3 | leftover staging directory | the writer's staging area under `.meta/tmp/` is emptied when the writer lease is taken (9.3); event still legacy |
 | step 4 | v3 directory exists, catalog says legacy | the intent marker triggers a re-index; a rebuild also resolves to v3 + `legacy_path` |
 | step 5 | both copies, catalog says v3 with `legacy_path` | nothing to repair; a later `--delete-legacy` continues with step 6 |
 | during step 6 | legacy directory is in `.meta/trash/` | trash is emptied; `legacy_path` is cleared because the directory is gone |
@@ -1705,7 +2072,11 @@ directories, season-list files and the change log. There is no separate journal:
   migrated" and are deleted only with `--purge-derived`. A legacy season that has summary CSVs but no round or
   page JSON cannot be converted; it stays in place, stays readable, and is reported.
 - `watch_events.jsonl` and `watch_state_*.json` are not migrated: the watcher imports its state file once when
-  it first runs on the Store (plan item ST-18), and the events file is history that no code reads.
+  it first runs on the Store (ST-18, PR #59; the import is recorded under the meta key
+  `imported_watch_state:<sport>`), and the events file is history that no code reads. Until the live service
+  replaces the 2.x watcher (P23) the watcher keeps writing both files through the Store: the state file as a
+  copy of the table, the events file with LF line endings on every platform.
+- `migrate` takes `writer` and then `live`, each with a purpose; no extra kind of lease is needed (6.1).
 
 **Dry run.** `Migrator.plan()` changes nothing on disk (a test compares a hash of the whole tree before and
 after). It reports counts per kind, bytes before, estimated bytes after, unknown files, conflicts, and
@@ -1730,7 +2101,7 @@ There is one implementation, `src/store/lease.py`. The job manager, the live ser
 
 | Lease | Who takes it | Excludes |
 |---|---|---|
-| `writer` | download and refresh jobs, single-event fetch, `migrate`, history pruning, backup creation | another `writer`; `maintenance` |
+| `writer` | download and refresh jobs, single-event fetch (target; today the route only asks, see below), `migrate`, history pruning, backup creation, the reset of the "unavailable" markers (`--recheck-unavailable`; it rewrites the marker files of stored matches) | another `writer`; `maintenance` |
 | `watcher:<sport>` | the 2.x-style polling watcher, one per sport (`src/watcher.py:10-12`), until the live service replaces it | the same watcher name; `live`; `maintenance` |
 | `live` | the live service (one per data directory, all sports) | another `live`; every `watcher:<sport>`; `maintenance`; a running `migrate` |
 | `sinks` | the process that dispatches streams to webhooks and file sinks | another `sinks` |
@@ -1747,6 +2118,57 @@ exclude each other the same way through `live.lock`; `migrate` holds `writer` an
 the `leases` table. That table is filled when a lease is taken and is only information; the OS lock decides.
 The holder information is not written into the lock file itself, because a byte-range lock on Windows makes
 the locked bytes unreadable for other processes.
+
+As built (ST-10 #50, `src/store/lease.py` at `f286723`):
+
+- **Who blocks is found by probing, not from the table.** The table cannot tell which of several shared
+  holders blocks `maintenance`, and a row outlives a killed process. `LeaseHeld`, `Store.lease_holder(name)`
+  and `StoreInfo.leases` probe the OS locks (a shared lock that is taken and released at once) and use a
+  `leases` row only for a lock that is really held. For a moment after a lock is taken the row can be
+  missing or still show the previous, killed holder; `LeaseHeld` then carries no pid, or the old one.
+- **Order and attempts.** A lease takes its shared guards first (`maintenance.lock`, and `live.lock` for a
+  watcher) and its own file last, so an attempt that fails half way has held only shared locks and cannot
+  make another request fail. A refusal is reported only after three attempts 5 ms apart; with `wait`, the
+  attempts continue every 50 ms until the time is over.
+- **Purposes.** A job takes `writer` with purpose `job`. A data operation takes its lease with purpose
+  `op:<name>`; backup is such an operation and takes `writer` (the table above), everything else
+  `maintenance`. `JobStore.exclusive` and `create_running` map a refused lease to the two existing conflict
+  classes through `conflict_from_lease`: a holder with a purpose `op:<name>` gives
+  `DataOperationRunningError` for that operation, any other `writer` holder gives `JobRunningError`
+  (`job_running`), and any other holder `DataOperationRunningError` with its purpose or lease name as the
+  operation. The last case is a `live` or `watcher:<sport>` holder that blocks a data operation:
+  `InstanceRunningError` (`02-services.md` 2.6) did not exist when the job store was written. It exists
+  since P18 (`src/errors.py`, where `lease_error_code(name, purpose)` gives the three codes); the job store
+  keeps its own mapping until the job manager replaces it (P11).
+- **Not re-entrant.** A second `store.lease('writer')` in the same process is refused with `LeaseHeld`, like
+  one from another process. Whoever adds a second acquirer to a process removes the first: when the job
+  manager takes the writer lease for a CLI job, `main.py` stops taking it (P11).
+- **Unclean marker.** Taking `writer` creates `.meta/locks/unclean` and a clean release removes it;
+  `Lease.unclean` on a new writer lease says that the previous writer did not release cleanly. Nothing reacts
+  to it yet; it is the trigger for the v3 comparison of 3.5 (ST-11).
+- **Fork.** A forked child inherits the lease's file descriptors, and with `flock` an unlock in the child
+  would drop the parent's lock. `Lease.release` in a forked copy only closes its descriptors (a test pins
+  this); the lock stays held until both processes have closed.
+- **Lock files** are created with mode 0644 whatever the umask (4.4; plan item FX-8).
+- **What takes a lease today.** The job store of the web server: a job takes `writer`, the data operations
+  take `maintenance` (backup: `writer`), and a state-db migration takes `maintenance` (7.3). The single-match
+  fetch of the web API does not take `writer`: since FX-1 (PR #60) it asks `JobStore.writer_busy()` before it
+  starts and is refused with 409 `job_running` while a job of the same server runs or another process holds
+  `writer`. A job that starts just after the check can still write alongside it; a `maintenance` holder
+  (clear, data-directory change) is not seen by the check; and during a backup the answer is `job_running`,
+  not `data_operation_running`. All three end when the single fetch runs as a job under the lease (P13).
+  Since P10 (PR #64) `main.py` takes the leases of the command line: `writer` for `--headless --update-all`,
+  `--refresh-only` and `--recheck-unavailable` (purposes `headless`, `refresh`, `recheck-unavailable`; one
+  lease covers a combined run) and `watcher:<sport>` for `--watch` (purpose `watch`). A refused run prints
+  the holder (pid, host, purpose, since when) on stderr and exits with 6. None of these purposes starts with
+  `op:`, so the web API answers `job_running` while such a run is active, the single-match guard included.
+  `--headless --csv-export` alone takes no lease (an export takes none, `02-services.md` 2.8). The services
+  take no lease themselves; the caller does. The interactive terminal menu takes none either: a download
+  started from the menu and a web job can still write the same directory at the same time, until the menu
+  is removed (P26).
+- **Measured.** Taking and releasing a lease 0.12 ms on tmpfs, a refusal 10.5 ms (the three attempts). Eight
+  processes taking `writer` and `maintenance` 300 times each never overlapped (2,393 acquisitions, checked
+  with an `O_EXCL` flag file; run outside the test suite).
 
 This replaces the in-process slot of `JobStore.exclusive` (`src/web/jobs.py:150-168`), which cannot see a CLI
 process writing the same directory. `JobStore.exclusive` keeps its interface and its error classes
@@ -1780,6 +2202,12 @@ Consequences:
 - Stream events and job rows live in `state.db` and are written in their own transactions. A stream event
   that announces a write (`change.recorded`, a live status change) is appended **after** the catalog
   transaction of that write has committed, so a consumer that reacts to the event finds the data.
+- A writer of `state.db` can be starved past the busy timeout. SQLite's busy handler polls at growing
+  intervals, and a writer that never pauses takes the lock again at once: on the Windows runner a test
+  process got `StoreBusy` on `BEGIN IMMEDIATE` while two helper processes appended in a tight loop.
+  `StreamLog.append` raises `StoreBusy` in that case. No producer today writes without pausing, but a
+  long-running producer must not end on it: the live service retries an append with back-off (P23), and the
+  job manager decides the same for job events (P11).
 
 ### 6.3 Readers
 
@@ -1808,7 +2236,13 @@ Readers take no lease and no lock.
 
 Network file systems (NFS, SMB) are not supported: WAL needs shared memory and `flock` is unreliable there.
 The Store detects a failed switch to WAL and degrades to single-process mode with a warning. Docker named
-volumes and bind mounts of local disks are fine.
+volumes and bind mounts of local disks are fine. As built (ST-10) the same fallback exists for a file system
+on which the lock call itself is not supported (`ENOLCK`, `ENOTSUP`): the lease is granted, one warning is
+logged per locks directory, and only one process may use the data directory. Without it an installation that
+runs on such a share with 2.x could no longer start a job.
+
+On Windows at most 64 processes can hold one lock file shared (one byte each); a 65th shared holder is
+refused as if the file were held exclusively.
 
 CI runs the Python tests on Windows and macOS already, with Python 3.14 only
 (`.github/workflows/ci.yml:62-63`; Python 3.10 runs on Linux only, `:59`). The Store's tests run there too,
@@ -1839,6 +2273,12 @@ exercised by CI.
 - A process refuses to **write** when `layout_version` is greater than the one it implements, and refuses to
   **read** when `min_reader_layout` is greater. Both raise `SchemaTooNew`.
 - `store_id` is created once. A consumer that remembers it can tell that a directory was replaced.
+- As built (ST-10): the file is created and rewritten under the write lock of `state.db`, so two processes
+  that open a new directory together agree on one `store_id`. `state_schema`, `catalog_schema`,
+  `derive_version` and `manifest_format` are the versions of the code that last wrote the directory; they
+  are information, the authoritative values are in the files themselves. The file is rewritten only by a
+  writable open that finds another application version in `last_writer` or other code versions; a read-only
+  open never rewrites it.
 - A data directory without `schema.json` and without `v3/` is a pure 2.x directory: the Store creates
   `.meta/schema.json`, `state.db` and `catalog.db` and changes nothing else. Removing those three files
   returns the directory to its 2.x state.
@@ -1877,14 +2317,28 @@ Migrations are written to be safe to run again after a crash between the script 
 
 As built (ST-09, `src/store/state.py`):
 
-- Leases arrive with ST-10. Until then the migration transaction itself (`BEGIN IMMEDIATE`, with the version
-  read again inside it) is the cross-process mutex; ST-10 wraps the step in the `maintenance` lease.
-- Scripts are split into statements (`sqlite3.complete_statement`) and run one by one inside the transaction,
-  because `executescript` commits an open transaction first. The runner skips an `ADD COLUMN` whose column
-  already exists. Script numbers run 0001, 0002, ... without gaps.
-- A `state.db` newer than the code raises `SchemaTooNew`. `src/web/routes/settings.py` catches only
-  `(OSError, sqlite3.Error)` around the job-store rebind, so a data-directory change to such a folder answers
-  500 instead of 400 until plan item FX-2 adds `StoreError` there.
+- Since ST-10 (PR #50) the migration step runs under the `maintenance` lease (purpose `op:state_migration`),
+  taken with a wait of 5 s: without the wait, two processes that open a new directory together would fail.
+  Before ST-10 the migration transaction itself (`BEGIN IMMEDIATE`, with the version read again inside it)
+  was the only cross-process mutex. A data-directory change can therefore meet a held lease: `rebind` raises
+  `LeaseHeld` when the new directory's `state.db` needs a migration while someone writes there. The same
+  wait shows when the Store is opened in a directory that has no `state.db` while another process holds a
+  lease there: the open waits the 5 s before `LeaseHeld`. A real holder has always opened the Store first;
+  only a test that holds a bare `LeaseManager` lease reaches it, and avoids it by opening the Store once
+  beforehand.
+- Scripts are split into statements and run one by one inside the transaction, because `executescript`
+  commits an open transaction first. Since FX-3 the splitter is the shared one of 3.2. The runner skips an
+  `ADD COLUMN` whose column already exists. Script numbers run 0001, 0002, ... without gaps.
+- A `state.db` newer than the code raises `SchemaTooNew`. Since FX-2 (PR #54) `src/web/routes/settings.py`
+  catches `StoreError` around the job-store rebind, so a data-directory change to a folder the Store cannot
+  open (a newer file, a SQLite file that is not a state database, a failed migration, `StoreBusy`,
+  `LeaseHeld`) answers 400 `data_dir_unusable` and changes nothing.
+- The first open of a directory logs `Store: state.db geçişi uygulandı: 0001_initial` at INFO. A command
+  that starts opening the Store therefore prints one more line on a fresh directory, and its CLI golden
+  changes (`03-implementation-plan.md` section 7).
+- `open_store` imports the 2.x job rows but does not sweep them: a row that 2.x left as `running` stays
+  `running` in `state.db` until a `JobStore` is constructed on that directory (P11's `reap_stale` replaces
+  the sweep).
 - `StateDb.write()` joins an outer transaction on the same thread instead of nesting; `connection()` outside
   `write()` is in autocommit mode.
 
@@ -1927,6 +2381,28 @@ A schedule page lists events with their status and score. Today those copies (ro
 
 Rule 3 is new behaviour (extra refresh requests) and ships with plan item ST-27; before that the flag is
 computed but nothing reads it.
+
+As built (ST-08 #61, `src/store/entities.py`):
+
+- The time of "the stored event payload" in rule 3 is its `observed_at`, else the `fetched_at` of the event
+  slice (`EventRecord.compared_at`). The compared fields are kept as a digest (`entities.compare_digest`,
+  `EventRecord.digest`), and `entities.is_stale` is the rule, so a writer can set the flag without reading
+  the page. `stale` is maintained by a rebuild, a reconcile and `index_event`.
+- A page lists events of its own season. A listing row takes `tournament_id` and `season_id` from its
+  directory; an object on the page that names another tournament or season is indexed and reported as
+  `season_mismatch`. An event that has a payload is attached to a page (`listed_in`, `stale`) only when its
+  payload names the same tournament and season.
+- A listing-only row has `layout`, `path` and `sig` NULL, the tournament and season of its directory, and
+  `listed_in` set (NULL only for a summary row whose round is neither a number nor a page name). A row from
+  a summary CSV has `status_type`, `status_code` and the team ids NULL (3.4).
+- `entity_slices` of a legacy season list is `('tournament', <id>, 'seasons', '')`, of a page
+  `('season', <season id>, 'schedule', <sub>)`; `path` is the file.
+- `changes.fields` is the comma-joined key list of the line's `changed` object and `row_json` is the line as
+  written. `ChangeLog.list` and `last_seq` do not exist yet (ST-30).
+- On the fixtures and on the owner's data (738 of 738 rows) `home_score_current`, `away_score_current`,
+  `stage_name` and `listed_in` reproduce the summary CSV; `match_date` is
+  `datetime.fromtimestamp(start_ts).isoformat()`. The CSV's `round` of a round file is the requested round
+  number, while the catalog has `roundInfo.round` in `round` and the page name in `listed_in`.
 
 The catalog row's `home_score`/`away_score` are the normalised values (`display`, else `current`). The summary
 CSV of today holds `current`. The two differ for football matches decided on penalties. The legacy list routes
@@ -2062,18 +2538,30 @@ Nothing is deleted unless a setting says so. Defaults:
 | payloads, manifests | kept | `EventStore.delete`, `Store.clear(scope)` on request |
 | change log | kept | — |
 | slice history (odds snapshots) | kept | `HistoryStore.prune(older_than=...)` |
-| stream events | 7 days and at most 1,000,000 rows | `StreamLog.prune`, run by the process that holds `live` or `sinks`, once per hour |
-| watcher state | rows of events that are done and older than 7 days are dropped | on `WatchStateStore.save` |
+| stream events | 7 days and at most 1,000,000 rows | `StreamLog.prune`, run by the process that holds `live` or `sinks`, once per hour. `prune` exists (ST-18); nothing calls it yet (P22 for the dispatcher, P23 for the live service) |
+| watcher state | rows of events that are done and older than 7 days are dropped | on `WatchStateStore.save`. As built the age is the row's `updated_at` (its last content change); the check runs on every save, for the saved watcher only, and reads `done` in Python, because SQLite's JSON functions are optional before 3.38 and the minimum is 3.24 |
 | jobs | newest 500 rows; 2,000 events per job | on job creation. Not implemented by ST-09, which keeps every row as the store did before; it comes with the job manager (P11) |
 | backups | kept | `BackupManager.prune(keep=..., max_age_days=...)` |
 | `exports/` | kept | the export command can be told to replace its previous output |
-| `.meta/tmp`, `.meta/trash` | emptied when the `writer` lease is taken | — |
+| `.meta/tmp`, `.meta/trash` | the writer's own staging area and the trash are emptied when the `writer` lease is taken (see below) | — |
 | `state.db.bak-v*` | one per old schema version | — |
 
 `Store.clear(scope)` replaces `src/web/routes/data.py:152-182`. It needs `maintenance`, removes both the v3 and
 the legacy form of the scope, and clears the matching catalog rows in the same critical section. Old scope
 names map as `match_details` → `events`, `matches` → `schedules`, `seasons` → `seasons`. It never touches
 `state.db`, the change log or backups.
+
+Staging under `.meta/tmp` (decision S16). The first version said that `.meta/tmp/` is emptied when the writer
+lease is taken. That cannot hold: an export stages files there without any lease (4.5, `02-services.md` 2.8)
+and the live service writes under the `live` lease, so a job that starts at that moment would delete their
+staging files. ST-10 therefore did not wire `files.purge_staging` to the lease. The rule: a staging entry
+carries the name of its holder. `files.new_staging_dir(data_dir, label)` already creates
+`.meta/tmp/<label>.<random>`; the labels are `writer` for everything that runs under the writer lease
+(promotion and `migrate`, whose area 5.4 writes as `.meta/tmp/migrate/`), `live` for the live service and
+`export` for exports. Taking `writer` removes only the `writer` entries, taking `live` only the `live`
+entries. Export staging has no lease to hang the clean-up on; an `export` entry that is older than a day is
+removed when the writer lease is taken. The item that first stages files implements this together with its
+writer (ST-20; ST-23 for migrate).
 
 ---
 
@@ -2102,7 +2590,7 @@ as follows:
 | migrate; backup format 2 and restore; raw export | ST-23, ST-24, ST-25 |
 | all statuses, stale-listing refresh | ST-27 |
 | removal of transition code | ST-28 |
-| fixes found by the first Store pull requests | FX-3 (one connection module), FX-4 (file mode, lower-case subs), FX-5 (presence predicates) |
+| fixes found by the Store pull requests | FX-3 (one connection module; merged), FX-4 (file mode, lower-case subs; merged), FX-5 (presence predicates, upper-case legacy round files), FX-8 (mode of the lock files) |
 
 Testing tools shared by many of these PRs:
 
@@ -2144,6 +2632,13 @@ Testing tools shared by many of these PRs:
 | Concurrent first open (ST-06, ST-09) | without a retry around the switch to WAL: 'database is locked' in at least 14 of 300 rounds (catalog) and 11 of 100 rounds with six threads (state db); with the retry 300 of 300 clean | stress tests of the two PRs |
 | File-system calls outside the Store (ST-04) | 291 calls in 21 modules, 166 baseline entries in 23 files, at `0aa73b4` (287 calls in 19 modules before PR #43 was merged) | the static check |
 | Boundary hook cost (ST-04) | none measurable: 18.2 s for the suite with the hook, 19.1 s on main before it | one run each |
+| Catalog from the real data, as built (ST-07, ST-08) | 423 events, all legacy; 2,453 slice rows (2,342 ok, 111 empty); 69 with an observation; 3 tournaments, 4 seasons, 280 participants, 3 categories; no problems, no duplicates. Event directories alone 0.56–0.69 s, the whole tree with listings 0.7–1.0 s, quick verify 0.02 s, deep verify 0.59 s, reconcile 13 ms, catalog 676 KB. No listed event names a tournament or season other than its directory (1,051 checked); no superseded page or season list; nothing stale; the summary CSV is reproduced for 738 of 738 rows | read-only; the catalog was written to a scratch directory |
+| Synthetic v3 tree (ST-07) | 20,000 events with 7 slice entries each: rebuild 7.0 s in either mode (0.35 ms per event, about 35 s per 100,000), quick verify 0.26 s (13 µs per event), catalog 18.7 MB; about a third of the rebuild is manifest validation and derive | cProfile, warm cache, tmpfs |
+| Listing scan (ST-08) | 0.08 s for 3,800 pages | synthetic; not measured beyond 38,000 listed events |
+| Leases and the facade (ST-10) | on a scratch copy of the owner's data (3,460 files): open 16 ms, `info()` 15 ms, `info(sizes=False)` 0.5 ms; lease take and release 0.12 ms, a refusal 10.5 ms; files outside `.meta/` unchanged, `jobs.db` kept its SHA-256 and its 63 rows were imported. Eight processes taking `writer` and `maintenance` 300 times each never overlapped (2,393 acquisitions) | tmpfs; the eight-process run was outside the test suite |
+| WAL switch, shared code (FX-3) | eight threads switching a new file at once: 16 of 100 rounds fail without the retry, 0 of 100 with it | Python 3.14.7, SQLite 3.53.4 |
+| Stream log and watcher state (ST-18) | 200,200 rows in four streams: append 0.04 ms, read of 500 rows 2.7 ms, `wait` woke after 0.5 ms, prune of 100,201 rows 165 ms; watcher state of 2,000 rows: full save 9.5 ms, one changed row 0.9 ms, load 5 ms. A Store keeps about 8 file descriptors open | tmpfs, no fsync cost |
+| Follows mirror (ST-17) | on a copy of the owner's `jobs.db` (63 job rows imported into a new `state.db`): a `ConfigManager` start with the first mirror 1.6 ms, a repeat without changes 0.68 ms (one SELECT, no write), `add_league` with its mirror 1.1 ms; job rows unchanged | scratch copy |
 
 Not measured: `fsync` cost; behaviour on a cold cache or a spinning disk; gzip speed with stock zlib; anything
 on Windows or macOS; any scale above 423 real events.
@@ -2226,6 +2721,55 @@ Corrections after the first Store pull requests (2026-10-01; the same list, by d
     decision. Section 2.4 (ST-04).
 30. **Diagnostics** reads the job history. Section 1.1 (ST-09).
 
+Corrections after batches three and four (2026-10-02; the same list, by document, is in
+`03-implementation-plan.md` section 11):
+
+31. **The package root** loads its public names on first use, and exports the facade, the leases, the job
+    store, the stream types and the follows names; `src/web/jobs.py` imports from the root. Section 2.1
+    (ST-10, ST-18, ST-17, FX-1).
+32. **The facade as built**: no `jobs` attribute, a registry keyed by directory and `readonly`,
+    `lease_holder`, `info(sizes=)`, constructors that take the Store. Section 2.3 (ST-10, ST-18).
+33. **Subs are lower-case**; an upper-case sub is rejected, not folded. Sections 2.3 and 5.1 (FX-4).
+34. **Stream types.** `StreamEvent`, `StreamRecord`, `StreamBatch` and `StreamHead` are defined; `last_seq`,
+    `gap`, the creation of `stream_id` and `head()` on an empty log are specified; `WatchStateStore` has three
+    helpers for the 2.x files. Section 2.3 (ST-18).
+35. **`CatalogAdmin`** has `ensure`, `index_event`, `stats`, `rebuild(mode=)`, `reconcile(v3=)` and the
+    `league_names` argument; `ReconcileReport` is specified. Sections 2.3, 3.5 (ST-07, ST-08).
+36. **One SQLite module.** Who raises `StoreBusy`, which errors are converted in which file, the single
+    busy rule and splitter, the warning once per file. Section 3.2 (FX-3).
+37. **Rebuild as built.** Sidecars are removed before the replace; what a valid v3 event is and the fallback
+    to the legacy copy; the participants rule; legacy timestamps; which legacy directory becomes
+    `legacy_path`; the scan order with listings per season and summary-only seasons after the events; the
+    meta keys; no lease taken by the indexer; the measured times. Sections 3.3, 3.4 (ST-07, ST-08).
+38. **Reconcile as built.** The `v3` keyword, the root signatures, `legacy_roots` kinds, the limits of
+    signatures, entity tables that only grow. Section 3.5 (ST-08).
+39. **Verify as built.** Deep verify and repair exist; I7 and I8 are not checked; quick verify covers legacy
+    events by signature. Section 3.6 (ST-07).
+40. **File modes** follow the umask in the Store layer; lock files do not yet. Section 4.4 (FX-4).
+41. **Watcher files** are still written, as copies, until P23. Sections 1.1, 5.4, 9.3 (ST-18).
+42. **Leases as built.** The holder is found by probing the OS locks; three attempts; purposes; backup under
+    `writer` as a data operation; the unclean marker; fork; the single-match fetch checks and does not take
+    the lease. Section 6.1 (ST-10, FX-1).
+43. **Platforms.** The single-process fallback also covers a file system without lock support; 64 shared
+    holders on Windows. Section 6.4 (ST-10).
+44. **`schema.json`** is created under the state db's write lock and rewritten only by a writable open that
+    finds other versions. Section 7.1 (ST-10).
+45. **State migrations** run under `maintenance` with a 5 s wait. Section 7.3 (ST-10).
+46. **Listing rules.** The payload's time, attribution to the season directory, the newest page for
+    tournaments. Section 8.2 (ST-08).
+47. **`.meta/tmp`** is not emptied as a whole when the writer lease is taken; staging areas are per holder.
+    Sections 5.4, 9.3 (ST-10; decision S16).
+48. **Retention of watcher state** uses `updated_at` and no SQLite JSON functions. Section 9.3 (ST-18).
+49. **Follows as built.** `Follow`, `ApplyResult` and `FollowConflict` are defined; the precedence of the
+    origins, the rules for a taken name and for repeated entries, `update` and `remove` on a missing row,
+    `position`, when the mirror runs, `apply_follows` without an open Store, and no `legacy_follows_sig`.
+    Sections 2.3 and 3.3 (ST-17).
+50. **Leases of the command line.** `main.py` takes `writer` and `watcher:<sport>`; the reset of the
+    unavailable markers is a writer; a lease is not re-entrant; the interactive menu takes none. Section 6.1
+    (P10).
+51. **`open_store(create=False)`** refuses a directory in which only the web job store created `state.db`.
+    Section 2.3 (ST-17).
+
 ---
 
 ## 13. Risks
@@ -2246,11 +2790,17 @@ Corrections after the first Store pull requests (2026-10-01; the same list, by d
 - Windows: `os.replace` fails while a reader has the file open; shared locks are emulated with byte ranges;
   recreating `catalog.db` needs exclusive access. The design retries and documents this. ST-03 runs on the
   Windows CI job: the retry works for readers that read and close, and does not for a reader that holds the
-  file open in a tight loop (4.4). Leases are untested until ST-10 runs there.
+  file open in a tight loop (4.4). The lease tests of ST-10 pass on the Windows and macOS runners.
 - Case-insensitive file systems. Two subs that differ only by case would share a file on Windows and on
-  default macOS volumes; FX-4 removes the case by allowing lower-case subs only (decision S13).
-- File modes. Payloads at 0600 are unreadable for a second user of a bind mount or for a backup tool under
-  another account; FX-4 and decision S12 settle the mode before the v3 writer produces files.
+  default macOS volumes; subs are lower-case only since FX-4 (decision S13). A legacy round file with an
+  upper-case slug is ignored by the reader until FX-5 (5.1).
+- File modes. Store-layer files follow the umask since FX-4 (decision S12). Lock files are still created
+  with 0644, so a second account of the group can read the data but cannot take a lease (FX-8).
+- Signatures are coarse (3.5). A file edited in place inside a legacy event directory is not seen by the
+  quick reconcile on open; only the deep forms find it.
+- Two names for one tournament. With a config file, `FollowStore.leagues()` gives the config name of a
+  tournament that is in both sources, while the directories on disk carry the `leagues.txt` name (2.3). A
+  reader that resolves legacy file names from the follows would miss them.
 - Network file systems. SQLite WAL and `flock` do not work reliably on NFS/SMB. A user who mounts `DATA_DIR`
   from a NAS gets single-process mode at best.
 - A 2.x process and a 3.x process on the same directory. 2.x does not take the lease and does not see v3 data;
