@@ -94,6 +94,18 @@ def test_every_direct_requirement_is_pinned_inside_its_allowed_range(python, pla
     assert problems == []
 
 
+def test_toml_reader_is_required_only_where_the_standard_library_lacks_it():
+    """
+    sofascore.toml'u Python 3.11+ standart kütüphanedeki tomllib okur; tomli yalnızca 3.10 için gerekir
+    (src/config/loader.py) ve orada sabitlidir.
+    """
+    tomli = [req for req in RUNTIME if canonicalize_name(req.name) == "tomli"]
+    assert len(tomli) == 1
+    needed = [python for python in SUPPORTED_PYTHONS if _applies(tomli[0], _env(python))]
+    assert needed == ["3.10"]
+    assert "tomli" in _pins_for(_env("3.10")) and "tomli" not in _pins_for(_env("3.11"))
+
+
 def test_dev_requirements_match_the_pyproject_dev_extra():
     """Araç listesi iki yerde durur (pip -r için requirements-dev.txt, pyproject `dev` ekstrası): aynı kalmalı."""
     with open(os.path.join(ROOT, "pyproject.toml"), "rb") as f:

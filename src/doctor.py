@@ -62,6 +62,8 @@ REQUIRED_MODULES: Tuple[Tuple[str, str], ...] = (
     ("tqdm", "tqdm"),
     ("rich", "rich"),
     ("dotenv", "python-dotenv"),
+    # sofascore.toml okuyucusu: Python 3.11+ standart kütüphanedeki tomllib, 3.10'da tomli paketi
+    ("tomllib" if sys.version_info >= (3, 11) else "tomli", "tomli"),
     ("fastapi", "fastapi"),
     ("pydantic", "pydantic"),
     ("uvicorn", "uvicorn"),
