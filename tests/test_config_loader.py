@@ -1,12 +1,13 @@
 """
 Ayar modeli ve yükleyici (src/config; plan maddesi P09, docs/design/02-services.md bölüm 4.3).
 
-Üç grup:
+Dört grup:
 
   bugünkü davranış   yapılandırma dosyası yokken her ayar bugünkü okuyucusuyla aynı değeri verir (tuhaf
                      değerler dahil); G-04 goldenı (tests/snapshots/api/settings.json) ve ortamı hâlâ
                      doğrudan okuyan modüller ölçüttür
   yapılandırma       sofascore.toml: bölümler, öncelik sırası, göreli yollar, hatalar, listeler
+  etkin ayarlar      ConfigManager getter'ları, ortam köprüsü, yeniden yükleme
   şema               JSON Schema modelden üretilir
 """
 from __future__ import annotations
@@ -16,16 +17,20 @@ import json
 import logging
 import math
 import os
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any, Dict, Mapping, Optional
 
 import pytest
 
+import conftest
 from src import breaker, bridge_health, language, paths, refresh, throttle, watcher
 from src import logger as app_logger
 from src.config import Settings, config_schema, loader
 from src.config import settings as model
 from src.config.schema import environment_only_keys
+from src.config_manager import ConfigManager
 from src.exceptions import ConfigError
 from src.store import files as store_files
 from src.web import security
@@ -821,6 +826,319 @@ def test_missing_toml_reader_is_a_config_error(tmp_path, monkeypatch):
     assert _load().settings == Settings()
     with pytest.raises(ConfigError, match="needs the tomli package"):
         _load(tmp_path, toml="")
+
+
+# === etkin ayarlar: ConfigManager ve ortam köprüsü =================================================
+
+
+@pytest.fixture
+def active(monkeypatch):
+    """
+    Etkin ayarları sıfırdan kurdurur; testten sonra test yapılandırma dizinindeki dosyaları siler ve köprünün
+    ortama yazdıklarını geri alır. `write(toml)` dosyayı yazıp ayarları yeniden yükler. conftest dosya aramayı
+    kapatır (SOFASCORE_CONFIG=none); burada değişken yazılan dosyaya çevrilir.
+    """
+    config_dir = Path(conftest.CONFIG_DIR)
+    created = [config_dir / loader.CONFIG_FILE_NAME, config_dir / loader.OVERRIDES_FILE_NAME]
+    loader.reset()
+
+    def write(toml: str) -> loader.LoadedSettings:
+        created[0].write_text(toml, encoding="utf-8")
+        monkeypatch.setenv(loader.CONFIG_ENV, str(created[0]))
+        return loader.reload()
+
+    yield write
+    for path in created:
+        path.unlink(missing_ok=True)
+    loader.reset()
+
+
+def test_without_a_config_file_nothing_is_written_to_the_environment(active):
+    before = dict(os.environ)
+    loaded = loader.active()
+    cm = ConfigManager()
+    assert cm.get_settings() is loaded.settings is loader.active_settings()   # ortam değişmedikçe aynı nesne
+    assert loaded.config_file is None and loaded.overrides_file is None
+    assert loader.projection(loaded) == {}
+    assert dict(os.environ) == before
+    # conftest: MAX_CONCURRENT test `.env`'inden, DATA_DIR ve REQUEST_RATE_LIMIT süreç ortamından gelir
+    assert loaded.source("client.max_concurrent") == loader.Source("dotenv", "MAX_CONCURRENT", legacy=True)
+    assert loaded.source("storage.data_dir") == loader.Source("env", "DATA_DIR", legacy=True)
+    assert (cm.get_max_concurrent(), cm.get_data_dir(), cm.get_request_rate_limit()) == (5, conftest.DATA_DIR, 0.0)
+
+
+GETTERS = {
+    # getter -> (değişken, bugünkü kural: ham değer -> sonuç, varsayılan)
+    "get_data_dir": ("DATA_DIR", lambda raw: raw, "data"),
+    "get_api_base_url": ("API_BASE_URL", lambda raw: raw, "https://www.sofascore.com/api/v1"),
+    "get_use_proxy": ("USE_PROXY", lambda raw: raw.lower() == "true", False),
+    "get_proxy_url": ("PROXY_URL", lambda raw: raw, ""),
+    "get_use_color": ("USE_COLOR", lambda raw: raw.lower() == "true", True),
+    "get_date_format": ("DATE_FORMAT", lambda raw: raw, "%Y-%m-%d %H:%M:%S"),
+    "get_max_concurrent": ("MAX_CONCURRENT", int, 10),
+    "get_wait_time_min": ("WAIT_TIME_MIN", float, 0.2),
+    "get_wait_time_max": ("WAIT_TIME_MAX", float, 0.5),
+    "get_request_timeout": ("REQUEST_TIMEOUT", int, 10),
+    "get_max_retries": ("MAX_RETRIES", int, 3),
+    "get_rate_limit_threshold_consecutive": ("RATE_LIMIT_THRESHOLD_CONSECUTIVE", int, 20),
+    "get_rate_limit_threshold_ratio": ("RATE_LIMIT_THRESHOLD_RATIO", float, 0.9),
+    "get_server_error_threshold_consecutive": ("SERVER_ERROR_THRESHOLD_CONSECUTIVE", int, 50),
+}
+
+
+@pytest.mark.parametrize("getter", sorted(GETTERS))
+def test_config_manager_getter_resolves_as_before(active, monkeypatch, caplog, getter):
+    """
+    Her getter, P09'dan önceki gövdesinin kuralıyla aynı sonucu verir: `os.getenv(AD, varsayılan)`, sayılarda
+    int()/float(), okunamazsa uyarı ve varsayılan. Ortam değişikliği bir sonraki çağrıda görülür.
+    """
+    name, rule, default = GETTERS[getter]
+    read = getattr(ConfigManager(), getter)
+    monkeypatch.delenv(name, raising=False)
+    assert _same(read(), default)
+    for raw in RAW_VALUES + ("inf", "10.5", "-", "90%", "010"):
+        monkeypatch.setenv(name, raw)
+        caplog.clear()
+        try:
+            expected, warned = rule(raw), False
+        except ValueError:
+            expected, warned = default, True
+        assert _same(read(), expected), repr(raw)
+        warnings = [r.getMessage() for r in caplog.records if r.name == "ConfigManager" and r.levelno == logging.WARNING]
+        assert warnings == ([f"{name} is not valid; using the default {default}."] if warned else []), repr(raw)
+
+
+def test_config_manager_rate_and_language_getters(active, monkeypatch):
+    cm = ConfigManager()
+    monkeypatch.setattr(throttle, "_warned_invalid_rate", None)
+    for raw in RAW_VALUES + ("inf", "2.5"):
+        monkeypatch.setenv("REQUEST_RATE_LIMIT", raw)
+        assert _same(cm.get_request_rate_limit(), throttle.configured_rate()), repr(raw)
+    monkeypatch.delenv("REQUEST_RATE_LIMIT")
+    assert cm.get_request_rate_limit() == throttle.DEFAULT_RATE_LIMIT
+
+    from src.i18n import app_language
+
+    for env in ({}, {"APP_LANGUAGE": "tr"}, {"LANGUAGE": "tr"}, {"APP_LANGUAGE": "de"}, {"LC_MESSAGES": "tr_TR.UTF-8"}):
+        with monkeypatch.context() as patch:
+            for key in language.ENV_KEYS:
+                patch.delenv(key, raising=False)
+            for key, value in env.items():
+                patch.setenv(key, value)
+            assert cm.get_language() == app_language(), env
+    assert cm.get_match_data_dir() == os.path.join(cm.get_data_dir(), "matches")
+
+
+def test_config_file_is_honoured_by_getters_and_by_modules_that_read_the_environment(active, monkeypatch):
+    """
+    Dosyadaki değer getter'lara yansır ve köprüyle, ayarı hâlâ ortamdan okuyan modüllere de. Dosya kalkınca
+    ortam eski haline döner.
+    """
+    for name in ("DATA_DIR", "SOFASCORE_ALLOWED_HOSTS"):   # conftest süreç ortamından verir; öyle kalsa dosyayı ezerdi
+        monkeypatch.delenv(name)
+    before = dict(os.environ)
+    config_dir = Path(conftest.CONFIG_DIR)
+    loaded = active(
+        '[storage]\ndata_dir = "store"\n'
+        "[client]\nmax_concurrent = 4\nrate = 2\ntimeout_seconds = 33\n"
+        "[refresh]\nwindow_hours = 12\n[bridge]\ndegraded_after = 6\n"
+        '[server]\nallowed_hosts = ["localhost", "box.lan"]\n[display]\nlanguage = "tr"\n[fetch]\nonly_finished = false\n'
+    )
+    cm = ConfigManager()
+    assert loaded.config_file == str(config_dir / "sofascore.toml")
+    # `.env`'deki MAX_CONCURRENT=5 dosyanın altında kalır; süreç ortamındaki REQUEST_RATE_LIMIT=0 üstünde
+    assert (cm.get_max_concurrent(), cm.get_request_timeout(), cm.get_request_rate_limit()) == (4, 33, 0.0)
+    assert cm.get_data_dir() == str(config_dir / "store")
+    assert cm.get_language() == "tr"
+    assert loaded.source("client.rate") == loader.Source("env", "REQUEST_RATE_LIMIT", legacy=True)
+    assert any("REQUEST_RATE_LIMIT is a legacy name" in w.message for w in loaded.warnings)
+
+    # Köprü: ortamı doğrudan okuyanlar da dosyayı görür
+    assert os.environ["DATA_DIR"] == str(config_dir / "store")
+    assert os.environ["MAX_CONCURRENT"] == "4"
+    assert os.environ["FETCH_ONLY_FINISHED"] == "false"
+    assert refresh.refresh_window_hours() == 12.0
+    assert bridge_health.thresholds()["degraded_after"] == 6
+    assert security.allowed_hosts() == ["localhost", "box.lan"]
+    assert language.resolve_language() == "tr"
+    assert throttle.configured_rate() == 0.0                       # süreç ortamındaki değere dokunulmadı
+    assert os.environ["REQUEST_RATE_LIMIT"] == "0"
+    assert loader.active() is loaded                               # köprünün yazdıkları yeni bir yüklemeye yol açmaz
+
+    # Süreç ortamından verilen değer dosyayı ezer ve hemen görülür
+    monkeypatch.setenv("MAX_CONCURRENT", "9")
+    assert cm.get_max_concurrent() == 9
+    monkeypatch.setenv("SOFASCORE_CLIENT__MAX_CONCURRENT", "11")
+    assert cm.get_max_concurrent() == 11 and os.environ["MAX_CONCURRENT"] == "11"
+    monkeypatch.delenv("SOFASCORE_CLIENT__MAX_CONCURRENT")
+    monkeypatch.delenv("MAX_CONCURRENT")
+    assert cm.get_max_concurrent() == 4
+
+    # Dosya kalkıp yeniden yüklenince ortam, köprüden önceki haline döner
+    (config_dir / "sofascore.toml").unlink()
+    monkeypatch.setenv(loader.CONFIG_ENV, "none")
+    loader.reload()
+    monkeypatch.setenv("MAX_CONCURRENT", "5")                      # test `.env`'inin yüklediği değer
+    assert dict(os.environ) == before
+    assert cm.get_max_concurrent() == 5 and cm.get_data_dir() == "data"
+
+
+def test_settings_page_write_does_not_override_the_config_file(active):
+    """
+    Ayarlar sayfası `.env`'e yazar (update_env_variable). Dosyanın sabitlediği ayar kilitlidir: `.env` değeri
+    dosyanın altında kalır. Dosyada olmayan ayar eskisi gibi değişir.
+    """
+    active("[client]\nmax_concurrent = 4\n")
+    cm = ConfigManager()
+    env_file = Path(conftest.ENV_FILE)
+    original = env_file.read_text(encoding="utf-8")
+    try:
+        assert cm.update_env_variable("MAX_CONCURRENT", "8") is True
+        assert cm.update_env_variable("MAX_RETRIES", "6") is True
+        assert (cm.get_max_concurrent(), cm.get_max_retries()) == (4, 6)
+        loaded = loader.active()
+        assert loaded.source("client.max_concurrent").locked is True
+        assert loaded.source("client.retries") == loader.Source("dotenv", "MAX_RETRIES", legacy=True)
+        assert os.environ["MAX_CONCURRENT"] == "4"
+        assert "MAX_CONCURRENT='8'" in env_file.read_text(encoding="utf-8")
+    finally:
+        env_file.write_text(original, encoding="utf-8")
+        os.environ.pop("MAX_RETRIES", None)
+        os.environ["MAX_CONCURRENT"] = "5"
+
+
+def test_config_file_is_reread_only_on_reload(active, monkeypatch):
+    path = Path(conftest.CONFIG_DIR) / "sofascore.toml"
+    active("[client]\nretries = 4\n")
+    cm = ConfigManager()
+    assert cm.get_max_retries() == 4
+    path.write_text("[client]\nretries = 6\n", encoding="utf-8")
+    monkeypatch.setenv("WAIT_TIME_MIN", "1.5")          # ortam değişti: ayarlar yeniden kurulur, dosya okunmaz
+    assert (cm.get_wait_time_min(), cm.get_max_retries()) == (1.5, 4)
+    assert cm.reload_config() is True
+    assert cm.get_max_retries() == 6
+
+    # Bozuk dosya: yeniden yükleme başarısız, önceki ayarlar yürürlükte
+    path.write_text("[client]\nretries = 'many'\n", encoding="utf-8")
+    with pytest.raises(ConfigError, match="retries: expected a whole number"):
+        loader.reload()
+    assert cm.get_max_retries() == 6
+    assert cm.reload_config() is False
+    assert cm.get_max_retries() == 6
+
+
+def test_activate_takes_an_explicit_file_and_flags(active, tmp_path, monkeypatch):
+    monkeypatch.delenv("DATA_DIR")
+    explicit = tmp_path / "other.toml"
+    explicit.write_text('[storage]\ndata_dir = "from-file"\n[client]\nretries = 9\n', encoding="utf-8")
+    loaded = loader.activate(config_file=explicit, flags={"storage.data_dir": str(tmp_path / "from-flag")})
+    cm = ConfigManager()
+    assert loaded.config_file == str(explicit)
+    assert (cm.get_data_dir(), cm.get_max_retries()) == (str(tmp_path / "from-flag"), 9)
+    assert os.environ["DATA_DIR"] == str(tmp_path / "from-flag")
+    loader.reset()
+    assert "DATA_DIR" not in os.environ
+    assert cm.get_max_retries() == 3
+
+
+def test_secrets_named_by_the_config_file_reach_today_s_readers_and_are_masked(active, monkeypatch):
+    """
+    token_env / proxy_env başka bir değişkeni gösterse de değer, belirteci ve proxy'yi bugün ortamdan okuyan
+    koda (src/web/security.py, src/challenge_solver.py) bugünkü adıyla ulaşır ve loglarda maskelenir.
+    """
+    from src import redact
+
+    token, proxy = "tok-0123456789abcdef", "http://scraper:pr0xy-passw0rd@proxy.example.com:8080"
+    monkeypatch.setenv("MY_TOKEN", token)
+    monkeypatch.setenv("MY_PROXY", proxy)
+    active('[server]\ntoken_env = "MY_TOKEN"\n[client]\nproxy_env = "MY_PROXY"\n')
+    cm = ConfigManager()
+    assert os.environ["SOFASCORE_API_TOKEN"] == token
+    assert (cm.get_use_proxy(), cm.get_proxy_url()) == (True, proxy)
+    assert (os.environ["USE_PROXY"], os.environ["PROXY_URL"]) == ("true", proxy)
+    text = redact.redact_text(f"token {token} via pr0xy-passw0rd")
+    assert token not in text and "pr0xy-passw0rd" not in text
+    # Adı verilen değişken boşalırsa koruma sessizce kapanmaz: ayarlar kurulamaz
+    monkeypatch.setenv("MY_TOKEN", "")
+    with pytest.raises(ConfigError, match="token_env: the environment variable MY_TOKEN is not set"):
+        cm.get_data_dir()
+    monkeypatch.setenv("MY_TOKEN", token)
+    assert cm.get_settings().server.token == token
+    loader.reset()
+    assert not {"SOFASCORE_API_TOKEN", "USE_PROXY", "PROXY_URL"} & set(os.environ)
+
+
+def test_log_settings_from_the_config_file_reach_the_running_logger(active):
+    root = logging.getLogger()
+    level_before, handler_before = root.level, app_logger._file_handler
+    assert handler_before is not None and handler_before.backupCount == app_logger.DEFAULT_BACKUP_COUNT
+    active('[log]\nlevel = "error"\n')
+    assert root.level == logging.ERROR and os.environ["LOG_LEVEL"] == "ERROR"
+    assert app_logger._file_handler is handler_before            # yalnızca seviye: log kurulumu yenilenmez
+    active('[log]\nlevel = "error"\nbackup_count = 2\n')
+    assert app_logger._file_handler.backupCount == 2
+    loader.reset()
+    assert root.level == level_before and "LOG_LEVEL" not in os.environ
+    assert app_logger._file_handler.backupCount == app_logger.DEFAULT_BACKUP_COUNT
+
+
+def _run_python(code: str, tmp_path: Path, **env: str) -> subprocess.CompletedProcess:
+    """Kodu temiz bir süreçte çalıştırır: gerçek `.env`, config/ ve log dizinine dokunmaz."""
+    clean = {k: v for k, v in os.environ.items() if k not in loader.LEGACY_ENV_NAMES and not k.startswith("SOFASCORE_")}
+    clean.update({
+        "SOFASCORE_ENV_FILE": str(tmp_path / ".env"), "SOFASCORE_CONFIG_DIR": str(tmp_path / "config"),
+        "SOFASCORE_THROTTLE_DIR": str(tmp_path / "throttle"), "LOG_DIR": str(tmp_path / "logs"), "LC_MESSAGES": "C",
+        **env,
+    })
+    return subprocess.run([sys.executable, "-c", code], cwd=ROOT, env=clean, capture_output=True, text=True, timeout=120)
+
+
+def test_at_start_up_the_config_file_reaches_modules_that_read_the_environment(tmp_path):
+    """
+    Uçtan uca, ayrı bir süreçte, main.py'nin içe aktarma sırasıyla (önce config_manager): dosya içe aktarma
+    sırasında okunur; bütçe ve yenileme modülleri ile src/utils.py'nin içe aktarılırken donan sabitleri onu görür.
+    """
+    config = tmp_path / "my.toml"
+    config.write_text(
+        '[client]\nrate = 2\nbase_url = "https://api.example.invalid/api/v1"\n[storage]\ndata_dir = "d"\n'
+        "[refresh]\nwindow_hours = 1.5\n[fetch]\nonly_finished = false\n",
+        encoding="utf-8",
+    )
+    code = (
+        "import json, os\n"
+        "import src.config_manager as cm\n"
+        "from src import refresh, throttle, utils\n"
+        "print(json.dumps([throttle.configured_rate(), refresh.refresh_window_hours(), os.environ['DATA_DIR'],"
+        " cm.ConfigManager().get_request_rate_limit(), utils.API_BASE_URL, utils.FETCH_ONLY_FINISHED]))\n"
+    )
+    done = _run_python(code, tmp_path, SOFASCORE_CONFIG=str(config))
+    assert done.returncode == 0, done.stderr
+    assert json.loads(done.stdout.strip().splitlines()[-1]) == [
+        2.0, 1.5, str(tmp_path / "d"), 2.0, "https://api.example.invalid/api/v1", False,
+    ]
+    # Dosya yokken aynı süreç bugünkü varsayılanları verir ve ortama hiçbir ayar yazılmaz
+    code = (
+        "import json, os\n"
+        "before = dict(os.environ)\n"
+        "import src.config_manager as cm\n"
+        "from src import throttle, utils\n"
+        "added = sorted(set(os.environ) - set(before))\n"
+        "print(json.dumps([throttle.configured_rate(), added, cm.ConfigManager().get_data_dir(),"
+        " utils.API_BASE_URL, utils.FETCH_ONLY_FINISHED]))\n"
+    )
+    done = _run_python(code, tmp_path, SOFASCORE_CONFIG="none")
+    assert done.returncode == 0, done.stderr
+    assert json.loads(done.stdout.strip().splitlines()[-1]) == [
+        5.0, [], "data", "https://www.sofascore.com/api/v1", True,
+    ]
+
+
+def test_a_broken_config_file_stops_the_application_at_start_up(tmp_path):
+    config = tmp_path / "broken.toml"
+    config.write_text("[client]\nrate = 'fast'\n", encoding="utf-8")
+    done = _run_python("import src.config_manager\n", tmp_path, SOFASCORE_CONFIG=str(config))
+    assert done.returncode != 0
+    assert "ConfigError" in done.stderr and 'broken.toml: [client] rate: expected a number or "off"' in done.stderr
 
 
 # === şema ==========================================================================================
