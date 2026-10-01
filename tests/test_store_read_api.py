@@ -1,6 +1,6 @@
 """
-Kataloğun okuma API'si: `Store.events` (EventStore) ve `Store.entities` (EntityStore)
-(plan maddesi ST-30; docs/design/01-storage.md bölüm 2.3, 3.7, 6.3, 8.2-8.4).
+Kataloğun okuma API'si: `Store.events` (EventStore), `Store.entities` (EntityStore) ve `Store.changes`
+(ChangeLog) (plan maddesi ST-30; docs/design/01-storage.md bölüm 2.3, 3.7, 6.3, 8.2-8.5).
 
 Testler `tests/store_fixtures.py`'nin kurduğu veri dizinlerinde çalışır; katalog dizinleyiciyle
 (`CatalogAdmin.rebuild`) kurulur, çünkü `open_store` onu kurmaz. Beklenen değerler fixture tanımlarından elle
@@ -41,6 +41,8 @@ from src import refresh
 from src.match_data_fetcher import MatchDataFetcher
 from src.sports import event_sport_slug, slices_for
 from src.store import (
+    ChangeLog,
+    ChangeRow,
     EntityStore,
     EventQuery,
     EventRow,
@@ -1705,3 +1707,72 @@ def test_plan_entity_queries(synthetic: Store, explain: Any) -> None:
     assert plans.by_primary_key(slices, "entity_slices")
     # kimlik listesi sabit olarak yazılır: bağlı parametre sınırını aşan liste de çalışır
     assert len(synthetic.entities.participants(ids=list(range(1000, 41_000)), limit=5000)) == 800
+
+
+# --- ChangeLog ----------------------------------------------------------------------------------------
+
+def test_store_has_the_change_log(canon: Store, tmp_path: Path) -> None:
+    assert isinstance(canon.changes, ChangeLog)
+    assert {"ChangeLog", "ChangeRow"} <= set(src.store.__all__)
+    assert not any(hasattr(ChangeLog, name) for name in WRITE_METHODS)
+    unbuilt = open_store(tmp_path / "data")  # kurulmamış katalog
+    assert unbuilt.changes.list() == [] and unbuilt.changes.last_seq() == 0
+    canon.close()
+    for call in (lambda: canon.changes.list(), lambda: canon.changes.last_seq()):
+        with pytest.raises(StoreError):
+            call()
+
+
+def test_change_log_rows(canon: Store) -> None:
+    found = canon.changes.list()
+    score, void = found
+
+    assert all(isinstance(row, ChangeRow) for row in found) and canon.changes.last_seq() == 2
+    assert (score.seq, score.event_id, score.sport, score.tournament_id, score.status_regressed) == (
+        1, LIV, "football", 17, False)
+    assert score.ts == epoch("2026-09-15T13:10:00+00:00") and score.segment == "score_changes.jsonl"
+    assert score.fields == ("awayScore.current", "awayScore.display", "awayScore.normaltime", "awayScore.period1")
+    assert score.row == sf.SCORE_CHANGES[0] and score.row["changed"]["awayScore.current"] == [0, 1]
+    assert (void.seq, void.event_id, void.sport, void.tournament_id, void.status_regressed) == (
+        2, NBA_VOID, "basketball", 132, True)
+    assert void.row == sf.SCORE_CHANGES[1] and "status.code" in void.fields and len(void.fields) == 21
+
+
+def test_change_log_filters(canon: Store) -> None:
+    def seqs(**kwargs: Any) -> List[int]:
+        return [row.seq for row in canon.changes.list(**kwargs)]
+
+    assert seqs(after_seq=0) == [1, 2] and seqs(after_seq=1) == [2] and seqs(after_seq=2) == []
+    assert seqs(event_id=LIV) == [1] and seqs(event_id=NBA_VOID, after_seq=1) == [2] and seqs(event_id=ARS) == []
+    assert seqs(since=epoch("2026-09-15T13:10:00+00:00")) == [1, 2]  # sınır dahil
+    assert seqs(since=epoch("2026-09-15T13:10:01+00:00")) == [2] and seqs(since=NOW) == []
+    assert seqs(limit=1) == [1] and seqs(limit=1, after_seq=1) == [2]
+    for bad in ({"after_seq": -1}, {"limit": 0}, {"event_id": "5"}, {"since": "today"}, {"after_seq": True}):
+        with pytest.raises(ValueError):
+            canon.changes.list(**bad)  # type: ignore[arg-type]
+
+
+def test_change_log_of_a_directory_without_one(built: Dict[str, sf.LegacyFixture]) -> None:
+    store = open_store(built["empty"].data_dir)
+
+    assert store.changes.list() == [] and store.changes.last_seq() == 0
+
+
+def test_change_log_seq_is_the_line_number(own: Tuple[sf.LegacyFixture, Store]) -> None:
+    """Dizine giremeyen satır da numara harcar: tüketicinin sakladığı `seq` yeniden kurmadan sonra da geçerlidir."""
+    fx, store = own
+    lines = (fx.data_dir / "score_changes.jsonl").read_bytes().splitlines()
+    (fx.data_dir / "score_changes.jsonl").write_bytes(b"\n".join([lines[0], b"not json", lines[1], lines[0]]) + b"\n")
+    admin_of(store, fx.leagues).rebuild()
+
+    assert [(row.seq, row.event_id) for row in store.changes.list()] == [(1, LIV), (3, NBA_VOID), (4, LIV)]
+    assert store.changes.last_seq() == 4
+    assert [row.seq for row in store.changes.list(event_id=LIV, after_seq=1)] == [4]
+
+
+def test_plan_change_log_queries(synthetic: Store, explain: Any) -> None:
+    of_event, = explain(lambda: synthetic.changes.list(event_id=10_000_500))
+    since, = explain(lambda: synthetic.changes.list(after_seq=5))
+
+    assert plans.uses(of_event, "changes", "changes_event") and not _sorts(of_event)
+    assert any("rowid>?" in line for line in since) and not _sorts(since)

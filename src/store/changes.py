@@ -5,21 +5,28 @@ Günlüğün kendisi dosyadır; `changes` tablosu o dosyaların dizinidir ve dos
 tek kaynak eski düzendeki `score_changes.jsonl`'dır: satırın sıra numarası (`seq`) dosyadaki satır
 numarasıdır (1'den başlar). Boş ve okunamayan satırlar da numara harcar, böylece bir satır bozulduğunda
 ötekilerin numarası kaymaz ve yeniden kurma aynı numaraları verir. v3'ün aylık parçaları
-(`changes/<yyyy>-<aa>.jsonl`, satırın içinde `seq` ile) onları yazan adımla birlikte buraya eklenir;
-`ChangeLog` okuma / yazma API'si de sonraki adımlardadır.
+(`changes/<yyyy>-<aa>.jsonl`, satırın içinde `seq` ile) onları yazan adımla birlikte buraya eklenir.
+
+`ChangeLog` (`Store.changes`) günlüğün okuma API'sidir (bölüm 2.3): `list` ve `last_seq` bu dizinden
+okur. Yazma yöntemi (`append`) sonraki adımlardadır.
 
 Dizine giremeyen satır (tarihi ya da maç kimliği olmayan) atlanır ve bildirilir; numarası yine harcanır.
 """
 from __future__ import annotations
 
+import json
 import math
+from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Mapping, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple
 
 from src.store import legacy
 from src.store.catalog import Catalog
 from src.store.entities import storable
 from src.store.legacy import LegacyLine, LegacyProblem, LegacyReader
+
+if TYPE_CHECKING:
+    from src.store.api import Store
 
 Row = Dict[str, Any]
 
@@ -111,7 +118,92 @@ def index_all(cat: Catalog, reader: LegacyReader, problems: Optional[List[Legacy
     return index_legacy(cat, reader, problems)
 
 
+# --- okuma API'si -------------------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class ChangeRow:
+    """
+    Değişiklik günlüğünün bir satırı. `row` günlükteki satırın kendisidir (`src/refresh.change_row` biçimi:
+    `changed` alan → [eski, yeni]); öteki alanlar dizinin sütunlarıdır. `ts` epoch saniyedir (UTC).
+    """
+
+    seq: int
+    ts: int
+    event_id: int
+    sport: Optional[str]
+    tournament_id: Optional[int]
+    status_regressed: bool
+    fields: Tuple[str, ...]  # değişen alan adları, satırdaki sırayla
+    row: Mapping[str, Any]
+    segment: str  # satırın geldiği dosya, DATA_DIR'e göre
+
+
+_CHANGE_SELECT = ("SELECT seq, ts, event_id, sport, tournament_id, status_regressed, fields, row_json, segment "
+                  "FROM changes")
+
+
+def _change(row: Any) -> ChangeRow:
+    try:
+        parsed = json.loads(row[7])
+    except ValueError:
+        parsed = None
+    return ChangeRow(
+        seq=int(row[0]), ts=int(row[1]), event_id=int(row[2]), sport=row[3], tournament_id=row[4],
+        status_regressed=bool(row[5]), fields=tuple(name for name in str(row[6]).split(",") if name),
+        row=parsed if isinstance(parsed, dict) else {}, segment=str(row[8]),
+    )
+
+
+def _whole(value: Any, what: str, minimum: int) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
+        raise ValueError(f"{what}: expected an integer >= {minimum}, got {value!r}")
+    return value
+
+
+class ChangeLog:
+    """Değişiklik günlüğünün okuma API'si (`Store.changes`); satırlar katalogdaki dizinden gelir."""
+
+    def __init__(self, store: "Store") -> None:
+        self._store = store
+        self._catalog = store._catalog
+
+    def list(self, *, after_seq: int = 0, event_id: Optional[int] = None, since: Optional[float] = None,
+             limit: int = 1000) -> List[ChangeRow]:
+        """
+        Sıra numarası `after_seq`'ten büyük satırlar, sıra numarasıyla; en çok `limit` tane. Tüketici son
+        satırın `seq`'ini bir sonraki çağrıya `after_seq` olarak verir. event_id: yalnızca o maçın satırları;
+        since: zamanı (epoch saniye) bundan önce olmayan satırlar.
+        """
+        conditions = ["seq > ?"]
+        params: List[Any] = [_whole(after_seq, "after_seq", 0)]
+        if event_id is not None:
+            conditions.append("event_id = ?")
+            params.append(_whole(event_id, "event_id", -(2 ** 63)))
+        if since is not None:
+            if isinstance(since, bool) or not isinstance(since, (int, float)) or since != since:
+                raise ValueError(f"since: expected a number, got {since!r}")
+            conditions.append("ts >= ?")
+            params.append(since)
+        params.append(_whole(limit, "limit", 1))
+        self._store._require_open()
+        assert self._catalog is not None
+        with self._catalog.read() as conn:
+            found = conn.execute(
+                f"{_CHANGE_SELECT} WHERE {' AND '.join(conditions)} ORDER BY seq LIMIT ?", params).fetchall()
+        return [_change(row) for row in found]
+
+    def last_seq(self) -> int:
+        """Dizindeki en büyük sıra numarası; günlük boşsa 0."""
+        self._store._require_open()
+        assert self._catalog is not None
+        with self._catalog.read() as conn:
+            row = conn.execute("SELECT max(seq) FROM changes").fetchone()
+        return int(row[0]) if row is not None and row[0] is not None else 0
+
+
 __all__ = [
+    "ChangeRow",
+    "ChangeLog",
     "LEGACY_SEGMENT",
     "change_row",
     "legacy_rows",

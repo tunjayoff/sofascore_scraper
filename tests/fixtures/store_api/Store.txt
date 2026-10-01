@@ -10,6 +10,7 @@ class Store:
     self.watch
     self.events
     self.entities
+    self.changes
     @property
     def closed(self) -> bool
     @property
