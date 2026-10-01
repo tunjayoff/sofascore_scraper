@@ -1,0 +1,8 @@
+# src/private_files.py: Store sınırı ihlalleri (docs/design/01-storage.md bölüm 2.4). Bu liste yalnızca küçülebilir.
+# Bir ihlali gideren PR satırını da siler; açıklama: tests/test_store_boundary.py
+[static]
+create_private_file:os.makedirs
+create_private_file:os.open
+make_private_dir:os.makedirs
+restrict_permissions:os.chmod
+restrict_permissions:os.stat

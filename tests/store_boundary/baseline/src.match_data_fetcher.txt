@@ -1,0 +1,49 @@
+# src/match_data_fetcher.py: Store sınırı ihlalleri (docs/design/01-storage.md bölüm 2.4). Bu liste yalnızca küçülebilir.
+# Bir ihlali gideren PR satırını da siler; açıklama: tests/test_store_boundary.py
+[static]
+MatchDataFetcher._append_score_change:open
+MatchDataFetcher._build_match_index:os.listdir x3
+MatchDataFetcher._build_match_index:os.path.exists x2
+MatchDataFetcher._build_match_index:os.path.isdir x3
+MatchDataFetcher._extract_match_ids_from_csv:open
+MatchDataFetcher._find_match_path:os.listdir x2
+MatchDataFetcher._find_match_path:os.path.exists x2
+MatchDataFetcher._find_match_path:os.path.isdir x4
+MatchDataFetcher._load_match_data_from_dir:open x3
+MatchDataFetcher._load_match_data_from_dir:os.path.exists x3
+MatchDataFetcher._load_slice_status:open
+MatchDataFetcher._load_unavailable:open
+MatchDataFetcher._reset_match_markers:os.remove x2
+MatchDataFetcher._save_match_data:os.makedirs
+MatchDataFetcher._season_summary_files:os.listdir x2
+MatchDataFetcher._season_summary_files:os.path.isdir
+MatchDataFetcher._season_summary_files:os.path.isfile
+MatchDataFetcher._update_slice_markers:os.path.exists
+MatchDataFetcher._update_slice_markers:os.remove
+MatchDataFetcher._write_matches_to_csv:open
+MatchDataFetcher.collect_detail_match_ids:os.listdir x2
+MatchDataFetcher.collect_detail_match_ids:os.path.exists
+MatchDataFetcher.collect_detail_match_ids:os.path.isdir x2
+MatchDataFetcher.collect_detail_match_ids:os.path.isfile
+MatchDataFetcher.convert_league_matches_to_csv:open
+MatchDataFetcher.convert_league_matches_to_csv:os.listdir x4
+MatchDataFetcher.convert_league_matches_to_csv:os.path.isdir
+MatchDataFetcher.convert_league_matches_to_csv:os.path.isfile
+MatchDataFetcher.create_csv_dataset:open x2
+MatchDataFetcher.create_csv_dataset:os.listdir x7
+MatchDataFetcher.create_csv_dataset:os.path.exists x7
+MatchDataFetcher.create_csv_dataset:os.path.isdir x11
+MatchDataFetcher.generate_file_report:Path.exists
+MatchDataFetcher.generate_file_report:Path.glob
+MatchDataFetcher.generate_file_report:Path.is_dir x3
+MatchDataFetcher.generate_file_report:Path.iterdir x2
+MatchDataFetcher.generate_file_report:open x2
+MatchDataFetcher.process_match_for_csv:open x2
+MatchDataFetcher.process_match_for_csv:os.path.exists x2
+MatchDataFetcher.refresh_due_ids:os.listdir x3
+MatchDataFetcher.refresh_due_ids:os.path.isdir x4
+MatchDataFetcher.refresh_match:open
+MatchDataFetcher.refresh_match:os.path.exists
+MatchDataFetcher.reset_unavailable_markers:os.listdir x3
+MatchDataFetcher.reset_unavailable_markers:os.path.isdir x3
+MatchDataFetcher.reset_unavailable_markers:os.path.isfile
