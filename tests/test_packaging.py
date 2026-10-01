@@ -48,6 +48,9 @@ def test_dockerfile_runs_as_non_root_with_healthcheck_and_volumes():
     # Web arayüzü Node aşamasında derlenip kopyalanır; çalışma imajında Node yoktur
     assert any(ln.startswith("COPY --from=frontend") and "frontend/dist" in ln for ln in final_stage)
     assert any(ln.startswith("ENTRYPOINT ") and "sofascore-entrypoint" in ln for ln in final_stage)
+    # Paketler CI'ın test ettiği sabit sürümlerle kurulur
+    assert any(ln.startswith("COPY ") and "requirements.txt" in ln and "constraints.txt" in ln for ln in final_stage)
+    assert any("pip install -r requirements.txt -c constraints.txt" in ln for ln in final_stage)
 
 
 def test_dockerignore_is_an_allowlist_without_user_state():
@@ -56,7 +59,9 @@ def test_dockerignore_is_an_allowlist_without_user_state():
     ]
     assert patterns[0] == "*", "everything is excluded unless allowed"
     allowed = {p[1:].rstrip("/") for p in patterns if p.startswith("!")}
-    for needed in ("pyproject.toml", "requirements.txt", "main.py", "src", "locales", "frontend", "docker", "LICENSE"):
+    for needed in (
+        "pyproject.toml", "requirements.txt", "constraints.txt", "main.py", "src", "locales", "frontend", "docker", "LICENSE",
+    ):
         assert needed in allowed
     # Kullanıcı durumu ve yerel çıktılar imaja/bağlama girmemeli
     for forbidden in (".env", "data", "config", "config/leagues.txt", "config/league_sports.json", ".git", ".venv"):
@@ -86,4 +91,3 @@ def test_compose_publishes_on_localhost_only():
     ports = re.findall(r'^\s*-\s*"?([0-9.:\[\]a-fA-F]*\d+:\d+)"?\s*(?:#.*)?$', text, flags=re.M)
     assert ports == ["127.0.0.1:8000:8000"], "the web app has no login; the example must not expose it to the network"
     assert "shm_size" in text
-

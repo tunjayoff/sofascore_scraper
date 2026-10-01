@@ -184,7 +184,7 @@ git clone https://github.com/tunjayoff/sofascore_scraper.git
 cd sofascore_scraper
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements.txt -c constraints.txt   # constraints.txt: the exact versions CI tests
 python -m patchright install chromium --no-shell   # required: the browser the app drives
 ```
 
@@ -558,7 +558,7 @@ Everything depends on the browser solving the challenge. When that stops working
 The [Docker image](#docker) already contains the browser and its system libraries. On a plain Linux server, or in an image of your own:
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt -c constraints.txt
 python -m patchright install chromium --no-shell
 # Debian/Ubuntu only, once: system libraries Chromium needs (uses sudo)
 python -m patchright install-deps chromium
@@ -594,7 +594,7 @@ python -m pytest -q
 python -m pytest -q --cov   # with coverage; fails below the floor set in pyproject.toml
 ```
 
-`requirements.txt` lists the allowed version ranges; `constraints.txt` pins every package (indirect ones too) to versions that are known to work together. CI always installs with the constraints, so a new upstream release cannot break it unnoticed; a weekly workflow installs the newest allowed versions instead and runs the same tests, and Dependabot proposes updates to the pins.
+`requirements.txt` lists the allowed version ranges; `constraints.txt` pins every package (indirect ones too) to versions that are known to work together. CI, the install scripts, the launcher and the Docker image all install with the constraints, so a new upstream release cannot break CI or a fresh install unnoticed; a weekly workflow installs the newest allowed versions instead and runs the same tests, and Dependabot proposes updates to the pins.
 
 `tests/conftest.py` points `DATA_DIR`, `config/` and `.env` at a temporary folder with a small synthetic data set, so the suite never touches your data or settings. Tests that call SofaScore are marked `live` and skipped by default; run them with `python -m pytest -m live`. Tests marked `browser` start a real Chromium and are skipped by default too: `python -m pytest -m "browser and not live"` runs the BrowserBridge against a local fake site without contacting SofaScore (CI does this on every push).
 

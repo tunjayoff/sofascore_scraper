@@ -170,7 +170,7 @@
     "go_to_address": "👉 http://localhost:8000 adresine gidin",
     "press_ctrl_c": "Durdurmak için CTRL+C tuşlarına basın",
     "err_web_packages_not_installed": "HATA: Web arayüzü için gerekli paketler yüklü değil.",
-    "run_pip_install": "Lütfen şu komutu çalıştırın: pip install -r requirements.txt",
+    "run_pip_install": "Lütfen şu komutu çalıştırın: pip install -r requirements.txt -c constraints.txt",
     "prog_terminated_by_user": "Program kullanıcı tarafından sonlandırıldı.",
     "unexpected_error_occurred": "Beklenmeyen bir hata oluştu: {error}",
     "check_log_for_details": "Lütfen detaylar için log dosyasını kontrol edin: {path}",

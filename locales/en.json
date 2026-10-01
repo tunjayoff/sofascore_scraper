@@ -170,7 +170,7 @@
     "go_to_address": "👉 Go to http://localhost:8000",
     "press_ctrl_c": "Press CTRL+C to stop",
     "err_web_packages_not_installed": "ERROR: Required packages for web interface are not installed.",
-    "run_pip_install": "Please run this command: pip install -r requirements.txt",
+    "run_pip_install": "Please run this command: pip install -r requirements.txt -c constraints.txt",
     "prog_terminated_by_user": "Program terminated by user.",
     "unexpected_error_occurred": "An unexpected error occurred: {error}",
     "check_log_for_details": "Please check the log file for details: {path}",

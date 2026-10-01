@@ -182,7 +182,7 @@ git clone https://github.com/tunjayoff/sofascore_scraper.git
 cd sofascore_scraper
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements.txt -c constraints.txt   # constraints.txt: CI'ın test ettiği tam sürümler
 python -m patchright install chromium --no-shell   # zorunlu: uygulamanın kullandığı tarayıcı
 ```
 
@@ -547,7 +547,7 @@ Her şey tarayıcının challenge'ı çözmesine bağlı. Bu bozulduğunda işle
 [Docker imajı](#docker) tarayıcıyı ve sistem kütüphanelerini zaten içerir. Düz bir Linux sunucuda ya da kendi imajınızda:
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt -c constraints.txt
 python -m patchright install chromium --no-shell
 # Yalnızca Debian/Ubuntu, bir kez: Chromium'un sistem kütüphaneleri (sudo kullanır)
 python -m patchright install-deps chromium
@@ -583,7 +583,7 @@ python -m pytest -q
 python -m pytest -q --cov   # kapsam ölçümüyle; pyproject.toml’daki tabanın altında başarısız olur
 ```
 
-`requirements.txt` izin verilen sürüm aralıklarını listeler; `constraints.txt` her paketi (dolaylı olanlar dahil) birlikte çalıştığı bilinen sürümlere sabitler. CI her zaman bu sabitlerle kurar, böylece yeni çıkan bir paket sürümü CI’ı habersizce bozamaz; haftalık bir iş akışı bunun yerine izin verilen en yeni sürümleri kurup aynı testleri çalıştırır, Dependabot da sabitler için güncelleme önerir.
+`requirements.txt` izin verilen sürüm aralıklarını listeler; `constraints.txt` her paketi (dolaylı olanlar dahil) birlikte çalıştığı bilinen sürümlere sabitler. CI, kurulum betikleri, başlatıcı ve Docker imajı hep bu sabitlerle kurar, böylece yeni çıkan bir paket sürümü ne CI’ı ne de yeni bir kurulumu habersizce bozabilir; haftalık bir iş akışı bunun yerine izin verilen en yeni sürümleri kurup aynı testleri çalıştırır, Dependabot da sabitler için güncelleme önerir.
 
 `tests/conftest.py`, `DATA_DIR`, `config/` ve `.env`’i küçük sentetik bir veri setiyle geçici bir klasöre yönlendirir; testler verinize ve ayarlarınıza hiç dokunmaz. SofaScore’a istek atan testler `live` olarak işaretlidir ve varsayılan olarak atlanır; çalıştırmak için `python -m pytest -m live`. `browser` işaretli testler gerçek bir Chromium başlatır ve onlar da varsayılan olarak atlanır: `python -m pytest -m "browser and not live"` BrowserBridge’i SofaScore’a hiç istek atmadan yerel bir sahte siteye karşı çalıştırır (CI bunu her push’ta yapar).
 
