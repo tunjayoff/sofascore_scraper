@@ -28,6 +28,66 @@ _ALLOWED_API_HOSTS = {"www.sofascore.com", "api.sofascore.com"}
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
+# Proxy parolası API'den asla tam dönmez: GET /api/settings parolayı bu yer tutucuyla değiştirir.
+# Form adresi yer tutucuyla birlikte geri gönderirse saklanan parola korunur (_restore_proxy_password).
+PROXY_PASSWORD_MASK = "***"
+
+
+def _split_proxy_userinfo(url: str) -> Optional[tuple[str, str, str, str]]:
+    """
+    "scheme://user:pass@host:port/x" → ("scheme://", "user", "pass", "@host:port/x"); parola yoksa None.
+    urlparse'a güvenmez: şemasız yazılmış ("user:pass@host:8080") bir değer de maskelenmeli.
+    """
+    scheme, sep, rest = url.partition("://")
+    if not sep:
+        scheme, rest = "", url
+    cut = min((i for i in (rest.find(c) for c in "/?#") if i >= 0), default=len(rest))
+    userinfo, at, hostport = rest[:cut].rpartition("@")
+    user, colon, password = userinfo.partition(":")
+    if not at or not colon or not password:
+        return None
+    return scheme + sep, user, password, at + hostport + rest[cut:]
+
+
+def mask_proxy_url(url: str) -> str:
+    """http://user:secret@host:8080 → http://user:***@host:8080 (parola yoksa değer aynen döner)."""
+    parts = _split_proxy_userinfo(url or "")
+    if parts is None:
+        return url or ""
+    head, user, _password, tail = parts
+    return f"{head}{user}:{PROXY_PASSWORD_MASK}{tail}"
+
+
+def _restore_proxy_password(submitted: str, stored: str) -> str:
+    """
+    Form maskeli adresi geri gönderdiyse (parola = yer tutucu) saklanan parolayı yerine koyar.
+    Yalnızca kullanıcı adı ve sunucu aynıysa: adres değiştiyse saklanan parola başka bir sunucuya
+    gönderilmez, parolanın yeniden yazılması istenir.
+    """
+    new = _split_proxy_userinfo(submitted)
+    if new is None or new[2] != PROXY_PASSWORD_MASK:
+        return submitted
+
+    def host(url: str) -> str:
+        try:
+            return (urlparse(url).hostname or "").lower()
+        except ValueError:  # .env'e elle yazılmış bozuk bir değer
+            return ""
+
+    old = _split_proxy_userinfo(stored)
+    same_target = old is not None and old[1] == new[1] and host(stored) != "" and host(stored) == host(submitted)
+    if not same_target:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "reason": "proxy_password_required",
+                "message": "Re-enter the proxy password: the proxy address or user changed.",
+            },
+        )
+    head, user, _mask, tail = new
+    return f"{head}{user}:{old[2]}{tail}"
+
+
 def _no_control_chars(v: Optional[str]) -> Optional[str]:
     # .env satır tabanlı: yeni satır başka bir değişken enjekte eder
     if v is not None and any(c in v for c in "\r\n\x00"):
@@ -105,7 +165,8 @@ def get_all_settings():
         "language": config_manager.get_language(),
         "api_base_url": config_manager.get_api_base_url(),
         "use_proxy": config_manager.get_use_proxy(),
-        "proxy_url": config_manager.get_proxy_url(),
+        # Parola maskeli döner (kullanıcı adı ve sunucu görünür kalır); tam değer yalnızca .env'de
+        "proxy_url": mask_proxy_url(config_manager.get_proxy_url()),
         "data_dir": config_manager.get_data_dir(),
         "use_color": config_manager.get_use_color(),
         "date_format": config_manager.get_date_format(),
@@ -140,6 +201,11 @@ def update_settings(settings: SettingsUpdate):
     dizine yazmayı sürdürürken yeni istekler yeni dizini okur ve veri iki dizine bölünür. İş yokken
     değişim hemen geçerlidir ve iş deposu (jobs.db) yeni dizine taşınır; yeniden başlatma gerekmez.
     """
+    if settings.proxy_url:
+        # Her şeyden önce: 422 (parola yeniden yazılmalı) hiçbir ayar yazılmadan ve iş deposu
+        # taşınmadan döner; _apply_settings'teki geniş except de onu 500'e çevirmez
+        settings.proxy_url = _restore_proxy_password(settings.proxy_url.strip(), config_manager.get_proxy_url())
+
     new_dir = settings.data_dir
     if new_dir is None or _abs_data_dir(new_dir) == _abs_data_dir(config_manager.get_data_dir()):
         return _apply_settings(settings)
