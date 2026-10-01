@@ -14,6 +14,9 @@ tests/characterization/test_cli_goldens.py`). Bu dosya bugünkü davranışı ol
 söylemez. `main.py`nin davranışını değiştiren iş (plan: P10, P19) goldenları yeniden üretir ve her farkı
 PR metninde sayar.
 
+P10'dan beri headless kipler (--headless, --refresh-only, --recheck-unavailable) terminal arayüzünü kurmaz:
+servis bağlamını kurar, SyncService ve MaintenanceService'i çağırır.
+
 Karşılaştırmadan önce çıktıdan çalıştırma anına bağlı kısımlar ayıklanır:
   - log satırlarının zamanı ve süreç numarası ("LOG INFO Main: ..." kalır)
   - kum havuzunun ve deponun yolları (<SANDBOX>, <REPO>); Windows'ta yol ayırıcısı
@@ -368,6 +371,14 @@ def run_cli(box: Sandbox, *argv: str, world: Optional[FakeSofaScore] = None, std
     )
 
 
+def terminal_ui_modules(run: CliRun) -> List[str]:
+    """Süreçte yüklenmiş terminal arayüzü modülleri (src/SofaScoreUi.py, src/ui/): headless kiplerde boş olmalı."""
+    return [
+        name for name in run.process["src_modules"]
+        if name == "src.SofaScoreUi" or name == "src.ui" or name.startswith("src.ui.")
+    ]
+
+
 def assert_cli_golden(name: str, actual: Dict[str, Any]) -> None:
     """`actual`ı fixtures/cli/{name}.golden.json ile karşılaştırır; UPDATE_GOLDENS=1 ise dosyayı yazar."""
     path = CLI_FIXTURES / f"{name}.golden.json"
@@ -580,7 +591,7 @@ def _argparse_error(run: CliRun) -> Dict[str, Any]:
 
 def test_usage_errors(new_box: NewBox) -> None:
     cases: Dict[str, Dict[str, Any]] = {}
-    # Bayrak eksikleri argümanlar ayrıştırıldıktan sonra anlaşılır: arayüz nesnesi kurulmuş, veri dizinleri açılmıştır
+    # Bayrak eksikleri argümanlar ayrıştırıldıktan sonra anlaşılır: servis bağlamı kurulmuş, veri dizinleri açılmıştır
     cases["headless_without_an_action"] = run_cli(new_box("headless"), "--headless").golden()
     cases["headless_without_an_action_tr"] = run_cli(
         new_box("headless-tr", env_lines=["APP_LANGUAGE=tr"]), "--headless"
@@ -621,6 +632,8 @@ def test_interactive_menu_is_the_default_mode(box: Sandbox) -> None:
     assert run.exit_code == 0
     assert "LOG INFO Main: İnteraktif mod başlatılıyor" in run.stdout
     assert run.requests == []
+    # Terminal arayüzü yalnızca bu dalda yüklenir
+    assert "src.SofaScoreUi" in terminal_ui_modules(run)
 
 
 # --- --headless --update-all ----------------------------------------------------------------
@@ -629,13 +642,14 @@ SAME_AS_ALL_LEAGUES = "<same as headless_update_all>"
 
 
 def test_headless_update_all(seed: Seed) -> None:
-    """Tüm ligler, boş veri dizini: sezonlar → maç programı → detaylar."""
+    """Tüm ligler, boş veri dizini: sezonlar → maç programı → detaylar. Terminal arayüzü yüklenmez."""
     assert seed.run.exit_code == 0
+    assert terminal_ui_modules(seed.run) == []
     assert_cli_golden("headless_update_all", seed.run.golden())
 
 
 def test_headless_update_one_league(box: Sandbox, seed: Seed) -> None:
-    """--league-id: aynı istekler ve aynı dosyalar; kullanıcıya yazılan metin başka bir koddan gelir."""
+    """--league-id: aynı istekler ve aynı dosyalar; iki yol da aynı servis akışıdır (SyncService)."""
     run = run_cli(box, "--headless", "--update-all", "--league-id", str(LEAGUE))
 
     assert run.requests == seed.run.requests
@@ -714,8 +728,8 @@ def test_headless_update_blocked_from_the_first_request(new_box: NewBox, world: 
 @pytest.mark.skipif(os.name != "posix", reason="POSIX izin bitleri gerekir (Windows'ta dizin salt okunur yapılamaz)")
 def test_headless_storage_error_exits_with_1(new_box: NewBox) -> None:
     """
-    Detaylar diske yazılamıyor (izin yok): iş durur, neden stderr'e yazılır, çıkış kodu 1. --league-id yolunda
-    hata doğrudan yükselir; tüm ligler yolunda menü katmanı yutar ve main.py `last_storage_error`dan okur.
+    Detaylar diske yazılamıyor (izin yok): iş durur, neden stderr'e yazılır, çıkış kodu 1. İki yolda da
+    servis StorageError'ı olduğu gibi yükseltir.
     """
     if os.geteuid() == 0:
         pytest.skip("root her dizine yazabilir")
@@ -758,6 +772,7 @@ def test_headless_csv_export(new_box: NewBox) -> None:
 
     assert (with_data.exit_code, empty.exit_code) == (0, 0)
     assert (with_data.requests, empty.requests) == ([], [])
+    assert terminal_ui_modules(with_data) == []
     assert_cli_golden("headless_csv_export", {"with_data": with_data.golden(), "empty_data_dir": empty.golden()})
 
 
@@ -801,6 +816,7 @@ def test_refresh_only(seeded: Sandbox, world: FakeSofaScore) -> None:
     run = run_cli(seeded, "--refresh-only", world=world)
 
     assert run.exit_code == 0
+    assert terminal_ui_modules(run) == []
     assert_cli_golden("refresh_only", run.golden())
 
 
@@ -860,7 +876,9 @@ def test_recheck_unavailable(new_box: NewBox, settled: Seed) -> None:
     (legacy_dir / "statistics.json").unlink()
     (legacy_dir / "_unavailable.json").write_text(json.dumps({"statistics": 2}), encoding="utf-8")
 
-    steps["default"] = run_cli(seeded, "--recheck-unavailable").golden()
+    default = run_cli(seeded, "--recheck-unavailable")
+    assert terminal_ui_modules(default) == []
+    steps["default"] = default.golden()
     steps["default_again"] = run_cli(seeded, "--recheck-unavailable", "--league-id", str(LEAGUE)).golden()
     steps["other_league"] = run_cli(seeded, "--recheck-unavailable", "all", "--league-id", "8").golden()
     steps["all_then_download"] = run_cli(
@@ -899,6 +917,7 @@ def test_watch_event_ids(box: Sandbox, world: FakeSofaScore) -> None:
     world.add("/sport/football/events/live", {"events": []})
     second = run_cli(box, *argv, world=world)
 
+    assert terminal_ui_modules(first) == []
     for run in (first, second):  # olay satırlarındaki zaman
         run.stdout = _map_lines(
             run.stdout, lambda line: json.dumps(_mask(json.loads(line))) if line.startswith("{") else line

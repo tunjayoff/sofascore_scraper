@@ -10,7 +10,7 @@
    "logs/sofascore_scraper.log": "<binary>"
   }
  },
- "request_layer_loaded": true,
+ "request_layer_loaded": false,
  "requests": [],
  "sleeps": {},
  "stderr": [],

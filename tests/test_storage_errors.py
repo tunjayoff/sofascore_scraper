@@ -206,7 +206,8 @@ def test_headless_cli_reports_a_storage_error_and_exits_1(tmp_path, monkeypatch,
         "main.py", "--headless", "--update-all", "--fetch-mode", "details", "--league-id", "17",
         "--data-dir", str(tmp_path),
     ])
-    with patch.object(MatchDataFetcher, "fetch_all_match_details", side_effect=boom), \
+    # Headless yol SyncService'i çağırır (P10): detay aşamasının ilk indirici çağrısı collect_detail_match_ids'tir
+    with patch.object(MatchDataFetcher, "collect_detail_match_ids", side_effect=boom), \
             patch.object(utils.cffi_requests, "get", side_effect=AssertionError("ağ isteği yapılmamalı")):
         assert cli.main() == 1
     err = capsys.readouterr().err

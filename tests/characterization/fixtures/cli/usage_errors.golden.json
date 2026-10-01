@@ -41,16 +41,15 @@
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data",
-   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/seasons",
-   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/matches",
-   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/match_details",
-   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/datasets",
+   "LOG INFO Services: Created directory: <SANDBOX>/data",
+   "LOG INFO Services: Created directory: <SANDBOX>/data/seasons",
+   "LOG INFO Services: Created directory: <SANDBOX>/data/matches",
+   "LOG INFO Services: Created directory: <SANDBOX>/data/match_details",
+   "LOG INFO Services: Created directory: <SANDBOX>/data/datasets",
    "LOG INFO SeasonFetcher: Mevcut sezon verisi bulunamadı",
    "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
-   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
-   "LOG INFO Main: Headless modda çalışılıyor",
-   "LOG ERROR Main: Headless için en az biri gerekli: --update-all ve/veya --csv-export"
+   "LOG INFO Main: Running in headless mode",
+   "LOG ERROR Main: Headless needs at least one of --update-all and --csv-export"
   ]
  },
  "headless_without_an_action_tr": {
@@ -79,16 +78,15 @@
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data",
-   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/seasons",
-   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/matches",
-   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/match_details",
-   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/datasets",
+   "LOG INFO Services: Created directory: <SANDBOX>/data",
+   "LOG INFO Services: Created directory: <SANDBOX>/data/seasons",
+   "LOG INFO Services: Created directory: <SANDBOX>/data/matches",
+   "LOG INFO Services: Created directory: <SANDBOX>/data/match_details",
+   "LOG INFO Services: Created directory: <SANDBOX>/data/datasets",
    "LOG INFO SeasonFetcher: Mevcut sezon verisi bulunamadı",
    "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
-   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
-   "LOG INFO Main: Headless modda çalışılıyor",
-   "LOG ERROR Main: Headless için en az biri gerekli: --update-all ve/veya --csv-export"
+   "LOG INFO Main: Running in headless mode",
+   "LOG ERROR Main: Headless needs at least one of --update-all and --csv-export"
   ]
  },
  "invalid_choice": {
@@ -103,7 +101,7 @@
     "logs/sofascore_scraper.log": "<binary>"
    }
   },
-  "request_layer_loaded": true,
+  "request_layer_loaded": false,
   "requests": [],
   "sleeps": {},
   "stderr": [
@@ -125,7 +123,7 @@
     "logs/sofascore_scraper.log": "<binary>"
    }
   },
-  "request_layer_loaded": true,
+  "request_layer_loaded": false,
   "requests": [],
   "sleeps": {},
   "stderr": [
@@ -148,7 +146,7 @@
     "logs/sofascore_scraper.log": "<binary>"
    }
   },
-  "request_layer_loaded": true,
+  "request_layer_loaded": false,
   "requests": [],
   "sleeps": {},
   "stderr": [
@@ -171,7 +169,7 @@
     "logs/sofascore_scraper.log": "<binary>"
    }
   },
-  "request_layer_loaded": true,
+  "request_layer_loaded": false,
   "requests": [],
   "sleeps": {},
   "stderr": [
@@ -194,7 +192,7 @@
     "logs/sofascore_scraper.log": "<binary>"
    }
   },
-  "request_layer_loaded": true,
+  "request_layer_loaded": false,
   "requests": [],
   "sleeps": {},
   "stderr": [
@@ -219,7 +217,7 @@
     "logs/sofascore_scraper.log": "<binary>"
    }
   },
-  "request_layer_loaded": true,
+  "request_layer_loaded": false,
   "requests": [],
   "sleeps": {},
   "stderr": [
