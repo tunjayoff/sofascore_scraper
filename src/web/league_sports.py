@@ -2,7 +2,8 @@
 Which sport each configured league belongs to.
 
 config/leagues.txt stays `name: id` (the CLI reads it), so the sport lives beside it in
-config/league_sports.json as {"<league id>": "football" | "basketball" | "tennis"}.
+config/league_sports.json as {"<league id>": "<sport slug>"} (the sports registered in src/sports.py:
+"football" | "basketball" | "tennis").
 
 A league added through the web UI gets its sport from the remote search result. A league
 added any other way has none until either someone picks it in the UI, or a downloaded
@@ -16,26 +17,21 @@ import os
 import threading
 from typing import Dict, Optional
 
+from src import sports
 from src.fsutil import atomic_write_json, file_lock
 from src.logger import get_logger
 
 logger = get_logger("LeagueSports")
 
-SPORTS = ("football", "basketball", "tennis")
+# The supported sports come from the registry in src/sports.py; this name stays for existing imports
+SPORTS = sports.sport_slugs()
 
 _lock = threading.Lock()
 
 
 def normalize_sport(raw: object) -> Optional[str]:
     """Sofascore says "Football"/"football"/"Basketball"/"Tennis"; anything else is unknown."""
-    s = str(raw or "").strip().lower()
-    if "basket" in s:
-        return "basketball"
-    if "tennis" in s:
-        return "tennis"
-    if "football" in s or "soccer" in s:
-        return "football"
-    return None
+    return sports.normalize_sport(raw)
 
 
 def sidecar_path(league_config_path: str) -> str:
@@ -87,8 +83,7 @@ def infer_from_data(data_dir: str, league_id: int) -> Optional[str]:
                 basic = json.load(f)
         except (OSError, ValueError):
             continue
-        sport = (((basic.get("tournament") or {}).get("category") or {}).get("sport") or {})
-        found = normalize_sport(sport.get("slug") or sport.get("name"))
+        found = normalize_sport(sports.event_sport_slug(basic))
         if found:
             return found
     return None
