@@ -42,11 +42,12 @@ section is what the first tagged release will contain.
   (#12).
 - **Shared request budget.** `REQUEST_RATE_LIMIT` is one requests-per-second budget for all
   processes on the machine together (web app, CLI, every `--watch`, `--refresh-only`),
-  whether a request goes through curl or through the browser. The default is
-  `10 × MAX_CONCURRENT` (100 with default settings), which does not slow down a single bulk
-  download; `0` turns it off. It is also on the Settings page (Advanced) and in
-  `/api/settings`. The state is a small locked file under
-  `~/.cache/sofascore_scraper/throttle/`; `SOFASCORE_THROTTLE_DIR` moves it (#19).
+  whether a request goes through curl or through the browser. The default is 5 requests
+  per second; a higher value is faster and `0` or `off` removes the limit, both at a higher
+  risk of being blocked by SofaScore. It is also on the Settings page (Advanced), which
+  explains the trade-off and shows a warning while the value is above the default or off,
+  and in `/api/settings`. The state is a small locked file under
+  `~/.cache/sofascore_scraper/throttle/`; `SOFASCORE_THROTTLE_DIR` moves it (#19, #33).
 - **Bridge health.** The browser bridge reports whether SofaScore is answering: `ok`,
   `degraded` after `BRIDGE_DEGRADED_AFTER` (default 3) failed requests in a row, `blocked`
   after `BRIDGE_BLOCKED_AFTER` (10) that span at least `BRIDGE_BLOCKED_MIN_SECONDS` (200).
@@ -133,6 +134,15 @@ section is what the first tagged release will contain.
   `ResourceNotFoundError`) instead of returning `None`, does not sleep after the final
   attempt, does not retry permanent 4xx responses, and really caps in-flight requests at
   `MAX_CONCURRENT`.
+- **Downloads are slower by default.** With `REQUEST_RATE_LIMIT` unset, all processes
+  together send at most 5 requests per second, so the match details of a 380-match football
+  season (about 2,700 requests) take roughly 9 minutes instead of one to two. `MAX_CONCURRENT`
+  no longer changes that total. A value you have set yourself is used as before (#33).
+- The fixed pauses that only slowed requests down are gone, because the request budget now
+  sets the pace: 1 s between batches of a bulk download, 0.2 s between matches in the
+  one-by-one download and 1 s between matches in `--refresh-only`. The wait after each
+  request (`WAIT_TIME_MIN` / `WAIT_TIME_MAX`) and the back-off after errors are unchanged
+  (#33).
 - Watch mode: the 1 s spacing between requests is shared by every `--watch` process on the
   machine instead of applying to each process, so one watcher per sport stays at 1 request/s
   in total. With `REQUEST_RATE_LIMIT=0` it applies per process as before (#19).
@@ -206,6 +216,9 @@ section is what the first tagged release will contain.
 - **A match that could not be written to disk is reported as failed**, not as downloaded. A
   full disk, an exhausted quota, a permission error or a read-only file system stops the job
   with a message naming the path and the reason (#25).
+- A request that waits for its turn in the request budget (a low `REQUEST_RATE_LIMIT`, or
+  many requests queued) no longer fails with the browser bridge's 120 s request timeout: the
+  time spent waiting for the slot does not count towards it (#33).
 - **Delete all data**, **Back up**, removing a league and changing the data folder are
   refused while a download is running (HTTP 409, code `job_running`) instead of racing the
   download; a download cannot start while a backup or delete is in progress (code

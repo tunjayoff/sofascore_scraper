@@ -21,8 +21,9 @@ Dayanıklılık:
   - Dosya bozuksa ya da sistem saati geri alınmışsa durum sıfırlanır; hiçbir istek
     _MAX_WAIT_SECONDS'tan uzun bekletilmez.
 
-Ayar (.env): REQUEST_RATE_LIMIT = tüm süreçlerin toplamı için saniyede istek; 0 = kapalı;
-boş = MAX_CONCURRENT başına 10 istek/sn (varsayılan ayarlarla 100).
+Ayar (.env): REQUEST_RATE_LIMIT = tüm süreçlerin toplamı için saniyede istek; boş = 5
+(varsayılan); 0 ya da "off" = kapalı. Varsayılanın üstü ve "kapalı", SofaScore'un engelleme
+riskini bilerek üstlenmek demektir.
 """
 from __future__ import annotations
 
@@ -41,20 +42,16 @@ logger = logging.getLogger(__name__)
 ENV_RATE = "REQUEST_RATE_LIMIT"
 ENV_DIR = "SOFASCORE_THROTTLE_DIR"
 
-# Varsayılan: tek süreçlik toplu indirmeyi bugünkünden YAVAŞLATMAYAN en küçük yuvarlak sayı.
-# Türetimi: scripts/bench_bulk_rate.py (ağ yok; taşıyıcı sahte). Varsayılan ayarlarla
-# (MAX_CONCURRENT=10, WAIT_TIME_MIN=0.2, WAIT_TIME_MAX=0.5) toplu indirme yolunun kendi
-# sınırları — maç başına 7 (tenis: 8) istek, 10 maç eşzamanlı, her istekten sonra ortalama
-# 0,45 sn bekleme — istek gecikmesi sıfırken bile ortalama 59 (tenis: 70) istek/sn'den
-# fazlasına izin vermiyor; en yoğun 1 sn'lik pencerede 81-101 istek. Gecikme 0,1 sn iken
-# ortalama 50-58, 0,2 sn iken ~40, 0,5 sn iken ~19 istek/sn. Bu tavan MAX_CONCURRENT ile
-# doğru orantılı (30 → tepe 258, 50 → tepe 417 istek/sn): eşzamanlı istek başına ≤ ~10.
-# Bu yüzden varsayılan sabit bir sayı değil, MAX_CONCURRENT başına 10 istek/sn'dir (bir
-# saniyelik patlama payıyla): varsayılan ayarlarla 100. Ölçümde süre, sınırlayıcı kapalıyken
-# olanla aynı. Daha nazik bir toplam için REQUEST_RATE_LIMIT'i açıkça verin (ör. 5 ya da 1).
-DEFAULT_RATE_PER_CONCURRENT = 10.0
-DEFAULT_MAX_CONCURRENT = 10  # src/config_manager.py get_max_concurrent ile aynı
-DEFAULT_RATE_LIMIT = DEFAULT_RATE_PER_CONCURRENT * DEFAULT_MAX_CONCURRENT
+# Varsayılan: tüm süreçlerin toplamı için saniyede 5 istek (boşta geçen süreden sonra bir
+# saniyelik, yani 5 isteklik patlama payıyla). Bilinçli olarak toplu indirmenin kendi tavanının
+# çok altında: scripts/bench_bulk_rate.py (ağ yok; taşıyıcı sahte) varsayılan ayarlarla
+# (MAX_CONCURRENT=10, WAIT_TIME_MIN=0.2, WAIT_TIME_MAX=0.5; 100 futbol maçı = 700 istek)
+# sınırlayıcı kapalıyken ortalama 19-62 istek/sn (11-37 sn) ölçüyor; varsayılan bütçeyle
+# sahte gecikmeden bağımsız olarak 5,0 istek/sn (140 sn; en yoğun saniyede 9 istek: baştaki
+# patlama payı). Toplu indirme artık MAX_CONCURRENT'ten bağımsız ~5 istek/sn ile ilerler:
+# 380 maçlık bir futbol sezonu ≈ 2700 istek ≈ 9 dakika. Daha hızlısı için REQUEST_RATE_LIMIT
+# yükseltilir ya da 0/off ile kapatılır; ikisi de SofaScore'un engelleme riskini artırır.
+DEFAULT_RATE_LIMIT = 5.0
 
 _OFF_WORDS = ("off", "false", "no", "none", "disabled")
 _LOCK_TIMEOUT_SECONDS = 1.0
@@ -71,21 +68,12 @@ State = Dict[str, float]
 _warned_invalid_rate: Optional[str] = None
 
 
-def default_rate() -> float:
-    """REQUEST_RATE_LIMIT verilmemişse: MAX_CONCURRENT başına 10 istek/sn (toplu indirmenin tavanı)."""
-    try:
-        concurrent = int(os.getenv("MAX_CONCURRENT", "") or DEFAULT_MAX_CONCURRENT)
-    except ValueError:
-        concurrent = DEFAULT_MAX_CONCURRENT
-    return DEFAULT_RATE_PER_CONCURRENT * max(1, concurrent)
-
-
 def configured_rate() -> float:
     """REQUEST_RATE_LIMIT (istek/sn). 0 ya da "off" = sınırlayıcı kapalı; boş/geçersiz = varsayılan."""
     global _warned_invalid_rate
     raw = os.getenv(ENV_RATE, "").strip().lower()
     if not raw:
-        return default_rate()
+        return DEFAULT_RATE_LIMIT
     if raw in _OFF_WORDS:
         return 0.0
     try:
@@ -95,8 +83,8 @@ def configured_rate() -> float:
     if not math.isfinite(rate):
         if _warned_invalid_rate != raw:
             _warned_invalid_rate = raw
-            logger.warning(f"{ENV_RATE} geçersiz ({raw!r}), varsayılan {default_rate():g} kullanılacak.")
-        return default_rate()
+            logger.warning(f"{ENV_RATE} geçersiz ({raw!r}), varsayılan {DEFAULT_RATE_LIMIT:g} kullanılacak.")
+        return DEFAULT_RATE_LIMIT
     return max(0.0, rate)
 
 

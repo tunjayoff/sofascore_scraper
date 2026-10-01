@@ -245,6 +245,24 @@ def test_batch_refreshes_after_new_matches_and_counts_separately(tmp_path):
     assert f.pending_detail_ids([MID, "999"]) == ["999", MID]
 
 
+def test_no_fixed_pauses_between_matches(tmp_path):
+    """
+    Maçlar arasındaki sabit beklemeler kalktı (tek tek indirmede 0,2 sn, --refresh-only'de 1 sn,
+    100'lük gruplar arasında 1 sn): hızı ortak istek bütçesi (src/throttle.py) belirler.
+    """
+    f = _fetcher(tmp_path)
+    old = _fixture("football/F2_penalties__16950622")
+    _store(f, old, observed_after_start_h=2)
+    f.fetch_match_data = MagicMock(side_effect=lambda mid: {"basic": {"id": mid}})
+    with patch("src.match_data_fetcher.time.sleep") as sleep:
+        assert len(f.fetch_matches_batch(["997", "998", "999"])) == 3
+        with patch.object(f, "_fetch_match_basic", return_value=copy.deepcopy(old)):
+            assert f.refresh_matches([MID, MID, MID])["refreshed"] == 3
+        f.fetch_matches_batch_parallel = MagicMock(side_effect=lambda batch, **_kw: dict.fromkeys(batch, {}))
+        assert f._fetch_detail_ids([str(n) for n in range(250)], None, None, None) == 250  # 3 grup
+    sleep.assert_not_called()
+
+
 def test_job_progress_counts_refreshes():
     published = []
     p = JobProgress(["details"], published.append)

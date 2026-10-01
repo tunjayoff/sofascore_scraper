@@ -246,7 +246,7 @@ Tüm anahtarlar `.env.example` içinde. Sık kullanılanlar:
 | `DATA_DIR` | Verinin kök dizini (varsayılan `data`). Web `ConfigManager` üzerinden okur. |
 | `APP_LANGUAGE` | `en` veya `tr`: terminal arayüzünün ve sunucu mesajlarının dili. Web uygulamasının dili **Ayarlar**’dan seçilir (orada değiştirmek bu değeri de günceller). |
 | `MAX_CONCURRENT` | Paralel detay isteği üst sınırı. |
-| `REQUEST_RATE_LIMIT` | **Tüm süreçlerin toplamı** için SofaScore'a saniyede istek sayısı (web uygulaması, CLI, her `--watch`, `--refresh-only`). Varsayılan `10 × MAX_CONCURRENT` (= `100`), `0` = kapalı. Bkz. [Ortak istek bütçesi](#ortak-istek-bütçesi-tüm-süreçler). |
+| `REQUEST_RATE_LIMIT` | **Tüm süreçlerin toplamı** için SofaScore'a saniyede istek sayısı (web uygulaması, CLI, her `--watch`, `--refresh-only`). Varsayılan `5`; daha yüksek bir değer ya da `0` / `off` (sınırsız) daha hızlıdır ama engellenme riskini artırır. Bkz. [Ortak istek bütçesi](#ortak-istek-bütçesi-tüm-süreçler). |
 | `USE_PROXY` / `PROXY_URL` | İsteğe bağlı proxy: `http://`, `https://` ya da `socks5://`; örn. `http://kullanici:parola@sunucu:8080`. Web uygulamasında **Ayarlar → Bağlantı** altından da ayarlanır; kayıtlı parola bir daha gösterilmez (form ve API `***` gösterir, öyle bırakılırsa parola korunur). Yerleşik tarayıcı değişen proxy’yi uygulama yeniden başlayınca kullanır. |
 | `FETCH_ONLY_FINISHED` | Yalnız bitmiş maçları tut (`status.type == finished`). Varsayılan `true`. Henüz oynanmamış fikstürler schedule dosyalarına yazılmaz. |
 | `REFRESH_WINDOW_HOURS` | Kaydedilen maçın başlangıçtan kaç saat boyunca geçici sayılıp yeniden okunacağı (varsayılan `72`, `0` = kapalı). Bkz. [Yenileme politikası](#yenileme-politikası). |
@@ -259,9 +259,10 @@ Web **Ayarlar** sayfasından birçok değer düzenlenir; kayıt `.env`’i günc
 
 Her kod yolu kendi isteklerini sınırlar (`MAX_CONCURRENT`, beklemeler, izleyicinin 1 sn aralığı), ama ayrı süreçler birbirini görmez: spor başına bir `--watch`, bir web işi ve cron'dan `--refresh-only` birlikte çalışınca hızları toplanır. `REQUEST_RATE_LIMIT` hepsinin paylaştığı tek bütçedir. SofaScore'a giden her istek (curl ya da tarayıcı) önce, işletim sistemi dosya kilidiyle korunan küçük bir durum dosyasından sıradaki boş anı ayırır.
 
-- **Varsayılan: `MAX_CONCURRENT` başına 10 istek/sn, yani varsayılan ayarlarla `100` istek/sn**; boşta geçen süreden sonra en fazla bir saniyelik bütçe art arda kullanılabilir. Tek bir toplu indirmeyi yavaşlatmayacak şekilde seçildi: varsayılan ayarlarla indirme yolu kendi başına en fazla 60–70 istek/sn'ye çıkıyor ve bu tavan `MAX_CONCURRENT` ile büyüyor (ağsız ölçüm; yinelemek için `python scripts/bench_bulk_rate.py`). Varsayılanın kattığı şey, birden çok sürecin birlikte bu sınırı aşamamasıdır.
-- **Daha nazik olmak için düşürün**, ör. `5`. `1` ve altında istekler eşit aralıklı olur. Toplu indirme de o oranda yavaşlar.
-- **`0` kapatır**: her süreç yine kendi başınadır.
+- **Varsayılan: tüm süreçlerin toplamı için saniyede `5` istek**; boşta geçen süreden sonra en fazla bir saniyelik bütçe (5 istek) art arda kullanılabilir. Bu, indirme yolunun kendi başına yapabildiğinin bilerek çok altındadır (varsayılan ayarlarla yaklaşık 20–60 istek/sn; ağsız ölçüm, yinelemek için `python scripts/bench_bulk_rate.py`): SofaScore'a binen yükü ve engellenme riskini düşük tutar.
+- **Bir indirme ne kadar sürer.** Maç detayları futbolda maç başına 7 (teniste 8) istek tutar; 380 maçlık bir sezon yaklaşık 2.700 istektir: varsayılanla kabaca **9 dakika** (eskiden bir iki dakikaydı). Sınırı bütçe belirlediği sürece `MAX_CONCURRENT`'i yükseltmek indirmeyi hızlandırmaz.
+- **Yükseltmek ya da kapatmak sizin kararınız ve sizin riskinizdir.** `.env` içinde `REQUEST_RATE_LIMIT=20` yazın (dört kat hızlı) ya da web uygulamasında **Ayarlar → Gelişmiş** altındaki **Ortak istek bütçesi**ni değiştirin; çalışan web uygulaması bunu hemen uygular, çalışan diğer süreçler `.env`'i başlarken okur. `0` ya da `off` sınırı tümüyle kaldırır: her süreç yine kendi başınadır ve olabildiğince hızlı istek atar. İkisi de SofaScore'un sizi engelleme olasılığını artırır; değer 5'in üstündeyken ya da kapalıyken Ayarlar sayfası bir uyarı gösterir.
+- **Daha nazik olmak için düşürün**, ör. `1`. `1` ve altında istekler eşit aralıklı olur. Sırası için uzun süre bekleyen istek düşürülmez: bu bekleme, tarayıcı köprüsünün 120 sn'lik istek zaman aşımından sayılmaz.
 - **İzleyiciler** ayrıca 1 istek/sn'lik ortak bir şeridi paylaşır: spor başına bir `--watch` çalışsa da istekler süreç başına değil toplamda en az 1 sn aralıklıdır.
 - **Durumun yeri:** `~/.cache/sofascore_scraper/throttle/` (`SOFASCORE_THROTTLE_DIR` ile değişir). Bu klasörü paylaşan süreçler bütçeyi paylaşır; konteynerlerde ortak bir volume gösterin.
 - **Hata durumunda:** süreç ölünce kilidi işletim sistemi bırakır; çöken süreç bayat kilit bırakamaz. Klasöre yazılamıyorsa ya da kilit 1 sn içinde alınamıyorsa istekler engellenmez: o süreç kendi sayacıyla devam eder, bir kez uyarı loglar ve 30 sn sonra dosyayı yeniden dener.
@@ -305,7 +306,7 @@ python main.py --config /yol/leagues.txt --data-dir /yol/veri
 **İpuçları**
 
 - Büyük ligde ilk indirme uzun sürebilir; önce tek lig ve az sayıda sezonla deneyin.
-- Hız sınırı veya çok hata görürseniz **Ayarlar**’dan **MAX_CONCURRENT** düşürüp bekleme sürelerini hafif artırın; `--ignore-rate-limit` yalnız bilinçli kullanımda.
+- Hız sınırı veya çok hata görürseniz **Ayarlar**’dan **ortak istek bütçesini** (`REQUEST_RATE_LIMIT`) düşürün (yükselttiyseniz ya da kapattıysanız varsayılan `5`’e dönün); `--ignore-rate-limit` yalnız bilinçli kullanımda.
 - **Web** ile **CLI/headless** aynı veriyi paylaşacaksa `.env` içindeki `DATA_DIR` ile komut satırındaki `--data-dir` değerini hizalayın.
 - Mümkünse içinde bitmiş maç olan sezonu seçin. En yeni etiket (ör. Avrupa `26/27`) çoğu zaman yalnızca fikstürdür; scraper gerekirse otomatik düşer.
 - İndirmeyi durdurmak o ana kadar inenleri korur. Detayına sıra gelmeyen maçlar Maçlar’da **Detay: Yok** görünür; Maçlar’daki (veya Maç indir’deki) **Eksikleri indir** ile tamamlanır.

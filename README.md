@@ -248,7 +248,7 @@ See `.env.example` for all keys. Common ones:
 | `DATA_DIR` | Root folder for stored data (default `data`). Web app reads this via `ConfigManager`. |
 | `APP_LANGUAGE` | `en` or `tr`: language of the terminal UI and server messages. The web app has its own switch under **Settings** (changing it there also updates this value). |
 | `MAX_CONCURRENT` | Parallel detail requests cap. |
-| `REQUEST_RATE_LIMIT` | Requests per second to SofaScore for **all processes together** (web app, CLI, every `--watch`, `--refresh-only`). Default `10 × MAX_CONCURRENT` (= `100`), `0` = off. See [Request budget](#request-budget-all-processes). |
+| `REQUEST_RATE_LIMIT` | Requests per second to SofaScore for **all processes together** (web app, CLI, every `--watch`, `--refresh-only`). Default `5`; a higher value or `0` / `off` (no limit) is faster but raises the risk of being blocked. See [Request budget](#request-budget-all-processes). |
 | `USE_PROXY` / `PROXY_URL` | Optional proxy: `http://`, `https://` or `socks5://`, e.g. `http://user:password@host:8080`. Also under **Settings → Connection** in the web app; the saved password is never shown again (the form and the API show `***`, and leaving it that way keeps it). The built-in browser uses a changed proxy after the app restarts. |
 | `FETCH_ONLY_FINISHED` | Keep only finished matches (`status.type == finished`). Default `true`. Upcoming fixtures are dropped from schedule files. |
 | `REFRESH_WINDOW_HOURS` | Hours after kick-off during which a saved match is provisional and gets re-read (default `72`, `0` = off). See [Refresh policy](#refresh-policy). |
@@ -261,9 +261,10 @@ Tuning for the web UI (timeouts, retries, logging) is exposed under **Settings**
 
 Every code path limits itself (`MAX_CONCURRENT`, the waits, the watcher's 1 s spacing), but separate processes do not see each other: one `--watch` per sport plus a web job plus a cron `--refresh-only` simply add up. `REQUEST_RATE_LIMIT` is one budget shared by all of them. Every request to SofaScore, through curl or through the browser, first reserves the next free slot in a small state file guarded by an operating-system file lock.
 
-- **Default: 10 requests/s per `MAX_CONCURRENT`, so `100` requests/s** with the default settings, with up to one second of budget as a burst after idle time. It is chosen so that a single bulk download is not slowed down: with default settings the download path tops out at about 60–70 requests/s on its own, and that ceiling grows with `MAX_CONCURRENT` (measured offline; reproduce with `python scripts/bench_bulk_rate.py`). What the default adds is that several processes can no longer exceed it together.
-- **Lower it to be gentler**, e.g. `5`. At `1` or below requests are evenly spaced. Bulk downloads get slower accordingly.
-- **`0` turns it off**: every process is on its own again.
+- **Default: `5` requests per second for all processes together**, with up to one second of budget (5 requests) as a burst after idle time. This is deliberately far below what the download path can do on its own (about 20–60 requests/s with default settings; measured offline, reproduce with `python scripts/bench_bulk_rate.py`): it keeps the load on SofaScore low and the risk of being blocked small.
+- **How long a download takes.** Match details cost 7 requests per football match (8 for tennis), so a 380-match season is about 2,700 requests: roughly **9 minutes** at the default, where it used to take one to two minutes. While the budget is the limit, raising `MAX_CONCURRENT` does not make a download faster.
+- **Raising it or turning it off is your call, and your risk.** Set `REQUEST_RATE_LIMIT=20` in `.env` (four times faster), or change **Shared request budget** under **Settings → Advanced** in the web app, which the running web app applies at once; other running processes read `.env` when they start. `0` or `off` removes the limit entirely: every process is on its own again and sends as fast as it can. Both make it more likely that SofaScore blocks you; the Settings page shows a warning while the value is above 5 or off.
+- **Lower it to be gentler**, e.g. `1`. At `1` or below requests are evenly spaced. A request that has to wait long for its turn is not dropped: the wait does not count against the browser bridge's 120 s request timeout.
 - **Watchers** share an extra 1 request/s lane, so one `--watch` per sport stays at least 1 s apart in total, not per process.
 - **Where the state lives:** `~/.cache/sofascore_scraper/throttle/` (change with `SOFASCORE_THROTTLE_DIR`). Processes share the budget when they share this folder; for containers, point them at one shared volume.
 - **Failure behaviour:** the lock is released by the operating system when a process dies, so a crash cannot leave a stale lock. If the folder is not writable or the lock cannot be taken within 1 s, requests are not blocked: that process paces itself, logs one warning and retries the file 30 s later.
@@ -307,7 +308,7 @@ Run `python main.py` and work through the numbered menus: manage leagues, refres
 **Tips**
 
 - The first download of a big league can take a long time; start with one league and a few recent seasons.
-- If you hit rate limits or many errors, lower **MAX_CONCURRENT** and raise waits slightly in **Settings**; avoid `--ignore-rate-limit` unless you know what you are doing.
+- If you hit rate limits or many errors, lower the **shared request budget** (`REQUEST_RATE_LIMIT`; back to the default `5` if you raised it or turned it off) in **Settings**; avoid `--ignore-rate-limit` unless you know what you are doing.
 - For the same dataset in **web** and **CLI/headless**, keep `DATA_DIR` in `.env` aligned with `--data-dir` when you use the command line.
 - Prefer a season that already has finished matches. The newest label (e.g. European `26/27`) is often fixtures-only; the scraper can fall back automatically.
 - Stopping a download keeps everything fetched so far. Matches whose details were not reached show **Details: No** in Matches; use **Download missing** there (or on the Download page) to complete them.

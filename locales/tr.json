@@ -305,7 +305,7 @@
     "season_data_not_found_for_league": "Bu lig için sezon verisi bulunamadı.",
     "season_number_to_view_matches": "Maçları görüntülemek istediğiniz sezon numarası:",
     "settings_applied_runtime": "Ayarlar başarıyla kaydedildi ve aktif edildi.",
-    "error_rate_limit_detected": "⚠  Rate limit / IP ban tespit edildi.\n\nÖnerilen aksiyonlar:\n  1. 30 dakika - 2 saat bekleyip tekrar deneyin\n  2. .env dosyasında MAX_CONCURRENT'i düşürün (örn: 5)\n  3. WAIT_TIME_MIN ve WAIT_TIME_MAX değerlerini artırın\n  4. Farklı bir IP kullanın (mobil veri, VPN, proxy)\n\nŞu ana kadar başarıyla kaydedilen maç sayısı: {count}",
+    "error_rate_limit_detected": "⚠  Rate limit / IP ban tespit edildi.\n\nÖnerilen aksiyonlar:\n  1. 30 dakika - 2 saat bekleyip tekrar deneyin\n  2. .env dosyasında REQUEST_RATE_LIMIT'i düşürün (varsayılan 5; yükselttiyseniz ya da kapattıysanız geri alın)\n  3. WAIT_TIME_MIN ve WAIT_TIME_MAX değerlerini artırın\n  4. Farklı bir IP kullanın (mobil veri, VPN, proxy)\n\nŞu ana kadar başarıyla kaydedilen maç sayısı: {count}",
     "fetch_zero_matches": "Bu sezon için maç yok. Başka sezon dene.",
     "fetch_completed_with_warning": "Bitti, ama bazı sezonlarda maç yoktu.",
     "fetch_stopped_by_breaker": "Erken durduruldu: SofaScore'a giden çok fazla istek başarısız oldu ({reason}). Başka istek gönderilmedi; bir süre bekleyip yeniden çalıştırın.",

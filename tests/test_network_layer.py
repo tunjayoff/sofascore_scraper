@@ -173,6 +173,37 @@ def test_breaker_trips_on_repeated_403(tmp_path, monkeypatch):
     assert len(calls) < 39  # tüm maçları denemeden durdu
 
 
+def test_no_fixed_pause_between_batches_of_a_bulk_download(tmp_path):
+    """100'lük batch'ler arasındaki 1 sn'lik bekleme kalktı: hızı ortak istek bütçesi belirler."""
+    f = _detail_fetcher(tmp_path, threshold=1000)
+
+    async def fetch(session, mid):
+        return {"basic": {"id": mid}}
+
+    f._fetch_match_data_async = fetch
+    with patch("src.utils.create_session_async", _fake_session), \
+            patch("src.match_data_fetcher.asyncio.sleep", new=AsyncMock()) as sleep:
+        results = _run(f.fetch_matches_batch_async(list(range(1, 251)), max_concurrent=10))  # 3 batch
+    assert len(results) == 250
+    sleep.assert_not_awaited()
+
+
+def test_error_back_off_between_attempts_is_kept(tmp_path, monkeypatch):
+    """Kaldırılan yalnızca hız beklemeleri: hata sonrası geri çekilme (1 sn, 2 sn + rastgele) duruyor."""
+    monkeypatch.delenv("IGNORE_RATE_LIMIT", raising=False)
+    f = _detail_fetcher(tmp_path, threshold=1000)
+
+    async def always_500(session, mid):
+        raise APIError("boom", status_code=500)
+
+    f._fetch_match_data_async = always_500
+    with patch("src.utils.create_session_async", _fake_session), \
+            patch("src.match_data_fetcher.asyncio.sleep", new=AsyncMock()) as sleep:
+        assert _run(f.fetch_matches_batch_async([1], max_concurrent=1)) == {}
+    waits = [c.args[0] for c in sleep.await_args_list]
+    assert len(waits) == 2 and 1.0 <= waits[0] <= 2.0 and 2.0 <= waits[1] <= 3.0
+
+
 def test_cancel_propagates_and_leaves_no_pending_tasks(tmp_path):
     f = _detail_fetcher(tmp_path, threshold=1000)
     started = []

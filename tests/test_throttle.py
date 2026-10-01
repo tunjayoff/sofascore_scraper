@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
 import json
 import os
 import subprocess
@@ -126,23 +127,70 @@ def test_configured_rate(monkeypatch, raw, expected):
     assert throttle.configured_rate() == expected
 
 
-@pytest.mark.parametrize("max_concurrent,expected", [
-    (None, 100.0), ("10", 100.0), ("5", 50.0), ("30", 300.0), ("50", 500.0), ("0", 10.0), ("abc", 100.0),
-])
-def test_default_rate_follows_max_concurrent(monkeypatch, max_concurrent, expected):
-    """
-    Varsayılan, toplu indirme yolunun kendi sınırlarının izin verdiği hızın üstünde olmalı. O tavan
-    MAX_CONCURRENT ile orantılı (scripts/bench_bulk_rate.py: en yoğun saniyede 10 → 81-101,
-    30 → 258, 50 → 417 istek), bu yüzden varsayılan eşzamanlı istek başına 10 istek/sn.
-    """
+def test_default_is_five_requests_per_second():
+    assert throttle.DEFAULT_RATE_LIMIT == 5.0
+
+
+@pytest.mark.parametrize("max_concurrent", [None, "1", "10", "30", "50", "0", "abc"])
+def test_default_rate_does_not_depend_on_max_concurrent(monkeypatch, max_concurrent):
+    """Varsayılan sabittir (5 istek/sn): MAX_CONCURRENT'i yükseltmek toplam hızı artırmaz."""
     monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
     if max_concurrent is None:
         monkeypatch.delenv("MAX_CONCURRENT", raising=False)
     else:
         monkeypatch.setenv("MAX_CONCURRENT", max_concurrent)
-    assert throttle.configured_rate() == expected
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "7")  # açıkça verilen değer MAX_CONCURRENT'e bakmaz
+    assert throttle.configured_rate() == 5.0
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", "7")  # açıkça verilen değer aynen kullanılır
     assert throttle.configured_rate() == 7.0
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", "100")  # eski varsayılanı elle yazmış kullanıcı etkilenmez
+    assert throttle.configured_rate() == 100.0
+
+
+def test_unset_limit_paces_requests_at_five_per_second(tmp_path, monkeypatch):
+    """Ayar yokken: bir saniyelik pay (5 istek) beklemeden geçer, sonrası 0,2 sn aralıklıdır."""
+    monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
+    clock = Clock()
+    t = RequestThrottle("api", throttle.configured_rate, clock=clock, directory=str(tmp_path))
+    delays = [t.reserve() for _ in range(10)]  # on istek aynı anda gelir
+    assert delays[:5] == [0.0] * 5
+    assert delays[5:] == pytest.approx([0.2, 0.4, 0.6, 0.8, 1.0])
+    clock.t += 60.0
+    slots = [t.reserve_slot()[1] for _ in range(605)]  # sürekli yük: 600 istek tam 120 sn sürer
+    assert slots[-1] - slots[4] == pytest.approx(120.0)
+
+
+@pytest.mark.parametrize("raw", ["0", "off", "OFF", "false", "none", "disabled"])
+def test_off_switch_removes_the_limit(tmp_path, monkeypatch, raw):
+    """0 / off: hiçbir istek bekletilmez, durum dosyası da yazılmaz."""
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", raw)
+    monkeypatch.setenv("SOFASCORE_THROTTLE_DIR", str(tmp_path / "t"))
+    throttle.reset_for_tests()
+    try:
+        assert [throttle.reserve() for _ in range(200)] == [0.0] * 200
+        assert throttle.status() == {"enabled": False, "requests_per_second": 0.0, "shared": False, "error": None}
+        assert not (tmp_path / "t").exists()
+    finally:
+        throttle.reset_for_tests()
+
+
+def test_default_shows_in_status(tmp_path, monkeypatch):
+    monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
+    monkeypatch.setenv("SOFASCORE_THROTTLE_DIR", str(tmp_path / "t"))
+    throttle.reset_for_tests()
+    try:
+        assert throttle.status() == {"enabled": True, "requests_per_second": 5.0, "shared": True, "error": None}
+    finally:
+        throttle.reset_for_tests()
+
+
+def test_settings_page_knows_the_same_default():
+    """Ayarlar sayfası uyarıyı bu sayıya göre gösterir; iki sabit ayrı düşmesin."""
+    import re
+
+    path = os.path.join(ROOT, "frontend", "src", "views", "SettingsView.vue")
+    with open(path, encoding="utf-8") as f:
+        found = re.search(r"^const DEFAULT_RATE_LIMIT = ([\d.]+)$", f.read(), re.M)
+    assert found and float(found.group(1)) == throttle.DEFAULT_RATE_LIMIT
 
 
 def test_disabled_throttle_never_waits_and_writes_nothing(tmp_path):
@@ -487,6 +535,116 @@ def test_real_limiter_spaces_bridge_requests_across_callers(shared_dir, monkeypa
     assert os.path.exists(shared_dir / "api.json")
 
 
+# --- köprü: ortak bütçede sıra bekleme, istek zaman aşımından sayılmaz -------------------------
+# PR #19'un açık bıraktığı durum: düşük bir bütçede (ya da kalabalık kuyrukta) istek, sırasını
+# köprünün içinde beklerken REQUEST_TIMEOUT (120 sn) doluyordu. Testler süreleri küçültür:
+# zaman aşımı 0,5 sn, sıra beklemesi 0,8 sn.
+
+_OK = {"status": 200, "ok": True, "data": {"a": 1}, "text": None}
+
+
+def _slot_delays(monkeypatch, *delays):
+    """throttle.reserve sahtesi: sırayla verilen beklemeleri döndürür, bitince 0."""
+    left = list(delays)
+    monkeypatch.setattr(throttle, "reserve", lambda: left.pop(0) if left else 0.0)
+
+
+def test_slot_wait_does_not_count_towards_async_bridge_timeout(monkeypatch):
+    _slot_delays(monkeypatch, 0.8)
+    bridge = _bridge(AsyncMock(return_value=_OK))
+    monkeypatch.setattr(cs, "REQUEST_TIMEOUT", 0.5)
+    with patch.object(cs.BrowserBridge, "get_instance", return_value=bridge):
+        start = time.monotonic()
+        assert asyncio.run(cs.fetch_api_via_browser("/event/1")) == {"a": 1}
+    assert time.monotonic() - start >= 0.75  # sıra gerçekten beklendi, istek düşmedi
+
+
+def test_slot_wait_does_not_count_towards_sync_bridge_timeout(monkeypatch):
+    _slot_delays(monkeypatch, 0.8)
+    bridge = _bridge(AsyncMock(return_value=_OK))
+    with patch.object(cs.BrowserBridge, "get_instance", return_value=bridge):
+        start = time.monotonic()
+        assert cs.fetch_api_via_browser_sync("/event/1", timeout=0.5) == {"a": 1}
+    assert time.monotonic() - start >= 0.75
+
+
+def test_retry_after_challenge_also_extends_the_timeout(monkeypatch):
+    """Challenge sonrası yineleme kuyruğun sonundan yeni sıra alır: o bekleme de sayılmaz."""
+    _slot_delays(monkeypatch, 0.4, 0.4)
+    challenge = {"status": 403, "ok": False, "data": None, "text": '{"error":{"reason":"challenge"}}'}
+    bridge = _bridge(AsyncMock(side_effect=[challenge, _OK]))
+    bridge.solve_challenge = AsyncMock(return_value="new")
+    with patch.object(cs.BrowserBridge, "get_instance", return_value=bridge):
+        assert cs.fetch_api_via_browser_sync("/event/1", timeout=0.5) == {"a": 1}
+
+
+@pytest.mark.parametrize("sync", [True, False])
+def test_bridge_timeout_still_limits_the_request_itself(monkeypatch, sync):
+    """Uzayan yalnızca sıra beklemesidir: sırası gelmiş ama yanıt vermeyen istek yine düşer."""
+    _slot_delays(monkeypatch, 0.3)
+
+    async def stuck():
+        await cs._wait_for_slot()
+        await asyncio.sleep(30)
+
+    start = time.monotonic()
+    if sync:
+        with pytest.raises(concurrent.futures.TimeoutError):
+            cs._run_sync(stuck(), 0.3)
+    else:
+        async def run():
+            with pytest.raises(asyncio.TimeoutError):
+                await cs._run_on_background_loop(stuck(), 0.3)
+
+        asyncio.run(run())
+    assert 0.5 <= time.monotonic() - start < 5  # 0,3 sn sıra + 0,3 sn zaman aşımı
+
+
+def test_callers_waiting_for_a_shared_solve_get_its_slot_wait_too(monkeypatch):
+    """Ortak çözümün doğrulama isteği sıra beklerken, çözümü bekleyen diğer istekler de düşmez."""
+    _slot_delays(monkeypatch, 0.8)
+    bridge = cs.BrowserBridge.__new__(cs.BrowserBridge)
+    bridge.token, bridge._token_at = None, 0.0
+    bridge._solve_task, bridge._solve_wait, bridge._solve_failed_at = None, None, 0.0
+    bridge.ensure_ready = AsyncMock()
+    solves = []
+
+    async def solve():
+        solves.append(1)
+        await cs._wait_for_slot()  # _api_unlocked'ın doğrulama isteği
+        return "jwt"
+
+    bridge._solve_challenge = solve
+
+    async def run():
+        return await asyncio.gather(*[cs._run_on_background_loop(bridge.solve_challenge(), 0.5) for _ in range(3)])
+
+    assert asyncio.run(run()) == ["jwt"] * 3
+    assert len(solves) == 1
+
+
+def test_calls_do_not_share_their_slot_wait(monkeypatch):
+    """Bir çağrının sıra beklemesi, aynı anda çalışan başka bir çağrının zaman aşımını uzatmaz."""
+    _slot_delays(monkeypatch, 0.8)
+
+    async def queued():
+        await cs._wait_for_slot()
+        return "ok"
+
+    async def stuck():
+        await asyncio.sleep(30)
+
+    async def run():
+        start = time.monotonic()
+        first = asyncio.ensure_future(cs._run_on_background_loop(queued(), 0.3))
+        with pytest.raises(asyncio.TimeoutError):
+            await cs._run_on_background_loop(stuck(), 0.3)
+        assert time.monotonic() - start < 1.0  # paylaşılsaydı 0,8 + 0,3 sn sürerdi
+        assert await first == "ok"
+
+    asyncio.run(run())
+
+
 # --- izleyici: 1 sn aralık ortak bütçenin "watch" şeridinden gelir -----------------------------
 
 def _fake_api(path):
@@ -525,6 +683,28 @@ def test_watchers_in_separate_processes_share_one_second_spacing(shared_dir, tmp
             w._get(f"/sport/{w.sport}/events/live")
     assert len(stamps) == 6
     assert all(b - a >= 1.0 for a, b in zip(stamps, stamps[1:], strict=False))
+    assert os.path.exists(shared_dir / "watch.json")
+
+
+def test_watchers_keep_one_second_spacing_with_the_default_budget(shared_dir, tmp_path, monkeypatch):
+    """REQUEST_RATE_LIMIT verilmemişken (5 istek/sn) izleyici şeridi değişmez: toplamda ≥ 1 sn, ortak dosya."""
+    monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
+    clock = Clock()
+    stamps = []
+
+    def fetch(path):
+        stamps.append(clock())
+        return _fake_api(path)
+
+    watchers = []
+    for sport in ("football", "tennis"):
+        with patch.object(MatchWatcher, "_default_fetch", staticmethod(fetch)):
+            watchers.append(MatchWatcher(sport, league_ids=[17], data_dir=str(tmp_path / "d"),
+                                         clock=clock, sleep=clock.sleep))
+    for _ in range(3):
+        for w in watchers:
+            w._get(f"/sport/{w.sport}/events/live")
+    assert [b - a for a, b in zip(stamps, stamps[1:], strict=False)] == [1.0] * 5
     assert os.path.exists(shared_dir / "watch.json")
 
 
@@ -568,6 +748,26 @@ def test_settings_expose_and_update_rate_limit(monkeypatch):
         assert client.get("/api/settings").json()["request_rate_limit"] == 2.5
         assert client.post("/api/settings", json={"request_rate_limit": -1}).status_code == 422
         assert client.post("/api/settings", json={"request_rate_limit": 5000}).status_code == 422
+    finally:
+        client.post("/api/settings", json={"request_rate_limit": float(before or 0)})
+        os.environ["REQUEST_RATE_LIMIT"] = before or "0"
+
+
+def test_settings_show_the_default_when_unset_and_accept_off(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from src.web.app import app
+
+    client = TestClient(app)
+    before = os.environ.get("REQUEST_RATE_LIMIT")
+    try:
+        monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
+        assert client.get("/api/settings").json()["request_rate_limit"] == 5.0
+        assert client.post("/api/settings", json={"request_rate_limit": 0}).status_code == 200  # kapalı
+        assert os.environ["REQUEST_RATE_LIMIT"] == "0"
+        assert client.get("/api/settings").json()["request_rate_limit"] == 0.0
+        assert client.post("/api/settings", json={"request_rate_limit": 40}).status_code == 200  # varsayılanın üstü
+        assert client.get("/api/settings").json()["request_rate_limit"] == 40.0
     finally:
         client.post("/api/settings", json={"request_rate_limit": float(before or 0)})
         os.environ["REQUEST_RATE_LIMIT"] = before or "0"

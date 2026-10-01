@@ -11,6 +11,7 @@ import { errorText, toast, toastError } from '@/lib/toast'
 import { UPSTREAM_REASONS } from '@/lib/upstream'
 import { useBridgeStore } from '@/stores/bridge'
 import { useLeaguesStore } from '@/stores/leagues'
+import AppIcon from '@/components/AppIcon.vue'
 
 type Tab = 'general' | 'data' | 'connection' | 'advanced'
 const TABS: readonly Tab[] = ['general', 'data', 'connection', 'advanced']
@@ -41,6 +42,20 @@ const advancedFields: { key: keyof Settings; label: string; step: string; min: n
   { key: 'max_retries', label: 'settings.retries', step: '1', min: 0, max: 10 },
   { key: 'refresh_window_hours', label: 'settings.refreshWindow', step: '1', min: 0, max: 720 },
 ]
+
+// Mirrors DEFAULT_RATE_LIMIT in src/throttle.py (tests/test_throttle.py keeps the two equal)
+const DEFAULT_RATE_LIMIT = 5
+
+/**
+ * Whether the request budget in the form is riskier than the default: 'off' (0, no limit),
+ * 'high' (above the default) or '' (at or below it). A warning only: saving is not blocked.
+ */
+const rateRisk = computed<'' | 'off' | 'high'>(() => {
+  const v = form.request_rate_limit as unknown
+  if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) return ''
+  if (v === 0) return 'off'
+  return v > DEFAULT_RATE_LIMIT ? 'high' : ''
+})
 
 /** First out-of-range advanced field as a message, or '' when all are valid. */
 function invalidField(): string {
@@ -329,9 +344,16 @@ onMounted(load)
   <section v-else id="settings-panel-advanced" role="tabpanel" aria-labelledby="settings-tab-advanced" class="card p-6 flex flex-col gap-6 max-w-[640px]">
     <p class="page-sub text-sm">{{ t('settings.advancedNote') }}</p>
     <div class="grid gap-4 sm:grid-cols-2">
-      <div v-for="f in advancedFields" :key="f.key">
+      <div v-for="f in advancedFields" :key="f.key" :class="{ 'sm:col-span-2': f.key === 'request_rate_limit' }">
         <label class="label" :for="`s-${f.key}`">{{ t(f.label) }}</label>
-        <input :id="`s-${f.key}`" v-model.number="form[f.key]" type="number" :step="f.step" :min="f.min" :max="f.max" class="field mono" />
+        <template v-if="f.key === 'request_rate_limit'">
+          <input :id="`s-${f.key}`" v-model.number="form[f.key]" type="number" :step="f.step" :min="f.min" :max="f.max" class="field mono" :class="{ 'field-warn': rateRisk }" aria-describedby="s-rate-hint" />
+          <p id="s-rate-hint" class="hint">{{ t('settings.rateLimitHint', { n: DEFAULT_RATE_LIMIT }) }}</p>
+          <p v-if="rateRisk" class="rate-warning" role="status" data-testid="rate-warning">
+            <AppIcon name="alert" :size="16" />{{ t(`settings.rateLimitWarn.${rateRisk}`, { n: DEFAULT_RATE_LIMIT }) }}
+          </p>
+        </template>
+        <input v-else :id="`s-${f.key}`" v-model.number="form[f.key]" type="number" :step="f.step" :min="f.min" :max="f.max" class="field mono" />
       </div>
       <div>
         <label class="label" for="s-log">{{ t('settings.logLevel') }}</label>
@@ -350,6 +372,24 @@ onMounted(load)
 </template>
 
 <style scoped>
+.field-warn {
+  border-color: var(--warn-fg);
+}
+.rate-warning {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.rate-warning svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
 .conn-facts {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);

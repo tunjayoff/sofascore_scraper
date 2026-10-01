@@ -305,7 +305,7 @@
     "season_data_not_found_for_league": "Season data not found for this league.",
     "season_number_to_view_matches": "Season number to view matches:",
     "settings_applied_runtime": "Settings saved successfully and applied immediately.",
-    "error_rate_limit_detected": "⚠  Rate limit / IP ban detected.\n\nRecommended actions:\n  1. Wait 30 minutes - 2 hours and retry\n  2. Lower MAX_CONCURRENT in .env (e.g. 5)\n  3. Increase WAIT_TIME_MIN and WAIT_TIME_MAX values\n  4. Use a different IP (mobile data, VPN, proxy)\n\nSuccessfully saved matches so far: {count}",
+    "error_rate_limit_detected": "⚠  Rate limit / IP ban detected.\n\nRecommended actions:\n  1. Wait 30 minutes - 2 hours and retry\n  2. Lower REQUEST_RATE_LIMIT in .env (default 5; if you raised it or turned it off, set it back)\n  3. Increase WAIT_TIME_MIN and WAIT_TIME_MAX values\n  4. Use a different IP (mobile data, VPN, proxy)\n\nSuccessfully saved matches so far: {count}",
     "fetch_zero_matches": "No matches for that season. Try another season.",
     "fetch_completed_with_warning": "Done, but some seasons had no matches.",
     "fetch_stopped_by_breaker": "Stopped early: too many requests to SofaScore failed ({reason}). No further requests were sent; wait a while and run it again.",

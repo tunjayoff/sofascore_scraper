@@ -3,12 +3,12 @@ Toplu indirme yolunun (fetch_matches_batch_async) istek hızını ağ olmadan ö
 
 SofaScore'a hiç istek atılmaz: tarayıcı köprüsü, sabit gecikmeli sahte bir taşıyıcıyla
 değiştirilir. Ölçülen şey, kodun kendi sınırlarının (MAX_CONCURRENT, istek sonrası
-WAIT_TIME_MIN/MAX beklemesi, 100'lük batch'ler arası 1 sn) izin verdiği istek hızıdır.
-REQUEST_RATE_LIMIT varsayılanı bu sayıya göre seçildi (bkz. src/throttle.py).
+WAIT_TIME_MIN/MAX beklemesi) ve ortak istek bütçesinin izin verdiği istek hızıdır.
+Varsayılan bütçe (5 istek/sn, bkz. src/throttle.py) bu tavanın bilerek çok altındadır.
 
 Kullanım:
-    python scripts/bench_bulk_rate.py                       # sınırlayıcı kapalı (bugünkü davranış)
-    python scripts/bench_bulk_rate.py --rate default        # varsayılan ortak bütçeyle
+    python scripts/bench_bulk_rate.py                       # sınırlayıcı kapalı (kodun kendi tavanı)
+    python scripts/bench_bulk_rate.py --rate default        # varsayılan ortak bütçeyle (5 istek/sn)
     python scripts/bench_bulk_rate.py --rate 20 --latency 0.2
 """
 from __future__ import annotations

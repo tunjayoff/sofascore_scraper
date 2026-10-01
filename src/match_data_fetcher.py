@@ -473,9 +473,7 @@ class MatchDataFetcher:
 
                 status_text = ", ".join([f"{v}x {k}" for k, v in batch_status_counts.items()]) if batch_status_counts else "hata yok"
                 logger.info(f"Batch {batch_idx+1}/{len(all_batches)}: {batch_success} başarılı, {batch_failed} başarısız ({status_text})")
-
-                if batch_idx < len(all_batches) - 1 and not breaker.tripped:
-                    await asyncio.sleep(1.0)
+                # Batch'ler arasında ayrıca beklenmez: hızı ortak istek bütçesi belirler (src/throttle.py)
 
         if progress_callback and total_m > 0 and not cancelled:
             progress_callback(total_m, total_m, "Parallel detail batches finished")
@@ -941,7 +939,9 @@ class MatchDataFetcher:
         should_cancel: Optional[Callable[[], bool]] = None,
     ) -> Dict[str, Any]:
         """
-        Yalnızca yenileme (refresh-only): sırayla, istekler arası bekleme ile.
+        Yalnızca yenileme (refresh-only): maçlar sırayla okunur. Hızı ortak istek bütçesi
+        (src/throttle.py) ve her istekten sonraki WAIT_TIME beklemesi belirler; maçlar arasında
+        ayrıca beklenmez.
 
         Devre kesilirse (SofaScore engelliyor / sürekli hata) kalan maçlar denenmez; sonuçta
         `breaker` (neden: "403" / "429" / "5xx" / "other") ve `skipped` (denenmeyen maç) alanları
@@ -974,8 +974,6 @@ class MatchDataFetcher:
                     stats["changed"] += int(self.last_refresh_changed)
                 if progress_callback:
                     progress_callback(idx + 1, n, f"Refresh {idx + 1}/{n}")
-                if idx < n - 1:
-                    time.sleep(1.0)
             if breaker.tripped:
                 stats.setdefault("breaker", breaker.reason())
                 stats.setdefault("skipped", 0)
@@ -1522,10 +1520,7 @@ class MatchDataFetcher:
 
                 if progress_callback and n > 0:
                     progress_callback(idx + 1, n, f"Match details {idx + 1}/{n}")
-
-                # Sabit kısa bekleme (SofaScore saniyede 5 isteğe izin veriyor)
-                if idx < n - 1:  # Son elemandan sonra bekleme yapma
-                    time.sleep(0.2)  # Saniyede 5 istek için
+                # Maçlar arasında ayrıca beklenmez: hızı ortak istek bütçesi belirler (src/throttle.py)
 
             self.rate_limit_breaker_triggered = breaker.tripped
             self.last_status_counts = breaker.counts()
@@ -2101,10 +2096,6 @@ class MatchDataFetcher:
                         logger.warning(f"{idx}. match_id={header_info.get('match_id')} error={header_info.get('error')}")
                 os.environ["APP_EXIT_CODE"] = "2"
                 break
-
-            # Her batch arasında kısa bir bekleme
-            if i + batch_size < len(match_ids_to_process):
-                time.sleep(1.0)
 
         # Genel başarı oranı
         success_rate = (total_success / total_attempts) * 100 if total_attempts > 0 else 0
