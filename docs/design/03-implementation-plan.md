@@ -31,10 +31,15 @@ and a brief that an implementer can work from without reading the other briefs.
 | P20 (part) | #43 | merged | the optional access token for every `/api/*` route; the rest of P20 is not started |
 | P25 (part) | #43 | merged | the Host allow-list is never widened; startup warning; both for `main.py --web`; the rest of P25 is not started |
 | EX-1 (part) | #43 | merged | `GET /api/export/csv` no longer creates a file; the rest of EX-1 is not started |
+| P05 | #48 | open | third batch, opened on 2026-10-01 |
+| ST-07 | #49 | open | third batch |
+| ST-10 | #50 | open | third batch |
 | (research) | #42 | merged | push-channel measurements; they settle what P24 waited for and are the basis of P31 |
 
-Every other item is not started, and no pull request of the plan is open. (#41, #43 and #47 were in review
-while this revision was written and were merged the same evening.) What this revision changed:
+Every other item is not started. #41, #43 and #47 were in review while this revision was written and were
+merged the same evening. The third batch (P05, ST-07, ST-10) was opened minutes before this revision; those
+three were written from the first version of their briefs, and what they found is not in this revision yet.
+What this revision changed:
 
 - **Owner decisions of 2026-10-01 on live watching** (`00-platform.md` sections 1 and 8). Live data is not part
   of the web UI and has no HTTP endpoint; `watch` is a CLI service that delivers to sinks. Live has two
@@ -57,10 +62,11 @@ while this revision was written and were merged the same evening.) What this rev
 
 ## 1. Before anything else
 
-Nothing the plan waits for is open. The three pull requests the first version of this plan waited for (#24,
-#23 and #32) are merged, and so are the three that were in review while this revision was written: #41 (G-04),
-#47 (ST-04) and #43 (web security hardening). The gate "after open PRs" no longer exists. What the last three
-mean for every pull request from now on:
+The three pull requests the first version of this plan waited for (#24, #23 and #32) are merged, and so are
+the three that were in review while this revision was written: #41 (G-04), #47 (ST-04) and #43 (web security
+hardening). The gate "after open PRs" no longer exists. Three plan items of the third batch are in review:
+P05 (#48), ST-07 (#49) and ST-10 (#50); they own disjoint files and none of them touches a file of the items
+that can start now (section 5). What #41, #47 and #43 mean for every pull request from now on:
 
 - **#41 (G-04).** A pull request that changes a route signature, a docstring, a response model or the FastAPI
   and pydantic pins regenerates `tests/snapshots/openapi-legacy.json` (section 7) and lists the differences.
@@ -72,7 +78,7 @@ mean for every pull request from now on:
   three route modules (`api.py`, `data.py`, `leagues.py`), `tests/conftest.py`, both locale files, the
   frontend, the Docker files and the four export goldens of G-02, and it added `src/private_files.py`,
   `src/web/security.py` and `src/web/routes/auth.py`. The briefs of the items that own or pin those files
-  (G-03, P05, P09, ST-10 and FX-6, which can start now, and P08 behind P05) cite line numbers from before it.
+  (G-03, P05, P08, P09, ST-10 and FX-6) cite line numbers from before it.
 
 Open pull requests that are not plan work: the dependency updates #27 to #31. #31 changes `constraints.txt`,
 which P09 owns, and a FastAPI or pydantic bump changes the legacy OpenAPI snapshot. #30 raises vue-i18n from 9
@@ -392,20 +398,20 @@ flowchart TD
 **Merged.** The table "Status" at the top. The first batch (G-01, G-02, ST-02, ST-03, P07) and the second
 (G-04, ST-04, ST-05, ST-06, ST-09) are done, and X-01, X-02 and X-03 were done outside their briefs.
 
-**Can start now and in parallel.** Every dependency of these eight is merged, and they own disjoint files:
+**In review.** P05 (#48), ST-07 (#49) and ST-10 (#50), the third batch.
+
+**Can start now and in parallel.** Every dependency of these five is merged, they own disjoint files, and
+none of their files is touched by the three pull requests in review:
 
 - **G-03** test: CLI goldens for today's main.py flags (M; lane `goldens-fetch`)
-- **P05** client: one Client facade over the request layer (M; lane `fetcher`)
 - **P09** config: Settings model and loader (M; lane `config`)
-- **ST-07** store: indexer for events and slices; rebuild and verify (L; lane `store`)
-- **ST-10** store: leases and the Store facade; writer lease for jobs and CLI (M; lane `state`)
 - **FX-4** store: file mode of payload files and lower-case sub names (S; lane `fix-files`; needs decisions S12
   and S13 confirmed)
 - **FX-6** throttle: cancelled work returns its reservations (S; lane `fix-throttle`; decision D14 for its
   burst part)
 - **FX-2** web: small defects of the status and settings routes (S; lane `fix-web`)
 
-G-03, P05, P09, ST-10 and FX-6 own or pin files that #43 changed after their briefs were written (section 1).
+G-03, P09 and FX-6 own or pin files that #43 changed after their briefs were written (section 1).
 
 **Readiness levels.** A pull request of level *n* can start when its dependencies, all of a lower level, are
 merged. Pull requests on the same level can run in parallel; pull requests in the same lane are sequential.
@@ -555,9 +561,9 @@ are merged. "—" means not started. Lanes order the work that is still to do.
 | 15 | ST-09 | store: state.db, migration runner, job store on it | `state` | ST-03 | L | 3 | merged #44 | none |
 | 15a | FX-2 | web: small defects of the status and settings routes | `fix-web` | G-04, ST-09 | S | 3 | — | **yes** |
 | 15b | FX-4 | store: file mode of payload files and lower-case sub names | `fix-files` | ST-03 | S | 3 | — | **yes** |
-| 16 | P05 | client: one Client facade over the request layer | `fetcher` | G-01, ST-02 | M | 3 | — | **yes** |
-| 17 | ST-07 | store: indexer for events and slices; rebuild and verify | `store` | ST-05, ST-06 | L | 3 | — | none |
-| 18 | ST-10 | store: leases and the Store facade; writer lease for jobs and CLI | `state` | ST-06, ST-09 | M | 3 | — | **yes** |
+| 16 | P05 | client: one Client facade over the request layer | `fetcher` | G-01, ST-02 | M | 3 | open #48 | **yes** |
+| 17 | ST-07 | store: indexer for events and slices; rebuild and verify | `store` | ST-05, ST-06 | L | 3 | open #49 | none |
+| 18 | ST-10 | store: leases and the Store facade; writer lease for jobs and CLI | `state` | ST-06, ST-09 | M | 3 | open #50 | **yes** |
 | 18a | FX-1 | web: the single-match fetch reports a blocked upstream | `fix-route` | G-01, P05, ST-10 | S | 3 | — | **yes** |
 | 18b | FX-3 | store: one SQLite connection module for catalog.py and state.py | `fix-sqlite` | ST-10 | S | 3 | — | none |
 | 19 | P08 | services: SyncService carrying today's web flow; web stops importing the terminal UI | `services` | G-01, G-02, P05, P07 | M | 3 | — | none |
@@ -835,6 +841,7 @@ Two findings of ST-03 that must be settled before the v3 writer (ST-20) produces
 - Depends on: G-01, ST-02.
 - Owns: `src/client/__init__.py`, `src/client/transport.py`, `src/client/context.py`, `src/client/endpoints.py`, `src/utils.py`, `src/bridge_health.py`, `src/match_data_fetcher.py`, `src/match_fetcher.py`, `src/season_fetcher.py`, `src/watcher.py`, `src/web/routes/leagues.py`, `tests/test_client.py`, `tests/fakes/sofascore.py` (the module lists only).
 - Behaviour change: `API_BASE_URL` now applies to every request (today only to relative URLs); otherwise none.
+- State: open, PR #48. It was written from the first version of this brief, before the notes below existed; what it found is not in this revision.
 
 Add `src/client` as in `docs/design/02-services.md` section 2.4: Client.get / `get_sync` returning the Outcome of `src/slices.py`, `request_context`, `endpoints.py` with every URL template. Move the bodies of `make_api_request`, `_request_sync`, `_request_async` and the ContextVars from `src/utils.py` into `src/client/transport.py` and `context.py`; `src/utils.py` keeps thin re-exports so existing imports and tests keep working. Replace the four hard-coded base URLs (`src/match_data_fetcher.py:519`, `src/season_fetcher.py:35`, `src/watcher.py:32`, `src/web/routes/leagues.py:54`) with endpoints plus one `base_url`; touch only those lines in those files. Add an `on_health_change` callback to the bridge health; the client writes nothing under `DATA_DIR`. Map the silent None at the end of the async body (`src/utils.py:624`) to a failed outcome. The G-01 goldens stay green.
 
@@ -846,6 +853,7 @@ Notes from earlier items. (ST-02) Build outcomes with `src.slices.Outcome(...)` 
 - Depends on: ST-05, ST-06.
 - Owns: `src/store/indexer.py`, `src/store/verify.py`, `scripts/catalog_tool.py`, `tests/test_store_indexer.py`, `tests/golden/catalog/*`.
 - Behaviour change: none (nothing in the application reads the catalog yet).
+- State: open, PR #49. It was written from the first version of this brief, before the notes below existed; what it found is not in this revision.
 
 Add `src/store/indexer.py`: build events, `event_slices`, participants, `event_participants` and tournament/season rows from event payloads, for v3 directories and all legacy forms, with the v3-over-legacy precedence (`docs/design/01-storage.md` sections 3.4 and 5.2). Add CatalogAdmin.rebuild in both modes (in place, recreate) and the quick verify of section 3.6 (`src/store/verify.py`). Add `scripts/catalog_tool.py` (rebuild, verify, stats) for manual use. Tests: golden catalog rows for each fixture directory of G-02; rebuilding twice gives identical rows; a corrupt payload is reported and does not abort; an event present in both layouts resolves to v3 with `legacy_path` set; an in-place rebuild is invisible to a concurrent reader until commit.
 
@@ -857,6 +865,7 @@ Notes from earlier items. (ST-06) Open the catalog with `cat = Catalog(catalog.c
 - Depends on: ST-06, ST-09.
 - Owns: `src/store/lease.py`, `src/store/api.py`, `src/store/__init__.py`, `src/store/jobs.py`, `src/web/routes/matches.py`, `main.py`, `locales/en.json`, `locales/tr.json`, `tests/test_store_lease.py`, `tests/test_store_open.py`, `src/store/state.py`, `src/web/jobs.py`.
 - Behaviour change: A second process that wants to write the same data directory is refused: the web API answers 409 with code `job_running`, the CLI prints who holds the lease and exits non-zero. Today both would run and write the same files. Two `--watch` processes for the same sport on one directory are refused as well.
+- State: open, PR #50. It was written from the first version of this brief, before the notes below existed; what it found is not in this revision.
 
 Add `src/store/lease.py` (OS file locks under `DATA_DIR/.meta/locks`, the shared/exclusive scheme and the lease table of `docs/design/01-storage.md` section 6.1, the unclean marker) and `src/store/api.py` (`open_store`, per-directory registry, Store.info, `schema.json` creation and checks of section 7.1). Export the facade from `src/store/__init__.py`. Implement JobStore.exclusive and `create_running` with the leases so their interface and error classes do not change. In `main.py` take the writer lease for headless runs and `--refresh-only` and the `watcher:<sport>` lease for `--watch`. In `src/web/routes/matches.py` change only the guard of the single-match fetch (:471-476) so that it is also refused while another process holds the writer lease. Two-process tests: second writer gets LeaseHeld with holder info; the lease is free after SIGKILL; maintenance excludes writer and watcher and the reverse. They must pass on Linux, macOS and Windows in CI.
 

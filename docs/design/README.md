@@ -57,6 +57,6 @@ As of 2026-10-01 (details and pull request numbers in the "Status" section at th
   (ST-05), the catalog schema (ST-06), the state database with the job store on it (ST-09), and outside the
   plan's briefs the 5 requests per second default (X-01), English by default (X-02) and the web security
   hardening, which covers X-03 and parts of P20, P25 and EX-1.
-- Open: no pull request of the plan.
-- Can start now: G-03, P05, P09, ST-07, ST-10, FX-2, FX-4, FX-6.
+- In review: the client facade (P05), the indexer (ST-07), leases and the Store facade (ST-10).
+- Can start now: G-03, P09, FX-2, FX-4, FX-6.
 - Nothing reads the catalog yet; the on-disk layout is unchanged.
