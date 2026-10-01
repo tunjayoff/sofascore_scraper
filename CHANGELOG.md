@@ -137,6 +137,17 @@ section is what the first tagged release will contain.
 - Research notes on SofaScore's data: status taxonomy and finish lag
   (`docs/status-matrix/`, #8) and an overview of all sports (`docs/all-sports/`, #17).
 - Web app screenshots in the READMEs.
+- A command line for servers and automation next to `main.py`:
+  `python -m src.cli.main <command>`, or `ssc <command>` after `pip install -e .`. Commands so
+  far: `version`, `doctor`, `describe`, `config show|validate|init|path` and `diagnostics`. The
+  result goes to stdout (`--json` prints one JSON document), logs and errors go to stderr, and
+  the exit codes are fixed: 0 success, 1 error, 2 usage or configuration error, 3 partial
+  success, 4 SofaScore is blocking, 5 storage error, 6 another instance is running. Downloading
+  and the web app are still started with `main.py` (#65).
+- `ssc doctor` warns when the request budget is above the default of 5 requests per second or
+  turned off (#65).
+- `ssc config init` prints a starter `sofascore.toml`; `ssc config init --from-legacy` prints
+  the equivalent of today's `.env` and `config/leagues.txt` (#65).
 
 ### Changed
 
@@ -259,10 +270,11 @@ section is what the first tagged release will contain.
 - **Store layer: file modes and sub names.** Payload files, manifests and `.meta/schema.json`
   written by the new Store layer get the mode the process umask gives (0644 with the usual umask
   022) instead of 0600, so a Docker bind mount read by another user, or a backup tool running
-  under another account, can read the data. Files written by today's code keep mode 0600, and
-  `.env` and the browser profile stay private. Slice sub names are lower-case only
-  (`[a-z0-9_.-]`), because Windows and default macOS file systems do not distinguish case.
-  Nothing in the application writes through the Store layer yet (FX-4, #53).
+  under another account, can read the data. Files written by today's code keep mode 0600, except
+  `watch_state_<sport>.json`, and `.env` and the browser profile stay private. Slice sub names
+  are lower-case only (`[a-z0-9_.-]`), because Windows and default macOS file systems do not
+  distinguish case. Since #59, `--watch` writes `watch_state_<sport>.json` through the Store's
+  writer, so that one file follows the umask: 0644 with umask 022 (#53).
 - League search in the web app now follows `API_BASE_URL` like every other request. It was
   the one request that still went to `https://www.sofascore.com/api/v1` whatever the setting
   said. With the default setting nothing changes (#57).
@@ -274,6 +286,25 @@ section is what the first tagged release will contain.
   `watch_state_<sport>.json` are still written; the state file is now a copy that is read only
   once, on the first run after the upgrade. On Windows `watch_events.jsonl` now gets LF line
   endings like every other data file (#59).
+- Headless runs (`--headless --update-all`, with or without `--league-id` and `--fetch-mode`)
+  now run the same flow as a download started in the web app. The terminal menu's banners are
+  gone from the output; a run ends with one summary line
+  (`Download finished. Matches that needed details: …`), and seasons whose match list came back
+  empty or could not be fetched are counted and reported on stderr. A league whose season list
+  cannot be fetched is asked once per run instead of twice. The data files are the same.
+  `--headless --csv-export` prints only the result line (#64).
+- Only one process writes to a data folder at a time, on the command line too:
+  `--headless --update-all`, `--refresh-only` and `--recheck-unavailable` do not start while a
+  download runs in the web app or in another such run. They print who holds the lock (process
+  id, host, purpose, since when) and exit with code **6**. A second `--watch` for the same sport
+  on the same data folder is refused the same way. `--headless --csv-export` on its own is not
+  affected. These runs create `.meta/` in the data folder, as the web app does (#64).
+- Exit codes of headless runs are otherwise unchanged, with two exceptions: an unexpected error
+  while fetching match details ends the run with exit code 1 instead of being logged and
+  ignored, and an `APP_EXIT_CODE` variable in the environment no longer overrides the exit code
+  (#64).
+- The warnings the logger prints to stderr (invalid `LOG_LEVEL`, log file cannot be opened or
+  written) are in English (#65).
 
 ### Fixed
 
@@ -358,6 +389,11 @@ section is what the first tagged release will contain.
   Requests that are cancelled before they are sent now give their slot back (#58).
 - A request that is waiting for its turn inside the browser bridge now stops within a quarter of
   a second when its job is stopped. It used to wait until its turn came (#58).
+- Fetching a single match from the web UI now says why it failed when SofaScore refused the
+  request (blocked, rate limited, network, unexpected answer) instead of "Match data could not
+  be fetched", and no longer reports success when every detail request was refused (#60).
+- A single-match fetch is refused (409 `job_running`) while another process is downloading into
+  the same data directory, not only while a job of the same server runs (#60).
 
 ### Removed
 
