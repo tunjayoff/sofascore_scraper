@@ -48,6 +48,9 @@ def test_dockerfile_runs_as_non_root_with_healthcheck_and_volumes():
     # Web arayüzü Node aşamasında derlenip kopyalanır; çalışma imajında Node yoktur
     assert any(ln.startswith("COPY --from=frontend") and "frontend/dist" in ln for ln in final_stage)
     assert any(ln.startswith("ENTRYPOINT ") and "sofascore-entrypoint" in ln for ln in final_stage)
+    # Paketler CI'ın test ettiği sabit sürümlerle kurulur
+    assert any(ln.startswith("COPY ") and "requirements.txt" in ln and "constraints.txt" in ln for ln in final_stage)
+    assert any("pip install -r requirements.txt -c constraints.txt" in ln for ln in final_stage)
 
 
 def test_dockerignore_is_an_allowlist_without_user_state():
@@ -56,7 +59,9 @@ def test_dockerignore_is_an_allowlist_without_user_state():
     ]
     assert patterns[0] == "*", "everything is excluded unless allowed"
     allowed = {p[1:].rstrip("/") for p in patterns if p.startswith("!")}
-    for needed in ("pyproject.toml", "requirements.txt", "main.py", "src", "locales", "frontend", "docker", "LICENSE"):
+    for needed in (
+        "pyproject.toml", "requirements.txt", "constraints.txt", "main.py", "src", "locales", "frontend", "docker", "LICENSE",
+    ):
         assert needed in allowed
     # Kullanıcı durumu ve yerel çıktılar imaja/bağlama girmemeli
     for forbidden in (".env", "data", "config", "config/leagues.txt", "config/league_sports.json", ".git", ".venv"):
@@ -86,4 +91,17 @@ def test_compose_publishes_on_localhost_only():
     ports = re.findall(r'^\s*-\s*"?([0-9.:\[\]a-fA-F]*\d+:\d+)"?\s*(?:#.*)?$', text, flags=re.M)
     assert ports == ["127.0.0.1:8000:8000"], "the web app has no login; the example must not expose it to the network"
     assert "shm_size" in text
+
+
+def test_compose_keeps_every_image_volume_in_a_named_volume():
+    """İmajın VOLUME dizinleri (log dosyası dahil) Compose'da adlandırılmış volume'da durur, anonim volume'da değil."""
+    compose = "\n".join(ln for ln in _read("docker-compose.yml").splitlines() if not ln.lstrip().startswith("#"))
+    mounts = dict(re.findall(r"^\s*-\s*([a-z][a-z0-9-]*):(/app/[a-z-]+)\b", compose, flags=re.M))
+    declared = set(re.findall(r"^  ([a-z][a-z0-9-]*):\s*$", compose.split("\nvolumes:\n", 1)[1], flags=re.M))
+    image_volumes = re.findall(r'"(/app/[a-z-]+)"', next(
+        ln for ln in _instructions(_read("Dockerfile")) if ln.startswith("VOLUME ")
+    ))
+    assert sorted(image_volumes) == ["/app/browser-profile", "/app/config", "/app/data", "/app/logs"]
+    assert sorted(mounts.values()) == sorted(image_volumes)
+    assert set(mounts) == declared
 

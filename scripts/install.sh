@@ -106,8 +106,9 @@ if ! python -m pip install --upgrade pip >/dev/null; then
   exit 1
 fi
 
-if ! pip install -r requirements.txt; then
-  echo "Hata: pip install -r requirements.txt başarısız. Derleyici / SSL / ağ hatası olabilir; çıktıyı yukarıda kontrol edin." >&2
+# constraints.txt: CI'ın test ettiği, birlikte çalıştığı bilinen tam sürümler (dolaylı bağımlılıklar dahil)
+if ! pip install -r requirements.txt -c constraints.txt; then
+  echo "Hata: pip install -r requirements.txt -c constraints.txt başarısız. Derleyici / SSL / ağ hatası olabilir; çıktıyı yukarıda kontrol edin." >&2
   exit 1
 fi
 

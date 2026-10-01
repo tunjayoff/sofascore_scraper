@@ -61,6 +61,7 @@ Bu proje SofaScore ile bağlantılı değildir. İstek hızına dikkat edin ve i
 ## Gereksinimler
 
 - Python **3.10+** (önerilen: 3.11+).
+- **Platformlar:** Resmî olarak desteklenen platformlar Linux ve Docker'dır; Windows ve macOS elden geldiğince desteklenir (kurulum betikleri, başlatıcılar ve CI onları da kapsar, ama yalnızca orada görülen bir sorun sürüm yayımlamayı engellemez).
 - **patchright için Chromium** — uygulamanın SofaScore'a eriştiği tarayıcı. Kurulum betikleri ve başlatıcı bir kez indirir (`python -m patchright install chromium --no-shell`). Bilgisayarda kurulu Google Chrome ya da Chromium **kullanılmaz**.
 - **Node.js 20.19+ veya 22.12+ ve npm** — web uygulamasını (`frontend/`) derlemek için. Node.js kuruluysa kurulum betikleri ve `scripts/start_web.py` kendisi derler. Node.js yoksa terminal modları yine çalışır; web adresi uygulama yerine bir yardım sayfası gösterir.
 - **Git** — `curl | bash` ile tek satır kurulum için gerekli (depoyu klonlar); elle indiriyorsanız isteğe bağlı.
@@ -169,7 +170,7 @@ Bilinmesi gerekenler:
 - **Paylaşımlı bellek:** Chromium, Docker’ın 64 MB’lık varsayılanından fazlasına ihtiyaç duyar; `--shm-size=1g` (Compose’da `shm_size`) bunun içindir.
 - **Klasör bağlama** (`-v ./data:/app/data`), klasör uid 1000 tarafından yazılabiliyorsa çalışır: `mkdir -p data config && sudo chown -R 1000:1000 data config`. Başka bir uid için imajı `--build-arg APP_UID=$(id -u) --build-arg APP_GID=$(id -g)` ile derleyin.
 - **Diğer komutlar:** imaj adından sonraki argümanlar `main.py`’ye gider; ör. `docker run --rm ghcr.io/tunjayoff/sofascore_scraper:latest --version` ya da aynı volume’larla zamanlanmış bir indirme: `docker compose run --rm sofascore-scraper --headless --update-all`. Tarayıcı profilini aynı anda tek konteyner kullanabilir; bu şekilde indirme başlatmadan önce web konteynerini durdurun (`docker compose stop`). Profil meşgulken başlatılan ikinci konteyner uyarı yazar ve tarayıcısını açamaz.
-- **Güncelleme:** `docker compose pull && docker compose up -d`. Veri, yapılandırma ve tarayıcı profili volume’larda kalır.
+- **Güncelleme:** `docker compose pull && docker compose up -d`. Veri, yapılandırma, tarayıcı profili ve log dosyaları volume’larda kalır.
 
 ### Sürüm arşivi
 
@@ -182,7 +183,7 @@ git clone https://github.com/tunjayoff/sofascore_scraper.git
 cd sofascore_scraper
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements.txt -c constraints.txt   # constraints.txt: CI'ın test ettiği tam sürümler
 python -m patchright install chromium --no-shell   # zorunlu: uygulamanın kullandığı tarayıcı
 ```
 
@@ -547,7 +548,7 @@ Her şey tarayıcının challenge'ı çözmesine bağlı. Bu bozulduğunda işle
 [Docker imajı](#docker) tarayıcıyı ve sistem kütüphanelerini zaten içerir. Düz bir Linux sunucuda ya da kendi imajınızda:
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt -c constraints.txt
 python -m patchright install chromium --no-shell
 # Yalnızca Debian/Ubuntu, bir kez: Chromium'un sistem kütüphaneleri (sudo kullanır)
 python -m patchright install-deps chromium
@@ -574,7 +575,7 @@ npm run build    # tip kontrolü (vue-tsc) + frontend/dist/ içine üretim derle
 
 Yapı: `src/views/` her sayfa bir dosya, `src/components/` ortak parçalar, `src/stores/` (ligler, spor filtresi, çalışan iş), `src/api/client.ts` bütün backend çağrıları, `src/locales/{tr,en}.ts` bütün arayüz metinleri.
 
-Testler ve lint (CI aynısını Linux’ta Python 3.10 ve 3.14 ile, Windows ve macOS’ta Python 3.14 ile çalıştırır):
+Testler ve lint (CI aynısını Linux’ta Python 3.10 ve 3.14 ile çalıştırır; Python 3.14 ile çalışan Windows ve macOS işleri elden geldiğince desteklenir: sonuçlarını bildirir ama bir pull request’i ya da sürümü engellemez):
 
 ```bash
 pip install -r requirements-dev.txt -c constraints.txt
@@ -583,7 +584,7 @@ python -m pytest -q
 python -m pytest -q --cov   # kapsam ölçümüyle; pyproject.toml’daki tabanın altında başarısız olur
 ```
 
-`requirements.txt` izin verilen sürüm aralıklarını listeler; `constraints.txt` her paketi (dolaylı olanlar dahil) birlikte çalıştığı bilinen sürümlere sabitler. CI her zaman bu sabitlerle kurar, böylece yeni çıkan bir paket sürümü CI’ı habersizce bozamaz; haftalık bir iş akışı bunun yerine izin verilen en yeni sürümleri kurup aynı testleri çalıştırır, Dependabot da sabitler için güncelleme önerir.
+`requirements.txt` izin verilen sürüm aralıklarını listeler; `constraints.txt` her paketi (dolaylı olanlar dahil) birlikte çalıştığı bilinen sürümlere sabitler. CI, kurulum betikleri, başlatıcı ve Docker imajı hep bu sabitlerle kurar, böylece yeni çıkan bir paket sürümü ne CI’ı ne de yeni bir kurulumu habersizce bozabilir; haftalık bir iş akışı bunun yerine izin verilen en yeni sürümleri kurup aynı testleri çalıştırır, Dependabot da sabitler için güncelleme önerir.
 
 `tests/conftest.py`, `DATA_DIR`, `config/` ve `.env`’i küçük sentetik bir veri setiyle geçici bir klasöre yönlendirir; testler verinize ve ayarlarınıza hiç dokunmaz. SofaScore’a istek atan testler `live` olarak işaretlidir ve varsayılan olarak atlanır; çalıştırmak için `python -m pytest -m live`. `browser` işaretli testler gerçek bir Chromium başlatır ve onlar da varsayılan olarak atlanır: `python -m pytest -m "browser and not live"` BrowserBridge’i SofaScore’a hiç istek atmadan yerel bir sahte siteye karşı çalıştırır (CI bunu her push’ta yapar).
 

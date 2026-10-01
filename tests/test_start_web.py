@@ -5,6 +5,7 @@ tarayıcısını kurar. Hiçbir test gerçek kurulum, sunucu ya da tarayıcı ba
 from __future__ import annotations
 
 import importlib.util
+import re
 from pathlib import Path
 
 import pytest
@@ -70,7 +71,7 @@ def test_missing_packages_then_missing_browser_are_fixed_in_order(launcher):
     fixes = []
     assert launcher._preflight(PY, run_doctor=run_doctor, run_fix=lambda cmd: fixes.append(cmd) or 0) is True
     assert fixes == [
-        [str(PY), "-m", "pip", "install", "-r", "requirements.txt"],
+        [str(PY), "-m", "pip", "install", "-r", "requirements.txt", "-c", "constraints.txt"],
         doctor.browser_install_command(str(PY)),
     ]
     assert run_doctor.calls == 3
@@ -193,6 +194,29 @@ def test_installers_and_readme_install_the_browser_the_bridge_uses(name):
     # Eski, yanlış iddia: "Chrome kuruluysa gerekmez / yine çalışır"
     for claim in ("Google Chrome varsa yine çalışır", "only needed if Google Chrome", "yalnızca Google Chrome kurulu değilse"):
         assert claim not in text
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "scripts/install.sh",
+        "scripts/install.ps1",
+        "scripts/start_web.py",
+        "Dockerfile",
+        "README.md",
+        "README.tr.md",
+        ".github/workflows/ci.yml",
+    ],
+)
+def test_every_install_uses_the_constraints_file(name):
+    """Paketler her yerde CI'ın test ettiği sabit sürümlerle kurulur (constraints.txt)."""
+    text = (REPO / name).read_text(encoding="utf-8-sig")
+    # "pip install -r requirements[-dev].txt" (kabuk) ve ["pip", "install", "-r", "requirements.txt"] (Python)
+    installs = re.findall(r"pip\W{1,6}install\W{1,6}-r\W{1,6}requirements(?:-dev)?\.txt[^\n]*", text)
+    assert installs, f"{name} has no pip install line"
+    for line in installs:
+        assert "constraints.txt" in line, line
+    assert (REPO / "constraints.txt").is_file()
 
 
 def test_nothing_else_tells_users_to_run_playwright_install():

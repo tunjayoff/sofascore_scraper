@@ -88,7 +88,9 @@ jobs:
               print(f"  {name}: {old} -> {new}")
           EOF
       - run: python -m pytest -q -rfExX
-      - run: python -m playwright install chromium
+      # patchright's Chromium, as the installers do: with unpinned versions playwright and patchright
+      # can differ, and playwright's installer would then fetch a build the bridge does not start
+      - run: python -m patchright install chromium --no-shell
         timeout-minutes: 5
       - name: Browser bridge against the local fake site
         run: python -m pytest -q -rfExX -m "browser and not live"

@@ -5,6 +5,7 @@
 
 !pyproject.toml
 !requirements.txt
+!constraints.txt
 !main.py
 !LICENSE
 !README.md

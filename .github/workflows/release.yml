@@ -40,9 +40,10 @@ jobs:
       - name: CHANGELOG.md has a section for this version
         run: python scripts/release.py notes
 
-  # The CI workflow itself (frontend lint/test/build; ruff + pytest on Linux 3.10 and 3.14,
-  # Windows and macOS; the offline browser-bridge test);
-  # it also uploads the built web app as the `frontend-dist` artifact used below.
+  # The CI workflow itself (frontend lint/test/build; ruff + pytest on Linux 3.10 and 3.14; the
+  # offline browser-bridge test). Its Windows and macOS jobs are best-effort: they run and report,
+  # but they are `continue-on-error` in ci.yml, so a failure there does not stop the release.
+  # It also uploads the built web app as the `frontend-dist` artifact used below.
   checks:
     needs: verify
     uses: ./.github/workflows/ci.yml

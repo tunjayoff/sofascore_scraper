@@ -115,7 +115,8 @@ def _auto_fixes(py: Path) -> Dict[str, Any]:
     return {
         "packages_missing": (
             "Installing Python packages…",
-            [str(py), "-m", "pip", "install", "-r", "requirements.txt"],
+            # constraints.txt: the exact versions CI tests (same command as the installers)
+            [str(py), "-m", "pip", "install", "-r", "requirements.txt", "-c", "constraints.txt"],
         ),
         "browser_missing": (
             "Installing the browser the app drives (patchright's Chromium; a one-time download)…",

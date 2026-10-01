@@ -61,6 +61,7 @@ The web app with two football leagues downloaded. The images follow your GitHub 
 ## Requirements
 
 - Python **3.10+** (3.11+ recommended).
+- **Platforms:** Linux and Docker are the officially supported platforms; Windows and macOS are best-effort (the installers, launchers and CI cover them, but a problem that only occurs there does not block a release).
 - **Chromium for patchright** — the browser the app reaches SofaScore through. A one-time download made by the install scripts and by the launcher (`python -m patchright install chromium --no-shell`). A Google Chrome or Chromium already on the machine is **not** used.
 - **Node.js 20.19+ or 22.12+ and npm** — to build the web app (`frontend/`). The install scripts and `scripts/start_web.py` build it when Node.js is installed. Without it the terminal modes still work, and the web address shows a help page instead of the app.
 - **Git** — required for the one-line `curl | bash` installer (clones this repo); optional if you already extracted or cloned the project manually.
@@ -171,7 +172,7 @@ Things to know:
 - **Shared memory:** Chromium needs more than Docker's 64 MB default, hence `--shm-size=1g` (`shm_size` in Compose).
 - **Bind mounts** (`-v ./data:/app/data`) work when the folder is writable by uid 1000: `mkdir -p data config && sudo chown -R 1000:1000 data config`. To use another uid, build with `--build-arg APP_UID=$(id -u) --build-arg APP_GID=$(id -g)`.
 - **Other commands:** arguments after the image name go to `main.py`, for example `docker run --rm ghcr.io/tunjayoff/sofascore_scraper:latest --version`, or a scheduled download with the same volumes: `docker compose run --rm sofascore-scraper --headless --update-all`. The browser profile can be used by one container at a time, so stop the web container (`docker compose stop`) before running a download this way; a second container on a busy profile logs a warning and cannot open its browser.
-- **Updating:** `docker compose pull && docker compose up -d`. Data, configuration and the browser profile stay in their volumes.
+- **Updating:** `docker compose pull && docker compose up -d`. Data, configuration, the browser profile and the log files stay in their volumes.
 
 ### Release archive
 
@@ -184,7 +185,7 @@ git clone https://github.com/tunjayoff/sofascore_scraper.git
 cd sofascore_scraper
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements.txt -c constraints.txt   # constraints.txt: the exact versions CI tests
 python -m patchright install chromium --no-shell   # required: the browser the app drives
 ```
 
@@ -558,7 +559,7 @@ Everything depends on the browser solving the challenge. When that stops working
 The [Docker image](#docker) already contains the browser and its system libraries. On a plain Linux server, or in an image of your own:
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt -c constraints.txt
 python -m patchright install chromium --no-shell
 # Debian/Ubuntu only, once: system libraries Chromium needs (uses sudo)
 python -m patchright install-deps chromium
@@ -585,7 +586,7 @@ npm run build    # type-check (vue-tsc) + production build into frontend/dist/
 
 Layout: `src/views/` one file per page, `src/components/` shared pieces, `src/stores/` (leagues, sport filter, running job), `src/api/client.ts` every backend call, `src/locales/{tr,en}.ts` all UI text.
 
-Tests and lint (CI runs the same on Linux with Python 3.10 and 3.14, and on Windows and macOS with Python 3.14):
+Tests and lint (CI runs the same on Linux with Python 3.10 and 3.14; the Windows and macOS jobs, with Python 3.14, are best-effort: they report their result but do not block a pull request or a release):
 
 ```bash
 pip install -r requirements-dev.txt -c constraints.txt
@@ -594,7 +595,7 @@ python -m pytest -q
 python -m pytest -q --cov   # with coverage; fails below the floor set in pyproject.toml
 ```
 
-`requirements.txt` lists the allowed version ranges; `constraints.txt` pins every package (indirect ones too) to versions that are known to work together. CI always installs with the constraints, so a new upstream release cannot break it unnoticed; a weekly workflow installs the newest allowed versions instead and runs the same tests, and Dependabot proposes updates to the pins.
+`requirements.txt` lists the allowed version ranges; `constraints.txt` pins every package (indirect ones too) to versions that are known to work together. CI, the install scripts, the launcher and the Docker image all install with the constraints, so a new upstream release cannot break CI or a fresh install unnoticed; a weekly workflow installs the newest allowed versions instead and runs the same tests, and Dependabot proposes updates to the pins.
 
 `tests/conftest.py` points `DATA_DIR`, `config/` and `.env` at a temporary folder with a small synthetic data set, so the suite never touches your data or settings. Tests that call SofaScore are marked `live` and skipped by default; run them with `python -m pytest -m live`. Tests marked `browser` start a real Chromium and are skipped by default too: `python -m pytest -m "browser and not live"` runs the BrowserBridge against a local fake site without contacting SofaScore (CI does this on every push).
 

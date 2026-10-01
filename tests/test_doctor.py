@@ -72,6 +72,24 @@ def test_packages_missing_names_the_pip_packages_and_the_fix(make_ctx):
     assert set(res.detail["missing"]) == {"patchright", "python-dotenv"}
 
 
+def test_packages_fix_installs_with_the_constraints_file_when_there_is_one(make_ctx):
+    ctx = make_ctx(python="/venv/bin/python")
+    (ctx.root / "constraints.txt").write_text("rich==15.0.0\n", encoding="utf-8")
+    expected = [
+        "/venv/bin/python", "-m", "pip", "install",
+        "-r", str(ctx.root / "requirements.txt"), "-c", str(ctx.root / "constraints.txt"),
+    ]
+    assert doctor.pip_install_command(ctx) == expected
+
+    def nothing_installed(name):
+        raise ImportError(name)
+
+    res = doctor.check_packages(ctx, import_module=nothing_installed)
+    assert res.fix_command == expected and "constraints.txt" in res.fix
+    # Gerçek depo: kısıt dosyası var, doctor'ın önerdiği komut onu kullanır
+    assert doctor.pip_install_command(Context(root=REPO, environ={}))[-2:] == ["-c", str(REPO / "constraints.txt")]
+
+
 def test_packages_broken_install_counts_as_missing(make_ctx):
     def fake_import(name):
         if name == "pandas":

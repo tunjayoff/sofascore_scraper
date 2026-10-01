@@ -31,6 +31,7 @@ services:
       - data:/app/data # downloaded seasons, matches, details, backups, job history
       - config:/app/config # leagues.txt, league_sports.json and .env (settings saved in the UI)
       - browser-profile:/app/browser-profile # solved challenge; makes restarts fast
+      - logs:/app/logs # rotating log file (the same lines also go to stdout: docker compose logs)
       # To keep the files in folders next to this file instead, replace the two lines above
       # with bind mounts. The container runs as uid 1000, so the folders must be writable
       # by it: mkdir -p data config && sudo chown -R 1000:1000 data config
@@ -41,3 +42,4 @@ volumes:
   data:
   config:
   browser-profile:
+  logs:

@@ -113,9 +113,10 @@ if ($LASTEXITCODE -ne 0) {
     throw "pip güncellenemedi — proxy / ağ kontrol edin."
 }
 
-& $pip install -r requirements.txt
+# constraints.txt: CI'ın test ettiği, birlikte çalıştığı bilinen tam sürümler (dolaylı bağımlılıklar dahil)
+& $pip install -r requirements.txt -c constraints.txt
 if ($LASTEXITCODE -ne 0) {
-    throw "pip install -r requirements.txt başarısız — üstteki hata satırlarına bakın (bazı paketler için Visual C++ Build Tools gerekebilir)."
+    throw "pip install -r requirements.txt -c constraints.txt başarısız — üstteki hata satırlarına bakın (bazı paketler için Visual C++ Build Tools gerekebilir)."
 }
 
 # Köprü (BrowserBridge) tarayıcıyı Scrapling → patchright ile, channel="chromium" olarak başlatır:

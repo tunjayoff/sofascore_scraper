@@ -40,8 +40,9 @@ WORKDIR /app
 # kütüphanelerini (--with-deps) patchright kurar. Yeni headless modu tam Chromium ikilisini
 # kullandığı için ayrı headless-shell indirilmez (--no-shell).
 # tini: PID 1 olarak sinyalleri iletir ve Chromium'un öksüz kalan alt süreçlerini toplar.
-COPY requirements.txt ./
-RUN pip install -r requirements.txt \
+# constraints.txt: CI'ın test ettiği tam sürümler; imaj her derlemede aynı paketlerle kurulur.
+COPY requirements.txt constraints.txt ./
+RUN pip install -r requirements.txt -c constraints.txt \
     && apt-get update \
     && apt-get install -y --no-install-recommends tini \
     && python -m patchright install --with-deps --no-shell chromium \

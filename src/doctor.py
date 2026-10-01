@@ -279,7 +279,15 @@ def check_python(ctx: Context) -> CheckResult:
 
 
 def pip_install_command(ctx: Context) -> List[str]:
-    return [ctx.python, "-m", "pip", "install", "-r", str(ctx.root / "requirements.txt")]
+    """
+    Paketleri kuran komut. constraints.txt varsa onunla: CI'ın test ettiği tam sürümler kurulur
+    (kurulum betikleri ve başlatıcı ile aynı komut).
+    """
+    command = [ctx.python, "-m", "pip", "install", "-r", str(ctx.root / "requirements.txt")]
+    constraints = ctx.root / "constraints.txt"
+    if constraints.is_file():
+        command += ["-c", str(constraints)]
+    return command
 
 
 def _pinned_requirements(path: Path, _seen: Optional[set] = None) -> Dict[str, str]:
