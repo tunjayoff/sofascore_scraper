@@ -1,0 +1,135 @@
+name: Release
+
+# Pushing a tag vX.Y.Z publishes that version:
+#   1. the tag must equal "v" + the version in pyproject.toml, and CHANGELOG.md must have
+#      a "## [X.Y.Z]" section (it becomes the release notes);
+#   2. the same lint / test / build as CI runs on the tagged commit;
+#   3. the Docker image is built, smoke-tested and pushed to GHCR;
+#   4. a GitHub Release is created with a source + built web app archive.
+# Nothing is published unless every earlier step passed. See "Releasing" in the README.
+
+on:
+  push:
+    tags: ["v*"]
+
+# Jobs get a read-only token; only `publish` asks for more
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Tag matches version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # scripts/release.py needs the standard library only
+      - id: version
+        run: |
+          python scripts/release.py check-tag "$GITHUB_REF_NAME"
+          echo "version=$(python scripts/release.py version)" >> "$GITHUB_OUTPUT"
+      # Defaults to the pyproject version; fails when the section is missing or empty
+      - name: CHANGELOG.md has a section for this version
+        run: python scripts/release.py notes
+
+  # The CI workflow itself (frontend lint/test/build, ruff + pytest on 3.10 and 3.14);
+  # it also uploads the built web app as the `frontend-dist` artifact used below.
+  checks:
+    needs: verify
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: GitHub Release and Docker image
+    needs: [verify, checks]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the GitHub Release
+      packages: write # push the image to ghcr.io
+    env:
+      VERSION: ${{ needs.verify.outputs.version }}
+      IMAGE: ghcr.io/${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---- source + built web app archive ----
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+      - name: Build release archives
+        run: |
+          test -f frontend/dist/index.html
+          name="sofascore-scraper-${VERSION}"
+          stage="${RUNNER_TEMP}/stage"
+          mkdir -p "${stage}" dist-release
+          # Tracked files of the tagged commit (.gitattributes line endings applied) ...
+          git archive --format=tar --prefix="${name}/" HEAD | tar -x -C "${stage}"
+          # ... plus the built web app, so running it needs Python only (no Node.js)
+          cp -r frontend/dist "${stage}/${name}/frontend/dist"
+          tar -czf "dist-release/${name}.tar.gz" -C "${stage}" "${name}"
+          (cd "${stage}" && zip -qr "${GITHUB_WORKSPACE}/dist-release/${name}.zip" "${name}")
+          (cd dist-release && sha256sum "${name}.tar.gz" "${name}.zip" > SHA256SUMS.txt)
+          ls -l dist-release
+      - name: Release notes from CHANGELOG.md
+        run: python3 scripts/release.py notes "${VERSION}" > "${RUNNER_TEMP}/notes.md"
+
+      # ---- Docker image ----
+      - uses: docker/setup-buildx-action@v3
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          # 2.1.0, 2.1 and latest; a pre-release tag (v2.1.0-rc.1) only gets its own version
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: ${{ env.IMAGE }}:smoke
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      # --version, the image's HEALTHCHECK, /health, the SPA index and a headless Chromium
+      # launch, all with --network none: the test cannot reach SofaScore or anything else
+      - name: Smoke test image (offline)
+        run: bash docker/smoke-test.sh "${IMAGE}:smoke" "${VERSION}"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+
+      # ---- GitHub Release (last: it is the public announcement) ----
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=""
+          case "${VERSION}" in *-*) flags="--prerelease" ;; esac
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            # Re-run after a partial failure: refresh notes and files of the existing release
+            gh release edit "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" --notes-file "${RUNNER_TEMP}/notes.md" ${flags}
+            gh release upload "${GITHUB_REF_NAME}" dist-release/* --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" dist-release/* --verify-tag \
+              --title "${GITHUB_REF_NAME}" --notes-file "${RUNNER_TEMP}/notes.md" ${flags}
+          fi

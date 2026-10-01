@@ -48,6 +48,9 @@ section is what the first tagged release will contain.
 - **Docker image** (`Dockerfile`, `docker-compose.yml`): the web app together with the
   headless browser it needs, running as a non-root user, with data, configuration and the
   browser profile in volumes.
+- **Release workflow** (`.github/workflows/release.yml`): pushing a `v*` tag runs the CI
+  checks, pushes the Docker image to GHCR and publishes a GitHub Release with an archive of
+  the source plus the built web app.
 - This changelog.
 - `config/leagues.example.txt`, copied to `config/leagues.txt` on the first run.
 - `SOFASCORE_CONFIG_DIR` and `SOFASCORE_ENV_FILE` to move the config folder and the `.env`
