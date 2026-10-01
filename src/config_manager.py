@@ -104,6 +104,10 @@ class ConfigManager:
         """
         leagues.txt yoksa config/leagues.example.txt'den (yoksa gömülü örnekten) oluşturur.
 
+        Şablonda lig yoktur: yeni kurulum boş başlar. Eskiden "Premier League: 17" ekiliyordu; o ligin
+        sporu league_sports.json'da olmadığı için ilk ekran "spor seçin" kutusuyla açılıyor, Ligler
+        sayfasının karşılama durumu hiç görünmüyordu. Lig, arayüzden eklenince sporu da kaydedilir.
+
         Raises:
             OSError: Dosya oluşturulamazsa
         """
@@ -113,7 +117,7 @@ class ConfigManager:
                 with open(example, "r", encoding="utf-8-sig") as f:
                     text = f.read()
             else:
-                text = "# League configuration file\n# Format: League Name: ID\n\nPremier League: 17\n"
+                text = "# League configuration file\n# Format: League Name: ID\n#\n# Premier League: 17\n"
             atomic_write_text(self.league_config_path, text)
             logger.info(f"Örnek lig yapılandırma dosyası oluşturuldu: {self.league_config_path}")
         except OSError as e:

@@ -1,5 +1,9 @@
 # League configuration file
 # Format: League Name: ID  (the ID is the SofaScore unique-tournament id)
 # Copied to config/leagues.txt on first run; edit that file, not this one.
-
-Premier League: 17
+#
+# A new install starts with no leagues. Add them in the web app (Leagues > Add league,
+# which also records each league's sport) or in the terminal menu, or add lines to
+# config/leagues.txt by hand, like this one without the leading "#":
+#
+# Premier League: 17

@@ -46,10 +46,47 @@ def test_invalid_lines_are_skipped(make_cm):
     assert cm.get_leagues() == {8: "LaLiga"}
 
 
-def test_missing_file_is_created_from_example(make_cm):
+def test_missing_file_is_created_from_example_without_any_league(make_cm):
+    """
+    Yeni kurulum boş başlar: eskiden ekilen "Premier League: 17"nin sporu yoktu (league_sports.json
+    yazılmıyordu), ilk ekran "spor seçin" kutusuyla açılıyor ve karşılama durumu hiç görünmüyordu.
+    """
     cm, path = make_cm(None)
     assert path.exists()
-    assert 17 in cm.get_leagues()
+    assert cm.get_leagues() == {}
+    text = path.read_text(encoding="utf-8")
+    assert "Format: League Name: ID" in text  # biçim hâlâ anlatılıyor
+    assert all(line.startswith("#") or not line.strip() for line in text.splitlines())
+    assert not (path.parent / "league_sports.json").exists()
+
+
+def test_first_league_can_be_added_to_the_empty_file(make_cm):
+    cm, path = make_cm(None)
+    assert cm.add_league("Premier League", 17) is True
+    assert cm.get_leagues() == {17: "Premier League"}
+    assert path.read_text(encoding="utf-8").rstrip().endswith("Premier League: 17")
+
+
+def test_example_file_and_embedded_fallback_seed_no_league(make_cm, monkeypatch):
+    example = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "leagues.example.txt")
+    with open(example, encoding="utf-8") as f:
+        lines = f.read().splitlines()
+    assert all(line.startswith("#") or not line.strip() for line in lines)
+    assert any("Premier League: 17" in line for line in lines)  # örnek satır yorum olarak duruyor
+
+    # Şablon dosyası yoksa kullanılan gömülü metin de lig eklemez
+    real_exists = os.path.exists
+    monkeypatch.setattr(os.path, "exists", lambda p: False if str(p).endswith("leagues.example.txt") else real_exists(p))
+    cm, path = make_cm(None)
+    assert path.exists() and cm.get_leagues() == {}
+
+
+def test_existing_league_file_is_left_untouched(make_cm):
+    """Var olan kullanıcıların yapılandırmasına dokunulmaz: ekilmiş lig de yerinde kalır."""
+    original = "# League configuration file\n# Format: League Name: ID\n\nPremier League: 17\n"
+    cm, path = make_cm(original)
+    assert cm.get_leagues() == {17: "Premier League"}
+    assert path.read_text(encoding="utf-8") == original
 
 
 def test_add_rejects_newline_names(make_cm):
