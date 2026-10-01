@@ -10,7 +10,6 @@ import time
 import random
 import re
 import datetime as dt
-from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Union, Tuple
 from pathlib import Path
 import asyncio
@@ -28,6 +27,21 @@ from src.match_fetcher import MatchFetcher
 from src.sports import DETAIL_SLICES, event_sport_slug, get_slice, slices_for
 from src.status import OBSERVATION_KEY, observation_record
 from src.refresh import SCORE_CHANGES_FILE, change_row, diff_basic, refresh_due
+# Sonuç tipi ve "veri var mı" yüklemleri src/slices.py'de durur. `X as X` biçimindekiler buradan taşınan
+# adlardır: eski import'lar (from src.match_data_fetcher import SliceOutcome, SLICE_*) çalışmaya devam eder.
+from src.slices import (
+    SLICE_EMPTY as SLICE_EMPTY,
+    SLICE_FAILED as SLICE_FAILED,
+    SLICE_OK as SLICE_OK,
+    SliceOutcome as SliceOutcome,
+    has_h2h_data_dict,
+    has_incidents_data_dict,
+    has_lineups_data_dict,
+    has_pregame_form_data_dict,
+    has_team_streaks_data_dict,
+    match_detail_slice_present,
+    statistics_has_data,
+)
 
 from src.logger import get_logger
 
@@ -56,38 +70,6 @@ SLICE_STATUS_FILE = "_slice_status.json"
 
 # uniqueTournament.id'si olmayan maçların sabit dizini: match_details/_no_tournament/<spor>/<maç id>
 NO_TOURNAMENT_DIR = "_no_tournament"
-
-SLICE_OK = "ok"  # yanıt geldi, veri var
-SLICE_EMPTY = "empty"  # kesin yanıt: kaynak yok (404) ya da içinde veri olmayan 200
-SLICE_FAILED = "failed"  # istek başarısız: dilimin var olup olmadığı bilinmiyor
-
-
-@dataclass(frozen=True)
-class SliceOutcome:
-    """Bir detay dilimi isteğinin tipli sonucu (async ve sync yollar aynısını üretir)."""
-
-    status: str  # SLICE_OK | SLICE_EMPTY | SLICE_FAILED
-    data: Any = None
-    # SLICE_FAILED: "403" | "429" | "5xx" | "timeout" | "network" | "parse" | "breaker" | "other"
-    # SLICE_EMPTY: "404" ya da "empty"
-    reason: Optional[str] = None
-    http_status: Optional[int] = None
-
-    @property
-    def failed(self) -> bool:
-        return self.status == SLICE_FAILED
-
-    @classmethod
-    def from_error(cls, exc: BaseException) -> "SliceOutcome":
-        """İsteği bitiren hata → sonuç: 404 kesin "yok"tur, gerisi başarısızlık."""
-        if isinstance(exc, ResourceNotFoundError):
-            return cls(SLICE_EMPTY, reason=request_breaker.NOT_FOUND, http_status=404)
-        return cls(
-            SLICE_FAILED,
-            reason=request_breaker.failure_kind(exc),
-            http_status=request_breaker.http_status(exc),
-        )
-
 
 def _utc_now_iso() -> str:
     return dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
@@ -554,85 +536,29 @@ class MatchDataFetcher:
             logger.warning(f"Maç {mid} dizininden yüklenirken hata: {e}")
         return result
 
+    # "Bu yanıtta veri var mı" yüklemleri src/slices.py'dedir; metot adları eski çağrılar için durur.
+
     def _statistics_has_data(self, d: Dict[str, Any]) -> bool:
-        s = d.get("statistics")
-        if s is None:
-            return False
-        periods = s if isinstance(s, list) else (s.get("statistics") or [])
-        all_periods = [p for p in periods if p and p.get("period") == "ALL"]
-        if not all_periods and periods:
-            all_periods = [periods[0]]
-        for p in all_periods:
-            for g in p.get("groups") or []:
-                if (g.get("statisticsItems") or []):
-                    return True
-        return False
+        return statistics_has_data(d)
 
     def _has_lineups_data_dict(self, d: Dict[str, Any]) -> bool:
-        L = d.get("lineups")
-        if not L or not isinstance(L, dict):
-            return False
-        for side in ("home", "away"):
-            block = L.get(side)
-            if not isinstance(block, dict):
-                continue
-            players = block.get("players")
-            if isinstance(players, list) and len(players) > 0:
-                return True
-        return False
+        return has_lineups_data_dict(d)
 
     def _has_h2h_data_dict(self, d: Dict[str, Any]) -> bool:
-        h = d.get("h2h")
-        if not h or not isinstance(h, dict):
-            return False
-        td = h.get("teamDuel") or {}
-        if td and any(td.get(x) is not None for x in ("homeWins", "awayWins", "draws")):
-            return True
-        raw = h.get("matches") or h.get("events") or td.get("matches")
-        return isinstance(raw, list) and len(raw) > 0
+        return has_h2h_data_dict(d)
 
     def _has_pregame_form_data_dict(self, d: Dict[str, Any]) -> bool:
-        p = d.get("pregame_form")
-        if not p or not isinstance(p, dict):
-            return False
-
-        def chk(t: Any) -> bool:
-            if not t or not isinstance(t, dict):
-                return False
-            form = t.get("form")
-            if isinstance(form, list) and len(form) > 0:
-                return True
-            return any(t.get(x) is not None for x in ("position", "value", "avgRating"))
-
-        return chk(p.get("homeTeam")) or chk(p.get("awayTeam"))
+        return has_pregame_form_data_dict(d)
 
     def _has_team_streaks_data_dict(self, d: Dict[str, Any]) -> bool:
-        g = (d.get("team_streaks") or {}).get("general")
-        return isinstance(g, list) and len(g) > 0
+        return has_team_streaks_data_dict(d)
 
     def _has_incidents_data_dict(self, d: Dict[str, Any]) -> bool:
-        raw = d.get("incidents")
-        if raw and isinstance(raw, dict) and not isinstance(raw, list):
-            raw = raw.get("incidents")
-        return isinstance(raw, list) and len(raw) > 0
+        return has_incidents_data_dict(d)
 
     def match_detail_slice_present(self, key: str, d: Dict[str, Any]) -> bool:
-        """Web arayüzündeki matchDetailSlicePresent ile aynı anlam."""
-        if key == "basic":
-            return bool(d.get("basic"))
-        if key == "statistics":
-            return self._statistics_has_data(d)
-        if key == "lineups":
-            return self._has_lineups_data_dict(d)
-        if key == "h2h":
-            return self._has_h2h_data_dict(d)
-        if key == "team_streaks":
-            return self._has_team_streaks_data_dict(d)
-        if key == "pregame_form":
-            return self._has_pregame_form_data_dict(d)
-        if key == "incidents":
-            return self._has_incidents_data_dict(d)
-        return bool(d.get(key))
+        """Dilimin verisi var mı (src.slices.match_detail_slice_present)."""
+        return match_detail_slice_present(key, d)
 
     def _load_unavailable(self, match_dir: str) -> Dict[str, int]:
         try:

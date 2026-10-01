@@ -1,0 +1,780 @@
+{
+ "window_utc": [
+  1790871906.1507273,
+  1790877854.4361894
+ ],
+ "duration_min": 99.1,
+ "api_requests": 584,
+ "api_by_pattern": {
+  "poll:/sport/{sport}/events/live": 284,
+  "/unique-tournament/{id}/seasons": 40,
+  "/unique-tournament/{id}/scheduled-events/{date}": 30,
+  "/config/country-sport-priorities/country/{cc}": 20,
+  "/config/default-unique-tournaments/{cc}/{sport}": 19,
+  "/config/country-sport-priorities/country": 16,
+  "/sport/{id}/event-count": 10,
+  "/config/top-unique-tournaments/{cc}/{sport}": 10,
+  "/event/{id}/odds/{id}/featured": 10,
+  "/unique-tournament/{id}/season/{id}/player-of-the-season-race": 10,
+  "/sport/{sport}/live-tournaments": 9,
+  "/trending/events/{cc}/all": 9,
+  "/country/alpha2": 7,
+  "/config/top-unique-tournaments/{id}/{sport}": 7,
+  "/event/newly-added-events": 7,
+  "/dsp/country/{cc}": 7,
+  "/event/{id}": 7,
+  "/sport/{sport}/categories/all": 6,
+  "/sport/{sport}/scheduled-tournaments/{date}/page/{id}": 6,
+  "/odds/{id}/featured-events-by-popularity/{sport}": 6,
+  "/odds/{id}/featured-events/{sport}": 6,
+  "/event/{id}/votes": 6,
+  "/sport/{sport}/trending-top-players": 5,
+  "/event/{id}/odds/{id}/all": 5,
+  "/transfer": 4,
+  "/odds/providers/{cc}/web": 3,
+  "/branding/providers/{cc}/web": 3,
+  "/odds/providers/{cc}/web-odds": 3,
+  "/team/{id}/team-statistics/seasons": 2,
+  "/team/{id}/unique-tournament/{id}/season/{id}/statistics/overall": 2,
+  "/event/{id}/lineups": 2,
+  "/team/{id}/year-statistics/{id}": 2,
+  "/team/{id}/achievements": 2,
+  "/team/{id}/featured-players": 2,
+  "/sport/{sport}/events/live": 1,
+  "/event/{id}/ai-insights/tr": 1,
+  "/event/{id}/graph/win-probability": 1,
+  "/event/{id}/at-bats": 1,
+  "/event/{id}/highlights": 1,
+  "/event/{id}/official-tweets": 1,
+  "/tournament/{id}/season/{id}/standings/total": 1,
+  "/unique-tournament/{id}/season/{id}/cuptrees": 1,
+  "/event/{id}/incidents": 1,
+  "/event/{id}/pregame-form": 1,
+  "/tv/event/{id}/country-channels": 1,
+  "/sofascore-news/en/event/{id}/posts/{id}": 1,
+  "/event/{id}/media/summary/country/{cc}": 1,
+  "/event/{id}/managers": 1,
+  "/event/{id}/graph": 1,
+  "/token/captcha": 1,
+  "/odds/providers/{cc}/web-featured": 1
+ },
+ "idle_dropped": 248,
+ "idle_dropped_by_pattern": {
+  "/unique-tournament/{id}/seasons": 32,
+  "/unique-tournament/{id}/scheduled-events/{date}": 20,
+  "/unique-tournament/{id}/season/{id}/player-of-the-season-race": 16,
+  "/event/{id}/odds/{id}/featured": 15,
+  "/sport/{sport}/live-tournaments": 13,
+  "/sport/{id}/event-count": 13,
+  "/odds/providers/{cc}/web-featured": 12,
+  "/odds/providers/{cc}/web": 11,
+  "/branding/providers/{cc}/web": 11,
+  "/odds/providers/{cc}/web-odds": 11,
+  "/trending/events/{cc}/all": 11,
+  "/event/{id}/odds/{id}/all": 10,
+  "/event/{id}/votes": 10,
+  "/country/alpha2": 9,
+  "/sport/{sport}/categories/all": 9,
+  "/sport/{sport}/scheduled-tournaments/{date}/page/{id}": 9,
+  "/event/newly-added-events": 9,
+  "/dsp/country/{cc}": 9,
+  "/sport/{sport}/trending-top-players": 6,
+  "/event/{id}": 5,
+  "/odds/{id}/featured-events/{sport}": 3,
+  "/transfer": 3,
+  "/odds/{id}/featured-events-by-popularity/{sport}": 1
+ },
+ "polls": {
+  "football:200": 98,
+  "tennis:200": 97,
+  "basketball:200": 97
+ },
+ "status_frames": {
+  "tennis": 111,
+  "basketball": 188,
+  "football": 326,
+  "probe-new-tab": 13
+ },
+ "coverage": {
+  "football": {
+   "transitions": 234,
+   "in_push": 234,
+   "pct": 100.0,
+   "by_kind": {
+    "code": {
+     "n": 97,
+     "in_push": 97,
+     "pct": 100.0
+    },
+    "entered": {
+     "n": 72,
+     "in_push": 72,
+     "pct": 100.0
+    },
+    "dropped": {
+     "n": 65,
+     "in_push": 65,
+     "pct": 100.0
+    }
+   },
+   "misses_by_tournament": {}
+  },
+  "tennis": {
+   "transitions": 92,
+   "in_push": 92,
+   "pct": 100.0,
+   "by_kind": {
+    "code": {
+     "n": 33,
+     "in_push": 33,
+     "pct": 100.0
+    },
+    "entered": {
+     "n": 29,
+     "in_push": 29,
+     "pct": 100.0
+    },
+    "dropped": {
+     "n": 30,
+     "in_push": 30,
+     "pct": 100.0
+    }
+   },
+   "misses_by_tournament": {}
+  },
+  "basketball": {
+   "transitions": 129,
+   "in_push": 128,
+   "pct": 99.2,
+   "by_kind": {
+    "code": {
+     "n": 97,
+     "in_push": 97,
+     "pct": 100.0
+    },
+    "entered": {
+     "n": 13,
+     "in_push": 12,
+     "pct": 92.3
+    },
+    "dropped": {
+     "n": 19,
+     "in_push": 19,
+     "pct": 100.0
+    }
+   },
+   "misses_by_tournament": {
+    "EYBL U14": 1
+   }
+  }
+ },
+ "ids": {
+  "football": {
+   "poll_live_ids": 174,
+   "push_status_ids": 219,
+   "push_only_ids": 74
+  },
+  "tennis": {
+   "poll_live_ids": 58,
+   "push_status_ids": 61,
+   "push_only_ids": 6
+  },
+  "basketball": {
+   "poll_live_ids": 35,
+   "push_status_ids": 60,
+   "push_only_ids": 25
+  }
+ },
+ "connections": {
+  "football": {
+   "connections": 5,
+   "closes": 2,
+   "natural_closes": 2,
+   "gaps": [
+    {
+     "closed_at": 1790877568.4211812,
+     "reopened_after_s": null,
+     "deliberate": false,
+     "event": "socketerror"
+    },
+    {
+     "closed_at": 1790877568.42129,
+     "reopened_after_s": null,
+     "deliberate": false,
+     "event": "close"
+    }
+   ]
+  },
+  "tennis": {
+   "connections": 4,
+   "closes": 0,
+   "natural_closes": 0,
+   "gaps": []
+  },
+  "basketball": {
+   "connections": 4,
+   "closes": 0,
+   "natural_closes": 0,
+   "gaps": []
+  }
+ },
+ "resubscribed": {
+  "1": {
+   "tab": "football",
+   "sport_sub": true,
+   "event_subs": 66,
+   "opened": 1790871919.0528414
+  },
+  "2": {
+   "tab": "tennis",
+   "sport_sub": true,
+   "event_subs": 65,
+   "opened": 1790871936.732283
+  },
+  "3": {
+   "tab": "basketball",
+   "sport_sub": true,
+   "event_subs": 65,
+   "opened": 1790871951.76522
+  },
+  "6": {
+   "tab": "football",
+   "sport_sub": true,
+   "event_subs": 65,
+   "opened": 1790873772.5113895
+  },
+  "7": {
+   "tab": "tennis",
+   "sport_sub": true,
+   "event_subs": 65,
+   "opened": 1790873788.5274634
+  },
+  "8": {
+   "tab": "basketball",
+   "sport_sub": true,
+   "event_subs": 65,
+   "opened": 1790873810.4577925
+  },
+  "9": {
+   "tab": "tennis",
+   "sport_sub": true,
+   "event_subs": 65,
+   "opened": 1790875599.2122664
+  },
+  "10": {
+   "tab": "football",
+   "sport_sub": true,
+   "event_subs": 65,
+   "opened": 1790875643.5089686
+  },
+  "11": {
+   "tab": "basketball",
+   "sport_sub": true,
+   "event_subs": 65,
+   "opened": 1790875682.7247887
+  },
+  "12": {
+   "tab": "football",
+   "sport_sub": true,
+   "event_subs": 94,
+   "opened": 1790875701.1539254
+  },
+  "13": {
+   "tab": "tennis",
+   "sport_sub": true,
+   "event_subs": 65,
+   "opened": 1790877400.2685316
+  },
+  "14": {
+   "tab": "basketball",
+   "sport_sub": true,
+   "event_subs": 65,
+   "opened": 1790877497.761733
+  },
+  "15": {
+   "tab": "football",
+   "sport_sub": false,
+   "event_subs": 0,
+   "opened": 1790877568.4208302
+  }
+ },
+ "transitions_while_disconnected": 36,
+ "pingpong_intervals_s": {
+  "football:sent:PING": {
+   "n": 45,
+   "min": 119.9,
+   "median": 120.0,
+   "max": 120.1,
+   "p90": 120.0,
+   "count": 49
+  },
+  "tennis:sent:PING": {
+   "n": 47,
+   "min": 120.0,
+   "median": 120.0,
+   "max": 120.3,
+   "p90": 120.0,
+   "count": 51
+  },
+  "basketball:sent:PING": {
+   "n": 47,
+   "min": 118.6,
+   "median": 120.0,
+   "max": 120.1,
+   "p90": 120.0,
+   "count": 51
+  },
+  "football:recv:PING": {
+   "n": 0,
+   "count": 4
+  },
+  "tennis:recv:PING": {
+   "n": 0,
+   "count": 4
+  },
+  "basketball:recv:PING": {
+   "n": 0,
+   "count": 4
+  }
+ },
+ "credential_groups": [
+  {
+   "tab": "football",
+   "conn": 1,
+   "group": 1
+  },
+  {
+   "tab": "tennis",
+   "conn": 2,
+   "group": 1
+  },
+  {
+   "tab": "basketball",
+   "conn": 3,
+   "group": 1
+  },
+  {
+   "tab": "probe-live-filter",
+   "conn": 4,
+   "group": 1
+  },
+  {
+   "tab": "probe-match",
+   "conn": 5,
+   "group": 1
+  },
+  {
+   "tab": "football",
+   "conn": 6,
+   "group": 1
+  },
+  {
+   "tab": "tennis",
+   "conn": 7,
+   "group": 1
+  },
+  {
+   "tab": "basketball",
+   "conn": 8,
+   "group": 1
+  },
+  {
+   "tab": "tennis",
+   "conn": 9,
+   "group": 1
+  },
+  {
+   "tab": "football",
+   "conn": 10,
+   "group": 1
+  },
+  {
+   "tab": "basketball",
+   "conn": 11,
+   "group": 1
+  },
+  {
+   "tab": "football",
+   "conn": 12,
+   "group": 1
+  },
+  {
+   "tab": "tennis",
+   "conn": 13,
+   "group": 1
+  },
+  {
+   "tab": "basketball",
+   "conn": 14,
+   "group": 1
+  },
+  {
+   "tab": "probe-new-tab",
+   "conn": 16,
+   "group": 1
+  }
+ ],
+ "distinct_credential_groups": 1,
+ "lag_push_finished_s": {
+  "football": {
+   "n": 135,
+   "min": 0.2,
+   "median": 0.8,
+   "max": 1.7,
+   "p90": 1.3
+  },
+  "tennis": {
+   "n": 28,
+   "min": 0.2,
+   "median": 0.6,
+   "max": 2.8,
+   "p90": 1.1
+  },
+  "basketball": {
+   "n": 47,
+   "min": 0.1,
+   "median": 1.0,
+   "max": 1.6,
+   "p90": 1.2
+  }
+ },
+ "lag_poll_dropped_s": {
+  "football": {
+   "n": 65,
+   "min": -3747.8,
+   "median": 36.9,
+   "max": 78.9,
+   "p90": 63.7
+  },
+  "tennis": {
+   "n": 26,
+   "min": 12.3,
+   "median": 31.5,
+   "max": 63.3,
+   "p90": 56.4
+  },
+  "basketball": {
+   "n": 19,
+   "min": 5.8,
+   "median": 51.7,
+   "max": 74.8,
+   "p90": 64.5
+  }
+ },
+ "poll_minus_push_s": {
+  "football": {
+   "n": 65,
+   "min": -3748.5,
+   "median": 36.1,
+   "max": 78.4,
+   "p90": 63.3
+  },
+  "tennis": {
+   "n": 26,
+   "min": 11.7,
+   "median": 31.0,
+   "max": 62.9,
+   "p90": 55.8
+  },
+  "basketball": {
+   "n": 19,
+   "min": 5.1,
+   "median": 50.8,
+   "max": 73.9,
+   "p90": 63.6
+  }
+ },
+ "subscriptions": {
+  "football": {
+   "sport.football": 4,
+   "event.{id}": 290,
+   "odds.{id}": 5
+  },
+  "tennis": {
+   "sport.tennis": 4,
+   "event.{id}": 260
+  },
+  "basketball": {
+   "sport.basketball": 4,
+   "event.{id}": 260
+  },
+  "probe-live-filter": {
+   "sport.football": 2
+  },
+  "probe-match": {
+   "event.{id}": 1
+  },
+  "probe-new-tab": {
+   "sport.football": 1,
+   "event.{id}": 65
+  }
+ },
+ "cost": [
+  {
+   "min": 2,
+   "rss_mb": 3092.0,
+   "cpu_pct_sum": 65.0,
+   "processes": 20,
+   "js_heap_mb": {
+    "football": 48,
+    "tennis": 40,
+    "basketball": 38
+   },
+   "api_requests": 150
+  },
+  {
+   "min": 7,
+   "rss_mb": 3288.0,
+   "cpu_pct_sum": 75.2,
+   "processes": 20,
+   "js_heap_mb": {
+    "football": 45,
+    "tennis": 36,
+    "basketball": 34
+   },
+   "api_requests": 162
+  },
+  {
+   "min": 12,
+   "rss_mb": 3422.1,
+   "cpu_pct_sum": 74.1,
+   "processes": 20,
+   "js_heap_mb": {
+    "football": 46,
+    "tennis": 37,
+    "basketball": 34
+   },
+   "api_requests": 177
+  },
+  {
+   "min": 17,
+   "rss_mb": 3495.3,
+   "cpu_pct_sum": 68.7,
+   "processes": 20,
+   "js_heap_mb": {
+    "football": 46,
+    "tennis": 37,
+    "basketball": 35
+   },
+   "api_requests": 192
+  },
+  {
+   "min": 22,
+   "rss_mb": 3573.1,
+   "cpu_pct_sum": 66.2,
+   "processes": 20,
+   "js_heap_mb": {
+    "football": 49,
+    "tennis": 37,
+    "basketball": 34
+   },
+   "api_requests": 207
+  },
+  {
+   "min": 27,
+   "rss_mb": 3630.3,
+   "cpu_pct_sum": 64.0,
+   "processes": 20,
+   "js_heap_mb": {
+    "football": 47,
+    "tennis": 37,
+    "basketball": 34
+   },
+   "api_requests": 222
+  },
+  {
+   "min": 32,
+   "rss_mb": 7046.2,
+   "cpu_pct_sum": 81.7,
+   "processes": 49,
+   "js_heap_mb": {
+    "football": 34,
+    "tennis": 43,
+    "basketball": 47
+   },
+   "api_requests": 251
+  },
+  {
+   "min": 37,
+   "rss_mb": 7161.6,
+   "cpu_pct_sum": 66.6,
+   "processes": 49,
+   "js_heap_mb": {
+    "football": 30,
+    "tennis": 39,
+    "basketball": 38
+   },
+   "api_requests": 266
+  },
+  {
+   "min": 42,
+   "rss_mb": 7195.7,
+   "cpu_pct_sum": 64.0,
+   "processes": 49,
+   "js_heap_mb": {
+    "football": 31,
+    "tennis": 39,
+    "basketball": 38
+   },
+   "api_requests": 281
+  },
+  {
+   "min": 47,
+   "rss_mb": 7221.6,
+   "cpu_pct_sum": 62.5,
+   "processes": 49,
+   "js_heap_mb": {
+    "football": 31,
+    "tennis": 40,
+    "basketball": 38
+   },
+   "api_requests": 296
+  },
+  {
+   "min": 52,
+   "rss_mb": 7269.6,
+   "cpu_pct_sum": 61.1,
+   "processes": 49,
+   "js_heap_mb": {
+    "football": 31,
+    "tennis": 39,
+    "basketball": 38
+   },
+   "api_requests": 311
+  },
+  {
+   "min": 57,
+   "rss_mb": 7291.4,
+   "cpu_pct_sum": 59.9,
+   "processes": 49,
+   "js_heap_mb": {
+    "football": 31,
+    "tennis": 41,
+    "basketball": 38
+   },
+   "api_requests": 326
+  },
+  {
+   "min": 62,
+   "rss_mb": 7088.3,
+   "cpu_pct_sum": 69.7,
+   "processes": 46,
+   "js_heap_mb": {
+    "football": 31,
+    "tennis": 39,
+    "basketball": 39
+   },
+   "api_requests": 346
+  },
+  {
+   "min": 67,
+   "rss_mb": 7285.8,
+   "cpu_pct_sum": 62.3,
+   "processes": 52,
+   "js_heap_mb": {
+    "football": 54,
+    "tennis": 40,
+    "basketball": 41
+   },
+   "api_requests": 430
+  },
+  {
+   "min": 72,
+   "rss_mb": 7292.8,
+   "cpu_pct_sum": 62.2,
+   "processes": 52,
+   "js_heap_mb": {
+    "football": 54,
+    "tennis": 39,
+    "basketball": 40
+   },
+   "api_requests": 445
+  },
+  {
+   "min": 77,
+   "rss_mb": 7166.3,
+   "cpu_pct_sum": 62.1,
+   "processes": 52,
+   "js_heap_mb": {
+    "football": 54,
+    "tennis": 39,
+    "basketball": 40
+   },
+   "api_requests": 460
+  },
+  {
+   "min": 82,
+   "rss_mb": 7205.7,
+   "cpu_pct_sum": 62.2,
+   "processes": 52,
+   "js_heap_mb": {
+    "football": 54,
+    "tennis": 40,
+    "basketball": 41
+   },
+   "api_requests": 475
+  },
+  {
+   "min": 87,
+   "rss_mb": 7225.0,
+   "cpu_pct_sum": 61.9,
+   "processes": 52,
+   "js_heap_mb": {
+    "football": 54,
+    "tennis": 39,
+    "basketball": 40
+   },
+   "api_requests": 490
+  },
+  {
+   "min": 92,
+   "rss_mb": 6769.7,
+   "cpu_pct_sum": 61.3,
+   "processes": 51,
+   "js_heap_mb": {
+    "football": 56,
+    "tennis": 33,
+    "basketball": 40
+   },
+   "api_requests": 510
+  },
+  {
+   "min": 97,
+   "rss_mb": 4834.7,
+   "cpu_pct_sum": 59.0,
+   "processes": 36,
+   "js_heap_mb": {
+    "football": 43,
+    "tennis": 31,
+    "basketball": 39
+   },
+   "api_requests": 584
+  }
+ ],
+ "run_events": [
+  {
+   "ts": 1790871991.8804839,
+   "event": "probe-match",
+   "href": "/tr/football/match/india-brazil/YUbsDWb#id:17184820"
+  },
+  {
+   "ts": 1790875523.2128549,
+   "event": "poll-403",
+   "sport": "football"
+  },
+  {
+   "ts": 1790875686.227725,
+   "event": "cred-test-reload",
+   "tab": "football"
+  },
+  {
+   "ts": 1790877576.1959748,
+   "event": "cred-test-new-tab"
+  },
+  {
+   "ts": 1790877894.6075463,
+   "event": "stopped-early",
+   "reason": "3+ reconnect cycles captured; freeing shared machine; Talimat 07 paused for user"
+  }
+ ]
+}

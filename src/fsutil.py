@@ -1,39 +1,20 @@
 """
-Atomik dosya yazma: önce aynı dizinde benzersiz bir geçici dosyaya yazılır, sonra
-os.replace ile yerine konur. Yarıda kesilen bir yazma hedef dosyayı bozuk bırakmaz ve
-aynı dosyaya aynı anda yazan iki süreç birbirinin geçici dosyasını ezmez.
+Eski içe aktarma yolu: atomik yazma ve config dosyalarını koruyan süreçler arası kilit.
+
+Gerçek kod src/store/files.py'ye taşındı (docs/design/01-storage.md, bölüm 2.2); bu modül 2.x
+çağıranları ve testleri için adları yeniden dışa açar ve Store dışındaki kod Store'a geçince silinir.
+Davranış aynıdır; tek fark Windows'ta yerine koymanın, hedef başka bir süreçte açıkken kısa
+aralıklarla yeniden denenmesidir.
 """
 
 import contextlib
-import json
-import os
-import tempfile
-from typing import Any, Iterator
+import os  # noqa: F401  (testler os.replace'i `fsutil.os` üzerinden yamalar)
+from typing import Iterator
 
-try:
-    import fcntl
-except ImportError:  # Windows
-    fcntl = None
+from src.store import files as _files
+from src.store.files import atomic_write_json, atomic_write_text, fcntl
 
-
-def atomic_write_text(path: str, text: str, encoding: str = "utf-8") -> None:
-    directory = os.path.dirname(os.path.abspath(path))
-    os.makedirs(directory, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=directory, prefix=f".{os.path.basename(path)}.", suffix=".tmp")
-    try:
-        with os.fdopen(fd, "w", encoding=encoding, newline="") as f:
-            f.write(text)
-        os.replace(tmp, path)
-    except BaseException:
-        with contextlib.suppress(OSError):
-            os.remove(tmp)
-        raise
-
-
-def atomic_write_json(path: str, data: Any, **dump_kwargs: Any) -> None:
-    dump_kwargs.setdefault("ensure_ascii", False)
-    dump_kwargs.setdefault("indent", 2)
-    atomic_write_text(path, json.dumps(data, **dump_kwargs))
+__all__ = ["atomic_write_json", "atomic_write_text", "fcntl", "file_lock"]
 
 
 @contextlib.contextmanager
@@ -41,15 +22,10 @@ def file_lock(path: str) -> Iterator[None]:
     """
     Süreçler arası danışma kilidi (CLI ve web aynı config dosyasını düzenlerken).
     Kilit, hedefin yanındaki `<path>.lock` dosyasında tutulur; Windows'ta kilitlenmez.
+    `fcntl` bu modülün adı üzerinden okunur: testler kilitsiz dalı `fsutil.fcntl = None` ile dener.
     """
     if fcntl is None:
         yield
         return
-    lock_path = f"{path}.lock"
-    os.makedirs(os.path.dirname(os.path.abspath(lock_path)), exist_ok=True)
-    with open(lock_path, "a") as lock_file:
-        fcntl.flock(lock_file, fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(lock_file, fcntl.LOCK_UN)
+    with _files.file_lock(path):
+        yield

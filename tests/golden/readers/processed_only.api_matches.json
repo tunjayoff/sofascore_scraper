@@ -1,0 +1,126 @@
+{
+ "rows": {
+  "15000001": {"match_id": 15000001, "league_folder": "", "season_folder": "", "tournament_name": "LaLiga", "season_name": "LaLiga 25/26", "round": 1, "home_team_name": "Atlético Madrid", "away_team_name": "Sevilla", "home_score_ft": 3, "away_score_ft": 1, "match_date": "2026-05-18 18:00:00", "away_score_ht": 1, "home_score_ht": 0, "season_id": 77559, "status": "Ended", "tournament_id": 8, "home_team": "Atlético Madrid", "away_team": "Sevilla", "home_score": 3, "away_score": 1, "tournament": "LaLiga"},
+  "17099711": {"match_id": 17099711, "league_folder": "17_Premier_League", "season_folder": "Premier_League_26_27", "tournament_name": "Premier League", "season_name": "Premier League 26/27", "round": 1, "home_team_name": "Liverpool", "away_team_name": "Everton", "home_score_ft": 2, "away_score_ft": 1, "match_date": "2026-09-15 04:00:00", "away_score_ht": 1, "home_score_ht": 2, "season_id": 96668, "status": "Ended", "tournament_id": 17, "home_team": "Liverpool", "away_team": "Everton", "home_score": 2, "away_score": 1, "tournament": "Premier League"},
+  "16837335": {"match_id": 16837335, "league_folder": "17_Premier_League", "season_folder": "Premier_League_26_27", "tournament_name": "Premier League", "season_name": "Premier League 26/27", "round": 1, "home_team_name": "Arsenal", "away_team_name": "Chelsea", "home_score_ft": 3, "away_score_ft": 1, "match_date": "2026-09-15 18:00:00", "away_score_ht": 1, "home_score_ht": 0, "season_id": 96668, "status": "Ended", "tournament_id": 17, "home_team": "Arsenal", "away_team": "Chelsea", "home_score": 3, "away_score": 1, "tournament": "Premier League"},
+  "16837399": {"match_id": 16837399, "league_folder": "17_Premier_League", "season_folder": "Premier_League_26_27", "tournament_name": "Premier League", "season_name": "Premier League 26/27", "round": 2, "home_team_name": "Manchester City", "away_team_name": "Hull City", "home_score_ft": 3, "away_score_ft": 1, "match_date": "2026-09-22 18:00:00", "away_score_ht": 1, "home_score_ht": 0, "season_id": 96668, "status": "Ended", "tournament_id": 17, "home_team": "Manchester City", "away_team": "Hull City", "home_score": 3, "away_score": 1, "tournament": "Premier League"}
+ },
+ "queries": {
+  "": {
+   "response": {"status": 200, "total": 4, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": [[16837399, false], [16837335, true], [17099711, true], [15000001, false]]
+  },
+  "sort=asc": {
+   "response": {"status": 200, "total": 4, "limit": 25, "offset": 0, "sort": "asc"},
+   "items": [[15000001, false], [17099711, true], [16837335, true], [16837399, false]]
+  },
+  "sort=bogus": {
+   "response": {"status": 200, "total": 4, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": [[16837399, false], [16837335, true], [17099711, true], [15000001, false]]
+  },
+  "limit=200&sort=asc": {
+   "response": {"status": 200, "total": 4, "limit": 200, "offset": 0, "sort": "asc"},
+   "items": [[15000001, false], [17099711, true], [16837335, true], [16837399, false]]
+  },
+  "limit=3": {
+   "response": {"status": 200, "total": 4, "limit": 3, "offset": 0, "sort": "desc"},
+   "items": [[16837399, false], [16837335, true], [17099711, true]]
+  },
+  "limit=3&offset=3": {
+   "response": {"status": 200, "total": 4, "limit": 3, "offset": 3, "sort": "desc"},
+   "items": [[15000001, false]]
+  },
+  "limit=3&offset=5000": {
+   "response": {"status": 200, "total": 4, "limit": 3, "offset": 5000, "sort": "desc"},
+   "items": []
+  },
+  "limit=0": {"status": 422},
+  "details=present": {
+   "response": {"status": 200, "total": 2, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": [[16837335, true], [17099711, true]]
+  },
+  "details=missing": {
+   "response": {"status": 200, "total": 2, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": [[16837399, false], [15000001, false]]
+  },
+  "details=other": {"status": 422},
+  "details=missing&sort=asc&limit=2": {
+   "response": {"status": 200, "total": 2, "limit": 2, "offset": 0, "sort": "asc"},
+   "items": [[15000001, false], [16837399, false]]
+  },
+  "date=2026-09-15": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
+  "date=2026-09-29T13": {
+   "response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": []
+  },
+  "date=2026-05": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
+  "date=1999": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
+  "date=17894": {
+   "response": {"status": 200, "total": 2, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": [[16837335, true], [17099711, true]]
+  },
+  "league_id=999": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
+  "league_id=abc": {
+   "response": {"status": 200, "total": 4, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": [[16837399, false], [16837335, true], [17099711, true], [15000001, false]]
+  },
+  "season_id=1": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
+  "league_id=17": {
+   "response": {"status": 200, "total": 3, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": [[16837399, false], [16837335, true], [17099711, true]]
+  },
+  "league_id=17&details=present": {
+   "response": {"status": 200, "total": 2, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": [[16837335, true], [17099711, true]]
+  },
+  "league_id=17&details=missing": {
+   "response": {"status": 200, "total": 1, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": [[16837399, false]]
+  },
+  "league_id=8": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
+  "league_id=8&details=present": {
+   "response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": []
+  },
+  "league_id=8&details=missing": {
+   "response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": []
+  },
+  "league_id=17,8&sort=asc": {
+   "response": {"status": 200, "total": 3, "limit": 25, "offset": 0, "sort": "asc"},
+   "items": [[17099711, true], [16837335, true], [16837399, false]]
+  },
+  "league_id=8,999,x": {
+   "response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": []
+  },
+  "season_id=96668": {
+   "response": {"status": 200, "total": 3, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": [[16837399, false], [16837335, true], [17099711, true]]
+  },
+  "league_id=17&season_id=96668": {
+   "response": {"status": 200, "total": 3, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": [[16837399, false], [16837335, true], [17099711, true]]
+  },
+  "league_id=999&season_id=96668": {
+   "response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": []
+  },
+  "season_id=77559": {
+   "response": {"status": 200, "total": 1, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": [[15000001, false]]
+  },
+  "league_id=8&season_id=77559": {
+   "response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": []
+  },
+  "league_id=999&season_id=77559": {
+   "response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": []
+  },
+  "league_id=17&date=2026-09-29&details=present&sort=asc&limit=2&offset=1": {
+   "response": {"status": 200, "total": 0, "limit": 2, "offset": 1, "sort": "asc"},
+   "items": []
+  }
+ }
+}

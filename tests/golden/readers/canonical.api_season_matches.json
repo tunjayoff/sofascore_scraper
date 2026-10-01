@@ -1,0 +1,79 @@
+{
+ "season_id=96668&league_id=17": {
+  "status": 200,
+  "body": {
+   "matches": [
+    {"round": 1, "match_id": 16837335, "home_team": "Arsenal", "away_team": "Chelsea", "home_score": 3, "away_score": 1, "match_date": "2026-09-15T18:00:00", "status": "Ended", "tournament": "Premier League", "season": "Premier League 26/27"},
+    {"round": 1, "match_id": 17099711, "home_team": "Liverpool", "away_team": "Everton", "home_score": 2, "away_score": 1, "match_date": "2026-09-15T04:00:00", "status": "Ended", "tournament": "Premier League", "season": "Premier League 26/27"},
+    {"round": 1, "match_id": 16867839, "home_team": "Leeds United", "away_team": "Fulham", "home_score": 1, "away_score": 0, "match_date": "2026-09-29T13:30:00", "status": "Ended", "tournament": "Premier League", "season": "Premier League 26/27"},
+    {"round": 1, "match_id": 17018554, "home_team": "Brentford", "away_team": "Burnley", "home_score": 0, "away_score": 2, "match_date": "2026-09-29T13:00:00", "status": "Ended", "tournament": "Premier League", "season": "Premier League 26/27"},
+    {"round": 2, "match_id": 17185003, "home_team": "Aston Villa", "away_team": "Wolverhampton", "home_score": 5, "away_score": 0, "match_date": "2026-09-29T13:10:00", "status": "Ended", "tournament": "Premier League", "season": "Premier League 26/27"},
+    {"round": 2, "match_id": 17018572, "home_team": "Newcastle United", "away_team": "Sunderland", "home_score": 1, "away_score": 0, "match_date": "2026-09-29T12:00:00", "status": "Ended", "tournament": "Premier League", "season": "Premier League 26/27"},
+    {"round": 2, "match_id": 17184988, "home_team": "Tottenham Hotspur", "away_team": "West Ham United", "home_score": 0, "away_score": 1, "match_date": "2026-09-29T12:30:00", "status": "Ended", "tournament": "Premier League", "season": "Premier League 26/27"},
+    {"round": 2, "match_id": 16872361, "home_team": "Brighton & Hove Albion", "away_team": "Bournemouth", "home_score": 1, "away_score": 1, "match_date": "2026-09-16T00:30:00", "status": "Ended", "tournament": "Premier League", "season": "Premier League 26/27"},
+    {"round": 2, "match_id": 16951514, "home_team": "Crystal Palace", "away_team": "Nottingham Forest", "home_score": 0, "away_score": 0, "match_date": "2026-09-17T03:15:00", "status": "Ended", "tournament": "Premier League", "season": "Premier League 26/27"},
+    {"round": 2, "match_id": 16837399, "home_team": "Manchester City", "away_team": "Hull City", "home_score": 3, "away_score": 1, "match_date": "2026-09-22T18:00:00", "status": "Ended", "tournament": "Premier League", "season": "Premier League 26/27"}
+   ]
+  }
+ },
+ "season_id=76986&league_id=17": {
+  "status": 200,
+  "body": {
+   "matches": [
+    {"round": 38, "match_id": 14025001, "home_team": "Southampton", "away_team": "Leicester City", "home_score": 2, "away_score": 1, "match_date": "2026-05-24T04:00:00", "status": "Ended", "tournament": "Premier League", "season": "Premier League 25/26"},
+    {"round": 38, "match_id": 14025002, "home_team": "Watford", "away_team": "Norwich City", "home_score": 2, "away_score": 1, "match_date": "2026-05-24T06:00:00", "status": "Ended", "tournament": "Premier League", "season": "Premier League 25/26"}
+   ]
+  }
+ },
+ "season_id=97110&league_id=19": {
+  "status": 200,
+  "body": {
+   "matches": [
+    {"round": 28, "match_id": 16950622, "home_team": "Manchester City", "away_team": "Manchester United", "home_score": 10, "away_score": 9, "match_date": "2026-09-15T18:30:00", "status": "AP", "tournament": "FA Cup", "season": "FA Cup 26/27"},
+    {"round": 28, "match_id": 17090707, "home_team": "Arsenal", "away_team": "Tottenham Hotspur", "home_score": 6, "away_score": 5, "match_date": "2026-09-16T13:00:00", "status": "AP", "tournament": "FA Cup", "season": "FA Cup 26/27"},
+    {"round": 29, "match_id": 17148332, "home_team": "Manchester City", "away_team": "Arsenal", "home_score": 2, "away_score": 1, "match_date": "2026-09-22T18:45:00", "status": "AET", "tournament": "FA Cup", "season": "FA Cup 26/27"}
+   ]
+  }
+ },
+ "season_id=80229&league_id=132": {
+  "status": 200,
+  "body": {
+   "matches": [
+    {"round": "last_0", "match_id": 16484334, "home_team": "Boston Celtics", "away_team": "Denver Nuggets", "home_score": 99, "away_score": 116, "match_date": "2026-09-14T13:30:00", "status": "Ended", "tournament": "NBA", "season": "NBA 26/27"},
+    {"round": "last_0", "match_id": 17092269, "home_team": "Miami Heat", "away_team": "Chicago Bulls", "home_score": 72, "away_score": 65, "match_date": "2026-09-15T07:00:00", "status": "Ended", "tournament": "NBA", "season": "NBA 26/27"},
+    {"round": "last_0", "match_id": 16346148, "home_team": "Phoenix Suns", "away_team": "Utah Jazz", "home_score": 100, "away_score": 101, "match_date": "2026-09-16T02:15:00", "status": "AET", "tournament": "NBA", "season": "NBA 26/27"},
+    {"round": "last_1", "match_id": 17102381, "home_team": "Dallas Mavericks", "away_team": "Orlando Magic", "home_score": 0, "away_score": 0, "match_date": "2026-09-18T12:25:00", "status": "Walkover", "tournament": "NBA", "season": "NBA 26/27"},
+    {"round": "last_1", "match_id": 17203939, "home_team": "Golden State Warriors", "away_team": "Atlanta Hawks", "home_score": 81, "away_score": 62, "match_date": "2026-09-29T11:30:00", "status": "Ended", "tournament": "NBA", "season": "NBA 26/27"},
+    {"round": "last_1", "match_id": 17060394, "home_team": "Toronto Raptors", "away_team": "Brooklyn Nets", "home_score": 78, "away_score": 70, "match_date": "2026-09-15T20:30:00", "status": "Ended", "tournament": "NBA", "season": "NBA 26/27"}
+   ]
+  }
+ },
+ "season_id=79116&league_id=2361": {
+  "status": 200,
+  "body": {
+   "matches": [
+    {"round": "last_0", "match_id": 17204710, "home_team": "Carlos Alcaraz", "away_team": "Jannik Sinner", "home_score": 2, "away_score": 0, "match_date": "2026-09-29T02:00:00", "status": "Ended", "tournament": "Wimbledon, London, Great Britain", "season": "Wimbledon Men Singles 2026"},
+    {"round": "last_0", "match_id": 17206241, "home_team": "Novak Djokovic", "away_team": "Taylor Fritz", "home_score": 0, "away_score": 2, "match_date": "2026-09-29T03:00:00", "status": "Ended", "tournament": "Wimbledon, London, Great Britain", "season": "Wimbledon Men Singles 2026"},
+    {"round": "last_0", "match_id": 17081861, "home_team": "Alexander Zverev", "away_team": "Ben Shelton", "home_score": 1, "away_score": 1, "match_date": "2026-09-15T07:30:00", "status": "Retired", "tournament": "Wimbledon, London, Great Britain", "season": "Wimbledon Men Singles 2026"},
+    {"round": "last_0", "match_id": 17058663, "home_team": "Daniil Medvedev", "away_team": "Holger Rune", "home_score": 0, "away_score": 0, "match_date": "2026-09-16T12:30:00", "status": "Walkover", "tournament": "Wimbledon, London, Great Britain", "season": "Wimbledon Men Singles 2026"},
+    {"round": "last_0", "match_id": 17078471, "home_team": "Casper Ruud", "away_team": "Alex de Minaur", "home_score": 2, "away_score": 1, "match_date": "2026-09-14T18:00:00", "status": "Ended", "tournament": "Wimbledon, London, Great Britain", "season": "Wimbledon Men Singles 2026"},
+    {"round": "last_0", "match_id": 17207542, "home_team": "Granollers M / Zeballos H", "away_team": "Heliovaara H / Patten H", "home_score": 0, "away_score": 2, "match_date": "2026-09-29T13:20:00", "status": "Ended", "tournament": "Wimbledon, London, Great Britain", "season": "Wimbledon Men Singles 2026"}
+   ]
+  }
+ },
+ "season_id=97532&league_id=8": {
+  "status": 200,
+  "body": {
+   "matches": [
+    {"round": "last_0", "match_id": 16990001, "home_team": "Real Madrid", "away_team": "Barcelona", "home_score": 2, "away_score": 1, "match_date": "2026-09-18T04:00:00", "status": "Ended", "tournament": "LaLiga", "season": "LaLiga 26/27"},
+    {"round": "last_0", "match_id": 16599919, "home_team": "Villarreal", "away_team": "Osasuna", "home_score": 0, "away_score": 0, "match_date": "2026-09-20T15:00:00", "status": "Postponed", "tournament": "LaLiga", "season": "LaLiga 26/27"},
+    {"round": "last_0", "match_id": 17148292, "home_team": "Girona", "away_team": "Getafe", "home_score": 0, "away_score": 0, "match_date": "2026-09-21T08:00:00", "status": "Interrupted", "tournament": "LaLiga", "season": "LaLiga 26/27"},
+    {"round": "next_0", "match_id": 17211681, "home_team": "Athletic Club", "away_team": "Real Sociedad", "home_score": 0, "away_score": 0, "match_date": "2026-10-06T17:00:00", "status": "Not started", "tournament": "LaLiga", "season": "LaLiga 26/27"},
+    {"round": "next_0", "match_id": 16425949, "home_team": "Celta Vigo", "away_team": "Mallorca", "home_score": 0, "away_score": 0, "match_date": "2026-09-20T16:00:00", "status": "Canceled", "tournament": "LaLiga", "season": "LaLiga 26/27"}
+   ]
+  }
+ },
+ "season_id=96668&league_id=999": {"status": 200, "body": {"matches": []}},
+ "season_id=1&league_id=17": {"status": 200, "body": {"matches": []}},
+ "season_id=96668 (league_id missing)": {"status": 422}
+}

@@ -1,0 +1,50 @@
+{
+ "rows": {},
+ "queries": {
+  "": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
+  "sort=asc": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "asc"}, "items": []},
+  "sort=bogus": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
+  "limit=200&sort=asc": {
+   "response": {"status": 200, "total": 0, "limit": 200, "offset": 0, "sort": "asc"},
+   "items": []
+  },
+  "limit=3": {"response": {"status": 200, "total": 0, "limit": 3, "offset": 0, "sort": "desc"}, "items": []},
+  "limit=3&offset=3": {"response": {"status": 200, "total": 0, "limit": 3, "offset": 3, "sort": "desc"}, "items": []},
+  "limit=3&offset=5000": {
+   "response": {"status": 200, "total": 0, "limit": 3, "offset": 5000, "sort": "desc"},
+   "items": []
+  },
+  "limit=0": {"status": 422},
+  "details=present": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
+  "details=missing": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
+  "details=other": {"status": 422},
+  "details=missing&sort=asc&limit=2": {
+   "response": {"status": 200, "total": 0, "limit": 2, "offset": 0, "sort": "asc"},
+   "items": []
+  },
+  "date=2026-09-15": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
+  "date=2026-09-29T13": {
+   "response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": []
+  },
+  "date=2026-05": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
+  "date=1999": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
+  "date=17894": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
+  "league_id=999": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
+  "league_id=abc": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
+  "season_id=1": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
+  "league_id=17": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
+  "league_id=17&details=present": {
+   "response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": []
+  },
+  "league_id=17&details=missing": {
+   "response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": []
+  },
+  "league_id=17&date=2026-09-29&details=present&sort=asc&limit=2&offset=1": {
+   "response": {"status": 200, "total": 0, "limit": 2, "offset": 1, "sort": "asc"},
+   "items": []
+  }
+ }
+}

@@ -1,0 +1,5 @@
+{"ts": 1790877998.8835003, "event": "start", "utc": "2026-10-01T18:06:38+00:00", "minutes": 35.0}
+{"ts": 1790878059.252313, "event": "poll-403", "sport": "football"}
+{"ts": 1790879865.2746525, "event": "main-frame-navigated", "url": "https://www.sofascore.com/captcha.html?redirectUrl=https%3A%2F%2Fwww.sofascore.com%2Ftr"}
+{"ts": 1790880131.7885017, "event": "challenge-on-open", "tab": "candidate-favorites"}
+{"ts": 1790880376.932546, "event": "end", "utc": "2026-10-01T18:46:16+00:00", "api_requests": 204, "third_blocked": 38}

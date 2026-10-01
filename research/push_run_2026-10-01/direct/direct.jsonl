@@ -1,0 +1,24 @@
+{"ts": 1790878576.8968139, "event": "captured-connect", "cred_group": 1, "fields": ["headers", "lang", "no_responders", "pedantic", "protocol", "verbose", "version"], "lang": "nats.ws", "version": "3.4.0"}
+{"ts": 1790878583.8392215, "event": "dial", "conn": 1, "url": "wss://ws.sofascore.com:9222/"}
+{"ts": 1790878585.6154525, "event": "info", "conn": 1, "version": "2.12.15", "auth_required": true, "tls_required": true}
+{"ts": 1790878585.6154525, "event": "sent-connect-sub", "conn": 1}
+{"ts": 1790878705.6310766, "event": "ping-sent", "conn": 1}
+{"ts": 1790878825.6447725, "event": "ping-sent", "conn": 1}
+{"ts": 1790878945.7205837, "event": "ping-sent", "conn": 1}
+{"ts": 1790879065.9958003, "event": "ping-sent", "conn": 1}
+{"ts": 1790879186.034906, "event": "ping-sent", "conn": 1}
+{"ts": 1790879306.1835592, "event": "ping-sent", "conn": 1}
+{"ts": 1790879426.4582262, "event": "ping-sent", "conn": 1}
+{"ts": 1790879546.5758216, "event": "ping-sent", "conn": 1}
+{"ts": 1790879666.7784507, "event": "ping-sent", "conn": 1}
+{"ts": 1790879786.7984328, "event": "ping-sent", "conn": 1}
+{"ts": 1790879906.8179536, "event": "ping-sent", "conn": 1}
+{"ts": 1790880026.976202, "event": "ping-sent", "conn": 1}
+{"ts": 1790880147.336158, "event": "ping-sent", "conn": 1}
+{"ts": 1790880267.409296, "event": "ping-sent", "conn": 1}
+{"ts": 1790880387.4735951, "event": "ping-sent", "conn": 1}
+{"ts": 1790880507.7367547, "event": "ping-sent", "conn": 1}
+{"ts": 1790880628.0935776, "event": "ping-sent", "conn": 1}
+{"ts": 1790880748.4349568, "event": "ping-sent", "conn": 1}
+{"ts": 1790880843.7715936, "event": "session-end", "conn": 1, "result": "dropped", "subscribed": true, "direct_frames_so_far": 294}
+{"ts": 1790880843.8745997, "event": "reconnect-after-drop", "conn": 1}

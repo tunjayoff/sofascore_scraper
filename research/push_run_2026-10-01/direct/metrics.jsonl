@@ -1,0 +1,9 @@
+{"ts": 1790878883.8446977, "client_rss_mb": 216.4, "client_cpu_pct_since_start": 4.8, "direct_frames": 28, "page_frames": 30, "api_requests": 6}
+{"ts": 1790879183.8458867, "client_rss_mb": 218.2, "client_cpu_pct_since_start": 3.14, "direct_frames": 67, "page_frames": 69, "api_requests": 11}
+{"ts": 1790879483.846967, "client_rss_mb": 220.1, "client_cpu_pct_since_start": 2.61, "direct_frames": 112, "page_frames": 114, "api_requests": 16}
+{"ts": 1790879783.8482006, "client_rss_mb": 222.7, "client_cpu_pct_since_start": 2.45, "direct_frames": 153, "page_frames": 155, "api_requests": 20}
+{"ts": 1790880083.850178, "client_rss_mb": 224.6, "client_cpu_pct_since_start": 2.59, "direct_frames": 188, "page_frames": 190, "api_requests": 25}
+{"ts": 1790880383.8575578, "client_rss_mb": 225.5, "client_cpu_pct_since_start": 2.53, "direct_frames": 225, "page_frames": 227, "api_requests": 30}
+{"ts": 1790880683.86156, "client_rss_mb": 225.5, "client_cpu_pct_since_start": 2.17, "direct_frames": 278, "page_frames": 227, "api_requests": 35}
+{"ts": 1790880983.961605, "client_rss_mb": 172.9, "client_cpu_pct_since_start": 1.9, "direct_frames": 294, "page_frames": 227, "api_requests": 37}
+{"ts": 1790880983.9624763, "client_rss_mb": 172.9, "direct_frames": 294, "page_frames": 227, "api_requests": 37, "final": true}

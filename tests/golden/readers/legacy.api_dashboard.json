@@ -1,0 +1,12 @@
+{
+ "status": 200,
+ "body": {
+  "leagues": [
+   {"id": 17, "name": "Premier League", "seasons": 3, "matches": 10, "details": 3, "coverage": 30.0, "last_update": "2026-09-30T12:00:00"},
+   {"id": 8, "name": "LaLiga", "seasons": 0, "matches": 4, "details": 1, "coverage": 25.0, "last_update": "2026-09-30T12:00:00"},
+   {"id": 2361, "name": "Wimbledon, Men", "seasons": 1, "matches": 0, "details": 0, "coverage": 0, "last_update": null}
+  ],
+  "disk_usage": {"seasons": 993, "matches": 43899, "details": 49970, "total": 94898, "formatted_total": "92.7 KB"},
+  "totals": {"leagues": 3, "matches": 14, "details": 4}
+ }
+}
