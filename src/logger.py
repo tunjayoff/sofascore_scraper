@@ -4,6 +4,9 @@ Loglama: konsol + dönen (rotating) log dosyası.
 Konsol: terminalde Rich ile renkli; çıktı terminal değilse (Docker, cron, yönlendirme) dosyadakiyle
 aynı düz biçimde. Kapsayıcıda birincil çıktı stdout'tur ve her zaman açıktır.
 
+Konsol akışı seçilebilir (`set_console_stream`): varsayılan stdout'tur (web sunucusu, eski `main.py`); yeni
+CLI (src/cli) stderr'i seçer, çünkü orada stdout yalnızca komutun sonucunu taşır (docs/design/02-services.md 4.4).
+
 Dosya: LOG_DIR (varsayılan: proje kökündeki logs/) altında `sofascore_scraper.log`. Boyutu
 LOG_MAX_MB'ı (varsayılan 5) geçince çevrilir, en fazla LOG_BACKUP_COUNT (varsayılan 5) eski dosya
 tutulur. LOG_TO_FILE=false dosyayı kapatır. Dizin yazılamıyorsa uygulama dosyasız devam eder.
@@ -28,6 +31,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import dotenv
+from rich.console import Console
 from rich.logging import RichHandler
 
 from src.fsutil import file_lock
@@ -50,6 +54,10 @@ LEVEL_NAMES = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _TRUTHY = ("true", "1", "yes", "t", "y", "on")
 _FALSY = ("false", "0", "no", "f", "n", "off")
+
+# Konsol log satırlarının yazıldığı akış (set_console_stream)
+CONSOLE_STREAMS = ("stdout", "stderr")
+_console_stream = "stdout"
 
 # Flag to track if logging has been configured
 _configured = False
@@ -102,7 +110,7 @@ def resolve_level() -> int:
     if os.getenv("DEBUG", "").strip().lower() in _TRUTHY:
         name = "DEBUG"
     if name not in LEVEL_NAMES:
-        print(f"Uyarı: Geçersiz LOG_LEVEL '{name}'. INFO olarak ayarlanıyor.", file=sys.stderr)
+        print(f"Warning: invalid LOG_LEVEL '{name}'; using INFO.", file=sys.stderr)
         return logging.INFO
     return getattr(logging, name)
 
@@ -213,7 +221,7 @@ class SharedRotatingFileHandler(RotatingFileHandler):
         if not SharedRotatingFileHandler._warned:
             SharedRotatingFileHandler._warned = True
             err = sys.exc_info()[1]
-            print(f"Uyarı: log dosyasına yazılamıyor ({self.baseFilename}): {err}", file=sys.stderr)
+            print(f"Warning: cannot write to the log file ({self.baseFilename}): {err}", file=sys.stderr)
 
 
 def build_file_handler(
@@ -232,20 +240,47 @@ def build_file_handler(
     return handler
 
 
+def console_stream() -> str:
+    """Konsol log satırlarının yazıldığı akışın adı: "stdout" ya da "stderr"."""
+    return _console_stream
+
+
+def set_console_stream(name: str) -> None:
+    """
+    Konsol log satırlarının akışını seçer: "stdout" (varsayılan) ya da "stderr". Loglama kurulmuşsa konsol
+    handler'ı yeni akışla yeniden kurulur; dosya logu ve seviye aynı kalır. Seçim süreç boyunca geçerlidir:
+    sonraki `setup_logger(force=True)` çağrıları da onu kullanır.
+    """
+    global _console_stream
+    if name not in CONSOLE_STREAMS:
+        raise ValueError(f"unknown console stream: {name!r} (expected one of {', '.join(CONSOLE_STREAMS)})")
+    if name == _console_stream:
+        return
+    _console_stream = name
+    if _configured:
+        setup_logger(force=True)
+
+
 def _build_console_handler() -> logging.Handler:
     # USE_COLOR kontrolü
     if os.getenv("USE_COLOR", "true").strip().lower() != "true":
         os.environ["NO_COLOR"] = "1"
+    to_stderr = _console_stream == "stderr"
+    stream = sys.stderr if to_stderr else sys.stdout
     try:
-        interactive = sys.stdout.isatty()
+        interactive = stream.isatty()
     except (AttributeError, ValueError):
         interactive = False
     if interactive:
         # markup=False: mesajdaki "[...]" Rich etiketi olarak yorumlanmaz
-        handler: logging.Handler = RedactingRichHandler(rich_tracebacks=True, markup=False)
+        handler: logging.Handler = (
+            RedactingRichHandler(rich_tracebacks=True, markup=False, console=Console(stderr=True))
+            if to_stderr
+            else RedactingRichHandler(rich_tracebacks=True, markup=False)
+        )
         handler.setFormatter(logging.Formatter("%(message)s", datefmt="[%X]"))
         return handler
-    handler = logging.StreamHandler(sys.stdout)
+    handler = logging.StreamHandler(stream)
     handler.setFormatter(RedactingFormatter(FILE_FORMAT))
     return handler
 
@@ -291,7 +326,7 @@ def setup_logger(level: Optional[int] = None, force: bool = False) -> None:
         except OSError as e:
             # Salt okunur dizin (ör. kapsayıcı): konsol logu yeterli, uygulama dursun istemeyiz
             _file_error = str(e)
-            print(f"Uyarı: log dosyası açılamadı ({path}): {e}. Yalnızca konsola yazılacak.", file=sys.stderr)
+            print(f"Warning: cannot open the log file ({path}): {e}. Logging to the console only.", file=sys.stderr)
 
     root.setLevel(resolve_level() if level is None else level)
     _configured = True
