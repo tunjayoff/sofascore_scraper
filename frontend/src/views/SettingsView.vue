@@ -54,7 +54,7 @@ const changed = computed(() => {
   if (!o) return {}
   const out: Partial<Settings> = {}
   for (const k of Object.keys(form) as (keyof Settings)[]) {
-    if (form[k] !== o[k]) (out as any)[k] = form[k]
+    if (form[k] !== o[k]) (out as Record<string, unknown>)[k] = form[k]
   }
   return out
 })
@@ -211,7 +211,7 @@ onMounted(load)
     <div class="grid gap-4 sm:grid-cols-2">
       <div v-for="f in advancedFields" :key="f.key">
         <label class="label" :for="`s-${f.key}`">{{ t(f.label) }}</label>
-        <input :id="`s-${f.key}`" v-model.number="(form as any)[f.key]" type="number" :step="f.step" :min="f.min" :max="f.max" class="field mono" />
+        <input :id="`s-${f.key}`" v-model.number="form[f.key]" type="number" :step="f.step" :min="f.min" :max="f.max" class="field mono" />
       </div>
       <div>
         <label class="label" for="s-log">{{ t('settings.logLevel') }}</label>

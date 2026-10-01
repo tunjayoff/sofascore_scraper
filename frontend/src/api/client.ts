@@ -1,3 +1,5 @@
+import type { MatchDetail } from '@/lib/matchDetail'
+
 type ValidationIssue = { loc?: (string | number)[]; msg?: string }
 
 /** FastAPI 422: [{loc: ['body', 'max_concurrent'], msg: '...'}] → "max_concurrent: ..." */
@@ -46,7 +48,7 @@ export async function apiSend<T>(path: string, method: string, body?: unknown): 
   return res.json()
 }
 
-// ---- shapes returned by src/web/routes/api.py ----
+// ---- shapes returned by src/web/routes/*.py (leagues, matches, scrape, settings, data) ----
 
 export type League = { id: number; name: string; sport?: string | null }
 export type RemoteLeague = { id: number; name: string; country: string; slug?: string | null; sport?: string | null }
@@ -83,6 +85,8 @@ export type MissingDetails = { total_matches: number; missing_count: number; mis
 
 export type FetchSelection = { league_id: number; season_ids?: number[] | null; match_ids?: number[] | null }
 export type FetchPayload = { mode?: 'full' | 'details'; league_id?: number | null; selections?: FetchSelection[] | null }
+
+export type BackupScope = 'all' | 'config' | 'seasons' | 'matches' | 'match_details'
 
 export type JobPhase = 'seasons' | 'matches' | 'details' | 'export'
 
@@ -185,14 +189,19 @@ export const api = {
       `/api/leagues/${id}/missing-details${seasonId ? `?season_id=${seasonId}` : ''}`,
     ),
   matches: (params: URLSearchParams) => apiGet<MatchList>(`/api/matches?${params}`),
-  match: (id: string | number) => apiGet<any>(`/api/matches/${id}`),
+  match: (id: string | number) => apiGet<MatchDetail>(`/api/matches/${id}`),
   fetchMatch: (id: string | number) => apiSend<unknown>(`/api/matches/${id}/fetch`, 'POST'),
   fetch: (payload: FetchPayload) => apiSend<{ job_id: string }>('/api/fetch', 'POST', payload),
   jobs: (limit = 30) => apiGet<{ jobs: JobRow[] }>(`/api/jobs?limit=${limit}`),
   stats: () => apiGet<SystemStats>('/api/stats/system'),
   settings: () => apiGet<Settings>('/api/settings'),
   saveSettings: (s: Partial<Settings>) => apiSend<{ status: string }>('/api/settings', 'POST', s),
-  backup: () => apiSend<{ download_url: string; filename: string }>('/api/data/backup', 'POST'),
+  /** Query options of POST /api/data/backup (src/web/routes/data.py); the page uses the defaults. */
+  backup: ({ scope = 'all', include_env = false }: { scope?: BackupScope; include_env?: boolean } = {}) =>
+    apiSend<{ download_url: string; filename: string }>(
+      `/api/data/backup?${new URLSearchParams({ scope, include_env: String(include_env) })}`,
+      'POST',
+    ),
   clearData: (scope: 'all' | 'matches' | 'match_details' | 'seasons') =>
     apiSend<{ status: string }>('/api/data/clear', 'POST', { scope }),
 }
