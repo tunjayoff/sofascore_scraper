@@ -9,6 +9,11 @@ second time during reconciliation.
 The PR list that implements this document is in `03-implementation-plan.md`. Section 12 lists what changed in
 this document during reconciliation and why.
 
+Revised on 2026-10-01 after the first Store pull requests were merged (ST-02 #36, ST-03 #37, ST-04 #47,
+ST-05 #45, ST-06 #46, ST-09 #44). Where they found the design wrong or silent, the text below was corrected
+and says "as built"; section 12 lists the corrections. References marked `0aa73b4` are to `origin/main` at
+that commit; all others are still at `3ae2599`, and main has moved since.
+
 Terms used throughout:
 
 - **payload**: one SofaScore JSON response, stored as a file.
@@ -48,10 +53,10 @@ Items 2, 3, 4, 7 and several smaller points are listed in the "Decisions needed"
 | Path under `DATA_DIR` | Content | Written by | Read by |
 |---|---|---|---|
 | `seasons/<lid>_<name>_seasons.json` | `{"seasons": [...]}`, pretty JSON | `src/season_fetcher.py:357-370` (name from `src/paths.py:60-61`) | `src/season_fetcher.py:289-316` (scan at start), `:423-463` (three alternate file names at `:441-445`); `src/web/routes/common.py:26-38` (bare `<lid>_seasons.json` first, otherwise the newest `<lid>_*_seasons.json` by mtime); `src/web/routes/leagues.py:173-187`; `src/services/stats.py:89`, `:127-130`; `src/SofaScoreUi.py:109-113` |
-| `league_seasons.csv` | pre-JSON season list | nobody on main | `src/season_fetcher.py:291` |
+| `league_seasons.csv` | pre-JSON season list; header `Liga Adı,Lig ID,Sezon ID,Sezon Adı,Sezon Yılı` | nobody on main | `src/season_fetcher.py:291` |
 | `matches/<lid>_<name>/<sid>_<name>/round_<n>[_<slug>].json` | round response plus a `_complete` key; **not** filtered by status | `src/match_fetcher.py:452-471` | `src/match_fetcher.py:403-425` (cache with a 6 h TTL on file mtime, `:393`); `src/season_fetcher.py:177-183`; `src/ui/match_ui.py:441-450` |
 | `matches/.../events_<last\|next>_<page>.json` | de-duplicated page, filtered to finished events when `FETCH_ONLY_FINISHED` | `src/match_fetcher.py:362-378` | same as above |
-| `matches/<lid>_<name>/<sid>_<name>_summary.json` and `.csv` | derived per-season list. Ten columns (`src/match_fetcher.py:547-548`); scores are `homeScore.current` with default 0 (`:570-571`); `match_date` is naive local time (`:572`); `tournament` is `tournament.name` (`:574`) | `src/match_fetcher.py:514-595` (paths from `src/paths.py:72-77`) | `src/match_data_fetcher.py:1855-1884`, `:1953-2007`, `:1822-1852`; `src/web/routes/matches.py:165-216`, `:284-303`, `:316-337`; `src/services/stats.py:73-77`, `:93-95`, `:131`. Old `*_matches.csv` is still accepted (`src/match_data_fetcher.py:1871-1875`) |
+| `matches/<lid>_<name>/<sid>_<name>_summary.json` and `.csv` | derived per-season list. Ten columns (`src/match_fetcher.py:547-548`); scores are `homeScore.current` with default 0 (`:570-571`); `match_date` is naive local time (`:572`); `tournament` is `tournament.name` (`:574`) | `src/match_fetcher.py:514-595` (paths from `src/paths.py:72-77`) | `src/match_data_fetcher.py:1855-1884`, `:1953-2007`, `:1822-1852`; `src/web/routes/matches.py:165-216`, `:284-303`, `:316-337`; `src/services/stats.py:73-77`, `:93-95`, `:131`. Old `*_matches.csv` is still accepted (`src/match_data_fetcher.py:1871-1875`). The first version wrote `round_<n>_matches.csv` (13 other columns) and `round_<n>_full.json` inside the season directory; `_season_summary_files` and the statistics accept both places (`src/match_data_fetcher.py:1790-1797` at `0aa73b4`), while `/api/matches` and missing-details read neither nested file |
 | `match_details/<lid>_<name>/season_<name>/<eid>/<slice>.json` | one pretty JSON per slice; `basic.json` is `/event/{id}` | `src/match_data_fetcher.py:1215-1225` (directory computed at `:1151-1192`); refresh rewrites `basic.json` at `:888` | `src/match_data_fetcher.py:124-181`, `:534-557`, `:1535-1730`; `src/web/routes/matches.py:219-242`, `:340-347`, `:361-393`; `src/services/stats.py:80-81`, `:132`; `src/web/league_sports.py:77-89` |
 | `.../<eid>/observation.json` | `{observed_at_utc, change_ts[, status_regressed]}` | `src/match_data_fetcher.py:897`, record built at `src/status.py:260-266` | `src/match_data_fetcher.py:551-554`, used by `src/refresh.py:63-81` |
 | `.../<eid>/_unavailable.json` | `{slice: count}` | `src/match_data_fetcher.py:710-711`, `:788-793` | `:639-645`, `:804-811` |
@@ -61,7 +66,7 @@ Items 2, 3, 4, 7 and several smaller points are listed in the "Decisions needed"
 | `match_details/processed/all_matches_<ts>.csv`, `<league>_<ts>.csv`, `match_files_stats.json`, `match_files_report.csv` | derived exports and reports | `src/match_data_fetcher.py:518` (directory), `:1535-1820`, `:2323-2482` | `src/web/routes/data.py:185-221`, `src/web/routes/matches.py:134-150` |
 | `score_changes.jsonl` | one line per post-finish change | `src/match_data_fetcher.py:911-915` (name at `src/refresh.py:21`) | no reader in `src/` |
 | `watch_events.jsonl`, `watch_state_<sport>.json` | watcher event stream and last known state | `src/watcher.py:45-46`, `:177-179`, `:212-222` | `src/watcher.py:204-210` |
-| `.meta/jobs.db` | SQLite job history, rollback journal mode, `user_version` 0 (checked on the local file) | `src/web/jobs.py:18-21`, `:100-127`, `:193-223`, `:322-362` | `src/web/jobs.py:388-402` |
+| `.meta/jobs.db` | SQLite job history, rollback journal mode, `user_version` 0 (checked on the local file). Since ST-09 (PR #44) the history is in `.meta/state.db`; `jobs.db` is imported once and left in place | `src/web/jobs.py:18-21`, `:100-127`, `:193-223`, `:322-362` | `src/web/jobs.py:388-402`; the diagnostics bundle (`src/diagnostics.py:389-398` at `0aa73b4`, read-only; `state.db` first, `jobs.db` for a directory 3.x has not opened) |
 | `backups/backup_<scope>_<ts>.zip` | zip of `seasons/`, `matches/`, `match_details/` and optionally the league config and `.env`; does **not** contain `.meta`, `score_changes.jsonl` or watcher files | `src/web/routes/data.py:103-149` | `src/web/routes/data.py:251-260` |
 | `datasets/`, `reports/<kind>_report_<ts>.json` | terminal-UI leftovers | `src/SofaScoreUi.py:79-83`, `src/ui/stats_ui.py:157-161` | `src/services/stats.py:139` (size only) |
 
@@ -141,6 +146,11 @@ only in its payload.
 the only code that opens `catalog.db` or `state.db`. Everything else imports from `src.store` (the package
 root) and nothing from its submodules.
 
+Two imports of submodules exist during the transition and are entries of the ratchet (2.4): the shim
+`src/fsutil.py` imports `src.store.files` until ST-28 deletes it, and `src/web/jobs.py` imports
+`src.store.jobs` until the package root exports the facade (ST-10). The root exports only the error classes
+so far.
+
 The Store contains no network code and no policy. It does not know which slices a sport needs, how long the
 refresh window is, or what "finished" means for a job. Callers pass those in as arguments. It may import
 `src.sports`, `src.status`, `src.slices`, `src.exceptions` and `src.version`, nothing else from `src`.
@@ -162,6 +172,7 @@ src/store/
   legacy.py       read-only discovery and readers for every legacy form
   catalog.py      catalog.db connections, DDL, upserts, queries
   state.py        state.db connections, migration runner, runtime key/value
+  sqlite.py       connection handling shared by catalog.py and state.py (plan item FX-3; until then each has its own)
   derive.py       payload -> catalog row (pure)
   indexer.py      build, rebuild, reconcile
   verify.py       consistency checks
@@ -227,9 +238,10 @@ class Outcome:
     status: Literal["ok", "empty", "failed", "skipped"]
     data: Any = None               # parsed JSON; required for "ok"; optional for "empty" (an empty 200 body)
     reason: str | None = None      # empty: "404" | "empty"; failed: "403" | "429" | "5xx" | "timeout" | "network" | "parse" | "other"
-                                   # skipped: "breaker" | "not_selected" | "not_applicable" | "not_due" | "cancelled"
+                                   # skipped: "breaker" | "not_selected" | "not_applicable" | "not_due" | "unavailable" | "cancelled"
     http_status: int | None = None
-    fetched_at: datetime | None = None    # default: now
+    fetched_at: datetime | None = None    # None means "now" to the consumer; it is not filled at construction,
+                                          # so two otherwise equal outcomes stay equal
     via: Literal["curl", "bridge"] | None = None
     meta: Mapping[str, Any] | None = None # small JSON kept next to the state (e.g. {"complete": true} for a round)
 
@@ -326,8 +338,13 @@ class PutResult:
 
 Semantics of `put` (the only way event payloads reach the disk):
 
-1. Keys are validated: `key` matches `[a-z][a-z0-9_]{0,39}`, `sub` matches `[A-Za-z0-9_.-]{0,80}`. An
-   `"event"` outcome must be `ok` and its payload's `id` must equal `event_id`.
+1. Keys are validated: `key` matches `[a-z][a-z0-9_]{0,39}`, `sub` matches `[A-Za-z0-9_.-]{0,80}`. As built
+   (ST-03, `src/store/layout.py:47-76` at `0aa73b4`) two more rules apply: Windows device names (`con`, `nul`,
+   `aux`, `prn`, `com1`-`com9`, `lpt1`-`lpt9`) are rejected as a key or as the stem of a sub, and the sub `_`
+   is rejected, because `_history/<key>/_.jsonl.gz` is the history file of the slice without a sub. The sub
+   pattern is case-sensitive while Windows and default macOS file systems are not; plan item FX-4 restricts
+   subs to lower case (decision S13). An `"event"` outcome must be `ok` and its payload's `id` must equal
+   `event_id`.
 2. An event is created by the first `put` that carries an `"event"` outcome or by a listing (see
    `EntityStore.put`). A `put` without `"event"` for an id the catalog does not know raises `UnknownEvent`.
 3. Per outcome:
@@ -341,7 +358,9 @@ Semantics of `put` (the only way event payloads reach the disk):
    - `failed`: stored as state `error` with `{reason, status, at, count + 1}`; `empty_count` is not touched
      (`:696-703`). An error never downgrades a slice that is `ok`.
    - `skipped`: ignored, nothing is stored. This covers the open circuit breaker, where no request was sent
-     (`:693-694`).
+     (`:693-694`). Today's code still reports the open breaker as failed with reason `breaker`, and
+     `_update_slice_markers` relies on that; the switch to `skipped` is made by P05 or P13 together with that
+     check.
 4. An `"event"` outcome whose `fetched_at` is older than the stored observation is ignored
    (`PutResult.superseded`). Two writers (a job and the live service) can therefore never replace a newer
    event payload with an older one.
@@ -573,41 +592,122 @@ Errors: `StoreError(StorageError)` keeps the `fatal` property of today's `Storag
 `02-services.md` section 2.6: any `StoreError` is `storage_error` (exit code 5), `LeaseHeld` is one of the three
 "another instance" codes (exit code 6).
 
+Error types as built (ST-03, ST-06, ST-09), where the first version of this section was silent:
+
+| Situation | Error |
+|---|---|
+| a payload or manifest file is missing | `PayloadMissing` (not `FileNotFoundError`) |
+| a file is truncated, is not valid gzip or JSON, or decompresses to nothing (`gzip.decompress(b"")` returns `b""` without an error) | `PayloadCorrupt` |
+| an invalid manifest | `PayloadCorrupt` on read, `LayoutError` on write (`write_manifest` refuses it) |
+| a manifest of a format newer than 1; a `state.db` newer than the code | `SchemaTooNew(component=, found=, supported=)` |
+| an unknown file suffix, or a payload write to anything but `.json.gz` | `LayoutError` |
+| a `.json.zst` file while no zstd module can be imported | a plain `StoreError` that names `backports.zstd` |
+| a payload that cannot be serialised | a non-fatal `StoreError` |
+| a replace that still fails after the Windows retries | Store-layer functions: a non-fatal `StoreError`; the 2.x helpers of `src/fsutil.py`: `ReplaceBusy`, a `PermissionError` subclass, which 2.x callers treat as fatal (4.4) |
+| a SQLite lock that outlasts `busy_timeout`, including the switch to WAL | `StoreBusy` |
+| an unreadable database file | `CatalogCorrupt` |
+| SQLite reports 'disk full' or 'read-only' | a `StoreError` with the errno, so that `fatal` is true |
+
+Every subclass keeps the base constructor (message, path, errno_code, detail); extra fields are keyword-only,
+so `Class.from_exception(exc, path, reading=True)` works on each.
+
 ### 2.4 Enforcing "only the Store touches `DATA_DIR`" in CI
 
-Three tests, all in the normal `pytest` job (`.github/workflows/ci.yml:85-93`), no new CI job:
+Four tests, all in the normal `pytest` job (`.github/workflows/ci.yml:85-93`), no new CI job. This section
+describes them as built by plan item ST-04 (PR #47).
 
 1. **Static check** (`tests/test_store_boundary.py`, uses `ast`). For every module under `src/` outside
    `src/store/` it fails on:
-   - any import of a `src.store.<submodule>` (only `from src.store import ...` is allowed);
+   - any import of a `src.store.<submodule>` (only `from src.store import ...` is allowed), whether absolute,
+     relative, inside a function, through `importlib.import_module` or by attribute access through the root;
    - any call to `open`, `os.listdir`, `os.scandir`, `os.walk`, `os.remove`, `os.unlink`, `os.rename`,
      `os.replace`, `os.makedirs`, `os.mkdir`, `os.rmdir`, `os.stat`, `os.path.exists/isfile/isdir/getsize/getmtime/getctime`,
      `glob.glob/iglob`, `shutil.*`, `tempfile.*`, `sqlite3.connect`, `zipfile.ZipFile`, `pandas.read_csv`,
-     `DataFrame.to_csv`, and the `pathlib.Path` methods that hit the disk.
+     `DataFrame.to_csv`, and the `pathlib.Path` methods that hit the disk. The list as built is a superset:
+     also `io.open`, `os.open`, `gzip.open` and similar openers, `os.lstat`, `os.access`, `os.chmod`,
+     `os.utime`, the remaining `os.path` probes, every `pandas.read_*` and the other `DataFrame.to_*` file
+     writers. `shutil.get_terminal_size` is exempt; `Path.resolve`, `absolute` and `expanduser` compute a path
+     and are not flagged. Names are resolved through the module's imports, and a function that is only
+     mentioned (`map(os.remove, paths)`) counts too.
+   - The scanner is heuristic for `pathlib`: ambiguous method names (`exists`, `open`, `stat`, `glob`,
+     `rename`, `replace`) are flagged only when the receiver is inferred to be a `Path`. What it misses is
+     left to the runtime check.
    An allowlist names the modules that legitimately touch *other* files, each with a one-line reason:
    `src/config_manager.py` and `src/config/` (config files and `.env`), `src/paths.py`, `src/i18n.py`
    (locales), `src/doctor.py` (environment probes), `src/throttle.py` (budget files), `src/challenge_solver.py`
    (browser profile), `src/logger.py` and `src/diagnostics.py` (log files and the diagnostics bundle, PR #24),
    `src/sinks/file.py` (the file sink's own output path), `src/web/app.py` and `src/web/missing_ui.py` (static
-   files).
+   files). The allowlist exempts a module from the file-system rule only; the import rule and the runtime
+   check still apply to it.
 2. **Runtime check** (`tests/conftest.py`, `sys.addaudithook`). CPython raises audit events for `open`,
    `os.listdir`, `os.scandir`, `os.remove`, `os.rename`, `os.mkdir`, `os.rmdir`, `shutil.rmtree`,
-   `sqlite3.connect` and others. The hook looks only at paths inside the test `DATA_DIR`
-   (`tests/conftest.py:25`), walks the call stack to the nearest frame under `src/`, and records a violation
-   when that frame is not in `src/store/`. Frames in `tests/` are ignored, so tests can still seed fixtures.
-   This catches paths that are built dynamically, which the static check cannot see.
-3. **Layering check**: `src/store/` imports nothing from `src.web`, `src.ui`, `src.services`, `src.jobs`,
-   `src.client`, the fetchers, `src.utils` or `src.challenge_solver`.
+   `sqlite3.connect` and others. The hook looks at paths inside the test data directory, walks the call stack
+   to the nearest frame under `src/`, and records a violation when that frame is not in `src/store/`. Frames
+   in `tests/` are ignored, so tests can still seed fixtures. This catches paths that are built dynamically,
+   which the static check cannot see. As built:
+   - The hook follows the current value of the `DATA_DIR` environment variable, not only the directory of
+     `tests/conftest.py`, because most tests that exercise readers and routes point `DATA_DIR` at their own
+     temporary directory. Tests that pass `data_dir=` as an argument are observed only when they register the
+     directory with `conftest.STORE_BOUNDARY.add_data_dir(path)`.
+   - A record is named after the function the `src/` frame called directly (`shutil.rmtree`, `os.makedirs`,
+     `pandas`), not after the raw audit events: one `shutil.rmtree` raises different events on Linux, on
+     Windows and across Python versions. System calls made inside a library generator that is being iterated
+     (`os.walk`, whose frame is `os._walk` on Python 3.10 and 3.11) are attributed to the library's own call.
+     Records keep the on-disk case of module paths.
+   - The hook cannot be removed once installed. Later recorders are added to `conftest.BOUNDARY_RECORDERS`.
+   - A write that goes through the `src/fsutil.py` shim has its nearest `src/` frame in `src/store/files.py`
+     and is therefore not a violation, although the caller built the path; the static check does not flag
+     `from src.fsutil import ...` either. Those call sites become visible when the shim is removed (ST-28).
+3. **Layering check** (`tests/test_layers.py`): `src/store/` imports only what 2.1 allows (`src.sports`,
+   `src.status`, `src.slices`, `src.exceptions`, `src.version`). It is checked as that allow-list, which is
+   stricter than a list of forbidden packages, and it includes what the allowed modules pull in: every Store
+   module is loaded in a fresh interpreter, and the test fails if another `src` module or an HTTP client, the
+   browser bridge or the web framework is loaded with it. `socket` is allowed, so that a lease can record the
+   host name.
+4. **API-surface snapshot** (`tests/test_store_api_surface.py`): compares `src.store.__all__` and every public
+   signature with checked-in text files under `tests/fixtures/store_api/`, one per public name (classes,
+   functions, constants and type aliases), so an API change always shows up in review and two PRs that extend
+   different classes do not edit the same file. The text is rendered from the source with `ast`, so it is the
+   same on Python 3.10 to 3.14. A Store class that appears in a public signature without being exported gets a
+   file too. Every public name bound in `src/store/__init__.py` must be in `__all__`.
 
 Both the static and the runtime check use a **ratchet**: `tests/store_boundary/baseline/<module>.txt`, one
-file per offending source module, listing the violations that exist today as `function:call`. A new violation
-fails the test. A baseline entry that no longer occurs also fails the test, so entries must be removed in the
-PR that fixes them and the lists can only shrink. One file per module means two PRs that clean up different
-modules do not edit the same baseline file. The last PR deletes the directory.
+file per offending source module. A new violation fails the test. A baseline entry that no longer occurs also
+fails the test, so entries must be removed in the PR that fixes them and the lists can only shrink. One file
+per module means two PRs that clean up different modules do not edit the same baseline file. The last PR
+(ST-28) deletes the directory, which makes both checks strict without a code change. Format as built:
 
-A fourth test (`tests/test_store_api_surface.py`) compares `src.store.__all__` and every public signature with
-checked-in text files, one per public class under `tests/fixtures/store_api/`, so an API change always shows up
-in review and two PRs that extend different classes do not edit the same file.
+```
+[static]
+MatchFetcher._load_cached_round:open
+_clear_data_sync:shutil.rmtree x3
+[runtime]
+_dir_state:tempfile.mkstemp
+```
+
+- `[static]` entries are `function:call`, with a count when the call occurs more than once. `[runtime]` holds
+  only accesses in functions that the static list does not already track.
+- The stale-entry check for `[runtime]` entries runs only when the whole suite runs, and not on Windows or
+  under pytest-xdist: a run narrowed by path, `-k` or `-m` (the CI browser job is one) proves nothing about an
+  entry it did not observe. New runtime violations fail everywhere.
+- `STORE_BOUNDARY_UPDATE=prune python -m pytest` removes entries that no longer occur and lowers counts; it
+  never adds. `STORE_BOUNDARY_UPDATE=rewrite python -m pytest` regenerates the files and can add entries; it is
+  for code that moves between modules or for a renamed function, and the added lines show in the diff.
+  `STORE_API_UPDATE=1 python -m pytest tests/test_store_api_surface.py` regenerates the API snapshot.
+- Today's debt (at `0aa73b4`): 23 files, 166 static entries covering 291 calls in 21 modules, 3 runtime
+  entries (`src/match_data_fetcher.py` 105 calls, `src/ui/settings_ui.py` 67, `src/web/routes/matches.py` 26,
+  `src/web/routes/data.py` 24, `src/services/stats.py` 17, `src/season_fetcher.py` 11, the rest 6 or fewer).
+
+Open points that ST-28 has to settle before the baseline directory can be deleted:
+
+- Three modules touch files outside `DATA_DIR` and are not on the allowlist, so they sit in the baseline and
+  look like debt: `src/version.py` (`read_version` reads `pyproject.toml`; the Store is allowed to import this
+  module), `src/redact.py` (`_env_file_values` stats the `.env` file) and `src/web/league_sports.py` (`load`
+  reads `league_sports.json` next to the league list). The two modules PR #43 added, `src/private_files.py`
+  (modes of `.env` and the browser profile) and `src/web/security.py`, are in the same position.
+- The runtime check has no allowlist, but two allowlisted modules do touch `DATA_DIR`: `src/doctor.py`
+  (`_dir_state` creates and removes a probe file in the data directory) and `src/diagnostics.py` (`_jobs`
+  opens the job database read-only). Each needs a Store method or a named exception.
 
 ---
 
@@ -666,6 +766,18 @@ PRAGMA synchronous = FULL;        -- state.db
   writers of high-volume rows (live events) batch one transaction per poll round.
 - If `PRAGMA journal_mode = WAL` does not return `wal` (network file systems), the Store falls back to
   `DELETE` journal mode, logs a warning, and the doctor reports it: only one process may use the directory.
+- `busy_timeout` does not cover the switch to WAL. When two connections switch a new file at once, SQLite
+  returns `SQLITE_BUSY` immediately instead of waiting (found independently by ST-06 and ST-09: 'database is
+  locked' in at least 14 of 300 and in 11 of 100 stress rounds). Both `catalog.configure()` and `StateDb`
+  retry the switch for up to `busy_timeout` and then raise `StoreBusy`. Reading a file's identity
+  (`application_id`, `user_version`, table count) happens in one read transaction, so that a concurrent
+  schema creation is never seen half done.
+- Connections close themselves. `sqlite3.Connection` emits a ResourceWarning from its own finalizer on
+  Python 3.13+, and for cyclic garbage that finalizer can run before a wrapper's `__del__`; the thread-local
+  connections are therefore instances of a Connection subclass that closes itself.
+- sqlite3 errors inside a read or write helper are converted to `StoreError` (table in 2.3).
+- The two modules were written in parallel and each has its own copy of this connection handling; plan item
+  FX-3 moves it into one shared module.
 - Minimum SQLite: 3.24 (UPSERT, row values, partial indexes, `WITHOUT ROWID`). Checked on open. No `STRICT`
   tables, no generated columns, no FTS, so the SQLite bundled with every supported Python works.
 - `PRAGMA application_id` marks the two files (`0x53464331` catalog, `0x53465331` state); `PRAGMA user_version`
@@ -904,7 +1016,8 @@ CREATE TABLE legacy_roots (                        -- legacy directories seen by
 ) WITHOUT ROWID;
 ```
 
-`state.db`. Migration `0001_initial` (plan item ST-09):
+`state.db`. Migration `0001_initial` (plan item ST-09). The file as built writes every statement as
+`CREATE TABLE IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS`, as 7.3 requires; the DDL is otherwise as printed:
 
 ```sql
 CREATE TABLE meta (
@@ -1025,6 +1138,7 @@ ALTER TABLE jobs ADD COLUMN origin_json TEXT;       -- face (cli|api|scheduler|l
 ALTER TABLE jobs ADD COLUMN spec_json TEXT;         -- the service spec
 ALTER TABLE jobs ADD COLUMN error_json TEXT;        -- {code, message, details}
 ALTER TABLE jobs ADD COLUMN heartbeat_at INTEGER;
+ALTER TABLE jobs ADD COLUMN created_at TEXT;        -- ISO-8601 UTC; NULL for rows written before 0002 (readers use started_at)
 CREATE TABLE job_events (
   job_id    TEXT    NOT NULL,
   seq       INTEGER NOT NULL,
@@ -1037,9 +1151,19 @@ CREATE TABLE job_events (
 
 Notes on the event row:
 
-- It is produced by one pure function, `derive.event_row(payload, source, observed_at)`. This is the single
-  place where a score is read out of a payload. `home_score`/`away_score`, `status_class` and `scores_json`
-  come from `src.status.classify_status` and `extract_scores`.
+- It is produced by one pure function, `derive.event_row(payload, source="event", observed_at=None, *,
+  sport=None)`. `sport` is a fallback for a payload that names no sport (a listing row of a known tournament);
+  the payload's own sport wins. The function returns exactly `derive.EVENT_DERIVED_COLUMNS`; the other columns
+  (`status_regressed`, `stale`, `listed_in`, `layout`, `path`, `legacy_path`, `sig`, `first_seen_at`,
+  `updated_at`) are the indexer's. A payload without an integer id raises `PayloadCorrupt`. This is the single
+  place where a score is read out of a payload. `status_class` comes from `src.status.classify_status` and
+  `scores_json` from `extract_scores`. `home_score`/`away_score` are what the column comment says,
+  `homeScore.display`, else `.current`: no field of the score sheet is that value for all three sports.
+  `scores_json` holds `{"family": ..., <sport-specific fields>}` with sorted keys; the five common fields of
+  the score sheet are not repeated in it, and it is NULL for a sport without a score family.
+- `seasons.sort_key` is `derive.season_sort_key(year)`. It equals `SeasonFetcher._get_sortable_year_value`
+  wherever that function returns a number, and returns 0.0 where that function raises (`'ab/cd'`, a
+  non-string) or returns NaN (`'nan'`).
 - `home_score_current`, `away_score_current`, `stage_name` and `listed_in` exist only so that the legacy list
   routes and the legacy CSV can be reproduced from the catalog: today's summary writes `homeScore.current`
   (`src/match_fetcher.py:570-571`; in football that value includes penalties, see the docstring at
@@ -1083,6 +1207,11 @@ gets `state = 'error'`, `error_reason = 'corrupt'`, which makes it a re-fetch ca
 
 A rebuild runs automatically on open when the catalog is missing, its `user_version` differs, its
 `derive_version` in `meta` differs from the code's, or `PRAGMA quick_check` fails after an unclean shutdown.
+As built, `Catalog.prepare()` (ST-06) only reports that state and never rebuilds; the automatic rebuild is
+wired where the indexer and the facade meet (ST-11). A schema that was created but never filled keeps
+reporting `derive_version` until `stamp_derive_version()` is called as the last step of a build, so an
+interrupted build never looks usable. The final `ANALYZE` of a build is `ANALYZE main`: with `state.db`
+attached, a plain `ANALYZE` would also write statistics for `state.db` (see 3.7).
 
 Measured cost (warm page cache): the local legacy tree (90 schedule files, 423 event directories, 1,051 events
 in total) indexes in 0.22 s. Reading one v3 event for the rebuild (manifest + `event.json.gz`) takes 0.11 ms.
@@ -1174,9 +1303,18 @@ WHERE e.tournament_id = :t AND e.season_id = :s
 GROUP BY e.id;
 ```
 
-Two things the tests must pin, because the planner cannot infer them: a query that wants the partial index
-`event_slices_not_ok` must contain the literal `state != 'ok'`, and a refresh query must repeat the two
-conditions of `events_unsettled`. `tests/test_store_query_plans.py` asserts the index name in each plan.
+Three spelling rules the tests must pin, because the planner cannot infer them: a query that wants the
+partial index `event_slices_not_ok` must contain the literal `state != 'ok'`; a refresh query must repeat the
+two conditions of `events_unsettled`; and `events_open` is used only when the query writes
+`status_class IN ('not_started', 'live', 'unknown')` as three literals in that order (a reordered list, a
+subset or bound parameters do not reach it; likewise `status_class IN ('live')` does not reach `events_live`,
+`status_class = 'live'` does). `tests/test_store_query_plans.py` asserts the index name in each plan. Its
+negative assertions (a query without the literal does not reach the partial index) will fail if a future
+SQLite planner gets smarter; the rule can then be relaxed and the assertion deleted.
+
+One condition on the stream read: the plan uses `stream_events_stream` only while `state.db` has no
+statistics. After `ANALYZE` with evenly filled streams, SQLite 3.53.4 picks the rowid range and filters on
+`stream`. No code runs `ANALYZE` on `state.db`, and the test pins the index under that condition.
 
 Catalog size at that scale: 230 MB for 301,000 events and 2.1 million slice rows, about 0.8 KB per event
 (`events` 54 MB, `event_slices` 114 MB, indexes the rest; the indexes and the four columns added after the
@@ -1193,9 +1331,14 @@ measurement add an estimated 15–20 MB). The real data gives 1.1 MB for 1,051 e
   the order of the response. This is the parsed response serialised again, as today
   (`src/fsutil.py:33-36`), not the bytes on the wire: escapes and number spelling may differ, values do not.
   "Raw" everywhere in the platform (raw export, the `/raw` API routes) means these bytes.
-- Compression: `gzip.compress(data, 6, mtime=0)`. `mtime=0` makes the output deterministic: the same payload
-  always gives the same file, which keeps backups and `rsync` quiet. Verified.
-- sha256 is taken over the uncompressed bytes and stored in the manifest.
+- Compression: `gzip.compress(data, 6, mtime=0)`. `mtime=0` makes the output deterministic on one machine:
+  the same payload gives the same file, which keeps backups and `rsync` quiet. Across machines the files are
+  not guaranteed identical: the header's OS byte differs between Python versions (3.11 and 3.12 delegate to
+  zlib) and the deflate stream may differ between zlib builds, so the manifest's `bytes` may differ too. Tests
+  and `migrate` never compare compressed bytes produced elsewhere.
+- sha256 is taken over the uncompressed bytes and stored in the manifest; it is the same on every machine.
+- An empty `.json.gz` is corrupt: `gzip.decompress(b"")` returns `b""` without an error, and the codec
+  treats an empty or whitespace-only result as `PayloadCorrupt`.
 - File suffix names the codec: `.json.gz`. The reader dispatches on the suffix and also accepts `.json`
   (legacy) and, when `compression.zstd` or `backports.zstd` can be imported, `.json.zst`. The writer writes
   gzip only in 3.0.
@@ -1262,6 +1405,13 @@ directories). All names are ASCII digits and fixed words, so they are valid on W
 
 `observation` keeps the two fields of today's `observation.json` (`src/status.py:260-266`) and the sticky flag.
 `migrated_from` is present only for an event that came from the legacy layout.
+
+As built (ST-03), the manifest goes beyond the example in three ways. A slice entry may carry `meta` (the
+small JSON that `Outcome.meta` brings, for example `{"complete": true}` of a round). Fields this version does
+not know are preserved at every level and written back, which is what lets "adding fields does not bump the
+format" (7.1) hold for an older writer. Timestamps keep sub-second precision when they have it.
+`manifest.validate()` requires `bytes`, `raw_bytes` and `sha256` together, a payload for state `ok` and an
+error mark for state `error`; `write_manifest` refuses an invalid manifest and always writes format 1.
 
 History file: one gzip member per snapshot, each member holding one line
 `{"fetched_at": ..., "sha256": ..., "payload": ...}`. Members are appended; the file as a whole is a valid
@@ -1358,10 +1508,24 @@ Conclusions:
 - Durability: by default nothing is `fsync`-ed, as today. After a power cut a file may be empty or old; the
   unclean-shutdown reconcile and `verify(deep=True)` detect it through the manifest hash and mark the slice
   for re-fetching. `STORE_DURABILITY=full` adds `fsync` of each file and its directory. The cost of that was
-  not measured (the scratch file system was tmpfs).
+  not measured (the scratch file system was tmpfs). As built, the setting is read from the environment and
+  honoured by the Store-layer functions only, not by the 2.x helpers, so today's writers never fsync; it gets
+  its line in `.env.example` and its place in the config model when the first writer uses the Store (ST-22,
+  P09).
 - Windows: `os.replace` fails while another process has the target open. Store readers read a file in one
   call and close it; the writer retries a failed replace up to 10 times with 20 ms pauses, then raises a
-  non-fatal `StoreError`.
+  non-fatal `StoreError`. That holds for the Store-layer functions (`write_bytes`, `replace`, `publish_dir`,
+  `move_to_trash`). The 2.x helpers that `src/fsutil.py` re-exports must keep raising `OSError`; they raise
+  `ReplaceBusy`, a `PermissionError` subclass, which 2.x callers turn into a fatal `StorageError` exactly as
+  before the retry existed. One sharing violation can therefore still stop a 2.x job, only more rarely, until
+  the writers use the Store (ST-21, ST-22).
+- The retries do not help against a reader that holds the file open in a tight loop: the test
+  `test_reader_never_sees_a_partial_file_while_it_is_rewritten` still fails on the Windows runner (an expected
+  failure). The design relies on the first sentence above: Store readers read in one call and close.
+- `files.publish_dir` refuses an existing target, even an empty directory, on every platform.
+- File mode. Files written through `atomic_write_*` get mode 0600, because `tempfile.mkstemp` creates them
+  that way, and payloads written through `files.write_bytes` inherit it. That matters for a Docker bind mount
+  read by another user. Decision S12 and plan item FX-4 make Store-layer payload files follow the umask.
 
 ### 4.5 Raw export, uncompressed
 
@@ -1402,18 +1566,34 @@ The legacy wide CSV (`all_matches_*.csv`) is not a Store function. It is the `le
 | L4 | `<event dir>/<eid>.json` holding all slices in one object | `:538-542` |
 | L5 | `match_details/_no_tournament/<sport>/<eid>/` | `:58`, `:1165-1172` |
 | schedule | `matches/<lid>_<name>/<sid>_<name>/round_*.json`, `events_*.json` | `src/match_fetcher.py:367`, `:452-454` |
-| summaries | `matches/<lid>_<name>/*_summary.{json,csv}`, `*_matches.csv` | `src/match_fetcher.py:514-595`, `src/match_data_fetcher.py:1871-1875` |
-| season lists | `seasons/<lid>_*_seasons.json`, `<lid>_seasons.json`, `<name>_seasons.json`, `league_seasons.csv` | `src/season_fetcher.py:291`, `:441-445`, `src/web/routes/common.py:31-36` |
+| schedule, first version | `matches/<lid>_<name>/<sid>_<name>/round_<n>_full.json` | matches the `round_*.json` pattern but is the older file and has no `_complete` key; read as a round page with sub `round_<n>_full` and meta `{filtered: true}` |
+| summaries | `matches/<lid>_<name>/*_summary.{json,csv}`, `*_matches.csv` in the league directory; `round_<n>_matches.csv` of the first version (13 other columns) inside the season directory | `src/match_fetcher.py:514-595`, `src/match_data_fetcher.py:1871-1875`; both places are accepted by `_season_summary_files` (`:1790-1797` at `0aa73b4`) |
+| season lists | `seasons/<lid>_*_seasons.json`, `<lid>_seasons.json`, `<name>_seasons.json`, `league_seasons.csv` (header `Liga Adı,Lig ID,Sezon ID,Sezon Adı,Sezon Yılı`) | `src/season_fetcher.py:291`, `:441-445`, `src/web/routes/common.py:31-36` |
 | change log | `score_changes.jsonl` | `src/refresh.py:21` |
 | watcher | `watch_events.jsonl`, `watch_state_<sport>.json` | `src/watcher.py:45-46` |
 
 An event directory is recognised by `basic.json` (or by L4's combined file with a `basic` key) whose `id`
-equals the directory name. `match_details/processed/` is skipped, as every walker does today.
+equals the directory name. `match_details/processed/` is skipped, as every walker does today. Two parts of
+this rule are corrections of today's behaviour, not descriptions of it (ST-05):
+
+- A directory that holds only the combined file `<id>.json` is an event directory for the reader. No walker
+  on main finds it: `/api/matches/{id}` answers 404 for it and the need is `full`.
+- No walker on main compares the payload's id with the directory name; they take the directory name as the
+  id. The reader reports a mismatch as a problem and does not yield the directory.
+
+A round file named `<n>_matches.json`, which only the terminal UI accepts (`src/ui/match_ui.py:442-448`), is
+not a form the Store reads: the reader reports it as `unknown_name`.
 
 When one event id is found in more than one legacy place, the directory with the newest `basic.json` mtime
-wins and the others are reported by `verify`.
+wins and the others are reported by `verify`. When one schedule page is stored in two directories of the same
+season (for example `96668_Premier_League_26_27/` and `96668_Season_96668/`), the newest mtime wins and ties
+go to the smaller path.
 
 When several season-list files exist for one tournament id, the newest by mtime is indexed, whatever its name.
+`league_seasons.csv` takes part only for a tournament that has no JSON list at all (as `SeasonFetcher` uses
+it). A file named after the league only (`<name>_seasons.json`) is resolved through an id-to-name map that
+the caller supplies, because the Store may not read the league configuration; without the map the file is
+reported as `unresolved_tournament`.
 Neither of today's readers does exactly this: the web routes prefer the bare `<lid>_seasons.json` when it
 exists (`src/web/routes/common.py:31-33`) and `SeasonFetcher` prefers the file named after the configured
 league (`src/season_fetcher.py:436-451`). The difference only shows when a directory holds an old-format file
@@ -1427,13 +1607,25 @@ The indexer fills the same tables from legacy files as from v3 files:
 - `observed_at` from `observation.json`; when that file is missing it is `NULL`, which the refresh rules treat
   as "final unless legacy refresh is asked for", exactly as today (`src/refresh.py:72-74`).
 - Slice rows from the slice files and the two marker files (mapping in 2.3). `fetched_at` is the file mtime.
+  A marker file that holds a value Python's `json` accepts but the counters cannot use (`Infinity`) is
+  reported as malformed; today's `_load_unavailable` raises `OverflowError` on it.
 - Schedule files give listing rows (8.2) and `entity_slices` rows with `layout = 'legacy'` and the file path.
   The `_complete` key becomes `meta_json = {"complete": true|false}`; a page that was stored filtered (no
-  `_complete` key, or an `events_*` page) gets `{"filtered": true}`.
+  `_complete` key, or an `events_*` page) gets `{"filtered": true}`. An `events_*` page that was written with
+  `FETCH_ONLY_FINISHED=false` is in fact unfiltered, but nothing in the file says so; it gets
+  `{"filtered": true}` as well and is fetched again once.
 - Legacy rows in `score_changes.jsonl` get `seq` = their line number.
 
 Reads go through the same Store calls: `events.payload(id, key)` looks at `events.layout`; for a legacy event
 it opens `<path>/<key>.json` (with `event` → `basic.json`) or takes the key from the combined file.
+
+The separate file comes first and `observation.json` is always read. Today's loader does the opposite: when
+the combined file exists, `_load_match_data_from_dir` returns it and reads neither the separate files nor
+`observation.json`. The Store's order is the right one, because only `refresh_match` updates the combined
+file and it writes `basic.json` too. Moving the readers onto the Store therefore changes three things on old
+data, which the reader PRs list as differences (plan items RD-1 and RD-3): a directory that holds only the
+combined file becomes visible; a record with a combined file becomes due for refresh (today it never is); and
+a truncated slice file affects only that slice instead of the whole match.
 
 A legacy tree can still change (a 2.x process, the terminal UI, a user copying files). The reconcile step on
 open (3.5) picks that up. While 3.x writers and 2.x writers run on the same directory at the same time,
@@ -1600,8 +1792,9 @@ Readers take no lease and no lock.
   event moved to v3; clear). On `FileNotFoundError` the Store re-reads the event's row once and retries with
   the new location; if the file is still missing it raises `PayloadMissing`.
 - A process that has `catalog.db` open while another process recreates the file (3.4, recreate mode) would
-  keep reading the old, unlinked file. Each Store compares the inode and size of `catalog.db` with those of
-  its open connection once per second and reopens when they differ.
+  keep reading the old, unlinked file. Each Store compares the device and inode of `catalog.db` with those of
+  its open connection once per second and reopens when they differ (not the size, which changes with every
+  write).
 
 ### 6.4 Platforms
 
@@ -1664,7 +1857,8 @@ data directory, because nothing on disk is in that schema.
 
 ### 7.2 Catalog
 
-No migration scripts. `catalog.py` holds `CATALOG_SCHEMA` and `DERIVE_VERSION`; if either differs from the
+No migration scripts. `catalog.py` holds `CATALOG_SCHEMA`, and `derive.py` holds `DERIVE_VERSION` (re-exported
+by `catalog.py`); if either differs from the
 file, the catalog is recreated from the files. A change that is cheap to apply in place (a new index) may
 ship as an optional in-place step, but the rebuild path must always give the same result, and a test checks
 that it does.
@@ -1681,8 +1875,24 @@ that it does.
 Migrations are written to be safe to run again after a crash between the script and the version bump
 (`CREATE TABLE IF NOT EXISTS`, `ALTER TABLE ... ADD COLUMN` guarded by a column check in a small Python hook).
 
+As built (ST-09, `src/store/state.py`):
+
+- Leases arrive with ST-10. Until then the migration transaction itself (`BEGIN IMMEDIATE`, with the version
+  read again inside it) is the cross-process mutex; ST-10 wraps the step in the `maintenance` lease.
+- Scripts are split into statements (`sqlite3.complete_statement`) and run one by one inside the transaction,
+  because `executescript` commits an open transaction first. The runner skips an `ADD COLUMN` whose column
+  already exists. Script numbers run 0001, 0002, ... without gaps.
+- A `state.db` newer than the code raises `SchemaTooNew`. `src/web/routes/settings.py` catches only
+  `(OSError, sqlite3.Error)` around the job-store rebind, so a data-directory change to such a folder answers
+  500 instead of 400 until plan item FX-2 adds `StoreError` there.
+- `StateDb.write()` joins an outer transaction on the same thread instead of nesting; `connection()` outside
+  `write()` is in autocommit mode.
+
 First creation of `state.db` imports the rows of `.meta/jobs.db` once (read only; recorded in `meta`; the old
-file stays where it is). Follows of origin `legacy` are not imported once but mirrored (2.3).
+file stays where it is). The record `meta.imported_jobs_db` is JSON, `{file, found, rows, imported, at}`. It is
+written even when no `jobs.db` exists, so a `jobs.db` that appears later is not imported; an unreadable
+`jobs.db` is not recorded and is tried again on the next open. Follows of origin `legacy` are not imported
+once but mirrored (2.3).
 
 ---
 
@@ -1854,7 +2064,7 @@ Nothing is deleted unless a setting says so. Defaults:
 | slice history (odds snapshots) | kept | `HistoryStore.prune(older_than=...)` |
 | stream events | 7 days and at most 1,000,000 rows | `StreamLog.prune`, run by the process that holds `live` or `sinks`, once per hour |
 | watcher state | rows of events that are done and older than 7 days are dropped | on `WatchStateStore.save` |
-| jobs | newest 500 rows; 2,000 events per job | on job creation |
+| jobs | newest 500 rows; 2,000 events per job | on job creation. Not implemented by ST-09, which keeps every row as the store did before; it comes with the job manager (P11) |
 | backups | kept | `BackupManager.prune(keep=..., max_age_days=...)` |
 | `exports/` | kept | the export command can be told to replace its previous output |
 | `.meta/tmp`, `.meta/trash` | emptied when the `writer` lease is taken | — |
@@ -1892,6 +2102,7 @@ as follows:
 | migrate; backup format 2 and restore; raw export | ST-23, ST-24, ST-25 |
 | all statuses, stale-listing refresh | ST-27 |
 | removal of transition code | ST-28 |
+| fixes found by the first Store pull requests | FX-3 (one connection module), FX-4 (file mode, lower-case subs), FX-5 (presence predicates) |
 
 Testing tools shared by many of these PRs:
 
@@ -1928,6 +2139,11 @@ Testing tools shared by many of these PRs:
 | Manifest | 1.2 KB average, 1.5 KB maximum | conversion above |
 | Stat of one manifest | 4 µs | conversion above |
 | DDL of section 3.3 | executes on SQLite 3.53.4; plans for refresh candidates, unobserved, open events, season list and stream read use the named indexes | executed in memory during reconciliation |
+| Codec round trip on the real data (ST-03) | all 3,389 `.json` files under the owner's `data/` read and round-trip in memory; 84.0 MB as stored, 47.2 MB canonical, 7.5 MB with gzip-6 (11.2 times smaller) | read-only, in memory; the directory has grown since the first measurement |
+| Legacy reader on the real data (ST-05) | 423 event directories (all form L1, none combined), 69 observations, 12 unverified empty counts, 90 schedule files listing 1,051 events (628 without a detail directory), 6 season lists, 8 summary files, no change log, no watcher files, no problems, no duplicates. Discovery 0.03 s, full read with payloads 0.85 s, schedule files 0.06 s, logical dump 0.8 s | read-only, warm cache |
+| Concurrent first open (ST-06, ST-09) | without a retry around the switch to WAL: 'database is locked' in at least 14 of 300 rounds (catalog) and 11 of 100 rounds with six threads (state db); with the retry 300 of 300 clean | stress tests of the two PRs |
+| File-system calls outside the Store (ST-04) | 291 calls in 21 modules, 166 baseline entries in 23 files, at `0aa73b4` (287 calls in 19 modules before PR #43 was merged) | the static check |
+| Boundary hook cost (ST-04) | none measurable: 18.2 s for the suite with the hook, 19.1 s on main before it | one run each |
 
 Not measured: `fsync` cost; behaviour on a cold cache or a spinning disk; gzip speed with stock zlib; anything
 on Windows or macOS; any scale above 423 real events.
@@ -1976,6 +2192,40 @@ Changes that come from reconciling with the service design:
     legacy wide CSV is an `ExportService` profile instead of `Exporter.legacy_all_matches_csv`.
 13. **`EventStore.states`** was added for the planner, and the ratchet baseline is one file per module.
 
+Corrections after the first Store pull requests (2026-10-01; the same list, by document, is in
+`03-implementation-plan.md` section 11):
+
+14. **Old files of the first version.** `round_<n>_matches.csv` and `round_<n>_full.json` live inside the
+    season directory; `league_seasons.csv` has a header; the terminal UI accepts `<n>_matches.json`. Sections
+    1.1 and 5.1 (G-02, ST-05).
+15. **What today's walkers find.** A directory with only the combined file is found by no walker, and no
+    walker checks the payload's id. Section 5.1 now states both as corrections the reader makes (G-02, ST-05).
+16. **Separate file before combined file**, and `observation.json` always read: the opposite of today's
+    loader. Section 5.2, with the three visible effects (ST-05).
+17. **Season-list and schedule duplicates.** Rules for `league_seasons.csv`, name-only files and a page stored
+    in two directories of a season. Section 5.1 (ST-05).
+18. **Outcome.** `fetched_at` None means now; `unavailable` added to the skipped reasons; the breaker is
+    still a failed outcome in today's code. Section 2.3 (ST-02).
+19. **Validation, manifest, error types** as built. Sections 2.3 and 4.2 (ST-03).
+20. **Replace failures and durability.** Non-fatal only in the Store layer; `STORE_DURABILITY` only there;
+    file mode 0600; the tight-loop reader on Windows. Section 4.4 (ST-03).
+21. **gzip output** is deterministic per machine, not across machines. Section 4.1 (ST-03).
+22. **Connections.** The switch to WAL is retried; identity is read in one transaction; connections close
+    themselves; errors are mapped. Section 3.2 (ST-06, ST-09).
+23. **Event row.** The signature of `derive.event_row`, the source of `home_score`, the shape of
+    `scores_json`, `season_sort_key`. Section 3.3 (ST-06).
+24. **Query plans.** A third spelling rule, and no `ANALYZE` on `state.db`. Section 3.7 (ST-06).
+25. **Replaced catalog** is detected by device and inode, not by size. Section 6.3 (ST-06).
+26. **State migrations.** `IF NOT EXISTS` in 0001; the transaction as mutex until leases exist; statements run
+    one by one; the import record. `DERIVE_VERSION` lives in `derive.py`. Sections 3.3, 7.2, 7.3 (ST-09,
+    ST-06).
+27. **`created_at`** of a job gets a column in migration 0002. Section 3.3 (P07).
+28. **Job retention** is P11's, not ST-09's. Section 9.3 (ST-09).
+29. **Boundary tests** described as built: baseline format, the hook that follows `DATA_DIR`, the stale-entry
+    conditions, the update variables, the allow-list form of the layering rule, and the modules that need a
+    decision. Section 2.4 (ST-04).
+30. **Diagnostics** reads the job history. Section 1.1 (ST-09).
+
 ---
 
 ## 13. Risks
@@ -1994,8 +2244,13 @@ Changes that come from reconciling with the service design:
 - Measurements cover 423 events of three sports on one machine (btrfs data, tmpfs scratch, zlib-ng). Rebuild
   time on a cold cache, fsync cost, stock-zlib speed and all Windows/macOS timings are estimates.
 - Windows: `os.replace` fails while a reader has the file open; shared locks are emulated with byte ranges;
-  recreating `catalog.db` needs exclusive access. The design retries and documents this, but it is untested
-  until ST-03 and ST-10 run on the Windows CI job.
+  recreating `catalog.db` needs exclusive access. The design retries and documents this. ST-03 runs on the
+  Windows CI job: the retry works for readers that read and close, and does not for a reader that holds the
+  file open in a tight loop (4.4). Leases are untested until ST-10 runs there.
+- Case-insensitive file systems. Two subs that differ only by case would share a file on Windows and on
+  default macOS volumes; FX-4 removes the case by allowing lower-case subs only (decision S13).
+- File modes. Payloads at 0600 are unreadable for a second user of a bind mount or for a backup tool under
+  another account; FX-4 and decision S12 settle the mode before the v3 writer produces files.
 - Network file systems. SQLite WAL and `flock` do not work reliably on NFS/SMB. A user who mounts `DATA_DIR`
   from a NAS gets single-process mode at best.
 - A 2.x process and a 3.x process on the same directory. 2.x does not take the lease and does not see v3 data;

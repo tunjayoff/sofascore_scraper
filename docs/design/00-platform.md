@@ -3,31 +3,39 @@
 This is an English rendering of the owner's design draft of 2026-10-01 (`platform-tasarimi-v0`, written in
 Turkish). It turns the decisions taken that day into one architecture and contract outline. It describes the
 target structure, not code. Sections 1 to 12 follow the draft section by section. The only additions are the
-three paragraphs marked "Note", which give context from the repository or from the task brief and decide
-nothing. Section 13 lists where the detailed designs (`01-storage.md`, `02-services.md`) refine the draft or propose
-something different; those points are proposals until the owner confirms them.
+paragraphs marked "Note", which give context from the repository or from the task brief and decide nothing,
+and the changes of the revision described below. Section 13 lists where the detailed designs
+(`01-storage.md`, `02-services.md`) refine the draft or propose something different; those points are
+proposals until the owner confirms them.
+
+Revised on 2026-10-01, later the same day. The owner took two further decisions on live watching after the
+push-channel measurements (`docs/push-channel/README.md`), and three decisions of the draft were carried out
+by pull requests. Section 1 lists both. Where a decision changed the draft, the section says so with the
+words "Changed on 2026-10-01": sections 2, 5, 6, 7, 8, 10 and 11.
 
 ## 1. Decisions (Tuncay, 2026-10-01)
 
-| Topic | Decision |
-|---|---|
-| Product position | A data foundation: products are built on it, it runs on servers as automation, applications and agents use it |
-| Sports | 21 sports (the current 3 + 13 that need score mapping + 5 with their own logic). Motor sports, cycling, bandy, water polo and beach volleyball are out of scope |
-| Data types | Everything SofaScore shows without login, including betting odds. Every type is selectable; what is not selected is not fetched |
-| History / live | History: by requests. Live: the push channel (by listening to the page), with polling as the fallback |
-| Interfaces | The web UI is for people (a large update on the current base). The CLI is for servers and automation only; the menu-driven terminal UI is removed |
-| Request rate | Default 5 requests per second; the user may take the risk and remove the limit |
-| Storage | Raw JSON files stay + a rebuildable SQLite catalog |
-| Data format | A fixed, versioned common schema + raw data for those who want it |
-| Match status | Every status is stored (fixture, live, finished, cancelled); filtering happens when reading |
-| Language | Default English; Turkish when the system language is Turkish |
-| Platform | Linux and Docker are official; Windows and macOS best-effort |
-| Network access | No account system. Local-only by default; exposing it is the responsibility of whoever installs it (see section 9) |
-| Raw payloads | Stored compressed; the application and the CLI export them at full size (plain JSON) on request |
-| Old data layout | No automatic migration. New writes use the new layout; old data is read in place; whoever wants to moves it with the `migrate` command (manager decision) |
-| Scheduler | In-app automatic updating is optional, off by default |
-| Version | These changes are 3.0.0 (manager decision): storage layout, API and CLI change incompatibly |
-| Merging | The manager session reviews and merges; the release tag is Tuncay's |
+| Topic | Decision | State on 2026-10-01 |
+|---|---|---|
+| Product position | A data foundation: products are built on it, it runs on servers as automation, applications and agents use it | |
+| Sports | 21 sports (the current 3 + 13 that need score mapping + 5 with their own logic). Motor sports, cycling, bandy, water polo and beach volleyball are out of scope | |
+| Data types | Everything SofaScore shows without login, including betting odds. Every type is selectable; what is not selected is not fetched | |
+| History / live | History: by requests. Live: the push channel, with polling as the fallback. How the push channel is used was decided after the draft: see the two rows at the end of this table | measured, PR #42 |
+| Interfaces | The web UI is for people (a large update on the current base). The CLI is for servers and automation only; the menu-driven terminal UI is removed. Live watching belongs to the CLI only (row at the end of this table) | |
+| Request rate | Default 5 requests per second; the user may take the risk and remove the limit | done, PR #33 |
+| Storage | Raw JSON files stay + a rebuildable SQLite catalog | in progress (`03-implementation-plan.md`, Status) |
+| Data format | A fixed, versioned common schema + raw data for those who want it | |
+| Match status | Every status is stored (fixture, live, finished, cancelled); filtering happens when reading | |
+| Language | Default English; Turkish when the system language is Turkish | done, PR #39 |
+| Platform | Linux and Docker are official; Windows and macOS best-effort | |
+| Network access | No account system. Local-only by default; exposing it is the responsibility of whoever installs it (see section 9) | done, PR #43 |
+| Raw payloads | Stored compressed; the application and the CLI export them at full size (plain JSON) on request | |
+| Old data layout | No automatic migration. New writes use the new layout; old data is read in place; whoever wants to moves it with the `migrate` command (manager decision) | |
+| Scheduler | In-app automatic updating is optional, off by default | |
+| Version | These changes are 3.0.0 (manager decision): storage layout, API and CLI change incompatibly | |
+| Merging | The manager session reviews and merges; the release tag is Tuncay's | |
+| Live is not a web feature (2026-10-01, after the draft) | Live data is not part of the web UI and is not exposed over an HTTP endpoint (no SSE stream). A person at a screen can watch live scores on SofaScore itself; the value of the live stream is for servers and programs. Live watching is a CLI service (`watch`) that delivers events to sinks: stdout (JSON lines), file, webhook. A program that wants live data over the network uses the webhook. The event stream is still stored with sequence numbers | planned: P22, P23 |
+| Live sources (2026-10-01, after the draft) | Two selectable push sources in the CLI, plus polling as the fallback that is always present. `page` (default): the service keeps a real browser page open and listens to the page's own push connection; no credential is handled. `direct` (explicit opt-in): a lightweight client connects to the push server itself with the credential read at runtime from the bridge page's own connection, kept in memory only. `direct` is never the default, is never enabled implicitly, and carries clear warnings wherever it is configured or documented (section 8) | planned: P24, P31 |
 
 Note. The sports, by class, as measured in `docs/all-sports/README.md`:
 
@@ -50,8 +58,8 @@ Note. The sports, by class, as measured in `docs/all-sports/README.md`:
           (download, refresh, watch, export, backup, status, doctor)
                    │                 │                  │
                Store             Client              Live
-        catalog + raw files   bridge + budget     push listener
-                              + health            + polling fallback
+        catalog + raw files   bridge + budget     push source (page or
+                              + health            direct) + polling fallback
                    └──────── Sport registry (sports, data slices) ────────┘
 ```
 
@@ -63,6 +71,8 @@ Rules:
 - Only the Client sends requests to SofaScore; the shared budget and the health state live there (PR #19).
 - The 2,200-line `match_data_fetcher.py` is split into these layers in small steps that do not change
   behaviour.
+- Changed on 2026-10-01: Live has one face, the CLI. The HTTP API and the web UI carry no live data
+  (section 8).
 
 Note. The file is 2,482 lines at `3ae2599`.
 
@@ -118,8 +128,9 @@ bumps the version.
   status, team name), `events/{id}`, `events/{id}/slices/{key}`, `events/{id}/odds`, `changes?since=`,
   `follows`, `jobs`, `exports`, `health`, `diagnostics`.
 - Raw data: on every resource, `?raw=1` or `/raw` gives SofaScore's response as it is.
-- Live: `GET /api/v1/live/stream?after=<sequence>` (SSE). After a dropped connection it continues from the
-  sequence where it stopped.
+- Live: none. Changed on 2026-10-01: the draft had `GET /api/v1/live/stream?after=<sequence>` (SSE). Live
+  data is not exposed over HTTP; programs read it through the CLI or receive it by webhook (sections 7, 8).
+  Job progress keeps its own SSE stream.
 - Errors: a machine-readable code + a human-readable message (`blocked`, `rate_limited`, `not_found`,
   `job_running`, …).
 
@@ -132,9 +143,9 @@ is safe; exit codes are meaningful.
 |---|---|
 | `sync` | Brings the follow list of the configuration file up to date (fixtures, missing data, refresh). One line for cron |
 | `fetch` | Fetches data for a given sport/tournament/season/match |
-| `watch` | Watches live; streams events to the chosen targets; runs as a service |
+| `watch` | Watches live; streams events to the chosen targets; runs as a service. Changed on 2026-10-01: it is the only way to watch live, and it has the option `--source page\|direct\|poll` (section 8) |
 | `export` | Exports from the catalog (CSV, JSONL, Parquet, SQLite) |
-| `serve` | Starts the HTTP API and the web UI |
+| `serve` | Starts the HTTP API and the web UI (no live service) |
 | `status` / `doctor` | Health, blocked state, last success; environment check |
 | `describe` | Gives the supported sports, data slices, commands and schemas in machine-readable form (for agents) |
 | `diagnostics` | Produces the diagnostics bundle |
@@ -151,18 +162,41 @@ schedule). Every setting can be overridden by an environment variable (for Docke
 - **file**: the current layout + exports in fixed formats.
 - **database**: the catalog is already a queryable SQLite file; a PostgreSQL target later.
 - **webhook**: live events and job notifications; signed body, retries, safe to repeat thanks to the sequence
-  number.
+  number. Changed on 2026-10-01: this is the way live data reaches a program on another machine; there is no
+  HTTP endpoint to pull or stream it from.
 - **message queue**: later, a new target on the same interface.
 
 ## 8. Live watching
 
-- Source 1: push (the connection of the browser page in the background is listened to; credentials are not
-  touched).
-- Source 2: polling (30 s), when push stays silent or drops.
+Changed on 2026-10-01 by the two decisions at the end of the table in section 1, after the endurance test the
+draft waited for (`docs/push-channel/README.md`). The draft's six lines are replaced by the following.
+
+- **A CLI service with sinks.** Live watching is `watch`. It is not part of the web UI and has no HTTP
+  endpoint: a person at a screen can watch live scores on SofaScore itself, and the value of the live stream
+  is for servers and programs. Events go to sinks: stdout (JSON lines), a file, a webhook. A program that
+  wants live data over the network uses the webhook.
+- **Source `page` (default).** The service keeps a real browser page open and listens to the push connection
+  that the page opens itself. No credential is handled.
+- **Source `direct` (explicit opt-in).** A lightweight client connects to the push server itself, using the
+  credential read at runtime from the bridge page's own connection. The credential is kept in memory only; it
+  is never written to disk, to logs or to the repository, and it is read again if the server rejects it. This
+  source is never the default and is never enabled implicitly. Wherever it is configured or documented it
+  carries these warnings: it uses the site's own client credential outside the site's client; it may break
+  without notice if the credential or the server changes; it may get the IP address blocked; it is a
+  terms-of-use grey area that the user chooses knowingly.
+- **Polling (30 s) is always present** as the fallback of both push sources, and can be chosen alone.
+- **Measured** (one evening, three sports): push delivers a match end about 0.6 to 1.0 s after SofaScore's own
+  change time, one-minute polling 32 to 52 s after it; push coverage is about 100 %. The push connection is
+  dropped about every 30 minutes and established again, so the polling fallback is mandatory and the service
+  must tolerate gaps. Frames carry only the changed fields, so the service keeps the last known state of
+  every event. Only the subject `sport.{sport}`, which a sport page subscribes to, gives a whole sport; a
+  match page subscribes to `event.{id}` only.
+- **Cost.** Listening to a page costs about 1.8 to 2.6 GB of memory per sport page even with ads and images
+  blocked; an idle bridge tab is about 1.1 GB; the direct client is about 0.2 GB.
 - Detail (incidents, statistics, point-by-point) by polling; the site does the same (10–20 s).
-- Events are written to the catalog with a sequence number; API, CLI and webhook read the same stream.
+- Events are written to the state database with a sequence number; the CLI and the sinks read the same
+  stream.
 - The watcher is a supervised background service, separate from download jobs.
-- It is finalised according to the results of this evening's endurance test.
 
 ## 9. Network access and security
 
@@ -177,6 +211,11 @@ VPN, allowlist). What the application must still do:
   browser send requests to the local application). Therefore state-changing requests are never GET, the origin
   is checked, and basic security headers are added. This is a fix that does not depend on the allowlist.
 
+Note. PR #43 (merged on 2026-10-01) implements this section for the current web application: the origin check,
+the explicit Host allow-list (a wildcard bind does not start without one), the optional access token, the
+security headers with a Content-Security-Policy, the two state-changing GET routes turned into POST, and the
+startup warning.
+
 ## 10. Work packages and order
 
 Wave 2 (running): data integrity, logs/diagnostics, job guards, doctor, blocked-state messages, CI.
@@ -185,7 +224,7 @@ Wave 3 — foundation (in order, because they share the same code):
 
 1. Store layer + catalog (without changing behaviour: first the read paths move to the catalog).
 2. Service layer: splitting `match_data_fetcher.py`; web routes and the CLI call services.
-3. Default rate 5/s, default language, security fixes (small, parallel).
+3. Default rate 5/s, default language, security fixes (small, parallel). Done: PR #33, PR #39, PR #43.
 
 Wave 4 — contract (parallel):
 
@@ -202,12 +241,18 @@ Wave 5 — expansion (parallel, independent thanks to the sport registry):
 Wave 6 — faces (parallel, against the same contract):
 
 10. Rewrite of the CLI (the menu UI is removed).
-11. Live service: push listener + SSE + webhook.
-12. Web UI update: first the screen design (approval), then the implementation.
+11. Live service: polling, then the `page` push source, then the opt-in `direct` source; sinks (stdout,
+    file, webhook). Changed on 2026-10-01: the draft had "push listener + SSE + webhook"; there is no SSE.
+12. Web UI update: first the screen design (approval), then the implementation. Changed on 2026-10-01: the
+    web UI has no live view.
 
 ## 11. Open questions
 
-- Is the push channel robust in production (this evening's test).
+- Is the push channel robust in production (this evening's test). Changed on 2026-10-01: answered for one
+  evening (section 8). Still open: how often the push credential changes, whether the server refuses
+  non-browser clients over time, whether `sport.{sport}` carries every event at quiet hours and for the other
+  18 sports, and how a direct client behaves over hours and with several subjects
+  (`03-implementation-plan.md` section 14).
 
 ## 12. Old data and migration (detail of the decision)
 
@@ -243,5 +288,7 @@ needed" in `03-implementation-plan.md`.
 | Raw data: "SofaScore's response as it is" (section 5) | The stored payload is the parsed response written again: same values and key order, not the same bytes. This is what is stored today | `01-storage.md` 4.1 |
 | Exit codes 0–6 (section 6) | The same, plus 130/143 for a one-shot command stopped by a signal | `02-services.md` 4.5 |
 | One sequence of live events (sections 3, 8) | One sequence for four streams (live, change, job, system) | `01-storage.md` 2.3, `02-services.md` 5.1 |
+| Push or polling (section 8) | `--source page\|direct\|poll`: polling can also be chosen alone, and the old `--watch` alias keeps polling so that it never starts a browser (decision D18) | `02-services.md` 8.2, 8.4 |
+| Security: basic headers, optional key (section 9) | Implemented by PR #43 with more than the draft asks: a session cookie next to the bearer token, a full Content-Security-Policy, tightened file modes | `03-implementation-plan.md` X-03, P20, P25 |
 | Follow list in the configuration file (section 6) | Three origins of follows: the config file, the API/web UI, and the existing `leagues.txt` for installations without a config file | `02-services.md` 4.3 |
 | Wave order (section 10) | Kept. Inside wave 3 the Store and the service layer are interleaved PR by PR because they share files; the plan gives the order | `03-implementation-plan.md` |
