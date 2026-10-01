@@ -10,7 +10,7 @@ Paket (zip) üç dosya içerir:
 
 Her şey src.redact'ten geçer (token, cookie, proxy parolası `***` olur) ve ev dizini `~` ile
 değiştirilir. Okunan dosyalar sabittir: log dosyası yalnızca src.logger'ın yazdığı dosyadır,
-dışarıdan yol alınmaz. Paket üretmek hiçbir şeyi değiştirmez (jobs.db salt okunur açılır).
+dışarıdan yol alınmaz. Paket üretmek hiçbir şeyi değiştirmez (iş geçmişi salt okunur açılır).
 
 Web: GET /api/logs, GET /api/diagnostics, GET /api/diagnostics/bundle (src/web/routes/diagnostics.py).
 CLI: python main.py --diagnostics [YOL]
@@ -384,10 +384,15 @@ def _cap_lists(value: Any) -> Any:
 
 def _jobs() -> Dict[str, Any]:
     """
-    Son işler, jobs.db'den SALT OKUNUR okunur. JobStore kullanılmaz: kurulurken "running" işleri
+    Son işler, iş geçmişinden SALT OKUNUR okunur. JobStore kullanılmaz: kurulurken "running" işleri
     "interrupted" yapar; CLI'dan paket üretmek çalışan web sunucusunun işini bozmamalı.
+    İş geçmişi state.db'dedir (src/store/jobs.py); 3.x'in henüz açmadığı bir dizinde yalnızca 2.x'in
+    jobs.db'si vardır.
     """
-    db = os.path.join(os.path.abspath(os.getenv("DATA_DIR", "data")), ".meta", "jobs.db")
+    meta = os.path.join(os.path.abspath(os.getenv("DATA_DIR", "data")), ".meta")
+    db = os.path.join(meta, "state.db")
+    if not os.path.isfile(db):
+        db = os.path.join(meta, "jobs.db")
     if not os.path.isfile(db):
         return {"db": db, "exists": False, "recent": []}
     conn = sqlite3.connect(f"{Path(db).as_uri()}?mode=ro", uri=True, timeout=2.0)

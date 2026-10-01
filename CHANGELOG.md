@@ -204,6 +204,11 @@ section is what the first tagged release will contain.
   available. The web app shows a translated message for the refusals listed under Fixed
   instead of a raw server error, and `POST /api/settings` answers `data_dir_changed: true`
   when the data folder changed (#21).
+- The job history moved from `DATA_DIR/.meta/jobs.db` to `DATA_DIR/.meta/state.db`. The existing
+  history is copied over once, when the new file is first created. `jobs.db` is not written
+  any more and is left in place, so an older version started on the same folder still shows
+  its own history (but not the jobs run by this version). The diagnostics bundle reads the
+  new file.
 
 ### Fixed
 
