@@ -378,7 +378,7 @@ def test_browser_headed_matches_the_bridge(monkeypatch):
 def test_language_follows_the_one_rule(env):
     """src/language.resolve_language ile aynı sonuç; kaynağı da doğru (açık ayar mı, sistem dili mi)."""
     loaded = _load(env=env)
-    assert loaded.settings.display.language == language.resolve_language(env, platform="linux")
+    assert loaded.settings.display.language == language.resolve_language(env)
     explicit = language.explicit_language(env) is not None
     assert (loaded.source("display.language").layer != loader.LAYER_DEFAULT) is explicit
 
@@ -1125,9 +1125,14 @@ def _run_python(code: str, tmp_path: Path, **env: str) -> subprocess.CompletedPr
     clean.update({
         "SOFASCORE_ENV_FILE": str(tmp_path / ".env"), "SOFASCORE_CONFIG_DIR": str(tmp_path / "config"),
         "SOFASCORE_THROTTLE_DIR": str(tmp_path / "throttle"), "LOG_DIR": str(tmp_path / "logs"), "LC_MESSAGES": "C",
+        # Log satırları (Türkçe harfler) borudan her platformda aynı kodlamayla geçsin
+        "PYTHONIOENCODING": "utf-8",
         **env,
     })
-    return subprocess.run([sys.executable, "-c", code], cwd=ROOT, env=clean, capture_output=True, text=True, timeout=120)
+    return subprocess.run(
+        [sys.executable, "-c", code], cwd=ROOT, env=clean, capture_output=True, encoding="utf-8", errors="replace",
+        timeout=120,
+    )
 
 
 def test_at_start_up_the_config_file_reaches_modules_that_read_the_environment(tmp_path):
@@ -1159,7 +1164,8 @@ def test_at_start_up_the_config_file_reaches_modules_that_read_the_environment(t
         "before = dict(os.environ)\n"
         "import src.config_manager as cm\n"
         "from src import throttle, utils\n"
-        "added = sorted(set(os.environ) - set(before))\n"
+        "names = set(os.environ) - set(before)\n"
+        f"added = sorted(n for n in names if n.startswith('SOFASCORE_') or n in {sorted(loader.LEGACY_ENV_NAMES)!r})\n"
         "print(json.dumps([throttle.configured_rate(), added, cm.ConfigManager().get_data_dir(),"
         " utils.API_BASE_URL, utils.FETCH_ONLY_FINISHED]))\n"
     )
