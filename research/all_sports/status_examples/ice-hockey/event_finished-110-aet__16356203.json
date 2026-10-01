@@ -1,0 +1,42 @@
+{
+  "id": 16356203,
+  "sport": "ice-hockey",
+  "unique_tournament": {
+    "id": 14191,
+    "name": "QMJHL"
+  },
+  "tournament": "QMJHL",
+  "category": "Canada",
+  "status": {
+    "code": 110,
+    "description": "AET",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 6,
+    "display": 6,
+    "period1": 3,
+    "period2": 1,
+    "period3": 1,
+    "normaltime": 5,
+    "overtime": 1
+  },
+  "awayScore": {
+    "current": 5,
+    "display": 5,
+    "period1": 3,
+    "period2": 1,
+    "period3": 1,
+    "normaltime": 5,
+    "overtime": 0
+  },
+  "time": {},
+  "winnerCode": 1,
+  "changes": {
+    "changeTimestamp": 1790820375
+  },
+  "startTimestamp": 1790809200,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/ice-hockey.jsonl"
+}

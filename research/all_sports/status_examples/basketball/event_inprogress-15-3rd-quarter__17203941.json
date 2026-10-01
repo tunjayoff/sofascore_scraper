@@ -1,0 +1,45 @@
+{
+  "id": 17203941,
+  "sport": "basketball",
+  "unique_tournament": {
+    "id": 23955,
+    "name": "CBI U17"
+  },
+  "tournament": "CBI U17, Fase Final",
+  "category": "Brazil",
+  "status": {
+    "code": 15,
+    "description": "3rd quarter",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 38,
+    "display": 38,
+    "period1": 8,
+    "period2": 17,
+    "period3": 13
+  },
+  "awayScore": {
+    "current": 65,
+    "display": 65,
+    "period1": 13,
+    "period2": 19,
+    "period3": 33
+  },
+  "time": {
+    "played": 1763,
+    "periodLength": 600,
+    "overtimeLength": 300,
+    "totalPeriodCount": 4,
+    "clockRunning": false,
+    "clockRunningLastUpdated": "2026-10-01T12:30:40+00:00"
+  },
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 1790857840
+  },
+  "startTimestamp": 1790854200,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/basketball.jsonl"
+}

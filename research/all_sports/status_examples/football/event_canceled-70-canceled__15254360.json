@@ -1,0 +1,26 @@
+{
+  "id": 15254360,
+  "sport": "football",
+  "unique_tournament": {
+    "id": 18654,
+    "name": "Finalissima"
+  },
+  "tournament": "Finalissima",
+  "category": "World",
+  "status": {
+    "code": 70,
+    "description": "Canceled",
+    "type": "canceled"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 1773581319
+  },
+  "startTimestamp": 1774634400,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/football.jsonl"
+}

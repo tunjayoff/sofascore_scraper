@@ -1,0 +1,28 @@
+{
+  "id": 17197207,
+  "sport": "badminton",
+  "unique_tournament": {
+    "id": 10617,
+    "name": "Dutch Open (GP), Women Doubles"
+  },
+  "tournament": "Dutch Open, WD",
+  "category": "International",
+  "status": {
+    "code": 91,
+    "description": "Walkover",
+    "type": "finished"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {
+    "currentPeriodStartTimestamp": 1790841440
+  },
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 1790841445
+  },
+  "startTimestamp": 1790928000,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/badminton.jsonl"
+}

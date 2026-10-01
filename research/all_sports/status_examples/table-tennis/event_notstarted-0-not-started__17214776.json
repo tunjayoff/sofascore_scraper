@@ -1,0 +1,26 @@
+{
+  "id": 17214776,
+  "sport": "table-tennis",
+  "unique_tournament": {
+    "id": 31462,
+    "name": "Liga Pro"
+  },
+  "tournament": "Liga Pro",
+  "category": "Belarus",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 0
+  },
+  "startTimestamp": 1790780400,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/table-tennis.jsonl"
+}

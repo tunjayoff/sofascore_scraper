@@ -1,0 +1,7 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+event,finished,100,Ended,468,completed,723764,research/all_sports/status_examples/baseball/event_finished-100-ended__723764.json
+event,finished,110,AET,14,completed,9861550,research/all_sports/status_examples/baseball/event_finished-110-aet__9861550.json
+event,notstarted,0,Not started,12,not_started,16754641,research/all_sports/status_examples/baseball/event_notstarted-0-not-started__16754641.json
+event,postponed,60,Postponed,9,void,2518204,research/all_sports/status_examples/baseball/event_postponed-60-postponed__2518204.json
+event,inprogress,28,8th Inning,2,live,16977347,research/all_sports/status_examples/baseball/event_inprogress-28-8th-inning__16977347.json
+event,inprogress,29,9th Inning,1,live,16754636,research/all_sports/status_examples/baseball/event_inprogress-29-9th-inning__16754636.json

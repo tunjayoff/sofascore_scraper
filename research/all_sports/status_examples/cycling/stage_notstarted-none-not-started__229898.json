@@ -1,0 +1,30 @@
+{
+  "id": 229898,
+  "sport": "cycling",
+  "status": {
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "type": "Stage",
+  "name": "Stage 8",
+  "keys": [
+    "arrivalCity",
+    "country",
+    "departureCity",
+    "description",
+    "flag",
+    "id",
+    "info",
+    "name",
+    "seasonStageName",
+    "sequence",
+    "slug",
+    "stageParent",
+    "startDateTimestamp",
+    "status",
+    "type",
+    "uniqueStage",
+    "year"
+  ],
+  "source_file": "research/all_sports/samples/cycling/stage-id-substages__1.json"
+}

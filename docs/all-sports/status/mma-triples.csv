@@ -1,0 +1,3 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+event,finished,100,Ended,26,completed,11366500,research/all_sports/status_examples/mma/event_finished-100-ended__11366500.json
+event,notstarted,0,Not started,24,not_started,16679037,research/all_sports/status_examples/mma/event_notstarted-0-not-started__16679037.json

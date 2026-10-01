@@ -1,0 +1,5 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+stage,finished,,Finished,15,unknown,220866,research/all_sports/status_examples/cycling/stage_finished-none-finished__220866.json
+stage,notstarted,,Not started,3,not_started,229898,research/all_sports/status_examples/cycling/stage_notstarted-none-not-started__229898.json
+stage,,,,1,unknown,220825,research/all_sports/status_examples/cycling/stage_none-none-none__220825.json
+stage,canceled,,Canceled,1,void,220862,research/all_sports/status_examples/cycling/stage_canceled-none-canceled__220862.json

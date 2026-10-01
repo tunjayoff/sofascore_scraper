@@ -1,0 +1,26 @@
+{
+  "id": 2518204,
+  "sport": "baseball",
+  "unique_tournament": {
+    "id": 11205,
+    "name": "MLB"
+  },
+  "tournament": "MLB, Regular Season",
+  "category": "USA",
+  "status": {
+    "code": 60,
+    "description": "Postponed",
+    "type": "postponed"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 0
+  },
+  "startTimestamp": 1335139500,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/baseball.jsonl"
+}

@@ -1,0 +1,6 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+event,finished,100,Ended,136,completed,1033762,research/all_sports/status_examples/basketball/event_finished-100-ended__1033762.json
+event,notstarted,0,Not started,55,not_started,16310364,research/all_sports/status_examples/basketball/event_notstarted-0-not-started__16310364.json
+event,finished,110,AET,5,completed,7446525,research/all_sports/status_examples/basketball/event_finished-110-aet__7446525.json
+event,inprogress,14,2nd quarter,1,live,17203935,research/all_sports/status_examples/basketball/event_inprogress-14-2nd-quarter__17203935.json
+event,inprogress,15,3rd quarter,1,live,17203941,research/all_sports/status_examples/basketball/event_inprogress-15-3rd-quarter__17203941.json

@@ -1,0 +1,38 @@
+{
+  "id": 54278,
+  "sport": "football",
+  "unique_tournament": {
+    "id": 295,
+    "name": "World Cup Qual. CONMEBOL"
+  },
+  "tournament": "World Cup Qualification, CONMEBOL",
+  "category": "South America",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 3,
+    "display": 3,
+    "period1": 0,
+    "period2": 3,
+    "normaltime": 3
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "period2": 0,
+    "normaltime": 0
+  },
+  "time": {},
+  "winnerCode": 1,
+  "changes": {
+    "changeTimestamp": 0
+  },
+  "startTimestamp": 1068942600,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/football.jsonl"
+}

@@ -1,0 +1,34 @@
+{
+  "id": 17121445,
+  "sport": "futsal",
+  "unique_tournament": {
+    "id": 26486,
+    "name": "U17 Paranaense"
+  },
+  "tournament": "U17 Paranaense, Playoffs - Série Prata",
+  "category": "Brazil Amateur",
+  "status": {
+    "code": 110,
+    "description": "AET",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 8,
+    "display": 8,
+    "series": 1
+  },
+  "awayScore": {
+    "current": 2,
+    "display": 2,
+    "series": 1
+  },
+  "time": {},
+  "winnerCode": 1,
+  "changes": {
+    "changeTimestamp": 1790822752
+  },
+  "startTimestamp": 1790811000,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/futsal.jsonl"
+}

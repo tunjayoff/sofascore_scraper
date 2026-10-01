@@ -1,0 +1,48 @@
+{
+  "id": 12338680,
+  "sport": "american-football",
+  "unique_tournament": {
+    "id": 9464,
+    "name": "NFL"
+  },
+  "tournament": "NFL",
+  "category": "USA",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 38,
+    "display": 38,
+    "period1": 14,
+    "period2": 10,
+    "period3": 7,
+    "period4": 7,
+    "normaltime": 38
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "period2": 0,
+    "period3": 0,
+    "period4": 0,
+    "normaltime": 0
+  },
+  "time": {
+    "played": 3600,
+    "periodLength": 900,
+    "overtimeLength": 600,
+    "totalPeriodCount": 4,
+    "currentPeriodStartTimestamp": 1736121893
+  },
+  "winnerCode": 1,
+  "changes": {
+    "changeTimestamp": 1736122802
+  },
+  "startTimestamp": 1736112300,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/american-football.jsonl"
+}

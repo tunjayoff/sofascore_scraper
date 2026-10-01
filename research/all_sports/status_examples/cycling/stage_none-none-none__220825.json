@@ -1,0 +1,25 @@
+{
+  "id": 220825,
+  "sport": "cycling",
+  "status": {
+    "description": "",
+    "type": ""
+  },
+  "type": "Season",
+  "name": "Cycling Men 2026",
+  "keys": [
+    "country",
+    "description",
+    "id",
+    "name",
+    "slug",
+    "stageParent",
+    "startDateTimestamp",
+    "status",
+    "substages",
+    "type",
+    "uniqueStage",
+    "year"
+  ],
+  "source_file": "research/all_sports/samples/cycling/stage-id-extended__2.json"
+}

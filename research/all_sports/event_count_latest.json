@@ -1,0 +1,83 @@
+{
+ "at_utc": "2026-10-01T14:00:10+00:00",
+ "snooker": {
+  "live": 3,
+  "total": 8
+ },
+ "badminton": {
+  "live": 6,
+  "total": 112
+ },
+ "futsal": {
+  "live": 1,
+  "total": 50
+ },
+ "ice-hockey": {
+  "live": 3,
+  "total": 55
+ },
+ "minifootball": {
+  "live": 0,
+  "total": 87
+ },
+ "table-tennis": {
+  "live": 16,
+  "total": 1231
+ },
+ "darts": {
+  "live": 1,
+  "total": 24
+ },
+ "aussie-rules": {
+  "live": 0,
+  "total": 1
+ },
+ "floorball": {
+  "live": 0,
+  "total": 4
+ },
+ "football": {
+  "live": 74,
+  "total": 925
+ },
+ "tennis": {
+  "live": 33,
+  "total": 436
+ },
+ "baseball": {
+  "live": 1,
+  "total": 12
+ },
+ "basketball": {
+  "live": 2,
+  "total": 114
+ },
+ "padel": {
+  "live": 0,
+  "total": 46
+ },
+ "handball": {
+  "live": 2,
+  "total": 45
+ },
+ "cricket": {
+  "live": 1,
+  "total": 12
+ },
+ "waterpolo": {
+  "live": 0,
+  "total": 1
+ },
+ "rugby": {
+  "live": 0,
+  "total": 21
+ },
+ "volleyball": {
+  "live": 0,
+  "total": 21
+ },
+ "esports": {
+  "live": 7,
+  "total": 75
+ }
+}

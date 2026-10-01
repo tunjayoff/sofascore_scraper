@@ -1,0 +1,32 @@
+{
+  "id": 214141,
+  "sport": "motorsport",
+  "status": {
+    "description": "Finished",
+    "type": "finished"
+  },
+  "type": "Event",
+  "name": "Australia GP",
+  "keys": [
+    "circuitCity",
+    "country",
+    "description",
+    "endDateTimestamp",
+    "flag",
+    "hasCompetitorResults",
+    "hasTeamResults",
+    "id",
+    "info",
+    "name",
+    "slug",
+    "stageParent",
+    "startDateTimestamp",
+    "status",
+    "substages",
+    "type",
+    "uniqueStage",
+    "winner",
+    "year"
+  ],
+  "source_file": "research/all_sports/samples/motorsport/stage-id-extended__2.json"
+}

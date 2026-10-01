@@ -1,0 +1,50 @@
+{
+  "id": 13899141,
+  "sport": "american-football",
+  "unique_tournament": {
+    "id": 9464,
+    "name": "NFL"
+  },
+  "tournament": "NFL",
+  "category": "USA",
+  "status": {
+    "code": 110,
+    "description": "AET",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 23,
+    "display": 23,
+    "period1": 0,
+    "period2": 9,
+    "period3": 0,
+    "period4": 11,
+    "normaltime": 20,
+    "overtime": 3
+  },
+  "awayScore": {
+    "current": 20,
+    "display": 20,
+    "period1": 7,
+    "period2": 7,
+    "period3": 6,
+    "period4": 0,
+    "normaltime": 20,
+    "overtime": 0
+  },
+  "time": {
+    "played": 4383,
+    "periodLength": 900,
+    "overtimeLength": 600,
+    "totalPeriodCount": 4,
+    "currentPeriodStartTimestamp": 1763933749
+  },
+  "winnerCode": 1,
+  "changes": {
+    "changeTimestamp": 1763934685
+  },
+  "startTimestamp": 1763920800,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/american-football.jsonl"
+}

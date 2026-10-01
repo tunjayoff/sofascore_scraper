@@ -1,0 +1,26 @@
+{
+  "id": 17197184,
+  "sport": "badminton",
+  "unique_tournament": {
+    "id": 10614,
+    "name": "Dutch Open (GP), Women Singles"
+  },
+  "tournament": "Dutch Open, WS",
+  "category": "International",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 0
+  },
+  "startTimestamp": 1790861400,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/badminton.jsonl"
+}

@@ -1,0 +1,1 @@
+{"url":"https://www.sofascore.com/api/v1/token/captcha","status":200,"fetched_at_utc":"2026-10-01T12:10:03+00:00","page":"https://www.sofascore.com/tr/football","cache_control":"no-cache, private","trimmed":false,"body":{"token":"<masked-jwt>"},"masked":true}

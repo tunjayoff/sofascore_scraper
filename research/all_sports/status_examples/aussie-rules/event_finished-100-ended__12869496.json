@@ -1,0 +1,44 @@
+{
+  "id": 12869496,
+  "sport": "aussie-rules",
+  "unique_tournament": {
+    "id": 10159,
+    "name": "AFL, Women"
+  },
+  "tournament": "AFL, Women",
+  "category": "Australia",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 33,
+    "display": 33,
+    "period1": 9,
+    "period2": 8,
+    "period3": 3,
+    "period4": 13,
+    "normaltime": 33
+  },
+  "awayScore": {
+    "current": 41,
+    "display": 41,
+    "period1": 13,
+    "period2": 14,
+    "period3": 13,
+    "period4": 1,
+    "normaltime": 41
+  },
+  "time": {
+    "currentPeriodStartTimestamp": 1729852388
+  },
+  "winnerCode": 2,
+  "changes": {
+    "changeTimestamp": 1729852391
+  },
+  "startTimestamp": 1729845900,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/aussie-rules.jsonl"
+}

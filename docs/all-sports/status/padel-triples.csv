@@ -1,0 +1,4 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+event,notstarted,0,Not started,32,not_started,17213169,research/all_sports/status_examples/padel/event_notstarted-0-not-started__17213169.json
+event,finished,100,Ended,14,completed,17213163,research/all_sports/status_examples/padel/event_finished-100-ended__17213163.json
+event,finished,91,Walkover,2,decided_without_play,17213165,research/all_sports/status_examples/padel/event_finished-91-walkover__17213165.json

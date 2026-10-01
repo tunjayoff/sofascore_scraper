@@ -1,0 +1,20 @@
+{
+  "id": 224932,
+  "sport": "motorsport",
+  "status": {
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "type": "Practice",
+  "name": "Free Practice 1",
+  "keys": [
+    "description",
+    "id",
+    "name",
+    "slug",
+    "startDateTimestamp",
+    "status",
+    "type"
+  ],
+  "source_file": "research/all_sports/samples/motorsport/stage-sport-sport-scheduled-date__1.json"
+}

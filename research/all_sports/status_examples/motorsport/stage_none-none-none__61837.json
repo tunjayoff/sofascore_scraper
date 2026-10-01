@@ -1,0 +1,26 @@
+{
+  "id": 61837,
+  "sport": "motorsport",
+  "status": {
+    "description": "",
+    "type": ""
+  },
+  "type": "Season",
+  "name": "Formula 1 2015",
+  "keys": [
+    "country",
+    "description",
+    "endDateTimestamp",
+    "id",
+    "name",
+    "seasonStageName",
+    "slug",
+    "stageParent",
+    "startDateTimestamp",
+    "status",
+    "type",
+    "uniqueStage",
+    "year"
+  ],
+  "source_file": "research/all_sports/samples/motorsport/team-id-stage-seasons__1.json"
+}

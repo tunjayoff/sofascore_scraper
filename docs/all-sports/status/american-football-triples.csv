@@ -1,0 +1,4 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+event,finished,100,Ended,71,completed,12338680,research/all_sports/status_examples/american-football/event_finished-100-ended__12338680.json
+event,notstarted,0,Not started,38,not_started,16067192,research/all_sports/status_examples/american-football/event_notstarted-0-not-started__16067192.json
+event,finished,110,AET,4,completed,13899141,research/all_sports/status_examples/american-football/event_finished-110-aet__13899141.json

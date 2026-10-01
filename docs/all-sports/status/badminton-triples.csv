@@ -1,0 +1,9 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+event,finished,100,Ended,75,completed,17185944,research/all_sports/status_examples/badminton/event_finished-100-ended__17185944.json
+event,notstarted,0,Not started,54,not_started,17197184,research/all_sports/status_examples/badminton/event_notstarted-0-not-started__17197184.json
+event,finished,91,Walkover,5,decided_without_play,17197207,research/all_sports/status_examples/badminton/event_finished-91-walkover__17197207.json
+event,canceled,70,Canceled,4,void,17185946,research/all_sports/status_examples/badminton/event_canceled-70-canceled__17185946.json
+event,inprogress,9,2nd set,3,live,17197189,research/all_sports/status_examples/badminton/event_inprogress-9-2nd-set__17197189.json
+event,inprogress,8,1st set,2,live,17223330,research/all_sports/status_examples/badminton/event_inprogress-8-1st-set__17223330.json
+event,inprogress,10,3rd set,1,live,17229055,research/all_sports/status_examples/badminton/event_inprogress-10-3rd-set__17229055.json
+event,inprogress,30,Pause,1,live,17229094,research/all_sports/status_examples/badminton/event_inprogress-30-pause__17229094.json

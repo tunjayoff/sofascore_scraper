@@ -1,0 +1,26 @@
+{
+  "id": 17211423,
+  "sport": "football",
+  "unique_tournament": {
+    "id": 853,
+    "name": "Club Friendly Games"
+  },
+  "tournament": "Club Friendly Games",
+  "category": "World",
+  "status": {
+    "code": 60,
+    "description": "Postponed",
+    "type": "postponed"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 1790798396
+  },
+  "startTimestamp": 1790877600,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/football.jsonl"
+}

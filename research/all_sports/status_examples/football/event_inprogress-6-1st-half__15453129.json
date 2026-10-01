@@ -1,0 +1,42 @@
+{
+  "id": 15453129,
+  "sport": "football",
+  "unique_tournament": {
+    "id": 17027,
+    "name": "Liga 4"
+  },
+  "tournament": "Liga 4",
+  "category": "Georgia",
+  "status": {
+    "code": 6,
+    "description": "1st half",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0
+  },
+  "time": {
+    "periodLength": 2700,
+    "overtimeLength": 3000,
+    "totalPeriodCount": 2,
+    "currentPeriodStartTimestamp": 1790856153,
+    "initial": 0,
+    "max": 2700,
+    "extra": 540
+  },
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 1790856273
+  },
+  "startTimestamp": 1790852400,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/football.jsonl"
+}

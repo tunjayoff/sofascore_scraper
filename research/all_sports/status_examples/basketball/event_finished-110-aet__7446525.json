@@ -1,0 +1,53 @@
+{
+  "id": 7446525,
+  "sport": "basketball",
+  "unique_tournament": {
+    "id": 486,
+    "name": "WNBA"
+  },
+  "tournament": "WNBA",
+  "category": "USA",
+  "status": {
+    "code": 110,
+    "description": "AET",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 100,
+    "display": 100,
+    "period1": 15,
+    "period2": 26,
+    "period3": 23,
+    "period4": 25,
+    "normaltime": 89,
+    "overtime": 11
+  },
+  "awayScore": {
+    "current": 96,
+    "display": 96,
+    "period1": 22,
+    "period2": 34,
+    "period3": 16,
+    "period4": 17,
+    "normaltime": 89,
+    "overtime": 7
+  },
+  "time": {
+    "current": 6583,
+    "period1": 1220,
+    "period2": 1509,
+    "period3": 1381,
+    "period4": 1565,
+    "overtime": 908,
+    "overtimeLength": 300,
+    "currentPeriodStartTimestamp": 1500486697
+  },
+  "winnerCode": 1,
+  "changes": {
+    "changeTimestamp": 1500486704
+  },
+  "startTimestamp": 1500478200,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/basketball.jsonl"
+}

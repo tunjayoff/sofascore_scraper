@@ -1,0 +1,49 @@
+{
+  "id": 16526539,
+  "sport": "cricket",
+  "unique_tournament": {
+    "id": 18704,
+    "name": "Women's National Cricket League"
+  },
+  "tournament": "Women's National Cricket League",
+  "category": "Australia",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 174,
+    "display": 174,
+    "innings": {
+      "inning1": {
+        "score": 174,
+        "wickets": 10,
+        "overs": 38.5,
+        "runRate": 4.48,
+        "targetRunRate": 5.72
+      }
+    }
+  },
+  "awayScore": {
+    "current": 285,
+    "display": 285,
+    "innings": {
+      "inning1": {
+        "score": 285,
+        "wickets": 4,
+        "overs": 50,
+        "runRate": 5.7
+      }
+    }
+  },
+  "time": {},
+  "winnerCode": 2,
+  "changes": {
+    "changeTimestamp": 1790834124
+  },
+  "startTimestamp": 1790811000,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/cricket.jsonl"
+}

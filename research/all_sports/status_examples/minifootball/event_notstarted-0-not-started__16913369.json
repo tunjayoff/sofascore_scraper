@@ -1,0 +1,24 @@
+{
+  "id": 16913369,
+  "sport": "minifootball",
+  "unique_tournament": {
+    "id": 32327,
+    "name": "M70s Thames Valley Walking Football League"
+  },
+  "tournament": "M70s Mixed",
+  "category": "United Kingdom",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": null,
+  "winnerCode": null,
+  "changes": null,
+  "startTimestamp": 1790854815,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/minifootball.jsonl"
+}

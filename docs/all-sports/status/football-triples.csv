@@ -1,0 +1,11 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+event,finished,100,Ended,216,completed,54278,research/all_sports/status_examples/football/event_finished-100-ended__54278.json
+event,notstarted,0,Not started,212,not_started,15265909,research/all_sports/status_examples/football/event_notstarted-0-not-started__15265909.json
+event,inprogress,6,1st half,14,live,15453129,research/all_sports/status_examples/football/event_inprogress-6-1st-half__15453129.json
+event,inprogress,20,Started,14,live,16873110,research/all_sports/status_examples/football/event_inprogress-20-started__16873110.json
+event,inprogress,7,2nd half,11,live,15453130,research/all_sports/status_examples/football/event_inprogress-7-2nd-half__15453130.json
+event,finished,110,AET,4,completed,11886600,research/all_sports/status_examples/football/event_finished-110-aet__11886600.json
+event,canceled,70,Canceled,3,void,15254360,research/all_sports/status_examples/football/event_canceled-70-canceled__15254360.json
+event,inprogress,31,Halftime,3,live,15453138,research/all_sports/status_examples/football/event_inprogress-31-halftime__15453138.json
+event,finished,120,AP,2,completed,17117826,research/all_sports/status_examples/football/event_finished-120-ap__17117826.json
+event,postponed,60,Postponed,1,void,17211423,research/all_sports/status_examples/football/event_postponed-60-postponed__17211423.json

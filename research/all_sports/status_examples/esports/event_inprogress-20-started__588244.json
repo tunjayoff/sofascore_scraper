@@ -1,0 +1,24 @@
+{
+  "id": 588244,
+  "sport": null,
+  "unique_tournament": {
+    "id": null,
+    "name": null
+  },
+  "tournament": null,
+  "category": null,
+  "status": {
+    "code": 20,
+    "description": "Started",
+    "type": "inprogress"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": null,
+  "winnerCode": 0,
+  "changes": null,
+  "startTimestamp": 1790856306,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/esports.jsonl"
+}

@@ -1,0 +1,50 @@
+{
+  "id": 11886600,
+  "sport": "football",
+  "unique_tournament": {
+    "id": 133,
+    "name": "Copa América"
+  },
+  "tournament": "CONMEBOL Copa América, Knockout stage",
+  "category": "South America",
+  "status": {
+    "code": 110,
+    "description": "AET",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 1,
+    "display": 1,
+    "period1": 0,
+    "period2": 0,
+    "normaltime": 0,
+    "extra1": 0,
+    "extra2": 1,
+    "overtime": 1
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "period2": 0,
+    "normaltime": 0,
+    "extra1": 0,
+    "extra2": 0,
+    "overtime": 0
+  },
+  "time": {
+    "injuryTime1": 1,
+    "injuryTime2": 4,
+    "injuryTime3": 1,
+    "injuryTime4": 2,
+    "currentPeriodStartTimestamp": 1721015370
+  },
+  "winnerCode": 1,
+  "changes": {
+    "changeTimestamp": 1721016564
+  },
+  "startTimestamp": 1721006100,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/football.jsonl"
+}

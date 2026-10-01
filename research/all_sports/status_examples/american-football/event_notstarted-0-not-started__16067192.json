@@ -1,0 +1,24 @@
+{
+  "id": 16067192,
+  "sport": "american-football",
+  "unique_tournament": {
+    "id": 32199,
+    "name": "NCAA Division FBS"
+  },
+  "tournament": "Regular season",
+  "category": "USA",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": null,
+  "winnerCode": null,
+  "changes": null,
+  "startTimestamp": 1791070200,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/american-football.jsonl"
+}

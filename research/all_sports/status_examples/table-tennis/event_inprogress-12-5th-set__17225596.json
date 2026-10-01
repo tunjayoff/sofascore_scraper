@@ -1,0 +1,40 @@
+{
+  "id": 17225596,
+  "sport": "table-tennis",
+  "unique_tournament": {
+    "id": 15005,
+    "name": "TT Cup"
+  },
+  "tournament": "TT Cup",
+  "category": "Czech Republic",
+  "status": {
+    "code": 12,
+    "description": "5th set",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 2,
+    "display": 2,
+    "period1": 8,
+    "period2": 7,
+    "period3": 12,
+    "period4": 12,
+    "period5": 10
+  },
+  "awayScore": {
+    "current": 2,
+    "display": 2,
+    "period1": 11,
+    "period2": 11,
+    "period3": 10,
+    "period4": 10,
+    "period5": 8
+  },
+  "time": null,
+  "winnerCode": null,
+  "changes": null,
+  "startTimestamp": 1790857200,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/table-tennis.jsonl"
+}

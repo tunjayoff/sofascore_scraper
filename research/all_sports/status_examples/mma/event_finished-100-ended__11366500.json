@@ -1,0 +1,31 @@
+{
+  "id": 11366500,
+  "sport": "mma",
+  "unique_tournament": {
+    "id": 19906,
+    "name": "UFC"
+  },
+  "tournament": "UFC on ABC 5: Emmett vs. Topuria",
+  "category": "World",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {
+    "period1": 300,
+    "period2": 300,
+    "period3": 300,
+    "totalPeriodCount": 3
+  },
+  "winnerCode": 2,
+  "changes": {
+    "changeTimestamp": 1687627992
+  },
+  "startTimestamp": 1687626604,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/mma.jsonl"
+}

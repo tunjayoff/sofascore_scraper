@@ -1,0 +1,38 @@
+{
+  "id": 17218595,
+  "sport": "snooker",
+  "unique_tournament": {
+    "id": 36013,
+    "name": "Shenzhen Open"
+  },
+  "tournament": "Shenzhen Open 2026",
+  "category": "International",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "normaltime": 0
+  },
+  "awayScore": {
+    "current": 5,
+    "display": 5,
+    "period1": 5,
+    "normaltime": 5
+  },
+  "time": {
+    "currentPeriodStartTimestamp": 1790842237
+  },
+  "winnerCode": 2,
+  "changes": {
+    "changeTimestamp": 1790842239
+  },
+  "startTimestamp": 1790834400,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/snooker.jsonl"
+}

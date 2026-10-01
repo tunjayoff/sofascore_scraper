@@ -1,0 +1,42 @@
+{
+  "id": 17099316,
+  "sport": "darts",
+  "unique_tournament": {
+    "id": 751,
+    "name": "World Grand Prix"
+  },
+  "tournament": "World Grand Prix",
+  "category": "International",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 1,
+    "period2": 1,
+    "period3": 1,
+    "normaltime": 0
+  },
+  "awayScore": {
+    "current": 3,
+    "display": 3,
+    "period1": 3,
+    "period2": 3,
+    "period3": 3,
+    "normaltime": 3
+  },
+  "time": {
+    "currentPeriodStartTimestamp": 1790794712
+  },
+  "winnerCode": 2,
+  "changes": {
+    "changeTimestamp": 1790794830
+  },
+  "startTimestamp": 1790792280,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/darts.jsonl"
+}

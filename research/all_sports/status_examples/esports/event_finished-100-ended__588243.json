@@ -1,0 +1,32 @@
+{
+  "id": 588243,
+  "sport": null,
+  "unique_tournament": {
+    "id": null,
+    "name": null
+  },
+  "tournament": null,
+  "category": null,
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "homeScore": {
+    "display": 13,
+    "period1": 11,
+    "period2": 2
+  },
+  "awayScore": {
+    "display": 7,
+    "period1": 1,
+    "period2": 6
+  },
+  "time": null,
+  "winnerCode": 1,
+  "changes": null,
+  "startTimestamp": 1790853309,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/esports.jsonl"
+}

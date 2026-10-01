@@ -1,0 +1,43 @@
+{
+  "rows_before_compact": 9412,
+  "sub_subjects": {
+    "event.{id}": 6981,
+    "odds.{id}": 47,
+    "sport.aussie-rules": 6,
+    "sport.bandy": 6,
+    "sport.beach-volley": 5,
+    "sport.table-tennis": 4,
+    "sport.badminton": 4,
+    "sport.futsal": 4,
+    "sport.volleyball": 3,
+    "sport.esports": 3,
+    "sport.waterpolo": 3,
+    "sport.floorball": 3,
+    "sport.tennis": 3,
+    "sport.football": 2,
+    "sport.american-football": 2,
+    "sport.handball": 2,
+    "sport.snooker": 2,
+    "sport.basketball": 1,
+    "sport.cricket": 1,
+    "sport.baseball": 1,
+    "sport.ice-hockey": 1,
+    "sport.darts": 1,
+    "sport.rugby": 1,
+    "sport.minifootball": 1,
+    "sport.padel": 1
+  },
+  "msg_subjects_logged": {
+    "sport.table-tennis": 48,
+    "sport.football": 31,
+    "sport.tennis": 27,
+    "event.{id}": 9,
+    "odds.{id}": 6,
+    "sport.badminton": 5,
+    "sport.basketball": 3,
+    "sport.darts": 3,
+    "sport.futsal": 2,
+    "sport.handball": 2,
+    "sport.ice-hockey": 1
+  }
+}

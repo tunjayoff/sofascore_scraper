@@ -1,0 +1,28 @@
+{
+  "id": 16679037,
+  "sport": "mma",
+  "unique_tournament": {
+    "id": 19906,
+    "name": "UFC"
+  },
+  "tournament": "UFC Fight Night: Buckley vs. Malott",
+  "category": "World",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {
+    "totalPeriodCount": 5
+  },
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 0
+  },
+  "startTimestamp": 1792278000,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/mma.jsonl"
+}

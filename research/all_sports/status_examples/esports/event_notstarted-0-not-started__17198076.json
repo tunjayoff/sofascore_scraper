@@ -1,0 +1,26 @@
+{
+  "id": 17198076,
+  "sport": "esports",
+  "unique_tournament": {
+    "id": 16925,
+    "name": "ESL Pro League"
+  },
+  "tournament": "ESL Pro League Group Stage",
+  "category": "Counter Strike",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 0
+  },
+  "startTimestamp": 1791036000,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/esports.jsonl"
+}

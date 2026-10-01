@@ -1,0 +1,6 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+event,notstarted,0,Not started,5,not_started,15884176,research/all_sports/status_examples/cricket/event_notstarted-0-not-started__15884176.json
+event,finished,100,Ended,5,completed,16526539,research/all_sports/status_examples/cricket/event_finished-100-ended__16526539.json
+event,willcontinue,141,End of day 1,5,unknown,16586046,research/all_sports/status_examples/cricket/event_willcontinue-141-end-of-day-1__16586046.json
+event,inprogress,21,1st Inning,1,live,16526541,research/all_sports/status_examples/cricket/event_inprogress-21-1st-inning__16526541.json
+event,canceled,90,Abandoned,1,void,16526543,research/all_sports/status_examples/cricket/event_canceled-90-abandoned__16526543.json

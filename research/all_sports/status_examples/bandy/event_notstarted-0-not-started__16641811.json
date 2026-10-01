@@ -1,0 +1,26 @@
+{
+  "id": 16641811,
+  "sport": "bandy",
+  "unique_tournament": {
+    "id": 444,
+    "name": "Elitserien"
+  },
+  "tournament": "Elitserien",
+  "category": "Sweden",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 0
+  },
+  "startTimestamp": 1792166400,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/bandy.jsonl"
+}

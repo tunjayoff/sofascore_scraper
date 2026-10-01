@@ -1,0 +1,26 @@
+{
+  "id": 17185946,
+  "sport": "badminton",
+  "unique_tournament": {
+    "id": 29866,
+    "name": "Bulgarian International Championship, MS"
+  },
+  "tournament": "Bulgarian International Championship, MS, Qual.",
+  "category": "International",
+  "status": {
+    "code": 70,
+    "description": "Canceled",
+    "type": "canceled"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 1790792672
+  },
+  "startTimestamp": 1790838000,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/badminton.jsonl"
+}

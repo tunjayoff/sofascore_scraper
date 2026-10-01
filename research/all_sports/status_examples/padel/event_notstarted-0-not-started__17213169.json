@@ -1,0 +1,26 @@
+{
+  "id": 17213169,
+  "sport": "padel",
+  "unique_tournament": {
+    "id": 38555,
+    "name": "FIP Bronze Almeirim Men"
+  },
+  "tournament": "FIP Bronze Almeirim Men - Qualification",
+  "category": "Cupra FIP Tour",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 0
+  },
+  "startTimestamp": 1790870400,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/padel.jsonl"
+}

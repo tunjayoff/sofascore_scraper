@@ -1,0 +1,3 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+event,notstarted,0,Not started,26,not_started,16237239,research/all_sports/status_examples/rugby/event_notstarted-0-not-started__16237239.json
+event,finished,100,Ended,21,completed,16237238,research/all_sports/status_examples/rugby/event_finished-100-ended__16237238.json

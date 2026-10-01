@@ -1,0 +1,26 @@
+{
+  "id": 16419100,
+  "sport": "handball",
+  "unique_tournament": {
+    "id": 149,
+    "name": "Bundesliga"
+  },
+  "tournament": "Bundesliga",
+  "category": "Germany",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 0
+  },
+  "startTimestamp": 1791118800,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/handball.jsonl"
+}

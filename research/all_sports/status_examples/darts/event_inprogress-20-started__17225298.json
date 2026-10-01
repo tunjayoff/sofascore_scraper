@@ -1,0 +1,38 @@
+{
+  "id": 17225298,
+  "sport": "darts",
+  "unique_tournament": {
+    "id": 16756,
+    "name": "Modus Super Series"
+  },
+  "tournament": "Modus Super Series",
+  "category": "International",
+  "status": {
+    "code": 20,
+    "description": "Started",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 1,
+    "display": 1,
+    "period1": 1,
+    "point": "441"
+  },
+  "awayScore": {
+    "current": 3,
+    "display": 3,
+    "period1": 3,
+    "point": "441"
+  },
+  "time": {
+    "currentPeriodStartTimestamp": 1790858871
+  },
+  "winnerCode": 2,
+  "changes": {
+    "changeTimestamp": 1790859315
+  },
+  "startTimestamp": 1790858820,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/darts.jsonl"
+}

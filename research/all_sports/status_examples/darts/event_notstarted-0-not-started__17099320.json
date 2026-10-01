@@ -1,0 +1,26 @@
+{
+  "id": 17099320,
+  "sport": "darts",
+  "unique_tournament": {
+    "id": 751,
+    "name": "World Grand Prix"
+  },
+  "tournament": "World Grand Prix",
+  "category": "International",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 0
+  },
+  "startTimestamp": 1790885700,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/darts.jsonl"
+}

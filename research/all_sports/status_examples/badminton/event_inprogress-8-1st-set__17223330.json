@@ -1,0 +1,36 @@
+{
+  "id": 17223330,
+  "sport": "badminton",
+  "unique_tournament": {
+    "id": 10613,
+    "name": "Dutch Open (GP), Singles"
+  },
+  "tournament": "Dutch Open, MS",
+  "category": "International",
+  "status": {
+    "code": 8,
+    "description": "1st set",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 10
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 13
+  },
+  "time": {
+    "currentPeriodStartTimestamp": 1790858996
+  },
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 1790859597
+  },
+  "startTimestamp": 1790859000,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/badminton.jsonl"
+}

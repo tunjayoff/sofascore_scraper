@@ -1,0 +1,26 @@
+{
+  "id": 14211294,
+  "sport": "handball",
+  "unique_tournament": {
+    "id": 149,
+    "name": "Bundesliga"
+  },
+  "tournament": "Bundesliga",
+  "category": "Germany",
+  "status": {
+    "code": 60,
+    "description": "Postponed",
+    "type": "postponed"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 1775817474
+  },
+  "startTimestamp": 1777824000,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/handball.jsonl"
+}

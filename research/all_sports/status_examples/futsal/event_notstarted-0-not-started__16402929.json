@@ -1,0 +1,26 @@
+{
+  "id": 16402929,
+  "sport": "futsal",
+  "unique_tournament": {
+    "id": 20681,
+    "name": "Campeonato Paulista"
+  },
+  "tournament": "Campeonato Paulista",
+  "category": "Brazil",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 0
+  },
+  "startTimestamp": 1790897400,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/futsal.jsonl"
+}

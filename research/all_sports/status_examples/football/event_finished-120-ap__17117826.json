@@ -1,0 +1,47 @@
+{
+  "id": 17117826,
+  "sport": "football",
+  "unique_tournament": {
+    "id": 851,
+    "name": "International Friendly Games"
+  },
+  "tournament": "International Friendly Games",
+  "category": "World",
+  "status": {
+    "code": 120,
+    "description": "AP",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 4,
+    "display": 1,
+    "period1": 1,
+    "period2": 0,
+    "normaltime": 1,
+    "penalties": 3
+  },
+  "awayScore": {
+    "current": 6,
+    "display": 1,
+    "period1": 1,
+    "period2": 0,
+    "normaltime": 1,
+    "penalties": 5
+  },
+  "time": {
+    "periodLength": 2700,
+    "overtimeLength": 900,
+    "totalPeriodCount": 2,
+    "injuryTime2": 3,
+    "currentPeriodStartTimestamp": 1790842020,
+    "lastPeriodEndTimestamp": 1790837839
+  },
+  "winnerCode": 2,
+  "changes": {
+    "changeTimestamp": 1790842475
+  },
+  "startTimestamp": 1790835000,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/football.jsonl"
+}
