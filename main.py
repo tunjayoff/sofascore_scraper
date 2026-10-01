@@ -33,6 +33,7 @@ from src.paths import env_file_path  # noqa: E402
 dotenv.load_dotenv(env_file_path())
 
 from src.SofaScoreUi import SimpleSofaScoreUI
+from src.exceptions import StorageError
 from src.logger import get_logger
 from src.i18n import get_i18n
 from src.sports import sport_slugs
@@ -146,6 +147,19 @@ def parse_arguments() -> argparse.Namespace:
         "--refresh-legacy",
         action="store_true",
         help="observation.json'ı olmayan eski kayıtları da bir kez yeniler (varsayılan: kesin sayılır)",
+    )
+
+    parser.add_argument(
+        "--recheck-unavailable",
+        nargs="?",
+        const="legacy",
+        default=None,
+        choices=["legacy", "all"],
+        metavar="legacy|all",
+        help="\"Bu dilim bu maçta yok\" işaretlerini yeniden denetime açar (ağ isteği yapmaz; dilimler sonraki "
+        "indirmede yeniden istenir). legacy (varsayılan): yalnızca kesin yanıtla (404 / boş yanıt) doğrulanmamış, "
+        "eski sürümlerden kalan işaretler; all: hepsi. --league-id ile tek lig; --headless --update-all ile "
+        "birlikte verilirse önce işaretler açılır, sonra indirme yapılır",
     )
 
     parser.add_argument(
@@ -265,6 +279,16 @@ def main() -> int:
 
         ui = SimpleSofaScoreUI(config_path=args.config, data_dir=args.data_dir)
 
+        if args.recheck_unavailable:
+            # Ağ isteği yok: yalnızca işaretler geri alınır; dilimler sonraki indirmede yeniden istenir
+            reset = ui.match_data_fetcher.reset_unavailable_markers(
+                league_id=args.league_id, include_confirmed=args.recheck_unavailable == "all"
+            )
+            logger.info(f"Yeniden denetim: {reset}")
+            print(get_i18n().t("recheck_unavailable_done", **reset))
+            if not (args.headless or args.refresh_only):
+                return 0
+
         if args.refresh_only:
             md = ui.match_data_fetcher
             md.begin_job_cache()
@@ -278,6 +302,13 @@ def main() -> int:
                 f"Yenileme: {stats['refreshed']} maç yenilendi, {stats['changed']} değişti, "
                 f"{stats['failed']} başarısız (değişiklikler: data/score_changes.jsonl)"
             )
+            if stats.get("breaker"):
+                # Devre kesildi: kalan maçlar denenmedi; cron bunu sıfırdan farklı çıkış koduyla görsün
+                print(
+                    get_i18n().t("refresh_stopped_by_breaker", reason=stats["breaker"], skipped=stats.get("skipped", 0)),
+                    file=sys.stderr,
+                )
+                return 2
             return 1 if stats["failed"] and not stats["refreshed"] else 0
 
         if args.headless:
@@ -290,7 +321,19 @@ def main() -> int:
                     args.league_id,
                     args.fetch_mode,
                 )
-                ui.run_headless_fetch(league_id=args.league_id, mode=args.fetch_mode)
+                # Tüm aşamalar (sezon, maç programı, detay, yenileme) tek devre kesiciyi paylaşır: açıldığında
+                # istek katmanı bu çalıştırma için SofaScore'a yeni istek göndermez.
+                from src import breaker as request_breaker
+
+                with request_breaker.scope(ui.config_manager) as job_breaker:
+                    ui.run_headless_fetch(league_id=args.league_id, mode=args.fetch_mode)
+                if job_breaker.tripped:
+                    print(get_i18n().t("fetch_stopped_by_breaker", reason=job_breaker.reason()), file=sys.stderr)
+                    os.environ["APP_EXIT_CODE"] = "2"
+                # Tüm ligler yolunda menü katmanı hatayı yakalayıp yalnızca "hata" yazar: nedeni burada söyle
+                storage_error = getattr(ui.match_data_fetcher, "last_storage_error", None)
+                if storage_error is not None:
+                    raise storage_error
                 ran = True
 
             if args.csv_export:
@@ -323,6 +366,12 @@ def main() -> int:
         i18n = get_i18n()
         print(i18n.t('prog_terminated_by_user'))
         return 0
+
+    except StorageError as e:
+        # Kayıt diske yazılamadı (disk dolu, izin yok): iz dökümü yerine nedeni söyle
+        logger.error(f"Depolama hatası, işlem durduruldu: {e}")
+        print(get_i18n().t("storage_error_abort", path=e.path or "?", reason=e.detail or str(e)), file=sys.stderr)
+        return 1
 
     except Exception as e:
         i18n = get_i18n()

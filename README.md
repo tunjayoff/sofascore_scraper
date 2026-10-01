@@ -208,7 +208,7 @@ See `.env.example` for all keys. Common ones:
 | `USE_PROXY` / `PROXY_URL` | Optional HTTP proxy. |
 | `FETCH_ONLY_FINISHED` | Keep only finished matches (`status.type == finished`). Default `true`. Upcoming fixtures are dropped from schedule files. |
 | `REFRESH_WINDOW_HOURS` | Hours after kick-off during which a saved match is provisional and gets re-read (default `72`, `0` = off). See [Refresh policy](#refresh-policy). |
-| `RATE_LIMIT_*` / `SERVER_ERROR_*` | Circuit breaker thresholds when many errors occur. |
+| `RATE_LIMIT_*` / `SERVER_ERROR_*` | Circuit breaker thresholds, counted per request across all phases of a job. See [Missing slices, failed requests and the circuit breaker](#missing-slices-failed-requests-and-the-circuit-breaker). |
 
 Tuning for the web UI (timeouts, retries, logging) is exposed under **Settings**; writing settings updates `.env`.
 
@@ -310,6 +310,7 @@ At least one of `--update-all` or `--csv-export` is required with `--headless`. 
 | `--ignore-rate-limit` | Disable circuit breaker (use with care) |
 | `--refresh-only` | Only re-read provisional records (no `--headless` needed); see [Refresh policy](#refresh-policy) |
 | `--refresh-legacy` | Also refresh records saved before `observation.json` existed, once |
+| `--recheck-unavailable [legacy\|all]` | Reopen "this slice does not exist for this match" markers so the next download asks again; sends no requests itself. See [Missing slices](#missing-slices-failed-requests-and-the-circuit-breaker) |
 | `--watch` | Live watcher with `--sport` and `--league-ids` or `--event-ids` (`--watch-hours` optional); see [Watch mode](#watch-mode) |
 
 Examples:
@@ -320,7 +321,7 @@ python main.py --headless --update-all --fetch-mode details --league-id 52
 python main.py --headless --csv-export --data-dir ./data
 ```
 
-Exit codes: **0** success (or `APP_EXIT_CODE` if set by scraper), **1** unexpected error, **2** headless with no action.
+Exit codes: **0** success (or `APP_EXIT_CODE` if set by scraper), **1** unexpected error or data could not be written, **2** headless with no action, or the circuit breaker stopped the run.
 
 ### Command-line help
 
@@ -350,6 +351,30 @@ The match list reads the per-season summaries under `matches/`; the export CSV i
 Next to `config/leagues.txt` (the `name: id` list the CLI also reads), `config/league_sports.json` stores each league's sport as `{"<id>": "football" | "basketball" | "tennis"}`. It is filled when a league is added from the web app, when you pick a sport in the UI, or from a downloaded match of that league.
 
 The supported sports are defined in one place, the registry in `src/sports.py`: per sport its score shape, the live watcher's parameters and the match-detail endpoints requested for it. The CLI, the downloader, the watcher and the web API all read it.
+
+### Missing slices, failed requests and the circuit breaker
+
+Each match folder holds one JSON file per detail slice (`statistics`, `lineups`, `incidents`, …). Two bookkeeping files sit next to them:
+
+- `_unavailable.json` counts, per slice, how often SofaScore gave a **definitive** "nothing here" answer for a finished match: HTTP 404, or a 200 response with no data in it. After two such answers the slice is no longer expected for that match (tennis has no lineups, for example) and the match counts as complete.
+- `_slice_status.json` records the last **failed** request per slice: `reason` (`403`, `429`, `5xx`, `timeout`, `network`, `parse`), the HTTP status, the UTC time and how many times in a row. A failed request is never counted as "not available": the slice stays expected, the match stays incomplete, and the next download asks for it again.
+
+Earlier releases counted every empty result, including requests that failed during a block or an outage. Those markers cannot be told apart from genuine ones, so they are left alone and are **not** reset automatically: that would re-request every "no lineups" tennis match on the next run. To re-check them:
+
+```bash
+python main.py --recheck-unavailable                 # reopen markers not confirmed by a definitive answer
+python main.py --recheck-unavailable --league-id 17  # one league
+python main.py --recheck-unavailable all             # reopen every marker
+python main.py --recheck-unavailable --headless --update-all --fetch-mode details   # reopen, then download
+```
+
+The flag itself sends no requests; the reopened slices are requested by the next details download. Markers confirmed by a definitive answer are kept, so running it a second time changes nothing.
+
+**Circuit breaker.** One breaker per job counts the final outcome of every request: season lists, match lists, `/event`, each detail slice and refreshes. It trips after `RATE_LIMIT_THRESHOLD_CONSECUTIVE` failed requests in a row (default 20), when `RATE_LIMIT_THRESHOLD_RATIO` of all requests have failed (default 0.9, after the first 50), or after `SERVER_ERROR_THRESHOLD_CONSECUTIVE` 5xx answers in a row (default 50). It also trips early when the browser bridge turns `blocked` during the job (see [bridge health](#is-sofascore-blocking-us-bridge-health)) and the job's own requests keep ending in 403. A 404 is an answer, not a failure. Once tripped, the job sends no further requests in any phase and says why: the web job card shows it, and `--headless` and `--refresh-only` exit with code 2.
+
+**Storage errors.** A match whose files cannot be written is reported as failed, not as downloaded. If the cause will repeat for every match (disk or quota full, permission denied, read-only file system), the job stops with a message naming the path and the reason.
+
+Matches without a SofaScore unique-tournament id are stored under `match_details/_no_tournament/<sport>/<match id>/`; records already on disk stay where they are.
 
 ## Refresh policy
 

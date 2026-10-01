@@ -206,7 +206,7 @@ Tüm anahtarlar `.env.example` içinde. Sık kullanılanlar:
 | `USE_PROXY` / `PROXY_URL` | İsteğe bağlı proxy. |
 | `FETCH_ONLY_FINISHED` | Yalnız bitmiş maçları tut (`status.type == finished`). Varsayılan `true`. Henüz oynanmamış fikstürler schedule dosyalarına yazılmaz. |
 | `REFRESH_WINDOW_HOURS` | Kaydedilen maçın başlangıçtan kaç saat boyunca geçici sayılıp yeniden okunacağı (varsayılan `72`, `0` = kapalı). Bkz. [Yenileme politikası](#yenileme-politikası). |
-| `RATE_LIMIT_*` / `SERVER_ERROR_*` | Çok hata durumunda devreye giren eşikler. |
+| `RATE_LIMIT_*` / `SERVER_ERROR_*` | Devre kesicinin eşikleri; işin tüm aşamalarında istek başına sayılır. Bkz. [Eksik dilimler, başarısız istekler ve devre kesici](#eksik-dilimler-başarısız-istekler-ve-devre-kesici). |
 
 Web **Ayarlar** sayfasından birçok değer düzenlenir; kayıt `.env`’i günceller.
 
@@ -308,6 +308,7 @@ Arka plan işlemleri `GET /api/scrape/status` ve `GET /api/scrape/stream` (SSE) 
 | `--ignore-rate-limit` | Circuit breaker’ı kapatır (dikkatli kullanın) |
 | `--refresh-only` | Yalnızca geçici kayıtları yeniden okur (`--headless` gerekmez); bkz. [Yenileme politikası](#yenileme-politikası) |
 | `--refresh-legacy` | `observation.json` öncesi kaydedilmiş maçları da bir kez yeniler |
+| `--recheck-unavailable [legacy\|all]` | "Bu dilim bu maçta yok" işaretlerini yeniden açar; sonraki indirme dilimi yeniden ister, bayrağın kendisi istek göndermez. Bkz. [Eksik dilimler](#eksik-dilimler-başarısız-istekler-ve-devre-kesici) |
 | `--watch` | Canlı izleyici: `--sport` ve `--league-ids` ya da `--event-ids` (isteğe bağlı `--watch-hours`); bkz. [İzleme modu](#izleme-modu) |
 
 Örnekler:
@@ -318,7 +319,7 @@ python main.py --headless --update-all --fetch-mode details --league-id 52
 python main.py --headless --csv-export --data-dir ./data
 ```
 
-Çıkış kodları: **0** başarı (veya scraper’ın set ettiği `APP_EXIT_CODE`), **1** beklenmeyen hata, **2** headless’te işlem belirtilmedi.
+Çıkış kodları: **0** başarı (veya scraper’ın set ettiği `APP_EXIT_CODE`), **1** beklenmeyen hata ya da veri diske yazılamadı, **2** headless’te işlem belirtilmedi ya da devre kesici çalışmayı durdurdu.
 
 ### Yardım
 
@@ -348,6 +349,30 @@ Maç listesi `matches/` altındaki sezon özetlerinden okunur; `match_details/pr
 `config/leagues.txt`’nin (CLI’ın da okuduğu `ad: id` listesi) yanında `config/league_sports.json` her ligin sporunu `{"<id>": "football" | "basketball" | "tennis"}` olarak saklar. Lig web’den eklendiğinde, arayüzde spor seçildiğinde veya o ligin indirilmiş bir maçından doldurulur.
 
 Desteklenen sporlar tek yerde, `src/sports.py`’deki kayıt defterinde tanımlıdır: spor başına skor biçimi, canlı izleyicinin parametreleri ve o spor için istenen maç detay uç noktaları. CLI, indirici, izleyici ve web API’si bu kayıt defterini okur.
+
+### Eksik dilimler, başarısız istekler ve devre kesici
+
+Her maç dizininde detay dilimi başına bir JSON dosyası bulunur (`statistics`, `lineups`, `incidents`, …). Yanlarında iki kayıt dosyası durur:
+
+- `_unavailable.json`, bitmiş bir maçta SofaScore'un dilim için kaç kez **kesin** "burada bir şey yok" yanıtı verdiğini sayar: HTTP 404 ya da içinde veri olmayan bir 200 yanıtı. İki kesin yanıttan sonra dilim o maç için beklenmez (ör. teniste kadro yoktur) ve maç tam sayılır.
+- `_slice_status.json`, dilim başına son **başarısız** isteği tutar: `reason` (`403`, `429`, `5xx`, `timeout`, `network`, `parse`), HTTP kodu, UTC zamanı ve art arda kaç kez olduğu. Başarısız istek hiçbir zaman "yok" sayılmaz: dilim beklenmeye devam eder, maç eksik görünür ve sonraki indirme dilimi yeniden ister.
+
+Önceki sürümler boş gelen her sonucu sayıyordu; engelleme ya da kesinti sırasında başarısız olan istekler de buna dahildi. O işaretler gerçek olanlardan ayırt edilemez. Bu yüzden oldukları gibi bırakılır ve kendiliğinden **sıfırlanmaz**: sıfırlansaydı, "kadrosu yok" işaretli her tenis maçı sonraki çalıştırmada yeniden istenirdi. Yeniden denetlemek için:
+
+```bash
+python main.py --recheck-unavailable                 # kesin yanıtla doğrulanmamış işaretleri yeniden aç
+python main.py --recheck-unavailable --league-id 17  # tek lig
+python main.py --recheck-unavailable all             # bütün işaretleri yeniden aç
+python main.py --recheck-unavailable --headless --update-all --fetch-mode details   # aç, sonra indir
+```
+
+Bayrağın kendisi istek göndermez; yeniden açılan dilimleri bir sonraki detay indirmesi ister. Kesin yanıtla doğrulanmış işaretler korunur, bu yüzden ikinci kez çalıştırmak hiçbir şeyi değiştirmez.
+
+**Devre kesici.** İş başına tek bir kesici her isteğin son halini sayar: sezon listeleri, maç listeleri, `/event`, her detay dilimi ve yenilemeler. Art arda `RATE_LIMIT_THRESHOLD_CONSECUTIVE` istek başarısız olunca (varsayılan 20), tüm isteklerin `RATE_LIMIT_THRESHOLD_RATIO` kadarı başarısız olunca (varsayılan 0,9; ilk 50 istekten sonra) ya da art arda `SERVER_ERROR_THRESHOLD_CONSECUTIVE` kez 5xx gelince (varsayılan 50) devre kesilir. Tarayıcı köprüsü iş sırasında `blocked` durumuna geçtiyse (bkz. [köprü sağlığı](#sofascore-bizi-engelliyor-mu-köprü-sağlığı)) ve işin kendi istekleri de 403 ile bitiyorsa daha erken kesilir. 404 bir yanıttır, başarısızlık değildir. Devre kesilince iş hiçbir aşamada yeni istek göndermez ve nedenini söyler: web iş kartında görünür, `--headless` ve `--refresh-only` 2 koduyla çıkar.
+
+**Depolama hataları.** Dosyaları yazılamayan maç indirilmiş değil, başarısız olarak bildirilir. Neden her maçta tekrarlanacaksa (disk ya da kota dolu, izin yok, salt okunur dosya sistemi) iş, yolu ve nedeni söyleyen bir mesajla durur.
+
+SofaScore unique-tournament kimliği olmayan maçlar `match_details/_no_tournament/<spor>/<maç id>/` altına yazılır; diskte zaten bulunan kayıtlar yerinde kalır.
 
 ## Yenileme politikası
 
