@@ -19,4 +19,4 @@ initTheme()
 document.documentElement.lang = String(i18n.global.locale.value)
 
 createApp(App).use(createPinia()).use(router).use(i18n).mount('#app')
-void adoptServerLanguage(async () => (await api.settings()).language)
+void adoptServerLanguage(() => api.settings())
