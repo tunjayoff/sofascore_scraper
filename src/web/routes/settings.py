@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from src.language import explicit_language
 from src.refresh import refresh_window_hours
+from src.store import StoreError
 from src.web.jobs import default_db_path
 from src.web.routes.common import (
     _job_store,
@@ -216,9 +217,12 @@ def update_settings(settings: SettingsUpdate):
 
     with _job_store.exclusive("data_dir_change"):
         try:
-            # Önce depo: dizin oluşturulamıyor ya da yazılamıyorsa .env'e hiç dokunulmaz
+            # Önce depo: dizin oluşturulamıyor, yazılamıyor ya da Store onu açamıyorsa .env'e hiç dokunulmaz.
+            # StoreError: state.db koddan yeni (SchemaTooNew), dosya bir state.db değil, geçiş başarısız,
+            # yazma kilidi alınamadı (StoreBusy) ya da dizinde başka bir süreç yazarken geçiş gerekiyor
+            # (LeaseHeld). rebind bu durumların hepsinde depoyu eski dizinde bırakır.
             _job_store.rebind(default_db_path(_abs_data_dir(new_dir)))
-        except (OSError, sqlite3.Error) as e:
+        except (OSError, sqlite3.Error, StoreError) as e:
             logger.error(f"Yeni veri dizini kullanılamıyor: {new_dir}: {e}")
             raise HTTPException(
                 status_code=400,
