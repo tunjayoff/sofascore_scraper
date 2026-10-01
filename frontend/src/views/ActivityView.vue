@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api, type JobRow } from '@/api/client'
 import { useScrapeStore } from '@/stores/scrape'
@@ -26,9 +26,13 @@ async function load() {
   }
 }
 
+/** One display row per job, computed once per change rather than per binding. */
+const rows = computed(() => jobs.value.map(row))
+
 function row(j: JobRow) {
   const st = jobStatus(j.status, false, hasWarnings(j), t)
   return {
+    id: j.id,
     title: jobTitle(j.payload, leagues.nameOf, t),
     status: st.text,
     badge: toneBadge[st.tone],
@@ -67,17 +71,17 @@ onUnmounted(scrape.onFinished(() => void load()))
   <div v-else-if="!jobs.length" class="card p-8 page-sub">{{ t('activity.empty') }}</div>
   <div v-else class="card overflow-hidden">
     <div
-      v-for="j in jobs"
-      :key="j.id"
+      v-for="r in rows"
+      :key="r.id"
       class="table-row"
       style="grid-template-columns: minmax(0, 1fr) auto auto; border-top-color: var(--line)"
     >
       <div class="min-w-0 flex flex-col gap-1">
-        <span class="font-semibold truncate">{{ row(j).title }}</span>
-        <span v-if="row(j).detail" class="mono text-[13px]" style="color: var(--muted)">{{ row(j).detail }}</span>
+        <span class="font-semibold truncate">{{ r.title }}</span>
+        <span v-if="r.detail" class="mono text-[13px]" style="color: var(--muted)">{{ r.detail }}</span>
       </div>
-      <span :class="row(j).badge">{{ row(j).status }}</span>
-      <span class="mono text-[13px] w-[120px] text-right max-sm:hidden" style="color: var(--muted)">{{ row(j).when }}</span>
+      <span :class="r.badge">{{ r.status }}</span>
+      <span class="mono text-[13px] w-[120px] text-right max-sm:hidden" style="color: var(--muted)">{{ r.when }}</span>
     </div>
   </div>
 </template>

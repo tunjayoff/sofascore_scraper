@@ -172,8 +172,8 @@ onMounted(load)
     <div>
       <span class="label">{{ t('settings.language') }}</span>
       <div class="seg" role="group" :aria-label="t('settings.language')">
-        <button type="button" :class="{ 'is-active': locale === 'tr' }" @click="changeLang('tr')">Türkçe</button>
-        <button type="button" :class="{ 'is-active': locale === 'en' }" @click="changeLang('en')">English</button>
+        <button type="button" :class="{ 'is-active': locale === 'tr' }" :aria-pressed="locale === 'tr'" @click="changeLang('tr')">Türkçe</button>
+        <button type="button" :class="{ 'is-active': locale === 'en' }" :aria-pressed="locale === 'en'" @click="changeLang('en')">English</button>
       </div>
     </div>
     <div>
