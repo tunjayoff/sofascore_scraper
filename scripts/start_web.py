@@ -31,6 +31,16 @@ from src import doctor  # noqa: E402
 # (ör. tarayıcı kurulamadıysa indirilmiş veriler yine de görüntülenebilir).
 BLOCKING_CHECKS = ("python", "packages")
 
+_messages: Optional[doctor.Context] = None
+
+
+def _t(key: str, **kwargs: Any) -> str:
+    """Launcher text from locales/*.json, in the app's language (rule: src/language.py)."""
+    global _messages
+    if _messages is None:
+        _messages = doctor.Context()
+    return _messages.t("launcher_" + key, **kwargs)
+
 
 def _venv_python() -> Path:
     if os.name == "nt":
@@ -44,21 +54,19 @@ def _ensure_venv() -> Optional[Path]:
         return py
     if sys.version_info < MIN_PYTHON:
         print(
-            f"ERROR: Python {MIN_PYTHON[0]}.{MIN_PYTHON[1]} or newer is required; "
-            f"this is Python {sys.version_info[0]}.{sys.version_info[1]}.\n"
-            "  Install a newer Python from https://www.python.org/downloads/ and start again.",
+            _t(
+                "python_too_old",
+                minimum=f"{MIN_PYTHON[0]}.{MIN_PYTHON[1]}",
+                current=f"{sys.version_info[0]}.{sys.version_info[1]}",
+            ),
             file=sys.stderr,
         )
         return None
-    print("Creating virtualenv (.venv)…")
+    print(_t("creating_venv"))
     try:
         subprocess.check_call([sys.executable, "-m", "venv", str(ROOT / ".venv")], cwd=ROOT)
     except (OSError, subprocess.CalledProcessError):
-        print(
-            "ERROR: could not create the virtualenv (python -m venv .venv).\n"
-            "  Debian/Ubuntu: sudo apt install python3-venv   Fedora: sudo dnf install python3-virtualenv",
-            file=sys.stderr,
-        )
+        print(_t("venv_failed"), file=sys.stderr)
         return None
     # Paketler ve tarayıcı ön denetimde (_preflight) kurulur: yarıda kalmış bir kurulum da böylece tamamlanır
     return _venv_python()
@@ -69,28 +77,18 @@ def _ensure_frontend() -> None:
         return
     version = doctor.installed_node_version()
     if not doctor.node_is_supported(version):
-        found = "Node.js " + ".".join(str(n) for n in version) + " is too old" if version else "Node.js / npm not found"
-        print(
-            f"WARNING: the web UI is not built and cannot be built here ({found}).\n"
-            "  Install Node.js 20.19+ or 22.12+ (https://nodejs.org), then start again; or run:\n"
-            "    cd frontend && npm install && npm run build\n"
-            "  Continuing anyway: the API works, the browser will show a help page instead of the UI.",
-            file=sys.stderr,
-        )
+        found = _t("node_too_old", version=".".join(str(n) for n in version)) if version else _t("node_missing")
+        print(_t("ui_cannot_build", found=found), file=sys.stderr)
         return
     npm = shutil.which("npm")
-    print("Building web UI (first run may take a minute)…")
+    print(_t("building_ui"))
     frontend = ROOT / "frontend"
     try:
         if not (frontend / "node_modules").is_dir():
             subprocess.check_call([npm, "install"], cwd=frontend)
         subprocess.check_call([npm, "run", "build"], cwd=frontend)
     except (OSError, subprocess.CalledProcessError):
-        print(
-            "WARNING: building the web UI failed (see the output above).\n"
-            "  Continuing anyway: the API works, the browser will show a help page instead of the UI.",
-            file=sys.stderr,
-        )
+        print(_t("ui_build_failed"), file=sys.stderr)
 
 
 def _run_doctor(py: Path) -> Optional[Dict[str, Any]]:
@@ -114,12 +112,12 @@ def _auto_fixes(py: Path) -> Dict[str, Any]:
     """Doctor result code -> (what to tell the user, command). Only these are run without asking."""
     return {
         "packages_missing": (
-            "Installing Python packages…",
+            _t("installing_packages"),
             # constraints.txt: the exact versions CI tests (same command as the installers)
             [str(py), "-m", "pip", "install", "-r", "requirements.txt", "-c", "constraints.txt"],
         ),
         "browser_missing": (
-            "Installing the browser the app drives (patchright's Chromium; a one-time download)…",
+            _t("installing_browser"),
             doctor.browser_install_command(str(py)),
         ),
     }
@@ -154,33 +152,25 @@ def _preflight(
         try:
             run_fix(command)
         except OSError as e:
-            print(f"  could not run {command[0]}: {e}", file=sys.stderr)
+            print(_t("fix_not_run", command=command[0], error=e), file=sys.stderr)
         report = run_doctor(py)
 
     if report is None:
-        print(
-            "WARNING: the environment check could not run; starting anyway.\n"
-            f'  To see why: "{py}" main.py --doctor',
-            file=sys.stderr,
-        )
+        print(_t("doctor_unreadable", python=py), file=sys.stderr)
         return True
 
     problems = [c for c in report["checks"] if c.get("status") in ("warn", "fail")]
     for c in problems:
-        tag = "ERROR" if c["status"] == "fail" else "WARNING"
+        tag = _t("tag_error" if c["status"] == "fail" else "tag_warning")
         print(f"{tag}: {c.get('label')}: {c.get('summary')}", file=sys.stderr)
         if c.get("fix"):
             print(f"  → {c['fix']}", file=sys.stderr)
     blocking = [c for c in problems if c["status"] == "fail" and c.get("id") in BLOCKING_CHECKS]
     if blocking:
-        print("Cannot start until the errors above are fixed.", file=sys.stderr)
+        print(_t("cannot_start"), file=sys.stderr)
         return False
     if any(c["status"] == "fail" for c in problems):
-        print(
-            "Starting anyway: data already downloaded can be viewed, but new downloads will fail "
-            "until the errors above are fixed.",
-            file=sys.stderr,
-        )
+        print(_t("starting_anyway"), file=sys.stderr)
     return True
 
 
@@ -224,7 +214,7 @@ def _open_browser(url: str) -> None:
             return
     except OSError:
         pass
-    print(f"Open this URL in your browser:\n  {url}")
+    print(_t("open_url", url=url))
 
 
 def main() -> int:
@@ -242,7 +232,7 @@ def main() -> int:
     _ensure_frontend()
 
     if _port_open():
-        print(f"Already running — open:\n  {URL}")
+        print(_t("already_running", url=URL))
         # Do not spawn another browser process; user likely already has a tab.
         return 0
 
@@ -259,24 +249,24 @@ def main() -> int:
             f"uvicorn.run('src.web.app:app', host='127.0.0.1', port={PORT}, reload=False)"
         ),
     ]
-    print(f"Starting SofaScore Scraper at {URL}")
-    print("Leave this window open. Close it to stop the app.")
+    print(_t("starting", url=URL))
+    print(_t("leave_open"))
     proc = subprocess.Popen(cmd, cwd=ROOT, env=env)
 
     opened = False
     for _ in range(60):
         if proc.poll() is not None:
-            print("Server exited early.", file=sys.stderr)
+            print(_t("server_exited"), file=sys.stderr)
             return proc.returncode or 1
         if _port_open():
-            print(f"Ready: {URL}")
+            print(_t("ready", url=URL))
             if os.environ.get("SOFASCORE_NO_BROWSER", "").strip() not in ("1", "true", "yes"):
                 _open_browser(URL)
             opened = True
             break
         time.sleep(0.25)
     if not opened:
-        print("Server started but /health not ready yet — open manually:", URL)
+        print(_t("not_ready", url=URL))
 
     try:
         return proc.wait()

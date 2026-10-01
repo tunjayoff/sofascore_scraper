@@ -222,3 +222,32 @@ def test_every_install_uses_the_constraints_file(name):
 def test_nothing_else_tells_users_to_run_playwright_install():
     for path in [REPO / "main.py", *sorted((REPO / "src").rglob("*.py")), REPO / "scripts" / "start_web.py"]:
         assert "playwright install" not in path.read_text(encoding="utf-8"), path
+
+
+def test_launcher_messages_follow_the_app_language(launcher, monkeypatch, capsys):
+    """Başlatıcının iletileri locales/*.json'dan gelir: varsayılan İngilizce, dil Türkçeyse Türkçe."""
+    broken = _report(_check("packages", "fail", "packages_missing"))
+    assert launcher._preflight(PY, run_doctor=Doctor(broken), run_fix=lambda cmd: 1) is False
+    out = capsys.readouterr()
+    assert "Installing Python packages" in out.out and "ERROR: Packages:" in out.err and "Cannot start" in out.err
+
+    monkeypatch.setattr(launcher, "_messages", doctor.Context(lang="tr"))
+    assert launcher._preflight(PY, run_doctor=Doctor(broken), run_fix=lambda cmd: 1) is False
+    out = capsys.readouterr()
+    assert "Python paketleri kuruluyor" in out.out and "HATA: Packages:" in out.err
+    assert "giderilmeden başlatılamaz" in out.err
+    assert launcher._preflight(PY, run_doctor=lambda py: None) is True
+    assert "UYARI: ortam denetimi çalıştırılamadı" in capsys.readouterr().err
+
+
+def test_launcher_language_comes_from_the_shared_rule(launcher, monkeypatch, tmp_path):
+    for key in ("APP_LANGUAGE", "LANGUAGE"):  # başka bir testin ortamda bıraktığı ayar .env'in önüne geçmesin
+        monkeypatch.delenv(key, raising=False)
+    env_file = tmp_path / ".env"
+    env_file.write_text("APP_LANGUAGE=tr\n", encoding="utf-8")
+    monkeypatch.setenv("SOFASCORE_ENV_FILE", str(env_file))
+    monkeypatch.setattr(launcher, "_messages", None)
+    assert launcher._t("ready", url="http://x") == "Hazır: http://x"
+    env_file.write_text("APP_LANGUAGE=\n", encoding="utf-8")
+    monkeypatch.setattr(launcher, "_messages", None)
+    assert launcher._t("ready", url="http://x") == "Ready: http://x"
