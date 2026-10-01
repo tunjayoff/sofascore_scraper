@@ -1,0 +1,18 @@
+# src.store.Follow
+# kaynak: src/store/follows.py
+@dataclass(frozen=True)
+class Follow:
+    id: int
+    kind: str
+    entity_id: int
+    name: str
+    sport: Optional[str]
+    seasons: Union[str, Tuple[int, ...]]
+    slices: Optional[Mapping[str, Any]]
+    live: bool
+    enabled: bool
+    origin: str
+    position: int
+    created_at: int
+    updated_at: int
+    def spec(self) -> FollowSpec

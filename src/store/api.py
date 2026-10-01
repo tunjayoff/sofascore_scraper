@@ -36,6 +36,7 @@ from src.store import files, layout
 from src.store.catalog import CATALOG_SCHEMA, Catalog, CatalogState, catalog_path
 from src.store.derive import DERIVE_VERSION
 from src.store.errors import PayloadCorrupt, PayloadMissing, SchemaTooNew, StoreError
+from src.store.follows import FollowStore
 from src.store.jobs import import_legacy_jobs
 from src.store.lease import Lease, LeaseInfo, LeaseManager
 from src.store.manifest import MANIFEST_FORMAT
@@ -173,6 +174,7 @@ class Store:
             import_legacy_jobs(self._state, layout.resolve(self.data_dir, layout.LEGACY_JOBS_DB))
             self._catalog = Catalog(catalog_path(self.data_dir), attach={"state": state_path})
             self._catalog.prepare(create=create)
+            self.follows = FollowStore(self)
             self._schema = self._sync_schema()
             self.runtime = RuntimeFacts(self._state)
         except BaseException:

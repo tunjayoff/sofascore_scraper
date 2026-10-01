@@ -2,8 +2,8 @@
 Store: DATA_DIR altındaki her şeye dokunan tek paket (docs/design/01-storage.md, bölüm 2).
 
 Paketin dışındaki kod yalnızca bu kökten içe aktarır (`from src.store import ...`), alt modüllerden
-değil. Dışa açık olanlar: hata sınıfları, cephe (`open_store`, `Store`, `StoreInfo`), kilitler (`Lease`,
-`LeaseInfo`) ve iş deposu. Okuma ve yazma API'leri sonraki adımlarda eklenir.
+değil. Dışa açık olanlar: hata sınıfları, cephe (`open_store`, `Store`, `StoreInfo`), takipler (`FollowStore`,
+`apply_follows`), kilitler (`Lease`, `LeaseInfo`) ve iş deposu. Okuma ve yazma API'leri sonraki adımlarda eklenir.
 
 Hata sınıfları dışındaki adlar ilk kullanımda yüklenir: kök, cepheyi (SQLite, katalog, türetme) içe
 aktarmadan da alınabilmelidir, çünkü `src.store.files` gibi alt modülleri uygulamanın en alt katmanları
@@ -29,6 +29,7 @@ from src.store.errors import (
 
 if _TYPE_CHECKING:  # tür denetleyicileri ve API anlık görüntüsü adları buradan bulur
     from src.store.api import Store, StoreInfo, open_store
+    from src.store.follows import ApplyResult, Follow, FollowConflict, FollowSpec, FollowStore, apply_follows
     from src.store.jobs import (
         DataOperationRunningError,
         JobRunningError,
@@ -43,6 +44,12 @@ _LAZY = {
     "open_store": "src.store.api",
     "Store": "src.store.api",
     "StoreInfo": "src.store.api",
+    "FollowStore": "src.store.follows",
+    "Follow": "src.store.follows",
+    "FollowSpec": "src.store.follows",
+    "FollowConflict": "src.store.follows",
+    "ApplyResult": "src.store.follows",
+    "apply_follows": "src.store.follows",
     "Lease": "src.store.lease",
     "LeaseInfo": "src.store.lease",
     "JobStore": "src.store.jobs",
@@ -71,6 +78,12 @@ __all__ = [
     "open_store",
     "Store",
     "StoreInfo",
+    "FollowStore",
+    "Follow",
+    "FollowSpec",
+    "FollowConflict",
+    "ApplyResult",
+    "apply_follows",
     "Lease",
     "LeaseInfo",
     "JobStore",

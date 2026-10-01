@@ -1,0 +1,3 @@
+# src.store.apply_follows
+# kaynak: src/store/follows.py
+def apply_follows(data_dir: PathLike, desired: Union[Sequence[FollowSpec], Callable[[], Sequence[FollowSpec]]], *, origin: str, prune: bool = True, create: bool = False) -> Optional[ApplyResult]

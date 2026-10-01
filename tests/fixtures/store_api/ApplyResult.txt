@@ -1,0 +1,12 @@
+# src.store.ApplyResult
+# kaynak: src/store/follows.py
+@dataclass(frozen=True)
+class ApplyResult:
+    origin: str
+    added: Tuple[Follow, ...] = ()
+    updated: Tuple[Follow, ...] = ()
+    removed: Tuple[Follow, ...] = ()
+    unchanged: int = 0
+    conflicts: Tuple[FollowConflict, ...] = ()
+    @property
+    def changed(self) -> bool

@@ -1,0 +1,11 @@
+# src.store.FollowStore
+# kaynak: src/store/follows.py
+class FollowStore:
+    def __init__(self, store: Store) -> None
+    def list(self, *, kind: Optional[str] = None, enabled: Optional[bool] = None, origin: Optional[str] = None) -> List[Follow]
+    def get(self, kind: str, entity_id: int) -> Optional[Follow]
+    def leagues(self) -> Dict[int, str]
+    def add(self, spec: FollowSpec, *, origin: str = 'api') -> Follow
+    def update(self, kind: str, entity_id: int, **changes: Any) -> Follow
+    def remove(self, kind: str, entity_id: int) -> bool
+    def apply(self, desired: Sequence[FollowSpec], *, origin: str, prune: bool = True) -> ApplyResult
