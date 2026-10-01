@@ -126,13 +126,16 @@ class _SlotWait:
     REQUEST_TIMEOUT ile düşürmesin. Süre, beklemeye başlamadan önce (ayırma anında) yazılır;
     çağıran taraf son tarihi buna göre uzatır (_run_sync / _run_on_background_loop).
     `joined`: bu çağrının beklediği ortak challenge çözümünün kendi sıra beklemeleri.
+    `shared`: sayaç ortak challenge çözümünündür; o çözümün sıra beklemesi tek bir çağıranın iptaliyle
+    kesilmez (bkz. _wait_for_slot).
     """
 
-    __slots__ = ("own", "joined")
+    __slots__ = ("own", "joined", "shared")
 
-    def __init__(self) -> None:
+    def __init__(self, shared: bool = False) -> None:
         self.own = 0.0
         self.joined: List["_SlotWait"] = []
+        self.shared = shared
 
     @property
     def seconds(self) -> float:
@@ -142,14 +145,48 @@ class _SlotWait:
 _slot_wait: "contextvars.ContextVar[Optional[_SlotWait]]" = contextvars.ContextVar("bridge_slot_wait", default=None)
 
 
+# Sıra beklerken çağıranın iptal kontrolüne bu aralıkla bakılır (istek katmanındaki _sleep/_asleep ile aynı)
+_CANCEL_CHECK_SECONDS = 0.25
+
+
+async def _cancellable_sleep(seconds: float) -> None:
+    """
+    asyncio.sleep gibi, ama çağıranın iptal kontrolü (src/client/context.py) iptal derse
+    FetchCancelled ile kesilir. Kontrol bir ContextVar'dır: köprü görevi, çağıranın bağlamını
+    kopyaladığı için (_submit) arka plan döngüsünde de çağıranın işine bakar.
+    """
+    # Fonksiyon içinde: src.client paketi (istek katmanı) bu modülü de fonksiyon içinden yükler
+    from src.client.context import raise_if_cancelled
+
+    end = time.monotonic() + seconds
+    while True:
+        raise_if_cancelled()
+        left = end - time.monotonic()
+        if left <= 0:
+            return
+        await asyncio.sleep(min(_CANCEL_CHECK_SECONDS, left))
+
+
 async def _wait_for_slot() -> None:
-    """Ortak bütçeden sıra alır ve bekler; beklenen süre çağrının zaman aşımına eklenir."""
+    """
+    Ortak bütçeden sıra alır ve bekler; beklenen süre çağrının zaman aşımına eklenir.
+
+    Bekleme, çağıranın işi iptal edilince en geç _CANCEL_CHECK_SECONDS içinde kesilir (sync yolda
+    çağıran thread köprünün sonucunu beklerken kendi iptaline bakamaz). Bekleme nasıl kesilirse
+    kesilsin (iş iptali, zaman aşımının görevi iptal etmesi) istek gönderilmemiştir: sıra bütçeye
+    geri verilir. Ortak challenge çözümünün doğrulama isteği iptale bakmaz: çözümü başlatan işin
+    iptali, aynı çözümü bekleyen başka çağıranları düşürmesin.
+    """
     delay = throttle.reserve()
     if delay > 0:
         wait = _slot_wait.get()
         if wait is not None:
             wait.own += delay
-        await asyncio.sleep(delay)
+        with throttle.give_back_if_interrupted(delay):
+            if wait is not None and wait.shared:
+                await asyncio.sleep(delay)
+            else:
+                await _cancellable_sleep(delay)
 
 
 class BrowserBridge:
@@ -302,7 +339,7 @@ class BrowserBridge:
         if self._solve_task is None or self._solve_task.done():
             # Çözümün (doğrulama isteğinin) sıra beklemesi kendi sayacına yazılır: görev, bağlamı
             # oluşturulduğu anda kopyalar
-            solve_wait = _SlotWait()
+            solve_wait = _SlotWait(shared=True)
             token = _slot_wait.set(solve_wait)
             try:
                 self._solve_task = asyncio.ensure_future(self._solve_challenge())

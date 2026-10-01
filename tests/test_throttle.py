@@ -1030,6 +1030,83 @@ def test_stopped_bulk_job_leaves_no_queue_behind(shared_dir, monkeypatch):
     assert throttle.reserve() <= 1.0
 
 
+@pytest.mark.parametrize("sync", [True, False])
+def test_bridge_slot_wait_stops_when_the_job_is_cancelled(shared_dir, monkeypatch, sync):
+    """
+    Köprünün içindeki sıra beklemesi çağıranın iptal kontrolüne bakar: iş durdurulunca bir kontrol
+    aralığı içinde kesilir, istek gönderilmez ve sıra geri verilir. Eskiden sync yolda çağıran thread
+    bekleme bitene kadar (burada 10 sn) köprüde kalırdı.
+    """
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0.1")
+    assert throttle.reserve() == 0.0
+    bridge = _bridge(AsyncMock(return_value=_OK))
+    stop_at = time.monotonic() + 0.1
+
+    def call():
+        if sync:
+            return cs.fetch_api_via_browser_sync("/event/1")
+        return asyncio.run(cs.fetch_api_via_browser("/event/1"))
+
+    with request_context(cancel=lambda: time.monotonic() >= stop_at), \
+            patch.object(cs.BrowserBridge, "get_instance", return_value=bridge):
+        start = time.monotonic()
+        with pytest.raises(utils.FetchCancelled):
+            call()
+        elapsed = time.monotonic() - start
+    assert elapsed < 0.1 + cs._CANCEL_CHECK_SECONDS + 2.0  # + yavaş makine payı; 10 sn değil
+    assert bridge.evaluate.await_count == 0
+    assert 9.0 - elapsed < throttle.reserve() <= 10.0  # iade olmasaydı ~20 sn
+
+
+def test_bridge_slot_wait_without_a_cancel_check_is_unchanged(shared_dir, monkeypatch):
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", "4")
+    monkeypatch.setattr(throttle.api_throttle(), "_burst", 1)
+    bridge = _bridge(AsyncMock(return_value=_OK))
+    with request_context(), patch.object(cs.BrowserBridge, "get_instance", return_value=bridge):
+        start = time.monotonic()
+        assert [cs.fetch_api_via_browser_sync("/event/1") for _ in range(3)] == [{"a": 1}] * 3
+    assert time.monotonic() - start >= 0.45  # iki bekleme, 0,25'er sn
+
+
+def test_cancelled_bridge_call_gives_its_slot_back(shared_dir, monkeypatch):
+    """Sıra beklerken asyncio iptali (zaman aşımı, kapanan çağıran) da sırayı geri verir."""
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0.1")
+    assert throttle.reserve() == 0.0
+
+    async def run():
+        waiting = asyncio.ensure_future(cs._wait_for_slot())
+        await asyncio.sleep(0.05)
+        waiting.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await waiting
+
+    with request_context():
+        asyncio.run(run())
+    assert 9.0 < throttle.reserve() <= 10.0
+
+
+def test_one_cancelled_job_does_not_stop_a_shared_solve(monkeypatch):
+    """
+    Ortak challenge çözümünü başlatan işin iptali, çözümün doğrulama isteğini sıra beklerken kesmez:
+    aynı çözümü başka çağıranlar da bekliyor olabilir (çözüm görevi, başlatanın bağlamını kopyalar).
+    """
+    _slot_delays(monkeypatch, 0.3, 0.3)
+    bridge = cs.BrowserBridge.__new__(cs.BrowserBridge)
+    bridge.token, bridge._token_at = None, 0.0
+    bridge._solve_task, bridge._solve_wait, bridge._solve_failed_at = None, None, 0.0
+    bridge.ensure_ready = AsyncMock()
+
+    async def solve():
+        await cs._wait_for_slot()  # _api_unlocked'ın doğrulama isteği
+        return "jwt"
+
+    bridge._solve_challenge = solve
+    with request_context(cancel=lambda: True):
+        assert cs._run_sync(bridge.solve_challenge(), 5.0) == "jwt"
+        with pytest.raises(utils.FetchCancelled):  # işin kendi isteği ise kesilir
+            cs._run_sync(cs._wait_for_slot(), 5.0)
+
+
 # --- izleyici: 1 sn aralık ortak bütçenin "watch" şeridinden gelir -----------------------------
 
 def _fake_api(path):
