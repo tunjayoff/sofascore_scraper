@@ -153,7 +153,8 @@ class BrowserBridge:
                 bridge_health.record_failure(bridge_health.KIND_BROWSER, "tarayıcı başlatılamadı (yeniden deneme bekleniyor)")
                 raise RuntimeError(
                     "BrowserBridge başlatılamadı (yakın zamanda denendi). "
-                    "Tarayıcı kurulu mu? `python -m playwright install chromium`"
+                    "Nedenini görmek için: `python main.py --doctor` "
+                    "(tarayıcı kurulumu: `python -m patchright install chromium --no-shell`)"
                 )
             # Sayfası kapanmış eski oturum: yeniden başlatmadan önce kapat (profil kilidi)
             await self.close()
