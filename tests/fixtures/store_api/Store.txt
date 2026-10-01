@@ -5,6 +5,8 @@ class Store:
     self.data_dir
     self.readonly
     self.runtime
+    self.streams
+    self.watch
     @property
     def closed(self) -> bool
     @property

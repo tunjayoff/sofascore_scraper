@@ -1,0 +1,7 @@
+# src.store.StreamHead
+# kaynak: src/store/streams.py
+@dataclass(frozen=True)
+class StreamHead:
+    stream_id: str
+    first_seq: int
+    last_seq: int

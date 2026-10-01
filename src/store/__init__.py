@@ -38,6 +38,8 @@ if _TYPE_CHECKING:  # tür denetleyicileri ve API anlık görüntüsü adları b
         get_job_store,
     )
     from src.store.lease import Lease, LeaseInfo
+    from src.store.streams import StreamBatch, StreamEvent, StreamHead, StreamLog, StreamRecord
+    from src.store.watch import WatchStateStore
 
 _LAZY = {
     "open_store": "src.store.api",
@@ -51,6 +53,12 @@ _LAZY = {
     "DataOperationRunningError": "src.store.jobs",
     "default_db_path": "src.store.jobs",
     "get_job_store": "src.store.jobs",
+    "StreamLog": "src.store.streams",
+    "StreamEvent": "src.store.streams",
+    "StreamRecord": "src.store.streams",
+    "StreamBatch": "src.store.streams",
+    "StreamHead": "src.store.streams",
+    "WatchStateStore": "src.store.watch",
 }
 
 
@@ -79,6 +87,12 @@ __all__ = [
     "DataOperationRunningError",
     "default_db_path",
     "get_job_store",
+    "StreamLog",
+    "StreamEvent",
+    "StreamRecord",
+    "StreamBatch",
+    "StreamHead",
+    "WatchStateStore",
     "StoreError",
     "LeaseHeld",
     "StoreBusy",

@@ -14,8 +14,9 @@ dizinidir ve bu üç dosya silinince yine öyle olur.
     sürümleridir (bilgi). Yetkili değerler dosyaların kendisindedir ve onlar denetlenir: state.db koddan
     yeniyse SchemaTooNew, katalog farklıysa yeniden kurulur (`StoreInfo.catalog_rebuild_reason`).
 
-Bu adımda cephede kilitler (`Store.lease`), çalışma zamanı bilgileri (`Store.runtime`) ve `Store.info`
-var; okuma ve yazma API'leri (events, entities, follows, streams, ...) kendi plan maddeleriyle eklenir.
+Bu adımda cephede kilitler (`Store.lease`), çalışma zamanı bilgileri (`Store.runtime`), olay akışları
+(`Store.streams`), izleyici durumu (`Store.watch`) ve `Store.info` var; okuma ve yazma API'leri (events,
+entities, follows, ...) kendi plan maddeleriyle eklenir.
 Store içindeki modüller `_state`, `_catalog` ve `_leases` özniteliklerini kullanır; paket dışındaki kod
 yalnızca açık yöntemleri.
 """
@@ -40,6 +41,8 @@ from src.store.jobs import import_legacy_jobs
 from src.store.lease import Lease, LeaseInfo, LeaseManager
 from src.store.manifest import MANIFEST_FORMAT
 from src.store.state import RuntimeFacts, StateDb
+from src.store.streams import StreamLog
+from src.store.watch import WatchStateStore
 from src.version import __version__ as APP_VERSION
 
 logger = logging.getLogger("Store")
@@ -175,6 +178,8 @@ class Store:
             self._catalog.prepare(create=create)
             self._schema = self._sync_schema()
             self.runtime = RuntimeFacts(self._state)
+            self.streams = StreamLog(self)
+            self.watch = WatchStateStore(self)
         except BaseException:
             self.close()
             raise
