@@ -1,0 +1,4 @@
+# src.store.PayloadCorrupt
+# kaynak: src/store/errors.py
+class PayloadCorrupt(StoreError):
+    default_message = ...

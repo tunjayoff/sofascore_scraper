@@ -1,0 +1,6 @@
+# src.store.UnknownEvent
+# kaynak: src/store/errors.py
+class UnknownEvent(StoreError):
+    default_message = ...
+    def __init__(self, message: Optional[str] = None, path: Optional[str] = None, errno_code: Optional[int] = None, detail: str = '', *, event_id: Optional[int] = None)
+    self.event_id

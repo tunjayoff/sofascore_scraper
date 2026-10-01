@@ -1,0 +1,5 @@
+# src/doctor.py: Store sınırı ihlalleri (docs/design/01-storage.md bölüm 2.4). Bu liste yalnızca küçülebilir.
+# Bir ihlali gideren PR satırını da siler; açıklama: tests/test_store_boundary.py
+[runtime]
+_dir_state:os.remove
+_dir_state:tempfile.mkstemp

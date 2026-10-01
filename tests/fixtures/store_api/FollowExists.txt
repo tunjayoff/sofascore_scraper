@@ -1,0 +1,4 @@
+# src.store.FollowExists
+# kaynak: src/store/errors.py
+class FollowExists(StoreError):
+    default_message = ...
