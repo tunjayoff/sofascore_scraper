@@ -35,7 +35,7 @@ from starlette.routing import Route
 import conftest
 import src.challenge_solver as cs
 import src.utils as utils
-from src import bridge_health, diagnostics, fsutil, redact
+from src import bridge_health, diagnostics, private_files, redact
 from src.i18n import I18nManager
 from src.paths import env_file_path
 from src.web import fetch_job, security
@@ -997,16 +997,16 @@ def test_startup_tightens_existing_env_and_browser_profile(tmp_path, monkeypatch
     monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", str(profile))
 
     with caplog.at_level(logging.INFO):
-        assert fsutil.harden_secret_paths() == [str(env), str(profile)]
+        assert private_files.harden_secret_paths() == [str(env), str(profile)]
     assert _mode(env) == 0o600 and _mode(profile) == 0o700
     assert len([r for r in caplog.records if "İzinler daraltıldı" in r.getMessage()]) == 2
     # İkinci çağrı: değişecek bir şey yok, log da yok
     caplog.clear()
-    assert fsutil.harden_secret_paths() == []
+    assert private_files.harden_secret_paths() == []
     assert not caplog.records
     # Zaten daha dar olan izinler genişletilmez
     os.chmod(env, 0o400)
-    assert fsutil.harden_secret_paths() == []
+    assert private_files.harden_secret_paths() == []
     assert _mode(env) == 0o400
     os.chmod(env, 0o600)
 
@@ -1015,7 +1015,7 @@ def test_startup_tightens_existing_env_and_browser_profile(tmp_path, monkeypatch
 def test_startup_with_nothing_to_tighten_is_quiet(tmp_path, monkeypatch):
     monkeypatch.setenv("SOFASCORE_ENV_FILE", str(tmp_path / "no.env"))
     monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", str(tmp_path / "no-profile"))
-    assert fsutil.harden_secret_paths() == []
+    assert private_files.harden_secret_paths() == []
     assert not (tmp_path / "no.env").exists() and not (tmp_path / "no-profile").exists()
 
 
@@ -1023,9 +1023,9 @@ def test_permission_tightening_is_a_no_op_on_windows(tmp_path, monkeypatch):
     target = tmp_path / ".env"
     target.write_text("X=1\n", encoding="utf-8")
     before = _mode(target)
-    monkeypatch.setattr(fsutil.os, "name", "nt")
+    monkeypatch.setattr(private_files.os, "name", "nt")
     try:
-        changed = fsutil.restrict_permissions(str(target), fsutil.PRIVATE_FILE_MODE)
+        changed = private_files.restrict_permissions(str(target), private_files.PRIVATE_FILE_MODE)
     finally:
         monkeypatch.undo()
     assert changed is False and _mode(target) == before

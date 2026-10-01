@@ -9,11 +9,12 @@ from typing import Dict, Tuple, Optional, Set, Any
 from dataclasses import dataclass
 
 from src.exceptions import ConfigError
-from src.fsutil import PRIVATE_FILE_MODE, atomic_write_text, create_private_file, file_lock, restrict_permissions
+from src.fsutil import atomic_write_text, file_lock
 from src import redact
 from src.i18n import app_language
 from src.logger import apply_log_level, get_logger
 from src.paths import default_league_config_path, env_file_path
+from src.private_files import PRIVATE_FILE_MODE, create_private_file, restrict_permissions
 
 # .env dosyasını yükle
 dotenv.load_dotenv(env_file_path())

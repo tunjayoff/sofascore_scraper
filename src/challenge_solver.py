@@ -25,7 +25,7 @@ import time
 from typing import Any, Dict, List, Optional, Tuple
 
 from src import bridge_health, throttle
-from src.fsutil import make_private_dir
+from src.private_files import make_private_dir
 from src.logger import get_logger
 from src.paths import browser_profile_dir
 

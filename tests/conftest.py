@@ -53,7 +53,7 @@ os.environ["SOFASCORE_ENV_FILE"] = ENV_FILE
 os.environ["REQUEST_RATE_LIMIT"] = "0"
 os.environ["SOFASCORE_THROTTLE_DIR"] = os.path.join(_TMP, "throttle")
 # Tarayıcı profili de geçici dizinde: uygulama başlangıçta profil dizininin izinlerini daraltır
-# (src/fsutil.harden_secret_paths); testler kullanıcının gerçek profiline dokunmaz.
+# (src/private_files.harden_secret_paths); testler kullanıcının gerçek profiline dokunmaz.
 os.environ["SOFASCORE_BROWSER_PROFILE"] = os.path.join(_TMP, "browser-profile")
 # TestClient "testserver" Host başlığını kullanır
 os.environ["SOFASCORE_ALLOWED_HOSTS"] = "localhost,127.0.0.1,testserver"

@@ -12,7 +12,7 @@ import pandas as pd
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from src.fsutil import create_private_file
+from src.private_files import create_private_file
 from src.paths import env_file_path
 from src.web import league_sports
 from src.services import stats as stats_service

@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 import dotenv
 
-from src.fsutil import harden_secret_paths
+from src.private_files import harden_secret_paths
 from src.logger import attach_file_handler, get_logger
 from src.paths import env_file_path
 from src.version import __version__

@@ -44,7 +44,7 @@ dotenv.load_dotenv(env_file_path())
 
 from src.SofaScoreUi import SimpleSofaScoreUI
 from src.exceptions import StorageError
-from src.fsutil import harden_secret_paths
+from src.private_files import harden_secret_paths
 from src.logger import get_logger, log_file_path
 from src.i18n import get_i18n
 from src.sports import sport_slugs
