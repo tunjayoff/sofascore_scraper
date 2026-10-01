@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 import pytest
 
 from src.web.jobs import JobStore
-from src.web.progress import MAX_FAILED_LISTED, JobProgress
+from src.jobs.progress import MAX_FAILED_LISTED, JobProgress
 
 
 class Clock:
@@ -119,7 +119,7 @@ def test_job_store_keeps_detail_in_the_mirror(tmp_path):
     assert store.list_jobs()[0]["matches_failed"] == 2
 
 
-# --- run_fetch_job with a fake UI -----------------------------------------------------
+# --- run_fetch_job with a fake service context (the namespace is still called "ui") -----
 
 
 class FakeMatchData:
@@ -184,7 +184,10 @@ def job_env(tmp_path, monkeypatch):
 def run(fj, store, monkeypatch, ui, payload):
     from src.web.routes.scrape import FetchRequest
 
-    monkeypatch.setattr(fj, "SimpleSofaScoreUI", lambda config_manager: ui)
+    # `ui` servis bağlamının (ServiceContext) yerini tutar; CSV adımı onun export_all_to_csv'sine bağlanır
+    ui.config = fj.config_manager
+    monkeypatch.setattr(fj, "build_context", lambda config_manager: ui)
+    monkeypatch.setattr("src.services.sync.export_all_csv", lambda ctx: ctx.export_all_to_csv())
     req = FetchRequest(**payload)
     job_id = store.create_running(req.model_dump())
     fj.run_fetch_job(job_id, req)

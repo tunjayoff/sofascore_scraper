@@ -253,9 +253,9 @@ def test_get_routes_are_the_reviewed_read_only_set():
 
 def test_no_get_route_writes_files_or_sends_requests(monkeypatch):
     monkeypatch.setattr(utils.cffi_requests, "get", lambda *a, **k: pytest.fail("a GET route sent a request"))
-    from src.SofaScoreUi import SimpleSofaScoreUI
-
-    monkeypatch.setattr(SimpleSofaScoreUI, "export_all_to_csv", lambda self: pytest.fail("a GET route wrote an export"))
+    monkeypatch.setattr(
+        "src.services.export.export_all_csv", lambda ctx: pytest.fail("a GET route wrote an export")
+    )
     before = _tree_digest()
     for path in GET_ROUTES:
         query = {"/api/leagues/search": "?q=prem", "/api/seasons/1/matches": "?league_id=17"}.get(path, "")
@@ -282,18 +282,16 @@ def test_remote_league_search_is_post_only(monkeypatch):
 
 
 def test_csv_export_get_only_downloads_and_post_creates(tmp_path, monkeypatch):
-    from src.SofaScoreUi import SimpleSofaScoreUI
-
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     processed = tmp_path / "match_details" / "processed"
     generated = []
 
-    def fake_export(self):
+    def fake_export(ctx):
         generated.append(1)
         processed.mkdir(parents=True, exist_ok=True)
         (processed / "all_matches_20260101.csv").write_text("match_id,league_folder\n1,17_Premier_League\n", encoding="utf-8")
 
-    monkeypatch.setattr(SimpleSofaScoreUI, "export_all_to_csv", fake_export)
+    monkeypatch.setattr("src.services.export.export_all_csv", fake_export)
 
     # GET: dışa aktarım yokken hiçbir şey üretmez
     r = client.get("/api/export/csv")
@@ -1140,7 +1138,7 @@ def test_failed_job_does_not_store_or_return_the_proxy_password(proxy, monkeypat
     def boom(*args, **kwargs):
         raise RuntimeError(f"curl: (56) CONNECT tunnel failed, response 407 via {PROXY_URL}")
 
-    monkeypatch.setattr(fetch_job, "SimpleSofaScoreUI", boom)
+    monkeypatch.setattr(fetch_job, "build_context", boom)
     store = api_mod._job_store
     job_id = store.create_running({"mode": "details", "league_id": conftest.LEAGUE_ID})
     fetch_job.run_fetch_job(job_id, FetchRequest(mode="details", league_id=conftest.LEAGUE_ID))

@@ -199,11 +199,12 @@ def _export_csv_sync(league_id: Optional[int], data_dir: str, generate: bool = F
         raise _SyncHttpError(404, "No CSV export yet. Create it with POST /api/export/csv or run a download.")
 
     if not files:
-        from src.SofaScoreUi import SimpleSofaScoreUI
+        # İndiricileri (ve onlarla istek katmanını) yalnızca gerektiğinde yükle
+        from src.services.context import build_context
+        from src.services.export import export_all_csv
 
         try:
-            ui = SimpleSofaScoreUI(config_manager=config_manager)
-            ui.export_all_to_csv()
+            export_all_csv(build_context(config_manager))
             files = glob.glob(pattern)
         except Exception as e:
             logger.error(f"CSV export failed: {e}")

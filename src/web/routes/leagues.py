@@ -4,7 +4,6 @@ from __future__ import annotations
 import asyncio
 import json
 from typing import Dict, List, Optional
-from urllib.parse import quote
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator
@@ -64,9 +63,11 @@ def _search_remote_leagues_sync(q: str) -> List[RemoteLeagueResult]:
     döner; engelleme, ağ hatası ve beklenmeyen yanıt _UpstreamFailure(reason) olarak fırlatılır
     (eskiden hepsi boş listeye dönüşüyor, arayüz "Sonuç yok. Yazımı değiştirin." diyordu).
     """
+    from src.client import api_url, endpoints
     from src.utils import make_api_request
 
-    url = f"https://www.sofascore.com/api/v1/search/unique-tournaments/{quote(q, safe='')}"
+    # API kökü istemcinindir (API_BASE_URL): diğer bütün istekler gibi
+    url = api_url(endpoints.search_unique_tournaments(q))
     before = bridge_health.snapshot()
     try:
         # Etkileşimli arama: 403 bekleme döngüsüyle bir sunucu işçisini dakikalarca tutma
@@ -119,12 +120,12 @@ def _refresh_league_seasons_sync(league_id: int) -> dict:
     döner (liste boş olabilir: ligin sezonu yok). Çekilemediyse _UpstreamFailure(reason) fırlatılır;
     eskiden diskteki eski liste (ya da boş liste) "success" olarak dönüyordu.
     """
-    from src.SofaScoreUi import SimpleSofaScoreUI
+    from src.services.context import build_context
 
-    ui = SimpleSofaScoreUI(config_manager=config_manager)
+    ctx = build_context(config_manager)
     before = bridge_health.snapshot()
     try:
-        seasons = ui.season_fetcher.fetch_seasons_checked(league_id, max_retries=_REFRESH_MAX_RETRIES)
+        seasons = ctx.season_fetcher.fetch_seasons_checked(league_id, max_retries=_REFRESH_MAX_RETRIES)
     except SofaScoreScraperError as e:
         reason = upstream.reason_for(e, before)
         logger.error(f"Lig {league_id} için sezon yenileme başarısız ({reason}): {e}")

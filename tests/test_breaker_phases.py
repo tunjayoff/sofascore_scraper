@@ -235,7 +235,10 @@ def job_env(tmp_path, monkeypatch):
 def _run_job(fj, store, monkeypatch, ui, payload: Dict[str, Any]) -> Dict[str, Any]:
     from src.web.routes.scrape import FetchRequest
 
-    monkeypatch.setattr(fj, "SimpleSofaScoreUI", lambda config_manager: ui)
+    # `ui` servis bağlamının (ServiceContext) yerini tutar; CSV adımı onun export_all_to_csv'sine bağlanır
+    ui.config = fj.config_manager
+    monkeypatch.setattr(fj, "build_context", lambda config_manager: ui)
+    monkeypatch.setattr("src.services.sync.export_all_csv", lambda ctx: ctx.export_all_to_csv())
     req = FetchRequest(**payload)
     job_id = store.create_running(req.model_dump())
     with _request_layer(), patch.object(utils.cffi_requests, "get", return_value=Resp(403, text="no")) as get:
