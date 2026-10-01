@@ -24,6 +24,10 @@ hepsini birden düşürür. Bu geçici olabilir (çözüm 180 sn sonra yeniden d
 Durum, istek sonuçlarıyla değişir; kendi kendine (zaman geçtikçe) değişmez. Değişimde tek
 bir log satırı yazılır ve dinleyiciler çağrılır (CLI'da tek satır mesaj). Durum süreç
 başınadır: web uygulaması kendi köprüsünü, her CLI süreci kendininkini bildirir.
+
+Durumu başka bir sürecin de görebilmesi için (ör. `status` komutu) bu modül hiçbir şey yazmaz:
+her geçişte `on_health_change` geri çağrıları görüntüyle (snapshot) çağrılır; görüntüyü nereye
+saklayacağına çağıran karar verir (docs/design/02-services.md 2.4: istemci DATA_DIR'e yazmaz).
 """
 from __future__ import annotations
 
@@ -33,7 +37,7 @@ import os
 import sys
 import threading
 import time
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Mapping, Optional
 
 from src.redact import redact_text
 
@@ -56,6 +60,10 @@ DEFAULT_BLOCKED_AFTER = 10
 DEFAULT_BLOCKED_MIN_SECONDS = 200.0
 
 Listener = Callable[[Dict[str, Any], str], None]
+# snapshot()'ın döndürdüğü JSON'a hazır görüntü
+BridgeHealthSnapshot = Dict[str, Any]
+# Her durum geçişinde bir kez, yeni görüntüyle çağrılır
+HealthChangeCallback = Callable[[Mapping[str, Any]], None]
 
 
 def _env_number(key: str, default: float, minimum: float) -> float:
@@ -91,11 +99,13 @@ class BridgeHealth:
         self,
         clock: Callable[[], float] = time.time,
         thresholds_fn: Callable[[], Dict[str, float]] = thresholds,
+        on_health_change: Optional[HealthChangeCallback] = None,
     ) -> None:
         self._clock = clock
         self._thresholds = thresholds_fn
         self._lock = threading.Lock()
         self._listeners: List[Listener] = []
+        self._change_callbacks: List[HealthChangeCallback] = [on_health_change] if on_health_change else []
         self.state = OK
         self.consecutive_failures = 0
         self.last_success_at: Optional[float] = None
@@ -151,7 +161,7 @@ class BridgeHealth:
         return previous
 
     def _announce(self, previous: Optional[str], snap: Optional[Dict[str, Any]]) -> None:
-        """Durum değişiminde bir kez: log + dinleyiciler (kilit dışında)."""
+        """Durum değişiminde bir kez: log + dinleyiciler + on_health_change geri çağrıları (kilit dışında)."""
         if previous is None or snap is None:
             return
         err = snap["last_error"] or {}
@@ -181,15 +191,20 @@ class BridgeHealth:
                 fn(snap, previous)
             except Exception:  # bildirim isteği asla bozmamalı
                 logger.debug("bridge health listener failed", exc_info=True)
+        for callback in list(self._change_callbacks):
+            try:
+                callback(snap)
+            except Exception:  # görüntüyü saklayamayan çağıran isteği bozmamalı
+                logger.debug("bridge health change callback failed", exc_info=True)
 
     # -- okuma --
 
-    def snapshot(self) -> Dict[str, Any]:
+    def snapshot(self) -> BridgeHealthSnapshot:
         """JSON'a hazır görüntü (/health, /api/bypass/status). Zamanlar ISO-8601 UTC."""
         with self._lock:
             return self._snapshot()
 
-    def _snapshot(self) -> Dict[str, Any]:
+    def _snapshot(self) -> BridgeHealthSnapshot:
         err = self.last_error
         return {
             "state": self.state,
@@ -211,6 +226,15 @@ class BridgeHealth:
         if fn in self._listeners:
             self._listeners.remove(fn)
 
+    def add_on_health_change(self, fn: HealthChangeCallback) -> None:
+        """fn(snapshot): durum her değiştiğinde bir kez (ok → degraded → blocked ve geri dönüş)."""
+        if fn not in self._change_callbacks:
+            self._change_callbacks.append(fn)
+
+    def remove_on_health_change(self, fn: HealthChangeCallback) -> None:
+        if fn in self._change_callbacks:
+            self._change_callbacks.remove(fn)
+
 
 # Süreç başına tek köprü (BrowserBridge.get_instance) → tek sağlık durumu
 _health = BridgeHealth()
@@ -224,7 +248,7 @@ def record_failure(kind: str, detail: str = "") -> None:
     _health.record_failure(kind, detail)
 
 
-def snapshot() -> Dict[str, Any]:
+def snapshot() -> BridgeHealthSnapshot:
     return _health.snapshot()
 
 
@@ -234,6 +258,14 @@ def add_listener(fn: Listener) -> None:
 
 def remove_listener(fn: Listener) -> None:
     _health.remove_listener(fn)
+
+
+def add_on_health_change(fn: HealthChangeCallback) -> None:
+    _health.add_on_health_change(fn)
+
+
+def remove_on_health_change(fn: HealthChangeCallback) -> None:
+    _health.remove_on_health_change(fn)
 
 
 def reset() -> None:

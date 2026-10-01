@@ -5,13 +5,16 @@ Ağ yok: istekler tests/fakes/sofascore.py'deki sahte taşıyıcıya gider; iste
 """
 from __future__ import annotations
 
-from typing import Iterator
+import json
+from typing import Any, Iterator, List
 from unittest.mock import patch
 
 import pytest
 
 import src.utils as utils
 from fakes.sofascore import REQUEST_LAYER_MODULES, FakeSofaScore
+from src import bridge_health
+from src.bridge_health import BridgeHealth
 from src.client import context, transport
 
 EVENT = {"id": 1, "status": {"type": "finished"}}
@@ -117,3 +120,82 @@ def test_legacy_entry_points_still_run_the_real_request_layer(fake: FakeSofaScor
     assert utils.make_api_request("/event/1")["event"]["id"] == 1
     assert utils.make_api_request("/event/2") is None
     assert [r.label for r in fake.requests] == ["sync /event/1 200", "sync /event/2 404"]
+
+
+# --- köprü sağlığı: on_health_change ---------------------------------------------------------------
+
+THRESHOLDS = {"degraded_after": 3, "blocked_after": 5, "blocked_min_seconds": 0.0}
+
+
+def _bridge_health(**kwargs: Any) -> BridgeHealth:
+    return BridgeHealth(clock=lambda: 1_790_000_000.0, thresholds_fn=lambda: dict(THRESHOLDS), **kwargs)
+
+
+def _fail(health: Any, count: int) -> None:
+    for _ in range(count):
+        health.record_failure(bridge_health.KIND_CHALLENGE, "HTTP 403")
+
+
+def test_on_health_change_gets_the_snapshot_of_every_transition_once() -> None:
+    seen: List[Any] = []
+    health = _bridge_health(on_health_change=seen.append)
+
+    _fail(health, 2)
+    assert seen == []  # eşiğin altında durum değişmez
+    _fail(health, 5)
+    health.record_success()
+    health.record_success()  # zaten ok: geçiş yok
+
+    assert [(s["state"], s["consecutive_failures"]) for s in seen] == [("degraded", 3), ("blocked", 5), ("ok", 0)]
+    assert seen[-1] == health.snapshot()
+    json.dumps(seen)  # çağıran görüntüyü olduğu gibi saklayabilir
+
+
+def test_health_callbacks_can_be_added_and_removed() -> None:
+    first: List[Any] = []
+    second: List[Any] = []
+    on_first, on_second = first.append, second.append
+    health = _bridge_health()
+    health.add_on_health_change(on_first)
+    health.add_on_health_change(on_first)  # iki kez eklenen bir kez çağrılır
+    health.add_on_health_change(on_second)
+
+    _fail(health, 3)
+    health.remove_on_health_change(on_second)
+    health.remove_on_health_change(on_second)  # olmayanı kaldırmak hata değil
+    health.record_success()
+
+    assert [s["state"] for s in first] == ["degraded", "ok"]
+    assert [s["state"] for s in second] == ["degraded"]
+
+
+def test_a_failing_health_callback_breaks_neither_recording_nor_the_others() -> None:
+    seen: List[Any] = []
+    listened: List[str] = []
+
+    def boom(snapshot: Any) -> None:
+        raise RuntimeError("cannot store the snapshot")
+
+    health = _bridge_health(on_health_change=boom)
+    health.add_on_health_change(seen.append)
+    health.add_listener(lambda snap, previous: listened.append(f"{previous}>{snap['state']}"))
+
+    _fail(health, 3)
+
+    assert health.state == "degraded"
+    assert [s["state"] for s in seen] == ["degraded"] and listened == ["ok>degraded"]
+
+
+def test_process_wide_health_reports_through_the_module_functions() -> None:
+    seen: List[Any] = []
+    on_change = seen.append
+    bridge_health.add_on_health_change(on_change)
+    try:
+        for _ in range(int(bridge_health.thresholds()["degraded_after"])):
+            bridge_health.record_failure(bridge_health.KIND_FORBIDDEN, "HTTP 403")
+        assert [s["state"] for s in seen] == ["degraded"]
+        bridge_health.remove_on_health_change(on_change)
+        bridge_health.record_success()
+        assert [s["state"] for s in seen] == ["degraded"]
+    finally:
+        bridge_health.remove_on_health_change(on_change)
