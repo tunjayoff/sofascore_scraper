@@ -4,7 +4,6 @@ from __future__ import annotations
 import asyncio
 import json
 from typing import Dict, List, Optional
-from urllib.parse import quote
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator
@@ -64,9 +63,11 @@ def _search_remote_leagues_sync(q: str) -> List[RemoteLeagueResult]:
     döner; engelleme, ağ hatası ve beklenmeyen yanıt _UpstreamFailure(reason) olarak fırlatılır
     (eskiden hepsi boş listeye dönüşüyor, arayüz "Sonuç yok. Yazımı değiştirin." diyordu).
     """
+    from src.client import api_url, endpoints
     from src.utils import make_api_request
 
-    url = f"https://www.sofascore.com/api/v1/search/unique-tournaments/{quote(q, safe='')}"
+    # API kökü istemcinindir (API_BASE_URL): diğer bütün istekler gibi
+    url = api_url(endpoints.search_unique_tournaments(q))
     before = bridge_health.snapshot()
     try:
         # Etkileşimli arama: 403 bekleme döngüsüyle bir sunucu işçisini dakikalarca tutma

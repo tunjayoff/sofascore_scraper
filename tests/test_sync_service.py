@@ -9,9 +9,10 @@ test_storage_errors.py ile sabitlidir. Burada servis tek başına, bir iş depos
   * build_context: veri dizinleri ve üç indirici;
   * SyncService.run: aşamalar, detay planı, iptal, devre kesici, sonuç, istek bağlamının geri alınması;
   * export_all_csv: menü metni yazdırmaz, hatayı yutar;
-  * web bağdaştırıcısı: istek → SyncSpec, konsol satırları, iptal kontrolünün iş bitince geri alınması.
+  * web bağdaştırıcısı: istek → SyncSpec, konsol satırları, iptal kontrolünün iş bitince geri alınması;
+  * lig araması API kökünü istemciden alır.
 
-Gerçek ağ yok: indiriciler sahtedir.
+Gerçek ağ yok: indiriciler sahtedir; lig aramasında curl taşıyıcısı sahtedir.
 """
 from __future__ import annotations
 
@@ -28,8 +29,10 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Tupl
 
 import pytest
 
+import src.utils as utils
 from src import breaker as request_breaker
 from src.client import context as request_ctx
+from src.client import transport
 from src.config_manager import ConfigManager
 from src.exceptions import StorageError
 from src.jobs.progress import JobProgress
@@ -995,3 +998,64 @@ def test_web_job_writes_the_result_of_the_service(web_job: Any) -> None:
     assert final["result"]["schedule_empty_seasons"] == 0
     assert final["result"]["failed"] == [{"match_id": "b", "league_id": 17}]
     assert final["result"]["details_done"] == 2 and final["result"]["breaker"] is None
+
+
+# --- lig araması: API kökü ---------------------------------------------------------------------------
+
+DEFAULT_BASE = "https://www.sofascore.com/api/v1"
+OTHER_BASE = "https://api.sofascore.com/api/v1"
+
+
+class _Response:
+    def __init__(self, body: Any) -> None:
+        self.status_code = 200
+        self.reason = "OK"
+        self.headers: Dict[str, str] = {}
+        self.text = json.dumps(body)
+        self._body = body
+
+    def json(self) -> Any:
+        return self._body
+
+
+@pytest.fixture
+def sent_urls(monkeypatch: pytest.MonkeyPatch) -> List[str]:
+    """curl'e giden tam adresleri toplar; her isteğe tek sonuçlu bir arama yanıtı döner."""
+    urls: List[str] = []
+    body = {
+        "results": [
+            {"entity": {"id": 17, "name": "Premier League", "slug": "premier-league",
+                        "category": {"name": "England", "sport": {"name": "Football"}}}}
+        ]
+    }
+
+    def sync_get(url: str, **kwargs: Any) -> _Response:
+        urls.append(url)
+        return _Response(body)
+
+    monkeypatch.setattr(transport.cffi_requests, "get", sync_get)
+    monkeypatch.setattr(utils, "_sleep", lambda seconds: None)
+    return urls
+
+
+@pytest.mark.parametrize("base", [DEFAULT_BASE, OTHER_BASE])
+def test_league_search_uses_the_api_base_of_the_client(
+    sent_urls: List[str], monkeypatch: pytest.MonkeyPatch, base: str
+) -> None:
+    """Eskiden arama, API_BASE_URL ne olursa olsun varsayılan adrese gidiyordu (PR #48'in bıraktığı tek istek)."""
+    from src.web.routes import leagues
+
+    monkeypatch.setattr(utils, "API_BASE_URL", base)
+
+    found = leagues._search_remote_leagues_sync("premier league/1")
+
+    # Sorgu yolun parçasıdır ve tümüyle kodlanır ("/" dahil), önceki gibi
+    assert sent_urls == [f"{base}/search/unique-tournaments/premier%20league%2F1"]
+    assert [(league.id, league.name, league.country, league.sport) for league in found] == [
+        (17, "Premier League", "England", "Football")
+    ]
+
+
+def test_the_league_route_module_no_longer_hard_codes_the_api_base() -> None:
+    source = (SRC / "web" / "routes" / "leagues.py").read_text(encoding="utf-8")
+    assert "sofascore.com" not in source
