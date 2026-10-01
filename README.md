@@ -330,7 +330,7 @@ python main.py --watch --sport tennis --event-ids 17196038,17210464 --watch-hour
   - `status_changed` `{event_id, from, to, at_utc, change_ts, scores}`. `scores` comes from `extract_scores`. The first `completed` carries `provisional: true` until the refresh window closes; see [Refresh policy](#refresh-policy).
   - `score_changed` for live scores `{event_id, from, to, at_utc}`.
   - `stuck`.
-- **Restarts.** The last known class per match is kept in `DATA_DIR/watch_state.json`, so a restart does not emit the same transition twice. Ctrl+C stops cleanly.
+- **Restarts.** The last known class per match is kept in `DATA_DIR/watch_state_{sport}.json`, so a restart does not emit the same transition twice. Each sport has its own file, so watchers for different sports running at the same time do not overwrite each other. `watch_state.json` is the old format; it is no longer read and can be deleted. Ctrl+C stops cleanly.
 - **When it exits.** With `--event-ids`, the watcher exits when every tracked match is over.
 
 Why these numbers: `events/live` is cached for 5 s at the CDN, and whistle → `finished` took a median of 20 s (max 302 s) in the research (`docs/status-matrix/README.md`). Polling faster than 30 s gains nothing.

@@ -319,7 +319,7 @@ python main.py --watch --sport tennis --event-ids 17196038,17210464 --watch-hour
   - `status_changed` `{event_id, from, to, at_utc, change_ts, scores}`. `scores` `extract_scores` çıktısıdır. İlk `completed` olayı, yenileme penceresi kapanana kadar `provisional: true` taşır; bkz. [Yenileme politikası](#yenileme-politikası).
   - `score_changed` canlı skor içindir `{event_id, from, to, at_utc}`.
   - `stuck`.
-- **Yeniden başlatma.** Her maçın son bilinen sınıfı `DATA_DIR/watch_state.json`'da tutulur; yeniden başlatmada aynı geçiş iki kez olay olmaz. Ctrl+C temiz kapatır.
+- **Yeniden başlatma.** Her maçın son bilinen sınıfı `DATA_DIR/watch_state_{sport}.json`'da tutulur (spor başına ayrı dosya: aynı anda çalışan farklı spor izleyicileri birbirinin kaydını ezmez); yeniden başlatmada aynı geçiş iki kez olay olmaz. `watch_state.json` eski formattır, okunmaz; silinebilir. Ctrl+C temiz kapatır.
 - **Ne zaman durur?** `--event-ids` ile izlenen maçların hepsi bitince izleyici kapanır.
 
 Neden bu sayılar: `events/live` CDN'de 5 sn önbellekte kalıyor; araştırmada düdük → `finished` medyan 20 sn, en fazla 302 sn sürdü (`docs/status-matrix/README.md`). 30 sn'den sık sorgulamak fayda getirmez.

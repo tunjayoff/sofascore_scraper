@@ -8,7 +8,8 @@ Parametrelerin dayanağı docs/status-matrix/README.md:
 Kesinlik 03-A pencere kuralındadır (src/refresh.py); izleyici yalnızca ilk COMPLETED'i `provisional` olarak bildirir.
 
 Olaylar data/watch_events.jsonl'a yazılır ve isteğe bağlı `on_event` ile verilir. Son bilinen durum
-data/watch_state.json'da; yeniden başlatmada aynı geçiş iki kez olay yapılmaz.
+data/watch_state_{sport}.json'da (spor başına ayrı dosya: her spor için ayrı süreç birbirini ezmez);
+yeniden başlatmada aynı geçiş iki kez olay yapılmaz.
 """
 from __future__ import annotations
 
@@ -38,7 +39,7 @@ STUCK_AFTER_SECONDS_TENNIS = 6 * 3600
 EVENT_PAGES_PER_MINUTE = 40  # liste 2/dk + maç sayfaları ≤ 40/dk → < 1 istek/sn
 MIN_REQUEST_SPACING_SECONDS = 1.0
 WATCH_EVENTS_FILE = "watch_events.jsonl"
-WATCH_STATE_FILE = "watch_state.json"
+WATCH_STATE_FILE = "watch_state_{sport}.json"
 
 _TERMINAL = (StatusClass.COMPLETED, StatusClass.DECIDED_WITHOUT_PLAY)
 
@@ -141,7 +142,7 @@ class MatchWatcher:
         self._slow_warned = False
         self._stop = False
         self.events_path = os.path.join(data_dir, WATCH_EVENTS_FILE)
-        self.state_path = os.path.join(data_dir, WATCH_STATE_FILE)
+        self.state_path = os.path.join(data_dir, WATCH_STATE_FILE.format(sport=sport))
         self.state: Dict[str, Dict[str, Any]] = self._load_state()
 
     # --- ağ ---------------------------------------------------------------------------
@@ -179,11 +180,8 @@ class MatchWatcher:
             return {}
 
     def _save_state(self) -> None:
-        """Dosyadaki diğer izleyicilerin (başka spor/süreç) maçlarını koruyarak yalnızca kendi maçlarını yazar."""
         os.makedirs(self.data_dir, exist_ok=True)
-        merged = self._load_state()
-        merged.update(self.state)
-        atomic_write_json(self.state_path, merged)
+        atomic_write_json(self.state_path, self.state)
 
     def _emit(self, event: Dict[str, Any]) -> None:
         line = json.dumps(event, ensure_ascii=False)

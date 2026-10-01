@@ -112,7 +112,7 @@ def test_restart_from_state_does_not_repeat_the_event(tmp_path):
     assert len(_events(tmp_path)) == 1
 
 
-def test_watchers_sharing_a_data_dir_keep_each_others_state(tmp_path):
+def test_watchers_sharing_a_data_dir_keep_separate_state_files(tmp_path):
     fb = _fx("football/A_inprogress-7-2nd-half__17018572", eid=500)
     tn = _fx("tennis/A_inprogress-9-2nd-set__17208186", eid=600)
     clock = Clock(_now_of("football/A_inprogress-7-2nd-half__17018572"))
@@ -121,8 +121,10 @@ def test_watchers_sharing_a_data_dir_keep_each_others_state(tmp_path):
     w1.start()
     w2.start()
     w1.tick()
-    saved = json.loads((Path(tmp_path) / "watch_state.json").read_text())
-    assert set(saved) == {"500", "600"}
+    w2.tick()
+    assert set(json.loads((Path(tmp_path) / "watch_state_football.json").read_text())) == {"500"}
+    assert set(json.loads((Path(tmp_path) / "watch_state_tennis.json").read_text())) == {"600"}
+    assert not (Path(tmp_path) / "watch_state.json").exists()
 
 
 def test_run_stops_when_all_event_ids_are_done(tmp_path):
