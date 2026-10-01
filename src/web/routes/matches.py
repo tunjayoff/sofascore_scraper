@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from src import breaker as request_breaker
 from src import bridge_health
 from src.web import upstream
+from src.web.jobs import JobRunningError
 from src.web.routes.common import (
     _SyncHttpError,
     _job_store,
@@ -510,9 +511,11 @@ async def get_match_details(match_id: int):
 @router.post("/matches/{match_id}/fetch")
 async def fetch_single_match(match_id: int):
     """Tek bir maç için detayları senkron olarak çeker."""
-    if _job_store.snapshot().get("is_running"):
-        # Çalışan iş aynı dosyalara yazıyor ve istek hızını zaten kullanıyor
-        raise HTTPException(status_code=409, detail="A fetch job is running; try again when it finishes.")
+    if _job_store.writer_busy():
+        # Veri dizinine yazan biri var: bu sürecin işi ya da `writer` kilidini tutan başka bir süreç (ikinci
+        # bir web sunucusunun işi, CLI indirmesi). Aynı dosyalara yazıyor ve istek hızını zaten kullanıyor:
+        # diğer uç noktalar gibi 409 job_running (app.py, JobStoreConflict)
+        raise JobRunningError()
     try:
         return await asyncio.to_thread(_fetch_single_match_sync, str(match_id))
     except _SyncHttpError as e:

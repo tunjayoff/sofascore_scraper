@@ -1,5 +1,6 @@
 """
-POST /api/matches/{id}/fetch, SofaScore isteği reddettiğinde (plan maddesi FX-1).
+POST /api/matches/{id}/fetch: SofaScore isteği reddettiğinde (plan maddesi FX-1) ve veri dizinine başka
+biri yazarken (ST-10'un bu uç noktadaki parçası).
 
 Eskiden reddedilen bir /event isteği 404 "Match data could not be fetched (may be unfinished or unavailable)",
 dilimlerin hepsinin reddedilmesi de hiçbir dilim kaydedilmeden 200 "success" oluyordu: MatchDataFetcher'ın tek
@@ -7,12 +8,19 @@ maç yolu "maç yok" ile "istek başarısız"ı aynı None'a indirgiyordu. Artı
 yazar (SingleFetchReport) ve uç nokta lig araması ile sezon yenilemenin kullandığı tipli hatayı verir
 (src/web/upstream.py: {"detail": {"reason", "message"}}).
 
+Veri dizinine yazan biri varken (bu sürecin işi ya da `writer` kilidini tutan başka bir süreç) çekim
+409 `job_running` ile reddedilir; eskiden yalnızca bu sürecin işi görülüyordu.
+
 Ağ yok: istekler tests/fakes/sofascore.py'deki sahte taşıyıcıya gider; istek katmanı gerçektir. Adım adım
 istek sırası ve yazılan dosyalar tests/characterization/fixtures/fetch/single_match_route.golden.json'da durur.
 """
 from __future__ import annotations
 
+import contextlib
 import json
+import subprocess
+import sys
+import time
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional
 from unittest.mock import patch
@@ -34,6 +42,9 @@ from src.exceptions import (
 )
 from src.match_data_fetcher import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, MatchDataFetcher, SingleFetchReport, SliceOutcome
 from src.web import upstream
+from src.web.jobs import JobStore, default_db_path
+
+ROOT = Path(__file__).resolve().parents[1]
 
 # tests/characterization/fixtures/fetch/world.json: bitmiş ve bütün dilimleri dolu iki futbol maçı,
 # pregame-form'u 404 ve kadrosu boş bir maç, başlamamış bir maç
@@ -71,14 +82,18 @@ def fake() -> Iterator[FakeSofaScore]:
 @pytest.fixture
 def client(data_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     """Uygulama, çalışan işi olmayan geçici bir iş deposuyla."""
+    yield from _client(JobStore(str(tmp_path / "jobs.db")), monkeypatch)
+
+
+def _client(store: JobStore, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     import src.web.routes.matches as matches_routes
     from src.web.app import app
-    from src.web.jobs import JobStore
 
-    store = JobStore(str(tmp_path / "jobs.db"))
     monkeypatch.setattr(matches_routes, "_job_store", store)
-    yield TestClient(app)
-    store.close()
+    try:
+        yield TestClient(app)
+    finally:
+        store.close()
 
 
 def _fetch(client: TestClient, event_id: int) -> Any:
@@ -362,3 +377,108 @@ def test_without_a_report_the_batch_path_is_unchanged(fake: FakeSofaScore, data_
     fake.fail(f"/event/{COMPLETE}", 403)
     assert fetcher.fetch_match_data(COMPLETE) is None
     assert fetcher._fetch_match_basic(str(COMPLETE)) is None
+
+
+# --- veri dizinine başka biri yazarken -----------------------------------------------------------
+
+JOB_RUNNING = {
+    "detail": {
+        "code": "job_running",
+        "message": "A download job is running; stop it or wait until it finishes, then try again.",
+    }
+}
+
+# Başka bir süreç: veri dizininin bir kilidini cephe üzerinden alır (CLI indirmesinin yapacağı gibi), "ready"
+# yazar ve stdin'den bir satır gelene kadar tutar
+HOLDER = """
+import sys
+from src.store import open_store
+lease = open_store(sys.argv[1]).lease(sys.argv[2], purpose=sys.argv[3])
+print("ready", flush=True)
+sys.stdin.readline()
+lease.release()
+"""
+
+
+@contextlib.contextmanager
+def _other_process(data_dir: Path, lease: str, purpose: str) -> Iterator[subprocess.Popen]:
+    """Kilidi tutan ayrı bir süreç; blok bitince (öldürülmediyse) kilidi bırakıp temiz kapanır."""
+    proc = subprocess.Popen(
+        [sys.executable, "-c", HOLDER, str(data_dir), lease, purpose],
+        cwd=ROOT, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+    )
+    try:
+        assert proc.stdout is not None
+        if proc.stdout.readline().strip() != "ready":
+            proc.kill()
+            pytest.fail(f"helper process did not start: {proc.communicate()[1]}")
+        yield proc
+    finally:
+        if proc.poll() is None:
+            _out, err = proc.communicate("\n", timeout=60)
+            assert proc.returncode == 0, err
+        else:
+            proc.communicate()
+
+
+@pytest.fixture
+def job_store(data_dir: Path) -> JobStore:
+    """Veri dizininin kendi iş deposu (üretimdeki gibi `.meta/state.db`): kilitleri o dizinin kilitleridir."""
+    return JobStore(default_db_path(str(data_dir)))
+
+
+@pytest.fixture
+def shared_client(job_store: JobStore, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
+    yield from _client(job_store, monkeypatch)
+
+
+def test_fetch_is_refused_while_another_process_holds_the_writer_lease(
+    fake: FakeSofaScore, shared_client: TestClient, data_dir: Path
+) -> None:
+    with _other_process(data_dir, "writer", "headless"):
+        response = _fetch(shared_client, COMPLETE)
+
+        assert (response.status_code, response.json()) == (409, JOB_RUNNING)
+        assert fake.requests == []  # SofaScore'a istek gitmedi
+        assert _match_dir(data_dir, COMPLETE) is None
+
+    response = _fetch(shared_client, COMPLETE)  # kilit bırakıldı
+
+    assert (response.status_code, response.json()) == (200, {"status": "success", "match_id": str(COMPLETE)})
+
+
+def test_fetch_proceeds_after_the_writing_process_is_killed(
+    fake: FakeSofaScore, shared_client: TestClient, job_store: JobStore, data_dir: Path
+) -> None:
+    with _other_process(data_dir, "writer", "headless") as proc:
+        assert _fetch(shared_client, COMPLETE).status_code == 409
+        proc.kill()
+        proc.wait(timeout=60)
+        deadline = time.monotonic() + 20  # Windows kilidi hemen bırakmayabilir
+        while job_store.writer_busy():
+            assert time.monotonic() < deadline, "the writer lease of a killed process was not released"
+            time.sleep(0.05)
+
+        assert _fetch(shared_client, COMPLETE).status_code == 200
+
+
+def test_fetch_is_refused_with_the_same_answer_while_a_job_runs_in_this_process(
+    fake: FakeSofaScore, shared_client: TestClient, job_store: JobStore
+) -> None:
+    job_store.create_running({"mode": "full"})
+    try:
+        response = _fetch(shared_client, COMPLETE)
+    finally:
+        job_store.update(status="Completed", finished=True)
+
+    assert (response.status_code, response.json()) == (409, JOB_RUNNING)
+    assert fake.requests == []
+    assert _fetch(shared_client, COMPLETE).status_code == 200
+
+
+def test_a_watcher_in_another_process_does_not_block_the_fetch(
+    fake: FakeSofaScore, shared_client: TestClient, data_dir: Path
+) -> None:
+    """İzleyici yazar değildir (`watcher:<spor>` ayrı bir kilittir): tek maç çekimi onunla birlikte çalışır."""
+    with _other_process(data_dir, "watcher:football", "watch"):
+        assert _fetch(shared_client, COMPLETE).status_code == 200
