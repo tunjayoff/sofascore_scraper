@@ -307,6 +307,7 @@
     "fetch_completed_with_warning": "Bitti, ama bazı sezonlarda maç yoktu.",
     "fetch_stopped_by_breaker": "Erken durduruldu: SofaScore'a giden çok fazla istek başarısız oldu ({reason}). Başka istek gönderilmedi; bir süre bekleyip yeniden çalıştırın.",
     "refresh_stopped_by_breaker": "Yenileme durduruldu: SofaScore'a giden çok fazla istek başarısız oldu ({reason}); {skipped} maç denenmedi. Bir süre bekleyip yeniden çalıştırın.",
+    "recheck_unavailable_done": "Yeniden denetim: {matches} maçta {slices} \"dilim yok\" işareti yeniden açıldı (işareti olan {scanned} maça bakıldı). Bu dilimler sonraki indirmede yeniden istenecek.",
     "invalid_choice_error": "Geçersiz seçim!",
     "error_with_message": "Hata: {error}",
     "selected_seasons_label": "seçili sezonlar",

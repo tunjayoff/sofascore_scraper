@@ -149,6 +149,19 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--recheck-unavailable",
+        nargs="?",
+        const="legacy",
+        default=None,
+        choices=["legacy", "all"],
+        metavar="legacy|all",
+        help="\"Bu dilim bu maçta yok\" işaretlerini yeniden denetime açar (ağ isteği yapmaz; dilimler sonraki "
+        "indirmede yeniden istenir). legacy (varsayılan): yalnızca kesin yanıtla (404 / boş yanıt) doğrulanmamış, "
+        "eski sürümlerden kalan işaretler; all: hepsi. --league-id ile tek lig; --headless --update-all ile "
+        "birlikte verilirse önce işaretler açılır, sonra indirme yapılır",
+    )
+
+    parser.add_argument(
         "--watch",
         action="store_true",
         help="Canlı izleyici: --sport ve --league-ids ya da --event-ids ile; olaylar data/watch_events.jsonl",
@@ -264,6 +277,16 @@ def main() -> int:
             os.environ["REFRESH_LEGACY"] = "true"
 
         ui = SimpleSofaScoreUI(config_path=args.config, data_dir=args.data_dir)
+
+        if args.recheck_unavailable:
+            # Ağ isteği yok: yalnızca işaretler geri alınır; dilimler sonraki indirmede yeniden istenir
+            reset = ui.match_data_fetcher.reset_unavailable_markers(
+                league_id=args.league_id, include_confirmed=args.recheck_unavailable == "all"
+            )
+            logger.info(f"Yeniden denetim: {reset}")
+            print(get_i18n().t("recheck_unavailable_done", **reset))
+            if not (args.headless or args.refresh_only):
+                return 0
 
         if args.refresh_only:
             md = ui.match_data_fetcher

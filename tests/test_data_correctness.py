@@ -11,7 +11,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 import conftest
-from src.match_data_fetcher import UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher
+from src.match_data_fetcher import (SLICE_EMPTY, SLICE_FAILED, UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher,
+                                    SliceOutcome)
 from src.match_fetcher import MatchFetcher
 from src.paths import league_dir_name, season_dir_name, seasons_file, summary_paths
 from src.web.app import app
@@ -102,15 +103,36 @@ def _basic(mid=42, sport="tennis", desc="Ended"):
     }
 
 
-def test_slice_missing_twice_is_no_longer_expected(tmp_path):
+_EMPTY_SLICES = ("lineups", "incidents", "team_streaks", "pregame_form", "h2h")
+
+
+def _partial_match():
+    return {"basic": _basic(), "statistics": {"statistics": [{"period": "ALL", "groups": [{"statisticsItems": [{"x": 1}]}]}]},
+            **{key: None for key in _EMPTY_SLICES}}
+
+
+def test_slice_confirmed_empty_twice_is_no_longer_expected(tmp_path):
+    """İki kesin "yok" yanıtı (404 ya da içinde veri olmayan 200) dilimi o maç için beklenmez yapar."""
     f = _detail_fetcher(tmp_path)
-    data = {"basic": _basic(), "statistics": {"statistics": [{"period": "ALL", "groups": [{"x": 1}]}]},
-            "lineups": None, "incidents": None, "team_streaks": None, "pregame_form": None, "h2h": None}
-    f._save_match_data("42", data)
+    data = _partial_match()
+    confirmed = {key: SliceOutcome(SLICE_EMPTY, reason="404", http_status=404) for key in _EMPTY_SLICES}
+    f._save_match_data("42", data, confirmed)
     assert f._needs_detail_fetch("42") == "refill"
     for _ in range(UNAVAILABLE_AFTER_ATTEMPTS - 1):
-        f._save_match_data("42", data)
+        f._save_match_data("42", data, confirmed)
     assert f._needs_detail_fetch("42") == "none"
+
+
+@pytest.mark.parametrize("outcomes", [
+    None,  # sonucu bilinmeyen boş dilim: istenip istenmediği belli değil
+    {key: SliceOutcome(SLICE_FAILED, reason="429", http_status=429) for key in _EMPTY_SLICES},
+], ids=["unknown", "failed"])
+def test_slice_missing_without_a_definitive_answer_stays_expected(tmp_path, outcomes):
+    """Eski kural her boş dilimi sayıyordu; başarısız istek kaç kez olursa olsun "yok" sayılmaz."""
+    f = _detail_fetcher(tmp_path)
+    for _ in range(UNAVAILABLE_AFTER_ATTEMPTS + 3):
+        f._save_match_data("42", _partial_match(), outcomes)
+    assert f._needs_detail_fetch("42") == "refill"
 
 
 def test_sync_fetch_accepts_aet(tmp_path):
