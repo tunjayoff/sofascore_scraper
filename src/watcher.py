@@ -29,7 +29,6 @@ from src.status import StatusClass, classify_status, extract_scores
 
 logger = logging.getLogger(__name__)
 
-BASE_URL = "https://www.sofascore.com/api/v1"
 LIST_INTERVAL_SECONDS = 30
 EVENT_INTERVAL_SECONDS = 30
 EVENT_INTERVAL_SLOW_SECONDS = 60  # hız bütçesi aşılınca
@@ -182,11 +181,12 @@ class MatchWatcher:
 
     @staticmethod
     def _default_fetch(path: str) -> Optional[Dict[str, Any]]:
+        from src.client import api_url
         from src.exceptions import ResourceNotFoundError
         from src.utils import make_api_request
 
         try:
-            return make_api_request(f"{BASE_URL}{path}")
+            return make_api_request(api_url(path))
         except ResourceNotFoundError:
             return None
 
