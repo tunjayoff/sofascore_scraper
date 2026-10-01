@@ -221,7 +221,7 @@ def update_settings(settings: SettingsUpdate):
 
     DATA_DIR değişimi çalışan iş varken reddedilir (409 job_running; hiçbir ayar yazılmaz): iş eski
     dizine yazmayı sürdürürken yeni istekler yeni dizini okur ve veri iki dizine bölünür. İş yokken
-    değişim hemen geçerlidir ve iş deposu (jobs.db) yeni dizine taşınır; yeniden başlatma gerekmez.
+    değişim hemen geçerlidir ve iş deposu (state.db) yeni dizine taşınır; yeniden başlatma gerekmez.
     """
     if settings.proxy_url:
         # Her şeyden önce: 422 (parola yeniden yazılmalı) hiçbir ayar yazılmadan ve iş deposu
