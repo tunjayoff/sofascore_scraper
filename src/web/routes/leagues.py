@@ -119,12 +119,12 @@ def _refresh_league_seasons_sync(league_id: int) -> dict:
     döner (liste boş olabilir: ligin sezonu yok). Çekilemediyse _UpstreamFailure(reason) fırlatılır;
     eskiden diskteki eski liste (ya da boş liste) "success" olarak dönüyordu.
     """
-    from src.SofaScoreUi import SimpleSofaScoreUI
+    from src.services.context import build_context
 
-    ui = SimpleSofaScoreUI(config_manager=config_manager)
+    ctx = build_context(config_manager)
     before = bridge_health.snapshot()
     try:
-        seasons = ui.season_fetcher.fetch_seasons_checked(league_id, max_retries=_REFRESH_MAX_RETRIES)
+        seasons = ctx.season_fetcher.fetch_seasons_checked(league_id, max_retries=_REFRESH_MAX_RETRIES)
     except SofaScoreScraperError as e:
         reason = upstream.reason_for(e, before)
         logger.error(f"Lig {league_id} için sezon yenileme başarısız ({reason}): {e}")

@@ -252,8 +252,10 @@ def test_web_job_fails_with_a_clear_message_on_enospc(tmp_path, monkeypatch):
                 OSError(errno.ENOSPC, os.strerror(errno.ENOSPC)), "/data/match_details/17_PL/season_x/a"
             )
 
-    ui = SimpleNamespace(match_data_fetcher=FullDisk(), export_all_to_csv=lambda: exported.append(True))
-    monkeypatch.setattr(fj, "SimpleSofaScoreUI", lambda config_manager: ui)
+    # Servis bağlamının (ServiceContext) yerini tutar; CSV adımı çağrılırsa `exported`a yazılır
+    ctx = SimpleNamespace(config=fj.config_manager, match_data_fetcher=FullDisk())
+    monkeypatch.setattr(fj, "build_context", lambda config_manager: ctx)
+    monkeypatch.setattr("src.services.sync.export_all_csv", lambda ctx: exported.append(True))
     req = FetchRequest(mode="details", league_id=17)
     fj.run_fetch_job(store.create_running(req.model_dump()), req)
 

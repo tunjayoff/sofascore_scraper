@@ -5,10 +5,11 @@ Web işinin akışı src/web/fetch_job.py'den src/services/sync.py'ye taşındı
 goldenlarıyla (tests/characterization/test_fetch_flows.py) ve tests/test_job_progress.py, test_breaker_phases.py,
 test_storage_errors.py ile sabitlidir. Burada servis tek başına, bir iş deposu olmadan sınanır:
 
-  * katman: src/services hiçbir yüzü içe aktarmaz;
+  * katman: src/web terminal arayüzünü, src/services hiçbir yüzü içe aktarmaz;
   * build_context: veri dizinleri ve üç indirici;
   * SyncService.run: aşamalar, detay planı, iptal, devre kesici, sonuç, istek bağlamının geri alınması;
-  * export_all_csv: menü metni yazdırmaz, hatayı yutar.
+  * export_all_csv: menü metni yazdırmaz, hatayı yutar;
+  * web bağdaştırıcısı: istek → SyncSpec, konsol satırları, iptal kontrolünün iş bitince geri alınması.
 
 Gerçek ağ yok: indiriciler sahtedir.
 """
@@ -17,7 +18,10 @@ from __future__ import annotations
 import ast
 import dataclasses
 import errno
+import json
 import os
+import subprocess
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Tuple
@@ -81,6 +85,11 @@ def _violations(directory: Path, forbidden: Sequence[str]) -> List[str]:
     ]
 
 
+def test_web_imports_nothing_from_the_terminal_ui() -> None:
+    """Web, indiricilere servis bağlamı üzerinden ulaşır; menü arayüzü (P26'da silinir) ona gerekmez."""
+    assert _violations(SRC / "web", ("src.ui", "src.SofaScoreUi")) == []
+
+
 def test_services_import_no_face_module() -> None:
     assert _violations(SRC / "services", ("src.web", "src.ui", "src.cli", "src.SofaScoreUi")) == []
 
@@ -96,6 +105,23 @@ def test_the_import_scan_sees_function_level_and_from_imports(tmp_path: Path) ->
     assert [m for m in found if _is_or_under(m, ("src.ui", "src.SofaScoreUi"))] == [
         "src.SofaScoreUi", "src.SofaScoreUi.SimpleSofaScoreUI", "src.ui",
     ]
+
+
+def test_loading_the_web_job_does_not_load_the_terminal_ui(tmp_path: Path) -> None:
+    """Ayrı süreçte: rotalar, iş modülü ve servisler yüklendiğinde menü modülleri yüklenmiş olmamalı."""
+    code = (
+        "import json, sys\n"
+        "import src.web.routes, src.web.fetch_job, src.services.sync, src.services.export\n"
+        "print(json.dumps(sorted(m for m in sys.modules"
+        " if m == 'src.SofaScoreUi' or m == 'src.ui' or m.startswith('src.ui.'))))\n"
+    )
+    # Kendi veri dizini: rotalar yüklenirken açılan iş deposu testlerin ortak dizinine dokunmasın
+    env = {**os.environ, "DATA_DIR": str(tmp_path / "data")}
+    done = subprocess.run(
+        [sys.executable, "-c", code], cwd=str(ROOT), env=env, capture_output=True, text=True, timeout=120, check=False
+    )
+    assert done.returncode == 0, done.stderr
+    assert json.loads(done.stdout.strip().splitlines()[-1]) == []
 
 
 # --- build_context -----------------------------------------------------------------------------------
@@ -854,3 +880,118 @@ def test_export_of_a_real_data_dir_prints_no_menu_text(
     i18n = get_i18n()
     for key in ("headless_exporting_csv", "title_csv_conversion", "csv_created_success", "csv_created_error"):
         assert i18n.t(key) not in out, key
+
+
+# --- web bağdaştırıcısı ------------------------------------------------------------------------------
+
+
+@pytest.fixture
+def web_job(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
+    """Web işini kendi thread'i olmadan, geçici bir iş deposu ve sahte bir servis bağlamıyla çalıştırır."""
+    import src.web.fetch_job as fj
+    from src.web.jobs import JobStore
+    from src.web.routes.scrape import FetchRequest
+
+    store = JobStore(str(tmp_path / "jobs.db"))
+    monkeypatch.setattr(fj, "_job_store", store)
+    monkeypatch.setattr(fj, "_refresh_scraper_state", lambda: store.snapshot())
+
+    def run(details: FakeDetails, **payload: Any) -> Dict[str, Any]:
+        ctx = make_ctx(fj.config_manager, monkeypatch, details=details)
+        monkeypatch.setattr(fj, "build_context", lambda config_manager: ctx)
+        request = FetchRequest(**payload)
+        fj.run_fetch_job(store.create_running(request.model_dump()), request)
+        return store.snapshot()
+
+    return run
+
+
+def test_payload_becomes_a_spec() -> None:
+    import src.web.fetch_job as fj
+    from src.web.routes.scrape import FetchRequest
+
+    assert fj._spec_from_payload(FetchRequest()) == SyncSpec(mode="full", league_id=None, selections=())
+    assert fj._spec_from_payload(FetchRequest(mode="details", league_id=17, selections=[])) == SyncSpec(
+        mode="details", league_id=17
+    )
+    request = FetchRequest(
+        selections=[
+            {"league_id": 17, "season_ids": [2, 1, 2]},
+            {"league_id": 8, "match_ids": [5]},
+            {"league_id": 9, "season_ids": [], "match_ids": None},
+        ]
+    )
+    assert fj._spec_from_payload(request).selections == (
+        SyncSelection(league_id=17, season_ids=(2, 1, 2)),
+        SyncSelection(league_id=8, match_ids=(5,)),
+        SyncSelection(league_id=9),
+    )
+
+
+def test_the_first_job_log_line_names_the_target() -> None:
+    import src.web.fetch_job as fj
+    from src.web.routes.scrape import FetchRequest
+
+    assert fj._summary(FetchRequest()) == "All Leagues"
+    assert fj._summary(FetchRequest(league_id=17)) == "17"
+    assert fj._summary(FetchRequest(league_id=17, selections=[{"league_id": 8}, {"league_id": 9}])) == (
+        "2 targeted selection(s)"
+    )
+
+
+def test_web_job_prints_its_two_console_lines_and_no_menu_text(
+    web_job: Any, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from src.i18n import get_i18n
+
+    final = web_job(FakeDetails({"17": ["a"]}), mode="details", league_id=17)
+
+    assert final["status"] == "Completed" and final["progress"] == 100
+    assert final["log"][0] == "[Running] Starting fetch for 17"
+    assert final["log"][-2:] == [
+        "[Running] Exporting data to CSV...",
+        "[Completed] Background Task Completed Successfully.",
+    ]
+    out = capsys.readouterr().out
+    assert [line for line in out.splitlines() if line.startswith("-->")] == [
+        "--> Exporting to CSV...",
+        "--> Background Task Completed Successfully.",
+    ]
+    i18n = get_i18n()
+    for key in ("headless_exporting_csv", "title_csv_conversion", "csv_created_success", "csv_created_error"):
+        assert i18n.t(key) not in out, key
+
+
+def test_web_job_does_not_leave_its_cancel_check_behind(web_job: Any) -> None:
+    """Eskiden iptal kontrolü kurulup geri alınmıyordu; işi ana thread'de koşturan testlerde sonraki isteklere sızıyordu."""
+    final = web_job(FakeDetails({"17": ["a"]}), mode="details", league_id=17)
+
+    assert final["status"] == "Completed"
+    assert _request_context_state() == (None, None, None)
+
+
+def test_web_job_ends_cancelled_when_the_request_layer_sees_the_cancel(web_job: Any) -> None:
+    details = FakeDetails({"17": ["a", "b", "c", "d"]})
+
+    def cancelled_mid_request() -> None:
+        raise request_ctx.FetchCancelled()
+
+    details.during_fetch = cancelled_mid_request
+
+    final = web_job(details, mode="details", league_id=17)
+
+    assert final["status"] == "Cancelled" and final["is_running"] is False
+    assert final["log"][-1] == "[Cancelled] Cancelled"
+    assert details.exports == 0
+    assert _request_context_state() == (None, None, None)
+
+
+def test_web_job_writes_the_result_of_the_service(web_job: Any) -> None:
+    details = FakeDetails({"17": ["a", "b"]}, failing=["b"])
+
+    final = web_job(details, mode="details", league_id=17)
+
+    assert final["status"] == "Completed"
+    assert final["result"]["schedule_empty_seasons"] == 0
+    assert final["result"]["failed"] == [{"match_id": "b", "league_id": 17}]
+    assert final["result"]["details_done"] == 2 and final["result"]["breaker"] is None
