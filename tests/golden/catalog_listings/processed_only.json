@@ -1,0 +1,21 @@
+{
+ "derive_version": 1,
+ "report": {
+  "counts": {"events": 2, "listed": 0, "schedules": 0, "season_lists": 0, "changes": 0},
+  "problems": [],
+  "superseded_files": []
+ },
+ "tables": {
+  "listing_events": [],
+  "listed_event_rows": [],
+  "entity_slices": [],
+  "seasons": [
+   {"id": 96668, "tournament_id": 17, "name": "Premier League 26/27", "year": "26/27", "sort_key": 2026.0, "listed": 0, "updated_at": 1790769600}
+  ],
+  "tournaments": [
+   {"id": 17, "sport": "football", "name": "Premier League", "name_folded": "premier league", "slug": "premier-league", "updated_at": 1790769600}
+  ],
+  "changes": [],
+  "legacy_roots": []
+ }
+}
