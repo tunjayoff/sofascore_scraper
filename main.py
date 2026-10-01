@@ -3,6 +3,7 @@
 SofaScore Scraper uygulaması ana giriş noktası.
 """
 
+import json
 import sys
 import traceback
 import os
@@ -128,12 +129,55 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--watch",
+        action="store_true",
+        help="Canlı izleyici: --sport ve --league-ids ya da --event-ids ile; olaylar data/watch_events.jsonl",
+    )
+    parser.add_argument("--sport", choices=["football", "basketball", "tennis"], help="--watch ile spor")
+    parser.add_argument("--league-ids", default=None, help="--watch: virgülle SofaScore unique-tournament id'leri")
+    parser.add_argument("--event-ids", default=None, help="--watch: virgülle maç id'leri")
+    parser.add_argument(
+        "--watch-hours",
+        type=float,
+        default=None,
+        help="--watch: en fazla kaç saat (varsayılan: Ctrl+C'ye ya da --event-ids'teki maçlar bitene kadar)",
+    )
+
+    parser.add_argument(
         "--ignore-rate-limit",
         action="store_true",
         help="Rate-limit circuit breaker mekanizmasını devre dışı bırakır"
     )
 
     return parser.parse_args()
+
+
+def _run_watch(args: argparse.Namespace) -> int:
+    """Canlı izleyici (src/watcher.py): olay üretir, sonuçlandırmaz."""
+    from src.config_manager import ConfigManager
+    from src.watcher import MatchWatcher
+
+    def ids(raw):
+        return [int(x) for x in str(raw).split(",") if x.strip()] if raw else []
+
+    if not args.sport or not (args.league_ids or args.event_ids):
+        print("Örnek: python main.py --watch --sport football --league-ids 17,8", file=sys.stderr)
+        return 2
+    data_dir = args.data_dir or ConfigManager().get_data_dir()
+    watcher = MatchWatcher(
+        args.sport,
+        event_ids=ids(args.event_ids),
+        league_ids=ids(args.league_ids),
+        on_event=lambda ev: print(json.dumps(ev, ensure_ascii=False)),
+        data_dir=data_dir,
+    )
+    try:
+        watcher.run(until_seconds=args.watch_hours * 3600 if args.watch_hours else None)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        print(f"İzleyici durdu: {watcher.requests} istek; olaylar {watcher.events_path}", file=sys.stderr)
+    return 0
 
 
 def main() -> int:
@@ -186,6 +230,9 @@ def main() -> int:
         if args.data_dir:
             # Açıkça verilen --data-dir bu çalıştırma için DATA_DIR'i ezer (tüm modüller aynısını görsün)
             os.environ["DATA_DIR"] = args.data_dir
+        if args.watch:
+            return _run_watch(args)
+
         if args.refresh_legacy:
             os.environ["REFRESH_LEGACY"] = "true"
 
