@@ -41,6 +41,7 @@ from fastapi.testclient import TestClient
 import conftest
 import store_fixtures as sf
 from src.jobs.progress import JobProgress
+from src.version import __version__
 from src.web.app import app
 from src.web.jobs import default_db_path
 from src.web.routes import common
@@ -49,6 +50,7 @@ SNAPSHOT_DIR = Path(__file__).resolve().parent.parent / "snapshots" / "api"
 REGENERATE = os.getenv("REGEN_API_GOLDENS") == "1"
 LINE_WIDTH = 118
 UNKNOWN_LEAGUE = 999
+VERSION_PLACEHOLDER = "<app version>"  # tests/snapshots/openapi-legacy.json'daki ile aynı
 LEAGUES_FILE = os.path.join(conftest.CONFIG_DIR, "leagues.txt")
 SPORTS_FILE = os.path.join(conftest.CONFIG_DIR, "league_sports.json")
 
@@ -332,7 +334,10 @@ def test_api_settings(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_api_status(monkeypatch: pytest.MonkeyPatch) -> None:
-    """`version` uygulamanın sürümü değil, koda yazılmış "1.0.0" değeridir."""
+    """
+    `version` uygulamanın sürümüdür (pyproject.toml; FX-2'den önce koda yazılmış "1.0.0" idi). Kayıtta
+    maskelenir: sürüm her yayında değişir ve bu yanıtın sabitlenen biçiminin parçası değildir.
+    """
     golden: Dict[str, Any] = {}
     scenarios: Sequence[Tuple[str, Dict[int, str], Dict[str, str]]] = (
         ("one league, no language set", {17: "Premier League"}, {}),
@@ -344,7 +349,10 @@ def test_api_status(monkeypatch: pytest.MonkeyPatch) -> None:
     for name, leagues, values in scenarios:
         with monkeypatch.context() as patch, _configured(leagues):
             _set_settings_env(patch, values)
-            golden[name] = _get("/api/status")
+            response = _get("/api/status")
+            assert response["body"]["version"] == __version__
+            response["body"]["version"] = VERSION_PLACEHOLDER
+            golden[name] = response
     check_golden("status", golden)
 
 
