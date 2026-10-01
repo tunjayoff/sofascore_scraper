@@ -257,6 +257,50 @@ def test_secrets_never_reach_the_file(make_logger, tmp_path, monkeypatch):
     assert "ConnectionError" in text and "Traceback" in text
 
 
+def test_unparseable_env_line_does_not_deadlock_logging(make_logger, tmp_path, monkeypatch):
+    """
+    python-dotenv ayrıştıramadığı satırı logging ile uyarır. Bu uyarı, maskelenecek değerler
+    toplanırken yazılır ve kendisi de maskelenmek ister: eskiden aynı kilit ikinci kez istendiği
+    için süreç kilitleniyordu (tanılama özeti, ayar kaydı; Python 3.12 ve öncesinde her log satırı).
+    """
+    import threading
+
+    env = tmp_path / ".env"
+    env.write_text("THIRD_PARTY_API_KEY=sk-live-0123456789abcdef\nthis line has no equals sign\n", encoding="utf-8")
+    monkeypatch.setenv("SOFASCORE_ENV_FILE", str(env))
+    log, path = make_logger()
+    # dotenv'in uyarısı da aynı (maskeleyen) dosya handler'ına gitsin: uygulamada kök logger'a gider
+    dotenv_log = logging.getLogger("dotenv.main")
+    handler = app_logger.build_file_handler(path, max_bytes=1_000_000, backup_count=3)
+    dotenv_log.addHandler(handler)
+    monkeypatch.setattr(redact, "_CACHE_SECONDS", -1.0)  # her satırda yeniden topla
+    redact.refresh()
+    try:
+        masked = []
+
+        def write():
+            # Önce log dışından (tanılama özeti ve ayar kaydı böyle çağırır), sonra log satırlarıyla
+            masked.append(redact.redact_text("anahtar sk-live-0123456789abcdef"))
+            for i in range(3):
+                log.warning("satır %d: anahtar sk-live-0123456789abcdef geçersiz", i)
+
+        worker = threading.Thread(target=write, daemon=True)
+        worker.start()
+        worker.join(10)
+        assert not worker.is_alive(), "logging deadlocked while collecting the values to mask"
+        text = _read(path)
+    finally:
+        dotenv_log.removeHandler(handler)
+        handler.close()
+        monkeypatch.undo()
+        redact.refresh()
+    assert masked == ["anahtar ***"]
+    assert "sk-live-0123456789abcdef" not in text
+    assert text.count("geçersiz") == 3
+    # Uyarı dosya değişmedikçe bir kez yazılır, her log satırında yinelenmez
+    assert text.count("could not parse statement") == 1
+
+
 def _rich_output(record_fn) -> str:
     buffer = io.StringIO()
     handler = app_logger.RedactingRichHandler(

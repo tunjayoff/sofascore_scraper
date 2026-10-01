@@ -6,8 +6,9 @@ ya da proxy parolası bulunmamalı. İki katman birlikte çalışır:
 
   1. Bilinen değerler: .env dosyasındaki, adı gizli bir şeye benzeyen anahtarların değerleri
      (TOKEN, SECRET, PASSWORD, KEY, COOKIE...), ayrıca SOFA_CAPTCHA_TOKEN ve URL biçimli
-     değerlerin (PROXY_URL) içindeki kullanıcı adı/parola. Metinde geçtikleri her yerde,
-     hangi biçimde yazılmış olurlarsa olsunlar `***` olur.
+     değerlerin (PROXY_URL) içindeki kullanıcı adı/parola; adres şemasız yazılmış olsa da
+     ("kullanıcı:parola@host:8080"). Metinde geçtikleri her yerde, hangi biçimde yazılmış
+     olurlarsa olsunlar `***` olur.
   2. Kalıplar: `scheme://kullanıcı:parola@host`, JWT (sofa_captcha böyle bir token),
      Cookie / Authorization / X-Captcha başlıkları, `token=...` gibi anahtar=değer çiftleri.
      Bunlar .env'de hiç yazmayan değerleri de (tarayıcıdan gelen cookie) yakalar.
@@ -20,8 +21,8 @@ import os
 import re
 import threading
 import time
-from typing import Any, Dict, Iterable, Optional, Tuple
-from urllib.parse import unquote, urlsplit
+from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import unquote
 
 import dotenv
 
@@ -48,8 +49,9 @@ _SECRET_KEY_RE = re.compile(
 )
 
 # scheme://kullanıcı[:parola]@host — '/', '?' ve '#' kullanıcı bilgisinde olamaz; böylece
-# "https://host/yol?mail=a@b" gibi adresler eşleşmez.
-_URL_USERINFO_RE = re.compile(r"(\b[a-zA-Z][a-zA-Z0-9+.\-]*://)[^\s/@?#]+@")
+# "https://host/yol?mail=a@b" gibi adresler eşleşmez. Parola '@' içerebilir: host'tan önceki
+# SON '@' ayırır (açgözlü eşleşme), yoksa "user:p@ss@host" adresinde parolanın sonu açıkta kalırdı.
+_URL_USERINFO_RE = re.compile(r"(\b[a-zA-Z][a-zA-Z0-9+.\-]*://)[^\s/?#]+@")
 _JWT_RE = re.compile(r"\beyJ[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}(?:\.[A-Za-z0-9_\-]*)?")
 _BEARER_RE = re.compile(r"\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=\-]{8,}", re.IGNORECASE)
 # Başlıklar: değer tırnak içindeyse tırnağa, değilse satır sonuna kadar
@@ -67,7 +69,13 @@ _PAIR_RE = re.compile(
 
 _lock = threading.Lock()
 _cached_values: Tuple[str, ...] = ()
+# URL değerlerindeki "kullanıcı:parola@" parçaları: uzunluk sınırı olmadan, `***@` ile değiştirilir
+_cached_userinfo: Tuple[str, ...] = ()
 _cached_at: Optional[float] = None
+# .env'in son ayrıştırılmış hali: (yol, mtime_ns, boyut) → değerler
+_file_cache: Tuple[Optional[Tuple[str, int, int]], Dict[str, str]] = (None, {})
+# Bilinen değerler toplanırken aynı thread'den gelen log satırı için (bkz. secret_values)
+_collecting = threading.local()
 
 
 def is_secret_key(key: str) -> bool:
@@ -75,35 +83,70 @@ def is_secret_key(key: str) -> bool:
     return key in KNOWN_SECRET_KEYS or bool(_SECRET_KEY_RE.search(key))
 
 
-def _url_credentials(value: str) -> Iterable[str]:
+def _split_userinfo(value: str) -> Optional[Tuple[str, str, str]]:
+    """
+    "[scheme://]kullanıcı[:parola]@host[:port][/...]" → (baş, kullanıcı bilgisi, "@host..." ve sonrası);
+    kullanıcı bilgisi yoksa None. urlsplit'e güvenmez: şemasız yazılmış ("user:pass@host:8080")
+    bir proxy adresi de maskelenmeli; parola '@' içerebilir (host'tan önceki son '@' ayırır).
+    """
+    scheme, sep, rest = value.partition("://")
+    if not sep:
+        scheme, rest = "", value
+    cut = min((i for i in (rest.find(c) for c in "/?#") if i >= 0), default=len(rest))
+    userinfo, at, hostport = rest[:cut].rpartition("@")
+    if not at or not userinfo:
+        return None
+    return scheme + sep, userinfo, at + hostport + rest[cut:]
+
+
+def _url_credentials(value: str) -> List[str]:
     """URL biçimli bir değerdeki kullanıcı bilgisi parçaları (ham ve yüzde-çözülmüş)."""
-    if "://" not in value or "@" not in value:
-        return ()
-    try:
-        parts = urlsplit(value)
-        netloc = parts.netloc
-        password = parts.password
-    except ValueError:
-        return ()
+    parts = _split_userinfo(value)
+    if parts is None:
+        return []
+    userinfo = parts[1]
     found = []
-    userinfo = netloc.rsplit("@", 1)[0] if "@" in netloc else ""
-    for piece in (userinfo, password):
+    for piece in (userinfo, userinfo.partition(":")[2]):
         if piece:
             found.extend((piece, unquote(piece)))
     return found
 
 
+def mask_url_userinfo(value: str) -> str:
+    """Adresin kullanıcı bilgisini (varsa) `***` yapar; şemasız yazılmış adreste de."""
+    parts = _split_userinfo(value)
+    if parts is None:
+        return value
+    return f"{parts[0]}{MASK}{parts[2]}"
+
+
 def _env_file_values() -> Dict[str, str]:
+    """
+    .env'deki dolu değerler. Dosya değişmediyse yeniden ayrıştırılmaz: python-dotenv ayrıştıramadığı
+    her satır için log'a uyarı yazar; birkaç saniyede bir yeniden okumak log'u o uyarıyla doldururdu.
+    """
+    global _file_cache
+    path = env_file_path()
     try:
-        return {k: v for k, v in dotenv.dotenv_values(env_file_path()).items() if v}
-    except Exception:
-        # .env okunamıyorsa yalnızca ortamdaki bilinen anahtarlar kullanılır
+        st = os.stat(path)
+    except OSError:
         return {}
+    signature = (str(path), st.st_mtime_ns, st.st_size)
+    if _file_cache[0] != signature:
+        try:
+            values = {k: v for k, v in dotenv.dotenv_values(path).items() if v}
+        except Exception:
+            # .env okunamıyorsa yalnızca ortamdaki bilinen anahtarlar kullanılır
+            values = {}
+        _file_cache = (signature, values)
+    return _file_cache[1]
 
 
-def _collect_values() -> Tuple[str, ...]:
+def _collect_values() -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
+    """(metinde aranacak gizli değerler, URL değerlerindeki "kullanıcı bilgisi@" parçaları)."""
     file_values = _env_file_values()
     values = set()
+    userinfo = set()
     # .env'deki her anahtar için hem dosyadaki hem ortamdaki (çalışma anında değişmiş olabilir) değer
     for key in set(file_values) | set(KNOWN_SECRET_KEYS) | set(KNOWN_URL_KEYS):
         for value in (file_values.get(key), os.environ.get(key)):
@@ -111,27 +154,53 @@ def _collect_values() -> Tuple[str, ...]:
                 continue
             if is_secret_key(key):
                 values.add(value)
-            values.update(_url_credentials(value))
+            pieces = _url_credentials(value)
+            values.update(pieces)
+            if pieces:
+                # Kısa bir parola tek başına aranmaz (MIN_SECRET_LENGTH), ama "kullanıcı:parola@"
+                # olarak adresin içinde her zaman tanınır: şemasız adresi kalıplar yakalayamaz
+                userinfo.update((pieces[0] + "@", pieces[1] + "@"))
+
     # Uzun olan önce: kısa bir değer, uzun olanın parçasıysa onu yarım maskelemesin
-    return tuple(sorted((v for v in values if len(v) >= MIN_SECRET_LENGTH), key=len, reverse=True))
+    def ordered(items) -> Tuple[str, ...]:
+        return tuple(sorted(items, key=len, reverse=True))
+
+    return ordered(v for v in values if len(v) >= MIN_SECRET_LENGTH), ordered(userinfo)
+
+
+def _known() -> Tuple[Tuple[str, ...], Tuple[str, ...]]:
+    """Bilinen gizli değerler ve kullanıcı bilgisi parçaları (kısa süreli önbellekli)."""
+    global _cached_values, _cached_userinfo, _cached_at
+    now = time.monotonic()
+    if _cached_at is None or now - _cached_at > _CACHE_SECONDS:
+        if getattr(_collecting, "active", False):
+            # Değerler toplanırken yazılan bir log satırı (python-dotenv ayrıştıramadığı .env satırını
+            # logging ile uyarır) maskelenmek için yine buraya gelir: kilidi yeniden istemek süreci
+            # kilitlerdi. O satır eldeki değerlerle (ve kalıplarla) maskelenir.
+            return _cached_values, _cached_userinfo
+        with _lock:
+            _collecting.active = True
+            try:
+                _cached_values, _cached_userinfo = _collect_values()
+                _cached_at = now
+            finally:
+                _collecting.active = False
+    return _cached_values, _cached_userinfo
 
 
 def secret_values() -> Tuple[str, ...]:
     """Metinde aranacak bilinen gizli değerler (kısa süreli önbellekli)."""
-    global _cached_values, _cached_at
-    now = time.monotonic()
-    if _cached_at is None or now - _cached_at > _CACHE_SECONDS:
-        with _lock:
-            _cached_values = _collect_values()
-            _cached_at = now
-    return _cached_values
+    return _known()[0]
 
 
 def refresh() -> None:
     """Ayar değişti (.env yazıldı / yeniden yüklendi): bilinen değerleri hemen yeniden oku."""
-    global _cached_at
+    global _cached_at, _file_cache
+    if getattr(_collecting, "active", False):
+        return  # toplama sürerken (aynı thread) çağrıldı: kilit zaten bizde
     with _lock:
         _cached_at = None
+        _file_cache = (None, {})
 
 
 def redact_text(text: str) -> str:
@@ -139,9 +208,13 @@ def redact_text(text: str) -> str:
     if not text:
         return text
     try:
-        for value in secret_values():
+        values, userinfo = _known()
+        for value in values:
             if value in text:
                 text = text.replace(value, MASK)
+        for value in userinfo:
+            if value in text:
+                text = text.replace(value, MASK + "@")
         text = _URL_USERINFO_RE.sub(rf"\1{MASK}@", text)
         text = _HEADER_RE.sub(rf"\1{MASK}", text)
         text = _BEARER_RE.sub(rf"\1 {MASK}", text)
@@ -159,7 +232,11 @@ def mask_value(key: str, value: Optional[str]) -> Optional[str]:
         return value
     if is_secret_key(key):
         return MASK
-    return redact_text(str(value))
+    value = str(value)
+    if key in KNOWN_URL_KEYS:
+        # Değer henüz .env'de / ortamda olmasa da (yeni yazılıyor) kimlik bilgisi yapısal olarak maskelenir
+        value = mask_url_userinfo(value)
+    return redact_text(value)
 
 
 def redact_obj(obj: Any) -> Any:

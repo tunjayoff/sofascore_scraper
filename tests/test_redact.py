@@ -102,6 +102,64 @@ def test_proxy_password_is_masked_outside_the_url_too(env_file):
     assert "p%40ss%21word-9" not in out
 
 
+@pytest.mark.parametrize(
+    "proxy, secrets, shown",
+    [
+        # Elle .env'e şemasız yazılmış adres: curl bunu kabul eder, kalıplar ise şema bekler
+        ("scraper:Pr0xy-P4ss!word@proxy.example.com:8080", ["Pr0xy-P4ss!word", "scraper:"], "***@proxy.example.com:8080"),
+        # Şemasız ve kısa parola: tek başına aranmayacak kadar kısa, adresin içinde yine de tanınır
+        ("u:abc@10.0.0.5:1080", ["u:abc", ":abc@"], "***@10.0.0.5:1080"),
+        # Parolada '@': host'tan önceki son '@' ayırır
+        ("http://scraper:p@ss@proxy.example.com:8080", ["p@ss", "ss@proxy", "scraper:"], "http://***@proxy.example.com:8080"),
+        ("http://u:a@b@proxy.example.com:8080", ["a@b", "@b@", "u:a"], "http://***@proxy.example.com:8080"),
+        # Parolada ':'
+        ("http://scraper:pa:ss:word@proxy.example.com:8080", ["pa:ss:word", "ss:word"], "http://***@proxy.example.com:8080"),
+        # Parolasız, yalnızca kullanıcı adı (API anahtarı olarak kullanılan sağlayıcılar var)
+        ("http://ApiKey-0123456789@proxy.example.com:8080", ["ApiKey-0123456789"], "http://***@proxy.example.com:8080"),
+    ],
+)
+def test_proxy_credentials_are_masked_however_the_url_is_written(env_file, monkeypatch, proxy, secrets, shown):
+    env_file(f"USE_PROXY=true\nPROXY_URL={proxy}\n")
+    line = redact.redact_text(f"Proxy/Bağlantı hatası: curl: (7) Failed to connect via {proxy} - proxy: açık")
+    setting = redact.mask_value("PROXY_URL", proxy)
+    nested = repr(redact.redact_obj({"settings": {"PROXY_URL": proxy}, "log": [f"proxy {proxy} reddetti"]}))
+    for secret in secrets:
+        assert secret not in line, line
+        assert secret not in setting, setting
+        assert secret not in nested, nested
+    assert setting == shown
+    assert shown in line and "proxy: açık" in line
+
+
+def test_proxy_setting_is_masked_before_it_is_known(env_file):
+    # Değer henüz .env'de de ortamda da yok (ayar yazılırken log'a geçen değer): yapısal maskeleme
+    assert redact.mask_value("PROXY_URL", "user:pw@10.1.1.1:3128") == "***@10.1.1.1:3128"
+    assert redact.mask_value("PROXY_URL", "http://10.1.1.1:3128") == "http://10.1.1.1:3128"
+    assert redact.mask_value("PROXY_URL", "http://10.1.1.1:3128/?mail=a@b") == "http://10.1.1.1:3128/?mail=a@b"
+    assert redact.mask_url_userinfo("socks5://u:p@h:1/x@y") == "socks5://***@h:1/x@y"
+
+
+def test_unparseable_env_line_does_not_stop_masking(env_file):
+    # python-dotenv bu satırı atlar (ve logging ile uyarır); geri kalan değerler yine maskelenir
+    env_file(f"MY_SERVICE_API_KEY={API_KEY}\nthis line has no equals sign\nPROXY_URL={PROXY}\n")
+    out = redact.redact_text(f"anahtar {API_KEY}, proxy parolası Pr0xy-P4ss!word")
+    assert API_KEY not in out and "Pr0xy-P4ss!word" not in out
+
+
+def test_env_file_is_parsed_again_only_when_it_changes(env_file, monkeypatch):
+    env_file(f"MY_SERVICE_API_KEY={API_KEY}\n")
+    calls = []
+    real = redact.dotenv.dotenv_values
+    monkeypatch.setattr(redact.dotenv, "dotenv_values", lambda *a, **k: calls.append(a) or real(*a, **k))
+    monkeypatch.setattr(redact, "_CACHE_SECONDS", -1.0)  # bilinen değerler her çağrıda yeniden toplanır
+    for _ in range(5):
+        assert API_KEY not in redact.redact_text(f"anahtar {API_KEY}")
+    assert len(calls) == 1  # dosya değişmedi: python-dotenv'in "satır ayrıştırılamadı" uyarısı yinelenmez
+    env_file("OTHER_SERVICE_TOKEN=second-secret-value\n")
+    assert "second-secret-value" not in redact.redact_text("değer second-secret-value")
+    assert len(calls) == 2
+
+
 def test_runtime_change_is_picked_up_after_refresh(env_file, monkeypatch):
     assert redact.redact_text("değer: first-secret-value") == "değer: first-secret-value"
     env_file("UPSTREAM_SECRET=first-secret-value\n")
