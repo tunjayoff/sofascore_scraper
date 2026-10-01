@@ -429,7 +429,7 @@ class ConfigManager:
         Returns:
             str: Dil kodu (tr, en, vs.)
         """
-        return app_language("tr")
+        return app_language()
 
     def set_language(self, lang_code: str) -> bool:
         """

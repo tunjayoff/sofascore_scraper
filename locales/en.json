@@ -419,7 +419,7 @@
     "doctor_env_proxy_missing": "USE_PROXY=true but PROXY_URL is empty: requests go out without a proxy",
     "doctor_env_proxy_invalid": "PROXY_URL is not a proxy address (expected http://, https://, socks5:// or socks5h:// and a host)",
     "doctor_env_api_url": "API_BASE_URL={value}: not an https SofaScore address (default: https://www.sofascore.com/api/v1)",
-    "doctor_env_language": "APP_LANGUAGE={value}: only tr and en are supported; Turkish is used",
+    "doctor_env_language": "APP_LANGUAGE={value}: only en and tr are supported; the value is ignored and the language follows the system language (English if that is not supported either)",
     "doctor_env_log_level": "LOG_LEVEL={value}: must be DEBUG, INFO, WARNING, ERROR or CRITICAL; INFO is used",
     "doctor_env_legacy_profile": "SOFASCORE_CHROME_PROFILE is not read by the app; the setting is called SOFASCORE_BROWSER_PROFILE",
     "doctor_env_headed": "SOFASCORE_BROWSER_HEADED is set but there is no display (DISPLAY / WAYLAND_DISPLAY): the browser cannot open a window",
@@ -435,5 +435,7 @@
     "doctor_cli_live": "also make ONE real request to SofaScore through the browser bridge (never done otherwise)",
     "doctor_cli_only": "run only these checks, comma-separated ({ids})",
     "doctor_cli_skip": "skip these checks, comma-separated",
-    "doctor_cli_lang": "output language (default: APP_LANGUAGE)"
+    "doctor_cli_lang": "output language (default: APP_LANGUAGE, otherwise the system language, otherwise English)",
+    "doctor_cli_unknown_ids": "unknown check id: {ids} (valid: {valid})",
+    "cli_help_help": "Show this help message and exit"
 }

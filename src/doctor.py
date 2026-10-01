@@ -36,6 +36,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 from urllib.parse import urlparse
 
+from src import language  # yalnızca standart kütüphane
+from src.language import SUPPORTED_LANGUAGES
 from src.paths import DEFAULT_BROWSER_PROFILE_DIR  # yalnızca standart kütüphane
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -46,8 +48,6 @@ FAIL = "fail"
 _SEVERITY = {OK: 0, WARN: 1, FAIL: 2}
 
 MIN_PYTHON = (3, 10)
-SUPPORTED_LANGUAGES = ("tr", "en")
-DEFAULT_LANGUAGE = "tr"  # src/i18n.py ile aynı varsayılan
 
 # requirements.txt'teki her paket için içe aktarma adı; patchright ve playwright,
 # scrapling[fetchers] ile gelir ve köprü onlarsız çalışmaz. tests/test_doctor.py bu listeyi
@@ -160,12 +160,9 @@ class Context:
         return p if p.is_absolute() else self.root / p
 
     def _app_language(self) -> str:
-        # src/i18n.app_language ile aynı kural (LANGUAGE yalnızca desteklenen bir koda eşitse)
-        for key in ("APP_LANGUAGE", "LANGUAGE"):
-            value = self.get(key).lower()
-            if value in SUPPORTED_LANGUAGES:
-                return value
-        return DEFAULT_LANGUAGE
+        # Uygulamayla aynı kural (src/language.py): açık ayar > sistem dili > İngilizce. Değerler
+        # uygulamanın göreceği gibi okunur (süreç ortamı, sonra .env).
+        return language.resolve_language({key: self.get(key) for key in language.ENV_KEYS}, platform=self.platform)
 
     def get(self, key: str, default: str = "") -> str:
         """Geçerli değer: süreç ortamı .env'in önündedir (uygulama load_dotenv'i override'sız çağırır)."""
@@ -970,7 +967,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             lang = arg.split("=", 1)[1]
     ctx = Context(lang=lang)
 
-    parser = argparse.ArgumentParser(prog="python main.py --doctor", description=ctx.t("doctor_cli_description"))
+    parser = argparse.ArgumentParser(
+        prog="python main.py --doctor", description=ctx.t("doctor_cli_description"), add_help=False
+    )
+    parser.add_argument("-h", "--help", action="help", help=ctx.t("cli_help_help"))
     parser.add_argument("--json", action="store_true", help=ctx.t("doctor_cli_json"))
     parser.add_argument("--strict", action="store_true", help=ctx.t("doctor_cli_strict"))
     parser.add_argument("--live", action="store_true", help=ctx.t("doctor_cli_live"))
@@ -981,7 +981,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     unknown = [i for i in (_split_ids(args.only) or []) + (_split_ids(args.skip) or []) if i not in CHECK_IDS + ("live",)]
     if unknown:
-        parser.error("unknown check id: {} (valid: {})".format(", ".join(unknown), ", ".join(CHECK_IDS)))
+        parser.error(ctx.t("doctor_cli_unknown_ids", ids=", ".join(unknown), valid=", ".join(CHECK_IDS)))
 
     if args.live:
         # Canlı istek uygulamanın ayarlarıyla (proxy, profil, istek bütçesi) atılır: .env yüklenir

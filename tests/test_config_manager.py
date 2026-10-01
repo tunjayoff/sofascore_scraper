@@ -124,9 +124,9 @@ def test_external_edit_is_picked_up(make_cm):
     [
         ({"APP_LANGUAGE": "en"}, "en"),
         ({"LANGUAGE": "en"}, "en"),
-        ({"LANGUAGE": "en_US:en"}, "tr"),  # GNU gettext değeri yok sayılır
+        ({"LANGUAGE": "tr_TR:tr"}, "en"),  # GNU gettext değeri yok sayılır
         ({"APP_LANGUAGE": "tr", "LANGUAGE": "en"}, "tr"),
-        ({}, "tr"),
+        ({}, "en"),  # açık ayar yok, sistem dili desteklenmiyor: İngilizce (kuralın tamamı: test_language.py)
     ],
 )
 def test_app_language(monkeypatch, env, expected):

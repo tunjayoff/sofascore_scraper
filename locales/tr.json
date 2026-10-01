@@ -419,7 +419,7 @@
     "doctor_env_proxy_missing": "USE_PROXY=true ama PROXY_URL boş: istekler proxy'siz gidiyor",
     "doctor_env_proxy_invalid": "PROXY_URL bir proxy adresi değil (http://, https://, socks5:// ya da socks5h:// ve bir sunucu adı beklenir)",
     "doctor_env_api_url": "API_BASE_URL={value}: https ile başlayan bir SofaScore adresi değil (varsayılan: https://www.sofascore.com/api/v1)",
-    "doctor_env_language": "APP_LANGUAGE={value}: yalnızca tr ve en desteklenir; Türkçe kullanılıyor",
+    "doctor_env_language": "APP_LANGUAGE={value}: yalnızca en ve tr desteklenir; değer yok sayılıyor ve dil sistem dilini izliyor (o da desteklenmiyorsa İngilizce)",
     "doctor_env_log_level": "LOG_LEVEL={value}: DEBUG, INFO, WARNING, ERROR ya da CRITICAL olmalı; INFO kullanılıyor",
     "doctor_env_legacy_profile": "SOFASCORE_CHROME_PROFILE uygulama tarafından okunmuyor; ayarın adı SOFASCORE_BROWSER_PROFILE",
     "doctor_env_headed": "SOFASCORE_BROWSER_HEADED açık ama ekran yok (DISPLAY / WAYLAND_DISPLAY): tarayıcı pencere açamaz",
@@ -435,5 +435,7 @@
     "doctor_cli_live": "ayrıca tarayıcı köprüsü üzerinden SofaScore'a TEK gerçek istek atar (başka hiçbir durumda atılmaz)",
     "doctor_cli_only": "yalnızca bu denetimleri çalıştırır, virgülle ({ids})",
     "doctor_cli_skip": "bu denetimleri atlar, virgülle",
-    "doctor_cli_lang": "çıktı dili (varsayılan: APP_LANGUAGE)"
+    "doctor_cli_lang": "çıktı dili (varsayılan: APP_LANGUAGE, yoksa sistem dili, o da desteklenmiyorsa İngilizce)",
+    "doctor_cli_unknown_ids": "bilinmeyen denetim adı: {ids} (geçerli olanlar: {valid})",
+    "cli_help_help": "Bu yardım iletisini gösterir ve çıkar"
 }
