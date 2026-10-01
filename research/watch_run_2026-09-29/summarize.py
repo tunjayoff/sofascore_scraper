@@ -1,8 +1,11 @@
-import json, statistics as st, collections, math
+import collections
+import json
+import math
+import statistics as st
 D = "research/watch_run_2026-09-29"
 picked = json.load(open("research/watch_run_2026-09-29/picked.json"))
 sport_of = {str(e): s for s, ids in picked.items() for e in ids}
-evs = [json.loads(l) for l in open(D + "/watch_events.jsonl")]
+evs = [json.loads(line) for line in open(D + "/watch_events.jsonl")]
 try:
     summ = json.load(open(D + "/run_summary.json"))
 except OSError:
@@ -18,13 +21,16 @@ for e in evs:
         at = dt.datetime.fromisoformat(e["at_utc"]).timestamp()
         lag = at - e["change_ts"]
         s = sport_of.get(str(e["event_id"]))
-        lags[s].append(lag); lags["all"].append(lag)
+        lags[s].append(lag)
+        lags["all"].append(lag)
         rows.append((s, e["event_id"], e["from"], e.get("source"), round(lag)))
 def dist(v):
     v = sorted(v)
-    if not v: return "n 0"
+    if not v:
+        return "n 0"
     d = f"n {len(v)}; min {v[0]:.0f} / medyan {st.median(v):.0f} / maks {v[-1]:.0f} sn"
-    if len(v) >= 10: d += f" / p90 {v[math.ceil(0.9*len(v))-1]:.0f}"
+    if len(v) >= 10:
+        d += f" / p90 {v[math.ceil(0.9*len(v))-1]:.0f}"
     return d
 for k in ("football", "basketball", "tennis", "all"):
     print("gecikme", k, dist(lags[k]))

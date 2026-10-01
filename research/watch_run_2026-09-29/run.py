@@ -1,5 +1,10 @@
 """Talimat 03-B kabul koşusu: 3 spor x 10 maç, 2 saat; tek süreç, ortak 1 istek/sn sınırı."""
-import json, sys, time, threading, collections, signal
+import collections
+import json
+import signal
+import sys
+import threading
+import time
 sys.path.insert(0, "/home/tunjayoff/Desktop/OwnProjects/sofascore_scraper")
 from src.watcher import MatchWatcher, LIST_INTERVAL_SECONDS
 
