@@ -111,9 +111,13 @@ if ! pip install -r requirements.txt; then
   exit 1
 fi
 
-echo "→ Tarayıcı bileşeni (Playwright Chromium) yükleniyor…"
-if ! python -m playwright install chromium; then
-  echo "Uyarı: playwright install chromium başarısız. Kurulu Google Chrome varsa yine çalışır." >&2
+# Köprü (BrowserBridge) tarayıcıyı Scrapling → patchright ile, channel="chromium" olarak başlatır:
+# patchright'ın kendi Chromium derlemesi gerekir. Kurulu Google Chrome KULLANILMAZ; playwright'ın kurulum
+# komutu ise yalnızca playwright ve patchright sürümleri denk geldiğinde aynı derlemeyi indirir.
+echo "→ Tarayıcı kuruluyor: patchright'ın Chromium'u (uygulamanın SofaScore'a eriştiği tarayıcı; tek seferlik indirme)…"
+if ! python -m patchright install chromium --no-shell; then
+  echo "Hata: tarayıcı kurulamadı. O olmadan uygulama SofaScore'dan veri çekemez (kurulu Google Chrome onun yerine kullanılmaz)." >&2
+  echo "  Yeniden denemek için: \"$ROOT/.venv/bin/python\" -m patchright install chromium --no-shell" >&2
 fi
 
 if [[ ! -f ".env" ]] && [[ -f ".env.example" ]]; then
@@ -121,9 +125,35 @@ if [[ ! -f ".env" ]] && [[ -f ".env.example" ]]; then
   cp .env.example .env
 fi
 
+# Web arayüzü Node.js ile bir kez derlenir (frontend/ → frontend/dist/). Sürüm kuralı src/doctor.py'de.
+if python -c "import sys; from src import doctor; sys.exit(0 if doctor.node_is_supported(doctor.installed_node_version()) else 1)"; then
+  echo "→ Web arayüzü derleniyor (npm install && npm run build; birkaç dakika sürebilir)…"
+  # </dev/null: `curl | bash` ile çalışırken betiğin kendisi stdin'dedir; npm onu tüketmesin
+  if ! (cd frontend && npm install </dev/null && npm run build </dev/null); then
+    echo "Uyarı: web arayüzü derlenemedi (çıktı yukarıda). Terminal modları yine çalışır; web uygulaması arayüz yerine bir yardım sayfası gösterir." >&2
+    echo "  Yeniden denemek için: cd \"$ROOT/frontend\" && npm install && npm run build" >&2
+  fi
+else
+  NODE_FOUND="$(command -v node >/dev/null 2>&1 && node --version 2>/dev/null || echo "yok")"
+  echo "Uyarı: web arayüzü derlenmedi: Node.js 20.19+ veya 22.12+ ve npm gerekli (bulunan Node.js: $NODE_FOUND)." >&2
+  echo "  Node.js'i https://nodejs.org adresinden kurun, sonra bu betiği yeniden çalıştırın ya da ./start-sofascore.sh ile başlatın (Node.js varsa arayüzü o da derler)." >&2
+  echo "  Terminal arayüzü (python main.py) ve headless mod Node.js olmadan çalışır." >&2
+fi
+
 echo ""
+echo "→ Kurulum denetleniyor (python main.py --doctor)…"
+echo ""
+DOCTOR_STATUS=0
+python -m src.doctor || DOCTOR_STATUS=$?
+
+echo ""
+if [[ "$DOCTOR_STATUS" -ne 0 ]]; then
+  echo "Kurulum tamamlanmadı: yukarıdaki [FAIL] satırlarındaki çözümleri uygulayın, sonra yeniden denetleyin:" >&2
+  echo "  cd \"$ROOT\" && .venv/bin/python main.py --doctor" >&2
+  exit 1
+fi
 echo "Kurulum tamam."
 echo "  Web arayüzü:  cd \"$ROOT\" && ./start-sofascore.sh  → http://127.0.0.1:8000"
-echo "                (ilk çalıştırmada web arayüzü derlenir; Node.js 20+ gerekir)"
 echo "  TUI:          cd \"$ROOT\" && source .venv/bin/activate && python main.py"
+echo "  Denetim:      cd \"$ROOT\" && .venv/bin/python main.py --doctor"
 echo ""

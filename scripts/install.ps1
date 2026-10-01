@@ -118,10 +118,14 @@ if ($LASTEXITCODE -ne 0) {
     throw "pip install -r requirements.txt başarısız — üstteki hata satırlarına bakın (bazı paketler için Visual C++ Build Tools gerekebilir)."
 }
 
-Write-Host "→ Tarayıcı bileşeni (Playwright Chromium) yükleniyor…"
-& $venvPy -m playwright install chromium
+# Köprü (BrowserBridge) tarayıcıyı Scrapling → patchright ile, channel="chromium" olarak başlatır:
+# patchright'ın kendi Chromium derlemesi gerekir. Kurulu Google Chrome KULLANILMAZ; playwright'ın kurulum
+# komutu ise yalnızca playwright ve patchright sürümleri denk geldiğinde aynı derlemeyi indirir.
+Write-Host "→ Tarayıcı kuruluyor: patchright'ın Chromium'u (uygulamanın SofaScore'a eriştiği tarayıcı; tek seferlik indirme)…"
+& $venvPy -m patchright install chromium --no-shell
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Uyarı: playwright install chromium başarısız. Kurulu Google Chrome varsa yine çalışır." -ForegroundColor Yellow
+    Write-Host "Hata: tarayıcı kurulamadı. O olmadan uygulama SofaScore'dan veri çekemez (kurulu Google Chrome onun yerine kullanılmaz)." -ForegroundColor Red
+    Write-Host "  Yeniden denemek için: `"$venvPy`" -m patchright install chromium --no-shell" -ForegroundColor Red
 }
 
 $envFile = Join-Path $root ".env"
@@ -131,9 +135,49 @@ if (-not (Test-Path $envFile) -and (Test-Path $envEx)) {
     Write-Host "→ .env.example → .env kopyalandı."
 }
 
+# Web arayüzü Node.js ile bir kez derlenir (frontend\ → frontend\dist\). Sürüm kuralı src\doctor.py'de.
+& $venvPy -c "import sys; from src import doctor; sys.exit(0 if doctor.node_is_supported(doctor.installed_node_version()) else 1)"
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "→ Web arayüzü derleniyor (npm install, npm run build; birkaç dakika sürebilir)…"
+    $uiBuilt = $false
+    Push-Location (Join-Path $root "frontend")
+    try {
+        & npm install
+        if ($LASTEXITCODE -eq 0) {
+            & npm run build
+            $uiBuilt = ($LASTEXITCODE -eq 0)
+        }
+    }
+    finally {
+        Pop-Location
+    }
+    if (-not $uiBuilt) {
+        Write-Host "Uyarı: web arayüzü derlenemedi (çıktı yukarıda). Terminal modları yine çalışır; web uygulaması arayüz yerine bir yardım sayfası gösterir." -ForegroundColor Yellow
+        Write-Host "  Yeniden denemek için: cd `"$root\frontend`" ; npm install ; npm run build" -ForegroundColor Yellow
+    }
+}
+else {
+    $nodeFound = "yok"
+    if (Get-Command node -ErrorAction SilentlyContinue) { $nodeFound = (& node --version) }
+    Write-Host "Uyarı: web arayüzü derlenmedi: Node.js 20.19+ veya 22.12+ ve npm gerekli (bulunan Node.js: $nodeFound)." -ForegroundColor Yellow
+    Write-Host "  Node.js'i https://nodejs.org adresinden kurun, sonra bu betiği yeniden çalıştırın ya da 'Start SofaScore.bat' ile başlatın (Node.js varsa arayüzü o da derler)." -ForegroundColor Yellow
+    Write-Host "  Terminal arayüzü (python main.py) ve headless mod Node.js olmadan çalışır." -ForegroundColor Yellow
+}
+
 Write-Host ""
+Write-Host "→ Kurulum denetleniyor (python main.py --doctor)…"
+Write-Host ""
+& $venvPy -m src.doctor
+$doctorStatus = $LASTEXITCODE
+
+Write-Host ""
+if ($doctorStatus -ne 0) {
+    Write-Host "Kurulum tamamlanmadı: yukarıdaki [FAIL] satırlarındaki çözümleri uygulayın, sonra yeniden denetleyin:" -ForegroundColor Red
+    Write-Host "  cd `"$root`" ; .\.venv\Scripts\python.exe main.py --doctor" -ForegroundColor Red
+    exit 1
+}
 Write-Host "Kurulum tamam." -ForegroundColor Green
-Write-Host "  Web:  cd `"$root`" ; .\.venv\Scripts\python.exe scripts\start_web.py  → http://127.0.0.1:8000"
-Write-Host "        (ilk çalıştırmada web arayüzü derlenir; Node.js 20+ gerekir)"
-Write-Host "  TUI:  cd `"$root`" ; .\.venv\Scripts\python.exe main.py"
+Write-Host "  Web:      cd `"$root`" ; .\.venv\Scripts\python.exe scripts\start_web.py  → http://127.0.0.1:8000"
+Write-Host "  TUI:      cd `"$root`" ; .\.venv\Scripts\python.exe main.py"
+Write-Host "  Denetim:  cd `"$root`" ; .\.venv\Scripts\python.exe main.py --doctor"
 Write-Host ""
