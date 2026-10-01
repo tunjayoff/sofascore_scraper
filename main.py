@@ -33,6 +33,7 @@ from src.paths import env_file_path  # noqa: E402
 dotenv.load_dotenv(env_file_path())
 
 from src.SofaScoreUi import SimpleSofaScoreUI
+from src.exceptions import StorageError
 from src.logger import get_logger
 from src.i18n import get_i18n
 from src.sports import sport_slugs
@@ -329,6 +330,10 @@ def main() -> int:
                 if job_breaker.tripped:
                     print(get_i18n().t("fetch_stopped_by_breaker", reason=job_breaker.reason()), file=sys.stderr)
                     os.environ["APP_EXIT_CODE"] = "2"
+                # Tüm ligler yolunda menü katmanı hatayı yakalayıp yalnızca "hata" yazar: nedeni burada söyle
+                storage_error = getattr(ui.match_data_fetcher, "last_storage_error", None)
+                if storage_error is not None:
+                    raise storage_error
                 ran = True
 
             if args.csv_export:
@@ -361,6 +366,12 @@ def main() -> int:
         i18n = get_i18n()
         print(i18n.t('prog_terminated_by_user'))
         return 0
+
+    except StorageError as e:
+        # Kayıt diske yazılamadı (disk dolu, izin yok): iz dökümü yerine nedeni söyle
+        logger.error(f"Depolama hatası, işlem durduruldu: {e}")
+        print(get_i18n().t("storage_error_abort", path=e.path or "?", reason=e.detail or str(e)), file=sys.stderr)
+        return 1
 
     except Exception as e:
         i18n = get_i18n()

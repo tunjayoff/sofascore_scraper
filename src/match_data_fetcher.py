@@ -21,7 +21,7 @@ from tqdm import tqdm
 
 from src import breaker as request_breaker
 from src.config_manager import ConfigManager
-from src.exceptions import ResourceNotFoundError
+from src.exceptions import ResourceNotFoundError, StorageError
 from src.fsutil import atomic_write_json
 from src.utils import make_api_request, ensure_directory
 from src.match_fetcher import MatchFetcher
@@ -53,6 +53,9 @@ UNAVAILABLE_FILE = "_unavailable.json"
 #                büyükse fark eski sürümden kalmadır (geçici hata da olabilir; bkz. reset_unavailable_markers)
 #   error        dilimin son başarısız isteği (neden, HTTP kodu, zaman, art arda kaç kez)
 SLICE_STATUS_FILE = "_slice_status.json"
+
+# uniqueTournament.id'si olmayan maçların sabit dizini: match_details/_no_tournament/<spor>/<maç id>
+NO_TOURNAMENT_DIR = "_no_tournament"
 
 SLICE_OK = "ok"  # yanıt geldi, veri var
 SLICE_EMPTY = "empty"  # kesin yanıt: kaynak yok (404) ya da içinde veri olmayan 200
@@ -88,6 +91,11 @@ class SliceOutcome:
 
 def _utc_now_iso() -> str:
     return dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+
+
+def _path_part(value: Any) -> str:
+    """Kimlikten/slug'dan güvenli dizin adı parçası."""
+    return re.sub(r"[^A-Za-z0-9_.-]", "_", str(value)).strip(".") or "unknown"
 
 # score_changes.jsonl'a paralel iş parçacıklarından ekleme
 _SCORE_CHANGES_LOCK = threading.Lock()
@@ -267,11 +275,13 @@ class MatchDataFetcher:
     async def fetch_matches_batch_async(self, match_ids, max_concurrent=30, progress_bar=None, progress_callback=None, should_cancel=None, failed_callback=None):
         """Birden çok maç için veri çeker (circuit breaker destekli).
 
-        failed_callback(match_id): denemeleri tükenen her maç için çağrılır (devre kesilince
-        hiç denenmeyenler ve iptal edilenler başarısız sayılmaz).
+        failed_callback(match_id): denemeleri tükenen ya da kaydı diske yazılamayan her maç için
+        çağrılır (devre kesilince hiç denenmeyenler ve iptal edilenler başarısız sayılmaz).
 
         Devre kesici işin kesicisidir (src/breaker.py): çağıran kurduysa o, yoksa bu çağrı için
         yenisi. İstek katmanı her isteğin sonucunu (alt dilimler ve yenileme dahil) ona bildirir.
+        Diske yazılamayan maç başarısız sayılır; disk dolu / izin yok gibi kalıcı hatalarda
+        StorageError yukarı fırlatılır ve iş durur.
         """
         with request_breaker.scope(self.config_manager) as breaker:
             return await self._fetch_matches_batch_async(
@@ -367,6 +377,17 @@ class MatchDataFetcher:
                                 # fetch_one görevleri bu batch bitmeden tamamlanır/iptal edilir
                                 batch_status_counts["other"] += 1  # noqa: B023
                                 break
+                        except StorageError as e:
+                            # Veri çekildi ama diske yazılamadı: istek hatası değil, yeniden istemek çözmez
+                            logger.error(f"Maç {match_id} kaydedilemedi: {e}")
+                            status_counts["storage"] += 1
+                            batch_status_counts["storage"] += 1  # noqa: B023
+                            if e.fatal:
+                                batch_failed += 1
+                                if failed_callback:
+                                    failed_callback(str(match_id))
+                                raise  # disk dolu / izin yok: kalan maçlar da yazılamaz, iş durur
+                            break
                         except Exception as e:
                             err = str(e)
                             status_key = request_breaker.failure_kind(e)
@@ -430,12 +451,15 @@ class MatchDataFetcher:
                                     f"Match details {min(cumulative_done, total_m)}/{total_m} (parallel batch {batch_idx + 1}/{len(all_batches)})",
                                 )
                 except BaseException:
-                    # FetchCancelled (iptal) veya beklenmeyen hata: kalan görevleri iptal edip bekle,
-                    # oturum kapanmadan ve döngü kapatılmadan önce hiçbiri askıda kalmasın
+                    # FetchCancelled (iptal), kalıcı depolama hatası veya beklenmeyen hata: kalan görevleri
+                    # iptal edip bekle, oturum kapanmadan ve döngü kapatılmadan önce hiçbiri askıda kalmasın
                     pending = [t for t in batch_tasks if not t.done()]
                     for t in pending:
                         t.cancel()
                     await asyncio.gather(*pending, return_exceptions=True)
+                    for t in batch_tasks:
+                        if not t.cancelled():
+                            t.exception()  # aynı anda düşen diğer görevlerin hatası "alınmadı" diye loglanmasın
                     raise
 
                 if cancelled:
@@ -499,6 +523,8 @@ class MatchDataFetcher:
         # refresh_match her yenilemede (match_id, değişti_mi) ile çağırır (web iş kartı sayacı)
         self.refresh_listener: Optional[Callable[[str, bool], None]] = None
         self.last_refresh_changed = False
+        # Toplu indirmeyi durduran kalıcı depolama hatası (disk dolu, izin yok); yoksa None
+        self.last_storage_error: Optional[StorageError] = None
 
         # Veri dizinlerinin var olduğundan emin ol
         ensure_directory(self.data_dir)
@@ -759,17 +785,20 @@ class MatchDataFetcher:
                     del status[key]
         if not changed:
             return 0
-        unavailable_path = os.path.join(match_dir, UNAVAILABLE_FILE)
-        if unavailable:
-            atomic_write_json(unavailable_path, unavailable)
-        else:
-            os.remove(unavailable_path)
-        if status_changed:
-            status_path = os.path.join(match_dir, SLICE_STATUS_FILE)
-            if status:
-                atomic_write_json(status_path, status)
+        try:
+            unavailable_path = os.path.join(match_dir, UNAVAILABLE_FILE)
+            if unavailable:
+                atomic_write_json(unavailable_path, unavailable)
             else:
-                os.remove(status_path)
+                os.remove(unavailable_path)
+            if status_changed:
+                status_path = os.path.join(match_dir, SLICE_STATUS_FILE)
+                if status:
+                    atomic_write_json(status_path, status)
+                else:
+                    os.remove(status_path)
+        except OSError as e:
+            raise StorageError.from_exception(e, match_dir) from e
         return reopened
 
     def _expected_slices(self, match_dir: str, sport: Optional[str] = None) -> List[str]:
@@ -849,22 +878,26 @@ class MatchDataFetcher:
         if isinstance(stored, dict) and stored.get("status_regressed"):
             obs["status_regressed"] = True
         changed = diff_basic(old, new)
-        if changed:
-            row = change_row(old, new, changed, _event_sport(new) or _event_sport(old))
-            if row.get("status_regressed"):
-                obs["status_regressed"] = True
-                logger.warning(f"Maç {mid} oynanmış sayılıyordu, şimdi {new.get('status')}; kayıt silinmedi")
-            self._append_score_change(row)
-            atomic_write_json(os.path.join(match_dir, "basic.json"), new)
-            full_json_path = os.path.join(match_dir, f"{mid}.json")
-            if os.path.exists(full_json_path):  # eski tek dosyalı kayıt da güncel kalsın
-                with open(full_json_path, "r", encoding="utf-8") as f:
-                    full = json.load(f)
-                full["basic"] = new
-                atomic_write_json(full_json_path, full)
-            data["basic"] = new
-            logger.info(f"Maç {mid} yenilendi: {len(changed)} alan değişti ({', '.join(list(changed)[:5])})")
-        atomic_write_json(os.path.join(match_dir, f"{OBSERVATION_KEY}.json"), obs)
+        try:
+            if changed:
+                row = change_row(old, new, changed, _event_sport(new) or _event_sport(old))
+                if row.get("status_regressed"):
+                    obs["status_regressed"] = True
+                    logger.warning(f"Maç {mid} oynanmış sayılıyordu, şimdi {new.get('status')}; kayıt silinmedi")
+                self._append_score_change(row)
+                atomic_write_json(os.path.join(match_dir, "basic.json"), new)
+                full_json_path = os.path.join(match_dir, f"{mid}.json")
+                if os.path.exists(full_json_path):  # eski tek dosyalı kayıt da güncel kalsın
+                    with open(full_json_path, "r", encoding="utf-8") as f:
+                        full = json.load(f)
+                    full["basic"] = new
+                    atomic_write_json(full_json_path, full)
+                data["basic"] = new
+                logger.info(f"Maç {mid} yenilendi: {len(changed)} alan değişti ({', '.join(list(changed)[:5])})")
+            atomic_write_json(os.path.join(match_dir, f"{OBSERVATION_KEY}.json"), obs)
+        except OSError as e:
+            # Yazılamayan yenileme "yenilendi" sayılmaz; çağıran maçı başarısız işaretler (kalıcıysa iş durur)
+            raise StorageError.from_exception(e, match_dir) from e
         data[OBSERVATION_KEY] = obs
 
         self.last_refresh_changed = bool(changed)
@@ -912,7 +945,7 @@ class MatchDataFetcher:
 
         Devre kesilirse (SofaScore engelliyor / sürekli hata) kalan maçlar denenmez; sonuçta
         `breaker` (neden: "403" / "429" / "5xx" / "other") ve `skipped` (denenmeyen maç) alanları
-        bulunur.
+        bulunur. Kalıcı depolama hatası (disk dolu, izin yok) StorageError olarak fırlatılır.
         """
         stats: Dict[str, Any] = {"refreshed": 0, "changed": 0, "failed": 0}
         n = len(match_ids)
@@ -927,7 +960,13 @@ class MatchDataFetcher:
                     stats["skipped"] = n - idx
                     logger.warning(f"Çok fazla başarısız istek; yenileme durduruldu, {n - idx} maç denenmedi")
                     break
-                result = self.refresh_match(mid)
+                try:
+                    result = self.refresh_match(mid)
+                except StorageError as e:
+                    logger.error(f"Maç {mid} yenilemesi kaydedilemedi: {e}")
+                    if e.fatal:
+                        raise
+                    result = None
                 if result is None:
                     stats["failed"] += 1
                 else:
@@ -1109,6 +1148,49 @@ class MatchDataFetcher:
         """Maç olaylarını (goller, kartlar, devre vb.) çeker — yanıt genelde {\"incidents\": [...], \"home\": ..., \"away\": ...}."""
         return self._fetch_slice_endpoint(match_id, "incidents", "incidents verisi")
 
+    def _match_storage_dir(self, match_id: str, basic_data: Dict[str, Any]) -> Tuple[Optional[str], Optional[str], str]:
+        """
+        Maçın yazılacağı yer: (lig dizini adı, sezon dizini adı, maç dizini).
+
+        Lig dizini `{uniqueTournament.id}_{ad}` biçimindedir; lig filtreli okuyucular bu id önekine
+        bakar. uniqueTournament.id'si olmayan maç (bazı e-spor / hazırlık maçları) eskiden yalnızca
+        ada göre ("Unknown_League" ya da turnuva adı) bir dizine düşüyordu. Artık sabit bir yere
+        yazılır: match_details/_no_tournament/<spor>/<maç id>. Bu da lig/sezon/maç derinliğindedir,
+        yani dizin ağacını gezen okuyucular (_find_match_path, yenileme taraması, CSV dışa aktarımı,
+        web'deki "detayı olan maçlar") onu bulur. Böyle bir maç zaten diskteyse yeri değişmez:
+        mevcut veri taşınmaz, kaydı olduğu dizinde güncellenir.
+        """
+        tournament_data = (basic_data.get("tournament") or {}).get("uniqueTournament") or {}
+        tournament_id = tournament_data.get("id")
+        if not tournament_id:
+            existing = self._find_match_path(match_id)
+            if existing:
+                return existing
+            sport_dir = _path_part(_event_sport(basic_data) or "unknown")
+            return NO_TOURNAMENT_DIR, sport_dir, os.path.join(
+                self.match_details_dir, NO_TOURNAMENT_DIR, sport_dir, match_id
+            )
+
+        tournament_name = tournament_data.get("name") or "Unknown_League"
+        # Güvenli dizin adı (ID prefix ile standart format)
+        safe_tournament_name = f"{tournament_id}_{tournament_name.replace(' ', '_').replace('/', '_')}"
+
+        # Sezon adı için güvenli string oluştur - öncelikle name kullan, yoksa year
+        season_data = basic_data.get("season") or {}
+        season_id = season_data.get("id")
+        season_name = season_data.get("name", "Unknown_Season")
+        season_year = season_data.get("year", "Unknown_Year")
+        if season_name and season_name != "Unknown_Season":
+            safe_season_name = f"season_{season_name.replace(' ', '_').replace('/', '_')}"
+        elif season_year and season_year != "Unknown_Year":
+            safe_season_name = f"season_{season_year.replace('/', '_')}"
+        else:
+            safe_season_name = f"season_{season_id}"
+
+        # Dizin yapısı: lig/sezon/maç_id
+        match_dir = os.path.join(self.match_details_dir, safe_tournament_name, safe_season_name, match_id)
+        return safe_tournament_name, safe_season_name, match_dir
+
     def _save_match_data(
         self,
         match_id: str,
@@ -1124,42 +1206,18 @@ class MatchDataFetcher:
             outcomes: Bu kayıtta istenen dilimlerin tipli sonuçları. Yalnızca kesin "yok" yanıtları
                 _unavailable.json'da sayılır; başarısız istekler _slice_status.json'a yazılır.
                 Sonucu verilmeyen boş dilim sayılmaz (istenip istenmediği bilinmiyor).
+
+        Raises:
+            StorageError: veri diske yazılamadı. Hata yutulmaz: yutulursa hiçbir şey yazılmamışken
+                maç "indirildi" sayılır. Çağıran maçı başarısız işaretler; `fatal` ise (disk dolu,
+                izin yok) işi durdurur.
         """
+        mid = str(match_id)
+        basic_data = match_data.get("basic") or {}
+        match_dir = self.match_details_dir
         try:
-            # Temel veriyi al
-            basic_data = match_data.get("basic", {})
-
-            # Lig bilgisini çıkar
-            tournament_data = basic_data.get("tournament", {}).get("uniqueTournament", {})
-            tournament_id = tournament_data.get("id")
-            tournament_name = tournament_data.get("name", "Unknown_League")
-
-            # Sezon bilgisini çıkar
-            season_data = basic_data.get("season", {})
-            season_id = season_data.get("id")
-            season_name = season_data.get("name", "Unknown_Season")
-            season_year = season_data.get("year", "Unknown_Year")
-
-            # Güvenli dizin adları oluştur (ID prefix ile standart format)
-            safe_tournament_name = f"{tournament_id}_{tournament_name.replace(' ', '_').replace('/', '_')}" if tournament_id else tournament_name.replace(' ', '_').replace('/', '_')
-
-            # Sezon adı için güvenli string oluştur - öncelikle name kullan, yoksa year
-            if season_name and season_name != "Unknown_Season":
-                safe_season_name = f"season_{season_name.replace(' ', '_').replace('/', '_')}"
-            elif season_year and season_year != "Unknown_Year":
-                safe_season_name = f"season_{season_year.replace('/', '_')}"
-            else:
-                safe_season_name = f"season_{season_id}"
-
-            # Dizin yapısını oluştur: lig/sezon/maç_id
-            league_dir = os.path.join(self.match_details_dir, safe_tournament_name)
-            ensure_directory(league_dir)
-
-            season_dir = os.path.join(league_dir, safe_season_name)
-            ensure_directory(season_dir)
-
-            match_dir = os.path.join(season_dir, str(match_id))
-            ensure_directory(match_dir)
+            league_dir_name, season_dir_name, match_dir = self._match_storage_dir(mid, basic_data)
+            os.makedirs(match_dir, exist_ok=True)
 
             # Her veri türünü ayrı ayrı kaydet
             for data_type, data in match_data.items():
@@ -1169,19 +1227,18 @@ class MatchDataFetcher:
             # Bitmiş maçta dilim sonuçlarını işle: kesin "yok"lar sayılır, başarısız istekler not edilir
             if MatchFetcher._is_finished_event(basic_data):
                 self._update_slice_markers(match_dir, _event_sport(basic_data), match_data, outcomes or {})
-
-            mid = str(match_id)
-            if getattr(self, "_match_index", None) is not None:
-                self._match_index[mid] = (safe_tournament_name, safe_season_name, match_dir)
-            if getattr(self, "_need_cache", None) is not None:
-                self._need_cache.pop(mid, None)
-
-            logger.info(f"{safe_tournament_name}, {safe_season_name}, Maç ID {match_id} için veriler başarıyla kaydedildi: {match_dir}")
+        except StorageError:
+            raise
         except Exception as e:
-            logger.error(f"Maç ID {match_id} için veriler kaydedilirken hata: {str(e)}")
-            # Hata detayını yazdır
-            import traceback
-            logger.error(traceback.format_exc())
+            logger.error(f"Maç ID {match_id} için veriler kaydedilemedi ({match_dir}): {str(e)}")
+            raise StorageError.from_exception(e, match_dir) from e
+
+        if getattr(self, "_match_index", None) is not None:
+            self._match_index[mid] = (league_dir_name, season_dir_name, match_dir)
+        if getattr(self, "_need_cache", None) is not None:
+            self._need_cache.pop(mid, None)
+
+        logger.info(f"{league_dir_name}, {season_dir_name}, Maç ID {match_id} için veriler başarıyla kaydedildi: {match_dir}")
 
     def process_match_for_csv(self, match_id: str, match_data: Optional[Dict[str, Any]] = None, league_dir: Optional[str] = None, season_dir: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
@@ -1438,21 +1495,30 @@ class MatchDataFetcher:
                 else:
                     logger.info(f"Maç verisi çekiliyor: ID {match_id}")
 
-                need = self._needs_detail_fetch(match_id)
-                if need == "refresh":
-                    match_data = self.refresh_match(match_id)
-                elif need == "refill":
-                    match_data = self.refill_missing_match_slices(match_id)
-                    if not match_data:
+                try:
+                    need = self._needs_detail_fetch(match_id)
+                    if need == "refresh":
+                        match_data = self.refresh_match(match_id)
+                    elif need == "refill":
+                        match_data = self.refill_missing_match_slices(match_id)
+                        if not match_data:
+                            match_data = self.fetch_match_data(match_id)
+                    else:
                         match_data = self.fetch_match_data(match_id)
+                except StorageError as e:
+                    # Veri çekildi ama diske yazılamadı: maç başarısız; kalıcı hatada (disk dolu, izin yok) iş durur
+                    logger.error(f"Maç {match_id} kaydedilemedi: {e}")
+                    if failed_callback:
+                        failed_callback(match_id)
+                    if e.fatal:
+                        raise
+                    match_data = None
                 else:
-                    match_data = self.fetch_match_data(match_id)
-
-                if match_data:
-                    results[match_id] = match_data
-                elif failed_callback and not breaker.tripped:
-                    # Devre kesildiği için gönderilmeyen istek "başarısız maç" değildir
-                    failed_callback(match_id)
+                    if match_data:
+                        results[match_id] = match_data
+                    elif failed_callback and not breaker.tripped:
+                        # Devre kesildiği için gönderilmeyen istek "başarısız maç" değildir
+                        failed_callback(match_id)
 
                 if progress_callback and n > 0:
                     progress_callback(idx + 1, n, f"Match details {idx + 1}/{n}")
@@ -1876,6 +1942,8 @@ class MatchDataFetcher:
             total_success = self.fetch_detail_ids(match_ids_to_process, progress_callback, should_cancel)
             return total_success > 0
 
+        except StorageError:
+            raise  # disk dolu / izin yok: "başarısız" deyip geçmek yerine çağırana net hata
         except Exception as e:
             logger.error(f"Tüm maç detayları çekilirken hata: {str(e)}")
             import traceback
@@ -1953,9 +2021,16 @@ class MatchDataFetcher:
 
         Devre kesilirse (rate limit) kalan batch'ler atlanır ve rate_limit_breaker_triggered True kalır.
         Kesici tüm batch'ler boyunca aynıdır (çağıran kurduysa işin kesicisi): sayaçlar batch başına sıfırlanmaz.
+        Kalıcı depolama hatasında (disk dolu, izin yok) StorageError fırlatılır.
         """
-        with request_breaker.scope(self.config_manager):
-            return self._fetch_detail_ids(match_ids_to_process, progress_callback, should_cancel, failed_callback)
+        self.last_storage_error = None
+        try:
+            with request_breaker.scope(self.config_manager):
+                return self._fetch_detail_ids(match_ids_to_process, progress_callback, should_cancel, failed_callback)
+        except StorageError as e:
+            # Çağıran hatayı yutsa bile (etkileşimli menüler) neden okunabilsin: main.py çıkışta bildirir
+            self.last_storage_error = e
+            raise
 
     def _fetch_detail_ids(
         self,

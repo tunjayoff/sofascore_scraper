@@ -5,7 +5,8 @@ ilerleme `JobProgress` ile yapılandırılmış olarak yayınlanır; kart metinl
 
 İşin tek bir devre kesicisi vardır (src/breaker.py). İstek katmanı her isteğin sonucunu ona
 bildirir; her aşama döngüsünde ona bakar. SofaScore engellediğinde iş kalan lig/sezon/maç için
-istek atmayı bırakır ve nedenini karta yazar.
+istek atmayı bırakır ve nedenini karta yazar. Kayıt diske yazılamıyorsa (disk dolu, izin yok)
+iş "Failed" olarak, nedeni söyleyerek biter.
 """
 from __future__ import annotations
 
@@ -14,6 +15,7 @@ from collections import Counter
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from src import breaker as request_breaker
+from src.exceptions import StorageError
 from src.SofaScoreUi import SimpleSofaScoreUI
 from src.utils import FetchCancelled
 from src.web.progress import JobProgress
@@ -232,6 +234,15 @@ def run_fetch_job(job_id: str, payload: "FetchRequest") -> None:
     except FetchCancelled:
         logger.info("Background fetch cancelled. job_id=%s", job_id)
         update_state("Cancelled", tracker.percent(), "Cancelled")
+    except StorageError as e:
+        # Kalıcı depolama hatası (disk dolu, izin yok): kalan maçlar da yazılamaz, iş durur
+        from src.i18n import get_i18n
+
+        message = get_i18n().t("storage_error_abort", path=e.path or "?", reason=e.detail or str(e))
+        logger.error(f"Background fetch aborted, data could not be written: {e}")
+        print(f"--> Background Task FAILED: {message}")
+        _job_store.update(result={"error": "storage", "error_path": e.path, **tracker.result()})
+        update_state("Failed", tracker.percent(), message)
     except Exception as e:
         error_msg = str(e)
         logger.error(f"Background update failed: {e}")

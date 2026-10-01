@@ -307,6 +307,7 @@
     "fetch_completed_with_warning": "Done, but some seasons had no matches.",
     "fetch_stopped_by_breaker": "Stopped early: too many requests to SofaScore failed ({reason}). No further requests were sent; wait a while and run it again.",
     "refresh_stopped_by_breaker": "Refresh stopped: too many requests to SofaScore failed ({reason}); {skipped} matches were not attempted. Wait a while and run it again.",
+    "storage_error_abort": "Stopped: data could not be written to {path} ({reason}). Free up disk space or fix the permissions, then run it again.",
     "recheck_unavailable_done": "Re-check: {slices} \"slice not available\" markers reopened in {matches} matches ({scanned} matches with markers scanned). They will be requested again on the next download.",
     "invalid_choice_error": "Invalid choice!",
     "error_with_message": "Error: {error}",
