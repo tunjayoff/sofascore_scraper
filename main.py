@@ -58,106 +58,45 @@ def parse_arguments() -> argparse.Namespace:
     Returns:
         argparse.Namespace: Ayrıştırılan argümanlar
     """
+    # Yardım metinleri locales/*.json'dan gelir (dil kuralı: src/language.py). argparse bunları
+    # %-biçimlendirir: çevirilerde yalın "%" olmamalı (tests/test_language.py denetler).
+    t = get_i18n().t
     parser = argparse.ArgumentParser(
-        description="SofaScore'dan futbol maçı verilerini çeken ve analiz eden uygulama.",
-        epilog=(
-            "Headless / CI örnekleri:\n"
-            "  %(prog)s --headless --update-all\n"
-            "  %(prog)s --headless --update-all --fetch-mode details --league-id 52\n"
-            "  %(prog)s --headless --csv-export --data-dir ./data\n"
-            "  %(prog)s --doctor --json   (ortam denetimi; hata varsa çıkış kodu 1)\n"
-            "Not: --web modu kendi ConfigManager örneğini kullanır; CLI --config/--data-dir yalnızca "
-            "TUI ve headless için geçerlidir (.env / DATA_DIR ile web hizalanabilir)."
-        ),
+        description=t("cli_description"),
+        epilog=t("cli_epilog"),
         formatter_class=argparse.RawDescriptionHelpFormatter,
+        add_help=False,
     )
 
-    parser.add_argument(
-        "--version",
-        action="version",
-        version=VERSION_TEXT,
-        help="Sürümü yazdırır ve çıkar",
-    )
+    parser.add_argument("-h", "--help", action="help", help=t("cli_help_help"))
 
-    parser.add_argument(
-        "--headless",
-        action="store_true",
-        help="Kullanıcı arayüzünü göstermeden toplu veri çekme işlemi yapar"
-    )
+    parser.add_argument("--version", action="version", version=VERSION_TEXT, help=t("cli_help_version"))
 
-    parser.add_argument(
-        "--update-all",
-        action="store_true",
-        help="Tüm (veya --league-id ile tek) lig verisini headless günceller; --fetch-mode ile kapsam",
-    )
+    parser.add_argument("--headless", action="store_true", help=t("cli_help_headless"))
 
-    parser.add_argument(
-        "--fetch-mode",
-        choices=["full", "details"],
-        default="full",
-        help="--update-all ile: full=sezon+maç+detay, details=sadece maç detayları (web ile aynı)",
-    )
+    parser.add_argument("--update-all", action="store_true", help=t("cli_help_update_all"))
 
-    parser.add_argument(
-        "--league-id",
-        type=int,
-        default=None,
-        metavar="ID",
-        help="--update-all ile yalnız bu SofaScore lig ID'si (config'de kayıtlı olmalı)",
-    )
+    parser.add_argument("--fetch-mode", choices=["full", "details"], default="full", help=t("cli_help_fetch_mode"))
 
-    parser.add_argument(
-        "--config",
-        default=None,
-        help="Lig listesi dosyası (varsayılan: config/leagues.txt)",
-    )
+    parser.add_argument("--league-id", type=int, default=None, metavar="ID", help=t("cli_help_league_id"))
 
-    parser.add_argument(
-        "--data-dir",
-        default=None,
-        dest="data_dir",
-        help="Veri kök dizini (varsayılan: .env'deki DATA_DIR, o da yoksa data)",
-    )
+    parser.add_argument("--config", default=None, help=t("cli_help_config"))
 
-    parser.add_argument(
-        "--csv-export",
-        action="store_true",
-        help="Verileri CSV formatında dışa aktarır"
-    )
+    parser.add_argument("--data-dir", default=None, dest="data_dir", help=t("cli_help_data_dir"))
 
-    parser.add_argument(
-        "--web",
-        action="store_true",
-        help="Web arayüzünü başlatır"
-    )
+    parser.add_argument("--csv-export", action="store_true", help=t("cli_help_csv_export"))
 
-    parser.add_argument(
-        "--host",
-        default="127.0.0.1",
-        help="Web sunucusunun dinleyeceği adres (varsayılan: 127.0.0.1). "
-        "0.0.0.0 arayüzü kimlik doğrulaması olmadan tüm ağa açar.",
-    )
+    parser.add_argument("--web", action="store_true", help=t("cli_help_web"))
 
-    parser.add_argument("--port", type=int, default=8000, help="Web sunucusu portu (varsayılan: 8000)")
+    parser.add_argument("--host", default="127.0.0.1", help=t("cli_help_host"))
 
-    parser.add_argument(
-        "--dev",
-        action="store_true",
-        help="Web sunucusunu kod değişikliğinde yeniden başlatır (geliştirme)",
-    )
+    parser.add_argument("--port", type=int, default=8000, help=t("cli_help_port"))
 
-    parser.add_argument(
-        "--refresh-only",
-        action="store_true",
-        help="Yalnızca geçici kayıtları yeniler (REFRESH_WINDOW_HOURS içindeki maçların /event'i); "
-        "günlük cron için. --league-id ile tek lig",
-    )
+    parser.add_argument("--dev", action="store_true", help=t("cli_help_dev"))
 
-    parser.add_argument(
-        "--refresh-legacy",
-        action="store_true",
-        help="observation.json'ı olmayan eski kayıtları da bir kez yeniler (varsayılan: kesin sayılır)",
-    )
+    parser.add_argument("--refresh-only", action="store_true", help=t("cli_help_refresh_only"))
+
+    parser.add_argument("--refresh-legacy", action="store_true", help=t("cli_help_refresh_legacy"))
 
     parser.add_argument(
         "--recheck-unavailable",
@@ -166,50 +105,27 @@ def parse_arguments() -> argparse.Namespace:
         default=None,
         choices=["legacy", "all"],
         metavar="legacy|all",
-        help="\"Bu dilim bu maçta yok\" işaretlerini yeniden denetime açar (ağ isteği yapmaz; dilimler sonraki "
-        "indirmede yeniden istenir). legacy (varsayılan): yalnızca kesin yanıtla (404 / boş yanıt) doğrulanmamış, "
-        "eski sürümlerden kalan işaretler; all: hepsi. --league-id ile tek lig; --headless --update-all ile "
-        "birlikte verilirse önce işaretler açılır, sonra indirme yapılır",
+        help=t("cli_help_recheck_unavailable"),
     )
 
-    parser.add_argument(
-        "--watch",
-        action="store_true",
-        help="Canlı izleyici: --sport ve --league-ids ya da --event-ids ile; olaylar data/watch_events.jsonl",
-    )
-    parser.add_argument("--sport", choices=list(sport_slugs()), help="--watch ile spor")
-    parser.add_argument("--league-ids", default=None, help="--watch: virgülle SofaScore unique-tournament id'leri")
-    parser.add_argument("--event-ids", default=None, help="--watch: virgülle maç id'leri")
-    parser.add_argument(
-        "--watch-hours",
-        type=float,
-        default=None,
-        help="--watch: en fazla kaç saat (varsayılan: Ctrl+C'ye ya da --event-ids'teki maçlar bitene kadar)",
-    )
+    parser.add_argument("--watch", action="store_true", help=t("cli_help_watch"))
+    parser.add_argument("--sport", choices=list(sport_slugs()), help=t("cli_help_sport"))
+    parser.add_argument("--league-ids", default=None, help=t("cli_help_league_ids"))
+    parser.add_argument("--event-ids", default=None, help=t("cli_help_event_ids"))
+    parser.add_argument("--watch-hours", type=float, default=None, help=t("cli_help_watch_hours"))
 
-    parser.add_argument(
-        "--doctor",
-        action="store_true",
-        help="Ortam denetimi: Python, paketler, tarayıcı, dizinler, web arayüzü derlemesi, .env "
-        "(SofaScore'a bağlanmaz; hata varsa çıkış kodu 1). Seçenekler: --doctor --help "
-        "(--json, --strict, --only, --skip, --lang, --live)",
-    )
+    parser.add_argument("--doctor", action="store_true", help=t("cli_help_doctor"))
 
     parser.add_argument(
         "--diagnostics",
         nargs="?",
         const="",
         default=None,
-        metavar="YOL",
-        help="Tanılama paketini (zip: sürümler, gizli değerleri maskelenmiş ayarlar, son iş, log sonu) "
-        "yazar ve çıkar. YOL verilmezse log dizinine yazılır",
+        metavar=t("cli_metavar_path"),
+        help=t("cli_help_diagnostics"),
     )
 
-    parser.add_argument(
-        "--ignore-rate-limit",
-        action="store_true",
-        help="Rate-limit circuit breaker mekanizmasını devre dışı bırakır"
-    )
+    parser.add_argument("--ignore-rate-limit", action="store_true", help=t("cli_help_ignore_rate_limit"))
 
     return parser.parse_args()
 
@@ -223,7 +139,7 @@ def _run_watch(args: argparse.Namespace) -> int:
         return [int(x) for x in str(raw).split(",") if x.strip()] if raw else []
 
     if not args.sport or not (args.league_ids or args.event_ids):
-        print("Örnek: python main.py --watch --sport football --league-ids 17,8", file=sys.stderr)
+        print(get_i18n().t("cli_watch_usage"), file=sys.stderr)
         return 2
     data_dir = args.data_dir or ConfigManager().get_data_dir()
     watcher = MatchWatcher(
@@ -238,7 +154,9 @@ def _run_watch(args: argparse.Namespace) -> int:
     except KeyboardInterrupt:
         pass
     finally:
-        print(f"İzleyici durdu: {watcher.requests} istek; olaylar {watcher.events_path}", file=sys.stderr)
+        print(
+            get_i18n().t("cli_watch_stopped", requests=watcher.requests, path=watcher.events_path), file=sys.stderr
+        )
     return 0
 
 
@@ -344,8 +262,12 @@ def main() -> int:
             finally:
                 md.end_job_cache()
             print(
-                f"Yenileme: {stats['refreshed']} maç yenilendi, {stats['changed']} değişti, "
-                f"{stats['failed']} başarısız (değişiklikler: data/score_changes.jsonl)"
+                get_i18n().t(
+                    "cli_refresh_summary",
+                    refreshed=stats["refreshed"],
+                    changed=stats["changed"],
+                    failed=stats["failed"],
+                )
             )
             if stats.get("breaker"):
                 # Devre kesildi: kalan maçlar denenmedi; cron bunu sıfırdan farklı çıkış koduyla görsün
@@ -390,12 +312,7 @@ def main() -> int:
                 logger.error(
                     "Headless için en az biri gerekli: --update-all ve/veya --csv-export"
                 )
-                print(
-                    "Örnek: python main.py --headless --update-all\n"
-                    "        python main.py --headless --update-all --fetch-mode details --league-id 52\n"
-                    "        python main.py --headless --csv-export --data-dir ./data",
-                    file=sys.stderr,
-                )
+                print(get_i18n().t("cli_headless_usage"), file=sys.stderr)
                 return 2
         else:
             # Normal interaktif mod

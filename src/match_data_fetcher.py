@@ -490,8 +490,8 @@ class MatchDataFetcher:
     # Main metodunda çağırmak için senkron wrapper
     def fetch_matches_batch_parallel(self, match_ids, max_concurrent=10, progress_callback=None, should_cancel=None, failed_callback=None):
         """Paralel istekler için senkron wrapper."""
-        print(f"Toplam {len(match_ids)} maç paralel olarak işleniyor...")
-        progress = tqdm(total=len(match_ids), desc="Maç detayları çekiliyor")
+        print(get_i18n().t("details_processing_parallel", count=len(match_ids)))
+        progress = tqdm(total=len(match_ids), desc=get_i18n().t("details_progress_label"))
 
         try:
             # asyncio.run: döngüyü kapatır, kalan görevleri iptal eder ve thread'e kapalı döngü bırakmaz
@@ -1919,19 +1919,19 @@ class MatchDataFetcher:
             match_ids = self.collect_detail_match_ids(league_id, max_seasons, only_season_ids)
             if match_ids is None:
                 return False
-            print(f"Toplam {len(match_ids)} benzersiz maç ID'si bulundu.")
+            print(get_i18n().t("details_unique_ids_found", count=len(match_ids)))
 
             if not match_ids:
-                print("Hiç maç ID'si bulunamadı!")
+                print(get_i18n().t("details_no_ids"))
                 return False
 
             match_ids_to_process = self.pending_detail_ids(match_ids)
             complete_count = len(match_ids) - len(match_ids_to_process)
             if complete_count:
-                print(f"{complete_count} maçta tüm detay dilimleri hazır; eksik/kısmi olanlar işlenecek.")
+                print(get_i18n().t("details_some_complete", count=complete_count))
 
             if not match_ids_to_process:
-                print("Tüm maçların detayları tam!")
+                print(get_i18n().t("details_all_complete"))
                 return True
 
             total_success = self.fetch_detail_ids(match_ids_to_process, progress_callback, should_cancel)
@@ -1960,21 +1960,21 @@ class MatchDataFetcher:
         league_dirs = []
         # Belirli bir lig seçilmişse sadece o ligi işle
         if league_id:
-            print(f"Lig ID {league_id} için maç detayları çekiliyor...")
+            print(get_i18n().t("details_fetching_league", league_id=league_id))
             for dir_name in os.listdir(matches_dir):
                 if dir_name.startswith(f"{league_id}_"):
                     league_dirs.append(dir_name)
                     break
 
             if not league_dirs:
-                print(f"Lig ID {league_id} için maç dizini bulunamadı!")
+                print(get_i18n().t("details_league_dir_missing", league_id=league_id))
                 return None
         else:
-            print("Tüm ligler için maç detayları çekiliyor...")
+            print(get_i18n().t("details_fetching_all"))
             league_dirs = [dir_name for dir_name in os.listdir(matches_dir)
                           if os.path.isdir(os.path.join(matches_dir, dir_name))]
 
-        print(f"Toplam {len(league_dirs)} lig işlenecek...")
+        print(get_i18n().t("details_league_count", count=len(league_dirs)))
 
         match_ids: List[str] = []
         for league_dir in league_dirs:
@@ -1982,7 +1982,7 @@ class MatchDataFetcher:
             if not os.path.isdir(league_path):
                 continue
 
-            print(f"\nLig dizini: {league_dir}")
+            print("\n" + get_i18n().t("details_league_dir", name=league_dir))
 
             summary_files = self._season_summary_files(league_path, only_season_ids, max_seasons)
 
@@ -1995,7 +1995,7 @@ class MatchDataFetcher:
                         current_ids.extend(ids_from_csv)
 
             if current_ids:
-                print(f"Lig için {len(current_ids)} maç ID'si bulundu.")
+                print(get_i18n().t("details_league_ids_found", count=len(current_ids)))
                 match_ids.extend(current_ids)
 
         # Tekrarlanan ID'leri temizle (sırayı koru)
@@ -2038,7 +2038,7 @@ class MatchDataFetcher:
         batch_size = 100  # Her seferde kaç maç işleneceği
         total_success = 0
         total_attempts = len(match_ids_to_process)
-        print(f"\nToplam {total_attempts} maç için detaylar çekilecek...")
+        print("\n" + get_i18n().t("details_total_to_fetch", count=total_attempts))
         if progress_callback:
             progress_callback(0, total_attempts, f"Match details 0/{total_attempts}")
 
@@ -2052,7 +2052,18 @@ class MatchDataFetcher:
             start_index = i + 1
             end_index = min(i + len(batch), total_attempts)
 
-            print(f"\nBatch {current_batch}/{total_batches}: {len(batch)} maç işleniyor ({start_index}-{end_index}/{total_attempts})...")
+            print(
+                "\n"
+                + get_i18n().t(
+                    "details_batch_start",
+                    current=current_batch,
+                    total=total_batches,
+                    size=len(batch),
+                    start=start_index,
+                    end=end_index,
+                    all=total_attempts,
+                )
+            )
 
             nested_cb: Optional[Callable[[int, int, str], None]] = None
             if progress_callback:
@@ -2086,7 +2097,7 @@ class MatchDataFetcher:
             if results:
                 success_count = len(results)
                 total_success += success_count
-                print(f"✓ Batch {current_batch}: {success_count}/{len(batch)} başarılı")
+                print(get_i18n().t("details_batch_done", current=current_batch, ok=success_count, size=len(batch)))
             if self.rate_limit_breaker_triggered:
                 i18n = get_i18n()
                 print(i18n.t("error_rate_limit_detected", count=len(results) if results else 0))
@@ -2099,7 +2110,10 @@ class MatchDataFetcher:
 
         # Genel başarı oranı
         success_rate = (total_success / total_attempts) * 100 if total_attempts > 0 else 0
-        print(f"\nİşlem tamamlandı: {total_success}/{total_attempts} maç (% {success_rate:.1f}) başarıyla işlendi.")
+        print(
+            "\n"
+            + get_i18n().t("details_finished", ok=total_success, total=total_attempts, rate=f"{success_rate:.1f}")
+        )
         return total_success
 
     def fetch_match_details(self, match_id: Union[int, str]) -> bool:
