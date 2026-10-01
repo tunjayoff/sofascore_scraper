@@ -147,9 +147,17 @@ def test_invalid_keys(key):
         layout.slice_path("v3/events/0/000/1", key)
 
 
-@pytest.mark.parametrize("sub", ["", "1", "round_12", "total", "17-76986", "A.b-c_d", "x" * 80])
+@pytest.mark.parametrize(
+    "sub",
+    [
+        "", "1", "total", "a.b-c_d", "x" * 80,
+        # bugün bilinen bütün alt anahtar biçimleri: tur, kupa turu, sayfa, sağlayıcı kimliği, <ut>-<sid>
+        "round_12", "round_3_final", "round_3_round-of-16", "last_0", "next_12", "17-76986",
+    ],
+)
 def test_valid_subs(sub):
     assert layout.validate_sub(sub) == sub
+    assert sub == sub.lower()
 
 
 @pytest.mark.parametrize(
@@ -166,7 +174,46 @@ def test_invalid_subs(sub):
         layout.history_path("v3/events/0/000/1", "odds_all", sub)
 
 
-@pytest.mark.parametrize("name", ["", "/1", "odds_all/", "odds_all/1/2", "Odds/1", 5, None])
+@pytest.mark.parametrize(
+    "sub",
+    ["A", "Z", "A.b-c_d", "a.B-c_d", "Round_12", "round_3_Final", "TOTAL", "Last_0", "17-76986X", "x" * 79 + "X", "İ", "ı"],
+)
+def test_subs_are_lower_case_only(sub):
+    """
+    Karar S13: Windows ve varsayılan macOS dosya sistemleri büyük/küçük harf ayırmaz; "A" ile "a" orada
+    aynı dosyaya düşerdi. Büyük harfli alt anahtar reddedilir, sessizce küçültülmez.
+    """
+    with pytest.raises(LayoutError) as caught:
+        layout.validate_sub(sub)
+    assert repr(sub) in str(caught.value)
+    with pytest.raises(LayoutError):
+        layout.slice_name("odds_all", sub)
+    with pytest.raises(LayoutError):
+        layout.slice_path("v3/events/0/000/1", "odds_all", sub)
+    with pytest.raises(LayoutError):
+        layout.history_path("v3/events/0/000/1", "odds_all", sub)
+    with pytest.raises(LayoutError):
+        layout.split_slice_name(f"odds_all/{sub}")
+
+
+def test_no_two_valid_names_differ_only_by_case():
+    """Geçerli her anahtar ve alt anahtar kendi küçük harfli biçimidir: harf büyüklüğü iki dosyayı ayırmaz."""
+    alphabet = "abcxyzABCXYZ019_.-"
+    accepted = []
+    for first in alphabet:
+        for second in alphabet:
+            for candidate in (first, first + second, f"round_{first}{second}"):
+                try:
+                    accepted.append(layout.validate_sub(candidate))
+                except LayoutError:
+                    assert candidate != candidate.lower() or candidate == "_"
+
+    assert accepted and all(sub == sub.lower() for sub in accepted)
+    paths = [layout.slice_path("v3/events/0/000/1", "odds_all", sub) for sub in set(accepted)]
+    assert len({path.lower() for path in paths}) == len(paths)
+
+
+@pytest.mark.parametrize("name", ["", "/1", "odds_all/", "odds_all/1/2", "Odds/1", "odds_all/A", 5, None])
 def test_split_slice_name_rejects_malformed_names(name):
     with pytest.raises(LayoutError):
         layout.split_slice_name(name)
@@ -222,7 +269,7 @@ def test_every_name_is_ascii_and_valid_on_windows():
         layout.team_dir(2817),
         layout.player_dir(1234567),
         layout.sport_dir(1),
-        layout.slice_path(layout.event_dir(16416346), "odds_all", "A.b-c_d"),
+        layout.slice_path(layout.event_dir(16416346), "odds_all", "a.b-c_d"),
         layout.history_path(layout.event_dir(16416346), "odds_all"),
         layout.lock_path("watcher:table-tennis"),
         layout.change_segment(2026, 10),

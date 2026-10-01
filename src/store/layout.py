@@ -6,7 +6,9 @@ saklar, böylece bir veri dizini işletim sistemleri arasında taşınabilir. Ge
 `resolve(data_dir, rel)` kullanılır.
 
 Bir varlığın yolu yalnızca kimliğine bağlıdır: lig ya da sezon adı değişince hiçbir şey taşınmaz.
-Bütün adlar ASCII rakam ve sabit sözcüklerden oluşur, bu yüzden Windows'ta da geçerlidir.
+Bütün adlar ASCII rakam ve sabit sözcüklerden oluşur, bu yüzden Windows'ta da geçerlidir. Dilim anahtarı
+ve alt anahtarında büyük harf yoktur: büyük/küçük harf ayırmayan dosya sistemlerinde (Windows, varsayılan
+macOS) iki ad aynı dosyaya düşmez.
 """
 from __future__ import annotations
 
@@ -45,7 +47,9 @@ HISTORY_SUFFIX = ".jsonl.gz"
 KINDS: Tuple[str, ...] = ("event", "tournament", "season", "team", "player", "sport")
 
 _KEY_RE = re.compile(r"[a-z][a-z0-9_]{0,39}")
-_SUB_RE = re.compile(r"[A-Za-z0-9_.-]{0,80}")
+# Yalnızca küçük harf (karar S13): Windows ve varsayılan macOS dosya sistemleri büyük/küçük harf ayırmaz,
+# "A" ile "a" alt anahtarları orada aynı dosyaya düşerdi
+_SUB_RE = re.compile(r"[a-z0-9_.-]{0,80}")
 _LEASE_RE = re.compile(r"([a-z][a-z0-9_]{0,39})(?::([a-z0-9][a-z0-9_-]{0,39}))?")
 # Windows'ta uzantısı olsa bile dosya adı olamayan aygıt adları ("nul.json.gz" de geçersizdir)
 _WINDOWS_RESERVED = frozenset(
@@ -72,7 +76,13 @@ def validate_key(key: str) -> str:
 
 
 def validate_sub(sub: str) -> str:
-    """Alt anahtar: [A-Za-z0-9_.-]{0,80} (boş = alt anahtar yok). Geçersizse LayoutError."""
+    """
+    Alt anahtar: [a-z0-9_.-]{0,80} (boş = alt anahtar yok). Geçersizse LayoutError.
+
+    Büyük harf kabul edilmez ve küçültülmez (karar S13): çağıran alt anahtarı küçük harfle üretir
+    (`round_12`, `last_0`, `total`, sağlayıcı kimliği, `<ut>-<sid>`); sessizce küçültmek, yalnızca
+    harf büyüklüğüyle ayrılan iki alt anahtarı tek dosyada birleştirirdi.
+    """
     if not isinstance(sub, str) or not _SUB_RE.fullmatch(sub) or sub == _NO_SUB or (sub and _reserved(sub)):
         raise LayoutError(f"Geçersiz dilim alt anahtarı: {sub!r}")
     return sub
