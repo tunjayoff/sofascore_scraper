@@ -90,9 +90,11 @@ Kaynak: `ws_events.jsonl`, `pingpong.jsonl`.
   - Bu bir **üst sınır**: Playwright `close` olayını güvenilir yollamadığı için "kapalı pencere" ataması kısı
     kısmen yaklaşık; bu geçişlerin bir kısmı gerçek kayıp değil, sekme yakalamasının durmasından kaynaklı
     artefakt olabilir.
-  - Pratik etki sınırlı: push yükü **tam durum** taşıyor (delta değil), bağlantı saniyeler içinde geri geliyor;
-    kopma sırasında kaçan bir geçiş, o olayın bir sonraki karesiyle düzeliyor. Yine de üretimde **yoklama yedeği
-    şart** — kopma pencereleri için.
+  - Bağlantı saniyeler içinde geri geliyor, ama push yükü **tam durum taşımıyor**: bir kare, olayın yalnızca
+    değişen alanlarını noktalı yol olarak ve yeni mutlak değerleriyle taşıyor (`research/all_sports/ws.jsonl`,
+    bakılan 121 MSG karesi; örn. `{"cardsCode":"01","changes.changeTimestamp":...,"id":...}`). Kopma sırasında
+    kaçan bir geçiş bu yüzden o olayın bir sonraki karesiyle düzelmiyor; onu yalnızca bir yoklama düzeltiyor.
+    Üretimde **yoklama yedeği şart** — kopma pencereleri için.
 
 ---
 
