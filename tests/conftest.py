@@ -33,7 +33,7 @@ SEASON_NAME = "Premier League 26/27"
 MATCH_IDS = (9000001, 9000002)
 
 # Kullanıcının kabuğundan veya gerçek .env'den gelebilecek ayarları temizle
-for _k in ("PROXY_URL", "USE_PROXY", "API_BASE_URL", "SOFA_CAPTCHA_TOKEN", "FETCH_ONLY_FINISHED"):
+for _k in ("PROXY_URL", "USE_PROXY", "API_BASE_URL", "SOFA_CAPTCHA_TOKEN", "FETCH_ONLY_FINISHED", "SOFASCORE_API_TOKEN"):
     os.environ.pop(_k, None)
 # Dil, testleri çalıştıranın kabuğuna bağlı olmasın (kural: açık ayar > sistem dili > İngilizce,
 # src/language.py): açık ayar yok, ileti dili "C" → her makinede varsayılan dil (İngilizce).
@@ -52,6 +52,9 @@ os.environ["SOFASCORE_ENV_FILE"] = ENV_FILE
 # süreçlerin bütçe dosyasına dokunmaz, sahte uyku sayaçlarına fazladan bekleme girmez.
 os.environ["REQUEST_RATE_LIMIT"] = "0"
 os.environ["SOFASCORE_THROTTLE_DIR"] = os.path.join(_TMP, "throttle")
+# Tarayıcı profili de geçici dizinde: uygulama başlangıçta profil dizininin izinlerini daraltır
+# (src/fsutil.harden_secret_paths); testler kullanıcının gerçek profiline dokunmaz.
+os.environ["SOFASCORE_BROWSER_PROFILE"] = os.path.join(_TMP, "browser-profile")
 # TestClient "testserver" Host başlığını kullanır
 os.environ["SOFASCORE_ALLOWED_HOSTS"] = "localhost,127.0.0.1,testserver"
 
