@@ -45,6 +45,9 @@ section is what the first tagged release will contain.
 - `main.py --web` options `--host`, `--port` and `--dev`.
 - `main.py --version`; the version is also reported by `GET /health` and shown on the
   Settings page. `pyproject.toml` is the single place it is written.
+- **Docker image** (`Dockerfile`, `docker-compose.yml`): the web app together with the
+  headless browser it needs, running as a non-root user, with data, configuration and the
+  browser profile in volumes.
 - This changelog.
 - `config/leagues.example.txt`, copied to `config/leagues.txt` on the first run.
 - `SOFASCORE_CONFIG_DIR` and `SOFASCORE_ENV_FILE` to move the config folder and the `.env`

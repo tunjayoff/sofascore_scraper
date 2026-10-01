@@ -1,0 +1,26 @@
+# Build context is an allowlist: everything is left out unless listed below.
+# Keeps user state (.env, config/leagues.txt, data/), research material, tests and
+# local build output (.venv, node_modules, frontend/dist) out of the image and the context.
+*
+
+!pyproject.toml
+!requirements.txt
+!main.py
+!LICENSE
+!README.md
+!README.tr.md
+!CHANGELOG.md
+!src/
+!locales/
+!config/leagues.example.txt
+!docker/
+!frontend/
+
+# The frontend is built inside the image (npm ci + npm run build)
+frontend/node_modules
+frontend/dist
+frontend/tests
+**/__pycache__
+**/*.pyc
+**/*.tsbuildinfo
+**/.DS_Store
