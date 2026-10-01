@@ -277,6 +277,8 @@ Maç listesi `matches/` altındaki sezon özetlerinden okunur; `match_details/pr
 
 `config/leagues.txt`’nin (CLI’ın da okuduğu `ad: id` listesi) yanında `config/league_sports.json` her ligin sporunu `{"<id>": "football" | "basketball" | "tennis"}` olarak saklar. Lig web’den eklendiğinde, arayüzde spor seçildiğinde veya o ligin indirilmiş bir maçından doldurulur.
 
+Desteklenen sporlar tek yerde, `src/sports.py`’deki kayıt defterinde tanımlıdır: spor başına skor biçimi, canlı izleyicinin parametreleri ve o spor için istenen maç detay uç noktaları. CLI, indirici, izleyici ve web API’si bu kayıt defterini okur.
+
 ## Yenileme politikası
 
 SofaScore bazı sonuçları maç bittikten sonra da düzenliyor. Araştırma ölçümünde (`docs/status-matrix/README.md`, "Geriye dönük") nihai ya da periyot skoru `finished` sonrasında değişti: alt lig basketbolda 255 maçın 78'inde, alt lig futbolda 240 maçın 6'sında, üst lig basketbolda 145 maçın 4'ünde. En geç nihai skor değişikliği başlangıçtan 66,4 sa sonra geldi. Bu yüzden bir kez indirilen maç, SofaScore'un son hâlinden farklı kalabilir.
@@ -329,6 +331,7 @@ Neden bu sayılar: `events/live` CDN'de 5 sn önbellekte kalıyor; araştırmada
 Web uygulaması kök yollarda; JSON API öneki **`/api`**.
 
 - **Ligler**: listele (her ligde `sport`), ekle (isteğe bağlı `sport`), sporu ayarlamak için `PATCH /api/leagues/{id}`, sil, ara (yerel/uzak; uzak sonuçlarda `sport`), sezonlar, sezon yenileme, eksik detay listesi.
+- **Sporlar**: `GET /api/sports` — desteklenen sporlar ve her biri için istenen maç detay dilimleri (`src/sports.py`’deki kayıt defterinin salt okunur görünümü).
 - **Maçlar**: `GET /api/matches` — sayfalı; filtreler `league_id` (tek ID ya da virgülle birden fazla, ör. `17,8`), `season_id`, `date`, `details=present|missing`, `sort=asc|desc`; her satırda `has_details`. Ayrıca tek maç JSON ve tek maç çekme.
 - **Scraper**: `POST /api/fetch` (gövde: `full` | `details`, `selections: [{league_id, season_ids, match_ids}]`), `POST /api/scrape/cancel` (sonrasında yeni istek gönderilmez, yeniden deneme beklemeleri kesilir), durum, SSE akışı.
 - **Pano / istatistik / ayarlar**: Web panellerine JSON; ayarlar `.env` ile uyumlu.

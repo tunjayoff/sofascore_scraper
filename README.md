@@ -279,6 +279,8 @@ The match list reads the per-season summaries under `matches/`; the export CSV i
 
 Next to `config/leagues.txt` (the `name: id` list the CLI also reads), `config/league_sports.json` stores each league's sport as `{"<id>": "football" | "basketball" | "tennis"}`. It is filled when a league is added from the web app, when you pick a sport in the UI, or from a downloaded match of that league.
 
+The supported sports are defined in one place, the registry in `src/sports.py`: per sport its score shape, the live watcher's parameters and the match-detail endpoints requested for it. The CLI, the downloader, the watcher and the web API all read it.
+
 ## Refresh policy
 
 SofaScore keeps editing some results after a match has finished. In the research run (`docs/status-matrix/README.md`, "Geriye dönük"), the final or period score changed after `finished` in 78 of 255 lower-tier basketball matches, 6 of 240 lower-tier football matches and 4 of 145 upper-tier basketball matches. The latest final-score change came 66.4 h after kick-off. A match downloaded once can therefore differ from SofaScore's own final state.
@@ -340,6 +342,7 @@ Why these numbers: `events/live` is cached for 5 s at the CDN, and whistle → `
 All routes are prefixed with `/api` unless noted.
 
 - **Leagues**: list (each with `sport`), create (optional `sport`), `PATCH /api/leagues/{id}` to set the sport, delete, search (local / remote, remote results carry `sport`), seasons, refresh seasons, missing-details.
+- **Sports**: `GET /api/sports` — the supported sports and, for each, the match-detail slices requested for it (read-only view of the registry in `src/sports.py`).
 - **Matches**: `GET /api/matches` — paginated, filters `league_id` (one id or several comma-separated, e.g. `17,8`), `season_id`, `date`, `details=present|missing`, `sort=asc|desc`; every row has `has_details`. Also single-match JSON and on-demand fetch for one match.
 - **Scraper**: `POST /api/fetch` (body: mode `full` or `details`, `selections: [{league_id, season_ids, match_ids}]`), `POST /api/scrape/cancel` (no new requests after it; retry waits are cut short), status, SSE stream.
 - **Dashboard / stats / settings**: JSON for the web UI; settings mirror `.env` keys.
