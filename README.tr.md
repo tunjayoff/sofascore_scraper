@@ -160,7 +160,7 @@ docker compose logs -f      # uygulama stdout'a log yazar
 | `/app/data` | İndirilen her şey (`DATA_DIR`): sezonlar, maçlar, detaylar, yedekler, iş geçmişi |
 | `/app/config` | `leagues.txt`, `league_sports.json` ve `.env` (**Ayarlar** sayfasında kaydedilen ayarlar) |
 | `/app/browser-profile` | Çözülmüş challenge’ı taşıyan tarayıcı profili; saklanırsa yeniden başlatma hızlı olur |
-| `/app/logs` | Ayrılmıştır. Uygulama şu an logları stdout’a yazar (`docker logs`) |
+| `/app/logs` | Log dosyası (`sofascore_scraper.log`, çevrilir, en çok yaklaşık 30 MB). Aynı satırlar stdout’a da yazılır (`docker logs`). Bkz. [Loglar ve tanılama](#loglar-ve-tanılama) |
 
 Bilinmesi gerekenler:
 
@@ -250,6 +250,7 @@ Tüm anahtarlar `.env.example` içinde. Sık kullanılanlar:
 | `FETCH_ONLY_FINISHED` | Yalnız bitmiş maçları tut (`status.type == finished`). Varsayılan `true`. Henüz oynanmamış fikstürler schedule dosyalarına yazılmaz. |
 | `REFRESH_WINDOW_HOURS` | Kaydedilen maçın başlangıçtan kaç saat boyunca geçici sayılıp yeniden okunacağı (varsayılan `72`, `0` = kapalı). Bkz. [Yenileme politikası](#yenileme-politikası). |
 | `RATE_LIMIT_*` / `SERVER_ERROR_*` | Devre kesicinin eşikleri; işin tüm aşamalarında istek başına sayılır. Bkz. [Eksik dilimler, başarısız istekler ve devre kesici](#eksik-dilimler-başarısız-istekler-ve-devre-kesici). |
+| `LOG_LEVEL` / `LOG_DIR` / `LOG_TO_FILE` / `LOG_MAX_MB` / `LOG_BACKUP_COUNT` | Log seviyesi, log dosyasının yeri ve çevrilmesi. Bkz. [Loglar ve tanılama](#loglar-ve-tanılama). |
 
 Web **Ayarlar** sayfasından birçok değer düzenlenir; kayıt `.env`’i günceller.
 
@@ -327,6 +328,25 @@ python main.py --config /yol/leagues.txt --data-dir /yol/veri
    - Yalnız `1..50` hafta tarayan eski sürümler PL’yi indirir ama **MLS’te 0 maç** döner. Event-list yedeklemesini içeren sürüme güncelleyin, sezonları yenileyin ve çekimi tekrarlayın.
 3. `FETCH_ONLY_FINISHED=true` (varsayılan) iken oynanmamış maçlar atılır. Yeni sezonda henüz bitmiş maç yoksa önceki sezonu seçin (veya bilerek fikstür istiyorsanız `FETCH_ONLY_FINISHED=false`).
 4. Eski/retired sezon ID’leri de boş schedule üretir — ligi **Maç indir** sayfasında açıp sezonların üstündeki **Yenile**’ye basın, sonra tekrar indirin.
+
+### Loglar ve tanılama
+
+Uygulamanın logladığı her şey konsola **ve** bir log dosyasına yazılır; başlatıcı penceresi kapandıktan ya da gece süren bir indirme başarısız olduktan sonra da çıktı elinizde kalır.
+
+- **Nerede:** proje klasöründeki `logs/sofascore_scraper.log`. Klasörü `LOG_DIR` ile değiştirin (göreli yol çalışma dizinine değil, proje klasörüne göre çözülür). Web uygulaması, terminal arayüzü, `--headless`, `--watch` ve `--refresh-only` aynı dosyaya yazar; her satırda süreç numarası bulunur.
+- **Boyut:** dosya `LOG_MAX_MB`'a (varsayılan 5 MB) ulaşınca çevrilir ve `LOG_BACKUP_COUNT` (varsayılan 5) eski dosya `.1` … `.5` olarak tutulur; loglar yaklaşık 30 MB'ı geçmez.
+- **Seviye:** `LOG_LEVEL` (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`; `DEBUG=true` seviyeyi `DEBUG` yapar). **Ayarlar**'dan değiştirince çalışan web uygulamasında hemen geçerli olur, yeniden başlatmak gerekmez. O sırada çalışan diğer süreçler bir sonraki başlatılışlarında alır.
+- **Gizli değerler maskelenir** (dosyada ve konsolda), satır yazılmadan önce: captcha token'ı, cookie'ler, `Authorization` başlıkları, proxy kimlik bilgisi (`http://kullanıcı:parola@host`, `http://***@host` olur) ve `.env`'de adı gizli bir şeye benzeyen anahtarların değerleri (`*TOKEN*`, `*SECRET*`, `*PASSWORD*`, `*_KEY`, …).
+- **Sunucu / Docker:** konsol (stdout) her zaman açıktır ve kapsayıcıda birincil çıktıdır; stdout terminal değilse satırlar düz, zaman damgalı metindir. Docker imajında dosya `/app/logs` volume'una yazılır; yalnızca `docker logs` kullanmak için `LOG_TO_FILE=false` yapın. Klasöre yazılamıyorsa uygulama bunu bir kez söyler ve yalnızca konsolla devam eder.
+
+**Sorun bildirirken** tanılama paketini ekleyin. Küçük bir zip'tir: `diagnostics.json` (uygulama sürümü ve commit'i, Python ve işletim sistemi, paket sürümleri, gizli değerleri maskelenmiş ayarlar, köprü sağlığı, istek bütçesi, son indirme işleri) ve `log_tail.txt` (son 1000 log satırı). Ev dizininiz `~` olarak yazılır; uygulamanın tanımadığı `.env` anahtarlarının değerleri pakete girmez. Göndermeden önce içine göz atın.
+
+```bash
+python main.py --diagnostics              # logs/sofascore-diagnostics-<zaman>.zip yazar ve yolunu basar
+python main.py --diagnostics ./rapor.zip  # ya da istediğiniz yol / klasör
+```
+
+Web uygulaması çalışırken (Docker dahil) aynı paket `http://127.0.0.1:8000/api/diagnostics/bundle` adresinden iner; "SofaScore bizi engelliyor" bildirimleri için doğrusu budur: köprü sağlığı süreç başınadır, web uygulamasının durumunu yalnızca onun paketi taşır. `GET /api/logs?limit=200&level=WARNING` son log kayıtlarını JSON olarak döndürür.
 
 ### Etkileşimli terminal
 
@@ -485,6 +505,7 @@ Web uygulaması kök yollarda; JSON API öneki **`/api`**.
 - **Veri**: yedek zip, kapsam seçerek temizleme, CSV export.
 - **İndirme sürerken reddedilenler**: `POST /api/data/clear`, `POST /api/data/backup` (`scope=config` hariç), `DELETE /api/leagues/{id}` ve `data_dir`’i değiştiren `POST /api/settings`, `409` ve `{"detail": {"code": "job_running", "message": "..."}}` döndürür. Bunlardan biri sürerken hem bunlar hem `POST /api/fetch`, `data_operation_running` koduyla `409` döndürür. Başarılı `data_dir` değişikliği `"data_dir_changed": true` içerir; oluşturulamayan klasör `data_dir_unusable` koduyla `400` döndürür.
 - **Bypass Durumu**: `GET /api/bypass/status` (`health` ile: `ok` / `degraded` / `blocked`, bkz. [SofaScore bizi engelliyor mu?](#sofascore-bizi-engelliyor-mu-köprü-sağlığı)) ve canlı test `POST /api/bypass/test`.
+- **Loglar / tanılama** (salt okunur, bkz. [Loglar ve tanılama](#loglar-ve-tanılama)): `GET /api/logs` (`limit` 1–2000, `level` = en düşük seviye), `GET /api/diagnostics` (özet, JSON), `GET /api/diagnostics/bundle` (zip indirme). Hiçbiri dosya yolu almaz.
 - **Sağlık**: `GET /health` (`/api` öneki yok) `status`, `version`, `ui` alanlarının yanında `bridge` (aynı sağlık bloğu) ve `throttle` ([ortak istek bütçesi](#ortak-istek-bütçesi-tüm-süreçler)) döndürür.
 
 Sunucu çalışırken OpenAPI: `GET /docs`.

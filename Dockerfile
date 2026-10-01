@@ -75,7 +75,7 @@ LABEL org.opencontainers.image.title="SofaScore Scraper" \
 USER app
 
 # data: indirilen veri ve iş geçmişi · config: leagues.txt, league_sports.json, .env
-# logs: ileride dosyaya yazılacak loglar için ayrılmıştır (şu an loglar stdout'a gider: docker logs)
+# logs: dönen log dosyası (LOG_DIR varsayılanı; aynı satırlar stdout'a da yazılır: docker logs)
 # browser-profile: tarayıcı profili (çözülmüş challenge)
 VOLUME ["/app/data", "/app/config", "/app/logs", "/app/browser-profile"]
 

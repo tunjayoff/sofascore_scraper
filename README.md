@@ -162,7 +162,7 @@ Images are published to `ghcr.io/tunjayoff/sofascore_scraper` with each tagged r
 | `/app/data` | Everything downloaded (`DATA_DIR`): seasons, matches, details, backups, job history |
 | `/app/config` | `leagues.txt`, `league_sports.json` and `.env` (settings saved on the **Settings** page) |
 | `/app/browser-profile` | The browser profile with the solved challenge; keeping it makes restarts fast |
-| `/app/logs` | Reserved. The app logs to stdout today (`docker logs`) |
+| `/app/logs` | The log file (`sofascore_scraper.log`, rotated, about 30 MB at most). The same lines go to stdout (`docker logs`). See [Logs and diagnostics](#logs-and-diagnostics) |
 
 Things to know:
 
@@ -252,6 +252,7 @@ See `.env.example` for all keys. Common ones:
 | `FETCH_ONLY_FINISHED` | Keep only finished matches (`status.type == finished`). Default `true`. Upcoming fixtures are dropped from schedule files. |
 | `REFRESH_WINDOW_HOURS` | Hours after kick-off during which a saved match is provisional and gets re-read (default `72`, `0` = off). See [Refresh policy](#refresh-policy). |
 | `RATE_LIMIT_*` / `SERVER_ERROR_*` | Circuit breaker thresholds, counted per request across all phases of a job. See [Missing slices, failed requests and the circuit breaker](#missing-slices-failed-requests-and-the-circuit-breaker). |
+| `LOG_LEVEL` / `LOG_DIR` / `LOG_TO_FILE` / `LOG_MAX_MB` / `LOG_BACKUP_COUNT` | Log level, log file location and rotation. See [Logs and diagnostics](#logs-and-diagnostics). |
 
 Tuning for the web UI (timeouts, retries, logging) is exposed under **Settings**; writing settings updates `.env`.
 
@@ -329,6 +330,25 @@ Run `python main.py --doctor`. It names what is missing (most often the browser:
    - Older builds that only probed weeks `1..50` therefore downloaded PL fine but returned **zero MLS matches**. Update to a release that includes the event-list fallback, refresh seasons, and re-run the fetch.
 3. With `FETCH_ONLY_FINISHED=true` (default), not-yet-played fixtures are ignored. If a brand-new season has no finished games yet, pick the previous season (or wait / set `FETCH_ONLY_FINISHED=false` if you intentionally want fixtures).
 4. Stale season IDs (SofaScore retired the ID after a refresh) also yield empty schedules — open the league on the **Download** page, press **Refresh** above its seasons, then download again.
+
+### Logs and diagnostics
+
+Everything the app logs goes to the console **and** to a log file, so the output is still there after the launcher window is closed or an overnight download has failed.
+
+- **Where:** `logs/sofascore_scraper.log` in the project folder. Change the folder with `LOG_DIR` (a relative path is resolved against the project folder, not the current directory). The web app, the terminal UI, `--headless`, `--watch` and `--refresh-only` all write to the same file; each line carries the process id.
+- **Size:** the file is rotated at `LOG_MAX_MB` (default 5 MB) and `LOG_BACKUP_COUNT` (default 5) older files are kept as `.1` … `.5`, so logs never take more than about 30 MB.
+- **Level:** `LOG_LEVEL` (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`; `DEBUG=true` forces `DEBUG`). Changing it under **Settings** takes effect immediately in the running web app, no restart. Other processes that are already running pick it up on their next start.
+- **Secrets are masked** before a line is written (file and console): the captcha token, cookies, `Authorization` headers, proxy credentials (`http://user:password@host` becomes `http://***@host`) and the value of any `.env` key that looks like a secret (`*TOKEN*`, `*SECRET*`, `*PASSWORD*`, `*_KEY`, …).
+- **Server / Docker:** the console (stdout) is always on and is the primary output in a container; when stdout is not a terminal the lines are plain, timestamped text. In the Docker image the file is written to the `/app/logs` volume; set `LOG_TO_FILE=false` to rely on `docker logs` only. If the folder is not writable the app says so once and continues with the console only.
+
+**Reporting a problem:** attach a diagnostics bundle. It is a small zip with `diagnostics.json` (app version and commit, Python and OS, package versions, settings with secrets masked, bridge health, request budget, the last download jobs) and `log_tail.txt` (the last 1000 log lines). Your home directory is written as `~`; values of `.env` keys the app does not know are left out. Have a look at it before you send it.
+
+```bash
+python main.py --diagnostics              # writes logs/sofascore-diagnostics-<time>.zip and prints the path
+python main.py --diagnostics ./report.zip # or a path / folder of your choice
+```
+
+With the web app running (Docker included), the same bundle downloads from `http://127.0.0.1:8000/api/diagnostics/bundle`, and it is the better one for "SofaScore is blocking us" reports: bridge health is per process, so only the web app's bundle carries the web app's state. `GET /api/logs?limit=200&level=WARNING` returns the most recent log entries as JSON.
 
 ### Interactive terminal
 
@@ -496,6 +516,7 @@ All routes are prefixed with `/api` unless noted.
 - **Data**: backup zip, clear scopes, CSV export.
 - **Refusals while a download runs**: `POST /api/data/clear`, `POST /api/data/backup` (except `scope=config`), `DELETE /api/leagues/{id}` and a `POST /api/settings` that changes `data_dir` answer `409` with `{"detail": {"code": "job_running", "message": "..."}}`. While one of these is in progress, they and `POST /api/fetch` answer `409` with code `data_operation_running`. A successful `data_dir` change answers `"data_dir_changed": true`; a folder that cannot be created answers `400` with code `data_dir_unusable`.
 - **Bypass Status**: `GET /api/bypass/status` (with `health`: `ok` / `degraded` / `blocked`, see [Is SofaScore blocking us?](#is-sofascore-blocking-us-bridge-health)) and live test `POST /api/bypass/test`.
+- **Logs / diagnostics** (read-only, see [Logs and diagnostics](#logs-and-diagnostics)): `GET /api/logs` (`limit` 1–2000, `level` = minimum level), `GET /api/diagnostics` (the summary as JSON), `GET /api/diagnostics/bundle` (zip download). None of them takes a file path.
 - **Health**: `GET /health` (no `/api` prefix) answers `status`, `version`, `ui`, plus `bridge` (the same health block) and `throttle` (the shared [request budget](#request-budget-all-processes)).
 
 OpenAPI: `GET /docs` when the server is running.
