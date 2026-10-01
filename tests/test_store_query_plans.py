@@ -14,10 +14,11 @@ Aşağıdaki "yazım" testleri bunu iki yönden sabitler: doğru yazım dizini k
 başka yazılmış sorgu (SQLite 3.53'e kadar) kullanmaz. İkinci tür bir test, planlayıcı akıllandığı için
 kırılırsa kural gevşetilebilir ve o satır silinir.
 
-`state.db` tabloları (follows, stream_events) plan maddesi ST-09'un işidir; ATTACH edilen sorgu ve akış
-okuma sorgusu için buradaki DDL, bölüm 3.3'teki `0001_initial` göçünden kopyalanmıştır. state.db'de
-`ANALYZE` çalıştırılmaz (tasarım da çalıştırmıyor): istatistik varken ve akışlar eşit doluyken planlayıcı
-akış okuma sorgusunda `stream_events_stream` yerine rowid aralığını seçer.
+ATTACH edilen sorgu ve akış okuma sorgusu `state.db` tablolarına (follows, stream_events) dokunur. O dosya
+burada da `StateDb` ile, yani gerçek göç betiğiyle (src/store/migrations/state/0001_initial.sql) kurulur;
+DDL'in testte ayrı bir kopyası yoktur. state.db'de `ANALYZE` çalıştırılmaz (tasarım da çalıştırmıyor):
+istatistik varken ve akışlar eşit doluyken planlayıcı akış okuma sorgusunda `stream_events_stream` yerine
+rowid aralığını seçer.
 """
 from __future__ import annotations
 
@@ -28,6 +29,7 @@ import pytest
 
 from src.store import catalog
 from src.store.catalog import Catalog
+from src.store.state import StateDb
 
 SPORTS = ("football", "basketball", "tennis", "handball")
 TOURNAMENTS = 40
@@ -37,45 +39,6 @@ TEAMS_PER_TOURNAMENT = 20
 SLICE_KEYS = ("statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents")
 BASE_TS = 1_780_000_000
 NOW = BASE_TS + 400 * 86400
-
-# Bölüm 3.3'teki state.db DDL'inden (göç 0001_initial) bu sorguların dokunduğu iki tablo
-STATE_DDL = """
-CREATE TABLE follows (
-  id          INTEGER PRIMARY KEY,
-  kind        TEXT    NOT NULL CHECK (kind IN ('tournament', 'team', 'player', 'event')),
-  entity_id   INTEGER NOT NULL,
-  sport       TEXT,
-  name        TEXT    NOT NULL,
-  seasons     TEXT    NOT NULL DEFAULT 'all',
-  slices_json TEXT,
-  live        INTEGER NOT NULL DEFAULT 0,
-  enabled     INTEGER NOT NULL DEFAULT 1,
-  origin      TEXT    NOT NULL DEFAULT 'api' CHECK (origin IN ('legacy', 'config', 'api')),
-  position    INTEGER NOT NULL,
-  created_at  INTEGER NOT NULL,
-  updated_at  INTEGER NOT NULL,
-  UNIQUE (kind, entity_id)
-);
-CREATE UNIQUE INDEX follows_tournament_name ON follows(name) WHERE kind = 'tournament';
-CREATE INDEX follows_position ON follows(position, id);
-CREATE TABLE stream_events (
-  seq           INTEGER PRIMARY KEY AUTOINCREMENT,
-  stream        TEXT    NOT NULL,
-  ts_ms         INTEGER NOT NULL,
-  type          TEXT    NOT NULL,
-  event_id      INTEGER,
-  sport         TEXT,
-  tournament_id INTEGER,
-  source        TEXT,
-  dedup_key     TEXT,
-  payload_json  TEXT    NOT NULL
-);
-CREATE INDEX stream_events_stream ON stream_events(stream, seq);
-CREATE INDEX stream_events_event  ON stream_events(event_id, seq);
-CREATE INDEX stream_events_ts     ON stream_events(ts_ms);
-CREATE UNIQUE INDEX stream_events_dedup ON stream_events(stream, dedup_key) WHERE dedup_key IS NOT NULL;
-"""
-
 
 # --- sentetik katalog -----------------------------------------------------------------------------------
 
@@ -154,17 +117,16 @@ def _rows():
 def conn(tmp_path_factory):
     data_dir = tmp_path_factory.mktemp("plans")
     state_path = str(data_dir / "state.db")
-    state = sqlite3.connect(state_path, isolation_level=None)
+    state = StateDb(state_path)  # şema göç betiğinden gelir; ANALYZE çalıştırılmaz
     try:
-        catalog.configure(state, synchronous="FULL")
-        state.executescript(STATE_DDL)
-        state.executemany(
-            "INSERT INTO follows (kind, entity_id, sport, name, enabled, position, created_at, updated_at) "
-            "VALUES ('tournament', ?, ?, ?, ?, ?, 1, 1)",
-            [(t, SPORTS[t % 4], f"Tournament {t}", 1 if t % 3 else 0, t) for t in range(1, 16)])
-        state.executemany(
-            "INSERT INTO stream_events (stream, ts_ms, type, event_id, payload_json) VALUES (?, ?, ?, ?, '{}')",
-            [(("live", "change", "job", "system")[n % 4], n, "x", n % 300) for n in range(4000)])
+        with state.write() as writer:
+            writer.executemany(
+                "INSERT INTO follows (kind, entity_id, sport, name, enabled, position, created_at, updated_at) "
+                "VALUES ('tournament', ?, ?, ?, ?, ?, 1, 1)",
+                [(t, SPORTS[t % 4], f"Tournament {t}", 1 if t % 3 else 0, t) for t in range(1, 16)])
+            writer.executemany(
+                "INSERT INTO stream_events (stream, ts_ms, type, event_id, payload_json) VALUES (?, ?, ?, ?, '{}')",
+                [(("live", "change", "job", "system")[n % 4], n, "x", n % 300) for n in range(4000)])
     finally:
         state.close()
 
@@ -175,6 +137,7 @@ def conn(tmp_path_factory):
                 cat.upsert(table, rows)
             cat.stamp_derive_version()
         connection.execute("ANALYZE main")
+        assert not connection.execute("SELECT 1 FROM state.sqlite_master WHERE name LIKE 'sqlite_stat%'").fetchall()
         assert connection.execute("SELECT count(*) FROM events").fetchone()[0] == 7200
         assert connection.execute("SELECT count(*) FROM event_slices").fetchone()[0] == 30240
         yield connection
