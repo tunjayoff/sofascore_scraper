@@ -1,0 +1,9 @@
+# src.store.WatchStateStore
+# kaynak: src/store/watch.py
+class WatchStateStore:
+    def __init__(self, store: 'Store', *, retention_s: Optional[float] = WATCH_STATE_RETENTION_SECONDS, clock: Callable[[], float] = time.time) -> None
+    def load(self, watcher: str) -> Dict[str, Dict[str, Any]]
+    def save(self, watcher: str, state: Mapping[str, Mapping[str, Any]], *, changed: Optional[Iterable[str]] = None) -> None
+    def import_legacy(self, sport: str, *, watcher: Optional[str] = None) -> Optional[int]
+    def mirror_legacy_state(self, sport: str, state: Mapping[str, Mapping[str, Any]]) -> None
+    def append_legacy_events(self, lines: Sequence[str]) -> None

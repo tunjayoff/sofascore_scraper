@@ -1,0 +1,14 @@
+# src.store.StreamRecord
+# kaynak: src/store/streams.py
+@dataclass(frozen=True)
+class StreamRecord:
+    seq: int
+    stream: str
+    ts: float
+    type: str
+    data: Mapping[str, Any]
+    event_id: Optional[int] = None
+    sport: Optional[str] = None
+    tournament_id: Optional[int] = None
+    source: Optional[str] = None
+    dedup_key: Optional[str] = None

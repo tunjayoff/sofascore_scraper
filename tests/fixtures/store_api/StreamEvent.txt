@@ -1,0 +1,12 @@
+# src.store.StreamEvent
+# kaynak: src/store/streams.py
+@dataclass(frozen=True)
+class StreamEvent:
+    type: str
+    data: Mapping[str, Any] = field(default_factory=dict)
+    event_id: Optional[int] = None
+    sport: Optional[str] = None
+    tournament_id: Optional[int] = None
+    source: Optional[str] = None
+    dedup_key: Optional[str] = None
+    ts: Optional[float] = None

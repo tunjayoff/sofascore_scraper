@@ -1,0 +1,8 @@
+# src.store.StreamBatch
+# kaynak: src/store/streams.py
+@dataclass(frozen=True)
+class StreamBatch:
+    stream_id: str
+    events: Tuple[StreamRecord, ...]
+    last_seq: int
+    gap: bool

@@ -68,6 +68,7 @@
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO Store: state.db geçişi uygulandı: 0001_initial",
    "{\"type\": \"stuck\", \"event_id\": 9300001, \"at_utc\": \"<volatile>\", \"start_ts\": 1725700000, \"status_class\": \"live\"}",
    "{\"type\": \"score_changed\", \"event_id\": 9300001, \"at_utc\": \"<volatile>\", \"from\": [1, 0], \"to\": [2, 0], \"change_ts\": 1725701200, \"source\": \"live\"}"
   ]

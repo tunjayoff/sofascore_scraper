@@ -7,9 +7,13 @@ Parametrelerin dayanağı docs/status-matrix/README.md:
   - Askıya alınan maç aynı id ile ertesi güne kayabiliyor (B9/T6, B13) → takılı maç eşiği başlangıç + 4 sa.
 Kesinlik 03-A pencere kuralındadır (src/refresh.py); izleyici yalnızca ilk COMPLETED'i `provisional` olarak bildirir.
 
-Olaylar data/watch_events.jsonl'a yazılır ve isteğe bağlı `on_event` ile verilir. Son bilinen durum
-data/watch_state_{sport}.json'da (spor başına ayrı dosya: her spor için ayrı süreç birbirini ezmez);
-yeniden başlatmada aynı geçiş iki kez olay yapılmaz.
+Diske yalnızca Store üzerinden dokunulur (docs/design/01-storage.md, bölüm 2.3):
+  - Son bilinen durum `store.watch`tadır (state.db), izleyici adı = spor: her spor için ayrı süreç birbirini
+    ezmez ve yeniden başlatmada aynı geçiş iki kez olay yapılmaz. 2.x'in data/watch_state_{sport}.json
+    dosyası ilk çalıştırmada bir kez içe alınır.
+  - Her olay sıra numarasıyla `live` akışına eklenir (`store.streams`) ve isteğe bağlı `on_event` ile verilir.
+  - Canlı servis izleyicinin yerini alana kadar (plan maddesi P23) 2.x dosyaları da yazılmaya devam eder:
+    olay satırları data/watch_events.jsonl'a eklenir, durumun bir kopyası data/watch_state_{sport}.json'a yazılır.
 """
 from __future__ import annotations
 
@@ -22,10 +26,10 @@ import time
 from typing import Any, Callable, Dict, Iterable, List, Optional
 
 from src import throttle
-from src.fsutil import atomic_write_json
 from src.refresh import refresh_window_hours
 from src.sports import DEFAULT_STUCK_AFTER_SECONDS, watcher_params
 from src.status import StatusClass, classify_status, extract_scores
+from src.store import StreamEvent, open_store
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +47,10 @@ MIN_REQUEST_SPACING_SECONDS = 1.0
 THROTTLE_LANE = "watch"
 WATCH_EVENTS_FILE = "watch_events.jsonl"
 WATCH_STATE_FILE = "watch_state_{sport}.json"
+# Olayların eklendiği akış; tür adı akış adıyla öneklenir ("status_changed" → "live.status_changed").
+# İzleyici yoklamayla çalışır: zarfın kaynağı hep "poll"dur (hangi isteğin gördüğü olayın kendi `source` alanında).
+LIVE_STREAM = "live"
+STREAM_SOURCE = "poll"
 
 _TERMINAL = (StatusClass.COMPLETED, StatusClass.DECIDED_WITHOUT_PLAY)
 
@@ -173,8 +181,11 @@ class MatchWatcher:
         self.event_interval = EVENT_INTERVAL_SECONDS
         self._slow_warned = False
         self._stop = False
+        # 2.x dosyalarının yolları (gösterim için; dosyalara Store yazar)
         self.events_path = os.path.join(data_dir, WATCH_EVENTS_FILE)
         self.state_path = os.path.join(data_dir, WATCH_STATE_FILE.format(sport=sport))
+        self._store = open_store(data_dir)
+        self._saved: Dict[str, str] = {}  # son kayıttaki durum (maç → JSON): yalnızca değişen satırlar yazılır
         self.state: Dict[str, Dict[str, Any]] = self._load_state()
 
     # --- ağ ---------------------------------------------------------------------------
@@ -202,24 +213,42 @@ class MatchWatcher:
     # --- durum ------------------------------------------------------------------------
 
     def _load_state(self) -> Dict[str, Dict[str, Any]]:
-        try:
-            with open(self.state_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            return data if isinstance(data, dict) else {}
-        except (OSError, ValueError):
-            return {}
+        """Durumu Store'dan okur; 2.x durum dosyası varsa önce (bir kez) içe alınır."""
+        self._store.watch.import_legacy(self.sport)
+        state = self._store.watch.load(self.sport)
+        self._saved = self._snapshot(state)
+        return state
+
+    @staticmethod
+    def _snapshot(state: Dict[str, Dict[str, Any]]) -> Dict[str, str]:
+        return {eid: json.dumps(s, ensure_ascii=False, sort_keys=True) for eid, s in state.items()}
 
     def _save_state(self) -> None:
-        os.makedirs(self.data_dir, exist_ok=True)
-        atomic_write_json(self.state_path, self.state)
+        snapshot = self._snapshot(self.state)
+        changed = [eid for eid, text in snapshot.items() if self._saved.get(eid) != text]
+        changed += [eid for eid in self._saved if eid not in snapshot]
+        self._store.watch.save(self.sport, self.state, changed=changed)
+        self._saved = snapshot
+        self._store.watch.mirror_legacy_state(self.sport, self.state)  # P23'e kadar: 2.x dosyası da güncel kalır
 
     def _emit(self, event: Dict[str, Any]) -> None:
         line = json.dumps(event, ensure_ascii=False)
-        os.makedirs(self.data_dir, exist_ok=True)
-        with open(self.events_path, "a", encoding="utf-8") as f:
-            f.write(line + "\n")
+        stored = json.loads(line)  # dosyadakiyle aynı biçim (Pair → liste, enum → metin)
+        eid = stored["event_id"]
+        tournament_id = (self.state.get(str(eid)) or {}).get("tournament_id")
+        # Akış satırı: tür ve maç zarfın sütunlarıdır, olayın kalan alanları veridir. Yinelenme anahtarı
+        # verilmez: aynı geçişi iki kez üretmemek izleyicinin durumunun işidir.
+        self._store.streams.append(LIVE_STREAM, [StreamEvent(
+            type=f"{LIVE_STREAM}.{stored['type']}",
+            data={k: v for k, v in stored.items() if k not in ("type", "event_id")},
+            event_id=eid,
+            sport=self.sport,
+            tournament_id=tournament_id if type(tournament_id) is int else None,
+            source=STREAM_SOURCE,
+        )])
+        self._store.watch.append_legacy_events([line])  # P23'e kadar: watch_events.jsonl da yazılır
         if self.on_event:
-            self.on_event(json.loads(line))  # dosyadakiyle aynı biçim (Pair → liste, enum → metin)
+            self.on_event(stored)
 
     def _in_scope(self, eid: str, s: Dict[str, Any]) -> bool:
         """State dosyasında önceki koşulardan kalan başka maçlar izlenmez."""
