@@ -10,6 +10,7 @@ import time
 import random
 import re
 import datetime as dt
+from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Union, Tuple
 from pathlib import Path
 import asyncio
@@ -99,6 +100,37 @@ _LEGACY_SLICE_FETCHERS = {
 def _event_sport(basic: Dict[str, Any]) -> str:
     """Olayın sporu (küçük harfli slug, yoksa ad); bilinmiyorsa ""."""
     return event_sport_slug(basic) or ""
+
+
+@dataclass
+class SingleFetchReport:
+    """
+    Tek maç çekiminde (fetch_match_data / refill_missing_match_slices) SofaScore'a giden isteklerin sonucu.
+
+    Bu iki fonksiyon "maç yok", "maç bitmemiş" ve "istek reddedildi" durumlarının hepsinde None döndürür;
+    dilimlerin hepsi reddedildiğinde de dolu bir sözlük döndürür. Nedeni kullanıcıya söylemesi gereken
+    çağıran (web: POST /api/matches/{id}/fetch) bir rapor verir ve sonuca oradan bakar.
+    """
+
+    # /event/{id} isteğinin sonucu; istek gönderilmediyse None
+    event: Optional[SliceOutcome] = None
+    # Bu çağrıda istenen dilimler, istek sırasıyla (anahtar → sonuç)
+    slices: Dict[str, SliceOutcome] = field(default_factory=dict)
+
+    def upstream_failure(self) -> Optional[SliceOutcome]:
+        """
+        Çekimi SofaScore tarafı engellediyse o başarısız sonuç, aksi halde None:
+          - /event isteği başarısız olduysa (403/429/5xx/zaman aşımı/ağ/bozuk yanıt) onun sonucu;
+          - dilim istendiyse ve HİÇBİRİ yanıt almadıysa en sık görülen başarısızlık (eşitlikte ilk istenen).
+        Kesin "yok" (404, içinde veri olmayan 200) bir yanıttır: tek bir dilim bile yanıt aldıysa None döner.
+        """
+        if self.event is not None and self.event.failed:
+            return self.event
+        outcomes = list(self.slices.values())
+        if not outcomes or not all(outcome.failed for outcome in outcomes):
+            return None
+        reason = Counter(outcome.reason for outcome in outcomes).most_common(1)[0][0]
+        return next(outcome for outcome in outcomes if outcome.reason == reason)
 
 
 class MatchDataFetcher:
@@ -907,9 +939,13 @@ class MatchDataFetcher:
         self.rate_limit_breaker_triggered = bool(stats.get("breaker"))
         return stats
 
-    def refill_missing_match_slices(self, match_id: Union[int, str]) -> Optional[Dict[str, Any]]:
+    def refill_missing_match_slices(
+        self, match_id: Union[int, str], *, report: Optional[SingleFetchReport] = None
+    ) -> Optional[Dict[str, Any]]:
         """
         Diskte basic.json olan maçta eksik API dilimlerini tamamlar (yeni maç için fetch_match_data kullanın).
+
+        report verilirse /event isteğinin ve istenen dilimlerin sonucu ona yazılır (SingleFetchReport).
         """
         mid = str(match_id)
         path_info = self._find_match_path(mid)
@@ -920,7 +956,7 @@ class MatchDataFetcher:
         if not match_data.get("basic"):
             return None
 
-        basic_live = self._fetch_match_basic(mid)
+        basic_live = self._fetch_event(mid, report)
         if not basic_live:
             logger.warning(f"Maç {mid} refill: canlı basic alınamadı")
             return None
@@ -943,16 +979,24 @@ class MatchDataFetcher:
         for key in missing:
             outcomes[key] = self._fetch_slice(mid, key)
             match_data[key] = outcomes[key].data
+        if report is not None:
+            report.slices.update(outcomes)
         self._save_match_data(mid, match_data, outcomes)
         return match_data
 
-    def fetch_match_data(self, match_id: Union[int, str]) -> Optional[Dict[str, Any]]:
-        """Bir maç için tüm detay verilerini çeker."""
+    def fetch_match_data(
+        self, match_id: Union[int, str], *, report: Optional[SingleFetchReport] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Bir maç için tüm detay verilerini çeker.
+
+        report verilirse /event isteğinin ve istenen dilimlerin sonucu ona yazılır (SingleFetchReport).
+        """
         match_id = str(match_id)
         logger.info(f"Maç ID {match_id} için detay verileri çekiliyor...")
 
         # Önce temel veriyi çek
-        basic_data = self._fetch_match_basic(match_id)
+        basic_data = self._fetch_event(match_id, report)
 
         # Temel veri yoksa işleme devam etme
         if not basic_data:
@@ -980,6 +1024,8 @@ class MatchDataFetcher:
         for key in keys:
             outcomes[key] = self._fetch_slice(match_id, key)
             match_data[key] = outcomes[key].data
+        if report is not None:
+            report.slices.update(outcomes)
 
         # Verileri kaydet: yalnızca kesin "yok" yanıtları sayılır, başarısız istekler not edilir
         self._save_match_data(match_id, match_data, outcomes)
@@ -1003,6 +1049,35 @@ class MatchDataFetcher:
         except Exception as e:
             logger.error(f"Maç ID {match_id} için temel veri çekilirken hata: {str(e)}")
             return None
+
+    def _fetch_event(self, match_id: str, report: Optional[SingleFetchReport]) -> Optional[Dict[str, Any]]:
+        """
+        fetch_match_data ve refill_missing_match_slices'ın /event isteği. Rapor yoksa bugünkü yol
+        (_fetch_match_basic: hata yutulur, None döner); rapor varsa isteğin tipli sonucu rapora yazılır.
+        """
+        if report is None:
+            return self._fetch_match_basic(match_id)
+        report.event = self._fetch_event_outcome(match_id)
+        return report.event.data
+
+    def _fetch_event_outcome(self, match_id: str) -> SliceOutcome:
+        """
+        /event/{id} isteğinin tipli sonucu. _fetch_match_basic "maç yok" ile "istek başarısız"ı aynı None'a
+        indirger; burada ayrılır: olay geldiyse SLICE_OK (data = olay), maç yoksa (404 ya da içinde olay
+        olmayan yanıt) SLICE_EMPTY, istek başarısızsa SLICE_FAILED (neden ve HTTP koduyla).
+        """
+        url = f"{self.base_url}/event/{match_id}"
+        try:
+            data = make_api_request(url, raise_on_failure=True)
+            event = data.get("event") if data and "event" in data else None
+        except Exception as e:
+            outcome = SliceOutcome.from_error(e)
+            if outcome.failed:
+                logger.error(f"Event request for match {match_id} failed ({outcome.reason}): {e}")
+            return outcome
+        if not event:
+            return SliceOutcome(SLICE_EMPTY, reason="empty")
+        return SliceOutcome(SLICE_OK, data=event)
 
     def _fetch_slice(self, match_id: str, key: str) -> SliceOutcome:
         """

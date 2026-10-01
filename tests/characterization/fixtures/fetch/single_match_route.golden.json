@@ -98,19 +98,24 @@
  "steps": {
   "blocked": {
    "body": {
-    "detail": "Match data could not be fetched (may be unfinished or unavailable)."
+    "detail": {
+     "message": "SofaScore refused the request (HTTP 403).",
+     "reason": "blocked"
+    }
    },
    "requests": [
     "sync /event/9100003 403",
     "sync /event/9100003 403",
     "sync /event/9100003 403"
    ],
-   "status": 404
+   "status": 502
   },
   "blocked_slices_only": {
    "body": {
-    "match_id": "9100003",
-    "status": "success"
+    "detail": {
+     "message": "SofaScore refused the request (HTTP 403).",
+     "reason": "blocked"
+    }
    },
    "requests": [
     "sync /event/9100003 200",
@@ -133,7 +138,7 @@
     "sync /event/9100003/incidents 403",
     "sync /event/9100003/incidents 403"
    ],
-   "status": 200
+   "status": 502
   },
   "complete_match_again": {
    "body": {

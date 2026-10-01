@@ -7,18 +7,24 @@ import json
 import os
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
 import pandas as pd
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
+from src import breaker as request_breaker
+from src import bridge_health
+from src.web import upstream
 from src.web.routes.common import (
     _SyncHttpError,
     _job_store,
     config_manager,
     logger,
 )
+
+if TYPE_CHECKING:
+    from src.slices import Outcome
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -393,28 +399,61 @@ def _get_match_details_sync(match_id: str) -> Dict[str, Any]:
     return result
 
 
+def _single_fetch_reason(outcome: Outcome, before: Optional[Dict[str, Any]]) -> str:
+    """
+    Başarısız bir isteğin sonucu → src/web/upstream.py'deki neden. upstream.reason_for'un hata sınıfları
+    için yaptığı eşlemenin sonuç tipi üzerindeki karşılığıdır (tek maç yolu hatayı değil sonucu saklar):
+    429/503 → rate_limited; 403 → blocked (challenge'ı çözecek tarayıcı açılamadıysa browser);
+    zaman aşımı/bağlantı hatası → network; gerisi (diğer HTTP kodları, bozuk yanıt) → upstream.
+    """
+    if outcome.reason == request_breaker.RATE_LIMITED or outcome.http_status == 503:
+        return upstream.RATE_LIMITED
+    if outcome.reason == request_breaker.FORBIDDEN:
+        return upstream.BROWSER if upstream.browser_failed_since(before) else upstream.BLOCKED
+    if outcome.reason in (request_breaker.TIMEOUT, request_breaker.NETWORK):
+        return upstream.NETWORK
+    return upstream.UPSTREAM
+
+
 def _fetch_single_match_sync(match_id: str) -> dict:
-    from src.match_data_fetcher import MatchDataFetcher
+    """
+    Tek maçı çeker. SofaScore /event isteğini ya da istenen dilimlerin hepsini reddettiyse tipli hatayı
+    (src/web/upstream.py: {"detail": {"reason", "message"}}) fırlatır; eskiden ilki 404 "Match data could
+    not be fetched", ikincisi hiçbir dilim kaydedilmeden 200 "success" oluyordu. Maç SofaScore'da yoksa ya
+    da bitmemişse 404; dilimlerden biri bile yanıt aldıysa "success".
+    """
+    from src.match_data_fetcher import MatchDataFetcher, SingleFetchReport
 
     fetcher = MatchDataFetcher(config_manager=config_manager, data_dir=config_manager.get_data_dir())
+    report = SingleFetchReport()
+    before = bridge_health.snapshot()
     try:
         result = None
         if fetcher._find_match_path(match_id):
-            result = fetcher.refill_missing_match_slices(match_id)
-        if result is None:
-            result = fetcher.fetch_match_data(match_id)
+            result = fetcher.refill_missing_match_slices(match_id, report=report)
+        # Reddedilen /event, kayıt yokmuş gibi baştan istenmez: neden belli, aynı istek yine reddedilir
+        if result is None and report.upstream_failure() is None:
+            result = fetcher.fetch_match_data(match_id, report=report)
+        failure = report.upstream_failure()
+        if failure is not None:
+            reason = _single_fetch_reason(failure, before)
+            logger.error(
+                f"Single match fetch for {match_id} failed ({reason}): "
+                f"{'the event request' if failure is report.event else 'every slice request'} failed "
+                f"({failure.reason}, HTTP {failure.http_status})"
+            )
+            raise upstream.http_error(reason)
         if result is None:
             raise _SyncHttpError(
                 404,
                 "Match data could not be fetched (may be unfinished or unavailable).",
             )
         return {"status": "success", "match_id": match_id}
-    except _SyncHttpError:
+    except (_SyncHttpError, HTTPException):
         raise
     except Exception as e:
+        # İstek hataları buraya ulaşmaz (yukarıda rapordan okunur); kalanlar diske yazma ve benzeri hatalardır
         logger.error(f"Single match fetch failed for {match_id}: {e}")
-        if "403" in str(e) or "rate" in str(e).lower():
-            raise _SyncHttpError(429, "SofaScore rate limit or block")
         raise _SyncHttpError(500, "Match fetch failed")
 
 
