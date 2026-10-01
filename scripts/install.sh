@@ -166,6 +166,8 @@ fi
 if [[ ! -f ".env" ]] && [[ -f ".env.example" ]]; then
   msg "→ Copied .env.example → .env (you can edit it)." "→ .env.example → .env kopyalandı (düzenleyebilirsiniz)."
   cp .env.example .env
+  # .env proxy parolası ve erişim belirteci taşıyabilir: yalnızca sahibi okusun
+  chmod 600 .env
 fi
 
 # Web arayüzü Node.js ile bir kez derlenir (frontend/ → frontend/dist/). Sürüm kuralı src/doctor.py'de.

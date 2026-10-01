@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 import dotenv
 
+from src.fsutil import harden_secret_paths
 from src.logger import attach_file_handler, get_logger
 from src.paths import env_file_path
 from src.version import __version__
@@ -16,6 +17,8 @@ dotenv.load_dotenv(env_file_path())
 logger = get_logger("WebApp")
 # uvicorn kendi logger'ını köke iletmez: sunucu hataları log dosyasına da yazılsın (erişim logu hariç)
 attach_file_handler("uvicorn")
+# .env ve tarayıcı profili yalnızca sahibince okunur (POSIX); sunucu hangi yoldan başlatılırsa başlatılsın
+harden_secret_paths()
 if 0 < len(security.api_token()) < security.MIN_TOKEN_LENGTH:
     logger.warning(
         f"{security.TOKEN_ENV} çok kısa, tahmin edilebilir: en az {security.MIN_TOKEN_LENGTH} rastgele karakter kullanın."

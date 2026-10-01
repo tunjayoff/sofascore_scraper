@@ -12,6 +12,7 @@ import pandas as pd
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from src.fsutil import create_private_file
 from src.paths import env_file_path
 from src.web import league_sports
 from src.services import stats as stats_service
@@ -107,13 +108,18 @@ def _create_backup_sync(scope: str, include_env: bool = False) -> dict:
     data_dir = os.path.abspath(config_manager.get_data_dir())
 
     timestamp = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_filename = f"backup_{scope}_{timestamp}.zip"
+    # .env gerçekten pakete giriyorsa dosya adı bunu söyler: gizli değer taşıyan bir yedek, veri
+    # yedeği sanılıp paylaşılmasın
+    with_env = include_env and scope in ("all", "config") and os.path.exists(env_file_path())
+    backup_filename = f"backup_{scope}{'_with_env' if with_env else ''}_{timestamp}.zip"
 
     backups_dir = _backups_dir()
     os.makedirs(backups_dir, exist_ok=True)
     zip_path = os.path.join(backups_dir, backup_filename)
 
     try:
+        if with_env:
+            create_private_file(zip_path)  # içinde .env var: yalnızca sahibi okur (0600)
         with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
             dirs_to_backup = []
             if scope in ("all", "config"):
@@ -123,8 +129,8 @@ def _create_backup_sync(scope: str, include_env: bool = False) -> dict:
                 sports_path = league_sports.sidecar_path(config_path)
                 if os.path.exists(sports_path):
                     zf.write(sports_path, os.path.basename(sports_path))
-                # .env proxy kimlik bilgisi ve captcha token taşıyabilir; yalnızca açıkça istenirse
-                if include_env and os.path.exists(env_file_path()):
+                # .env proxy kimlik bilgisi, captcha ve erişim belirteci taşıyabilir; yalnızca açıkça istenirse
+                if with_env:
                     zf.write(env_file_path(), ".env")
             if scope in ("all", "seasons"):
                 dirs_to_backup.append(os.path.join(data_dir, "seasons"))

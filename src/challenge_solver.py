@@ -25,6 +25,7 @@ import time
 from typing import Any, Dict, List, Optional, Tuple
 
 from src import bridge_health, throttle
+from src.fsutil import make_private_dir
 from src.logger import get_logger
 from src.paths import browser_profile_dir
 
@@ -172,7 +173,8 @@ class BrowserBridge:
         self._solve_wait: Optional[_SlotWait] = None
         self._launch_failed_at: float = 0.0
         self._solve_failed_at: float = 0.0
-        os.makedirs(self.profile_dir, exist_ok=True)
+        # Profil SofaScore cookie'lerini (çözülmüş challenge) taşır: yalnızca sahibine açık (0700)
+        make_private_dir(self.profile_dir)
 
     @classmethod
     def get_instance(cls, profile_dir: str = DEFAULT_PROFILE_DIR) -> "BrowserBridge":

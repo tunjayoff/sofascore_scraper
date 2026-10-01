@@ -44,6 +44,7 @@ dotenv.load_dotenv(env_file_path())
 
 from src.SofaScoreUi import SimpleSofaScoreUI
 from src.exceptions import StorageError
+from src.fsutil import harden_secret_paths
 from src.logger import get_logger, log_file_path
 from src.i18n import get_i18n
 from src.sports import sport_slugs
@@ -187,6 +188,9 @@ def main() -> int:
     try:
         # Komut satırı argümanlarını ayrıştır
         args = parse_arguments()
+
+        # .env ve tarayıcı profili yalnızca sahibince okunur (POSIX); her çalışma kipinde denetlenir
+        harden_secret_paths()
 
         if args.diagnostics is not None:
             return _run_diagnostics(args.diagnostics)
