@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
@@ -11,6 +10,7 @@ import dotenv
 from src.logger import attach_file_handler, get_logger
 from src.paths import env_file_path
 from src.version import __version__
+from src.web import security
 from src.web.missing_ui import MISSING_UI_HTML
 
 dotenv.load_dotenv(env_file_path())
@@ -33,23 +33,27 @@ FRONTEND_DIST = REPO_ROOT / "frontend" / "dist"
 _DEFAULT_HOSTS = "localhost,127.0.0.1,[::1]"
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("SOFASCORE_ALLOWED_HOSTS", _DEFAULT_HOSTS).split(",") if h.strip()]
 
-_UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
-
 
 @app.middleware("http")
-async def reject_cross_origin_writes(request: Request, call_next):
+async def security_boundary(request: Request, call_next):
     """
-    CSRF: tarayıcılar cross-origin POST'larda Origin gönderir. Origin, isteğin Host'u ile
-    eşleşmiyorsa başka bir sitenin tetiklediği istektir — veri silme, yedek, ayar yazma engellenir.
+    Her isteğin geçtiği tek güvenlik katmanı (kurallar: src/web/security.py).
+
+      1. CSRF: başka bir sitenin tetiklediği durum değiştiren istek (veri silme, yedek, ayar yazma,
+         iş başlatma) reddedilir. Tarayıcı dışı istemciler (Origin göndermeyen curl) etkilenmez.
+      2. Güvenlik başlıkları: ret yanıtları dahil her yanıta eklenir.
     """
-    if request.method in _UNSAFE_METHODS:
-        origin = request.headers.get("origin")
-        if origin and urlparse(origin).netloc != request.headers.get("host", ""):
-            return JSONResponse({"detail": "Cross-origin request rejected"}, status_code=403)
-    return await call_next(request)
+    path = request.url.path
+    if security.is_cross_origin_write(request.method, request.headers):
+        response = JSONResponse({"detail": "Cross-origin request rejected"}, status_code=403)
+    else:
+        response = await call_next(request)
+    for name, value in security.security_headers(path, FRONTEND_DIST):
+        response.headers[name] = value
+    return response
 
 
-# Eklenen son middleware en dışta çalışır: Host kontrolü Origin kontrolünden önce
+# Eklenen son middleware en dışta çalışır: Host kontrolü diğer her şeyden önce
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
 
 from src.web.jobs import JobStoreConflict  # noqa: E402
