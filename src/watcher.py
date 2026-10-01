@@ -23,6 +23,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional
 
 from src.fsutil import atomic_write_json
 from src.refresh import refresh_window_hours
+from src.sports import DEFAULT_STUCK_AFTER_SECONDS, watcher_params
 from src.status import StatusClass, classify_status, extract_scores
 
 logger = logging.getLogger(__name__)
@@ -32,10 +33,10 @@ LIST_INTERVAL_SECONDS = 30
 EVENT_INTERVAL_SECONDS = 30
 EVENT_INTERVAL_SLOW_SECONDS = 60  # hız bütçesi aşılınca
 STUCK_INTERVAL_SECONDS = 300
-STUCK_AFTER_SECONDS = 4 * 3600
-# Tenis: startTimestamp planlanan saattir (aynı kortta sıra, yağmur); retro verisinde bitmiş 60 maçın 5'i
-# başlangıçtan > 4 sa sonra bitti (maks 5,46 sa). Ölçü gerçek oyun başlangıcı, eşik 6 sa.
-STUCK_AFTER_SECONDS_TENNIS = 6 * 3600
+# Takılı maç eşiği spora göre değişir: değerler ve gerekçeleri src/sports.py'de (WatcherParams).
+# Bu iki ad eski import'lar için duruyor; izleyici eşiği watcher_params(sport) ile okur.
+STUCK_AFTER_SECONDS = DEFAULT_STUCK_AFTER_SECONDS
+STUCK_AFTER_SECONDS_TENNIS = watcher_params("tennis").stuck_after_seconds
 EVENT_PAGES_PER_MINUTE = 40  # liste 2/dk + maç sayfaları ≤ 40/dk → < 1 istek/sn
 MIN_REQUEST_SPACING_SECONDS = 1.0
 WATCH_EVENTS_FILE = "watch_events.jsonl"
@@ -56,48 +57,70 @@ def _utc(ts: float) -> str:
     return dt.datetime.fromtimestamp(ts, dt.timezone.utc).isoformat(timespec="seconds")
 
 
+def _near_end_football_minute(event: Dict[str, Any], now: float) -> bool:
+    """2. yarı ≥ 80. dk ya da injuryTime2 görüldü; uzatma/penaltı kodları."""
+    code = (event.get("status") or {}).get("code")
+    t = event.get("time") or {}
+    if code in (6, 31):
+        return False
+    if code == 7:
+        if t.get("injuryTime2") is not None:
+            return True
+        start = t.get("currentPeriodStartTimestamp")
+        if not start:
+            return False
+        minute = ((t.get("initial") or 2700) + now - start) / 60
+        return minute >= 80
+    if code == 20:  # periyot bilgisi yok: başlangıçtan 95 dk (80 + devre arası)
+        start = event.get("startTimestamp") or now
+        return now - start >= 95 * 60
+    return True  # uzatma, penaltılar ve bilinmeyen canlı kodlar
+
+
+def _near_end_played_ratio(event: Dict[str, Any], now: float) -> bool:
+    """Son periyot (4. çeyrek ya da 2. yarı, uzatma) ve played ≥ %90 (played yoksa yalnız periyot)."""
+    code = (event.get("status") or {}).get("code")
+    t = event.get("time") or {}
+    regulation = (t.get("periodLength") or 0) * (t.get("totalPeriodCount") or 0)
+    played = t.get("played")
+    if played is not None and regulation:
+        # %90 ancak son periyotta (4. çeyrek / 2. yarı) ya da uzatmada aşılır
+        return played >= 0.9 * regulation
+    # Saat verisi yok (K7: çoğu alt lig): yalnızca periyot kodu; 16, uzatma ve bilinmeyen canlı kodlar
+    return code not in (13, 14, 15, 30, 31)
+
+
+def _near_end_last_set(event: Dict[str, Any], now: float) -> bool:
+    """Son set (defaultPeriodCount, yoksa 3)."""
+    code = (event.get("status") or {}).get("code")
+    sets = event.get("defaultPeriodCount") or 3
+    return isinstance(code, int) and 8 <= code <= 12 and code - 7 >= sets
+
+
+# Kural adı → kural; hangi sporun hangisini kullandığı src/sports.py'de (WatcherParams.near_end_rule).
+# Tabloda olmayan ad ("never") ve kayıtlı olmayan spor: bitişe yakın sayılmaz.
+_NEAR_END_RULES: Dict[str, Callable[[Dict[str, Any], float], bool]] = {
+    "football_minute": _near_end_football_minute,
+    "played_ratio": _near_end_played_ratio,
+    "last_set": _near_end_last_set,
+}
+
+
 def near_end(event: Dict[str, Any], sport: str, now: float) -> bool:
     """
-    Bitişe yakın mı (maç sayfası da izlenir):
+    Bitişe yakın mı (maç sayfası da izlenir). Kuralı sporun kayıt defteri girdisi seçer:
       futbol: 2. yarı ≥ 80. dk ya da injuryTime2 görüldü; uzatma/penaltı kodları
       basketbol: son periyot (4. çeyrek ya da 2. yarı, uzatma) ve played ≥ %90 (played yoksa yalnız periyot)
       tenis: son set (defaultPeriodCount, yoksa 3)
     """
-    status = event.get("status") or {}
-    code = status.get("code")
-    t = event.get("time") or {}
-    if sport == "football":
-        if code in (6, 31):
-            return False
-        if code == 7:
-            if t.get("injuryTime2") is not None:
-                return True
-            start = t.get("currentPeriodStartTimestamp")
-            if not start:
-                return False
-            minute = ((t.get("initial") or 2700) + now - start) / 60
-            return minute >= 80
-        if code == 20:  # periyot bilgisi yok: başlangıçtan 95 dk (80 + devre arası)
-            start = event.get("startTimestamp") or now
-            return now - start >= 95 * 60
-        return True  # uzatma, penaltılar ve bilinmeyen canlı kodlar
-    if sport == "basketball":
-        regulation = (t.get("periodLength") or 0) * (t.get("totalPeriodCount") or 0)
-        played = t.get("played")
-        if played is not None and regulation:
-            # %90 ancak son periyotta (4. çeyrek / 2. yarı) ya da uzatmada aşılır
-            return played >= 0.9 * regulation
-        # Saat verisi yok (K7: çoğu alt lig): yalnızca periyot kodu; 16, uzatma ve bilinmeyen canlı kodlar
-        return code not in (13, 14, 15, 30, 31)
-    if sport == "tennis":
-        sets = event.get("defaultPeriodCount") or 3
-        return isinstance(code, int) and 8 <= code <= 12 and code - 7 >= sets
-    return False
+    rule = _NEAR_END_RULES.get(watcher_params(sport).near_end_rule)
+    return rule(event, now) if rule else False
 
 
 def play_start(event: Dict[str, Any]) -> Optional[float]:
     """
-    Tenis: gerçek oyun başlangıcı = currentPeriodStartTimestamp − biten setlerin süreleri (time.periodN, sn);
+    Gerçek oyun başlangıcı (takılı maç süresi buradan sayılan sporlarda; bugün yalnızca tenis)
+    = currentPeriodStartTimestamp − biten setlerin süreleri (time.periodN, sn);
     set süreleri yoksa currentPeriodStartTimestamp. Zaman bilgisi yoksa None (çağıran startTimestamp'e düşer).
     time.periodN oyun süresidir, yağmur arası gibi duraklamalar dahil değildir; bu yüzden hesaplanan başlangıç
     gerçek olandan geç çıkabilir ve stuck olayı biraz geç tetiklenir (zararsız yönde hata).
@@ -258,12 +281,13 @@ class MatchWatcher:
         else:
             s["done"] = False
 
-        if self.sport == "tennis":
+        params = watcher_params(self.sport)
+        if params.stuck_from_play_start:
             s["play_start"] = play_start(event) or s.get("play_start")
             start = s.get("play_start") or s.get("start_ts")
-            limit = STUCK_AFTER_SECONDS_TENNIS
         else:
-            start, limit = s.get("start_ts"), STUCK_AFTER_SECONDS
+            start = s.get("start_ts")
+        limit = params.stuck_after_seconds
         stuck_now = (
             cls in (StatusClass.LIVE, StatusClass.NOT_STARTED)
             and isinstance(start, (int, float))

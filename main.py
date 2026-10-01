@@ -23,6 +23,7 @@ dotenv.load_dotenv(env_file_path())
 from src.SofaScoreUi import SimpleSofaScoreUI
 from src.logger import get_logger
 from src.i18n import get_i18n
+from src.sports import sport_slugs
 
 # Logger'ı al
 logger = get_logger("Main")
@@ -133,7 +134,7 @@ def parse_arguments() -> argparse.Namespace:
         action="store_true",
         help="Canlı izleyici: --sport ve --league-ids ya da --event-ids ile; olaylar data/watch_events.jsonl",
     )
-    parser.add_argument("--sport", choices=["football", "basketball", "tennis"], help="--watch ile spor")
+    parser.add_argument("--sport", choices=list(sport_slugs()), help="--watch ile spor")
     parser.add_argument("--league-ids", default=None, help="--watch: virgülle SofaScore unique-tournament id'leri")
     parser.add_argument("--event-ids", default=None, help="--watch: virgülle maç id'leri")
     parser.add_argument(

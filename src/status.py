@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, NamedTuple, Optional
 
+from src.sports import event_sport_slug, score_family
+
 logger = logging.getLogger(__name__)
 
 
@@ -164,12 +166,6 @@ class TennisScores(ScoreSheet):
     match_tiebreak: bool = False  # sezgisel, bkz. _is_match_tiebreak
 
 
-def _event_sport_slug(event: Dict[str, Any]) -> Optional[str]:
-    sport = (((event.get("tournament") or {}).get("category") or {}).get("sport") or {})
-    slug = sport.get("slug") or sport.get("name")
-    return str(slug).lower() if slug else None
-
-
 def _is_match_tiebreak(games: List[Pair]) -> bool:
     """
     Sezgisel: 3. ya da 5. set (son oynanan set) ≥ 10 ise normal set olamaz (normal set en çok 7),
@@ -182,8 +178,12 @@ def _is_match_tiebreak(games: List[Pair]) -> bool:
 
 
 def extract_scores(event: Dict[str, Any], sport: Optional[str] = None) -> ScoreSheet:
-    """Spor parametre ile verilirse o kullanılır; yoksa event.tournament.category.sport.slug."""
-    sport = (sport or _event_sport_slug(event) or "").lower() or None
+    """
+    Spor parametre ile verilirse o kullanılır; yoksa event.tournament.category.sport.slug.
+    Hangi skor sınıfının döneceğini sporun kayıt defterindeki skor ailesi belirler (src/sports.py).
+    """
+    sport = (sport or event_sport_slug(event) or "").lower() or None
+    family = score_family(sport)
     status = event.get("status") or {}
     code = status.get("code")
     home = event.get("homeScore") or {}
@@ -197,7 +197,7 @@ def extract_scores(event: Dict[str, Any], sport: Optional[str] = None) -> ScoreS
         raw_changed_fields=list(changes.get("changes") or []),
     )
 
-    if sport == "football":
+    if family == "football":
         ft90 = _pair(home, away, "normaltime")
         display = _pair(home, away, "display")
         if code == 100 and display is not None and ft90 is not None and display != ft90:
@@ -212,7 +212,7 @@ def extract_scores(event: Dict[str, Any], sport: Optional[str] = None) -> ScoreS
             aggregated_winner_code=event.get("aggregatedWinnerCode"),
         )
 
-    if sport == "basketball":
+    if family == "periods":
         periods = {k: p for k in ("period1", "period2", "period3", "period4") if (p := _pair(home, away, k))}
         # İki yarı formatında period1/period3 hiç gelmez; biri varsa çeyrek (maç sürüyor ya da yarıda kalmış olsa da)
         if {"period1", "period3"} & set(periods):
@@ -230,7 +230,7 @@ def extract_scores(event: Dict[str, Any], sport: Optional[str] = None) -> ScoreS
             final=_pair(home, away, "current"),
         )
 
-    if sport == "tennis":
+    if family == "sets":
         games = []
         for n in range(1, 6):
             p = _pair(home, away, f"period{n}")

@@ -21,6 +21,7 @@ from src.config_manager import ConfigManager
 from src.fsutil import atomic_write_json
 from src.utils import make_api_request, ensure_directory
 from src.match_fetcher import MatchFetcher
+from src.sports import DETAIL_SLICES, event_sport_slug, get_slice, slices_for
 from src.status import OBSERVATION_KEY, observation_record
 from src.refresh import SCORE_CHANGES_FILE, change_row, diff_basic, refresh_due
 
@@ -28,26 +29,14 @@ from src.logger import get_logger
 
 logger = get_logger("MatchDataFetcher")
 
-# Gerekli dosyaların listesini ekleyelim
-REQUIRED_FILES = [
-    'basic.json',
-    'statistics.json',
-    'team_streaks.json',
-    'pregame_form.json',
-    'h2h.json',
-    'lineups.json',
-    'incidents.json',
-]
+# Detay dilimleri src/sports.py'deki DETAIL_SLICES tablosundan türer; hangi maçta hangisinin isteneceğini
+# slices_for(spor) söyler. Aşağıdaki iki ad spordan bağımsız özetlerdir ve eski import'lar için durur.
 
-# UI / dosya tamlığı ile uyumlu alt dilimler (basic hariç)
-DETAIL_SLICE_KEYS = (
-    "statistics",
-    "team_streaks",
-    "pregame_form",
-    "h2h",
-    "lineups",
-    "incidents",
-)
+# UI / dosya tamlığı ile uyumlu alt dilimler (basic hariç): tablodaki `required` dilimler
+DETAIL_SLICE_KEYS = tuple(s.key for s in DETAIL_SLICES if s.required)
+
+# Bir maç dizininden okunan dosyalar
+REQUIRED_FILES = ['basic.json'] + [f"{key}.json" for key in DETAIL_SLICE_KEYS]
 
 # Bitmiş bir maçta bu kadar denemede de boş gelen dilim o maç için yok sayılır (ör. tenis
 # maçlarında kadro/olay yok). Bir kez daha denemek geçici hataları ayırır.
@@ -58,9 +47,21 @@ UNAVAILABLE_FILE = "_unavailable.json"
 _SCORE_CHANGES_LOCK = threading.Lock()
 
 
+# Tablodan önce de var olan dilim yardımcıları: testler ve dış kod bu adları doğrudan değiştiriyor/çağırıyor.
+# Yeni dilimler buraya eklenmez; _fetch_slice onları tablodaki yolla çeker.
+_LEGACY_SLICE_FETCHERS = {
+    "statistics": "_fetch_match_statistics",
+    "team_streaks": "_fetch_team_streaks",
+    "pregame_form": "_fetch_pregame_form",
+    "h2h": "_fetch_h2h",
+    "lineups": "_fetch_lineups",
+    "incidents": "_fetch_incidents",
+}
+
+
 def _event_sport(basic: Dict[str, Any]) -> str:
-    sport = ((basic.get("tournament") or {}).get("category") or {}).get("sport") or {}
-    return str(sport.get("slug") or sport.get("name") or "").lower()
+    """Olayın sporu (küçük harfli slug, yoksa ad); bilinmiyorsa ""."""
+    return event_sport_slug(basic) or ""
 
 
 class MatchDataFetcher:
@@ -160,21 +161,11 @@ class MatchDataFetcher:
 
             match_data = {"basic": basic_data, OBSERVATION_KEY: observation_record(basic_data)}
 
-            # Spor türüne uygun endpoint'leri çağır (Futbol, Basketbol, Tenis)
+            # Spor türüne uygun endpoint'leri çağır: dilim tablosu src/sports.py'de (DETAIL_SLICES)
             tasks = [
-                self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/statistics", "statistics"),
-                self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/team-streaks", "team_streaks"),
-                self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/pregame-form", "pregame_form"),
-                self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/h2h", "h2h"),
-                self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/lineups", "lineups"),
-                self._fetch_endpoint_async(session, f"{self.base_url}/event/{match_id}/incidents", "incidents"),
+                self._fetch_endpoint_async(session, detail.url(self.base_url, match_id), detail.key)
+                for detail in slices_for(_event_sport(basic_data))
             ]
-            if _event_sport(basic_data) == "tennis":
-                tasks.append(
-                    self._fetch_endpoint_async(
-                        session, f"{self.base_url}/event/{match_id}/point-by-point", "point_by_point"
-                    )
-                )
 
             results = await asyncio.gather(*tasks, return_exceptions=True)
             for result in results:
@@ -567,10 +558,14 @@ class MatchDataFetcher:
         except (OSError, ValueError, TypeError):
             return {}
 
-    def _expected_slices(self, match_dir: str) -> List[str]:
-        """Beklenen dilimler: yeterince denenip hep boş gelenler hariç."""
+    def _expected_slices(self, match_dir: str, sport: Optional[str] = None) -> List[str]:
+        """Beklenen dilimler: o sporun `required` dilimleri, yeterince denenip hep boş gelenler hariç."""
         unavailable = self._load_unavailable(match_dir)
-        return [k for k in DETAIL_SLICE_KEYS if unavailable.get(k, 0) < UNAVAILABLE_AFTER_ATTEMPTS]
+        return [
+            detail.key
+            for detail in slices_for(sport, required_only=True)
+            if unavailable.get(detail.key, 0) < UNAVAILABLE_AFTER_ATTEMPTS
+        ]
 
     def _needs_detail_fetch(self, match_id: str) -> str:
         """
@@ -597,7 +592,7 @@ class MatchDataFetcher:
         data = self._load_match_data_from_dir(match_dir, mid)
         if not data.get("basic"):
             return "full"
-        for key in self._expected_slices(match_dir):
+        for key in self._expected_slices(match_dir, _event_sport(data["basic"])):
             if not self.match_detail_slice_present(key, data):
                 return "refill"
         if refresh_due(data["basic"], data.get(OBSERVATION_KEY) or {}):
@@ -743,22 +738,16 @@ class MatchDataFetcher:
         match_data["basic"] = basic_live
         match_data[OBSERVATION_KEY] = observation_record(basic_live)
         missing = [
-            k for k in self._expected_slices(match_dir) if not self.match_detail_slice_present(k, match_data)
+            k
+            for k in self._expected_slices(match_dir, _event_sport(basic_live))
+            if not self.match_detail_slice_present(k, match_data)
         ]
         if not missing:
             return match_data
 
-        fetchers = {
-            "statistics": self._fetch_match_statistics,
-            "team_streaks": self._fetch_team_streaks,
-            "pregame_form": self._fetch_pregame_form,
-            "h2h": self._fetch_h2h,
-            "lineups": self._fetch_lineups,
-            "incidents": self._fetch_incidents,
-        }
         for key in missing:
             try:
-                match_data[key] = fetchers[key](mid)
+                match_data[key] = self._fetch_slice(mid, key)
             except Exception as e:
                 logger.error(f"Maç {mid} refill {key} hatası: {e}")
                 match_data[key] = None
@@ -786,25 +775,17 @@ class MatchDataFetcher:
             )
             return None
 
-        # Diğer verileri çek
+        # Diğer verileri çek: bu yol yalnızca `required` dilimleri ister (src/sports.py, DETAIL_SLICES)
+        keys = [detail.key for detail in slices_for(_event_sport(basic_data), required_only=True)]
         match_data = {
             "basic": basic_data,
             OBSERVATION_KEY: observation_record(basic_data),
-            "statistics": None,
-            "team_streaks": None,
-            "pregame_form": None,
-            "h2h": None,
-            "lineups": None,
-            "incidents": None,
+            **{key: None for key in keys},
         }
 
         # Diğer endpointleri topla
-        match_data["statistics"] = self._fetch_match_statistics(match_id)
-        match_data["team_streaks"] = self._fetch_team_streaks(match_id)
-        match_data["pregame_form"] = self._fetch_pregame_form(match_id)
-        match_data["h2h"] = self._fetch_h2h(match_id)
-        match_data["lineups"] = self._fetch_lineups(match_id)
-        match_data["incidents"] = self._fetch_incidents(match_id)
+        for key in keys:
+            match_data[key] = self._fetch_slice(match_id, key)
 
         # Verileri kaydet
         self._save_match_data(match_id, match_data)
@@ -829,99 +810,55 @@ class MatchDataFetcher:
             logger.error(f"Maç ID {match_id} için temel veri çekilirken hata: {str(e)}")
             return None
 
-    def _fetch_match_statistics(self, match_id: str) -> Optional[Dict[str, Any]]:
+    def _fetch_slice(self, match_id: str, key: str) -> Optional[Dict[str, Any]]:
+        """Bir detay dilimini senkron çeker; eski adlı yardımcısı olan dilimde onu kullanır."""
+        legacy = _LEGACY_SLICE_FETCHERS.get(key)
+        if legacy:
+            return getattr(self, legacy)(match_id)
+        return self._fetch_slice_endpoint(match_id, key)
+
+    def _fetch_slice_endpoint(self, match_id: str, key: str, label: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
-        Maç istatistiklerini çeker.
+        Dilimin uç noktasını (src/sports.py, DETAIL_SLICES) çağırır.
 
         Args:
             match_id: Maç ID'si
+            key: Dilim anahtarı
+            label: Hata logunda dilimin adı (varsayılan "{key} verisi")
 
         Returns:
-            Optional[Dict[str, Any]]: İstatistik verisi veya başarısız ise None
+            Optional[Dict[str, Any]]: Dilim verisi veya başarısız ise None
         """
-        url = f"{self.base_url}/event/{match_id}/statistics"
+        url = get_slice(key).url(self.base_url, match_id)
         try:
             return make_api_request(url)
         except Exception as e:
-            logger.error(f"Maç ID {match_id} için istatistik verisi çekilirken hata: {str(e)}")
+            logger.error(f"Maç ID {match_id} için {label or key + ' verisi'} çekilirken hata: {str(e)}")
             return None
+
+    def _fetch_match_statistics(self, match_id: str) -> Optional[Dict[str, Any]]:
+        """Maç istatistiklerini çeker."""
+        return self._fetch_slice_endpoint(match_id, "statistics", "istatistik verisi")
 
     def _fetch_team_streaks(self, match_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Takım serilerini çeker.
-
-        Args:
-            match_id: Maç ID'si
-
-        Returns:
-            Optional[Dict[str, Any]]: Takım serileri verisi veya başarısız ise None
-        """
-        url = f"{self.base_url}/event/{match_id}/team-streaks"
-        try:
-            return make_api_request(url)
-        except Exception as e:
-            logger.error(f"Maç ID {match_id} için takım serileri çekilirken hata: {str(e)}")
-            return None
+        """Takım serilerini çeker."""
+        return self._fetch_slice_endpoint(match_id, "team_streaks", "takım serileri")
 
     def _fetch_pregame_form(self, match_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Maç öncesi form verilerini çeker.
-
-        Args:
-            match_id: Maç ID'si
-
-        Returns:
-            Optional[Dict[str, Any]]: Form verisi veya başarısız ise None
-        """
-        url = f"{self.base_url}/event/{match_id}/pregame-form"
-        try:
-            return make_api_request(url)
-        except Exception as e:
-            logger.error(f"Maç ID {match_id} için form verisi çekilirken hata: {str(e)}")
-            return None
+        """Maç öncesi form verilerini çeker."""
+        return self._fetch_slice_endpoint(match_id, "pregame_form", "form verisi")
 
     def _fetch_h2h(self, match_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Takımlar arası karşılaşma geçmişini çeker.
-
-        Args:
-            match_id: Maç ID'si
-
-        Returns:
-            Optional[Dict[str, Any]]: H2H verisi veya başarısız ise None
-        """
-        url = f"{self.base_url}/event/{match_id}/h2h"
-        try:
-            return make_api_request(url)
-        except Exception as e:
-            logger.error(f"Maç ID {match_id} için H2H verisi çekilirken hata: {str(e)}")
-            return None
+        """Takımlar arası karşılaşma geçmişini çeker."""
+        return self._fetch_slice_endpoint(match_id, "h2h", "H2H verisi")
 
     def _fetch_lineups(self, match_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Maç kadro bilgilerini (lineups) çeker.
-
-        Args:
-            match_id: Maç ID'si
-
-        Returns:
-            Optional[Dict[str, Any]]: Lineup verisi veya başarısız ise None
-        """
-        url = f"{self.base_url}/event/{match_id}/lineups"
-        try:
-            return make_api_request(url)
-        except Exception as e:
-            logger.error(f"Maç ID {match_id} için lineup verisi çekilirken hata: {str(e)}")
-            return None
+        """Maç kadro bilgilerini (lineups) çeker."""
+        return self._fetch_slice_endpoint(match_id, "lineups", "lineup verisi")
 
     def _fetch_incidents(self, match_id: str) -> Optional[Dict[str, Any]]:
         """Maç olaylarını (goller, kartlar, devre vb.) çeker — yanıt genelde {\"incidents\": [...], \"home\": ..., \"away\": ...}."""
-        url = f"{self.base_url}/event/{match_id}/incidents"
-        try:
-            return make_api_request(url)
-        except Exception as e:
-            logger.error(f"Maç ID {match_id} için incidents verisi çekilirken hata: {str(e)}")
-            return None
+        return self._fetch_slice_endpoint(match_id, "incidents", "incidents verisi")
 
     def _save_match_data(self, match_id: str, match_data: Dict[str, Any]) -> None:
         """
@@ -976,7 +913,8 @@ class MatchDataFetcher:
             if MatchFetcher._is_finished_event(basic_data):
                 unavailable = self._load_unavailable(match_dir)
                 changed = False
-                for key in DETAIL_SLICE_KEYS:
+                for detail in slices_for(_event_sport(basic_data), required_only=True):
+                    key = detail.key
                     if key not in match_data:
                         continue  # bu kayıtta istenmedi (refill yalnız eksikleri ister)
                     if self.match_detail_slice_present(key, match_data):
