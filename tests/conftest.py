@@ -404,3 +404,17 @@ def _isolate_request_layer(request, monkeypatch):
 
         monkeypatch.setattr(cs.BrowserBridge, "_launch", _no_real_browser)
     yield
+
+
+@pytest.fixture(autouse=True)
+def _close_stores_opened_by_the_test():
+    """
+    Testin `open_store` ile açtığı depolar test bitince kapatılır. Depolar süreç boyunca kayıt defterinde
+    açık kalır (dizin başına bir tane); her testin kendi geçici dizinini açtığı bir oturumda bu, test başına
+    birkaç açık SQLite dosyası demektir ve açık dosya sınırına ulaşılır (macOS'ta 256).
+    """
+    yield
+    api = sys.modules.get("src.store.api")  # cephe hiç yüklenmediyse açılmış depo da yoktur
+    if api is not None:
+        for store in list(api._registry.values()):
+            store.close()
