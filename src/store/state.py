@@ -13,8 +13,9 @@ Bu modülde:
     açılış, betiğin adını söyleyen bir StoreError ile biter. Dosya koddan yeniyse SchemaTooNew.
   * `RuntimeFacts`: süreçler arası küçük bilgiler için anahtar/değer API'si (`runtime` tablosu).
 
-Geçişler bölüm 7.3'e göre `maintenance` kilidi altında çalışır; kilitler ST-10 ile gelir. O zamana kadar
-süreçler arası sıralamayı geçiş işleminin kendisi sağlar (BEGIN IMMEDIATE, sürüm işlem içinde yeniden okunur).
+Geçişler bölüm 7.3'e göre `maintenance` kilidi altında çalışır: kilidi `migration_guard` verir
+(src/store/lease.py). Verilmediğinde süreçler arası sıralamayı geçiş işleminin kendisi sağlar
+(BEGIN IMMEDIATE, sürüm işlem içinde yeniden okunur).
 
 SQLite hataları (bozuk dosya, açılamayan yol) burada çevrilmez, `sqlite3.Error` olarak çıkar: iş deposunun
 bugünkü çağıranları bunları öyle yakalar (src/web/routes/settings.py).
@@ -32,7 +33,7 @@ import time
 import uuid
 import weakref
 from dataclasses import dataclass
-from typing import Any, Iterator, List, Mapping, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Callable, ContextManager, Iterator, List, Mapping, Optional, Sequence, Set, Tuple, Union
 
 from src.store import files
 from src.store.errors import SchemaTooNew, StoreBusy, StoreError
@@ -168,9 +169,12 @@ class StateDb:
     Bütün yöntemler iş parçacığı güvenlidir.
     """
 
-    def __init__(self, path: PathLike, *, migrations_dir: Optional[PathLike] = None) -> None:
+    def __init__(self, path: PathLike, *, migrations_dir: Optional[PathLike] = None,
+                 migration_guard: Optional[Callable[[], ContextManager[Any]]] = None) -> None:
         check_sqlite_version()
         self.path = os.fspath(path)
+        # Geçişler bu bağlam yöneticisinin içinde çalışır (`maintenance` kilidi, src/store/lease.py)
+        self._migration_guard = migration_guard
         self.journal_mode = ""  # "wal", ya da WAL kurulamadıysa "delete" (tek süreç kipi)
         self._migrations = load_migrations(migrations_dir)
         self._local = threading.local()
@@ -327,13 +331,16 @@ class StateDb:
         version = int(conn.execute("PRAGMA user_version").fetchone()[0])
         if version > self.latest_version:  # denetimden sonra başka bir süreç yükseltmiş olabilir
             raise SchemaTooNew(path=self.path, component="state", found=version, supported=self.latest_version)
-        pending = [m for m in self._migrations if m.version > version]
-        if not pending:
+        if not any(m.version > version for m in self._migrations):
             return
-        if version > 0:
-            self._backup(conn, version)
-        for migration in pending:
-            self._apply(conn, migration)
+        with self._migration_guard() if self._migration_guard is not None else contextlib.nullcontext():
+            # Kilit beklenirken başka bir süreç geçişleri uygulamış olabilir: sürüm yeniden okunur
+            version = int(conn.execute("PRAGMA user_version").fetchone()[0])
+            pending = [m for m in self._migrations if m.version > version]
+            if pending and version > 0:
+                self._backup(conn, version)
+            for migration in pending:
+                self._apply(conn, migration)
 
     def backup_path(self, version: int) -> str:
         """Şema sürümü `version` iken alınan kopyanın yolu."""

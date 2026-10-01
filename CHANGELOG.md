@@ -239,6 +239,14 @@ section is what the first tagged release will contain.
   default address, and a trailing slash is ignored. The value is read once at start-up.
   One request still uses the default address whatever the setting says: league search in
   the web app.
+- One data folder has one writer at a time, across processes too. A running download holds a
+  lock file under `DATA_DIR/.meta/locks/`. A second web server on the same folder now answers
+  `409 job_running` to `POST /api/fetch`, to clearing data and to a backup that includes data,
+  and `409 data_operation_running` while the other server is clearing or backing up; before,
+  both would have written the same files. The lock is an operating-system file lock, so it is
+  free again when the process ends, however it ends. On a file system without lock support
+  (some network shares) a warning is logged and the folder must be used by one process, as
+  before. `python main.py` runs do not take the lock yet.
 
 ### Fixed
 

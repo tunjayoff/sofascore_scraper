@@ -1,9 +1,10 @@
 """
-src/store/lease.py: süreçler arası kilitler (docs/design/01-storage.md bölüm 6.1; plan maddesi ST-10).
+src/store/lease.py ve iş deposunun kilitlerle çalışması (docs/design/01-storage.md bölüm 6.1; plan maddesi ST-10).
 
 Kilit tablosu (kim kimi dışlar), sahip bilgisi, temiz kapanmama işareti, bekleme ve iki süreçli durumlar:
 ikinci yazar sahibin bilgisiyle reddedilir, süreç öldürülünce kilit boşalır, `maintenance` yazarı ve
-izleyiciyi dışlar (ve tersi). Tümü çevrimdışı; Linux, macOS ve Windows'ta çalışır.
+izleyiciyi dışlar (ve tersi). İş deposunun hata sınıfları ve arayüzü değişmez; yalnızca artık başka bir
+sürecin işini de görür. Tümü çevrimdışı; Linux, macOS ve Windows'ta çalışır.
 """
 from __future__ import annotations
 
@@ -16,13 +17,14 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Optional
 
 import pytest
 
 from src.store import LayoutError, LeaseHeld, StoreError, layout
+from src.store import jobs as jobs_mod
 from src.store import lease as lease_mod
-from src.store.jobs import default_db_path
+from src.store.jobs import DataOperationRunningError, JobRunningError, JobStore, default_db_path
 from src.store.lease import EXCLUSIVE, SHARED, Lease, LeaseInfo, LeaseManager, lock_plan
 from src.store.state import StateDb
 
@@ -55,6 +57,22 @@ print("ready", flush=True)
 sys.stdin.readline()
 lease.release()
 state.close()
+"""
+
+# İş deposunu kullanan başka bir süreç: iş başlatır ya da bir veri işlemi yuvasını tutar
+JOB_HOLDER = """
+import sys
+from src.store.jobs import JobStore, default_db_path
+store = JobStore(default_db_path(sys.argv[1]))
+if sys.argv[2] == "job":
+    store.create_running({"mode": "full"})
+    print("ready", flush=True)
+    sys.stdin.readline()
+    store.update(status="Completed", finished=True)
+else:
+    with store.exclusive(sys.argv[2]):
+        print("ready", flush=True)
+        sys.stdin.readline()
 """
 
 
@@ -397,3 +415,277 @@ def test_lease_is_a_context_manager_and_reports_itself(manager):
     with lease as same:
         assert same is lease and lease.held
     assert not lease.held
+
+
+# --- iş deposu: aynı arayüz, süreçler arası kilit ------------------------------------------------
+
+def _holder(db_path: str, name: str) -> Optional[LeaseInfo]:
+    return LeaseManager(jobs_mod.locks_dir_for(db_path)).holder(name)
+
+
+def test_job_store_locks_live_next_to_its_database(data_dir):
+    db = default_db_path(str(data_dir))
+    assert jobs_mod.locks_dir_for(db) == layout.resolve(str(data_dir), layout.LOCKS_DIR)
+
+
+def test_a_running_job_holds_the_writer_lease_until_it_finishes(tmp_path):
+    db = str(tmp_path / "jobs.db")
+    jobs = JobStore(db)
+    assert _holder(db, "writer") is None  # depoyu açmak kilit almaz
+    jobs.create_running({"mode": "full"})
+    assert _holder(db, "writer") is not None
+    second = jobs.create_running({"mode": "details"})  # aynı depo kendi kilidini yeniden kullanır (bugünkü davranış)
+    assert jobs.snapshot()["job_id"] == second
+    jobs.update(progress=50)
+    assert _holder(db, "writer") is not None
+    jobs.update(status="Completed", finished=True)
+    assert _holder(db, "writer") is None
+    jobs.close()
+
+
+def test_sweep_and_close_release_the_writer_lease(tmp_path):
+    db = str(tmp_path / "jobs.db")
+    jobs = JobStore(db)
+    jobs.create_running({})
+    assert jobs.mark_stale_running_interrupted() == 1
+    assert _holder(db, "writer") is None and jobs.snapshot()["is_running"] is False
+    jobs.create_running({})
+    jobs.close()
+    assert _holder(db, "writer") is None
+
+
+def test_a_second_job_store_on_the_same_directory_sees_the_running_job(tmp_path):
+    db = str(tmp_path / "jobs.db")
+    first, second = JobStore(db), JobStore(db)
+    first.create_running({"mode": "full"})
+    with pytest.raises(JobRunningError) as running:
+        second.create_running({"mode": "full"})
+    assert running.value.code == "job_running"
+    with pytest.raises(JobRunningError):
+        with second.exclusive("clear"):
+            pytest.fail("başka bir depo yazarken veri işlemi başlamamalı")
+    with pytest.raises(JobRunningError):
+        with second.exclusive("backup"):
+            pytest.fail("başka bir depo yazarken yedek başlamamalı")
+    assert second.snapshot()["is_running"] is False and len(second.list_jobs()) == 1
+    first.update(status="Completed", finished=True)
+    job = second.create_running({"mode": "full"})
+    second.update(status="Completed", finished=True)
+    assert second.get_job(job)["status"] == "completed"
+    first.close()
+    second.close()
+
+
+@pytest.mark.parametrize("operation, lease_name", [
+    ("clear", "maintenance"), ("league_delete", "maintenance"), ("data_dir_change", "maintenance"),
+    ("backup", "writer"),
+])
+def test_a_data_operation_holds_its_lease_and_blocks_other_job_stores(tmp_path, operation, lease_name):
+    db = str(tmp_path / "jobs.db")
+    first, second = JobStore(db), JobStore(db)
+    with first.exclusive(operation):
+        holder = first._leases.holder(lease_name)
+        assert holder is not None and (holder.pid, holder.purpose) == (os.getpid(), f"op:{operation}")
+        with pytest.raises(DataOperationRunningError) as busy:
+            second.create_running({})
+        assert busy.value.code == "data_operation_running" and busy.value.operation == operation
+        with pytest.raises(DataOperationRunningError) as busy:
+            with second.exclusive("clear"):
+                pytest.fail("iki veri işlemi aynı anda çalışmamalı")
+        assert busy.value.operation == operation
+    assert _holder(db, lease_name) is None
+    with second.exclusive("clear"):
+        pass
+    first.close()
+    second.close()
+
+
+def test_writer_busy_sees_this_store_and_other_holders(tmp_path):
+    db = str(tmp_path / "jobs.db")
+    first, second = JobStore(db), JobStore(db)
+    assert first.writer_busy() is False and second.writer_busy() is False
+    first.create_running({})
+    assert first.writer_busy() is True and second.writer_busy() is True
+    first.update(status="Completed", finished=True)
+    assert second.writer_busy() is False
+    with first.exclusive("backup"):  # yedek de yazar kilidini tutar
+        assert second.writer_busy() is True
+    with first.exclusive("clear"):  # `maintenance` yazar değildir; onu create_running ve exclusive reddeder
+        assert second.writer_busy() is False
+    first.close()
+    second.close()
+
+
+def test_an_operation_that_fails_releases_its_lease(tmp_path):
+    db = str(tmp_path / "jobs.db")
+    jobs = JobStore(db)
+    with pytest.raises(ValueError):
+        with jobs.exclusive("clear"):
+            raise ValueError("boom")
+    assert _holder(db, "maintenance") is None
+    jobs.close()
+
+
+def test_conflict_mapping_from_the_held_lease():
+    def conflict(name, purpose):
+        return jobs_mod.conflict_from_lease(LeaseHeld(name=name, purpose=purpose))
+
+    assert isinstance(conflict("writer", "job"), JobRunningError)
+    assert isinstance(conflict("writer", ""), JobRunningError)  # sahip bilgisi yok: yazan biri var
+    assert isinstance(conflict("writer", "headless"), JobRunningError)
+    assert conflict("writer", "op:backup").operation == "backup"
+    assert conflict("maintenance", "op:clear").operation == "clear"
+    assert conflict("maintenance", "").operation == "maintenance"
+    assert conflict("watcher:tennis", "").operation == "watcher:tennis"
+    assert conflict("live", "serve").operation == "serve"
+
+
+def test_rebind_moves_the_leases_to_the_new_directory(tmp_path):
+    a, b = str(tmp_path / "a" / "jobs.db"), str(tmp_path / "b" / "jobs.db")
+    jobs = JobStore(a)
+    with jobs.exclusive("data_dir_change"):
+        assert _holder(a, "maintenance") is not None
+        assert jobs.rebind(b) is True
+    assert _holder(a, "maintenance") is None  # eski dizinin kilidi, depo taşındıktan sonra da bırakılır
+    jobs.create_running({})
+    assert _holder(b, "writer") is not None and _holder(a, "writer") is None
+    jobs.update(status="Completed", finished=True)
+    jobs.close()
+
+
+def test_an_abandoned_job_store_frees_its_lease(tmp_path):
+    db = str(tmp_path / "jobs.db")
+    JobStore(db).create_running({})
+    gc.collect()
+    assert _holder(db, "writer") is None
+
+
+def test_job_in_another_process_blocks_jobs_and_operations_here(data_dir):
+    jobs = JobStore(default_db_path(str(data_dir)))
+    with other_process(JOB_HOLDER, data_dir, "job"):
+        assert jobs.writer_busy() is True
+        with pytest.raises(JobRunningError):
+            jobs.create_running({"mode": "full"})
+        with pytest.raises(JobRunningError):
+            with jobs.exclusive("clear"):
+                pytest.fail("başka bir süreç yazarken silme başlamamalı")
+        assert jobs.snapshot()["is_running"] is False
+    jobs.create_running({"mode": "full"})
+    jobs.update(status="Completed", finished=True)
+    jobs.close()
+
+
+@pytest.mark.parametrize("operation", ["clear", "backup"])
+def test_data_operation_in_another_process_blocks_jobs_here(data_dir, operation):
+    jobs = JobStore(default_db_path(str(data_dir)))
+    with other_process(JOB_HOLDER, data_dir, operation):
+        with pytest.raises(DataOperationRunningError) as busy:
+            jobs.create_running({"mode": "full"})
+        assert busy.value.operation == operation
+        with pytest.raises(DataOperationRunningError) as busy:
+            with jobs.exclusive("league_delete"):
+                pytest.fail("başka bir süreçte veri işlemi sürerken ikincisi başlamamalı")
+        assert busy.value.operation == operation
+    with jobs.exclusive("league_delete"):
+        pass
+    jobs.close()
+
+
+def test_a_killed_job_process_leaves_an_interrupted_row_and_a_free_lease(data_dir):
+    db = default_db_path(str(data_dir))
+    with other_process(JOB_HOLDER, data_dir, "job") as proc:
+        proc.kill()
+        proc.wait(60)
+    wait_until_free(LeaseManager(jobs_mod.locks_dir_for(db)), "writer")
+    jobs = JobStore(db)  # açılış: çöken sürecin "running" satırı interrupted olur
+    assert [j["status"] for j in jobs.list_jobs()] == ["interrupted"]
+    jobs.create_running({"mode": "full"})
+    jobs.update(status="Completed", finished=True)
+    jobs.close()
+
+
+# --- state.db geçişleri `maintenance` kilidi altında ---------------------------------------------
+
+def test_state_migrations_run_inside_the_guard_and_only_when_needed(tmp_path):
+    calls = []
+
+    @contextlib.contextmanager
+    def guard():
+        calls.append("enter")
+        yield
+        calls.append("exit")
+
+    path = tmp_path / "state.db"
+    StateDb(path, migration_guard=guard).close()
+    assert calls == ["enter", "exit"]
+    StateDb(path, migration_guard=guard).close()  # güncel dosya: kilit istenmez
+    assert calls == ["enter", "exit"]
+
+
+def test_a_new_state_db_is_not_created_while_someone_writes_the_directory(tmp_path, monkeypatch):
+    """Geçiş (ilk kuruluş dahil) `maintenance` ister; yazan biri varken beklenir, sonra LeaseHeld."""
+    monkeypatch.setattr(lease_mod, "MIGRATION_WAIT", 0.2)
+    db = default_db_path(str(tmp_path / "data"))
+    writer = LeaseManager(jobs_mod.locks_dir_for(db)).acquire("writer", purpose="job")
+    with pytest.raises(LeaseHeld) as refused:
+        JobStore(db)
+    assert refused.value.name == "writer"
+    writer.release()
+    jobs = JobStore(db)
+    assert jobs.list_jobs() == [] and _holder(db, "maintenance") is None
+    jobs.close()
+
+
+def test_concurrent_first_opens_wait_for_the_migrating_process(tmp_path):
+    """Aynı anda açılan depolar: biri geçişi yapar, diğerleri kilidi bekleyip hazır dosyayı bulur."""
+    db = default_db_path(str(tmp_path / "data"))
+    opened, errors = [], []
+
+    def worker():
+        try:
+            opened.append(JobStore(db))
+        except Exception as e:  # noqa: BLE001 - iş parçacığındaki hata teste taşınır
+            errors.append(e)
+
+    threads = [threading.Thread(target=worker) for _ in range(6)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(60)
+    assert errors == [] and len(opened) == 6
+    for jobs in opened:
+        jobs.close()
+
+
+# --- web API: başka bir süreç yazarken 409 job_running -------------------------------------------
+
+def test_web_api_answers_409_job_running_while_another_process_holds_the_writer_lease(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from src.web import fetch_job
+    from src.web.app import app
+    from src.web.routes import api as api_mod
+
+    jobs = api_mod._job_store
+    monkeypatch.setattr(fetch_job, "run_fetch_job", lambda job_id, payload: None)
+    # Silme reddedilmezse ortak test verisine değil bu boş dizine dokunsun
+    monkeypatch.setenv("DATA_DIR", str(tmp_path / "scratch"))
+    if jobs.snapshot().get("is_running"):
+        jobs.update(status="Cancelled", finished=True)
+    client = TestClient(app)
+    web_data_dir = os.path.dirname(os.path.dirname(jobs.db_path))
+
+    def assert_job_running(response):
+        assert response.status_code == 409, response.text
+        assert response.json()["detail"]["code"] == "job_running"
+
+    with other_process(HOLDER, web_data_dir, "writer", "headless"):
+        assert_job_running(client.post("/api/fetch", json={"mode": "full", "league_id": 17}))
+        assert jobs.snapshot()["is_running"] is False
+        assert_job_running(client.post("/api/data/clear", json={"scope": "matches"}))
+        assert_job_running(client.post("/api/data/backup"))
+    try:
+        assert client.post("/api/fetch", json={"mode": "full", "league_id": 17}).status_code == 200
+    finally:
+        if jobs.snapshot().get("is_running"):
+            jobs.update(status="Cancelled", progress=0, current_task="cleanup", finished=True)
