@@ -6,7 +6,7 @@ import glob
 import os
 import re
 import traceback
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Callable, Dict, Literal, Optional
 
 import pandas as pd
 from fastapi import APIRouter, HTTPException
@@ -17,6 +17,7 @@ from src.web import league_sports
 from src.services import stats as stats_service
 from src.web.routes.common import (
     _SyncHttpError,
+    _job_store,
     config_manager,
     logger,
 )
@@ -220,11 +221,29 @@ def _export_csv_sync(league_id: Optional[int], data_dir: str):
     )
 
 
+def _run_exclusive(operation: str, fn: Callable[..., Any], *args: Any) -> Any:
+    """
+    `fn`'i iş deposunun veri işlemi yuvasında çalıştırır: iş çalışıyorsa ya da başka bir veri işlemi
+    sürüyorsa JobStoreConflict (app.py bunu 409'a çevirir), işlem sürerken de yeni iş başlatılamaz.
+    Yuva worker thread içinde alınır: istemci bağlantıyı koparsa bile dosya işlemi bitene kadar tutulur.
+    """
+    with _job_store.exclusive(operation):
+        return fn(*args)
+
+
 @router.post("/data/backup")
 async def create_backup(scope: BackupScope = "all", include_env: bool = False):
-    """Veri yedeği oluşturur ve indirilebilir zip dosyası döndürür."""
+    """
+    Veri yedeği oluşturur ve indirilebilir zip dosyası döndürür.
+
+    İş çalışırken veri içeren yedek reddedilir (409 job_running): iş dosya yazmayı sürdürdüğü için
+    zip yarım bir indirmenin tutarsız kopyası olurdu, işin bitmesini beklemek ise isteği saatlerce
+    açık tutardı. `scope=config` yalnızca işin yazmadığı ayar dosyalarını okur; her zaman alınabilir.
+    """
     try:
-        return await asyncio.to_thread(_create_backup_sync, scope, include_env)
+        if scope == "config":
+            return await asyncio.to_thread(_create_backup_sync, scope, include_env)
+        return await asyncio.to_thread(_run_exclusive, "backup", _create_backup_sync, scope, include_env)
     except _SyncHttpError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
@@ -247,9 +266,12 @@ class ClearRequest(BaseModel):
 
 @router.post("/data/clear")
 async def clear_data(req: ClearRequest):
-    """Veriyi temizler."""
+    """
+    Veriyi temizler. İş çalışırken reddedilir (409 job_running): rmtree yazan işle yarışır ve iş,
+    bellekteki dizinine göre silinen maçları "var" sayıp atlar.
+    """
     try:
-        return await asyncio.to_thread(_clear_data_sync, req.scope)
+        return await asyncio.to_thread(_run_exclusive, "clear", _clear_data_sync, req.scope)
     except _SyncHttpError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 

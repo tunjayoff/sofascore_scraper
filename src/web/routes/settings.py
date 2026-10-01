@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from src.refresh import refresh_window_hours
 from src.web.routes.common import (
+    _job_store,
     config_manager,
     logger,
 )
@@ -122,9 +123,28 @@ def get_all_settings():
     }
 
 
+def _abs_data_dir(value: str) -> str:
+    # İş deposu ve veri uçları göreli DATA_DIR'i çalışma dizinine göre çözer (bkz. jobs.get_job_store)
+    return os.path.abspath(value)
+
+
 @router.post("/settings")
 def update_settings(settings: SettingsUpdate):
-    """Update application settings."""
+    """
+    Update application settings.
+
+    DATA_DIR değişimi çalışan iş varken reddedilir (409 job_running; hiçbir ayar yazılmaz): iş eski
+    dizine yazmayı sürdürürken yeni istekler yeni dizini okur ve veri iki dizine bölünür.
+    """
+    new_dir = settings.data_dir
+    if new_dir is None or _abs_data_dir(new_dir) == _abs_data_dir(config_manager.get_data_dir()):
+        return _apply_settings(settings)
+
+    with _job_store.exclusive("data_dir_change"):
+        return _apply_settings(settings)
+
+
+def _apply_settings(settings: SettingsUpdate) -> dict:
     try:
         updated = False
         env_map = {

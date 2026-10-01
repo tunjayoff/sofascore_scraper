@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field, field_validator
 from src.web import league_sports
 from src.web.routes.common import (
     _find_league_seasons_json,
+    _job_store,
     config_manager,
     logger,
 )
@@ -139,10 +140,13 @@ def update_league(league_id: int, body: LeagueUpdate) -> LeagueModel:
 
 @router.delete("/leagues/{league_id}")
 def delete_league(league_id: int) -> Dict[str, str]:
-    success = config_manager.remove_league(league_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="League not found.")
-    league_sports.set_sport(config_manager.league_config_path, league_id, None)
+    # Çalışan iş lig adını (dizin adı) ve sporunu yapılandırmadan okur: iş sürerken lig silinmez
+    # (409 job_running, bkz. app.py).
+    with _job_store.exclusive("league_delete"):
+        success = config_manager.remove_league(league_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="League not found.")
+        league_sports.set_sport(config_manager.league_config_path, league_id, None)
     return {"status": "success", "message": f"League {league_id} deleted."}
 
 

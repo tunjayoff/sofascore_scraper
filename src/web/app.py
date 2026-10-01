@@ -49,9 +49,19 @@ async def reject_cross_origin_writes(request: Request, call_next):
 # Eklenen son middleware en dışta çalışır: Host kontrolü Origin kontrolünden önce
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
 
+from src.web.jobs import JobStoreConflict  # noqa: E402
 from src.web.routes import api  # noqa: E402
 
 app.include_router(api.router)
+
+
+@app.exception_handler(JobStoreConflict)
+async def job_store_conflict(_request: Request, exc: JobStoreConflict):
+    """
+    Çalışan iş ya da süren veri işlemiyle çakışan istek: 409 ve makinece okunur `code`
+    (job_running / data_operation_running). Ön yüz mesajı bu koda göre çevirir.
+    """
+    return JSONResponse({"detail": {"code": exc.code, "message": str(exc)}}, status_code=409)
 
 
 @app.get("/health")

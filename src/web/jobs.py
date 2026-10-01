@@ -21,6 +21,31 @@ def default_db_path(data_dir: str) -> str:
     return os.path.join(meta, "jobs.db")
 
 
+class JobStoreConflict(RuntimeError):
+    """İstenen işlem şu anki iş durumuyla çakışıyor; web katmanı bunu 409'a çevirir (bkz. app.py)."""
+
+    code = "conflict"
+
+
+class JobRunningError(JobStoreConflict):
+    """Bir indirme işi çalışırken veri dizinine dokunan işlem istendi."""
+
+    code = "job_running"
+
+    def __init__(self) -> None:
+        super().__init__("A download job is running; stop it or wait until it finishes, then try again.")
+
+
+class DataOperationRunningError(JobStoreConflict):
+    """Yedekleme/silme gibi bir veri işlemi sürerken iş başlatmak ya da ikinci bir işlem istendi."""
+
+    code = "data_operation_running"
+
+    def __init__(self, operation: str) -> None:
+        self.operation = operation
+        super().__init__(f"Another data operation ({operation}) is in progress; try again when it finishes.")
+
+
 class JobStore:
     """Thread-safe job persistence + in-memory mirror for SSE."""
 
@@ -28,6 +53,8 @@ class JobStore:
         self.db_path = db_path
         self._lock = threading.RLock()
         self._active_id: Optional[str] = None
+        # Süren veri işleminin adı (clear, backup, ...); doluyken yeni iş başlatılamaz
+        self._exclusive: Optional[str] = None
         self._mirror: Dict[str, Any] = self._idle_mirror()
         os.makedirs(os.path.dirname(db_path) or ".", exist_ok=True)
         self._init_db()
@@ -120,11 +147,34 @@ class JobStore:
             self._mirror = self._idle_mirror()
             return n
 
+    @contextlib.contextmanager
+    def exclusive(self, operation: str) -> Iterator[None]:
+        """
+        Veri dizinine dokunan işlemler (silme, yedek, DATA_DIR değişimi, lig silme) için tek kişilik
+        yuva. İş çalışıyorsa JobRunningError, başka bir işlem sürüyorsa DataOperationRunningError
+        fırlatır. Kontrol ile yuvanın alınması aynı kilit altında olduğundan, işlem sürerken
+        create_running de reddedilir: "iş yok" kontrolünden sonra araya iş giremez.
+        """
+        with self._lock:
+            if self._mirror.get("is_running"):
+                raise JobRunningError()
+            if self._exclusive is not None:
+                raise DataOperationRunningError(self._exclusive)
+            self._exclusive = operation
+        try:
+            yield
+        finally:
+            with self._lock:
+                self._exclusive = None
+
     def create_running(self, payload: Any) -> str:
         job_id = str(uuid.uuid4())
         now = _utc_now()
         payload_json = json.dumps(payload, default=str)
         with self._lock:
+            if self._exclusive is not None:
+                # Silme/yedek sürerken başlayan iş, silinen dizine yazar ya da yarım yedeğe girer
+                raise DataOperationRunningError(self._exclusive)
             with self._conn() as conn:
                 conn.execute(
                     """
