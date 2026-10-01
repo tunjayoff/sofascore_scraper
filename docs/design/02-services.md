@@ -1243,16 +1243,16 @@ token given under its legacy name.
 **Legacy names.** The current names (`DATA_DIR`, `REQUEST_RATE_LIMIT`, `MAX_CONCURRENT`, `APP_LANGUAGE`,
 `USE_PROXY`, `PROXY_URL`, the breaker and bridge thresholds, `REFRESH_*`, `SOFASCORE_ALLOWED_HOSTS`,
 `SOFASCORE_BROWSER_PROFILE`, …; the table `loader.LEGACY`, 38 names, and the two language names) are read
-until P30 removes them. Each is
-parsed with the rule of the code that reads it today, odd ones included (`USE_PROXY=yes` is false,
-`REQUEST_TIMEOUT=10.5` falls back to the default, an empty `DATA_DIR` stays empty); a test compares the table
-with today's readers and with the settings golden of G-04. A legacy value that does not parse falls back to
-the default with a warning, now in English (`<NAME> is not valid; using the default <v>.`). The config file
-and the new names are parsed strictly: a rejected value is a `ConfigError`. The deprecation warning for a
-legacy name is logged only when a config file is present and the name is set in the process environment
-(`<NAME> is a legacy name; use SOFASCORE_<SECTION>__<KEY> or the config file`), so nothing new is logged for
-an existing installation. The Docker image sets `SOFASCORE_BROWSER_PROFILE` in its `ENV`, so a container with
-a config file logs that warning at every start until P25 switches the image to the new name.
+until P30 removes them. Each is parsed with the rule of the code that reads it today, odd ones included
+(`USE_PROXY=yes` is false, `REQUEST_TIMEOUT=10.5` falls back to the default, an empty `DATA_DIR` stays
+empty); a test compares the table with today's readers and with the settings golden of G-04. A legacy value
+that does not parse falls back to the default with a warning, now in English (`<NAME> is not valid; using
+the default <v>.`). The config file and the new names are parsed strictly: a rejected value is a
+`ConfigError`. The deprecation warning for a legacy name is logged only when a config file is present and
+the name is set in the process environment (`<NAME> is a legacy name; use SOFASCORE_<SECTION>__<KEY> or the
+config file`), so nothing new is logged for an existing installation. The Docker image sets
+`SOFASCORE_BROWSER_PROFILE` in its `ENV`, so a container with a config file logs that warning at every start
+until P25 switches the image to the new name.
 
 Two settings have two readers with different rules, and the model keeps both. `API_BASE_URL`:
 `ConfigManager.get_api_base_url` returns it as written (an empty value stays empty, pinned by G-04), while
@@ -1307,7 +1307,7 @@ wrote (tests).
 **What stops the start.** A broken config file, an unknown `SOFASCORE_*__*` variable or an invalid
 `overrides.json` raises `ConfigError` (`config_invalid`). Through `main.py` that is a traceback and exit
 code 1 today, with the file and the key in the last line; `--version` and `--doctor` still work, because
-they run before the imports. The new CLI renders it as exit code 2 (P18, P19). `loader.reload()` re-reads
+they run before the imports. The new CLI renders it as exit code 2 (since P18). `loader.reload()` re-reads
 `.env`, the overrides file and the config file; if one of them is invalid the previous settings stay in
 force.
 
@@ -1320,10 +1320,10 @@ force.
 are per request and per web request, not per file.
 
 **What uses the model today.** `ConfigManager`'s getters, and through the bridge every module that reads a
-legacy name. Modelled and validated but not used by anything yet: follows (ST-17), sinks (P22), schedule
-tasks (P29), the slice selection (P27), `[server] host` and `port` (P25), `[log] format` (P18),
-`[client] odds_provider` (P28) and `[live]` (P23, P24, P31). There is no `[live] enabled` key and no
-`sources` list. `loader.load_settings(config_file=...)` validates a file without touching the process
+legacy name. The `[[follow]]` entries are applied to the follows table since ST-17, and nothing reads the
+table yet. Modelled and validated but not used by anything: sinks (P22), schedule tasks (P29), the slice
+selection (P27), `[server] host` and `port` (P25), `[log] format` (P19), `[client] odds_provider` (P28) and
+`[live]` (P23, P24, P31). There is no `[live] enabled` key and no `sources` list. `loader.load_settings(config_file=...)` validates a file without touching the process
 (`config validate`), `loader.find_config_file()` is `config path`, and `config_schema()` is the JSON Schema
 of the file. Constructing the `Settings` creates no file; constructing `ConfigManager` still creates
 `config/leagues.txt` (`03-implementation-plan.md` section 15).
