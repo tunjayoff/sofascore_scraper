@@ -228,6 +228,37 @@ def test_summary_has_the_expected_sections(log_dir):
     json.dumps(doc)  # JSON'a çevrilebilir
 
 
+def test_setup_check_is_included_without_starting_a_browser(log_dir, monkeypatch):
+    from src import doctor
+
+    def no_probe(*args, **kwargs):
+        raise AssertionError("the diagnostics summary must not start the browser probe")
+
+    monkeypatch.setattr(doctor, "probe_browser", no_probe)
+    section = diagnostics.collect()["doctor"]
+    ids = [check["id"] for check in section["checks"]]
+    assert "browser" not in ids and section["skipped"] == ["browser"]
+    assert {"python", "packages", "data_dir", "config_dir", "env"} <= set(ids)
+    assert section["status"] in (doctor.OK, doctor.WARN, doctor.FAIL)
+    assert section["counts"][doctor.OK] >= 1
+    assert all(check["code"] and check["summary"] for check in section["checks"])
+
+
+def test_setup_check_problems_reach_the_summary_masked(log_dir, secrets_everywhere, monkeypatch):
+    monkeypatch.setenv("MAX_CONCURRENT", "çok")  # geçersiz sayı: .env denetimi hata verir
+    # Ayrıştırılamayan satır ('=' yok): doctor terminalde metnini gösterir, pakete metni girmez
+    with open(os.environ["SOFASCORE_ENV_FILE"], "a", encoding="utf-8") as f:
+        f.write("VENDOR_LICENSE unparsed-line-secret-value\n")
+    doc = diagnostics.collect()
+    env = next(check for check in doc["doctor"]["checks"] if check["id"] == "env")
+    assert env["status"] == "fail" and env["code"] == "env_invalid"
+    assert {p["setting"] for p in env["detail"]["problems"]} == {"MAX_CONCURRENT", "line 5"}
+    assert doc["doctor"]["ok"] is False
+    flat = json.dumps(doc, ensure_ascii=False)
+    for secret in SECRETS + ("unparsed-line-secret-value", "VENDOR_LICENSE"):
+        assert secret not in flat, secret
+
+
 def test_bridge_health_is_reported(log_dir):
     for _ in range(4):
         bridge_health.record_failure(bridge_health.KIND_CHALLENGE, "çözülemedi")

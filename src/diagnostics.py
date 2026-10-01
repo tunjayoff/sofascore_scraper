@@ -3,7 +3,8 @@ Tanılama: son log satırları ve hata bildirimine eklenebilecek paket.
 
 Paket (zip) üç dosya içerir:
   diagnostics.json  uygulama sürümü ve commit'i, Python/işletim sistemi, paket sürümleri, ayarlar
-                    (gizli değerler maskeli), köprü sağlığı, istek bütçesi, son işler, log dosyaları
+                    (gizli değerler maskeli), köprü sağlığı, istek bütçesi, kurulum denetimi
+                    (src.doctor; tarayıcı başlatılmadan), son işler, log dosyaları
   log_tail.txt      log dosyasının son satırları
   README.txt        içinde ne olduğu
 
@@ -35,7 +36,7 @@ import dotenv
 
 from src import logger as app_logger
 from src.paths import default_league_config_path, env_file_path
-from src.redact import mask_value, redact_obj, redact_text
+from src.redact import MASK, mask_value, redact_obj, redact_text
 from src.version import __version__
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -48,6 +49,9 @@ MAX_TAIL_LINES = 5000
 DEFAULT_TAIL_LINES = 1000
 _JOB_LIMIT = 3
 _JOB_LIST_CAP = 50  # bir işin sonucundaki listelerden (başarısız maçlar) pakete giren en fazla öğe
+# Pakete girmeyen kurulum denetimleri: "browser" ayrı bir süreçte Chromium başlatır (saniyeler sürer,
+# uç nokta her çağrıda bunu yapmamalı); köprünün gerçek durumu zaten "bridge" bölümündedir.
+_DOCTOR_SKIP: Tuple[str, ...] = ("browser",)
 
 # Değeri pakette gösterilen ayarlar (gizli olanlar mask_value ile `***` olur). Burada olmayan
 # .env anahtarlarının yalnızca adı ve dolu olup olmadığı yazılır.
@@ -71,7 +75,8 @@ _PACKAGES = (
 _BUNDLE_README = """SofaScore Scraper diagnostics bundle
 
 diagnostics.json  app version/commit, Python and OS, package versions, settings, bridge health,
-                  request budget, the most recent download jobs, log file list
+                  request budget, the setup check (python main.py --doctor, without starting the
+                  browser), the most recent download jobs, log file list
 log_tail.txt      the last lines of the application log
 
 Secrets are masked before anything is written here: tokens, cookies, proxy credentials and any
@@ -418,6 +423,27 @@ def _throttle() -> Dict[str, Any]:
     return throttle.status()
 
 
+def _doctor() -> Dict[str, Any]:
+    """
+    Kurulum denetimi (python main.py --doctor ile aynı denetimler, tarayıcıyı başlatan hariç).
+    SofaScore'a istek atılmaz; hiçbir şey değiştirilmez.
+    """
+    from src import doctor
+
+    ctx = doctor.Context()
+    # Ayrıştırılamayan .env satırının metni rapora girmez (satır numarası yeter): içinde, anahtarı
+    # tanınmadığı için maskelenemeyen bir gizli değer olabilir
+    ctx.env_bad_lines = [(number, MASK) for number, _text in ctx.env_bad_lines]
+    out = doctor.report(doctor.run_checks(ctx, skip=_DOCTOR_SKIP), ctx)
+    out["skipped"] = list(_DOCTOR_SKIP)
+    for check in out["checks"]:
+        # Sorunlu ayarın adı "setting" olarak yazılır: "key" adlı alan redact_obj'de gizli değer
+        # sayılır (API_KEY gibi) ve `***` olurdu
+        for problem in check["detail"].get("problems") or []:
+            problem["setting"] = problem.pop("key", None)
+    return out
+
+
 def collect(source: str = "web") -> Dict[str, Any]:
     """
     Tanılama özeti (JSON'a hazır, maskelenmiş). `source`: paketi kim üretti ("web" / "cli").
@@ -435,6 +461,7 @@ def collect(source: str = "web") -> Dict[str, Any]:
         "logging": _section(_logging),
         "bridge": _section(_bridge),
         "throttle": _section(_throttle),
+        "doctor": _section(_doctor),
         "jobs": _section(_jobs),
     }
     return _scrub_obj(redact_obj(doc))
