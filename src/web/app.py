@@ -8,13 +8,15 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 import dotenv
 
-from src.logger import get_logger
+from src.logger import attach_file_handler, get_logger
 from src.paths import env_file_path
 from src.version import __version__
 from src.web.missing_ui import MISSING_UI_HTML
 
 dotenv.load_dotenv(env_file_path())
 logger = get_logger("WebApp")
+# uvicorn kendi logger'ını köke iletmez: sunucu hataları log dosyasına da yazılsın (erişim logu hariç)
+attach_file_handler("uvicorn")
 
 app = FastAPI(
     title="SofaScore Scraper Web UI",

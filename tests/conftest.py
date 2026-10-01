@@ -35,6 +35,10 @@ MATCH_IDS = (9000001, 9000002)
 # Kullanıcının kabuğundan veya gerçek .env'den gelebilecek ayarları temizle
 for _k in ("PROXY_URL", "USE_PROXY", "API_BASE_URL", "SOFA_CAPTCHA_TOKEN", "FETCH_ONLY_FINISHED"):
     os.environ.pop(_k, None)
+# Log dosyası da geçici dizine: testler projedeki logs/ dizinine yazmaz (src/logger.py)
+for _k in ("LOG_TO_FILE", "LOG_MAX_MB", "LOG_BACKUP_COUNT"):
+    os.environ.pop(_k, None)
+os.environ["LOG_DIR"] = os.path.join(_TMP, "logs")
 os.environ["DATA_DIR"] = DATA_DIR
 os.environ["SOFASCORE_CONFIG_DIR"] = CONFIG_DIR
 os.environ["SOFASCORE_ENV_FILE"] = ENV_FILE
