@@ -9,6 +9,7 @@ class Store:
     self.streams
     self.watch
     self.events
+    self.entities
     @property
     def closed(self) -> bool
     @property

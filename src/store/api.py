@@ -16,9 +16,10 @@ dizinidir ve bu üç dosya silinince yine öyle olur.
 
 Bu adımda cephede kilitler (`Store.lease`), çalışma zamanı bilgileri (`Store.runtime`), takipler
 (`Store.follows`), olay akışları (`Store.streams`), izleyici durumu (`Store.watch`), `Store.info` ve
-kataloğun maçlar için okuma API'si (`Store.events`) var. Okuma API'si kataloğa sorar; `open_store`
-kataloğu kurmaz (şeması yaratılır), kuran ve güncel tutan dizinleyicidir. Öteki okuma API'leri (entities,
-changes) ve yazma API'leri (put, history, migrate, export, backup) kendi plan maddeleriyle eklenir.
+kataloğun okuma API'leri var: maçlar (`Store.events`) ve maç dışı varlıklar (`Store.entities`). Okuma
+API'leri kataloğa sorar; `open_store` kataloğu kurmaz (şeması yaratılır), kuran ve güncel tutan
+dizinleyicidir. Değişiklik günlüğü ve yazma API'leri (put, history, migrate, export, backup) kendi plan
+maddeleriyle eklenir.
 Store içindeki modüller `_state`, `_catalog` ve `_leases` özniteliklerini kullanır; paket dışındaki kod
 yalnızca açık yöntemleri.
 """
@@ -38,6 +39,7 @@ from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
 from src.store import files, layout
 from src.store.catalog import CATALOG_SCHEMA, Catalog, CatalogState, catalog_path
 from src.store.derive import DERIVE_VERSION
+from src.store.entities import EntityStore
 from src.store.errors import PayloadCorrupt, PayloadMissing, SchemaTooNew, StoreError
 from src.store.events import EventStore
 from src.store.follows import FollowStore
@@ -186,6 +188,7 @@ class Store:
             self.streams = StreamLog(self)
             self.watch = WatchStateStore(self)
             self.events = EventStore(self)
+            self.entities = EntityStore(self)
         except BaseException:
             self.close()
             raise

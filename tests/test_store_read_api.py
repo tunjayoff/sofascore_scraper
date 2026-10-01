@@ -1,5 +1,5 @@
 """
-Kataloğun maçlar için okuma API'si: `Store.events` (EventStore)
+Kataloğun okuma API'si: `Store.events` (EventStore) ve `Store.entities` (EntityStore)
 (plan maddesi ST-30; docs/design/01-storage.md bölüm 2.3, 3.7, 6.3, 8.2-8.4).
 
 Testler `tests/store_fixtures.py`'nin kurduğu veri dizinlerinde çalışır; katalog dizinleyiciyle
@@ -41,6 +41,7 @@ from src import refresh
 from src.match_data_fetcher import MatchDataFetcher
 from src.sports import event_sport_slug, slices_for
 from src.store import (
+    EntityStore,
     EventQuery,
     EventRow,
     EventState,
@@ -49,14 +50,17 @@ from src.store import (
     LayoutError,
     MissingRow,
     Page,
+    ParticipantRow,
     PayloadCorrupt,
     PayloadMissing,
     Ref,
     Scope,
+    SeasonRow,
     SliceError,
     SliceInfo,
     Store,
     StoreError,
+    TournamentRow,
     TournamentSummary,
     open_store,
 )
@@ -1423,3 +1427,281 @@ def test_ids_are_written_as_literals_so_long_lists_work(synthetic: Store) -> Non
 
     assert synthetic.events.count(EventQuery(scope=Scope(event_ids=wanted))) == 5000
     assert sum(1 for _ in synthetic.events.states(Scope(event_ids=wanted), batch=2000)) == 5000
+
+
+# --- EntityStore: turnuvalar, sezonlar, yarışmacılar -------------------------------------------------------
+
+def test_store_has_the_entity_store(canon: Store, tmp_path: Path) -> None:
+    assert isinstance(canon.entities, EntityStore)
+    assert {"EntityStore", "TournamentRow", "SeasonRow", "ParticipantRow"} <= set(src.store.__all__)
+    assert not any(hasattr(EntityStore, name) for name in WRITE_METHODS)
+    # kurulmamış katalog boş yanıt verir
+    unbuilt = open_store(tmp_path / "data")
+    assert unbuilt.entities.tournaments() == [] and unbuilt.entities.seasons(17) == []
+    assert unbuilt.entities.participants() == [] and unbuilt.entities.sport_of_tournament(17) is None
+    assert unbuilt.entities.tournament(17) is None and unbuilt.entities.season(96668) is None
+    assert unbuilt.entities.payload(Ref.tournament(17), "seasons") is None
+    assert unbuilt.entities.slices(Ref.tournament(17)) == []
+    # kapatılmış depo okumayı reddeder
+    canon.close()
+    for call in (lambda: canon.entities.tournaments(), lambda: canon.entities.seasons(17),
+                 lambda: canon.entities.participants(), lambda: canon.entities.slices(Ref.tournament(17)),
+                 lambda: canon.entities.payload(Ref.tournament(17), "seasons")):
+        with pytest.raises(StoreError):
+            call()
+
+
+@pytest.mark.parametrize("key, sub", [("../seasons", ""), ("Seasons", ""), ("schedule", "../round_1"),
+                                      ("schedule", "Round_1")])
+def test_entity_payload_rejects_names_that_are_not_slice_names(canon: Store, key: str, sub: str) -> None:
+    with pytest.raises(LayoutError):
+        canon.entities.payload(Ref.season(17, 96668), key, sub)
+    with pytest.raises(LayoutError):
+        canon.entities.slice(Ref.season(17, 96668), key, sub)
+
+
+def test_tournaments(canon: Store) -> None:
+    found = canon.entities.tournaments()
+
+    assert [(row.id, row.name, row.sport, row.slug) for row in found] == [
+        (19, "FA Cup", "football", "fa-cup"), (8, "LaLiga", "football", "laliga"), (132, "NBA", "basketball", "nba"),
+        (17, "Premier League", "football", "premier-league"), (2361, "Wimbledon, Men", "tennis", "wimbledon-men")]
+    assert all(isinstance(row, TournamentRow) and row.updated_at == BASE for row in found)
+    assert [row.id for row in canon.entities.tournaments(sport="football")] == [19, 8, 17]
+    assert [row.id for row in canon.entities.tournaments(sport="football", limit=2)] == [19, 8]
+    assert [row.id for row in canon.entities.tournaments(text="LIGA")] == [8]
+    assert [row.id for row in canon.entities.tournaments(text="l", sport="football")] == [8, 17]
+    assert canon.entities.tournaments(text="%") == [] and canon.entities.tournaments(sport="handball") == []
+    assert canon.entities.tournament(17) == found[3]
+    assert canon.entities.tournament(35) is None  # yapılandırılmış ama verisi olmayan lig
+    with pytest.raises(ValueError):
+        canon.entities.tournaments(limit=0)
+
+
+def test_seasons_newest_first(canon: Store, old: Store) -> None:
+    found = canon.entities.seasons(17)
+
+    assert [(row.id, row.name, row.year, row.listed, row.position) for row in found] == [
+        (96668, "Premier League 26/27", "26/27", True, 0), (76986, "Premier League 25/26", "25/26", True, 1),
+        (61627, "Premier League 24/25", "24/25", True, 2)]
+    assert all(isinstance(row, SeasonRow) and row.tournament_id == 17 for row in found)
+    assert found[0].sort_key > found[1].sort_key > found[2].sort_key
+    assert canon.entities.season(76986) == found[1]
+    assert canon.entities.season(1) is None and canon.entities.seasons(35) == []
+    # sezon listesi olan ama hiç maçı olmayan turnuva: turnuva satırı yok, sezonları var
+    assert old.entities.tournament(2361) is None
+    assert [(row.id, row.listed) for row in old.entities.seasons(2361)] == [(79116, True)]
+    # aynı turnuvanın iki liste dosyasından yenisi geçerli: 26/27 de listede
+    assert [row.id for row in old.entities.seasons(17)] == [96668, 76986, 61627]
+
+
+def test_a_season_known_only_from_events_is_not_listed(tmp_path: Path) -> None:
+    fx = sf.build_fixture("legacy", tmp_path / "data")
+    build_catalog(fx.data_dir)  # lig adları verilmedi: `LaLiga_seasons.json` çözülemez, CSV geçerli olur
+    store = open_store(fx.data_dir)
+
+    assert [(row.id, row.listed, row.position) for row in store.entities.seasons(8)] == [(77559, True, 0)]
+    friendly = store.entities.season(sf.NO_SEASON.id)
+    assert friendly is None or friendly.listed is False
+
+
+def test_participants(canon: Store) -> None:
+    arsenal = canon.entities.participants(text="ARSENAL")
+
+    assert [(row.name, row.sport) for row in arsenal] == [("Arsenal", "football")]
+    assert isinstance(arsenal[0], ParticipantRow)
+    assert arsenal[0].id == canon.events.get(ARS).home_id  # type: ignore[union-attr]
+    assert [row.name for row in canon.entities.participants(text="manchester")] == [
+        "Manchester City", "Manchester United"]
+    basketball = [row.name for row in canon.entities.participants(sport="basketball", limit=500)]
+    assert basketball[:3] == ["Atlanta Hawks", "Boston Celtics", "Brooklyn Nets"] and len(basketball) == 12
+    assert [row.name for row in canon.entities.participants(text="EN", sport="basketball", limit=2)] == [
+        "Denver Nuggets", "Golden State Warriors"]  # üçüncüsü (Phoenix Suns) sınırın dışında
+    assert len(canon.entities.participants(sport="tennis", limit=500)) == 12
+    assert len(canon.entities.participants()) == 50 and len(canon.entities.participants(limit=500)) > 50
+    names = [row.name for row in canon.entities.participants(limit=500)]
+    assert names == sorted(names, key=lambda name: name.casefold())
+    assert canon.entities.participants(ids=[arsenal[0].id, 1]) == arsenal
+    assert canon.entities.participants(ids=[arsenal[0].id], sport="tennis") == []
+    with pytest.raises(ValueError):
+        canon.entities.participants(ids=["1"])  # type: ignore[list-item]
+
+
+def test_sport_of_tournament(own: Tuple[sf.LegacyFixture, Store]) -> None:
+    _, store = own
+
+    assert store.entities.sport_of_tournament(17) == "football"
+    assert store.entities.sport_of_tournament(132) == "basketball"
+    assert store.entities.sport_of_tournament(35) is None and store.entities.sport_of_tournament(1) is None
+    # turnuva satırı sporu bilmiyorsa (ya da satır yoksa) maçlarında en çok geçen spor
+    with store._catalog.write() as conn:
+        conn.execute("UPDATE tournaments SET sport = NULL WHERE id = 132")
+        conn.execute("DELETE FROM tournaments WHERE id = 2361")
+        conn.execute("UPDATE events SET sport = 'tennis' WHERE id = ?", (NBA_B,))
+        conn.execute("UPDATE events SET sport = '' WHERE id = ?", (NBA_VOID,))
+    assert store.entities.sport_of_tournament(132) == "basketball"
+    assert store.entities.sport_of_tournament(2361) == "tennis"
+    assert store.entities.tournament(132).sport is None  # type: ignore[union-attr]
+
+
+# --- EntityStore: dilimler ve yükler ----------------------------------------------------------------------
+
+def test_season_list_slice_and_payload(built: Dict[str, sf.LegacyFixture], canon: Store) -> None:
+    ref = Ref.tournament(17)
+    stored = (built["canonical"].data_dir / "seasons" / "17_Premier_League_seasons.json").read_bytes()
+    info = canon.entities.slice(ref, "seasons")
+
+    assert canon.entities.slices(ref) == [info]
+    assert (info.ref, info.key, info.sub, info.state, info.has_payload) == (ref, "seasons", "", "ok", True)
+    assert info.fetched_at == info.checked_at == at(BASE) and info.stored_bytes == len(stored)
+    payload = canon.entities.payload(ref, "seasons")
+    assert payload == json.loads(stored)
+    assert [season["id"] for season in payload["seasons"]] == [96668, 76986, 61627]
+    assert canon.entities.payload(ref, "seasons", raw=True) == stored
+    assert canon.entities.payload(Ref.tournament(35), "seasons") is None
+    assert canon.entities.payload(ref, "standings", "total") is None
+    assert canon.entities.slice(ref, "standings", "total").state == "not_requested"
+    assert canon.entities.slices(Ref.team(3928)) == [] and canon.entities.slices(Ref.tournament(35)) == []
+
+
+def test_schedule_slices_and_payloads(built: Dict[str, sf.LegacyFixture], canon: Store) -> None:
+    data_dir = built["canonical"].data_dir
+    season = Ref.season(17, 96668)
+    found = canon.entities.slices(season)
+
+    assert [(info.key, info.sub, info.state, dict(info.meta)) for info in found] == [
+        ("schedule", "round_1", "ok", {"complete": True}), ("schedule", "round_2", "ok", {"complete": False}),
+        ("schedule", "round_3", "ok", {"complete": False})]
+    assert all(info.ref == season and info.has_payload for info in found)
+    # tur dosyası: `_complete` bizim eklediğimiz anahtardır, yükte yoktur (meta'dadır)
+    stored = json.loads((data_dir / PL_MATCHES / "round_1.json").read_bytes())
+    payload = canon.entities.payload(season, "schedule", "round_1")
+    assert stored["_complete"] is True and "_complete" not in payload
+    assert payload == {key: value for key, value in stored.items() if key != "_complete"}
+    assert [event["id"] for event in payload["events"]] == [ARS, LIV, LEE, BRE]
+    assert canon.entities.payload(season, "schedule", "round_1", raw=True) == codec.canonical_bytes(payload)
+    assert canon.entities.slice(season, "schedule", "round_2").meta == {"complete": False}
+    assert canon.entities.payload(season, "schedule", "round_4") is None
+    assert canon.entities.payload(season, "schedule") is None
+    # olay sayfası: dosya olduğu gibi yüktür
+    nba = Ref.season(132, 80229)
+    page = (data_dir / "matches/132_NBA/80229_NBA_26_27/events_last_0.json").read_bytes()
+    assert [(info.sub, dict(info.meta)) for info in canon.entities.slices(nba)] == [
+        ("last_0", {"filtered": True}), ("last_1", {"filtered": True})]
+    assert canon.entities.payload(nba, "schedule", "last_0") == json.loads(page)
+    assert canon.entities.payload(nba, "schedule", "last_0", raw=True) == page
+    assert canon.entities.payload(nba, "schedule", "last_0")["hasNextPage"] is True
+    # kupa turu: alt anahtarda tur adı da var
+    assert [info.sub for info in canon.entities.slices(Ref.season(19, 97110))] == [
+        "round_28_semifinals", "round_29_final"]
+    # sezonun turnuvası okuma için gerekmez
+    assert canon.entities.slices(Ref("season", 96668)) == [dataclasses.replace(info, ref=Ref("season", 96668))
+                                                          for info in found]
+
+
+def test_season_list_that_lives_only_in_the_csv(tmp_path: Path) -> None:
+    """İlk sürümün `league_seasons.csv` dosyası: JSON listesi olmayan turnuvanın listesi ondan kurulur."""
+    fx = sf.build_fixture("legacy", tmp_path / "data")
+    build_catalog(fx.data_dir)  # lig adları verilmedi: `LaLiga_seasons.json` çözülemez
+    store = open_store(fx.data_dir)
+    ref = Ref.tournament(8)
+
+    info = store.entities.slice(ref, "seasons")
+    assert (info.state, info.has_payload, info.stored_bytes) == ("ok", True, None)
+    payload = store.entities.payload(ref, "seasons")
+    assert payload == {"seasons": [{"id": 77559, "name": "LaLiga 25/26", "year": "25/26"}]}
+    assert store.entities.payload(ref, "seasons", raw=True) == codec.canonical_bytes(payload)
+    path, = store._catalog.connection().execute(
+        "SELECT path FROM entity_slices WHERE kind = 'tournament' AND entity_id = 8").fetchone()
+    assert path == "league_seasons.csv"
+    (fx.data_dir / "league_seasons.csv").unlink()
+    with pytest.raises(PayloadMissing):
+        store.entities.payload(ref, "seasons")
+
+
+def test_entity_payload_in_the_v3_layout(own: Tuple[sf.LegacyFixture, Store]) -> None:
+    """v3 varlık dizinlerini henüz hiçbir şey yazmıyor; okuyucu satırın gösterdiği dizinden okur."""
+    _, store = own
+    ref = Ref.season(17, 96668)
+    directory = layout.entity_dir("season", 96668, 17)
+    standings = {"standings": [{"rows": [{"team": {"id": 3928}, "position": 1}]}]}
+    encoded = codec.write_payload(layout.resolve(store.data_dir, layout.slice_path(directory, "standings", "total")),
+                                  standings)
+    with store._catalog.write():
+        store._catalog.upsert("entity_slices", [{
+            "kind": "season", "entity_id": 96668, "key": "standings", "sub": "total", "state": "ok", "has_payload": 1,
+            "fetched_at": NOW, "checked_at": NOW, "stored_bytes": encoded.stored_bytes, "raw_bytes": encoded.raw_bytes,
+            "meta_json": '{"round": 2}', "layout": "v3", "path": directory}])
+
+    assert store.entities.payload(ref, "standings", "total") == standings
+    assert store.entities.payload(ref, "standings", "total", raw=True) == codec.canonical_bytes(standings)
+    info = store.entities.slice(ref, "standings", "total")
+    assert (info.state, info.fetched_at, info.raw_bytes) == ("ok", at(NOW), encoded.raw_bytes)
+    assert dict(info.meta) == {"round": 2}
+    assert [(s.key, s.sub) for s in store.entities.slices(ref)] == [
+        ("schedule", "round_1"), ("schedule", "round_2"), ("schedule", "round_3"), ("standings", "total")]
+    assert store.entities.payload(ref, "standings", "home") is None
+
+
+def test_entity_calls_with_an_event_ref_go_to_the_event_store(canon: Store) -> None:
+    ref = Ref.event(CRY)
+
+    assert canon.entities.slices(ref) == canon.events.slices(CRY)
+    assert canon.entities.slice(ref, "incidents") == canon.events.slice(CRY, "incidents")
+    assert canon.entities.payload(ref, "event") == canon.events.payload(CRY)
+    assert canon.entities.payload(ref, "statistics", raw=True) == canon.events.payload(CRY, "statistics", raw=True)
+
+
+def test_entity_reader_retries_once_when_the_file_was_replaced(own: Tuple[sf.LegacyFixture, Store],
+                                                               monkeypatch: pytest.MonkeyPatch) -> None:
+    """Sezon listesi başka bir adla yeniden yazılır ve eskisi silinir: okuyucu yeni dosyayı bulur."""
+    fx, store = own
+    ref = Ref.tournament(17)
+    expected = store.entities.payload(ref, "seasons")
+    original = store.entities._read_file
+    seen: List[str] = []
+
+    def replaced_meanwhile(where: Any, *args: Any) -> Any:
+        if not seen:
+            old_file = fx.data_dir / "seasons" / "17_Premier_League_seasons.json"
+            shutil.copy2(old_file, fx.data_dir / "seasons" / "17_seasons.json")
+            old_file.unlink()
+            assert admin_of(store, fx.leagues).reconcile().changed
+        seen.append(where.path)
+        return original(where, *args)
+
+    monkeypatch.setattr(store.entities, "_read_file", replaced_meanwhile)
+
+    assert store.entities.payload(ref, "seasons") == expected
+    assert seen == ["seasons/17_Premier_League_seasons.json", "seasons/17_seasons.json"]
+
+
+def test_entity_payload_missing_and_corrupt(own: Tuple[sf.LegacyFixture, Store]) -> None:
+    fx, store = own
+    (fx.data_dir / PL_MATCHES / "round_1.json").unlink()
+    (fx.data_dir / PL_MATCHES / "round_2.json").write_bytes(b'{"events": [')
+    (fx.data_dir / PL_MATCHES / "round_3.json").write_bytes(b"[]")
+    season = Ref.season(17, 96668)
+
+    with pytest.raises(PayloadMissing):
+        store.entities.payload(season, "schedule", "round_1")
+    with pytest.raises(PayloadMissing):
+        store.entities.payload(season, "schedule", "round_1", raw=True)
+    with pytest.raises(PayloadCorrupt):
+        store.entities.payload(season, "schedule", "round_2")
+    with pytest.raises(PayloadCorrupt):
+        store.entities.payload(season, "schedule", "round_3")  # nesne değil
+
+
+def test_plan_entity_queries(synthetic: Store, explain: Any) -> None:
+    seasons, = explain(lambda: synthetic.entities.seasons(17))
+    by_sport, = explain(lambda: synthetic.entities.tournaments(sport="football"))
+    names, = explain(lambda: synthetic.entities.participants(text="17005"))
+    slices, = explain(lambda: synthetic.entities.slices(Ref.season(17, 171)))
+
+    assert plans.uses(seasons, "seasons", "seasons_tournament") and not _sorts(seasons)
+    assert plans.uses(by_sport, "tournaments", "tournaments_sport") and not _sorts(by_sport)
+    assert plans.uses(names, "participants", "participants_name") and not _sorts(names)
+    assert plans.by_primary_key(slices, "entity_slices")
+    # kimlik listesi sabit olarak yazılır: bağlı parametre sınırını aşan liste de çalışır
+    assert len(synthetic.entities.participants(ids=list(range(1000, 41_000)), limit=5000)) == 800
