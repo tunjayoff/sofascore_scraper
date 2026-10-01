@@ -1,14 +1,18 @@
 """
-Dilim sonucu (SliceOutcome) ve "bu yanıtta veri var mı" yüklemleri: karakterizasyon tabloları.
+src/slices.py: sonuç tipi (Outcome) ve "bu yanıtta veri var mı" yüklemleri.
 
 Beklenen değerler tabloya elle yazıldı ve yüklemler src/slices.py'ye taşınmadan ÖNCEKİ kodla
 (MatchDataFetcher metotları, src/match_data_fetcher.py'deki SliceOutcome) doğrulandı. Aynı tablolar
-IMPLEMENTATIONS'taki her uygulamaya uygulanır: bir uygulama eklemek tabloyu değiştirmez.
+IMPLEMENTATIONS'taki her uygulamaya uygulanır: MatchDataFetcher'ın eski metotları ile src.slices'taki
+işlevler aynı tablodan geçer, yani aynı sonucu verir.
 """
 from __future__ import annotations
 
 import dataclasses
+import datetime as dt
 import json
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -22,11 +26,14 @@ from src.exceptions import (
     RateLimitError,
     ResourceNotFoundError,
 )
+from src import match_data_fetcher, slices
 from src.match_data_fetcher import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, MatchDataFetcher, SliceOutcome
+from src.slices import SLICE_SKIPPED, Outcome
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
 
-# Kendi yüklemi olan dilimler: anahtar → MatchDataFetcher'daki metot adı
+# Kendi yüklemi olan dilimler: anahtar → MatchDataFetcher'daki metot adı. src.slices'taki işlev aynı adı
+# baştaki alt çizgi olmadan taşır.
 TYPED_METHODS = {
     "statistics": "_statistics_has_data",
     "lineups": "_has_lineups_data_dict",
@@ -54,9 +61,16 @@ def _method_direct(key: str, d: Dict[str, Any]) -> bool:
     return getattr(_FETCHER, name)(d) if name else _FETCHER.match_detail_slice_present(key, d)
 
 
+def _function_direct(key: str, d: Dict[str, Any]) -> bool:
+    name = TYPED_METHODS.get(key)
+    return getattr(slices, name.lstrip("_"))(d) if name else slices.match_detail_slice_present(key, d)
+
+
 IMPLEMENTATIONS: List[Tuple[str, Predicate]] = [
     ("method-dispatch", _method_dispatch),
     ("method-direct", _method_direct),
+    ("function-dispatch", slices.match_detail_slice_present),
+    ("function-direct", _function_direct),
 ]
 
 # İçinde veri olan gerçekçi yanıtlar (tests/test_data_integrity.py'deki PRESENT ile aynı biçimler)
@@ -273,3 +287,72 @@ def test_outcome_is_frozen_and_compares_by_value():
     assert outcome != SliceOutcome(SLICE_EMPTY, reason="empty")
     with pytest.raises(dataclasses.FrozenInstanceError):
         outcome.status = SLICE_OK  # type: ignore[misc]
+
+
+# --- src/slices.py'ye taşıma ---------------------------------------------------------------
+
+def test_moved_names_stay_importable_from_match_data_fetcher():
+    assert slices.SliceOutcome is Outcome
+    assert match_data_fetcher.SliceOutcome is Outcome
+    for name in ("SLICE_OK", "SLICE_EMPTY", "SLICE_FAILED"):
+        assert getattr(match_data_fetcher, name) is getattr(slices, name)
+    for method in list(TYPED_METHODS.values()) + ["match_detail_slice_present"]:
+        assert callable(getattr(MatchDataFetcher, method))
+        assert callable(getattr(slices, method.lstrip("_")))
+
+
+def test_outcome_fields_and_new_defaults():
+    names = [f.name for f in dataclasses.fields(Outcome)]
+    # İlk dört alan eski SliceOutcome'ın sırasıdır (konumla kurulan sonuçlar bozulmasın)
+    assert names == ["status", "data", "reason", "http_status", "fetched_at", "via", "meta"]
+    bare = Outcome(SLICE_OK)
+    assert (bare.fetched_at, bare.via, bare.meta) == (None, None, None)
+    # Yeni alanlar verilmediğinde eşitlik eskisi gibidir
+    assert Outcome(SLICE_EMPTY, reason="empty") == SliceOutcome(SLICE_EMPTY, None, "empty", None)
+
+
+def test_outcome_carries_new_fields():
+    at = dt.datetime(2026, 10, 1, 12, 0, tzinfo=dt.timezone.utc)
+    outcome = Outcome(SLICE_OK, data={"events": []}, fetched_at=at, via="bridge", meta={"complete": True})
+    assert (outcome.fetched_at, outcome.via, outcome.meta) == (at, "bridge", {"complete": True})
+    assert outcome != Outcome(SLICE_OK, data={"events": []})
+    assert outcome == dataclasses.replace(
+        Outcome(SLICE_OK, data={"events": []}, via="bridge"), fetched_at=at, meta={"complete": True}
+    )
+
+
+def test_skipped_is_a_status_of_its_own():
+    assert SLICE_SKIPPED == "skipped"
+    skipped = Outcome(SLICE_SKIPPED, reason="not_selected")
+    assert skipped.failed is False
+    assert skipped.status not in (SLICE_OK, SLICE_EMPTY, SLICE_FAILED)
+
+
+def test_from_error_does_not_set_new_fields():
+    for exc in (ResourceNotFoundError("x"), RateLimitError(status_code=429, url="/x")):
+        outcome = Outcome.from_error(exc)
+        assert (outcome.fetched_at, outcome.via, outcome.meta) == (None, None, None)
+
+
+_PURITY_PROBE = """
+import sys
+import src.slices
+print(",".join(sorted(m for m in sys.modules if m == "src" or m.startswith("src."))))
+print(",".join(sorted(m for m in ("pandas", "tqdm", "rich", "dotenv", "curl_cffi") if m in sys.modules)))
+"""
+
+
+def test_slices_module_is_pure():
+    """
+    src.slices import edildiğinde çekici, istek katmanı, günlükçü ve ağır kitaplıklar yüklenmez: depo ve
+    servisler yüklemleri bunlara bağlanmadan çağırabilir. Temiz bir yorumlayıcıda bakılır (bu süreçte
+    diğer testler hepsini zaten yüklemiş olur).
+    """
+    root = Path(__file__).resolve().parent.parent
+    result = subprocess.run(
+        [sys.executable, "-c", _PURITY_PROBE], cwd=root, capture_output=True, text=True, timeout=60
+    )
+    assert result.returncode == 0, result.stderr
+    lines = result.stdout.splitlines()
+    assert lines[0].split(",") == ["src", "src.exceptions", "src.slices"]
+    assert lines[1:] in ([], [""])
