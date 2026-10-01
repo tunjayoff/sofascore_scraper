@@ -14,9 +14,11 @@ dizinidir ve bu üç dosya silinince yine öyle olur.
     sürümleridir (bilgi). Yetkili değerler dosyaların kendisindedir ve onlar denetlenir: state.db koddan
     yeniyse SchemaTooNew, katalog farklıysa yeniden kurulur (`StoreInfo.catalog_rebuild_reason`).
 
-Bu adımda cephede kilitler (`Store.lease`), çalışma zamanı bilgileri (`Store.runtime`), olay akışları
-(`Store.streams`), izleyici durumu (`Store.watch`) ve `Store.info` var; okuma ve yazma API'leri (events,
-entities, follows, ...) kendi plan maddeleriyle eklenir.
+Bu adımda cephede kilitler (`Store.lease`), çalışma zamanı bilgileri (`Store.runtime`), takipler
+(`Store.follows`), olay akışları (`Store.streams`), izleyici durumu (`Store.watch`), `Store.info` ve
+kataloğun maçlar için okuma API'si (`Store.events`) var. Okuma API'si kataloğa sorar; `open_store`
+kataloğu kurmaz (şeması yaratılır), kuran ve güncel tutan dizinleyicidir. Öteki okuma API'leri (entities,
+changes) ve yazma API'leri (put, history, migrate, export, backup) kendi plan maddeleriyle eklenir.
 Store içindeki modüller `_state`, `_catalog` ve `_leases` özniteliklerini kullanır; paket dışındaki kod
 yalnızca açık yöntemleri.
 """
@@ -37,6 +39,7 @@ from src.store import files, layout
 from src.store.catalog import CATALOG_SCHEMA, Catalog, CatalogState, catalog_path
 from src.store.derive import DERIVE_VERSION
 from src.store.errors import PayloadCorrupt, PayloadMissing, SchemaTooNew, StoreError
+from src.store.events import EventStore
 from src.store.follows import FollowStore
 from src.store.jobs import import_legacy_jobs
 from src.store.lease import Lease, LeaseInfo, LeaseManager
@@ -182,6 +185,7 @@ class Store:
             self.runtime = RuntimeFacts(self._state)
             self.streams = StreamLog(self)
             self.watch = WatchStateStore(self)
+            self.events = EventStore(self)
         except BaseException:
             self.close()
             raise

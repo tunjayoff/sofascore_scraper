@@ -1,0 +1,19 @@
+# src.store.SliceInfo
+# kaynak: src/store/events.py
+@dataclass(frozen=True)
+class SliceInfo:
+    ref: Ref
+    key: str
+    sub: str
+    state: str
+    has_payload: bool
+    fetched_at: Optional[datetime]
+    checked_at: Optional[datetime]
+    empty_count: int
+    unverified_empty_count: int
+    error: Optional[SliceError]
+    stored_bytes: Optional[int]
+    raw_bytes: Optional[int]
+    history_count: int
+    meta: Mapping[str, Any] = field(default_factory=dict)
+    def settled_empty(self, threshold: int = DEFAULT_EMPTY_THRESHOLD) -> bool

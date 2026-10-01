@@ -1,0 +1,10 @@
+# src.store.Scope
+# kaynak: src/store/events.py
+@dataclass(frozen=True)
+class Scope:
+    sport: Optional[str] = None
+    tournament_ids: Sequence[int] = ()
+    season_ids: Sequence[int] = ()
+    event_ids: Sequence[int] = ()
+    participant_ids: Sequence[int] = ()
+    followed: bool = False

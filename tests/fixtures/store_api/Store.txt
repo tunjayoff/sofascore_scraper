@@ -8,6 +8,7 @@ class Store:
     self.runtime
     self.streams
     self.watch
+    self.events
     @property
     def closed(self) -> bool
     @property

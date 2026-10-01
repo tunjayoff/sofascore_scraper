@@ -1,0 +1,7 @@
+# src.store.EventState
+# kaynak: src/store/events.py
+@dataclass(frozen=True)
+class EventState:
+    event: EventRow
+    slices: Tuple[SliceInfo, ...]
+    def slice(self, key: str, sub: str = '') -> SliceInfo

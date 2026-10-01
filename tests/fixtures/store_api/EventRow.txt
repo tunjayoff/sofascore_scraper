@@ -1,0 +1,47 @@
+# src.store.EventRow
+# kaynak: src/store/events.py
+@dataclass(frozen=True)
+class EventRow:
+    id: int
+    sport: str
+    category_id: Optional[int]
+    tournament_id: Optional[int]
+    stage_id: Optional[int]
+    stage_name: Optional[str]
+    season_id: Optional[int]
+    round: Optional[int]
+    round_name: Optional[str]
+    round_slug: Optional[str]
+    start_ts: Optional[int]
+    status_type: Optional[str]
+    status_code: Optional[int]
+    status_description: Optional[str]
+    status_class: str
+    home_id: Optional[int]
+    away_id: Optional[int]
+    home_name: Optional[str]
+    away_name: Optional[str]
+    home_score: Optional[int]
+    away_score: Optional[int]
+    home_score_current: Optional[int]
+    away_score_current: Optional[int]
+    winner_code: Optional[int]
+    scores_json: Optional[str]
+    slug: Optional[str]
+    custom_id: Optional[str]
+    observed_at: Optional[int]
+    change_ts: Optional[int]
+    observed_gap: Optional[int]
+    status_regressed: bool
+    tier_hint: Optional[int]
+    stale: bool
+    row_source: str
+    listed_in: Optional[str]
+    has_event_payload: bool
+    layout: Optional[str]
+    path: Optional[str]
+    legacy_path: Optional[str]
+    sig: Optional[str]
+    first_seen_at: int
+    updated_at: int
+    def scores(self) -> Optional[Dict[str, Any]]

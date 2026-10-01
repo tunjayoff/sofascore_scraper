@@ -1,0 +1,7 @@
+# src.store.Page
+# kaynak: src/store/events.py
+@dataclass(frozen=True)
+class Page(Generic[T]):
+    items: Tuple[T, ...]
+    next_cursor: Optional[str] = None
+    total: Optional[int] = None

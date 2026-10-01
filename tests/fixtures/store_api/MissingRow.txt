@@ -1,0 +1,8 @@
+# src.store.MissingRow
+# kaynak: src/store/events.py
+@dataclass(frozen=True)
+class MissingRow:
+    event_id: int
+    sport: str
+    has_event_payload: bool
+    missing_keys: Tuple[str, ...]

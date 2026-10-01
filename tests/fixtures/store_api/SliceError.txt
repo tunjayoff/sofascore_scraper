@@ -1,0 +1,8 @@
+# src.store.SliceError
+# kaynak: src/store/events.py
+@dataclass(frozen=True)
+class SliceError:
+    reason: str
+    http_status: Optional[int] = None
+    at: Optional[datetime] = None
+    count: int = 1

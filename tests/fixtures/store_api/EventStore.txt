@@ -1,0 +1,18 @@
+# src.store.EventStore
+# kaynak: src/store/events.py
+class EventStore:
+    def __init__(self, store: 'Store') -> None
+    def get(self, event_id: int) -> Optional[EventRow]
+    def list(self, q: EventQuery, *, with_total: bool = False) -> Page[EventRow]
+    def count(self, q: EventQuery) -> int
+    def iter(self, q: EventQuery, *, batch: int = DEFAULT_BATCH) -> Iterator[EventRow]
+    def payload(self, event_id: int, key: str = EVENT_KEY, sub: str = '', *, raw: bool = False) -> Any
+    def payloads(self, event_id: int, keys: Optional[Iterable[str]] = None) -> Dict[str, Any]
+    def slices(self, event_id: int) -> List[SliceInfo]
+    def slice(self, event_id: int, key: str, sub: str = '') -> SliceInfo
+    def states(self, scope: Optional[Scope] = None, *, status_classes: Sequence[str] = (), batch: int = DEFAULT_BATCH) -> Iterator[EventState]
+    def missing(self, scope: Optional[Scope], required: Mapping[str, Sequence[str]], *, status_classes: Sequence[str] = FINISHED_CLASSES, threshold: int = DEFAULT_EMPTY_THRESHOLD, limit: Optional[int] = None) -> Iterator[MissingRow]
+    def refresh_candidates(self, *, now: float, window_s: float, min_interval_s: float, scope: Optional[Scope] = None, status_classes: Sequence[str] = (), include_unobserved: bool = False) -> List[int]
+    def stale(self, scope: Optional[Scope] = None) -> List[int]
+    def open_events(self, *, started_before: float, scope: Optional[Scope] = None) -> List[int]
+    def summary(self, scope: Optional[Scope] = None) -> List[TournamentSummary]

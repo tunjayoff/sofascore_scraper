@@ -1,0 +1,13 @@
+# src.store.TournamentSummary
+# kaynak: src/store/events.py
+@dataclass(frozen=True)
+class TournamentSummary:
+    tournament_id: Optional[int]
+    events: int
+    with_payload: int
+    finished: int
+    seasons: int
+    by_status: Mapping[str, int]
+    first_start_ts: Optional[int]
+    last_start_ts: Optional[int]
+    updated_at: Optional[int]
