@@ -1,0 +1,49 @@
+{
+ "before": {
+  "markers": {
+   "match_details/_no_tournament/tennis/15500002": {
+    "_unavailable.json": {"pregame_form": 2, "lineups": 2, "incidents": 2}
+   }
+  },
+  "_needs_detail_fetch": {"14025001": "full", "14025002": "full", "15000001": "none", "15000002": "full", "15500001": "refresh", "15500002": "none", "15500003": "refill", "16837335": "none", "16867839": "none", "17018554": "full", "17018572": "full", "17099711": "none", "17185003": "refill"}
+ },
+ "reset_unavailable_markers()": {
+  "result": {"matches": 1, "slices": 3, "scanned": 1},
+  "markers": {},
+  "_needs_detail_fetch": {"14025001": "full", "14025002": "full", "15000001": "none", "15000002": "full", "15500001": "refresh", "15500002": "refill", "15500003": "refill", "16837335": "none", "16867839": "none", "17018554": "full", "17018572": "full", "17099711": "none", "17185003": "refill"},
+  "second_call": {"matches": 0, "slices": 0, "scanned": 0}
+ },
+ "reset_unavailable_markers(include_confirmed=True)": {
+  "result": {"matches": 1, "slices": 3, "scanned": 1},
+  "markers": {},
+  "_needs_detail_fetch": {"14025001": "full", "14025002": "full", "15000001": "none", "15000002": "full", "15500001": "refresh", "15500002": "refill", "15500003": "refill", "16837335": "none", "16867839": "none", "17018554": "full", "17018572": "full", "17099711": "none", "17185003": "refill"},
+  "second_call": {"matches": 0, "slices": 0, "scanned": 0}
+ },
+ "reset_unavailable_markers(league_id=17)": {
+  "result": {"matches": 0, "slices": 0, "scanned": 0},
+  "markers": {
+   "match_details/_no_tournament/tennis/15500002": {
+    "_unavailable.json": {"pregame_form": 2, "lineups": 2, "incidents": 2}
+   }
+  },
+  "second_call": {"matches": 0, "slices": 0, "scanned": 0}
+ },
+ "reset_unavailable_markers(league_id=8)": {
+  "result": {"matches": 0, "slices": 0, "scanned": 0},
+  "markers": {
+   "match_details/_no_tournament/tennis/15500002": {
+    "_unavailable.json": {"pregame_form": 2, "lineups": 2, "incidents": 2}
+   }
+  },
+  "second_call": {"matches": 0, "slices": 0, "scanned": 0}
+ },
+ "reset_unavailable_markers(league_id=2361)": {
+  "result": {"matches": 0, "slices": 0, "scanned": 0},
+  "markers": {
+   "match_details/_no_tournament/tennis/15500002": {
+    "_unavailable.json": {"pregame_form": 2, "lineups": 2, "incidents": 2}
+   }
+  },
+  "second_call": {"matches": 0, "slices": 0, "scanned": 0}
+ }
+}

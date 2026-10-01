@@ -1,0 +1,409 @@
+{
+ "processed_files_before": [],
+ "all": {
+  "status": 200,
+  "content_type": "text/csv; charset=utf-8",
+  "content_disposition": "attachment; filename=\"all_matches_<ts>.csv\"",
+  "columns": [
+   "match_id", "league_folder", "season_folder", "tournament_name", "season_name", "round", "home_team_name",
+   "away_team_name", "home_score_ft", "away_score_ft", "match_date", "away_aces", "away_ballPossession",
+   "away_doubleFaults", "away_form", "away_formation", "away_freeThrowsScored", "away_points", "away_position",
+   "away_rating", "away_rebounds", "away_score_ht", "away_starting_xi_count", "away_streak_no_losses",
+   "away_streak_no_losses_continued", "away_substitutes_count", "away_team_id", "away_totalShotsOnGoal",
+   "h2h_away_wins", "h2h_draws", "h2h_home_wins", "home_aces", "home_ballPossession", "home_doubleFaults", "home_form",
+   "home_formation", "home_freeThrowsScored", "home_points", "home_position", "home_rating", "home_rebounds",
+   "home_score_ht", "home_starting_xi_count", "home_streak_wins", "home_streak_wins_continued",
+   "home_substitutes_count", "home_team_id", "home_totalShotsOnGoal", "lineups_confirmed", "referee", "season_id",
+   "season_year", "status", "tournament_id", "venue"
+  ],
+  "rows": [
+   [
+    "14025001", "17_Premier_League", "Premier_League_25_26", "Premier League", "Premier League 25/26", "38",
+    "Southampton", "Leicester City", "2", "1", "1779595200", "", "47", "", "L_W_D_D_W", "", "", "9", "3", "6.38", "",
+    "1", "1", "4", "False", "1", "1090", "11", "1", "1", "1", "", "44", "", "W_D_W_L_W", "", "", "11", "14", "6.31",
+    "", "2", "1", "3", "True", "1", "3178", "8", "True", "Referee 1", "76986", "25/26", "Ended", "17",
+    "Southampton Stadium"
+   ],
+   [
+    "16484334", "132_NBA", "NBA_26_27", "NBA", "NBA 26/27", "", "Boston Celtics", "Denver Nuggets", "99", "116",
+    "1789392600", "", "", "", "L_W_D_D_W", "", "25", "17", "14", "6.31", "43", "24", "1", "7", "True", "1", "7889", "",
+    "0", "2", "4", "", "", "", "W_D_W_L_W", "", "22", "34", "7", "6.24", "40", "24", "1", "4", "True", "1", "3279", "",
+    "True", "", "80229", "26/27", "Ended", "132", ""
+   ],
+   [
+    "16837335", "17_Premier_League", "Premier_League_26_27", "Premier League", "Premier League 26/27", "1", "Arsenal",
+    "Chelsea", "3", "1", "1789495200", "", "61", "", "L_W_D_D_W", "", "", "18", "10", "6.52", "", "1", "1", "3",
+    "False", "1", "7846", "16", "0", "3", "0", "", "58", "", "W_D_W_L_W", "", "", "25", "10", "6.45", "", "0", "1",
+    "5", "True", "1", "3928", "13", "True", "Referee 35", "96668", "26/27", "Ended", "17", "Arsenal Stadium"
+   ],
+   [
+    "16867839", "17_Premier_League", "Premier_League_26_27", "Premier League", "Premier League 26/27", "1",
+    "Leeds United", "Fulham", "1", "0", "1790688600", "", "52", "", "L_W_D_D_W", "", "", "22", "16", "6.46", "", "0",
+    "1", "7", "False", "1", "5925", "9", "0", "3", "4", "", "49", "", "W_D_W_L_W", "", "", "19", "4", "6.39", "", "1",
+    "1", "5", "True", "1", "7785", "6", "True", "Referee 39", "96668", "26/27", "Ended", "17", "Leeds United Stadium"
+   ],
+   [
+    "16872361", "17_Premier_League", "Premier_League_26_27", "Premier League", "Premier League 26/27", "2",
+    "Brighton & Hove Albion", "Bournemouth", "1", "1", "1789518600", "", "59", "", "L_W_D_D_W", "", "", "19", "16",
+    "6.68", "", "0", "", "4", "False", "", "7387", "20", "1", "1", "1", "", "56", "", "W_D_W_L_W", "", "", "11", "8",
+    "6.61", "", "0", "", "3", "True", "", "3540", "17", "", "Referee 11", "96668", "26/27", "Ended", "17",
+    "Brighton & Hove Albion Stadium"
+   ],
+   [
+    "16950622", "19_FA_Cup", "FA_Cup_26_27", "FA Cup", "FA Cup 26/27", "28", "Manchester City", "Manchester United",
+    "3", "3", "1789497000", "", "53", "", "L_W_D_D_W", "", "", "30", "9", "6.29", "", "2", "1", "5", "True", "1",
+    "4614", "8", "1", "2", "2", "", "50", "", "W_D_W_L_W", "", "", "32", "5", "6.22", "", "2", "1", "4", "True", "1",
+    "4814", "5", "True", "Referee 22", "97110", "26/27", "AP", "19", "Manchester City Stadium"
+   ],
+   [
+    "16951514", "17_Premier_League", "Premier_League_26_27", "Premier League", "Premier League 26/27", "2",
+    "Crystal Palace", "Nottingham Forest", "0", "0", "1789614900", "", "63", "", "", "", "", "", "", "", "", "0", "",
+    "7", "True", "", "5060", "16", "2", "2", "4", "", "60", "", "", "", "", "", "", "", "", "0", "", "4", "True", "",
+    "4021", "13", "", "Referee 14", "96668", "26/27", "Ended", "17", "Crystal Palace Stadium"
+   ],
+   [
+    "16990001", "8_LaLiga", "LaLiga_26_27", "LaLiga", "LaLiga 26/27", "", "Real Madrid", "Barcelona", "2", "1",
+    "1789704000", "", "57", "", "L_W_D_D_W", "", "", "9", "16", "6.78", "", "1", "1", "4", "False", "1", "9576", "10",
+    "2", "1", "1", "", "54", "", "W_D_W_L_W", "", "", "21", "18", "6.71", "", "2", "1", "3", "True", "1", "3768", "7",
+    "True", "Referee 1", "97532", "26/27", "Ended", "8", "Real Madrid Stadium"
+   ],
+   [
+    "17018554", "17_Premier_League", "Premier_League_26_27", "Premier League", "Premier League 26/27", "1",
+    "Brentford", "Burnley", "0", "2", "1790686800", "", "50", "", "L_W_D_D_W", "", "", "12", "9", "6.11", "", "1", "",
+    "7", "True", "", "1629", "15", "1", "2", "4", "", "47", "", "W_D_W_L_W", "", "", "14", "5", "6.04", "", "0", "",
+    "4", "True", "", "1850", "12", "", "Referee 4", "96668", "26/27", "Ended", "17", "Brentford Stadium"
+   ],
+   [
+    "17018572", "17_Premier_League", "Premier_League_26_27", "Premier League", "Premier League 26/27", "2",
+    "Newcastle United", "Sunderland", "1", "0", "1790683200", "", "", "", "L_W_D_D_W", "", "", "30", "10", "6.29", "",
+    "0", "1", "5", "True", "1", "8714", "", "1", "0", "2", "", "", "", "W_D_W_L_W", "", "", "32", "5", "6.22", "", "0",
+    "1", "2", "True", "1", "9843", "", "True", "Referee 22", "96668", "26/27", "Ended", "17",
+    "Newcastle United Stadium"
+   ],
+   [
+    "17060394", "132_NBA", "NBA_26_27", "NBA", "NBA 26/27", "", "Toronto Raptors", "Brooklyn Nets", "59", "57",
+    "1789599600", "", "", "", "", "", "23", "", "", "", "42", "23", "", "", "", "", "3616", "", "", "", "", "", "", "",
+    "", "", "20", "", "", "", "39", "19", "", "", "", "", "6482", "", "", "", "80229", "26/27", "Abandoned", "132", ""
+   ],
+   [
+    "17078471", "2361_Wimbledon,_Men", "Wimbledon_Men_Singles_2026", "Wimbledon, Men", "Wimbledon Men Singles 2026",
+    "", "Casper Ruud", "Alex de Minaur", "2", "1", "1789408800", "14", "", "8", "", "", "", "", "", "", "", "7", "",
+    "", "", "", "1250", "", "2", "3", "1", "11", "", "5", "", "", "", "", "", "", "", "5", "", "", "", "", "7720", "",
+    "", "", "79116", "2026", "Ended", "2361", ""
+   ],
+   [
+    "17081861", "2361_Wimbledon,_Men", "Wimbledon_Men_Singles_2026", "Wimbledon, Men", "Wimbledon Men Singles 2026",
+    "", "Alexander Zverev", "Ben Shelton", "", "", "1789457400", "", "", "", "", "", "", "", "", "", "", "7", "", "",
+    "", "", "4686", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "6", "", "", "", "", "9999", "", "", "",
+    "79116", "2026", "Retired", "2361", ""
+   ],
+   [
+    "17092269", "132_NBA", "NBA_26_27", "NBA", "NBA 26/27", "", "Miami Heat", "Chicago Bulls", "72", "65",
+    "1789455600", "", "", "", "L_W_D_D_W", "", "23", "27", "12", "6.16", "35", "21", "0", "7", "False", "0", "7630",
+    "", "0", "1", "4", "", "", "", "W_D_W_L_W", "", "20", "19", "10", "6.09", "32", "17", "0", "3", "True", "0",
+    "3597", "", "False", "", "80229", "26/27", "Ended", "132", ""
+   ],
+   [
+    "17099711", "17_Premier_League", "Premier_League_26_27", "Premier League", "Premier League 26/27", "1",
+    "Liverpool", "Everton", "2", "1", "1789444800", "", "63", "", "L_W_D_D_W", "", "", "19", "8", "6.78", "", "1", "1",
+    "4", "False", "1", "4605", "13", "2", "3", "1", "", "60", "", "W_D_W_L_W", "", "", "21", "18", "6.71", "", "2",
+    "1", "5", "True", "1", "5944", "10", "True", "Referee 11", "96668", "26/27", "Ended", "17", "Liverpool Stadium"
+   ],
+   [
+    "17102381", "132_NBA", "NBA_26_27", "NBA", "NBA 26/27", "", "Dallas Mavericks", "Orlando Magic", "", "",
+    "1789734300", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "2876", "", "", "", "", "", "", "", "",
+    "", "", "", "", "", "", "", "", "", "", "", "4423", "", "", "", "80229", "26/27", "Walkover", "132", ""
+   ],
+   [
+    "17148332", "19_FA_Cup", "FA_Cup_26_27", "FA Cup", "FA Cup 26/27", "29", "Manchester City", "Arsenal", "1", "1",
+    "1790102700", "", "48", "", "L_W_D_D_W", "", "", "15", "9", "6.09", "", "0", "1", "5", "True", "1", "3928", "14",
+    "2", "0", "2", "", "45", "", "W_D_W_L_W", "", "", "12", "3", "6.02", "", "0", "1", "2", "True", "1", "4814", "11",
+    "True", "Referee 32", "97110", "26/27", "AET", "19", "Manchester City Stadium"
+   ],
+   [
+    "17184988", "17_Premier_League", "Premier_League_26_27", "Premier League", "Premier League 26/27", "2",
+    "Tottenham Hotspur", "West Ham United", "0", "1", "1790685000", "", "59", "", "L_W_D_D_W", "", "", "21", "13",
+    "6.35", "", "0", "1", "6", "True", "1", "1470", "10", "", "", "", "", "56", "", "W_D_W_L_W", "", "", "38", "11",
+    "6.28", "", "0", "1", "2", "True", "1", "5597", "7", "True", "Referee 38", "96668", "26/27", "Ended", "17",
+    "Tottenham Hotspur Stadium"
+   ],
+   [
+    "17185003", "17_Premier_League", "Premier_League_26_27", "Premier League", "Premier League 26/27", "2",
+    "Aston Villa", "Wolverhampton", "5", "0", "1790687400", "", "53", "", "L_W_D_D_W", "", "", "11", "11", "6.50", "",
+    "0", "", "6", "False", "", "3370", "12", "1", "3", "3", "", "50", "", "W_D_W_L_W", "", "", "23", "8", "6.43", "",
+    "3", "", "5", "True", "", "2203", "9", "", "Referee 3", "96668", "26/27", "Ended", "17", "Aston Villa Stadium"
+   ],
+   [
+    "17203939", "132_NBA", "NBA_26_27", "NBA", "NBA 26/27", "", "Golden State Warriors", "Atlanta Hawks", "81", "62",
+    "1790681400", "", "", "", "L_W_D_D_W", "", "20", "22", "9", "6.86", "42", "6", "1", "7", "False", "1", "3036", "",
+    "1", "3", "4", "", "", "", "W_D_W_L_W", "", "17", "29", "8", "6.79", "39", "28", "1", "5", "True", "1", "7307", "",
+    "True", "", "80229", "26/27", "Ended", "132", ""
+   ],
+   [
+    "17204710", "2361_Wimbledon,_Men", "Wimbledon_Men_Singles_2026", "Wimbledon, Men", "Wimbledon Men Singles 2026",
+    "", "Carlos Alcaraz", "Jannik Sinner", "2", "0", "1790647200", "13", "", "7", "", "", "", "", "", "", "", "4", "",
+    "3", "True", "", "2670", "", "1", "2", "0", "10", "", "4", "", "", "", "", "", "", "", "6", "", "4", "True", "",
+    "5316", "", "", "", "79116", "2026", "Ended", "2361", ""
+   ],
+   [
+    "17206241", "2361_Wimbledon,_Men", "Wimbledon_Men_Singles_2026", "Wimbledon, Men", "Wimbledon Men Singles 2026",
+    "", "Novak Djokovic", "Taylor Fritz", "0", "2", "1790650800", "14", "", "8", "", "", "", "", "", "", "", "6", "",
+    "", "", "", "2380", "", "2", "1", "1", "11", "", "5", "", "", "", "", "", "", "", "3", "", "", "", "", "9425", "",
+    "", "", "79116", "2026", "Ended", "2361", ""
+   ],
+   [
+    "17211681", "8_LaLiga", "LaLiga_26_27", "LaLiga", "LaLiga 26/27", "", "Athletic Club", "Real Sociedad", "", "",
+    "1791306000", "", "", "", "L_W_D_D_W", "", "", "14", "16", "6.88", "", "", "", "4", "False", "", "3070", "", "0",
+    "1", "1", "", "", "", "W_D_W_L_W", "", "", "31", "10", "6.81", "", "", "", "3", "True", "", "8995", "", "",
+    "Referee 31", "97532", "26/27", "Not started", "8", "Athletic Club Stadium"
+   ]
+  ]
+ },
+ "processed_files_after": ["all_matches_<ts>.csv"],
+ "league_id=17": {
+  "status": 200,
+  "content_type": "text/csv; charset=utf-8",
+  "content_disposition": "attachment; filename=\"league_17_all_matches_<ts>.csv\"",
+  "columns": [
+   "match_id", "league_folder", "season_folder", "tournament_name", "season_name", "round", "home_team_name",
+   "away_team_name", "home_score_ft", "away_score_ft", "match_date", "away_aces", "away_ballPossession",
+   "away_doubleFaults", "away_form", "away_formation", "away_freeThrowsScored", "away_points", "away_position",
+   "away_rating", "away_rebounds", "away_score_ht", "away_starting_xi_count", "away_streak_no_losses",
+   "away_streak_no_losses_continued", "away_substitutes_count", "away_team_id", "away_totalShotsOnGoal",
+   "h2h_away_wins", "h2h_draws", "h2h_home_wins", "home_aces", "home_ballPossession", "home_doubleFaults", "home_form",
+   "home_formation", "home_freeThrowsScored", "home_points", "home_position", "home_rating", "home_rebounds",
+   "home_score_ht", "home_starting_xi_count", "home_streak_wins", "home_streak_wins_continued",
+   "home_substitutes_count", "home_team_id", "home_totalShotsOnGoal", "lineups_confirmed", "referee", "season_id",
+   "season_year", "status", "tournament_id", "venue"
+  ],
+  "rows": [
+   [
+    "14025001", "17_Premier_League", "Premier_League_25_26", "Premier League", "Premier League 25/26", "38.0",
+    "Southampton", "Leicester City", "2.0", "1.0", "1779595200", "", "47.0", "", "L_W_D_D_W", "", "", "9.0", "3.0",
+    "6.38", "", "1.0", "1.0", "4.0", "False", "1.0", "1090", "11.0", "1.0", "1.0", "1.0", "", "44.0", "", "W_D_W_L_W",
+    "", "", "11.0", "14.0", "6.31", "", "2.0", "1.0", "3.0", "True", "1.0", "3178", "8.0", "True", "Referee 1",
+    "76986", "25/26", "Ended", "17", "Southampton Stadium"
+   ],
+   [
+    "16837335", "17_Premier_League", "Premier_League_26_27", "Premier League", "Premier League 26/27", "1.0",
+    "Arsenal", "Chelsea", "3.0", "1.0", "1789495200", "", "61.0", "", "L_W_D_D_W", "", "", "18.0", "10.0", "6.52", "",
+    "1.0", "1.0", "3.0", "False", "1.0", "7846", "16.0", "0.0", "3.0", "0.0", "", "58.0", "", "W_D_W_L_W", "", "",
+    "25.0", "10.0", "6.45", "", "0.0", "1.0", "5.0", "True", "1.0", "3928", "13.0", "True", "Referee 35", "96668",
+    "26/27", "Ended", "17", "Arsenal Stadium"
+   ],
+   [
+    "16867839", "17_Premier_League", "Premier_League_26_27", "Premier League", "Premier League 26/27", "1.0",
+    "Leeds United", "Fulham", "1.0", "0.0", "1790688600", "", "52.0", "", "L_W_D_D_W", "", "", "22.0", "16.0", "6.46",
+    "", "0.0", "1.0", "7.0", "False", "1.0", "5925", "9.0", "0.0", "3.0", "4.0", "", "49.0", "", "W_D_W_L_W", "", "",
+    "19.0", "4.0", "6.39", "", "1.0", "1.0", "5.0", "True", "1.0", "7785", "6.0", "True", "Referee 39", "96668",
+    "26/27", "Ended", "17", "Leeds United Stadium"
+   ],
+   [
+    "16872361", "17_Premier_League", "Premier_League_26_27", "Premier League", "Premier League 26/27", "2.0",
+    "Brighton & Hove Albion", "Bournemouth", "1.0", "1.0", "1789518600", "", "59.0", "", "L_W_D_D_W", "", "", "19.0",
+    "16.0", "6.68", "", "0.0", "", "4.0", "False", "", "7387", "20.0", "1.0", "1.0", "1.0", "", "56.0", "",
+    "W_D_W_L_W", "", "", "11.0", "8.0", "6.61", "", "0.0", "", "3.0", "True", "", "3540", "17.0", "", "Referee 11",
+    "96668", "26/27", "Ended", "17", "Brighton & Hove Albion Stadium"
+   ],
+   [
+    "16951514", "17_Premier_League", "Premier_League_26_27", "Premier League", "Premier League 26/27", "2.0",
+    "Crystal Palace", "Nottingham Forest", "0.0", "0.0", "1789614900", "", "63.0", "", "", "", "", "", "", "", "",
+    "0.0", "", "7.0", "True", "", "5060", "16.0", "2.0", "2.0", "4.0", "", "60.0", "", "", "", "", "", "", "", "",
+    "0.0", "", "4.0", "True", "", "4021", "13.0", "", "Referee 14", "96668", "26/27", "Ended", "17",
+    "Crystal Palace Stadium"
+   ],
+   [
+    "17018554", "17_Premier_League", "Premier_League_26_27", "Premier League", "Premier League 26/27", "1.0",
+    "Brentford", "Burnley", "0.0", "2.0", "1790686800", "", "50.0", "", "L_W_D_D_W", "", "", "12.0", "9.0", "6.11", "",
+    "1.0", "", "7.0", "True", "", "1629", "15.0", "1.0", "2.0", "4.0", "", "47.0", "", "W_D_W_L_W", "", "", "14.0",
+    "5.0", "6.04", "", "0.0", "", "4.0", "True", "", "1850", "12.0", "", "Referee 4", "96668", "26/27", "Ended", "17",
+    "Brentford Stadium"
+   ],
+   [
+    "17018572", "17_Premier_League", "Premier_League_26_27", "Premier League", "Premier League 26/27", "2.0",
+    "Newcastle United", "Sunderland", "1.0", "0.0", "1790683200", "", "", "", "L_W_D_D_W", "", "", "30.0", "10.0",
+    "6.29", "", "0.0", "1.0", "5.0", "True", "1.0", "8714", "", "1.0", "0.0", "2.0", "", "", "", "W_D_W_L_W", "", "",
+    "32.0", "5.0", "6.22", "", "0.0", "1.0", "2.0", "True", "1.0", "9843", "", "True", "Referee 22", "96668", "26/27",
+    "Ended", "17", "Newcastle United Stadium"
+   ],
+   [
+    "17099711", "17_Premier_League", "Premier_League_26_27", "Premier League", "Premier League 26/27", "1.0",
+    "Liverpool", "Everton", "2.0", "1.0", "1789444800", "", "63.0", "", "L_W_D_D_W", "", "", "19.0", "8.0", "6.78", "",
+    "1.0", "1.0", "4.0", "False", "1.0", "4605", "13.0", "2.0", "3.0", "1.0", "", "60.0", "", "W_D_W_L_W", "", "",
+    "21.0", "18.0", "6.71", "", "2.0", "1.0", "5.0", "True", "1.0", "5944", "10.0", "True", "Referee 11", "96668",
+    "26/27", "Ended", "17", "Liverpool Stadium"
+   ],
+   [
+    "17184988", "17_Premier_League", "Premier_League_26_27", "Premier League", "Premier League 26/27", "2.0",
+    "Tottenham Hotspur", "West Ham United", "0.0", "1.0", "1790685000", "", "59.0", "", "L_W_D_D_W", "", "", "21.0",
+    "13.0", "6.35", "", "0.0", "1.0", "6.0", "True", "1.0", "1470", "10.0", "", "", "", "", "56.0", "", "W_D_W_L_W",
+    "", "", "38.0", "11.0", "6.28", "", "0.0", "1.0", "2.0", "True", "1.0", "5597", "7.0", "True", "Referee 38",
+    "96668", "26/27", "Ended", "17", "Tottenham Hotspur Stadium"
+   ],
+   [
+    "17185003", "17_Premier_League", "Premier_League_26_27", "Premier League", "Premier League 26/27", "2.0",
+    "Aston Villa", "Wolverhampton", "5.0", "0.0", "1790687400", "", "53.0", "", "L_W_D_D_W", "", "", "11.0", "11.0",
+    "6.5", "", "0.0", "", "6.0", "False", "", "3370", "12.0", "1.0", "3.0", "3.0", "", "50.0", "", "W_D_W_L_W", "", "",
+    "23.0", "8.0", "6.43", "", "3.0", "", "5.0", "True", "", "2203", "9.0", "", "Referee 3", "96668", "26/27", "Ended",
+    "17", "Aston Villa Stadium"
+   ]
+  ]
+ },
+ "league_id=19": {
+  "status": 200,
+  "content_type": "text/csv; charset=utf-8",
+  "content_disposition": "attachment; filename=\"league_19_all_matches_<ts>.csv\"",
+  "columns": [
+   "match_id", "league_folder", "season_folder", "tournament_name", "season_name", "round", "home_team_name",
+   "away_team_name", "home_score_ft", "away_score_ft", "match_date", "away_aces", "away_ballPossession",
+   "away_doubleFaults", "away_form", "away_formation", "away_freeThrowsScored", "away_points", "away_position",
+   "away_rating", "away_rebounds", "away_score_ht", "away_starting_xi_count", "away_streak_no_losses",
+   "away_streak_no_losses_continued", "away_substitutes_count", "away_team_id", "away_totalShotsOnGoal",
+   "h2h_away_wins", "h2h_draws", "h2h_home_wins", "home_aces", "home_ballPossession", "home_doubleFaults", "home_form",
+   "home_formation", "home_freeThrowsScored", "home_points", "home_position", "home_rating", "home_rebounds",
+   "home_score_ht", "home_starting_xi_count", "home_streak_wins", "home_streak_wins_continued",
+   "home_substitutes_count", "home_team_id", "home_totalShotsOnGoal", "lineups_confirmed", "referee", "season_id",
+   "season_year", "status", "tournament_id", "venue"
+  ],
+  "rows": [
+   [
+    "16950622", "19_FA_Cup", "FA_Cup_26_27", "FA Cup", "FA Cup 26/27", "28.0", "Manchester City", "Manchester United",
+    "3.0", "3.0", "1789497000", "", "53.0", "", "L_W_D_D_W", "", "", "30.0", "9.0", "6.29", "", "2.0", "1.0", "5.0",
+    "True", "1.0", "4614", "8.0", "1.0", "2.0", "2.0", "", "50.0", "", "W_D_W_L_W", "", "", "32.0", "5.0", "6.22", "",
+    "2.0", "1.0", "4.0", "True", "1.0", "4814", "5.0", "True", "Referee 22", "97110", "26/27", "AP", "19",
+    "Manchester City Stadium"
+   ],
+   [
+    "17148332", "19_FA_Cup", "FA_Cup_26_27", "FA Cup", "FA Cup 26/27", "29.0", "Manchester City", "Arsenal", "1.0",
+    "1.0", "1790102700", "", "48.0", "", "L_W_D_D_W", "", "", "15.0", "9.0", "6.09", "", "0.0", "1.0", "5.0", "True",
+    "1.0", "3928", "14.0", "2.0", "0.0", "2.0", "", "45.0", "", "W_D_W_L_W", "", "", "12.0", "3.0", "6.02", "", "0.0",
+    "1.0", "2.0", "True", "1.0", "4814", "11.0", "True", "Referee 32", "97110", "26/27", "AET", "19",
+    "Manchester City Stadium"
+   ]
+  ]
+ },
+ "league_id=132": {
+  "status": 200,
+  "content_type": "text/csv; charset=utf-8",
+  "content_disposition": "attachment; filename=\"league_132_all_matches_<ts>.csv\"",
+  "columns": [
+   "match_id", "league_folder", "season_folder", "tournament_name", "season_name", "round", "home_team_name",
+   "away_team_name", "home_score_ft", "away_score_ft", "match_date", "away_aces", "away_ballPossession",
+   "away_doubleFaults", "away_form", "away_formation", "away_freeThrowsScored", "away_points", "away_position",
+   "away_rating", "away_rebounds", "away_score_ht", "away_starting_xi_count", "away_streak_no_losses",
+   "away_streak_no_losses_continued", "away_substitutes_count", "away_team_id", "away_totalShotsOnGoal",
+   "h2h_away_wins", "h2h_draws", "h2h_home_wins", "home_aces", "home_ballPossession", "home_doubleFaults", "home_form",
+   "home_formation", "home_freeThrowsScored", "home_points", "home_position", "home_rating", "home_rebounds",
+   "home_score_ht", "home_starting_xi_count", "home_streak_wins", "home_streak_wins_continued",
+   "home_substitutes_count", "home_team_id", "home_totalShotsOnGoal", "lineups_confirmed", "referee", "season_id",
+   "season_year", "status", "tournament_id", "venue"
+  ],
+  "rows": [
+   [
+    "16484334", "132_NBA", "NBA_26_27", "NBA", "NBA 26/27", "", "Boston Celtics", "Denver Nuggets", "99.0", "116.0",
+    "1789392600", "", "", "", "L_W_D_D_W", "", "25.0", "17.0", "14.0", "6.31", "43.0", "24.0", "1.0", "7.0", "True",
+    "1.0", "7889", "", "0.0", "2.0", "4.0", "", "", "", "W_D_W_L_W", "", "22.0", "34.0", "7.0", "6.24", "40.0", "24.0",
+    "1.0", "4.0", "True", "1.0", "3279", "", "True", "", "80229", "26/27", "Ended", "132", ""
+   ],
+   [
+    "17060394", "132_NBA", "NBA_26_27", "NBA", "NBA 26/27", "", "Toronto Raptors", "Brooklyn Nets", "59.0", "57.0",
+    "1789599600", "", "", "", "", "", "23.0", "", "", "", "42.0", "23.0", "", "", "", "", "3616", "", "", "", "", "",
+    "", "", "", "", "20.0", "", "", "", "39.0", "19.0", "", "", "", "", "6482", "", "", "", "80229", "26/27",
+    "Abandoned", "132", ""
+   ],
+   [
+    "17092269", "132_NBA", "NBA_26_27", "NBA", "NBA 26/27", "", "Miami Heat", "Chicago Bulls", "72.0", "65.0",
+    "1789455600", "", "", "", "L_W_D_D_W", "", "23.0", "27.0", "12.0", "6.16", "35.0", "21.0", "0.0", "7.0", "False",
+    "0.0", "7630", "", "0.0", "1.0", "4.0", "", "", "", "W_D_W_L_W", "", "20.0", "19.0", "10.0", "6.09", "32.0",
+    "17.0", "0.0", "3.0", "True", "0.0", "3597", "", "False", "", "80229", "26/27", "Ended", "132", ""
+   ],
+   [
+    "17102381", "132_NBA", "NBA_26_27", "NBA", "NBA 26/27", "", "Dallas Mavericks", "Orlando Magic", "", "",
+    "1789734300", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "2876", "", "", "", "", "", "", "", "",
+    "", "", "", "", "", "", "", "", "", "", "", "4423", "", "", "", "80229", "26/27", "Walkover", "132", ""
+   ],
+   [
+    "17203939", "132_NBA", "NBA_26_27", "NBA", "NBA 26/27", "", "Golden State Warriors", "Atlanta Hawks", "81.0",
+    "62.0", "1790681400", "", "", "", "L_W_D_D_W", "", "20.0", "22.0", "9.0", "6.86", "42.0", "6.0", "1.0", "7.0",
+    "False", "1.0", "3036", "", "1.0", "3.0", "4.0", "", "", "", "W_D_W_L_W", "", "17.0", "29.0", "8.0", "6.79",
+    "39.0", "28.0", "1.0", "5.0", "True", "1.0", "7307", "", "True", "", "80229", "26/27", "Ended", "132", ""
+   ]
+  ]
+ },
+ "league_id=2361": {
+  "status": 200,
+  "content_type": "text/csv; charset=utf-8",
+  "content_disposition": "attachment; filename=\"league_2361_all_matches_<ts>.csv\"",
+  "columns": [
+   "match_id", "league_folder", "season_folder", "tournament_name", "season_name", "round", "home_team_name",
+   "away_team_name", "home_score_ft", "away_score_ft", "match_date", "away_aces", "away_ballPossession",
+   "away_doubleFaults", "away_form", "away_formation", "away_freeThrowsScored", "away_points", "away_position",
+   "away_rating", "away_rebounds", "away_score_ht", "away_starting_xi_count", "away_streak_no_losses",
+   "away_streak_no_losses_continued", "away_substitutes_count", "away_team_id", "away_totalShotsOnGoal",
+   "h2h_away_wins", "h2h_draws", "h2h_home_wins", "home_aces", "home_ballPossession", "home_doubleFaults", "home_form",
+   "home_formation", "home_freeThrowsScored", "home_points", "home_position", "home_rating", "home_rebounds",
+   "home_score_ht", "home_starting_xi_count", "home_streak_wins", "home_streak_wins_continued",
+   "home_substitutes_count", "home_team_id", "home_totalShotsOnGoal", "lineups_confirmed", "referee", "season_id",
+   "season_year", "status", "tournament_id", "venue"
+  ],
+  "rows": [
+   [
+    "17078471", "2361_Wimbledon,_Men", "Wimbledon_Men_Singles_2026", "Wimbledon, Men", "Wimbledon Men Singles 2026",
+    "", "Casper Ruud", "Alex de Minaur", "2.0", "1.0", "1789408800", "14.0", "", "8.0", "", "", "", "", "", "", "",
+    "7.0", "", "", "", "", "1250", "", "2.0", "3.0", "1.0", "11.0", "", "5.0", "", "", "", "", "", "", "", "5.0", "",
+    "", "", "", "7720", "", "", "", "79116", "2026", "Ended", "2361", ""
+   ],
+   [
+    "17081861", "2361_Wimbledon,_Men", "Wimbledon_Men_Singles_2026", "Wimbledon, Men", "Wimbledon Men Singles 2026",
+    "", "Alexander Zverev", "Ben Shelton", "", "", "1789457400", "", "", "", "", "", "", "", "", "", "", "7.0", "", "",
+    "", "", "4686", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "6.0", "", "", "", "", "9999", "", "", "",
+    "79116", "2026", "Retired", "2361", ""
+   ],
+   [
+    "17204710", "2361_Wimbledon,_Men", "Wimbledon_Men_Singles_2026", "Wimbledon, Men", "Wimbledon Men Singles 2026",
+    "", "Carlos Alcaraz", "Jannik Sinner", "2.0", "0.0", "1790647200", "13.0", "", "7.0", "", "", "", "", "", "", "",
+    "4.0", "", "3.0", "True", "", "2670", "", "1.0", "2.0", "0.0", "10.0", "", "4.0", "", "", "", "", "", "", "",
+    "6.0", "", "4.0", "True", "", "5316", "", "", "", "79116", "2026", "Ended", "2361", ""
+   ],
+   [
+    "17206241", "2361_Wimbledon,_Men", "Wimbledon_Men_Singles_2026", "Wimbledon, Men", "Wimbledon Men Singles 2026",
+    "", "Novak Djokovic", "Taylor Fritz", "0.0", "2.0", "1790650800", "14.0", "", "8.0", "", "", "", "", "", "", "",
+    "6.0", "", "", "", "", "2380", "", "2.0", "1.0", "1.0", "11.0", "", "5.0", "", "", "", "", "", "", "", "3.0", "",
+    "", "", "", "9425", "", "", "", "79116", "2026", "Ended", "2361", ""
+   ]
+  ]
+ },
+ "league_id=8": {
+  "status": 200,
+  "content_type": "text/csv; charset=utf-8",
+  "content_disposition": "attachment; filename=\"league_8_all_matches_<ts>.csv\"",
+  "columns": [
+   "match_id", "league_folder", "season_folder", "tournament_name", "season_name", "round", "home_team_name",
+   "away_team_name", "home_score_ft", "away_score_ft", "match_date", "away_aces", "away_ballPossession",
+   "away_doubleFaults", "away_form", "away_formation", "away_freeThrowsScored", "away_points", "away_position",
+   "away_rating", "away_rebounds", "away_score_ht", "away_starting_xi_count", "away_streak_no_losses",
+   "away_streak_no_losses_continued", "away_substitutes_count", "away_team_id", "away_totalShotsOnGoal",
+   "h2h_away_wins", "h2h_draws", "h2h_home_wins", "home_aces", "home_ballPossession", "home_doubleFaults", "home_form",
+   "home_formation", "home_freeThrowsScored", "home_points", "home_position", "home_rating", "home_rebounds",
+   "home_score_ht", "home_starting_xi_count", "home_streak_wins", "home_streak_wins_continued",
+   "home_substitutes_count", "home_team_id", "home_totalShotsOnGoal", "lineups_confirmed", "referee", "season_id",
+   "season_year", "status", "tournament_id", "venue"
+  ],
+  "rows": [
+   [
+    "16990001", "8_LaLiga", "LaLiga_26_27", "LaLiga", "LaLiga 26/27", "", "Real Madrid", "Barcelona", "2.0", "1.0",
+    "1789704000", "", "57.0", "", "L_W_D_D_W", "", "", "9.0", "16.0", "6.78", "", "1.0", "1.0", "4.0", "False", "1.0",
+    "9576", "10.0", "2.0", "1.0", "1.0", "", "54.0", "", "W_D_W_L_W", "", "", "21.0", "18.0", "6.71", "", "2.0", "1.0",
+    "3.0", "True", "1.0", "3768", "7.0", "True", "Referee 1", "97532", "26/27", "Ended", "8", "Real Madrid Stadium"
+   ],
+   [
+    "17211681", "8_LaLiga", "LaLiga_26_27", "LaLiga", "LaLiga 26/27", "", "Athletic Club", "Real Sociedad", "", "",
+    "1791306000", "", "", "", "L_W_D_D_W", "", "", "14.0", "16.0", "6.88", "", "", "", "4.0", "False", "", "3070", "",
+    "0.0", "1.0", "1.0", "", "", "", "W_D_W_L_W", "", "", "31.0", "10.0", "6.81", "", "", "", "3.0", "True", "",
+    "8995", "", "", "Referee 31", "97532", "26/27", "Not started", "8", "Athletic Club Stadium"
+   ]
+  ]
+ },
+ "league_id=35": {"status": 404, "body": {"detail": "No exported matches for league 35."}},
+ "league_id=999": {"status": 404, "body": {"detail": "No exported matches for league 999."}}
+}

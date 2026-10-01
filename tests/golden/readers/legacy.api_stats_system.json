@@ -1,0 +1,14 @@
+{
+ "status": 200,
+ "body": {
+  "leagues": 3,
+  "seasons": 8,
+  "matches": 14,
+  "details": 4,
+  "league_breakdown": [
+   {"id": 17, "name": "Premier League", "matches": 10, "details": 3, "coverage": 30.0},
+   {"id": 8, "name": "LaLiga", "matches": 4, "details": 1, "coverage": 25.0}
+  ],
+  "disk_usage": {"seasons": 993, "matches": 43899, "details": 49970, "datasets": 36, "total": 94898, "formatted_total": "92.7 KB"}
+ }
+}

@@ -1,0 +1,160 @@
+{
+ "league_id=17": {
+  "status": 200,
+  "body": {
+   "total_matches": 12,
+   "missing_count": 2,
+   "missing": [
+    {"match_id": 14025002, "home": "Watford", "away": "Norwich City", "match_date": "2026-05-24T06:00:00", "season_name": "Premier League 25/26"},
+    {"match_id": 16837399, "home": "Manchester City", "away": "Hull City", "match_date": "2026-09-22T18:00:00", "season_name": "Premier League 26/27"}
+   ],
+   "truncated": false
+  }
+ },
+ "league_id=17&season_id=96668": {
+  "status": 200,
+  "body": {
+   "total_matches": 10,
+   "missing_count": 1,
+   "missing": [
+    {"match_id": 16837399, "home": "Manchester City", "away": "Hull City", "match_date": "2026-09-22T18:00:00", "season_name": "Premier League 26/27"}
+   ],
+   "truncated": false
+  }
+ },
+ "league_id=17&season_id=76986": {
+  "status": 200,
+  "body": {
+   "total_matches": 2,
+   "missing_count": 1,
+   "missing": [
+    {"match_id": 14025002, "home": "Watford", "away": "Norwich City", "match_date": "2026-05-24T06:00:00", "season_name": "Premier League 25/26"}
+   ],
+   "truncated": false
+  }
+ },
+ "league_id=17&season_id=1": {
+  "status": 200,
+  "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}
+ },
+ "league_id=19": {
+  "status": 200,
+  "body": {
+   "total_matches": 3,
+   "missing_count": 1,
+   "missing": [
+    {"match_id": 17090707, "home": "Arsenal", "away": "Tottenham Hotspur", "match_date": "2026-09-16T13:00:00", "season_name": "FA Cup 26/27"}
+   ],
+   "truncated": false
+  }
+ },
+ "league_id=19&season_id=97110": {
+  "status": 200,
+  "body": {
+   "total_matches": 3,
+   "missing_count": 1,
+   "missing": [
+    {"match_id": 17090707, "home": "Arsenal", "away": "Tottenham Hotspur", "match_date": "2026-09-16T13:00:00", "season_name": "FA Cup 26/27"}
+   ],
+   "truncated": false
+  }
+ },
+ "league_id=19&season_id=1": {
+  "status": 200,
+  "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}
+ },
+ "league_id=132": {
+  "status": 200,
+  "body": {
+   "total_matches": 6,
+   "missing_count": 1,
+   "missing": [
+    {"match_id": 16346148, "home": "Phoenix Suns", "away": "Utah Jazz", "match_date": "2026-09-16T02:15:00", "season_name": "NBA 26/27"}
+   ],
+   "truncated": false
+  }
+ },
+ "league_id=132&season_id=80229": {
+  "status": 200,
+  "body": {
+   "total_matches": 6,
+   "missing_count": 1,
+   "missing": [
+    {"match_id": 16346148, "home": "Phoenix Suns", "away": "Utah Jazz", "match_date": "2026-09-16T02:15:00", "season_name": "NBA 26/27"}
+   ],
+   "truncated": false
+  }
+ },
+ "league_id=132&season_id=1": {
+  "status": 200,
+  "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}
+ },
+ "league_id=2361": {
+  "status": 200,
+  "body": {
+   "total_matches": 6,
+   "missing_count": 2,
+   "missing": [
+    {"match_id": 17058663, "home": "Daniil Medvedev", "away": "Holger Rune", "match_date": "2026-09-16T12:30:00", "season_name": "Wimbledon Men Singles 2026"},
+    {"match_id": 17207542, "home": "Granollers M / Zeballos H", "away": "Heliovaara H / Patten H", "match_date": "2026-09-29T13:20:00", "season_name": "Wimbledon Men Singles 2026"}
+   ],
+   "truncated": false
+  }
+ },
+ "league_id=2361&season_id=79116": {
+  "status": 200,
+  "body": {
+   "total_matches": 6,
+   "missing_count": 2,
+   "missing": [
+    {"match_id": 17058663, "home": "Daniil Medvedev", "away": "Holger Rune", "match_date": "2026-09-16T12:30:00", "season_name": "Wimbledon Men Singles 2026"},
+    {"match_id": 17207542, "home": "Granollers M / Zeballos H", "away": "Heliovaara H / Patten H", "match_date": "2026-09-29T13:20:00", "season_name": "Wimbledon Men Singles 2026"}
+   ],
+   "truncated": false
+  }
+ },
+ "league_id=2361&season_id=1": {
+  "status": 200,
+  "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}
+ },
+ "league_id=8": {
+  "status": 200,
+  "body": {
+   "total_matches": 5,
+   "missing_count": 3,
+   "missing": [
+    {"match_id": 16425949, "home": "Celta Vigo", "away": "Mallorca", "match_date": "2026-09-20T16:00:00", "season_name": "LaLiga 26/27"},
+    {"match_id": 16599919, "home": "Villarreal", "away": "Osasuna", "match_date": "2026-09-20T15:00:00", "season_name": "LaLiga 26/27"},
+    {"match_id": 17148292, "home": "Girona", "away": "Getafe", "match_date": "2026-09-21T08:00:00", "season_name": "LaLiga 26/27"}
+   ],
+   "truncated": false
+  }
+ },
+ "league_id=8&season_id=97532": {
+  "status": 200,
+  "body": {
+   "total_matches": 5,
+   "missing_count": 3,
+   "missing": [
+    {"match_id": 16425949, "home": "Celta Vigo", "away": "Mallorca", "match_date": "2026-09-20T16:00:00", "season_name": "LaLiga 26/27"},
+    {"match_id": 16599919, "home": "Villarreal", "away": "Osasuna", "match_date": "2026-09-20T15:00:00", "season_name": "LaLiga 26/27"},
+    {"match_id": 17148292, "home": "Girona", "away": "Getafe", "match_date": "2026-09-21T08:00:00", "season_name": "LaLiga 26/27"}
+   ],
+   "truncated": false
+  }
+ },
+ "league_id=8&season_id=1": {
+  "status": 200,
+  "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}
+ },
+ "league_id=35": {"status": 200, "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}},
+ "league_id=35&season_id=1": {
+  "status": 200,
+  "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}
+ },
+ "league_id=999": {"status": 200, "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}},
+ "league_id=999&season_id=1": {
+  "status": 200,
+  "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}
+ }
+}

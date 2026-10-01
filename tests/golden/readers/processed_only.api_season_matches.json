@@ -1,0 +1,7 @@
+{
+ "season_id=96668&league_id=17": {"status": 200, "body": {"matches": []}},
+ "season_id=77559&league_id=8": {"status": 200, "body": {"matches": []}},
+ "season_id=96668&league_id=999": {"status": 200, "body": {"matches": []}},
+ "season_id=1&league_id=17": {"status": 200, "body": {"matches": []}},
+ "season_id=96668 (league_id missing)": {"status": 422}
+}

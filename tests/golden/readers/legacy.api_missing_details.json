@@ -1,0 +1,83 @@
+{
+ "league_id=17": {
+  "status": 200,
+  "body": {
+   "total_matches": 8,
+   "missing_count": 4,
+   "missing": [
+    {"match_id": 14025001, "home": "Southampton", "away": "Leicester City", "match_date": "2026-05-24T04:00:00", "season_name": "Premier League 25/26"},
+    {"match_id": 14025002, "home": "Watford", "away": "Norwich City", "match_date": "2026-05-24T06:00:00", "season_name": "Premier League 25/26"},
+    {"match_id": 17018554, "home": "Brentford", "away": "Burnley", "match_date": "2026-09-29T13:00:00", "season_name": "Premier League 26/27"},
+    {"match_id": 17018572, "home": "Newcastle United", "away": "Sunderland", "match_date": "2026-09-29T12:00:00", "season_name": "Premier League 26/27"}
+   ],
+   "truncated": false
+  }
+ },
+ "league_id=17&season_id=96668": {
+  "status": 200,
+  "body": {
+   "total_matches": 6,
+   "missing_count": 2,
+   "missing": [
+    {"match_id": 17018554, "home": "Brentford", "away": "Burnley", "match_date": "2026-09-29T13:00:00", "season_name": "Premier League 26/27"},
+    {"match_id": 17018572, "home": "Newcastle United", "away": "Sunderland", "match_date": "2026-09-29T12:00:00", "season_name": "Premier League 26/27"}
+   ],
+   "truncated": false
+  }
+ },
+ "league_id=17&season_id=76986": {
+  "status": 200,
+  "body": {
+   "total_matches": 2,
+   "missing_count": 2,
+   "missing": [
+    {"match_id": 14025001, "home": "Southampton", "away": "Leicester City", "match_date": "2026-05-24T04:00:00", "season_name": "Premier League 25/26"},
+    {"match_id": 14025002, "home": "Watford", "away": "Norwich City", "match_date": "2026-05-24T06:00:00", "season_name": "Premier League 25/26"}
+   ],
+   "truncated": false
+  }
+ },
+ "league_id=17&season_id=1": {
+  "status": 200,
+  "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}
+ },
+ "league_id=8": {
+  "status": 200,
+  "body": {
+   "total_matches": 2,
+   "missing_count": 1,
+   "missing": [
+    {"match_id": 15000002, "home": "Real Betis", "away": "Valencia", "match_date": "2026-05-20T03:15:00", "season_name": "LaLiga 25/26"}
+   ],
+   "truncated": false
+  }
+ },
+ "league_id=8&season_id=77559": {
+  "status": 200,
+  "body": {
+   "total_matches": 2,
+   "missing_count": 1,
+   "missing": [
+    {"match_id": 15000002, "home": "Real Betis", "away": "Valencia", "match_date": "2026-05-20T03:15:00", "season_name": "LaLiga 25/26"}
+   ],
+   "truncated": false
+  }
+ },
+ "league_id=8&season_id=1": {
+  "status": 200,
+  "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}
+ },
+ "league_id=2361": {
+  "status": 200,
+  "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}
+ },
+ "league_id=2361&season_id=1": {
+  "status": 200,
+  "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}
+ },
+ "league_id=999": {"status": 200, "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}},
+ "league_id=999&season_id=1": {
+  "status": 200,
+  "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}
+ }
+}
