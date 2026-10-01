@@ -111,3 +111,36 @@ def test_browser_calls_share_one_event_loop_across_callers():
     assert len(loops) == 6
     assert all(lp is loops[0] for lp in loops)
     assert loops[0].is_running()
+
+
+def test_profile_dir_treats_empty_setting_as_unset(monkeypatch):
+    """`.env`'deki `SOFASCORE_BROWSER_PROFILE=` profil dizinini "" yapıp tarayıcıyı bozmasın."""
+    import os
+
+    from src.paths import browser_profile_dir
+
+    default = os.path.expanduser("~/.cache/sofascore_scraper/chrome_profile")
+    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", "")
+    assert browser_profile_dir() == default
+    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", "   ")
+    assert browser_profile_dir() == default
+    monkeypatch.delenv("SOFASCORE_BROWSER_PROFILE")
+    assert browser_profile_dir() == default
+    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", "/srv/profile")
+    assert browser_profile_dir() == "/srv/profile"
+    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", "~/elsewhere")
+    assert browser_profile_dir() == os.path.expanduser("~/elsewhere")
+
+
+def test_env_example_names_the_profile_setting_the_bridge_reads():
+    """.env.example eskiden hiç okunmayan SOFASCORE_CHROME_PROFILE adını gösteriyordu."""
+    import os
+    import re
+
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with open(os.path.join(root, ".env.example"), encoding="utf-8") as f:
+        example = f.read()
+    with open(os.path.join(root, "src", "paths.py"), encoding="utf-8") as f:
+        read_by_code = set(re.findall(r'os\.getenv\("(SOFASCORE_[A-Z_]*PROFILE)"', f.read()))
+    assert read_by_code == {"SOFASCORE_BROWSER_PROFILE"}
+    assert "SOFASCORE_BROWSER_PROFILE=" in example and "SOFASCORE_CHROME_PROFILE" not in example

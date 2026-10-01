@@ -22,6 +22,19 @@ def default_league_config_path() -> str:
     return os.path.join(config_dir(), "leagues.txt")
 
 
+DEFAULT_BROWSER_PROFILE_DIR = "~/.cache/sofascore_scraper/chrome_profile"
+
+
+def browser_profile_dir() -> str:
+    """
+    Köprü tarayıcısının profil dizini (cookie'ler, çözülmüş challenge): SOFASCORE_BROWSER_PROFILE,
+    yoksa varsayılan. Boş değer de "yok" sayılır: `.env`'deki `SOFASCORE_BROWSER_PROFILE=` satırı
+    profil dizinini "" yapıp tarayıcının başlamasını engellemesin.
+    """
+    raw = (os.getenv("SOFASCORE_BROWSER_PROFILE") or "").strip()
+    return os.path.expanduser(raw or DEFAULT_BROWSER_PROFILE_DIR)
+
+
 # --- Veri dizini düzeni -------------------------------------------------------
 # Yazıcılar ve okuyucular aynı adları bu yardımcılardan alır. Mevcut disk düzeniyle
 # birebir aynıdır (boşluk ve '/' → '_'), migration gerektirmez.

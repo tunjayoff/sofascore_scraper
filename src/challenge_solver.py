@@ -24,6 +24,7 @@ from typing import Any, Dict, Optional
 
 from src import bridge_health, throttle
 from src.logger import get_logger
+from src.paths import browser_profile_dir
 
 logger = get_logger("ChallengeSolver")
 
@@ -32,9 +33,7 @@ _cached_token: Optional[str] = None
 _cached_at: float = 0
 _TOKEN_TTL_SECONDS = 3500
 
-DEFAULT_PROFILE_DIR = os.getenv(
-    "SOFASCORE_BROWSER_PROFILE", os.path.expanduser("~/.cache/sofascore_scraper/chrome_profile")
-)
+DEFAULT_PROFILE_DIR = browser_profile_dir()
 HOME_URL = "https://www.sofascore.com/tr"
 CAPTCHA_URL = "https://www.sofascore.com/captcha.html?redirectUrl=https%3A%2F%2Fwww.sofascore.com%2Ftr"
 # Çözümün API'yi gerçekten açtığını doğrulamak için küçük bir uç nokta
@@ -154,7 +153,8 @@ class BrowserBridge:
                 bridge_health.record_failure(bridge_health.KIND_BROWSER, "tarayıcı başlatılamadı (yeniden deneme bekleniyor)")
                 raise RuntimeError(
                     "BrowserBridge başlatılamadı (yakın zamanda denendi). "
-                    "Tarayıcı kurulu mu? `python -m playwright install chromium`"
+                    "Nedenini görmek için: `python main.py --doctor` "
+                    "(tarayıcı kurulumu: `python -m patchright install chromium --no-shell`)"
                 )
             # Sayfası kapanmış eski oturum: yeniden başlatmadan önce kapat (profil kilidi)
             await self.close()

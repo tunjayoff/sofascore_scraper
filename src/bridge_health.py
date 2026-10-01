@@ -163,7 +163,7 @@ class BridgeHealth:
         else:
             subject = "Tarayıcı köprüsü çalışmıyor" if browser else "SofaScore bizi engelliyor"
             advice = (
-                "Tarayıcı kurulumunu denetleyin (`python -m playwright install chromium`)."
+                "Tarayıcı kurulumunu denetleyin: `python main.py --doctor`."
                 if browser
                 else "Bir süre bekleyin; istek hızını düşürmek (REQUEST_RATE_LIMIT) yardımcı olabilir."
             )

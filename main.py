@@ -21,11 +21,18 @@ if __name__ == "__main__" and "--version" in sys.argv[1:]:
     print(VERSION_TEXT)
     sys.exit(0)
 
-import dotenv
-
 # Çalışma dizinini modülün dizinine ayarla
 script_dir = Path(__file__).resolve().parent
 os.chdir(script_dir)
+
+# --doctor aşağıdaki import'lardan önce yanıtlanır: eksik paket (dotenv dahil) tam da onun bulması
+# gereken sorundur; src/doctor.py yalnızca standart kütüphaneyi ister. Seçenekleri: --doctor --help
+if __name__ == "__main__" and "--doctor" in sys.argv[1:]:
+    from src.doctor import main as doctor_main
+
+    sys.exit(doctor_main([a for a in sys.argv[1:] if a != "--doctor"]))
+
+import dotenv
 
 # Çevre değişkenlerini yükle
 from src.paths import env_file_path  # noqa: E402
@@ -56,6 +63,7 @@ def parse_arguments() -> argparse.Namespace:
             "  %(prog)s --headless --update-all\n"
             "  %(prog)s --headless --update-all --fetch-mode details --league-id 52\n"
             "  %(prog)s --headless --csv-export --data-dir ./data\n"
+            "  %(prog)s --doctor --json   (ortam denetimi; hata varsa çıkış kodu 1)\n"
             "Not: --web modu kendi ConfigManager örneğini kullanır; CLI --config/--data-dir yalnızca "
             "TUI ve headless için geçerlidir (.env / DATA_DIR ile web hizalanabilir)."
         ),
@@ -175,6 +183,14 @@ def parse_arguments() -> argparse.Namespace:
         type=float,
         default=None,
         help="--watch: en fazla kaç saat (varsayılan: Ctrl+C'ye ya da --event-ids'teki maçlar bitene kadar)",
+    )
+
+    parser.add_argument(
+        "--doctor",
+        action="store_true",
+        help="Ortam denetimi: Python, paketler, tarayıcı, dizinler, web arayüzü derlemesi, .env "
+        "(SofaScore'a bağlanmaz; hata varsa çıkış kodu 1). Seçenekler: --doctor --help "
+        "(--json, --strict, --only, --skip, --lang, --live)",
     )
 
     parser.add_argument(

@@ -61,7 +61,8 @@ Bu proje SofaScore ile bağlantılı değildir. İstek hızına dikkat edin ve i
 ## Gereksinimler
 
 - Python **3.10+** (önerilen: 3.11+).
-- **Node.js 20.19+ veya 22.12+ ve npm** — web uygulamasını (`frontend/`) derlemek için. `scripts/start_web.py` ilk çalıştırmada kendisi derler.
+- **patchright için Chromium** — uygulamanın SofaScore'a eriştiği tarayıcı. Kurulum betikleri ve başlatıcı bir kez indirir (`python -m patchright install chromium --no-shell`). Bilgisayarda kurulu Google Chrome ya da Chromium **kullanılmaz**.
+- **Node.js 20.19+ veya 22.12+ ve npm** — web uygulamasını (`frontend/`) derlemek için. Node.js kuruluysa kurulum betikleri ve `scripts/start_web.py` kendisi derler. Node.js yoksa terminal modları yine çalışır; web adresi uygulama yerine bir yardım sayfası gösterir.
 - **Git** — `curl | bash` ile tek satır kurulum için gerekli (depoyu klonlar); elle indiriyorsanız isteğe bağlı.
 - SofaScore’a ağ erişimi.
 
@@ -91,7 +92,7 @@ chmod +x scripts/install.sh   # bir kez
 ./scripts/install.sh
 ```
 
-**Tek satır** (depoyu klonlar, `.venv` kurar, bağımlılıkları yükler, `.env` oluşturur):
+**Tek satır** (depoyu klonlar, `.venv` kurar, bağımlılıkları ve tarayıcıyı yükler, Node.js kuruluysa web uygulamasını derler, `.env` oluşturur, sonunda [kurulumu denetler](#kurulumu-denetleme-doctor)):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/tunjayoff/sofascore_scraper/main/scripts/install.sh | bash
@@ -130,7 +131,7 @@ Açıkça adres / klasör:
 
 CMD: `scripts\install.bat`. Ortam: `SOFASCORE_SCRAPER_REPO`, `SOFASCORE_SCRAPER_DIR`, `SOFASCORE_SCRAPER_DEFAULT_REPO`.
 
-**Önkoşullar:** **Git** (tek satır / klon yolu için), **PATH** üzerinde **Python 3.10+**. Betikler `git`, `python`, `venv` veya `pip` hata verirse anlaşılır Türkçe/İngilizce iletir (ör. Ubuntu’da `python3-venv` eksikliği).
+**Önkoşullar:** **Git** (tek satır / klon yolu için), **PATH** üzerinde **Python 3.10+**. Betikler `git`, `python`, `venv` veya `pip` hata verirse anlaşılır Türkçe/İngilizce iletir (ör. Ubuntu’da `python3-venv` eksikliği). Node.js yoksa ya da eskiyse bunu bildirir, kurulumu durdurmaz. Betik kurulum denetimiyle biter ve uygulamanın ihtiyaç duyduğu bir şey eksikse 1 ile çıkar.
 
 ### Docker
 
@@ -182,7 +183,15 @@ cd sofascore_scraper
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-python -m playwright install chromium   # yalnızca Google Chrome kurulu değilse gerekir
+python -m patchright install chromium --no-shell   # zorunlu: uygulamanın kullandığı tarayıcı
+```
+
+Tarayıcı adımı, Google Chrome kurulu olsa da gereklidir. Köprü sistemdeki tarayıcıyı değil, patchright'ın kendi Chromium derlemesini başlatır (Scrapling'in `StealthySession`'ı üzerinden). Bu komutta `playwright` değil `patchright` kullanın: iki paketin her biri kendi sürümünün beklediği derlemeyi indirir. `--no-shell`, köprünün hiç kullanmadığı ayrı headless shell'i indirmez.
+
+Web uygulamasını derleyin (Node.js 20.19+ veya 22.12+ gerekir; yalnızca terminal modlarını kullanacaksanız atlayın):
+
+```bash
+cd frontend && npm install && npm run build && cd ..
 ```
 
 Örnek ortam dosyasını kopyalayıp düzenleyin:
@@ -190,6 +199,40 @@ python -m playwright install chromium   # yalnızca Google Chrome kurulu değils
 ```bash
 cp .env.example .env
 ```
+
+### Kurulumu denetleme (doctor)
+
+```bash
+python main.py --doctor          # okunur rapor
+python main.py --doctor --json   # aynısı JSON olarak; betikler ve sunucular için
+```
+
+Denetim SofaScore'a hiç bağlanmaz. Her satır `OK`, `WARN` ya da `FAIL` olur; her sorunun yanında tek satırlık çözümü yazar:
+
+| Denetim | Neye bakar |
+|---------|------------|
+| `python` | Python 3.10 veya üzeri. |
+| `packages` | `requirements.txt` içindeki her paket içe aktarılabiliyor; sabitlenen sürümler tutuyor. |
+| `browser` | Köprünün başlattığı Chromium derlemesi kurulu **ve başlıyor** (headless, `about:blank` üzerinde, geçici bir profille). |
+| `profile` | Tarayıcı profili klasörü yazılabilir; başka bir makine, geride kalmış bir tarayıcı ya da ölmüş bir süreç tarafından kilitli değil. |
+| `data_dir`, `config_dir` | `DATA_DIR` ve `config/` yazılabilir. |
+| `frontend` | `frontend/dist/` var. Yoksa yalnızca uyarıdır: terminal modları onsuz çalışır. |
+| `env` | `.env` ayrıştırılabiliyor ve değerleri geçerli (sayılar, `true`/`false`, proxy adresi, dil, log düzeyi). |
+
+```text
+[ OK ] Python: 3.14.0
+[ OK ] Paketler: gerekli 13 paketin hepsi içe aktarılabiliyor
+[FAIL] Tarayıcı: patchright 1.63.0 sürümünün Chromium derlemesi kurulu değil (beklenen yer: ...); kurulu Google Chrome kullanılmaz
+       Çözüm: Şunu çalıştırın: .venv/bin/python -m patchright install chromium --no-shell
+[WARN] Web arayüzü: derlenmemiş (frontend/dist yok): web uygulaması bunun yerine bir yardım sayfası gösterir; terminal modları onsuz çalışır
+       Çözüm: cd frontend && npm install && npm run build   (ya da scripts/start_web.py ile başlatın, kendisi derler)
+```
+
+- **Çıkış kodu:** hiçbir denetim başarısız değilse `0` (uyarı olabilir), en az biri başarısızsa `1`. `--strict` uyarılarda da `1` ile çıkar.
+- `--only python,browser` / `--skip frontend` denetim seçer; `--lang en|tr` dili belirler (varsayılan: `APP_LANGUAGE`).
+- Uygulamanın kendi import'larından önce çalışır; paketler eksikken de çalışır (bildirdiği şeylerden biri de budur).
+- `--live` ek olarak tarayıcı köprüsü üzerinden SofaScore'a **tek** gerçek istek atar. Başka hiçbir durumda atılmaz. Önce web uygulamasını durdurun: iki süreç aynı tarayıcı profilini açamaz.
+- Başlatıcı (`scripts/start_web.py`) aynı denetimi her açılışta çalıştırır, eksik paketleri ve eksik tarayıcıyı kendisi kurar. Başka kod `src.doctor.run_checks()` / `src.doctor.report()` çağırabilir.
 
 ## Yapılandırma
 
@@ -223,7 +266,7 @@ Her kod yolu kendi isteklerini sınırlar (`MAX_CONCURRENT`, beklemeler, izleyic
 
 ### Lig listesi (`config/leagues.txt`)
 
-Her satır `Ad: ID` biçimindedir; ID, SofaScore **unique tournament** sayısal ID’sidir (turnuva URL’sinde yer alır, ör. `.../premier-league/17` → `17`). Dosya size aittir ve git’te takip edilmez: ilk çalıştırmada `config/leagues.example.txt`’den oluşturulur. Web uygulamasında veya CLI’da lig ekleyip kaldırdığınızda satırları uygulama kendisi günceller.
+Her satır `Ad: ID` biçimindedir; ID, SofaScore **unique tournament** sayısal ID’sidir (turnuva URL’sinde yer alır, ör. `.../premier-league/17` → `17`). Dosya size aittir ve git’te takip edilmez: ilk çalıştırmada `config/leagues.example.txt`’den oluşturulur; o dosyada lig yoktur. Yeni kurulum boş başlar: ligleri web uygulamasından (**Ligler → Lig ekle**; ligin sporunu da kaydeder) ya da terminal menüsünden ekleyin. Web uygulamasında veya CLI’da lig ekleyip kaldırdığınızda satırları uygulama kendisi günceller.
 
 CLI ile özel yol:
 
@@ -240,10 +283,10 @@ python main.py --config /yol/leagues.txt --data-dir /yol/veri
 **Web (çoğu kullanıcı için uygun)**
 
 1. **Kurulum** ve **Yapılandırma** adımlarını tamamlayın (`pip install`, `cp .env.example .env`). Veriyi `./data` dışında tutmak isterseniz `DATA_DIR` ayarlayın.
-2. Uygulamayı başlatın: `./start-sofascore.sh` (veya `python scripts/start_web.py`). İlk çalıştırmada web uygulamasını derler, sonra `http://127.0.0.1:8000` adresini açar. Sadece sunucu için: `python main.py --web`.
+2. Uygulamayı başlatın: `./start-sofascore.sh` (veya `python scripts/start_web.py`; Windows'ta `Start SofaScore.bat`, macOS'ta `Start SofaScore.command` dosyasına çift tıklayın). Başlatıcı `.venv` yoksa oluşturur, [kurulumu denetler](#kurulumu-denetleme-doctor), eksikleri kurar (Python paketleri, tarayıcı), `frontend/dist/` yoksa ve Node.js kuruluysa web uygulamasını derler, sonra `http://127.0.0.1:8000` adresini açar. `python main.py --web` yalnızca sunucuyu başlatır, hiçbir şey kurmaz.
    Kodu güncelledikten sonra (`git pull`) web uygulamasını kendiniz yeniden derleyin: `cd frontend && npm install && npm run build`. Başlatma betiği sadece `frontend/dist/` yoksa derler; aksi halde eski arayüzü görmeye devam edersiniz.
 3. **Spor** — Kenar menünün üstündeki seçici (Tümü / Futbol / Basketbol / Tenis) bütün sayfaları süzer. Üzerinde çalıştığınız sporu seçin.
-4. **Ligler** — **Lig ekle** SofaScore’da arar; sonuçları spora göre süzüp **Ekle**’ye basın. Sporu bilinmeyen bir ligde (örneğin `config/leagues.txt`’ye elle eklenmiş) **Spor seç** kutusu çıkar; bir kez seçmeniz yeterli, kaydedilir.
+4. **Ligler** — Yeni kurulumda lig yoktur; sayfa bir **Lig ekle** düğmesiyle açılır. **Lig ekle** SofaScore’da arar; sonuçları spora göre süzüp **Ekle**’ye basın. Sporu bilinmeyen bir ligde (örneğin `config/leagues.txt`’ye elle eklenmiş) **Spor seç** kutusu çıkar; bir kez seçmeniz yeterli, kaydedilir.
 5. **Maç indir** — Sol sütunda lig seçin, ortada sezonları işaretleyin (sezon listesi ilk seferde kendiliğinden gelir; **Son sezon** / **Son 3 sezon** kısayolları vardır). Birden fazla ligden sezon seçebilirsiniz; hepsi sağdaki **İndirme listesi**’nde toplanır. **N sezonu indir**’e basın. Maçlar ve maç detayları (istatistik, olaylar, kadrolar) birlikte indirilir.
 6. İndirme sürerken kenar menünün altındaki kart ilerlemeyi gösterir; **Durdur** hemen etki eder: yeni istek gönderilmez, yeniden deneme beklemeleri kesilir; o an havada olan bir istek zaman aşımı (`REQUEST_TIMEOUT`) kadar sürebilir. Aynı anda tek indirme çalışır. **Etkinlik** şimdiki ve geçmiş indirmeleri listeler.
 7. **Maçlar** — Lig, sezon, tarih ve **Detay** (olanlar / eksikler) ile süzün. Bir ligde detayı eksik maç varsa (genelde yarıda durdurulan bir indirmeden kalır) üstte **Eksikleri indir** şeridi çıkar. Bir satıra tıklayınca maç açılır: periyot skorları, özet, istatistikler, olaylar ve kadrolar.
@@ -266,6 +309,14 @@ python main.py --config /yol/leagues.txt --data-dir /yol/veri
 - İndirmeyi durdurmak o ana kadar inenleri korur. Detayına sıra gelmeyen maçlar Maçlar’da **Detay: Yok** görünür; Maçlar’daki (veya Maç indir’deki) **Eksikleri indir** ile tamamlanır.
 
 ### Sorun giderme
+
+**Bir şey başlamıyor ya da bütün indirmeler başarısız**
+
+`python main.py --doctor` çalıştırın. Neyin eksik olduğunu (çoğu zaman tarayıcı: `python -m patchright install chromium --no-shell`) ve çözümünü yazar. Tarayıcı başlatılamadığında uygulama 5 dakika yeniden denemez; nedeni giderip uygulamayı yeniden başlatın. Bkz. [Kurulumu denetleme](#kurulumu-denetleme-doctor).
+
+**Tarayıcıda "Web arayüzü derlenmemiş" sayfası çıkıyor**
+
+`frontend/dist/` yok. `cd frontend && npm install && npm run build` ile derleyin (Node.js 20.19+ veya 22.12+) ve sayfayı yenileyin; sunucuyu yeniden başlatmak gerekmez. Node.js yoksa, yayımlandığında [Releases sayfasındaki](https://github.com/tunjayoff/sofascore_scraper/releases) sürüm arşivini kullanın (web uygulaması derlenmiş gelir) ya da başka bir makinede derlenmiş `frontend/dist/` klasörünü kopyalayın. Bu sırada API ve terminal modları çalışır.
 
 **Sezonlar görünüyor ama çekim 0 maç buluyor** (`İşlenecek maç verisi bulunamadı` / `0it`)
 
@@ -310,6 +361,7 @@ Arka plan işlemleri `GET /api/scrape/status` ve `GET /api/scrape/stream` (SSE) 
 | `--refresh-legacy` | `observation.json` öncesi kaydedilmiş maçları da bir kez yeniler |
 | `--recheck-unavailable [legacy\|all]` | "Bu dilim bu maçta yok" işaretlerini yeniden açar; sonraki indirme dilimi yeniden ister, bayrağın kendisi istek göndermez. Bkz. [Eksik dilimler](#eksik-dilimler-başarısız-istekler-ve-devre-kesici) |
 | `--watch` | Canlı izleyici: `--sport` ve `--league-ids` ya da `--event-ids` (isteğe bağlı `--watch-hours`); bkz. [İzleme modu](#izleme-modu) |
+| `--doctor` | Ortamı denetler ve çıkar, `0` = hazır, `1` = bir şey başarısız (`--headless` gerekmez); bkz. [Kurulumu denetleme](#kurulumu-denetleme-doctor) |
 
 Örnekler:
 
@@ -473,9 +525,11 @@ Her şey tarayıcının challenge'ı çözmesine bağlı. Bu bozulduğunda işle
 
 ```bash
 pip install -r requirements.txt
-python -m playwright install chromium
+python -m patchright install chromium --no-shell
 # Yalnızca Debian/Ubuntu, bir kez: Chromium'un sistem kütüphaneleri (sudo kullanır)
-python -m playwright install-deps chromium
+python -m patchright install-deps chromium
+# çıkış kodu 0 = hazır; tarayıcıyı bir kez about:blank ile açar, SofaScore'a istek atmaz
+python main.py --doctor --skip frontend
 ```
 
 ## Geliştirme
