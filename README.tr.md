@@ -61,6 +61,7 @@ Bu proje SofaScore ile bağlantılı değildir. İstek hızına dikkat edin ve i
 ## Gereksinimler
 
 - Python **3.10+** (önerilen: 3.11+).
+- **Platformlar:** Resmî olarak desteklenen platformlar Linux ve Docker'dır; Windows ve macOS elden geldiğince desteklenir (kurulum betikleri, başlatıcılar ve CI onları da kapsar, ama yalnızca orada görülen bir sorun sürüm yayımlamayı engellemez).
 - **patchright için Chromium** — uygulamanın SofaScore'a eriştiği tarayıcı. Kurulum betikleri ve başlatıcı bir kez indirir (`python -m patchright install chromium --no-shell`). Bilgisayarda kurulu Google Chrome ya da Chromium **kullanılmaz**.
 - **Node.js 20.19+ veya 22.12+ ve npm** — web uygulamasını (`frontend/`) derlemek için. Node.js kuruluysa kurulum betikleri ve `scripts/start_web.py` kendisi derler. Node.js yoksa terminal modları yine çalışır; web adresi uygulama yerine bir yardım sayfası gösterir.
 - **Git** — `curl | bash` ile tek satır kurulum için gerekli (depoyu klonlar); elle indiriyorsanız isteğe bağlı.
@@ -574,7 +575,7 @@ npm run build    # tip kontrolü (vue-tsc) + frontend/dist/ içine üretim derle
 
 Yapı: `src/views/` her sayfa bir dosya, `src/components/` ortak parçalar, `src/stores/` (ligler, spor filtresi, çalışan iş), `src/api/client.ts` bütün backend çağrıları, `src/locales/{tr,en}.ts` bütün arayüz metinleri.
 
-Testler ve lint (CI aynısını Linux’ta Python 3.10 ve 3.14 ile, Windows ve macOS’ta Python 3.14 ile çalıştırır):
+Testler ve lint (CI aynısını Linux’ta Python 3.10 ve 3.14 ile çalıştırır; Python 3.14 ile çalışan Windows ve macOS işleri elden geldiğince desteklenir: sonuçlarını bildirir ama bir pull request’i ya da sürümü engellemez):
 
 ```bash
 pip install -r requirements-dev.txt -c constraints.txt

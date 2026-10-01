@@ -61,6 +61,7 @@ The web app with two football leagues downloaded. The images follow your GitHub 
 ## Requirements
 
 - Python **3.10+** (3.11+ recommended).
+- **Platforms:** Linux and Docker are the officially supported platforms; Windows and macOS are best-effort (the installers, launchers and CI cover them, but a problem that only occurs there does not block a release).
 - **Chromium for patchright** — the browser the app reaches SofaScore through. A one-time download made by the install scripts and by the launcher (`python -m patchright install chromium --no-shell`). A Google Chrome or Chromium already on the machine is **not** used.
 - **Node.js 20.19+ or 22.12+ and npm** — to build the web app (`frontend/`). The install scripts and `scripts/start_web.py` build it when Node.js is installed. Without it the terminal modes still work, and the web address shows a help page instead of the app.
 - **Git** — required for the one-line `curl | bash` installer (clones this repo); optional if you already extracted or cloned the project manually.
@@ -585,7 +586,7 @@ npm run build    # type-check (vue-tsc) + production build into frontend/dist/
 
 Layout: `src/views/` one file per page, `src/components/` shared pieces, `src/stores/` (leagues, sport filter, running job), `src/api/client.ts` every backend call, `src/locales/{tr,en}.ts` all UI text.
 
-Tests and lint (CI runs the same on Linux with Python 3.10 and 3.14, and on Windows and macOS with Python 3.14):
+Tests and lint (CI runs the same on Linux with Python 3.10 and 3.14; the Windows and macOS jobs, with Python 3.14, are best-effort: they report their result but do not block a pull request or a release):
 
 ```bash
 pip install -r requirements-dev.txt -c constraints.txt

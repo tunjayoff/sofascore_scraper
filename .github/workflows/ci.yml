@@ -51,6 +51,11 @@ jobs:
     name: python (${{ matrix.os }}, ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    # Support policy: Linux and Docker are the officially supported platforms; Windows and macOS are
+    # best-effort. Their jobs (`best-effort: true` below) still run and show their result, but a
+    # failure there does not fail the workflow, so it can block neither a pull request nor a release
+    # (release.yml runs this workflow as its gate). The Linux jobs stay blocking.
+    continue-on-error: ${{ matrix.best-effort == true }}
     strategy:
       fail-fast: false
       matrix:
@@ -58,9 +63,9 @@ jobs:
           # Oldest and newest supported Python on Linux; the newest also enforces the coverage floor
           - { os: ubuntu-latest, python-version: "3.10" }
           - { os: ubuntu-latest, python-version: "3.14", coverage: true }
-          # The installers and launchers target Windows and macOS too
-          - { os: windows-latest, python-version: "3.14" }
-          - { os: macos-latest, python-version: "3.14" }
+          # The installers and launchers target Windows and macOS too (best-effort, non-blocking)
+          - { os: windows-latest, python-version: "3.14", best-effort: true }
+          - { os: macos-latest, python-version: "3.14", best-effort: true }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -113,9 +118,10 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: ms-playwright-${{ runner.os }}-${{ hashFiles('constraints.txt') }}
-      # Same command the installers run (scripts/install.*). No --with-deps: the runner image already
-      # has Chromium's system libraries, and apt mirrors are slow or unreachable often enough to matter.
-      - run: python -m playwright install chromium
+      # Same command the installers run (scripts/install.*): patchright's own Chromium build, the one
+      # the bridge starts. No --with-deps: the runner image already has Chromium's system libraries,
+      # and apt mirrors are slow or unreachable often enough to matter.
+      - run: python -m patchright install chromium --no-shell
         timeout-minutes: 5
       - run: python -m pytest -q -rfExX -m "browser and not live"
         timeout-minutes: 5
