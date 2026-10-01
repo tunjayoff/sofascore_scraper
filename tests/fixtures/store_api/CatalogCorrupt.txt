@@ -1,0 +1,4 @@
+# src.store.CatalogCorrupt
+# kaynak: src/store/errors.py
+class CatalogCorrupt(StoreError):
+    default_message = ...

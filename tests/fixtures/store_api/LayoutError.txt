@@ -1,0 +1,4 @@
+# src.store.LayoutError
+# kaynak: src/store/errors.py
+class LayoutError(StoreError):
+    default_message = ...

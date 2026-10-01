@@ -1,0 +1,7 @@
+# src.store.StoreError
+# kaynak: src/store/errors.py
+class StoreError(StorageError):
+    default_message = ...
+    def __init__(self, message: Optional[str] = None, path: Optional[str] = None, errno_code: Optional[int] = None, detail: str = '')
+    @classmethod
+    def from_exception(cls, exc: BaseException, path: Optional[str] = None, *, reading: bool = False) -> 'StoreError'

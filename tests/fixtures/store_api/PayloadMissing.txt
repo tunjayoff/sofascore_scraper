@@ -1,0 +1,4 @@
+# src.store.PayloadMissing
+# kaynak: src/store/errors.py
+class PayloadMissing(StoreError):
+    default_message = ...

@@ -1,0 +1,4 @@
+# src.store.StoreBusy
+# kaynak: src/store/errors.py
+class StoreBusy(StoreError):
+    default_message = ...
