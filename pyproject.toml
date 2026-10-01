@@ -12,6 +12,20 @@ dev = [
     "ruff>=0.6",
 ]
 
+# Yeni CLI (src/cli; docs/design/02-services.md bölüm 4). Kurulum gerektirmeden: python -m src.cli.main
+# `ssc` komutu için proje düzenlenebilir kipte kurulur: pip install -e .  (bağımlılıklar yine
+# requirements.txt + constraints.txt ile kurulur). Düzenlenebilir olmayan kurulum desteklenmez: sürüm
+# (pyproject.toml), çeviriler (locales/) ve web arayüzü (frontend/dist) proje klasöründen okunur.
+[project.scripts]
+ssc = "src.cli.main:main"
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["src", "src.*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "strict"

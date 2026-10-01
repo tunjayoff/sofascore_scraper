@@ -436,7 +436,7 @@ def test_unwritable_log_dir_does_not_break_the_app(reconfigure, tmp_path, capsys
     assert app_logger.log_file_path() is None
     assert app_logger.log_file_error()
     logging.getLogger("WebAPI").warning("konsola yazılmaya devam")  # hata fırlatmaz
-    assert "log dosyası açılamadı" in capsys.readouterr().err
+    assert "cannot open the log file" in capsys.readouterr().err
 
 
 def test_console_handler_is_added_only_when_nobody_configured_the_root_logger(reconfigure, tmp_path):

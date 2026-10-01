@@ -4,6 +4,7 @@ Ortam ön denetimi ("doctor"): uygulamanın çalışması için gerekenler yerin
     python main.py --doctor            # okunur metin; hata varsa çıkış kodu 1
     python main.py --doctor --json     # aynı sonuç JSON olarak (otomasyon, başlatıcı)
     python -m src.doctor               # aynısı (başlatıcı sanal ortamın Python'u ile böyle çağırır)
+    ssc doctor [--json]                # yeni CLI (src/cli): aynı denetimler + istek bütçesi uyarısı
 
 Denetimler SofaScore'a bağlanmaz: Python sürümü, gerekli paketler, köprünün başlatacağı tarayıcı
 (patchright'ın Chromium'u; yerel bir about:blank sayfasıyla denenir), tarayıcı profili, veri ve
@@ -145,6 +146,10 @@ class Context:
     platform: str = sys.platform
     version_info: Tuple[int, ...] = tuple(sys.version_info[:3])
     hostname: str = field(default_factory=socket.gethostname)
+    # İstek bütçesinin geçerli değeri (istek/sn) ve kaynağı, çağıran biliyorsa: yeni CLI yapılandırma dosyasını
+    # ve bayrakları da hesaba katarak verir. None: bütçe denetimi ortamı ve .env'i kendisi okur.
+    request_rate: Optional[float] = None
+    request_rate_source: str = ""
 
     def __post_init__(self) -> None:
         self.root = Path(self.root)
@@ -820,6 +825,65 @@ def check_env(ctx: Context) -> CheckResult:
     return _result(ctx, "env", OK, "env_ok", ctx.t("doctor_env_ok", path=path, count=len(ctx.file_env)), detail=detail)
 
 
+# --- istek bütçesi ----------------------------------------------------------------------------
+
+# src/throttle.DEFAULT_RATE_LIMIT ile aynı (tests/test_doctor.py karşılaştırır); burada yinelenir çünkü bu
+# modül yüklenirken başka uygulama modülü içe aktarmaz
+DEFAULT_REQUEST_RATE = 5.0
+# Yeni ad eski adın önündedir (src/config/loader.py: ikisi de verilmişse yenisi kazanır)
+_RATE_KEYS = ("SOFASCORE_CLIENT__RATE", "REQUEST_RATE_LIMIT")
+
+
+def _configured_rate(ctx: Context) -> Tuple[float, str]:
+    """
+    (istek/sn, kaynak). Çağıran geçerli değeri verdiyse o; değilse ortam ve .env, src/throttle.configured_rate
+    kuralıyla: boş ya da geçersiz = varsayılan (geçersiz değeri `env` denetimi bildirir), 0 / off = kapalı.
+    """
+    if ctx.request_rate is not None:
+        return max(0.0, float(ctx.request_rate)), ctx.request_rate_source or "settings"
+    for key in _RATE_KEYS:
+        raw = ctx.get(key).lower()
+        if not raw:
+            continue
+        if raw in _RATE_OFF_WORDS:
+            return 0.0, key
+        try:
+            rate = float(raw)
+        except ValueError:
+            continue
+        if rate != rate or abs(rate) == float("inf"):  # nan / inf
+            continue
+        return max(0.0, rate), key
+    return DEFAULT_REQUEST_RATE, "default"
+
+
+def check_budget(ctx: Context) -> CheckResult:
+    """
+    Ortak istek bütçesi varsayılanın üstünde ya da kapalıysa uyarır (ayarlar sayfasındaki uyarının aynısı):
+    indirme hızlanır ama SofaScore'un engelleme olasılığı artar. Hata değildir; kullanıcı bilerek seçmiş olabilir.
+    """
+    rate, source = _configured_rate(ctx)
+    default = "{:g}".format(DEFAULT_REQUEST_RATE)
+    detail: Dict[str, Any] = {"rate": rate, "default": DEFAULT_REQUEST_RATE, "source": source}
+    if rate == 0:
+        return _result(
+            ctx, "budget", WARN, "budget_off", ctx.t("doctor_budget_off", default=default),
+            fix=ctx.t("doctor_budget_fix", default=default),
+            detail=detail,
+        )
+    if rate > DEFAULT_REQUEST_RATE:
+        return _result(
+            ctx, "budget", WARN, "budget_above_default",
+            ctx.t("doctor_budget_high", rate="{:g}".format(rate), default=default),
+            fix=ctx.t("doctor_budget_fix", default=default),
+            detail=detail,
+        )
+    return _result(
+        ctx, "budget", OK, "budget_ok", ctx.t("doctor_budget_ok", rate="{:g}".format(rate), default=default),
+        detail=detail,
+    )
+
+
 # --- canlı denetim (yalnızca açıkça istenirse) ------------------------------------------------
 
 
@@ -871,6 +935,14 @@ CHECKS: Tuple[Tuple[str, Callable[[Context], CheckResult]], ...] = (
 )
 CHECK_IDS = tuple(check_id for check_id, _ in CHECKS)
 
+# Yalnızca `run_checks(extra=True)` ile çalışan denetimler: yeni CLI (`ssc doctor`, src/cli) bunları da
+# çalıştırır. `python main.py --doctor`un denetim listesi ve çıktısı CLI goldenlarıyla sabittir (o testler
+# bütçe kapalıyken koşar); main.py yeni CLI'ye bağlandığında (plan: P19) bu liste CHECKS'e katılır.
+EXTRA_CHECKS: Tuple[Tuple[str, Callable[[Context], CheckResult]], ...] = (
+    ("budget", check_budget),
+)
+EXTRA_CHECK_IDS = tuple(check_id for check_id, _ in EXTRA_CHECKS)
+
 
 def run_checks(
     ctx: Optional[Context] = None,
@@ -878,8 +950,12 @@ def run_checks(
     skip: Optional[Iterable[str]] = None,
     live: bool = False,
     browser_probe: Optional[Callable[..., Dict[str, Any]]] = None,
+    extra: bool = False,
 ) -> List[CheckResult]:
-    """Denetimleri sırayla çalıştırır. Bir denetimin çökmesi diğerlerini durdurmaz."""
+    """
+    Denetimleri sırayla çalıştırır. Bir denetimin çökmesi diğerlerini durdurmaz. `extra=True`: EXTRA_CHECKS
+    de çalışır (yeni CLI).
+    """
     ctx = ctx or Context()
     wanted = set(only) if only else None
     skipped = set(skip or ())
@@ -888,6 +964,8 @@ def run_checks(
         checks = [
             (cid, (lambda c: check_browser(c, probe=browser_probe)) if cid == "browser" else fn) for cid, fn in checks
         ]
+    if extra:
+        checks.extend(EXTRA_CHECKS)
     if live:
         checks.append(("live", check_live))
 
