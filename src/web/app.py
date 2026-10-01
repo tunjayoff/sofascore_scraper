@@ -3,7 +3,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 import dotenv
@@ -11,6 +11,7 @@ import dotenv
 from src.logger import get_logger
 from src.paths import env_file_path
 from src.version import __version__
+from src.web.missing_ui import MISSING_UI_HTML
 
 dotenv.load_dotenv(env_file_path())
 logger = get_logger("WebApp")
@@ -69,34 +70,31 @@ async def health_check():
     }
 
 
-if FRONTEND_DIST.is_dir():
-    assets_dir = FRONTEND_DIST / "assets"
-    if assets_dir.is_dir():
-        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="spa_assets")
+_assets_dir = FRONTEND_DIST / "assets"
+if _assets_dir.is_dir():
+    app.mount("/assets", StaticFiles(directory=str(_assets_dir)), name="spa_assets")
+# Derleme başlangıçta yoksa /assets bağlanmaz: sunucu çalışırken yapılan derlemenin dosyalarını da
+# aşağıdaki genel rota sunar (StaticFiles, var olmayan klasörle her istekte 500 verirdi).
+if not (FRONTEND_DIST / "index.html").is_file():
+    logger.warning(
+        "Web arayüzü derlenmemiş (frontend/dist yok): / adresinde yardım sayfası gösterilecek. "
+        "Derlemek için: cd frontend && npm install && npm run build"
+    )
 
-    _DIST_ROOT = FRONTEND_DIST.resolve()
 
-    @app.get("/{full_path:path}")
-    async def spa_fallback(full_path: str):
-        if full_path == "api" or full_path.startswith("api/"):
-            raise HTTPException(status_code=404, detail="Not Found")
-        if full_path:
-            # uvicorn '..' segmentlerini ve %2e%2e'yi normalize etmez: yol dist içinde kalmalı
-            candidate = (FRONTEND_DIST / full_path).resolve()
-            if candidate.is_relative_to(_DIST_ROOT) and candidate.is_file():
-                return FileResponse(candidate)
-        index = FRONTEND_DIST / "index.html"
-        if not index.is_file():
-            raise HTTPException(status_code=500, detail="SPA index missing")
-        return FileResponse(index)
-else:
-    logger.warning("frontend/dist missing — run: cd frontend && npm run build")
-
-    @app.get("/")
-    async def missing_frontend():
-        return {
-            "error": "SPA not built",
-            "hint": "cd frontend && npm install && npm run build",
-            "api": "/api",
-            "health": "/health",
-        }
+@app.get("/{full_path:path}")
+async def spa_fallback(full_path: str):
+    if full_path == "api" or full_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="Not Found")
+    # Derlemeye her istekte bakılır: sunucu çalışırken yapılan derleme yeniden başlatmadan görünür
+    if full_path:
+        # uvicorn '..' segmentlerini ve %2e%2e'yi normalize etmez: yol dist içinde kalmalı
+        candidate = (FRONTEND_DIST / full_path).resolve()
+        if candidate.is_relative_to(FRONTEND_DIST.resolve()) and candidate.is_file():
+            return FileResponse(candidate)
+    index = FRONTEND_DIST / "index.html"
+    if not index.is_file():
+        # Arayüz derlenmemiş: ham JSON yerine iki dilli, kendi kendine yeten yardım sayfası.
+        # 503: istenen arayüz şu an sunulamıyor (API ve /health etkilenmez).
+        return HTMLResponse(MISSING_UI_HTML, status_code=503, headers={"Cache-Control": "no-store"})
+    return FileResponse(index)
