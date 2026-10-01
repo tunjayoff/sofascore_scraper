@@ -1,14 +1,19 @@
 """
-src/store/follows.py: `follows` tablosu (docs/design/01-storage.md bölüm 2.3; plan maddesi ST-17).
+src/store/follows.py: `follows` tablosu ve onu dolduran üç yol (docs/design/01-storage.md bölüm 2.3;
+plan maddesi ST-17).
 
   * FollowStore: ekleme, değiştirme, silme, `apply` (yinelenebilir; yalnızca kendi kaynağını budar),
     kaynaklar arası öncelik ve ad tekliği.
   * `apply_follows`: deposu açık olmayan çağıranların yolu; state.db yoksa hiçbir şeye dokunmaz.
+  * ConfigManager ve league_sports: `leagues.txt` ile `league_sports.json` doğruluk kaynağı olarak kalır,
+    tablo onların aynasıdır; dosyalar tablodan asla yeniden yazılmaz.
 
 Tümü çevrimdışı ve geçici dizinlerde.
 """
 from __future__ import annotations
 
+import json
+import logging
 import os
 import sqlite3
 import subprocess
@@ -16,11 +21,12 @@ import sys
 import threading
 from pathlib import Path
 from types import MappingProxyType
-from typing import Callable, Iterator, List, Optional, Tuple
+from typing import Callable, Dict, Iterator, List, Optional, Tuple
 
 import pytest
 
 from src.config import FollowSpec as ConfigFollowSpec
+from src.config_manager import ConfigManager, mirror_league_follows
 from src.store import (
     ApplyResult,
     Follow,
@@ -37,6 +43,7 @@ from src.store import (
 )
 from src.store import api as api_mod
 from src.store import follows as follows_mod
+from src.web import league_sports
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -614,4 +621,336 @@ def test_apply_follows_refuses_a_newer_state_db(data_dir: Path):
 
     with pytest.raises(SchemaTooNew):
         apply_follows(data_dir, [PL], origin="legacy")
+
+
+# === ConfigManager ve league_sports: dosyalar doğruluk kaynağı, tablo ayna ===========================
+
+
+class Setup:
+    """Bir kurulum: geçici config dizini, geçici veri dizini ve o dosyaya bakan ConfigManager."""
+
+    def __init__(self, root: Path) -> None:
+        self.config_dir = root / "config"
+        self.data_dir = root / "data"
+        self.leagues_file = self.config_dir / "leagues.txt"
+        self.sports_file = self.config_dir / "league_sports.json"
+        self.config_dir.mkdir(parents=True)
+
+    def write_leagues(self, text: str) -> None:
+        """Dosyayı elle düzenler gibi yazar; mtime'ın değiştiği kesin olsun diye ileri alınır."""
+        previous = self.leagues_file.stat().st_mtime_ns if self.leagues_file.exists() else 0
+        self.leagues_file.write_text(text, encoding="utf-8", newline="\n")
+        if self.leagues_file.stat().st_mtime_ns <= previous:
+            later = previous + 2_000_000_000  # zaman damgası kaba olan dosya sistemlerinde de farklı
+            os.utime(self.leagues_file, ns=(later, later))
+
+    def write_sports(self, sports: Dict[int, str]) -> None:
+        self.sports_file.write_text(json.dumps({str(k): v for k, v in sports.items()}), encoding="utf-8")
+
+    def manager(self) -> ConfigManager:
+        ConfigManager._instance = None
+        return ConfigManager(str(self.leagues_file))
+
+    def make_store(self) -> None:
+        """Veri dizinini bir depoya çevirir (web sunucusunun iş deposu ya da bir CLI kilidi bunu yapar)."""
+        open_store(self.data_dir).close()
+
+    def table(self) -> List[Tuple[str, int, str, Optional[str], str, int]]:
+        return _rows(open_store(self.data_dir).follows)
+
+    def files(self) -> Dict[str, bytes]:
+        """Config dizinindeki dosyalar (yazma kilidinin boş `.lock` dosyaları dışında)."""
+        return {p.name: p.read_bytes() for p in sorted(self.config_dir.iterdir()) if p.suffix != ".lock"}
+
+
+@pytest.fixture
+def setup(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Setup]:
+    """ConfigManager tekilini kenara alır; DATA_DIR bu testin veri dizinidir."""
+    saved = ConfigManager._instance
+    box = Setup(tmp_path)
+    monkeypatch.setenv("DATA_DIR", str(box.data_dir))
+    yield box
+    ConfigManager._instance = saved
+
+
+def test_the_two_legacy_files_round_trip_through_the_mirror(setup: Setup):
+    setup.write_leagues("# c\nPremier League: 17\nSerie A: Italy: 23\n132 NBA\nLaLiga: 8\n")
+    setup.write_sports({17: "football", 132: "basketball", 999: "football", 8: "curling"})
+    setup.make_store()
+    before = setup.files()
+
+    cm = setup.manager()
+
+    assert setup.table() == [
+        ("tournament", 17, "Premier League", "football", "legacy", 0),
+        ("tournament", 23, "Serie A: Italy", None, "legacy", 1),
+        ("tournament", 132, "NBA", "basketball", "legacy", 2),
+        ("tournament", 8, "LaLiga", None, "legacy", 3),
+    ]
+    follows = open_store(setup.data_dir).follows
+    # Tablodan okunan, dosyalardan okunanın aynısıdır (sırası dahil)
+    assert follows.leagues() == cm.get_leagues() and list(follows.leagues()) == list(cm.get_leagues())
+    stored_sports = {f.entity_id: f.sport for f in follows.list() if f.sport}
+    assert stored_sports == {k: v for k, v in league_sports.load(str(setup.leagues_file)).items() if k in cm.leagues}
+    assert all((f.seasons, f.slices, f.live, f.enabled) == ("all", None, False, True) for f in follows.list())
+    assert setup.files() == before  # dosyalar yalnızca okundu
+
+
+def test_constructing_a_config_manager_does_not_turn_the_data_directory_into_a_store(setup: Setup):
+    setup.write_leagues("Premier League: 17\n")
+    setup.data_dir.mkdir()
+
+    cm = setup.manager()
+    assert cm.add_league("LaLiga", 8) is True
+    assert cm.mirror_follows() is None
+
+    assert list(setup.data_dir.iterdir()) == []
+    assert api_mod._registry == {}
+
+
+def test_without_a_store_the_sport_sidecar_is_not_read(setup: Setup, monkeypatch: pytest.MonkeyPatch):
+    """Depo yokken ConfigManager bugünkü kadar dosya okur: league_sports.json'a ayna için bakılmaz."""
+    setup.write_leagues("Premier League: 17\n")
+    setup.sports_file.write_text("{ broken", encoding="utf-8")
+    reads: List[str] = []
+    real_load = league_sports.load
+    monkeypatch.setattr(league_sports, "load", lambda path: reads.append(path) or real_load(path))
+
+    cm = setup.manager()
+    cm.add_league("LaLiga", 8)
+    assert reads == []
+
+    setup.make_store()
+    cm.mirror_follows()
+    assert reads == [str(setup.leagues_file)]
+    assert [row[1] for row in setup.table()] == [17, 8]  # okunamayan yan dosya: sporlar bilinmiyor
+
+
+def test_the_table_fills_once_the_directory_becomes_a_store(setup: Setup):
+    setup.write_leagues("Premier League: 17\n")
+    cm = setup.manager()
+    setup.make_store()
+    assert setup.table() == []
+
+    result = cm.mirror_follows()
+
+    assert result is not None and [f.entity_id for f in result.added] == [17]
+    assert cm.mirror_follows().changed is False
+
+
+def test_add_and_remove_write_the_file_first_and_then_the_mirror(setup: Setup):
+    setup.write_leagues("Premier League: 17\n")
+    setup.make_store()
+    cm = setup.manager()
+
+    assert cm.add_league("LaLiga", 8) is True
+    assert setup.leagues_file.read_text(encoding="utf-8") == "Premier League: 17\nLaLiga: 8\n"
+    assert setup.table() == [
+        ("tournament", 17, "Premier League", None, "legacy", 0),
+        ("tournament", 8, "LaLiga", None, "legacy", 1),
+    ]
+
+    assert cm.remove_league(17) is True
+    assert setup.leagues_file.read_text(encoding="utf-8") == "LaLiga: 8\n"
+    assert setup.table() == [("tournament", 8, "LaLiga", None, "legacy", 0)]
+
+
+def test_uniqueness_on_id_and_on_name_is_as_today(setup: Setup):
+    setup.write_leagues("Premier League: 17\n")
+    setup.make_store()
+    cm = setup.manager()
+    before = setup.files()
+
+    assert cm.add_league("Another Name", 17) is False
+    assert cm.add_league("Premier League", 99) is False
+    assert cm.remove_league(404) is False
+
+    assert setup.files() == before
+    assert setup.table() == [("tournament", 17, "Premier League", None, "legacy", 0)]
+
+
+def test_a_hand_edit_of_leagues_txt_is_picked_up_on_the_next_read(setup: Setup):
+    setup.write_leagues("Premier League: 17\n")
+    setup.make_store()
+    cm = setup.manager()
+
+    setup.write_leagues("# edited by hand\nLaLiga: 8\nEPL: 17\n")
+
+    assert setup.table() == [("tournament", 17, "Premier League", None, "legacy", 0)]  # henüz kimse okumadı
+    assert cm.get_leagues() == {8: "LaLiga", 17: "EPL"}
+    assert setup.table() == [
+        ("tournament", 8, "LaLiga", None, "legacy", 0),
+        ("tournament", 17, "EPL", None, "legacy", 1),
+    ]
+
+
+def test_a_hand_edit_seen_by_a_refused_add_is_mirrored_too(setup: Setup):
+    setup.write_leagues("Premier League: 17\n")
+    setup.make_store()
+    cm = setup.manager()
+    setup.write_leagues("Premier League: 17\nLaLiga: 8\n")
+
+    assert cm.add_league("LaLiga", 8) is False  # dosyada zaten var: kilit altında yeniden okununca görülür
+
+    assert [row[1] for row in setup.table()] == [17, 8]
+
+
+def test_reload_config_mirrors_again(setup: Setup):
+    setup.write_leagues("Premier League: 17\n")
+    setup.make_store()
+    cm = setup.manager()
+    open_store(setup.data_dir).follows.apply([], origin="legacy")  # tablo dosyanın gerisinde kaldı
+    assert setup.table() == []
+
+    assert cm.reload_config() is True
+
+    assert [row[1] for row in setup.table()] == [17]
+
+
+def test_the_files_are_never_rewritten_from_the_table(setup: Setup):
+    setup.write_leagues("# my leagues\nPremier League: 17\n\nLaLiga: 8\n")
+    setup.write_sports({17: "football"})
+    setup.make_store()
+    cm = setup.manager()
+    before = setup.files()
+    follows = open_store(setup.data_dir).follows
+
+    # Tablo dosyalardan ayrışıyor: bir satır siliniyor, biri değişiyor, başka kaynaklardan satırlar ekleniyor
+    follows.remove("tournament", 17)
+    follows.update("tournament", 8, name="La Liga Santander", sport="basketball")
+    follows.add(NBA)
+    follows.apply([FollowSpec("tournament", 35, "bundesliga")], origin="config")
+
+    assert cm.get_leagues() == {17: "Premier League", 8: "LaLiga"}  # dosyadan, tablodan değil
+    result = cm.mirror_follows()
+
+    assert setup.files() == before
+    assert result is not None and result.changed
+    assert sorted(setup.table(), key=lambda row: row[1]) == [
+        ("tournament", 8, "LaLiga", None, "legacy", 1),
+        ("tournament", 17, "Premier League", "football", "legacy", 0),
+        ("tournament", 35, "bundesliga", None, "config", 0),
+        ("tournament", 132, "NBA", "basketball", "api", 2),
+    ]
+
+
+def test_the_sport_sidecar_is_mirrored_after_every_write(setup: Setup):
+    setup.write_leagues("Premier League: 17\nNBA: 132\n")
+    setup.make_store()
+    setup.manager()
+    cfg = str(setup.leagues_file)
+
+    league_sports.set_sport(cfg, 132, "basketball")
+    assert [(row[1], row[3]) for row in setup.table()] == [(17, None), (132, "basketball")]
+    assert json.loads(setup.sports_file.read_text(encoding="utf-8")) == {"132": "basketball"}
+
+    league_sports.set_sport(cfg, 17, "football")
+    league_sports.set_sport(cfg, 132, None)
+    assert [(row[1], row[3]) for row in setup.table()] == [(17, "football"), (132, None)]
+
+    # Sporu bilinen ama listede olmayan bir lig tabloya girmez
+    league_sports.set_sport(cfg, 999, "tennis")
+    assert [row[1] for row in setup.table()] == [17, 132]
+
+
+def test_a_sport_learned_from_downloaded_data_is_mirrored(setup: Setup):
+    setup.write_leagues("NBA: 132\nPremier League: 17\n")
+    setup.make_store()
+    setup.manager()
+    match_dir = setup.data_dir / "match_details" / "132_NBA" / "season_NBA_25_26" / "14441992"
+    match_dir.mkdir(parents=True)
+    (match_dir / "basic.json").write_text(
+        json.dumps({"tournament": {"category": {"sport": {"name": "Basketball", "slug": "basketball"}}}}),
+        encoding="utf-8",
+    )
+
+    assert league_sports.resolve_all(str(setup.leagues_file), str(setup.data_dir), [132, 17]) == {
+        132: "basketball", 17: None,
+    }
+
+    assert [(row[1], row[3]) for row in setup.table()] == [(132, "basketball"), (17, None)]
+
+
+def test_a_hand_edit_of_the_sidecar_reaches_the_table_with_the_next_mirror(setup: Setup):
+    setup.write_leagues("Premier League: 17\n")
+    setup.make_store()
+    cm = setup.manager()
+
+    setup.write_sports({17: "football"})
+    assert setup.table() == [("tournament", 17, "Premier League", None, "legacy", 0)]
+
+    cm.mirror_follows()
+    assert setup.table() == [("tournament", 17, "Premier League", "football", "legacy", 0)]
+
+
+def test_sidecar_writes_for_another_league_file_do_not_touch_this_mirror(setup: Setup, tmp_path: Path):
+    setup.write_leagues("Premier League: 17\n")
+    setup.make_store()
+    setup.manager()
+    other = tmp_path / "elsewhere" / "leagues.txt"
+    other.parent.mkdir()
+
+    league_sports.set_sport(str(other), 17, "tennis")
+    mirror_league_follows(str(other))
+
+    assert setup.table() == [("tournament", 17, "Premier League", None, "legacy", 0)]
+
+    ConfigManager._instance = None  # süreçte ConfigManager yok: yapılacak bir şey de yok
+    mirror_league_follows(str(setup.leagues_file))
+    league_sports.set_sport(str(setup.leagues_file), 17, "football")
+    assert setup.table() == [("tournament", 17, "Premier League", None, "legacy", 0)]
+
+
+def test_one_name_under_two_ids_keeps_the_later_line_in_the_table(setup: Setup, caplog: pytest.LogCaptureFixture):
+    """
+    Elle düzenlenmiş dosyada aynı ad iki kimlikte olabilir; `get_leagues()` ikisini de verir. Tabloda turnuva
+    adı tekildir: `get_league_by_name`in gösterdiği (son) satır kalır ve ayna hata vermez.
+    """
+    setup.write_leagues("Cup: 1\nPremier League: 17\nCup: 2\n")
+    setup.make_store()
+    with caplog.at_level(logging.WARNING):
+        cm = setup.manager()
+
+    assert cm.get_leagues() == {1: "Cup", 17: "Premier League", 2: "Cup"}
+    assert cm.get_league_by_name("Cup") == 2
+    assert setup.table() == [
+        ("tournament", 17, "Premier League", None, "legacy", 1),
+        ("tournament", 2, "Cup", None, "legacy", 2),
+    ]
+    assert not [r for r in caplog.records if "follows" in r.getMessage()]
+
+
+def test_an_unusable_store_does_not_break_the_league_file(setup: Setup, caplog: pytest.LogCaptureFixture):
+    setup.write_leagues("Premier League: 17\n")
+    (setup.data_dir / ".meta").mkdir(parents=True)
+    _state_path(setup.data_dir).write_bytes(b"this is not a database, " * 64)
+
+    with caplog.at_level(logging.WARNING):
+        cm = setup.manager()
+        assert cm.add_league("LaLiga", 8) is True
+        assert cm.remove_league(17) is True
+        league_sports.set_sport(str(setup.leagues_file), 8, "football")
+
+    assert cm.get_leagues() == {8: "LaLiga"}
+    assert setup.leagues_file.read_text(encoding="utf-8") == "LaLiga: 8\n"
+    assert league_sports.load(str(setup.leagues_file)) == {8: "football"}
+    warnings = [r for r in caplog.records if "could not be mirrored into the follows table" in r.getMessage()]
+    assert warnings and all(r.levelno == logging.WARNING for r in warnings)
+
+
+def test_a_league_that_is_also_in_the_config_origin_stays_there(setup: Setup):
+    setup.write_leagues("Premier League: 17\nLaLiga: 8\n")
+    setup.make_store()
+    open_store(setup.data_dir).follows.apply([FollowSpec("tournament", 17, "premier-league", seasons="last:2")],
+                                             origin="config")
+
+    cm = setup.manager()
+    result = cm.mirror_follows()
+
+    assert result is not None and [c.reason for c in result.conflicts] == ["owned_by_config"]
+    assert setup.table() == [
+        ("tournament", 17, "premier-league", None, "config", 0),
+        ("tournament", 8, "LaLiga", None, "legacy", 1),
+    ]
+    assert cm.get_leagues() == {17: "Premier League", 8: "LaLiga"}
 

@@ -8,12 +8,17 @@ config/league_sports.json as {"<league id>": "<sport slug>"} (the sports registe
 A league added through the web UI gets its sport from the remote search result. A league
 added any other way has none until either someone picks it in the UI, or a downloaded
 match's basic.json (tournament.category.sport) tells us; that lookup reads local files only.
+
+The sidecar stays the source of truth. After every write the sports are also mirrored into the
+`follows` table of the data directory (origin "legacy", together with the league names; see
+ConfigManager.mirror_follows and src/store/follows.py). The file is never rewritten from the table.
 """
 from __future__ import annotations
 
 import glob
 import json
 import os
+import sys
 import threading
 from typing import Dict, Optional
 
@@ -63,6 +68,19 @@ def _save(league_config_path: str, data: Dict[int, str]) -> None:
     atomic_write_json(sidecar_path(league_config_path), {str(k): v for k, v in sorted(data.items())})
 
 
+def _mirror_follows(league_config_path: str) -> None:
+    """
+    The sidecar was written: bring the follows table in line (called after the file lock is released).
+
+    The league names live in ConfigManager, so the mirror goes through it. If the config module was never
+    loaded there is no ConfigManager in this process and nothing to do: the sports reach the table the next
+    time a ConfigManager mirrors that league file.
+    """
+    config_module = sys.modules.get("src.config_manager")
+    if config_module is not None:
+        config_module.mirror_league_follows(league_config_path)
+
+
 def set_sport(league_config_path: str, league_id: int, sport: Optional[str]) -> None:
     """Store (or with sport=None, forget) a league's sport."""
     with _lock, file_lock(sidecar_path(league_config_path)):
@@ -72,6 +90,7 @@ def set_sport(league_config_path: str, league_id: int, sport: Optional[str]) -> 
         else:
             data.pop(int(league_id), None)
         _save(league_config_path, data)
+    _mirror_follows(league_config_path)
 
 
 def infer_from_data(data_dir: str, league_id: int) -> Optional[str]:
@@ -107,4 +126,5 @@ def resolve_all(league_config_path: str, data_dir: str, league_ids) -> Dict[int,
             data = load(league_config_path)
             data.update(learned)
             _save(league_config_path, data)
+        _mirror_follows(league_config_path)
     return out
