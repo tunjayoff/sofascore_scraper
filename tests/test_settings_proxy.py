@@ -90,11 +90,27 @@ def test_sending_the_masked_url_back_keeps_the_stored_password(monkeypatch):
     assert PROXY_PASSWORD_MASK not in os.environ["PROXY_URL"]
 
 
-def test_masked_password_survives_a_scheme_or_port_change_on_the_same_proxy(monkeypatch):
+def test_masked_password_survives_letter_case_of_scheme_and_host(monkeypatch):
+    """Şema ve sunucu adı büyük/küçük harfe duyarsızdır: aynı uç, parola geri konur."""
     monkeypatch.setenv("PROXY_URL", STORED)
-    r = client.post("/api/settings", json={"proxy_url": f"socks5://scraper:{PROXY_PASSWORD_MASK}@PROXY.example:1080"})
+    r = client.post("/api/settings", json={"proxy_url": f"HTTP://scraper:{PROXY_PASSWORD_MASK}@PROXY.example:8080"})
     assert r.status_code == 200
-    assert os.environ["PROXY_URL"] == f"socks5://scraper:{SECRET}@PROXY.example:1080"
+    assert os.environ["PROXY_URL"] == f"HTTP://scraper:{SECRET}@PROXY.example:8080"
+
+
+@pytest.mark.parametrize(
+    "stored",
+    [
+        f"https://scraper:{SECRET}@proxy.example",  # port yazılmamış
+        f"socks5h://scraper:{SECRET}@10.0.0.1:1080/",
+        f"http://scraper:{SECRET}@[2001:db8::1]:8080",
+    ],
+)
+def test_masked_password_is_kept_for_the_same_scheme_host_and_port(monkeypatch, stored):
+    monkeypatch.setenv("PROXY_URL", stored)
+    r = client.post("/api/settings", json={"proxy_url": mask_proxy_url(stored)})
+    assert r.status_code == 200
+    assert os.environ["PROXY_URL"] == stored
 
 
 @pytest.mark.parametrize(
@@ -102,6 +118,12 @@ def test_masked_password_survives_a_scheme_or_port_change_on_the_same_proxy(monk
     [
         f"http://scraper:{PROXY_PASSWORD_MASK}@other.example:8080",  # başka sunucu
         f"http://someone:{PROXY_PASSWORD_MASK}@proxy.example:8080",  # başka kullanıcı
+        f"socks5://scraper:{PROXY_PASSWORD_MASK}@proxy.example:8080",  # başka şema
+        f"https://scraper:{PROXY_PASSWORD_MASK}@proxy.example:8080",  # başka şema (yükseltme de sayılır)
+        f"http://scraper:{PROXY_PASSWORD_MASK}@proxy.example:1080",  # başka port
+        f"http://scraper:{PROXY_PASSWORD_MASK}@proxy.example",  # port silinmiş
+        f"http://scraper:{PROXY_PASSWORD_MASK}@proxy.example:80a",  # okunamayan port
+        f"socks5://scraper:{PROXY_PASSWORD_MASK}@PROXY.example:1080",  # FX-2'den önce parolayı koruyan istek (#23)
     ],
 )
 def test_stored_password_is_not_sent_to_a_different_proxy(monkeypatch, submitted):
@@ -112,6 +134,39 @@ def test_stored_password_is_not_sent_to_a_different_proxy(monkeypatch, submitted
     assert r.json()["detail"]["reason"] == "proxy_password_required"
     assert os.environ["PROXY_URL"] == STORED and _env_file() == before
     assert SECRET not in r.text
+
+
+def test_scheme_downgrade_on_the_same_host_does_not_reveal_the_password(monkeypatch):
+    """
+    Ayarları yazabilen biri aynı sunucuda https'i http'ye çevirip parolayı ağda açık taşıtamaz:
+    şema değişince parola yeniden yazılmalıdır.
+    """
+    stored = f"https://scraper:{SECRET}@proxy.example:8443"
+    monkeypatch.setenv("PROXY_URL", stored)
+    before = _env_file()
+    r = client.post("/api/settings", json={"proxy_url": f"http://scraper:{PROXY_PASSWORD_MASK}@proxy.example:8443"})
+    assert r.status_code == 422
+    assert r.json()["detail"]["reason"] == "proxy_password_required"
+    assert os.environ["PROXY_URL"] == stored and _env_file() == before
+    assert SECRET not in r.text
+
+
+def test_explicit_port_is_not_equal_to_a_missing_port(monkeypatch):
+    """Yazılmamış port hiçbir porta eşit sayılmaz: varsayılan port istemciye göre değişir."""
+    stored = f"http://scraper:{SECRET}@proxy.example"
+    monkeypatch.setenv("PROXY_URL", stored)
+    r = client.post("/api/settings", json={"proxy_url": f"http://scraper:{PROXY_PASSWORD_MASK}@proxy.example:80"})
+    assert r.status_code == 422 and r.json()["detail"]["reason"] == "proxy_password_required"
+    assert os.environ["PROXY_URL"] == stored
+
+
+def test_a_typed_password_is_accepted_when_the_proxy_address_changes(monkeypatch):
+    """Parola yeniden yazıldıysa şema, sunucu ve port serbestçe değişir."""
+    monkeypatch.setenv("PROXY_URL", STORED)
+    new = f"socks5://scraper:{SECRET}@proxy.example:1080"
+    r = client.post("/api/settings", json={"proxy_url": new})
+    assert r.status_code == 200 and SECRET not in r.text
+    assert os.environ["PROXY_URL"] == new
 
 
 def test_masked_url_without_a_stored_password_asks_for_the_password():

@@ -934,7 +934,7 @@
           "api"
         ],
         "summary": "Update Settings",
-        "description": "Update application settings.\n\nDATA_DIR değişimi çalışan iş varken reddedilir (409 job_running; hiçbir ayar yazılmaz): iş eski\ndizine yazmayı sürdürürken yeni istekler yeni dizini okur ve veri iki dizine bölünür. İş yokken\ndeğişim hemen geçerlidir ve iş deposu (jobs.db) yeni dizine taşınır; yeniden başlatma gerekmez.",
+        "description": "Update application settings.\n\nDATA_DIR değişimi çalışan iş varken reddedilir (409 job_running; hiçbir ayar yazılmaz): iş eski\ndizine yazmayı sürdürürken yeni istekler yeni dizini okur ve veri iki dizine bölünür. İş yokken\ndeğişim hemen geçerlidir ve iş deposu (state.db) yeni dizine taşınır; yeniden başlatma gerekmez.",
         "operationId": "update_settings_api_settings_post",
         "requestBody": {
           "content": {

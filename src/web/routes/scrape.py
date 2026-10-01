@@ -8,6 +8,7 @@ from typing import List, Literal, Optional
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 
+from src.version import __version__
 from src.web.routes.common import (
     _job_store,
     _refresh_scraper_state,
@@ -109,7 +110,8 @@ async def trigger_fetch(payload: FetchRequest):
 async def system_status():
     """Get system status info."""
     return {
-        "version": "1.0.0",
+        # Tek kaynak: pyproject.toml (src/version.py); /health ve OpenAPI belgesi de aynı değeri verir
+        "version": __version__,
         "leagues_count": len(config_manager.get_leagues()),
         "language": config_manager.get_language()
     }
