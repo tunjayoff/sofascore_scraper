@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from src import breaker as request_breaker
 from src.exceptions import StorageError
+from src.redact import redact_text
 from src.SofaScoreUi import SimpleSofaScoreUI
 from src.utils import FetchCancelled
 from src.web.progress import JobProgress
@@ -244,10 +245,12 @@ def run_fetch_job(job_id: str, payload: "FetchRequest") -> None:
         _job_store.update(result={"error": "storage", "error_path": e.path, **tracker.result()})
         update_state("Failed", tracker.percent(), message)
     except Exception as e:
-        error_msg = str(e)
+        # Hata metni iş kaydına yazılır ve API'den (durum, iş geçmişi, SSE) okunur: bir istek hatası
+        # proxy adresini parolasıyla taşıyabilir, bu yüzden log satırları gibi maskelenir
+        error_msg = redact_text(str(e))
         logger.error(f"Background update failed: {e}")
         logger.error(traceback.format_exc())
-        print(f"--> Background Task FAILED: {e}")
+        print(f"--> Background Task FAILED: {error_msg}")
         update_state("Failed", tracker.percent(), f"Error: {error_msg}")
     finally:
         set_wait_notifier(None)
