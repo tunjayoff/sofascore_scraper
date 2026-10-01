@@ -43,8 +43,8 @@ API_PREFIX = "/api/v1"
 SITE_ROOT = "https://www.sofascore.com/"
 
 # İstek katmanının gövdesinin bulunduğu modüller: `AsyncSession`, `_sleep` ve `_asleep` adları burada
-# değiştirilir. Gövde başka bir modüle taşınırsa (plan: P05, src/client/transport.py) o modül eklenir.
-REQUEST_LAYER_MODULES: Tuple[str, ...] = ("src.utils",)
+# değiştirilir. Gövde src/client/transport.py'dedir (plan: P05); src.utils aynı adları yeniden dışa aktarır.
+REQUEST_LAYER_MODULES: Tuple[str, ...] = ("src.utils", "src.client.transport")
 
 # Beklemenin kaynağı: istek katmanı (yeniden deneme geri çekilmesi, istek sonrası kısa bekleme ve
 # ortak istek bütçesi açıksa isteğin bütçede beklediği sıra: src/throttle.py)
