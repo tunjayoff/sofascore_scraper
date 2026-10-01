@@ -7,9 +7,23 @@ on:
   # release.yml runs these same jobs on the tagged commit before publishing
   workflow_call:
 
+# Jobs only read the repository
+permissions:
+  contents: read
+
+# A newer push to the same pull request replaces the run in progress. Runs on main and release
+# runs (workflow_call) each get their own group, so they are never cancelled or queued.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
 jobs:
   frontend:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: frontend
@@ -31,25 +45,77 @@ jobs:
           name: frontend-dist
           path: frontend/dist
 
+  # The frontend is built once (above) and its dist/ is shared with every Python job.
   python:
     needs: frontend
-    runs-on: ubuntu-latest
+    name: python (${{ matrix.os }}, ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.14"]
+        include:
+          # Oldest and newest supported Python on Linux; the newest also enforces the coverage floor
+          - { os: ubuntu-latest, python-version: "3.10" }
+          - { os: ubuntu-latest, python-version: "3.14", coverage: true }
+          # The installers and launchers target Windows and macOS too
+          - { os: windows-latest, python-version: "3.14" }
+          - { os: macos-latest, python-version: "3.14" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+            constraints.txt
       # The SPA tests (routes, path-traversal guard) need the built frontend
       - uses: actions/download-artifact@v4
         with:
           name: frontend-dist
           path: frontend/dist
-      - run: pip install -r requirements.txt "pytest>=8.0" "pytest-asyncio>=0.23" "httpx>=0.27" "ruff>=0.6"
+      # constraints.txt pins every package to a verified version: a new upstream release cannot
+      # change this job. The latest allowed versions are tried weekly in latest-deps.yml.
+      - run: python -m pip install -r requirements-dev.txt -c constraints.txt
       - run: ruff check .
-      # pyproject.toml deselects `live` (network) and `browser` tests
-      - run: pytest -q
+      # pyproject.toml deselects `live` (network) and `browser` tests.
+      # -rfExX lists failures, known issues (xfail) and unexpectedly passing tests with their reasons.
+      - name: pytest
+        if: ${{ !matrix.coverage }}
+        run: python -m pytest -q -rfExX
+      # Fails below the floor in pyproject.toml ([tool.coverage.report] fail_under)
+      - name: pytest with coverage floor
+        if: ${{ matrix.coverage }}
+        run: |
+          python -m pytest -q -rfExX --cov --cov-report=term
+          python -m coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+
+  # The real BrowserBridge (Scrapling + patchright + Chromium) against a local fake site.
+  # Nothing leaves the runner for SofaScore: see tests/test_bridge_offline_browser.py.
+  browser:
+    name: browser bridge (offline)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+            constraints.txt
+      - run: python -m pip install -r requirements-dev.txt -c constraints.txt
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ms-playwright-${{ runner.os }}-${{ hashFiles('constraints.txt') }}
+      # Same command the installers run (scripts/install.*). No --with-deps: the runner image already
+      # has Chromium's system libraries, and apt mirrors are slow or unreachable often enough to matter.
+      - run: python -m playwright install chromium
+        timeout-minutes: 5
+      - run: python -m pytest -q -rfExX -m "browser and not live"
+        timeout-minutes: 5

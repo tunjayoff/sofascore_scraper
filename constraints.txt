@@ -1,0 +1,95 @@
+# Doğrulanmış sürüm sabitleri (pip constraints dosyası).
+#
+# requirements.txt hangi paketlerin gerektiğini ve izin verilen aralıkları söyler; bu dosya
+# o aralıkların içinde, birlikte çalıştığı bilinen tam sürümleri sabitler (dolaylı bağımlılıklar
+# dahil). CI her zaman bu dosyayla kurar; böylece yeni çıkan bir paket sürümü ne CI'ı ne de
+# kurulumu habersizce değiştirir. Aralıkların en yeni sürümleri ayrıca haftalık
+# "Latest dependencies" iş akışında denenir.
+#
+#   pip install -r requirements.txt -c constraints.txt        # çalışma zamanı
+#   pip install -r requirements-dev.txt -c constraints.txt    # + test / lint araçları
+#
+# Kaynak: çalışan geliştirme ortamının (Linux, CPython 3.14) `pip freeze` çıktısı, 2026-10-01.
+# requirements*.txt'nin gerektirmediği paketler alınmadı. Dosyayı elle yeniden üretmek yerine
+# Dependabot PR'ları ile güncelleyin; tests/test_dependency_pins.py requirements.txt ile
+# tutarlılığı denetler.
+#
+# Bir constraints dosyası yalnızca kurulacak paketlerin sürümünü sınırlar, kendisi paket kurmaz;
+# burada olmayan bir dolaylı bağımlılık (örn. yalnızca belirli bir platformda gereken) serbest kalır.
+
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anyio==4.15.1
+apify-fingerprint-datapoints==0.15.0
+browserforge==1.2.4
+certifi==2026.7.22
+cffi==2.1.1
+click==8.5.0
+colorama==0.4.6
+cssselect==1.5.0
+curl-cffi==0.16.3
+fastapi==0.141.1
+greenlet==3.5.6
+h11==0.16.0
+httpcore==1.0.9
+httpx==0.28.1
+idna==3.20
+iniconfig==2.3.0
+lxml==6.1.3
+markdown-it-py==4.2.0
+mdurl==0.1.2
+msgspec==0.21.1
+orjson==3.12.0
+packaging==26.3
+pluggy==1.6.0
+protego==0.7.0
+pycparser==3.0
+pydantic==2.13.5
+pydantic-core==2.46.5
+pyee==13.0.1
+pygments==2.21.0
+pytest==9.1.1
+pytest-asyncio==1.4.0
+python-dateutil==2.9.0.post0
+python-dotenv==1.2.3
+rich==15.0.0
+ruff==0.16.9
+six==1.17.0
+sse-starlette==3.4.11
+starlette==1.7.0
+tld==0.13.2
+tqdm==4.70.1
+typing-extensions==4.16.0
+typing-inspection==0.4.4
+uvicorn==0.54.0
+w3lib==2.4.1
+
+# --- Tarayıcı yığını -----------------------------------------------------------------------
+# Turnstile çözümü bu üçlüyle canlıda doğrulandı (requirements.txt'deki nota bakın). CI bu
+# sürümleri yalnızca yerel sahte sayfaya karşı dener (tests/test_bridge_offline_browser.py);
+# yükseltmeden önce `pytest -m "live and browser"` elle çalıştırılmalı.
+scrapling==0.4.15
+patchright==1.63.0
+playwright==1.63.0
+
+# --- Python sürümüne bağlı sabitler ------------------------------------------------------------
+# Referans ortamdaki pandas 3.0.6 Python >=3.11, numpy 2.5.3 Python >=3.12 ister. Daha eski
+# Python'lar için o Python sürümünü destekleyen son sürüm sabitlendi; bunlar referans ortamda değil,
+# CI'ın Python 3.10 işinde doğrulanır.
+numpy==2.5.3 ; python_version >= "3.12"
+numpy==2.4.6 ; python_version == "3.11"
+numpy==2.2.6 ; python_version < "3.11"
+pandas==3.0.6 ; python_version >= "3.11"
+pandas==2.3.3 ; python_version < "3.11"
+# pandas 2.x'in ek bağımlılıkları (tzdata, pandas 3'te yalnızca Windows'ta gerekir)
+pytz==2026.4 ; python_version < "3.11"
+tzdata==2026.4 ; python_version < "3.11" or sys_platform == "win32"
+# Python 3.10'da pytest / pytest-asyncio / coverage'ın ihtiyaç duyduğu geri taşımalar
+backports-asyncio-runner==1.2.0 ; python_version < "3.11"
+exceptiongroup==1.3.1 ; python_version < "3.11"
+tomli==2.4.1 ; python_version < "3.11"
+
+# --- Referans ortamda kurulu olmayan araçlar -------------------------------------------------
+# pytest-cov geliştirme ortamında kurulu değildi; kapsam ölçümü bu sürümlerle yapıldı.
+coverage==7.16.2
+pytest-cov==7.1.0

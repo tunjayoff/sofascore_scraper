@@ -562,15 +562,18 @@ npm run build    # type-check (vue-tsc) + production build into frontend/dist/
 
 Layout: `src/views/` one file per page, `src/components/` shared pieces, `src/stores/` (leagues, sport filter, running job), `src/api/client.ts` every backend call, `src/locales/{tr,en}.ts` all UI text.
 
-Tests and lint (CI runs the same on Python 3.10 and 3.14):
+Tests and lint (CI runs the same on Linux with Python 3.10 and 3.14, and on Windows and macOS with Python 3.14):
 
 ```bash
-pip install pytest pytest-asyncio httpx ruff
+pip install -r requirements-dev.txt -c constraints.txt
 ruff check .
 python -m pytest -q
+python -m pytest -q --cov   # with coverage; fails below the floor set in pyproject.toml
 ```
 
-`tests/conftest.py` points `DATA_DIR`, `config/` and `.env` at a temporary folder with a small synthetic data set, so the suite never touches your data or settings. Tests that call SofaScore are marked `live` and skipped by default; run them with `python -m pytest -m live`.
+`requirements.txt` lists the allowed version ranges; `constraints.txt` pins every package (indirect ones too) to versions that are known to work together. CI always installs with the constraints, so a new upstream release cannot break it unnoticed; a weekly workflow installs the newest allowed versions instead and runs the same tests, and Dependabot proposes updates to the pins.
+
+`tests/conftest.py` points `DATA_DIR`, `config/` and `.env` at a temporary folder with a small synthetic data set, so the suite never touches your data or settings. Tests that call SofaScore are marked `live` and skipped by default; run them with `python -m pytest -m live`. Tests marked `browser` start a real Chromium and are skipped by default too: `python -m pytest -m "browser and not live"` runs the BrowserBridge against a local fake site without contacting SofaScore (CI does this on every push).
 
 ### Releasing
 

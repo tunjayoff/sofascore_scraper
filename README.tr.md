@@ -551,15 +551,18 @@ npm run build    # tip kontrolü (vue-tsc) + frontend/dist/ içine üretim derle
 
 Yapı: `src/views/` her sayfa bir dosya, `src/components/` ortak parçalar, `src/stores/` (ligler, spor filtresi, çalışan iş), `src/api/client.ts` bütün backend çağrıları, `src/locales/{tr,en}.ts` bütün arayüz metinleri.
 
-Testler ve lint (CI aynısını Python 3.10 ve 3.14’te çalıştırır):
+Testler ve lint (CI aynısını Linux’ta Python 3.10 ve 3.14 ile, Windows ve macOS’ta Python 3.14 ile çalıştırır):
 
 ```bash
-pip install pytest pytest-asyncio httpx ruff
+pip install -r requirements-dev.txt -c constraints.txt
 ruff check .
 python -m pytest -q
+python -m pytest -q --cov   # kapsam ölçümüyle; pyproject.toml’daki tabanın altında başarısız olur
 ```
 
-`tests/conftest.py`, `DATA_DIR`, `config/` ve `.env`’i küçük sentetik bir veri setiyle geçici bir klasöre yönlendirir; testler verinize ve ayarlarınıza hiç dokunmaz. SofaScore’a istek atan testler `live` olarak işaretlidir ve varsayılan olarak atlanır; çalıştırmak için `python -m pytest -m live`.
+`requirements.txt` izin verilen sürüm aralıklarını listeler; `constraints.txt` her paketi (dolaylı olanlar dahil) birlikte çalıştığı bilinen sürümlere sabitler. CI her zaman bu sabitlerle kurar, böylece yeni çıkan bir paket sürümü CI’ı habersizce bozamaz; haftalık bir iş akışı bunun yerine izin verilen en yeni sürümleri kurup aynı testleri çalıştırır, Dependabot da sabitler için güncelleme önerir.
+
+`tests/conftest.py`, `DATA_DIR`, `config/` ve `.env`’i küçük sentetik bir veri setiyle geçici bir klasöre yönlendirir; testler verinize ve ayarlarınıza hiç dokunmaz. SofaScore’a istek atan testler `live` olarak işaretlidir ve varsayılan olarak atlanır; çalıştırmak için `python -m pytest -m live`. `browser` işaretli testler gerçek bir Chromium başlatır ve onlar da varsayılan olarak atlanır: `python -m pytest -m "browser and not live"` BrowserBridge’i SofaScore’a hiç istek atmadan yerel bir sahte siteye karşı çalıştırır (CI bunu her push’ta yapar).
 
 ### Sürüm yayımlama
 

@@ -22,6 +22,18 @@ markers = [
 ]
 addopts = "-m 'not live and not browser'"
 
+# Kapsam `pytest --cov` ile ölçülür (CI: Linux / Python 3.14 işi); satır + dal kapsamı birlikte.
+# main.py ve scripts/ ölçüme dahil değildir.
+[tool.coverage.run]
+source = ["src"]
+branch = true
+
+[tool.coverage.report]
+# Taban, ölçülen değerin (2026-10-01: %54,1) hemen altındadır: kapsam yalnızca yukarı gidebilir.
+# Test ekleyip değeri yükselttiğinizde tabanı da yükseltin.
+fail_under = 53
+skip_covered = true
+
 [tool.ruff]
 line-length = 120
 target-version = "py310"

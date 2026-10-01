@@ -1,0 +1,95 @@
+name: Latest dependencies
+
+# CI installs the verified versions in constraints.txt. This weekly run ignores them and
+# installs the newest versions that requirements.txt allows — what a user gets from a plain
+# `pip install -r requirements.txt` today — then runs the same tests, including the offline
+# browser-bridge test. A failure here means a new upstream release breaks the project before
+# any pin was moved; fix the code or narrow the range in requirements.txt.
+#
+# GitHub e-mails the result of a failed scheduled run to whoever last edited this schedule.
+
+on:
+  schedule:
+    - cron: "23 4 * * 1" # Mondays 04:23 UTC
+  workflow_dispatch:
+  # A change to this workflow is tried in its own pull request
+  pull_request:
+    paths:
+      - ".github/workflows/latest-deps.yml"
+
+permissions:
+  contents: read
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 1
+
+  python:
+    needs: frontend
+    name: latest allowed versions (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      # No pip cache on purpose: the point is to see today's releases
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+      - name: Install without constraints
+        run: python -m pip install --upgrade --upgrade-strategy eager -r requirements-dev.txt
+      - name: Versions that differ from constraints.txt
+        run: |
+          python -m pip freeze > latest.txt
+          python - <<'EOF'
+          import re
+
+          def pins(path):
+              out = {}
+              for line in open(path, encoding="utf-8"):
+                  m = re.match(r"\s*([A-Za-z0-9._-]+)==([^\s;]+)", line)
+                  if m:
+                      out.setdefault(re.sub(r"[-_.]+", "-", m.group(1)).lower(), set()).add(m.group(2))
+              return out
+
+          pinned, latest = pins("constraints.txt"), pins("latest.txt")
+          rows = [(n, ", ".join(sorted(pinned[n])), v) for n, vs in sorted(latest.items()) for v in vs
+                  if n in pinned and v not in pinned[n]]
+          print(f"{len(rows)} package(s) newer than the pin:")
+          for name, old, new in rows:
+              print(f"  {name}: {old} -> {new}")
+          EOF
+      - run: python -m pytest -q -rfExX
+      - run: python -m playwright install chromium
+        timeout-minutes: 5
+      - name: Browser bridge against the local fake site
+        run: python -m pytest -q -rfExX -m "browser and not live"
+        timeout-minutes: 5
