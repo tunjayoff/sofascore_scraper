@@ -3,6 +3,7 @@ Talimat 06 ek ölçüm: "sayfayı dinlemenin" üretim maliyeti (ana koşudan son
 
     python scripts/push_light_probe.py --out data/research_index/push_light_2026-10-01 --minutes 35
 
+0) Taban: köprünün tek sekmesi robots.txt'de beklerken Chrome RSS'i ve süreç sayısı.
 A) Tek futbol spor sekmesi; görsel/medya/font ve tüm üçüncü taraf istekleri (reklam, analitik, video, harici
    betikler) engelli. NATS bağlantısı ve sport.football aboneliği kuruluyor mu; Chrome RSS, süreç/renderer
    sayısı, aralık CPU'su (/proc'tan), sayfanın çerçeve (iframe) sayısı ve alan adları. 30. dakikadaki yeniden
@@ -117,6 +118,9 @@ async def main_async(args: argparse.Namespace) -> None:
     rec.poll_page = bridge.page
     start = time.time()
     rec.write("run.jsonl", {"ts": start, "event": "start", "utc": pcr.utc(start), "minutes": args.minutes})
+    # Taban: köprünün tek sekmesi API çağırmayan robots.txt'de beklerken (sunucuda "tek boş sekme" maliyeti)
+    await asyncio.sleep(50)
+    await sample(rec, bridge.page, profile, "baseline-robots-1min")
     await pcr.poll_live(bridge, rec, "football")  # eski token: önce çöz
     page = await pcr.open_tab(bridge.context, rec, "football", "light-football", bridge)
     page.on("framenavigated", lambda fr: fr == page.main_frame and rec.write(
