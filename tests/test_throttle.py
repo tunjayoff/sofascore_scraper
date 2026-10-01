@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
 import json
 import os
 import subprocess
@@ -522,6 +523,116 @@ def test_real_limiter_spaces_bridge_requests_across_callers(shared_dir, monkeypa
     assert delays[0] == 0.0
     assert 0.9 < delays[1] <= 1.0 and 1.9 < delays[2] <= 2.0  # 1 istek/sn: sıra sıra
     assert os.path.exists(shared_dir / "api.json")
+
+
+# --- köprü: ortak bütçede sıra bekleme, istek zaman aşımından sayılmaz -------------------------
+# PR #19'un açık bıraktığı durum: düşük bir bütçede (ya da kalabalık kuyrukta) istek, sırasını
+# köprünün içinde beklerken REQUEST_TIMEOUT (120 sn) doluyordu. Testler süreleri küçültür:
+# zaman aşımı 0,5 sn, sıra beklemesi 0,8 sn.
+
+_OK = {"status": 200, "ok": True, "data": {"a": 1}, "text": None}
+
+
+def _slot_delays(monkeypatch, *delays):
+    """throttle.reserve sahtesi: sırayla verilen beklemeleri döndürür, bitince 0."""
+    left = list(delays)
+    monkeypatch.setattr(throttle, "reserve", lambda: left.pop(0) if left else 0.0)
+
+
+def test_slot_wait_does_not_count_towards_async_bridge_timeout(monkeypatch):
+    _slot_delays(monkeypatch, 0.8)
+    bridge = _bridge(AsyncMock(return_value=_OK))
+    monkeypatch.setattr(cs, "REQUEST_TIMEOUT", 0.5)
+    with patch.object(cs.BrowserBridge, "get_instance", return_value=bridge):
+        start = time.monotonic()
+        assert asyncio.run(cs.fetch_api_via_browser("/event/1")) == {"a": 1}
+    assert time.monotonic() - start >= 0.75  # sıra gerçekten beklendi, istek düşmedi
+
+
+def test_slot_wait_does_not_count_towards_sync_bridge_timeout(monkeypatch):
+    _slot_delays(monkeypatch, 0.8)
+    bridge = _bridge(AsyncMock(return_value=_OK))
+    with patch.object(cs.BrowserBridge, "get_instance", return_value=bridge):
+        start = time.monotonic()
+        assert cs.fetch_api_via_browser_sync("/event/1", timeout=0.5) == {"a": 1}
+    assert time.monotonic() - start >= 0.75
+
+
+def test_retry_after_challenge_also_extends_the_timeout(monkeypatch):
+    """Challenge sonrası yineleme kuyruğun sonundan yeni sıra alır: o bekleme de sayılmaz."""
+    _slot_delays(monkeypatch, 0.4, 0.4)
+    challenge = {"status": 403, "ok": False, "data": None, "text": '{"error":{"reason":"challenge"}}'}
+    bridge = _bridge(AsyncMock(side_effect=[challenge, _OK]))
+    bridge.solve_challenge = AsyncMock(return_value="new")
+    with patch.object(cs.BrowserBridge, "get_instance", return_value=bridge):
+        assert cs.fetch_api_via_browser_sync("/event/1", timeout=0.5) == {"a": 1}
+
+
+@pytest.mark.parametrize("sync", [True, False])
+def test_bridge_timeout_still_limits_the_request_itself(monkeypatch, sync):
+    """Uzayan yalnızca sıra beklemesidir: sırası gelmiş ama yanıt vermeyen istek yine düşer."""
+    _slot_delays(monkeypatch, 0.3)
+
+    async def stuck():
+        await cs._wait_for_slot()
+        await asyncio.sleep(30)
+
+    start = time.monotonic()
+    if sync:
+        with pytest.raises(concurrent.futures.TimeoutError):
+            cs._run_sync(stuck(), 0.3)
+    else:
+        async def run():
+            with pytest.raises(asyncio.TimeoutError):
+                await cs._run_on_background_loop(stuck(), 0.3)
+
+        asyncio.run(run())
+    assert 0.5 <= time.monotonic() - start < 5  # 0,3 sn sıra + 0,3 sn zaman aşımı
+
+
+def test_callers_waiting_for_a_shared_solve_get_its_slot_wait_too(monkeypatch):
+    """Ortak çözümün doğrulama isteği sıra beklerken, çözümü bekleyen diğer istekler de düşmez."""
+    _slot_delays(monkeypatch, 0.8)
+    bridge = cs.BrowserBridge.__new__(cs.BrowserBridge)
+    bridge.token, bridge._token_at = None, 0.0
+    bridge._solve_task, bridge._solve_wait, bridge._solve_failed_at = None, None, 0.0
+    bridge.ensure_ready = AsyncMock()
+    solves = []
+
+    async def solve():
+        solves.append(1)
+        await cs._wait_for_slot()  # _api_unlocked'ın doğrulama isteği
+        return "jwt"
+
+    bridge._solve_challenge = solve
+
+    async def run():
+        return await asyncio.gather(*[cs._run_on_background_loop(bridge.solve_challenge(), 0.5) for _ in range(3)])
+
+    assert asyncio.run(run()) == ["jwt"] * 3
+    assert len(solves) == 1
+
+
+def test_calls_do_not_share_their_slot_wait(monkeypatch):
+    """Bir çağrının sıra beklemesi, aynı anda çalışan başka bir çağrının zaman aşımını uzatmaz."""
+    _slot_delays(monkeypatch, 0.8)
+
+    async def queued():
+        await cs._wait_for_slot()
+        return "ok"
+
+    async def stuck():
+        await asyncio.sleep(30)
+
+    async def run():
+        start = time.monotonic()
+        first = asyncio.ensure_future(cs._run_on_background_loop(queued(), 0.3))
+        with pytest.raises(asyncio.TimeoutError):
+            await cs._run_on_background_loop(stuck(), 0.3)
+        assert time.monotonic() - start < 1.0  # paylaşılsaydı 0,8 + 0,3 sn sürerdi
+        assert await first == "ok"
+
+    asyncio.run(run())
 
 
 # --- izleyici: 1 sn aralık ortak bütçenin "watch" şeridinden gelir -----------------------------

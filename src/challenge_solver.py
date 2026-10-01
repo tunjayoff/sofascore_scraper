@@ -14,13 +14,15 @@ Playwright ile headless modda Turnstile hiç geçilemiyordu (ölçüm: 0/12 iste
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
+import contextvars
 import hashlib
 import json
 import os
 import re
 import threading
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from src import bridge_health, throttle
 from src.logger import get_logger
@@ -41,6 +43,7 @@ _PROBE_URL = "https://www.sofascore.com/api/v1/unique-tournament/17/seasons"
 
 # Zaman aşımları (saniye). Tarayıcı başlatma (ilk challenge çözümü dahil), istek başına
 # zaman aşımının dışında tutulur: soğuk bir başlatmayı yarıda kesmek profili kilitli bırakır.
+# Ortak istek bütçesinde sıra beklenen süre de bu zaman aşımlarından sayılmaz (bkz. _SlotWait).
 STARTUP_TIMEOUT = 150.0
 REQUEST_TIMEOUT = 120.0
 SOLVE_TIMEOUT = 90.0
@@ -113,6 +116,41 @@ def _headless() -> bool:
     return os.getenv("SOFASCORE_BROWSER_HEADED", "").lower() not in ("1", "true", "yes")
 
 
+class _SlotWait:
+    """
+    Bir köprü çağrısının ortak istek bütçesinde (src/throttle.py) sıra beklediği toplam süre.
+
+    Bekleme köprünün içinde (arka plan döngüsünde) yapılır, ama çağrının zaman aşımından
+    sayılmaz: düşük bir REQUEST_RATE_LIMIT ya da kalabalık bir kuyruk, sırası gelmemiş isteği
+    REQUEST_TIMEOUT ile düşürmesin. Süre, beklemeye başlamadan önce (ayırma anında) yazılır;
+    çağıran taraf son tarihi buna göre uzatır (_run_sync / _run_on_background_loop).
+    `joined`: bu çağrının beklediği ortak challenge çözümünün kendi sıra beklemeleri.
+    """
+
+    __slots__ = ("own", "joined")
+
+    def __init__(self) -> None:
+        self.own = 0.0
+        self.joined: List["_SlotWait"] = []
+
+    @property
+    def seconds(self) -> float:
+        return self.own + sum(w.seconds for w in self.joined)
+
+
+_slot_wait: "contextvars.ContextVar[Optional[_SlotWait]]" = contextvars.ContextVar("bridge_slot_wait", default=None)
+
+
+async def _wait_for_slot() -> None:
+    """Ortak bütçeden sıra alır ve bekler; beklenen süre çağrının zaman aşımına eklenir."""
+    delay = throttle.reserve()
+    if delay > 0:
+        wait = _slot_wait.get()
+        if wait is not None:
+            wait.own += delay
+        await asyncio.sleep(delay)
+
+
 class BrowserBridge:
     """
     Scrapling StealthySession üzerinden Sofascore API köprüsü.
@@ -131,6 +169,7 @@ class BrowserBridge:
         self._token_at: float = 0.0
         self._init_lock = asyncio.Lock()
         self._solve_task: Optional["asyncio.Future[Optional[str]]"] = None
+        self._solve_wait: Optional[_SlotWait] = None
         self._launch_failed_at: float = 0.0
         self._solve_failed_at: float = 0.0
         os.makedirs(self.profile_dir, exist_ok=True)
@@ -259,7 +298,19 @@ class BrowserBridge:
         if self._solve_failed_at and time.time() - self._solve_failed_at < _SOLVE_RETRY_AFTER:
             return None
         if self._solve_task is None or self._solve_task.done():
-            self._solve_task = asyncio.ensure_future(self._solve_challenge())
+            # Çözümün (doğrulama isteğinin) sıra beklemesi kendi sayacına yazılır: görev, bağlamı
+            # oluşturulduğu anda kopyalar
+            solve_wait = _SlotWait()
+            token = _slot_wait.set(solve_wait)
+            try:
+                self._solve_task = asyncio.ensure_future(self._solve_challenge())
+            finally:
+                _slot_wait.reset(token)
+            self._solve_wait = solve_wait
+        # Ortak çözümü bekleyen her çağrı, çözümün sıra beklemesi kadar ek süre alır
+        wait = _slot_wait.get()
+        if wait is not None and self._solve_wait is not None and self._solve_wait not in wait.joined:
+            wait.joined.append(self._solve_wait)
         # shield: bir bekleyenin iptali diğerlerinin beklediği çözümü iptal etmesin
         return await asyncio.shield(self._solve_task)
 
@@ -293,8 +344,9 @@ class BrowserBridge:
         """
         Köprüden çıkan tek API isteği. Tarayıcıdan giden her istek buradan geçer: önce süreçler
         arası ortak bütçeden sıra alınır (src/throttle.py), sonra sayfada fetch() çalışır.
+        Sıra bekleme, çağrının zaman aşımından sayılmaz (_SlotWait).
         """
-        await throttle.wait_async()
+        await _wait_for_slot()
         x_req = hashlib.sha256(str(int(time.time()) // 1800).encode("utf-8")).hexdigest()[:6]
         return await self.evaluate(_FETCH_JS, [url, x_req, self.token, _JS_FETCH_TIMEOUT_MS, cache_mode])
 
@@ -433,10 +485,35 @@ def _proxy_settings() -> Optional[Dict[str, str]]:
     return settings
 
 
-def _run_sync(coro, timeout: float) -> Any:
-    fut = asyncio.run_coroutine_threadsafe(coro, _get_background_loop())
+def _submit(coro) -> "Tuple[concurrent.futures.Future[Any], _SlotWait]":
+    """
+    Coroutine'i arka plan döngüsüne verir. Döngüdeki görev, çağıranın o anki bağlamını kopyalar
+    (call_soon_threadsafe); böylece köprünün içindeki sıra beklemeleri bu çağrının sayacına yazılır.
+    """
+    wait = _SlotWait()
+    token = _slot_wait.set(wait)
     try:
-        return fut.result(timeout=timeout)
+        fut = asyncio.run_coroutine_threadsafe(coro, _get_background_loop())
+    finally:
+        _slot_wait.reset(token)
+    return fut, wait
+
+
+def _run_sync(coro, timeout: float) -> Any:
+    """`timeout`: ortak bütçede sıra beklenen süre HARİÇ en uzun çalışma süresi."""
+    fut, wait = _submit(coro)
+    started = time.monotonic()
+    try:
+        while True:
+            left = started + timeout + wait.seconds - time.monotonic()
+            try:
+                return fut.result(timeout=max(0.0, left))
+            except concurrent.futures.TimeoutError:
+                if fut.done():
+                    return fut.result()  # coroutine'in kendi zaman aşımı (ya da tam o anda biten sonuç)
+                if started + timeout + wait.seconds - time.monotonic() <= 0:
+                    raise
+                # bu arada sıra beklendi: son tarih uzadı
     except BaseException:
         fut.cancel()
         raise
@@ -447,11 +524,21 @@ async def _run_on_background_loop(coro, timeout: float = REQUEST_TIMEOUT) -> Any
     Coroutine'i BrowserBridge'in arka plan döngüsünde çalıştırır ve sonucu bekler.
     Playwright nesneleri oluşturuldukları döngüye bağlıdır; çağıranın döngüsü
     (örn. asyncio.run ile açılıp kapanan geçici döngü) kullanılırsa sonraki çağrılar askıda kalır.
+    `timeout`: ortak bütçede sıra beklenen süre HARİÇ en uzun çalışma süresi.
     """
-    fut = asyncio.run_coroutine_threadsafe(coro, _get_background_loop())
+    fut, wait = _submit(coro)
+    wrapped = asyncio.wrap_future(fut)
+    started = time.monotonic()
     try:
-        return await asyncio.wait_for(asyncio.wrap_future(fut), timeout)
+        while True:
+            left = started + timeout + wait.seconds - time.monotonic()
+            if left <= 0:
+                raise asyncio.TimeoutError()
+            done, _ = await asyncio.wait({wrapped}, timeout=left)
+            if done:
+                return wrapped.result()
     except BaseException:
+        wrapped.cancel()  # asyncio.wait_for'un yaptığı gibi: iptal arka plandaki göreve de ulaşır
         fut.cancel()
         raise
 
