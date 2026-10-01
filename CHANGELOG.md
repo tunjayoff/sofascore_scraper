@@ -40,6 +40,20 @@ section is what the first tagged release will contain.
 - **Watch mode.** `main.py --watch --sport … --league-ids …|--event-ids …` follows live
   matches and writes status, score and stuck-match events to `DATA_DIR/watch_events.jsonl`
   (#12).
+- **Shared request budget.** `REQUEST_RATE_LIMIT` is one requests-per-second budget for all
+  processes on the machine together (web app, CLI, every `--watch`, `--refresh-only`),
+  whether a request goes through curl or through the browser. The default is
+  `10 × MAX_CONCURRENT` (100 with default settings), which does not slow down a single bulk
+  download; `0` turns it off. It is also on the Settings page (Advanced) and in
+  `/api/settings`. The state is a small locked file under
+  `~/.cache/sofascore_scraper/throttle/`; `SOFASCORE_THROTTLE_DIR` moves it (#19).
+- **Bridge health.** The browser bridge reports whether SofaScore is answering: `ok`,
+  `degraded` after `BRIDGE_DEGRADED_AFTER` (default 3) failed requests in a row, `blocked`
+  after `BRIDGE_BLOCKED_AFTER` (10) that span at least `BRIDGE_BLOCKED_MIN_SECONDS` (200).
+  It is in `GET /health` (`bridge`, next to a new `throttle` block) and
+  `GET /api/bypass/status` (`health`), in a dismissible banner in the web app, and in the
+  terminal modes as one line on stderr per state change; the log gets one warning per state
+  change (#19).
 - `GET /api/sports` lists the supported sports and, for each, the match-detail slices
   requested for it (#18).
 - `main.py --web` options `--host`, `--port` and `--dev`.
@@ -83,6 +97,9 @@ section is what the first tagged release will contain.
   `ResourceNotFoundError`) instead of returning `None`, does not sleep after the final
   attempt, does not retry permanent 4xx responses, and really caps in-flight requests at
   `MAX_CONCURRENT`.
+- Watch mode: the 1 s spacing between requests is shared by every `--watch` process on the
+  machine instead of applying to each process, so one watcher per sport stays at 1 request/s
+  in total. With `REQUEST_RATE_LIMIT=0` it applies per process as before (#19).
 - Round files store the raw payload; a round with unfinished matches is fetched again once
   it is older than 6 hours.
 - The supported sports are defined in one registry (`src/sports.py`) that the CLI, the
