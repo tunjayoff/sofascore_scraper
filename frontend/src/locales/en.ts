@@ -40,6 +40,12 @@ const en: typeof tr = {
     serverDown: 'Can’t reach the server. Is the app running?',
     statsFailed: 'Statistics could not be loaded: {error}',
   },
+  // Keyed by the `code` of an API refusal (src/web/jobs.py, src/web/routes/settings.py)
+  errors: {
+    job_running: 'A download is running. Stop it or wait for it to finish, then try again.',
+    data_operation_running: 'A backup or delete is still in progress. Try again when it finishes.',
+    data_dir_unusable: 'This folder can’t be created or written to. Nothing was changed.',
+  },
   sport: {
     all: 'All sports',
     football: 'Football',
@@ -240,7 +246,9 @@ const en: typeof tr = {
     themeDark: 'Dark',
     themeSystem: 'System',
     dataDir: 'Data folder',
-    dataDirHint: 'Where downloaded files are saved.',
+    dataDirHint: 'Where downloaded files are saved. It can’t be changed while a download is running.',
+    dataDirChanged:
+      'Data folder changed. New downloads and the download history now use it; files in the old folder were not moved.',
     disk: 'Disk used',
     totals: '{leagues} leagues · {matches} matches · {details} match details',
     backup: 'Back up',

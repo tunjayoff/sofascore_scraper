@@ -12,28 +12,43 @@ function formatValidation(issues: ValidationIssue[]): string {
     .join('; ')
 }
 
-async function parseError(res: Response): Promise<string> {
+type ParsedError = { message: string; code?: string }
+
+async function parseError(res: Response): Promise<ParsedError> {
   try {
     const data = await res.json()
-    if (typeof data?.detail === 'string') return data.detail
-    if (Array.isArray(data?.detail)) return formatValidation(data.detail)
-    return JSON.stringify(data?.detail ?? data)
+    const detail = data?.detail
+    if (typeof detail === 'string') return { message: detail }
+    if (Array.isArray(detail)) return { message: formatValidation(detail) }
+    // Refusals the UI translates: {code: 'job_running', message: '...'} (src/web/app.py, routes/settings.py)
+    if (typeof detail?.code === 'string' && typeof detail?.message === 'string') {
+      return { message: detail.message, code: detail.code }
+    }
+    return { message: JSON.stringify(detail ?? data) }
   } catch {
-    return res.statusText || 'Request failed'
+    return { message: res.statusText || 'Request failed' }
   }
 }
 
 export class ApiError extends Error {
   status: number
-  constructor(message: string, status: number) {
+  /** Machine-readable reason, when the server sent one; lib/toast.ts maps it to `errors.<code>`. */
+  code?: string
+  constructor(message: string, status: number, code?: string) {
     super(message)
     this.status = status
+    this.code = code
   }
+}
+
+async function apiError(res: Response): Promise<ApiError> {
+  const { message, code } = await parseError(res)
+  return new ApiError(message, res.status, code)
 }
 
 export async function apiGet<T>(path: string): Promise<T> {
   const res = await fetch(path)
-  if (!res.ok) throw new ApiError(await parseError(res), res.status)
+  if (!res.ok) throw await apiError(res)
   return res.json()
 }
 
@@ -43,7 +58,7 @@ export async function apiSend<T>(path: string, method: string, body?: unknown): 
     headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
-  if (!res.ok) throw new ApiError(await parseError(res), res.status)
+  if (!res.ok) throw await apiError(res)
   if (res.status === 204) return undefined as T
   return res.json()
 }
@@ -212,7 +227,8 @@ export const api = {
   stats: () => apiGet<SystemStats>('/api/stats/system'),
   settings: () => apiGet<Settings>('/api/settings'),
   bypassStatus: () => apiGet<BypassStatus>('/api/bypass/status'),
-  saveSettings: (s: Partial<Settings>) => apiSend<{ status: string }>('/api/settings', 'POST', s),
+  saveSettings: (s: Partial<Settings>) =>
+    apiSend<{ status: string; data_dir_changed?: boolean }>('/api/settings', 'POST', s),
   /** Query options of POST /api/data/backup (src/web/routes/data.py); the page uses the defaults. */
   backup: ({ scope = 'all', include_env = false }: { scope?: BackupScope; include_env?: boolean } = {}) =>
     apiSend<{ download_url: string; filename: string }>(

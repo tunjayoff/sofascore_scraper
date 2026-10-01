@@ -104,8 +104,9 @@ async function save() {
   saving.value = true
   try {
     const r = await api.saveSettings(changed.value)
-    toast(r.status === 'success' ? t('settings.saved') : t('settings.noChange'))
-    await load()
+    toast(r.data_dir_changed ? t('settings.dataDirChanged') : r.status === 'success' ? t('settings.saved') : t('settings.noChange'))
+    // The other folder has its own files: league counts come from there now
+    await Promise.all([load(), r.data_dir_changed ? leagues.load() : null])
   } catch (e) {
     toastError(e)
   } finally {

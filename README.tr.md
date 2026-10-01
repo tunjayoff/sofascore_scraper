@@ -251,6 +251,8 @@ python main.py --config /yol/leagues.txt --data-dir /yol/veri
 
 > **Tüm veriyi sil** indirilmiş bütün sezon, maç ve detayları siler ve geri alınamaz. Önce yedek alın. Yedek, `data/backups/` (yani `DATA_DIR` içi) altında `data/`, `leagues.txt` ve `league_sports.json` içeren bir zip’tir. `.env` proxy kimlik bilgisi içerebileceği için dahil edilmez; isterseniz `POST /api/data/backup` isteğine `?include_env=true` ekleyin. Geri yüklemek için uygulamayı durdurun, `data/` klasörünü proje klasörüne (veya `DATA_DIR`’e) açın; `leagues.txt` ve `league_sports.json`’ı da geri istiyorsanız `config/` altına kopyalayın.
 
+> **İndirme sürerken** **Yedek al**, **Tüm veriyi sil**, lig kaldırma ve veri klasörünü değiştirme bir mesajla reddedilir: indirmeyi durdurun ya da bitmesini bekleyin. Yedekleme ya da silme sürerken de indirme başlatılamaz. Veri klasörü değişikliği hemen geçerli olur (yeniden başlatma gerekmez): indirmeler ve **Etkinlik** geçmişi artık yeni klasörü kullanır (her veri klasörü kendi geçmişini `.meta/jobs.db` içinde tutar); eski klasördeki dosyalar taşınmaz.
+
 **Terminal menüsü**
 
 `python main.py` ile numaralı menülerden ilerleyin: lig, sezon, maç listesi, detay, istatistik, CSV. Web’deki Maç indir sayfasının karşılığı yok; istemlerle lig ve seçenek belirlersiniz.
@@ -404,6 +406,7 @@ Web uygulaması kök yollarda; JSON API öneki **`/api`**.
 - **Scraper**: `POST /api/fetch` (gövde: `full` | `details`, `selections: [{league_id, season_ids, match_ids}]`), `POST /api/scrape/cancel` (sonrasında yeni istek gönderilmez, yeniden deneme beklemeleri kesilir), durum, SSE akışı.
 - **Pano / istatistik / ayarlar**: Web panellerine JSON; ayarlar `.env` ile uyumlu.
 - **Veri**: yedek zip, kapsam seçerek temizleme, CSV export.
+- **İndirme sürerken reddedilenler**: `POST /api/data/clear`, `POST /api/data/backup` (`scope=config` hariç), `DELETE /api/leagues/{id}` ve `data_dir`’i değiştiren `POST /api/settings`, `409` ve `{"detail": {"code": "job_running", "message": "..."}}` döndürür. Bunlardan biri sürerken hem bunlar hem `POST /api/fetch`, `data_operation_running` koduyla `409` döndürür. Başarılı `data_dir` değişikliği `"data_dir_changed": true` içerir; oluşturulamayan klasör `data_dir_unusable` koduyla `400` döndürür.
 - **Bypass Durumu**: `GET /api/bypass/status` (`health` ile: `ok` / `degraded` / `blocked`, bkz. [SofaScore bizi engelliyor mu?](#sofascore-bizi-engelliyor-mu-köprü-sağlığı)) ve canlı test `POST /api/bypass/test`.
 - **Sağlık**: `GET /health` (`/api` öneki yok) `status`, `version`, `ui` alanlarının yanında `bridge` (aynı sağlık bloğu) ve `throttle` ([ortak istek bütçesi](#ortak-istek-bütçesi-tüm-süreçler)) döndürür.
 
