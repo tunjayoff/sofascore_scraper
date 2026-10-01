@@ -1,0 +1,156 @@
+{
+ "all_failed": {
+  "argv": [
+   "--refresh-only"
+  ],
+  "exit_code": 1,
+  "files": {
+   "added": {
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [
+   "sync /event/9100001 404"
+  ],
+  "sleeps": {},
+  "stderr": [],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Yenileme: 1 geçici kayıt",
+   "LOG INFO MatchDataFetcher: 1 maç yenileniyor",
+   "LOG WARNING MatchDataFetcher: Maç 9100001 yenileme: /event alınamadı",
+   "Refresh: 0 matches refreshed, 0 changed, 1 failed (changes: data/score_changes.jsonl)"
+  ]
+ },
+ "breaker_ignored": {
+  "argv": [
+   "--refresh-only",
+   "--ignore-rate-limit"
+  ],
+  "exit_code": 1,
+  "files": {},
+  "request_layer_loaded": true,
+  "requests": [
+   "sync /event/9100010 403",
+   "sync /event/9100010 403",
+   "sync /event/9100010 403",
+   "sync /event/9100001 403",
+   "sync /event/9100001 403",
+   "sync /event/9100001 403",
+   "sync /event/9100003 403",
+   "sync /event/9100003 403",
+   "sync /event/9100003 403"
+  ],
+  "sleeps": {
+   "request-layer": 6
+  },
+  "stderr": [],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG WARNING Main: Rate-limit circuit breaker --ignore-rate-limit ile devre dışı bırakıldı.",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Yenileme: 3 geçici kayıt",
+   "LOG INFO MatchDataFetcher: 3 maç yenileniyor",
+   "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100010",
+   "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100010",
+   "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100010",
+   "LOG ERROR Utils: 403 Forbidden, denemeler tükendi: https://www.sofascore.com/api/v1/event/9100010",
+   "LOG WARNING MatchDataFetcher: Maç 9100010 yenileme: /event alınamadı",
+   "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100001",
+   "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100001",
+   "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100001",
+   "LOG ERROR Utils: 403 Forbidden, denemeler tükendi: https://www.sofascore.com/api/v1/event/9100001",
+   "LOG WARNING MatchDataFetcher: Maç 9100001 yenileme: /event alınamadı",
+   "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100003",
+   "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100003",
+   "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100003",
+   "LOG ERROR Utils: 403 Forbidden, denemeler tükendi: https://www.sofascore.com/api/v1/event/9100003",
+   "LOG WARNING MatchDataFetcher: Maç 9100003 yenileme: /event alınamadı",
+   "Refresh: 0 matches refreshed, 0 changed, 3 failed (changes: data/score_changes.jsonl)"
+  ]
+ },
+ "nothing_due": {
+  "argv": [
+   "--refresh-only"
+  ],
+  "exit_code": 0,
+  "files": {
+   "added": {
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Yenileme: 0 geçici kayıt",
+   "Refresh: 0 matches refreshed, 0 changed, 0 failed (changes: data/score_changes.jsonl)"
+  ]
+ },
+ "stopped_by_breaker": {
+  "argv": [
+   "--refresh-only"
+  ],
+  "exit_code": 2,
+  "files": {
+   "added": {
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [
+   "sync /event/9100010 403",
+   "sync /event/9100010 403",
+   "sync /event/9100010 403",
+   "sync /event/9100001 403",
+   "sync /event/9100001 403",
+   "sync /event/9100001 403"
+  ],
+  "sleeps": {
+   "request-layer": 4
+  },
+  "stderr": [
+   "Refresh stopped: too many requests to SofaScore failed (403); 1 matches were not attempted. Wait a while and run it again."
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Yenileme: 3 geçici kayıt",
+   "LOG INFO MatchDataFetcher: 3 maç yenileniyor",
+   "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100010",
+   "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100010",
+   "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100010",
+   "LOG ERROR Utils: 403 Forbidden, denemeler tükendi: https://www.sofascore.com/api/v1/event/9100010",
+   "LOG WARNING MatchDataFetcher: Maç 9100010 yenileme: /event alınamadı",
+   "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100001",
+   "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100001",
+   "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100001",
+   "LOG ERROR Utils: 403 Forbidden, denemeler tükendi: https://www.sofascore.com/api/v1/event/9100001",
+   "LOG WARNING Breaker: Devre kesici açıldı (art arda 2 başarısız istek): 2 istekten 2 başarısız (2x 403). Bu iş SofaScore'a yeni istek göndermeyecek.",
+   "LOG WARNING MatchDataFetcher: Maç 9100001 yenileme: /event alınamadı",
+   "LOG WARNING MatchDataFetcher: Çok fazla başarısız istek; yenileme durduruldu, 1 maç denenmedi",
+   "Refresh: 0 matches refreshed, 0 changed, 2 failed (changes: data/score_changes.jsonl)"
+  ]
+ }
+}

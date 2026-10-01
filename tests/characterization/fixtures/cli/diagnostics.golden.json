@@ -1,0 +1,22 @@
+{
+ "argv": [
+  "--diagnostics",
+  "out/bundle.zip"
+ ],
+ "exit_code": 0,
+ "files": {
+  "added": {
+   "cwd/out/bundle.zip": "<binary>",
+   "logs/sofascore_scraper.log": "<binary>"
+  }
+ },
+ "request_layer_loaded": true,
+ "requests": [],
+ "sleeps": {},
+ "stderr": [],
+ "stdout": [
+  "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+  "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+  "Diagnostics bundle written: <SANDBOX>/cwd/out/bundle.zip"
+ ]
+}

@@ -1,0 +1,90 @@
+{
+ "argv": [
+  "--headless",
+  "--update-all",
+  "--league-id",
+  "17"
+ ],
+ "exit_code": 0,
+ "files": "<same as headless_update_all>",
+ "request_layer_loaded": true,
+ "requests": "<same as headless_update_all>",
+ "sleeps": {
+  "request-layer": 33,
+  "src.client.transport": 3
+ },
+ "stderr": [
+  "<progress> Fetching match details: 4/4"
+ ],
+ "stdout": [
+  "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+  "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+  "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data",
+  "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/seasons",
+  "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/matches",
+  "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/match_details",
+  "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/datasets",
+  "LOG INFO SeasonFetcher: Mevcut sezon verisi bulunamadı",
+  "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+  "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+  "LOG INFO Main: Headless modda çalışılıyor",
+  "LOG INFO Main: Headless güncelleme: league_id=17 mode=full",
+  "",
+  "Headless: Full update for league 17 (seasons → matches → details)...",
+  "LOG INFO SeasonFetcher: Premier League (ID: 17) için sezonlar çekiliyor...",
+  "LOG INFO SeasonFetcher: Sezon verileri JSON olarak kaydedildi: <SANDBOX>/data/seasons/17_Premier_League_seasons.json",
+  "LOG INFO SeasonFetcher: Premier League için 2 sezon bulundu",
+  "LOG INFO MatchFetcher: Fetching matches for season",
+  "LOG INFO MatchFetcher: Fetching all matches for Premier League - Premier League 24/25...",
+  "LOG INFO MatchFetcher: Fetching data up to 50 rounds for the season...",
+  "LOG INFO MatchFetcher: Premier League: Premier League 24/25 için maç programı çekiliyor...",
+  {
+   "concurrent": [
+    "",
+    "LOG INFO MatchFetcher: Premier League: Premier League 24/25 için 2/2 tur çekildi",
+    "LOG INFO MatchFetcher: Premier League: Premier League 24/25 için eşzamanlı istek limiti: 5"
+   ]
+  },
+  "LOG INFO MatchFetcher: Premier League: Sezon 61627 JSON özeti kaydedildi: <SANDBOX>/data/matches/17_Premier_League/61627_Premier_League_24_25_summary.json",
+  "LOG INFO MatchFetcher: Premier League: Sezon 61627 CSV özeti kaydedildi: <SANDBOX>/data/matches/17_Premier_League/61627_Premier_League_24_25_summary.csv",
+  "LOG INFO MatchFetcher: Premier League - Premier League 24/25 için 2 hafta verisi çekildi",
+  "LOG INFO MatchFetcher: Fetching matches for season",
+  "LOG INFO MatchFetcher: Fetching all matches for Premier League - Premier League 23/24...",
+  "LOG INFO MatchFetcher: Fetching data up to 50 rounds for the season...",
+  "LOG INFO MatchFetcher: Premier League: Premier League 23/24 için maç programı çekiliyor...",
+  {
+   "concurrent": [
+    "LOG INFO MatchFetcher: Premier League: Premier League 23/24 için eşzamanlı istek limiti: 5",
+    "LOG INFO MatchFetcher: Premier League: Premier League 23/24 — round schedule unavailable (rounds=1), using event list",
+    "LOG INFO MatchFetcher: Premier League: event listesinden 1 benzersiz maç, 1 sayfa kaydedildi"
+   ]
+  },
+  "LOG INFO MatchFetcher: Premier League: Sezon 52186 JSON özeti kaydedildi: <SANDBOX>/data/matches/17_Premier_League/52186_Premier_League_23_24_summary.json",
+  "LOG INFO MatchFetcher: Premier League: Sezon 52186 CSV özeti kaydedildi: <SANDBOX>/data/matches/17_Premier_League/52186_Premier_League_23_24_summary.csv",
+  "LOG INFO MatchFetcher: Premier League - Premier League 23/24 için 1 hafta verisi çekildi",
+  "Fetching match details for league ID 17...",
+  "1 leagues to process...",
+  "",
+  "League folder: 17_Premier_League",
+  "Found 4 match IDs for the league.",
+  "Found 4 unique match IDs.",
+  "",
+  "Details will be fetched for 4 matches...",
+  "",
+  "Batch 1/1: processing 4 matches (1-4/4)...",
+  "Processing 4 matches in parallel...",
+  {
+   "concurrent": [
+    "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_23_24, Maç ID 9100010 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_23_24/9100010",
+    "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100001 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100001",
+    "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100002 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100002",
+    "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100003 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003",
+    "LOG INFO MatchDataFetcher: Batch 1/1: 4 başarılı, 0 başarısız (hata yok)",
+    "LOG INFO MatchDataFetcher: Processing batch 1/1 (4 matches)"
+   ]
+  },
+  "✓ Batch 1: 4/4 succeeded",
+  "",
+  "Done: 4/4 matches (100.0%) processed successfully."
+ ]
+}

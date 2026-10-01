@@ -1,0 +1,97 @@
+{
+ "json": {
+  "argv": [
+   "--doctor",
+   "--json",
+   "--only",
+   "env"
+  ],
+  "exit_code": 1,
+  "files": {},
+  "request_layer_loaded": false,
+  "requests": [],
+  "sleeps": {},
+  "src_modules": [
+   "src",
+   "src.doctor",
+   "src.language",
+   "src.paths",
+   "src.version"
+  ],
+  "stderr": [],
+  "stdout": {
+   "checks": [
+    {
+     "code": "env_invalid",
+     "detail": {
+      "exists": true,
+      "path": "<SANDBOX>/.env",
+      "problems": [
+       {
+        "key": "REQUEST_TIMEOUT",
+        "message": "REQUEST_TIMEOUT=soon: must be a whole number (≥ 1); the default is used instead",
+        "status": "fail"
+       },
+       {
+        "key": "USE_PROXY",
+        "message": "USE_PROXY=yes: must be true or false; anything else is read as false",
+        "status": "fail"
+       },
+       {
+        "key": "API_BASE_URL",
+        "message": "API_BASE_URL=https://example.org/api: not an https SofaScore address (default: https://www.sofascore.com/api/v1)",
+        "status": "warn"
+       }
+      ]
+     },
+     "fix": "Edit <SANDBOX>/.env (.env.example lists the accepted values)",
+     "fix_command": null,
+     "id": "env",
+     "label": "Settings (.env)",
+     "status": "fail",
+     "summary": "3 problems: REQUEST_TIMEOUT, USE_PROXY, API_BASE_URL"
+    }
+   ],
+   "counts": {
+    "fail": 1,
+    "ok": 0,
+    "warn": 0
+   },
+   "language": "en",
+   "ok": false,
+   "root": "<REPO>",
+   "status": "fail"
+  }
+ },
+ "text": {
+  "argv": [
+   "--doctor",
+   "--only",
+   "env"
+  ],
+  "exit_code": 1,
+  "files": {},
+  "request_layer_loaded": false,
+  "requests": [],
+  "sleeps": {},
+  "src_modules": [
+   "src",
+   "src.doctor",
+   "src.language",
+   "src.paths",
+   "src.version"
+  ],
+  "stderr": [],
+  "stdout": [
+   "SofaScore Scraper — environment check",
+   "",
+   "[FAIL] Settings (.env): 3 problems: REQUEST_TIMEOUT, USE_PROXY, API_BASE_URL",
+   "       - REQUEST_TIMEOUT=soon: must be a whole number (≥ 1); the default is used instead",
+   "       - USE_PROXY=yes: must be true or false; anything else is read as false",
+   "       - API_BASE_URL=https://example.org/api: not an https SofaScore address (default: https://www.sofascore.com/api/v1)",
+   "       Fix: Edit <SANDBOX>/.env (.env.example lists the accepted values)",
+   "",
+   "Result: 1 failed, 0 warning(s), 0 ok."
+  ]
+ }
+}

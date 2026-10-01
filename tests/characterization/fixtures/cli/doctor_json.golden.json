@@ -1,0 +1,83 @@
+{
+ "argv": [
+  "--doctor",
+  "--json",
+  "--only",
+  "profile,data_dir,config_dir,env"
+ ],
+ "exit_code": 0,
+ "files": {},
+ "request_layer_loaded": false,
+ "requests": [],
+ "sleeps": {},
+ "src_modules": [
+  "src",
+  "src.doctor",
+  "src.language",
+  "src.paths",
+  "src.version"
+ ],
+ "stderr": [],
+ "stdout": {
+  "checks": [
+   {
+    "code": "profile_new",
+    "detail": {
+     "path": "<SANDBOX>/browser-profile"
+    },
+    "fix": null,
+    "fix_command": null,
+    "id": "profile",
+    "label": "Browser profile",
+    "status": "ok",
+    "summary": "<SANDBOX>/browser-profile (does not exist yet; it is created on first use)"
+   },
+   {
+    "code": "data_dir_ok",
+    "detail": {
+     "path": "<SANDBOX>/data"
+    },
+    "fix": null,
+    "fix_command": null,
+    "id": "data_dir",
+    "label": "Data folder",
+    "status": "ok",
+    "summary": "<SANDBOX>/data (does not exist yet; it is created on first use)"
+   },
+   {
+    "code": "config_dir_ok",
+    "detail": {
+     "path": "<SANDBOX>/config"
+    },
+    "fix": null,
+    "fix_command": null,
+    "id": "config_dir",
+    "label": "Config folder",
+    "status": "ok",
+    "summary": "<SANDBOX>/config"
+   },
+   {
+    "code": "env_ok",
+    "detail": {
+     "exists": true,
+     "path": "<SANDBOX>/.env"
+    },
+    "fix": null,
+    "fix_command": null,
+    "id": "env",
+    "label": "Settings (.env)",
+    "status": "ok",
+    "summary": "<SANDBOX>/.env: 1 settings, all valid"
+   }
+  ],
+  "counts": {
+   "fail": 0,
+   "ok": 4,
+   "warn": 0
+  },
+  "language": "en",
+  "ok": true,
+  "root": "<REPO>",
+  "status": "ok"
+ }
+}

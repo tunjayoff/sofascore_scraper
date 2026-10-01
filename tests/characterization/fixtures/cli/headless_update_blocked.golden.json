@@ -1,0 +1,147 @@
+{
+ "all_leagues": {
+  "argv": [
+   "--headless",
+   "--update-all"
+  ],
+  "exit_code": 0,
+  "files": {
+   "added": {
+    "data/datasets/": "<empty dir>",
+    "data/match_details/processed/": "<empty dir>",
+    "data/matches/": "<empty dir>",
+    "data/seasons/": "<empty dir>",
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [
+   "sync /unique-tournament/17/seasons 403",
+   "sync /unique-tournament/17/seasons 403",
+   "sync /unique-tournament/17/seasons 403",
+   "sync /unique-tournament/17/seasons 403",
+   "sync /unique-tournament/17/seasons 403",
+   "sync /unique-tournament/17/seasons 403"
+  ],
+  "sleeps": {
+   "request-layer": 4
+  },
+  "stderr": [],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/seasons",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/matches",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/match_details",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/datasets",
+   "LOG INFO SeasonFetcher: Mevcut sezon verisi bulunamadı",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Headless modda çalışılıyor",
+   "LOG INFO Main: Headless güncelleme: league_id=None mode=full",
+   "",
+   "Headless Mode: Updating all data...",
+   "",
+   "1. Updating Season Data...",
+   "",
+   "Fetching season data for all leagues...",
+   "  - Fetching seasons for Premier League (ID: 17)...",
+   "LOG INFO SeasonFetcher: Premier League (ID: 17) için sezonlar çekiliyor...",
+   "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
+   "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
+   "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
+   "LOG ERROR Utils: 403 Forbidden, denemeler tükendi: https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
+   "LOG ERROR SeasonFetcher: Premier League için sezon verileri çekilemedi: HTTP 403 Forbidden: https://www.sofascore.com/api/v1/unique-tournament/17/seasons (Durum Kodu: 403)",
+   "    ✓ 0 seasons found",
+   "",
+   "✅ Successfully fetched total 0 seasons for all leagues.",
+   "",
+   "2. Fetching Match Data...",
+   "Fetching match data for all leagues...",
+   "All seasons will be fetched for each league",
+   "",
+   "  🏆 Premier League (ID: 17)",
+   "  ○ Checking seasons...",
+   "LOG WARNING SeasonFetcher: Sezon verisi bulunamadı: <SANDBOX>/data/seasons/17_Premier_League_seasons.json",
+   "  ○ Season data not found locally, fetching from API...",
+   "LOG INFO SeasonFetcher: Premier League (ID: 17) için sezonlar çekiliyor...",
+   "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
+   "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
+   "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
+   "LOG ERROR Utils: 403 Forbidden, denemeler tükendi: https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
+   "LOG ERROR SeasonFetcher: Premier League için sezon verileri çekilemedi: HTTP 403 Forbidden: https://www.sofascore.com/api/v1/unique-tournament/17/seasons (Durum Kodu: 403)",
+   "  Match not found. Skipping.",
+   "",
+   "Total matches successfully fetched for all leagues: 0 match data successfully fetched.",
+   "",
+   "3. Fetching Match Details...",
+   "",
+   "Fetching Details for All Matches:",
+   "",
+   "Fetching match details for all leagues...",
+   "All seasons will be fetched for each league",
+   "Fetching match details for all leagues...",
+   "0 leagues to process...",
+   "Found 0 unique match IDs.",
+   "No match IDs found!",
+   "",
+   "An error occurred during during the operation.",
+   "",
+   "All operations completed."
+  ]
+ },
+ "one_league": {
+  "argv": [
+   "--headless",
+   "--update-all",
+   "--league-id",
+   "17"
+  ],
+  "exit_code": 0,
+  "files": {
+   "added": {
+    "data/datasets/": "<empty dir>",
+    "data/match_details/processed/": "<empty dir>",
+    "data/matches/": "<empty dir>",
+    "data/seasons/": "<empty dir>",
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [
+   "sync /unique-tournament/17/seasons 403",
+   "sync /unique-tournament/17/seasons 403",
+   "sync /unique-tournament/17/seasons 403"
+  ],
+  "sleeps": {
+   "request-layer": 2
+  },
+  "stderr": [],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/seasons",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/matches",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/match_details",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/datasets",
+   "LOG INFO SeasonFetcher: Mevcut sezon verisi bulunamadı",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Headless modda çalışılıyor",
+   "LOG INFO Main: Headless güncelleme: league_id=17 mode=full",
+   "",
+   "Headless: Full update for league 17 (seasons → matches → details)...",
+   "LOG INFO SeasonFetcher: Premier League (ID: 17) için sezonlar çekiliyor...",
+   "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
+   "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
+   "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
+   "LOG ERROR Utils: 403 Forbidden, denemeler tükendi: https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
+   "LOG ERROR SeasonFetcher: Premier League için sezon verileri çekilemedi: HTTP 403 Forbidden: https://www.sofascore.com/api/v1/unique-tournament/17/seasons (Durum Kodu: 403)",
+   "LOG WARNING SeasonFetcher: Sezon verisi bulunamadı: <SANDBOX>/data/seasons/17_Premier_League_seasons.json",
+   "Fetching match details for league ID 17...",
+   "No match folder found for league ID 17!"
+  ]
+ }
+}

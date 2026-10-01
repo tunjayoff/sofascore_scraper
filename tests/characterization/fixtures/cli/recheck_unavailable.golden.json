@@ -1,0 +1,256 @@
+{
+ "all_then_download": {
+  "argv": [
+   "--recheck-unavailable",
+   "all",
+   "--headless",
+   "--update-all",
+   "--fetch-mode",
+   "details"
+  ],
+  "exit_code": 0,
+  "files": {
+   "added": {
+    "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/statistics.json": "sha256:461cc83fd197"
+   },
+   "changed": {
+    "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/_slice_status.json": {
+     "lineups": {
+      "empty": {
+       "at": "<volatile>",
+       "count": 1
+      }
+     },
+     "pregame_form": {
+      "empty": {
+       "at": "<volatile>",
+       "count": 1
+      }
+     }
+    },
+    "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/_unavailable.json": {
+     "lineups": 1,
+     "pregame_form": 1
+    }
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [
+   {
+    "concurrent": [
+     "async https://www.sofascore.com/ 200",
+     "sync /event/9100001 200",
+     "sync /event/9100001/statistics 200",
+     "sync /event/9100002 200",
+     "sync /event/9100002/lineups 200",
+     "sync /event/9100002/pregame-form 404"
+    ]
+   }
+  ],
+  "sleeps": {
+   "request-layer": 4,
+   "src.client.transport": 1
+  },
+  "stderr": [
+   "<progress> Fetching match details: 2/2"
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Yeniden denetim: {'matches': 1, 'slices': 2, 'scanned': 1}",
+   "Re-check: 2 \"slice not available\" markers reopened in 1 matches (1 matches with markers scanned). They will be requested again on the next download.",
+   "LOG INFO Main: Headless modda çalışılıyor",
+   "LOG INFO Main: Headless güncelleme: league_id=None mode=details",
+   "",
+   "Headless: Fetching match details for all leagues...",
+   "Fetching match details for all leagues...",
+   "1 leagues to process...",
+   "",
+   "League folder: 17_Premier_League",
+   "Found 4 match IDs for the league.",
+   "Found 4 unique match IDs.",
+   "2 matches already have every detail slice; the missing or partial ones will be processed.",
+   "",
+   "Details will be fetched for 2 matches...",
+   "",
+   "Batch 1/1: processing 2 matches (1-2/2)...",
+   "Processing 2 matches in parallel...",
+   {
+    "concurrent": [
+     "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100001 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100001",
+     "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100002 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100002",
+     "LOG INFO MatchDataFetcher: Batch 1/1: 2 başarılı, 0 başarısız (hata yok)",
+     "LOG INFO MatchDataFetcher: Processing batch 1/1 (2 matches)"
+    ]
+   },
+   "✓ Batch 1: 2/2 succeeded",
+   "",
+   "Done: 2/2 matches (100.0%) processed successfully."
+  ]
+ },
+ "default": {
+  "argv": [
+   "--recheck-unavailable"
+  ],
+  "exit_code": 0,
+  "files": {
+   "added": {
+    "logs/sofascore_scraper.log": "<binary>"
+   },
+   "removed": [
+    "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/_unavailable.json"
+   ]
+  },
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Yeniden denetim: {'matches': 1, 'slices': 1, 'scanned': 2}",
+   "Re-check: 1 \"slice not available\" markers reopened in 1 matches (2 matches with markers scanned). They will be requested again on the next download."
+  ]
+ },
+ "default_again": {
+  "argv": [
+   "--recheck-unavailable",
+   "--league-id",
+   "17"
+  ],
+  "exit_code": 0,
+  "files": {},
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Yeniden denetim: {'matches': 0, 'slices': 0, 'scanned': 1}",
+   "Re-check: 0 \"slice not available\" markers reopened in 0 matches (1 matches with markers scanned). They will be requested again on the next download."
+  ]
+ },
+ "details_run_confirms_markers": {
+  "argv": [
+   "--headless",
+   "--update-all",
+   "--fetch-mode",
+   "details"
+  ],
+  "exit_code": 0,
+  "files": {
+   "added": {
+    "logs/sofascore_scraper.log": "<binary>"
+   },
+   "changed": {
+    "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/_slice_status.json": {
+     "lineups": {
+      "empty": {
+       "at": "<volatile>",
+       "count": 2
+      }
+     },
+     "pregame_form": {
+      "empty": {
+       "at": "<volatile>",
+       "count": 2
+      }
+     }
+    },
+    "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/_unavailable.json": {
+     "lineups": 2,
+     "pregame_form": 2
+    }
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [
+   {
+    "concurrent": [
+     "async https://www.sofascore.com/ 200",
+     "sync /event/9100002 200",
+     "sync /event/9100002/lineups 200",
+     "sync /event/9100002/pregame-form 404"
+    ]
+   }
+  ],
+  "sleeps": {
+   "request-layer": 2,
+   "src.client.transport": 1
+  },
+  "stderr": [
+   "<progress> Fetching match details: 1/1"
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Headless modda çalışılıyor",
+   "LOG INFO Main: Headless güncelleme: league_id=None mode=details",
+   "",
+   "Headless: Fetching match details for all leagues...",
+   "Fetching match details for all leagues...",
+   "1 leagues to process...",
+   "",
+   "League folder: 17_Premier_League",
+   "Found 4 match IDs for the league.",
+   "Found 4 unique match IDs.",
+   "3 matches already have every detail slice; the missing or partial ones will be processed.",
+   "",
+   "Details will be fetched for 1 matches...",
+   "",
+   "Batch 1/1: processing 1 matches (1-1/1)...",
+   "Processing 1 matches in parallel...",
+   {
+    "concurrent": [
+     "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100002 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100002",
+     "LOG INFO MatchDataFetcher: Batch 1/1: 1 başarılı, 0 başarısız (hata yok)",
+     "LOG INFO MatchDataFetcher: Processing batch 1/1 (1 matches)"
+    ]
+   },
+   "✓ Batch 1: 1/1 succeeded",
+   "",
+   "Done: 1/1 matches (100.0%) processed successfully."
+  ]
+ },
+ "other_league": {
+  "argv": [
+   "--recheck-unavailable",
+   "all",
+   "--league-id",
+   "8"
+  ],
+  "exit_code": 0,
+  "files": {},
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Yeniden denetim: {'matches': 0, 'slices': 0, 'scanned': 0}",
+   "Re-check: 0 \"slice not available\" markers reopened in 0 matches (0 matches with markers scanned). They will be requested again on the next download."
+  ]
+ }
+}

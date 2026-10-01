@@ -1,0 +1,144 @@
+{
+ "all_leagues": {
+  "argv": [
+   "--headless",
+   "--update-all",
+   "--fetch-mode",
+   "details"
+  ],
+  "exit_code": 1,
+  "files": {
+   "added": {
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [
+   {
+    "concurrent": [
+     "async /event/9100003 200",
+     "async /event/9100003/h2h 200",
+     "async /event/9100003/incidents 200",
+     "async /event/9100003/lineups 200",
+     "async /event/9100003/pregame-form 200",
+     "async /event/9100003/statistics 200",
+     "async /event/9100003/team-streaks 200",
+     "async https://www.sofascore.com/ 200"
+    ]
+   }
+  ],
+  "sleeps": {
+   "request-layer": 7,
+   "src.client.transport": 1
+  },
+  "stderr": [
+   "<progress> Fetching match details: 0/1",
+   "Stopped: data could not be written to <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003 (Permission denied). Free up disk space or fix the permissions, then run it again."
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Headless modda çalışılıyor",
+   "LOG INFO Main: Headless güncelleme: league_id=None mode=details",
+   "",
+   "Headless: Fetching match details for all leagues...",
+   "Fetching match details for all leagues...",
+   "1 leagues to process...",
+   "",
+   "League folder: 17_Premier_League",
+   "Found 4 match IDs for the league.",
+   "Found 4 unique match IDs.",
+   "3 matches already have every detail slice; the missing or partial ones will be processed.",
+   "",
+   "Details will be fetched for 1 matches...",
+   "",
+   "Batch 1/1: processing 1 matches (1-1/1)...",
+   "Processing 1 matches in parallel...",
+   {
+    "concurrent": [
+     "LOG ERROR MatchDataFetcher: Maç 9100003 kaydedilemedi: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003",
+     "LOG ERROR MatchDataFetcher: Maç ID 9100003 için asenkron veri çekilirken hata: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003",
+     "LOG ERROR MatchDataFetcher: Maç ID 9100003 için veriler kaydedilemedi (<SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003): [Errno 13] Permission denied: '<SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003'",
+     "LOG INFO MatchDataFetcher: Processing batch 1/1 (1 matches)"
+    ]
+   },
+   "LOG ERROR Main: Depolama hatası, işlem durduruldu: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003"
+  ]
+ },
+ "one_league": {
+  "argv": [
+   "--headless",
+   "--update-all",
+   "--fetch-mode",
+   "details",
+   "--league-id",
+   "17"
+  ],
+  "exit_code": 1,
+  "files": {
+   "added": {
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [
+   {
+    "concurrent": [
+     "async /event/9100003 200",
+     "async /event/9100003/h2h 200",
+     "async /event/9100003/incidents 200",
+     "async /event/9100003/lineups 200",
+     "async /event/9100003/pregame-form 200",
+     "async /event/9100003/statistics 200",
+     "async /event/9100003/team-streaks 200",
+     "async https://www.sofascore.com/ 200"
+    ]
+   }
+  ],
+  "sleeps": {
+   "request-layer": 7,
+   "src.client.transport": 1
+  },
+  "stderr": [
+   "<progress> Fetching match details: 0/1",
+   "Stopped: data could not be written to <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003 (Permission denied). Free up disk space or fix the permissions, then run it again."
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Headless modda çalışılıyor",
+   "LOG INFO Main: Headless güncelleme: league_id=17 mode=details",
+   "",
+   "Headless: Fetching match details for league 17...",
+   "Fetching match details for league ID 17...",
+   "1 leagues to process...",
+   "",
+   "League folder: 17_Premier_League",
+   "Found 4 match IDs for the league.",
+   "Found 4 unique match IDs.",
+   "3 matches already have every detail slice; the missing or partial ones will be processed.",
+   "",
+   "Details will be fetched for 1 matches...",
+   "",
+   "Batch 1/1: processing 1 matches (1-1/1)...",
+   "Processing 1 matches in parallel...",
+   {
+    "concurrent": [
+     "LOG ERROR MatchDataFetcher: Maç 9100003 kaydedilemedi: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003",
+     "LOG ERROR MatchDataFetcher: Maç ID 9100003 için asenkron veri çekilirken hata: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003",
+     "LOG ERROR MatchDataFetcher: Maç ID 9100003 için veriler kaydedilemedi (<SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003): [Errno 13] Permission denied: '<SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003'",
+     "LOG INFO MatchDataFetcher: Processing batch 1/1 (1 matches)"
+    ]
+   },
+   "LOG ERROR Main: Depolama hatası, işlem durduruldu: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003"
+  ]
+ }
+}
