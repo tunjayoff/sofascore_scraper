@@ -1,0 +1,284 @@
+"""
+Store'un dosya ilkelleri (docs/design/01-storage.md, bölüm 4.4): atomik yazma, yerine koyma, silme,
+hazırlık (.meta/tmp) ve çöp (.meta/trash) dizinleri. src/fsutil.py'nin içeriği buraya taşındı.
+
+Atomik yazma: içerik önce aynı dizinde `.<ad>.<rastgele>.tmp` adlı geçici dosyaya yazılır, sonra
+os.replace ile yerine konur. Okuyan taraf ya eski ya yeni dosyayı görür, yarım dosyayı görmez; aynı
+dosyaya aynı anda yazan iki süreç birbirinin geçici dosyasını ezmez.
+
+İki katman var:
+  * `atomic_write_*` ve `file_lock`: 2.x kodunun kullandığı yardımcılar (src/fsutil.py bunları yeniden
+    dışa açar). Hata olduğu gibi (OSError) çıkar; hiçbir şey fsync edilmez.
+  * `write_bytes`, `read_bytes`, `replace`, `remove`, hazırlık/çöp işlevleri: Store'un kendi kullandığı
+    katman. Her OSError bir StoreError'a çevrilir (`fatal` errno'dan hesaplanır) ve STORE_DURABILITY=full
+    ise dosya ve dizini fsync edilir.
+
+Windows: hedef başka bir süreçte açıkken os.replace PermissionError verir. Yerine koyma en çok
+REPLACE_RETRIES kez, REPLACE_RETRY_PAUSE aralıkla yeniden denenir.
+"""
+from __future__ import annotations
+
+import contextlib
+import errno
+import json
+import os
+import shutil
+import tempfile
+import time
+import uuid
+from typing import Any, Callable, Iterator, Optional, Union
+
+from src.store import layout
+from src.store.errors import PayloadMissing, StoreError
+
+try:
+    import fcntl
+except ImportError:  # Windows
+    fcntl = None
+
+PathLike = Union[str, "os.PathLike[str]"]
+
+REPLACE_RETRIES = 10
+REPLACE_RETRY_PAUSE = 0.02  # saniye
+DURABILITY_ENV = "STORE_DURABILITY"
+
+_WINDOWS = os.name == "nt"
+
+
+class ReplaceBusy(PermissionError):
+    """Yerine koyma, yeniden denemelere rağmen başarısız: hedef başka bir süreçte açık (Windows)."""
+
+
+def durability_full() -> bool:
+    """STORE_DURABILITY=full: her dosya ve dizini fsync edilir. Varsayılan: fsync yok (bugünkü davranış)."""
+    return os.environ.get(DURABILITY_ENV, "").strip().lower() == "full"
+
+
+def _retry_while_busy(operation: Callable[[str, str], None], src: str, dst: str) -> None:
+    """
+    os.replace / os.rename; Windows'ta PermissionError (hedef açık) alınırsa kısa aralıklarla yeniden dener.
+    Denemeler tükenirse ReplaceBusy (PermissionError'ın alt sınıfı) fırlatır. Diğer platformlarda ve diğer
+    hatalarda ilk hata aynen çıkar.
+    """
+    retries = REPLACE_RETRIES if _WINDOWS else 0
+    for attempt in range(retries + 1):
+        try:
+            operation(src, dst)
+            return
+        except PermissionError as e:
+            if not retries:
+                raise
+            if attempt == retries:
+                raise ReplaceBusy(e.errno, e.strerror, e.filename, getattr(e, "winerror", None), e.filename2) from e
+            time.sleep(REPLACE_RETRY_PAUSE)
+
+
+def fsync_dir(directory: PathLike) -> None:
+    """Dizin girdisini diske yazdırır (yeniden adlandırma kalıcı olsun). Windows'ta dizin açılamaz: atlanır."""
+    if _WINDOWS:
+        return
+    with contextlib.suppress(OSError):  # bazı dosya sistemleri dizinde fsync'i desteklemez
+        fd = os.open(directory, os.O_RDONLY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+
+
+# --- 2.x yardımcıları (src/fsutil.py bunları yeniden dışa açar) -----------------------------------
+
+def atomic_write_bytes(path: PathLike, data: bytes, *, durable: bool = False) -> None:
+    """Baytları atomik yazar; üst dizinleri oluşturur. Hata olduğu gibi çıkar, hedef eski haliyle kalır."""
+    target = os.fspath(path)
+    directory = os.path.dirname(os.path.abspath(target))
+    os.makedirs(directory, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=directory, prefix=f".{os.path.basename(target)}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+            if durable:
+                f.flush()
+                os.fsync(f.fileno())
+        _retry_while_busy(os.replace, tmp, target)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.remove(tmp)
+        raise
+    if durable:
+        fsync_dir(directory)
+
+
+def atomic_write_text(path: str, text: str, encoding: str = "utf-8") -> None:
+    """Metni bayt bayt aynen yazar (satır sonu çevirisi yok)."""
+    atomic_write_bytes(path, text.encode(encoding))
+
+
+def atomic_write_json(path: str, data: Any, **dump_kwargs: Any) -> None:
+    dump_kwargs.setdefault("ensure_ascii", False)
+    dump_kwargs.setdefault("indent", 2)
+    atomic_write_text(path, json.dumps(data, **dump_kwargs))
+
+
+@contextlib.contextmanager
+def file_lock(path: str) -> Iterator[None]:
+    """
+    Süreçler arası danışma kilidi (CLI ve web aynı config dosyasını düzenlerken).
+    Kilit, hedefin yanındaki `<path>.lock` dosyasında tutulur; Windows'ta kilitlenmez.
+    Store'un kendi kilitleri (lease) bu değildir: onlar src/store/lease.py'dedir.
+    """
+    if fcntl is None:
+        yield
+        return
+    lock_path = f"{path}.lock"
+    os.makedirs(os.path.dirname(os.path.abspath(lock_path)), exist_ok=True)
+    with open(lock_path, "a") as lock_file:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock_file, fcntl.LOCK_UN)
+
+
+# --- Store katmanı: OSError → StoreError ---------------------------------------------------------
+
+def _store_error(exc: OSError, path: Optional[PathLike], *, reading: bool = False) -> StoreError:
+    where = os.fspath(path) if path is not None else None
+    if isinstance(exc, ReplaceBusy):
+        # Geçici durum (dosya başka süreçte açık): errno verilmez ki hata `fatal` sayılıp işi durdurmasın
+        detail = exc.strerror or str(exc)
+        return StoreError(f"Dosya yerine konamadı, başka bir süreçte açık ({detail}): {where}",
+                          path=where, detail=detail)
+    return StoreError.from_exception(exc, where, reading=reading)
+
+
+def read_bytes(path: PathLike) -> bytes:
+    """Dosyayı tek çağrıda okur ve kapatır (açık kalan okuyucu Windows'ta yazarı engeller)."""
+    try:
+        with open(path, "rb") as f:
+            return f.read()
+    except FileNotFoundError as e:
+        raise PayloadMissing(f"Dosya bulunamadı: {os.fspath(path)}", path=os.fspath(path)) from e
+    except OSError as e:
+        raise _store_error(e, path, reading=True) from e
+
+
+def write_bytes(path: PathLike, data: bytes, *, durable: Optional[bool] = None) -> None:
+    """Atomik yazma. durable=None → STORE_DURABILITY ortam değişkeni karar verir."""
+    try:
+        atomic_write_bytes(path, data, durable=durability_full() if durable is None else durable)
+    except OSError as e:
+        raise _store_error(e, path) from e
+
+
+def replace(src: PathLike, dst: PathLike) -> None:
+    """Dosyayı atomik olarak yerine koyar (hedef varsa ezilir)."""
+    try:
+        _retry_while_busy(os.replace, os.fspath(src), os.fspath(dst))
+    except OSError as e:
+        raise _store_error(e, dst) from e
+
+
+def remove(path: PathLike) -> bool:
+    """Dosyayı siler. Dosya yoksa False döner (hata değildir)."""
+    try:
+        os.remove(path)
+    except FileNotFoundError:
+        return False
+    except OSError as e:
+        raise _store_error(e, path) from e
+    return True
+
+
+def remove_tree(path: PathLike) -> bool:
+    """Dizini içindekilerle siler (sembolik bağın kendisini siler, hedefine girmez). Yoksa False döner."""
+    try:
+        if os.path.islink(path) or not os.path.isdir(path):
+            os.remove(path)
+        else:
+            shutil.rmtree(path)
+    except FileNotFoundError:
+        return False
+    except OSError as e:
+        raise _store_error(e, path) from e
+    return True
+
+
+# --- hazırlık ve çöp dizinleri -------------------------------------------------------------------
+
+def _unique_name(label: str) -> str:
+    return f"{label}.{uuid.uuid4().hex}" if label else uuid.uuid4().hex
+
+
+def new_staging_dir(data_dir: PathLike, label: str = "") -> str:
+    """
+    DATA_DIR/.meta/tmp altında yeni, boş bir dizin açar ve yolunu döndürür. Birden çok dosyadan oluşan
+    bir varlık dizini burada kurulur, sonra `publish_dir` ile tek yeniden adlandırmayla yerine taşınır.
+    """
+    path = os.path.join(layout.resolve(data_dir, layout.TMP_DIR), _unique_name(label))
+    try:
+        os.makedirs(path)
+    except OSError as e:
+        raise _store_error(e, path) from e
+    return path
+
+
+def publish_dir(staged: PathLike, final: PathLike, *, durable: Optional[bool] = None) -> None:
+    """
+    Hazırlık dizinini tek yeniden adlandırmayla yerine taşır: dizin ya tam görünür ya hiç görünmez.
+    Hedef zaten varsa (boş bile olsa) StoreError; hiçbir şeyin üzerine yazılmaz.
+    """
+    source, target = os.fspath(staged), os.fspath(final)
+    parent = os.path.dirname(os.path.abspath(target))
+    try:
+        if os.path.lexists(target):
+            raise FileExistsError(errno.EEXIST, "Hedef dizin zaten var", target)
+        os.makedirs(parent, exist_ok=True)
+        _retry_while_busy(os.rename, source, target)
+    except OSError as e:
+        raise _store_error(e, target) from e
+    if durability_full() if durable is None else durable:
+        fsync_dir(parent)
+
+
+def move_to_trash(data_dir: PathLike, path: PathLike) -> str:
+    """
+    Dosya ya da dizini DATA_DIR/.meta/trash altına taşır ve yeni yolunu döndürür. Önce taşımak, silme
+    yarıda kalsa bile eski yerinde yarım bir dizin bırakmaz; çöp sonradan `purge_trash` ile boşaltılır.
+    """
+    source = os.fspath(path)
+    trash = layout.resolve(data_dir, layout.TRASH_DIR)
+    target = os.path.join(trash, _unique_name(os.path.basename(os.path.normpath(source))))
+    try:
+        os.makedirs(trash, exist_ok=True)
+        _retry_while_busy(os.rename, source, target)
+    except OSError as e:
+        raise _store_error(e, source) from e
+    return target
+
+
+def _purge(directory: str) -> int:
+    try:
+        names = os.listdir(directory)
+    except FileNotFoundError:
+        return 0
+    except OSError as e:
+        raise _store_error(e, directory, reading=True) from e
+    removed, first_error = 0, None
+    for name in names:
+        try:
+            removed += remove_tree(os.path.join(directory, name))
+        except StoreError as e:  # kalanları da dene; ilk hatayı sonda bildir
+            first_error = first_error or e
+    if first_error is not None:
+        raise first_error
+    return removed
+
+
+def purge_staging(data_dir: PathLike) -> int:
+    """.meta/tmp'yi boşaltır (yarıda kalmış hazırlıklar); silinen girdi sayısını döndürür."""
+    return _purge(layout.resolve(data_dir, layout.TMP_DIR))
+
+
+def purge_trash(data_dir: PathLike) -> int:
+    """.meta/trash'i boşaltır; silinen girdi sayısını döndürür."""
+    return _purge(layout.resolve(data_dir, layout.TRASH_DIR))
