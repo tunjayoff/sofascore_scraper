@@ -1,0 +1,46 @@
+{
+ "no sports file": {
+  "response": {
+   "status": 200,
+   "body": [
+    {"id": 17, "name": "Premier League", "sport": "football"},
+    {"id": 19, "name": "FA Cup", "sport": "football"},
+    {"id": 132, "name": "NBA", "sport": "basketball"},
+    {"id": 2361, "name": "Wimbledon, Men", "sport": "tennis"},
+    {"id": 8, "name": "LaLiga", "sport": "football"},
+    {"id": 35, "name": "Bundesliga", "sport": null}
+   ]
+  },
+  "sports_file_after": {"8": "football", "17": "football", "19": "football", "132": "basketball", "2361": "tennis"}
+ },
+ "sports file with a stored, an unknown and an unconfigured entry": {
+  "sports_file_before": {"17": "Tennis", "999": "basketball", "not-an-id": "football", "19": "curling"},
+  "response": {
+   "status": 200,
+   "body": [
+    {"id": 17, "name": "Premier League", "sport": "tennis"},
+    {"id": 19, "name": "FA Cup", "sport": "football"},
+    {"id": 132, "name": "NBA", "sport": "basketball"},
+    {"id": 2361, "name": "Wimbledon, Men", "sport": "tennis"},
+    {"id": 8, "name": "LaLiga", "sport": "football"},
+    {"id": 35, "name": "Bundesliga", "sport": null}
+   ]
+  },
+  "sports_file_after": {
+   "8": "football",
+   "17": "tennis",
+   "19": "football",
+   "132": "basketball",
+   "999": "basketball",
+   "2361": "tennis"
+  }
+ },
+ "no leagues configured": {"response": {"status": 200, "body": []}, "sports_file_after": null},
+ "search": {
+  "LEAGUE": {"status": 200, "body": [{"id": 17, "name": "Premier League", "sport": null}]},
+  "la": {"status": 200, "body": [{"id": 8, "name": "LaLiga", "sport": null}]},
+  "zz": {"status": 200, "body": []},
+  "l": {"status": 422},
+  "(q missing)": {"status": 422}
+ }
+}
