@@ -4,7 +4,8 @@ Dizinleyici: yük dosyalarından katalog satırları (docs/design/01-storage.md,
 Bu modül maçları ve dilimlerini dizinler (`events`, `event_slices`, `event_participants`, `participants` ve
 olay yükünde geçen `sports` / `categories` / `tournaments` / `seasons` satırları) ve öteki kaynakların
 dizinlenmesini sıraya koyar: sezon listeleri, program sayfaları ve liste satırları (src/store/entities.py),
-değişiklik günlüğü (src/store/changes.py). Uzlaştırma (reconcile) sonraki adımda eklenir.
+değişiklik günlüğü (src/store/changes.py). Kataloğu dosyalarla yeniden eşitleyen uzlaştırma da buradadır
+(`CatalogAdmin.reconcile`, bölüm 3.5).
 
 Kaynaklar ve öncelik:
 
@@ -36,6 +37,12 @@ listeleri; v3 maçları; eski düzen maçları; yalnızca özet CSV'si olan sezo
 maçlardan önce yazılır, çünkü turnuva ve sezon satırlarının asıl kaynağı onlardır (olay yükü satırı yalnızca
 yoksa ekler). Özet CSV'sinden gelen sezonlar maçlardan sonra yazılır: o satırlar sporunu söylemez, spor
 turnuvanın katalogdaki satırından alınır.
+
+Uzlaştırma (bölüm 3.5), kataloğun arkasından değişen dosyaları yeniden dizinler ve yeniden kurmaktan
+ucuzdur: dosyalar yalnızca imzası değişen dizinlerde okunur. İmzalar: eski düzen maç dizini `events.sig`
+("<mtime_ns>:<girdi sayısı>"), v3 maçı manifest dosyası ("<mtime_ns>:<boyut>"), program dizinleri, sezon
+listesi dosyaları ve `score_changes.jsonl` `legacy_roots` tablosunda. İmza kabadır: bir dosya yerinde
+düzenlenir ve zamanı da korunursa değişiklik görülmez (`deep=True` her şeyi yeniden okur).
 
 Yeniden kurma `maintenance` kilidini (bölüm 6.1) gerektirir; kilitler Store cephesindedir, burada alınmaz:
 çağıran, aynı anda başka yazar olmadığından emin olmalıdır.
@@ -100,6 +107,7 @@ PathLike = Union[str, "os.PathLike[str]"]
 Row = Dict[str, Any]
 Progress = Callable[[str, int, int], None]
 LeagueNames = Union[Mapping[int, str], Callable[[], Mapping[int, str]]]
+_Brief = Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]  # layout, path, legacy_path, sig
 
 LAYOUT_V3 = "v3"
 LAYOUT_LEGACY = "legacy"
@@ -227,6 +235,31 @@ class RebuildReport:
     listed: int = 0  # olay yükü olmayan, yalnızca listelerden gelen maç satırı
     changes: int = 0  # değişiklik günlüğü satırı
     superseded_files: List[LegacySuperseded] = field(default_factory=list)  # geçersiz sayfa / sezon listesi kopyaları
+
+
+@dataclass
+class ReconcileReport:
+    """`CatalogAdmin.reconcile` sonucu: neye bakıldı, ne yeniden dizinlendi."""
+
+    deep: bool
+    v3: bool  # v3 maç dizinleri de imzalarıyla karşılaştırıldı (temiz kapanmamış yazardan sonra)
+    events_checked: int = 0  # diskte ya da katalogda görülen, olay yükü olan maç
+    events_indexed: int = 0  # dosyalardan yeniden dizinlenen maç (yeni ya da değişmiş)
+    events_removed: int = 0  # dizini kalmadığı için olay satırı silinen (ya da liste satırına dönen) maç
+    pending: int = 0  # yeniden dizinlenip silinen yarım yazma işareti
+    pending_skipped: int = 0  # maç olmayan varlıkların işaretleri: dokunulmadı
+    season_lists: Optional[int] = None  # sezon listeleri yeniden yazıldıysa sayısı; None: değişmemişti
+    seasons: List[SeasonKey] = field(default_factory=list)  # listesi yeniden dizinlenen sezonlar
+    changes: Optional[int] = None  # değişiklik günlüğü yeniden dizinlendiyse satır sayısı; None: değişmemişti
+    problems: List[IndexProblem] = field(default_factory=list)
+    verify: Optional["VerifyReport"] = None  # deep=True: ardından çalışan doğrulamanın raporu
+    seconds: float = 0.0
+
+    @property
+    def changed(self) -> bool:
+        """Katalogda bir şey değişti."""
+        return bool(self.events_indexed or self.events_removed or self.pending or self.seasons
+                    or self.season_lists is not None or self.changes is not None)
 
 
 @dataclass
@@ -689,7 +722,7 @@ def delete_event(cat: Catalog, event_id: int) -> bool:
 
 class CatalogAdmin:
     """
-    Kataloğun yönetimi (bölüm 2.3): yeniden kurma, tek maçı yeniden dizinleme, doğrulama, sayımlar.
+    Kataloğun yönetimi (bölüm 2.3): yeniden kurma, uzlaştırma, tek maçı yeniden dizinleme, doğrulama, sayımlar.
 
     catalog: paylaşılan Catalog nesnesi (Store cephesi verir); verilmezse DATA_DIR/.meta/catalog.db için
     yenisi açılır ve `close()` onu kapatır. clock: `built_at`, `scanned_at` ve onarım işaretleri için saat.
@@ -1120,6 +1153,160 @@ class CatalogAdmin:
                                       record.digest)
         conn.execute("UPDATE events SET stale = ? WHERE id = ?", (int(stale), record.event_id))
 
+    # -- uzlaştırma --------------------------------------------------------------------------------
+
+    def reconcile(self, *, deep: bool = False, v3: bool = False) -> ReconcileReport:
+        """
+        Kataloğu, arkasından değişen dosyalarla yeniden eşitler (bölüm 3.5). Tek bir yazma işleminde:
+
+          1. Yarım kalmış yazma işaretleri (`pending_writes`): maçlar dosyalardan yeniden dizinlenir ve
+             işaretleri silinir. Maç olmayan varlıkların işaretlerine dokunulmaz (v3 yazıcısıyla gelir).
+          2. Eski düzen maç dizinleri: imzası (`events.sig`) ya da geçerli dizini değişen, yeni gelen ve
+             dizini kalmayan maçlar yeniden dizinlenir.
+          3. Sezon listeleri: herhangi bir dosya değiştiyse hepsi yeniden yazılır.
+          4. Program dizinleri: imzası (`legacy_roots`) değişen her sezonun listesi yeniden dizinlenir; lig
+             dizini değiştiyse o ligin yalnızca özet CSV'si olan sezonları da.
+          5. Sporu bilinmeyen liste satırı olan bir sezonun turnuvası artık biliniyorsa o sezon da yeniden
+             dizinlenir (dosyaları değişmemiş olsa bile; bkz. `_fill_sports`).
+          6. `score_changes.jsonl` değiştiyse baştan dizinlenir (satır numaraları aynı kalır).
+
+        v3=True: v3 maç dizinleri de taranır ve manifest imzaları `events.sig` ile karşılaştırılır; yazar
+        kilidi temiz bırakılmadıysa (`Lease.unclean`) çağıran bunu ister. Verilmezse v3 maçlarının yalnızca
+        `legacy_path` sütunu denetlenir.
+        deep=True: imzalara bakılmaz, her maç ve her liste yeniden okunur (v3 dahil); ardından
+        `verify(deep=True, repair=True)` çalışır ve raporu `ReconcileReport.verify`'da döner.
+
+        Katalog kullanılabilir durumda değilse (yok, başka şema ya da türetme sürümü) StoreError: önce
+        yeniden kurulmalıdır (`ensure`).
+
+        Sonuç, aynı ağacın sıfırdan kurulmuş kataloğuna eşittir; şu farkla: varlık tablolarından (turnuva,
+        sezon, yarışmacı, spor, kategori) satır silinmez ve "yalnızca yoksa eklenen" satırlar ilk yazanın
+        değerlerini taşır. Dosyaları silinmiş bir turnuvanın satırı (ve ondan öğrenilen spor) bu yüzden
+        katalogda kalır; yeniden kurma onu unutur.
+
+        En yeni kopyası okunamayan maç imzayla "değişmedi" denemediği için her uzlaştırmada yeniden okunur
+        ve `events_indexed`'e girer.
+        """
+        started = time.monotonic()
+        cat = self.catalog
+        state = cat.inspect()
+        if not state.usable:
+            raise StoreError(
+                f"Katalog uzlaştırılamaz, önce yeniden kurulmalı ({state.rebuild_reason}): {cat.path}",
+                path=cat.path, detail=state.detail)
+        report = ReconcileReport(deep=deep, v3=v3 or deep)
+        with cat.write():
+            seasons: Set[SeasonKey] = set()
+            self._reconcile_events(report, seasons)
+            self._reconcile_listings(report, seasons)
+        if deep:
+            report.verify = self.verify(deep=True, repair=True)
+        report.seconds = time.monotonic() - started
+        if report.changed:
+            logger.info(
+                f"Catalog reconciled: {report.events_indexed} events re-indexed, {report.events_removed} removed, "
+                f"{report.pending} pending writes, {len(report.seasons)} season listings, "
+                f"season lists {'rewritten' if report.season_lists is not None else 'unchanged'}, "
+                f"change log {'re-indexed' if report.changes is not None else 'unchanged'}, "
+                f"{len(report.problems)} problems, {report.seconds:.2f} s")
+        return report
+
+    def _unchanged(self, event_id: int, has_v3: bool, candidates: Sequence[LegacyEventDir], brief: _Brief, *,
+                   check_manifest: bool) -> bool:
+        """Maçın geçerli dizini ve imzası katalogdakiyle aynı mı (dosyalar okunmadan; verify ile aynı kural)."""
+        row_layout, row_path, row_legacy_path, row_sig = brief
+        first = candidates[0] if candidates else None
+        if has_v3:
+            if row_layout != LAYOUT_V3 or row_path is not None:
+                return False
+            if row_legacy_path != (first.path if first else None):
+                return False
+            if not check_manifest:
+                return True
+            manifest_file = layout.resolve(self.data_dir, layout.manifest_path(layout.event_dir(event_id)))
+            return file_signature(manifest_file) == row_sig
+        if first is None or row_layout != LAYOUT_LEGACY:
+            return False
+        return row_path == first.path and row_sig == first.sig and row_legacy_path is None
+
+    def _reconcile_events(self, report: ReconcileReport, seasons: Set[SeasonKey]) -> None:
+        conn = self.catalog.connection()
+        candidates: Dict[int, List[LegacyEventDir]] = {}
+        for name, found in legacy_candidates(self.reader, report.problems).items():
+            event_id = canonical_id(name)
+            if event_id is not None:
+                candidates[event_id] = found
+
+        for kind, entity_id in conn.execute(
+                "SELECT kind, entity_id FROM pending_writes ORDER BY kind, entity_id").fetchall():
+            if kind != "event":
+                report.pending_skipped += 1
+                continue
+            self._index_event(int(entity_id), (), candidates.get(int(entity_id), []), report.problems, seasons)
+            conn.execute("DELETE FROM pending_writes WHERE kind = ? AND entity_id = ?", (kind, entity_id))
+            report.pending += 1
+
+        v3_ids: Optional[Set[int]] = None
+        if report.v3:
+            v3_ids = {event_id for event_id, _rel in scan_v3_events(self.data_dir, report.problems)}
+        known: Dict[int, _Brief] = {int(row[0]): (row[1], row[2], row[3], row[4]) for row in conn.execute(
+            "SELECT id, layout, path, legacy_path, sig FROM events WHERE has_event_payload = 1 OR layout IS NOT NULL")}
+        ids = sorted(set(known) | set(candidates) | (v3_ids or set()))
+        report.events_checked = len(ids)
+        for event_id in ids:
+            brief = known.get(event_id)
+            found = candidates.get(event_id, [])
+            # v3 ağacı taranmadıysa v3 dizininin varlığı için kataloğa güvenilir
+            has_v3 = event_id in v3_ids if v3_ids is not None else brief is not None and brief[0] == LAYOUT_V3
+            if not report.deep and brief is not None and self._unchanged(
+                    event_id, has_v3, found, brief, check_manifest=v3_ids is not None):
+                continue
+            if self._index_event(event_id, (), found, report.problems, seasons) is not None:
+                report.events_indexed += 1
+            elif brief is not None:
+                report.events_removed += 1
+
+    def _reconcile_listings(self, report: ReconcileReport, seasons: Set[SeasonKey]) -> None:
+        cat = self.catalog
+        conn = cat.connection()
+        scan = self._scan_listings(report.problems)
+        roots = scan.roots
+        stored = {str(row[0]): (str(row[1]), str(row[2]))
+                  for row in conn.execute("SELECT path, kind, sig FROM legacy_roots")}
+        changed = [path for path in sorted(set(stored) | set(roots))
+                   if report.deep or stored.get(path) != roots.get(path)]
+        kinds = {path: (roots.get(path) or stored[path])[0] for path in changed}
+
+        if ROOT_SEASONS_FILE in kinds.values():
+            report.season_lists = entities.apply_season_lists(cat, self.reader, scan.season_lists)
+
+        for path, kind in kinds.items():
+            if kind == ROOT_SCHEDULE_DIR:
+                match = _SCHEDULE_DIR_RE.fullmatch(path)
+                if match is not None:
+                    seasons.add((int(match.group(1)), int(match.group(2))))
+            elif kind == ROOT_LEAGUE_DIR:
+                match = _LEAGUE_DIR_RE.fullmatch(path)
+                if match is not None:
+                    # Lig dizinindeki özet dosyaları yalnızca tur / sayfa dosyası olmayan sezonların kaynağıdır
+                    league = int(match.group(1))
+                    seasons.update(key for key in scan.summaries if key[0] == league and key not in scan.pages)
+                    seasons.update(key for key in entities.attached_seasons(cat, league) if key not in scan.pages)
+        if report.deep:
+            seasons.update(scan.seasons)
+            seasons.update(entities.attached_seasons(cat))
+        # Yeniden kurmadaki sırayla: önce sayfaları olan sezonlar, sonra yalnızca özeti olanlar
+        report.seasons = sorted(seasons, key=lambda key: (key not in scan.pages, key))
+        for key in report.seasons:
+            self._index_season(cat, scan, key, report.problems)
+        report.seasons.extend(key for key in self._fill_sports(cat, scan) if key not in seasons)
+
+        if ROOT_CHANGES_FILE in kinds.values():
+            notes: List[LegacyProblem] = []
+            report.changes = changes_mod.index_legacy(cat, self.reader, notes)
+            report.problems.extend(_from_legacy(notes))
+        self._write_roots(cat, roots, changed)
+
     # -- doğrulama ve sayımlar ---------------------------------------------------------------------
 
     def verify(self, *, deep: bool = False, repair: bool = False) -> "VerifyReport":
@@ -1193,6 +1380,7 @@ __all__ = [
     "V3Event",
     "EventRecord",
     "RebuildReport",
+    "ReconcileReport",
     "RowWriter",
     "CatalogAdmin",
     "problem_of",
