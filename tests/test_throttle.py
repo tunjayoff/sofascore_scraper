@@ -126,23 +126,60 @@ def test_configured_rate(monkeypatch, raw, expected):
     assert throttle.configured_rate() == expected
 
 
-@pytest.mark.parametrize("max_concurrent,expected", [
-    (None, 100.0), ("10", 100.0), ("5", 50.0), ("30", 300.0), ("50", 500.0), ("0", 10.0), ("abc", 100.0),
-])
-def test_default_rate_follows_max_concurrent(monkeypatch, max_concurrent, expected):
-    """
-    Varsayılan, toplu indirme yolunun kendi sınırlarının izin verdiği hızın üstünde olmalı. O tavan
-    MAX_CONCURRENT ile orantılı (scripts/bench_bulk_rate.py: en yoğun saniyede 10 → 81-101,
-    30 → 258, 50 → 417 istek), bu yüzden varsayılan eşzamanlı istek başına 10 istek/sn.
-    """
+def test_default_is_five_requests_per_second():
+    assert throttle.DEFAULT_RATE_LIMIT == 5.0
+
+
+@pytest.mark.parametrize("max_concurrent", [None, "1", "10", "30", "50", "0", "abc"])
+def test_default_rate_does_not_depend_on_max_concurrent(monkeypatch, max_concurrent):
+    """Varsayılan sabittir (5 istek/sn): MAX_CONCURRENT'i yükseltmek toplam hızı artırmaz."""
     monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
     if max_concurrent is None:
         monkeypatch.delenv("MAX_CONCURRENT", raising=False)
     else:
         monkeypatch.setenv("MAX_CONCURRENT", max_concurrent)
-    assert throttle.configured_rate() == expected
-    monkeypatch.setenv("REQUEST_RATE_LIMIT", "7")  # açıkça verilen değer MAX_CONCURRENT'e bakmaz
+    assert throttle.configured_rate() == 5.0
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", "7")  # açıkça verilen değer aynen kullanılır
     assert throttle.configured_rate() == 7.0
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", "100")  # eski varsayılanı elle yazmış kullanıcı etkilenmez
+    assert throttle.configured_rate() == 100.0
+
+
+def test_unset_limit_paces_requests_at_five_per_second(tmp_path, monkeypatch):
+    """Ayar yokken: bir saniyelik pay (5 istek) beklemeden geçer, sonrası 0,2 sn aralıklıdır."""
+    monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
+    clock = Clock()
+    t = RequestThrottle("api", throttle.configured_rate, clock=clock, directory=str(tmp_path))
+    delays = [t.reserve() for _ in range(10)]  # on istek aynı anda gelir
+    assert delays[:5] == [0.0] * 5
+    assert delays[5:] == pytest.approx([0.2, 0.4, 0.6, 0.8, 1.0])
+    clock.t += 60.0
+    slots = [t.reserve_slot()[1] for _ in range(605)]  # sürekli yük: 600 istek tam 120 sn sürer
+    assert slots[-1] - slots[4] == pytest.approx(120.0)
+
+
+@pytest.mark.parametrize("raw", ["0", "off", "OFF", "false", "none", "disabled"])
+def test_off_switch_removes_the_limit(tmp_path, monkeypatch, raw):
+    """0 / off: hiçbir istek bekletilmez, durum dosyası da yazılmaz."""
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", raw)
+    monkeypatch.setenv("SOFASCORE_THROTTLE_DIR", str(tmp_path / "t"))
+    throttle.reset_for_tests()
+    try:
+        assert [throttle.reserve() for _ in range(200)] == [0.0] * 200
+        assert throttle.status() == {"enabled": False, "requests_per_second": 0.0, "shared": False, "error": None}
+        assert not (tmp_path / "t").exists()
+    finally:
+        throttle.reset_for_tests()
+
+
+def test_default_shows_in_status(tmp_path, monkeypatch):
+    monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
+    monkeypatch.setenv("SOFASCORE_THROTTLE_DIR", str(tmp_path / "t"))
+    throttle.reset_for_tests()
+    try:
+        assert throttle.status() == {"enabled": True, "requests_per_second": 5.0, "shared": True, "error": None}
+    finally:
+        throttle.reset_for_tests()
 
 
 def test_disabled_throttle_never_waits_and_writes_nothing(tmp_path):
@@ -528,6 +565,28 @@ def test_watchers_in_separate_processes_share_one_second_spacing(shared_dir, tmp
     assert os.path.exists(shared_dir / "watch.json")
 
 
+def test_watchers_keep_one_second_spacing_with_the_default_budget(shared_dir, tmp_path, monkeypatch):
+    """REQUEST_RATE_LIMIT verilmemişken (5 istek/sn) izleyici şeridi değişmez: toplamda ≥ 1 sn, ortak dosya."""
+    monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
+    clock = Clock()
+    stamps = []
+
+    def fetch(path):
+        stamps.append(clock())
+        return _fake_api(path)
+
+    watchers = []
+    for sport in ("football", "tennis"):
+        with patch.object(MatchWatcher, "_default_fetch", staticmethod(fetch)):
+            watchers.append(MatchWatcher(sport, league_ids=[17], data_dir=str(tmp_path / "d"),
+                                         clock=clock, sleep=clock.sleep))
+    for _ in range(3):
+        for w in watchers:
+            w._get(f"/sport/{w.sport}/events/live")
+    assert [b - a for a, b in zip(stamps, stamps[1:], strict=False)] == [1.0] * 5
+    assert os.path.exists(shared_dir / "watch.json")
+
+
 def test_watcher_keeps_private_spacing_when_shared_budget_is_off(shared_dir, tmp_path, monkeypatch):
     """REQUEST_RATE_LIMIT=0: ortak dosya yok, ama izleyicinin 1 sn aralığı (eski davranış) sürer."""
     monkeypatch.setenv("REQUEST_RATE_LIMIT", "0")
@@ -568,6 +627,26 @@ def test_settings_expose_and_update_rate_limit(monkeypatch):
         assert client.get("/api/settings").json()["request_rate_limit"] == 2.5
         assert client.post("/api/settings", json={"request_rate_limit": -1}).status_code == 422
         assert client.post("/api/settings", json={"request_rate_limit": 5000}).status_code == 422
+    finally:
+        client.post("/api/settings", json={"request_rate_limit": float(before or 0)})
+        os.environ["REQUEST_RATE_LIMIT"] = before or "0"
+
+
+def test_settings_show_the_default_when_unset_and_accept_off(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from src.web.app import app
+
+    client = TestClient(app)
+    before = os.environ.get("REQUEST_RATE_LIMIT")
+    try:
+        monkeypatch.delenv("REQUEST_RATE_LIMIT", raising=False)
+        assert client.get("/api/settings").json()["request_rate_limit"] == 5.0
+        assert client.post("/api/settings", json={"request_rate_limit": 0}).status_code == 200  # kapalı
+        assert os.environ["REQUEST_RATE_LIMIT"] == "0"
+        assert client.get("/api/settings").json()["request_rate_limit"] == 0.0
+        assert client.post("/api/settings", json={"request_rate_limit": 40}).status_code == 200  # varsayılanın üstü
+        assert client.get("/api/settings").json()["request_rate_limit"] == 40.0
     finally:
         client.post("/api/settings", json={"request_rate_limit": float(before or 0)})
         os.environ["REQUEST_RATE_LIMIT"] = before or "0"
