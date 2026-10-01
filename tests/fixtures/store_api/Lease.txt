@@ -1,0 +1,19 @@
+# src.store.Lease
+# kaynak: src/store/lease.py
+class Lease:
+    def __init__(self, name: str, purpose: str, handles: List[Tuple[int, Region]], *, on_release: Optional[Callable[['Lease'], None]] = None) -> None
+    self.name
+    self.purpose
+    self.holder
+    self.pid
+    self.host
+    self.acquired_at
+    self.unclean
+    @property
+    def held(self) -> bool
+    def info(self) -> LeaseInfo
+    def release(self) -> None
+    def __enter__(self) -> 'Lease'
+    def __exit__(self, *exc_info: Any) -> None
+    def __del__(self) -> None
+    def __repr__(self) -> str

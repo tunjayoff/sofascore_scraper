@@ -1,0 +1,18 @@
+# src.store.JobStore
+# kaynak: src/store/jobs.py
+class JobStore:
+    def __init__(self, db_path: str)
+    self.db_path
+    def close(self) -> None
+    def writer_busy(self) -> bool
+    def mark_stale_running_interrupted(self) -> int
+    @contextlib.contextmanager
+    def exclusive(self, operation: str) -> Iterator[None]
+    def rebind(self, db_path: str) -> bool
+    def create_running(self, payload: Any) -> str
+    def request_cancel(self) -> bool
+    def cancel_requested(self) -> bool
+    def update(self, *, status: Optional[str] = None, progress: Optional[int] = None, current_task: Optional[str] = None, append_log: Optional[str] = None, matches_total: Optional[int] = None, matches_done: Optional[int] = None, matches_failed: Optional[int] = None, schedule_empty_seasons: Optional[int] = None, circuit_breaker_triggered: Optional[bool] = None, circuit_breaker_reason: Optional[str] = None, eta_seconds: Optional[float] = None, current_batch: Optional[str] = None, result: Optional[Dict[str, Any]] = None, detail: Optional[Dict[str, Any]] = None, finished: bool = False) -> None
+    def snapshot(self) -> Dict[str, Any]
+    def list_jobs(self, limit: int = 20) -> List[Dict[str, Any]]
+    def get_job(self, job_id: str) -> Optional[Dict[str, Any]]

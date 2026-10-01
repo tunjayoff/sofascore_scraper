@@ -1,0 +1,23 @@
+# src.store.StoreInfo
+# kaynak: src/store/api.py
+@dataclass(frozen=True)
+class StoreInfo:
+    data_dir: str
+    readonly: bool
+    store_id: str
+    layout_version: int
+    min_reader_layout: int
+    manifest_format: int
+    created_by: str
+    created_at: str
+    last_writer: Mapping[str, Any]
+    state_schema: int
+    catalog_schema: Optional[int]
+    derive_version: Optional[int]
+    catalog_rebuild_reason: Optional[str]
+    last_rebuild: Optional[str]
+    journal_modes: Mapping[str, str]
+    rows: Mapping[str, Mapping[str, int]]
+    events_by_layout: Mapping[str, int]
+    bytes: Mapping[str, int] = field(default_factory=dict)
+    leases: Tuple[LeaseInfo, ...] = ()

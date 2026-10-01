@@ -1,0 +1,3 @@
+# src.store.get_job_store
+# kaynak: src/store/jobs.py
+def get_job_store(data_dir: Optional[str] = None) -> JobStore
