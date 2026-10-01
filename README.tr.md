@@ -65,7 +65,20 @@ Bu proje SofaScore ile bağlantılı değildir. İstek hızına dikkat edin ve i
 - **Git** — `curl | bash` ile tek satır kurulum için gerekli (depoyu klonlar); elle indiriyorsanız isteğe bağlı.
 - SofaScore’a ağ erişimi.
 
+[Docker](#docker) ile bunların hiçbiri bilgisayarınızda gerekmez: imaj Python’u, derlenmiş web uygulamasını ve tarayıcıyı içerir.
+
 ## Kurulum
+
+Birini seçin:
+
+| Yol | Gerekenler | Kime uygun |
+|-----|------------|------------|
+| [Kurulum betiği](#hızlı-kurulum-betik) | Git, Python 3.10+, Node.js | Masaüstü: çift tıkla başlatıcı, terminal arayüzü, `git pull` ile kolay güncelleme |
+| [Docker](#docker) | Docker | Sunucu ya da NAS; Python ve tarayıcıyı ana sisteme kurmak istemeyenler |
+| [Sürüm arşivi](#sürüm-arşivi) | Python 3.10+ | Git ve Node.js olmadan sabit bir sürüm |
+| [Elle kurulum](#elle-kurulum) | Git, Python 3.10+, Node.js | Geliştirme |
+
+Hangi sürümün çalıştığını `python main.py --version` (ya da `GET /health`, ya da **Ayarlar** sayfasının altı) gösterir. Sürümler arasındaki değişiklikler [CHANGELOG.md](CHANGELOG.md) dosyasındadır (İngilizce).
 
 ### Hızlı kurulum (betik)
 
@@ -118,6 +131,48 @@ Açıkça adres / klasör:
 CMD: `scripts\install.bat`. Ortam: `SOFASCORE_SCRAPER_REPO`, `SOFASCORE_SCRAPER_DIR`, `SOFASCORE_SCRAPER_DEFAULT_REPO`.
 
 **Önkoşullar:** **Git** (tek satır / klon yolu için), **PATH** üzerinde **Python 3.10+**. Betikler `git`, `python`, `venv` veya `pip` hata verirse anlaşılır Türkçe/İngilizce iletir (ör. Ubuntu’da `python3-venv` eksikliği).
+
+### Docker
+
+İmaj uygulamayı, derlenmiş web uygulamasını ve [BrowserBridge](#anti-bot-koruması-browserbridge)’in ihtiyaç duyduğu headless Chromium’u içerir. Root olmayan bir kullanıcıyla (uid 1000) çalışır ve varsayılan olarak web uygulamasını başlatır.
+
+```bash
+docker run -d --name sofascore-scraper --shm-size=1g \
+  -p 127.0.0.1:8000:8000 \
+  -v sofascore-data:/app/data \
+  -v sofascore-config:/app/config \
+  -v sofascore-browser:/app/browser-profile \
+  ghcr.io/tunjayoff/sofascore_scraper:latest
+```
+
+Ardından `http://127.0.0.1:8000` adresini açın. Compose ile depodaki [`docker-compose.yml`](docker-compose.yml) aynısını yapar:
+
+```bash
+docker compose up -d
+docker compose logs -f      # uygulama stdout'a log yazar
+```
+
+İmajlar her etiketli sürümle `ghcr.io/tunjayoff/sofascore_scraper` adresinde yayımlanır (`latest`, `X.Y.Z`, `X.Y`). Henüz bir sürüm yoksa ya da güncel `main`’i istiyorsanız imajı depodan derleyin: `docker build -t sofascore-scraper .` (sonra imaj adı olarak `sofascore-scraper` kullanın) ya da `docker compose up -d --build`. `docker/smoke-test.sh sofascore-scraper` derlenmiş imajı hiç ağa çıkmadan sınar.
+
+| Volume | İçeriği |
+|--------|---------|
+| `/app/data` | İndirilen her şey (`DATA_DIR`): sezonlar, maçlar, detaylar, yedekler, iş geçmişi |
+| `/app/config` | `leagues.txt`, `league_sports.json` ve `.env` (**Ayarlar** sayfasında kaydedilen ayarlar) |
+| `/app/browser-profile` | Çözülmüş challenge’ı taşıyan tarayıcı profili; saklanırsa yeniden başlatma hızlı olur |
+| `/app/logs` | Ayrılmıştır. Uygulama şu an logları stdout’a yazar (`docker logs`) |
+
+Bilinmesi gerekenler:
+
+- **Giriş (parola) yoktur.** Örnekler portu yalnızca `127.0.0.1` üzerinde açar. Portu ağa açarsanız (`-p 8000:8000`) erişebilen herkes ayarları değiştirip veriyi silebilir; ayrıca arayüzü açtığınız adı ya da IP’yi de bildirmeniz gerekir: `-e SOFASCORE_ALLOWED_HOSTS=localhost,127.0.0.1,sunucum.lan` (başka `Host` başlığıyla gelen istekler reddedilir).
+- **Ayarlar:** `.env.example` içindeki her değişken `-e` / `environment:` ile verilebilir. Bu şekilde verilen değişken her başlangıçta Ayarlar sayfasında kaydedilen değerin önüne geçer; bu yüzden yalnızca sabit kalmasını istediklerinizi verin (ör. `APP_LANGUAGE=tr`, `USE_PROXY` / `PROXY_URL`). `PORT` konteyner içindeki portu değiştirir.
+- **Paylaşımlı bellek:** Chromium, Docker’ın 64 MB’lık varsayılanından fazlasına ihtiyaç duyar; `--shm-size=1g` (Compose’da `shm_size`) bunun içindir.
+- **Klasör bağlama** (`-v ./data:/app/data`), klasör uid 1000 tarafından yazılabiliyorsa çalışır: `mkdir -p data config && sudo chown -R 1000:1000 data config`. Başka bir uid için imajı `--build-arg APP_UID=$(id -u) --build-arg APP_GID=$(id -g)` ile derleyin.
+- **Diğer komutlar:** imaj adından sonraki argümanlar `main.py`’ye gider; ör. `docker run --rm ghcr.io/tunjayoff/sofascore_scraper:latest --version` ya da aynı volume’larla zamanlanmış bir indirme: `docker compose run --rm sofascore-scraper --headless --update-all`. Tarayıcı profilini aynı anda tek konteyner kullanabilir; bu şekilde indirme başlatmadan önce web konteynerini durdurun (`docker compose stop`). Profil meşgulken başlatılan ikinci konteyner uyarı yazar ve tarayıcısını açamaz.
+- **Güncelleme:** `docker compose pull && docker compose up -d`. Veri, yapılandırma ve tarayıcı profili volume’larda kalır.
+
+### Sürüm arşivi
+
+[Releases sayfasındaki](https://github.com/tunjayoff/sofascore_scraper/releases) her etiketli sürümde `sofascore-scraper-X.Y.Z.tar.gz` / `.zip` bulunur: o sürümün kaynağı ve derlenmiş web uygulaması; Node.js gerekmez. Arşivi açın ve [elle kurulum](#elle-kurulum)a `python -m venv` adımından devam edin ya da klasörün içinde `./scripts/install.sh` (Windows’ta `scripts\install.ps1`) çalıştırın.
 
 ### Elle kurulum
 
@@ -232,7 +287,7 @@ python main.py
 python main.py --web
 ```
 
-Varsayılan adres: `http://127.0.0.1:8000`. Sunucu yalnızca bu bilgisayarı dinler. `--host 0.0.0.0` onu ağa açar ve **giriş yoktur**: erişebilen herkes ayarları değiştirip veriyi silebilir. `--port` portu değiştirir, `--dev` kod değişince yeniden başlatır. Sağlık kontrolü: `GET /health`.
+Varsayılan adres: `http://127.0.0.1:8000`. Sunucu yalnızca bu bilgisayarı dinler. `--host 0.0.0.0` onu ağa açar ve **giriş yoktur**: erişebilen herkes ayarları değiştirip veriyi silebilir. `--port` portu değiştirir, `--dev` kod değişince yeniden başlatır. Sağlık kontrolü: `GET /health` (sürümü de bildirir).
 
 Arka plan işlemleri `GET /api/scrape/status` ve `GET /api/scrape/stream` (SSE) ile izlenir. Ağır dosya/pandas işleri event loop dışına alındığından uzun çekimler sırasında arayüz genelde yanıt vermeye devam eder.
 
@@ -267,6 +322,7 @@ python main.py --headless --csv-export --data-dir ./data
 
 ```bash
 python main.py --help
+python main.py --version
 ```
 
 ## Veri yapısı (`DATA_DIR` altında)
@@ -385,6 +441,8 @@ Her şey tarayıcının challenge'ı çözmesine bağlı. Bu bozulduğunda işle
 
 ### Sunucu kurulumu (Linux / Docker)
 
+[Docker imajı](#docker) tarayıcıyı ve sistem kütüphanelerini zaten içerir. Düz bir Linux sunucuda ya da kendi imajınızda:
+
 ```bash
 pip install -r requirements.txt
 python -m playwright install chromium
@@ -420,6 +478,30 @@ python -m pytest -q
 ```
 
 `tests/conftest.py`, `DATA_DIR`, `config/` ve `.env`’i küçük sentetik bir veri setiyle geçici bir klasöre yönlendirir; testler verinize ve ayarlarınıza hiç dokunmaz. SofaScore’a istek atan testler `live` olarak işaretlidir ve varsayılan olarak atlanır; çalıştırmak için `python -m pytest -m live`.
+
+### Sürüm yayımlama
+
+Bakımcı için. Sürüm tek bir yerde yazılıdır: `pyproject.toml`. CLI, `/health`, web uygulaması, yayın iş akışı ve Docker imajı onu oradan okur.
+
+1. `pyproject.toml` içindeki `version` değerini `X.Y.Z` yapın.
+2. `CHANGELOG.md` içinde `## [Unreleased]` başlığını `## [X.Y.Z] - YYYY-AA-GG` olarak değiştirin, üstüne yeni ve boş bir `## [Unreleased]` ekleyin ve dosyanın sonundaki bağlantıları güncelleyin. Bu bölüm sürüm notları olur.
+3. İkisini yerelde kontrol edin, sonra commit’leyip değişikliği `main`’e alın:
+
+   ```bash
+   python scripts/release.py check-tag vX.Y.Z   # etiket ↔ pyproject sürümü
+   python scripts/release.py notes              # notları yazdırır; bölüm yoksa hata verir
+   ```
+
+4. O commit’i etiketleyip etiketi gönderin:
+
+   ```bash
+   git tag -a vX.Y.Z -m "vX.Y.Z"
+   git push origin vX.Y.Z
+   ```
+
+Etiket `.github/workflows/release.yml` iş akışını başlatır: etiketin sürümle eşleştiğini denetler, CI ile aynı lint, test ve derlemeyi çalıştırır, Docker imajını derleyip duman testinden geçirir, `ghcr.io/tunjayoff/sofascore_scraper` adresine gönderir (`X.Y.Z`, `X.Y`, `latest`) ve kaynak + derlenmiş web uygulaması arşivleriyle GitHub Release’i oluşturur. Son ekli bir sürüm (`pyproject.toml`’da `X.Y.Z-rc.1`, etiket `vX.Y.Z-rc.1`) ön sürüm olarak yayımlanır ve `latest`’i değiştirmez. Kontroller geçmeden hiçbir şey yayımlanmaz ve yayın adımları tekrarlanabilir: bir adım geçici bir nedenle (ağ, kayıt deposu) başarısız olursa iş akışını yeniden çalıştırın.
+
+İlk sürümden sonra GitHub’da paketin ayarlarını bir kez açıp herkese açık yapın (GHCR paketleri gizli başlar); aksi halde `docker pull` oturum açmayı gerektirir.
 
 ## Katkıda bulunma
 

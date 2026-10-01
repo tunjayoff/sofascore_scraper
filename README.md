@@ -65,7 +65,20 @@ The web app with two football leagues downloaded. The images follow your GitHub 
 - **Git** — required for the one-line `curl | bash` installer (clones this repo); optional if you already extracted or cloned the project manually.
 - Network access to SofaScore.
 
+With [Docker](#docker) you need none of these on the host: the image carries Python, the built web app and the browser.
+
 ## Installation
+
+Pick one:
+
+| Way | You need | Best for |
+|-----|----------|----------|
+| [Install script](#quick-install-script) | Git, Python 3.10+, Node.js | A desktop: double-click launcher, terminal UI, easy updates with `git pull` |
+| [Docker](#docker) | Docker | A server or NAS, or keeping Python and the browser off the host |
+| [Release archive](#release-archive) | Python 3.10+ | A fixed version without Git or Node.js |
+| [Manual install](#manual-install) | Git, Python 3.10+, Node.js | Development |
+
+`python main.py --version` (or `GET /health`, or the bottom of the **Settings** page) tells you which version is running. Changes between versions are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ### Quick install (script)
 
@@ -120,6 +133,48 @@ Explicit clone URL / folder:
 From CMD: `scripts\install.bat`. Environment overrides: `SOFASCORE_SCRAPER_REPO`, `SOFASCORE_SCRAPER_DIR`, `SOFASCORE_SCRAPER_DEFAULT_REPO`.
 
 **Prerequisites:** **Git** (for the one-liner / clone path), **Python 3.10+** on `PATH`. The scripts print clear errors if `git`, `python`, `venv`, or `pip install` fails (e.g. missing `python3-venv` on Debian/Ubuntu).
+
+### Docker
+
+The image contains the app, the built web app and the headless Chromium that [BrowserBridge](#anti-bot-protection-browserbridge) needs. It runs as a non-root user (uid 1000) and starts the web app by default.
+
+```bash
+docker run -d --name sofascore-scraper --shm-size=1g \
+  -p 127.0.0.1:8000:8000 \
+  -v sofascore-data:/app/data \
+  -v sofascore-config:/app/config \
+  -v sofascore-browser:/app/browser-profile \
+  ghcr.io/tunjayoff/sofascore_scraper:latest
+```
+
+Then open `http://127.0.0.1:8000`. With Compose, the repository's [`docker-compose.yml`](docker-compose.yml) does the same:
+
+```bash
+docker compose up -d
+docker compose logs -f      # the app logs to stdout
+```
+
+Images are published to `ghcr.io/tunjayoff/sofascore_scraper` with each tagged release (`latest`, `X.Y.Z`, `X.Y`). If there is no release yet, or you want the current `main`, build the image from a checkout: `docker build -t sofascore-scraper .` (then use `sofascore-scraper` as the image name), or `docker compose up -d --build`. `docker/smoke-test.sh sofascore-scraper` checks a built image without any network access.
+
+| Volume | Holds |
+|--------|-------|
+| `/app/data` | Everything downloaded (`DATA_DIR`): seasons, matches, details, backups, job history |
+| `/app/config` | `leagues.txt`, `league_sports.json` and `.env` (settings saved on the **Settings** page) |
+| `/app/browser-profile` | The browser profile with the solved challenge; keeping it makes restarts fast |
+| `/app/logs` | Reserved. The app logs to stdout today (`docker logs`) |
+
+Things to know:
+
+- **There is no login.** The examples publish the port on `127.0.0.1` only. If you publish it to your network (`-p 8000:8000`), anyone who can reach it can change settings and delete data, and you must also list the name or IP you open it with: `-e SOFASCORE_ALLOWED_HOSTS=localhost,127.0.0.1,my-server.lan` (requests with any other `Host` header are rejected).
+- **Settings:** every variable in `.env.example` can be passed with `-e` / `environment:`. On every start a variable set that way wins over the value saved on the Settings page, so only set the ones you want fixed (for example `APP_LANGUAGE=en`, `USE_PROXY` / `PROXY_URL`). `PORT` changes the port inside the container.
+- **Shared memory:** Chromium needs more than Docker's 64 MB default, hence `--shm-size=1g` (`shm_size` in Compose).
+- **Bind mounts** (`-v ./data:/app/data`) work when the folder is writable by uid 1000: `mkdir -p data config && sudo chown -R 1000:1000 data config`. To use another uid, build with `--build-arg APP_UID=$(id -u) --build-arg APP_GID=$(id -g)`.
+- **Other commands:** arguments after the image name go to `main.py`, for example `docker run --rm ghcr.io/tunjayoff/sofascore_scraper:latest --version`, or a scheduled download with the same volumes: `docker compose run --rm sofascore-scraper --headless --update-all`. The browser profile can be used by one container at a time, so stop the web container (`docker compose stop`) before running a download this way; a second container on a busy profile logs a warning and cannot open its browser.
+- **Updating:** `docker compose pull && docker compose up -d`. Data, configuration and the browser profile stay in their volumes.
+
+### Release archive
+
+Each tagged release on the [Releases page](https://github.com/tunjayoff/sofascore_scraper/releases) has `sofascore-scraper-X.Y.Z.tar.gz` / `.zip`: the source of that version with the web app already built, so Node.js is not needed. Unpack it and continue with the [manual install](#manual-install) from the `python -m venv` step, or run `./scripts/install.sh` (`scripts\install.ps1` on Windows) inside the folder.
 
 ### Manual install
 
@@ -234,7 +289,7 @@ python main.py
 python main.py --web
 ```
 
-Default URL: `http://127.0.0.1:8000`. The server only listens on this machine. `--host 0.0.0.0` opens it to your network, **with no login**: anyone who can reach it can change settings and delete data. `--port` changes the port and `--dev` reloads on code changes. Health: `GET /health`.
+Default URL: `http://127.0.0.1:8000`. The server only listens on this machine. `--host 0.0.0.0` opens it to your network, **with no login**: anyone who can reach it can change settings and delete data. `--port` changes the port and `--dev` reloads on code changes. Health: `GET /health` (also reports the version).
 
 Background jobs report status via `GET /api/scrape/status` and `GET /api/scrape/stream` (SSE). Heavy API work runs off the asyncio event loop so the UI stays responsive during long fetches.
 
@@ -269,6 +324,7 @@ Exit codes: **0** success (or `APP_EXIT_CODE` if set by scraper), **1** unexpect
 
 ```bash
 python main.py --help
+python main.py --version
 ```
 
 ## Data layout (under `DATA_DIR`)
@@ -396,6 +452,8 @@ Everything depends on the browser solving the challenge. When that stops working
 
 ### Server setup (Linux / Docker)
 
+The [Docker image](#docker) already contains the browser and its system libraries. On a plain Linux server, or in an image of your own:
+
 ```bash
 pip install -r requirements.txt
 python -m playwright install chromium
@@ -431,6 +489,30 @@ python -m pytest -q
 ```
 
 `tests/conftest.py` points `DATA_DIR`, `config/` and `.env` at a temporary folder with a small synthetic data set, so the suite never touches your data or settings. Tests that call SofaScore are marked `live` and skipped by default; run them with `python -m pytest -m live`.
+
+### Releasing
+
+For the maintainer. The version is written in one place, `pyproject.toml`; the CLI, `/health`, the web app, the release workflow and the Docker image all read it from there.
+
+1. Set `version` in `pyproject.toml` to `X.Y.Z`.
+2. In `CHANGELOG.md`, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD`, put a new empty `## [Unreleased]` above it and update the links at the bottom of the file. That section becomes the release notes.
+3. Check both locally, then commit and get the change onto `main`:
+
+   ```bash
+   python scripts/release.py check-tag vX.Y.Z   # tag ↔ pyproject version
+   python scripts/release.py notes              # prints the notes; fails if the section is missing
+   ```
+
+4. Tag that commit and push the tag:
+
+   ```bash
+   git tag -a vX.Y.Z -m "vX.Y.Z"
+   git push origin vX.Y.Z
+   ```
+
+The tag starts `.github/workflows/release.yml`: it checks that the tag matches the version, runs the same lint, tests and build as CI, builds and smoke-tests the Docker image, pushes it to `ghcr.io/tunjayoff/sofascore_scraper` (`X.Y.Z`, `X.Y`, `latest`) and creates the GitHub Release with the source + built web app archives. A version with a suffix (`X.Y.Z-rc.1` in `pyproject.toml`, tag `vX.Y.Z-rc.1`) is published as a pre-release and does not move `latest`. Nothing is published before the checks pass, and the publish steps are safe to repeat: if one fails for a passing reason (network, registry), re-run the workflow.
+
+After the very first release, open the package's settings on GitHub once and make it public (GHCR packages start private), otherwise `docker pull` needs a login.
 
 ## Contributing
 
