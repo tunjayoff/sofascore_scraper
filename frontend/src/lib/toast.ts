@@ -20,7 +20,12 @@ export function dismissToast(id: number) {
 /** A readable message for any thrown value; a failed fetch means the server is down. */
 export function errorText(e: unknown): string {
   const t = i18n.global.t
-  if (e instanceof ApiError) return e.message || t('common.unknownError')
+  if (e instanceof ApiError) {
+    // A refusal with a known code gets our own wording instead of the server's English text
+    const key = e.code ? `errors.${e.code}` : ''
+    if (key && i18n.global.te(key, 'en')) return t(key)
+    return e.message || t('common.unknownError')
+  }
   if (e instanceof TypeError) return t('common.serverDown')
   return String((e as Error)?.message || e || t('common.unknownError'))
 }

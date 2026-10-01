@@ -39,6 +39,12 @@ export default {
     serverDown: 'Sunucuya ulaşılamıyor. Uygulama çalışıyor mu?',
     statsFailed: 'İstatistikler yüklenemedi: {error}',
   },
+  // API reddinin `code` alanına göre (src/web/jobs.py, src/web/routes/settings.py)
+  errors: {
+    job_running: 'Bir indirme sürüyor. Durdurun ya da bitmesini bekleyin, sonra yeniden deneyin.',
+    data_operation_running: 'Bir yedekleme ya da silme işlemi hâlâ sürüyor. Bitince yeniden deneyin.',
+    data_dir_unusable: 'Bu klasör oluşturulamıyor ya da yazılamıyor. Hiçbir şey değiştirilmedi.',
+  },
   sport: {
     all: 'Tüm sporlar',
     football: 'Futbol',
@@ -239,7 +245,9 @@ export default {
     themeDark: 'Koyu',
     themeSystem: 'Sisteme uy',
     dataDir: 'Veri klasörü',
-    dataDirHint: 'İndirilen dosyaların kaydedildiği klasör.',
+    dataDirHint: 'İndirilen dosyaların kaydedildiği klasör. İndirme sürerken değiştirilemez.',
+    dataDirChanged:
+      'Veri klasörü değişti. Yeni indirmeler ve indirme geçmişi artık bu klasörü kullanıyor; eski klasördeki dosyalar taşınmadı.',
     disk: 'Diskte kullanılan',
     totals: '{leagues} lig · {matches} maç · {details} maç detayı',
     backup: 'Yedek al',
