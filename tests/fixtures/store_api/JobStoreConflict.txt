@@ -1,0 +1,4 @@
+# src.store.JobStoreConflict
+# kaynak: src/store/jobs.py
+class JobStoreConflict(RuntimeError):
+    code = ...

@@ -11,7 +11,9 @@ Dosya değişti, davranış değişmedi:
   * Dışarıya verilen satırlar bugünkü 18 sütundur; state.db'nin yeni sütunları (`kind`, `owner`) iş
     yöneticisi gelene kadar yalnızca varsayılan değerleriyle durur.
 
-Tek kişilik yuva (`exclusive`) ve yansı hâlâ süreç içidir; süreçler arası kilit ST-10 ile gelir.
+Süreçler arası kural (bölüm 6.1): çalışan iş `writer` kilidini, veri işlemleri (`exclusive`) `maintenance`
+kilidini (yedek: `writer`) tutar. Aynı veri dizinini yazan ikinci bir süreç, bu süreçteki ikinci bir iş
+gibi JobRunningError / DataOperationRunningError alır. Yansı (`snapshot`) hâlâ süreç içidir.
 """
 from __future__ import annotations
 
@@ -27,12 +29,22 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from src.store import layout
+from src.store.errors import LeaseHeld
+from src.store.lease import MAINTENANCE, WRITER, Lease, LeaseManager
 from src.store.state import APPLICATION_ID, BUSY_TIMEOUT_MS, StateDb
 
 logger = logging.getLogger("Store")
 
 META_IMPORTED_JOBS_DB = "imported_jobs_db"
 _LEGACY_DB_NAME = os.path.basename(layout.LEGACY_JOBS_DB)
+_LOCKS_DIR_NAME = os.path.basename(layout.LOCKS_DIR)
+
+# Kilidin `purpose` alanı: çakışan süreç hangi hatayı vereceğini buradan anlar (`conflict_from_lease`)
+JOB_PURPOSE = "job"
+OPERATION_PREFIX = "op:"  # "op:clear", "op:backup", ...
+# Veri dizinini değiştirmeyen, yalnızca tutarlı bir kopya isteyen işlemler `writer` alır; diğerleri
+# (silme, lig silme, DATA_DIR değişimi) `maintenance` (docs/design/01-storage.md bölüm 6.1)
+WRITER_OPERATIONS = frozenset({"backup"})
 
 # 2.x jobs.db'nin sütunları, o sırayla. Okuma yöntemleri yalnızca bunları döndürür.
 JOB_COLUMNS: Tuple[str, ...] = (
@@ -92,6 +104,24 @@ class DataOperationRunningError(JobStoreConflict):
     def __init__(self, operation: str) -> None:
         self.operation = operation
         super().__init__(f"Another data operation ({operation}) is in progress; try again when it finishes.")
+
+
+def conflict_from_lease(held: LeaseHeld) -> JobStoreConflict:
+    """
+    LeaseHeld → web katmanının 409'a çevirdiği hata. Kilidi bir veri işlemi tutuyorsa (amaç "op:<ad>")
+    DataOperationRunningError, `writer` başka bir amaçla tutuluyorsa (web işi, CLI indirmesi) JobRunningError.
+    """
+    purpose = held.purpose or ""
+    if purpose.startswith(OPERATION_PREFIX):
+        return DataOperationRunningError(purpose[len(OPERATION_PREFIX):])
+    if held.name == WRITER:
+        return JobRunningError()
+    return DataOperationRunningError(purpose or held.name or MAINTENANCE)
+
+
+def locks_dir_for(db_path: str) -> str:
+    """İş deposunun kilit dizini: veritabanının yanındaki `locks/` (`.meta/state.db` için `.meta/locks`)."""
+    return os.path.join(os.path.dirname(os.path.abspath(db_path)), _LOCKS_DIR_NAME)
 
 
 def _read_legacy_rows(legacy_path: str) -> Tuple[List[str], List[Tuple[Any, ...]]]:
@@ -157,8 +187,10 @@ class JobStore:
         # Süren veri işleminin adı (clear, backup, ...); doluyken yeni iş başlatılamaz
         self._exclusive: Optional[str] = None
         self._mirror: Dict[str, Any] = self._idle_mirror()
+        # Çalışan işin `writer` kilidi: create_running alır, iş bitince bırakılır
+        self._writer: Optional[Lease] = None
         os.makedirs(os.path.dirname(db_path) or ".", exist_ok=True)
-        self._state = self._open(db_path)
+        self._state, self._leases = self._open(db_path)
         try:
             self.mark_stale_running_interrupted()
         except BaseException:
@@ -192,9 +224,13 @@ class JobStore:
         }
 
     @staticmethod
-    def _open(db_path: str) -> StateDb:
-        """state.db'yi açar (gerekirse kurar, geçişleri uygular) ve yanındaki 2.x jobs.db'yi bir kez içe aktarır."""
-        state = StateDb(db_path)
+    def _open(db_path: str) -> Tuple[StateDb, LeaseManager]:
+        """
+        state.db'yi açar (gerekirse kurar; geçişler `maintenance` kilidi altında uygulanır), yanındaki 2.x
+        jobs.db'yi bir kez içe aktarır ve dizinin kilit yöneticisini döndürür.
+        """
+        leases = LeaseManager(locks_dir_for(db_path))
+        state = StateDb(db_path, migration_guard=leases.migration_guard)
         try:
             legacy = os.path.join(os.path.dirname(os.path.abspath(db_path)), _LEGACY_DB_NAME)
             if os.path.normcase(legacy) != os.path.normcase(os.path.abspath(db_path)):
@@ -202,12 +238,41 @@ class JobStore:
         except BaseException:
             state.close()
             raise
-        return state
+        leases.state = state
+        return state, leases
 
     def close(self) -> None:
-        """Veritabanı bağlantılarını kapatır (testler ve DATA_DIR değişimi için)."""
+        """Kilidi bırakır ve veritabanı bağlantılarını kapatır (testler ve DATA_DIR değişimi için)."""
         with self._lock:
+            self._release_writer()
             self._state.close()
+
+    def _take_writer(self) -> bool:
+        """
+        `writer` kilidini alır; depo zaten tutuyorsa hiçbir şey yapmaz ve False döner. Kilit başka bir
+        süreçte (ya da bu süreçteki başka bir depoda) ise JobRunningError / DataOperationRunningError.
+        """
+        if self._writer is not None and self._writer.held:
+            return False
+        try:
+            self._writer = self._leases.acquire(WRITER, purpose=JOB_PURPOSE)
+        except LeaseHeld as held:
+            raise conflict_from_lease(held) from held
+        return True
+
+    def _release_writer(self) -> None:
+        writer, self._writer = self._writer, None
+        if writer is not None:
+            writer.release()
+
+    def writer_busy(self) -> bool:
+        """
+        Veri dizinine şu an yazan biri var mı: bu deponun çalışan işi ya da `writer` kilidini tutan başka
+        bir süreç (indirme işi, CLI çalıştırması, yedek). Kilidi almaz; tek maç indirme gibi kısa yazmalar
+        başlamadan önce sorar.
+        """
+        with self._lock:
+            return bool(self._mirror.get("is_running")) or self._leases.holder(WRITER) is not None
 
     def mark_stale_running_interrupted(self) -> int:
         """On process start: any running/queued job becomes interrupted."""
@@ -227,6 +292,7 @@ class JobStore:
                 n = cur.rowcount or 0
             self._active_id = None
             self._mirror = self._idle_mirror()
+            self._release_writer()
             return n
 
     @contextlib.contextmanager
@@ -236,18 +302,27 @@ class JobStore:
         yuva. İş çalışıyorsa JobRunningError, başka bir işlem sürüyorsa DataOperationRunningError
         fırlatır. Kontrol ile yuvanın alınması aynı kilit altında olduğundan, işlem sürerken
         create_running de reddedilir: "iş yok" kontrolünden sonra araya iş giremez.
+
+        Yuva süreçler arasında da geçerlidir: işlem süresince veri dizininin `maintenance` kilidi
+        (yedekte `writer`) tutulur; kilit başka bir süreçteyse aynı iki hata fırlatılır.
         """
         with self._lock:
             if self._mirror.get("is_running"):
                 raise JobRunningError()
             if self._exclusive is not None:
                 raise DataOperationRunningError(self._exclusive)
+            name = WRITER if operation in WRITER_OPERATIONS else MAINTENANCE
+            try:
+                lease = self._leases.acquire(name, purpose=OPERATION_PREFIX + operation)
+            except LeaseHeld as held:
+                raise conflict_from_lease(held) from held
             self._exclusive = operation
         try:
             yield
         finally:
             with self._lock:
                 self._exclusive = None
+                lease.release()
 
     def rebind(self, db_path: str) -> bool:
         """
@@ -259,16 +334,16 @@ class JobStore:
                 raise JobRunningError()
             if os.path.abspath(db_path) == os.path.abspath(self.db_path):
                 return False
-            previous_path, previous_state = self.db_path, self._state
+            previous_path, previous_state, previous_leases = self.db_path, self._state, self._leases
             os.makedirs(os.path.dirname(db_path) or ".", exist_ok=True)
-            new_state = self._open(db_path)
-            self.db_path, self._state = db_path, new_state
+            new_state, new_leases = self._open(db_path)
+            self.db_path, self._state, self._leases = db_path, new_state, new_leases
             try:
                 # Bu süreçte çalışan iş yok: yeni dizindeki "running" satırları eski bir çöküşten kalmadır.
                 # Yansı da boşa döner; önceki dizinin son işi yeni dizinin işi gibi görünmez.
                 self.mark_stale_running_interrupted()
             except BaseException:
-                self.db_path, self._state = previous_path, previous_state
+                self.db_path, self._state, self._leases = previous_path, previous_state, previous_leases
                 new_state.close()
                 raise
             previous_state.close()
@@ -282,14 +357,21 @@ class JobStore:
             if self._exclusive is not None:
                 # Silme/yedek sürerken başlayan iş, silinen dizine yazar ya da yarım yedeğe girer
                 raise DataOperationRunningError(self._exclusive)
-            with self._state.write() as conn:
-                conn.execute(
-                    """
-                    INSERT INTO jobs (id, status, progress, current_task, payload_json, log_json, started_at)
-                    VALUES (?, 'running', 0, 'Starting…', ?, '[]', ?)
-                    """,
-                    (job_id, payload_json, now),
-                )
+            # Başka bir süreç bu dizine yazıyorsa (web işi, CLI indirmesi, veri işlemi) iş başlamaz
+            taken = self._take_writer()
+            try:
+                with self._state.write() as conn:
+                    conn.execute(
+                        """
+                        INSERT INTO jobs (id, status, progress, current_task, payload_json, log_json, started_at)
+                        VALUES (?, 'running', 0, 'Starting…', ?, '[]', ?)
+                        """,
+                        (job_id, payload_json, now),
+                    )
+            except BaseException:
+                if taken:
+                    self._release_writer()
+                raise
             self._active_id = job_id
             self._mirror = self._idle_mirror()
             self._mirror.update(
@@ -401,7 +483,12 @@ class JobStore:
                     elif low == "cancelled":
                         db_status = "cancelled"
 
-            with self._state.write() as conn:
+            # İş bittiyse `writer` kilidi satır yazıldıktan sonra bırakılır; yazma hata verse de bırakılır,
+            # çünkü yansı artık "çalışmıyor" diyor
+            done = contextlib.ExitStack()
+            if finished:
+                done.callback(self._release_writer)
+            with done, self._state.write() as conn:
                 conn.execute(
                     """
                     UPDATE jobs SET

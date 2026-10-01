@@ -1,0 +1,10 @@
+# src.store.LeaseInfo
+# kaynak: src/store/lease.py
+@dataclass(frozen=True)
+class LeaseInfo:
+    name: str
+    holder: Optional[str] = None
+    pid: Optional[int] = None
+    host: Optional[str] = None
+    purpose: str = ''
+    acquired_at: Optional[float] = None

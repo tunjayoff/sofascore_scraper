@@ -1,0 +1,16 @@
+# src.store.Store
+# kaynak: src/store/api.py
+class Store:
+    def __init__(self, data_dir: PathLike, *, create: bool = True, readonly: bool = False) -> None
+    self.data_dir
+    self.readonly
+    self.runtime
+    @property
+    def closed(self) -> bool
+    @property
+    def store_id(self) -> str
+    def lease(self, name: str, *, purpose: str = '', wait: float = 0.0) -> Lease
+    def lease_holder(self, name: str) -> Optional[LeaseInfo]
+    def info(self, *, sizes: bool = True) -> StoreInfo
+    def close(self) -> None
+    def __repr__(self) -> str

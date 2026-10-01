@@ -1,0 +1,6 @@
+# src.store.DataOperationRunningError
+# kaynak: src/store/jobs.py
+class DataOperationRunningError(JobStoreConflict):
+    code = ...
+    def __init__(self, operation: str) -> None
+    self.operation

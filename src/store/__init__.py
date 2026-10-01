@@ -2,8 +2,17 @@
 Store: DATA_DIR altındaki her şeye dokunan tek paket (docs/design/01-storage.md, bölüm 2).
 
 Paketin dışındaki kod yalnızca bu kökten içe aktarır (`from src.store import ...`), alt modüllerden
-değil. Şimdilik yalnızca hata sınıfları dışa açık; Store cephesi ve veri tipleri sonraki adımlarda eklenir.
+değil. Dışa açık olanlar: hata sınıfları, cephe (`open_store`, `Store`, `StoreInfo`), kilitler (`Lease`,
+`LeaseInfo`) ve iş deposu. Okuma ve yazma API'leri sonraki adımlarda eklenir.
+
+Hata sınıfları dışındaki adlar ilk kullanımda yüklenir: kök, cepheyi (SQLite, katalog, türetme) içe
+aktarmadan da alınabilmelidir, çünkü `src.store.files` gibi alt modülleri uygulamanın en alt katmanları
+kullanır (src/fsutil.py) ve bir alt modülü içe aktarmak önce bu dosyayı çalıştırır.
 """
+import importlib as _importlib
+from typing import TYPE_CHECKING as _TYPE_CHECKING
+from typing import Any as _Any
+
 from src.store.errors import (
     CatalogCorrupt,
     FollowExists,
@@ -18,7 +27,58 @@ from src.store.errors import (
     UnknownEvent,
 )
 
+if _TYPE_CHECKING:  # tür denetleyicileri ve API anlık görüntüsü adları buradan bulur
+    from src.store.api import Store, StoreInfo, open_store
+    from src.store.jobs import (
+        DataOperationRunningError,
+        JobRunningError,
+        JobStore,
+        JobStoreConflict,
+        default_db_path,
+        get_job_store,
+    )
+    from src.store.lease import Lease, LeaseInfo
+
+_LAZY = {
+    "open_store": "src.store.api",
+    "Store": "src.store.api",
+    "StoreInfo": "src.store.api",
+    "Lease": "src.store.lease",
+    "LeaseInfo": "src.store.lease",
+    "JobStore": "src.store.jobs",
+    "JobStoreConflict": "src.store.jobs",
+    "JobRunningError": "src.store.jobs",
+    "DataOperationRunningError": "src.store.jobs",
+    "default_db_path": "src.store.jobs",
+    "get_job_store": "src.store.jobs",
+}
+
+
+def __getattr__(name: str) -> _Any:
+    module = _LAZY.get(name)
+    if module is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    value = getattr(_importlib.import_module(module), name)
+    globals()[name] = value
+    return value
+
+
+def __dir__() -> list:
+    return sorted(set(globals()) | set(_LAZY))
+
+
 __all__ = [
+    "open_store",
+    "Store",
+    "StoreInfo",
+    "Lease",
+    "LeaseInfo",
+    "JobStore",
+    "JobStoreConflict",
+    "JobRunningError",
+    "DataOperationRunningError",
+    "default_db_path",
+    "get_job_store",
     "StoreError",
     "LeaseHeld",
     "StoreBusy",
