@@ -91,3 +91,17 @@ def test_compose_publishes_on_localhost_only():
     ports = re.findall(r'^\s*-\s*"?([0-9.:\[\]a-fA-F]*\d+:\d+)"?\s*(?:#.*)?$', text, flags=re.M)
     assert ports == ["127.0.0.1:8000:8000"], "the web app has no login; the example must not expose it to the network"
     assert "shm_size" in text
+
+
+def test_compose_keeps_every_image_volume_in_a_named_volume():
+    """İmajın VOLUME dizinleri (log dosyası dahil) Compose'da adlandırılmış volume'da durur, anonim volume'da değil."""
+    compose = "\n".join(ln for ln in _read("docker-compose.yml").splitlines() if not ln.lstrip().startswith("#"))
+    mounts = dict(re.findall(r"^\s*-\s*([a-z][a-z0-9-]*):(/app/[a-z-]+)\b", compose, flags=re.M))
+    declared = set(re.findall(r"^  ([a-z][a-z0-9-]*):\s*$", compose.split("\nvolumes:\n", 1)[1], flags=re.M))
+    image_volumes = re.findall(r'"(/app/[a-z-]+)"', next(
+        ln for ln in _instructions(_read("Dockerfile")) if ln.startswith("VOLUME ")
+    ))
+    assert sorted(image_volumes) == ["/app/browser-profile", "/app/config", "/app/data", "/app/logs"]
+    assert sorted(mounts.values()) == sorted(image_volumes)
+    assert set(mounts) == declared
+

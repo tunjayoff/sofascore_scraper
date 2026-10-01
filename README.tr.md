@@ -169,7 +169,7 @@ Bilinmesi gerekenler:
 - **Paylaşımlı bellek:** Chromium, Docker’ın 64 MB’lık varsayılanından fazlasına ihtiyaç duyar; `--shm-size=1g` (Compose’da `shm_size`) bunun içindir.
 - **Klasör bağlama** (`-v ./data:/app/data`), klasör uid 1000 tarafından yazılabiliyorsa çalışır: `mkdir -p data config && sudo chown -R 1000:1000 data config`. Başka bir uid için imajı `--build-arg APP_UID=$(id -u) --build-arg APP_GID=$(id -g)` ile derleyin.
 - **Diğer komutlar:** imaj adından sonraki argümanlar `main.py`’ye gider; ör. `docker run --rm ghcr.io/tunjayoff/sofascore_scraper:latest --version` ya da aynı volume’larla zamanlanmış bir indirme: `docker compose run --rm sofascore-scraper --headless --update-all`. Tarayıcı profilini aynı anda tek konteyner kullanabilir; bu şekilde indirme başlatmadan önce web konteynerini durdurun (`docker compose stop`). Profil meşgulken başlatılan ikinci konteyner uyarı yazar ve tarayıcısını açamaz.
-- **Güncelleme:** `docker compose pull && docker compose up -d`. Veri, yapılandırma ve tarayıcı profili volume’larda kalır.
+- **Güncelleme:** `docker compose pull && docker compose up -d`. Veri, yapılandırma, tarayıcı profili ve log dosyaları volume’larda kalır.
 
 ### Sürüm arşivi
 

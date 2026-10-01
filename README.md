@@ -171,7 +171,7 @@ Things to know:
 - **Shared memory:** Chromium needs more than Docker's 64 MB default, hence `--shm-size=1g` (`shm_size` in Compose).
 - **Bind mounts** (`-v ./data:/app/data`) work when the folder is writable by uid 1000: `mkdir -p data config && sudo chown -R 1000:1000 data config`. To use another uid, build with `--build-arg APP_UID=$(id -u) --build-arg APP_GID=$(id -g)`.
 - **Other commands:** arguments after the image name go to `main.py`, for example `docker run --rm ghcr.io/tunjayoff/sofascore_scraper:latest --version`, or a scheduled download with the same volumes: `docker compose run --rm sofascore-scraper --headless --update-all`. The browser profile can be used by one container at a time, so stop the web container (`docker compose stop`) before running a download this way; a second container on a busy profile logs a warning and cannot open its browser.
-- **Updating:** `docker compose pull && docker compose up -d`. Data, configuration and the browser profile stay in their volumes.
+- **Updating:** `docker compose pull && docker compose up -d`. Data, configuration, the browser profile and the log files stay in their volumes.
 
 ### Release archive
 
