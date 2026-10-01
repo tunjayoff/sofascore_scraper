@@ -1,6 +1,11 @@
 """
 Yapılandırma dosyalarını yöneten modül.
 Lig bilgilerini okur ve yönetir.
+
+Ayar getter'ları (get_data_dir, get_max_concurrent...) etkin `Settings`ten okur (src/config; plan maddesi
+P09). Yapılandırma dosyası (sofascore.toml) yokken her değer eskisi gibi `.env` ve ortam değişkenlerinden,
+aynı kurallarla çözülür; dosya varsa onun değerleri de hesaba katılır. `.env` yazımı ve lig dosyası
+(leagues.txt) işlemleri değişmedi.
 """
 
 import os
@@ -8,16 +13,20 @@ import dotenv
 from typing import Dict, Tuple, Optional, Set, Any
 from dataclasses import dataclass
 
+from src.config import Settings
+from src.config import loader as settings_loader
 from src.exceptions import ConfigError
 from src.fsutil import atomic_write_text, file_lock
 from src import redact
-from src.i18n import app_language
 from src.logger import apply_log_level, get_logger
 from src.paths import default_league_config_path, env_file_path
 from src.private_files import PRIVATE_FILE_MODE, create_private_file, restrict_permissions
 
 # .env dosyasını yükle
 dotenv.load_dotenv(env_file_path())
+# Etkin ayarları kur. sofascore.toml varsa burada okunur; bozuksa uygulama burada, açık bir ConfigError ile
+# durur (yarım uygulanmış bir yapılandırmayla çalışmaz). Dosya yoksa ortama dokunulmaz, log yazılmaz.
+settings_loader.active()
 
 # Logger'ı alın
 logger = get_logger("ConfigManager")
@@ -289,6 +298,21 @@ class ConfigManager:
         """
         return self.get_league_by_name(league_name)
 
+    def get_settings(self) -> Settings:
+        """Etkin ayarlar (src/config). Ortam değişkeni değişmişse yeni bir nesne döner."""
+        return settings_loader.active_settings()
+
+    def _number(self, key: str, env_name: str) -> Any:
+        """
+        Sayısal bir ayar. Ortamdaki / .env'deki değer okunamadıysa eskisi gibi her çağrıda uyarı yazılır
+        (değer başka bir kaynaktan, ör. yapılandırma dosyasından geliyorsa uyarı yanlış olurdu, yazılmaz).
+        """
+        loaded = settings_loader.active()
+        value = loaded.settings.get(key)
+        if key in loaded.invalid_legacy and loaded.source(key).layer == settings_loader.LAYER_DEFAULT:
+            logger.warning(f"{env_name} is not valid; using the default {value}.")
+        return value
+
     def get_data_dir(self) -> str:
         """
         Veri dizinini döndürür.
@@ -296,7 +320,7 @@ class ConfigManager:
         Returns:
             str: Yapılandırmada tanımlanan veri dizini
         """
-        return os.getenv("DATA_DIR", "data")
+        return self.get_settings().storage.data_dir
 
     def get_match_data_dir(self) -> str:
         """
@@ -315,7 +339,7 @@ class ConfigManager:
         Returns:
             str: API temel URL'si
         """
-        return os.getenv("API_BASE_URL", "https://www.sofascore.com/api/v1")
+        return self.get_settings().client.base_url
 
     def get_use_proxy(self) -> bool:
         """
@@ -324,7 +348,7 @@ class ConfigManager:
         Returns:
             bool: Proxy kullanılacaksa True, değilse False
         """
-        return os.getenv("USE_PROXY", "false").lower() == "true"
+        return self.get_settings().client.use_proxy
 
     def get_proxy_url(self) -> str:
         """
@@ -333,7 +357,7 @@ class ConfigManager:
         Returns:
             str: Proxy URL'si
         """
-        return os.getenv("PROXY_URL", "")
+        return self.get_settings().client.proxy
 
     def get_use_color(self) -> bool:
         """
@@ -342,7 +366,7 @@ class ConfigManager:
         Returns:
             bool: Renk kullanılacaksa True, değilse False
         """
-        return os.getenv("USE_COLOR", "true").lower() == "true"
+        return self.get_settings().display.use_color
 
     def get_date_format(self) -> str:
         """
@@ -351,77 +375,49 @@ class ConfigManager:
         Returns:
             str: Tarih formatı
         """
-        return os.getenv("DATE_FORMAT", "%Y-%m-%d %H:%M:%S")
+        return self.get_settings().display.date_format
 
     def get_max_concurrent(self) -> int:
         """Maksimum paralel istek sayısını döndürür."""
-        try:
-            return int(os.getenv("MAX_CONCURRENT", "10"))
-        except ValueError:
-            logger.warning("MAX_CONCURRENT geçersiz, varsayılan 10 kullanılacak.")
-            return 10
+        return self._number("client.max_concurrent", "MAX_CONCURRENT")
 
     def get_request_rate_limit(self) -> float:
         """Tüm süreçlerin paylaştığı istek bütçesi (istek/sn); 0 = kapalı. Bkz. src/throttle.py."""
-        from src.throttle import configured_rate
+        loaded = settings_loader.active()
+        if "client.rate" in loaded.invalid_legacy:
+            # Geçersiz değerin uyarısını (değer başına bir kez) bütçenin kendisi yazar
+            from src.throttle import configured_rate
 
-        return configured_rate()
+            configured_rate()
+        return loaded.settings.client.rate
 
     def get_wait_time_min(self) -> float:
         """İstekler arası minimum bekleme süresini döndürür."""
-        try:
-            return float(os.getenv("WAIT_TIME_MIN", "0.2"))
-        except ValueError:
-            logger.warning("WAIT_TIME_MIN geçersiz, varsayılan 0.2 kullanılacak.")
-            return 0.2
+        return self._number("client.wait_time_min", "WAIT_TIME_MIN")
 
     def get_wait_time_max(self) -> float:
         """İstekler arası maksimum ek bekleme süresini döndürür."""
-        try:
-            return float(os.getenv("WAIT_TIME_MAX", "0.5"))
-        except ValueError:
-            logger.warning("WAIT_TIME_MAX geçersiz, varsayılan 0.5 kullanılacak.")
-            return 0.5
+        return self._number("client.wait_time_max", "WAIT_TIME_MAX")
 
     def get_request_timeout(self) -> int:
         """İstek zaman aşımı değerini döndürür."""
-        try:
-            return int(os.getenv("REQUEST_TIMEOUT", "10"))
-        except ValueError:
-            logger.warning("REQUEST_TIMEOUT geçersiz, varsayılan 10 kullanılacak.")
-            return 10
+        return self._number("client.timeout_seconds", "REQUEST_TIMEOUT")
 
     def get_max_retries(self) -> int:
         """Maksimum yeniden deneme sayısını döndürür."""
-        try:
-            return int(os.getenv("MAX_RETRIES", "3"))
-        except ValueError:
-            logger.warning("MAX_RETRIES geçersiz, varsayılan 3 kullanılacak.")
-            return 3
+        return self._number("client.retries", "MAX_RETRIES")
 
     def get_rate_limit_threshold_consecutive(self) -> int:
         """Arka arkaya rate-limit hatası eşiğini döndürür."""
-        try:
-            return int(os.getenv("RATE_LIMIT_THRESHOLD_CONSECUTIVE", "20"))
-        except ValueError:
-            logger.warning("RATE_LIMIT_THRESHOLD_CONSECUTIVE geçersiz, varsayılan 20 kullanılacak.")
-            return 20
+        return self._number("breaker.rate_limit_consecutive", "RATE_LIMIT_THRESHOLD_CONSECUTIVE")
 
     def get_rate_limit_threshold_ratio(self) -> float:
         """Rate-limit hata oranı eşiğini döndürür."""
-        try:
-            return float(os.getenv("RATE_LIMIT_THRESHOLD_RATIO", "0.9"))
-        except ValueError:
-            logger.warning("RATE_LIMIT_THRESHOLD_RATIO geçersiz, varsayılan 0.9 kullanılacak.")
-            return 0.9
+        return self._number("breaker.rate_limit_ratio", "RATE_LIMIT_THRESHOLD_RATIO")
 
     def get_server_error_threshold_consecutive(self) -> int:
         """Arka arkaya 5xx hataları için eşik döndürür."""
-        try:
-            return int(os.getenv("SERVER_ERROR_THRESHOLD_CONSECUTIVE", "50"))
-        except ValueError:
-            logger.warning("SERVER_ERROR_THRESHOLD_CONSECUTIVE geçersiz, varsayılan 50 kullanılacak.")
-            return 50
+        return self._number("breaker.server_error_consecutive", "SERVER_ERROR_THRESHOLD_CONSECUTIVE")
 
     def get_language(self) -> str:
         """
@@ -430,7 +426,7 @@ class ConfigManager:
         Returns:
             str: Dil kodu (tr, en, vs.)
         """
-        return app_language()
+        return self.get_settings().display.language
 
     def set_language(self, lang_code: str) -> bool:
         """
@@ -459,11 +455,16 @@ class ConfigManager:
             # Ligleri yeniden yükle
             self._load_leagues()
 
-            # Çevre değişkenlerini yeniden yükle
-            dotenv.load_dotenv(env_file_path(), override=True)
-            # .env değişmiş olabilir: maskelenecek değerler ve log seviyesi hemen güncellensin
-            redact.refresh()
-            apply_log_level()
+            try:
+                # .env, overrides.json ve yapılandırma dosyası yeniden okunur. .env'deki değerler ortama
+                # uygulanır, ama süreç ortamından (kabuk, docker -e, bayrak) gelen bir değerin üzerine
+                # yazılmaz: eskiden load_dotenv(override=True) onu .env'deki (boş olabilen) satırla eziyordu.
+                # Yapılandırma dosyası bozuksa önceki ayarlar yürürlükte kalır ve hata aşağıda loglanır.
+                settings_loader.reload()
+            finally:
+                # .env değişmiş olabilir: maskelenecek değerler ve log seviyesi hemen güncellensin
+                redact.refresh()
+                apply_log_level()
 
             # Debug için ligleri logla
             logger.debug(f"Yapılandırma yeniden yüklendi: {len(self.leagues)} lig bulundu")
@@ -583,6 +584,7 @@ class ConfigManager:
             # set_key dosyayı yeniden yazar; python-dotenv sürümüne göre izinler korunmayabilir.
             create_private_file(env_path)
             dotenv.set_key(env_path, key, value)
+            settings_loader.note_dotenv_write(key, value)
             restrict_permissions(env_path, PRIVATE_FILE_MODE)
             redact.refresh()
             if key in _LOG_LEVEL_KEYS:

@@ -55,6 +55,17 @@ section is what the first tagged release will contain.
   `GET /api/bypass/status` (`health`), in a dismissible banner in the web app, and in the
   terminal modes as one line on stderr per state change; the log gets one warning per state
   change (#19).
+- **Configuration file, first step.** A `sofascore.toml` is read at start if there is one. It
+  is looked for in `SOFASCORE_CONFIG`, then `./sofascore.toml`, then `config/sofascore.toml`.
+  Its values win over `.env`; variables set in the process environment win over the file, and
+  every setting can be set as `SOFASCORE_<SECTION>__<KEY>` (for example
+  `SOFASCORE_CLIENT__RATE=2`). Relative paths in the file are resolved against the file's
+  folder. An unknown key or a value of the wrong type stops the start with a message that
+  names the file and the key. Without the file nothing changes: `.env` and the existing
+  variables are read as before. Not used yet, only checked: `[[follow]]`, `[[sink]]`,
+  `[schedule]`, `[live]`, `[defaults]`, `[slices.*]` and the host and port in `[server]`. The
+  Settings page still writes `.env` and does not show which values the file pins. On Python
+  3.10 this adds the `tomli` package to `requirements.txt`.
 - **Setup check.** `python main.py --doctor` checks the environment without contacting
   SofaScore: Python, packages, the browser the bridge starts, the browser profile, the data
   and config folders, the web app build and `.env`. Output is text or `--json`, and the exit
@@ -250,6 +261,11 @@ section is what the first tagged release will contain.
 
 ### Fixed
 
+- Saving settings no longer replaces values that come from the process environment. The save
+  re-read `.env` over the environment, so a value given in the shell or with `docker -e` (for
+  example `DATA_DIR` or `SOFASCORE_ALLOWED_HOSTS`) was replaced by the line in `.env`, even an
+  empty one, until the next start. Values that came from `.env` are still refreshed, and a
+  value saved on the Settings page still takes effect at once.
 - Results that arrived after a round was first saved never reached the summary or got
   details; seasons that already had a summary were never updated.
 - Choosing a season explicitly no longer silently falls back to the previous season.
