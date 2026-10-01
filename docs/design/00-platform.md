@@ -13,9 +13,14 @@ push-channel measurements (`docs/push-channel/README.md`), and three decisions o
 by pull requests. Section 1 lists both. Where a decision changed the draft, the section says so with the
 words "Changed on 2026-10-01": sections 2, 5, 6, 7, 8, 10 and 11.
 
+Revised again on 2026-10-02, after two more batches of implementation. No decision of the draft changed. The
+state column of section 1 follows the merged work, two notes say what exists (sections 4 and 6), and section
+13 has one more row (the place of `.env` among the configuration layers) and marks the row on polling as
+settled.
+
 ## 1. Decisions (Tuncay, 2026-10-01)
 
-| Topic | Decision | State on 2026-10-01 |
+| Topic | Decision | State on 2026-10-02 |
 |---|---|---|
 | Product position | A data foundation: products are built on it, it runs on servers as automation, applications and agents use it | |
 | Sports | 21 sports (the current 3 + 13 that need score mapping + 5 with their own logic). Motor sports, cycling, bandy, water polo and beach volleyball are out of scope | |
@@ -23,7 +28,7 @@ words "Changed on 2026-10-01": sections 2, 5, 6, 7, 8, 10 and 11.
 | History / live | History: by requests. Live: the push channel, with polling as the fallback. How the push channel is used was decided after the draft: see the two rows at the end of this table | measured, PR #42 |
 | Interfaces | The web UI is for people (a large update on the current base). The CLI is for servers and automation only; the menu-driven terminal UI is removed. Live watching belongs to the CLI only (row at the end of this table) | |
 | Request rate | Default 5 requests per second; the user may take the risk and remove the limit | done, PR #33 |
-| Storage | Raw JSON files stay + a rebuildable SQLite catalog | in progress (`03-implementation-plan.md`, Status) |
+| Storage | Raw JSON files stay + a rebuildable SQLite catalog | in progress (`03-implementation-plan.md`, Status): the catalog, the state database, the leases and the indexers exist; nothing reads the catalog yet and the layout on disk is unchanged |
 | Data format | A fixed, versioned common schema + raw data for those who want it | |
 | Match status | Every status is stored (fixture, live, finished, cancelled); filtering happens when reading | |
 | Language | Default English; Turkish when the system language is Turkish | done, PR #39 |
@@ -120,6 +125,12 @@ bumps the version.
 - Single-writer rule: one writer lease per data directory; watchers have a separate lease.
 - Every match status is stored; `FETCH_ONLY_FINISHED` becomes a read filter.
 
+Note. The leases exist since PR #50 (plan item ST-10). The web application's jobs and data operations take
+them, and since PR #64 (P10) so do the headless runs and `--watch` of the command line: a second writer of
+a data directory is refused, whichever face it comes from. The catalog and the state database exist as well
+(`.meta/catalog.db`, `.meta/state.db`); the catalog is built and checked by tools and tests only, until the
+readers move to it.
+
 ## 5. HTTP API v1
 
 - Under `/api/v1/...`, every response typed; `openapi.json` is kept in the repository and CI fails when it
@@ -155,6 +166,13 @@ blocking · 5 storage error · 6 another copy is running.
 
 Configuration: one declarative file (follow list: sport/tournament/season + data slices; rate; targets;
 schedule). Every setting can be overridden by an environment variable (for Docker).
+
+Note. The file is `sofascore.toml`, and it is honoured since PR #56 (plan item P09): settings from it take
+effect in today's application, while its follow list, targets and schedule are read and validated and wait
+for the items that use them. The first commands of the new CLI exist next to `main.py` since PR #65 (P18):
+`version`, `doctor`, `describe`, `config show|validate|init|path` and `diagnostics`, with the exit codes
+above. The data commands of the table (`sync`, `fetch`, `watch`, `export`, `serve`, `status`) are still to
+come; until then `main.py` does that work.
 
 ## 7. Output targets (pluggable)
 
@@ -288,7 +306,8 @@ needed" in `03-implementation-plan.md`.
 | Raw data: "SofaScore's response as it is" (section 5) | The stored payload is the parsed response written again: same values and key order, not the same bytes. This is what is stored today | `01-storage.md` 4.1 |
 | Exit codes 0–6 (section 6) | The same, plus 130/143 for a one-shot command stopped by a signal | `02-services.md` 4.5 |
 | One sequence of live events (sections 3, 8) | One sequence for four streams (live, change, job, system) | `01-storage.md` 2.3, `02-services.md` 5.1 |
-| Push or polling (section 8) | `--source page\|direct\|poll`: polling can also be chosen alone, and the old `--watch` alias keeps polling so that it never starts a browser (decision D18) | `02-services.md` 8.2, 8.4 |
+| Push or polling (section 8) | `--source page\|direct\|poll`: polling can also be chosen alone, and the old `--watch` alias keeps polling so that it never starts a browser (decision D18, settled on 2026-10-02) | `02-services.md` 8.2, 8.4 |
 | Security: basic headers, optional key (section 9) | Implemented by PR #43 with more than the draft asks: a session cookie next to the bearer token, a full Content-Security-Policy, tightened file modes | `03-implementation-plan.md` X-03, P20, P25 |
 | Follow list in the configuration file (section 6) | Three origins of follows: the config file, the API/web UI, and the existing `leagues.txt` for installations without a config file | `02-services.md` 4.3 |
+| Every setting can be overridden by an environment variable (section 6) | The same, with one distinction: the existing `.env` file, which the installers create and the web UI writes, is a layer of its own below the configuration file, so that its lines do not beat the file; variables of the process environment are above the file (decision D19) | `02-services.md` 4.3 |
 | Wave order (section 10) | Kept. Inside wave 3 the Store and the service layer are interleaved PR by PR because they share files; the plan gives the order | `03-implementation-plan.md` |
