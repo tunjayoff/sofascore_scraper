@@ -228,7 +228,7 @@ def test_data_dir_change_moves_the_job_store(data_dir_sandbox):
     assert "not moved" in body["message"]
 
     assert client.get("/api/settings").json()["data_dir"] == new_dir
-    assert store.db_path == os.path.join(new_dir, ".meta", "jobs.db")
+    assert store.db_path == os.path.join(new_dir, ".meta", "state.db")
     # Yeni dizinin geçmişi boş; eski dizinin son işi "şu anki durum" olarak görünmez
     assert client.get("/api/jobs").json()["jobs"] == []
     status = client.get("/api/scrape/status").json()

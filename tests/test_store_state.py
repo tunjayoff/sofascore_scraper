@@ -1,8 +1,10 @@
 """
-src/store/state.py: state.db, geçiş çalıştırıcısı ve RuntimeFacts
-(docs/design/01-storage.md bölüm 3.1-3.3 ve 7.3; plan maddesi ST-09).
+src/store/state.py ve src/store/jobs.py: state.db, geçiş çalıştırıcısı, RuntimeFacts ve iş deposunun
+state.db'ye taşınması (docs/design/01-storage.md bölüm 3.1-3.3 ve 7.3; plan maddesi ST-09).
 
-Şema, bağlantı ayarları, geçişler (başarısız geçiş, sahte ikinci geçiş, daha yeni dosya). Tümü çevrimdışı.
+İş deposunun davranış testleri yerinde durur (tests/test_job_store.py, tests/test_job_guards.py). Buradaki
+testler yeni olanı dener: şema, bağlantı ayarları, geçişler (başarısız geçiş, sahte ikinci geçiş, daha yeni
+dosya), 2.x jobs.db'nin bir kezlik içe aktarımı ve o dosyaya hiç yazılmaması. Tümü çevrimdışı.
 """
 from __future__ import annotations
 
@@ -23,9 +25,12 @@ from typing import Any, Dict, List
 
 import pytest
 
+import src.web.jobs as web_jobs
 from src.exceptions import StorageError
-from src.store import SchemaTooNew, StoreBusy, StoreError
+from src.store import SchemaTooNew, StoreBusy, StoreError, layout
+from src.store import jobs as store_jobs
 from src.store import state as state_mod
+from src.store.jobs import JOB_COLUMNS, META_IMPORTED_JOBS_DB, JobStore, default_db_path, import_legacy_jobs
 from src.store.state import APPLICATION_ID, RuntimeFacts, StateDb, load_migrations, split_statements
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -674,3 +679,277 @@ def test_runtime_facts_are_visible_to_another_process(db, tmp_path):
     fact = RuntimeFacts(db).get("child")
     assert fact is not None and fact.value == {"hello": "world"}
     assert fact.pid not in (None, os.getpid())
+
+
+# --- iş deposu state.db üzerinde ---------------------------------------------------------------
+
+def test_jobs_table_keeps_todays_columns_and_adds_kind_and_owner(db):
+    columns = [row[1] for row in db.connection().execute("PRAGMA table_info(jobs)")]
+    assert tuple(columns[: len(JOB_COLUMNS)]) == JOB_COLUMNS
+    assert columns[len(JOB_COLUMNS):] == ["kind", "owner"]
+
+    legacy = sqlite3.connect(":memory:")
+    legacy.execute(LEGACY_JOBS_DDL)
+    old = {row[1]: tuple(row[2:]) for row in legacy.execute("PRAGMA table_info(jobs)")}
+    legacy.close()
+    new = {row[1]: tuple(row[2:]) for row in db.connection().execute("PRAGMA table_info(jobs)")}
+    # Tip, NOT NULL, varsayılan ve birincil anahtar: 2.x sütunlarının her biri aynı
+    assert {name: new[name] for name in old} == old
+
+
+def test_default_db_path_is_state_db_under_meta(tmp_path):
+    data_dir = tmp_path / "data"
+    path = default_db_path(str(data_dir))
+    assert path == os.path.join(str(data_dir), ".meta", "state.db") == layout.resolve(data_dir, layout.STATE_DB)
+    assert (data_dir / ".meta").is_dir() and not os.path.exists(path)
+
+
+def test_web_module_reexports_the_store_objects():
+    for name in ("JobStore", "JobStoreConflict", "JobRunningError", "DataOperationRunningError",
+                 "default_db_path", "get_job_store"):
+        assert getattr(web_jobs, name) is getattr(store_jobs, name), name
+    assert issubclass(web_jobs.JobRunningError, web_jobs.JobStoreConflict)
+    assert issubclass(web_jobs.JobStoreConflict, RuntimeError)
+
+
+def test_rows_keep_todays_shape(tmp_path):
+    """list_jobs / get_job bugünkü anahtarları döndürür; state.db'nin yeni sütunları dışarı sızmaz."""
+    store = JobStore(default_db_path(str(tmp_path / "data")))
+    job_id = store.create_running({"mode": "full"})
+    store.update(append_log="[Running] x", result={"failed_count": 0}, finished=True)
+    row = store.get_job(job_id)
+    assert list(row) == [
+        "id", "status", "progress", "current_task", "started_at", "finished_at", "cancel_requested",
+        "matches_total", "matches_done", "matches_failed", "schedule_empty_seasons", "circuit_breaker_triggered",
+        "circuit_breaker_reason", "eta_seconds", "current_batch", "payload", "log", "result", "is_running",
+    ]
+    assert store.list_jobs() == [row]
+    assert row["status"] == "completed" and row["payload"] == {"mode": "full"} and row["log"] == ["[Running] x"]
+    stored = _raw(store.db_path, "SELECT kind, owner FROM jobs WHERE id = ?", job_id)
+    assert stored == [("fetch", None)]
+    store.close()
+
+
+def test_job_store_works_from_several_threads(tmp_path):
+    store = JobStore(default_db_path(str(tmp_path / "data")))
+    job_id = store.create_running({"mode": "full"})
+    errors: List[BaseException] = []
+
+    def work(n: int) -> None:
+        try:
+            store.update(progress=n, append_log=f"adım {n}")
+            assert store.get_job(job_id)["status"] == "running"
+        except BaseException as e:  # noqa: BLE001
+            errors.append(e)
+
+    threads = [threading.Thread(target=work, args=(n,)) for n in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(30)
+    assert errors == []
+    store.update(status="Completed", progress=100, finished=True)
+    row = store.get_job(job_id)
+    assert row["status"] == "completed" and len(row["log"]) == 8
+    store.close()
+
+
+# --- 2.x jobs.db'nin içe aktarımı --------------------------------------------------------------
+
+def test_legacy_history_is_imported_once_and_the_old_file_is_left_alone(tmp_path):
+    data_dir = tmp_path / "data"
+    legacy = _make_legacy_db(data_dir / ".meta" / "jobs.db")
+    legacy_hash, legacy_mtime = _sha256(legacy), os.stat(legacy).st_mtime_ns
+
+    store = JobStore(default_db_path(str(data_dir)))
+    jobs = store.list_jobs()
+    assert [j["id"] for j in jobs] == ["job-old-3", "job-old-2", "job-old-1"]  # en yeni başlayan önce
+
+    done = store.get_job("job-old-1")
+    assert done["status"] == "completed" and done["progress"] == 100
+    assert done["payload"] == {"mode": "full", "selections": [{"league_id": 17}]}
+    assert done["log"] == ["[Running] Sezonlar", "[Completed] Done"] and done["result"] == {"failed_count": 0}
+    assert (done["started_at"], done["finished_at"]) == ("2026-09-01T10:00:00+00:00", "2026-09-01T10:05:00+00:00")
+    assert (done["matches_total"], done["matches_done"], done["current_batch"]) == (380, 380, "Premier League")
+
+    failed = store.get_job("job-old-2")
+    assert failed["status"] == "failed" and failed["matches_failed"] == 6
+    assert failed["circuit_breaker_triggered"] is True and failed["circuit_breaker_reason"] == "403"
+    assert failed["log"] == [] and failed["result"] is None
+
+    # 2.x'te çalışırken kalmış iş: açılışta, 2.x'in kendi yeniden başlatmasındaki gibi interrupted olur
+    crashed = store.get_job("job-old-3")
+    assert crashed["status"] == "interrupted" and crashed["cancel_requested"] is True
+    assert crashed["current_task"] == "Interrupted by server restart" and crashed["finished_at"]
+    assert store.snapshot()["is_running"] is False
+
+    record = json.loads(_raw(store.db_path, "SELECT value FROM meta WHERE key = ?", META_IMPORTED_JOBS_DB)[0][0])
+    assert record["file"] == "jobs.db" and record["found"] is True
+    assert (record["rows"], record["imported"]) == (3, 3) and record["at"]
+
+    # Yeni işler yalnızca state.db'ye yazılır
+    new_job = store.create_running({"mode": "details"})
+    store.update(status="Completed", progress=100, finished=True)
+    store.close()
+    assert _sha256(legacy) == legacy_hash and os.stat(legacy).st_mtime_ns == legacy_mtime
+    assert _raw(legacy, "SELECT id, status FROM jobs ORDER BY id") == [
+        ("job-old-1", "completed"), ("job-old-2", "failed"), ("job-old-3", "running"),
+    ]
+    assert sorted(n for n in os.listdir(data_dir / ".meta") if n.startswith("jobs.db")) == ["jobs.db"]
+
+    # İkinci açılış yeniden içe aktarmaz: 2.x sonradan iş eklese de, state.db'den satır silinse de
+    conn = sqlite3.connect(legacy)
+    conn.execute("INSERT INTO jobs (id, status, started_at) VALUES ('job-old-4', 'completed', '2026-09-09T00:00:00+00:00')")
+    conn.commit()
+    conn.close()
+    conn = sqlite3.connect(store.db_path)
+    conn.execute("DELETE FROM jobs WHERE id = 'job-old-2'")
+    conn.commit()
+    conn.close()
+    reopened = JobStore(default_db_path(str(data_dir)))
+    assert [j["id"] for j in reopened.list_jobs()] == [new_job, "job-old-3", "job-old-1"]
+    reopened.close()
+
+
+def test_missing_legacy_file_is_recorded_and_a_later_one_is_not_imported(tmp_path):
+    data_dir = tmp_path / "data"
+    store = JobStore(default_db_path(str(data_dir)))
+    record = json.loads(_raw(store.db_path, "SELECT value FROM meta WHERE key = ?", META_IMPORTED_JOBS_DB)[0][0])
+    assert record["found"] is False and record["rows"] == 0 and record["imported"] == 0
+    assert not (data_dir / ".meta" / "jobs.db").exists()  # aramak dosyayı oluşturmaz
+    store.close()
+
+    _make_legacy_db(data_dir / ".meta" / "jobs.db")  # 3.x'ten sonra aynı dizinde bir 2.x süreci çalıştı
+    later = JobStore(default_db_path(str(data_dir)))
+    assert later.list_jobs() == []
+    later.close()
+
+
+def test_unreadable_legacy_file_does_not_block_and_is_retried(tmp_path, caplog):
+    data_dir = tmp_path / "data"
+    legacy = data_dir / ".meta" / "jobs.db"
+    legacy.parent.mkdir(parents=True)
+    legacy.write_bytes(b"this is not sqlite" * 100)
+
+    with caplog.at_level(logging.WARNING, logger="Store"):
+        store = JobStore(default_db_path(str(data_dir)))
+    assert any("Eski iş geçmişi okunamadı" in r.getMessage() for r in caplog.records)
+    assert store.list_jobs() == []
+    job_id = store.create_running({})  # depo çalışıyor
+    store.update(finished=True)
+    assert _raw(store.db_path, "SELECT COUNT(*) FROM meta WHERE key = ?", META_IMPORTED_JOBS_DB) == [(0,)]
+    store.close()
+    assert legacy.read_bytes() == b"this is not sqlite" * 100
+
+    legacy.unlink()
+    _make_legacy_db(legacy)
+    retried = JobStore(default_db_path(str(data_dir)))
+    assert {j["id"] for j in retried.list_jobs()} == {job_id, "job-old-1", "job-old-2", "job-old-3"}
+    retried.close()
+
+
+def test_import_copes_with_older_and_unrelated_legacy_shapes(tmp_path):
+    # Daha az sütunlu eski bir tablo: eksik sütunlar varsayılan değerini alır
+    slim = _make_legacy_db(
+        tmp_path / "slim" / "jobs.db",
+        rows=[{"id": "slim-1", "status": "completed", "started_at": "2026-01-01T00:00:00+00:00", "extra": "x"}],
+        ddl="CREATE TABLE jobs (id TEXT PRIMARY KEY, status TEXT NOT NULL, started_at TEXT, extra TEXT)",
+    )
+    state = StateDb(tmp_path / "slim" / "state.db")
+    assert import_legacy_jobs(state, slim) == 1
+    assert import_legacy_jobs(state, slim) is None  # ikinci çağrı: zaten kayıtlı
+    row = state.connection().execute("SELECT * FROM jobs").fetchone()
+    assert (row["id"], row["progress"], row["log_json"], row["current_batch"], row["kind"]) == (
+        "slim-1", 0, "[]", "", "fetch")
+    state.close()
+
+    # jobs tablosu olmayan ya da kimliksiz bir dosya: satır yok, ama denendi diye kaydedilir
+    for name, ddl in (("no_table", "CREATE TABLE other (x TEXT)"), ("no_id", "CREATE TABLE jobs (status TEXT)")):
+        legacy = _make_legacy_db(tmp_path / name / "jobs.db", rows=[], ddl=ddl)
+        state = StateDb(tmp_path / name / "state.db")
+        assert import_legacy_jobs(state, legacy) == 0
+        assert json.loads(state.meta_get(META_IMPORTED_JOBS_DB))["found"] is True
+        state.close()
+
+    # jobs.db adında bir state.db (ör. testlerin yaptığı gibi yol elle verilmiş): 2.x geçmişi sayılmaz
+    named = JobStore(str(tmp_path / "named" / "jobs.db"))
+    named.create_running({})
+    named.update(finished=True)
+    named.close()
+    state = StateDb(tmp_path / "named" / "state.db")
+    assert import_legacy_jobs(state, str(tmp_path / "named" / "jobs.db")) == 0
+    state.close()
+
+
+def test_existing_row_wins_over_the_legacy_row_with_the_same_id(tmp_path):
+    legacy = _make_legacy_db(tmp_path / "jobs.db")
+    state = StateDb(tmp_path / "state.db")
+    with state.write() as conn:
+        conn.execute("INSERT INTO jobs (id, status) VALUES ('job-old-1', 'cancelled')")
+    assert import_legacy_jobs(state, legacy) == 2
+    assert state.connection().execute("SELECT status FROM jobs WHERE id = 'job-old-1'").fetchone()[0] == "cancelled"
+    record = json.loads(state.meta_get(META_IMPORTED_JOBS_DB))
+    assert (record["rows"], record["imported"]) == (3, 2)
+    state.close()
+
+
+def test_rebind_imports_the_history_of_the_new_directory_and_closes_the_old_file(tmp_path):
+    first, second = tmp_path / "first", tmp_path / "second"
+    _make_legacy_db(second / ".meta" / "jobs.db")
+    store = JobStore(default_db_path(str(first)))
+    job_id = store.create_running({"where": "first"})
+    store.update(finished=True)
+    old_state = store._state
+
+    assert store.rebind(default_db_path(str(second))) is True
+    assert [j["id"] for j in store.list_jobs()] == ["job-old-3", "job-old-2", "job-old-1"]
+    assert store.get_job("job-old-3")["status"] == "interrupted"
+    with pytest.raises(StoreError):
+        old_state.connection()
+
+    assert store.rebind(default_db_path(str(first))) is True
+    assert [j["id"] for j in store.list_jobs()] == [job_id]
+    store.close()
+
+
+def test_rebind_to_a_newer_state_db_keeps_the_current_one(tmp_path):
+    newer_dir = tmp_path / "newer" / ".meta"
+    newer_dir.mkdir(parents=True)
+    migrations = _migrations_with(tmp_path, {"0002_future.sql": "CREATE TABLE future (id INTEGER PRIMARY KEY);"})
+    StateDb(newer_dir / "state.db", migrations_dir=migrations).close()
+
+    store = JobStore(default_db_path(str(tmp_path / "current")))
+    job_id = store.create_running({})
+    store.update(finished=True)
+    path_before = store.db_path
+    with pytest.raises(SchemaTooNew):
+        store.rebind(default_db_path(str(tmp_path / "newer")))
+    assert store.db_path == path_before
+    assert [j["id"] for j in store.list_jobs()] == [job_id]
+    store.close()
+
+
+# --- tanılama paketi ---------------------------------------------------------------------------
+
+def test_diagnostics_reads_state_db_and_falls_back_to_a_2x_jobs_db(tmp_path, monkeypatch):
+    from src import diagnostics
+
+    # 3.x'in henüz açmadığı 2.x dizini: yalnızca jobs.db var; okumak state.db oluşturmaz
+    data_dir = tmp_path / "data"
+    legacy = _make_legacy_db(data_dir / ".meta" / "jobs.db")
+    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    jobs = diagnostics._jobs()
+    assert jobs["db"] == legacy and jobs["exists"] is True
+    assert [j["id"] for j in jobs["recent"]] == ["job-old-3", "job-old-2", "job-old-1"]
+    assert os.listdir(data_dir / ".meta") == ["jobs.db"]
+
+    # Depo açıldıktan sonra kaynak state.db'dir: 3.x'in yeni işi de görünür, çalışan işe dokunulmaz
+    store = JobStore(default_db_path(str(data_dir)))
+    new_job = store.create_running({"mode": "details"})
+    jobs = diagnostics._jobs()
+    assert jobs["db"] == store.db_path
+    assert [j["id"] for j in jobs["recent"]] == [new_job, "job-old-3", "job-old-2"]  # en yeni üç iş
+    assert jobs["recent"][0]["status"] == "running" and jobs["recent"][0]["payload"] == {"mode": "details"}
+    assert store.snapshot()["is_running"] is True
+    store.update(finished=True)
+    store.close()
