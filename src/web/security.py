@@ -14,12 +14,74 @@ listesini buradan hesaplar.
 """
 from __future__ import annotations
 
+import ipaddress
 import logging
+import os
 from pathlib import Path
 from typing import List, Mapping, Optional, Tuple
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
+
+# --- Host izin listesi ----------------------------------------------------------------------
+
+ALLOWED_HOSTS_ENV = "SOFASCORE_ALLOWED_HOSTS"
+# Tarayıcının bu bilgisayara ulaşırken gönderdiği Host adları (IPv6 köşeli ayraçla gelir)
+LOOPBACK_HOSTS: Tuple[str, ...] = ("localhost", "127.0.0.1", "[::1]")
+# "Her arayüz" adresleri: bu adreslerle açılan sunucuya hangi adla ulaşılacağı bilinemez
+_WILDCARD_BINDS = ("", "0.0.0.0", "::", "[::]")
+
+
+class AllowedHostsRequired(Exception):
+    """Sunucu her arayüzde dinleyecek ama hangi Host adlarına yanıt vereceği söylenmedi."""
+
+
+def parse_hosts(raw: Optional[str]) -> List[str]:
+    return [h.strip() for h in (raw or "").split(",") if h.strip()]
+
+
+def is_loopback_bind(host: str) -> bool:
+    """Sunucu yalnızca bu bilgisayarı mı dinliyor (localhost, 127.0.0.0/8, ::1)?"""
+    name = (host or "").strip().strip("[]").lower()
+    if name == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(name).is_loopback
+    except ValueError:
+        return False
+
+
+def allowed_hosts() -> List[str]:
+    """
+    Yanıt verilen Host adları: SOFASCORE_ALLOWED_HOSTS, yoksa (ya da boşsa) yalnızca yerel adlar.
+    Kullanıcının yazdığı değer olduğu gibi kullanılır ("*" = hepsi; güvensiz).
+    """
+    return parse_hosts(os.environ.get(ALLOWED_HOSTS_ENV)) or list(LOOPBACK_HOSTS)
+
+
+def allowed_hosts_for_bind(bind_host: str, explicit: Optional[str], allow_any: bool = False) -> Optional[str]:
+    """
+    main.py --web --host için SOFASCORE_ALLOWED_HOSTS değeri; None = ortam olduğu gibi kalır.
+
+      - Kullanıcı SOFASCORE_ALLOWED_HOSTS yazdıysa her zaman o geçerlidir (üzerine yazılmaz).
+      - Yerel adres: varsayılan (yalnızca yerel adlar).
+      - --allow-any-host: "*" (güvensiz; DNS rebinding koruması kapanır).
+      - Belirli bir adres (ör. 192.168.1.5): yerel adlar + o adres. IP ile yazılmış bir Host
+        başlığını DNS rebinding üretemez, bu yüzden bu liste korumayı zayıflatmaz.
+      - Her arayüz (0.0.0.0, ::): hangi adla ulaşılacağı bilinemez → AllowedHostsRequired.
+    """
+    if parse_hosts(explicit) or is_loopback_bind(bind_host):
+        return None
+    if allow_any:
+        return "*"
+    host = (bind_host or "").strip()
+    if host in _WILDCARD_BINDS:
+        raise AllowedHostsRequired(host)
+    bare = host.strip("[]")
+    # IPv6 adresi Host başlığında köşeli ayraçla gelir
+    literal = f"[{bare}]" if ":" in bare else bare
+    return ",".join(LOOPBACK_HOSTS + (literal,))
+
 
 # --- Kaynak (origin) denetimi ---------------------------------------------------------------
 

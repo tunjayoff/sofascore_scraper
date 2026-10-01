@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -28,10 +27,12 @@ BASE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BASE_DIR.parent.parent
 FRONTEND_DIST = REPO_ROOT / "frontend" / "dist"
 
-# DNS rebinding: yalnızca yerel host adlarına yanıt ver. main.py --host ile LAN'a açıldığında
-# SOFASCORE_ALLOWED_HOSTS genişletilir ("*" = hepsi).
-_DEFAULT_HOSTS = "localhost,127.0.0.1,[::1]"
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("SOFASCORE_ALLOWED_HOSTS", _DEFAULT_HOSTS).split(",") if h.strip()]
+# DNS rebinding: yalnızca bilinen Host adlarına yanıt verilir (varsayılan: yerel adlar). Liste
+# açıktır: SOFASCORE_ALLOWED_HOSTS ne diyorsa odur; hiçbir başlatma yolu onu sessizce "*" yapmaz
+# (bkz. security.allowed_hosts_for_bind).
+ALLOWED_HOSTS = security.allowed_hosts()
+if "*" in ALLOWED_HOSTS:
+    logger.warning("Host izin listesi kapalı (*): her Host başlığına yanıt veriliyor, DNS rebinding koruması yok.")
 
 
 @app.middleware("http")
