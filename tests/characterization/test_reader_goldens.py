@@ -760,7 +760,10 @@ def _replay_watcher(data_dir: Path) -> None:
 def test_fidelity_watcher_files(tmp_path: Path) -> None:
     _replay_watcher(tmp_path / "written")
     built = _tree(sf.build_fixture("canonical", tmp_path / "built").data_dir)
-    # watch_events.jsonl metin kipinde eklenir: Windows'ta satır sonu \r\n olur, fabrika hep \n yazar
-    written = {f: data.replace(b"\r\n", b"\n") for f, data in _tree(tmp_path / "written").items()}
+    # İzleyici Store üzerinden yazar: .meta/ (state.db, katalog) da oluşur; açık veritabanı dosyaları okunmaz.
+    # 2.x dosyaları her platformda fabrikadakilerle bayt bayt aynıdır (watch_events.jsonl LF ile eklenir).
+    root = tmp_path / "written"
+    written = {p.relative_to(root).as_posix(): p.read_bytes() for p in sorted(root.rglob("*"))
+               if p.is_file() and p.relative_to(root).parts[0] != ".meta"}
     assert set(written) == {"watch_events.jsonl", "watch_state_football.json", "watch_state_tennis.json"}
     assert written == {f: built[f] for f in written}
