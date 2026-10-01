@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import datetime as dt
 import gzip
+import importlib.util
 import json
 import os
 import sqlite3
@@ -1430,7 +1431,7 @@ def test_listing_only_rows_are_left_alone(canonical: sf.LegacyFixture, make_admi
         "event", 1, "legacy", "round_2", 1)
 
 
-# --- sayımlar ------------------------------------------------------------------------------------------
+# --- sayımlar ve araç -----------------------------------------------------------------------------------
 
 def test_stats(old_forms: sf.LegacyFixture, make_admin) -> None:
     admin = make_admin(old_forms.data_dir)
@@ -1459,6 +1460,72 @@ def test_stats(old_forms: sf.LegacyFixture, make_admin) -> None:
     other = admin.stats()
     assert (other["usable"], other["rebuild_reason"], other["schema_version"]) == (False, "schema_version", 9)
     assert "tables" not in other and other["size_bytes"] > 0
+
+
+def _tool() -> Any:
+    spec = importlib.util.spec_from_file_location("catalog_tool_under_test", ROOT / "scripts" / "catalog_tool.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_catalog_tool(old_forms: sf.LegacyFixture, capsys: pytest.CaptureFixture, monkeypatch: pytest.MonkeyPatch,
+                      tmp_path: Path) -> None:
+    tool = _tool()
+    data = str(old_forms.data_dir)
+
+    assert tool.main(["--data-dir", str(tmp_path / "nowhere"), "stats"]) == tool.EXIT_USAGE
+    assert "Veri dizini yok" in capsys.readouterr().err and not (tmp_path / "nowhere").exists()
+
+    assert tool.main(["--data-dir", data, "stats"]) == 0
+    assert "dosya yok" in capsys.readouterr().out and not (old_forms.data_dir / ".meta").exists()
+    assert tool.main(["--data-dir", data, "verify"]) == tool.EXIT_ISSUES
+    assert "catalog missing" in capsys.readouterr().out
+
+    assert tool.main(["--data-dir", data, "rebuild", "--json"]) == 0
+    built = json.loads(capsys.readouterr().out)
+    assert (built["mode"], built["reason"], built["completed"], built["events"]) == ("recreate", "missing", True, 9)
+    assert {p["kind"] for p in built["problems"]} == {"no_event_payload", "corrupt"} and len(built["superseded"]) == 1
+
+    monkeypatch.setenv("DATA_DIR", data)  # --data-dir verilmezse ortam değişkeni
+    assert tool.main(["rebuild", "--mode", "in_place"]) == 0
+    captured = capsys.readouterr()
+    assert "Katalog yeniden kuruldu (in_place" in captured.out and "maç: 9" in captured.out
+    assert "Kullanılmayan eski kopyalar (1):" in captured.out and "legacy_events: 9/9" in captured.err
+
+    assert tool.main(["verify", "--deep", "--json"]) == 0
+    checked = json.loads(capsys.readouterr().out)
+    assert checked["ok"] is True and checked["issues"] == [] and checked["events_read"] == 9
+    assert tool.main(["stats", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)["tables"]["events"] == 9
+    assert tool.main(["stats"]) == 0
+    assert "events.by_layout: {'legacy': 9}" in capsys.readouterr().out
+
+    files.remove_tree(old_forms.data_dir / "match_details" / "16867839")
+    assert tool.main(["verify"]) == tool.EXIT_ISSUES
+    out = capsys.readouterr().out
+    assert "I1 no_event_directory maç 16867839" in out and "1 tutarsızlık giderilmedi" in out
+    assert tool.main(["verify", "--repair"]) == 0
+    assert "[onarıldı]" in capsys.readouterr().out
+    assert tool.main(["verify"]) == 0
+    assert "Katalog dosyalarla tutarlı." in capsys.readouterr().out
+
+    with pytest.raises(SystemExit) as usage:
+        tool.main(["rebuild", "--mode", "sideways"])
+    assert usage.value.code == 2
+    capsys.readouterr()
+
+    broken = tmp_path / "broken"
+    (broken / ".meta" / "catalog.db").mkdir(parents=True)  # veritabanı dosyası açılamaz: depolama hatası
+    assert tool.main(["--data-dir", str(broken), "stats"]) == tool.EXIT_STORAGE
+    assert "Depolama hatası" in capsys.readouterr().err
+
+
+def test_catalog_tool_runs_as_a_script(canonical: sf.LegacyFixture) -> None:
+    out = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "catalog_tool.py"), "--data-dir", str(canonical.data_dir),
+         "rebuild", "--json"], cwd=str(canonical.data_dir), capture_output=True, text=True, check=True)
+    assert json.loads(out.stdout)["events"] == len(canonical.detail_ids)
 
 
 # --- katmanlama -----------------------------------------------------------------------------------------
