@@ -1,0 +1,264 @@
+{
+ "empty job store": {"status": 200, "body": {"jobs": []}},
+ "limit=1 while job-6 runs": {
+  "status": 200,
+  "body": {
+   "jobs": [
+    {
+     "id": "job-6",
+     "status": "running",
+     "progress": 37,
+     "current_task": "Fetching match details: league 17 (10 matches)…",
+     "started_at": "2026-10-01T13:01:11+00:00",
+     "finished_at": null,
+     "cancel_requested": false,
+     "matches_total": 10,
+     "matches_done": 4,
+     "matches_failed": 1,
+     "schedule_empty_seasons": 0,
+     "circuit_breaker_triggered": false,
+     "circuit_breaker_reason": null,
+     "eta_seconds": null,
+     "current_batch": "",
+     "payload": {"league_id": null, "mode": "details", "selections": null},
+     "log": [
+      "[Running] Starting fetch for All Leagues",
+      "[Running] Checking which matches need details...",
+      "[Running] Fetching match details: league 17 (10 matches)…"
+     ],
+     "result": null,
+     "is_running": true
+    }
+   ]
+  }
+ },
+ "default limit: newest first": {
+  "status": 200,
+  "body": {
+   "jobs": [
+    {
+     "id": "job-6",
+     "status": "interrupted",
+     "progress": 37,
+     "current_task": "Fetching match details: league 17 (10 matches)…",
+     "started_at": "2026-10-01T13:01:11+00:00",
+     "finished_at": "2026-10-01T13:02:19+00:00",
+     "cancel_requested": false,
+     "matches_total": 10,
+     "matches_done": 4,
+     "matches_failed": 1,
+     "schedule_empty_seasons": 0,
+     "circuit_breaker_triggered": false,
+     "circuit_breaker_reason": null,
+     "eta_seconds": null,
+     "current_batch": "",
+     "payload": {"league_id": null, "mode": "details", "selections": null},
+     "log": [
+      "[Running] Starting fetch for All Leagues",
+      "[Running] Checking which matches need details...",
+      "[Running] Fetching match details: league 17 (10 matches)…"
+     ],
+     "result": null,
+     "is_running": false
+    },
+    {
+     "id": "job-5",
+     "status": "failed",
+     "progress": 30,
+     "current_task": "(storage error message, translated by the server)",
+     "started_at": "2026-10-01T12:51:07+00:00",
+     "finished_at": "2026-10-01T12:51:11+00:00",
+     "cancel_requested": false,
+     "matches_total": 6,
+     "matches_done": 2,
+     "matches_failed": 0,
+     "schedule_empty_seasons": 0,
+     "circuit_breaker_triggered": false,
+     "circuit_breaker_reason": null,
+     "eta_seconds": null,
+     "current_batch": "",
+     "payload": {"league_id": 17, "mode": "details", "selections": null},
+     "log": [
+      "[Running] Starting fetch for 17",
+      "[Running] Checking which matches need details...",
+      "[Running] Fetching match details: league 17 (6 matches)…",
+      "[Failed] (storage error message, translated by the server)"
+     ],
+     "result": {
+      "error": "storage",
+      "error_path": "/data/match_details/17_Premier_League",
+      "details_done": 2,
+      "details_total": 6,
+      "failed_count": 0,
+      "failed": [],
+      "breaker": null,
+      "refreshed": 0,
+      "refresh_changed": 0
+     },
+     "is_running": false
+    },
+    {
+     "id": "job-4",
+     "status": "cancelled",
+     "progress": 43,
+     "current_task": "Cancelled",
+     "started_at": "2026-10-01T12:40:51+00:00",
+     "finished_at": "2026-10-01T12:41:07+00:00",
+     "cancel_requested": true,
+     "matches_total": 20,
+     "matches_done": 4,
+     "matches_failed": 0,
+     "schedule_empty_seasons": 0,
+     "circuit_breaker_triggered": false,
+     "circuit_breaker_reason": null,
+     "eta_seconds": null,
+     "current_batch": "",
+     "payload": {
+      "league_id": null,
+      "mode": "full",
+      "selections": [{"league_id": 17, "season_ids": [96668, 76986], "match_ids": null}]
+     },
+     "log": [
+      "[Running] Starting fetch for 1 targeted selection(s)",
+      "[Running] Refreshing season list for league 17...",
+      "[Running] Fetching matches: league 17, season 96668",
+      "[Running] Fetching matches: league 17, season 76986",
+      "[Running] Checking which matches need details...",
+      "[Running] Fetching match details: league 17 (20 matches)…",
+      "[Cancelled] Cancelled"
+     ],
+     "result": null,
+     "is_running": false
+    },
+    {
+     "id": "job-3",
+     "status": "completed",
+     "progress": 100,
+     "current_task": "(message of the circuit breaker stop, translated by the server)",
+     "started_at": "2026-10-01T12:30:32+00:00",
+     "finished_at": "2026-10-01T12:30:51+00:00",
+     "cancel_requested": false,
+     "matches_total": 40,
+     "matches_done": 5,
+     "matches_failed": 2,
+     "schedule_empty_seasons": 1,
+     "circuit_breaker_triggered": true,
+     "circuit_breaker_reason": "403",
+     "eta_seconds": null,
+     "current_batch": "",
+     "payload": {"league_id": 17, "mode": "full", "selections": null},
+     "log": [
+      "[Running] Starting fetch for 17",
+      "[Running] Refreshing season list for league 17...",
+      "[Running] Fetching matches: league 17, season 96668",
+      "[Running] Fetching matches: league 17, season 76986",
+      "[Running] Checking which matches need details...",
+      "[Running] Fetching match details: league 17 (40 matches)…",
+      "[Running] Too many failed requests (403); stopped fetching match details.",
+      "[Running] Exporting data to CSV...",
+      "[Completed] (message of the circuit breaker stop, translated by the server)"
+     ],
+     "result": {
+      "schedule_empty_seasons": 1,
+      "details_done": 5,
+      "details_total": 40,
+      "failed_count": 2,
+      "failed": [{"match_id": "16837335", "league_id": 17}, {"match_id": "17099711", "league_id": 17}],
+      "breaker": "403",
+      "refreshed": 0,
+      "refresh_changed": 0
+     },
+     "is_running": false
+    },
+    {
+     "id": "job-2",
+     "status": "completed",
+     "progress": 100,
+     "current_task": "Background Task Completed Successfully.",
+     "started_at": "2026-10-01T12:20:25+00:00",
+     "finished_at": "2026-10-01T12:20:32+00:00",
+     "cancel_requested": false,
+     "matches_total": 3,
+     "matches_done": 3,
+     "matches_failed": 1,
+     "schedule_empty_seasons": 0,
+     "circuit_breaker_triggered": false,
+     "circuit_breaker_reason": null,
+     "eta_seconds": null,
+     "current_batch": "",
+     "payload": {
+      "league_id": null,
+      "mode": "details",
+      "selections": [{"league_id": 17, "season_ids": null, "match_ids": [16837335, 17099711, 16867839]}]
+     },
+     "log": [
+      "[Running] Starting fetch for 1 targeted selection(s)",
+      "[Running] Checking which matches need details...",
+      "[Running] Fetching match details: league 17 (3 matches)…",
+      "[Running] Exporting data to CSV...",
+      "[Completed] Background Task Completed Successfully."
+     ],
+     "result": {
+      "schedule_empty_seasons": 0,
+      "details_done": 3,
+      "details_total": 3,
+      "failed_count": 1,
+      "failed": [{"match_id": "17099711", "league_id": 17}],
+      "breaker": null,
+      "refreshed": 0,
+      "refresh_changed": 0
+     },
+     "is_running": false
+    },
+    {
+     "id": "job-1",
+     "status": "completed",
+     "progress": 100,
+     "current_task": "Background Task Completed Successfully.",
+     "started_at": "2026-10-01T12:10:00+00:00",
+     "finished_at": "2026-10-01T12:10:25+00:00",
+     "cancel_requested": false,
+     "matches_total": 8,
+     "matches_done": 8,
+     "matches_failed": 0,
+     "schedule_empty_seasons": 0,
+     "circuit_breaker_triggered": false,
+     "circuit_breaker_reason": null,
+     "eta_seconds": null,
+     "current_batch": "",
+     "payload": {"league_id": null, "mode": "full", "selections": null},
+     "log": [
+      "[Running] Starting fetch for All Leagues",
+      "[Running] Refreshing season list for league 17...",
+      "[Running] Fetching matches: league 17, season 96668",
+      "[Running] Fetching matches: league 17, season 76986",
+      "[Running] Checking which matches need details...",
+      "[Running] Fetching match details: league 17 (8 matches)…",
+      "[Running] Exporting data to CSV...",
+      "[Completed] Background Task Completed Successfully."
+     ],
+     "result": {
+      "schedule_empty_seasons": 0,
+      "details_done": 8,
+      "details_total": 8,
+      "failed_count": 0,
+      "failed": [],
+      "breaker": null,
+      "refreshed": 2,
+      "refresh_changed": 1
+     },
+     "is_running": false
+    }
+   ]
+  }
+ },
+ "limit=2": {"status": 200, "job_ids": ["job-6", "job-5"]},
+ "limit=100": {"status": 200, "job_ids": ["job-6", "job-5", "job-4", "job-3", "job-2", "job-1"]},
+ "limit=0": {"status": 422},
+ "limit=101": {"status": 422},
+ "limit=abc": {"status": 422},
+ "/api/jobs/{id}": {
+  "known id": "200, the same object as its row in the list (asserted by the test)",
+  "unknown id": {"status": 404, "body": {"detail": "Job not found"}}
+ }
+}

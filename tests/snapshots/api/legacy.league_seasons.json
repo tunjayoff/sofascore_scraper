@@ -1,0 +1,22 @@
+{
+ "league_id=17": {
+  "status": 200,
+  "body": {
+   "seasons": [
+    {"name": "Premier League 25/26", "year": "25/26", "editor": false, "id": 76986},
+    {"name": "Premier League 24/25", "year": "24/25", "editor": false, "id": 61627}
+   ],
+   "fetched": true
+  }
+ },
+ "league_id=8": {"status": 200, "body": {"seasons": [], "fetched": false}},
+ "league_id=2361": {
+  "status": 200,
+  "body": {
+   "seasons": [{"name": "Wimbledon Men Singles 2026", "year": "2026", "editor": false, "id": 79116}],
+   "fetched": true
+  }
+ },
+ "league_id=999": {"status": 200, "body": {"seasons": [], "fetched": false}},
+ "league_id=abc": {"status": 422}
+}

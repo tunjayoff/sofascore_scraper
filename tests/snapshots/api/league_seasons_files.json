@@ -1,0 +1,32 @@
+{
+ "files": [
+  "50_seasons.json",
+  "51_Dict_Without_Key_seasons.json",
+  "52_Truncated_seasons.json",
+  "53_Older_Name_seasons.json",
+  "53_Newer_Name_seasons.json",
+  "54_seasons.json",
+  "54_Named_seasons.json",
+  "55_Null_seasons.json",
+  "56_Text_seasons.json",
+  "57_Empty_seasons.json",
+  "58_Extra_Keys_seasons.json",
+  "59_BOM_seasons.json",
+  "Sixty_seasons.json",
+  "61_seasons.csv"
+ ],
+ "league_id=50": {"status": 200, "body": {"seasons": [{"id": 501, "name": "bare list"}], "fetched": true}},
+ "league_id=51": {"status": 200, "body": {"seasons": [], "fetched": true}},
+ "league_id=52": {"status": 200, "body": {"seasons": [], "fetched": false}},
+ "league_id=53": {"status": 200, "body": {"seasons": [{"id": 532, "name": "newer file"}], "fetched": true}},
+ "league_id=54": {"status": 200, "body": {"seasons": [{"id": 541, "name": "bare name, older"}], "fetched": true}},
+ "league_id=55": {"status": 200, "body": {"seasons": [], "fetched": true}},
+ "league_id=56": {"status": 200, "body": {"seasons": [], "fetched": true}},
+ "league_id=57": {"status": 200, "body": {"seasons": [], "fetched": true}},
+ "league_id=58": {"status": 200, "body": {"seasons": [{"id": 581, "year": "26/27", "x": [1]}], "fetched": true}},
+ "league_id=59": {"status": 200, "body": {"seasons": [], "fetched": false}},
+ "league_id=60": {"status": 200, "body": {"seasons": [], "fetched": false}},
+ "league_id=61": {"status": 200, "body": {"seasons": [], "fetched": false}},
+ "league_id=5": {"status": 200, "body": {"seasons": [], "fetched": false}},
+ "league_id=50 (no data directory)": {"status": 200, "body": {"seasons": [], "fetched": false}}
+}

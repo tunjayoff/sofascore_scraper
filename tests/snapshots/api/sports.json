@@ -1,0 +1,48 @@
+{
+ "status": 200,
+ "body": [
+  {
+   "slug": "football",
+   "name": "Football",
+   "i18n_key": "sport.football",
+   "score_family": "football",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
+  },
+  {
+   "slug": "basketball",
+   "name": "Basketball",
+   "i18n_key": "sport.basketball",
+   "score_family": "periods",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
+  },
+  {
+   "slug": "tennis",
+   "name": "Tennis",
+   "i18n_key": "sport.tennis",
+   "score_family": "sets",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true},
+    {"key": "point_by_point", "path": "/event/{event_id}/point-by-point", "required": false, "default_enabled": true}
+   ]
+  }
+ ]
+}
