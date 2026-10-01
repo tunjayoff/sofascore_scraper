@@ -30,10 +30,13 @@ const lastAdded = ref<number | null>(null)
 provide('openAddLeague', () => (addOpen.value = true))
 provide('lastAddedLeague', lastAdded)
 
+// A failed load is shown from leagues.error (card below); the rejection itself needs no handling
+const loadLeagues = () => void leagues.load().catch(() => {})
+
 onMounted(() => {
   scrape.init()
-  void leagues.load().catch(() => {})
-  scrape.onFinished(() => void leagues.load().catch(() => {}))
+  loadLeagues()
+  scrape.onFinished(loadLeagues)
 })
 </script>
 
@@ -66,6 +69,10 @@ onMounted(() => {
 
     <main class="flex-1 min-w-0 px-4 py-6 md:px-10 md:py-8">
       <div class="md:hidden mb-4" v-if="scrape.visible"><JobCard /></div>
+      <div v-if="leagues.error" class="card p-6 mb-6 flex flex-col items-start gap-3" role="alert">
+        <span style="color: var(--danger)">{{ t('leagues.loadFailed') }} {{ leagues.error }}</span>
+        <button type="button" class="btn" :disabled="leagues.loading" @click="loadLeagues">{{ t('common.retry') }}</button>
+      </div>
       <RouterView />
     </main>
 

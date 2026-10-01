@@ -6,7 +6,7 @@ import { setLocale, type Lang } from '@/i18n'
 import { themePref, setTheme, type ThemePref } from '@/lib/theme'
 import { num } from '@/lib/format'
 import { onTabKeydown } from '@/lib/tabs'
-import { toast, toastError } from '@/lib/toast'
+import { errorText, toast, toastError } from '@/lib/toast'
 import { useLeaguesStore } from '@/stores/leagues'
 
 type Tab = 'general' | 'data' | 'advanced'
@@ -62,7 +62,14 @@ const dirty = computed(() => Object.keys(changed.value).length > 0)
 
 async function load() {
   try {
-    const [s, st] = await Promise.all([api.settings(), api.stats().catch(() => null)])
+    let statsError: unknown = null
+    const [s, st] = await Promise.all([
+      api.settings(),
+      api.stats().catch((e) => {
+        statsError = e
+        return null
+      }),
+    ])
     original.value = s
     Object.assign(form, {
       data_dir: s.data_dir,
@@ -77,6 +84,8 @@ async function load() {
       log_level: s.log_level,
     })
     stats.value = st
+    // The settings loaded; the disk/totals box is just missing, so say why
+    if (statsError) toastError(new Error(t('common.statsFailed', { error: errorText(statsError) })))
   } catch (e) {
     toastError(e)
   }

@@ -33,7 +33,7 @@ async function remove(l: LeagueView) {
 </script>
 
 <template>
-  <div v-if="!leagues.loaded" class="flex items-center gap-3 py-16" style="color: var(--muted)"><span class="spinner"></span>{{ t('common.loading') }}</div>
+  <div v-if="!leagues.loaded && !leagues.error" class="flex items-center gap-3 py-16" style="color: var(--muted)"><span class="spinner"></span>{{ t('common.loading') }}</div>
 
   <div v-else-if="leagues.isEmpty" class="max-w-[640px] mx-auto mt-[12vh] flex flex-col items-center gap-5 text-center">
     <h1 class="m-0 text-[34px] font-bold tracking-tight">{{ t('leagues.empty.title') }}</h1>
