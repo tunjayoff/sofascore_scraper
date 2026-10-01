@@ -255,6 +255,8 @@ section is what the first tagged release will contain.
   its own state file.
 - `Start SofaScore.bat` could not find the launcher script; `install.ps1` failed on a
   parameter named `$Args`.
+- Windows: when a file cannot be replaced because another process or thread has it open,
+  the write is retried (up to 10 times, 20 ms apart) instead of failing at the first attempt.
 - An unanchored `lib/` rule in `.gitignore` kept `frontend/src/lib/` out of the repository,
   so a fresh clone could not build the web app.
 
