@@ -1,0 +1,24 @@
+{
+  "id": 17075775,
+  "sport": "waterpolo",
+  "unique_tournament": {
+    "id": 37804,
+    "name": "Super League"
+  },
+  "tournament": "Super League",
+  "category": "International",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": null,
+  "winnerCode": null,
+  "changes": null,
+  "startTimestamp": 1790881200,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/waterpolo.jsonl"
+}

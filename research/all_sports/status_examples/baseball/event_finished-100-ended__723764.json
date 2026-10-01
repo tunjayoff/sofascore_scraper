@@ -1,0 +1,58 @@
+{
+  "id": 723764,
+  "sport": "baseball",
+  "unique_tournament": {
+    "id": 11205,
+    "name": "MLB"
+  },
+  "tournament": "MLB, Regular Season",
+  "category": "USA",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 1,
+    "display": 1,
+    "innings": {
+      "inning1": {
+        "run": 0,
+        "hits": 0,
+        "errors": 0
+      },
+      "inning2": {
+        "run": 0,
+        "hits": 0,
+        "errors": 0
+      },
+      "__trimmed_keys__": 7
+    }
+  },
+  "awayScore": {
+    "current": 4,
+    "display": 4,
+    "innings": {
+      "inning1": {
+        "run": 0,
+        "hits": 0,
+        "errors": 0
+      },
+      "inning2": {
+        "run": 0,
+        "hits": 0,
+        "errors": 0
+      },
+      "__trimmed_keys__": 7
+    }
+  },
+  "time": {},
+  "winnerCode": 2,
+  "changes": {
+    "changeTimestamp": 0
+  },
+  "startTimestamp": 1207955100,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/baseball.jsonl"
+}

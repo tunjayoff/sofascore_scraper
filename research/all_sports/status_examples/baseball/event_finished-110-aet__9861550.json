@@ -1,0 +1,78 @@
+{
+  "id": 9861550,
+  "sport": "baseball",
+  "unique_tournament": {
+    "id": 11205,
+    "name": "MLB"
+  },
+  "tournament": "MLB",
+  "category": "USA",
+  "status": {
+    "code": 110,
+    "description": "AET",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 6,
+    "display": 6,
+    "period1": 0,
+    "period2": 1,
+    "period3": 0,
+    "period4": 0,
+    "period5": 0,
+    "period6": 1,
+    "period7": 0,
+    "normaltime": 3,
+    "overtime": 3,
+    "innings": {
+      "inning1": {
+        "run": 0
+      },
+      "inning2": {
+        "run": 1
+      },
+      "__trimmed_keys__": 8
+    },
+    "inningsBaseball": {
+      "run": 6,
+      "hits": 10,
+      "__trimmed_keys__": 1
+    }
+  },
+  "awayScore": {
+    "current": 5,
+    "display": 5,
+    "period1": 0,
+    "period2": 0,
+    "period3": 0,
+    "period4": 0,
+    "period5": 1,
+    "period6": 2,
+    "period7": 0,
+    "normaltime": 3,
+    "overtime": 2,
+    "innings": {
+      "inning1": {
+        "run": 0
+      },
+      "inning2": {
+        "run": 0
+      },
+      "__trimmed_keys__": 8
+    },
+    "inningsBaseball": {
+      "run": 5,
+      "hits": 10,
+      "__trimmed_keys__": 1
+    }
+  },
+  "time": {},
+  "winnerCode": 1,
+  "changes": {
+    "changeTimestamp": 1773325830
+  },
+  "startTimestamp": 1657408500,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/baseball.jsonl"
+}

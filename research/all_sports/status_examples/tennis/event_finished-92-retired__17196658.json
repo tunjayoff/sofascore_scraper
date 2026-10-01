@@ -1,0 +1,42 @@
+{
+  "id": 17196658,
+  "sport": "tennis",
+  "unique_tournament": {
+    "id": 9366,
+    "name": "Curitiba, Brazil"
+  },
+  "tournament": "Curitiba, Brazil",
+  "category": "Challenger",
+  "status": {
+    "code": 92,
+    "description": "Retired",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 1,
+    "display": 1,
+    "period1": 6,
+    "period2": 2,
+    "point": "40"
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 2,
+    "period2": 1,
+    "point": "15"
+  },
+  "time": {
+    "period1": 2742,
+    "period2": 1379,
+    "currentPeriodStartTimestamp": 1790781920
+  },
+  "winnerCode": 1,
+  "changes": {
+    "changeTimestamp": 1790783350
+  },
+  "startTimestamp": 1790778900,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/tennis.jsonl"
+}

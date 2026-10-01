@@ -1,0 +1,42 @@
+{
+  "id": 1033762,
+  "sport": "basketball",
+  "unique_tournament": {
+    "id": 486,
+    "name": "WNBA"
+  },
+  "tournament": "WNBA",
+  "category": "USA",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 77,
+    "display": 77,
+    "period1": 8,
+    "period2": 30,
+    "period3": 23,
+    "period4": 16,
+    "normaltime": 77
+  },
+  "awayScore": {
+    "current": 71,
+    "display": 71,
+    "period1": 22,
+    "period2": 8,
+    "period3": 16,
+    "period4": 25,
+    "normaltime": 71
+  },
+  "time": {},
+  "winnerCode": 1,
+  "changes": {
+    "changeTimestamp": 0
+  },
+  "startTimestamp": 1244404800,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/basketball.jsonl"
+}

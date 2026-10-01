@@ -1,0 +1,26 @@
+{
+  "id": 16341235,
+  "sport": "ice-hockey",
+  "unique_tournament": {
+    "id": 260,
+    "name": "Elitehockeyligaen"
+  },
+  "tournament": "EliteHockey Ligaen",
+  "category": "Norway",
+  "status": {
+    "code": 70,
+    "description": "Canceled",
+    "type": "canceled"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 1789471017
+  },
+  "startTimestamp": 1790872200,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/ice-hockey.jsonl"
+}

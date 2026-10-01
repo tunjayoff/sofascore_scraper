@@ -1,0 +1,31 @@
+{
+  "id": 220866,
+  "sport": "cycling",
+  "status": {
+    "description": "Finished",
+    "type": "finished"
+  },
+  "type": "Stage",
+  "name": "Stage 2",
+  "keys": [
+    "arrivalCity",
+    "country",
+    "departureCity",
+    "description",
+    "flag",
+    "id",
+    "info",
+    "name",
+    "seasonStageName",
+    "sequence",
+    "slug",
+    "stageParent",
+    "startDateTimestamp",
+    "status",
+    "type",
+    "uniqueStage",
+    "winner",
+    "year"
+  ],
+  "source_file": "research/all_sports/samples/cycling/stage-id-substages__2.json"
+}

@@ -1,0 +1,10 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+event,finished,100,Ended,96,completed,15522197,research/all_sports/status_examples/tennis/event_finished-100-ended__15522197.json
+event,notstarted,0,Not started,70,not_started,17163382,research/all_sports/status_examples/tennis/event_notstarted-0-not-started__17163382.json
+event,inprogress,9,2nd set,21,live,17163399,research/all_sports/status_examples/tennis/event_inprogress-9-2nd-set__17163399.json
+event,inprogress,8,1st set,15,live,17163390,research/all_sports/status_examples/tennis/event_inprogress-8-1st-set__17163390.json
+event,inprogress,10,3rd set,8,live,17206243,research/all_sports/status_examples/tennis/event_inprogress-10-3rd-set__17206243.json
+event,canceled,70,Canceled,4,void,17197179,research/all_sports/status_examples/tennis/event_canceled-70-canceled__17197179.json
+event,interrupted,80,Interrupted,2,void,17163492,research/all_sports/status_examples/tennis/event_interrupted-80-interrupted__17163492.json
+event,finished,92,Retired,2,decided_without_play,17196658,research/all_sports/status_examples/tennis/event_finished-92-retired__17196658.json
+event,finished,91,Walkover,1,decided_without_play,15980145,research/all_sports/status_examples/tennis/event_finished-91-walkover__15980145.json

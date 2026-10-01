@@ -1,0 +1,32 @@
+{
+  "id": 16873110,
+  "sport": "football",
+  "unique_tournament": {
+    "id": 37027,
+    "name": "Rumbek First Division "
+  },
+  "tournament": "Rumbek First Division ",
+  "category": "South Sudan",
+  "status": {
+    "code": 20,
+    "description": "Started",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 1,
+    "display": 1
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0
+  },
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 1790856667
+  },
+  "startTimestamp": 1790856000,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/football.jsonl"
+}

@@ -1,0 +1,38 @@
+{
+  "id": 16506696,
+  "sport": "volleyball",
+  "unique_tournament": {
+    "id": 20241,
+    "name": "1. Liga"
+  },
+  "tournament": "I Liga",
+  "category": "Poland",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 3,
+    "display": 3,
+    "period1": 25,
+    "period2": 25,
+    "period3": 25
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 14,
+    "period2": 23,
+    "period3": 23
+  },
+  "time": {},
+  "winnerCode": 1,
+  "changes": {
+    "changeTimestamp": 1790793163
+  },
+  "startTimestamp": 1790787600,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/volleyball.jsonl"
+}

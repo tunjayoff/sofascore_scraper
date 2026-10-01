@@ -1,0 +1,28 @@
+{
+  "id": 17220159,
+  "sport": "table-tennis",
+  "unique_tournament": {
+    "id": 23707,
+    "name": "China Smash, WS"
+  },
+  "tournament": "China Smash, WS, Qualifying",
+  "category": "International",
+  "status": {
+    "code": 91,
+    "description": "Walkover",
+    "type": "finished"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {
+    "currentPeriodStartTimestamp": 1790858751
+  },
+  "winnerCode": 2,
+  "changes": {
+    "changeTimestamp": 1790858828
+  },
+  "startTimestamp": 1790861100,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/table-tennis.jsonl"
+}

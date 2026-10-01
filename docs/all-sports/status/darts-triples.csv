@@ -1,0 +1,4 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+event,notstarted,0,Not started,40,not_started,17099320,research/all_sports/status_examples/darts/event_notstarted-0-not-started__17099320.json
+event,finished,100,Ended,9,completed,17099316,research/all_sports/status_examples/darts/event_finished-100-ended__17099316.json
+event,inprogress,20,Started,1,live,17225298,research/all_sports/status_examples/darts/event_inprogress-20-started__17225298.json

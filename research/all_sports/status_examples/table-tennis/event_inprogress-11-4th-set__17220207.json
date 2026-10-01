@@ -1,0 +1,36 @@
+{
+  "id": 17220207,
+  "sport": "table-tennis",
+  "unique_tournament": {
+    "id": 23707,
+    "name": "China Smash, WS"
+  },
+  "tournament": "China Smash, WS, Qualifying",
+  "category": "International",
+  "status": {
+    "code": 11,
+    "description": "4th set",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 1,
+    "display": 1,
+    "period4": 9
+  },
+  "awayScore": {
+    "current": 2,
+    "display": 2,
+    "period4": 6
+  },
+  "time": {
+    "currentPeriodStartTimestamp": 1790859108
+  },
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 1790859554
+  },
+  "startTimestamp": 1790857200,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/table-tennis.jsonl"
+}

@@ -1,0 +1,42 @@
+{
+  "id": 16952186,
+  "sport": "floorball",
+  "unique_tournament": {
+    "id": 961,
+    "name": "Champions Cup"
+  },
+  "tournament": "Champions Cup, Playoffs",
+  "category": "International",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 6,
+    "display": 6,
+    "period1": 2,
+    "period2": 0,
+    "period3": 4,
+    "normaltime": 6
+  },
+  "awayScore": {
+    "current": 4,
+    "display": 4,
+    "period1": 1,
+    "period2": 2,
+    "period3": 1,
+    "normaltime": 4
+  },
+  "time": {
+    "currentPeriodStartTimestamp": 1790190641
+  },
+  "winnerCode": 1,
+  "changes": {
+    "changeTimestamp": 1790190666
+  },
+  "startTimestamp": 1790184600,
+  "defaultPeriodCount": 3,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/floorball.jsonl"
+}

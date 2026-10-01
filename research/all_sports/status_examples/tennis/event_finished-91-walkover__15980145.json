@@ -1,0 +1,28 @@
+{
+  "id": 15980145,
+  "sport": "tennis",
+  "unique_tournament": {
+    "id": 2407,
+    "name": "Barcelona"
+  },
+  "tournament": "Barcelona, Spain",
+  "category": "ATP",
+  "status": {
+    "code": 91,
+    "description": "Walkover",
+    "type": "finished"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {
+    "currentPeriodStartTimestamp": 1776272403
+  },
+  "winnerCode": 2,
+  "changes": {
+    "changeTimestamp": 1776272410
+  },
+  "startTimestamp": 1776416400,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/tennis.jsonl"
+}

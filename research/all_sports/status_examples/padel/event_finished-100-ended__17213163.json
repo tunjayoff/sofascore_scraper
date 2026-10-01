@@ -1,0 +1,36 @@
+{
+  "id": 17213163,
+  "sport": "padel",
+  "unique_tournament": {
+    "id": 38554,
+    "name": "FIP Bronze THE MORA Tunisia II Men"
+  },
+  "tournament": "FIP Bronze THE MORA Tunisia II Men - Qualification",
+  "category": "Cupra FIP Tour",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 2,
+    "display": 2,
+    "period1": 6,
+    "period2": 6
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 3,
+    "period2": 3
+  },
+  "time": {},
+  "winnerCode": 1,
+  "changes": {
+    "changeTimestamp": 1790791518
+  },
+  "startTimestamp": 1790787600,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/padel.jsonl"
+}

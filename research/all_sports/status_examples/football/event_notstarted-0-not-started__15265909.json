@@ -1,0 +1,24 @@
+{
+  "id": 15265909,
+  "sport": "football",
+  "unique_tournament": {
+    "id": 22,
+    "name": "Norwegian 1st Division"
+  },
+  "tournament": "1st Division",
+  "category": "Norway",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": null,
+  "winnerCode": null,
+  "changes": null,
+  "startTimestamp": 1791036000,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/football.jsonl"
+}

@@ -1,0 +1,5 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+event,notstarted,0,Not started,52,not_started,16419100,research/all_sports/status_examples/handball/event_notstarted-0-not-started__16419100.json
+event,finished,100,Ended,28,completed,14203138,research/all_sports/status_examples/handball/event_finished-100-ended__14203138.json
+event,postponed,60,Postponed,1,void,14211294,research/all_sports/status_examples/handball/event_postponed-60-postponed__14211294.json
+event,finished,120,AP,1,completed,15251094,research/all_sports/status_examples/handball/event_finished-120-ap__15251094.json

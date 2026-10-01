@@ -1,0 +1,48 @@
+{
+  "id": 16586046,
+  "sport": "cricket",
+  "unique_tournament": {
+    "id": 19260,
+    "name": "Irani Trophy"
+  },
+  "tournament": "Irani Cup",
+  "category": "India",
+  "status": {
+    "code": 141,
+    "description": "End of day 1",
+    "type": "willcontinue"
+  },
+  "homeScore": {
+    "current": 21,
+    "display": 21,
+    "innings": {
+      "inning1": {
+        "score": 21,
+        "wickets": 2,
+        "overs": 7,
+        "runRate": 3
+      }
+    }
+  },
+  "awayScore": {
+    "current": 237,
+    "display": 237,
+    "innings": {
+      "inning1": {
+        "score": 237,
+        "wickets": 10,
+        "overs": 68.1,
+        "runRate": 3.48
+      }
+    }
+  },
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 1790854397
+  },
+  "startTimestamp": 1790827200,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/cricket.jsonl"
+}

@@ -1,0 +1,68 @@
+{
+  "id": 16977347,
+  "sport": "baseball",
+  "unique_tournament": {
+    "id": 11204,
+    "name": "KBO"
+  },
+  "tournament": "KBO League",
+  "category": "South Korea",
+  "status": {
+    "code": 28,
+    "description": "8th Inning",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 9,
+    "display": 9,
+    "period1": 2,
+    "period2": 0,
+    "period3": 0,
+    "period4": 4,
+    "period5": 0,
+    "period6": 0,
+    "period7": 2,
+    "period8": 1,
+    "innings": {
+      "inning1": {
+        "run": 2
+      },
+      "inning2": {
+        "run": 0
+      },
+      "__trimmed_keys__": 6
+    }
+  },
+  "awayScore": {
+    "current": 7,
+    "display": 7,
+    "period1": 0,
+    "period2": 0,
+    "period3": 4,
+    "period4": 0,
+    "period5": 1,
+    "period6": 0,
+    "period7": 2,
+    "period8": 0,
+    "innings": {
+      "inning1": {
+        "run": 0
+      },
+      "inning2": {
+        "run": 0
+      },
+      "__trimmed_keys__": 6
+    }
+  },
+  "time": {
+    "currentPeriodStartTimestamp": 1790847040
+  },
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 1790858475
+  },
+  "startTimestamp": 1790847000,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/baseball.jsonl"
+}

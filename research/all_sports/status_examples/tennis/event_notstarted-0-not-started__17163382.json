@@ -1,0 +1,26 @@
+{
+  "id": 17163382,
+  "sport": "tennis",
+  "unique_tournament": {
+    "id": 5936,
+    "name": "Mouilleron-Le-Captif, France"
+  },
+  "tournament": "Mouilleron-le-Captif, France",
+  "category": "Challenger",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 0
+  },
+  "startTimestamp": 1790931600,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/tennis.jsonl"
+}

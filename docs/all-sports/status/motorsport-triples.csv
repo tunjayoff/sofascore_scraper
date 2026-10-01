@@ -1,0 +1,4 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+stage,finished,,Finished,16,unknown,214141,research/all_sports/status_examples/motorsport/stage_finished-none-finished__214141.json
+stage,notstarted,,Not started,14,not_started,224932,research/all_sports/status_examples/motorsport/stage_notstarted-none-not-started__224932.json
+stage,,,,12,unknown,61837,research/all_sports/status_examples/motorsport/stage_none-none-none__61837.json

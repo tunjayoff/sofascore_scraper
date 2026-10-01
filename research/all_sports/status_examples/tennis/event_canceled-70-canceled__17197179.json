@@ -1,0 +1,26 @@
+{
+  "id": 17197179,
+  "sport": "tennis",
+  "unique_tournament": {
+    "id": 10524,
+    "name": "Laver Cup"
+  },
+  "tournament": "Laver Cup, Singles Matches",
+  "category": "Exhibition",
+  "status": {
+    "code": 70,
+    "description": "Canceled",
+    "type": "canceled"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 1790523188
+  },
+  "startTimestamp": 1790522400,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/tennis.jsonl"
+}

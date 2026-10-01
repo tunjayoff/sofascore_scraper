@@ -1,0 +1,26 @@
+{
+  "id": 16237239,
+  "sport": "rugby",
+  "unique_tournament": {
+    "id": 797,
+    "name": "National Provincial Championship"
+  },
+  "tournament": "National Provincial Championship",
+  "category": "Rugby Union",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 0
+  },
+  "startTimestamp": 1790917800,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/rugby.jsonl"
+}

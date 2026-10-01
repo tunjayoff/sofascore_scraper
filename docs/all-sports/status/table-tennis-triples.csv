@@ -1,0 +1,7 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+event,notstarted,0,Not started,76,not_started,17214776,research/all_sports/status_examples/table-tennis/event_notstarted-0-not-started__17214776.json
+event,finished,100,Ended,68,completed,17214760,research/all_sports/status_examples/table-tennis/event_finished-100-ended__17214760.json
+event,inprogress,12,5th set,2,live,17225596,research/all_sports/status_examples/table-tennis/event_inprogress-12-5th-set__17225596.json
+event,finished,91,Walkover,1,decided_without_play,17220159,research/all_sports/status_examples/table-tennis/event_finished-91-walkover__17220159.json
+event,inprogress,9,2nd set,1,live,17220178,research/all_sports/status_examples/table-tennis/event_inprogress-9-2nd-set__17220178.json
+event,inprogress,11,4th set,1,live,17220207,research/all_sports/status_examples/table-tennis/event_inprogress-11-4th-set__17220207.json

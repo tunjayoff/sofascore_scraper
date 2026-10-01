@@ -1,0 +1,44 @@
+{
+  "id": 17060161,
+  "sport": "esports",
+  "unique_tournament": {
+    "id": 32724,
+    "name": "Stake Ranked"
+  },
+  "tournament": "Stake Ranked Playoffs",
+  "category": "Counter Strike",
+  "status": {
+    "code": 1001,
+    "description": "First game",
+    "type": "inprogress"
+  },
+  "homeScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "period2": 0,
+    "period3": 0,
+    "period4": 0,
+    "period5": 0
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "period2": 0,
+    "period3": 0,
+    "period4": 0,
+    "period5": 0
+  },
+  "time": {
+    "currentPeriodStartTimestamp": 1790857082
+  },
+  "winnerCode": 3,
+  "changes": {
+    "changeTimestamp": 1790857088
+  },
+  "startTimestamp": 1790857200,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/esports.jsonl"
+}

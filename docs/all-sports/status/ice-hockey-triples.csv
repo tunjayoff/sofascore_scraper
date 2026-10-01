@@ -1,0 +1,5 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+event,notstarted,0,Not started,37,not_started,16230730,research/all_sports/status_examples/ice-hockey/event_notstarted-0-not-started__16230730.json
+event,finished,100,Ended,5,completed,16492292,research/all_sports/status_examples/ice-hockey/event_finished-100-ended__16492292.json
+event,canceled,70,Canceled,1,void,16341235,research/all_sports/status_examples/ice-hockey/event_canceled-70-canceled__16341235.json
+event,finished,110,AET,1,completed,16356203,research/all_sports/status_examples/ice-hockey/event_finished-110-aet__16356203.json

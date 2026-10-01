@@ -1,0 +1,26 @@
+{
+  "id": 16310364,
+  "sport": "basketball",
+  "unique_tournament": {
+    "id": 1524,
+    "name": "NBL"
+  },
+  "tournament": "NBL",
+  "category": "Australia",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 0
+  },
+  "startTimestamp": 1790933400,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/basketball.jsonl"
+}

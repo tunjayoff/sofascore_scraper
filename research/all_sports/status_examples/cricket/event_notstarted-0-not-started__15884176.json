@@ -1,0 +1,26 @@
+{
+  "id": 15884176,
+  "sport": "cricket",
+  "unique_tournament": {
+    "id": 11190,
+    "name": "One Day International"
+  },
+  "tournament": "West Indies in India, 3 ODI Series",
+  "category": "World",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 0
+  },
+  "startTimestamp": 1791016200,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/cricket.jsonl"
+}

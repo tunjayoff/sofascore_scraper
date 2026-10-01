@@ -1,0 +1,38 @@
+{
+  "id": 17163492,
+  "sport": "tennis",
+  "unique_tournament": {
+    "id": 29541,
+    "name": "Jingshan, China,"
+  },
+  "tournament": "Jingshan, China",
+  "category": "Challenger",
+  "status": {
+    "code": 80,
+    "description": "Interrupted",
+    "type": "interrupted"
+  },
+  "homeScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 1,
+    "point": "40"
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "point": "30"
+  },
+  "time": {
+    "currentPeriodStartTimestamp": 1790831902
+  },
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 1790832156
+  },
+  "startTimestamp": 1790910000,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/tennis.jsonl"
+}

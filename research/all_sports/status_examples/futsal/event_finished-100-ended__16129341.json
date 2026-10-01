@@ -1,0 +1,32 @@
+{
+  "id": 16129341,
+  "sport": "futsal",
+  "unique_tournament": {
+    "id": 22489,
+    "name": "Catarinense, Série Prata"
+  },
+  "tournament": "Catarinense, Série Prata",
+  "category": "Brazil",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 3,
+    "display": 3
+  },
+  "awayScore": {
+    "current": 3,
+    "display": 3
+  },
+  "time": {},
+  "winnerCode": 3,
+  "changes": {
+    "changeTimestamp": 1790814161
+  },
+  "startTimestamp": 1790807400,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/futsal.jsonl"
+}

@@ -1,0 +1,2586 @@
+{
+  "requests": {
+    "sofascore_rows": 3493,
+    "sofascore_sent": 3349,
+    "third_party_rows": 4469,
+    "first_ts": 1790856041.659,
+    "last_ts": 1790863322.994
+  },
+  "patterns": {
+    "sofascore": 175,
+    "not_in_repo": 160,
+    "by_label": {
+      "none": 75,
+      "live": 4,
+      "historical": 91,
+      "settlement+live": 1,
+      "historical+live": 4
+    }
+  },
+  "event_count_today": {
+    "at_utc": "2026-10-01T14:00:10+00:00",
+    "snooker": {
+      "live": 3,
+      "total": 8
+    },
+    "badminton": {
+      "live": 6,
+      "total": 112
+    },
+    "futsal": {
+      "live": 1,
+      "total": 50
+    },
+    "ice-hockey": {
+      "live": 3,
+      "total": 55
+    },
+    "minifootball": {
+      "live": 0,
+      "total": 87
+    },
+    "table-tennis": {
+      "live": 16,
+      "total": 1231
+    },
+    "darts": {
+      "live": 1,
+      "total": 24
+    },
+    "aussie-rules": {
+      "live": 0,
+      "total": 1
+    },
+    "floorball": {
+      "live": 0,
+      "total": 4
+    },
+    "football": {
+      "live": 74,
+      "total": 925
+    },
+    "tennis": {
+      "live": 33,
+      "total": 436
+    },
+    "baseball": {
+      "live": 1,
+      "total": 12
+    },
+    "basketball": {
+      "live": 2,
+      "total": 114
+    },
+    "padel": {
+      "live": 0,
+      "total": 46
+    },
+    "handball": {
+      "live": 2,
+      "total": 45
+    },
+    "cricket": {
+      "live": 1,
+      "total": 12
+    },
+    "waterpolo": {
+      "live": 0,
+      "total": 1
+    },
+    "rugby": {
+      "live": 0,
+      "total": 21
+    },
+    "volleyball": {
+      "live": 0,
+      "total": 21
+    },
+    "esports": {
+      "live": 7,
+      "total": 75
+    }
+  },
+  "checks": {
+    "american-football": {
+      "events": 113,
+      "stages": 0,
+      "classes": {
+        "completed": 75,
+        "not_started": 38
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        100,
+        110
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'american-football' (event {id})": 113
+      }
+    },
+    "aussie-rules": {
+      "events": 33,
+      "stages": 0,
+      "classes": {
+        "completed": 31,
+        "not_started": 2
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        100
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'aussie-rules' (event {id})": 33
+      }
+    },
+    "badminton": {
+      "events": 145,
+      "stages": 0,
+      "classes": {
+        "completed": 75,
+        "void": 4,
+        "not_started": 54,
+        "live": 7,
+        "decided_without_play": 5
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        8,
+        9,
+        10,
+        30,
+        70,
+        91,
+        100
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'badminton' (event {id})": 145
+      }
+    },
+    "bandy": {
+      "events": 1,
+      "stages": 0,
+      "classes": {
+        "not_started": 1
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'bandy' (event {id})": 1
+      }
+    },
+    "baseball": {
+      "events": 506,
+      "stages": 0,
+      "classes": {
+        "completed": 482,
+        "void": 9,
+        "live": 3,
+        "not_started": 12
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        28,
+        29,
+        60,
+        100,
+        110
+      ],
+      "new_codes": [
+        28,
+        29
+      ],
+      "known_code_share": 0.994,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'baseball' (event {id})": 506
+      }
+    },
+    "basketball": {
+      "events": 198,
+      "stages": 0,
+      "classes": {
+        "completed": 141,
+        "not_started": 55,
+        "live": 2
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        14,
+        15,
+        100,
+        110
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": true,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {}
+    },
+    "cricket": {
+      "events": 17,
+      "stages": 0,
+      "classes": {
+        "not_started": 5,
+        "completed": 5,
+        "live": 1,
+        "void": 1,
+        "unknown": 5
+      },
+      "stage_classes": {},
+      "unknown": 5,
+      "unknown_rate": 0.294,
+      "unknown_triples": {
+        "willcontinue / 141 / End of day 1": 5
+      },
+      "codes_seen": [
+        0,
+        21,
+        90,
+        100,
+        141
+      ],
+      "new_codes": [
+        21,
+        141
+      ],
+      "known_code_share": 0.647,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'cricket' (event {id})": 17,
+        "Bilinmeyen status type: {'code': 141, 'description': 'End of day 1', 'type': 'willcontinue'} (event {id})": 10
+      }
+    },
+    "cycling": {
+      "events": 0,
+      "stages": 20,
+      "classes": {},
+      "stage_classes": {
+        "unknown": 16,
+        "void": 1,
+        "not_started": 3
+      },
+      "unknown": 16,
+      "unknown_rate": 0.8,
+      "unknown_triples": {
+        "stage:finished /  / Finished": 15,
+        "stage: /  / ": 1
+      },
+      "codes_seen": [],
+      "new_codes": [],
+      "known_code_share": null,
+      "extract_supported": null,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {}
+    },
+    "darts": {
+      "events": 50,
+      "stages": 0,
+      "classes": {
+        "completed": 9,
+        "not_started": 40,
+        "live": 1
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        20,
+        100
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'darts' (event {id})": 50
+      }
+    },
+    "esports": {
+      "events": 7,
+      "stages": 0,
+      "classes": {
+        "completed": 1,
+        "live": 5,
+        "not_started": 1
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        20,
+        30,
+        100,
+        1001,
+        1002
+      ],
+      "new_codes": [
+        1001,
+        1002
+      ],
+      "known_code_share": 0.571,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'esports' (event {id})": 7
+      }
+    },
+    "floorball": {
+      "events": 7,
+      "stages": 0,
+      "classes": {
+        "completed": 4,
+        "not_started": 3
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        100
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'floorball' (event {id})": 7
+      }
+    },
+    "football": {
+      "events": 480,
+      "stages": 0,
+      "classes": {
+        "completed": 222,
+        "void": 4,
+        "not_started": 212,
+        "live": 42
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        6,
+        7,
+        20,
+        31,
+        60,
+        70,
+        100,
+        110,
+        120
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": true,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "Futbol {id}: code 100 ama display Pair(home=1, away=2) != normaltime Pair(home=1, away=1)": 1
+      }
+    },
+    "futsal": {
+      "events": 26,
+      "stages": 0,
+      "classes": {
+        "completed": 16,
+        "not_started": 10
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        100,
+        110
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'futsal' (event {id})": 26
+      }
+    },
+    "handball": {
+      "events": 82,
+      "stages": 0,
+      "classes": {
+        "completed": 29,
+        "void": 1,
+        "not_started": 52
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        60,
+        100,
+        120
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'handball' (event {id})": 82
+      }
+    },
+    "ice-hockey": {
+      "events": 44,
+      "stages": 0,
+      "classes": {
+        "not_started": 37,
+        "void": 1,
+        "completed": 6
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        70,
+        100,
+        110
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'ice-hockey' (event {id})": 44
+      }
+    },
+    "minifootball": {
+      "events": 8,
+      "stages": 0,
+      "classes": {
+        "not_started": 7,
+        "completed": 1
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        100
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'minifootball' (event {id})": 8
+      }
+    },
+    "mma": {
+      "events": 50,
+      "stages": 0,
+      "classes": {
+        "completed": 26,
+        "not_started": 24
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        100
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'mma' (event {id})": 50
+      }
+    },
+    "motorsport": {
+      "events": 0,
+      "stages": 42,
+      "classes": {},
+      "stage_classes": {
+        "unknown": 28,
+        "not_started": 14
+      },
+      "unknown": 28,
+      "unknown_rate": 0.667,
+      "unknown_triples": {
+        "stage:finished /  / Finished": 16,
+        "stage: /  / ": 12
+      },
+      "codes_seen": [],
+      "new_codes": [],
+      "known_code_share": null,
+      "extract_supported": null,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {}
+    },
+    "padel": {
+      "events": 48,
+      "stages": 0,
+      "classes": {
+        "completed": 14,
+        "decided_without_play": 2,
+        "not_started": 32
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        91,
+        100
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'padel' (event {id})": 48
+      }
+    },
+    "rugby": {
+      "events": 47,
+      "stages": 0,
+      "classes": {
+        "completed": 21,
+        "not_started": 26
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        100
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'rugby' (event {id})": 47
+      }
+    },
+    "snooker": {
+      "events": 9,
+      "stages": 0,
+      "classes": {
+        "completed": 4,
+        "live": 4,
+        "not_started": 1
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        20,
+        100
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'snooker' (event {id})": 9
+      }
+    },
+    "table-tennis": {
+      "events": 149,
+      "stages": 0,
+      "classes": {
+        "completed": 68,
+        "not_started": 76,
+        "decided_without_play": 1,
+        "live": 4
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        9,
+        11,
+        12,
+        91,
+        100
+      ],
+      "new_codes": [
+        11,
+        12
+      ],
+      "known_code_share": 0.98,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'table-tennis' (event {id})": 149
+      }
+    },
+    "tennis": {
+      "events": 219,
+      "stages": 0,
+      "classes": {
+        "completed": 96,
+        "decided_without_play": 3,
+        "not_started": 70,
+        "live": 44,
+        "void": 6
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        8,
+        9,
+        10,
+        70,
+        80,
+        91,
+        92,
+        100
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": true,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {}
+    },
+    "volleyball": {
+      "events": 81,
+      "stages": 0,
+      "classes": {
+        "not_started": 62,
+        "completed": 19
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0,
+        100
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'volleyball' (event {id})": 81
+      }
+    },
+    "waterpolo": {
+      "events": 1,
+      "stages": 0,
+      "classes": {
+        "not_started": 1
+      },
+      "stage_classes": {},
+      "unknown": 0,
+      "unknown_rate": 0.0,
+      "unknown_triples": {},
+      "codes_seen": [
+        0
+      ],
+      "new_codes": [],
+      "known_code_share": 1.0,
+      "extract_supported": false,
+      "extract_errors": [],
+      "extract_error_count": 0,
+      "extract_warnings": {
+        "extract_scores: desteklenmeyen spor 'waterpolo' (event {id})": 1
+      }
+    }
+  },
+  "score_structure": {
+    "american-football": {
+      "finished": 75,
+      "homeScore_key_freq": {
+        "current": 75,
+        "display": 75,
+        "period1": 75,
+        "period2": 75,
+        "period3": 75,
+        "period4": 75,
+        "normaltime": 75,
+        "overtime": 4
+      },
+      "majority_keyset": [
+        "current",
+        "display",
+        "normaltime",
+        "period1",
+        "period2",
+        "period3",
+        "period4"
+      ],
+      "keyset_variants": 2,
+      "tournaments_deviating": {},
+      "time_keys": {
+        "played": 30,
+        "periodLength": 30,
+        "overtimeLength": 30,
+        "totalPeriodCount": 30,
+        "currentPeriodStartTimestamp": 30
+      },
+      "defaultPeriodCount": {
+        "null": 110,
+        "4": 3
+      },
+      "event_top_keys": {
+        "awayScore": 113,
+        "awayTeam": 113,
+        "customId": 113,
+        "finalResultOnly": 113,
+        "homeScore": 113,
+        "homeTeam": 113,
+        "id": 113,
+        "slug": 113,
+        "startTimestamp": 113,
+        "status": 113,
+        "tournament": 113,
+        "roundInfo": 107,
+        "winnerCode": 75,
+        "changes": 52,
+        "crowdsourcingDataDisplayEnabled": 52,
+        "feedLocked": 52,
+        "hasGlobalHighlights": 52,
+        "isEditor": 52,
+        "periods": 52,
+        "season": 52,
+        "time": 52,
+        "hasEventPlayerStatistics": 30,
+        "awayTeamSeasonHistoricalForm": 25,
+        "homeTeamSeasonHistoricalForm": 25,
+        "cupMatchesInRound": 3,
+        "defaultOvertimeLength": 3,
+        "defaultPeriodCount": 3,
+        "defaultPeriodLength": 3,
+        "showTotoPromo": 3
+      },
+      "n_events": 113
+    },
+    "aussie-rules": {
+      "finished": 31,
+      "homeScore_key_freq": {
+        "current": 31,
+        "display": 31,
+        "period1": 31,
+        "period2": 31,
+        "period3": 31,
+        "period4": 31,
+        "normaltime": 31
+      },
+      "majority_keyset": [
+        "current",
+        "display",
+        "normaltime",
+        "period1",
+        "period2",
+        "period3",
+        "period4"
+      ],
+      "keyset_variants": 1,
+      "tournaments_deviating": {},
+      "time_keys": {
+        "currentPeriodStartTimestamp": 31
+      },
+      "defaultPeriodCount": {
+        "null": 32,
+        "4": 1
+      },
+      "event_top_keys": {
+        "awayScore": 33,
+        "awayTeam": 33,
+        "changes": 33,
+        "crowdsourcingDataDisplayEnabled": 33,
+        "customId": 33,
+        "feedLocked": 33,
+        "finalResultOnly": 33,
+        "hasGlobalHighlights": 33,
+        "homeScore": 33,
+        "homeTeam": 33,
+        "id": 33,
+        "isEditor": 33,
+        "periods": 33,
+        "season": 33,
+        "slug": 33,
+        "startTimestamp": 33,
+        "status": 33,
+        "time": 33,
+        "tournament": 33,
+        "roundInfo": 31,
+        "winnerCode": 31,
+        "cupMatchesInRound": 6,
+        "defaultPeriodCount": 1,
+        "defaultPeriodLength": 1,
+        "showTotoPromo": 1,
+        "venue": 1
+      },
+      "n_events": 33
+    },
+    "badminton": {
+      "finished": 75,
+      "homeScore_key_freq": {
+        "current": 75,
+        "display": 75,
+        "period1": 75,
+        "period2": 75,
+        "normaltime": 75,
+        "period3": 13
+      },
+      "majority_keyset": [
+        "current",
+        "display",
+        "normaltime",
+        "period1",
+        "period2"
+      ],
+      "keyset_variants": 2,
+      "tournaments_deviating": {},
+      "time_keys": {
+        "currentPeriodStartTimestamp": 87
+      },
+      "defaultPeriodCount": {
+        "null": 144,
+        "3": 1
+      },
+      "event_top_keys": {
+        "awayScore": 145,
+        "awayTeam": 145,
+        "customId": 145,
+        "finalResultOnly": 145,
+        "homeScore": 145,
+        "homeTeam": 145,
+        "id": 145,
+        "slug": 145,
+        "startTimestamp": 145,
+        "status": 145,
+        "tournament": 145,
+        "changes": 144,
+        "crowdsourcingDataDisplayEnabled": 144,
+        "feedLocked": 144,
+        "hasGlobalHighlights": 144,
+        "isEditor": 144,
+        "periods": 144,
+        "season": 144,
+        "time": 144,
+        "venue": 112,
+        "winnerCode": 78,
+        "lastPeriod": 6,
+        "currentPeriodStartTimestamp": 1,
+        "defaultPeriodCount": 1,
+        "showTotoPromo": 1
+      },
+      "n_events": 145
+    },
+    "bandy": {
+      "finished": 0,
+      "homeScore_key_freq": {},
+      "majority_keyset": [],
+      "keyset_variants": 0,
+      "tournaments_deviating": {},
+      "time_keys": {},
+      "defaultPeriodCount": {
+        "null": 1
+      },
+      "event_top_keys": {
+        "awayScore": 1,
+        "awayTeam": 1,
+        "changes": 1,
+        "crowdsourcingDataDisplayEnabled": 1,
+        "customId": 1,
+        "feedLocked": 1,
+        "finalResultOnly": 1,
+        "hasGlobalHighlights": 1,
+        "homeScore": 1,
+        "homeTeam": 1,
+        "id": 1,
+        "isEditor": 1,
+        "roundInfo": 1,
+        "season": 1,
+        "slug": 1,
+        "startTimestamp": 1,
+        "status": 1,
+        "time": 1,
+        "tournament": 1
+      },
+      "n_events": 1
+    },
+    "baseball": {
+      "finished": 482,
+      "homeScore_key_freq": {
+        "current": 482,
+        "display": 482,
+        "innings": 482,
+        "inningsBaseball": 265,
+        "period1": 117,
+        "period2": 117,
+        "period3": 117,
+        "period4": 117,
+        "period5": 117,
+        "period6": 117,
+        "normaltime": 117,
+        "period7": 116,
+        "period8": 68,
+        "period9": 68,
+        "overtime": 14,
+        "series": 5
+      },
+      "majority_keyset": [
+        "current",
+        "display",
+        "innings"
+      ],
+      "keyset_variants": 11,
+      "tournaments_deviating": {
+        "MLB, Preseason": {
+          "keys": [
+            "current",
+            "display",
+            "innings",
+            "normaltime",
+            "period1",
+            "period2",
+            "period3",
+            "period4",
+            "period5",
+            "period6",
+            "period7",
+            "period8",
+            "period9"
+          ],
+          "count": 7,
+          "example_id": 13599270,
+          "file": "research/all_sports/events/baseball.jsonl"
+        },
+        "Pro Yakyu - NPB": {
+          "keys": [
+            "current",
+            "display",
+            "innings",
+            "normaltime",
+            "period1",
+            "period2",
+            "period3",
+            "period4",
+            "period5",
+            "period6",
+            "period7",
+            "period8",
+            "period9"
+          ],
+          "count": 3,
+          "example_id": 16754637,
+          "file": "research/all_sports/events/baseball.jsonl"
+        },
+        "KBO": {
+          "keys": [
+            "current",
+            "display",
+            "innings",
+            "normaltime",
+            "period1",
+            "period2",
+            "period3",
+            "period4",
+            "period5",
+            "period6",
+            "period7",
+            "period8",
+            "period9"
+          ],
+          "count": 2,
+          "example_id": 16977348,
+          "file": "research/all_sports/events/baseball.jsonl"
+        }
+      },
+      "time_keys": {
+        "currentPeriodStartTimestamp": 100
+      },
+      "defaultPeriodCount": {
+        "null": 506
+      },
+      "event_top_keys": {
+        "awayScore": 506,
+        "awayTeam": 506,
+        "changes": 506,
+        "crowdsourcingDataDisplayEnabled": 506,
+        "customId": 506,
+        "feedLocked": 506,
+        "finalResultOnly": 506,
+        "hasGlobalHighlights": 506,
+        "homeScore": 506,
+        "homeTeam": 506,
+        "id": 506,
+        "isEditor": 506,
+        "periods": 506,
+        "season": 506,
+        "slug": 506,
+        "startTimestamp": 506,
+        "status": 506,
+        "time": 506,
+        "tournament": 506,
+        "winnerCode": 481,
+        "hasEventPlayerStatistics": 280,
+        "roundInfo": 135,
+        "awayTeamSeasonHistoricalForm": 65,
+        "homeTeamSeasonHistoricalForm": 65,
+        "venue": 18,
+        "cupMatchesInRound": 16,
+        "lastPeriod": 3,
+        "showTotoPromo": 3,
+        "previousLegEventId": 2
+      },
+      "n_events": 506
+    },
+    "basketball": {
+      "finished": 141,
+      "homeScore_key_freq": {
+        "current": 141,
+        "display": 141,
+        "period1": 141,
+        "period2": 141,
+        "period3": 141,
+        "period4": 141,
+        "normaltime": 141,
+        "overtime": 8,
+        "series": 7
+      },
+      "majority_keyset": [
+        "current",
+        "display",
+        "normaltime",
+        "period1",
+        "period2",
+        "period3",
+        "period4"
+      ],
+      "keyset_variants": 4,
+      "tournaments_deviating": {
+        "European North Basketball League": {
+          "keys": [
+            "current",
+            "display",
+            "normaltime",
+            "overtime",
+            "period1",
+            "period2",
+            "period3",
+            "period4"
+          ],
+          "count": 1,
+          "example_id": 17114278,
+          "file": "research/all_sports/events/basketball.jsonl"
+        }
+      },
+      "time_keys": {
+        "overtimeLength": 103,
+        "currentPeriodStartTimestamp": 91,
+        "periodLength": 77,
+        "totalPeriodCount": 77,
+        "played": 69,
+        "current": 32,
+        "period1": 32,
+        "period2": 32,
+        "period3": 32,
+        "period4": 32,
+        "clockRunning": 12,
+        "clockRunningLastUpdated": 12,
+        "overtime": 1
+      },
+      "defaultPeriodCount": {
+        "null": 197,
+        "4": 1
+      },
+      "event_top_keys": {
+        "awayScore": 198,
+        "awayTeam": 198,
+        "customId": 198,
+        "finalResultOnly": 198,
+        "homeScore": 198,
+        "homeTeam": 198,
+        "id": 198,
+        "slug": 198,
+        "startTimestamp": 198,
+        "status": 198,
+        "tournament": 198,
+        "changes": 175,
+        "crowdsourcingDataDisplayEnabled": 175,
+        "feedLocked": 175,
+        "hasGlobalHighlights": 175,
+        "periods": 175,
+        "time": 175,
+        "isEditor": 174,
+        "season": 174,
+        "roundInfo": 164,
+        "winnerCode": 141,
+        "eventFilters": 96,
+        "hasEventPlayerStatistics": 71,
+        "cupMatchesInRound": 12,
+        "previousLegEventId": 9,
+        "venue": 8,
+        "lastPeriod": 2,
+        "defaultOvertimeLength": 1,
+        "defaultPeriodCount": 1,
+        "defaultPeriodLength": 1,
+        "officials": 1,
+        "seasonStatisticsType": 1,
+        "showTotoPromo": 1
+      },
+      "n_events": 198
+    },
+    "cricket": {
+      "finished": 5,
+      "homeScore_key_freq": {
+        "current": 5,
+        "display": 5,
+        "innings": 5
+      },
+      "majority_keyset": [
+        "current",
+        "display",
+        "innings"
+      ],
+      "keyset_variants": 1,
+      "tournaments_deviating": {},
+      "time_keys": {},
+      "defaultPeriodCount": {
+        "null": 17
+      },
+      "event_top_keys": {
+        "awayScore": 17,
+        "awayTeam": 17,
+        "changes": 17,
+        "coverage": 17,
+        "crowdsourcingDataDisplayEnabled": 17,
+        "customId": 17,
+        "endTimestamp": 17,
+        "feedLocked": 17,
+        "finalResultOnly": 17,
+        "hasGlobalHighlights": 17,
+        "homeScore": 17,
+        "homeTeam": 17,
+        "id": 17,
+        "isEditor": 17,
+        "periods": 17,
+        "season": 17,
+        "slug": 17,
+        "startTimestamp": 17,
+        "status": 17,
+        "time": 17,
+        "tournament": 17,
+        "venue": 17,
+        "note": 5,
+        "winnerCode": 5,
+        "currentBattingTeamId": 3,
+        "showTotoPromo": 2,
+        "cricketBallProperties": 1,
+        "referee": 1,
+        "refereeName": 1,
+        "tossDecision": 1,
+        "tossWin": 1,
+        "tvUmpireName": 1,
+        "umpire1Name": 1,
+        "umpire2Name": 1,
+        "lastPeriod": 1
+      },
+      "n_events": 17
+    },
+    "darts": {
+      "finished": 9,
+      "homeScore_key_freq": {
+        "current": 9,
+        "display": 9,
+        "normaltime": 9,
+        "period1": 4,
+        "period2": 4,
+        "period3": 4,
+        "period4": 1
+      },
+      "majority_keyset": [
+        "current",
+        "display",
+        "normaltime"
+      ],
+      "keyset_variants": 3,
+      "tournaments_deviating": {
+        "World Grand Prix": {
+          "keys": [
+            "current",
+            "display",
+            "normaltime",
+            "period1",
+            "period2",
+            "period3"
+          ],
+          "count": 4,
+          "example_id": 17099316,
+          "file": "research/all_sports/events/darts.jsonl"
+        }
+      },
+      "time_keys": {
+        "currentPeriodStartTimestamp": 10
+      },
+      "defaultPeriodCount": {
+        "null": 50
+      },
+      "event_top_keys": {
+        "awayScore": 50,
+        "awayTeam": 50,
+        "bestOfLegs": 50,
+        "bestOfSets": 50,
+        "customId": 50,
+        "finalResultOnly": 50,
+        "homeScore": 50,
+        "homeTeam": 50,
+        "id": 50,
+        "slug": 50,
+        "startTimestamp": 50,
+        "status": 50,
+        "tournament": 50,
+        "changes": 48,
+        "crowdsourcingDataDisplayEnabled": 48,
+        "feedLocked": 48,
+        "hasGlobalHighlights": 48,
+        "isEditor": 48,
+        "season": 48,
+        "time": 48,
+        "firstToServe": 22,
+        "firstToServeInMatch": 22,
+        "roundInfo": 10,
+        "winnerCode": 10,
+        "bet365ExcludedCountryCodes": 1,
+        "currentPeriodStartTimestamp": 1,
+        "hasBet365LiveStream": 1,
+        "showTotoPromo": 1
+      },
+      "n_events": 50
+    },
+    "esports": {
+      "finished": 1,
+      "homeScore_key_freq": {
+        "display": 1,
+        "period1": 1,
+        "period2": 1
+      },
+      "majority_keyset": [
+        "display",
+        "period1",
+        "period2"
+      ],
+      "keyset_variants": 1,
+      "tournaments_deviating": {},
+      "time_keys": {
+        "currentPeriodStartTimestamp": 3
+      },
+      "defaultPeriodCount": {
+        "null": 7
+      },
+      "event_top_keys": {
+        "awayScore": 7,
+        "homeScore": 7,
+        "id": 7,
+        "startTimestamp": 7,
+        "status": 7,
+        "winnerCode": 6,
+        "awayTeam": 5,
+        "bestOf": 5,
+        "changes": 5,
+        "coverage": 5,
+        "crowdsourcingDataDisplayEnabled": 5,
+        "customId": 5,
+        "eventType": 5,
+        "feedLocked": 5,
+        "finalResultOnly": 5,
+        "hasGlobalHighlights": 5,
+        "homeTeam": 5,
+        "isEditor": 5,
+        "roundsInAHalf": 5,
+        "season": 5,
+        "slug": 5,
+        "time": 5,
+        "tournament": 5,
+        "hasCompleteStatistics": 2,
+        "map": 2,
+        "homeTeamStartingSide": 1,
+        "length": 1,
+        "currentPeriodStartTimestamp": 1,
+        "showTotoPromo": 1
+      },
+      "n_events": 7
+    },
+    "floorball": {
+      "finished": 4,
+      "homeScore_key_freq": {
+        "current": 4,
+        "display": 4,
+        "normaltime": 4,
+        "period1": 3,
+        "period2": 3,
+        "period3": 3
+      },
+      "majority_keyset": [
+        "current",
+        "display",
+        "normaltime",
+        "period1",
+        "period2",
+        "period3"
+      ],
+      "keyset_variants": 2,
+      "tournaments_deviating": {},
+      "time_keys": {
+        "currentPeriodStartTimestamp": 2
+      },
+      "defaultPeriodCount": {
+        "3": 2,
+        "null": 5
+      },
+      "event_top_keys": {
+        "awayScore": 7,
+        "awayTeam": 7,
+        "changes": 7,
+        "crowdsourcingDataDisplayEnabled": 7,
+        "customId": 7,
+        "feedLocked": 7,
+        "finalResultOnly": 7,
+        "hasGlobalHighlights": 7,
+        "homeScore": 7,
+        "homeTeam": 7,
+        "id": 7,
+        "isEditor": 7,
+        "periods": 7,
+        "roundInfo": 7,
+        "season": 7,
+        "slug": 7,
+        "startTimestamp": 7,
+        "status": 7,
+        "time": 7,
+        "tournament": 7,
+        "venue": 5,
+        "winnerCode": 4,
+        "cupMatchesInRound": 3,
+        "defaultPeriodCount": 2,
+        "showTotoPromo": 2,
+        "previousLegEventId": 2,
+        "currentPeriodStartTimestamp": 1
+      },
+      "n_events": 7
+    },
+    "football": {
+      "finished": 222,
+      "homeScore_key_freq": {
+        "current": 222,
+        "display": 222,
+        "period1": 217,
+        "normaltime": 217,
+        "period2": 213,
+        "extra1": 6,
+        "extra2": 5,
+        "overtime": 5,
+        "penalties": 2
+      },
+      "majority_keyset": [
+        "current",
+        "display",
+        "normaltime",
+        "period1",
+        "period2"
+      ],
+      "keyset_variants": 7,
+      "tournaments_deviating": {
+        "Torneo Regional Federal Amateur – Región Litoral Sur": {
+          "keys": [
+            "current",
+            "display"
+          ],
+          "count": 1,
+          "example_id": 16879280,
+          "file": "research/all_sports/events/football.jsonl"
+        },
+        "Torneo Regional Federal Amateur – Región Pampeana Sur": {
+          "keys": [
+            "current",
+            "display"
+          ],
+          "count": 3,
+          "example_id": 17210405,
+          "file": "research/all_sports/events/football.jsonl"
+        },
+        "Torneo Regional Federal Amateur – Región Cuyo": {
+          "keys": [
+            "current",
+            "display"
+          ],
+          "count": 1,
+          "example_id": 17227876,
+          "file": "research/all_sports/events/football.jsonl"
+        }
+      },
+      "time_keys": {
+        "currentPeriodStartTimestamp": 175,
+        "injuryTime2": 108,
+        "injuryTime1": 107,
+        "lastPeriodEndTimestamp": 101,
+        "periodLength": 42,
+        "overtimeLength": 42,
+        "totalPeriodCount": 42,
+        "initial": 21,
+        "max": 21,
+        "extra": 21,
+        "injuryTime3": 4,
+        "injuryTime4": 4
+      },
+      "defaultPeriodCount": {
+        "null": 477,
+        "2": 3
+      },
+      "event_top_keys": {
+        "awayScore": 480,
+        "awayTeam": 480,
+        "customId": 480,
+        "eventState": 480,
+        "finalResultOnly": 480,
+        "homeScore": 480,
+        "homeTeam": 480,
+        "id": 480,
+        "slug": 480,
+        "startTimestamp": 480,
+        "status": 480,
+        "tournament": 480,
+        "changes": 372,
+        "crowdsourcingDataDisplayEnabled": 372,
+        "feedLocked": 372,
+        "hasGlobalHighlights": 372,
+        "time": 372,
+        "isEditor": 369,
+        "season": 369,
+        "roundInfo": 339,
+        "eventFilters": 278,
+        "winnerCode": 221,
+        "detailId": 160,
+        "hasEventPlayerStatistics": 112,
+        "hasEventPlayerHeatMap": 107,
+        "hasXg": 106,
+        "coverage": 105,
+        "venue": 86,
+        "correctAiInsight": 60,
+        "correctHalftimeAiInsight": 51,
+        "crowdsourcingEnabled": 38,
+        "varInProgress": 36,
+        "lastPeriod": 21,
+        "statusTime": 21,
+        "awayRedCards": 15,
+        "cupMatchesInRound": 9,
+        "homeRedCards": 7,
+        "defaultOvertimeLength": 3,
+        "defaultPeriodCount": 3,
+        "defaultPeriodLength": 3,
+        "showTotoPromo": 3,
+        "seasonStatisticsType": 2,
+        "aggregatedWinnerCode": 2,
+        "referee": 1
+      },
+      "n_events": 480
+    },
+    "futsal": {
+      "finished": 16,
+      "homeScore_key_freq": {
+        "current": 16,
+        "display": 16,
+        "period1": 4,
+        "period2": 4,
+        "normaltime": 4,
+        "series": 1,
+        "overtime": 1
+      },
+      "majority_keyset": [
+        "current",
+        "display"
+      ],
+      "keyset_variants": 4,
+      "tournaments_deviating": {
+        "Paranaense, Série Prata": {
+          "keys": [
+            "current",
+            "display",
+            "normaltime",
+            "period1",
+            "period2"
+          ],
+          "count": 1,
+          "example_id": 17034059,
+          "file": "research/all_sports/events/futsal.jsonl"
+        },
+        "U17 Paranaense": {
+          "keys": [
+            "current",
+            "display",
+            "series"
+          ],
+          "count": 1,
+          "example_id": 17121445,
+          "file": "research/all_sports/events/futsal.jsonl"
+        },
+        "Copa do Brasil, Feminino": {
+          "keys": [
+            "current",
+            "display",
+            "normaltime",
+            "period1",
+            "period2"
+          ],
+          "count": 2,
+          "example_id": 17226246,
+          "file": "research/all_sports/events/futsal.jsonl"
+        }
+      },
+      "time_keys": {},
+      "defaultPeriodCount": {
+        "null": 25,
+        "2": 1
+      },
+      "event_top_keys": {
+        "awayScore": 26,
+        "awayTeam": 26,
+        "customId": 26,
+        "finalResultOnly": 26,
+        "homeScore": 26,
+        "homeTeam": 26,
+        "id": 26,
+        "roundInfo": 26,
+        "slug": 26,
+        "startTimestamp": 26,
+        "status": 26,
+        "tournament": 26,
+        "changes": 25,
+        "crowdsourcingDataDisplayEnabled": 25,
+        "feedLocked": 25,
+        "hasGlobalHighlights": 25,
+        "isEditor": 25,
+        "season": 25,
+        "time": 25,
+        "winnerCode": 16,
+        "aggregatedWinnerCode": 6,
+        "venue": 2,
+        "previousLegEventId": 1,
+        "createdByNickname": 1,
+        "defaultOvertimeLength": 1,
+        "defaultPeriodCount": 1,
+        "defaultPeriodLength": 1,
+        "eventEditor": 1,
+        "eventEditorName": 1,
+        "showTotoPromo": 1
+      },
+      "n_events": 26
+    },
+    "handball": {
+      "finished": 29,
+      "homeScore_key_freq": {
+        "current": 29,
+        "display": 29,
+        "period1": 29,
+        "period2": 29,
+        "normaltime": 29,
+        "overtime": 1,
+        "penalties": 1,
+        "aggregated": 1
+      },
+      "majority_keyset": [
+        "current",
+        "display",
+        "normaltime",
+        "period1",
+        "period2"
+      ],
+      "keyset_variants": 3,
+      "tournaments_deviating": {},
+      "time_keys": {
+        "periodLength": 28,
+        "overtimeLength": 28,
+        "totalPeriodCount": 28,
+        "played": 27,
+        "currentPeriodStartTimestamp": 27
+      },
+      "defaultPeriodCount": {
+        "null": 82
+      },
+      "event_top_keys": {
+        "awayScore": 82,
+        "awayTeam": 82,
+        "customId": 82,
+        "finalResultOnly": 82,
+        "homeScore": 82,
+        "homeTeam": 82,
+        "id": 82,
+        "roundInfo": 82,
+        "slug": 82,
+        "startTimestamp": 82,
+        "status": 82,
+        "tournament": 82,
+        "changes": 62,
+        "crowdsourcingDataDisplayEnabled": 62,
+        "feedLocked": 62,
+        "hasGlobalHighlights": 62,
+        "isEditor": 62,
+        "season": 62,
+        "time": 62,
+        "winnerCode": 29,
+        "hasEventPlayerStatistics": 25,
+        "cupMatchesInRound": 9,
+        "aggregatedWinnerCode": 1,
+        "previousLegEventId": 1
+      },
+      "n_events": 82
+    },
+    "ice-hockey": {
+      "finished": 6,
+      "homeScore_key_freq": {
+        "current": 6,
+        "display": 6,
+        "period1": 6,
+        "period2": 6,
+        "period3": 6,
+        "normaltime": 6,
+        "overtime": 1
+      },
+      "majority_keyset": [
+        "current",
+        "display",
+        "normaltime",
+        "period1",
+        "period2",
+        "period3"
+      ],
+      "keyset_variants": 2,
+      "tournaments_deviating": {
+        "QMJHL": {
+          "keys": [
+            "current",
+            "display",
+            "normaltime",
+            "overtime",
+            "period1",
+            "period2",
+            "period3"
+          ],
+          "count": 1,
+          "example_id": 16356203,
+          "file": "research/all_sports/events/ice-hockey.jsonl"
+        }
+      },
+      "time_keys": {
+        "periodLength": 4,
+        "overtimeLength": 4,
+        "totalPeriodCount": 4,
+        "played": 3,
+        "currentPeriodStartTimestamp": 3
+      },
+      "defaultPeriodCount": {
+        "null": 43,
+        "3": 1
+      },
+      "event_top_keys": {
+        "awayScore": 44,
+        "awayTeam": 44,
+        "customId": 44,
+        "finalResultOnly": 44,
+        "homeScore": 44,
+        "homeTeam": 44,
+        "id": 44,
+        "roundInfo": 44,
+        "slug": 44,
+        "startTimestamp": 44,
+        "status": 44,
+        "tournament": 44,
+        "changes": 28,
+        "crowdsourcingDataDisplayEnabled": 28,
+        "feedLocked": 28,
+        "hasGlobalHighlights": 28,
+        "isEditor": 28,
+        "periods": 28,
+        "season": 28,
+        "time": 28,
+        "venue": 9,
+        "winnerCode": 6,
+        "awayTeamSeasonHistoricalForm": 5,
+        "homeTeamSeasonHistoricalForm": 5,
+        "hasEventPlayerStatistics": 3,
+        "attendance": 1,
+        "currentPeriodStartTimestamp": 1,
+        "defaultOvertimeLength": 1,
+        "defaultPeriodCount": 1,
+        "defaultPeriodLength": 1,
+        "seasonStatisticsType": 1,
+        "showTotoPromo": 1
+      },
+      "n_events": 44
+    },
+    "minifootball": {
+      "finished": 1,
+      "homeScore_key_freq": {
+        "current": 1,
+        "display": 1,
+        "period1": 1,
+        "period2": 1,
+        "normaltime": 1
+      },
+      "majority_keyset": [
+        "current",
+        "display",
+        "normaltime",
+        "period1",
+        "period2"
+      ],
+      "keyset_variants": 1,
+      "tournaments_deviating": {},
+      "time_keys": {
+        "periodLength": 1,
+        "overtimeLength": 1,
+        "totalPeriodCount": 1,
+        "currentPeriodStartTimestamp": 1
+      },
+      "defaultPeriodCount": {
+        "null": 8
+      },
+      "event_top_keys": {
+        "awayScore": 8,
+        "awayTeam": 8,
+        "customId": 8,
+        "finalResultOnly": 8,
+        "homeScore": 8,
+        "homeTeam": 8,
+        "id": 8,
+        "roundInfo": 8,
+        "slug": 8,
+        "startTimestamp": 8,
+        "status": 8,
+        "tournament": 8,
+        "changes": 7,
+        "crowdsourcingDataDisplayEnabled": 7,
+        "feedLocked": 7,
+        "hasGlobalHighlights": 7,
+        "isEditor": 7,
+        "season": 7,
+        "time": 7,
+        "hasEventPlayerStatistics": 1,
+        "winnerCode": 1
+      },
+      "n_events": 8
+    },
+    "mma": {
+      "finished": 0,
+      "homeScore_key_freq": {},
+      "majority_keyset": [],
+      "keyset_variants": 0,
+      "tournaments_deviating": {},
+      "time_keys": {
+        "totalPeriodCount": 50,
+        "period1": 26,
+        "played": 20,
+        "period2": 17,
+        "period3": 16,
+        "period4": 3,
+        "period5": 3
+      },
+      "defaultPeriodCount": {
+        "null": 50
+      },
+      "event_top_keys": {
+        "awayScore": 50,
+        "awayTeam": 50,
+        "changes": 50,
+        "crowdsourcingDataDisplayEnabled": 50,
+        "customId": 50,
+        "feedLocked": 50,
+        "fightType": 50,
+        "finalResultOnly": 50,
+        "gender": 50,
+        "hasGlobalHighlights": 50,
+        "homeScore": 50,
+        "homeTeam": 50,
+        "id": 50,
+        "isEditor": 50,
+        "order": 50,
+        "season": 50,
+        "slug": 50,
+        "startTimestamp": 50,
+        "status": 50,
+        "time": 50,
+        "tournament": 50,
+        "venue": 50,
+        "weightClass": 50,
+        "finalRound": 26,
+        "winType": 26,
+        "winnerCode": 26,
+        "fightDiscipline": 2
+      },
+      "n_events": 50
+    },
+    "padel": {
+      "finished": 14,
+      "homeScore_key_freq": {
+        "current": 14,
+        "display": 14,
+        "period1": 14,
+        "period2": 14,
+        "period3": 2,
+        "period1TieBreak": 1,
+        "period3TieBreak": 1
+      },
+      "majority_keyset": [
+        "current",
+        "display",
+        "period1",
+        "period2"
+      ],
+      "keyset_variants": 3,
+      "tournaments_deviating": {
+        "FIP Bronze Almeirim Men": {
+          "keys": [
+            "current",
+            "display",
+            "period1",
+            "period1TieBreak",
+            "period2",
+            "period3",
+            "period3TieBreak"
+          ],
+          "count": 1,
+          "example_id": 17213167,
+          "file": "research/all_sports/events/padel.jsonl"
+        }
+      },
+      "time_keys": {
+        "played": 3
+      },
+      "defaultPeriodCount": {
+        "null": 47,
+        "3": 1
+      },
+      "event_top_keys": {
+        "awayScore": 48,
+        "awayTeam": 48,
+        "changes": 48,
+        "crowdsourcingDataDisplayEnabled": 48,
+        "customId": 48,
+        "feedLocked": 48,
+        "finalResultOnly": 48,
+        "hasGlobalHighlights": 48,
+        "homeScore": 48,
+        "homeTeam": 48,
+        "id": 48,
+        "isEditor": 48,
+        "periods": 48,
+        "roundInfo": 48,
+        "season": 48,
+        "slug": 48,
+        "startTimestamp": 48,
+        "status": 48,
+        "time": 48,
+        "tournament": 48,
+        "venue": 48,
+        "winnerCode": 16,
+        "defaultPeriodCount": 1,
+        "showTotoPromo": 1
+      },
+      "n_events": 48
+    },
+    "rugby": {
+      "finished": 21,
+      "homeScore_key_freq": {
+        "current": 21,
+        "display": 21,
+        "period1": 21,
+        "period2": 21,
+        "normaltime": 21
+      },
+      "majority_keyset": [
+        "current",
+        "display",
+        "normaltime",
+        "period1",
+        "period2"
+      ],
+      "keyset_variants": 1,
+      "tournaments_deviating": {},
+      "time_keys": {
+        "played": 1,
+        "periodLength": 1,
+        "overtimeLength": 1,
+        "totalPeriodCount": 1,
+        "currentPeriodStartTimestamp": 1
+      },
+      "defaultPeriodCount": {
+        "null": 47
+      },
+      "event_top_keys": {
+        "awayScore": 47,
+        "awayTeam": 47,
+        "customId": 47,
+        "finalResultOnly": 47,
+        "homeScore": 47,
+        "homeTeam": 47,
+        "id": 47,
+        "roundInfo": 47,
+        "slug": 47,
+        "startTimestamp": 47,
+        "status": 47,
+        "tournament": 47,
+        "changes": 32,
+        "crowdsourcingDataDisplayEnabled": 32,
+        "feedLocked": 32,
+        "hasGlobalHighlights": 32,
+        "isEditor": 32,
+        "season": 32,
+        "time": 32,
+        "winnerCode": 21,
+        "hasEventPlayerStatistics": 1
+      },
+      "n_events": 47
+    },
+    "snooker": {
+      "finished": 4,
+      "homeScore_key_freq": {
+        "current": 4,
+        "display": 4,
+        "period1": 4,
+        "normaltime": 4
+      },
+      "majority_keyset": [
+        "current",
+        "display",
+        "normaltime",
+        "period1"
+      ],
+      "keyset_variants": 1,
+      "tournaments_deviating": {},
+      "time_keys": {
+        "currentPeriodStartTimestamp": 8
+      },
+      "defaultPeriodCount": {
+        "null": 9
+      },
+      "event_top_keys": {
+        "awayScore": 9,
+        "awayTeam": 9,
+        "changes": 9,
+        "crowdsourcingDataDisplayEnabled": 9,
+        "customId": 9,
+        "feedLocked": 9,
+        "finalResultOnly": 9,
+        "hasGlobalHighlights": 9,
+        "homeScore": 9,
+        "homeTeam": 9,
+        "id": 9,
+        "isEditor": 9,
+        "roundInfo": 9,
+        "season": 9,
+        "slug": 9,
+        "startTimestamp": 9,
+        "status": 9,
+        "time": 9,
+        "tournament": 9,
+        "winnerCode": 4,
+        "bet365ExcludedCountryCodes": 1,
+        "currentPeriodStartTimestamp": 1,
+        "hasBet365LiveStream": 1,
+        "showTotoPromo": 1
+      },
+      "n_events": 9
+    },
+    "table-tennis": {
+      "finished": 68,
+      "homeScore_key_freq": {
+        "current": 68,
+        "display": 68,
+        "period1": 68,
+        "period2": 68,
+        "period3": 68,
+        "period4": 41,
+        "normaltime": 38,
+        "period5": 16
+      },
+      "majority_keyset": [
+        "current",
+        "display",
+        "normaltime",
+        "period1",
+        "period2",
+        "period3",
+        "period4"
+      ],
+      "keyset_variants": 6,
+      "tournaments_deviating": {
+        "Liga Pro": {
+          "keys": [
+            "current",
+            "display",
+            "period1",
+            "period2",
+            "period3"
+          ],
+          "count": 28,
+          "example_id": 17214781,
+          "file": "research/all_sports/events/table-tennis.jsonl"
+        },
+        "China Smash, WS": {
+          "keys": [
+            "current",
+            "display",
+            "normaltime",
+            "period1",
+            "period2",
+            "period3"
+          ],
+          "count": 19,
+          "example_id": 17220155,
+          "file": "research/all_sports/events/table-tennis.jsonl"
+        },
+        "TT Cup": {
+          "keys": [
+            "current",
+            "display",
+            "period1",
+            "period2",
+            "period3"
+          ],
+          "count": 2,
+          "example_id": 17225601,
+          "file": "research/all_sports/events/table-tennis.jsonl"
+        }
+      },
+      "time_keys": {
+        "currentPeriodStartTimestamp": 41
+      },
+      "defaultPeriodCount": {
+        "null": 149
+      },
+      "event_top_keys": {
+        "awayScore": 149,
+        "awayTeam": 149,
+        "customId": 149,
+        "finalResultOnly": 149,
+        "homeScore": 149,
+        "homeTeam": 149,
+        "id": 149,
+        "slug": 149,
+        "startTimestamp": 149,
+        "status": 149,
+        "tournament": 149,
+        "changes": 127,
+        "crowdsourcingDataDisplayEnabled": 127,
+        "feedLocked": 127,
+        "hasGlobalHighlights": 127,
+        "isEditor": 127,
+        "periods": 127,
+        "season": 127,
+        "time": 127,
+        "roundInfo": 81,
+        "venue": 81,
+        "winnerCode": 69,
+        "lastPeriod": 2
+      },
+      "n_events": 149
+    },
+    "tennis": {
+      "finished": 98,
+      "homeScore_key_freq": {
+        "current": 98,
+        "display": 98,
+        "period1": 98,
+        "period2": 98,
+        "point": 95,
+        "normaltime": 94,
+        "period3": 33,
+        "period1TieBreak": 20,
+        "period2TieBreak": 18,
+        "period3TieBreak": 5,
+        "period4": 2,
+        "period5": 1,
+        "period5TieBreak": 1
+      },
+      "majority_keyset": [
+        "current",
+        "display",
+        "normaltime",
+        "period1",
+        "period2",
+        "point"
+      ],
+      "keyset_variants": 16,
+      "tournaments_deviating": {
+        "Doha": {
+          "keys": [
+            "current",
+            "display",
+            "normaltime",
+            "period1",
+            "period1TieBreak",
+            "period2",
+            "period3",
+            "point"
+          ],
+          "count": 4,
+          "example_id": 15522197,
+          "file": "research/all_sports/events/tennis.jsonl"
+        },
+        "Indian Wells": {
+          "keys": [
+            "current",
+            "display",
+            "normaltime",
+            "period1",
+            "period2",
+            "period2TieBreak",
+            "point"
+          ],
+          "count": 5,
+          "example_id": 15624960,
+          "file": "research/all_sports/events/tennis.jsonl"
+        },
+        "Miami": {
+          "keys": [
+            "current",
+            "display",
+            "normaltime",
+            "period1",
+            "period2",
+            "period3",
+            "point"
+          ],
+          "count": 2,
+          "example_id": 15708834,
+          "file": "research/all_sports/events/tennis.jsonl"
+        },
+        "US Open, Mixed Doubles": {
+          "keys": [
+            "current",
+            "display",
+            "normaltime",
+            "period1",
+            "period1TieBreak",
+            "period2",
+            "point"
+          ],
+          "count": 2,
+          "example_id": 16895067,
+          "file": "research/all_sports/events/tennis.jsonl"
+        },
+        "US Open, Men": {
+          "keys": [
+            "current",
+            "display",
+            "normaltime",
+            "period1",
+            "period2",
+            "period3",
+            "point"
+          ],
+          "count": 5,
+          "example_id": 16901513,
+          "file": "research/all_sports/events/tennis.jsonl"
+        },
+        "Laver Cup": {
+          "keys": [
+            "current",
+            "display",
+            "normaltime",
+            "period1",
+            "period2",
+            "period3",
+            "point"
+          ],
+          "count": 1,
+          "example_id": 17190097,
+          "file": "research/all_sports/events/tennis.jsonl"
+        },
+        "Tokyo, Doubles": {
+          "keys": [
+            "current",
+            "display",
+            "normaltime",
+            "period1",
+            "period2",
+            "period3",
+            "period3TieBreak",
+            "point"
+          ],
+          "count": 4,
+          "example_id": 17204956,
+          "file": "research/all_sports/events/tennis.jsonl"
+        },
+        "Beijing, Doubles": {
+          "keys": [
+            "current",
+            "display",
+            "normaltime",
+            "period1",
+            "period1TieBreak",
+            "period2",
+            "period2TieBreak",
+            "point"
+          ],
+          "count": 2,
+          "example_id": 17207131,
+          "file": "research/all_sports/events/tennis.jsonl"
+        },
+        "ITF W35 Wagga Wagga Women Doubles": {
+          "keys": [
+            "current",
+            "display",
+            "period1",
+            "period2"
+          ],
+          "count": 1,
+          "example_id": 17220039,
+          "file": "research/all_sports/events/tennis.jsonl"
+        },
+        "ITF M25 Darwin Men": {
+          "keys": [
+            "current",
+            "display",
+            "period1",
+            "period2",
+            "period2TieBreak",
+            "period3",
+            "point"
+          ],
+          "count": 1,
+          "example_id": 17222010,
+          "file": "research/all_sports/events/tennis.jsonl"
+        }
+      },
+      "time_keys": {
+        "currentPeriodStartTimestamp": 105,
+        "period1": 103,
+        "period2": 97,
+        "period3": 32,
+        "period4": 2,
+        "period5": 1
+      },
+      "defaultPeriodCount": {
+        "null": 219
+      },
+      "event_top_keys": {
+        "awayScore": 219,
+        "awayTeam": 219,
+        "customId": 219,
+        "finalResultOnly": 219,
+        "homeScore": 219,
+        "homeTeam": 219,
+        "id": 219,
+        "slug": 219,
+        "startTimestamp": 219,
+        "status": 219,
+        "tournament": 219,
+        "roundInfo": 216,
+        "changes": 189,
+        "crowdsourcingDataDisplayEnabled": 189,
+        "eventFilters": 189,
+        "feedLocked": 189,
+        "groundType": 189,
+        "hasGlobalHighlights": 189,
+        "isEditor": 189,
+        "periods": 189,
+        "season": 189,
+        "time": 189,
+        "firstToServe": 125,
+        "venue": 108,
+        "winnerCode": 99,
+        "homeTeamSeed": 93,
+        "awayTeamSeed": 76,
+        "correctAiInsight": 40,
+        "lastPeriod": 39
+      },
+      "n_events": 219
+    },
+    "volleyball": {
+      "finished": 19,
+      "homeScore_key_freq": {
+        "current": 19,
+        "display": 19,
+        "period1": 19,
+        "period2": 19,
+        "period3": 19,
+        "period4": 9,
+        "period5": 3,
+        "normaltime": 2
+      },
+      "majority_keyset": [
+        "current",
+        "display",
+        "period1",
+        "period2",
+        "period3"
+      ],
+      "keyset_variants": 5,
+      "tournaments_deviating": {
+        "Paulista, Feminino": {
+          "keys": [
+            "current",
+            "display",
+            "period1",
+            "period2",
+            "period3",
+            "period4"
+          ],
+          "count": 1,
+          "example_id": 16673841,
+          "file": "research/all_sports/events/volleyball.jsonl"
+        }
+      },
+      "time_keys": {},
+      "defaultPeriodCount": {
+        "5": 2,
+        "null": 79
+      },
+      "event_top_keys": {
+        "awayScore": 81,
+        "awayTeam": 81,
+        "changes": 81,
+        "crowdsourcingDataDisplayEnabled": 81,
+        "customId": 81,
+        "feedLocked": 81,
+        "finalResultOnly": 81,
+        "hasGlobalHighlights": 81,
+        "homeScore": 81,
+        "homeTeam": 81,
+        "id": 81,
+        "isEditor": 81,
+        "periods": 81,
+        "season": 81,
+        "slug": 81,
+        "startTimestamp": 81,
+        "status": 81,
+        "time": 81,
+        "tournament": 81,
+        "roundInfo": 80,
+        "winnerCode": 19,
+        "cupMatchesInRound": 17,
+        "venue": 11,
+        "defaultPeriodCount": 2,
+        "showTotoPromo": 2
+      },
+      "n_events": 81
+    },
+    "waterpolo": {
+      "finished": 0,
+      "homeScore_key_freq": {},
+      "majority_keyset": [],
+      "keyset_variants": 0,
+      "tournaments_deviating": {},
+      "time_keys": {},
+      "defaultPeriodCount": {
+        "null": 1
+      },
+      "event_top_keys": {
+        "awayScore": 1,
+        "awayTeam": 1,
+        "customId": 1,
+        "finalResultOnly": 1,
+        "homeScore": 1,
+        "homeTeam": 1,
+        "id": 1,
+        "roundInfo": 1,
+        "slug": 1,
+        "startTimestamp": 1,
+        "status": 1,
+        "tournament": 1
+      },
+      "n_events": 1
+    }
+  },
+  "push": {
+    "sub_subjects": {
+      "event.{id}": 6981,
+      "odds.{id}": 47,
+      "sport.aussie-rules": 6,
+      "sport.bandy": 6,
+      "sport.beach-volley": 5,
+      "sport.table-tennis": 4,
+      "sport.badminton": 4,
+      "sport.futsal": 4,
+      "sport.volleyball": 3,
+      "sport.esports": 3,
+      "sport.waterpolo": 3,
+      "sport.floorball": 3,
+      "sport.tennis": 3,
+      "sport.football": 2,
+      "sport.american-football": 2,
+      "sport.handball": 2,
+      "sport.snooker": 2,
+      "sport.basketball": 1,
+      "sport.cricket": 1,
+      "sport.baseball": 1,
+      "sport.ice-hockey": 1,
+      "sport.darts": 1,
+      "sport.rugby": 1,
+      "sport.minifootball": 1,
+      "sport.padel": 1
+    },
+    "msg_subjects_logged": {
+      "sport.table-tennis": 48,
+      "sport.football": 31,
+      "sport.tennis": 27,
+      "event.{id}": 9,
+      "odds.{id}": 6,
+      "sport.badminton": 5,
+      "sport.basketball": 3,
+      "sport.darts": 3,
+      "sport.futsal": 2,
+      "sport.handball": 2,
+      "sport.ice-hockey": 1
+    },
+    "status_lag_s": {
+      "football": {
+        "n": 26,
+        "median": 0.8,
+        "max": 1.3,
+        "min": 0.2
+      },
+      "table-tennis": {
+        "n": 42,
+        "median": 0.6,
+        "max": 1.8,
+        "min": 0.1
+      },
+      "badminton": {
+        "n": 2,
+        "median": 0.5,
+        "max": 0.5,
+        "min": 0.2
+      },
+      "futsal": {
+        "n": 2,
+        "median": 1.2,
+        "max": 1.2,
+        "min": 0.8
+      },
+      "event.{id}": {
+        "n": 1,
+        "median": 1.0,
+        "max": 1.0,
+        "min": 1.0
+      },
+      "tennis": {
+        "n": 21,
+        "median": 0.6,
+        "max": 1.2,
+        "min": 0.1
+      }
+    },
+    "finished_lag_s": {
+      "football": {
+        "n": 11,
+        "median": 0.6,
+        "max": 1.3,
+        "min": 0.2
+      },
+      "table-tennis": {
+        "n": 15,
+        "median": 0.5,
+        "max": 1.8,
+        "min": 0.1
+      },
+      "futsal": {
+        "n": 2,
+        "median": 1.2,
+        "max": 1.2,
+        "min": 0.8
+      },
+      "tennis": {
+        "n": 8,
+        "median": 0.6,
+        "max": 1.2,
+        "min": 0.3
+      }
+    },
+    "finished_frames": 36
+  }
+}

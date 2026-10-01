@@ -1,0 +1,26 @@
+{
+  "id": 17180891,
+  "sport": "aussie-rules",
+  "unique_tournament": {
+    "id": 10159,
+    "name": "AFL, Women"
+  },
+  "tournament": "AFL, Women",
+  "category": "Australia",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 0
+  },
+  "startTimestamp": 1790932500,
+  "defaultPeriodCount": 4,
+  "defaultPeriodLength": 15,
+  "source_file": "research/all_sports/events/aussie-rules.jsonl"
+}

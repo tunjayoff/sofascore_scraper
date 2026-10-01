@@ -1,0 +1,44 @@
+{
+  "id": 16237238,
+  "sport": "rugby",
+  "unique_tournament": {
+    "id": 797,
+    "name": "National Provincial Championship"
+  },
+  "tournament": "National Provincial Championship",
+  "category": "Rugby Union",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 45,
+    "display": 45,
+    "period1": 21,
+    "period2": 24,
+    "normaltime": 45
+  },
+  "awayScore": {
+    "current": 42,
+    "display": 42,
+    "period1": 28,
+    "period2": 14,
+    "normaltime": 42
+  },
+  "time": {
+    "played": 4898,
+    "periodLength": 2400,
+    "overtimeLength": 600,
+    "totalPeriodCount": 2,
+    "currentPeriodStartTimestamp": 1790840831
+  },
+  "winnerCode": 1,
+  "changes": {
+    "changeTimestamp": 1790840835
+  },
+  "startTimestamp": 1790835000,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/rugby.jsonl"
+}

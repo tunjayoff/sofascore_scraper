@@ -1,0 +1,7 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+event,inprogress,1001,First game,2,live,17060161,research/all_sports/status_examples/esports/event_inprogress-1001-first-game__17060161.json
+event,finished,100,Ended,1,completed,588243,research/all_sports/status_examples/esports/event_finished-100-ended__588243.json
+event,inprogress,20,Started,1,live,588244,research/all_sports/status_examples/esports/event_inprogress-20-started__588244.json
+event,notstarted,0,Not started,1,not_started,17198076,research/all_sports/status_examples/esports/event_notstarted-0-not-started__17198076.json
+event,inprogress,30,Pause,1,live,17200404,research/all_sports/status_examples/esports/event_inprogress-30-pause__17200404.json
+event,inprogress,1002,Second game,1,live,17223320,research/all_sports/status_examples/esports/event_inprogress-1002-second-game__17223320.json

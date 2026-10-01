@@ -1,0 +1,4 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+event,finished,100,Ended,4,completed,17218595,research/all_sports/status_examples/snooker/event_finished-100-ended__17218595.json
+event,inprogress,20,Started,4,live,17220573,research/all_sports/status_examples/snooker/event_inprogress-20-started__17220573.json
+event,notstarted,0,Not started,1,not_started,17228588,research/all_sports/status_examples/snooker/event_notstarted-0-not-started__17228588.json

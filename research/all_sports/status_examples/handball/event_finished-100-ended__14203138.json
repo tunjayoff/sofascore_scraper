@@ -1,0 +1,44 @@
+{
+  "id": 14203138,
+  "sport": "handball",
+  "unique_tournament": {
+    "id": 149,
+    "name": "Bundesliga"
+  },
+  "tournament": "Bundesliga",
+  "category": "Germany",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 26,
+    "display": 26,
+    "period1": 14,
+    "period2": 12,
+    "normaltime": 26
+  },
+  "awayScore": {
+    "current": 30,
+    "display": 30,
+    "period1": 14,
+    "period2": 16,
+    "normaltime": 30
+  },
+  "time": {
+    "played": 3600,
+    "periodLength": 1800,
+    "overtimeLength": 300,
+    "totalPeriodCount": 2,
+    "currentPeriodStartTimestamp": 1777221147
+  },
+  "winnerCode": 2,
+  "changes": {
+    "changeTimestamp": 1777221151
+  },
+  "startTimestamp": 1777215600,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/handball.jsonl"
+}

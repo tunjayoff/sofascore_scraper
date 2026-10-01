@@ -1,0 +1,32 @@
+{
+  "id": 16526543,
+  "sport": "cricket",
+  "unique_tournament": {
+    "id": 18704,
+    "name": "Women's National Cricket League"
+  },
+  "tournament": "Women's National Cricket League",
+  "category": "Australia",
+  "status": {
+    "code": 90,
+    "description": "Abandoned",
+    "type": "canceled"
+  },
+  "homeScore": {
+    "current": 0,
+    "display": 0
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0
+  },
+  "time": {},
+  "winnerCode": null,
+  "changes": {
+    "changeTimestamp": 1790843959
+  },
+  "startTimestamp": 1790827200,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/cricket.jsonl"
+}

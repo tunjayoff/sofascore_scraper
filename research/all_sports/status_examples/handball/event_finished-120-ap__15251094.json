@@ -1,0 +1,48 @@
+{
+  "id": 15251094,
+  "sport": "handball",
+  "unique_tournament": {
+    "id": 57,
+    "name": "DHB Pokal"
+  },
+  "tournament": "DHB Pokal",
+  "category": "Germany",
+  "status": {
+    "code": 120,
+    "description": "AP",
+    "type": "finished"
+  },
+  "homeScore": {
+    "current": 31,
+    "display": 31,
+    "period1": 11,
+    "period2": 11,
+    "normaltime": 22,
+    "overtime": 5,
+    "penalties": 4
+  },
+  "awayScore": {
+    "current": 30,
+    "display": 30,
+    "period1": 11,
+    "period2": 11,
+    "normaltime": 22,
+    "overtime": 5,
+    "penalties": 3
+  },
+  "time": {
+    "played": 4201,
+    "periodLength": 1800,
+    "overtimeLength": 300,
+    "totalPeriodCount": 2,
+    "currentPeriodStartTimestamp": 1776539060
+  },
+  "winnerCode": 1,
+  "changes": {
+    "changeTimestamp": 1776539434
+  },
+  "startTimestamp": 1776530700,
+  "defaultPeriodCount": null,
+  "defaultPeriodLength": null,
+  "source_file": "research/all_sports/events/handball.jsonl"
+}

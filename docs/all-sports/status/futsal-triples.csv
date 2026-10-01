@@ -1,0 +1,4 @@
+model,type,code,description,count,classify_status,example_id,sample_file
+event,finished,100,Ended,14,completed,16129341,research/all_sports/status_examples/futsal/event_finished-100-ended__16129341.json
+event,notstarted,0,Not started,10,not_started,16402929,research/all_sports/status_examples/futsal/event_notstarted-0-not-started__16402929.json
+event,finished,110,AET,2,completed,17121445,research/all_sports/status_examples/futsal/event_finished-110-aet__17121445.json
