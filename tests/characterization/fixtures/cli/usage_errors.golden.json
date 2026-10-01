@@ -1,0 +1,236 @@
+{
+ "doctor_with_another_flag": {
+  "argv": [
+   "--headless",
+   "--doctor",
+   "--json"
+  ],
+  "exit_code": 2,
+  "files": {},
+  "request_layer_loaded": false,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "python main.py --doctor: error: unrecognized arguments: --headless"
+  ],
+  "stdout": []
+ },
+ "headless_without_an_action": {
+  "argv": [
+   "--headless"
+  ],
+  "exit_code": 2,
+  "files": {
+   "added": {
+    "data/datasets/": "<empty dir>",
+    "data/match_details/processed/": "<empty dir>",
+    "data/matches/": "<empty dir>",
+    "data/seasons/": "<empty dir>",
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "--headless needs --update-all and/or --csv-export. Examples:",
+   "  python main.py --headless --update-all",
+   "  python main.py --headless --update-all --fetch-mode details --league-id 52",
+   "  python main.py --headless --csv-export --data-dir ./data"
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/seasons",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/matches",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/match_details",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/datasets",
+   "LOG INFO SeasonFetcher: Mevcut sezon verisi bulunamadı",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Headless modda çalışılıyor",
+   "LOG ERROR Main: Headless için en az biri gerekli: --update-all ve/veya --csv-export"
+  ]
+ },
+ "headless_without_an_action_tr": {
+  "argv": [
+   "--headless"
+  ],
+  "exit_code": 2,
+  "files": {
+   "added": {
+    "data/datasets/": "<empty dir>",
+    "data/match_details/processed/": "<empty dir>",
+    "data/matches/": "<empty dir>",
+    "data/seasons/": "<empty dir>",
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "--headless için --update-all ve/veya --csv-export gerekir. Örnekler:",
+   "  python main.py --headless --update-all",
+   "  python main.py --headless --update-all --fetch-mode details --league-id 52",
+   "  python main.py --headless --csv-export --data-dir ./data"
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/seasons",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/matches",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/match_details",
+   "LOG INFO SofaScoreUI: Dizin oluşturuldu: <SANDBOX>/data/datasets",
+   "LOG INFO SeasonFetcher: Mevcut sezon verisi bulunamadı",
+   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SofaScoreUI: SofaScore Scraper kullanıcı arayüzü başlatıldı",
+   "LOG INFO Main: Headless modda çalışılıyor",
+   "LOG ERROR Main: Headless için en az biri gerekli: --update-all ve/veya --csv-export"
+  ]
+ },
+ "invalid_choice": {
+  "argv": [
+   "--headless",
+   "--fetch-mode",
+   "everything"
+  ],
+  "exit_code": 2,
+  "files": {
+   "added": {
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "main.py: error: argument --fetch-mode: invalid choice: 'everything'"
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)"
+  ]
+ },
+ "invalid_recheck_mode": {
+  "argv": [
+   "--recheck-unavailable",
+   "some"
+  ],
+  "exit_code": 2,
+  "files": {
+   "added": {
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "main.py: error: argument --recheck-unavailable: invalid choice: 'some'"
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)"
+  ]
+ },
+ "unknown_flag": {
+  "argv": [
+   "--headless",
+   "--update-all",
+   "--no-such-flag"
+  ],
+  "exit_code": 2,
+  "files": {
+   "added": {
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "main.py: error: unrecognized arguments: --no-such-flag"
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)"
+  ]
+ },
+ "watch_without_scope": {
+  "argv": [
+   "--watch",
+   "--sport",
+   "football"
+  ],
+  "exit_code": 2,
+  "files": {
+   "added": {
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "--watch needs --sport and --league-ids or --event-ids. Example: python main.py --watch --sport football --league-ids 17,8"
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)"
+  ]
+ },
+ "watch_without_sport": {
+  "argv": [
+   "--watch",
+   "--event-ids",
+   "9300001"
+  ],
+  "exit_code": 2,
+  "files": {
+   "added": {
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "--watch needs --sport and --league-ids or --event-ids. Example: python main.py --watch --sport football --league-ids 17,8"
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)"
+  ]
+ },
+ "web_public_host_without_allow_list": {
+  "argv": [
+   "--web",
+   "--host",
+   "0.0.0.0",
+   "--port",
+   "0"
+  ],
+  "exit_code": 2,
+  "files": {
+   "added": {
+    "logs/sofascore_scraper.log": "<binary>"
+   }
+  },
+  "request_layer_loaded": true,
+  "requests": [],
+  "sleeps": {},
+  "stderr": [
+   "The web server was asked to listen on every network interface (0.0.0.0), but it was not told which host names it may answer to.",
+   "List the names or IP addresses you open the app with in SOFASCORE_ALLOWED_HOSTS (in .env or the environment), for example:",
+   "  SOFASCORE_ALLOWED_HOSTS=localhost,127.0.0.1,my-server.lan",
+   "Or pass --allow-any-host to answer to any name. That is insecure: it turns off the protection against DNS rebinding."
+  ],
+  "stdout": [
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)"
+  ]
+ }
+}

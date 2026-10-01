@@ -1,0 +1,34 @@
+{
+ "exit_code": 0,
+ "files": {
+  "added": {
+   "logs/sofascore_scraper.log": "<binary>"
+  }
+ },
+ "options": [
+  "--allow-any-host",
+  "--config",
+  "--csv-export",
+  "--data-dir",
+  "--dev",
+  "--diagnostics",
+  "--doctor",
+  "--event-ids",
+  "--fetch-mode",
+  "--headless",
+  "--host",
+  "--ignore-rate-limit",
+  "--league-id",
+  "--league-ids",
+  "--port",
+  "--recheck-unavailable",
+  "--refresh-legacy",
+  "--refresh-only",
+  "--sport",
+  "--update-all",
+  "--version",
+  "--watch",
+  "--watch-hours",
+  "--web"
+ ]
+}
