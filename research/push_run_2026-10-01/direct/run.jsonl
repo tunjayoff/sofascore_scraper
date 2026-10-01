@@ -1,0 +1,3 @@
+{"ts": 1790878560.685532, "event": "start", "utc": "2026-10-01T18:16:00+00:00", "minutes": 38.0}
+{"ts": 1790878560.8971145, "event": "open-page"}
+{"ts": 1790880983.9651453, "event": "end", "utc": "2026-10-01T18:56:23+00:00", "direct_frames": 294, "page_frames": 227, "api_requests": 37}
