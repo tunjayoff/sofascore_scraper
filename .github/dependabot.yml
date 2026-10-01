@@ -1,0 +1,63 @@
+# Dependabot: weekly update pull requests, grouped so that a normal week is at most one pull
+# request per ecosystem. Every pull request runs CI with the proposed versions.
+version: 2
+
+updates:
+  # constraints.txt (exact pins) and requirements*.txt (allowed ranges)
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Europe/Istanbul
+    open-pull-requests-limit: 3
+    # Move the pins; touch a range in requirements.txt only when the new version is outside it
+    versioning-strategy: increase-if-necessary
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # The Turnstile solve was verified live with exactly these versions. CI only exercises
+      # them against a local fake site, so before merging this group run:
+      #   python -m pytest -m "live and browser" tests/test_live_bridge.py
+      browser-stack:
+        patterns:
+          - "scrapling"
+          - "patchright"
+          - "playwright"
+      python-minor-patch:
+        update-types:
+          - minor
+          - patch
+      # Major versions arrive as individual pull requests
+
+  - package-ecosystem: npm
+    directory: "/frontend"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Europe/Istanbul
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      frontend-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Europe/Istanbul
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      actions:
+        patterns:
+          - "*"
