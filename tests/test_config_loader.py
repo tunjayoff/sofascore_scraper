@@ -1007,6 +1007,43 @@ def test_settings_page_write_does_not_override_the_config_file(active):
         os.environ["MAX_CONCURRENT"] = "5"
 
 
+def test_reload_keeps_the_process_environment_above_dotenv(active, monkeypatch):
+    """
+    #43'te bulunan hata: yeniden yükleme `.env`'i ortamın üzerine yazıyordu, kabuktan ya da `docker -e` ile
+    verilen değer `.env`'deki (boş olabilen) satıra yeniliyordu. Süreç ortamı `.env`'in önündedir; `.env`'den
+    gelen değerler ise eskisi gibi yenilenir.
+    """
+    env_file = Path(conftest.ENV_FILE)
+    original = env_file.read_text(encoding="utf-8")
+    cm = ConfigManager()
+    monkeypatch.setenv("REQUEST_TIMEOUT", "30")                      # süreç ortamından
+    monkeypatch.setenv("SOFASCORE_ALLOWED_HOSTS", "my-server.lan")
+    monkeypatch.setenv("MAX_RETRIES", "3")                           # aşağıda .env'den gelecek; test sonunda geri alınır
+    monkeypatch.delenv("MAX_RETRIES")
+    assert loader.active().source("client.timeout_seconds").layer == "env"
+    try:
+        env_file.write_text(
+            original + "REQUEST_TIMEOUT=20\nSOFASCORE_ALLOWED_HOSTS=\nMAX_RETRIES=7\nMAX_CONCURRENT=6\n", encoding="utf-8",
+        )
+        assert cm.reload_config() is True
+        assert os.environ["REQUEST_TIMEOUT"] == "30" and cm.get_request_timeout() == 30
+        assert os.environ["SOFASCORE_ALLOWED_HOSTS"] == "my-server.lan"       # boş satır değeri silmedi
+        assert security.allowed_hosts() == ["my-server.lan"]
+        # `.env`'den gelmiş (MAX_CONCURRENT) ve oraya yeni eklenmiş (MAX_RETRIES) değerler eskisi gibi yenilenir
+        assert (cm.get_max_concurrent(), cm.get_max_retries()) == (6, 7)
+        loaded = loader.active()
+        assert loaded.source("client.timeout_seconds") == loader.Source("env", "REQUEST_TIMEOUT", legacy=True)
+        assert loaded.source("client.retries") == loader.Source("dotenv", "MAX_RETRIES", legacy=True)
+        # Ayarlar sayfasının yazdığı değer eskisi gibi hemen geçerlidir ve yeniden yüklemede de kalır
+        assert cm.update_env_variable("REQUEST_TIMEOUT", "45") is True
+        assert cm.reload_config() is True
+        assert cm.get_request_timeout() == 45
+        assert loader.active().source("client.timeout_seconds").layer == "dotenv"
+    finally:
+        env_file.write_text(original, encoding="utf-8")
+        os.environ["MAX_CONCURRENT"] = "5"
+
+
 def test_config_file_is_reread_only_on_reload(active, monkeypatch):
     path = Path(conftest.CONFIG_DIR) / "sofascore.toml"
     active("[client]\nretries = 4\n")

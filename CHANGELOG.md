@@ -261,6 +261,11 @@ section is what the first tagged release will contain.
 
 ### Fixed
 
+- Saving settings no longer replaces values that come from the process environment. The save
+  re-read `.env` over the environment, so a value given in the shell or with `docker -e` (for
+  example `DATA_DIR` or `SOFASCORE_ALLOWED_HOSTS`) was replaced by the line in `.env`, even an
+  empty one, until the next start. Values that came from `.env` are still refreshed, and a
+  value saved on the Settings page still takes effect at once.
 - Results that arrived after a round was first saved never reached the summary or got
   details; seasons that already had a summary were never updated.
 - Choosing a season explicitly no longer silently falls back to the previous season.

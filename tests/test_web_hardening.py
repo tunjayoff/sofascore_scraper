@@ -645,7 +645,8 @@ def test_token_is_read_at_startup_and_a_settings_save_cannot_switch_it_off(monke
 
     saved = c.post("/api/settings", json={"max_retries": 4}, headers=auth)
     assert saved.status_code == 200 and saved.json()["status"] == "success"
-    assert os.environ[security.TOKEN_ENV] == ""  # yeniden yükleme ortamdaki değeri sildi
+    # P09'dan önce yeniden yükleme ortamdaki değeri .env'deki boş satırla siliyordu; artık süreç ortamı .env'in önünde
+    assert os.environ[security.TOKEN_ENV] == TOKEN
     assert security.api_token() == TOKEN
     assert c.get("/api/leagues").status_code == 401
     assert c.get("/api/leagues", headers=auth).status_code == 200

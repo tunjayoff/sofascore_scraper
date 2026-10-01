@@ -455,11 +455,11 @@ class ConfigManager:
             # Ligleri yeniden yükle
             self._load_leagues()
 
-            # Çevre değişkenlerini yeniden yükle
-            dotenv.load_dotenv(env_file_path(), override=True)
             try:
-                # Yapılandırma dosyası ve overrides.json yalnızca burada yeniden okunur. Dosya bozuksa önceki
-                # ayarlar yürürlükte kalır ve hata aşağıda loglanır; .env'e bağlı adımlar yine de çalışır.
+                # .env, overrides.json ve yapılandırma dosyası yeniden okunur. .env'deki değerler ortama
+                # uygulanır, ama süreç ortamından (kabuk, docker -e, bayrak) gelen bir değerin üzerine
+                # yazılmaz: eskiden load_dotenv(override=True) onu .env'deki (boş olabilen) satırla eziyordu.
+                # Yapılandırma dosyası bozuksa önceki ayarlar yürürlükte kalır ve hata aşağıda loglanır.
                 settings_loader.reload()
             finally:
                 # .env değişmiş olabilir: maskelenecek değerler ve log seviyesi hemen güncellensin
