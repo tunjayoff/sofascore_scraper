@@ -345,7 +345,8 @@ Web uygulaması kök yollarda; JSON API öneki **`/api`**.
 - **Scraper**: `POST /api/fetch` (gövde: `full` | `details`, `selections: [{league_id, season_ids, match_ids}]`), `POST /api/scrape/cancel` (sonrasında yeni istek gönderilmez, yeniden deneme beklemeleri kesilir), durum, SSE akışı.
 - **Pano / istatistik / ayarlar**: Web panellerine JSON; ayarlar `.env` ile uyumlu.
 - **Veri**: yedek zip, kapsam seçerek temizleme, CSV export.
-- **Bypass Durumu**: `GET /api/bypass/status` ve canlı test `POST /api/bypass/test`.
+- **Bypass Durumu**: `GET /api/bypass/status` (`health` ile: `ok` / `degraded` / `blocked`, bkz. [SofaScore bizi engelliyor mu?](#sofascore-bizi-engelliyor-mu-köprü-sağlığı)) ve canlı test `POST /api/bypass/test`.
+- **Sağlık**: `GET /health` (`/api` öneki yok) `status`, `version`, `ui` alanlarının yanında `bridge` (aynı sağlık bloğu) ve `throttle` ([ortak istek bütçesi](#ortak-istek-bütçesi-tüm-süreçler)) döndürür.
 
 Sunucu çalışırken OpenAPI: `GET /docs`.
 
@@ -360,6 +361,24 @@ SofaScore düz HTTP istemcilerini reddeder: `curl_cffi` hangi TLS parmak izini g
 Tarayıcı masaüstünde de sunucuda da **her zaman headless** çalışır; her yerde aynı kod yolu kullanılır. Ekran, Xvfb veya Google Chrome gerekmez. Üç sporda ölçüldü: Premier League (50 maç), Wimbledon (239) ve EuroBasket (76) tam sezonları ekransız ortamda %100 kapsamayla indi. Hata ayıklarken tarayıcıyı görmek için `SOFASCORE_BROWSER_HEADED=1`.
 
 Tarayıcı profili (cookie'ler, çözülmüş challenge) `~/.cache/sofascore_scraper/chrome_profile` altındadır; `SOFASCORE_BROWSER_PROFILE` ile değiştirilebilir. Var olan profille yeniden başlatmada ilk istek yaklaşık 1–6 sn'de yanıtlanır.
+
+### SofaScore bizi engelliyor mu? (köprü sağlığı)
+
+Her şey tarayıcının challenge'ı çözmesine bağlı. Bu bozulduğunda işler yalnızca yavaşça başarısız oluyordu. Köprü artık isteklerinin sonucundan bir sağlık durumu tutuyor:
+
+| Durum | Anlamı |
+|-------|--------|
+| `ok` | Son istek yanıt aldı (ya da henüz istek yapılmadı). |
+| `degraded` | Art arda `BRIDGE_DEGRADED_AFTER` (varsayılan 3) istek başarısız oldu. |
+| `blocked` | Art arda `BRIDGE_BLOCKED_AFTER` (varsayılan 10) istek başarısız oldu **ve** seri en az `BRIDGE_BLOCKED_MIN_SECONDS` sürdü (varsayılan 200 sn; bir challenge yeniden denemesinden uzun: şanssız tek bir çözümde aynı anda düşen on paralel istek henüz engel sayılmaz). |
+
+- **Başarısızlık sayılanlar:** çözülemeyen challenge (ya da çözümden sonra da reddedilen istek), challenge sunulmayan 403, başlatılamayan tarayıcı. Çözülüp yinelenen 403 başarıdır. Ağ hatası, 5xx ve 429 seriyi ne uzatır ne sıfırlar. Yanıt alan tek istek durumu `ok` yapar.
+- **Nerede görünür:**
+  - `GET /health` → `bridge` ve `GET /api/bypass/status` → `health`: `state`, `consecutive_failures`, `last_success_at`, `failing_since`, `last_error` (`kind`: `challenge` / `forbidden` / `browser`), `thresholds`. `/health` içindeki `status` `ok` kalır: o, sunucunun ayakta olduğunu söyler.
+  - Web uygulaması: durum `ok` değilken her sayfanın üstünde bir afiş. Kapatınca o seri için gizlenir; durum kötüleşirse ya da yeni bir seri başlarsa yeniden görünür.
+  - Log: istek başına değil, durum değişimi başına bir uyarı.
+  - Terminal modları (etkileşimli, `--headless`, `--watch`, `--refresh-only`): durum değişimi başına stderr'de, uygulama dilinde tek satır.
+- Durum süreç başınadır: web uygulaması kendi köprüsünü, her CLI süreci kendininkini bildirir.
 
 ### Sunucu kurulumu (Linux / Docker)
 

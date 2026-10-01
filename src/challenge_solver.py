@@ -22,7 +22,7 @@ import threading
 import time
 from typing import Any, Dict, Optional
 
-from src import throttle
+from src import bridge_health, throttle
 from src.logger import get_logger
 
 logger = get_logger("ChallengeSolver")
@@ -151,6 +151,7 @@ class BrowserBridge:
             if self.page and not self.page.is_closed():
                 return
             if self._launch_failed_at and time.time() - self._launch_failed_at < _LAUNCH_RETRY_AFTER:
+                bridge_health.record_failure(bridge_health.KIND_BROWSER, "tarayıcı başlatılamadı (yeniden deneme bekleniyor)")
                 raise RuntimeError(
                     "BrowserBridge başlatılamadı (yakın zamanda denendi). "
                     "Tarayıcı kurulu mu? `python -m playwright install chromium`"
@@ -159,10 +160,12 @@ class BrowserBridge:
             await self.close()
             try:
                 await self._launch()
-            except BaseException:
+            except BaseException as e:
                 # Yarım kalan başlatma (hata veya iptal) tarayıcı sürecini ve profil kilidini bırakmasın
                 self._launch_failed_at = time.time()
                 await self.close()
+                if isinstance(e, Exception):  # iptal bir sağlık sinyali değil
+                    bridge_health.record_failure(bridge_health.KIND_BROWSER, f"{e.__class__.__name__}: {e}")
                 raise
             self._launch_failed_at = 0.0
 
@@ -346,12 +349,20 @@ class BrowserBridge:
             if new_token:
                 res = await self._api_fetch(url, cache_mode_for(url))
 
+        # Sağlık sinyali (src/bridge_health.py): isteğin SON hali sayılır — çözülüp yinelenen 403 başarıdır
         if res.get("ok"):
+            bridge_health.record_success()
             return res.get("data")
 
         if res.get("status") == 404:
+            bridge_health.record_success()  # API yanıt verdi; kaynak yok
             logger.debug(f"Kaynak bulunamadı (404): {url}")
             return {"__404__": True}
+
+        if res.get("status") == 403:
+            text = res.get("text") or ""
+            kind = bridge_health.KIND_CHALLENGE if "challenge" in text else bridge_health.KIND_FORBIDDEN
+            bridge_health.record_failure(kind, f"HTTP 403: {text[:100]}")
 
         logger.warning(f"Tarayıcı fetch başarısız (status {res.get('status')}): {(res.get('text') or '')[:100]}")
         return None

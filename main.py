@@ -227,6 +227,13 @@ def main() -> int:
                 return 1
             return 0
 
+        # Terminal modları (etkileşimli, headless, --watch, --refresh-only): köprü durumu değişince
+        # ("SofaScore bizi engelliyor") kullanıcıya tek satır. Web modunda aynı bilgi arayüzdeki
+        # afişte ve /health'te.
+        from src import bridge_health
+
+        bridge_health.add_listener(bridge_health.print_cli_line)
+
         if args.data_dir:
             # Açıkça verilen --data-dir bu çalıştırma için DATA_DIR'i ezer (tüm modüller aynısını görsün)
             os.environ["DATA_DIR"] = args.data_dir

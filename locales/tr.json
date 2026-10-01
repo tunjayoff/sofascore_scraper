@@ -348,5 +348,12 @@
     "headless_step_matches": "Maç Verileri Çekiliyor...",
     "headless_step_details": "Maç Detayları Çekiliyor...",
     "all_operations_completed": "Tüm işlemler tamamlandı.",
-    "headless_exporting_csv": "Headless Mod: CSV dışa aktarılıyor..."
+    "headless_exporting_csv": "Headless Mod: CSV dışa aktarılıyor...",
+    "bridge_health_degraded": "⚠ SofaScore'a erişim bozuluyor: art arda {count} istek başarısız ({reason}). İşlemler yavaşlayabilir ya da eksik kalabilir.",
+    "bridge_health_blocked": "✖ SofaScore'a erişilemiyor: art arda {count} istek başarısız ({reason}); son başarılı istek: {last_success}. Bir süre bekleyip yeniden deneyin.",
+    "bridge_health_ok": "✓ SofaScore'a erişim düzeldi.",
+    "bridge_health_never": "yok",
+    "bridge_reason_challenge": "SofaScore challenge'ı çözülemedi",
+    "bridge_reason_forbidden": "SofaScore istekleri 403 ile reddediyor",
+    "bridge_reason_browser": "tarayıcı başlatılamadı"
 }

@@ -356,7 +356,8 @@ All routes are prefixed with `/api` unless noted.
 - **Scraper**: `POST /api/fetch` (body: mode `full` or `details`, `selections: [{league_id, season_ids, match_ids}]`), `POST /api/scrape/cancel` (no new requests after it; retry waits are cut short), status, SSE stream.
 - **Dashboard / stats / settings**: JSON for the web UI; settings mirror `.env` keys.
 - **Data**: backup zip, clear scopes, CSV export.
-- **Bypass Status**: `GET /api/bypass/status` and live test `POST /api/bypass/test`.
+- **Bypass Status**: `GET /api/bypass/status` (with `health`: `ok` / `degraded` / `blocked`, see [Is SofaScore blocking us?](#is-sofascore-blocking-us-bridge-health)) and live test `POST /api/bypass/test`.
+- **Health**: `GET /health` (no `/api` prefix) answers `status`, `version`, `ui`, plus `bridge` (the same health block) and `throttle` (the shared [request budget](#request-budget-all-processes)).
 
 OpenAPI: `GET /docs` when the server is running.
 
@@ -371,6 +372,24 @@ SofaScore rejects plain HTTP clients: API requests get `403 {"reason": "challeng
 The browser always runs **headless**, on a desktop and on a server alike, so the same code path is used everywhere; no display, Xvfb or Google Chrome is needed. Measured on the three sports: full seasons of Premier League (50 matches), Wimbledon (239) and EuroBasket (76) downloaded at 100% coverage without a display. Set `SOFASCORE_BROWSER_HEADED=1` to watch the browser while debugging.
 
 The browser profile (cookies, solved challenge) lives in `~/.cache/sofascore_scraper/chrome_profile`; change it with `SOFASCORE_BROWSER_PROFILE`. A restart with an existing profile answers its first request in about 1–6 s.
+
+### Is SofaScore blocking us? (bridge health)
+
+Everything depends on the browser solving the challenge. When that stops working, jobs used to just fail slowly. The bridge now keeps a health state from the outcome of its requests:
+
+| State | Meaning |
+|-------|---------|
+| `ok` | The last request got an answer (or none was made yet). |
+| `degraded` | `BRIDGE_DEGRADED_AFTER` (default 3) requests in a row failed. |
+| `blocked` | `BRIDGE_BLOCKED_AFTER` (default 10) requests in a row failed **and** the streak has lasted `BRIDGE_BLOCKED_MIN_SECONDS` (default 200 s, longer than one challenge retry: ten parallel requests failing on one unlucky solve is not a block yet). |
+
+- **What counts as a failure:** a challenge that could not be solved (or a request still refused after solving), a 403 with no challenge offered, a browser that cannot start. A 403 that is solved and retried is a success. Network errors, 5xx and 429 neither extend nor reset the streak. One answered request returns the state to `ok`.
+- **Where you see it:**
+  - `GET /health` → `bridge` and `GET /api/bypass/status` → `health`: `state`, `consecutive_failures`, `last_success_at`, `failing_since`, `last_error` (`kind`: `challenge` / `forbidden` / `browser`), `thresholds`. `status` in `/health` stays `ok`: it says the server is up.
+  - Web app: a banner at the top of every page while the state is not `ok`. Dismissing hides it for that streak; it returns if the state gets worse or a new streak starts.
+  - Log: one warning per state change, not per request.
+  - Terminal modes (interactive, `--headless`, `--watch`, `--refresh-only`): one line on stderr per state change, in the app language.
+- The state is per process: the web app reports its own bridge, each CLI process its own.
 
 ### Server setup (Linux / Docker)
 

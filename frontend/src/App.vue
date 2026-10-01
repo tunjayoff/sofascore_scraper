@@ -4,17 +4,20 @@ import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useScrapeStore } from '@/stores/scrape'
 import { useLeaguesStore } from '@/stores/leagues'
+import { useBridgeStore } from '@/stores/bridge'
 import { toasts, dismissToast } from '@/lib/toast'
 import AppIcon, { type IconName } from '@/components/AppIcon.vue'
 import JobCard from '@/components/JobCard.vue'
 import AddLeagueDialog from '@/components/AddLeagueDialog.vue'
 import SportSwitch from '@/components/SportSwitch.vue'
 import BrandMark from '@/components/BrandMark.vue'
+import BridgeBanner from '@/components/BridgeBanner.vue'
 
 const { t } = useI18n()
 const route = useRoute()
 const scrape = useScrapeStore()
 const leagues = useLeaguesStore()
+const bridge = useBridgeStore()
 
 const nav: { to: string; label: string; icon: IconName; match: (p: string) => boolean }[] = [
   { to: '/', label: 'nav.leagues', icon: 'list', match: (p) => p === '/' },
@@ -35,8 +38,11 @@ const loadLeagues = () => void leagues.load().catch(() => {})
 
 onMounted(() => {
   scrape.init()
+  bridge.init()
   loadLeagues()
   scrape.onFinished(loadLeagues)
+  // A job that just ended is the moment a block shows up or clears: don't wait for the next poll
+  scrape.onFinished(() => void bridge.check())
 })
 </script>
 
@@ -69,6 +75,7 @@ onMounted(() => {
 
     <main class="flex-1 min-w-0 px-4 py-6 md:px-10 md:py-8">
       <div class="md:hidden mb-4" v-if="scrape.visible"><JobCard /></div>
+      <BridgeBanner />
       <div v-if="leagues.error" class="card p-6 mb-6 flex flex-col items-start gap-3" role="alert">
         <span style="color: var(--danger)">{{ t('leagues.loadFailed') }} {{ leagues.error }}</span>
         <button type="button" class="btn" :disabled="leagues.loading" @click="loadLeagues">{{ t('common.retry') }}</button>

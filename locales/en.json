@@ -348,5 +348,12 @@
     "headless_step_matches": "Fetching Match Data...",
     "headless_step_details": "Fetching Match Details...",
     "all_operations_completed": "All operations completed.",
-    "headless_exporting_csv": "Headless Mode: Exporting CSV..."
+    "headless_exporting_csv": "Headless Mode: Exporting CSV...",
+    "bridge_health_degraded": "⚠ Access to SofaScore is degrading: {count} requests in a row failed ({reason}). Jobs may be slow or incomplete.",
+    "bridge_health_blocked": "✖ SofaScore cannot be reached: {count} requests in a row failed ({reason}); last successful request: {last_success}. Wait a while before retrying.",
+    "bridge_health_ok": "✓ Access to SofaScore is working again.",
+    "bridge_health_never": "none",
+    "bridge_reason_challenge": "the SofaScore challenge could not be solved",
+    "bridge_reason_forbidden": "SofaScore answers requests with 403",
+    "bridge_reason_browser": "the browser could not start"
 }

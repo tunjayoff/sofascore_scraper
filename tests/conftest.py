@@ -118,8 +118,10 @@ def _isolate_request_layer(request, monkeypatch):
     """
     import src.utils as utils
     import src.challenge_solver as cs
+    from src import bridge_health
 
     monkeypatch.setattr(utils, "_browser_first_until", 0.0)
+    bridge_health.reset()  # köprü sağlık durumu da testten teste taşınmaz
     if request.node.get_closest_marker("browser") is None:
         async def _no_real_browser(self):
             raise RuntimeError("tests must not launch a real browser (mark the test with @pytest.mark.browser)")

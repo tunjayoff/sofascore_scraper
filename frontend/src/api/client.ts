@@ -174,6 +174,21 @@ export type Settings = {
   log_level: string
 }
 
+/** Browser-bridge health from src/bridge_health.py (GET /health → bridge, GET /api/bypass/status → health). */
+export type BridgeHealth = {
+  state: 'ok' | 'degraded' | 'blocked'
+  consecutive_failures: number
+  /** ISO-8601 UTC, null when it never happened in this server process */
+  last_success_at: string | null
+  last_failure_at: string | null
+  failing_since: string | null
+  changed_at: string | null
+  /** kind: 'challenge' | 'forbidden' | 'browser' */
+  last_error: { kind: string; detail: string; at: string } | null
+}
+
+export type BypassStatus = { status: string; has_token: boolean; is_valid: boolean; health?: BridgeHealth }
+
 // ---- endpoints ----
 
 export const api = {
@@ -196,6 +211,7 @@ export const api = {
   jobs: (limit = 30) => apiGet<{ jobs: JobRow[] }>(`/api/jobs?limit=${limit}`),
   stats: () => apiGet<SystemStats>('/api/stats/system'),
   settings: () => apiGet<Settings>('/api/settings'),
+  bypassStatus: () => apiGet<BypassStatus>('/api/bypass/status'),
   saveSettings: (s: Partial<Settings>) => apiSend<{ status: string }>('/api/settings', 'POST', s),
   /** Query options of POST /api/data/backup (src/web/routes/data.py); the page uses the defaults. */
   backup: ({ scope = 'all', include_env = false }: { scope?: BackupScope; include_env?: boolean } = {}) =>
