@@ -14,7 +14,7 @@ This project is not affiliated with SofaScore. Use reasonable request rates and 
 - **Leagues** — Add tournaments by searching SofaScore (web) or by ID (`config/leagues.txt`).
 - **Seasons & matches** — Pick seasons from one or several leagues and download them in one go; browse matches by league, season, date and whether details are downloaded.
 - **Match details** — Statistics (per period), incidents, lineups, H2H and form; score lines per half, quarter or set depending on the sport.
-- **Web app** — Leagues, Download, Matches, Activity and Settings pages; live progress (SSE) with a Stop that takes effect immediately; Turkish and English; light, dark or system theme.
+- **Web app** — Leagues, Download, Matches, Activity and Settings pages; live progress (SSE) with a Stop that takes effect immediately; English and Turkish, following your browser's language on the first visit; light, dark or system theme.
 - **Terminal UI** — Interactive menu for the same operations without the browser.
 - **Automation** — Headless flags for CI/scripts (`--update-all`, `--fetch-mode`, `--league-id`, `--csv-export`, paths).
 - **Export** — Processed “all matches” CSV and API export endpoints.
@@ -232,7 +232,7 @@ The check never contacts SofaScore. Each line is `OK`, `WARN` or `FAIL`, and eve
 ```
 
 - **Exit code:** `0` when nothing failed (warnings allowed), `1` when at least one check failed. `--strict` also exits with `1` on warnings.
-- `--only python,browser` / `--skip frontend` choose checks; `--lang en|tr` sets the language (default: `APP_LANGUAGE`).
+- `--only python,browser` / `--skip frontend` choose checks; `--lang en|tr` sets the language (default: the app's language, see [Language](#language)).
 - It runs before the app's own imports, so it also works when packages are missing (that is one of the things it reports).
 - `--live` additionally makes **one** real request to SofaScore through the browser bridge. It is never made otherwise. Stop the web app first: two processes cannot open the same browser profile.
 - The launcher (`scripts/start_web.py`) runs the same check on every start and installs missing packages and the missing browser itself. Other code can call `src.doctor.run_checks()` / `src.doctor.report()`.
@@ -246,7 +246,7 @@ See `.env.example` for all keys. Common ones:
 | Variable | Purpose |
 |----------|---------|
 | `DATA_DIR` | Root folder for stored data (default `data`). Web app reads this via `ConfigManager`. |
-| `APP_LANGUAGE` | `en` or `tr`: language of the terminal UI and server messages. The web app has its own switch under **Settings** (changing it there also updates this value). |
+| `APP_LANGUAGE` | `en` or `tr`. Empty (the default) means no language is pinned: the system language is used if it is Turkish, English otherwise. The language switch under **Settings** in the web app writes this value. See [Language](#language). |
 | `MAX_CONCURRENT` | Parallel detail requests cap. |
 | `REQUEST_RATE_LIMIT` | Requests per second to SofaScore for **all processes together** (web app, CLI, every `--watch`, `--refresh-only`). Default `5`; a higher value or `0` / `off` (no limit) is faster but raises the risk of being blocked. See [Request budget](#request-budget-all-processes). |
 | `USE_PROXY` / `PROXY_URL` | Optional proxy: `http://`, `https://` or `socks5://`, e.g. `http://user:password@host:8080`. Also under **Settings → Connection** in the web app; the saved password is never shown again (the form and the API show `***`, and leaving it that way keeps it). The built-in browser uses a changed proxy after the app restarts. |
@@ -256,6 +256,18 @@ See `.env.example` for all keys. Common ones:
 | `LOG_LEVEL` / `LOG_DIR` / `LOG_TO_FILE` / `LOG_MAX_MB` / `LOG_BACKUP_COUNT` | Log level, log file location and rotation. See [Logs and diagnostics](#logs-and-diagnostics). |
 
 Tuning for the web UI (timeouts, retries, logging) is exposed under **Settings**; writing settings updates `.env`.
+
+### Language
+
+The app speaks English and Turkish. The terminal, `--doctor`, the installers, the launcher and the web app all choose between them by one rule:
+
+1. **A language you chose wins.** That is `APP_LANGUAGE=en` or `tr` in `.env` (or in the environment), which is also what the language switch on the **Settings** page writes. A browser additionally remembers the choice made in it.
+2. **Otherwise the system language is used.** The terminal side reads `LC_ALL`, `LC_MESSAGES` and `LANG` (on Windows without those: the display language); the web app reads the browser's language list and takes the first language it has.
+3. **Otherwise English**, which is also the answer for every language other than Turkish.
+
+A new install pins nothing: `.env.example` ships with `APP_LANGUAGE` empty, so a Turkish system or browser gets Turkish and everyone else gets English. To force one language everywhere, set `APP_LANGUAGE`. An existing `.env` with `APP_LANGUAGE=tr` keeps Turkish.
+
+Log lines (console and log file) are still written in Turkish whatever the language; `argparse`'s own words in `--help` (`usage:`, `options:`) stay English.
 
 ### Request budget (all processes)
 
