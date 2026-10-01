@@ -14,6 +14,8 @@ listesini buradan hesaplar.
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
 import ipaddress
 import logging
 import os
@@ -108,6 +110,70 @@ def is_cross_origin_write(method: str, headers: Mapping[str, str]) -> bool:
     if origin:
         return urlparse(origin).netloc.lower() != (headers.get("host") or "").strip().lower()
     return False
+
+
+# --- Erişim belirteci -----------------------------------------------------------------------
+
+TOKEN_ENV = "SOFASCORE_API_TOKEN"
+SESSION_COOKIE = "sofascore_session"
+SESSION_MAX_AGE = 30 * 24 * 3600
+# Bundan kısa bir belirteç tahmin edilebilir; başlangıçta uyarılır
+MIN_TOKEN_LENGTH = 16
+# Belirteç olmadan da yanıt veren /api yolları: oturum durumu, giriş ve çıkış
+AUTH_OPEN_PATHS = frozenset({"/api/auth", "/api/auth/login", "/api/auth/logout"})
+
+
+# Süreç başlarken okunan belirteç (None = henüz okunmadı)
+_startup_token: Optional[str] = None
+
+
+def api_token() -> str:
+    """
+    Ayarlı erişim belirteci ("" = kapalı). İlk çağrıda (uygulama başlarken, .env yüklendikten
+    sonra) okunur ve süreç boyunca sabit kalır; değiştirmek için uygulama yeniden başlatılır.
+
+    Her istekte ortamdan okunmamasının nedeni: ayar kaydı .env'i ortamın üzerine yeniden yükler
+    (ConfigManager.reload_config, override=True). .env'deki boş bir `SOFASCORE_API_TOKEN=` satırı,
+    ortamdan (kabuk, Docker -e) verilen belirteci çalışırken silip korumayı sessizce kapatırdı.
+    """
+    global _startup_token
+    if _startup_token is None:
+        _startup_token = os.environ.get(TOKEN_ENV, "").strip()
+    return _startup_token
+
+
+def _equal(a: str, b: str) -> bool:
+    # Sabit süreli karşılaştırma: yanıt süresi belirtecin kaç karakterinin tuttuğunu söylemez
+    return hmac.compare_digest(a.encode("utf-8"), b.encode("utf-8"))
+
+
+def token_matches(candidate: Optional[str]) -> bool:
+    token = api_token()
+    return bool(token) and bool(candidate) and _equal(str(candidate), token)
+
+
+def session_value(token: str) -> str:
+    """
+    Oturum cookie'sinin değeri: belirteçten türetilir (HMAC), belirtecin kendisi değildir. Sunucuda
+    oturum kaydı tutulmaz; belirteç değişince eski cookie'ler kendiliğinden geçersiz olur.
+    """
+    return hmac.new(token.encode("utf-8"), b"sofascore-scraper web session v1", hashlib.sha256).hexdigest()
+
+
+def is_authenticated(headers: Mapping[str, str], cookies: Mapping[str, str]) -> bool:
+    """Belirteç ayarlı değilse herkes; ayarlıysa `Authorization: Bearer` ya da oturum cookie'si."""
+    token = api_token()
+    if not token:
+        return True
+    scheme, _, value = (headers.get("authorization") or "").strip().partition(" ")
+    if scheme.lower() == "bearer" and _equal(value.strip(), token):
+        return True
+    cookie = cookies.get(SESSION_COOKIE) or ""
+    return bool(cookie) and _equal(cookie, session_value(token))
+
+
+def requires_token(path: str) -> bool:
+    return (path == "/api" or path.startswith("/api/")) and path not in AUTH_OPEN_PATHS
 
 
 # --- Güvenlik başlıkları --------------------------------------------------------------------

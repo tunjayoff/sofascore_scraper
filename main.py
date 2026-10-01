@@ -4,6 +4,7 @@ SofaScore Scraper uygulaması ana giriş noktası.
 """
 
 import json
+import logging
 import sys
 import traceback
 import os
@@ -211,11 +212,12 @@ def main() -> int:
                     return 2
                 if hosts is not None:
                     os.environ[security.ALLOWED_HOSTS_ENV] = hosts
-                if not security.is_loopback_bind(args.host):
-                    logger.warning(
-                        f"Web arayüzü {args.host} adresinde dinliyor: ağdaki herkes kimlik doğrulaması "
-                        "olmadan erişebilir (veri silme, ayarlar dahil)."
-                    )
+                if not security.is_loopback_bind(args.host) and not security.api_token():
+                    # Tek ve açık uyarı: konsola ve log dosyasına (log seviyesi kapatmışsa yine de konsola)
+                    exposed = i18n.t("web_exposed_without_token", host=args.host, port=args.port)
+                    logger.warning(exposed)
+                    if not logger.isEnabledFor(logging.WARNING):
+                        print(exposed, file=sys.stderr)
                 logger.info(f"Web arayüzü başlatılıyor: http://localhost:{args.port}")
                 print(i18n.t('web_server_starting'))
                 print(i18n.t('go_to_address'))

@@ -56,6 +56,19 @@ export default {
     job_running: 'Bir indirme sürüyor. Durdurun ya da bitmesini bekleyin, sonra yeniden deneyin.',
     data_operation_running: 'Bir yedekleme ya da silme işlemi hâlâ sürüyor. Bitince yeniden deneyin.',
     data_dir_unusable: 'Bu klasör oluşturulamıyor ya da yazılamıyor. Hiçbir şey değiştirilmedi.',
+    auth_required: 'Devam etmek için erişim belirtecini girin.',
+    invalid_token: 'Erişim belirteci doğru değil.',
+  },
+  // Belirteç kutusu ve oturumu kapatma; yalnızca sunucuda SOFASCORE_API_TOKEN ayarlıysa görünür
+  auth: {
+    title: 'Erişim belirteci gerekli',
+    note: 'Bu uygulama bir erişim belirteciyle korunuyor (sunucudaki SOFASCORE_API_TOKEN). Devam etmek için girin.',
+    label: 'Erişim belirteci',
+    submit: 'Devam et',
+    checking: 'Denetleniyor…',
+    session: 'Erişim',
+    signOut: 'Oturumu kapat',
+    signOutHint: 'Bu tarayıcıdaki erişim belirtecini unutturur; yeniden girmeniz istenir.',
   },
   sport: {
     all: 'Tüm sporlar',

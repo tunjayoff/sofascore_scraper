@@ -16,6 +16,10 @@ dotenv.load_dotenv(env_file_path())
 logger = get_logger("WebApp")
 # uvicorn kendi logger'ını köke iletmez: sunucu hataları log dosyasına da yazılsın (erişim logu hariç)
 attach_file_handler("uvicorn")
+if 0 < len(security.api_token()) < security.MIN_TOKEN_LENGTH:
+    logger.warning(
+        f"{security.TOKEN_ENV} çok kısa, tahmin edilebilir: en az {security.MIN_TOKEN_LENGTH} rastgele karakter kullanın."
+    )
 
 app = FastAPI(
     title="SofaScore Scraper Web UI",
@@ -42,11 +46,19 @@ async def security_boundary(request: Request, call_next):
 
       1. CSRF: başka bir sitenin tetiklediği durum değiştiren istek (veri silme, yedek, ayar yazma,
          iş başlatma) reddedilir. Tarayıcı dışı istemciler (Origin göndermeyen curl) etkilenmez.
-      2. Güvenlik başlıkları: ret yanıtları dahil her yanıta eklenir.
+      2. Erişim belirteci (SOFASCORE_API_TOKEN ayarlıysa): /api istekleri `Authorization: Bearer`
+         ya da oturum cookie'si taşımalıdır (SSE başlık gönderemez; cookie ile çalışır).
+      3. Güvenlik başlıkları: ret yanıtları dahil her yanıta eklenir.
     """
     path = request.url.path
     if security.is_cross_origin_write(request.method, request.headers):
         response = JSONResponse({"detail": "Cross-origin request rejected"}, status_code=403)
+    elif security.requires_token(path) and not security.is_authenticated(request.headers, request.cookies):
+        response = JSONResponse(
+            {"detail": {"code": "auth_required", "message": "An access token is required."}},
+            status_code=401,
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     else:
         response = await call_next(request)
     for name, value in security.security_headers(path, FRONTEND_DIST):
@@ -73,10 +85,15 @@ async def job_store_conflict(_request: Request, exc: JobStoreConflict):
 
 
 @app.get("/health")
-async def health_check():
+async def health_check(request: Request):
     # status/version/ui: sunucunun kendisi (başlatıcı ve arayüz bunlara bakar). bridge: SofaScore'a
     # erişimin durumu (ok / degraded / blocked); throttle: süreçler arası ortak istek bütçesi.
     from src import bridge_health, throttle
+
+    if not security.is_authenticated(request.headers, request.cookies):
+        # Belirteç ayarlı ve çağıran onu taşımıyor: yalnızca "sunucu ayakta" (sağlık denetimleri
+        # çalışmaya devam eder); sürüm, köprü hatası ve istek bütçesi ayrıntıları verilmez
+        return {"status": "ok"}
 
     return {
         "status": "ok",

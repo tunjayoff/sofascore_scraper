@@ -7,6 +7,7 @@ import { themePref, setTheme, type ThemePref } from '@/lib/theme'
 import { appVersion } from '@/lib/appVersion'
 import { matchDate, num } from '@/lib/format'
 import { onTabKeydown } from '@/lib/tabs'
+import { reloadApp } from '@/lib/auth'
 import { errorText, toast, toastError } from '@/lib/toast'
 import { UPSTREAM_REASONS } from '@/lib/upstream'
 import { useBridgeStore } from '@/stores/bridge'
@@ -26,6 +27,8 @@ const stats = ref<SystemStats | null>(null)
 const saving = ref(false)
 const backingUp = ref(false)
 const backup = ref<{ url: string; name: string } | null>(null)
+// True when the server asks for an access token (SOFASCORE_API_TOKEN): only then is there a session to end
+const tokenAuth = ref(false)
 
 const themes: { v: ThemePref; k: string }[] = [
   { v: 'light', k: 'settings.themeLight' },
@@ -215,6 +218,15 @@ async function doBackup() {
   }
 }
 
+async function signOut() {
+  try {
+    await api.logout()
+    reloadApp()
+  } catch (e) {
+    toastError(e)
+  }
+}
+
 async function clearAll() {
   if (!window.confirm(t('settings.clearConfirm'))) return
   try {
@@ -226,7 +238,14 @@ async function clearAll() {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  void load()
+  // Without this answer the sign-out button stays hidden, which is right when no token is set
+  api.authStatus().then(
+    (s) => (tokenAuth.value = !!s.required),
+    () => {},
+  )
+})
 </script>
 
 <template>
@@ -264,6 +283,11 @@ onMounted(load)
       <div class="seg" role="group" :aria-label="t('settings.theme')">
         <button v-for="th in themes" :key="th.v" type="button" :class="{ 'is-active': themePref === th.v }" @click="setTheme(th.v)">{{ t(th.k) }}</button>
       </div>
+    </div>
+    <div v-if="tokenAuth">
+      <span class="label">{{ t('auth.session') }}</span>
+      <button type="button" class="btn" data-testid="sign-out" @click="signOut">{{ t('auth.signOut') }}</button>
+      <p class="hint">{{ t('auth.signOutHint') }}</p>
     </div>
   </section>
 

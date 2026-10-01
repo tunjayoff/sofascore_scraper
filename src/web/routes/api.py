@@ -6,7 +6,7 @@ adları yeniden dışa aktarır.
 """
 from fastapi import APIRouter
 
-from src.web.routes import data, diagnostics, leagues, matches, scrape, settings, sports
+from src.web.routes import auth, data, diagnostics, leagues, matches, scrape, settings, sports
 from src.web.routes.common import _job_store, config_manager  # noqa: F401
 from src.web.routes.data import _backups_dir  # noqa: F401
 from src.web.routes.matches import (  # noqa: F401
@@ -17,5 +17,5 @@ from src.web.routes.matches import (  # noqa: F401
 )
 
 router = APIRouter()
-for _module in (leagues, matches, scrape, settings, data, sports, diagnostics):
+for _module in (leagues, matches, scrape, settings, data, sports, diagnostics, auth):
     router.include_router(_module.router)

@@ -1,3 +1,4 @@
+import { authNeeded } from '@/lib/auth'
 import type { MatchDetail } from '@/lib/matchDetail'
 
 type ValidationIssue = { loc?: (string | number)[]; msg?: string }
@@ -16,8 +17,8 @@ type ParsedError = { message: string; code?: string; reason?: string }
 
 /**
  * Typed error bodies carry a machine-readable field the UI translates; `message` is the fallback text.
- *  - {detail: {code, message}}: a refusal such as 'job_running' (src/web/app.py, routes/settings.py);
- *    lib/toast.ts maps it to `errors.<code>`.
+ *  - {detail: {code, message}}: a refusal such as 'job_running' or 'auth_required' (src/web/app.py,
+ *    routes/settings.py, routes/auth.py); lib/toast.ts maps it to `errors.<code>`.
  *  - {detail: {reason, message}}: why a request to SofaScore failed (src/web/upstream.py), or the proxy
  *    check in src/web/routes/settings.py; lib/upstream.ts maps it.
  */
@@ -55,6 +56,8 @@ export class ApiError extends Error {
 
 async function apiError(res: Response): Promise<ApiError> {
   const { message, code, reason } = await parseError(res)
+  // The server wants its access token and this browser has no session: App.vue shows the prompt
+  if (res.status === 401 && code === 'auth_required') authNeeded.value = true
   return new ApiError(message, res.status, reason, code)
 }
 
@@ -238,6 +241,9 @@ export type BypassTest = {
   health?: BridgeHealth
 }
 
+/** GET /api/auth: `required` when SOFASCORE_API_TOKEN is set on the server (src/web/routes/auth.py). */
+export type AuthStatus = { required: boolean; authenticated: boolean }
+
 // ---- endpoints ----
 
 export const api = {
@@ -275,6 +281,10 @@ export const api = {
     ),
   clearData: (scope: 'all' | 'matches' | 'match_details' | 'seasons') =>
     apiSend<{ status: string }>('/api/data/clear', 'POST', { scope }),
+  authStatus: () => apiGet<AuthStatus>('/api/auth'),
+  /** Trades the access token for an HttpOnly session cookie; the page never stores the token. */
+  login: (token: string) => apiSend<AuthStatus>('/api/auth/login', 'POST', { token }),
+  logout: () => apiSend<AuthStatus>('/api/auth/logout', 'POST'),
 }
 
 export function seasonLabel(s: Season): string {

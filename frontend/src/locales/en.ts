@@ -57,6 +57,19 @@ const en: typeof tr = {
     job_running: 'A download is running. Stop it or wait for it to finish, then try again.',
     data_operation_running: 'A backup or delete is still in progress. Try again when it finishes.',
     data_dir_unusable: 'This folder can’t be created or written to. Nothing was changed.',
+    auth_required: 'Enter the access token to continue.',
+    invalid_token: 'That access token is not correct.',
+  },
+  // Token prompt and sign-out, shown only when SOFASCORE_API_TOKEN is set on the server
+  auth: {
+    title: 'Access token required',
+    note: 'This app is protected by an access token (SOFASCORE_API_TOKEN on the server). Enter it to continue.',
+    label: 'Access token',
+    submit: 'Continue',
+    checking: 'Checking…',
+    session: 'Access',
+    signOut: 'Sign out',
+    signOutHint: 'Forgets the access token in this browser; you will be asked for it again.',
   },
   sport: {
     all: 'All sports',

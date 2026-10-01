@@ -12,6 +12,8 @@ import AddLeagueDialog from '@/components/AddLeagueDialog.vue'
 import SportSwitch from '@/components/SportSwitch.vue'
 import BrandMark from '@/components/BrandMark.vue'
 import BridgeBanner from '@/components/BridgeBanner.vue'
+import TokenPrompt from '@/components/TokenPrompt.vue'
+import { authNeeded } from '@/lib/auth'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -84,6 +86,7 @@ onMounted(() => {
     </main>
 
     <AddLeagueDialog v-if="addOpen" @close="addOpen = false" @added="(id) => (lastAdded = id)" />
+    <TokenPrompt v-if="authNeeded" />
 
     <div class="fixed bottom-4 right-4 z-[60] flex flex-col gap-2 max-w-[420px]" aria-live="polite">
       <div
