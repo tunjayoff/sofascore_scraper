@@ -1,9 +1,12 @@
 """Delivery readiness: every safe API route responds with expected shape."""
 from __future__ import annotations
 
+import os
+
 import pytest
 from fastapi.testclient import TestClient
 
+from src.paths import env_file_path
 from src.web.app import app
 from src.web.routes import api as api_mod
 
@@ -89,9 +92,22 @@ def test_cancel_idle_and_conflict_fetch():
 
 def test_settings_roundtrip_safe():
     before = client.get("/api/settings").json()
-    # POST same settings back (no destructive change)
-    r = client.post("/api/settings", json=before if isinstance(before, dict) else {})
-    assert r.status_code in (200, 422)
+    # Kayıt, okunan her ayarı (APP_LANGUAGE dahil) ortama ve test .env'ine yazar: test bitince ikisi de eski
+    # haline döner, sonraki testler bu testin bıraktığı ayarlarla çalışmaz.
+    env_before = dict(os.environ)
+    with open(env_file_path(), encoding="utf-8") as f:
+        file_before = f.read()
+    try:
+        # POST same settings back (no destructive change)
+        r = client.post("/api/settings", json=before if isinstance(before, dict) else {})
+        assert r.status_code in (200, 422)
+    finally:
+        with open(env_file_path(), "w", encoding="utf-8") as f:
+            f.write(file_before)
+        for key in set(os.environ) - set(env_before):
+            del os.environ[key]
+        os.environ.update(env_before)
+        api_mod.config_manager.reload_config()
 
 
 def test_backup_endpoint():
