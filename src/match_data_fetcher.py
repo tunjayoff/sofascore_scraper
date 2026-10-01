@@ -17,6 +17,7 @@ from collections import Counter
 import pandas as pd
 from tqdm import tqdm
 
+from src import breaker as request_breaker
 from src.config_manager import ConfigManager
 from src.fsutil import atomic_write_json
 from src.utils import make_api_request, ensure_directory
@@ -202,9 +203,19 @@ class MatchDataFetcher:
 
         failed_callback(match_id): denemeleri tükenen her maç için çağrılır (devre kesilince
         hiç denenmeyenler ve iptal edilenler başarısız sayılmaz).
+
+        Devre kesici işin kesicisidir (src/breaker.py): çağıran kurduysa o, yoksa bu çağrı için
+        yenisi. İstek katmanı her isteğin sonucunu (alt dilimler ve yenileme dahil) ona bildirir.
         """
+        with request_breaker.scope(self.config_manager) as breaker:
+            return await self._fetch_matches_batch_async(
+                breaker, match_ids, max_concurrent, progress_bar, progress_callback, should_cancel, failed_callback
+            )
+
+    async def _fetch_matches_batch_async(
+        self, breaker, match_ids, max_concurrent, progress_bar, progress_callback, should_cancel, failed_callback
+    ):
         logger.debug(f"Starting batch fetch for {len(match_ids)} matches")
-        ignore_rate_limit = os.getenv("IGNORE_RATE_LIMIT", "false").lower() == "true"
 
         match_ids_to_process, refresh_count = self._order_by_need(match_ids)
         skipped = len(match_ids) - len(match_ids_to_process)
@@ -218,11 +229,6 @@ class MatchDataFetcher:
         results: Dict[str, Dict[str, Any]] = {}
         status_counts: Counter = Counter()
         recent_headers: List[Dict[str, str]] = []
-        consecutive_failures = 0
-        consecutive_server_errors = 0
-        total_failures = 0
-        total_attempts = 0
-        breaker_triggered = False
         cancelled = False
 
         batch_size = 100
@@ -237,7 +243,7 @@ class MatchDataFetcher:
         async with create_session_async() as session:
             sem = asyncio.Semaphore(max_concurrent)
             for batch_idx, batch in enumerate(all_batches):
-                if breaker_triggered or cancelled:
+                if breaker.tripped or cancelled:
                     break
                 if should_cancel and should_cancel():
                     cancelled = True
@@ -249,7 +255,7 @@ class MatchDataFetcher:
                 batch_failed = 0
 
                 async def fetch_one(match_id):
-                    nonlocal consecutive_failures, consecutive_server_errors, total_failures, total_attempts, breaker_triggered, batch_success, batch_failed, cancelled
+                    nonlocal batch_success, batch_failed, cancelled
                     if cancelled or (should_cancel and should_cancel()):
                         cancelled = True
                         return None
@@ -258,7 +264,7 @@ class MatchDataFetcher:
                         if cancelled or (should_cancel and should_cancel()):
                             cancelled = True
                             return None
-                        if breaker_triggered:
+                        if breaker.tripped:
                             # Devre kesildi: batch'te sırada bekleyen maçlar istek atmasın
                             return None
                         try:
@@ -266,9 +272,8 @@ class MatchDataFetcher:
                                 if cancelled or (should_cancel and should_cancel()):
                                     cancelled = True
                                     return None
-                                if breaker_triggered:
+                                if breaker.tripped:
                                     return None
-                                total_attempts += 1
                                 need = self._needs_detail_fetch(str(match_id))
                                 if need == "refresh":
                                     result = await asyncio.to_thread(self.refresh_match, str(match_id))
@@ -285,50 +290,35 @@ class MatchDataFetcher:
                                     cancelled = True
                                     return None
                                 if result and "basic" in result:
-                                    consecutive_failures = 0
-                                    consecutive_server_errors = 0
                                     batch_success += 1
                                     if progress_bar:
                                         progress_bar.update(1)
                                     return result
+                                if breaker.tripped:
+                                    # İstekler devre kesildiği için gönderilmedi: maç denenmemiş sayılır
+                                    return None
                                 status_counts["other"] += 1
                                 # fetch_one görevleri bu batch bitmeden tamamlanır/iptal edilir
                                 batch_status_counts["other"] += 1  # noqa: B023
                                 break
                         except Exception as e:
                             err = str(e)
-                            code = getattr(e, "status_code", None)
-                            status_key = "other"
-                            if code in (403, 404, 429):
-                                status_key = str(code)
-                            elif isinstance(code, int) and code >= 500:
-                                status_key = "5xx"
-                            elif "timeout" in err.lower():
-                                status_key = "timeout"
+                            status_key = request_breaker.failure_kind(e)
+                            if status_key == request_breaker.BREAKER_OPEN:
+                                return None  # devre kesik: istek gönderilmedi, maç denenmemiş sayılır
 
                             status_counts[status_key] += 1
                             batch_status_counts[status_key] += 1  # noqa: B023
-                            if status_key != "404":
-                                total_failures += 1
-                                consecutive_failures += 1
-                            if status_key == "5xx":
-                                consecutive_server_errors += 1
-                            else:
-                                consecutive_server_errors = 0
+                            # İstek katmanından gelen hata zaten sayıldı; başka kaynaklı hata burada sayılır
+                            breaker.record_exception(e)
 
                             if status_key in ("403", "429", "5xx"):
                                 recent_headers.append({"match_id": str(match_id), "error": err})
                                 if len(recent_headers) > 20:
                                     recent_headers.pop(0)
 
-                            if not ignore_rate_limit:
-                                threshold_cons = self.config_manager.get_rate_limit_threshold_consecutive()
-                                threshold_ratio = self.config_manager.get_rate_limit_threshold_ratio()
-                                threshold_5xx = self.config_manager.get_server_error_threshold_consecutive()
-                                ratio_triggered = total_attempts > 50 and (total_failures / total_attempts) >= threshold_ratio
-                                if consecutive_failures >= threshold_cons or consecutive_server_errors >= threshold_5xx or ratio_triggered:
-                                    breaker_triggered = True
-                                    return None
+                            if breaker.tripped:
+                                return None
 
                             if attempt < max_retries - 1:
                                 await asyncio.sleep(1.0 * (2 ** attempt) + random.uniform(0, 1))
@@ -394,14 +384,18 @@ class MatchDataFetcher:
                 status_text = ", ".join([f"{v}x {k}" for k, v in batch_status_counts.items()]) if batch_status_counts else "hata yok"
                 logger.info(f"Batch {batch_idx+1}/{len(all_batches)}: {batch_success} başarılı, {batch_failed} başarısız ({status_text})")
 
-                if batch_idx < len(all_batches) - 1 and not breaker_triggered:
+                if batch_idx < len(all_batches) - 1 and not breaker.tripped:
                     await asyncio.sleep(1.0)
 
         if progress_callback and total_m > 0 and not cancelled:
             progress_callback(total_m, total_m, "Parallel detail batches finished")
 
-        self.last_status_counts = dict(status_counts)
-        self.rate_limit_breaker_triggered = breaker_triggered
+        # Maç düzeyindeki sayım + kesicinin gördüğü istek düzeyindeki hatalar (alt dilimler dahil)
+        merged = dict(status_counts)
+        for kind, count in breaker.counts().items():
+            merged[kind] = max(merged.get(kind, 0), count)
+        self.last_status_counts = merged
+        self.rate_limit_breaker_triggered = breaker.tripped
         self.last_rate_limit_headers = recent_headers
         return results
 
@@ -692,25 +686,41 @@ class MatchDataFetcher:
         match_ids: List[str],
         progress_callback: Optional[Callable[[int, int, str], None]] = None,
         should_cancel: Optional[Callable[[], bool]] = None,
-    ) -> Dict[str, int]:
-        """Yalnızca yenileme (refresh-only): sırayla, istekler arası bekleme ile."""
-        stats = {"refreshed": 0, "changed": 0, "failed": 0}
+    ) -> Dict[str, Any]:
+        """
+        Yalnızca yenileme (refresh-only): sırayla, istekler arası bekleme ile.
+
+        Devre kesilirse (SofaScore engelliyor / sürekli hata) kalan maçlar denenmez; sonuçta
+        `breaker` (neden: "403" / "429" / "5xx" / "other") ve `skipped` (denenmeyen maç) alanları
+        bulunur.
+        """
+        stats: Dict[str, Any] = {"refreshed": 0, "changed": 0, "failed": 0}
         n = len(match_ids)
         if n:
             logger.info(f"{n} maç yenileniyor")
-        for idx, mid in enumerate(match_ids):
-            if should_cancel and should_cancel():
-                break
-            result = self.refresh_match(mid)
-            if result is None:
-                stats["failed"] += 1
-            else:
-                stats["refreshed"] += 1
-                stats["changed"] += int(self.last_refresh_changed)
-            if progress_callback:
-                progress_callback(idx + 1, n, f"Refresh {idx + 1}/{n}")
-            if idx < n - 1:
-                time.sleep(1.0)
+        with request_breaker.scope(self.config_manager) as breaker:
+            for idx, mid in enumerate(match_ids):
+                if should_cancel and should_cancel():
+                    break
+                if breaker.tripped:
+                    stats["breaker"] = breaker.reason()
+                    stats["skipped"] = n - idx
+                    logger.warning(f"Çok fazla başarısız istek; yenileme durduruldu, {n - idx} maç denenmedi")
+                    break
+                result = self.refresh_match(mid)
+                if result is None:
+                    stats["failed"] += 1
+                else:
+                    stats["refreshed"] += 1
+                    stats["changed"] += int(self.last_refresh_changed)
+                if progress_callback:
+                    progress_callback(idx + 1, n, f"Refresh {idx + 1}/{n}")
+                if idx < n - 1:
+                    time.sleep(1.0)
+            if breaker.tripped:
+                stats.setdefault("breaker", breaker.reason())
+                stats.setdefault("skipped", 0)
+        self.rate_limit_breaker_triggered = bool(stats.get("breaker"))
         return stats
 
     def refill_missing_match_slices(self, match_id: Union[int, str]) -> Optional[Dict[str, Any]]:
@@ -1177,38 +1187,47 @@ class MatchDataFetcher:
         n = len(match_ids_to_process)
         iterator: Any = tqdm(match_ids_to_process) if use_tqdm else match_ids_to_process
 
-        for idx, match_id in enumerate(iterator):
-            if should_cancel and should_cancel():
-                logger.info("Match detail batch cancelled after %s/%s", idx, n)
-                break
-            match_id = str(match_id)
+        self.rate_limit_breaker_triggered = False
+        with request_breaker.scope(self.config_manager) as breaker:
+            for idx, match_id in enumerate(iterator):
+                if should_cancel and should_cancel():
+                    logger.info("Match detail batch cancelled after %s/%s", idx, n)
+                    break
+                if breaker.tripped:
+                    logger.warning(f"Çok fazla başarısız istek; maç detayları durduruldu, {n - idx} maç denenmedi")
+                    break
+                match_id = str(match_id)
 
-            if use_tqdm:
-                iterator.set_description(f"Maç ID {match_id}")
-            else:
-                logger.info(f"Maç verisi çekiliyor: ID {match_id}")
+                if use_tqdm:
+                    iterator.set_description(f"Maç ID {match_id}")
+                else:
+                    logger.info(f"Maç verisi çekiliyor: ID {match_id}")
 
-            need = self._needs_detail_fetch(match_id)
-            if need == "refresh":
-                match_data = self.refresh_match(match_id)
-            elif need == "refill":
-                match_data = self.refill_missing_match_slices(match_id)
-                if not match_data:
+                need = self._needs_detail_fetch(match_id)
+                if need == "refresh":
+                    match_data = self.refresh_match(match_id)
+                elif need == "refill":
+                    match_data = self.refill_missing_match_slices(match_id)
+                    if not match_data:
+                        match_data = self.fetch_match_data(match_id)
+                else:
                     match_data = self.fetch_match_data(match_id)
-            else:
-                match_data = self.fetch_match_data(match_id)
 
-            if match_data:
-                results[match_id] = match_data
-            elif failed_callback:
-                failed_callback(match_id)
+                if match_data:
+                    results[match_id] = match_data
+                elif failed_callback and not breaker.tripped:
+                    # Devre kesildiği için gönderilmeyen istek "başarısız maç" değildir
+                    failed_callback(match_id)
 
-            if progress_callback and n > 0:
-                progress_callback(idx + 1, n, f"Match details {idx + 1}/{n}")
+                if progress_callback and n > 0:
+                    progress_callback(idx + 1, n, f"Match details {idx + 1}/{n}")
 
-            # Sabit kısa bekleme (SofaScore saniyede 5 isteğe izin veriyor)
-            if idx < n - 1:  # Son elemandan sonra bekleme yapma
-                time.sleep(0.2)  # Saniyede 5 istek için
+                # Sabit kısa bekleme (SofaScore saniyede 5 isteğe izin veriyor)
+                if idx < n - 1:  # Son elemandan sonra bekleme yapma
+                    time.sleep(0.2)  # Saniyede 5 istek için
+
+            self.rate_limit_breaker_triggered = breaker.tripped
+            self.last_status_counts = breaker.counts()
 
         return results
 
@@ -1698,7 +1717,18 @@ class MatchDataFetcher:
         """Verilen maçların detaylarını 100'lük paralel batch'lerle çeker; başarılı maç sayısını döndürür.
 
         Devre kesilirse (rate limit) kalan batch'ler atlanır ve rate_limit_breaker_triggered True kalır.
+        Kesici tüm batch'ler boyunca aynıdır (çağıran kurduysa işin kesicisi): sayaçlar batch başına sıfırlanmaz.
         """
+        with request_breaker.scope(self.config_manager):
+            return self._fetch_detail_ids(match_ids_to_process, progress_callback, should_cancel, failed_callback)
+
+    def _fetch_detail_ids(
+        self,
+        match_ids_to_process: List[str],
+        progress_callback: Optional[Callable[[int, int, str], None]],
+        should_cancel: Optional[Callable[[], bool]],
+        failed_callback: Optional[Callable[[str], None]],
+    ) -> int:
         self.rate_limit_breaker_triggered = False
         batch_size = 100  # Her seferde kaç maç işleneceği
         total_success = 0

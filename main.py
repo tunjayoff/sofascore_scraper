@@ -278,6 +278,13 @@ def main() -> int:
                 f"Yenileme: {stats['refreshed']} maç yenilendi, {stats['changed']} değişti, "
                 f"{stats['failed']} başarısız (değişiklikler: data/score_changes.jsonl)"
             )
+            if stats.get("breaker"):
+                # Devre kesildi: kalan maçlar denenmedi; cron bunu sıfırdan farklı çıkış koduyla görsün
+                print(
+                    get_i18n().t("refresh_stopped_by_breaker", reason=stats["breaker"], skipped=stats.get("skipped", 0)),
+                    file=sys.stderr,
+                )
+                return 2
             return 1 if stats["failed"] and not stats["refreshed"] else 0
 
         if args.headless:
@@ -290,7 +297,15 @@ def main() -> int:
                     args.league_id,
                     args.fetch_mode,
                 )
-                ui.run_headless_fetch(league_id=args.league_id, mode=args.fetch_mode)
+                # Tüm aşamalar (sezon, maç programı, detay, yenileme) tek devre kesiciyi paylaşır: açıldığında
+                # istek katmanı bu çalıştırma için SofaScore'a yeni istek göndermez.
+                from src import breaker as request_breaker
+
+                with request_breaker.scope(ui.config_manager) as job_breaker:
+                    ui.run_headless_fetch(league_id=args.league_id, mode=args.fetch_mode)
+                if job_breaker.tripped:
+                    print(get_i18n().t("fetch_stopped_by_breaker", reason=job_breaker.reason()), file=sys.stderr)
+                    os.environ["APP_EXIT_CODE"] = "2"
                 ran = True
 
             if args.csv_export:

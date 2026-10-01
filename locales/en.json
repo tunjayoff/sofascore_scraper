@@ -305,6 +305,8 @@
     "error_rate_limit_detected": "⚠  Rate limit / IP ban detected.\n\nRecommended actions:\n  1. Wait 30 minutes - 2 hours and retry\n  2. Lower MAX_CONCURRENT in .env (e.g. 5)\n  3. Increase WAIT_TIME_MIN and WAIT_TIME_MAX values\n  4. Use a different IP (mobile data, VPN, proxy)\n\nSuccessfully saved matches so far: {count}",
     "fetch_zero_matches": "No matches for that season. Try another season.",
     "fetch_completed_with_warning": "Done, but some seasons had no matches.",
+    "fetch_stopped_by_breaker": "Stopped early: too many requests to SofaScore failed ({reason}). No further requests were sent; wait a while and run it again.",
+    "refresh_stopped_by_breaker": "Refresh stopped: too many requests to SofaScore failed ({reason}); {skipped} matches were not attempted. Wait a while and run it again.",
     "invalid_choice_error": "Invalid choice!",
     "error_with_message": "Error: {error}",
     "selected_seasons_label": "selected seasons",

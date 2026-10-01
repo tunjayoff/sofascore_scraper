@@ -2,6 +2,10 @@
 
 Her istek aynı aşamalardan geçer (sezon listeleri → maç listeleri → maç detayları → CSV) ve
 ilerleme `JobProgress` ile yapılandırılmış olarak yayınlanır; kart metinleri ön yüzde çevrilir.
+
+İşin tek bir devre kesicisi vardır (src/breaker.py). İstek katmanı her isteğin sonucunu ona
+bildirir; her aşama döngüsünde ona bakar. SofaScore engellediğinde iş kalan lig/sezon/maç için
+istek atmayı bırakır ve nedenini karta yazar.
 """
 from __future__ import annotations
 
@@ -9,6 +13,7 @@ import traceback
 from collections import Counter
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
+from src import breaker as request_breaker
 from src.SofaScoreUi import SimpleSofaScoreUI
 from src.utils import FetchCancelled
 from src.web.progress import JobProgress
@@ -47,6 +52,14 @@ def _breaker_reason(status_counts: Dict[str, int]) -> str:
     return relevant.most_common(1)[0][0] if relevant else "other"
 
 
+def _report_breaker(tracker: JobProgress, reason: str, what: str) -> None:
+    """Devre kesildiğini karta ve iş günlüğüne bir kez yazar."""
+    if tracker.result().get("breaker"):
+        return
+    tracker.breaker(reason)
+    _note(f"Too many failed requests ({reason}); stopped fetching {what}.")
+
+
 # (lig, sezon, sezon adı) — maç listesi aşamasının bir adımı
 SeasonStep = Tuple[int, int, Optional[str]]
 
@@ -66,6 +79,16 @@ def run_fetch_job(job_id: str, payload: "FetchRequest") -> None:
     tracker = JobProgress(phases, _publish)
     # 429/403 geri çekilmeleri kartta geri sayım olarak görünsün
     set_wait_notifier(tracker.wait)
+    # İşin tek devre kesicisi: tüm aşamaların istekleri (sezon, maç programı, detay, yenileme) aynı
+    # sayaçları besler; açıldığında istek katmanı bu iş için yeni istek göndermez.
+    breaker = request_breaker.CircuitBreaker.from_config(config_manager)
+    breaker_token = request_breaker.activate(breaker)
+
+    def blocked(what: str) -> bool:
+        if not breaker.tripped:
+            return False
+        _report_breaker(tracker, breaker.reason(), what)
+        return True
 
     league_names = config_manager.get_leagues()
 
@@ -100,7 +123,7 @@ def run_fetch_job(job_id: str, payload: "FetchRequest") -> None:
             # 1. Sezon listeleri
             tracker.start_phase("seasons", len(unique_leagues))
             for i, lid in enumerate(unique_leagues):
-                if cancelled():
+                if cancelled() or blocked("season lists"):
                     break
                 tracker.set_context(league_id=lid, league_name=lname(lid))
                 _note(f"Refreshing season list for league {lid}...")
@@ -145,7 +168,7 @@ def run_fetch_job(job_id: str, payload: "FetchRequest") -> None:
             if not cancelled():
                 tracker.start_phase("matches", len(steps))
             for idx, (lid, sid, sname) in enumerate(steps):
-                if cancelled():
+                if cancelled() or blocked("match lists"):
                     break
                 tracker.set_context(league_id=lid, league_name=lname(lid), season_name=sname)
                 _note(f"Fetching matches: league {lid}, season {sid}")
@@ -159,7 +182,9 @@ def run_fetch_job(job_id: str, payload: "FetchRequest") -> None:
                 tracker.advance(idx + 1)
             _job_store.update(schedule_empty_seasons=empty_schedule)
             _refresh_scraper_state()
-            if steps and empty_schedule >= len(steps):
+            if blocked("match lists"):
+                pass  # son sezonun istekleri devreyi kesti: "maç yok" değil, engellendik
+            elif steps and empty_schedule >= len(steps):
                 from src.i18n import get_i18n
                 _note(get_i18n().t("fetch_zero_matches"))
         elif payload.selections:
@@ -171,8 +196,8 @@ def run_fetch_job(job_id: str, payload: "FetchRequest") -> None:
         else:
             detail_plan[None] = None
 
-        # 3. Maç detayları
-        if not cancelled():
+        # 3. Maç detayları (devre önceki aşamalarda kesildiyse hiç başlamaz)
+        if not cancelled() and not blocked("match details"):
             # Geçici kayıtların yenilenmesi kartta ayrı sayılır (JobProgress.detail()["refreshed"])
             ui.match_data_fetcher.refresh_listener = tracker.add_refreshed
             try:
@@ -193,7 +218,11 @@ def run_fetch_job(job_id: str, payload: "FetchRequest") -> None:
             from src.i18n import get_i18n
             empty_n = int(_job_store.snapshot().get("schedule_empty_seasons") or 0)
             _job_store.update(result={"schedule_empty_seasons": empty_n, **tracker.result()})
-            if empty_n > 0:
+            if tracker.result().get("breaker"):
+                update_state(
+                    "Completed", 100, get_i18n().t("fetch_stopped_by_breaker", reason=tracker.result()["breaker"])
+                )
+            elif empty_n > 0:
                 update_state("Completed", 100, get_i18n().t("fetch_completed_with_warning"))
             else:
                 update_state("Completed", 100, "Background Task Completed Successfully.")
@@ -211,6 +240,7 @@ def run_fetch_job(job_id: str, payload: "FetchRequest") -> None:
         update_state("Failed", tracker.percent(), f"Error: {error_msg}")
     finally:
         set_wait_notifier(None)
+        request_breaker.deactivate(breaker_token)
         snap = _job_store.snapshot()
         if snap.get("is_running"):
             # Ensure job is closed if worker exited without terminal status
@@ -219,6 +249,14 @@ def run_fetch_job(job_id: str, payload: "FetchRequest") -> None:
             else:
                 update_state("Failed", int(snap.get("progress") or 0), "Interrupted")
         _refresh_scraper_state()
+
+
+def _details_breaker_reason(md: Any) -> str:
+    """İşin kesicisi açıldıysa onun nedeni; yoksa detay indiricinin kendi sayımı."""
+    breaker = request_breaker.current()
+    if breaker is not None and breaker.tripped:
+        return breaker.reason()
+    return _breaker_reason(md.last_status_counts)
 
 
 def _run_details(
@@ -253,6 +291,8 @@ def _run_details(
             should_cancel=cancelled,
             failed_callback=lambda mid: tracker.add_failed(mid, league_of.get(int(mid))),
         )
+        if getattr(md, "rate_limit_breaker_triggered", False):
+            _report_breaker(tracker, _details_breaker_reason(md), "match details")
         return
 
     md.begin_job_cache()
@@ -286,8 +326,7 @@ def _run_details(
             )
             offset += len(pending)
             if md.rate_limit_breaker_triggered:
-                tracker.breaker(_breaker_reason(md.last_status_counts))
-                _note("Too many failed requests; stopped fetching details.")
+                _report_breaker(tracker, _details_breaker_reason(md), "match details")
                 break
     finally:
         md.end_job_cache()
