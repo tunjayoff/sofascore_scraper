@@ -38,8 +38,10 @@ replace_fails_on_windows = pytest.mark.xfail(
     reason=(
         "Bilinen hata (Windows): hedef dosya başka bir iş parçacığı/süreç tarafından açıkken ya da aynı "
         "anda değiştirilirken os.replace PermissionError (WinError 5, 'Access is denied') verir. "
-        "atomic_write_text yeniden denemez: yazma kaybolur ve hata çağırana çıkar "
-        "(CI windows-latest: aynı dosyaya yazan 6 iş parçacığından 5'i; okuyucu varken tek yazıcı da)."
+        "atomic_write_text yerine koymayı 20 ms arayla 10 kez yeniden dener (src/store/files.py, PR #37); "
+        "denemeler tükenirse yazma kaybolur ve hata çağırana çıkar. CI windows-latest: aynı dosyaya yazan "
+        "6 iş parçacığı artık geçiyor (XPASS); dosyayı sıkı döngüde açık tutan okuyucu varken tek yazıcı "
+        "hâlâ başarısız, çünkü okuyucu yeniden denemelerden uzun sürüyor."
     ),
 )
 
