@@ -24,8 +24,8 @@ section is what the first tagged release will contain.
   `SOFASCORE_BROWSER_PROFILE` moves the browser profile. After a challenge, requests go
   straight to the browser for 10 minutes ("browser-first" mode).
 - **Web app rebuilt** around Leagues, Download, Matches, Match, Activity and Settings pages,
-  with dark mode, Turkish and English text, error toasts and a job card with a Stop button.
-  The first visit follows the server's `APP_LANGUAGE`.
+  with dark mode, English and Turkish text, error toasts and a job card with a Stop button.
+  The first visit follows the browser's language, or `APP_LANGUAGE` when it is set (#39).
 - **Job progress** with phases (seasons, matches, details, export), job-wide counters, the
   list of failed matches, an ETA and SofaScore wait countdowns (#10).
 - **Status classification.** `classify_status` separates played, decided-without-play and
@@ -122,6 +122,20 @@ section is what the first tagged release will contain.
   Opening it to the network is an explicit `--host`, and logs a warning.
 - The interface language variable is `APP_LANGUAGE`. `LANGUAGE` clashed with GNU gettext;
   a legacy `LANGUAGE` value is only honoured when it is `tr` or `en`.
+- **English by default.** One rule chooses the language everywhere (terminal, `--doctor`,
+  installers, launcher, web app): a language you set wins (`APP_LANGUAGE`, or the choice
+  saved on the Settings page), then the system language (`LC_ALL` / `LC_MESSAGES` / `LANG`,
+  on Windows the display language; in the web app the browser's language list), then
+  English. Until now everything was Turkish unless `APP_LANGUAGE` said otherwise.
+  `.env.example` leaves `APP_LANGUAGE` empty instead of `tr`, and the example Compose file
+  no longer sets it. An `.env` that sets `APP_LANGUAGE` keeps its language; one without it
+  now follows the system language (#39).
+- `main.py --help`, the messages of `--watch`, `--refresh-only` and `--headless`, the
+  progress lines of a headless download, the launcher and the installers exist in both
+  languages. The help and the installers used to be Turkish only and the launcher English
+  only. Log lines are still Turkish (#39).
+- `GET /api/settings` reports `language_explicit`: whether `APP_LANGUAGE` is set (#39).
+- The comments in `.env.example` are in English (#39).
 - `config/leagues.txt` and `config/league_sports.json` are user state and no longer tracked
   in git.
 - The CLI and the web app use the same data folder (`DATA_DIR`); `--data-dir` only overrides
