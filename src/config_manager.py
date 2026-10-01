@@ -10,8 +10,9 @@ from dataclasses import dataclass
 
 from src.exceptions import ConfigError
 from src.fsutil import atomic_write_text, file_lock
+from src import redact
 from src.i18n import app_language
-from src.logger import get_logger
+from src.logger import apply_log_level, get_logger
 from src.paths import default_league_config_path, env_file_path
 
 # .env dosyasını yükle
@@ -21,13 +22,15 @@ dotenv.load_dotenv(env_file_path())
 logger = get_logger("ConfigManager")
 
 _SECRET_KEYS = ("PROXY_URL", "SOFA_CAPTCHA_TOKEN")
+# Değişince log seviyesi çalışırken yeniden uygulanan anahtarlar
+_LOG_LEVEL_KEYS = ("LOG_LEVEL", "DEBUG")
 
 
 def mask_secret(key: str, value: str) -> str:
-    """Log'a yazılacak değeri maskeler (proxy kimlik bilgisi, captcha token)."""
+    """Log'a yazılacak değeri maskeler (proxy kimlik bilgisi, captcha token, adı gizli görünen her anahtar)."""
     if key in _SECRET_KEYS and value:
-        return "***"
-    return value
+        return redact.MASK
+    return redact.mask_value(key, value)
 
 
 @dataclass
@@ -457,6 +460,9 @@ class ConfigManager:
 
             # Çevre değişkenlerini yeniden yükle
             dotenv.load_dotenv(env_file_path(), override=True)
+            # .env değişmiş olabilir: maskelenecek değerler ve log seviyesi hemen güncellensin
+            redact.refresh()
+            apply_log_level()
 
             # Debug için ligleri logla
             logger.debug(f"Yapılandırma yeniden yüklendi: {len(self.leagues)} lig bulundu")
@@ -575,6 +581,10 @@ class ConfigManager:
             if not os.path.exists(env_path):
                 open(env_path, "a", encoding="utf-8").close()
             dotenv.set_key(env_path, key, value)
+            redact.refresh()
+            if key in _LOG_LEVEL_KEYS:
+                # Seviye yeniden başlatmayı beklemeden uygulanır
+                apply_log_level()
             logger.info(f"Çevre değişkeni güncellendi: {key}={mask_secret(key, value)}")
             return True
         except Exception as e:
