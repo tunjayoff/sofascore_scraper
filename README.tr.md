@@ -246,7 +246,7 @@ Tüm anahtarlar `.env.example` içinde. Sık kullanılanlar:
 | `APP_LANGUAGE` | `en` veya `tr`: terminal arayüzünün ve sunucu mesajlarının dili. Web uygulamasının dili **Ayarlar**’dan seçilir (orada değiştirmek bu değeri de günceller). |
 | `MAX_CONCURRENT` | Paralel detay isteği üst sınırı. |
 | `REQUEST_RATE_LIMIT` | **Tüm süreçlerin toplamı** için SofaScore'a saniyede istek sayısı (web uygulaması, CLI, her `--watch`, `--refresh-only`). Varsayılan `10 × MAX_CONCURRENT` (= `100`), `0` = kapalı. Bkz. [Ortak istek bütçesi](#ortak-istek-bütçesi-tüm-süreçler). |
-| `USE_PROXY` / `PROXY_URL` | İsteğe bağlı proxy. |
+| `USE_PROXY` / `PROXY_URL` | İsteğe bağlı proxy: `http://`, `https://` ya da `socks5://`; örn. `http://kullanici:parola@sunucu:8080`. Web uygulamasında **Ayarlar → Bağlantı** altından da ayarlanır; kayıtlı parola bir daha gösterilmez (form ve API `***` gösterir, öyle bırakılırsa parola korunur). Yerleşik tarayıcı değişen proxy’yi uygulama yeniden başlayınca kullanır. |
 | `FETCH_ONLY_FINISHED` | Yalnız bitmiş maçları tut (`status.type == finished`). Varsayılan `true`. Henüz oynanmamış fikstürler schedule dosyalarına yazılmaz. |
 | `REFRESH_WINDOW_HOURS` | Kaydedilen maçın başlangıçtan kaç saat boyunca geçici sayılıp yeniden okunacağı (varsayılan `72`, `0` = kapalı). Bkz. [Yenileme politikası](#yenileme-politikası). |
 | `RATE_LIMIT_*` / `SERVER_ERROR_*` | Devre kesicinin eşikleri; işin tüm aşamalarında istek başına sayılır. Bkz. [Eksik dilimler, başarısız istekler ve devre kesici](#eksik-dilimler-başarısız-istekler-ve-devre-kesici). |
@@ -291,7 +291,7 @@ python main.py --config /yol/leagues.txt --data-dir /yol/veri
 5. **Maç indir** — Sol sütunda lig seçin, ortada sezonları işaretleyin (sezon listesi ilk seferde kendiliğinden gelir; **Son sezon** / **Son 3 sezon** kısayolları vardır). Birden fazla ligden sezon seçebilirsiniz; hepsi sağdaki **İndirme listesi**’nde toplanır. **N sezonu indir**’e basın. Maçlar ve maç detayları (istatistik, olaylar, kadrolar) birlikte indirilir.
 6. İndirme sürerken kenar menünün altındaki kart ilerlemeyi gösterir; **Durdur** hemen etki eder: yeni istek gönderilmez, yeniden deneme beklemeleri kesilir; o an havada olan bir istek zaman aşımı (`REQUEST_TIMEOUT`) kadar sürebilir. Aynı anda tek indirme çalışır. **Etkinlik** şimdiki ve geçmiş indirmeleri listeler.
 7. **Maçlar** — Lig, sezon, tarih ve **Detay** (olanlar / eksikler) ile süzün. Bir ligde detayı eksik maç varsa (genelde yarıda durdurulan bir indirmeden kalır) üstte **Eksikleri indir** şeridi çıkar. Bir satıra tıklayınca maç açılır: periyot skorları, özet, istatistikler, olaylar ve kadrolar.
-8. **Ayarlar** — Dil ve tema; veri klasörü, disk kullanımı, **Yedek al** ve **Tüm veriyi sil**; gelişmiş istek ayarları (zaman aşımı, eşzamanlılık, bekleme süreleri, deneme sayısı).
+8. **Ayarlar** — Dil ve tema; veri klasörü, disk kullanımı, **Yedek al** ve **Tüm veriyi sil**; **Bağlantı**: bağlantı testi (**Bağlantıyı sına**, yalnızca bastığınızda SofaScore’a tek bir istek gönderir ve ne olduğunu söyler) ve proxy; gelişmiş istek ayarları (zaman aşımı, eşzamanlılık, bekleme süreleri, deneme sayısı).
 
 > **Tüm veriyi sil** indirilmiş bütün sezon, maç ve detayları siler ve geri alınamaz. Önce yedek alın. Yedek, `data/backups/` (yani `DATA_DIR` içi) altında `data/`, `leagues.txt` ve `league_sports.json` içeren bir zip’tir. `.env` proxy kimlik bilgisi içerebileceği için dahil edilmez; isterseniz `POST /api/data/backup` isteğine `?include_env=true` ekleyin. Geri yüklemek için uygulamayı durdurun, `data/` klasörünü proje klasörüne (veya `DATA_DIR`’e) açın; `leagues.txt` ve `league_sports.json`’ı da geri istiyorsanız `config/` altına kopyalayın.
 
@@ -498,13 +498,14 @@ Neden bu sayılar: `events/live` CDN'de 5 sn önbellekte kalıyor; araştırmada
 Web uygulaması kök yollarda; JSON API öneki **`/api`**.
 
 - **Ligler**: listele (her ligde `sport`), ekle (isteğe bağlı `sport`), sporu ayarlamak için `PATCH /api/leagues/{id}`, sil, ara (yerel/uzak; uzak sonuçlarda `sport`), sezonlar, sezon yenileme, eksik detay listesi.
+  - Uzak arama ve sezon yenileme, başarısız olduğunda boş liste döndürmek yerine nedenini söyler. Hata gövdesi `{"detail": {"reason": "...", "message": "..."}}` biçimindedir; `reason` şunlardan biridir: `blocked` (SofaScore 403 yanıtladı), `browser` (challenge istedi ama yerleşik tarayıcı başlatılamadı), `rate_limited` (429/503), `network` (bağlantı yok, zaman aşımı, proxy), `not_found` (sezon yenileme: bu ID’de lig yok) ya da `upstream` (uygulamanın beklemediği bir yanıt). Durum kodu 502’dir; `rate_limited` için 503, `not_found` için 404. 200 ile gelen boş liste, SofaScore’un gerçekten bir şey bulamadığı anlamına gelir. Web uygulaması her nedeni bir sonraki adımla birlikte gösterir.
 - **Sporlar**: `GET /api/sports` — desteklenen sporlar ve her biri için istenen maç detay dilimleri (`src/sports.py`’deki kayıt defterinin salt okunur görünümü).
 - **Maçlar**: `GET /api/matches` — sayfalı; filtreler `league_id` (tek ID ya da virgülle birden fazla, ör. `17,8`), `season_id`, `date`, `details=present|missing`, `sort=asc|desc`; her satırda `has_details`. Ayrıca tek maç JSON ve tek maç çekme.
 - **Scraper**: `POST /api/fetch` (gövde: `full` | `details`, `selections: [{league_id, season_ids, match_ids}]`), `POST /api/scrape/cancel` (sonrasında yeni istek gönderilmez, yeniden deneme beklemeleri kesilir), durum, SSE akışı.
 - **Pano / istatistik / ayarlar**: Web panellerine JSON; ayarlar `.env` ile uyumlu.
 - **Veri**: yedek zip, kapsam seçerek temizleme, CSV export.
 - **İndirme sürerken reddedilenler**: `POST /api/data/clear`, `POST /api/data/backup` (`scope=config` hariç), `DELETE /api/leagues/{id}` ve `data_dir`’i değiştiren `POST /api/settings`, `409` ve `{"detail": {"code": "job_running", "message": "..."}}` döndürür. Bunlardan biri sürerken hem bunlar hem `POST /api/fetch`, `data_operation_running` koduyla `409` döndürür. Başarılı `data_dir` değişikliği `"data_dir_changed": true` içerir; oluşturulamayan klasör `data_dir_unusable` koduyla `400` döndürür.
-- **Bypass Durumu**: `GET /api/bypass/status` (`health` ile: `ok` / `degraded` / `blocked`, bkz. [SofaScore bizi engelliyor mu?](#sofascore-bizi-engelliyor-mu-köprü-sağlığı)) ve canlı test `POST /api/bypass/test`.
+- **Bypass Durumu**: `GET /api/bypass/status` (`health` ile: `ok` / `degraded` / `blocked`, bkz. [SofaScore bizi engelliyor mu?](#sofascore-bizi-engelliyor-mu-köprü-sağlığı)) ve canlı test `POST /api/bypass/test`: tarayıcı üzerinden tek bir istek; yanıtta `success`, `reason` (başarısızsa, yukarıdaki gibi), `browser_ready`, `has_token` / `is_valid` ve `health` bulunur. Hiçbir şey bunu kendiliğinden çağırmaz; web uygulamasında **Ayarlar → Bağlantı** altındaki **Bağlantıyı sına** düğmesidir.
 - **Loglar / tanılama** (salt okunur, bkz. [Loglar ve tanılama](#loglar-ve-tanılama)): `GET /api/logs` (`limit` 1–2000, `level` = en düşük seviye), `GET /api/diagnostics` (özet, JSON), `GET /api/diagnostics/bundle` (zip indirme). Hiçbiri dosya yolu almaz.
 - **Sağlık**: `GET /health` (`/api` öneki yok) `status`, `version`, `ui` alanlarının yanında `bridge` (aynı sağlık bloğu) ve `throttle` ([ortak istek bütçesi](#ortak-istek-bütçesi-tüm-süreçler)) döndürür.
 
@@ -536,6 +537,7 @@ Her şey tarayıcının challenge'ı çözmesine bağlı. Bu bozulduğunda işle
 - **Nerede görünür:**
   - `GET /health` → `bridge` ve `GET /api/bypass/status` → `health`: `state`, `consecutive_failures`, `last_success_at`, `failing_since`, `last_error` (`kind`: `challenge` / `forbidden` / `browser`), `thresholds`. `/health` içindeki `status` `ok` kalır: o, sunucunun ayakta olduğunu söyler.
   - Web uygulaması: durum `ok` değilken her sayfanın üstünde bir afiş. Kapatınca o seri için gizlenir; durum kötüleşirse ya da yeni bir seri başlarsa yeniden görünür.
+  - Web uygulaması, **Ayarlar → Bağlantı**: aynı durum ve tek bir isteği kendiniz denemek için **Bağlantıyı sına** (tarayıcı çalışıyor mu, bot koruması geçildi mi, başarısızsa nedeni).
   - Log: istek başına değil, durum değişimi başına bir uyarı.
   - Terminal modları (etkileşimli, `--headless`, `--watch`, `--refresh-only`): durum değişimi başına stderr'de, uygulama dilinde tek satır.
 - Durum süreç başınadır: web uygulaması kendi köprüsünü, her CLI süreci kendininkini bildirir.
