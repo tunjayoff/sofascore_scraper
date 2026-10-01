@@ -1,0 +1,80 @@
+{
+ "all": {
+  "matches": 1,
+  "scanned": 1,
+  "slices": 2
+ },
+ "default": {
+  "matches": 1,
+  "scanned": 2,
+  "slices": 1
+ },
+ "default_again": {
+  "matches": 0,
+  "scanned": 1,
+  "slices": 0
+ },
+ "markers_after_all": {},
+ "markers_after_default": {
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/_slice_status.json": {
+   "lineups": {
+    "empty": {
+     "at": "<volatile>",
+     "count": 2
+    }
+   },
+   "pregame_form": {
+    "empty": {
+     "at": "<volatile>",
+     "count": 2
+    }
+   }
+  },
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/_unavailable.json": {
+   "lineups": 2,
+   "pregame_form": 2
+  }
+ },
+ "markers_before": {
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/_unavailable.json": {
+   "statistics": 2
+  },
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/_slice_status.json": {
+   "lineups": {
+    "empty": {
+     "at": "<volatile>",
+     "count": 2
+    }
+   },
+   "pregame_form": {
+    "empty": {
+     "at": "<volatile>",
+     "count": 2
+    }
+   }
+  },
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/_unavailable.json": {
+   "lineups": 2,
+   "pregame_form": 2
+  }
+ },
+ "requests_after_all": [
+  {
+   "concurrent": [
+    "async https://www.sofascore.com/ 200",
+    "sync /event/9100002 200",
+    "sync /event/9100002/lineups 200",
+    "sync /event/9100002/pregame-form 404"
+   ]
+  }
+ ],
+ "requests_after_default": [
+  {
+   "concurrent": [
+    "async https://www.sofascore.com/ 200",
+    "sync /event/9100001 200",
+    "sync /event/9100001/statistics 200"
+   ]
+  }
+ ]
+}
