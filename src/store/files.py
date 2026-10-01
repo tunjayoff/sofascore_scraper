@@ -8,10 +8,18 @@ dosyaya aynı anda yazan iki süreç birbirinin geçici dosyasını ezmez.
 
 İki katman var:
   * `atomic_write_*` ve `file_lock`: 2.x kodunun kullandığı yardımcılar (src/fsutil.py bunları yeniden
-    dışa açar). Hata olduğu gibi (OSError) çıkar; hiçbir şey fsync edilmez.
+    dışa açar). Hata olduğu gibi (OSError) çıkar; hiçbir şey fsync edilmez. Dosya izni 0600'dür
+    (tempfile.mkstemp öyle açar); 2.x dosyaları bugünkü gibi kalır.
   * `write_bytes`, `read_bytes`, `replace`, `remove`, hazırlık/çöp işlevleri: Store'un kendi kullandığı
     katman. Her OSError bir StoreError'a çevrilir (`fatal` errno'dan hesaplanır) ve STORE_DURABILITY=full
     ise dosya ve dizini fsync edilir.
+
+Dosya izinleri (karar S12): Store katmanının yazdığı dosyalar (yükler, manifestler, .meta/schema.json)
+sürecin umask'ine uyar: umask 022 ile 0644, 077 ile 0600. Böylece Docker bağlama noktasını başka bir
+kullanıcıyla okuyan ya da başka hesapla çalışan bir yedekleme aracı veriyi okuyabilir (iki SQLite dosyası
+zaten böyledir). Dizinler os.makedirs ile açılır, yani onlar da umask'e uyar. Gizli bilgi taşıyan dosyalar
+(.env, tarayıcı profili) bu işlevlerle yazılmaz; onlara src/private_files.py bakar. POSIX izinleri
+Windows'ta yoktur: orada bu ayrımın etkisi olmaz.
 
 Windows: hedef başka bir süreçte açıkken os.replace PermissionError verir. Yerine koyma en çok
 REPLACE_RETRIES kez, REPLACE_RETRY_PAUSE aralıkla yeniden denenir.
@@ -26,7 +34,7 @@ import shutil
 import tempfile
 import time
 import uuid
-from typing import Any, Callable, Iterator, Optional, Union
+from typing import Any, Callable, Iterator, Optional, Tuple, Union
 
 from src.store import layout
 from src.store.errors import PayloadMissing, StoreError
@@ -41,6 +49,9 @@ PathLike = Union[str, "os.PathLike[str]"]
 REPLACE_RETRIES = 10
 REPLACE_RETRY_PAUSE = 0.02  # saniye
 DURABILITY_ENV = "STORE_DURABILITY"
+# Store katmanının dosyaları bu izinle açılır; çekirdek sürecin umask'ini kendisi düşer (022 → 0644)
+STORE_FILE_MODE = 0o666
+TMP_NAME_ATTEMPTS = 100
 
 _WINDOWS = os.name == "nt"
 
@@ -85,14 +96,41 @@ def fsync_dir(directory: PathLike) -> None:
             os.close(fd)
 
 
-# --- 2.x yardımcıları (src/fsutil.py bunları yeniden dışa açar) -----------------------------------
+# --- geçici dosya ve atomik yazma ------------------------------------------------------------------
 
-def atomic_write_bytes(path: PathLike, data: bytes, *, durable: bool = False) -> None:
-    """Baytları atomik yazar; üst dizinleri oluşturur. Hata olduğu gibi çıkar, hedef eski haliyle kalır."""
+# mkstemp'in bayrakları, okuma dışında: yalnızca yeni dosya (O_EXCL), bağ izlenmez, Windows'ta ikili kip
+_TMP_OPEN_FLAGS = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0)
+
+TmpOpener = Callable[[str, str], Tuple[int, str]]
+
+
+def _open_private_tmp(directory: str, name: str) -> Tuple[int, str]:
+    """2.x yardımcılarının geçici dosyası: tempfile.mkstemp, yani umask ne olursa olsun 0600."""
+    return tempfile.mkstemp(dir=directory, prefix=f".{name}.", suffix=".tmp")
+
+
+def _open_store_tmp(directory: str, name: str) -> Tuple[int, str]:
+    """
+    Store katmanının geçici dosyası: mkstemp ile aynı ad biçimi (`.<ad>.<rastgele>.tmp`), ama
+    STORE_FILE_MODE ile açılır ve izni çekirdek umask'e göre belirler (karar S12).
+
+    umask burada okunmaz: os.umask değeri yalnızca değiştirerek döndürür, bu da o anda başka bir iş
+    parçacığının açtığı dosyanın iznini bozar. İzin açılışta verilir; sonradan chmod yapılmaz.
+    """
+    for _ in range(TMP_NAME_ATTEMPTS):
+        tmp = os.path.join(directory, f".{name}.{uuid.uuid4().hex[:8]}.tmp")
+        try:
+            return os.open(tmp, _TMP_OPEN_FLAGS, STORE_FILE_MODE), tmp
+        except FileExistsError:
+            continue  # ad dolu: var olan dosyaya dokunulmadı (O_EXCL), başka adla dene
+    raise FileExistsError(errno.EEXIST, "Kullanılmayan geçici dosya adı bulunamadı", directory)
+
+
+def _atomic_write(path: PathLike, data: bytes, *, durable: bool, open_tmp: TmpOpener) -> None:
     target = os.fspath(path)
     directory = os.path.dirname(os.path.abspath(target))
     os.makedirs(directory, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=directory, prefix=f".{os.path.basename(target)}.", suffix=".tmp")
+    fd, tmp = open_tmp(directory, os.path.basename(target))
     try:
         with os.fdopen(fd, "wb") as f:
             f.write(data)
@@ -106,6 +144,16 @@ def atomic_write_bytes(path: PathLike, data: bytes, *, durable: bool = False) ->
         raise
     if durable:
         fsync_dir(directory)
+
+
+# --- 2.x yardımcıları (src/fsutil.py bunları yeniden dışa açar) -----------------------------------
+
+def atomic_write_bytes(path: PathLike, data: bytes, *, durable: bool = False) -> None:
+    """
+    Baytları atomik yazar; üst dizinleri oluşturur. Hata olduğu gibi çıkar, hedef eski haliyle kalır.
+    Dosya izni 0600'dür (2.x davranışı); Store katmanı `write_bytes` kullanır.
+    """
+    _atomic_write(path, data, durable=durable, open_tmp=_open_private_tmp)
 
 
 def atomic_write_text(path: str, text: str, encoding: str = "utf-8") -> None:
@@ -163,9 +211,15 @@ def read_bytes(path: PathLike) -> bytes:
 
 
 def write_bytes(path: PathLike, data: bytes, *, durable: Optional[bool] = None) -> None:
-    """Atomik yazma. durable=None → STORE_DURABILITY ortam değişkeni karar verir."""
+    """
+    Atomik yazma. durable=None → STORE_DURABILITY ortam değişkeni karar verir.
+
+    Dosyanın izni sürecin umask'ine uyar (karar S12), hedef daha önce başka bir izinle var olsa bile:
+    yerine konan dosya yeni dosyadır.
+    """
     try:
-        atomic_write_bytes(path, data, durable=durability_full() if durable is None else durable)
+        _atomic_write(path, data, durable=durability_full() if durable is None else durable,
+                      open_tmp=_open_store_tmp)
     except OSError as e:
         raise _store_error(e, path) from e
 
@@ -213,6 +267,7 @@ def new_staging_dir(data_dir: PathLike, label: str = "") -> str:
     """
     DATA_DIR/.meta/tmp altında yeni, boş bir dizin açar ve yolunu döndürür. Birden çok dosyadan oluşan
     bir varlık dizini burada kurulur, sonra `publish_dir` ile tek yeniden adlandırmayla yerine taşınır.
+    Dizin os.makedirs ile açılır (tempfile.mkdtemp ile değil), yani izni umask'e uyar (karar S12).
     """
     path = os.path.join(layout.resolve(data_dir, layout.TMP_DIR), _unique_name(label))
     try:
@@ -226,6 +281,11 @@ def publish_dir(staged: PathLike, final: PathLike, *, durable: Optional[bool] = 
     """
     Hazırlık dizinini tek yeniden adlandırmayla yerine taşır: dizin ya tam görünür ya hiç görünmez.
     Hedef zaten varsa (boş bile olsa) StoreError; hiçbir şeyin üzerine yazılmaz.
+
+    İzinler (karar S12): yeniden adlandırma izinlere dokunmaz, yayımlanan ağaç hazırlandığı izinlerle
+    görünür. Dizin `new_staging_dir` ile açılıp içi `write_bytes` ile doldurulduysa (alt dizinler dahil)
+    her şey umask'e uyar; burada açılan üst dizinler de öyle. Başka yoldan (mkdtemp, mkstemp, kopyalama)
+    hazırlanmış bir dizin kendi izinleriyle yayımlanır.
     """
     source, target = os.fspath(staged), os.fspath(final)
     parent = os.path.dirname(os.path.abspath(target))
