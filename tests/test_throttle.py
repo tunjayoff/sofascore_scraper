@@ -17,6 +17,7 @@ import pytest
 import src.challenge_solver as cs
 import src.utils as utils
 from src import throttle
+from src.client import request_context
 from src.throttle import RequestThrottle, Reservation, advance, put_back, take
 from src.watcher import MatchWatcher
 
@@ -971,6 +972,62 @@ def test_calls_do_not_share_their_slot_wait(monkeypatch):
         assert await first == "ok"
 
     asyncio.run(run())
+
+
+# --- iptal: istek katmanı ve köprü sırayı geri verir, köprünün beklemesi kesilir (FX-6) ---------
+
+def _queued_seconds():
+    """Ortak durum dosyasına göre kuyruğun sonu şimdiden kaç saniye ileride."""
+    with open(os.path.join(throttle.state_dir(), "api.json"), encoding="utf-8") as f:
+        return json.load(f)["tat"] - time.time()
+
+
+def test_cancelled_sync_request_gives_its_slot_back(shared_dir, monkeypatch):
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", "0.1")  # 10 sn'de bir istek
+    assert throttle.reserve() == 0.0
+    answers = iter([False])  # deneme başındaki kontrol geçer, sıra beklenirken iptal gelir
+
+    with request_context(cancel=lambda: next(answers, True)), \
+            patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(utils, "_get_proxy_config", return_value=(False, "")), \
+            patch.object(utils.cffi_requests, "get") as get, \
+            pytest.raises(utils.FetchCancelled):
+        utils.make_api_request("/x")
+    assert get.call_count == 0
+    assert 9.0 < throttle.reserve() <= 10.0  # iade olmasaydı ~20 sn
+
+
+def test_stopped_bulk_job_leaves_no_queue_behind(shared_dir, monkeypatch):
+    """
+    Uçtan uca: 70 eşzamanlı istek (10 maç × 7 dilim) başlar, ilki gidince iş durdurulur. O anda
+    MAX_CONCURRENT kadarı sırasını bekliyor, gerisi istek semaforunda; iptal edilince hepsi sırayla
+    bütçeden geçer. Eskiden her biri kuyrukta bir sıra bırakırdı: sonraki istek, hangi süreçten gelirse
+    gelsin, burada (1 istek/sn) 69 sn, varsayılan 5 istek/sn ile 13 sn beklerdi. Şimdi hiçbiri gönderilmez
+    ve kuyrukta sıra kalmaz.
+    """
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", "1")
+    session = MagicMock()
+    session.get = AsyncMock(return_value=Resp(200, {"ok": 1}))
+    stopped = []
+
+    async def stop():  # bütün istekler yola çıktıktan sonra: "Durdur"
+        stopped.append(True)
+
+    async def job():
+        return await asyncio.gather(
+            *[utils.make_api_request_async(session, f"/event/{n}") for n in range(70)], stop(),
+            return_exceptions=True,
+        )
+
+    with request_context(cancel=lambda: bool(stopped)), \
+            patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(utils, "_get_proxy_config", return_value=(False, "")):
+        results = asyncio.run(job())
+
+    assert session.get.await_count == 1  # durdurmadan sonra hiçbir istek gitmedi
+    assert sum(isinstance(r, utils.FetchCancelled) for r in results) == 69
+    assert _queued_seconds() <= 1.0 + 1e-3  # yalnızca giden isteğin aralığı
+    assert throttle.reserve() <= 1.0
 
 
 # --- izleyici: 1 sn aralık ortak bütçenin "watch" şeridinden gelir -----------------------------
