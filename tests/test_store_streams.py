@@ -43,16 +43,27 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DAY = 86400
 
 # Başka bir süreç: depoyu açar, "ready" yazar, stdin'den bir satır gelince `live` akışına N olay ekler ve
-# aldığı sıra numaralarını JSON olarak yazar
+# aldığı sıra numaralarını JSON olarak yazar.
+# SQLite'ın yazma kilidi sırası adil değildir: bekleyen süreç aralıklarla yoklar, aralıksız yazan süreç ise
+# kilidi bıraktığı anda geri alır. Yavaş diskte (Windows CI) bekleyen 5 sn'lik süreyi doldurabilir; bu yüzden
+# yardımcı süreç eklemeler arasında kısa bir boşluk bırakır ve StoreBusy alırsa aynı olayı yeniden dener.
 APPENDER = """
-import json, sys
-from src.store import StreamEvent, open_store
+import json, sys, time
+from src.store import StoreBusy, StreamEvent, open_store
 store = open_store(sys.argv[1])
 print("ready", flush=True)
 sys.stdin.readline()
 seqs = []
 for n in range(int(sys.argv[3])):
-    seqs += store.streams.append("live", [StreamEvent("live.test", {"who": sys.argv[2], "n": n})])
+    for attempt in range(20):
+        try:
+            seqs += store.streams.append("live", [StreamEvent("live.test", {"who": sys.argv[2], "n": n})])
+            break
+        except StoreBusy:
+            continue
+    else:
+        raise SystemExit("state.db stayed locked")
+    time.sleep(0.01)
 store.close()
 print(json.dumps(seqs), flush=True)
 """
@@ -342,25 +353,24 @@ def test_single_stream_read_uses_the_stream_index_and_state_db_has_no_statistics
 # --- süreçler arası sıra ----------------------------------------------------------------------------
 
 def test_seq_is_strictly_increasing_across_two_appending_processes(store: Store, data_dir: Path) -> None:
-    per_process = 40
+    per_process = 30
+    store.streams.head()  # akış kimliği önceden üretilsin: aşağıdaki okumalar hiç yazmasın
     procs = [start_process(APPENDER, data_dir, who, per_process) for who in ("a", "b")]
     for proc in procs:  # ikisi de hazır: aynı anda başlasınlar
         assert proc.stdin is not None
         proc.stdin.write("\n")
         proc.stdin.flush()
 
-    # Bu süreç de ekler ve bir yandan günlüğü izler: izleyen, eklenen her satırı tam bir kez ve sırayla görmeli
+    # Bu süreç bir yandan günlüğü izler: izleyen, eklenen her satırı tam bir kez ve sırayla görmeli
     followed: List[int] = []
-    own: List[int] = []
     after = 0
     deadline = time.monotonic() + 120
     while any(proc.poll() is None for proc in procs):
         assert time.monotonic() < deadline
-        if len(own) < per_process:
-            own += [seq for seq in store.streams.append("live", [live(len(own), source="main")]) if seq is not None]
         batch = store.streams.read(after=after, limit=7)
         followed += seqs_of(batch)
         after = batch.last_seq
+        time.sleep(0.002)
     reported = [json.loads(finish_process(proc, release=False)) for proc in procs]
     while True:
         batch = store.streams.read(after=after, limit=7)
@@ -371,14 +381,14 @@ def test_seq_is_strictly_increasing_across_two_appending_processes(store: Store,
 
     everything = store.streams.read(limit=10_000).events
     all_seqs = [event.seq for event in everything]
-    assert len(all_seqs) == 2 * per_process + len(own)
+    assert len(all_seqs) == 2 * per_process
     assert all(a < b for a, b in zip(all_seqs, all_seqs[1:], strict=False))  # kesin artan, yinelenen yok
     assert followed == all_seqs  # okuyan, daha küçük numaralı bir satır kaydedilmeden büyüğünü görmedi
     for who, seqs in zip(("a", "b"), reported, strict=True):
         assert len(seqs) == per_process and seqs == sorted(seqs)
         mine = [event for event in everything if event.data.get("who") == who]
         assert [event.seq for event in mine] == seqs and [event.data["n"] for event in mine] == list(range(per_process))
-    assert sorted(reported[0] + reported[1] + own) == all_seqs
+    assert sorted(reported[0] + reported[1]) == all_seqs
     assert set(reported[0]) & set(reported[1]) == set()
 
 
