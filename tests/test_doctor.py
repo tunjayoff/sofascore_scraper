@@ -701,9 +701,104 @@ def test_locale_keys_exist_in_both_languages_and_cover_the_code():
     source = (REPO / "src" / "doctor.py").read_text(encoding="utf-8")
     used = set(re.findall(r'"(doctor_[a-z_]+)"', source))
     used.discard("doctor_label_")
-    used |= {"doctor_label_" + check_id for check_id in doctor.CHECK_IDS + ("live",)}
+    used |= {"doctor_label_" + check_id for check_id in doctor.CHECK_IDS + doctor.EXTRA_CHECK_IDS + ("live",)}
     assert used <= keys["en"], used - keys["en"]
     assert keys["en"] <= used, keys["en"] - used  # kullanılmayan çeviri kalmasın
+
+
+# --- istek bütçesi (yalnızca extra=True ile: yeni CLI) ------------------------------------------
+
+
+def test_budget_at_or_below_the_default_is_ok(make_ctx):
+    res = doctor.check_budget(make_ctx())
+    assert (res.status, res.code, res.fix) == (OK, "budget_ok", None)
+    assert res.detail == {"rate": 5.0, "default": 5.0, "source": "default"}
+    assert res.summary == "5 requests per second (the default is 5)" and res.label == "Request budget"
+    for line in ("REQUEST_RATE_LIMIT=5", "REQUEST_RATE_LIMIT=2.5", "REQUEST_RATE_LIMIT="):
+        assert doctor.check_budget(make_ctx(env_text=line + "\n")).status == OK, line
+    slow = doctor.check_budget(make_ctx(env_text="REQUEST_RATE_LIMIT=2.5\n"))
+    assert slow.detail == {"rate": 2.5, "default": 5.0, "source": "REQUEST_RATE_LIMIT"}
+
+
+def test_budget_default_is_the_default_of_the_throttle():
+    from src import throttle
+
+    assert doctor.DEFAULT_REQUEST_RATE == throttle.DEFAULT_RATE_LIMIT
+    assert doctor._RATE_OFF_WORDS == throttle._OFF_WORDS
+
+
+def test_budget_above_the_default_is_a_warning(make_ctx):
+    res = doctor.check_budget(make_ctx(env_text="REQUEST_RATE_LIMIT=12\n"))
+    assert (res.status, res.code) == (WARN, "budget_above_default")
+    assert res.summary.startswith("12 requests per second is above the default of 5")
+    assert "SofaScore is more likely to block you" in res.summary
+    assert "REQUEST_RATE_LIMIT=5" in res.fix and "rate = 5" in res.fix
+    assert res.detail == {"rate": 12.0, "default": 5.0, "source": "REQUEST_RATE_LIMIT"}
+    assert doctor.check_budget(make_ctx(env_text="REQUEST_RATE_LIMIT=5.5\n")).code == "budget_above_default"
+
+
+@pytest.mark.parametrize("value", ["0", "off", "OFF", "false", "none", "disabled", "-3"])
+def test_budget_off_is_a_warning(make_ctx, value):
+    """0, kapatma sözcükleri ve negatif sayı sınırlayıcıyı kapatır (src/throttle.configured_rate ile aynı kural)."""
+    res = doctor.check_budget(make_ctx(environ={"REQUEST_RATE_LIMIT": value}))
+    assert (res.status, res.code, res.detail["rate"]) == (WARN, "budget_off", 0.0)
+    assert res.summary.startswith("the limit is off") and res.fix
+
+
+@pytest.mark.parametrize("value", ["fast", "nan", "inf"])
+def test_budget_invalid_value_means_the_default(make_ctx, value):
+    # Geçersiz değeri `env` denetimi bildirir; uygulama varsayılanı kullanır
+    ctx = make_ctx(env_text=f"REQUEST_RATE_LIMIT={value}\n")
+    assert doctor.check_budget(ctx).detail == {"rate": 5.0, "default": 5.0, "source": "default"}
+    assert doctor.check_env(ctx).status == FAIL
+
+
+def test_budget_matches_what_the_throttle_would_use(make_ctx, monkeypatch):
+    from src import throttle
+
+    for value in ("", "0", "off", "no", "3", "5", "7.5", "-1", "fast", "inf", " 12 "):
+        monkeypatch.setenv("REQUEST_RATE_LIMIT", value)
+        rate = doctor.check_budget(make_ctx(environ={"REQUEST_RATE_LIMIT": value})).detail["rate"]
+        assert rate == throttle.configured_rate(), value
+
+
+def test_budget_new_name_wins_and_process_environment_beats_the_file(make_ctx):
+    res = doctor.check_budget(make_ctx(environ={"SOFASCORE_CLIENT__RATE": "3", "REQUEST_RATE_LIMIT": "20"}))
+    assert (res.status, res.detail["rate"], res.detail["source"]) == (OK, 3.0, "SOFASCORE_CLIENT__RATE")
+    res = doctor.check_budget(make_ctx(env_text="REQUEST_RATE_LIMIT=20\n", environ={"REQUEST_RATE_LIMIT": "4"}))
+    assert (res.status, res.detail["rate"]) == (OK, 4.0)
+
+
+def test_budget_uses_the_rate_the_caller_resolved(make_ctx):
+    """Yeni CLI geçerli değeri (yapılandırma dosyası ve bayraklar dahil) kendisi verir."""
+    ctx = make_ctx(env_text="REQUEST_RATE_LIMIT=2\n", request_rate=20.0, request_rate_source="/etc/sofascore.toml")
+    res = doctor.check_budget(ctx)
+    assert (res.code, res.detail) == ("budget_above_default", {"rate": 20.0, "default": 5.0, "source": "/etc/sofascore.toml"})
+    assert doctor.check_budget(make_ctx(request_rate=0.0)).detail == {"rate": 0.0, "default": 5.0, "source": "settings"}
+
+
+def test_budget_in_turkish(make_ctx):
+    res = doctor.check_budget(make_ctx(lang="tr", environ={"REQUEST_RATE_LIMIT": "0"}))
+    assert res.label == "İstek bütçesi" and res.summary.startswith("sınır kapalı")
+
+
+def test_budget_runs_only_as_an_extra_check(make_ctx, capsys):
+    """
+    `python main.py --doctor`un denetim listesi değişmez (CLI goldenları onu bütçe kapalıyken sabitler); bütçe
+    denetimini yalnızca `run_checks(extra=True)` çağıran yeni CLI çalıştırır.
+    """
+    assert "budget" not in doctor.CHECK_IDS and doctor.EXTRA_CHECK_IDS == ("budget",)
+    ctx = make_ctx(environ={"REQUEST_RATE_LIMIT": "0"})
+    plain = doctor.run_checks(ctx, skip=["browser"])
+    assert [r.id for r in plain] == [i for i in doctor.CHECK_IDS if i != "browser"]
+    extra = doctor.run_checks(ctx, skip=["browser"], extra=True)
+    assert [r.id for r in extra] == [i for i in doctor.CHECK_IDS if i != "browser"] + ["budget"]
+    assert extra[-1].code == "budget_off"
+    assert [r.id for r in doctor.run_checks(ctx, only=["budget"], extra=True)] == ["budget"]
+    assert doctor.run_checks(ctx, only=["budget"]) == []
+    with pytest.raises(SystemExit) as e:
+        doctor.main(["--only", "budget"])  # eski giriş noktası bu adı tanımaz
+    assert e.value.code == 2 and "budget" in capsys.readouterr().err
 
 
 # --- canlı denetim: tanımlı, ama yalnızca açıkça istenince -------------------------------------
