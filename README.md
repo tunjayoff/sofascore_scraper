@@ -248,7 +248,7 @@ See `.env.example` for all keys. Common ones:
 | `APP_LANGUAGE` | `en` or `tr`: language of the terminal UI and server messages. The web app has its own switch under **Settings** (changing it there also updates this value). |
 | `MAX_CONCURRENT` | Parallel detail requests cap. |
 | `REQUEST_RATE_LIMIT` | Requests per second to SofaScore for **all processes together** (web app, CLI, every `--watch`, `--refresh-only`). Default `10 × MAX_CONCURRENT` (= `100`), `0` = off. See [Request budget](#request-budget-all-processes). |
-| `USE_PROXY` / `PROXY_URL` | Optional HTTP proxy. |
+| `USE_PROXY` / `PROXY_URL` | Optional proxy: `http://`, `https://` or `socks5://`, e.g. `http://user:password@host:8080`. Also under **Settings → Connection** in the web app; the saved password is never shown again (the form and the API show `***`, and leaving it that way keeps it). The built-in browser uses a changed proxy after the app restarts. |
 | `FETCH_ONLY_FINISHED` | Keep only finished matches (`status.type == finished`). Default `true`. Upcoming fixtures are dropped from schedule files. |
 | `REFRESH_WINDOW_HOURS` | Hours after kick-off during which a saved match is provisional and gets re-read (default `72`, `0` = off). See [Refresh policy](#refresh-policy). |
 | `RATE_LIMIT_*` / `SERVER_ERROR_*` | Circuit breaker thresholds, counted per request across all phases of a job. See [Missing slices, failed requests and the circuit breaker](#missing-slices-failed-requests-and-the-circuit-breaker). |
@@ -293,7 +293,7 @@ python main.py --config /path/to/leagues.txt --data-dir /path/to/data
 5. **Download** — Left column: pick a league. Middle: tick seasons (the season list is fetched automatically the first time; **Latest season** / **Last 3 seasons** are shortcuts). You can pick seasons from several leagues; they collect in the **Download list** on the right. Press **Download N seasons**. Matches and their details (statistics, events, lineups) are downloaded together.
 6. While a download runs, the card at the bottom left of the sidebar shows progress; **Stop** takes effect right away: no new requests are sent and retry waits are cut short; a request already in flight can take up to the request timeout (`REQUEST_TIMEOUT`) to return. Only one download runs at a time. **Activity** lists the current and past downloads.
 7. **Matches** — Filter by league, season, date and **Details** (with / missing). When a league has matches without details (typically after a stopped download), a banner offers **Download missing**. Click a row to open the match: score by period, overview, statistics, events and lineups.
-8. **Settings** — Language and theme; data folder, disk usage, **Back up** and **Delete all data**; advanced request settings (timeout, concurrency, waits, retries).
+8. **Settings** — Language and theme; data folder, disk usage, **Back up** and **Delete all data**; **Connection**: a connection check (**Test connection** sends one request to SofaScore, only when you press it, and says what happened) and the proxy; advanced request settings (timeout, concurrency, waits, retries).
 
 > **Delete all data** removes every downloaded season, match and detail and cannot be undone. Take a backup first. A backup is a zip under `data/backups/` (inside your `DATA_DIR`) holding `data/`, `leagues.txt` and `league_sports.json`. `.env` is left out because it can hold proxy credentials; add `?include_env=true` to `POST /api/data/backup` if you want it. To restore: stop the app, unzip `data/` into the project folder (or your `DATA_DIR`), and copy `leagues.txt` and `league_sports.json` to `config/` if you want those back too.
 
@@ -509,13 +509,14 @@ Why these numbers: `events/live` is cached for 5 s at the CDN, and whistle → `
 All routes are prefixed with `/api` unless noted.
 
 - **Leagues**: list (each with `sport`), create (optional `sport`), `PATCH /api/leagues/{id}` to set the sport, delete, search (local / remote, remote results carry `sport`), seasons, refresh seasons, missing-details.
+  - Remote search and season refresh say why they failed instead of answering with an empty list. The error body is `{"detail": {"reason": "...", "message": "..."}}`, with `reason` one of `blocked` (SofaScore answered 403), `browser` (it asked for the challenge and the built-in browser could not start), `rate_limited` (429/503), `network` (no connection, timeout, proxy), `not_found` (season refresh: no league with that ID) or `upstream` (an answer the app did not expect). The status is 502, except 503 for `rate_limited` and 404 for `not_found`. An empty list with 200 means SofaScore really found nothing. The web app shows each reason with a next step.
 - **Sports**: `GET /api/sports` — the supported sports and, for each, the match-detail slices requested for it (read-only view of the registry in `src/sports.py`).
 - **Matches**: `GET /api/matches` — paginated, filters `league_id` (one id or several comma-separated, e.g. `17,8`), `season_id`, `date`, `details=present|missing`, `sort=asc|desc`; every row has `has_details`. Also single-match JSON and on-demand fetch for one match.
 - **Scraper**: `POST /api/fetch` (body: mode `full` or `details`, `selections: [{league_id, season_ids, match_ids}]`), `POST /api/scrape/cancel` (no new requests after it; retry waits are cut short), status, SSE stream.
 - **Dashboard / stats / settings**: JSON for the web UI; settings mirror `.env` keys.
 - **Data**: backup zip, clear scopes, CSV export.
 - **Refusals while a download runs**: `POST /api/data/clear`, `POST /api/data/backup` (except `scope=config`), `DELETE /api/leagues/{id}` and a `POST /api/settings` that changes `data_dir` answer `409` with `{"detail": {"code": "job_running", "message": "..."}}`. While one of these is in progress, they and `POST /api/fetch` answer `409` with code `data_operation_running`. A successful `data_dir` change answers `"data_dir_changed": true`; a folder that cannot be created answers `400` with code `data_dir_unusable`.
-- **Bypass Status**: `GET /api/bypass/status` (with `health`: `ok` / `degraded` / `blocked`, see [Is SofaScore blocking us?](#is-sofascore-blocking-us-bridge-health)) and live test `POST /api/bypass/test`.
+- **Bypass Status**: `GET /api/bypass/status` (with `health`: `ok` / `degraded` / `blocked`, see [Is SofaScore blocking us?](#is-sofascore-blocking-us-bridge-health)) and live test `POST /api/bypass/test`: one request through the browser, answered with `success`, `reason` (as above, when it failed), `browser_ready`, `has_token` / `is_valid` and `health`. Nothing calls it on its own; in the web app it is the **Test connection** button under **Settings → Connection**.
 - **Logs / diagnostics** (read-only, see [Logs and diagnostics](#logs-and-diagnostics)): `GET /api/logs` (`limit` 1–2000, `level` = minimum level), `GET /api/diagnostics` (the summary as JSON), `GET /api/diagnostics/bundle` (zip download). None of them takes a file path.
 - **Health**: `GET /health` (no `/api` prefix) answers `status`, `version`, `ui`, plus `bridge` (the same health block) and `throttle` (the shared [request budget](#request-budget-all-processes)).
 
@@ -547,6 +548,7 @@ Everything depends on the browser solving the challenge. When that stops working
 - **Where you see it:**
   - `GET /health` → `bridge` and `GET /api/bypass/status` → `health`: `state`, `consecutive_failures`, `last_success_at`, `failing_since`, `last_error` (`kind`: `challenge` / `forbidden` / `browser`), `thresholds`. `status` in `/health` stays `ok`: it says the server is up.
   - Web app: a banner at the top of every page while the state is not `ok`. Dismissing hides it for that streak; it returns if the state gets worse or a new streak starts.
+  - Web app, **Settings → Connection**: the same state, and **Test connection** to try one request yourself (browser running or not, anti-bot check passed or not, and the reason if it failed).
   - Log: one warning per state change, not per request.
   - Terminal modes (interactive, `--headless`, `--watch`, `--refresh-only`): one line on stderr per state change, in the app language.
 - The state is per process: the web app reports its own bridge, each CLI process its own.

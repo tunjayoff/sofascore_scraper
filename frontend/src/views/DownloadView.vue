@@ -8,6 +8,7 @@ import { useScrapeStore } from '@/stores/scrape'
 import { useSportStore } from '@/stores/sport'
 import { SPORTS } from '@/lib/sport'
 import { toast, toastError, errorText } from '@/lib/toast'
+import { upstreamText } from '@/lib/upstream'
 import { num } from '@/lib/format'
 import AppIcon from '@/components/AppIcon.vue'
 import SportBadge from '@/components/SportBadge.vue'
@@ -72,7 +73,8 @@ async function refreshSeasons(id: number) {
     const r = await api.refreshSeasons(id)
     s.list = normalize(r.seasons)
   } catch (e) {
-    s.error = errorText(e)
+    // The saved list (if any) stays; the message says why SofaScore could not be asked
+    s.error = upstreamText(e)
   } finally {
     s.refreshing = false
   }
@@ -263,9 +265,10 @@ watch(lastAdded, (id) => {
           <span class="spinner"></span>{{ focusSeasons?.refreshing ? t('download.fetchingSeasons') : t('download.loadingSeasons') }}
         </div>
         <template v-else>
-          <p v-if="focusSeasons.error" class="m-0 text-sm" style="color: var(--danger)">{{ focusSeasons.error }}</p>
+          <p v-if="focusSeasons.error" class="m-0 text-sm" role="alert" style="color: var(--danger)">{{ focusSeasons.error }}</p>
           <div v-if="!focusSeasons.list.length" class="soft p-5 flex flex-col items-start gap-3">
-            <span class="text-sm" style="color: var(--muted)">{{ t('download.noSeasons') }}</span>
+            <!-- "Couldn't get the list" only when the request failed; an empty answer is said as such -->
+            <span class="text-sm" style="color: var(--muted)">{{ t(focusSeasons.error ? 'download.noSeasons' : 'download.seasonsEmpty') }}</span>
             <button type="button" class="btn" :disabled="focusSeasons.refreshing" @click="refreshSeasons(focus.id)">
               <span v-if="focusSeasons.refreshing" class="spinner"></span><AppIcon v-else name="refresh" :size="16" />
               {{ focusSeasons.refreshing ? t('download.fetchingSeasons') : t('download.fetchSeasons') }}

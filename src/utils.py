@@ -301,6 +301,7 @@ def make_api_request(
     max_retries: Optional[int] = None,
     timeout: Optional[int] = None,
     raise_on_failure: bool = False,
+    raise_errors: bool = False,
 ) -> Optional[JsonResponse]:
     """
     Belirtilen URL'ye API isteği yapar (curl_cffi kullanarak).
@@ -311,12 +312,16 @@ def make_api_request(
     NetworkError, bozuk yanıt → DataParsingError): çağıran "kaynak yok" ile "istek başarısız"ı
     ayırabilsin. Her iki durumda isteğin son hali işin devre kesicisine bildirilir (src/breaker.py).
     Son denemeden sonra beklenmez; kalıcı 4xx hataları yeniden denenmez.
+
+    raise_errors, raise_on_failure ile aynı anahtardır (ikisinden biri True ise hata fırlatılır):
+    nedeni kullanıcıya göstermesi gereken çağıranlar bu adı kullanır (web: lig arama, sezon
+    yenileme; src/web/upstream.py hatayı `reason`a çevirir).
     """
     try:
         data = _request_sync(url, max_retries, timeout)
     except SofaScoreScraperError as e:
         breaker.report_exception(e)
-        if raise_on_failure:
+        if raise_on_failure or raise_errors:
             raise
         return None
     breaker.report_ok()

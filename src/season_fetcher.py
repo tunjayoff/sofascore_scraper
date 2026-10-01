@@ -10,6 +10,7 @@ import datetime
 import re
 
 from src.config_manager import ConfigManager
+from src.exceptions import DataParsingError, SofaScoreScraperError
 from src.utils import make_api_request, ensure_directory
 
 from src.fsutil import atomic_write_json
@@ -54,17 +55,30 @@ class SeasonFetcher:
             league_id: Lig ID'si
 
         Returns:
-            List[Dict[str, Any]]: Sezon bilgilerini içeren liste
+            List[Dict[str, Any]]: Sezon bilgilerini içeren liste (çekilemediyse boş liste)
+        """
+        try:
+            return self.fetch_seasons_checked(league_id)
+        except SofaScoreScraperError as e:
+            league_name = self.config_manager.get_leagues().get(league_id, f"Bilinmeyen Lig {league_id}")
+            logger.error(f"{league_name} için sezon verileri çekilemedi: {e}")
+            return []
+
+    def fetch_seasons_checked(self, league_id: int, max_retries: Optional[int] = None) -> List[Dict[str, Any]]:
+        """
+        fetch_seasons_for_league gibi, ama başarısızlığı boş listeyle gizlemez: istek katmanının
+        tipli hatasını fırlatır (APIError / RateLimitError / ResourceNotFoundError / NetworkError),
+        yanıt sezon listesi içermiyorsa DataParsingError. Boş liste yalnızca SofaScore gerçekten
+        boş bir sezon listesi döndürdüğünde gelir. Nedeni kullanıcıya gösteren çağıranlar içindir.
         """
         league_name = self.config_manager.get_leagues().get(league_id, f"Bilinmeyen Lig {league_id}")
         logger.info(f"{league_name} (ID: {league_id}) için sezonlar çekiliyor...")
 
         url = f"{self.base_url}/unique-tournament/{league_id}/seasons"
-        data = make_api_request(url)
+        data = make_api_request(url, max_retries=max_retries, raise_errors=True)
 
-        if not data or "seasons" not in data:
-            logger.error(f"{league_name} için sezon verileri çekilemedi")
-            return []
+        if not isinstance(data, dict) or not isinstance(data.get("seasons"), list):
+            raise DataParsingError(f"Sezon yanıtı beklenen biçimde değil: {url}")
 
         seasons = data.get("seasons", [])
 

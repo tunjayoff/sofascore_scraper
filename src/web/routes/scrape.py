@@ -12,6 +12,7 @@ from src.web.routes.common import (
     _job_store,
     _refresh_scraper_state,
     config_manager,
+    logger,
 )
 
 router = APIRouter(prefix="/api", tags=["api"])
@@ -130,18 +131,64 @@ async def bypass_status():
     }
 
 
+def _browser_ready() -> bool:
+    """Köprünün açık bir tarayıcı sayfası var mı? (Yalnızca okur; tarayıcı başlatmaz.)"""
+    from src.challenge_solver import BrowserBridge
+
+    try:
+        page = BrowserBridge.get_instance().page
+        return bool(page) and not page.is_closed()
+    except Exception:
+        return False
+
+
 @router.post("/bypass/test")
 async def bypass_test():
-    """Test live connectivity and challenge solving through BrowserBridge."""
-    from src.challenge_solver import fetch_api_via_browser
-    data = await fetch_api_via_browser("/sport/football/events/live")
-    if data and "events" in data:
-        return {
-            "success": True,
-            "events_count": len(data.get("events", [])),
-            "message": "BrowserBridge connection verified successfully.",
-        }
-    return {
-        "success": False,
-        "message": "BrowserBridge test failed to retrieve live data.",
+    """
+    Test live connectivity and challenge solving through BrowserBridge.
+
+    SofaScore'a TEK bir canlı istek atar; yalnızca kullanıcı istediğinde çağrılır (Ayarlar →
+    Bağlantı testi), hiçbir şey bunu kendiliğinden ya da zamanlayıcıyla çağırmaz. Sonuç her
+    zaman 200 ile döner: `success`, başarısızsa `reason` (src/web/upstream.py: blocked / browser /
+    network / upstream), tarayıcı ve challenge durumu ve köprü sağlık görüntüsü.
+    """
+    from src import bridge_health
+    from src.challenge_solver import _is_token_valid, fetch_api_via_browser, get_cached_token
+    from src.web import upstream
+
+    before = bridge_health.snapshot()
+    reason: Optional[str] = None
+    events_count = 0
+    try:
+        data = await fetch_api_via_browser("/sport/football/events/live")
+    except Exception as e:
+        # Tarayıcı başlatılamadı (köprü bunu sağlık durumuna yazar) ya da istek zaman aşımına uğradı
+        logger.warning(f"Bağlantı testi başarısız: {e.__class__.__name__}: {e}")
+        reason = upstream.BROWSER if upstream.browser_failed_since(before) else upstream.NETWORK
+    else:
+        if isinstance(data, dict) and isinstance(data.get("events"), list):
+            events_count = len(data["events"])
+        elif data is None:
+            # Köprü yalnızca 403'ü sağlık durumuna yazar: yeni bir kayıt varsa SofaScore reddetti.
+            # Yoksa yanıt alınamadı (ağ hatası, zaman aşımı; nadiren 429/5xx): köprü ayrıntı vermez.
+            after = bridge_health.snapshot()
+            refused = (
+                after["consecutive_failures"] > before["consecutive_failures"]
+                or after["last_failure_at"] != before["last_failure_at"]
+            )
+            reason = upstream.BLOCKED if refused else upstream.NETWORK
+        else:
+            reason = upstream.UPSTREAM  # yanıt geldi ama canlı maç listesi değil
+
+    result = {
+        "success": reason is None,
+        "reason": reason,
+        "message": "BrowserBridge connection verified successfully." if reason is None else upstream.detail(reason)["message"],
+        "browser_ready": _browser_ready(),
+        "has_token": bool(get_cached_token()),
+        "is_valid": _is_token_valid(),
+        "health": bridge_health.snapshot(),
     }
+    if reason is None:
+        result["events_count"] = events_count
+    return result

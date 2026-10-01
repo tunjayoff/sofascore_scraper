@@ -5,7 +5,8 @@ import { api, type RemoteLeague } from '@/api/client'
 import { useLeaguesStore } from '@/stores/leagues'
 import { useSportStore } from '@/stores/sport'
 import { SPORTS, sportKey, type SportKey } from '@/lib/sport'
-import { toast, toastError, errorText } from '@/lib/toast'
+import { toast, toastError } from '@/lib/toast'
+import { upstreamText } from '@/lib/upstream'
 import AppIcon from '@/components/AppIcon.vue'
 import SportBadge from '@/components/SportBadge.vue'
 import { trapFocus } from '@/lib/tabs'
@@ -45,13 +46,18 @@ watch(q, (v) => {
 async function search() {
   const my = ++gen
   searching.value = true
+  err.value = ''
   try {
     const r = await api.searchRemote(q.value.trim())
     if (my !== gen) return
     results.value = r
     searched.value = true
   } catch (e) {
-    if (my === gen) err.value = errorText(e)
+    if (my !== gen) return
+    // A failed search is not "no results": say why (blocked, network, …) and offer a retry
+    err.value = upstreamText(e)
+    results.value = []
+    searched.value = false
   } finally {
     if (my === gen) searching.value = false
   }
@@ -114,7 +120,10 @@ onUnmounted(() => {
       <div class="rounded-[10px] overflow-hidden" style="border: 1px solid var(--border); min-height: 120px">
         <p v-if="q.trim().length < 2" class="m-0 p-4 text-sm" style="color: var(--muted)">{{ t('add.minChars') }}</p>
         <p v-else-if="searching && !results.length" class="m-0 p-4 text-sm flex items-center gap-3" style="color: var(--muted)"><span class="spinner"></span>{{ t('add.searching') }}</p>
-        <p v-else-if="err" class="m-0 p-4 text-sm" style="color: var(--danger)">{{ err }}</p>
+        <div v-else-if="err" class="p-4 flex flex-col items-start gap-3" role="alert" data-testid="add-error">
+          <p class="m-0 text-sm" style="color: var(--danger)">{{ err }}</p>
+          <button type="button" class="btn btn-sm" @click="search">{{ t('common.retry') }}</button>
+        </div>
         <p v-else-if="searched && !shown.length" class="m-0 p-4 text-sm" style="color: var(--muted)">{{ t('add.noResults') }}</p>
         <div v-else class="max-h-[340px] overflow-y-auto">
           <div v-for="r in shown" :key="r.id" class="table-row" style="grid-template-columns: minmax(0, 1fr) auto; min-height: 60px">
