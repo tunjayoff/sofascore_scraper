@@ -1,0 +1,46 @@
+{
+ "derive_version": 1,
+ "report": {
+  "counts": {"events": 2, "events_legacy": 2, "events_v3": 0, "slices": 8},
+  "problems": [],
+  "superseded": []
+ },
+ "tables": {
+  "events": [
+   {"id": 16837335, "sport": "football", "tournament_id": 17, "stage_name": "Premier League", "season_id": 96668, "round": 1, "start_ts": 1789495200, "status_type": "finished", "status_code": 100, "status_description": "Ended", "status_class": "completed", "home_id": 3928, "away_id": 7846, "home_name": "Arsenal", "away_name": "Chelsea", "home_score": 3, "away_score": 1, "home_score_current": 3, "away_score_current": 1, "winner_code": 1, "scores_json": "{\"aet\":null,\"aggregated\":null,\"aggregated_winner_code\":null,\"family\":\"football\",\"ft90\":[3,1],\"ht\":[0,1],\"penalties\":null}", "slug": "arsenal-chelsea", "observed_at": 1789797600, "change_ts": 1789576658, "observed_gap": 302400, "status_regressed": 0, "tier_hint": 1, "stale": 0, "row_source": "event", "has_event_payload": 1, "layout": "legacy", "path": "match_details/17_Premier_League/season_Premier_League_26_27/16837335", "first_seen_at": 1790769600, "updated_at": 1790769600},
+   {"id": 17099711, "sport": "football", "tournament_id": 17, "stage_name": "Premier League", "season_id": 96668, "round": 1, "start_ts": 1789444800, "status_type": "finished", "status_code": 100, "status_description": "Ended", "status_class": "completed", "home_id": 5944, "away_id": 4605, "home_name": "Liverpool", "away_name": "Everton", "home_score": 2, "away_score": 1, "home_score_current": 2, "away_score_current": 1, "winner_code": 1, "scores_json": "{\"aet\":null,\"aggregated\":null,\"aggregated_winner_code\":null,\"family\":\"football\",\"ft90\":[2,1],\"ht\":[2,1],\"penalties\":null}", "slug": "liverpool-everton", "change_ts": 1789477727, "status_regressed": 0, "tier_hint": 1, "stale": 0, "row_source": "event", "has_event_payload": 1, "layout": "legacy", "path": "match_details/17_Premier_League/season_Premier_League_26_27/17099711", "first_seen_at": 1790769600, "updated_at": 1790769600}
+  ],
+  "event_slices": [
+   {"event_id": 16837335, "key": "event", "sub": "", "state": "ok", "has_payload": 1, "fetched_at": 1790769600, "checked_at": 1790769600, "empty_count": 0, "unverified_empty_count": 0, "error_count": 0, "stored_bytes": 1753, "history_count": 0},
+   {"event_id": 16837335, "key": "h2h", "sub": "", "state": "ok", "has_payload": 1, "fetched_at": 1790769600, "checked_at": 1790769600, "empty_count": 0, "unverified_empty_count": 0, "error_count": 0, "stored_bytes": 99, "history_count": 0},
+   {"event_id": 16837335, "key": "incidents", "sub": "", "state": "ok", "has_payload": 1, "fetched_at": 1790769600, "checked_at": 1790769600, "empty_count": 0, "unverified_empty_count": 0, "error_count": 0, "stored_bytes": 370, "history_count": 0},
+   {"event_id": 16837335, "key": "lineups", "sub": "", "state": "ok", "has_payload": 1, "fetched_at": 1790769600, "checked_at": 1790769600, "empty_count": 0, "unverified_empty_count": 0, "error_count": 0, "stored_bytes": 903, "history_count": 0},
+   {"event_id": 16837335, "key": "pregame_form", "sub": "", "state": "ok", "has_payload": 1, "fetched_at": 1790769600, "checked_at": 1790769600, "empty_count": 0, "unverified_empty_count": 0, "error_count": 0, "stored_bytes": 338, "history_count": 0},
+   {"event_id": 16837335, "key": "statistics", "sub": "", "state": "ok", "has_payload": 1, "fetched_at": 1790769600, "checked_at": 1790769600, "empty_count": 0, "unverified_empty_count": 0, "error_count": 0, "stored_bytes": 1822, "history_count": 0},
+   {"event_id": 16837335, "key": "team_streaks", "sub": "", "state": "ok", "has_payload": 1, "fetched_at": 1790769600, "checked_at": 1790769600, "empty_count": 0, "unverified_empty_count": 0, "error_count": 0, "stored_bytes": 368, "history_count": 0},
+   {"event_id": 17099711, "key": "event", "sub": "", "state": "ok", "has_payload": 1, "fetched_at": 1790769600, "checked_at": 1790769600, "empty_count": 0, "unverified_empty_count": 0, "error_count": 0, "stored_bytes": 1761, "history_count": 0}
+  ],
+  "event_participants": [
+   {"participant_id": 3928, "start_ts": 1789495200, "event_id": 16837335, "side": 1},
+   {"participant_id": 7846, "start_ts": 1789495200, "event_id": 16837335, "side": 2},
+   {"participant_id": 5944, "start_ts": 1789444800, "event_id": 17099711, "side": 1},
+   {"participant_id": 4605, "start_ts": 1789444800, "event_id": 17099711, "side": 2}
+  ],
+  "participants": [
+   {"id": 3928, "sport": "football", "name": "Arsenal", "name_folded": "arsenal", "slug": "arsenal", "updated_at": 1790769600},
+   {"id": 4605, "sport": "football", "name": "Everton", "name_folded": "everton", "slug": "everton", "updated_at": 1790769600},
+   {"id": 5944, "sport": "football", "name": "Liverpool", "name_folded": "liverpool", "slug": "liverpool", "updated_at": 1790769600},
+   {"id": 7846, "sport": "football", "name": "Chelsea", "name_folded": "chelsea", "slug": "chelsea", "updated_at": 1790769600}
+  ],
+  "tournaments": [
+   {"id": 17, "sport": "football", "name": "Premier League", "name_folded": "premier league", "slug": "premier-league", "updated_at": 1790769600}
+  ],
+  "seasons": [
+   {"id": 96668, "tournament_id": 17, "name": "Premier League 26/27", "year": "26/27", "sort_key": 2026.0, "listed": 0, "updated_at": 1790769600}
+  ],
+  "sports": [
+   {"slug": "football", "id": 1, "name": "Football"}
+  ],
+  "categories": []
+ }
+}

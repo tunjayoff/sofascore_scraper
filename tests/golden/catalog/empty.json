@@ -1,0 +1,18 @@
+{
+ "derive_version": 1,
+ "report": {
+  "counts": {"events": 0, "events_legacy": 0, "events_v3": 0, "slices": 0},
+  "problems": [],
+  "superseded": []
+ },
+ "tables": {
+  "events": [],
+  "event_slices": [],
+  "event_participants": [],
+  "participants": [],
+  "tournaments": [],
+  "seasons": [],
+  "sports": [],
+  "categories": []
+ }
+}
