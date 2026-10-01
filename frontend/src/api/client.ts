@@ -246,7 +246,9 @@ export const api = {
     apiSend<League>('/api/leagues', 'POST', { id, name, sport: sport ?? null }),
   setLeagueSport: (id: number, sport: string | null) => apiSend<League>(`/api/leagues/${id}`, 'PATCH', { sport }),
   removeLeague: (id: number) => apiSend<unknown>(`/api/leagues/${id}`, 'DELETE'),
-  searchRemote: (q: string) => apiGet<RemoteLeague[]>(`/api/leagues/search-remote?q=${encodeURIComponent(q)}`),
+  /** POST, not GET: every call sends a live request to SofaScore, so the server's origin check must cover it. */
+  searchRemote: (q: string) =>
+    apiSend<RemoteLeague[]>(`/api/leagues/search-remote?q=${encodeURIComponent(q)}`, 'POST'),
   seasons: (id: number) => apiGet<{ seasons: Season[]; fetched: boolean }>(`/api/leagues/${id}/seasons`),
   refreshSeasons: (id: number) => apiSend<{ seasons: Season[] }>(`/api/leagues/${id}/seasons/refresh`, 'POST'),
   missingDetails: (id: number, seasonId?: number) =>

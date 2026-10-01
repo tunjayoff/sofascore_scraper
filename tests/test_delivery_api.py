@@ -49,7 +49,7 @@ def test_league_dependent_reads():
 
 @pytest.mark.live
 def test_remote_league_search():
-    r = client.get("/api/leagues/search-remote?q=Premier")
+    r = client.post("/api/leagues/search-remote?q=Premier")
     assert r.status_code == 200
 
 

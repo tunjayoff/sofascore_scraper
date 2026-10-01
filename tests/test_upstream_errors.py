@@ -171,7 +171,7 @@ def test_search_returns_results(client):
         "category": {"name": "England", "sport": {"name": "Football"}},
     }}]}
     with patch.object(utils, "make_api_request", return_value=data) as req:
-        r = client.get(SEARCH)
+        r = client.post(SEARCH)
     assert r.status_code == 200
     assert r.json() == [{"id": 17, "name": "Premier League", "country": "England", "slug": "premier-league", "sport": "Football"}]
     # Etkileşimli arama: tek deneme, kısa zaman aşımı, tipli hata
@@ -180,7 +180,7 @@ def test_search_returns_results(client):
 
 def test_search_with_nothing_found_is_an_empty_success(client):
     with patch.object(utils, "make_api_request", return_value={"results": []}):
-        r = client.get(SEARCH)
+        r = client.post(SEARCH)
     assert r.status_code == 200 and r.json() == []
 
 
@@ -198,7 +198,7 @@ def test_search_with_nothing_found_is_an_empty_success(client):
 )
 def test_search_failure_is_a_typed_error_not_an_empty_list(client, exc, status, reason):
     with patch.object(utils, "make_api_request", side_effect=exc):
-        r = client.get(SEARCH)
+        r = client.post(SEARCH)
     assert r.status_code == status
     assert _detail(r)["reason"] == reason
     assert _detail(r)["message"]
@@ -207,14 +207,14 @@ def test_search_failure_is_a_typed_error_not_an_empty_list(client, exc, status, 
 @pytest.mark.parametrize("data", [None, {}, {"error": {"code": 403}}, {"results": None}, ["x"]])
 def test_search_answer_without_a_result_list_is_not_reported_as_no_results(client, data):
     with patch.object(utils, "make_api_request", return_value=data):
-        r = client.get(SEARCH)
+        r = client.post(SEARCH)
     assert r.status_code == 502 and _detail(r)["reason"] == "upstream"
 
 
 def test_search_blocked_end_to_end_through_the_request_layer(client):
     """curl 403 alır, challenge sunulmaz: SofaScore reddediyor."""
     with _curl(Resp(403, text="Access denied")) as get:
-        r = client.get(SEARCH)
+        r = client.post(SEARCH)
     assert get.call_count == 1  # etkileşimli arama yeniden denemez
     assert r.status_code == 502 and _detail(r)["reason"] == "blocked"
 
@@ -222,14 +222,14 @@ def test_search_blocked_end_to_end_through_the_request_layer(client):
 def test_search_names_the_browser_when_the_challenge_cannot_even_be_attempted(client):
     """curl challenge alır, gömülü tarayıcı başlatılamaz (conftest gerçek tarayıcıyı engeller)."""
     with _curl(Resp(403, text=CHALLENGE)):
-        r = client.get(SEARCH)
+        r = client.post(SEARCH)
     assert r.status_code == 502 and _detail(r)["reason"] == "browser"
     assert bridge_health.snapshot()["last_error"]["kind"] == "browser"
 
 
 def test_search_network_failure_end_to_end(client):
     with _curl(side_effect=ConnectionError("curl: (6) Could not resolve host: www.sofascore.com")):
-        r = client.get(SEARCH)
+        r = client.post(SEARCH)
     assert r.status_code == 502 and _detail(r)["reason"] == "network"
 
 

@@ -182,12 +182,15 @@ def _clear_data_sync(scope: str) -> dict:
         raise _SyncHttpError(500, "Clear data failed") from e
 
 
-def _export_csv_sync(league_id: Optional[int], data_dir: str):
+def _export_csv_sync(league_id: Optional[int], data_dir: str, generate: bool = False):
     from fastapi.responses import FileResponse, Response
 
     csv_dir = os.path.join(data_dir, "match_details", "processed")
     pattern = os.path.join(csv_dir, "all_matches_*.csv")
     files = glob.glob(pattern)
+
+    if not files and not generate:
+        raise _SyncHttpError(404, "No CSV export yet. Create it with POST /api/export/csv or run a download.")
 
     if not files:
         from src.SofaScoreUi import SimpleSofaScoreUI
@@ -281,9 +284,22 @@ async def clear_data(req: ClearRequest):
 
 @router.get("/export/csv")
 async def export_csv(league_id: Optional[int] = None):
-    """CSV export. Mevcut processed CSV'yi döndürür veya yeni oluşturur."""
+    """
+    Var olan CSV dışa aktarımını indirir; salt okunur. Dışa aktarım yoksa 404: GET hiçbir şey
+    üretmez (bir bağlantı ya da başka bir sitedeki <img> diske dosya yazdıramaz). Üretmek için POST.
+    """
     data_dir = config_manager.get_data_dir()
     try:
         return await asyncio.to_thread(_export_csv_sync, league_id, data_dir)
+    except _SyncHttpError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+
+@router.post("/export/csv")
+async def create_csv_export(league_id: Optional[int] = None):
+    """CSV dışa aktarımı yoksa indirilmiş maçlardan üretir (diske yazar), sonra dosyayı döndürür."""
+    data_dir = config_manager.get_data_dir()
+    try:
+        return await asyncio.to_thread(_export_csv_sync, league_id, data_dir, True)
     except _SyncHttpError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
