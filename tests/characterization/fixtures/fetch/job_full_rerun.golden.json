@@ -1,0 +1,137 @@
+{
+ "markers": {
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/_slice_status.json": {
+   "lineups": {
+    "empty": {
+     "at": "<volatile>",
+     "count": 2
+    }
+   },
+   "pregame_form": {
+    "empty": {
+     "at": "<volatile>",
+     "count": 2
+    }
+   }
+  },
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/_unavailable.json": {
+   "lineups": 2,
+   "pregame_form": 2
+  }
+ },
+ "second_run": {
+  "job": {
+   "circuit_breaker_triggered": false,
+   "log": [
+    "[Running] Starting fetch for 17",
+    "[Running] Refreshing season list for league 17...",
+    "[Running] Fetching matches: league 17, season 61627",
+    "[Running] Fetching matches: league 17, season 52186",
+    "[Running] Checking which matches need details...",
+    "[Running] Fetching match details: league 17 (1 matches)…",
+    "[Running] Exporting data to CSV...",
+    "[Completed] Background Task Completed Successfully."
+   ],
+   "matches_done": 1,
+   "matches_failed": 0,
+   "matches_total": 1,
+   "phases": [
+    "seasons",
+    "matches",
+    "details",
+    "export"
+   ],
+   "progress": 100,
+   "result": {
+    "breaker": null,
+    "details_done": 1,
+    "details_total": 1,
+    "failed": [],
+    "failed_count": 0,
+    "refresh_changed": 0,
+    "refreshed": 0,
+    "schedule_empty_seasons": 0
+   },
+   "schedule_empty_seasons": 0,
+   "status": "Completed"
+  },
+  "requests": [
+   "sync /unique-tournament/17/seasons 200",
+   {
+    "concurrent": [
+     "async /unique-tournament/17/season/61627/rounds 200",
+     "async https://www.sofascore.com/ 200"
+    ]
+   },
+   {
+    "concurrent": [
+     "async /unique-tournament/17/season/52186/events/last/0 200",
+     "async /unique-tournament/17/season/52186/events/next/0 404",
+     "async /unique-tournament/17/season/52186/rounds 200",
+     "async https://www.sofascore.com/ 200"
+    ]
+   },
+   {
+    "concurrent": [
+     "async https://www.sofascore.com/ 200",
+     "sync /event/9100002 200",
+     "sync /event/9100002/lineups 200",
+     "sync /event/9100002/pregame-form 404"
+    ]
+   }
+  ]
+ },
+ "third_run": {
+  "job": {
+   "circuit_breaker_triggered": false,
+   "log": [
+    "[Running] Starting fetch for 17",
+    "[Running] Refreshing season list for league 17...",
+    "[Running] Fetching matches: league 17, season 61627",
+    "[Running] Fetching matches: league 17, season 52186",
+    "[Running] Checking which matches need details...",
+    "[Running] Exporting data to CSV...",
+    "[Completed] Background Task Completed Successfully."
+   ],
+   "matches_done": 0,
+   "matches_failed": 0,
+   "matches_total": 0,
+   "phases": [
+    "seasons",
+    "matches",
+    "details",
+    "export"
+   ],
+   "progress": 100,
+   "result": {
+    "breaker": null,
+    "details_done": 0,
+    "details_total": 0,
+    "failed": [],
+    "failed_count": 0,
+    "refresh_changed": 0,
+    "refreshed": 0,
+    "schedule_empty_seasons": 0
+   },
+   "schedule_empty_seasons": 0,
+   "status": "Completed"
+  },
+  "requests": [
+   "sync /unique-tournament/17/seasons 200",
+   {
+    "concurrent": [
+     "async /unique-tournament/17/season/61627/rounds 200",
+     "async https://www.sofascore.com/ 200"
+    ]
+   },
+   {
+    "concurrent": [
+     "async /unique-tournament/17/season/52186/events/last/0 200",
+     "async /unique-tournament/17/season/52186/events/next/0 404",
+     "async /unique-tournament/17/season/52186/rounds 200",
+     "async https://www.sofascore.com/ 200"
+    ]
+   }
+  ]
+ }
+}

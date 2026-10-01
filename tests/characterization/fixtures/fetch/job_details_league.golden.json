@@ -1,0 +1,158 @@
+{
+ "files": {
+  "match_details/17_Premier_League/season_Premier_League_23_24/9100010/basic.json": "sha256:e91503b4d55a",
+  "match_details/17_Premier_League/season_Premier_League_23_24/9100010/h2h.json": "sha256:d70f49116a50",
+  "match_details/17_Premier_League/season_Premier_League_23_24/9100010/incidents.json": "sha256:a2597c3a4cd2",
+  "match_details/17_Premier_League/season_Premier_League_23_24/9100010/lineups.json": "sha256:8638bfb622ea",
+  "match_details/17_Premier_League/season_Premier_League_23_24/9100010/observation.json": {
+   "change_ts": 1716141600,
+   "observed_at_utc": "<volatile>"
+  },
+  "match_details/17_Premier_League/season_Premier_League_23_24/9100010/pregame_form.json": "sha256:23d266be170d",
+  "match_details/17_Premier_League/season_Premier_League_23_24/9100010/statistics.json": "sha256:9be2383ec321",
+  "match_details/17_Premier_League/season_Premier_League_23_24/9100010/team_streaks.json": "sha256:875eb2f1ef52",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/basic.json": "sha256:b1915a025fe7",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/h2h.json": "sha256:d70f49116a50",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/incidents.json": "sha256:a2597c3a4cd2",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/lineups.json": "sha256:8638bfb622ea",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/observation.json": {
+   "change_ts": 1724507200,
+   "observed_at_utc": "<volatile>"
+  },
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/pregame_form.json": "sha256:23d266be170d",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/statistics.json": "sha256:461cc83fd197",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100001/team_streaks.json": "sha256:875eb2f1ef52",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/_slice_status.json": {
+   "lineups": {
+    "empty": {
+     "at": "<volatile>",
+     "count": 2
+    }
+   },
+   "pregame_form": {
+    "empty": {
+     "at": "<volatile>",
+     "count": 2
+    }
+   }
+  },
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/_unavailable.json": {
+   "lineups": 2,
+   "pregame_form": 2
+  },
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/basic.json": "sha256:f01370edebc5",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/h2h.json": "sha256:d70f49116a50",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/incidents.json": "sha256:a2597c3a4cd2",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/lineups.json": "sha256:0aaeb8655485",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/observation.json": {
+   "change_ts": 1724514400,
+   "observed_at_utc": "<volatile>"
+  },
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/statistics.json": "sha256:b72fef1ea76e",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/team_streaks.json": "sha256:875eb2f1ef52",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100003/basic.json": "sha256:badb7cb6e291",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100003/h2h.json": "sha256:d70f49116a50",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100003/incidents.json": "sha256:a2597c3a4cd2",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100003/lineups.json": "sha256:8638bfb622ea",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100003/observation.json": {
+   "change_ts": 1725112000,
+   "observed_at_utc": "<volatile>"
+  },
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100003/pregame_form.json": "sha256:23d266be170d",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100003/statistics.json": "sha256:6fec673fa7f1",
+  "match_details/17_Premier_League/season_Premier_League_24_25/9100003/team_streaks.json": "sha256:875eb2f1ef52",
+  "match_details/processed/all_matches_<epoch>.csv": "sha256:7734e755e0f3",
+  "matches/17_Premier_League/52186_Premier_League_23_24/events_last_0.json": "sha256:5f55caf4b15c",
+  "matches/17_Premier_League/52186_Premier_League_23_24_summary.csv": "sha256:3faf0d3448a3",
+  "matches/17_Premier_League/52186_Premier_League_23_24_summary.json": "sha256:35551700e5b8",
+  "matches/17_Premier_League/61627_Premier_League_24_25/round_1.json": "sha256:3ee61c05e56c",
+  "matches/17_Premier_League/61627_Premier_League_24_25/round_2.json": "sha256:c4513ef32663",
+  "matches/17_Premier_League/61627_Premier_League_24_25_summary.csv": "sha256:275d72357445",
+  "matches/17_Premier_League/61627_Premier_League_24_25_summary.json": "sha256:67fa6332404c",
+  "score_changes.jsonl": [
+   {
+    "changed": {
+     "homeScore.current": [
+      2,
+      3
+     ],
+     "homeScore.display": [
+      2,
+      3
+     ],
+     "homeScore.normaltime": [
+      2,
+      3
+     ]
+    },
+    "event_id": 9100010,
+    "hours_after_start": 3.0,
+    "new_change_ts": 1716141600,
+    "old_change_ts": 1716138000,
+    "sport": "football",
+    "start_ts": 1716130800,
+    "status_class": [
+     "completed",
+     "completed"
+    ],
+    "tier_hint": null,
+    "tournament": {
+     "id": 17,
+     "name": "Premier League"
+    },
+    "ts_utc": "<volatile>"
+   }
+  ],
+  "seasons/17_Premier_League_seasons.json": "sha256:0a0f8a9f191b"
+ },
+ "job": {
+  "circuit_breaker_triggered": false,
+  "log": [
+   "[Running] Starting fetch for 17",
+   "[Running] Checking which matches need details...",
+   "[Running] Fetching match details: league 17 (4 matches)…",
+   "[Running] Exporting data to CSV...",
+   "[Completed] Background Task Completed Successfully."
+  ],
+  "matches_done": 4,
+  "matches_failed": 0,
+  "matches_total": 4,
+  "phases": [
+   "details",
+   "export"
+  ],
+  "progress": 100,
+  "result": {
+   "breaker": null,
+   "details_done": 4,
+   "details_total": 4,
+   "failed": [],
+   "failed_count": 0,
+   "refresh_changed": 1,
+   "refreshed": 1,
+   "schedule_empty_seasons": 0
+  },
+  "schedule_empty_seasons": 0,
+  "status": "Completed"
+ },
+ "requests": [
+  {
+   "concurrent": [
+    "async /event/9100003 200",
+    "async /event/9100003/h2h 200",
+    "async /event/9100003/incidents 200",
+    "async /event/9100003/lineups 200",
+    "async /event/9100003/pregame-form 200",
+    "async /event/9100003/statistics 200",
+    "async /event/9100003/team-streaks 200",
+    "async https://www.sofascore.com/ 200",
+    "sync /event/9100001 200",
+    "sync /event/9100001/statistics 200",
+    "sync /event/9100002 200",
+    "sync /event/9100002/lineups 200",
+    "sync /event/9100002/pregame-form 404",
+    "sync /event/9100010 200"
+   ]
+  }
+ ]
+}
