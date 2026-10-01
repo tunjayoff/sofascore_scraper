@@ -19,6 +19,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from src import breaker as request_breaker
+from src.client import base_url
 from src.config_manager import ConfigManager
 from src.exceptions import ResourceNotFoundError, StorageError
 from src.fsutil import atomic_write_json
@@ -496,7 +497,7 @@ class MatchDataFetcher:
         self.data_dir = data_dir
         self.match_details_dir = os.path.join(data_dir, "match_details")
         self.processed_dir = os.path.join(self.match_details_dir, "processed")
-        self.base_url = "https://www.sofascore.com/api/v1"
+        self.base_url = base_url()
         self.rate_limit_breaker_triggered = False
         self.last_rate_limit_headers: List[Dict[str, str]] = []
         self.last_status_counts: Dict[str, int] = {}

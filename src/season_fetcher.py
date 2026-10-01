@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Any
 import datetime
 import re
 
+from src.client import base_url
 from src.config_manager import ConfigManager
 from src.exceptions import DataParsingError, SofaScoreScraperError
 from src.utils import make_api_request, ensure_directory
@@ -33,7 +34,7 @@ class SeasonFetcher:
         self.config_manager = config_manager
         self.data_dir = data_dir
         self.seasons_dir = os.path.join(data_dir, "seasons")
-        self.base_url = "https://www.sofascore.com/api/v1"
+        self.base_url = base_url()
 
         # Veri dizinlerinin var olduğundan emin ol
         ensure_directory(self.data_dir)

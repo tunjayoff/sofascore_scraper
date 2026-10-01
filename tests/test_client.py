@@ -10,7 +10,7 @@ import datetime as dt
 import json
 from pathlib import Path
 from typing import Any, Dict, Iterator, List
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -33,9 +33,13 @@ from src.client import (
     transport,
 )
 from src.client.transport import RequestTrace
+from src.config_manager import ConfigManager
+from src.match_data_fetcher import MatchDataFetcher
 from src.match_fetcher import MatchFetcher
+from src.season_fetcher import SeasonFetcher
 from src.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
 from src.sports import DETAIL_SLICES
+from src.watcher import MatchWatcher
 
 EVENT = {"id": 1, "status": {"type": "finished"}}
 
@@ -728,3 +732,146 @@ def test_every_endpoint_is_relative_to_the_api_root() -> None:
 
     assert len(paths) >= 8 and all(path.startswith("/") and "sofascore.com" not in path for path in paths)
     assert endpoints.DEFAULT_BASE_URL == "https://www.sofascore.com/api/v1"
+
+
+# --- API_BASE_URL her isteğe uygulanır ---------------------------------------------------------------
+
+DEFAULT_BASE = "https://www.sofascore.com/api/v1"
+OTHER_BASE = "https://api.sofascore.com/api/v1"
+SRC = Path(__file__).resolve().parent.parent / "src"
+
+
+@pytest.fixture
+def sent_urls(monkeypatch: pytest.MonkeyPatch) -> List[str]:
+    """curl'e giden tam adresleri toplar; her isteğe küçük bir sezon / maç yanıtı döner."""
+    urls: List[str] = []
+
+    def sync_get(url: str, **kwargs: Any) -> FakeResponse:
+        urls.append(url)
+        return FakeResponse(200, json.dumps({"seasons": [{"id": 1, "name": "24/25", "year": "24/25"}], "event": EVENT}))
+
+    monkeypatch.setattr(transport.cffi_requests, "get", sync_get)
+    monkeypatch.setattr(utils, "_sleep", lambda seconds: None)
+    return urls
+
+
+def _fetchers(tmp_path: Path) -> Any:
+    config = ConfigManager()
+    seasons = SeasonFetcher(config, str(tmp_path / "data"))
+    return seasons, MatchFetcher(config, seasons, str(tmp_path / "data")), MatchDataFetcher(config, str(tmp_path / "data"))
+
+
+def test_the_default_api_base_is_unchanged(tmp_path: Path, sent_urls: List[str]) -> None:
+    seasons, matches, details = _fetchers(tmp_path)
+
+    assert utils.API_BASE_URL == transport.base_url() == DEFAULT_BASE
+    assert {seasons.base_url, matches.base_url, details.base_url} == {DEFAULT_BASE}
+
+    seasons.fetch_seasons_checked(17)
+    details._fetch_match_basic("1")
+    MatchWatcher._default_fetch("/sport/football/events/live")
+    utils.make_api_request("/event/1/statistics")
+
+    assert sent_urls == [
+        f"{DEFAULT_BASE}/unique-tournament/17/seasons",
+        f"{DEFAULT_BASE}/event/1",
+        f"{DEFAULT_BASE}/sport/football/events/live",
+        f"{DEFAULT_BASE}/event/1/statistics",
+    ]
+
+
+def test_a_configured_api_base_reaches_every_fetcher_and_the_watcher(
+    tmp_path: Path, sent_urls: List[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Eskiden yalnızca göreli yollar API_BASE_URL'i kullanıyordu; sezon, detay ve izleyici istekleri sabit adrese gidiyordu."""
+    monkeypatch.setattr(utils, "API_BASE_URL", OTHER_BASE)
+    seasons, matches, details = _fetchers(tmp_path)
+
+    assert {seasons.base_url, matches.base_url, details.base_url} == {OTHER_BASE}
+
+    seasons.fetch_seasons_checked(17)
+    details._fetch_match_basic("1")
+    details._fetch_slice_endpoint("1", "statistics")
+    MatchWatcher._default_fetch("/sport/football/events/live")
+    utils.make_api_request("/event/1/h2h")
+    Client().get_sync(endpoints.event(1))
+
+    assert sent_urls == [
+        f"{OTHER_BASE}/unique-tournament/17/seasons",
+        f"{OTHER_BASE}/event/1",
+        f"{OTHER_BASE}/event/1/statistics",
+        f"{OTHER_BASE}/sport/football/events/live",
+        f"{OTHER_BASE}/event/1/h2h",
+        f"{OTHER_BASE}/event/1",
+    ]
+
+
+def test_an_absolute_url_given_by_the_caller_is_sent_as_it_is(sent_urls: List[str], monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(utils, "API_BASE_URL", OTHER_BASE)
+
+    utils.make_api_request(f"{DEFAULT_BASE}/event/1")
+
+    assert sent_urls == [f"{DEFAULT_BASE}/event/1"]
+
+
+@pytest.mark.parametrize("base", [DEFAULT_BASE, OTHER_BASE])
+def test_the_bridge_fallback_gets_the_full_address(
+    fake: FakeSofaScore, monkeypatch: pytest.MonkeyPatch, base: str
+) -> None:
+    """Köprü göreli yolu kendi sabit köküyle tamamlar; ayarlı kök ona da ulaşsın diye tam adres verilir."""
+    monkeypatch.setattr(utils, "API_BASE_URL", base)
+    fake.fail("/event/*", 403, body=CHALLENGE_BODY)
+    sync_bridge = MagicMock(return_value={"ok": 1})
+    async_bridge = AsyncMock(return_value={"ok": 1})
+
+    async def fetch_async(path: str) -> Any:
+        async with utils.create_session_async() as session:
+            return await utils.make_api_request_async(session, path)
+
+    with patch("src.challenge_solver.fetch_api_via_browser_sync", sync_bridge), \
+            patch("src.challenge_solver.fetch_api_via_browser", async_bridge):
+        assert utils.make_api_request("/event/1") == {"ok": 1}  # 403 challenge → köprü
+        assert utils.make_api_request("/event/2") == {"ok": 1}  # "önce tarayıcı" modu
+        monkeypatch.setattr(utils, "_browser_first_until", 0.0)
+        assert asyncio.run(fetch_async("/event/3")) == {"ok": 1}
+        assert asyncio.run(fetch_async("/event/4")) == {"ok": 1}
+
+    assert [call.args for call in sync_bridge.call_args_list] == [(f"{base}/event/1",), (f"{base}/event/2",)]
+    assert [call.args for call in async_bridge.await_args_list] == [(f"{base}/event/3",), (f"{base}/event/4",)]
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (None, DEFAULT_BASE),
+        ("", DEFAULT_BASE),  # .env'de boş bırakılan satır: eskiden göreli yollar köksüz kalıyordu
+        ("   ", DEFAULT_BASE),
+        (OTHER_BASE, OTHER_BASE),
+        (OTHER_BASE + "/", OTHER_BASE),  # yollar "/" ile başlar: çift "/" olmasın
+        (f"  {OTHER_BASE}  ", OTHER_BASE),
+    ],
+)
+def test_the_api_base_setting_is_normalised(monkeypatch: pytest.MonkeyPatch, value: Any, expected: str) -> None:
+    if value is None:
+        monkeypatch.delenv("API_BASE_URL", raising=False)
+    else:
+        monkeypatch.setenv("API_BASE_URL", value)
+
+    assert transport._configured_base_url() == expected
+
+
+def test_no_module_of_the_request_path_hard_codes_the_api_base() -> None:
+    """API kökü yalnızca src/client/endpoints.py'de yazılıdır; aşağıdakiler bu işin dışında kalan bilinen yerlerdir."""
+    known_elsewhere = {
+        "config_manager.py",  # get_api_base_url'in varsayılanı
+        "challenge_solver.py",  # tarayıcı köprüsü: göreli yolların kökü ve yoklama adresi
+        "web/routes/leagues.py",  # lig arama
+    }
+    hard_coded = {
+        path.relative_to(SRC).as_posix()
+        for path in SRC.rglob("*.py")
+        if "sofascore.com/api/v1" in path.read_text(encoding="utf-8")
+    }
+
+    assert "client/endpoints.py" in hard_coded
+    assert hard_coded - {"client/endpoints.py"} <= known_elsewhere

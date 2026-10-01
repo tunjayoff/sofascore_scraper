@@ -27,6 +27,7 @@ from curl_cffi.requests import AsyncSession
 
 from src import breaker, throttle
 from src.client.context import FetchCancelled, _notify_wait, raise_if_cancelled
+from src.client.endpoints import DEFAULT_BASE_URL
 
 # .env bu import sırasında yüklenir (src/config_manager.py); aşağıdaki os.getenv ondan sonra okunmalı
 from src.config_manager import ConfigManager
@@ -45,8 +46,13 @@ from src.slices import OutcomeVia
 # Günlükçü adı taşınmadan önceki gibi: log satırlarındaki ad değişmesin
 logger = get_logger("Utils")
 
-# API ayarları için çevre değişkenleri
-API_BASE_URL: str = os.getenv("API_BASE_URL", "https://www.sofascore.com/api/v1")
+def _configured_base_url() -> str:
+    """API_BASE_URL ayarı. Boş bırakılan ayar varsayılan köktür; sondaki "/" atılır (yollar "/" ile başlar)."""
+    return (os.getenv("API_BASE_URL") or "").strip().rstrip("/") or DEFAULT_BASE_URL
+
+
+# API kökü: süreç başlarken bir kez okunur ve her isteğe uygulanır (base_url / api_url)
+API_BASE_URL: str = _configured_base_url()
 
 # İstek ve proxy ayarları her istekte buradan okunur (çalışırken değişen ayar bir sonraki isteğe uygulanır)
 _cm = ConfigManager()
@@ -266,7 +272,7 @@ def _is_transient_status(status_code: int) -> bool:
 
 
 def base_url() -> str:
-    """API kökü: göreli her yola eklenen adres (süreç başlarken okunan API_BASE_URL)."""
+    """API kökü: her isteğin adresinin başı (süreç başlarken okunan API_BASE_URL). Kök yalnızca buradan alınır."""
     return API_BASE_URL
 
 
@@ -335,7 +341,7 @@ def _request_sync(
     if _browser_first():
         raise_if_cancelled()
         from src.challenge_solver import fetch_api_via_browser_sync
-        data = fetch_api_via_browser_sync(url)
+        data = fetch_api_via_browser_sync(full_url)
         if data is not None:
             trace.bridge()
             _sleep(wait_time_min + random.uniform(0, wait_time_max))
@@ -386,7 +392,7 @@ def _request_sync(
                     logger.info("Turnstile challenge tespit edildi. BrowserBridge üzerinden veri alınıyor...")
                     try:
                         from src.challenge_solver import fetch_api_via_browser_sync
-                        browser_data = fetch_api_via_browser_sync(url)
+                        browser_data = fetch_api_via_browser_sync(full_url)
                         if browser_data is not None:
                             trace.bridge()
                             _mark_browser_first()
@@ -528,7 +534,7 @@ async def _request_async(
         try:
             from src.challenge_solver import fetch_api_via_browser
             async with semaphore:
-                browser_data = await fetch_api_via_browser(url)
+                browser_data = await fetch_api_via_browser(full_url)
         except Exception as e:
             logger.debug(f"BrowserBridge hatası: {e!r}")
         if browser_data is not None:
@@ -591,7 +597,7 @@ async def _request_async(
                 browser_data = None
                 try:
                     from src.challenge_solver import fetch_api_via_browser
-                    browser_data = await fetch_api_via_browser(url)
+                    browser_data = await fetch_api_via_browser(full_url)
                 except Exception as te:
                     logger.debug(f"BrowserBridge hatası: {te!r}")
                 if browser_data is not None:

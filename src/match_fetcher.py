@@ -14,6 +14,7 @@ from typing import Dict, List, Optional, Any, Tuple
 
 from src.exceptions import ResourceNotFoundError
 
+from src.client import base_url
 from src.config_manager import ConfigManager
 from src.season_fetcher import SeasonFetcher
 from src.status import StatusClass, classify_status
@@ -41,7 +42,7 @@ class MatchFetcher:
         self.season_fetcher = season_fetcher
         self.data_dir = data_dir
         self.matches_dir = os.path.join(data_dir, "matches")
-        self.base_url = "https://www.sofascore.com/api/v1"
+        self.base_url = base_url()
 
         # Veri dizinlerinin var olduğundan emin ol
         ensure_directory(self.data_dir)

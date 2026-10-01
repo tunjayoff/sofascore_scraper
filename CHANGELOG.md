@@ -233,6 +233,12 @@ section is what the first tagged release will contain.
   any more and is left in place, so an older version started on the same folder still shows
   its own history (but not the jobs run by this version). The diagnostics bundle reads the
   new file.
+- `API_BASE_URL` now applies to season lists, match details, refreshes and watch mode as
+  well. Until now only the fixture requests (rounds and event pages) used it; the others
+  always went to `https://www.sofascore.com/api/v1`. An empty `API_BASE_URL` means the
+  default address, and a trailing slash is ignored. The value is read once at start-up.
+  One request still uses the default address whatever the setting says: league search in
+  the web app.
 
 ### Fixed
 
