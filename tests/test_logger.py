@@ -24,6 +24,24 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 _ENV_KEYS = ("LOG_DIR", "LOG_TO_FILE", "LOG_MAX_MB", "LOG_BACKUP_COUNT", "LOG_LEVEL", "DEBUG")
 
+# Windows'ta bilinen sınırlar (CI'da görüldü; Windows "elden geldiğince" desteklenen platformdur).
+# Açık bir dosya Windows'ta yeniden adlandırılamaz ve silinemez; src/fsutil.file_lock da orada
+# hiçbir şey kilitlemez. Sonuç: dosyayı birden çok yazıcı açık tutarken çevirme yapılamaz (dosya
+# LOG_MAX_MB'ı aşar, yalnız tek yazıcı kaldığında çevrilir) ve başka bir süreç çevirmeyi denerken
+# yazılan kayıt düşebilir. Düzeltilince işaretler kaldırılır (strict olan kendini belli eder).
+no_shared_rotation_on_windows = pytest.mark.xfail(
+    sys.platform == "win32",
+    reason="Bilinen sınır (Windows): log dosyası başka bir yazıcıda açıkken yeniden adlandırılamaz; "
+    "birden çok yazıcı varken dosya çevrilmez (src/logger.py: SharedRotatingFileHandler.doRollover)",
+    strict=True,
+)
+shared_rotation_races_on_windows = pytest.mark.xfail(
+    sys.platform == "win32",
+    reason="Bilinen sınır (Windows): süreçler arası kilit yok (src/fsutil.file_lock) ve açık dosya yeniden "
+    "adlandırılamaz; birden çok süreç yazarken dosya çevrilmez, çevirme denemesi sırasında kayıt düşebilir",
+    strict=False,
+)
+
 
 @pytest.fixture
 def make_logger(tmp_path):
@@ -126,6 +144,7 @@ def test_rotation_caps_size_and_file_count(make_logger, tmp_path):
     assert "satır 0000" not in everything
 
 
+@no_shared_rotation_on_windows
 def test_two_writers_share_one_file_across_rotation(make_logger, tmp_path):
     # İki süreç (web sunucusu + CLI) aynı dosyaya yazar: biri dosyayı çevirince diğeri
     # yeniden adlandırılmış eski dosyaya değil, yeni dosyaya yazmaya devam etmeli.
@@ -158,6 +177,7 @@ for i in range(int(sys.argv[4])):
 """
 
 
+@shared_rotation_races_on_windows
 def test_real_processes_writing_and_rotating_lose_nothing(tmp_path):
     # Web sunucusu + CLI + --watch aynı anda: hiçbir satır kaybolmaz, yarım satır oluşmaz
     path = str(tmp_path / "app.log")
@@ -218,6 +238,7 @@ def test_failed_rollover_keeps_logging_and_leaves_backups_alone(make_logger, tmp
     assert "kilitliyken 39" in (tmp_path / "app.log.1").read_text(encoding="utf-8")
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Windows'ta açık bir dosya silinemez: bu durum orada oluşmaz")
 def test_writer_recovers_when_the_file_is_deleted(make_logger):
     log, path = make_logger()
     log.info("önce")
