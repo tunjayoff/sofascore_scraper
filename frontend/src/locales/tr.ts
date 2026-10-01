@@ -19,6 +19,18 @@ export default {
     never: 'Sunucu başladığından beri hiçbir istek başarılı olmadı.',
     dismiss: 'Kapat',
   },
+  // SofaScore'a giden bir istek neden başarısız oldu (src/web/upstream.py); her biri bir sonraki adımla
+  upstream: {
+    blocked: 'SofaScore isteği reddetti: şu anda bu uygulamayı engelliyor. Birkaç dakika bekleyip yeniden dene.',
+    testHint: 'Bağlantıyı Ayarlar → Bağlantı sayfasından sınayabilirsin.',
+    browser:
+      'SofaScore tarayıcı doğrulaması istedi ama yerleşik tarayıcı başlatılamadı. "python -m playwright install chromium" komutuyla kur, uygulamayı yeniden başlat ve tekrar dene.',
+    rate_limited: 'SofaScore bizi yavaşlatıyor (çok fazla istek). Birkaç dakika bekleyip yeniden dene.',
+    network:
+      'SofaScore’a ulaşılamadı. İnternet bağlantını (proxy kullanıyorsan Ayarlar → Bağlantı sayfasındaki proxy’yi de) denetle, sonra yeniden dene.',
+    not_found: 'SofaScore’da bu ID ile bir lig yok. Ligi listenden kaldırıp aramadan yeniden ekle.',
+    upstream: 'SofaScore beklenmeyen bir yanıt verdi. Biraz sonra yeniden dene.',
+  },
   nav: {
     main: 'Ana menü',
     leagues: 'Ligler',
@@ -152,6 +164,7 @@ export default {
     unknownGroup: 'Sporu belirsiz',
     loadingSeasons: 'Sezonlar yükleniyor…',
     noSeasons: 'Sezon listesi getirilemedi.',
+    seasonsEmpty: 'SofaScore’da bu ligin sezonu görünmüyor.',
     fetchSeasons: 'Tekrar dene',
     fetchingSeasons: 'Sezon listesi getiriliyor…',
     latest: 'Son sezon',

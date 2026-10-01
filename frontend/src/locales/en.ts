@@ -20,6 +20,18 @@ const en: typeof tr = {
     never: 'No request has succeeded since the server started.',
     dismiss: 'Dismiss',
   },
+  // Why a request to SofaScore failed (src/web/upstream.py), each with a next step
+  upstream: {
+    blocked: 'SofaScore refused the request: it is blocking this app right now. Wait a few minutes and try again.',
+    testHint: 'You can test the connection under Settings → Connection.',
+    browser:
+      'SofaScore asked for a browser check, but the built-in browser could not start. Install it with "python -m playwright install chromium", restart the app and try again.',
+    rate_limited: 'SofaScore is slowing us down (too many requests). Wait a few minutes and try again.',
+    network:
+      'Could not reach SofaScore. Check your internet connection (and the proxy under Settings → Connection, if you use one), then try again.',
+    not_found: 'SofaScore has no league with this ID. Remove the league and add it again from the search.',
+    upstream: 'SofaScore sent an answer this app did not expect. Try again in a little while.',
+  },
   nav: {
     main: 'Main menu',
     leagues: 'Leagues',
@@ -153,6 +165,7 @@ const en: typeof tr = {
     unknownGroup: 'Sport not set',
     loadingSeasons: 'Loading seasons…',
     noSeasons: 'Couldn’t get the season list.',
+    seasonsEmpty: 'SofaScore lists no seasons for this league.',
     fetchSeasons: 'Try again',
     fetchingSeasons: 'Getting the season list…',
     latest: 'Latest season',

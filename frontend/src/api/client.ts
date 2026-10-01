@@ -12,17 +12,26 @@ function formatValidation(issues: ValidationIssue[]): string {
     .join('; ')
 }
 
-type ParsedError = { message: string; code?: string }
+type ParsedError = { message: string; code?: string; reason?: string }
 
+/**
+ * Typed error bodies carry a machine-readable field the UI translates; `message` is the fallback text.
+ *  - {detail: {code, message}}: a refusal such as 'job_running' (src/web/app.py, routes/settings.py);
+ *    lib/toast.ts maps it to `errors.<code>`.
+ *  - {detail: {reason, message}}: why a request to SofaScore failed (src/web/upstream.py), or the proxy
+ *    check in src/web/routes/settings.py; lib/upstream.ts maps it.
+ */
 async function parseError(res: Response): Promise<ParsedError> {
   try {
     const data = await res.json()
     const detail = data?.detail
     if (typeof detail === 'string') return { message: detail }
     if (Array.isArray(detail)) return { message: formatValidation(detail) }
-    // Refusals the UI translates: {code: 'job_running', message: '...'} (src/web/app.py, routes/settings.py)
-    if (typeof detail?.code === 'string' && typeof detail?.message === 'string') {
-      return { message: detail.message, code: detail.code }
+    if (detail && typeof detail === 'object') {
+      const code = typeof detail.code === 'string' ? detail.code : undefined
+      const reason = typeof detail.reason === 'string' ? detail.reason : undefined
+      if (typeof detail.message === 'string' && (code || reason)) return { message: detail.message, code, reason }
+      if (reason) return { message: reason, reason }
     }
     return { message: JSON.stringify(detail ?? data) }
   } catch {
@@ -32,18 +41,21 @@ async function parseError(res: Response): Promise<ParsedError> {
 
 export class ApiError extends Error {
   status: number
-  /** Machine-readable reason, when the server sent one; lib/toast.ts maps it to `errors.<code>`. */
+  /** Machine-readable cause of a failed SofaScore request when the server sent one, e.g. 'blocked' or 'network'. */
+  reason?: string
+  /** Machine-readable refusal when the server sent one, e.g. 'job_running'; lib/toast.ts maps it to `errors.<code>`. */
   code?: string
-  constructor(message: string, status: number, code?: string) {
+  constructor(message: string, status: number, reason?: string, code?: string) {
     super(message)
     this.status = status
+    this.reason = reason
     this.code = code
   }
 }
 
 async function apiError(res: Response): Promise<ApiError> {
-  const { message, code } = await parseError(res)
-  return new ApiError(message, res.status, code)
+  const { message, code, reason } = await parseError(res)
+  return new ApiError(message, res.status, reason, code)
 }
 
 export async function apiGet<T>(path: string): Promise<T> {
@@ -204,6 +216,26 @@ export type BridgeHealth = {
 
 export type BypassStatus = { status: string; has_token: boolean; is_valid: boolean; health?: BridgeHealth }
 
+/**
+ * Why a request to SofaScore failed (src/web/upstream.py). "No results" is not one of them:
+ * that is a successful answer with an empty list.
+ */
+export type UpstreamReason = 'blocked' | 'browser' | 'rate_limited' | 'network' | 'not_found' | 'upstream'
+
+/** POST /api/bypass/test: one live request through the browser bridge, sent only when the user asks. */
+export type BypassTest = {
+  success: boolean
+  reason: UpstreamReason | null
+  events_count?: number
+  message: string
+  /** The built-in browser has an open page. */
+  browser_ready: boolean
+  /** A solved-challenge token is cached. False is normal when no challenge was asked for: judge by `success`. */
+  has_token: boolean
+  is_valid: boolean
+  health?: BridgeHealth
+}
+
 // ---- endpoints ----
 
 export const api = {
@@ -227,6 +259,8 @@ export const api = {
   stats: () => apiGet<SystemStats>('/api/stats/system'),
   settings: () => apiGet<Settings>('/api/settings'),
   bypassStatus: () => apiGet<BypassStatus>('/api/bypass/status'),
+  /** Sends a real request to SofaScore: call it from a click handler only, never on load or on a timer. */
+  bypassTest: () => apiSend<BypassTest>('/api/bypass/test', 'POST'),
   saveSettings: (s: Partial<Settings>) =>
     apiSend<{ status: string; data_dir_changed?: boolean }>('/api/settings', 'POST', s),
   /** Query options of POST /api/data/backup (src/web/routes/data.py); the page uses the defaults. */
