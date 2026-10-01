@@ -2,6 +2,23 @@ export default {
   brand: 'SofaScore Scraper',
   brandSub: 'Maç verisi masası',
   server: { up: 'Sunucu bağlı', down: 'Sunucuya ulaşılamıyor' },
+  bridge: {
+    degradedTitle: 'SofaScore istekleri reddediyor',
+    blockedTitle: 'SofaScore bizi engelliyor',
+    browserTitle: 'Yerleşik tarayıcı başlatılamıyor',
+    degradedBody:
+      'Son {count} istek başarısız oldu. İndirmeler yavaşlayabilir ya da eksik kalabilir; uygulama denemeyi sürdürüyor.',
+    blockedBody:
+      'Art arda {count} istek başarısız oldu ve yeniden denemek işe yaramadı. Bu durum geçene kadar indirmeler başarısız olur: yeniden denemeden önce bir süre bekleyin.',
+    reason: {
+      challenge: 'Neden: bot koruması (challenge) çözülemedi.',
+      forbidden: 'Neden: istekler 403 ile yanıtlanıyor.',
+      browser: 'Neden: tarayıcı olmadan SofaScore’a istek gönderilemiyor; kurulumu denetleyin.',
+    },
+    lastSuccess: 'Son başarılı istek: {time}.',
+    never: 'Sunucu başladığından beri hiçbir istek başarılı olmadı.',
+    dismiss: 'Kapat',
+  },
   nav: {
     main: 'Ana menü',
     leagues: 'Ligler',
@@ -234,6 +251,7 @@ export default {
     advancedNote: 'Bu ayarları değiştirmen genelde gerekmez.',
     timeout: 'İstek zaman aşımı (sn)',
     concurrent: 'Eşzamanlı istek',
+    rateLimit: 'Ortak istek bütçesi (istek/sn, 0 = kapalı)',
     waitMin: 'En kısa bekleme (sn)',
     waitMax: 'En uzun bekleme (sn)',
     retries: 'Deneme sayısı',

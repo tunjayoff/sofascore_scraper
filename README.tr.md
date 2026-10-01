@@ -147,12 +147,24 @@ Tüm anahtarlar `.env.example` içinde. Sık kullanılanlar:
 | `DATA_DIR` | Verinin kök dizini (varsayılan `data`). Web `ConfigManager` üzerinden okur. |
 | `APP_LANGUAGE` | `en` veya `tr`: terminal arayüzünün ve sunucu mesajlarının dili. Web uygulamasının dili **Ayarlar**’dan seçilir (orada değiştirmek bu değeri de günceller). |
 | `MAX_CONCURRENT` | Paralel detay isteği üst sınırı. |
+| `REQUEST_RATE_LIMIT` | **Tüm süreçlerin toplamı** için SofaScore'a saniyede istek sayısı (web uygulaması, CLI, her `--watch`, `--refresh-only`). Varsayılan `10 × MAX_CONCURRENT` (= `100`), `0` = kapalı. Bkz. [Ortak istek bütçesi](#ortak-istek-bütçesi-tüm-süreçler). |
 | `USE_PROXY` / `PROXY_URL` | İsteğe bağlı proxy. |
 | `FETCH_ONLY_FINISHED` | Yalnız bitmiş maçları tut (`status.type == finished`). Varsayılan `true`. Henüz oynanmamış fikstürler schedule dosyalarına yazılmaz. |
 | `REFRESH_WINDOW_HOURS` | Kaydedilen maçın başlangıçtan kaç saat boyunca geçici sayılıp yeniden okunacağı (varsayılan `72`, `0` = kapalı). Bkz. [Yenileme politikası](#yenileme-politikası). |
 | `RATE_LIMIT_*` / `SERVER_ERROR_*` | Çok hata durumunda devreye giren eşikler. |
 
 Web **Ayarlar** sayfasından birçok değer düzenlenir; kayıt `.env`’i günceller.
+
+### Ortak istek bütçesi (tüm süreçler)
+
+Her kod yolu kendi isteklerini sınırlar (`MAX_CONCURRENT`, beklemeler, izleyicinin 1 sn aralığı), ama ayrı süreçler birbirini görmez: spor başına bir `--watch`, bir web işi ve cron'dan `--refresh-only` birlikte çalışınca hızları toplanır. `REQUEST_RATE_LIMIT` hepsinin paylaştığı tek bütçedir. SofaScore'a giden her istek (curl ya da tarayıcı) önce, işletim sistemi dosya kilidiyle korunan küçük bir durum dosyasından sıradaki boş anı ayırır.
+
+- **Varsayılan: `MAX_CONCURRENT` başına 10 istek/sn, yani varsayılan ayarlarla `100` istek/sn**; boşta geçen süreden sonra en fazla bir saniyelik bütçe art arda kullanılabilir. Tek bir toplu indirmeyi yavaşlatmayacak şekilde seçildi: varsayılan ayarlarla indirme yolu kendi başına en fazla 60–70 istek/sn'ye çıkıyor ve bu tavan `MAX_CONCURRENT` ile büyüyor (ağsız ölçüm; yinelemek için `python scripts/bench_bulk_rate.py`). Varsayılanın kattığı şey, birden çok sürecin birlikte bu sınırı aşamamasıdır.
+- **Daha nazik olmak için düşürün**, ör. `5`. `1` ve altında istekler eşit aralıklı olur. Toplu indirme de o oranda yavaşlar.
+- **`0` kapatır**: her süreç yine kendi başınadır.
+- **İzleyiciler** ayrıca 1 istek/sn'lik ortak bir şeridi paylaşır: spor başına bir `--watch` çalışsa da istekler süreç başına değil toplamda en az 1 sn aralıklıdır.
+- **Durumun yeri:** `~/.cache/sofascore_scraper/throttle/` (`SOFASCORE_THROTTLE_DIR` ile değişir). Bu klasörü paylaşan süreçler bütçeyi paylaşır; konteynerlerde ortak bir volume gösterin.
+- **Hata durumunda:** süreç ölünce kilidi işletim sistemi bırakır; çöken süreç bayat kilit bırakamaz. Klasöre yazılamıyorsa ya da kilit 1 sn içinde alınamıyorsa istekler engellenmez: o süreç kendi sayacıyla devam eder, bir kez uyarı loglar ve 30 sn sonra dosyayı yeniden dener.
 
 ### Lig listesi (`config/leagues.txt`)
 
@@ -315,7 +327,7 @@ python main.py --watch --sport tennis --event-ids 17196038,17210464 --watch-hour
   - futbol: 2. yarıda 80. dk ya da `injuryTime2` görülünce;
   - basketbol: normal sürenin `%90`'ı oynanınca, saat verisi yoksa son periyotta;
   - tenis: son sette.
-- **Hız bütçesi.** Turda en fazla `WATCH_MAX_EVENT_POLLS` (varsayılan 20) maç sayfası çekilir, istekler arasında en az 1 sn bırakılır; toplam 1 istek/sn'nin altında kalır. Daha çok maç bitişe yakınsa maç sayfası aralığı 60 sn'ye iner ve uyarı loglanır.
+- **Hız bütçesi.** Turda en fazla `WATCH_MAX_EVENT_POLLS` (varsayılan 20) maç sayfası çekilir, istekler arasında en az 1 sn bırakılır. Bu aralığı makinedeki tüm `--watch` süreçleri paylaşır (bkz. [Ortak istek bütçesi](#ortak-istek-bütçesi-tüm-süreçler)); spor başına bir izleyici çalışsa da toplam 1 istek/sn'nin altında kalır, birden çok yoğun izleyicide bir tur 30 sn'den uzun sürebilir. Daha çok maç bitişe yakınsa maç sayfası aralığı 60 sn'ye iner ve uyarı loglanır.
 - **Takılı maç.** Başlangıçtan 4 sa sonra (tenis: `startTimestamp` yalnızca planlanan saat olduğu için gerçek 1. set başlangıcından 6 sa sonra; set süreleri yağmur arası gibi duraklamaları içermediğinden bu başlangıç geç çıkabilir ve `stuck` biraz geç gelebilir) hâlâ canlı ya da başlamamış maç için bir kez `stuck` olayı üretilir, sonra 5 dk'da bir okunur. İptale dönüp başlangıç saati ileri alınmışsa izlemede kalır (askıya alınan tenis maçı aynı id ile ertesi güne taşınabiliyor).
 - **Olaylar.** `DATA_DIR/watch_events.jsonl` dosyasına satır başına bir JSON yazılır:
   - `status_changed` `{event_id, from, to, at_utc, change_ts, scores}`. `scores` `extract_scores` çıktısıdır. İlk `completed` olayı, yenileme penceresi kapanana kadar `provisional: true` taşır; bkz. [Yenileme politikası](#yenileme-politikası).
@@ -336,7 +348,8 @@ Web uygulaması kök yollarda; JSON API öneki **`/api`**.
 - **Scraper**: `POST /api/fetch` (gövde: `full` | `details`, `selections: [{league_id, season_ids, match_ids}]`), `POST /api/scrape/cancel` (sonrasında yeni istek gönderilmez, yeniden deneme beklemeleri kesilir), durum, SSE akışı.
 - **Pano / istatistik / ayarlar**: Web panellerine JSON; ayarlar `.env` ile uyumlu.
 - **Veri**: yedek zip, kapsam seçerek temizleme, CSV export.
-- **Bypass Durumu**: `GET /api/bypass/status` ve canlı test `POST /api/bypass/test`.
+- **Bypass Durumu**: `GET /api/bypass/status` (`health` ile: `ok` / `degraded` / `blocked`, bkz. [SofaScore bizi engelliyor mu?](#sofascore-bizi-engelliyor-mu-köprü-sağlığı)) ve canlı test `POST /api/bypass/test`.
+- **Sağlık**: `GET /health` (`/api` öneki yok) `status`, `version`, `ui` alanlarının yanında `bridge` (aynı sağlık bloğu) ve `throttle` ([ortak istek bütçesi](#ortak-istek-bütçesi-tüm-süreçler)) döndürür.
 
 Sunucu çalışırken OpenAPI: `GET /docs`.
 
@@ -351,6 +364,24 @@ SofaScore düz HTTP istemcilerini reddeder: `curl_cffi` hangi TLS parmak izini g
 Tarayıcı masaüstünde de sunucuda da **her zaman headless** çalışır; her yerde aynı kod yolu kullanılır. Ekran, Xvfb veya Google Chrome gerekmez. Üç sporda ölçüldü: Premier League (50 maç), Wimbledon (239) ve EuroBasket (76) tam sezonları ekransız ortamda %100 kapsamayla indi. Hata ayıklarken tarayıcıyı görmek için `SOFASCORE_BROWSER_HEADED=1`.
 
 Tarayıcı profili (cookie'ler, çözülmüş challenge) `~/.cache/sofascore_scraper/chrome_profile` altındadır; `SOFASCORE_BROWSER_PROFILE` ile değiştirilebilir. Var olan profille yeniden başlatmada ilk istek yaklaşık 1–6 sn'de yanıtlanır.
+
+### SofaScore bizi engelliyor mu? (köprü sağlığı)
+
+Her şey tarayıcının challenge'ı çözmesine bağlı. Bu bozulduğunda işler yalnızca yavaşça başarısız oluyordu. Köprü artık isteklerinin sonucundan bir sağlık durumu tutuyor:
+
+| Durum | Anlamı |
+|-------|--------|
+| `ok` | Son istek yanıt aldı (ya da henüz istek yapılmadı). |
+| `degraded` | Art arda `BRIDGE_DEGRADED_AFTER` (varsayılan 3) istek başarısız oldu. |
+| `blocked` | Art arda `BRIDGE_BLOCKED_AFTER` (varsayılan 10) istek başarısız oldu **ve** seri en az `BRIDGE_BLOCKED_MIN_SECONDS` sürdü (varsayılan 200 sn; bir challenge yeniden denemesinden uzun: şanssız tek bir çözümde aynı anda düşen on paralel istek henüz engel sayılmaz). |
+
+- **Başarısızlık sayılanlar:** çözülemeyen challenge (ya da çözümden sonra da reddedilen istek), challenge sunulmayan 403, başlatılamayan tarayıcı. Çözülüp yinelenen 403 başarıdır. Ağ hatası, 5xx ve 429 seriyi ne uzatır ne sıfırlar. Yanıt alan tek istek durumu `ok` yapar.
+- **Nerede görünür:**
+  - `GET /health` → `bridge` ve `GET /api/bypass/status` → `health`: `state`, `consecutive_failures`, `last_success_at`, `failing_since`, `last_error` (`kind`: `challenge` / `forbidden` / `browser`), `thresholds`. `/health` içindeki `status` `ok` kalır: o, sunucunun ayakta olduğunu söyler.
+  - Web uygulaması: durum `ok` değilken her sayfanın üstünde bir afiş. Kapatınca o seri için gizlenir; durum kötüleşirse ya da yeni bir seri başlarsa yeniden görünür.
+  - Log: istek başına değil, durum değişimi başına bir uyarı.
+  - Terminal modları (etkileşimli, `--headless`, `--watch`, `--refresh-only`): durum değişimi başına stderr'de, uygulama dilinde tek satır.
+- Durum süreç başınadır: web uygulaması kendi köprüsünü, her CLI süreci kendininkini bildirir.
 
 ### Sunucu kurulumu (Linux / Docker)
 

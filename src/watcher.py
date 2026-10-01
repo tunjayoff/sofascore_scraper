@@ -21,6 +21,7 @@ import os
 import time
 from typing import Any, Callable, Dict, Iterable, List, Optional
 
+from src import throttle
 from src.fsutil import atomic_write_json
 from src.refresh import refresh_window_hours
 from src.sports import DEFAULT_STUCK_AFTER_SECONDS, watcher_params
@@ -39,6 +40,8 @@ STUCK_AFTER_SECONDS = DEFAULT_STUCK_AFTER_SECONDS
 STUCK_AFTER_SECONDS_TENNIS = watcher_params("tennis").stuck_after_seconds
 EVENT_PAGES_PER_MINUTE = 40  # liste 2/dk + maç sayfaları ≤ 40/dk → < 1 istek/sn
 MIN_REQUEST_SPACING_SECONDS = 1.0
+# İzleyicilerin ortak şeridi (src/throttle.py): aynı anda çalışan tüm --watch süreçleri bu aralığı paylaşır
+THROTTLE_LANE = "watch"
 WATCH_EVENTS_FILE = "watch_events.jsonl"
 WATCH_STATE_FILE = "watch_state_{sport}.json"
 
@@ -161,7 +164,12 @@ class MatchWatcher:
         self._fetch = fetch_json or self._default_fetch
         self._clock = clock
         self._sleep = sleep
-        self._last_request = 0.0
+        # İstek aralığı izleyicinin özel kuralı değil, ortak bütçenin "watch" şeridi: spor başına ayrı
+        # süreçler toplamda da ≥ 1 sn aralıkla istek atar (issue #16). Kendi fetch'i verilen izleyici
+        # (testler, gömülü kullanım) gerçek istek atmadığı için şeridi süreç içinde tutar.
+        self._throttle = throttle.lane(
+            THROTTLE_LANE, MIN_REQUEST_SPACING_SECONDS, shared=fetch_json is None, clock=clock, sleep=sleep
+        )
         self.requests = 0
         self.event_interval = EVENT_INTERVAL_SECONDS
         self._slow_warned = False
@@ -183,10 +191,7 @@ class MatchWatcher:
             return None
 
     def _get(self, path: str) -> Optional[Dict[str, Any]]:
-        wait = MIN_REQUEST_SPACING_SECONDS - (self._clock() - self._last_request)
-        if wait > 0:
-            self._sleep(wait)
-        self._last_request = self._clock()
+        self._throttle.wait()
         self.requests += 1
         try:
             return self._fetch(path)

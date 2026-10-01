@@ -13,6 +13,7 @@ from typing import Callable, Dict, Any, Optional, Union, TypeVar, cast, Tuple
 from pathlib import Path
 import dotenv
 
+from src import throttle
 from src.logger import get_logger
 from src.paths import env_file_path
 from src.exceptions import (
@@ -115,6 +116,22 @@ async def _asleep(seconds: float) -> None:
         if left <= 0:
             return
         await asyncio.sleep(min(0.25, left))
+
+
+# ---- Ortak istek bütçesi (src/throttle.py, issue #16) ----
+# SofaScore'a giden her curl isteğinin hemen öncesinde çağrılır; tarayıcı köprüsü kendi
+# isteklerinde aynı bütçeyi kullanır (BrowserBridge._api_fetch). Bekleme iptal edilebilir.
+
+def _throttle() -> None:
+    delay = throttle.reserve()
+    if delay > 0:
+        _sleep(delay)
+
+
+async def _athrottle() -> None:
+    delay = throttle.reserve()
+    if delay > 0:
+        await _asleep(delay)
 
 
 # curl-cffi ile istekler (Cloudflare bypass için)
@@ -321,6 +338,7 @@ def make_api_request(
             if use_proxy and proxy_url:
                 kwargs["proxies"] = {"http": proxy_url, "https": proxy_url}
 
+            _throttle()
             response = cffi_requests.get(full_url, **kwargs)
 
             if response.status_code in (429, 503):
@@ -464,6 +482,7 @@ async def make_api_request_async(
                 kwargs["proxy"] = proxy_url
 
             async with semaphore:
+                await _athrottle()
                 response = await session.get(full_url, **kwargs)
         except Exception as e:
             if "curl: (7)" in str(e) or "Failed to connect" in str(e):
@@ -571,6 +590,7 @@ async def _warmup_session(session: AsyncSession) -> None:
         use_proxy, proxy_url = _get_proxy_config()
         if use_proxy and proxy_url:
             kwargs["proxy"] = proxy_url  # warm-up da gerçek IP'yi göstermesin
+        await throttle.wait_async()  # warm-up da SofaScore'a giden bir istek: ortak bütçeden
         resp = await session.get(warmup_url, **kwargs)
         logger.debug(
             f"Warm-up tamamlandı: status={resp.status_code}, "

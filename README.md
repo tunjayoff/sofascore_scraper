@@ -149,12 +149,24 @@ See `.env.example` for all keys. Common ones:
 | `DATA_DIR` | Root folder for stored data (default `data`). Web app reads this via `ConfigManager`. |
 | `APP_LANGUAGE` | `en` or `tr`: language of the terminal UI and server messages. The web app has its own switch under **Settings** (changing it there also updates this value). |
 | `MAX_CONCURRENT` | Parallel detail requests cap. |
+| `REQUEST_RATE_LIMIT` | Requests per second to SofaScore for **all processes together** (web app, CLI, every `--watch`, `--refresh-only`). Default `10 × MAX_CONCURRENT` (= `100`), `0` = off. See [Request budget](#request-budget-all-processes). |
 | `USE_PROXY` / `PROXY_URL` | Optional HTTP proxy. |
 | `FETCH_ONLY_FINISHED` | Keep only finished matches (`status.type == finished`). Default `true`. Upcoming fixtures are dropped from schedule files. |
 | `REFRESH_WINDOW_HOURS` | Hours after kick-off during which a saved match is provisional and gets re-read (default `72`, `0` = off). See [Refresh policy](#refresh-policy). |
 | `RATE_LIMIT_*` / `SERVER_ERROR_*` | Circuit breaker thresholds when many errors occur. |
 
 Tuning for the web UI (timeouts, retries, logging) is exposed under **Settings**; writing settings updates `.env`.
+
+### Request budget (all processes)
+
+Every code path limits itself (`MAX_CONCURRENT`, the waits, the watcher's 1 s spacing), but separate processes do not see each other: one `--watch` per sport plus a web job plus a cron `--refresh-only` simply add up. `REQUEST_RATE_LIMIT` is one budget shared by all of them. Every request to SofaScore, through curl or through the browser, first reserves the next free slot in a small state file guarded by an operating-system file lock.
+
+- **Default: 10 requests/s per `MAX_CONCURRENT`, so `100` requests/s** with the default settings, with up to one second of budget as a burst after idle time. It is chosen so that a single bulk download is not slowed down: with default settings the download path tops out at about 60–70 requests/s on its own, and that ceiling grows with `MAX_CONCURRENT` (measured offline; reproduce with `python scripts/bench_bulk_rate.py`). What the default adds is that several processes can no longer exceed it together.
+- **Lower it to be gentler**, e.g. `5`. At `1` or below requests are evenly spaced. Bulk downloads get slower accordingly.
+- **`0` turns it off**: every process is on its own again.
+- **Watchers** share an extra 1 request/s lane, so one `--watch` per sport stays at least 1 s apart in total, not per process.
+- **Where the state lives:** `~/.cache/sofascore_scraper/throttle/` (change with `SOFASCORE_THROTTLE_DIR`). Processes share the budget when they share this folder; for containers, point them at one shared volume.
+- **Failure behaviour:** the lock is released by the operating system when a process dies, so a crash cannot leave a stale lock. If the folder is not writable or the lock cannot be taken within 1 s, requests are not blocked: that process paces itself, logs one warning and retries the file 30 s later.
 
 ### Leagues (`config/leagues.txt`)
 
@@ -326,7 +338,7 @@ python main.py --watch --sport tennis --event-ids 17196038,17210464 --watch-hour
   - football: 2nd half from minute 80 or once `injuryTime2` appears;
   - basketball: `played ≥ 90%` of regulation, or the last period when there is no clock data;
   - tennis: the deciding set.
-- **Rate budget.** At most `WATCH_MAX_EVENT_POLLS` (default 20) match pages per round, requests at least 1 s apart. That is under 1 request/s in total. If more matches are near the end than that, match pages drop to every 60 s and a warning is logged.
+- **Rate budget.** At most `WATCH_MAX_EVENT_POLLS` (default 20) match pages per round, requests at least 1 s apart. The spacing is shared by every `--watch` process on the machine (see [Request budget](#request-budget-all-processes)), so one watcher per sport still stays under 1 request/s in total; with several busy watchers a round can take longer than 30 s. If more matches are near the end than that, match pages drop to every 60 s and a warning is logged.
 - **Stuck match.** Still live or not started 4 h after kick-off (tennis: 6 h after the real first-set start, since its `startTimestamp` is only the scheduled slot; set durations exclude breaks such as rain delays, so this start can come out late and `stuck` fires a little later): one `stuck` event, then polled every 5 min. If it turns void and its start time has moved (suspended tennis continues the next day with the same id), it stays tracked.
 - **Events.** One JSON line per event in `DATA_DIR/watch_events.jsonl`:
   - `status_changed` `{event_id, from, to, at_utc, change_ts, scores}`. `scores` comes from `extract_scores`. The first `completed` carries `provisional: true` until the refresh window closes; see [Refresh policy](#refresh-policy).
@@ -347,7 +359,8 @@ All routes are prefixed with `/api` unless noted.
 - **Scraper**: `POST /api/fetch` (body: mode `full` or `details`, `selections: [{league_id, season_ids, match_ids}]`), `POST /api/scrape/cancel` (no new requests after it; retry waits are cut short), status, SSE stream.
 - **Dashboard / stats / settings**: JSON for the web UI; settings mirror `.env` keys.
 - **Data**: backup zip, clear scopes, CSV export.
-- **Bypass Status**: `GET /api/bypass/status` and live test `POST /api/bypass/test`.
+- **Bypass Status**: `GET /api/bypass/status` (with `health`: `ok` / `degraded` / `blocked`, see [Is SofaScore blocking us?](#is-sofascore-blocking-us-bridge-health)) and live test `POST /api/bypass/test`.
+- **Health**: `GET /health` (no `/api` prefix) answers `status`, `version`, `ui`, plus `bridge` (the same health block) and `throttle` (the shared [request budget](#request-budget-all-processes)).
 
 OpenAPI: `GET /docs` when the server is running.
 
@@ -362,6 +375,24 @@ SofaScore rejects plain HTTP clients: API requests get `403 {"reason": "challeng
 The browser always runs **headless**, on a desktop and on a server alike, so the same code path is used everywhere; no display, Xvfb or Google Chrome is needed. Measured on the three sports: full seasons of Premier League (50 matches), Wimbledon (239) and EuroBasket (76) downloaded at 100% coverage without a display. Set `SOFASCORE_BROWSER_HEADED=1` to watch the browser while debugging.
 
 The browser profile (cookies, solved challenge) lives in `~/.cache/sofascore_scraper/chrome_profile`; change it with `SOFASCORE_BROWSER_PROFILE`. A restart with an existing profile answers its first request in about 1–6 s.
+
+### Is SofaScore blocking us? (bridge health)
+
+Everything depends on the browser solving the challenge. When that stops working, jobs used to just fail slowly. The bridge now keeps a health state from the outcome of its requests:
+
+| State | Meaning |
+|-------|---------|
+| `ok` | The last request got an answer (or none was made yet). |
+| `degraded` | `BRIDGE_DEGRADED_AFTER` (default 3) requests in a row failed. |
+| `blocked` | `BRIDGE_BLOCKED_AFTER` (default 10) requests in a row failed **and** the streak has lasted `BRIDGE_BLOCKED_MIN_SECONDS` (default 200 s, longer than one challenge retry: ten parallel requests failing on one unlucky solve is not a block yet). |
+
+- **What counts as a failure:** a challenge that could not be solved (or a request still refused after solving), a 403 with no challenge offered, a browser that cannot start. A 403 that is solved and retried is a success. Network errors, 5xx and 429 neither extend nor reset the streak. One answered request returns the state to `ok`.
+- **Where you see it:**
+  - `GET /health` → `bridge` and `GET /api/bypass/status` → `health`: `state`, `consecutive_failures`, `last_success_at`, `failing_since`, `last_error` (`kind`: `challenge` / `forbidden` / `browser`), `thresholds`. `status` in `/health` stays `ok`: it says the server is up.
+  - Web app: a banner at the top of every page while the state is not `ok`. Dismissing hides it for that streak; it returns if the state gets worse or a new streak starts.
+  - Log: one warning per state change, not per request.
+  - Terminal modes (interactive, `--headless`, `--watch`, `--refresh-only`): one line on stderr per state change, in the app language.
+- The state is per process: the web app reports its own bridge, each CLI process its own.
 
 ### Server setup (Linux / Docker)
 

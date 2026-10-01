@@ -22,6 +22,7 @@ import threading
 import time
 from typing import Any, Dict, Optional
 
+from src import bridge_health, throttle
 from src.logger import get_logger
 
 logger = get_logger("ChallengeSolver")
@@ -150,6 +151,7 @@ class BrowserBridge:
             if self.page and not self.page.is_closed():
                 return
             if self._launch_failed_at and time.time() - self._launch_failed_at < _LAUNCH_RETRY_AFTER:
+                bridge_health.record_failure(bridge_health.KIND_BROWSER, "tarayıcı başlatılamadı (yeniden deneme bekleniyor)")
                 raise RuntimeError(
                     "BrowserBridge başlatılamadı (yakın zamanda denendi). "
                     "Tarayıcı kurulu mu? `python -m playwright install chromium`"
@@ -158,10 +160,12 @@ class BrowserBridge:
             await self.close()
             try:
                 await self._launch()
-            except BaseException:
+            except BaseException as e:
                 # Yarım kalan başlatma (hata veya iptal) tarayıcı sürecini ve profil kilidini bırakmasın
                 self._launch_failed_at = time.time()
                 await self.close()
+                if isinstance(e, Exception):  # iptal bir sağlık sinyali değil
+                    bridge_health.record_failure(bridge_health.KIND_BROWSER, f"{e.__class__.__name__}: {e}")
                 raise
             self._launch_failed_at = 0.0
 
@@ -285,12 +289,20 @@ class BrowserBridge:
                 except Exception as le:
                     logger.warning(f"Köprü sayfası toparlanamadı: {le}")
 
+    async def _api_fetch(self, url: str, cache_mode: str) -> Dict[str, Any]:
+        """
+        Köprüden çıkan tek API isteği. Tarayıcıdan giden her istek buradan geçer: önce süreçler
+        arası ortak bütçeden sıra alınır (src/throttle.py), sonra sayfada fetch() çalışır.
+        """
+        await throttle.wait_async()
+        x_req = hashlib.sha256(str(int(time.time()) // 1800).encode("utf-8")).hexdigest()[:6]
+        return await self.evaluate(_FETCH_JS, [url, x_req, self.token, _JS_FETCH_TIMEOUT_MS, cache_mode])
+
     async def _api_unlocked(self) -> bool:
         """Çözümden sonra API gerçekten açıldı mı? (Sayfa henüz yoksa doğrulanamaz: evet say.)"""
         if self.page is None or self.page.is_closed():
             return True
-        x_req = hashlib.sha256(str(int(time.time()) // 1800).encode("utf-8")).hexdigest()[:6]
-        res = await self.evaluate(_FETCH_JS, [_PROBE_URL, x_req, self.token, _JS_FETCH_TIMEOUT_MS, "no-store"])
+        res = await self._api_fetch(_PROBE_URL, "no-store")
         return res.get("status") != 403
 
     async def _solve_challenge(self) -> Optional[str]:
@@ -327,23 +339,30 @@ class BrowserBridge:
         await self.ensure_ready()
 
         url = path_or_url if path_or_url.startswith("http") else "https://www.sofascore.com/api/v1" + path_or_url
-        x_req = hashlib.sha256(str(int(time.time()) // 1800).encode("utf-8")).hexdigest()[:6]
 
-        res = await self.evaluate(_FETCH_JS, [url, x_req, self.token, _JS_FETCH_TIMEOUT_MS, cache_mode_for(url)])
+        res = await self._api_fetch(url, cache_mode_for(url))
 
         # 403 Challenge alındıysa otomatik çöz ve tekrar dene
         if res.get("status") == 403 and "challenge" in (res.get("text") or ""):
             logger.info("API 403 challenge döndürdü, Turnstile otomatik çözülüyor...")
             new_token = await self.solve_challenge()
             if new_token:
-                res = await self.evaluate(_FETCH_JS, [url, x_req, self.token, _JS_FETCH_TIMEOUT_MS, cache_mode_for(url)])
+                res = await self._api_fetch(url, cache_mode_for(url))
 
+        # Sağlık sinyali (src/bridge_health.py): isteğin SON hali sayılır — çözülüp yinelenen 403 başarıdır
         if res.get("ok"):
+            bridge_health.record_success()
             return res.get("data")
 
         if res.get("status") == 404:
+            bridge_health.record_success()  # API yanıt verdi; kaynak yok
             logger.debug(f"Kaynak bulunamadı (404): {url}")
             return {"__404__": True}
+
+        if res.get("status") == 403:
+            text = res.get("text") or ""
+            kind = bridge_health.KIND_CHALLENGE if "challenge" in text else bridge_health.KIND_FORBIDDEN
+            bridge_health.record_failure(kind, f"HTTP 403: {text[:100]}")
 
         logger.warning(f"Tarayıcı fetch başarısız (status {res.get('status')}): {(res.get('text') or '')[:100]}")
         return None

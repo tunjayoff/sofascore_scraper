@@ -40,6 +40,7 @@ class SettingsUpdate(BaseModel):
     date_format: Optional[str] = Field(default=None, max_length=50)
     language: Optional[Literal["tr", "en"]] = None
     max_concurrent: Optional[int] = Field(default=None, ge=1, le=50)
+    request_rate_limit: Optional[float] = Field(default=None, ge=0, le=1000)
     wait_time_min: Optional[float] = Field(default=None, ge=0, le=60)
     wait_time_max: Optional[float] = Field(default=None, ge=0, le=60)
     request_timeout: Optional[int] = Field(default=None, ge=1, le=300)
@@ -105,6 +106,7 @@ def get_all_settings():
         "use_color": config_manager.get_use_color(),
         "date_format": config_manager.get_date_format(),
         "max_concurrent": config_manager.get_max_concurrent(),
+        "request_rate_limit": config_manager.get_request_rate_limit(),
         "wait_time_min": config_manager.get_wait_time_min(),
         "wait_time_max": config_manager.get_wait_time_max(),
         "request_timeout": config_manager.get_request_timeout(),
@@ -134,6 +136,7 @@ def update_settings(settings: SettingsUpdate):
             "use_color": ("USE_COLOR", lambda v: str(v).lower()),
             "date_format": ("DATE_FORMAT", lambda v: v),
             "max_concurrent": ("MAX_CONCURRENT", lambda v: str(v)),
+            "request_rate_limit": ("REQUEST_RATE_LIMIT", lambda v: f"{float(v):g}"),
             "wait_time_min": ("WAIT_TIME_MIN", lambda v: str(v)),
             "wait_time_max": ("WAIT_TIME_MAX", lambda v: str(v)),
             "request_timeout": ("REQUEST_TIMEOUT", lambda v: str(v)),

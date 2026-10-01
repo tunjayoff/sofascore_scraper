@@ -31,6 +31,7 @@ const themes: { v: ThemePref; k: string }[] = [
 const advancedFields: { key: keyof Settings; label: string; step: string; min: number; max: number }[] = [
   { key: 'request_timeout', label: 'settings.timeout', step: '1', min: 1, max: 300 },
   { key: 'max_concurrent', label: 'settings.concurrent', step: '1', min: 1, max: 50 },
+  { key: 'request_rate_limit', label: 'settings.rateLimit', step: '1', min: 0, max: 1000 },
   { key: 'wait_time_min', label: 'settings.waitMin', step: '0.5', min: 0, max: 60 },
   { key: 'wait_time_max', label: 'settings.waitMax', step: '0.5', min: 0, max: 60 },
   { key: 'max_retries', label: 'settings.retries', step: '1', min: 0, max: 10 },
@@ -75,6 +76,7 @@ async function load() {
       data_dir: s.data_dir,
       request_timeout: s.request_timeout,
       max_concurrent: s.max_concurrent,
+      request_rate_limit: s.request_rate_limit,
       wait_time_min: s.wait_time_min,
       wait_time_max: s.wait_time_max,
       max_retries: s.max_retries,

@@ -353,6 +353,12 @@ class ConfigManager:
             logger.warning("MAX_CONCURRENT geçersiz, varsayılan 10 kullanılacak.")
             return 10
 
+    def get_request_rate_limit(self) -> float:
+        """Tüm süreçlerin paylaştığı istek bütçesi (istek/sn); 0 = kapalı. Bkz. src/throttle.py."""
+        from src.throttle import configured_rate
+
+        return configured_rate()
+
     def get_wait_time_min(self) -> float:
         """İstekler arası minimum bekleme süresini döndürür."""
         try:

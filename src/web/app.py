@@ -55,7 +55,17 @@ app.include_router(api.router)
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "version": "2.0.0", "ui": "vue-spa" if FRONTEND_DIST.is_dir() else "missing-dist"}
+    # status/version/ui: sunucunun kendisi (başlatıcı ve arayüz bunlara bakar). bridge: SofaScore'a
+    # erişimin durumu (ok / degraded / blocked); throttle: süreçler arası ortak istek bütçesi.
+    from src import bridge_health, throttle
+
+    return {
+        "status": "ok",
+        "version": "2.0.0",
+        "ui": "vue-spa" if FRONTEND_DIST.is_dir() else "missing-dist",
+        "bridge": bridge_health.snapshot(),
+        "throttle": throttle.status(),
+    }
 
 
 if FRONTEND_DIST.is_dir():

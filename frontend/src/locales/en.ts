@@ -4,6 +4,22 @@ const en: typeof tr = {
   brand: 'SofaScore Scraper',
   brandSub: 'Match data desk',
   server: { up: 'Server connected', down: 'Can’t reach server' },
+  bridge: {
+    degradedTitle: 'SofaScore is refusing requests',
+    blockedTitle: 'SofaScore is blocking us',
+    browserTitle: 'The built-in browser can’t start',
+    degradedBody: 'The last {count} requests failed. Downloads may be slow or incomplete; the app keeps trying.',
+    blockedBody:
+      '{count} requests in a row have failed and retrying has not helped. Downloads will fail until this clears: wait a while before trying again.',
+    reason: {
+      challenge: 'Reason: the anti-bot challenge could not be solved.',
+      forbidden: 'Reason: requests are answered with 403.',
+      browser: 'Reason: without the browser no request can reach SofaScore; check its installation.',
+    },
+    lastSuccess: 'Last successful request: {time}.',
+    never: 'No request has succeeded since the server started.',
+    dismiss: 'Dismiss',
+  },
   nav: {
     main: 'Main menu',
     leagues: 'Leagues',
@@ -236,6 +252,7 @@ const en: typeof tr = {
     advancedNote: 'You rarely need to change these.',
     timeout: 'Request timeout (s)',
     concurrent: 'Concurrent requests',
+    rateLimit: 'Shared request budget (req/s, 0 = off)',
     waitMin: 'Shortest wait (s)',
     waitMax: 'Longest wait (s)',
     retries: 'Retries',

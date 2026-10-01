@@ -117,6 +117,7 @@ async def system_status():
 @router.get("/bypass/status")
 async def bypass_status():
     """Get Cloudflare Turnstile & BrowserBridge status."""
+    from src import bridge_health
     from src.challenge_solver import get_cached_token, _is_token_valid
     token = get_cached_token()
     return {
@@ -124,6 +125,8 @@ async def bypass_status():
         "has_token": bool(token),
         "is_valid": _is_token_valid(),
         "mechanism": "BrowserBridge (Chrome persistent context + Turnstile auto-solve)",
+        # ok / degraded / blocked + son başarılı istek, ardışık başarısızlık, son hata (web arayüzü afişi)
+        "health": bridge_health.snapshot(),
     }
 
 
