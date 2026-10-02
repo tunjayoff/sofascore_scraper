@@ -6,8 +6,9 @@ pipeline, and a live service. They contain no code. Every statement about today'
 `origin/main` commit `3ae2599` (2026-10-01). The documents were revised the same day, after the first two
 implementation batches and two owner decisions on live watching; references that the revision added or
 corrected are marked `0aa73b4`, the commit they were checked against. They were revised again on 2026-10-02,
-after batches three and four; references of that revision are marked `f286723`. Where a section of `01` or
-`02` describes something that exists, it says "as built" and names the plan item and the pull request.
+after batches three and four; references of that revision are marked `f286723`. A third revision followed
+later that day, after batches five to seven; its references are marked `e0bae0c`. Where a section of `01`
+or `02` describes something that exists, it says "as built" and names the plan item and the pull request.
 
 ## Reading order
 
@@ -16,13 +17,17 @@ after batches three and four; references of that revision are marked `f286723`. 
 | [00-platform.md](00-platform.md) | The owner's platform design in English: decisions (with their state and the decisions taken after the draft), layers, schema v1, storage, API v1, CLI, sinks, live, security, waves. Its last section lists where the detailed designs differ from the draft | you want the goal and the fixed requirements |
 | [01-storage.md](01-storage.md) | The Store: what is on disk today and who touches it, the v3 layout, compression measurements, the catalog and state databases with their DDL, both layouts read side by side, `migrate`, leases and the write protocol, backup and restore | you work on anything under `DATA_DIR` |
 | [02-services.md](02-services.md) | The service layer and the faces: what `match_data_fetcher.py` does today, the client, the one pipeline, jobs across processes, the CLI contract, sinks and webhooks, API v1 resources, the live service, removal of the terminal UI | you work on fetching, jobs, the CLI, the API or live |
-| [03-implementation-plan.md](03-implementation-plan.md) | The status of the work; one ordered plan of 76 pull requests with lanes, dependencies, owned files, behaviour changes and briefs (each with what earlier pull requests learned about it); the dependency diagram; what can start now; release points; decisions needed; open questions; the known defects that tests pin; follow-ups and what is deliberately not planned | you are about to start or review a pull request |
+| [03-implementation-plan.md](03-implementation-plan.md) | The status of the work; one ordered plan of 79 pull requests with lanes, dependencies, owned files, behaviour changes and briefs (each with what earlier pull requests learned about it); the dependency diagram; what can start now; release points; decisions needed; open questions; the known defects that tests pin; follow-ups and what is deliberately not planned | you are about to start or review a pull request |
+| [04-schema-v1.md](04-schema-v1.md) | The normalized schema v1, the public data contract, field by field: every record the platform gives out (Sport, Category, Tournament, Season, Participant, Event with its score by score family, Slice, Change, LiveEvent) with type, unit, null rule, source in SofaScore's payload and meaning; the versioning rule; what "raw" means; the 28 decisions taken while it was written. Approved on 2026-10-02 | you consume the platform's data, or you work on the API, the exports, the sinks or a new sport |
 
 ## How the documents relate
 
 - `00` is the requirement. `01` and `02` were designed in parallel against it and then reconciled with each
   other and with the code; each ends with a section "What changed during reconciliation".
 - `03` is the only PR list. The PR ids that appear in `01` and `02` are the ids of `03`.
+- `04` is the field-level contract for section 3 of `00`. Its field tables are generated from the models in
+  `src/schema`, and its examples are validated against the generated JSON Schema; a test fails when they
+  differ. It was written by the pull request of its plan item (SC-1) and approved before that was merged.
 - A pull request that runs alone and finds a document wrong corrects it in the same pull request. Pull
   requests of a parallel batch leave these documents and the changelog alone: each lists its mismatches and
   its changelog text in its description, and a docs pull request and a changelog pull request fold them in
@@ -53,22 +58,34 @@ after batches three and four; references of that revision are marked `f286723`. 
 
 ## Status
 
-As of 2026-10-02 (details and pull request numbers in the "Status" section at the top of `03`):
+As of 2026-10-02, after the second revision of that day (details and pull request numbers in the "Status"
+section at the top of `03`):
 
 - Merged: the safety net (G-01 to G-04: fetch flows, readers, today's CLI, the remaining routes); the slice
   module (ST-02); the Store core, its boundary tests, the legacy reader, the catalog schema, the state
   database with the job store on it, the event and listing indexers with rebuild, reconcile and verify, the
-  leases and the Store facade, the stream log and the watcher state (ST-03 to ST-10, ST-18); the job model
-  (P07), the client facade (P05), the Settings model and loader (P09), the first services with the web and
-  the headless flow on them (P08, P10), the follows mirror (ST-17) and the skeleton of the new CLI (P18);
-  five fix items (FX-1, FX-2, FX-3, FX-4, FX-6); and outside the plan's briefs the 5 requests per second
-  default (X-01), English by default (X-02) and the web security hardening, which covers X-03 and parts of
-  P20, P25 and EX-1.
-- In progress: nothing.
-- Can start now: ST-30 (the Store's read API), P11 (the job manager) and FX-8 (lock files follow the umask).
+  leases and the Store facade, the stream log and the watcher state (ST-03 to ST-10, ST-18), the Store's
+  read API (ST-30) and the shadow mode, in which the existing writers keep the catalog current (ST-11); the
+  job model (P07), the client facade (P05), the Settings model and loader (P09), the first services with
+  the web and the headless flow on them (P08, P10), the follows mirror (ST-17), the job manager across
+  processes (P11) and the skeleton of the new CLI (P18); schema v1 (SC-1), the foundation of API v1 (P20)
+  and the sinks with the `events` command (P22); six fix items (FX-1, FX-2, FX-3, FX-4, FX-6, FX-8); and
+  outside the plan's briefs the 5 requests per second default (X-01), English by default (X-02), the web
+  security hardening, which covers X-03 and parts of P20, P25 and EX-1, and a fix of the diagnostics bundle.
+- In progress: FX-5, RD-4, RD-5 and RD-1 are open pull requests in review (#77 to #80: the presence rules
+  of slices and the first readers on the catalog); ST-20 (the v3 writer) has no pull request yet.
+- Can start now: FX-9 (a cancel check in the request layer, which ends a test that fails at random in CI;
+  the coverage floor), FX-10 (three places that can still disclose a host name, a sink address or the
+  value of an unknown sink option) and FX-11 (the SQLite files follow the umask).
 - What a user can see so far: a `sofascore.toml` is honoured; `--watch` keeps its state in `state.db`; only
   one process writes a data directory at a time, in the web app and on the command line (a refused run
   exits with 6); the single-match fetch says when SofaScore refuses it; headless downloads run the web
-  flow; a second command line, `ssc`, has `version`, `doctor`, `describe`, `config` and `diagnostics`.
-  Nothing reads the catalog yet, and the on-disk layout of the data is unchanged.
-- Decisions that wait for the owner: section 13 of `03`. New on 2026-10-02: S15, S16 and D19.
+  flow, appear in the job history of the web app and can be stopped from another process; a second
+  command line, `ssc`, has `version`, `doctor`, `describe`, `config`, `diagnostics` and `events`; the web
+  server has the first routes of `/api/v1` (health, status, sports, jobs, settings), and the old routes
+  name their successors; the data folder holds a filled index (`.meta/catalog.db`). No feature reads the
+  catalog yet, no process delivers to a configured sink yet, and the on-disk layout of the data is
+  unchanged.
+- Decisions: settled on 2026-10-02 are P2 (schema v1 is approved as written), S15, S16, D19 and D20
+  (section 13 of `03`). Two new points wait for the owner: S17 (the cost of the reconcile on open) and P3
+  (the coverage floor).
