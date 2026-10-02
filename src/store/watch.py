@@ -6,12 +6,12 @@
 aynı sözlük maç başına bir satırdır; bir izleyicinin satırları `watcher` adıyla ayrılır (bugün spor adı).
 Biten maçların satırları WATCH_STATE_RETENTION_SECONDS sonra, bir sonraki `save` sırasında silinir.
 
-2.x dosyalarıyla ilgili üç yardımcı da buradadır, çünkü DATA_DIR'e yalnızca Store dokunur:
-  * `import_legacy`: `watch_state_<spor>.json` dosyasını **bir kez** tabloya alır (bölüm 8.3).
-  * `mirror_legacy_state`: izleyici, canlı servis onun yerini alana kadar (plan maddesi P23) durum
-    dosyasını da yazmayı sürdürür; dosya bir kopyadır, yetkili olan tablodur.
-  * `append_legacy_events`: `watch_events.jsonl` satırları. Bayt olarak ve LF ile eklenir: 2.x metin
-    kipinde yazdığı için Windows'ta CRLF üretiyordu, öteki bütün veri dosyaları LF'dir.
+2.x dosyalarıyla ilgili iki yardımcı da buradadır, çünkü DATA_DIR'e yalnızca Store dokunur:
+  * `import_legacy`: `watch_state_<spor>.json` dosyasını **bir kez** tabloya alır (bölüm 8.3). Dosya artık
+    yazılmaz (P23): canlı servis ve eski `--watch` takma adı durumu yalnızca tabloda tutar.
+  * `append_legacy_events`: `watch_events.jsonl` satırları; yalnızca eski `--watch` takma adı yazar ve onunla
+    birlikte kalkar (P30). Bayt olarak ve LF ile eklenir: 2.x metin kipinde yazdığı için Windows'ta CRLF
+    üretiyordu, öteki bütün veri dosyaları LF'dir.
 """
 from __future__ import annotations
 
@@ -213,18 +213,6 @@ class WatchStateStore:
         if record["found"]:
             logger.info("Legacy watch state %s imported: %s of %s entries", name, imported, record["rows"])
         return imported
-
-    def mirror_legacy_state(self, sport: str, state: Mapping[str, Mapping[str, Any]]) -> None:
-        """
-        Durumu 2.x biçiminde `watch_state_<spor>.json` dosyasına da yazar (atomik; girintili JSON).
-        Dosya yalnızca bir kopyadır: hiçbir 3.x kodu onu geri okumaz (ilk `import_legacy` dışında).
-        """
-        path = layout.resolve(self._data_dir, legacy_state_file(sport))
-        try:
-            text = json.dumps(state, ensure_ascii=False, indent=2)
-        except (TypeError, ValueError) as e:
-            raise StoreError(f"İzleyici durumu JSON'a çevrilemedi: {e}", path=path, detail=str(e)) from e
-        files.write_bytes(path, text.encode("utf-8"))
 
     def append_legacy_events(self, lines: Sequence[str]) -> None:
         """

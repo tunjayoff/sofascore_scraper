@@ -1,0 +1,649 @@
+"""
+Canlı servis (docs/design/02-services.md bölüm 8.1): `ssc watch`'ın çalıştırdığı, gözetimli tek süreç.
+
+    kapsam (takipler, live=true) ─→ spor başına kaynak (bugün yalnızca PollSource) ─→ gözlem
+        ─→ indirgeyici (reducer.reduce) ─→ store.streams.append("live") ─→ sink'ler, `ssc events`
+        ─→ bitiş: tek /event isteği ─→ store.events.observe ─→ change.recorded
+
+  * **Tek kopya.** Servis `live` kilidini tutar (01-storage.md 6.1): aynı veri dizininde ikinci bir servis
+    ya da 2.x izleyicisi (`watcher:<spor>`) başlamaz (LeaseHeld; CLI'de çıkış kodu 6). `writer` almaz: indirme
+    işleri ile birlikte çalışır.
+  * **Kendi istek bağlamı.** İstekler bir işin devre kesicisine sayılmaz (`request_context(breaker=None)`) ve
+    ortak bütçenin `watch` şeridinden sıra alır (istekler arası ≥ 1 sn).
+  * **Durum** `store.watch`tadır, izleyici adı spor adıdır (2.x izleyicisiyle aynı): yeniden başlatma aynı
+    geçişi yeniden olay yapmaz ve `--watch` ile `ssc watch` birbirinin bıraktığı yerden sürer (kilitler
+    ikisinin aynı anda çalışmasını engeller). 2.x'in `watch_state_<spor>.json` dosyası bir kez içe alınır.
+  * **Olaylar** `live` akışına yinelenme anahtarıyla eklenir (reducer.stream_event): çöken servisin yeniden
+    başlarken ürettiği aynı geçiş ikinci kez saklanmaz. Depo meşgulse (StoreBusy: başka bir yazar 5 sn'lik
+    bekleme süresini aştı) ekleme artan aralıklarla yeniden denenir; servis bunun yüzünden bitmez.
+  * **Bitiş onayı.** Sonuçlanan maçın (completed, decided_without_play) yükü bir `/event/{id}` isteğiyle
+    (gözlem zaten maç sayfasından geldiyse istek yapılmaz) `store.events.observe` ile saklanır; değişiklik
+    günlüğüne satır yazıldıysa `change.recorded` eklenir.
+  * **Gözetim.** Çöken kaynak artan aralıklarla (5 sn → 5 dk) yeniden kurulur. SofaScore istekleri
+    engellerse (429/403, açık devre kesici) servis durmaz: `system.blocked` yazar, artan aralıklarla
+    (1 → 10 dk) bekler ve ilk başarılı turda `system.recovered` yazar.
+  * **Bakım.** `live` kilidini tutarken olay günlüğünü saatte bir budar (sink dağıtıcısıyla aynı sınırlar:
+    7 gün, 1.000.000 satır); dağıtıcı yalnızca `sinks` kilidini tutarken budar.
+  * **Durum bilgisi.** Her turda `store.runtime`'a ("live") kaynağı, sporları, sayaçları ve kalp atışını yazar;
+    `live_status(store)` bunu kilidin sahibiyle birlikte okur (`ssc status`, `/api/v1/status` için).
+
+Kaynak bugün yalnızca yoklamadır (`poll`); `page` ve `direct` sonraki işlerde gelir (P24, P31) ve yoklama her
+zaman yedek kalır. Saat ve bekleme dışarıdan verilir: testler sahte saatle gerçek zaman beklemeden sınar.
+"""
+from __future__ import annotations
+
+import datetime as dt
+import logging
+import time
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, FrozenSet, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, TypeVar
+
+from src.services.live import reducer
+from src.services.live.poll_source import LIST_INTERVAL_SECONDS, PollSource, active_ids
+
+logger = logging.getLogger(__name__)
+
+LIVE_LEASE = "live"
+LEASE_PURPOSE = "watch"
+RUNTIME_KEY = "live"
+WATCH_THROTTLE_LANE = "watch"  # src/watcher.py ile aynı şerit: izleyiciler toplamda ≥ 1 sn aralıkla istek atar
+MIN_REQUEST_SPACING_SECONDS = 1.0
+DEFAULT_SPORT = "football"  # sporu belirtilmemiş takip (yapılandırmanın varsayılanı)
+
+SOURCE_POLL = "poll"
+SOURCES: Tuple[str, ...] = ("page", "direct", SOURCE_POLL)
+AVAILABLE_SOURCES: Tuple[str, ...] = (SOURCE_POLL,)  # page: P24, direct: P31
+
+BUSY_RETRY_FIRST_SECONDS = 0.5
+BUSY_RETRY_MAX_SECONDS = 30.0
+BUSY_ATTEMPTS_WHILE_STOPPING = 3
+SOURCE_RESTART_FIRST_SECONDS = 5.0
+SOURCE_RESTART_MAX_SECONDS = 300.0
+BLOCKED_FIRST_SECONDS = 60.0
+BLOCKED_MAX_SECONDS = 600.0
+SCOPE_RELOAD_SECONDS = 60.0
+PRUNE_INTERVAL_SECONDS = 3600.0
+
+SYSTEM_BLOCKED = "system.blocked"
+SYSTEM_RECOVERED = "system.recovered"
+CHANGE_RECORDED = "change.recorded"
+
+T = TypeVar("T")
+Fetch = Callable[[str], Optional[Dict[str, Any]]]
+
+
+class Blocked(Exception):
+    """SofaScore istekleri engelliyor (429, 403, açık devre kesici): tur yarıda kalır, servis bekler."""
+
+
+class _Stop:
+    """`threading.Event` benzeri, hiç kurulmayan durdurma belirteci (yalnızca `sleep` verilen çağıranlar için)."""
+
+    def __init__(self, sleep: Callable[[float], None]) -> None:
+        self._sleep = sleep
+
+    def is_set(self) -> bool:
+        return False
+
+    def wait(self, timeout: Optional[float] = None) -> bool:
+        self._sleep(max(0.0, float(timeout or 0.0)))
+        return False
+
+
+# --- meşgul depo -----------------------------------------------------------------------------------
+
+
+def retrying(fn: Callable[[], T], *, what: str, stop: Any = None, sleep: Callable[[float], None] = time.sleep) -> T:
+    """
+    `fn()`'i StoreBusy verdikçe artan aralıklarla (0,5 sn → 30 sn) yeniden dener. Başka hatalar olduğu gibi
+    çıkar. Durdurma istendiyse (`stop.is_set()`) en çok BUSY_ATTEMPTS_WHILE_STOPPING deneme daha yapılır ve
+    son StoreBusy fırlatılır: kapanış sonsuza dek beklemez.
+    """
+    from src.store import StoreBusy
+
+    waiter = stop if stop is not None else _Stop(sleep)
+    delay = BUSY_RETRY_FIRST_SECONDS
+    attempts_left = BUSY_ATTEMPTS_WHILE_STOPPING
+    warned = False
+    while True:
+        try:
+            result = fn()
+        except StoreBusy:
+            if waiter.is_set():
+                attempts_left -= 1
+                if attempts_left <= 0:
+                    raise
+            if not warned:
+                logger.warning("The store is busy (another process is writing); retrying %s", what)
+                warned = True
+            waiter.wait(delay)
+            delay = min(BUSY_RETRY_MAX_SECONDS, delay * 2)
+            continue
+        if warned:
+            logger.info("The store accepted %s again", what)
+        return result
+
+
+def append_retrying(store: Any, stream: str, events: Sequence[Any], *, stop: Any = None,
+                    sleep: Callable[[float], None] = time.sleep) -> List[Optional[int]]:
+    """`store.streams.append`, StoreBusy'de yeniden denenerek (`retrying`)."""
+    return retrying(lambda: store.streams.append(stream, events), what=f"an append to the {stream} stream",
+                    stop=stop, sleep=sleep)
+
+
+# --- kapsam ------------------------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class SportScope:
+    """Bir sporda izlenenler: maç id'leri, turnuvalar (unique tournament) ve takımlar."""
+
+    sport: str
+    event_ids: FrozenSet[int] = frozenset()
+    tournament_ids: FrozenSet[int] = frozenset()
+    team_ids: FrozenSet[int] = frozenset()
+
+    @property
+    def only_events(self) -> bool:
+        """Yalnızca maç id'leri: hepsi bitince izleme kendiliğinden biter."""
+        return bool(self.event_ids) and not self.tournament_ids and not self.team_ids
+
+    def listed(self, event: Mapping[str, Any]) -> bool:
+        try:
+            eid = int(str(event.get("id")))
+        except ValueError:
+            return False
+        if eid in self.event_ids:
+            return True
+        ut = reducer.tournament_of(event)
+        if ut is not None and ut in self.tournament_ids:
+            return True
+        teams = {(event.get(side) or {}).get("id") for side in ("homeTeam", "awayTeam")}
+        return bool(self.team_ids & teams)
+
+
+@dataclass(frozen=True)
+class LiveScope:
+    """Servisin kapsamı: spor başına bir SportScope. `from_follows`: takiplerden okundu (yeniden okunur)."""
+
+    sports: Tuple[SportScope, ...] = ()
+    from_follows: bool = False
+    skipped: Tuple[str, ...] = ()  # izlenemeyen takipler ("player:123"): kullanıcıya söylenir
+
+    @property
+    def empty(self) -> bool:
+        return not any(s.event_ids or s.tournament_ids or s.team_ids for s in self.sports)
+
+    def sport(self, name: str) -> Optional[SportScope]:
+        return next((s for s in self.sports if s.sport == name), None)
+
+
+def explicit_scope(sports: Iterable[str], *, event_ids: Iterable[int] = (),
+                   tournament_ids: Iterable[int] = ()) -> LiveScope:
+    """Komut satırından verilen kapsam: her spora aynı maç ve turnuva id'leri."""
+    events, tournaments = frozenset(int(e) for e in event_ids), frozenset(int(t) for t in tournament_ids)
+    return LiveScope(sports=tuple(SportScope(sport, events, tournaments) for sport in dict.fromkeys(sports)))
+
+
+def scope_from_follows(follows: Iterable[Any]) -> LiveScope:
+    """
+    `live=true` ve etkin takiplerden kapsam: turnuva → o sporun turnuvası, maç → maç id'si, takım → canlı
+    listede o takımın maçları. Oyuncu takibi canlı listeden izlenemez: atlanır ve `skipped`'te söylenir.
+    Sporu belirtilmemiş takip futbol sayılır (yapılandırmanın varsayılanı).
+    """
+    by_sport: Dict[str, Dict[str, Set[int]]] = {}
+    skipped: List[str] = []
+    for follow in follows:
+        if not getattr(follow, "live", False) or not getattr(follow, "enabled", True):
+            continue
+        sport = (getattr(follow, "sport", None) or DEFAULT_SPORT).lower()
+        kind = getattr(follow, "kind", "")
+        bucket = by_sport.setdefault(sport, {"event": set(), "tournament": set(), "team": set()})
+        if kind in bucket:
+            bucket[kind].add(int(follow.entity_id))
+        else:
+            skipped.append(f"{kind}:{follow.entity_id}")
+    sports = tuple(
+        SportScope(sport, frozenset(b["event"]), frozenset(b["tournament"]), frozenset(b["team"]))
+        for sport, b in sorted(by_sport.items()) if b["event"] or b["tournament"] or b["team"]
+    )
+    return LiveScope(sports=sports, from_follows=True, skipped=tuple(skipped))
+
+
+# --- spor başına izleyici --------------------------------------------------------------------------
+
+
+class _Tracker:
+    """Bir sporun durumu ve kapsamı; kaynağın beslediği `Tracker` (poll_source)."""
+
+    def __init__(self, service: "LiveService", scope: SportScope, state: Dict[str, Dict[str, Any]]) -> None:
+        self.service = service
+        self.scope = scope
+        self.state = state
+        self.matched: Set[str] = set()  # bu çalışmada kapsama girdiği canlı listede görülen maçlar (takım takibi)
+        self.saved: Dict[str, str] = reducer_snapshot(state)
+
+    @property
+    def sport(self) -> str:
+        return self.scope.sport
+
+    def listed(self, event: Mapping[str, Any]) -> bool:
+        if self.scope.listed(event):
+            self.matched.add(str(event.get("id")))
+            return True
+        return False
+
+    def in_scope(self, eid: str, s: Mapping[str, Any]) -> bool:
+        return (int(eid) in self.scope.event_ids or s.get("tournament_id") in self.scope.tournament_ids
+                or eid in self.matched)
+
+    def observe(self, event: Mapping[str, Any], via: str) -> None:
+        self.service._observe(self, event, via)
+
+
+def reducer_snapshot(state: Mapping[str, Mapping[str, Any]]) -> Dict[str, str]:
+    import json
+
+    return {eid: json.dumps(s, ensure_ascii=False, sort_keys=True) for eid, s in state.items()}
+
+
+@dataclass
+class _Slot:
+    """Bir sporun kaynağı ve gözetim bilgisi."""
+
+    tracker: _Tracker
+    source: Any
+    started: bool = False
+    failures: int = 0
+    retry_at: float = 0.0
+
+
+@dataclass
+class LiveReport:
+    """Servisin sayaçları (`status()` ve komutun özeti)."""
+
+    source: str = SOURCE_POLL
+    sports: Tuple[str, ...] = ()
+    rounds: int = 0
+    requests: int = 0
+    events: int = 0
+    confirmed: int = 0
+    source_restarts: int = 0
+    blocked: bool = False
+    started_at: Optional[float] = None
+    heartbeat_at: Optional[float] = None
+    finished: bool = False  # izlenen maçların hepsi bitti
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "source": self.source, "sports": list(self.sports), "rounds": self.rounds, "requests": self.requests,
+            "events": self.events, "confirmed": self.confirmed, "source_restarts": self.source_restarts,
+            "blocked": self.blocked, "started_at": self.started_at, "heartbeat_at": self.heartbeat_at,
+            "finished": self.finished,
+        }
+
+
+SourceFactory = Callable[[str, Fetch, Callable[[], float]], Any]
+
+
+def poll_source_factory(max_event_polls: Callable[[], int]) -> SourceFactory:
+    def make(sport: str, get: Fetch, clock: Callable[[], float]) -> PollSource:
+        return PollSource(sport, get, clock=clock, max_event_polls=max_event_polls)
+
+    return make
+
+
+# --- servis ------------------------------------------------------------------------------------------
+
+
+class LiveService:
+    """
+    store            açık Store (yazılabilir)
+    scope            izlenecekler; None: takiplerden (`live=true`), SCOPE_RELOAD_SECONDS'ta bir yeniden okunur
+    fetch            API yolu → yanıt; None: gerçek istek katmanı (`watch` şeridiyle). 404 → None,
+                     engellenme → Blocked fırlatmalıdır
+    clock            saat (epoch saniye)
+    sleep            istek şeridinin beklemesi (gerçek istek yokken süreç içi)
+    poll_interval    canlı listenin okunma aralığı ([live] poll_interval_seconds)
+    max_event_polls  turda en çok kaç maç sayfası ([live] max_event_polls)
+    source_factory   (spor, get, saat) → kaynak; varsayılan PollSource
+    confirm          bitişte maçın yükünü sakla (store.events.observe)
+    """
+
+    def __init__(self, store: Any, scope: Optional[LiveScope] = None, *, fetch: Optional[Fetch] = None,
+                 clock: Callable[[], float] = time.time, sleep: Callable[[float], None] = time.sleep,
+                 poll_interval: float = LIST_INTERVAL_SECONDS, max_event_polls: int = 20,
+                 source_factory: Optional[SourceFactory] = None, confirm: bool = True,
+                 requested_source: str = SOURCE_POLL) -> None:
+        from src import throttle
+
+        self._store = store
+        self._scope = scope
+        self._fetch = fetch or _default_fetch
+        self._clock = clock
+        self._sleep = sleep
+        self._poll_interval = max(1.0, float(poll_interval))
+        self._source_factory = source_factory or poll_source_factory(lambda: max(1, int(max_event_polls)))
+        self._confirm = confirm
+        self._throttle = throttle.lane(WATCH_THROTTLE_LANE, MIN_REQUEST_SPACING_SECONDS, shared=fetch is None,
+                                       clock=clock, sleep=sleep)
+        self._slots: Dict[str, _Slot] = {}
+        self._stop: Any = None
+        self._blocked_rounds = 0
+        self._blocked_since: Optional[float] = None
+        self._last_prune: Optional[float] = None
+        self._last_scope_read = 0.0
+        self.report = LiveReport(requested_source_note(requested_source))
+
+    # --- istekler ---------------------------------------------------------------------------
+
+    def _get(self, path: str) -> Optional[Dict[str, Any]]:
+        self._throttle.wait()
+        self.report.requests += 1
+        try:
+            return self._fetch(path)
+        except Blocked:
+            raise
+        except Exception as e:  # tek istek hatası izlemeyi durdurmasın
+            logger.warning("Live request failed: %s: %s", path, type(e).__name__)
+            return None
+
+    # --- açılış ve kapanış ------------------------------------------------------------------
+
+    def _read_scope(self) -> LiveScope:
+        if self._scope is not None and not self._scope.from_follows:
+            return self._scope
+        return scope_from_follows(self._store.follows.list(enabled=True))
+
+    def _apply_scope(self, scope: LiveScope) -> None:
+        for sport_scope in scope.sports:
+            slot = self._slots.get(sport_scope.sport)
+            if slot is not None:
+                slot.tracker.scope = sport_scope
+                continue
+            self._store.watch.import_legacy(sport_scope.sport)
+            state = self._store.watch.load(sport_scope.sport)
+            tracker = _Tracker(self, sport_scope, state)
+            self._slots[sport_scope.sport] = _Slot(tracker, self._source_factory(sport_scope.sport, self._get,
+                                                                                 self._clock))
+        for sport in [s for s in self._slots if scope.sport(s) is None]:
+            self._save(self._slots[sport].tracker)
+            del self._slots[sport]  # takip kaldırıldı: o spor artık izlenmez
+        self._scope = scope
+        self.report.sports = tuple(sorted(self._slots))
+
+    def _save(self, tracker: _Tracker) -> None:
+        snapshot = reducer_snapshot(tracker.state)
+        changed = [eid for eid, text in snapshot.items() if tracker.saved.get(eid) != text]
+        changed += [eid for eid in tracker.saved if eid not in snapshot]
+        if not changed:
+            return
+        retrying(lambda: self._store.watch.save(tracker.sport, tracker.state, changed=changed),
+                 what="the watch state", stop=self._stop, sleep=self._sleep)
+        tracker.saved = snapshot
+
+    # --- çalışma ----------------------------------------------------------------------------
+
+    def run(self, stop: Any, *, until_seconds: Optional[float] = None) -> LiveReport:
+        """
+        `stop.is_set()` olana, süre dolana ya da yalnızca maç id'leri izleniyorsa hepsi bitene kadar çalışır.
+        `stop`: `is_set()` ve `wait(timeout)` olan nesne (threading.Event). Kilit başkasındaysa LeaseHeld.
+        """
+        from src.client import request_context
+
+        lease = self._store.lease(LIVE_LEASE, purpose=LEASE_PURPOSE)
+        self._stop = stop
+        started = self._clock()
+        self.report.started_at = started
+        try:
+            with request_context(breaker=None):
+                self._apply_scope(self._read_scope())
+                self._last_scope_read = started
+                logger.info("Live service started: source %s, sports %s", self.report.source,
+                            ", ".join(self.report.sports) or "none")
+                while not stop.is_set():
+                    round_started = self._clock()
+                    self._round()
+                    self._heartbeat("running")
+                    self._prune_if_due()
+                    if self._all_done():
+                        logger.info("All watched events have finished")
+                        self.report.finished = True
+                        break
+                    if until_seconds is not None and self._clock() - started >= until_seconds:
+                        break
+                    self._reload_scope_if_due()
+                    stop.wait(self._next_wait(round_started))
+        finally:
+            for slot in self._slots.values():
+                try:
+                    self._save(slot.tracker)
+                except Exception as e:
+                    logger.error("The watch state of %s could not be saved (%s)", slot.tracker.sport,
+                                 type(e).__name__)
+            try:
+                self._heartbeat("stopped")
+            except Exception as e:
+                logger.debug("The live status could not be written (%s)", type(e).__name__)
+            lease.release()
+            logger.info("Live service stopped after %d round(s), %d request(s), %d event(s)",
+                        self.report.rounds, self.report.requests, self.report.events)
+        return self.report
+
+    def _round(self) -> None:
+        """Bir tur: her spor için kaynağın turu (ilk turda başlangıç okumaları), gözetim altında."""
+        now = self._clock()
+        for sport in sorted(self._slots):
+            slot = self._slots.get(sport)
+            if slot is None or slot.retry_at > now:
+                continue
+            try:
+                if not slot.started:
+                    slot.source.start(slot.tracker, slot.tracker.scope.event_ids)
+                    slot.started = True
+                slot.source.tick(slot.tracker)
+                slot.failures = 0
+            except Blocked as e:
+                self._save(slot.tracker)
+                self._on_blocked(str(e))
+                return
+            except Exception as e:
+                slot.failures += 1
+                delay = min(SOURCE_RESTART_MAX_SECONDS, SOURCE_RESTART_FIRST_SECONDS * 2 ** (slot.failures - 1))
+                slot.retry_at = self._clock() + delay
+                slot.source = self._source_factory(sport, self._get, self._clock)
+                slot.started = False
+                self.report.source_restarts += 1
+                logger.error("The %s source of %s failed (%s); restarting it in %.0f s",
+                             self.report.source, sport, type(e).__name__, delay, exc_info=True)
+            self._save(slot.tracker)
+        self.report.rounds += 1
+        if self._blocked_since is not None:
+            self._on_recovered()
+
+    def _all_done(self) -> bool:
+        if not self._slots or self._scope is None or self._scope.from_follows:
+            return False
+        return all(slot.tracker.scope.only_events and not active_ids(slot.tracker)
+                   for slot in self._slots.values())
+
+    def _next_wait(self, round_started: float) -> float:
+        if self._blocked_since is not None:
+            return min(BLOCKED_MAX_SECONDS, BLOCKED_FIRST_SECONDS * 2 ** max(0, self._blocked_rounds - 1))
+        wait = max(0.0, self._poll_interval - (self._clock() - round_started))
+        retries = [slot.retry_at - self._clock() for slot in self._slots.values() if slot.retry_at > self._clock()]
+        return max(0.0, min([wait, *retries]))
+
+    def _reload_scope_if_due(self) -> None:
+        if self._scope is None or not self._scope.from_follows:
+            return
+        now = self._clock()
+        if now - self._last_scope_read < SCOPE_RELOAD_SECONDS:
+            return
+        self._last_scope_read = now
+        try:
+            self._apply_scope(self._read_scope())
+        except Exception as e:
+            logger.warning("The live scope could not be read again (%s); keeping the current one", type(e).__name__)
+
+    # --- gözlem ve olaylar ------------------------------------------------------------------
+
+    def _observe(self, tracker: _Tracker, event: Mapping[str, Any], via: str) -> None:
+        eid = str(event.get("id"))
+        obs = reducer.Observation(event=event, via=via, at=self._clock())
+        tracker.state[eid], emitted = reducer.reduce(tracker.state.get(eid), obs, tracker.sport)
+        tournament_id = tracker.state[eid].get("tournament_id")
+        for item in emitted:
+            stream_event = reducer.stream_event(item, event, tracker.sport, tournament_id=tournament_id,
+                                                source=SOURCE_POLL)
+            seqs = append_retrying(self._store, reducer.LIVE_STREAM, [stream_event], stop=self._stop,
+                                   sleep=self._sleep)
+            if seqs and seqs[0] is not None:
+                self.report.events += 1
+            if (self._confirm and item["type"] == reducer.STATUS_CHANGED
+                    and item.get("to") in reducer.TERMINAL_CLASSES):
+                self._confirm_terminal(tracker, int(eid), event, via)
+
+    def _confirm_terminal(self, tracker: _Tracker, event_id: int, event: Mapping[str, Any], via: str) -> None:
+        """Sonuçlanan maçın yükünü saklar: maç sayfasından gelmediyse tek bir /event isteğiyle."""
+        from src.store import StoreError, StreamEvent
+
+        payload: Optional[Mapping[str, Any]] = event if via == reducer.VIA_EVENT else None
+        if payload is None:
+            data = self._get(f"/event/{event_id}")
+            payload = (data or {}).get("event")
+        if not payload:
+            logger.info("Event %s finished but its page could not be read; a later sync stores it", event_id)
+            return
+        observed_at = dt.datetime.fromtimestamp(self._clock(), dt.timezone.utc)
+        try:
+            result = retrying(lambda: self._store.events.observe(event_id, payload, observed_at=observed_at),
+                              what=f"the payload of event {event_id}", stop=self._stop, sleep=self._sleep)
+        except StoreError as e:
+            logger.warning("The payload of finished event %s could not be stored (%s)", event_id, type(e).__name__)
+            return
+        self.report.confirmed += 1
+        if result.change_seq is not None:
+            append_retrying(self._store, "change", [StreamEvent(
+                type=CHANGE_RECORDED, data={"change_seq": result.change_seq}, event_id=event_id,
+                sport=tracker.sport, source=SOURCE_POLL, dedup_key=f"change:{result.change_seq}",
+            )], stop=self._stop, sleep=self._sleep)
+
+    # --- engellenme ---------------------------------------------------------------------------
+
+    def _system(self, type_: str, data: Mapping[str, Any]) -> None:
+        from src.store import StreamEvent
+
+        append_retrying(self._store, "system", [StreamEvent(type=type_, data=dict(data), source="system")],
+                        stop=self._stop, sleep=self._sleep)
+
+    def _on_blocked(self, reason: str) -> None:
+        self._blocked_rounds += 1
+        wait = min(BLOCKED_MAX_SECONDS, BLOCKED_FIRST_SECONDS * 2 ** (self._blocked_rounds - 1))
+        if self._blocked_since is None:
+            self._blocked_since = self._clock()
+            self.report.blocked = True
+            logger.warning("SofaScore is refusing requests; the live service pauses for %.0f s", wait)
+            self._system(SYSTEM_BLOCKED, {"source": SOURCE_POLL, "retry_in_s": wait, "reason": reason[:200]})
+
+    def _on_recovered(self) -> None:
+        since = self._blocked_since or self._clock()
+        self._blocked_since = None
+        self._blocked_rounds = 0
+        self.report.blocked = False
+        logger.info("SofaScore answers again; the live service continues")
+        self._system(SYSTEM_RECOVERED, {"source": SOURCE_POLL, "blocked_for_s": round(self._clock() - since, 1)})
+
+    # --- bakım ve durum -----------------------------------------------------------------------
+
+    def _prune_if_due(self) -> None:
+        from src.sinks.dispatcher import PRUNE_MAX_AGE_SECONDS, PRUNE_MAX_ROWS
+        from src.store import StoreError
+
+        now = self._clock()
+        if self._last_prune is not None and now - self._last_prune < PRUNE_INTERVAL_SECONDS:
+            return
+        self._last_prune = now
+        try:
+            removed = self._store.streams.prune(max_age_s=PRUNE_MAX_AGE_SECONDS, max_rows=PRUNE_MAX_ROWS)
+        except StoreError as e:
+            logger.warning("The event log could not be pruned (%s)", type(e).__name__)
+            return
+        if removed:
+            logger.info("Pruned %d old event(s) from the event log", removed)
+
+    def _heartbeat(self, state: str) -> None:
+        from src.store import StoreError
+
+        self.report.heartbeat_at = self._clock()
+        try:
+            self._store.runtime.set(RUNTIME_KEY, {"state": state, **self.report.to_dict()})
+        except StoreError as e:  # durum bilgisi yazılamadı: izleme sürer
+            logger.debug("The live status could not be written (%s)", type(e).__name__)
+
+    def status(self) -> Dict[str, Any]:
+        return self.report.to_dict()
+
+
+def requested_source_note(requested: str) -> str:
+    """Kullanılan kaynak: bugün her seçimde `poll` (page ve direct sonraki işlerde gelir)."""
+    return requested if requested in AVAILABLE_SOURCES else SOURCE_POLL
+
+
+def _default_fetch(path: str) -> Optional[Dict[str, Any]]:
+    """Gerçek istek: 404 → None; 429, 403 ve açık devre kesici → Blocked; başka hata olduğu gibi."""
+    from src.client import api_url
+    from src.exceptions import APIError, CircuitOpenError, RateLimitError, ResourceNotFoundError
+    from src.utils import make_api_request
+
+    try:
+        return make_api_request(api_url(path), raise_on_failure=True)
+    except ResourceNotFoundError:
+        return None
+    except (RateLimitError, CircuitOpenError) as e:
+        raise Blocked(type(e).__name__) from e
+    except APIError as e:
+        if getattr(e, "status_code", None) == 403:
+            raise Blocked("APIError 403") from e
+        raise
+
+
+def live_status(store: Any) -> Dict[str, Any]:
+    """
+    Veri dizinindeki canlı servisin durumu: kilidi tutan var mı, hangi kaynak önde, son kalp atışı. Kilit
+    tutulmuyorsa `running` False'tur; son çalışmanın bilgisi (`last`) yine verilir.
+    """
+    holder = store.lease_holder(LIVE_LEASE)
+    fact = store.runtime.get(RUNTIME_KEY)
+    value: Mapping[str, Any] = fact.value if fact is not None else {}
+    running = holder is not None
+    return {
+        "running": running,
+        "pid": holder.pid if holder is not None else None,
+        "host": holder.host if holder is not None else None,
+        "source": value.get("source") if running else None,
+        "sports": list(value.get("sports") or []) if running else [],
+        "heartbeat_at": value.get("heartbeat_at"),
+        "blocked": bool(value.get("blocked")) if running else False,
+        "last": dict(value) if value else None,
+    }
+
+
+__all__ = [
+    "AVAILABLE_SOURCES",
+    "LEASE_PURPOSE",
+    "LIVE_LEASE",
+    "RUNTIME_KEY",
+    "SOURCES",
+    "Blocked",
+    "LiveReport",
+    "LiveScope",
+    "LiveService",
+    "SportScope",
+    "append_retrying",
+    "explicit_scope",
+    "live_status",
+    "poll_source_factory",
+    "retrying",
+    "scope_from_follows",
+]

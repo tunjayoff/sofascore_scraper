@@ -264,3 +264,129 @@ def test_every_scenario_emits_what_its_name_says(tmp_path: Path, fixed_window: N
     assert types("tennis_without_time") == [[], ["stuck"]]
     assert golden["void_with_a_moved_start"]["steps"][-1]["state"]["done"] is False
     assert golden["void_without_a_new_start"]["steps"][-1]["state"]["done"] is True
+
+
+# --- indirgeyici: saf işlev ---------------------------------------------------------------------------
+
+
+def run_reducer(tmp_path: Path, sport: str, steps: List[Step]) -> List[Dict[str, Any]]:
+    """İndirgeyiciyle: durum adımdan adıma elle taşınır; depo, saat ve ağ yok."""
+    from src.services.live.reducer import Observation, reduce
+
+    state = None
+    out = []
+    for event, via, at in steps:
+        frozen = copy.deepcopy(event)
+        before = copy.deepcopy(state)
+        new, emitted = reduce(state, Observation(event=frozen, via=via, at=at), sport)
+        assert state == before  # verilen durum değiştirilmez
+        assert frozen == event  # gözlem değiştirilmez
+        state = new
+        out.append({"events": plain(emitted), "state": plain(state)})
+    return out
+
+
+def test_the_reducer_matches_the_golden(tmp_path: Path, fixed_window: None) -> None:
+    golden = json.loads(GOLDEN.read_text(encoding="utf-8"))
+    assert scenario_results(tmp_path, run_reducer) == golden
+
+
+def test_the_window_is_read_only_for_the_first_completion() -> None:
+    from src.services.live.reducer import Observation, reduce
+
+    calls: List[int] = []
+
+    def window() -> float:
+        calls.append(1)
+        return 48.0
+
+    _, steps = _completed_seen_twice()
+    state = None
+    for event, via, at in steps:
+        state, _ = reduce(state, Observation(event=event, via=via, at=at), "football", window_hours=window)
+    assert len(calls) == 1
+
+
+# --- akış biçimi: data ve yinelenme anahtarı ---------------------------------------------------------
+
+
+def _emitted(name: str) -> List[Tuple[Dict[str, Any], Dict[str, Any]]]:
+    """Senaryonun olayları, her biri kendisini üreten gözlemin maç nesnesiyle."""
+    from src.services.live.reducer import Observation, reduce
+
+    sport, steps = SCENARIOS[name]()
+    state = None
+    out = []
+    for event, via, at in steps:
+        state, emitted = reduce(state, Observation(event=event, via=via, at=at), sport)
+        out.extend((item, event) for item in emitted)
+    return out
+
+
+def test_status_changed_data_is_the_shape_of_the_schema(fixed_window: None) -> None:
+    from src.services.live.reducer import stream_event
+
+    (item, event), = _emitted("finish_after_drop")
+    ev = stream_event(item, event, "football", tournament_id=17)
+    assert ev.type == "live.status_changed"
+    assert (ev.event_id, ev.sport, ev.tournament_id, ev.source) == (500, "football", 17, "poll")
+    assert list(ev.data) == ["from", "to", "change_ts", "provisional", "score"]
+    assert (ev.data["from"], ev.data["to"], ev.data["provisional"]) == ("live", "completed", True)
+    assert ev.data["change_ts"] == event["changes"]["changeTimestamp"]
+    score = ev.data["score"]
+    assert score["family"] == "football"
+    assert (score["home"], score["away"]) == (event["homeScore"]["display"], event["awayScore"]["display"])
+
+
+def test_a_transition_that_is_not_a_completion_has_no_provisional_flag(fixed_window: None) -> None:
+    from src.services.live.reducer import stream_event
+
+    (item, event), = _emitted("void_without_a_new_start")
+    data = stream_event(item, event, "tennis").data
+    assert (data["from"], data["to"], data["provisional"]) == ("live", "void", None)
+    assert data["score"]["family"] == "sets"
+
+
+def test_score_changed_data_carries_score_pairs(fixed_window: None) -> None:
+    from src.services.live.reducer import stream_event
+
+    (item, event), = _emitted("basketball_score_jump")
+    data = stream_event(item, event, "basketball").data
+    assert list(data) == ["from", "to", "change_ts", "score"]
+    assert data["to"]["home"] - data["from"]["home"] == 7 and data["to"]["away"] - data["from"]["away"] == 5
+    assert data["score"]["family"] == "periods"
+
+
+def test_stuck_data_carries_the_start_as_utc(fixed_window: None) -> None:
+    from src.services.live.reducer import stream_event
+
+    (item, event), = _emitted("stuck_not_started")
+    data = stream_event(item, event, "football").data
+    start = dt.datetime.fromtimestamp(item["start_ts"], dt.timezone.utc)
+    assert data == {"status_class": "not_started", "start_utc": start.strftime("%Y-%m-%dT%H:%M:%SZ")}
+
+
+def test_an_event_without_a_readable_score_still_gets_its_data() -> None:
+    from src.services.live.reducer import stream_event
+
+    item = {"type": "status_changed", "event_id": 5, "from": "live", "to": "completed", "change_ts": None,
+            "provisional": True}
+    data = stream_event(item, {"homeScore": "?"}, "football").data  # nesnenin kimliği yok
+    assert data["score"] is None and data["to"] == "completed"
+
+
+def test_dedup_keys_name_the_transition_and_are_stable(fixed_window: None) -> None:
+    from src.services.live.reducer import dedup_key
+
+    keys = {name: [dedup_key(item) for item, _ in _emitted(name)] for name in SCENARIOS}
+    assert keys == {name: [dedup_key(item) for item, _ in _emitted(name)] for name in SCENARIOS}  # aynı girdi
+    change_ts = _emitted("finish_after_drop")[0][0]["change_ts"]
+    assert keys["finish_after_drop"][0] == f'500:status_changed:"live">"completed":{change_ts}'
+    assert keys["stuck_not_started"][0].startswith("700:stuck:")
+    assert keys["basketball_score_change"][0].startswith("900:score_changed:[")
+    # Ayrı geçişlerin anahtarları ayrı ("completed_seen_twice" aynı maçın aynı geçişini yineler)
+    every = [key for name in SCENARIOS if name != "completed_seen_twice" for key in keys[name]]
+    assert len(every) == len(set(every))
+    assert keys["completed_seen_twice"] == keys["finish_after_drop"]
+    no_ts = {"type": "status_changed", "event_id": 1, "from": "live", "to": "void", "change_ts": None}
+    assert dedup_key(no_ts) == '1:status_changed:"live">"void":-'

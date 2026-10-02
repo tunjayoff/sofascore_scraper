@@ -757,23 +757,8 @@ def test_an_unreadable_legacy_state_file_is_tried_again(store: Store, data_dir: 
     assert store.watch.import_legacy("football") == 1
 
 
-def test_mirror_writes_the_state_file_in_the_2x_format(store: Store, data_dir: Path) -> None:
-    state = {"500": {"class": "live", "done": False, "ad": "Fenerbahçe", "score": [1, None]}, "7": {"done": True}}
-    store.watch.mirror_legacy_state("football", state)
-    path = legacy_state_path(data_dir, "football")
-    assert path.read_bytes() == json.dumps(state, ensure_ascii=False, indent=2).encode("utf-8")
-    store.watch.mirror_legacy_state("football", {})
-    assert path.read_bytes() == b"{}"
-    assert sorted(p.name for p in data_dir.iterdir()) == [".meta", "watch_state_football.json"]  # geçici dosya kalmaz
-    with pytest.raises(StoreError):
-        store.watch.mirror_legacy_state("football", {"1": {"when": object()}})
-    assert path.read_bytes() == b"{}"
-
-
 @pytest.mark.parametrize("sport", ["", ".", "..", "../x", "a/b", "a\\b", "a\0b", None, 5])
 def test_legacy_files_refuse_a_sport_that_is_not_a_file_name(store: Store, data_dir: Path, sport: Any) -> None:
-    with pytest.raises(LayoutError):
-        store.watch.mirror_legacy_state(sport, {})
     with pytest.raises(LayoutError):
         store.watch.import_legacy(sport)
     assert sorted(p.name for p in data_dir.iterdir()) == [".meta"]
@@ -856,12 +841,6 @@ def file_events(data_dir: Path) -> List[Dict[str, Any]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()] if path.exists() else []
 
 
-def as_file_line(record: StreamRecord) -> Dict[str, Any]:
-    """Akış satırından 2.x dosya satırı: tür öneksiz, maç id'si verinin yanında."""
-    assert record.type.startswith("live.") and record.event_id is not None
-    return {"type": record.type[len("live."):], "event_id": record.event_id, **record.data}
-
-
 def test_watcher_names_equal_the_store_names() -> None:
     assert watcher_mod.WATCH_EVENTS_FILE == watch.LEGACY_EVENTS_FILE
     assert watcher_mod.WATCH_STATE_FILE == watch.LEGACY_STATE_FILE
@@ -888,15 +867,21 @@ def test_watcher_events_reach_the_live_stream_the_file_and_the_callback(watched_
 
     lines = file_events(watched_dir)
     assert [line["type"] for line in lines] == ["score_changed", "status_changed"]
-    assert received == lines  # geri çağrıya ve dosyaya aynı satırlar gider
+    assert received == lines  # geri çağrıya ve dosyaya aynı satırlar gider (2.x biçimi)
     batch = open_store(watched_dir).streams.read(streams=["live"])
-    assert [as_file_line(record) for record in batch.events] == lines  # akış aynı olayları taşır
+    # Akış aynı olayları canlı servisin biçiminde taşır (P23): `data` ve yinelenme anahtarı
     assert [record.type for record in batch.events] == ["live.score_changed", "live.status_changed"]
-    assert all((r.stream, r.event_id, r.sport, r.tournament_id, r.source, r.dedup_key) ==
-               ("live", 500, "football", 17, "poll", None) for r in batch.events)
+    assert all((r.stream, r.event_id, r.sport, r.tournament_id, r.source) == ("live", 500, "football", 17, "poll")
+               for r in batch.events)
+    assert all(r.dedup_key for r in batch.events)
     assert seqs_of(batch) == sorted(set(seqs_of(batch))) and not batch.gap
-    assert all("type" not in r.data and "event_id" not in r.data for r in batch.events)
-    assert batch.events[1].data["provisional"] is True and batch.events[1].data["source"] == "event"
+    goal_line, done_line = lines
+    assert batch.events[0].data["from"] == {"home": goal_line["from"][0], "away": goal_line["from"][1]}
+    assert batch.events[0].data["to"] == {"home": goal_line["to"][0], "away": goal_line["to"][1]}
+    done_data = batch.events[1].data
+    assert (done_data["from"], done_data["to"], done_data["provisional"], done_data["change_ts"]) == \
+        ("live", "completed", True, done_line["change_ts"])
+    assert done_data["score"]["family"] == "football"
 
 
 def test_watch_events_file_gets_lf_line_endings_on_every_platform(watched_dir: Path) -> None:
@@ -911,7 +896,7 @@ def test_watch_events_file_gets_lf_line_endings_on_every_platform(watched_dir: P
     assert len(stuck) == 1 and stuck[0].tournament_id is None  # turnuvası bilinmeyen maç
 
 
-def test_watcher_state_is_in_the_store_and_the_file_is_only_a_copy(watched_dir: Path) -> None:
+def test_watcher_state_is_only_in_the_store(watched_dir: Path) -> None:
     live_event = fixture_event(LIVE_FOOTBALL, 500)
     done = fixture_event(DONE_FOOTBALL, 500)
     done["startTimestamp"] = live_event["startTimestamp"]
@@ -921,13 +906,11 @@ def test_watcher_state_is_in_the_store_and_the_file_is_only_a_copy(watched_dir: 
     watcher.start()
     watcher.tick()
 
-    state_file = watched_dir / "watch_state_football.json"
     stored = open_store(watched_dir).watch.load("football")
     assert stored == watcher.state and stored["500"]["class"] == "live"
-    assert state_file.read_bytes() == json.dumps(watcher.state, ensure_ascii=False, indent=2).encode("utf-8")
+    assert not (watched_dir / "watch_state_football.json").exists()  # 2.x kopyası artık yazılmaz (P23)
 
-    # Kopya silinse ya da bozulsa da yeniden başlayan izleyici durumunu Store'dan alır
-    state_file.write_text("{yarım", encoding="utf-8")
+    # Yeniden başlayan izleyici durumunu Store'dan alır
     restarted = make_watcher(watched_dir, api, clock, event_ids=[500])
     assert restarted.state == stored
     before = len(api.calls)
@@ -936,13 +919,12 @@ def test_watcher_state_is_in_the_store_and_the_file_is_only_a_copy(watched_dir: 
     api.live_list[:] = []
     api.events[500] = done
     restarted.tick()
-    state_file.unlink()
     again = make_watcher(watched_dir, api, clock, event_ids=[500])
     again.start()
     again.tick()
     assert [line["type"] for line in file_events(watched_dir)] == ["status_changed"]  # geçiş yinelenmedi
     assert len(open_store(watched_dir).streams.read().events) == 1
-    assert json.loads(state_file.read_text(encoding="utf-8")) == again.state  # kopya yeniden yazıldı
+    assert not (watched_dir / "watch_state_football.json").exists()
 
 
 def test_watcher_imports_a_2x_state_file_on_its_first_run(watched_dir: Path) -> None:
@@ -1026,7 +1008,7 @@ def test_watcher_reaches_the_data_dir_only_through_the_store(watched_dir: Path) 
     api.events[500] = done
     watcher.run()
 
-    assert sorted(p.name for p in watched_dir.iterdir()) == [".meta", "watch_events.jsonl", "watch_state_football.json"]
+    assert sorted(p.name for p in watched_dir.iterdir()) == [".meta", "watch_events.jsonl"]
     assert (watcher.events_path, watcher.state_path) == \
         (os.path.join(str(watched_dir), "watch_events.jsonl"), os.path.join(str(watched_dir), "watch_state_football.json"))
     assert [key for key in conftest.STORE_BOUNDARY.records if key[0] == "src/watcher.py"] == []
