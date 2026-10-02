@@ -1,10 +1,14 @@
 """
-src/slices.py: sonuç tipi (Outcome) ve "bu yanıtta veri var mı" yüklemleri.
+src/slices.py: sonuç tipi (Outcome) ve "bu yanıtta veri var mı" kuralları.
 
 Beklenen değerler tabloya elle yazıldı ve yüklemler src/slices.py'ye taşınmadan ÖNCEKİ kodla
 (MatchDataFetcher metotları, src/match_data_fetcher.py'deki SliceOutcome) doğrulandı. Aynı tablolar
 IMPLEMENTATIONS'taki her uygulamaya uygulanır: MatchDataFetcher'ın eski metotları ile src.slices'taki
 işlevler aynı tablodan geçer, yani aynı sonucu verir.
+
+Kurallar toplamdır ve üç yanıt verir (slice_body_state: veri var, veri yok, okunamadı). Altı eski kuralın
+yanıtı, taşınan yüklemlerin bu dosyada saklanan kopyasıyla (`_REFERENCE`) üretilmiş gövdeler üzerinde
+karşılaştırılır: True → veri var, False → veri yok, hata → okunamadı.
 """
 from __future__ import annotations
 
@@ -14,7 +18,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 import pytest
 
@@ -26,13 +30,13 @@ from src.exceptions import (
     RateLimitError,
     ResourceNotFoundError,
 )
-from src import match_data_fetcher, slices
+from src import match_data_fetcher, slices, sports
 from src.match_data_fetcher import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, MatchDataFetcher, SliceOutcome
-from src.slices import SLICE_SKIPPED, Outcome
+from src.slices import BODY_DATA, BODY_MALFORMED, BODY_NO_DATA, SLICE_SKIPPED, Outcome
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
 
-# Kendi yüklemi olan dilimler: anahtar → MatchDataFetcher'daki metot adı. src.slices'taki işlev aynı adı
+# MatchDataFetcher'da kendi metodu olan dilimler: anahtar → metot adı. src.slices'taki işlev aynı adı
 # baştaki alt çizgi olmadan taşır.
 TYPED_METHODS = {
     "statistics": "_statistics_has_data",
@@ -42,9 +46,16 @@ TYPED_METHODS = {
     "team_streaks": "_has_team_streaks_data_dict",
     "incidents": "_has_incidents_data_dict",
 }
-# Kendi yüklemi olmayan anahtarlar: değer "truthy" ise veri var sayılır
-GENERIC_KEYS = ("basic", "point_by_point", "graph")
-ALL_KEYS = tuple(TYPED_METHODS) + GENERIC_KEYS
+# src.slices'ta kendi işlevi olan dilimler (kuralı sonradan eklenenlerin MatchDataFetcher'da metodu yoktur)
+TYPED_FUNCTIONS = {
+    **{key: name.lstrip("_") for key, name in TYPED_METHODS.items()},
+    "point_by_point": "has_point_by_point_data_dict",
+}
+# Kendi kuralı olan dilimler: kayıt defterindeki her dilim
+RULE_KEYS = tuple(TYPED_FUNCTIONS)
+# Kendi kuralı olmayan anahtarlar (kayıt defterinde olmayanlar): değer "truthy" ise veri var sayılır
+GENERIC_KEYS = ("basic", "graph")
+ALL_KEYS = RULE_KEYS + GENERIC_KEYS
 
 # Yüklemler örnek durumuna bakmaz; kurucu (dizin tarama, ConfigManager) burada gereksiz
 _FETCHER = MatchDataFetcher.__new__(MatchDataFetcher)
@@ -62,8 +73,8 @@ def _method_direct(key: str, d: Dict[str, Any]) -> bool:
 
 
 def _function_direct(key: str, d: Dict[str, Any]) -> bool:
-    name = TYPED_METHODS.get(key)
-    return getattr(slices, name.lstrip("_"))(d) if name else slices.match_detail_slice_present(key, d)
+    name = TYPED_FUNCTIONS.get(key)
+    return getattr(slices, name)(d) if name else slices.match_detail_slice_present(key, d)
 
 
 IMPLEMENTATIONS: List[Tuple[str, Predicate]] = [
@@ -152,26 +163,55 @@ BODY_CASES: List[Tuple[str, Any, bool]] = [
     ("incidents", "abc", False),
     ("incidents", {"incidents": [{"incidentType": "goal"}]}, True),
     ("incidents", [{"incidentType": "goal"}], True),
-    # --- kendi yüklemi olmayan anahtarlar: bool(değer)
-    ("basic", {}, False),
-    ("basic", {"id": 1}, True),
+    # --- point_by_point: {"pointByPoint": [...]} listesi dolu olmalı
     ("point_by_point", {}, False),
     ("point_by_point", [], False),
-    ("point_by_point", {"pointByPoint": []}, True),  # içi boş ama sözlük dolu: veri var sayılır
+    ("point_by_point", {"pointByPoint": []}, False),  # içi boş liste: veri yok (eskiden dolu sözlük = veri)
+    ("point_by_point", {"pointByPoint": None}, False),
+    ("point_by_point", {"error": {"code": 404, "message": "Not Found"}}, False),
+    ("point_by_point", {"pointByPoint": [{"games": []}]}, True),
+    ("point_by_point", {"pointByPoint": [{}]}, True),
+    # --- kendi kuralı olmayan anahtarlar: bool(değer)
+    ("basic", {}, False),
+    ("basic", {"id": 1}, True),
     ("graph", 0, False),
     ("graph", [1], True),
+    ("graph", {"graphPoints": []}, True),  # kuralı olmayan anahtarda dolu sözlük yeter
+    ("graph", "abc", True),
 ]
 
-# Beklenmeyen biçimde gövde: yüklem AttributeError ile düşer (taşıma bunu değiştirmez)
+# Beklenmeyen biçimde gövde: kural okuyamaz. Yüklem False verir (eskiden AttributeError, TypeError ya da
+# KeyError ile düşerdi); slice_body_state "okunamadı" der.
 MALFORMED_CASES: List[Tuple[str, Any]] = [
     ("statistics", "abc"),
-    ("statistics", 0),  # yalnızca None "yok" sayılır; 0 sözlük gibi okunmaya çalışılır
+    ("statistics", 0),  # yalnızca None "yok" sayılır; 0 okunamayan gövdedir
+    ("statistics", True),
     ("statistics", ["x"]),
     ("statistics", [None, {"period": "1ST", "groups": _STAT_ITEMS}]),  # ALL yokken ilk öğe None
+    ("statistics", [{"period": "ALL", "groups": _STAT_ITEMS}, "x"]),  # veri olsa da: periyotlar önce okunur
     ("statistics", {"statistics": [{"period": "ALL", "groups": ["x"]}]}),
+    ("statistics", {"statistics": [{"period": "ALL", "groups": [{"statisticsItems": []}, None]}]}),
+    ("statistics", {"statistics": [{"period": "ALL", "groups": "abc"}]}),
+    ("statistics", {"statistics": [{"period": "ALL", "groups": 5}]}),
+    ("statistics", {"statistics": [{"period": "ALL", "groups": {"a": 1}}]}),
+    ("statistics", {"statistics": "abc"}),
+    ("statistics", {"statistics": 5}),
+    ("statistics", {"statistics": {"period": "ALL"}}),
+    ("statistics", {"statistics": {"": 1}}),
     ("h2h", {"teamDuel": ["x"]}),
+    ("h2h", {"teamDuel": "abc"}),
+    ("h2h", {"teamDuel": 5, "matches": [1]}),  # maç listesi olsa da: teamDuel önce okunur
     ("team_streaks", ["x"]),
     ("team_streaks", "abc"),
+    ("team_streaks", 5),
+    ("team_streaks", True),
+    ("point_by_point", "abc"),
+    ("point_by_point", 0),
+    ("point_by_point", False),
+    ("point_by_point", [{"games": []}]),  # sarmalayıcısız liste bilinen bir biçim değil
+    ("point_by_point", {"pointByPoint": {"games": []}}),
+    ("point_by_point", {"pointByPoint": "abc"}),
+    ("point_by_point", {"pointByPoint": 0}),
 ]
 
 
@@ -189,9 +229,279 @@ def test_presence_of_hand_made_bodies(impl: Predicate, key: str, body: Any, expe
 
 
 @pytest.mark.parametrize("impl,key,body", _impl_params(MALFORMED_CASES))
-def test_malformed_body_raises_attribute_error(impl: Predicate, key: str, body: Any):
-    with pytest.raises(AttributeError):
-        impl(key, {key: body})
+def test_malformed_body_is_absent_and_does_not_raise(impl: Predicate, key: str, body: Any):
+    assert impl(key, {key: body}) is False
+
+
+# --- üç yanıt: slice_body_state --------------------------------------------------------------
+
+
+@pytest.mark.parametrize("key,body,expected", BODY_CASES, ids=[f"{c[0]}:{i}" for i, c in enumerate(BODY_CASES)])
+def test_body_state_of_hand_made_bodies(key: str, body: Any, expected: bool):
+    """Elle yazılmış tablodaki hiçbir gövde "okunamadı" değildir: True → veri var, False → veri yok."""
+    assert slices.slice_body_state(key, body) == (BODY_DATA if expected else BODY_NO_DATA)
+
+
+@pytest.mark.parametrize("key,body", MALFORMED_CASES, ids=[f"{c[0]}:{i}" for i, c in enumerate(MALFORMED_CASES)])
+def test_body_state_of_malformed_bodies(key: str, body: Any):
+    assert slices.slice_body_state(key, body) == BODY_MALFORMED
+
+
+def test_body_state_values_and_null():
+    assert (BODY_DATA, BODY_NO_DATA, BODY_MALFORMED) == ("data", "no_data", "malformed")
+    for key in ALL_KEYS + ("unknown_slice",):
+        assert slices.slice_body_state(key, None) == BODY_NO_DATA
+        assert slices.slice_body_state(key, PRESENT.get(key, {"x": 1})) == BODY_DATA
+
+
+def test_keys_without_a_rule_are_never_malformed():
+    """Kayıt defterinde olmayan anahtarın kuralı yoktur: dolu değer veri, boş değer "veri yok"."""
+    for key in GENERIC_KEYS + ("odds", ""):
+        assert key not in slices.PRESENCE_RULE_KEYS
+        for body in _ATOMS:
+            assert slices.slice_body_state(key, body) == (BODY_DATA if body else BODY_NO_DATA)
+            assert slices.match_detail_slice_present(key, {key: body}) is bool(body)
+
+
+def test_every_registered_slice_has_a_rule_of_its_own():
+    """
+    Kayıt defterine (src/sports.py DETAIL_SLICES) dilim ekleyen, src/slices.py'ye kuralını da ekler: kuralı
+    olmayan dilim dolu her gövdeyi (`{"pointByPoint": []}` gibi) veri sayardı.
+    """
+    registered = {detail.key for detail in sports.DETAIL_SLICES}
+    assert registered - slices.PRESENCE_RULE_KEYS == set(), "src/slices.py'de kuralı olmayan kayıtlı dilim"
+    assert slices.PRESENCE_RULE_KEYS == registered == set(RULE_KEYS)
+    for spec in sports.SPORTS:
+        assert set(spec.detail_slices) <= slices.PRESENCE_RULE_KEYS
+
+
+# --- taşınan yüklemlerin kopyası (karşılaştırma için) ---------------------------------------
+#
+# Altı yüklemin kurallar toplam yapılmadan önceki hali, aynen. Yalnızca bu dosyada, yeni kuralların eski
+# yanıtları koruduğunu göstermek için durur: True → veri var, False → veri yok, hata → okunamadı.
+
+
+def _ref_statistics(d: Dict[str, Any]) -> bool:
+    s = d.get("statistics")
+    if s is None:
+        return False
+    periods = s if isinstance(s, list) else (s.get("statistics") or [])
+    all_periods = [p for p in periods if p and p.get("period") == "ALL"]
+    if not all_periods and periods:
+        all_periods = [periods[0]]
+    for p in all_periods:
+        for g in p.get("groups") or []:
+            if (g.get("statisticsItems") or []):
+                return True
+    return False
+
+
+def _ref_lineups(d: Dict[str, Any]) -> bool:
+    L = d.get("lineups")
+    if not L or not isinstance(L, dict):
+        return False
+    for side in ("home", "away"):
+        block = L.get(side)
+        if not isinstance(block, dict):
+            continue
+        players = block.get("players")
+        if isinstance(players, list) and len(players) > 0:
+            return True
+    return False
+
+
+def _ref_h2h(d: Dict[str, Any]) -> bool:
+    h = d.get("h2h")
+    if not h or not isinstance(h, dict):
+        return False
+    td = h.get("teamDuel") or {}
+    if td and any(td.get(x) is not None for x in ("homeWins", "awayWins", "draws")):
+        return True
+    raw = h.get("matches") or h.get("events") or td.get("matches")
+    return isinstance(raw, list) and len(raw) > 0
+
+
+def _ref_pregame_form(d: Dict[str, Any]) -> bool:
+    p = d.get("pregame_form")
+    if not p or not isinstance(p, dict):
+        return False
+
+    def chk(t: Any) -> bool:
+        if not t or not isinstance(t, dict):
+            return False
+        form = t.get("form")
+        if isinstance(form, list) and len(form) > 0:
+            return True
+        return any(t.get(x) is not None for x in ("position", "value", "avgRating"))
+
+    return chk(p.get("homeTeam")) or chk(p.get("awayTeam"))
+
+
+def _ref_team_streaks(d: Dict[str, Any]) -> bool:
+    g = (d.get("team_streaks") or {}).get("general")
+    return isinstance(g, list) and len(g) > 0
+
+
+def _ref_incidents(d: Dict[str, Any]) -> bool:
+    raw = d.get("incidents")
+    if raw and isinstance(raw, dict) and not isinstance(raw, list):
+        raw = raw.get("incidents")
+    return isinstance(raw, list) and len(raw) > 0
+
+
+_REFERENCE: Dict[str, Callable[[Dict[str, Any]], bool]] = {
+    "statistics": _ref_statistics,
+    "lineups": _ref_lineups,
+    "h2h": _ref_h2h,
+    "pregame_form": _ref_pregame_form,
+    "team_streaks": _ref_team_streaks,
+    "incidents": _ref_incidents,
+}
+
+
+def _reference_state(key: str, body: Any) -> str:
+    try:
+        return BODY_DATA if _REFERENCE[key]({key: body}) else BODY_NO_DATA
+    except (AttributeError, TypeError, KeyError, IndexError, ValueError):  # eski okuyucunun yakaladıkları
+        return BODY_MALFORMED
+
+
+# JSON'un verebileceği her türden değer: boş ve dolu
+_ATOMS: List[Any] = [
+    None, True, False, 0, 1, 2.5, "", "abc", [], ["x"], [None], [[]], [{}], [1, 2], {}, {"a": 1}, {"": 1},
+    {"period": "ALL"}, {"statisticsItems": [1]}, {"players": [1]}, {"form": ["W"]}, {"homeWins": 0},
+]
+_GROUPS = [{"statisticsItems": [{"key": "shots"}]}]
+
+# Dilim → gövde kalıpları; her kalıp, kuralın okuduğu bir yere bir değer koyar
+_TEMPLATES: Dict[str, List[Callable[[Any], Any]]] = {
+    "statistics": [
+        lambda a: a,
+        lambda a: {"statistics": a},
+        lambda a: [a],
+        lambda a: {"statistics": [a]},
+        lambda a: [a, {"period": "ALL", "groups": _GROUPS}],
+        lambda a: [{"period": "ALL", "groups": _GROUPS}, a],
+        lambda a: [a, {"period": "1ST", "groups": _GROUPS}],
+        lambda a: [{"period": "1ST", "groups": _GROUPS}, a],
+        lambda a: [{"period": a, "groups": _GROUPS}, {"period": "2ND"}],
+        lambda a: [{"period": "ALL", "groups": a}],
+        lambda a: [{"period": "1ST", "groups": a}],
+        lambda a: [{"period": "ALL", "groups": [a]}],
+        lambda a: [{"period": "ALL", "groups": [a, {"statisticsItems": [1]}]}],
+        lambda a: [{"period": "ALL", "groups": [{"statisticsItems": [1]}, a]}],
+        lambda a: [{"period": "ALL", "groups": [{"statisticsItems": a}]}],
+        lambda a: [{"period": "ALL", "groups": []}, {"period": "ALL", "groups": a}],
+        lambda a: [{"period": "ALL", "groups": a}, {"period": "ALL", "groups": _GROUPS}],
+    ],
+    "lineups": [
+        lambda a: a,
+        lambda a: {"home": a},
+        lambda a: {"away": a},
+        lambda a: {"home": {"players": a}},
+        lambda a: {"home": a, "away": {"players": [1]}},
+        lambda a: {"home": {"players": a}, "away": {"players": a}},
+    ],
+    "h2h": [
+        lambda a: a,
+        lambda a: {"teamDuel": a},
+        lambda a: {"teamDuel": a, "matches": [1]},
+        lambda a: {"teamDuel": {"homeWins": a}},
+        lambda a: {"teamDuel": {"draws": a, "matches": [1]}},
+        lambda a: {"teamDuel": {"matches": a}},
+        lambda a: {"matches": a},
+        lambda a: {"events": a},
+        lambda a: {"matches": a, "events": [1]},
+        lambda a: {"managerDuel": a},
+    ],
+    "pregame_form": [
+        lambda a: a,
+        lambda a: {"homeTeam": a},
+        lambda a: {"awayTeam": a},
+        lambda a: {"homeTeam": {"form": a}},
+        lambda a: {"awayTeam": {"position": a}},
+        lambda a: {"homeTeam": {"form": a, "value": a}},
+        lambda a: {"homeTeam": a, "awayTeam": {"form": ["W"]}},
+    ],
+    "team_streaks": [
+        lambda a: a,
+        lambda a: {"general": a},
+        lambda a: {"head2head": a},
+        lambda a: {"general": a, "head2head": [1]},
+    ],
+    "incidents": [
+        lambda a: a,
+        lambda a: {"incidents": a},
+        lambda a: [a],
+        lambda a: {"incidents": [a]},
+        lambda a: {"other": a},
+    ],
+}
+
+
+def _generated_bodies(key: str) -> Iterator[Any]:
+    for template in _TEMPLATES[key]:
+        for atom in _ATOMS:
+            yield template(atom)
+
+
+@pytest.mark.parametrize("key", sorted(_REFERENCE))
+def test_rules_answer_as_the_moved_predicates_did(key: str):
+    """
+    Altı eski kural, üretilmiş her gövdede taşınan yüklemle aynı yanıtı verir: eskiden True ise "veri var",
+    False ise "veri yok", hata ise "okunamadı". Yüklemler artık hata fırlatmaz ve yalnızca "veri var"da True'dur.
+    """
+    seen = set()
+    count = 0
+    for body in _generated_bodies(key):
+        count += 1
+        expected = _reference_state(key, body)
+        assert slices.slice_body_state(key, body) == expected, body
+        for name, impl in IMPLEMENTATIONS:
+            assert impl(key, {key: body}) is (expected == BODY_DATA), (name, body)
+        seen.add(expected)
+    assert count == len(_TEMPLATES[key]) * len(_ATOMS)
+    # Eski yüklemi hiç hata fırlatmayan üç dilim hiçbir gövdeyi "okunamadı" saymaz
+    never_malformed = key in ("lineups", "pregame_form", "incidents")
+    assert seen == ({BODY_DATA, BODY_NO_DATA} if never_malformed else {BODY_DATA, BODY_NO_DATA, BODY_MALFORMED})
+
+
+def test_reference_covers_the_hand_made_tables():
+    """Kopya gerçekten eski koddur: elle yazılmış tabloların eski yüklemi olan satırlarıyla aynı yanıtı verir."""
+    for key, body, expected in BODY_CASES:
+        if key in _REFERENCE:
+            assert _reference_state(key, body) == (BODY_DATA if expected else BODY_NO_DATA), (key, body)
+    for key, body in MALFORMED_CASES:
+        if key in _REFERENCE:
+            assert _reference_state(key, body) == BODY_MALFORMED, (key, body)
+
+
+@pytest.mark.parametrize("key", ALL_KEYS + ("unknown_slice",))
+def test_rules_are_total(key: str):
+    """Hangi değer verilirse verilsin hata yok; yüklem yalnızca "veri var" yanıtında True."""
+    bodies = [body for templates in _TEMPLATES.values() for template in templates for body in map(template, _ATOMS)]
+    bodies += [{"pointByPoint": atom} for atom in _ATOMS]
+    bodies += [("a", "tuple"), {1, 2}, b"bytes", object(), float("nan"), {1: 2}, {None: [1]}]  # JSON'da olmayanlar
+    for body in bodies:
+        state = slices.slice_body_state(key, body)
+        assert state in (BODY_DATA, BODY_NO_DATA, BODY_MALFORMED)
+        for name, impl in IMPLEMENTATIONS:
+            assert impl(key, {key: body}) is (state == BODY_DATA), (name, body)
+
+
+def test_fetcher_reports_an_unreadable_body_as_empty_for_now():
+    """
+    Çekici yüklemi çağırır (üç yanıtı değil): okunamayan gövde bugün içinde veri olmayan 200 gibi "boş"
+    sonuçtur (eskiden yüklem hata fırlatırdı). İşlem hattı slice_body_state'e geçtiğinde bu sonuç
+    başarısız / "parse" olur ve bu test onunla birlikte değişir.
+    """
+    for key, body in MALFORMED_CASES:
+        outcome = _FETCHER._answered_outcome(key, body)
+        assert (outcome.status, outcome.reason, outcome.data) == (SLICE_EMPTY, "empty", body), (key, body)
+    empty_points = _FETCHER._answered_outcome("point_by_point", {"pointByPoint": []})
+    assert (empty_points.status, empty_points.reason) == (SLICE_EMPTY, "empty")  # eskiden "ok"
+    assert empty_points.data == {"pointByPoint": []}  # gövde yine sonuçta durur ve diske yazılır
+    assert _FETCHER._answered_outcome("point_by_point", PRESENT["point_by_point"]).status == SLICE_OK
 
 
 @pytest.mark.parametrize("name,impl", IMPLEMENTATIONS, ids=[name for name, _ in IMPLEMENTATIONS])

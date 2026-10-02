@@ -30,7 +30,7 @@ import pytest
 import store_dump
 import store_fixtures as sf
 from src import match_data_fetcher as mdf
-from src import refresh, sports, status, watcher
+from src import refresh, slices, sports, status, watcher
 from src.config_manager import ConfigManager
 from src.match_data_fetcher import MatchDataFetcher
 from src.paths import safe_name
@@ -503,9 +503,9 @@ def test_slice_states_from_files(tmp_path: Path) -> None:
     write(tmp_path, f"{base}/lineups.json", sf.slice_payload("lineups", event, empty=True))  # boş 200
     write(tmp_path, f"{base}/incidents.json", sf.slice_payload("incidents", event, empty=True))  # boş + hata
     write(tmp_path, f"{base}/h2h.json", b'{"teamDuel": {"homeW')  # yarım dosya
-    write(tmp_path, f"{base}/team_streaks.json", "not an object")  # geçerli JSON, yüklem düşer
+    write(tmp_path, f"{base}/team_streaks.json", "not an object")  # geçerli JSON, kural okuyamaz
     write(tmp_path, f"{base}/pregame_form.json", sf.slice_payload("pregame_form", event))
-    write(tmp_path, f"{base}/point_by_point.json", {"pointByPoint": []})  # kendi yüklemi yok: dolu nesne = veri
+    write(tmp_path, f"{base}/point_by_point.json", {"pointByPoint": []})  # kendi kuralı var: boş liste = veri yok
     write(tmp_path, f"{base}/_unavailable.json", {"lineups": 1, "pregame_form": 2, "odds": 2})
     write(tmp_path, f"{base}/_slice_status.json", {
         "lineups": sf.empty_marker(1), "incidents": sf.error_marker("429", 429, 3),
@@ -524,7 +524,7 @@ def test_slice_states_from_files(tmp_path: Path) -> None:
         "h2h": ("error", False, 0, 0, ("corrupt", None, 1)),
         "lineups": ("empty", True, 1, 0, None),
         "incidents": ("error", True, 0, 0, ("429", 429, 3)),
-        "point_by_point": OK,
+        "point_by_point": ("empty", True, 0, 0, None),
     }
     assert event7.slice("h2h").path == f"{base}/h2h.json" and event7.slice("h2h").fetched_at is None
     assert set(event7.payloads) == {"event", "statistics", "team_streaks", "pregame_form", "lineups", "incidents",
@@ -533,6 +533,94 @@ def test_slice_states_from_files(tmp_path: Path) -> None:
     assert [(p.path, p.kind) for p in report.problems] == [
         (base, "unknown_name"), (f"{base}/team_streaks.json", "malformed"), (f"{base}/h2h.json", "corrupt"),
     ]
+
+
+_STAT_GROUPS = [{"statisticsItems": [{"key": "shots"}]}]
+CORRUPT = ("error", True, 0, 0, ("corrupt", None, 1))
+EMPTY = ("empty", True, 0, 0, None)
+
+# (dilim, dosyanın gövdesi, okuyucunun verdiği durum). Üç yanıt: kural "veri var" derse `ok`, "veri yok" derse
+# yüküyle `empty`, okuyamazsa `error` / `corrupt` ve `malformed` sorunu (src.slices.slice_body_state).
+BODY_STATE_CASES: List[Tuple[str, Any, Tuple[Any, ...]]] = [
+    # okunamayan gövdeler: eskiden yüklem hata fırlatıyordu ve okuyucu yakalıyordu; durum aynı
+    ("statistics", "abc", CORRUPT),
+    ("statistics", 0, CORRUPT),
+    ("statistics", ["x"], CORRUPT),
+    ("statistics", [None, {"period": "1ST", "groups": _STAT_GROUPS}], CORRUPT),
+    ("statistics", {"statistics": [{"period": "ALL", "groups": ["x"]}]}, CORRUPT),
+    ("statistics", {"statistics": {"period": "ALL"}}, CORRUPT),
+    ("h2h", {"teamDuel": ["x"]}, CORRUPT),
+    ("h2h", {"teamDuel": "abc", "matches": [1]}, CORRUPT),
+    ("team_streaks", ["x"], CORRUPT),
+    ("team_streaks", "abc", CORRUPT),
+    # eski yüklemin açıkça elediği yanlış türler eskisi gibi "veri yok"tur
+    ("lineups", ["x"], EMPTY),
+    ("lineups", {"home": {"players": "abc"}}, EMPTY),
+    ("h2h", ["x"], EMPTY),
+    ("pregame_form", ["x"], EMPTY),
+    ("incidents", "abc", EMPTY),
+    ("incidents", {"incidents": {"a": 1}}, EMPTY),
+    ("team_streaks", {"general": {"name": "Wins"}}, EMPTY),
+    # point_by_point: kendi kuralı (eskiden dolu olan her değer `ok` idi)
+    ("point_by_point", {"pointByPoint": [{"games": []}]}, OK),
+    ("point_by_point", {"pointByPoint": []}, EMPTY),
+    ("point_by_point", {"pointByPoint": None}, EMPTY),
+    ("point_by_point", {"error": {"code": 404}}, EMPTY),
+    ("point_by_point", {}, EMPTY),
+    ("point_by_point", [], EMPTY),
+    ("point_by_point", {"pointByPoint": {"games": []}}, CORRUPT),
+    ("point_by_point", [{"games": []}], CORRUPT),
+    ("point_by_point", "abc", CORRUPT),
+    ("point_by_point", 0, CORRUPT),
+]
+
+
+@pytest.mark.parametrize("combined", [False, True], ids=["own-file", "combined-file"])
+def test_slice_state_follows_the_three_answers_of_the_presence_rule(tmp_path: Path, combined: bool) -> None:
+    """Her gövde ayrı bir maç dizininde: bir kez dilimin kendi dosyasında, bir kez birleşik dosyada (L4)."""
+    for index, (key, body, _) in enumerate(BODY_STATE_CASES, start=1):
+        base = f"match_details/17_PL/season_x/{index}"
+        write(tmp_path, f"{base}/basic.json", event_of(index, "tennis"))
+        if combined:
+            write(tmp_path, f"{base}/{index}.json", {"basic": event_of(index, "tennis"), key: body})
+        else:
+            write(tmp_path, f"{base}/{key}.json", body)
+    events, report = scan(tmp_path)
+    assert len(events) == len(BODY_STATE_CASES)
+    malformed = []
+    for index, (key, body, expected) in enumerate(BODY_STATE_CASES, start=1):
+        base = f"match_details/17_PL/season_x/{index}"
+        answer = slices.slice_body_state(key, body)
+        assert answer == {OK: "data", EMPTY: "no_data", CORRUPT: "malformed"}[expected], (key, body)
+        assert counters(events[index]) == {key: expected}, (key, body)
+        assert events[index].payloads[key] == body  # yük, durumu ne olursa olsun okunur
+        if expected == CORRUPT:
+            malformed.append((f"{base}/{index}.json" if combined else f"{base}/{key}.json", "malformed"))
+    assert [(p.path, p.kind) for p in report.problems] == malformed
+
+
+def test_reader_never_raises_on_a_slice_body(tmp_path: Path) -> None:
+    """Kurallar toplamdır: okuyucu hiçbir geçerli JSON gövdesinde hata yakalamak zorunda kalmaz."""
+    bodies: List[Any] = [None, True, False, 0, 1, 1.5, "", "abc", [], ["x"], [None], [[]], [{}], {}, {"a": None},
+                         {"statistics": "abc"}, {"statistics": 5}, {"statistics": [[1]]}, {"teamDuel": 5},
+                         {"general": 5}, {"incidents": 5}, {"pointByPoint": 5}, {"home": 5, "away": [1]},
+                         {"homeTeam": 5, "awayTeam": [1]}]
+    cases = [(key, body) for key in LegacyReader(tmp_path).known_slices for body in bodies]
+    for index, (key, body) in enumerate(cases, start=1):
+        write(tmp_path, f"match_details/{index}/basic.json", event_of(index))
+        write(tmp_path, f"match_details/{index}/{key}.json", body)
+    events, report = scan(tmp_path)
+    assert len(events) == len(cases) == 7 * len(bodies)
+    state_of = {"data": "ok", "no_data": "empty", "malformed": "error"}
+    seen = set()
+    for index, (key, body) in enumerate(cases, start=1):
+        entry = events[index].slice(key)
+        assert entry.state == state_of[slices.slice_body_state(key, body)], (key, body)
+        assert entry.has_payload and (entry.error is not None) is (entry.state == "error")
+        seen.add(entry.state)
+    assert seen == {"ok", "empty", "error"}
+    assert {p.kind for p in report.problems} == {"malformed"}
+    assert len(report.problems) == sum(1 for event in events.values() for s in event.slices if s.state == "error")
 
 
 def test_known_slices_can_be_given(tmp_path: Path) -> None:
