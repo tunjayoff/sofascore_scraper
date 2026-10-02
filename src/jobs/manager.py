@@ -7,7 +7,8 @@ Bir iş onu yaratan süreçte çalışır; arka planda çalışan bir servis ya 
               başka bir işte) JobRunningError / DataOperationRunningError.
   * `run`     başlatılmış işi çağıranın thread'inde yürütür: gövdeye bir `JobHandle` verir, iptal bayrağını
               saniyede bir satırdan okur, beş saniyede bir kalp atışı yazar, bitişte durumu satıra yazar ve
-              kilidi bırakır.
+              kilidi bırakır. Kilit, işin son depo erişiminden (`job.finished` akış olayı, bitmiş işin geri
+              okunması) sonra bırakılır: o ana kadar veri klasörü değişimi JobRunningError alır.
   * `submit`  ikisi birden: `background=True` ise kendi thread'inde (web, zamanlayıcı), değilse çağıranın
               thread'inde (komut satırı, kitaplık).
 
@@ -354,18 +355,24 @@ class JobManager:
                            progress_interval=self._progress_interval)
         ticker = _Ticker(store, handle, cancel_poll=self._cancel_poll, heartbeat=self._heartbeat)
         ticker.start()
+        # Bitiş bloğu (`_job_finishing`): işin bütün son depo erişimleri (bitiş satırı, `job.finished` akış
+        # olayı, bitmiş işin geri okunması) `writer` kilidi bırakılmadan önce biter. Blok sürdükçe veri klasörü
+        # değişimi JobRunningError alır ve deponun kapatılması bekler; state.db bağlantısı bu thread'in
+        # altından kapatılamaz
         try:
             returned = fn(handle)
         except BaseException as exc:
             ticker.stop()
-            try:
-                self._finish(handle, kind, self._failure(handle, exc))
-            except Exception as e:  # asıl hata çağırana gitmeli; kayıt yazılamadıysa satırı sonraki okuyan süpürür
-                logger.error("Job %s failed and its end could not be recorded: %s", job_id, e)
+            with store._job_finishing():
+                try:
+                    self._finish(handle, kind, self._failure(handle, exc))
+                except Exception as e:  # asıl hata çağırana gitmeli; kayıt yazılamadıysa satırı sonraki okuyan süpürür
+                    logger.error("Job %s failed and its end could not be recorded: %s", job_id, e)
             raise
         ticker.stop()
-        self._finish(handle, kind, returned if isinstance(returned, JobOutcome) else JobOutcome())
-        job = self.get(job_id)
+        with store._job_finishing():
+            self._finish(handle, kind, returned if isinstance(returned, JobOutcome) else JobOutcome())
+            job = self.get(job_id)
         assert job is not None
         return job
 
