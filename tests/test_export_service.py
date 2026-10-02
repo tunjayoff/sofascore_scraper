@@ -9,6 +9,7 @@ Denetlenenler:
   4. Akışa ve dosyaya yazma, lig süzgeci (pandas), boş seçim, desteklenmeyen biçim.
   5. Yüzler: `GET /api/export/csv` istekte üretir ve diske yazmaz; POST aynı yanıtı verir; terminal menüsü ve
      MatchDataFetcher'ın eski girişleri servisi çağırır.
+  6. Web işinin sonunda CSV aşaması yoktur (karar D9).
 
 Altın dosyalar (`tests/golden/readers/*.api_export_csv.json`) uç noktanın yanıtını bütünüyle sabitler.
 """
@@ -29,6 +30,7 @@ from src.config_manager import ConfigManager
 from src.errors import NotSupportedError
 from src.match_data_fetcher import MatchDataFetcher
 from src.services import export as export_module
+from src.services import sync as sync_module
 from src.services.export import (
     PRIORITY_COLUMNS,
     ExportService,
@@ -350,3 +352,12 @@ def test_export_all_csv_writes_the_combined_file(tmp_path: Path, monkeypatch: py
     path = export_module.export_all_csv(SimpleNamespace(match_data_fetcher=fetcher))  # type: ignore[arg-type]
 
     assert path is not None and os.path.basename(path).startswith("all_matches_") and os.path.isfile(path)
+
+
+# --- 6. web işinde CSV aşaması yok ------------------------------------------------------------------
+
+def test_a_sync_job_has_no_export_phase() -> None:
+    assert not hasattr(sync_module, "export_all_csv")
+    for spec in (sync_module.SyncSpec(), sync_module.SyncSpec(mode="details"),
+                 sync_module.SyncSpec(export=False), sync_module.SyncSpec(mode="refresh")):
+        assert "export" not in spec.job_phases

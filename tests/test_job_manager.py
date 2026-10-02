@@ -1095,7 +1095,7 @@ def web(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     details = Details()
     ctx = SimpleNamespace(config=fj.config_manager, match_data_fetcher=details)
     monkeypatch.setattr(fj, "build_context", lambda config_manager: ctx)
-    monkeypatch.setattr("src.services.sync.export_all_csv", lambda ctx: None)
+    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: None)
 
     def run(**payload: Any) -> Job:
         request = FetchRequest(**payload)
@@ -1122,7 +1122,7 @@ def test_web_job_is_recorded_with_its_kind_origin_and_spec(web: Any) -> None:
     assert row["log"][0] == "[Running] Starting fetch for 17"
     assert row["log"][-1] == "[Completed] Background Task Completed Successfully."
     types = [event.type for event in web.fj.job_manager().events(job.id)]
-    assert types[0] == "started" and types[-1] == "finished" and types.count("phase") == 2
+    assert types[0] == "started" and types[-1] == "finished" and types.count("phase") == 1  # details (EX-1: export yok)
 
 
 def test_web_job_stopped_by_the_breaker_is_partial_and_still_renders_completed(web: Any) -> None:
@@ -1172,7 +1172,7 @@ def test_a_web_job_makes_its_data_directory_a_full_store(
     jobs = JobStore(default_db_path(str(data_dir)))  # web sunucusunun iş deposu: yalnızca state.db kurar
     monkeypatch.setattr(fj, "_job_store", jobs)
     monkeypatch.setattr(fj, "_refresh_scraper_state", lambda: jobs.snapshot())
-    monkeypatch.setattr("src.services.sync.export_all_csv", lambda ctx: None)
+    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: None)
     try:
         with pytest.raises(StoreError):
             open_store(data_dir, create=False)  # henüz bir depo değil: schema.json yok

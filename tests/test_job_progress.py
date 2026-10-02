@@ -184,10 +184,10 @@ def job_env(tmp_path, monkeypatch):
 def run(fj, store, monkeypatch, ui, payload):
     from src.web.routes.scrape import FetchRequest
 
-    # `ui` servis bağlamının (ServiceContext) yerini tutar; CSV adımı onun export_all_to_csv'sine bağlanır
+    # `ui` servis bağlamının (ServiceContext) yerini tutar; işin CSV aşaması yok (EX-1), dışa aktarma çağrılırsa ona gider
     ui.config = fj.config_manager
     monkeypatch.setattr(fj, "build_context", lambda config_manager: ui)
-    monkeypatch.setattr("src.services.sync.export_all_csv", lambda ctx: ctx.export_all_to_csv())
+    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: ctx.export_all_to_csv())
     req = FetchRequest(**payload)
     job_id = store.create_running(req.model_dump())
     fj.run_fetch_job(job_id, req)
@@ -210,7 +210,7 @@ def test_selection_job_counts_details_across_leagues(job_env, monkeypatch):
     assert final["matches_done"] == 5 and final["matches_total"] == 5
     assert final["matches_failed"] == 1
     assert final["result"]["failed"] == [{"match_id": "d", "league_id": 8}]
-    assert final["detail"]["phases"] == ["seasons", "matches", "details", "export"]
+    assert final["detail"]["phases"] == ["seasons", "matches", "details"]
 
     # The matches phase names the league and season being worked on
     ctx = [s["detail"] for s in snaps if (s.get("detail") or {}).get("phase") == "matches"]
@@ -225,7 +225,7 @@ def test_details_only_job_skips_season_phases(job_env, monkeypatch):
     fj, store, _ = job_env
     md = FakeMatchData({"17": ["a"]}, failing=set())
     final = run(fj, store, monkeypatch, fake_ui(md, {}), {"mode": "details", "league_id": 17})
-    assert final["detail"]["phases"] == ["details", "export"]
+    assert final["detail"]["phases"] == ["details"]
     assert md.fetched == [["a"]]
 
 

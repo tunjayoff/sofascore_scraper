@@ -29,7 +29,6 @@
     "[Running] Fetching matches: league 17, season 52186",
     "[Running] Checking which matches need details...",
     "[Running] Fetching match details: league 17 (1 matches)…",
-    "[Running] Exporting data to CSV...",
     "[Completed] Background Task Completed Successfully."
    ],
    "matches_done": 1,
@@ -38,8 +37,7 @@
    "phases": [
     "seasons",
     "matches",
-    "details",
-    "export"
+    "details"
    ],
    "progress": 100,
    "result": {
@@ -90,7 +88,6 @@
     "[Running] Fetching matches: league 17, season 61627",
     "[Running] Fetching matches: league 17, season 52186",
     "[Running] Checking which matches need details...",
-    "[Running] Exporting data to CSV...",
     "[Completed] Background Task Completed Successfully."
    ],
    "matches_done": 0,
@@ -99,8 +96,7 @@
    "phases": [
     "seasons",
     "matches",
-    "details",
-    "export"
+    "details"
    ],
    "progress": 100,
    "result": {
