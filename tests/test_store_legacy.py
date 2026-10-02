@@ -1018,8 +1018,6 @@ def walker_results(data_dir: Path, candidates: Set[int]) -> Dict[str, Set[int]]:
     `_unavailable.json`'ı olan her dizin için `_reset_match_markers`'ı (burada hiçbir şey yazmaz).
     """
     fetcher = fetcher_for(data_dir)
-    details = data_dir / "match_details"
-    tops = sorted(p for p in details.iterdir() if p.is_dir())
 
     def ids(names: Any) -> Set[int]:
         return {int(name) for name in names}
@@ -1042,13 +1040,12 @@ def walker_results(data_dir: Path, candidates: Set[int]) -> Dict[str, Set[int]]:
         "reset_markers_walk": ids(with_markers),
         "web_detail_match_ids": ids(matches_routes._detail_match_ids(str(data_dir), None)),
         "web_missing_details": _probe_missing_details(data_dir, candidates),
-        "stats_detail_basics": ids(Path(b).parent.name for top in tops for b in stats_service._detail_basics(str(top))),
         "csv_export": ids(_csv_export_ids(fetcher)),
     }
 
 
 WALKERS = ("build_match_index", "find_match_path", "refresh_due_ids_walk", "reset_markers_walk",
-           "web_detail_match_ids", "web_missing_details", "stats_detail_basics", "csv_export")
+           "web_detail_match_ids", "web_missing_details", "csv_export")
 
 # Karakterizasyon tablosu: (fixture, gezgin) → (okuyucunun bulup gezginin bulamadığı, gezginin bulup
 # okuyucunun maç saymadığı) id'ler. Tabloda olmayan çift için fark yoktur: `canonical`, `processed_only` ve
@@ -1056,7 +1053,6 @@ WALKERS = ("build_match_index", "find_match_path", "refresh_due_ids_walk", "rese
 # `_unavailable.json`'ı olan dizinlere bakar; o, okuyucunun aynı dosyası olan maçlarıyla karşılaştırılır
 # (fixture'larda düz dizinde işaret dosyası yok, bu yüzden farkı görünmüyor: kuralı `refresh_due_ids_walk` ile aynı).
 FLAT = {16867839, 17018554}  # legacy fixture: düz dizinler (17018554 yalnızca birleşik dosya)
-NO_TOURNAMENT = {15500001, 15500002, 15500003}  # legacy fixture: _no_tournament/<spor>/ altındakiler
 WALKER_DIFFERENCES: Dict[Tuple[str, str], Tuple[Set[int], Set[int]]] = {
     # yalnızca birleşik dosyası olan dizini bugün hiçbir gezgin bulamaz
     ("legacy", "build_match_index"): (COMBINED_ONLY["legacy"], set()),
@@ -1068,8 +1064,6 @@ WALKER_DIFFERENCES: Dict[Tuple[str, str], Tuple[Set[int], Set[int]]] = {
     # yenileme taraması ayrıca basic.json'a bakmaz: olay yükü olmayan dizine de girer (ihtiyaç hesabı onu
     # "full" bulduğu için sonuçta dönmez)
     ("legacy", "refresh_due_ids_walk"): (FLAT, NO_EVENT_PAYLOAD["legacy"]),
-    # istatistikler yalnızca `season_*` dizinlerini sayar
-    ("legacy", "stats_detail_basics"): (FLAT | NO_TOURNAMENT, set()),
 }
 
 
@@ -1130,11 +1124,14 @@ def test_league_filter_characterization(fx: sf.LegacyFixture) -> None:
 
 
 def test_counting_walkers(fx: sf.LegacyFixture, capsys: pytest.CaptureFixture[str]) -> None:
-    """Yalnızca sayı veren iki gezgin: ikisi de yalnızca `season_*` dizinlerine bakar."""
+    """
+    Yalnızca sayı veren iki okuyucu. İstatistikler katalogdan gelir (RD-4): okuyucunun bulduğu her maç bir kez
+    sayılır. Dosya raporu hâlâ ağacı gezer ve yalnızca `season_*` dizinlerine bakar.
+    """
     events, _ = scan(fx.data_dir)
     in_season_dirs = {eid for eid, e in events.items() if (e.dir.season_dir or "").startswith("season_")}
     system = stats_service.system_stats(str(fx.data_dir), fx.leagues)
-    assert system["details"] == len(in_season_dirs)
+    assert system["details"] == len(events)
     report = fetcher_for(fx.data_dir).generate_file_report()
     capsys.readouterr()
     # dosya raporu basic.json'a da bakmaz: olay yükü olmayan dizini de sayar

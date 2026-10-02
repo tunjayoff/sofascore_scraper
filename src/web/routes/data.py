@@ -12,11 +12,13 @@ import pandas as pd
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from src import store as store_hooks  # gölge kip: temizlemeden sonra katalog yeniden kurulur (`shadow_cleared`)
+# Depo: özet katalogdan okunur (`open_store`); gölge kip: temizlemeden sonra katalog yeniden kurulur (`shadow_cleared`)
+from src import store as store_hooks
 from src.private_files import create_private_file
 from src.paths import env_file_path
 from src.web import league_sports
 from src.services import stats as stats_service
+from src.services.status import DataSummary, StatusService
 from src.web.routes.common import (
     _SyncHttpError,
     _job_store,
@@ -27,12 +29,18 @@ from src.web.routes.common import (
 router = APIRouter(prefix="/api", tags=["api"])
 
 
+def _data_summary(data_dir: str, leagues: Dict[int, str]) -> DataSummary:
+    """Veri dizininin özeti (katalogdan); yapılandırılmış ligler maçları olmasa da dökümde yer alır."""
+    return StatusService(store_hooks.open_store(data_dir)).summary(tournament_ids=tuple(leagues))
+
+
 def _build_dashboard_sync(data_dir: str, leagues: Dict[int, str]) -> dict:
+    summary = _data_summary(data_dir, leagues)
     cards = []
     for lid, name in leagues.items():
-        st = stats_service.league_stats(data_dir, lid, name)
+        st = stats_service.league_counts(summary, lid, name)
         cards.append({k: st[k] for k in ("id", "name", "seasons", "matches", "details", "coverage", "last_update")})
-    disk = stats_service.system_stats(data_dir, {})["disk_usage"]
+    disk = stats_service.disk_usage(summary)
     return {
         "leagues": cards,
         "disk_usage": {k: disk[k] for k in ("seasons", "matches", "details", "total", "formatted_total")},
@@ -45,7 +53,7 @@ def _build_dashboard_sync(data_dir: str, leagues: Dict[int, str]) -> dict:
 
 
 def _compute_system_stats_sync(data_dir: str, leagues: Dict[int, str]) -> Dict[str, Any]:
-    stats = stats_service.system_stats(data_dir, leagues)
+    stats = stats_service.system_counts(_data_summary(data_dir, leagues), leagues)
     stats["league_breakdown"] = sorted(
         (
             {k: b[k] for k in ("id", "name", "matches", "details", "coverage")}

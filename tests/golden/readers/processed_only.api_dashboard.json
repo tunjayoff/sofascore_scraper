@@ -2,10 +2,10 @@
  "status": 200,
  "body": {
   "leagues": [
-   {"id": 17, "name": "Premier League", "seasons": 0, "matches": 0, "details": 2, "coverage": 0, "last_update": "2026-09-30T12:00:00"},
+   {"id": 17, "name": "Premier League", "seasons": 0, "matches": 2, "details": 2, "coverage": 100.0, "last_update": "2026-09-30T12:00:00"},
    {"id": 8, "name": "LaLiga", "seasons": 0, "matches": 0, "details": 0, "coverage": 0, "last_update": null}
   ],
   "disk_usage": {"seasons": 0, "matches": 0, "details": 8208, "total": 8208, "formatted_total": "8.0 KB"},
-  "totals": {"leagues": 2, "matches": 0, "details": 2}
+  "totals": {"leagues": 2, "matches": 2, "details": 2}
  }
 }

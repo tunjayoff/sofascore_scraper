@@ -1,21 +1,36 @@
 """
-Durum servisi (plan maddesi RD-4): sayımlar katalogdan, disk kullanımı Store'dan.
+Durum servisi ve istatistik aktarıcısı (plan maddesi RD-4): sayımlar katalogdan, disk kullanımı Store'dan.
 
-`StatusService.summary()`'nin sayım kuralları `tests/store_fixtures.py`'nin veri dizinlerinde elle denetlenmiş
-beklentilerle sınanır; ayrıca disk kullanımının saklanması.
+Üç şey sınanır:
+
+  * `StatusService.summary()`'nin sayım kuralları, `tests/store_fixtures.py`'nin veri dizinlerinde elle
+    denetlenmiş beklentilerle;
+  * eski sayımlardan (dosya ağacını gezen `src/services/stats.py`) farklar: aşağıdaki `old_stats` o kodun
+    sayımlarını yeniden üretir ve `CORRECTIONS` tablosu her farkı nedeniyle birlikte tutar. Tabloda olmayan
+    hiçbir sayı değişmemiştir;
+  * disk kullanımının saklanması ve aktarıcının (`src/services/stats.py`) bugünkü yanıt anahtarları.
+
+GET /api/dashboard ve /api/stats/system yanıtlarının tamamı `tests/golden/readers/` altında sabittir
+(tests/characterization/test_reader_goldens.py).
 """
 from __future__ import annotations
 
+import datetime as dt
+import glob
+import json
+import os
 from pathlib import Path
-from typing import Any, Iterator, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import pytest
 
 import conftest
 import store_fixtures as sf
+from src.services import stats as stats_service
 from src.services import status as status_module
-from src.services.status import DataSummary, StatusService, TournamentCounts
+from src.services.status import DataSummary, DiskUsage, StatusService, TournamentCounts
 from src.store import Store, open_store
+from src.web.routes import data as data_routes
 
 NOT_STARTED_CASE = "football/A_notstarted-0-not-started__17184998"
 
@@ -67,6 +82,118 @@ def write_orphan_detail(data_dir: Path, event_id: int, case: str = NOT_STARTED_C
     target = data_dir / "match_details" / "_no_tournament" / "football" / str(event_id)
     target.mkdir(parents=True)
     (target / "basic.json").write_bytes(sf.dump_json(sf.basic_payload(ev)))
+
+
+# --- eski sayımlar: dosya ağacını gezen src/services/stats.py (RD-4'ten önce) --------------------------
+
+
+def _csv_rows(path: str) -> int:
+    with open(path, "r", encoding="utf-8") as f:
+        return max(0, sum(1 for _ in f) - 1)
+
+
+def _season_list_len(path: str) -> int:
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except ValueError:
+        return 0
+    if isinstance(data, dict):
+        data = data.get("seasons", [])
+    return len(data) if isinstance(data, list) else 0
+
+
+def _summary_files(top: str) -> List[str]:
+    return [os.path.join(root, name) for root, _, files in os.walk(top) for name in files
+            if name.endswith(("_summary.csv", "_matches.csv"))]
+
+
+def old_stats(data_dir: Path, leagues: Dict[int, str]) -> Dict[str, Any]:
+    """
+    Eski sayımlar, düz bir sözlük olarak: maç = özet CSV'lerinin satır toplamı, detay = `season_*` altındaki
+    `basic.json` sayısı, sezon = sezon listesi dosyalarının uzunluğu (lig kartında en uzunu, toplamda hepsi).
+    """
+    root = str(data_dir)
+    out: Dict[str, Any] = {
+        "seasons": sum(_season_list_len(p) for p in glob.glob(os.path.join(root, "seasons", "*_seasons.json"))),
+        "matches": sum(_csv_rows(p) for p in _summary_files(os.path.join(root, "matches"))),
+        "details": len(glob.glob(os.path.join(root, "match_details", "*", "season_*", "*", "basic.json"))),
+    }
+    for league_id, name in leagues.items():
+        lists = glob.glob(os.path.join(root, "seasons", f"{league_id}_*_seasons.json"))
+        summaries = [p for top in glob.glob(os.path.join(root, "matches", f"{league_id}_*"))
+                     for p in _summary_files(top)]
+        detail_dirs = glob.glob(os.path.join(root, "match_details", f"{league_id}_*"))
+        if not detail_dirs:
+            detail_dirs = glob.glob(os.path.join(root, "match_details", name.replace(" ", "_")))
+        details = sum(len(glob.glob(os.path.join(top, "season_*", "*", "basic.json"))) for top in detail_dirs)
+        matches = sum(_csv_rows(p) for p in summaries)
+        out[f"{league_id}.seasons"] = max((_season_list_len(p) for p in lists), default=0)
+        out[f"{league_id}.seasons_fetched"] = len({os.path.basename(p).split("_", 1)[0] for p in summaries})
+        out[f"{league_id}.matches"] = matches
+        out[f"{league_id}.details"] = details
+        out[f"{league_id}.coverage"] = round(details / matches * 100, 1) if matches else 0
+        out[f"{league_id}.has_update"] = bool(details)
+    return out
+
+
+def new_stats(data_dir: Path, leagues: Dict[int, str]) -> Dict[str, Any]:
+    system = stats_service.system_stats(str(data_dir), leagues)
+    out: Dict[str, Any] = {key: system[key] for key in ("seasons", "matches", "details")}
+    for entry in system["league_breakdown"]:
+        for key in ("seasons", "seasons_fetched", "matches", "details", "coverage"):
+            out[f"{entry['id']}.{key}"] = entry[key]
+        out[f"{entry['id']}.has_update"] = entry["last_update"] is not None
+    return out
+
+
+# (eski, yeni) çiftleri; her satırın nedeni yanında. Tabloda olmayan sayı iki sayımda aynıdır.
+CORRECTIONS: Dict[str, Dict[str, Tuple[Any, Any]]] = {
+    "canonical": {
+        # LaLiga 26/27 FETCH_ONLY_FINISHED=false ile yazılmış bir sezondur: özetinde 5 satır var (1 bitmiş, 1
+        # başlamamış, 3 ertelenmiş / iptal). Ayar artık okurken uygulanır (varsayılan: açık): bitmiş maç ve
+        # detayı indirilmiş başlamamış maç sayılır, ötekiler sayılmaz.
+        "8.matches": (5, 2),
+        "8.coverage": (40.0, 100.0),
+        "matches": (32, 29),
+    },
+    "legacy": {
+        # Premier League 26/27'nin iki özet dosyası var: iki maç iki kez sayılıyordu (10 satır, 8 maç)
+        "17.matches": (10, 8),
+        # iki düz dizin (`match_details/<id>/`, biri yalnızca birleşik dosya) detay sayılmıyordu
+        "17.details": (3, 5),
+        "17.coverage": (30.0, 62.5),
+        # LaLiga 25/26'nın iki özet dosyası var: aynı iki maç iki kez sayılıyordu
+        "8.matches": (4, 2),
+        "8.coverage": (25.0, 50.0),
+        # `LaLiga_seasons.json` adında lig kimliği yok: kart 0 gösteriyordu. İki özet dosyası iki ayrı sezon
+        # kimliği taşıyor; maçlar tek sezonun
+        "8.seasons": (0, 1),
+        "8.seasons_fetched": (2, 1),
+        # toplamlar: Premier League'in iki sezon listesi dosyası ayrı ayrı toplanıyordu (3 + 3 + 1 + 1);
+        # `_no_tournament/` altındaki üç maç ve iki düz dizin detay sayılmıyordu; maç toplamı çift sayılan
+        # dört satırı içeriyor, `_no_tournament/` maçlarını içermiyordu (14 - 4 + 3)
+        "seasons": (8, 5),
+        "details": (4, 9),
+        "matches": (14, 13),
+    },
+    "processed_only": {
+        # program dosyası hiç yok (özet de yok): detayı indirilmiş iki maç "maç" sayılmıyordu
+        "17.matches": (0, 2),
+        "17.coverage": (0, 100.0),
+        "matches": (0, 2),
+        # terminal arayüzünün "sezon sayısı": özet dosyası olan sezonlardı, şimdi maçı bilinen sezonlar
+        "17.seasons_fetched": (0, 1),
+    },
+    "empty": {},
+}
+
+
+def test_counts_differ_from_the_file_walk_only_where_documented(fx: sf.LegacyFixture) -> None:
+    old = old_stats(fx.data_dir, fx.leagues)
+    new = new_stats(fx.data_dir, fx.leagues)
+    assert set(old) == set(new)
+    assert {key: (old[key], new[key]) for key in old if old[key] != new[key]} == CORRECTIONS[fx.name]
 
 
 # --- sayım kuralları -------------------------------------------------------------------------------
@@ -235,6 +362,31 @@ def test_summary_follows_the_catalog(canonical: sf.LegacyFixture) -> None:
     assert counts(after, None) == (1, 1, 0, 100.0)
 
 
+def test_the_dashboard_follows_a_clear_at_once(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Web'den temizleme kataloğu yeniden kurar (kancası var): sayılar ve disk kullanımı, saklanan ölçümün süresi
+    dolmadan değişir. Detaylar silinince maçlar programdaki halleriyle kalır.
+    """
+    data_dir, leagues = str(canonical.data_dir), canonical.leagues
+    monkeypatch.setattr(data_routes.config_manager, "get_data_dir", lambda: data_dir)
+    before = data_routes._build_dashboard_sync(data_dir, leagues)
+    assert before["totals"] == {"leagues": 6, "matches": 29, "details": 23}
+    assert before["disk_usage"]["details"] > 0
+
+    assert data_routes._clear_data_sync("match_details") == {"status": "success", "cleared": ["match_details"]}
+    after = data_routes._build_dashboard_sync(data_dir, leagues)
+    assert after["totals"]["details"] == 0 and after["disk_usage"]["details"] == 0
+    assert after["disk_usage"]["matches"] == before["disk_usage"]["matches"] > 0
+    assert all(card["details"] == 0 and card["last_update"] is None for card in after["leagues"])
+    # program dosyaları duruyor: bitmiş görünen maçlar sayılmaya devam eder (LaLiga'da yalnızca bitmiş olan)
+    assert {card["id"]: card["matches"] for card in after["leagues"]} == {17: 12, 19: 3, 132: 6, 2361: 6, 8: 1, 35: 0}
+
+    assert data_routes._clear_data_sync("all")["status"] == "success"
+    empty = data_routes._compute_system_stats_sync(data_dir, leagues)
+    assert (empty["seasons"], empty["matches"], empty["details"], empty["league_breakdown"]) == (0, 0, 0, [])
+    assert empty["disk_usage"]["total"] == 0
+
+
 def test_a_catalog_that_was_not_built_reports_why(canonical: sf.LegacyFixture) -> None:
     store = open_store(canonical.data_dir, sync_catalog=False)
     summary = StatusService(store).summary(tournament_ids=(17,))
@@ -259,6 +411,22 @@ def test_disk_usage_is_the_size_of_the_top_level_entries(fx: sf.LegacyFixture) -
     # Store her üst düzey girdiyi verir; toplam yalnızca dört veri alanıdır
     assert ".meta" in disk.entries and disk.entries[".meta"] > 0
     assert set(disk.entries) == {p.name for p in data_dir.iterdir()}
+
+
+def test_disk_total_includes_datasets(old_forms: sf.LegacyFixture) -> None:
+    """Gösterge panelinin toplamı, listelemediği `datasets/` dizinini de içerir (bugünkü davranış; altın dosyada sabit)."""
+    summary = summarise(old_forms)
+    data_dir = old_forms.data_dir
+    areas = {"seasons": tree_bytes(data_dir / "seasons"), "matches": tree_bytes(data_dir / "matches"),
+             "details": tree_bytes(data_dir / "match_details"), "datasets": tree_bytes(data_dir / "datasets")}
+    assert all(size > 0 for size in areas.values())
+    total = sum(areas.values())
+    usage = stats_service.disk_usage(summary)
+    assert usage == {**areas, "total": total, "formatted_total": stats_service.format_size(total)}
+    dashboard = data_routes._build_dashboard_sync(str(data_dir), old_forms.leagues)
+    assert dashboard["disk_usage"] == {key: usage[key] for key in ("seasons", "matches", "details", "total",
+                                                                  "formatted_total")}
+    assert dashboard["disk_usage"]["total"] > sum(dashboard["disk_usage"][key] for key in ("seasons", "matches", "details"))
 
 
 class InfoCalls:
@@ -336,3 +504,80 @@ def test_forget_sizes(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPat
     status_module.forget_sizes()
     service.summary()
     assert calls.walks == 3
+
+
+def test_disk_usage_of_an_unmeasured_summary() -> None:
+    assert DiskUsage().total == 0
+    summary = DataSummary(data_dir="x", only_finished=True)
+    assert stats_service.disk_usage(summary) == {"seasons": 0, "matches": 0, "details": 0, "datasets": 0,
+                                                 "total": 0, "formatted_total": "0.0 B"}
+
+
+# --- aktarıcı: bugünkü anahtarlar --------------------------------------------------------------------
+
+
+def test_league_stats_keeps_its_keys(canonical: sf.LegacyFixture) -> None:
+    stats = stats_service.league_stats(str(canonical.data_dir), 17, "Premier League")
+    assert list(stats) == ["id", "name", "seasons", "seasons_fetched", "matches", "details", "coverage",
+                           "last_update", "disk"]
+    assert stats == {
+        "id": 17, "name": "Premier League", "seasons": 3, "seasons_fetched": 2, "matches": 12, "details": 10,
+        "coverage": 83.3, "last_update": dt.datetime.fromtimestamp(sf.BASE_MTIME).isoformat(),
+        "disk": stats["disk"],
+    }
+    # lig başına disk boyutları lig dizinlerinden ölçülür (Store bu dökümü vermez)
+    data_dir = canonical.data_dir
+    assert stats["disk"] == {
+        "seasons": (data_dir / "seasons" / "17_Premier_League_seasons.json").stat().st_size,
+        "matches": tree_bytes(data_dir / "matches" / "17_Premier_League"),
+        "details": tree_bytes(data_dir / "match_details" / "17_Premier_League"),
+        "total": stats["disk"]["seasons"] + stats["disk"]["matches"] + stats["disk"]["details"],
+    }
+    assert stats["disk"]["details"] > 0
+
+
+def test_league_stats_of_a_league_without_data(canonical: sf.LegacyFixture) -> None:
+    stats = stats_service.league_stats(str(canonical.data_dir), 35, "Bundesliga")
+    assert stats == {"id": 35, "name": "Bundesliga", "seasons": 0, "seasons_fetched": 0, "matches": 0, "details": 0,
+                     "coverage": 0, "last_update": None, "disk": {"seasons": 0, "matches": 0, "details": 0, "total": 0}}
+    assert type(stats["coverage"]) is int  # JSON'da `0`, `0.0` değil (altın dosyalar türü de karşılaştırır)
+
+
+def test_league_disk_finds_the_directory_without_an_id(old_forms: sf.LegacyFixture) -> None:
+    stats = stats_service.league_stats(str(old_forms.data_dir), 8, "LaLiga")
+    assert stats["disk"]["details"] == tree_bytes(old_forms.data_dir / "match_details" / "LaLiga") > 0
+    assert stats["disk"]["seasons"] == 0  # `LaLiga_seasons.json`: adında kimlik yok, lig boyutuna girmez
+
+
+def test_system_stats_keeps_its_keys(canonical: sf.LegacyFixture) -> None:
+    leagues = canonical.leagues
+    system = stats_service.system_stats(str(canonical.data_dir), leagues)
+    assert list(system) == ["leagues", "seasons", "matches", "details", "league_breakdown", "disk_usage"]
+    assert (system["leagues"], system["seasons"], system["matches"], system["details"]) == (6, 11, 29, 23)
+    assert [entry["id"] for entry in system["league_breakdown"]] == list(leagues)
+    for entry in system["league_breakdown"]:
+        assert entry == stats_service.league_stats(str(canonical.data_dir), entry["id"], entry["name"])
+    assert system["disk_usage"] == stats_service.disk_usage(stats_service.data_summary(str(canonical.data_dir)))
+    assert list(system["disk_usage"]) == ["seasons", "matches", "details", "datasets", "total", "formatted_total"]
+    assert system["disk_usage"]["total"] == sum(
+        tree_bytes(canonical.data_dir / name) for name in ("seasons", "matches", "match_details", "datasets"))
+
+
+def test_the_routes_do_not_walk_the_tree(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Web yanıtları yalnızca özetten kurulur: lig dizinlerini gezen işlevler çağrılmaz."""
+
+    def forbidden(*args: Any, **kwargs: Any) -> Any:
+        raise AssertionError("the web routes must not walk the league directories")
+
+    for name in ("dir_size", "_league_dirs", "league_stats", "system_stats"):
+        monkeypatch.setattr(stats_service, name, forbidden)
+    data_dir, leagues = str(canonical.data_dir), canonical.leagues
+    dashboard = data_routes._build_dashboard_sync(data_dir, leagues)
+    assert dashboard["totals"] == {"leagues": 6, "matches": 29, "details": 23}
+    assert [card["id"] for card in dashboard["leagues"]] == list(leagues)
+    assert set(dashboard["leagues"][0]) == {"id", "name", "seasons", "matches", "details", "coverage", "last_update"}
+    system = data_routes._compute_system_stats_sync(data_dir, leagues)
+    # döküm: maçı ya da detayı olan ligler, maç sayısına göre (eşitlikte yapılandırma sırası)
+    assert [(b["id"], b["matches"]) for b in system["league_breakdown"]] == [
+        (17, 12), (132, 6), (2361, 6), (19, 3), (8, 2)]
+    assert set(system["league_breakdown"][0]) == {"id", "name", "matches", "details", "coverage"}

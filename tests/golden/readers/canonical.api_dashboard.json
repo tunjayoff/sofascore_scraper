@@ -6,10 +6,10 @@
    {"id": 19, "name": "FA Cup", "seasons": 2, "matches": 3, "details": 2, "coverage": 66.7, "last_update": "2026-09-30T12:00:00"},
    {"id": 132, "name": "NBA", "seasons": 2, "matches": 6, "details": 5, "coverage": 83.3, "last_update": "2026-09-30T12:00:00"},
    {"id": 2361, "name": "Wimbledon, Men", "seasons": 2, "matches": 6, "details": 4, "coverage": 66.7, "last_update": "2026-09-30T12:00:00"},
-   {"id": 8, "name": "LaLiga", "seasons": 2, "matches": 5, "details": 2, "coverage": 40.0, "last_update": "2026-09-30T12:00:00"},
+   {"id": 8, "name": "LaLiga", "seasons": 2, "matches": 2, "details": 2, "coverage": 100.0, "last_update": "2026-09-30T12:00:00"},
    {"id": 35, "name": "Bundesliga", "seasons": 0, "matches": 0, "details": 0, "coverage": 0, "last_update": null}
   ],
   "disk_usage": {"seasons": 1326, "matches": 138633, "details": 106367, "total": 246326, "formatted_total": "240.6 KB"},
-  "totals": {"leagues": 6, "matches": 32, "details": 23}
+  "totals": {"leagues": 6, "matches": 29, "details": 23}
  }
 }
