@@ -558,6 +558,13 @@ def _read_dotenv(path: Path) -> Dict[str, str]:
 # === bir belgeyi (TOML / overrides.json) katmana çevirme ===========================================
 
 
+# Hata iletisinde değerin yerine yazılan tür adları (bool, int'ten önce: True bir int'tir)
+_SHAPES: Tuple[Tuple[type, str], ...] = (
+    (bool, "a boolean"), (int, "a whole number"), (float, "a number"), (str, "a string"),
+    (dict, "a table"), (list, "a list"), (tuple, "a list"),
+)
+
+
 @dataclass
 class _Layer:
     """Bir kaynaktan gelen değerler. Listeler None ise o kaynak listeyi vermemiştir (alttaki geçerli kalır)."""
@@ -578,9 +585,38 @@ def _table(value: Any, where: str) -> Mapping[str, Any]:
     return value
 
 
+def _shape(value: Any) -> str:
+    """
+    Bir değerin türünün adı ("a string", "a list"). Değeri webhook adresi ya da gizli bir değer olabilen yerlerin
+    hata iletisinde değerin kendisi yerine bu yazılır: ileti komutun çıktısına, log'a ve hata zarfına girer.
+    """
+    if value is None:
+        return "null"
+    for kind, name in _SHAPES:
+        if isinstance(value, kind):
+            return name
+    return f"a {type(value).__name__} value"  # TOML tarih / saat
+
+
+def _item_shape(value: Any) -> str:
+    """Dizge listesi beklenen yerde verilen değerin tarifi: liste ise uymayan ilk öğenin türü ve sırası."""
+    if isinstance(value, (list, tuple)):
+        for index, item in enumerate(value, start=1):
+            if not isinstance(item, str):
+                return f"{_shape(item)} at #{index}"
+            if not item.strip():
+                return f"an empty string at #{index}"
+    return _shape(value)
+
+
 def _table_list(value: Any, where: str) -> List[Mapping[str, Any]]:
-    if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
-        raise ConfigError(f"{where}: expected a list of tables")
+    # Uymayan öğenin kendisi iletiye yazılmaz, türü yazılır: tablo yerine dizge listesi olarak verilmiş bir
+    # SOFASCORE_SINKS'in öğeleri webhook adresidir
+    if not isinstance(value, list):
+        raise ConfigError(f"{where}: expected a list of tables, got {_shape(value)}")
+    for index, item in enumerate(value, start=1):
+        if not isinstance(item, dict):
+            raise ConfigError(f"{where}: expected a list of tables, got {_shape(item)} at #{index}")
     return list(value)
 
 
@@ -668,12 +704,13 @@ def _document_layer(doc: Mapping[str, Any], *, layer: str, name: str, base: Opti
 _TYPE_NAMES = {int: "a whole number", str: "a string", bool: "true or false"}
 
 
-def _take(table: Mapping[str, Any], key: str, kind: type, where: str, default: Any = None) -> Any:
+def _take(table: Mapping[str, Any], key: str, kind: type, where: str, default: Any = None, *, quote: bool = True) -> Any:
+    """`quote=False`: yanlış türdeki değer iletiye yazılmaz, türü yazılır ([[sink]] satırları; bkz. parse_sinks)."""
     if key not in table:
         return default
     value = table[key]
     if isinstance(value, bool) and kind is not bool or not isinstance(value, kind):
-        raise ConfigError(f"{where} {key}: expected {_TYPE_NAMES[kind]}, got {value!r}")
+        raise ConfigError(f"{where} {key}: expected {_TYPE_NAMES[kind]}, got {repr(value) if quote else _shape(value)}")
     return value
 
 
@@ -745,31 +782,42 @@ def parse_follows(items: Sequence[Mapping[str, Any]], default_seasons: model.Sea
 
 
 def parse_sinks(items: Sequence[Mapping[str, Any]], name: str, base: Optional[Path]) -> Tuple[SinkSpec, ...]:
-    """[[sink]] tabloları -> SinkSpec. Modelin bilmediği anahtarlar `options`a geçer (türe özgü; P22 denetler)."""
+    """
+    [[sink]] tabloları -> SinkSpec. Modelin bilmediği anahtarlar `options`a geçer (türe özgü; P22 denetler).
+
+    Buradaki hata iletileri reddedilen değeri yazmaz, türünü yazar: bir sink satırının alanı webhook adresi
+    (yolu ya da sorgusu belirteç olabilir) ya da `secret_env`e adı yerine yazılmış imza anahtarı olabilir ve
+    ileti komutun çıktısına, log'a ve hata zarfına girer. Tek istisna sink'in adıdır (`config show` da gösterir).
+    """
     typed = {"name", "type", "events", "url", "secret_env", "allow_unsigned", "path"}
     specs: List[SinkSpec] = []
     seen: Dict[str, int] = {}
     for index, table in enumerate(items, start=1):
         where = f"{name}: [[sink]] #{index}"
-        label = (_take(table, "name", str, where) or "").strip()
+        label = (_take(table, "name", str, where, quote=False) or "").strip()
         if not label:
             raise ConfigError(f"{where}: name is required")
         if label in seen:
             raise ConfigError(f"{where}: the name {label!r} is already used by #{seen[label]}")
         seen[label] = index
-        kind = _take(table, "type", str, where)
+        kind = _take(table, "type", str, where, quote=False)
         if kind not in model.SINK_TYPES:
-            raise ConfigError(f"{where} type: expected one of {', '.join(model.SINK_TYPES)}, got {kind!r}")
+            raise ConfigError(f"{where} type: expected one of {', '.join(model.SINK_TYPES)}")
         try:
             events = _string_list(table.get("events", ["*"]), text=False)
-        except _Reject as e:
-            raise ConfigError(f"{where} events: {e}") from None
-        url = _take(table, "url", str, where, "").strip()
-        secret_env = _take(table, "secret_env", str, where, "").strip()
-        allow_unsigned = _take(table, "allow_unsigned", bool, where, False)
-        path = _take(table, "path", str, where, "").strip()
+        except _Reject:
+            raise ConfigError(
+                f"{where} events: expected a list of strings, got {_item_shape(table['events'])}"
+            ) from None
+        url = _take(table, "url", str, where, "", quote=False).strip()
+        secret_env = _take(table, "secret_env", str, where, "", quote=False).strip()
+        allow_unsigned = _take(table, "allow_unsigned", bool, where, False, quote=False)
+        path = _take(table, "path", str, where, "", quote=False).strip()
         if secret_env and not _ENV_NAME.match(secret_env):
-            raise ConfigError(f"{where} secret_env: expected the name of an environment variable, got {secret_env!r}")
+            raise ConfigError(
+                f"{where} secret_env: expected the name of an environment variable (letters, digits and _), "
+                f"not the secret itself"
+            )
         if kind == "webhook":
             if not url.lower().startswith(("http://", "https://")):
                 raise ConfigError(f"{where} url: a webhook needs an http:// or https:// address")
