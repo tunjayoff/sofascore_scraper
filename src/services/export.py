@@ -16,9 +16,11 @@ Eski dışa aktarmadan farklar (yalnızca eski biçimli kayıtlarda görünür):
   * Okunamayan bir dilim yalnızca o dilimi, işlenemeyen bir maç yalnızca o maçı düşürür; eskiden bozuk bir
     olay yükü bütün dışa aktarmayı boşaltabiliyordu.
 
-İki kusur bilerek olduğu gibi taşındı (plan maddesi FX-7 düzeltir): `home_formation` / `away_formation` hep
-boştur (kod nesne bekler, SofaScore metin gönderir) ve lig süzgeçli indirme dosyayı pandas'tan geçirdiği için
-boşluklu tamsayı sütunları `1.0` biçiminde çıkar.
+`home_formation` / `away_formation` doludur (plan maddesi FX-7): SofaScore dizilişi metin olarak gönderir
+(`"4-2-3-1"`); eski kod nesne beklediği için bu sütunlar hep boştu.
+
+Bir kusur bilerek olduğu gibi taşındı (plan maddesi FX-7 düzeltir): lig süzgeçli indirme dosyayı pandas'tan
+geçirdiği için boşluklu tamsayı sütunları `1.0` biçiminde çıkar.
 
 Servis dosya yazmaz; yalnızca istenen akışa ya da yola yazar. Web'in GET'i çıktıyı istekte üretip akıtır
 (karar D16); terminal menüsü ve `--headless --csv-export` dosyayı `match_details/processed/` altına yazar
@@ -442,7 +444,7 @@ def legacy_wide_row(match_id: str, match_data: Mapping[str, Any], league_folder:
             "h2h_draws": h2h.get("draws"),
         })
 
-    # Kadrolar: onay, ilk on bir ve yedek sayıları, diziliş (diziliş sütunu bugün hep boş kalır: FX-7)
+    # Kadrolar: onay, ilk on bir ve yedek sayıları, diziliş
     if "lineups" in match_data and match_data["lineups"]:
         lineups = match_data["lineups"]
         processed["lineups_confirmed"] = lineups.get("confirmed", False) if isinstance(lineups, dict) else False
@@ -453,12 +455,19 @@ def legacy_wide_row(match_id: str, match_data: Mapping[str, Any], league_folder:
                     players = lineup["players"]
                     processed[f"{side}_starting_xi_count"] = sum(1 for p in players if p.get("substitute") is False)
                     processed[f"{side}_substitutes_count"] = sum(1 for p in players if p.get("substitute") is True)
-                if "formation" in lineup and isinstance(lineup["formation"], dict):
-                    processed[f"{side}_formation"] = lineup["formation"].get("name")
-                else:
-                    processed[f"{side}_formation"] = None
+                processed[f"{side}_formation"] = _formation(lineup.get("formation"))
 
     return processed
+
+
+def _formation(value: Any) -> Optional[str]:
+    """
+    Kadronun dizilişi. SofaScore metin gönderir (`"4-2-3-1"`); eski kodun beklediği `{"name": ...}` nesnesi de
+    okunur. Başka her şey (yok, boş metin, sayı) boş hücredir.
+    """
+    if isinstance(value, dict):
+        value = value.get("name")
+    return value if isinstance(value, str) and value else None
 
 
 # -- eski girişler ----------------------------------------------------------------------------------------

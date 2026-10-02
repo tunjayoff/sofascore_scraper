@@ -3,7 +3,8 @@ Dışa aktarma servisi (plan maddesi EX-1): `legacy-wide-csv` profili depodan ok
 
 Denetlenenler:
 
-  1. Satır kuralı (`legacy_wide_row`): eski `process_match_for_csv`'nin kuralı, iki bilinen kusuruyla (FX-7).
+  1. Satır kuralı (`legacy_wide_row`): eski `process_match_for_csv`'nin kuralı; diziliş sütunları SofaScore'un
+     gönderdiği metinden dolar (FX-7).
   2. Hangi maçlar: detayı (olay yükü) saklanan her maç bir kez, başlangıç zamanı sırasıyla; iki düzen de.
   3. `league_folder` / `season_folder`: eski düzende dizin adları, düz kayıtta yok, v3'te eski yazıcının adları.
   4. Akışa ve dosyaya yazma, lig süzgeci (pandas), boş seçim, desteklenmeyen biçim.
@@ -112,8 +113,20 @@ def test_the_row_rule_is_the_one_of_the_old_export() -> None:
     assert (row["home_form"], row["away_form"], row["away_points"]) == ("W_D", None, None)
     assert (row["h2h_home_wins"], row["h2h_away_wins"], row["h2h_draws"]) == (4, 1, 2)
     assert (row["lineups_confirmed"], row["home_starting_xi_count"], row["home_substitutes_count"]) == (True, 1, 1)
-    # Bilinen kusur (FX-7 düzeltir): SofaScore dizilişi metin olarak gönderir, kod nesne bekler
-    assert row["home_formation"] is None and row["away_formation"] == "4-4-2"
+    # SofaScore dizilişi metin olarak gönderir; eski kodun beklediği nesne biçimi de okunur (FX-7)
+    assert row["home_formation"] == "4-3-3" and row["away_formation"] == "4-4-2"
+
+
+@pytest.mark.parametrize("formation, expected", [
+    ("4-2-3-1", "4-2-3-1"),  # SofaScore'un gönderdiği biçim
+    ({"name": "3-5-2"}, "3-5-2"),  # eski kodun beklediği biçim
+    ("", None), (None, None), (442, None), ({}, None),
+])
+def test_the_formation_columns_hold_the_formation_text(formation: Any, expected: Any) -> None:
+    lineup = {"players": [], "formation": formation}
+    row = legacy_wide_row("1", {"lineups": {"home": lineup, "away": {"players": []}}})
+
+    assert row["home_formation"] == expected and row["away_formation"] is None
 
 
 def test_a_row_without_folders_has_no_folder_keys() -> None:

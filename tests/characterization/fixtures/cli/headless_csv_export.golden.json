@@ -43,7 +43,7 @@
   "exit_code": 0,
   "files": {
    "added": {
-    "data/match_details/processed/all_matches_<epoch>.csv": "sha256:bbb79fb45fde",
+    "data/match_details/processed/all_matches_<epoch>.csv": "sha256:cff343a91bb1",
     "logs/sofascore_scraper.log": "<binary>"
    }
   },
