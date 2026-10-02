@@ -453,8 +453,10 @@ def event_from_row(row: Union["EventRow", RowLike], *,
 
 def slice_from_info(info: "SliceInfo", *, payload: Any = None) -> Slice:
     """
-    `SliceInfo` → Slice. Durumu bilinmeyen bir değerse ValueError. payload: ham yük istenmişse o (`store.events.payload(...)` sonucu); istenmemişse
-    None kalır. Alt anahtarı olmayan dilimde `sub` null'dır (Store boş metin tutar).
+    `SliceInfo` → Slice. Durumu bilinmeyen bir değerse ValueError.
+
+    payload: ham yük istenmişse o (`store.events.payload(...)` sonucu); istenmemişse None kalır.
+    Alt anahtarı olmayan dilimde `sub` null'dır (Store boş metin tutar).
     """
     error = None
     if info.error is not None:
