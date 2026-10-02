@@ -875,6 +875,93 @@ def test_a_command_refused_for_a_wrong_sink_value_prints_no_part_of_it(cli, tmp_
                 assert private not in output, private
 
 
+# --- sink seçenekleri: sink'lerin tanımadığı anahtarın değeri gösterilmez ------------------------------------
+
+# Bir webhook sink'i: tanımlı seçenekler, yanlış yazılmış / uydurulmuş anahtarlar ve başka türün bir anahtarı
+SINK_WITH_UNKNOWN_OPTIONS = f'''
+[[sink]]
+name = "ops"
+type = "webhook"
+url = "https://hooks.example.org/in"
+allow_unsigned = true
+batch_size = 50
+max_age = "12h"
+sports = ["football"]
+webhook_url = "{HOOK_ADDRESS}"
+signing = "{SIGNING_VALUE}"
+headers = {{ authorization = "{fake("header", "value")}" }}
+retries = 3
+rotate_size = "50MB"
+[[sink]]
+name = "feed"
+type = "file"
+path = "out/live.ndjson"
+rotate_daily = true
+keep = 7
+fallback = ["{HOOK_ADDRESS}"]
+'''
+SHOWN_OPTIONS = [
+    {
+        "batch_size": 50, "max_age": "12h", "sports": ["football"],
+        "webhook_url": "***", "signing": "***", "headers": "***", "retries": "***",
+        "rotate_size": "***",  # dosya sink'inin anahtarı: webhook için bilinmiyor
+    },
+    {"rotate_daily": True, "keep": 7, "fallback": "***"},
+]
+OPTION_VALUES = (HOOK_PATH_PART, HOOK_QUERY_PART, SIGNING_VALUE, "/services/", fake("header", "value"))
+
+
+def test_describe_masks_the_value_of_a_sink_option_the_sinks_do_not_define(tmp_path):
+    loaded = _load(tmp_path, toml=SINK_WITH_UNKNOWN_OPTIONS)
+    rows = {row["key"]: row["value"] for row in loaded.describe()}
+    assert [sink["options"] for sink in rows["sinks"]] == SHOWN_OPTIONS
+    for private in OPTION_VALUES:
+        assert private not in json.dumps(rows), private
+    # Ayarın kendisi değişmez (sink kurulurken bilinmeyen anahtar reddedilir); istenirse değerler gösterilir
+    assert loaded.settings.sinks[0].options["webhook_url"] == HOOK_ADDRESS
+    plain = {row["key"]: row["value"] for row in loaded.describe(mask_secrets=False)}
+    assert plain["sinks"][0]["options"]["webhook_url"] == HOOK_ADDRESS
+    assert plain["sinks"][1]["options"] == {"rotate_daily": True, "keep": 7, "fallback": [HOOK_ADDRESS]}
+
+
+def test_config_show_never_prints_the_value_of_an_unknown_sink_option(cli, tmp_path):
+    """`ssc config show`, JSON ve metin: anahtarın adı görünür (hangisinin yanlış olduğu), değeri görünmez."""
+    config = tmp_path / "sofascore.toml"
+    config.write_text("schema = 1\n" + SINK_WITH_UNKNOWN_OPTIONS, encoding="utf-8")
+    as_json = cli("config", "show", "--json", "--config", config, "--data-dir", tmp_path / "data")
+    as_text = cli("config", "show", "--config", config, "--data-dir", tmp_path / "data")
+    assert as_json.exit_code == 0 and as_text.exit_code == 0
+    rows = {row["key"]: row["value"] for row in as_json.data["values"]}
+    assert [sink["options"] for sink in rows["sinks"]] == SHOWN_OPTIONS
+    for private in OPTION_VALUES:
+        for output in (as_json.stdout, as_json.stderr, as_text.stdout, as_text.stderr):
+            assert private not in output, private
+    for shown in ('"webhook_url": "***"', '"signing": "***"', '"headers": "***"', '"batch_size": 50', '"keep": 7'):
+        assert shown in as_text.stdout, shown
+
+
+def test_the_shown_sink_options_are_the_ones_the_sinks_define():
+    from src import sinks
+
+    # Her sink türünün seçenek listesi vardır; modelin alanları seçenek sayılmaz
+    assert set(sinks.TYPE_OPTIONS) == set(model.SINK_TYPES)
+    assert set(loader.SINK_KEYS) == {f.name for f in dataclasses.fields(model.SinkSpec)} - {"options"}
+    every = set(sinks.COMMON_OPTIONS) | {key for keys in sinks.TYPE_OPTIONS.values() for key in keys}
+    for kind in model.SINK_TYPES:
+        known = set(sinks.COMMON_OPTIONS) | set(sinks.TYPE_OPTIONS[kind])
+        shown = loader.mask_sink_options(kind, {key: 1 for key in every | {"invented"}})
+        assert {key for key, value in shown.items() if value == 1} == known
+        assert shown["invented"] == "***"
+    # Türü bilinmeyen ya da dizge olmayan (ayrıştırılmamış tablo) bir sink: yalnızca ortak anahtarlar
+    for kind in ("kafka", None, ["webhook"]):
+        assert loader.mask_sink_options(kind, {"sports": ["tennis"], "batch_size": 5}) == {
+            "sports": ["tennis"], "batch_size": "***",
+        }
+    table = {"name": "ops", "type": "webhook", "uri": HOOK_ADDRESS, "url": HOOK_ADDRESS, "batch_size": 5, "keep": 2}
+    assert loader.mask_sink_table(table) == {**table, "uri": "***", "keep": "***"}
+    assert list(loader.mask_sink_table(table)) == list(table)  # anahtarların sırası korunur
+
+
 def test_flags(tmp_path):
     loaded = _load(flags={"storage.data_dir": "/flag/data", "client.rate": "off", "log.debug": True})
     assert (loaded.settings.storage.data_dir, loaded.settings.client.rate, loaded.settings.log.debug) == (

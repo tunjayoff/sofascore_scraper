@@ -702,6 +702,8 @@ def _document_layer(doc: Mapping[str, Any], *, layer: str, name: str, base: Opti
 
 
 _TYPE_NAMES = {int: "a whole number", str: "a string", bool: "true or false"}
+# Bir [[sink]] tablosunun modellenen anahtarları (SinkSpec'in alanları); kalanı türe özgü seçenektir (`options`)
+SINK_KEYS: Tuple[str, ...] = ("name", "type", "events", "url", "secret_env", "allow_unsigned", "path")
 
 
 def _take(table: Mapping[str, Any], key: str, kind: type, where: str, default: Any = None, *, quote: bool = True) -> Any:
@@ -789,7 +791,6 @@ def parse_sinks(items: Sequence[Mapping[str, Any]], name: str, base: Optional[Pa
     (yolu ya da sorgusu belirteç olabilir) ya da `secret_env`e adı yerine yazılmış imza anahtarı olabilir ve
     ileti komutun çıktısına, log'a ve hata zarfına girer. Tek istisna sink'in adıdır (`config show` da gösterir).
     """
-    typed = {"name", "type", "events", "url", "secret_env", "allow_unsigned", "path"}
     specs: List[SinkSpec] = []
     seen: Dict[str, int] = {}
     for index, table in enumerate(items, start=1):
@@ -834,9 +835,33 @@ def parse_sinks(items: Sequence[Mapping[str, Any]], name: str, base: Optional[Pa
         specs.append(SinkSpec(
             name=label, type=kind, events=events, url=url, secret_env=secret_env, allow_unsigned=allow_unsigned,
             path=_resolve_path(path, base),
-            options=MappingProxyType({k: v for k, v in table.items() if k not in typed}),
+            options=MappingProxyType({k: v for k, v in table.items() if k not in SINK_KEYS}),
         ))
     return tuple(specs)
+
+
+def mask_sink_options(kind: Any, options: Mapping[str, Any]) -> Dict[str, Any]:
+    """
+    Bir sink'in seçeneklerinin gösterilecek hali (`config show`, tanılama paketi): sink'lerin tanımladığı
+    anahtarların (src.sinks: her türün ortak ve türe özgü anahtarları) değeri kalır, başka her anahtarın değeri
+    `***` olur. Tanımlı anahtarlar gizli değer taşımaz; kullanıcının uydurduğu ya da yanlış yazdığı bir anahtar
+    (`webhook_url`, `auth`...) taşıyabilir. Öyle bir anahtar sink kurulurken reddedilir, ama `config show` ve
+    paket onu daha önce gösterir. Anahtarın adı kalır: hangisinin yanlış olduğu görünür.
+    """
+    from src.sinks import COMMON_OPTIONS, TYPE_OPTIONS  # geç içe aktarma: src.sinks ayarları (SinkSpec) kullanır
+
+    known = set(COMMON_OPTIONS) | set(TYPE_OPTIONS.get(kind, ()) if isinstance(kind, str) else ())
+    return {key: value if key in known else MASK for key, value in options.items()}
+
+
+def mask_sink_table(table: Mapping[str, Any]) -> Dict[str, Any]:
+    """
+    Aynı kural, ayrıştırılmamış bir [[sink]] tablosu için (SOFASCORE_SINKS'in bir öğesi): modelin anahtarları
+    (SINK_KEYS) olduğu gibi kalır, seçenekler mask_sink_options'tan geçer. `url` burada maskelenmez
+    (redact.mask_webhook_url çağıranın işidir).
+    """
+    shown = mask_sink_options(table.get("type"), {k: v for k, v in table.items() if k not in SINK_KEYS})
+    return {key: shown.get(key, value) for key, value in table.items()}
 
 
 def parse_duration(text: str) -> float:
@@ -1042,7 +1067,9 @@ def _sink_row(spec: SinkSpec, mask_secrets: bool) -> Dict[str, Any]:
         "name": spec.name, "type": spec.type, "events": list(spec.events),
         # Webhook adresinin yolu ve sorgusu da belirteç taşıyabilir: yalnızca şema ve host gösterilir
         "url": mask_webhook_url(spec.url) if mask_secrets else spec.url, "secret_env": spec.secret_env,
-        "allow_unsigned": spec.allow_unsigned, "path": spec.path, "options": dict(spec.options),
+        "allow_unsigned": spec.allow_unsigned, "path": spec.path,
+        # Sink'lerin tanımadığı bir anahtarın değeri gösterilmez (bkz. mask_sink_options)
+        "options": mask_sink_options(spec.type, spec.options) if mask_secrets else dict(spec.options),
     }
 
 
@@ -1467,6 +1494,7 @@ __all__ = [
     "OVERRIDES_FILE_NAME",
     "LegacyVar",
     "LoadedSettings",
+    "SINK_KEYS",
     "Source",
     "activate",
     "active",
@@ -1475,6 +1503,8 @@ __all__ = [
     "env_name",
     "find_config_file",
     "load_settings",
+    "mask_sink_options",
+    "mask_sink_table",
     "note_dotenv_write",
     "parse_duration",
     "parse_follows",

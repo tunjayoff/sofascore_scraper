@@ -300,6 +300,34 @@ def test_home_directory_is_not_exposed(log_dir, monkeypatch, tmp_path):
     assert str(tmp_path) not in tail and "~" in tail
 
 
+def test_bundle_masks_the_value_of_an_unknown_sink_option_in_the_environment(log_dir, monkeypatch):
+    # Paket bütün SOFASCORE_ değişkenlerini yazar. SOFASCORE_SINKS'te sink'lerin tanımadığı bir anahtar
+    # (yanlış yazılmış `url`, uydurulmuş bir anahtar, başka türün anahtarı) `ssc config show`daki gibi `***` olur.
+    # Değerler sahtedir ve çalışırken parçalardan kurulur.
+    path_part, signing = "-".join(("fake", "path", "part")), "-".join(("fake", "signing", "value"))
+    address = f"https://hooks.example.org/services/T000/B000/{path_part}"
+    monkeypatch.setenv("SOFASCORE_SINKS", json.dumps([
+        {"name": "ops", "type": "webhook", "url": address, "allow_unsigned": True, "batch_size": 50,
+         "webhook_url": address, "note": {"signing": signing}, "keep": 3},
+        {"name": "feed", "type": "file", "path": "out/live.ndjson", "keep": 7, "sports": ["football"], "batch_size": 5},
+    ]))
+    files = _unzip(diagnostics.build_bundle(source="cli"))
+    values = json.loads(files["diagnostics.json"])["settings"]["values"]
+    assert json.loads(values["SOFASCORE_SINKS"]) == [
+        {"name": "ops", "type": "webhook", "url": "https://hooks.example.org/***", "allow_unsigned": True,
+         "batch_size": 50, "webhook_url": "***", "note": "***", "keep": "***"},
+        {"name": "feed", "type": "file", "path": "out/live.ndjson", "keep": 7, "sports": ["football"],
+         "batch_size": "***"},
+    ]
+    for private in (path_part, signing, "/services/"):
+        assert private not in files["diagnostics.json"], private
+    # Tablo listesi olmayan değer, eskisi gibi, tümüyle maskelenir
+    monkeypatch.setenv("SOFASCORE_SINKS", json.dumps([address]))
+    assert diagnostics._settings()["values"]["SOFASCORE_SINKS"] == "***"
+    monkeypatch.setenv("SOFASCORE_SINKS", f"not json {address}")
+    assert diagnostics._settings()["values"]["SOFASCORE_SINKS"] == "***"
+
+
 # --- son iş ------------------------------------------------------------------------------
 
 def test_last_job_summary_comes_from_the_job_store(log_dir, monkeypatch, tmp_path):
