@@ -216,8 +216,8 @@ section is what the first tagged release will contain.
   it when given.
 - Backups are written to `DATA_DIR/backups`, downloaded through
   `/api/data/backups/{name}`, and leave `.env` out unless `include_env=true`.
-- `GET /api/matches` reads the per-season summaries (the export CSV is only a fallback),
-  accepts several league ids and can filter on whether details are present.
+- `GET /api/matches` accepts several league ids and can filter on whether details are present.
+  Since #89 it reads the data folder's index, with no fallback to the export CSV.
 - The request layer raises typed errors (`APIError`, `RateLimitError`, `NetworkError`,
   `ResourceNotFoundError`) instead of returning `None`, does not sleep after the final
   attempt, does not retry permanent 4xx responses, and really caps in-flight requests at
@@ -312,9 +312,9 @@ section is what the first tagged release will contain.
   menu's lines (`Headless Mode: Exporting CSV...`, `CSV Conversion:`, `CSV file successfully
   created: …`) to the server console. The job log and the files are unchanged (#57).
 - `--watch` keeps its state in the data directory's `state.db` and also stores every event with
-  a sequence number in the durable `live` stream. `watch_events.jsonl` and
-  `watch_state_<sport>.json` are still written; the state file is now a copy that is read only
-  once, on the first run after the upgrade. On Windows `watch_events.jsonl` now gets LF line
+  a sequence number in the durable `live` stream. `watch_events.jsonl` is still written. An
+  existing `watch_state_<sport>.json` is imported once, on the first run after the upgrade;
+  since #91 the file is no longer written. On Windows `watch_events.jsonl` now gets LF line
   endings like every other data file (#59).
 - Headless runs (`--headless --update-all`, with or without `--league-id` and `--fetch-mode`)
   now run the same flow as a download started in the web app. The terminal menu's banners are
@@ -376,9 +376,7 @@ section is what the first tagged release will contain.
   when the page is read: with the setting on, scheduled matches that are not finished and have
   no details are not counted, also in seasons that were downloaded while the setting was off. On
   folders without these cases the numbers are the same. Disk usage is measured again at most
-  once a minute unless a download or a clear changed the data. In the terminal UI, statistics
-  opened after "clear data" or "restore" show the old counts until the program is restarted
-  (#78).
+  once a minute unless a download or a clear changed the data (#78).
 - The season list of a league is read from the data folder's index everywhere (web app,
   downloads, terminal menu), so all of them see the same list. When `seasons/` holds several
   list files for one league (left by older versions or by renaming a league), the newest one is
@@ -405,10 +403,11 @@ section is what the first tagged release will contain.
   damaged slice file counts as that slice missing instead of making the match unreadable (the
   API answered 500); and when a match is stored in two folders the newer copy is used (#80).
 - `DATA_DIR/.meta/state.db` and `DATA_DIR/.meta/catalog.db` are created with the permissions the
-  process umask gives (0664 under umask 002) instead of always 0644, like every other file of
-  the data folder, so a second account of the same group can write a data folder it shares.
-  Nothing changes under the usual umask 022. Files that already exist keep their permissions: to
-  share a data folder that an earlier version created, stop everything that uses it and run
+  process umask gives (0664 under umask 002) instead of always 0644, like the files of the Store
+  layer and the lock files (files written by the older helpers stay 0600, see the entry of #53),
+  so a second account of the same group can write a data folder it shares. Nothing changes under
+  the usual umask 022. Files that already exist keep their permissions: to share a data folder
+  that an earlier version created, stop everything that uses it and run
   `chmod g+w DATA_DIR/.meta/state.db* DATA_DIR/.meta/catalog.db*` once. The `*` matters: `-wal`
   and `-shm` files that a failed attempt of the second account left behind need the same change,
   by that account or by root. Five more log lines of the data store are English, among them
@@ -513,7 +512,7 @@ section is what the first tagged release will contain.
   retry instead of an endless spinner or an empty list; tabs, dialogs and toggle buttons are
   keyboard and screen-reader accessible.
 - Watch mode: the tennis stuck check measures from the real start of play; each sport keeps
-  its own state file.
+  its own state, now in the data folder's `state.db` (#59, #91).
 - `Start SofaScore.bat` could not find the launcher script; `install.ps1` failed on a
   parameter named `$Args`.
 - Windows: when a file cannot be replaced because another process or thread has it open,
