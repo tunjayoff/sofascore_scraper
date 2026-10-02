@@ -105,12 +105,10 @@
    "request-layer": 2,
    "src.client.transport": 1
   },
-  "stderr": [],
-  "stdout": [
+  "stderr": [
+   "main.py flags are deprecated and will be removed; this run is: ssc sync",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO Main: Running in headless mode",
-   "LOG INFO Main: Headless update: league_id=None mode=full",
    "LOG INFO SyncService: Refreshing season list for league 17...",
    "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO Listing: Season list of league 17 is fresh; not requested",
@@ -124,11 +122,16 @@
    "LOG INFO SyncService: Fetching match details: league all (1 matches)…",
    "LOG INFO MatchDataFetcher: Details will be fetched for 1 matches",
    {
+    "concurrent": []
+   },
+   {
     "concurrent": [
      "LOG INFO FetchPipeline: Match 9100002 stored (0 files written)"
     ]
    },
-   "LOG INFO MatchDataFetcher: Done: 1/1 matches (100.0%) processed successfully",
+   "LOG INFO MatchDataFetcher: Done: 1/1 matches (100.0%) processed successfully"
+  ],
+  "stdout": [
    "Download finished. Matches that needed details: 1 (1 fetched, 0 failed). Provisional records refreshed: 0 (0 changed)."
   ]
  },
@@ -142,12 +145,10 @@
   "request_layer_loaded": true,
   "requests": [],
   "sleeps": {},
-  "stderr": [],
-  "stdout": [
+  "stderr": [
+   "main.py flags are deprecated and will be removed; this run is: ssc sync",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO Main: Running in headless mode",
-   "LOG INFO Main: Headless update: league_id=None mode=full",
    "LOG INFO SyncService: Refreshing season list for league 17...",
    "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO Listing: Season list of league 17 is fresh; not requested",
@@ -157,7 +158,9 @@
    "LOG INFO Listing: Schedule of league 17, season 52186 is fresh; not requested",
    "LOG INFO SyncService: Checking which matches need details...",
    "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
-   "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
+   "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids"
+  ],
+  "stdout": [
    "Download finished. Matches that needed details: 0 (0 fetched, 0 failed). Provisional records refreshed: 0 (0 changed)."
   ]
  }

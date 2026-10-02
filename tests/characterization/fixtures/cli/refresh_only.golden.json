@@ -2,7 +2,7 @@
  "argv": [
   "--refresh-only"
  ],
- "exit_code": 0,
+ "exit_code": 3,
  "files": {
   "added": {
    "data/changes/2026-10.jsonl": [
@@ -130,19 +130,24 @@
   "request-layer": 2,
   "src.client.transport": 1
  },
- "stderr": [],
- "stdout": [
+ "stderr": [
+  "main.py flags are deprecated and will be removed; this run is: ssc refresh",
   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
   "LOG INFO SyncService: Refreshing 3 provisional records...",
   "LOG INFO MatchDataFetcher: Refreshing 3 matches",
+  {
+   "concurrent": []
+  },
   {
    "concurrent": [
     "LOG INFO FetchPipeline: Match 9100003 refreshed: 3 fields changed (homeScore.current, homeScore.display, homeScore.normaltime)",
     "LOG INFO FetchPipeline: Match 9100010: no such event on SofaScore",
     "LOG WARNING FetchPipeline: Refresh of match 9100010: /event could not be fetched"
    ]
-  },
-  "Refresh: 2 matches refreshed, 1 changed, 1 failed (changes: data/score_changes.jsonl)"
+  }
+ ],
+ "stdout": [
+  "Refresh: 2 matches refreshed, 1 changed, 1 failed"
  ]
 }

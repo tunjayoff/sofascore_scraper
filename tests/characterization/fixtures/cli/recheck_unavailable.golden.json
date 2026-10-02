@@ -182,19 +182,19 @@
    "request-layer": 4,
    "src.client.transport": 1
   },
-  "stderr": [],
-  "stdout": [
+  "stderr": [
+   "main.py flags are deprecated and will be removed; this run is: ssc sync --only events --recheck-unavailable all",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
    "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=None include_confirmed=True matches=1 slices=2 scanned=1",
-   "Re-check: 2 \"slice not available\" markers reopened in 1 matches (1 matches with markers scanned). They will be requested again on the next download.",
-   "LOG INFO Main: Running in headless mode",
-   "LOG INFO Main: Headless update: league_id=None mode=details",
    "LOG INFO SyncService: Checking which matches need details...",
    "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
    "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league all (2 matches)…",
    "LOG INFO MatchDataFetcher: Details will be fetched for 2 matches",
+   {
+    "concurrent": []
+   },
    {
     "concurrent": [
      "LOG INFO FetchPipeline: Match 9100001 stored (1 files written)",
@@ -202,6 +202,9 @@
     ]
    },
    "LOG INFO MatchDataFetcher: Done: 2/2 matches (100.0%) processed successfully",
+   "Re-check: 2 \"slice not available\" markers reopened in 1 matches (1 matches with markers scanned). They will be requested again on the next download."
+  ],
+  "stdout": [
    "Download finished. Matches that needed details: 2 (2 fetched, 0 failed). Provisional records refreshed: 0 (0 changed)."
   ]
  },
@@ -282,11 +285,13 @@
   "request_layer_loaded": true,
   "requests": [],
   "sleeps": {},
-  "stderr": [],
-  "stdout": [
+  "stderr": [
+   "main.py flags are deprecated and will be removed; this run is: ssc data recheck-unavailable",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=None include_confirmed=False matches=1 slices=1 scanned=2",
+   "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=None include_confirmed=False matches=1 slices=1 scanned=2"
+  ],
+  "stdout": [
    "Re-check: 1 \"slice not available\" markers reopened in 1 matches (2 matches with markers scanned). They will be requested again on the next download."
   ]
  },
@@ -301,11 +306,13 @@
   "request_layer_loaded": true,
   "requests": [],
   "sleeps": {},
-  "stderr": [],
-  "stdout": [
+  "stderr": [
+   "main.py flags are deprecated and will be removed; this run is: ssc data recheck-unavailable --tournament 17",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=17 include_confirmed=False matches=0 slices=0 scanned=1",
+   "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=17 include_confirmed=False matches=0 slices=0 scanned=1"
+  ],
+  "stdout": [
    "Re-check: 0 \"slice not available\" markers reopened in 0 matches (1 matches with markers scanned). They will be requested again on the next download."
   ]
  },
@@ -417,23 +424,26 @@
    "request-layer": 2,
    "src.client.transport": 1
   },
-  "stderr": [],
-  "stdout": [
+  "stderr": [
+   "main.py flags are deprecated and will be removed; this run is: ssc sync --only events",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO Main: Running in headless mode",
-   "LOG INFO Main: Headless update: league_id=None mode=details",
    "LOG INFO SyncService: Checking which matches need details...",
    "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
    "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league all (1 matches)…",
    "LOG INFO MatchDataFetcher: Details will be fetched for 1 matches",
    {
+    "concurrent": []
+   },
+   {
     "concurrent": [
      "LOG INFO FetchPipeline: Match 9100002 stored (0 files written)"
     ]
    },
-   "LOG INFO MatchDataFetcher: Done: 1/1 matches (100.0%) processed successfully",
+   "LOG INFO MatchDataFetcher: Done: 1/1 matches (100.0%) processed successfully"
+  ],
+  "stdout": [
    "Download finished. Matches that needed details: 1 (1 fetched, 0 failed). Provisional records refreshed: 0 (0 changed)."
   ]
  },
@@ -449,11 +459,13 @@
   "request_layer_loaded": true,
   "requests": [],
   "sleeps": {},
-  "stderr": [],
-  "stdout": [
+  "stderr": [
+   "main.py flags are deprecated and will be removed; this run is: ssc data recheck-unavailable --all --tournament 8",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=8 include_confirmed=True matches=0 slices=0 scanned=0",
+   "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=8 include_confirmed=True matches=0 slices=0 scanned=0"
+  ],
+  "stdout": [
    "Re-check: 0 \"slice not available\" markers reopened in 0 matches (0 matches with markers scanned). They will be requested again on the next download."
   ]
  }

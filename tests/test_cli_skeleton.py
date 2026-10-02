@@ -642,7 +642,7 @@ def test_doctor_rejects_unknown_check_ids(cli):
     run = cli("doctor", "--only", "env,nope", "--json")
     assert run.exit_code == 2
     assert run.error["code"] == "invalid_request" and run.error["details"]["unknown"] == ["nope"]
-    assert run.error["details"]["valid"] == [*doctor.CHECK_IDS, "budget", "live"]
+    assert run.error["details"]["valid"] == [*doctor.CHECK_IDS, "live"] and "budget" in doctor.CHECK_IDS
 
 
 def test_doctor_checks_the_data_dir_of_the_flag(cli, tmp_path):

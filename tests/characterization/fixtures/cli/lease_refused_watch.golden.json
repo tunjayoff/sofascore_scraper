@@ -12,15 +12,15 @@
    "logs/sofascore_scraper.log": "<binary>"
   }
  },
- "request_layer_loaded": false,
+ "request_layer_loaded": true,
  "requests": [],
  "sleeps": {},
  "stderr": [
-  "Stopped: this data folder is in use by another process (lock watcher:football: pid <pid>, host <host>, purpose watch, since <time>). Wait for it to finish or stop it, then run this again."
- ],
- "stdout": [
+  "main.py flags are deprecated and will be removed; this run is: ssc watch --source poll --stdout --sport football --event 9300001",
   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-  "LOG ERROR Main: Data directory is in use by another process: lease=watcher:football pid=<pid> host=<host> purpose=watch"
- ]
+  "Another instance is running: Another instance is already running on this data directory.",
+  "Held by process <pid> on <host> (watch) since <time>"
+ ],
+ "stdout": []
 }

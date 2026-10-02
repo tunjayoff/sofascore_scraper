@@ -210,7 +210,7 @@ def test_fetch_all_match_details_lets_fatal_storage_errors_through(tmp_path):
             f.fetch_all_match_details()
 
 
-def test_headless_cli_reports_a_storage_error_and_exits_1(tmp_path, monkeypatch, capsys):
+def test_headless_cli_reports_a_storage_error_and_exits_5(tmp_path, monkeypatch, capsys):
     import main as cli
 
     boom = StorageError.from_exception(
@@ -225,7 +225,7 @@ def test_headless_cli_reports_a_storage_error_and_exits_1(tmp_path, monkeypatch,
     # Headless yol SyncService'i çağırır (P10): detay aşamasının ilk indirici çağrısı collect_detail_match_ids'tir
     with patch.object(MatchDataFetcher, "collect_detail_match_ids", side_effect=boom), \
             patch.object(utils.cffi_requests, "get", side_effect=AssertionError("ağ isteği yapılmamalı")):
-        assert cli.main() == 1
+        assert cli.main() == 5  # P19: depolama hatası 5 (önce 1)
     err = capsys.readouterr().err
     assert "17_PL" in err and os.strerror(errno.ENOSPC) in err
     assert "Traceback" not in err

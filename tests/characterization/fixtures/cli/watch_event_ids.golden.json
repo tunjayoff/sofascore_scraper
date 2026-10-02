@@ -12,30 +12,6 @@
   "exit_code": 0,
   "files": {
    "added": {
-    "data/watch_events.jsonl": [
-     {
-      "at_utc": "<volatile>",
-      "event_id": 9300001,
-      "start_ts": 1725700000,
-      "status_class": "live",
-      "type": "stuck"
-     },
-     {
-      "at_utc": "<volatile>",
-      "change_ts": 1725701200,
-      "event_id": 9300001,
-      "from": [
-       1,
-       0
-      ],
-      "source": "live",
-      "to": [
-       2,
-       0
-      ],
-      "type": "score_changed"
-     }
-    ],
     "logs/sofascore_scraper.log": "<binary>"
    }
   },
@@ -48,15 +24,18 @@
    "request-layer": 2
   },
   "stderr": [
-   "Watcher stopped: 2 requests; events in <SANDBOX>/data/watch_events.jsonl"
-  ],
-  "stdout": [
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "main.py flags are deprecated and will be removed; this run is: ssc watch --source poll --stdout --sport football --event 9300001 --hours 1e-09",
    "LOG INFO Store: state.db migration applied: 0001_initial",
    "LOG INFO Store: state.db migration applied: 0002_job_manager",
-   "{\"type\": \"stuck\", \"event_id\": 9300001, \"at_utc\": \"<volatile>\", \"start_ts\": 1725700000, \"status_class\": \"live\"}",
-   "{\"type\": \"score_changed\", \"event_id\": 9300001, \"at_utc\": \"<volatile>\", \"from\": [1, 0], \"to\": [2, 0], \"change_ts\": 1725701200, \"source\": \"live\"}"
+   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
+   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
+   "LOG INFO src.services.live.supervisor: Live service started: source poll, sports football",
+   "LOG INFO src.services.live.supervisor: Live service stopped after 1 round(s), 2 request(s), 2 event(s)",
+   "Live watching stopped: 1 round(s), 2 request(s), 2 new event(s), 0 finished match(es) stored."
+  ],
+  "stdout": [
+   "{\"data\": {\"start_utc\": \"2024-09-07T09:06:40Z\", \"status_class\": \"live\"}, \"event_id\": 9300001, \"seq\": 1, \"source\": \"poll\", \"sport\": \"football\", \"stream\": \"live\", \"tournament_id\": 17, \"ts\": \"<volatile>\", \"type\": \"live.stuck\"}",
+   "{\"data\": {\"change_ts\": 1725701200, \"from\": {\"away\": 0, \"home\": 1}, \"score\": {\"after_extra_time\": null, \"away\": 0, \"family\": \"football\", \"half_time\": {\"away\": 0, \"home\": 2}, \"home\": 2, \"penalties\": null, \"regulation\": null}, \"to\": {\"away\": 0, \"home\": 2}}, \"event_id\": 9300001, \"seq\": 2, \"source\": \"poll\", \"sport\": \"football\", \"stream\": \"live\", \"tournament_id\": 17, \"ts\": \"<volatile>\", \"type\": \"live.score_changed\"}"
   ]
  },
  "restart_after_the_match": {
@@ -69,57 +48,30 @@
   ],
   "exit_code": 0,
   "files": {
-   "changed": {
-    "data/watch_events.jsonl": [
-     {
-      "at_utc": "<volatile>",
-      "event_id": 9300001,
-      "start_ts": 1725700000,
-      "status_class": "live",
-      "type": "stuck"
-     },
-     {
-      "at_utc": "<volatile>",
-      "change_ts": 1725701200,
-      "event_id": 9300001,
-      "from": [
-       1,
-       0
-      ],
-      "source": "live",
-      "to": [
-       2,
-       0
-      ],
-      "type": "score_changed"
-     },
-     {
-      "at_utc": "<volatile>",
+   "added": {
+    "data/v3/events/9/300/9300001/event.json.gz": "<binary>",
+    "data/v3/events/9/300/9300001/manifest.json": {
+     "created_at": "<volatile>",
+     "format": 1,
+     "id": 9300001,
+     "kind": "event",
+     "observation": {
       "change_ts": 1725706600,
-      "event_id": 9300001,
-      "from": "live",
-      "provisional": false,
-      "scores": {
-       "aet": null,
-       "aggregated": null,
-       "aggregated_winner_code": null,
-       "ft90": null,
-       "ht": [
-        2,
-        0
-       ],
-       "penalties": null,
-       "raw_change_ts": 1725706600,
-       "raw_changed_fields": [],
-       "sport": "football",
-       "status_class": "completed",
-       "winner_code": 1
-      },
-      "source": "event",
-      "to": "completed",
-      "type": "status_changed"
-     }
-    ]
+      "observed_at_utc": "<volatile>",
+      "status_regressed": false
+     },
+     "slices": {
+      "event": {
+       "bytes": "<volatile>",
+       "checked_at": "<volatile>",
+       "fetched_at": "<volatile>",
+       "raw_bytes": 732,
+       "sha256": "98afaea1db6ec7a258cbe009914f4f4bb1eee9c4c0dc986e970dd03de4b27b18",
+       "state": "ok"
+      }
+     },
+     "updated_at": "<volatile>"
+    }
    }
   },
   "request_layer_loaded": true,
@@ -131,13 +83,16 @@
    "request-layer": 2
   },
   "stderr": [
-   "Watcher stopped: 2 requests; events in <SANDBOX>/data/watch_events.jsonl"
-  ],
-  "stdout": [
+   "main.py flags are deprecated and will be removed; this run is: ssc watch --source poll --stdout --sport football --event 9300001",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "{\"type\": \"status_changed\", \"event_id\": 9300001, \"from\": \"live\", \"to\": \"completed\", \"at_utc\": \"<volatile>\", \"change_ts\": 1725706600, \"source\": \"event\", \"scores\": {\"sport\": \"football\", \"status_class\": \"completed\", \"winner_code\": 1, \"raw_change_ts\": 1725706600, \"raw_changed_fields\": [], \"ht\": [2, 0], \"ft90\": null, \"aet\": null, \"penalties\": null, \"aggregated\": null, \"aggregated_winner_code\": null}, \"provisional\": false}",
-   "LOG INFO src.watcher: All watched events have finished"
+   "LOG INFO src.services.live.supervisor: Live service started: source poll, sports football",
+   "LOG INFO src.services.live.supervisor: All watched events have finished",
+   "LOG INFO src.services.live.supervisor: Live service stopped after 1 round(s), 2 request(s), 1 event(s)",
+   "Live watching stopped: 1 round(s), 2 request(s), 1 new event(s), 1 finished match(es) stored."
+  ],
+  "stdout": [
+   "{\"data\": {\"change_ts\": 1725706600, \"from\": \"live\", \"provisional\": false, \"score\": {\"after_extra_time\": null, \"away\": 0, \"family\": \"football\", \"half_time\": {\"away\": 0, \"home\": 2}, \"home\": 2, \"penalties\": null, \"regulation\": null}, \"to\": \"completed\"}, \"event_id\": 9300001, \"seq\": 3, \"source\": \"poll\", \"sport\": \"football\", \"stream\": \"live\", \"tournament_id\": 17, \"ts\": \"<volatile>\", \"type\": \"live.status_changed\"}"
   ]
  }
 }

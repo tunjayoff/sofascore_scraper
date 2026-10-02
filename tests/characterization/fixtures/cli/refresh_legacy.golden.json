@@ -100,8 +100,8 @@
    "request-layer": 1,
    "src.client.transport": 1
   },
-  "stderr": [],
-  "stdout": [
+  "stderr": [
+   "main.py flags are deprecated and will be removed; this run is: ssc refresh --include-legacy",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Refreshing 1 provisional records...",
@@ -109,7 +109,12 @@
    {
     "concurrent": []
    },
-   "Refresh: 1 matches refreshed, 0 changed, 0 failed (changes: data/score_changes.jsonl)"
+   {
+    "concurrent": []
+   }
+  ],
+  "stdout": [
+   "Refresh: 1 matches refreshed, 0 changed, 0 failed"
   ]
  },
  "with_flag_again": {
@@ -122,12 +127,14 @@
   "request_layer_loaded": true,
   "requests": [],
   "sleeps": {},
-  "stderr": [],
-  "stdout": [
+  "stderr": [
+   "main.py flags are deprecated and will be removed; this run is: ssc refresh --include-legacy",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SyncService: Refreshing 0 provisional records...",
-   "Refresh: 0 matches refreshed, 0 changed, 0 failed (changes: data/score_changes.jsonl)"
+   "LOG INFO SyncService: Refreshing 0 provisional records..."
+  ],
+  "stdout": [
+   "Refresh: 0 matches refreshed, 0 changed, 0 failed"
   ]
  },
  "without_flag": {
@@ -143,12 +150,14 @@
   "request_layer_loaded": true,
   "requests": [],
   "sleeps": {},
-  "stderr": [],
-  "stdout": [
+  "stderr": [
+   "main.py flags are deprecated and will be removed; this run is: ssc refresh",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SyncService: Refreshing 0 provisional records...",
-   "Refresh: 0 matches refreshed, 0 changed, 0 failed (changes: data/score_changes.jsonl)"
+   "LOG INFO SyncService: Refreshing 0 provisional records..."
+  ],
+  "stdout": [
+   "Refresh: 0 matches refreshed, 0 changed, 0 failed"
   ]
  }
 }

@@ -7,16 +7,16 @@
  "files": {
   "added": {
    "cwd/out/bundle.zip": "<binary>",
-   "logs/sofascore_scraper.log": "<binary>"
+   "logs/": "<empty dir>"
   }
  },
  "request_layer_loaded": false,
  "requests": [],
  "sleeps": {},
- "stderr": [],
+ "stderr": [
+  "main.py flags are deprecated and will be removed; this run is: ssc diagnostics --out <SANDBOX>/cwd/out/bundle.zip"
+ ],
  "stdout": [
-  "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-  "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
   "Diagnostics bundle written: <SANDBOX>/cwd/out/bundle.zip"
  ]
 }

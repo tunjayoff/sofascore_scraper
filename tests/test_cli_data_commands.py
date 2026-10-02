@@ -29,7 +29,7 @@ from typing import Any, Dict, List, Optional
 import pytest
 
 import test_cli_skeleton as skeleton
-from src.cli import output
+from src.cli import legacy_flags, output
 from src.cli import main as cli_main
 from src.cli.commands import sync as sync_command
 from src.jobs.manager import JobManager
@@ -639,6 +639,20 @@ def test_the_new_commands_are_registered_and_described(cli: CliRunner) -> None:
     described = {command["name"]: command for command in cli("describe", "commands").data["commands"]["commands"]}
     assert [option["flags"][0] for option in described["sync"]["options"]] == [
         "--tournament", "--only", "--recheck-unavailable", "--include-legacy", "--dry-run"]
+
+
+def test_main_py_passes_a_subcommand_through(box: Sandbox) -> None:
+    proc = subprocess.run([sys.executable, str(REPO / "main.py"), "status", "--json"], cwd=box.cwd,
+                          env=box.environ(), capture_output=True, text=True, timeout=120)
+    assert proc.returncode == 0, proc.stderr
+    assert json.loads(proc.stdout)["command"] == "status"
+    assert "deprecated" not in proc.stderr  # bir alt komut kullanımdan kalkmış değildir
+
+
+def test_deprecation_line_names_the_new_commands() -> None:
+    t = lambda key, **kw: f"{key}:{kw['commands']}"  # noqa: E731
+    line = legacy_flags.deprecation_line(t, "ssc", [("sync", "--tournament", "17"), ("export",)])
+    assert line == "ssc_legacy_deprecated:ssc sync --tournament 17 && ssc export"
 
 
 def test_sync_module_helpers() -> None:

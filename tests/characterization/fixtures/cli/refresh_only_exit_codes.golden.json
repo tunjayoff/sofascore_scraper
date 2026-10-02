@@ -3,7 +3,7 @@
   "argv": [
    "--refresh-only"
   ],
-  "exit_code": 1,
+  "exit_code": 3,
   "files": {
    "added": {
     "logs/sofascore_scraper.log": "<binary>"
@@ -21,19 +21,24 @@
   "sleeps": {
    "src.client.transport": 1
   },
-  "stderr": [],
-  "stdout": [
+  "stderr": [
+   "main.py flags are deprecated and will be removed; this run is: ssc refresh",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Refreshing 1 provisional records...",
    "LOG INFO MatchDataFetcher: Refreshing 1 matches",
    {
+    "concurrent": []
+   },
+   {
     "concurrent": [
      "LOG INFO FetchPipeline: Match 9100001: no such event on SofaScore",
      "LOG WARNING FetchPipeline: Refresh of match 9100001: /event could not be fetched"
     ]
-   },
-   "Refresh: 0 matches refreshed, 0 changed, 1 failed (changes: data/score_changes.jsonl)"
+   }
+  ],
+  "stdout": [
+   "Refresh: 0 matches refreshed, 0 changed, 1 failed"
   ]
  },
  "breaker_ignored": {
@@ -41,7 +46,7 @@
    "--refresh-only",
    "--ignore-rate-limit"
   ],
-  "exit_code": 1,
+  "exit_code": 3,
   "files": {},
   "request_layer_loaded": true,
   "requests": [
@@ -64,13 +69,15 @@
    "request-layer": 6,
    "src.client.transport": 1
   },
-  "stderr": [],
-  "stdout": [
+  "stderr": [
+   "main.py flags are deprecated and will be removed; this run is: ssc --ignore-breaker refresh",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG WARNING Main: Rate-limit circuit breaker --ignore-rate-limit ile devre dışı bırakıldı.",
    "LOG INFO SyncService: Refreshing 3 provisional records...",
    "LOG INFO MatchDataFetcher: Refreshing 3 matches",
+   {
+    "concurrent": []
+   },
    {
     "concurrent": [
      "LOG WARNING FetchPipeline: Event request for match 9100001 failed (403)",
@@ -89,8 +96,10 @@
      "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100003",
      "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100010"
     ]
-   },
-   "Refresh: 0 matches refreshed, 0 changed, 3 failed (changes: data/score_changes.jsonl)"
+   }
+  ],
+  "stdout": [
+   "Refresh: 0 matches refreshed, 0 changed, 3 failed"
   ]
  },
  "nothing_due": {
@@ -106,19 +115,21 @@
   "request_layer_loaded": true,
   "requests": [],
   "sleeps": {},
-  "stderr": [],
-  "stdout": [
+  "stderr": [
+   "main.py flags are deprecated and will be removed; this run is: ssc refresh",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SyncService: Refreshing 0 provisional records...",
-   "Refresh: 0 matches refreshed, 0 changed, 0 failed (changes: data/score_changes.jsonl)"
+   "LOG INFO SyncService: Refreshing 0 provisional records..."
+  ],
+  "stdout": [
+   "Refresh: 0 matches refreshed, 0 changed, 0 failed"
   ]
  },
  "stopped_by_breaker": {
   "argv": [
    "--refresh-only"
   ],
-  "exit_code": 2,
+  "exit_code": 4,
   "files": {
    "added": {
     "logs/sofascore_scraper.log": "<binary>"
@@ -143,13 +154,14 @@
    "src.client.transport": 1
   },
   "stderr": [
-   "Refresh stopped: too many requests to SofaScore failed (403); 1 matches were not attempted. Wait a while and run it again."
-  ],
-  "stdout": [
+   "main.py flags are deprecated and will be removed; this run is: ssc refresh",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SyncService: Refreshing 3 provisional records...",
    "LOG INFO MatchDataFetcher: Refreshing 3 matches",
+   {
+    "concurrent": []
+   },
    {
     "concurrent": [
      "LOG WARNING Breaker: Devre kesici açıldı (art arda 2 başarısız istek): 2 istekten 2 başarısız (2x 403). Bu iş SofaScore'a yeni istek göndermeyecek.",
@@ -167,7 +179,10 @@
    },
    "LOG WARNING MatchDataFetcher: Too many failed requests; the refresh stopped, 1 matches were not tried",
    "LOG INFO SyncService: Too many failed requests (403); stopped fetching provisional records.",
-   "Refresh: 0 matches refreshed, 0 changed, 2 failed (changes: data/score_changes.jsonl)"
+   "Refresh stopped: too many requests to SofaScore failed (403); 1 matches were not attempted. Wait a while and run it again."
+  ],
+  "stdout": [
+   "Refresh: 0 matches refreshed, 0 changed, 2 failed"
   ]
  }
 }

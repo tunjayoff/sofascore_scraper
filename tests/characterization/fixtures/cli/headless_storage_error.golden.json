@@ -6,7 +6,7 @@
    "--fetch-mode",
    "details"
   ],
-  "exit_code": 1,
+  "exit_code": 5,
   "files": {
    "added": {
     "logs/sofascore_scraper.log": "<binary>"
@@ -32,25 +32,25 @@
    "src.client.transport": 1
   },
   "stderr": [
-   "Stopped: data could not be written to <SANDBOX>/data/v3/events/9/100/9100003 (Permission denied). Free up disk space or fix the permissions, then run it again."
-  ],
-  "stdout": [
+   "main.py flags are deprecated and will be removed; this run is: ssc sync --only events",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO Main: Running in headless mode",
-   "LOG INFO Main: Headless update: league_id=None mode=details",
    "LOG INFO SyncService: Checking which matches need details...",
    "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
    "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league all (1 matches)…",
    "LOG INFO MatchDataFetcher: Details will be fetched for 1 matches",
    {
+    "concurrent": []
+   },
+   {
     "concurrent": [
      "LOG ERROR FetchPipeline: Match 9100003 could not be stored: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/v3/events/9/100/9100003"
     ]
    },
-   "LOG ERROR Main: Depolama hatası, işlem durduruldu: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/v3/events/9/100/9100003"
-  ]
+   "Storage error: storage error: Permission denied (<SANDBOX>/data/v3/events/9/100/9100003)"
+  ],
+  "stdout": []
  },
  "one_league": {
   "argv": [
@@ -61,7 +61,7 @@
    "--league-id",
    "17"
   ],
-  "exit_code": 1,
+  "exit_code": 5,
   "files": {
    "added": {
     "logs/sofascore_scraper.log": "<binary>"
@@ -87,24 +87,24 @@
    "src.client.transport": 1
   },
   "stderr": [
-   "Stopped: data could not be written to <SANDBOX>/data/v3/events/9/100/9100003 (Permission denied). Free up disk space or fix the permissions, then run it again."
-  ],
-  "stdout": [
+   "main.py flags are deprecated and will be removed; this run is: ssc sync --tournament 17 --only events",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO Main: Running in headless mode",
-   "LOG INFO Main: Headless update: league_id=17 mode=details",
    "LOG INFO SyncService: Checking which matches need details...",
    "LOG INFO MatchDataFetcher: Fetching match details for league 17",
    "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league 17 (1 matches)…",
    "LOG INFO MatchDataFetcher: Details will be fetched for 1 matches",
    {
+    "concurrent": []
+   },
+   {
     "concurrent": [
      "LOG ERROR FetchPipeline: Match 9100003 could not be stored: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/v3/events/9/100/9100003"
     ]
    },
-   "LOG ERROR Main: Depolama hatası, işlem durduruldu: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/v3/events/9/100/9100003"
-  ]
+   "Storage error: storage error: Permission denied (<SANDBOX>/data/v3/events/9/100/9100003)"
+  ],
+  "stdout": []
  }
 }
