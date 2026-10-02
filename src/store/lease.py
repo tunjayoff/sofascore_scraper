@@ -36,6 +36,12 @@ tek süreç kipiyle aynı kural). 2.x'te çalışan bir kurulum bu yüzden iş b
 `writer` alınırken `.meta/locks/unclean` işareti konur ve temiz bırakılışta silinir. Kilit alınırken
 işaret duruyorsa önceki yazar temiz kapanmamıştır (`Lease.unclean`); v3 dosyalarının katalogla
 karşılaştırılması çağıranın işidir (bölüm 3.5).
+
+Hazırlık alanı (karar S16): `.meta/tmp` altındaki girdiler sahibinin adını taşır (`writer.<rastgele>`,
+`live.<rastgele>`, `export.<rastgele>`). Bir kilit alındığında yalnızca o sahibin yarıda kalmış girdileri
+silinir: `writer` kendi girdilerini ve çöpü (`.meta/trash`), `live` kendi girdilerini. Kilide bağlı olmayan
+girdiler (dışa aktarma, kilitsiz yazma) `writer` alınırken, bir günden eskiyse silinir. Temizlik kilidi
+düşürmez: silinemeyen girdi uyarı olarak yazılır.
 """
 from __future__ import annotations
 
@@ -48,8 +54,9 @@ import sqlite3
 import threading
 import time
 import uuid
+import weakref
 from dataclasses import dataclass
-from typing import Any, Callable, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 from src.store import files, layout
 from src.store.errors import LayoutError, LeaseHeld, StoreError
@@ -94,6 +101,15 @@ _UNSUPPORTED_ERRNOS = frozenset(
 
 _unsupported_warned: Set[str] = set()
 _unsupported_warned_lock = threading.Lock()
+
+# Kilide bağlı hazırlık girdilerinin etiketleri (karar S16) ve kilitsiz girdilerin bekletilme süresi
+STAGING_HOLDERS: Tuple[str, ...] = (WRITER, LIVE)
+STAGING_KEEP_SECONDS = 86400.0
+
+# Bu sürecin tuttuğu kilitler, kilit dizinine göre: aynı dizin için birden çok LeaseManager olabilir (Store'un
+# ve iş deposunun kendi yöneticileri). Zayıf başvuru: bırakılmadan çöpe giden kilit kendiliğinden düşer.
+_held_here: Dict[str, "weakref.WeakSet[Lease]"] = {}
+_held_here_lock = threading.Lock()
 
 Region = Tuple[int, int]  # kilitlenen bayt aralığı (başlangıç, uzunluk); POSIX'te kullanılmaz
 
@@ -269,10 +285,22 @@ class LeaseManager:
     def __init__(self, locks_dir: PathLike, state: Optional[StateDb] = None) -> None:
         self.locks_dir = os.path.abspath(os.fspath(locks_dir))
         self.state = state
+        self._held_key = os.path.normcase(os.path.realpath(self.locks_dir))
 
     @classmethod
     def for_data_dir(cls, data_dir: PathLike, state: Optional[StateDb] = None) -> "LeaseManager":
         return cls(layout.resolve(data_dir, layout.LOCKS_DIR), state)
+
+    @property
+    def data_dir(self) -> Optional[str]:
+        """Kilit dizini bir veri dizininin `.meta/locks` dizini ise o veri dizini, değilse None."""
+        parts = layout.LOCKS_DIR.split("/")
+        root = self.locks_dir
+        for name in reversed(parts):
+            root, tail = os.path.split(root)
+            if tail != name:
+                return None
+        return root
 
     def lock_file(self, name: str) -> str:
         return os.path.join(self.locks_dir, os.path.basename(layout.lock_path(name)))
@@ -300,11 +328,37 @@ class LeaseManager:
                 raise self._held(name, *blocked)
             time.sleep(_RETRY_PAUSE if attempt < _MIN_ATTEMPTS else _POLL)
         lease = Lease(name, purpose, handles, on_release=self._forget)
+        with _held_here_lock:
+            _held_here.setdefault(self._held_key, weakref.WeakSet()).add(lease)
         if name == WRITER:
             lease.unclean = os.path.exists(self.unclean_marker)
             self._mark_unclean(lease)
         self._record(lease)
+        self._purge_staging(name)
         return lease
+
+    def held_here(self, name: str) -> bool:
+        """Bu süreç `name` kilidini şu an tutuyor mu (bu dizinin herhangi bir yöneticisiyle alınmış olabilir)."""
+        with _held_here_lock:
+            leases = list(_held_here.get(self._held_key, ()))
+        pid = os.getpid()
+        return any(lease.name == name and lease.held and lease.pid == pid for lease in leases)
+
+    def _purge_staging(self, name: str) -> None:
+        """
+        Karar S16: alınan kilidin sahibinden kalan hazırlık girdileri silinir; başkasınınkine dokunulmaz.
+        `writer` ayrıca çöpü ve hiçbir kilide bağlı olmayan, bir günden eski girdileri siler (bölüm 9.3).
+        """
+        data_dir = self.data_dir
+        if data_dir is None or name not in STAGING_HOLDERS:
+            return
+        try:
+            files.purge_staging(data_dir, name)
+            if name == WRITER:
+                files.purge_staging(data_dir, older_than=STAGING_KEEP_SECONDS, skip=STAGING_HOLDERS)
+                files.purge_trash(data_dir)
+        except StoreError as e:
+            logger.warning("Leftover staging entries could not be removed (%s): %s", name, e)
 
     def migration_guard(self) -> Lease:
         """state.db geçişleri `maintenance` kilidi altında çalışır (bölüm 7.3); StateDb'ye verilir."""

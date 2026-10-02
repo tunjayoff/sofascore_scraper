@@ -11,11 +11,16 @@ Denetlenen kurallar (maçlar ve dilimleri için):
   I4  `row_source = 'event'` olan satır `derive(olay yükü)`ne eşit.
   I5  Katalog `layout = 'v3'` derken diskte yalnızca eski dizin (ya da tersi) yok.
   I6  `pending_writes` boş (çalışan bir yazar yokken).
+  I7  Değişiklik günlüğünün v3 parçalarında (`changes/<yyyy>-<aa>.jsonl`) `changes.seq` boşluksuzdur ve her
+      satırın içindeki `seq`'e eşittir. Hızlı kip dizine ve dosya boyutlarına bakar: v3 satırlarının
+      numaraları ardışık mı, her parçanın tamamı dizinlenmiş mi. `deep=True` parçaları okur ve her satırı
+      dizindeki satırıyla karşılaştırır. Eski dosyanın (`score_changes.jsonl`) numaraları satır numarasıdır
+      ve boş ya da bozuk satırlar numara harcadığı için meşru boşlukları olur: ona bu kural uygulanmaz.
   I9  v3 maç dizininde manifestin adını vermediği dosya yok; yarım kalmış geçici dosyalar ayrıca
       bildirilir.                                                                        (yalnızca deep)
 
-ve iki veritabanında `PRAGMA quick_check`. I7 (değişiklik günlüğü sırası) ve I8 (geçmiş dosyaları) o
-tabloları dolduran adımlarla birlikte eklenir; şimdilik denetlenmez (`VerifyReport.checked`).
+ve iki veritabanında `PRAGMA quick_check`. I8 (geçmiş dosyaları) o tabloyu dolduran adımla birlikte eklenir;
+şimdilik denetlenmez (`VerifyReport.checked`).
 
 Hızlı kip (`deep=False`) imzaya bakar: katalogdaki `sig`, v3'te manifest dosyasının, eski düzende maç
 dizininin imzasına eşitse ve geçerli dizin değişmediyse maç değişmemiş sayılır ve dosyaları okunmaz. İmzası
@@ -23,7 +28,8 @@ tutmayan maçın satırları dosyalardan yeniden türetilip katalogdakilerle kar
 maçı yeniden türetir ve v3 yüklerinin hepsini okur.
 
 `repair=True`: tutmayan maçları dosyalardan yeniden dizinler, v3 dizinlerindeki yarım geçici dosyaları
-siler ve okunamayan v3 yüklerini manifestte `error` / `corrupt` olarak işaretler (deep). Hiçbir yük dosyasını
+siler, okunamayan v3 yüklerini manifestte `error` / `corrupt` olarak işaretler (deep) ve değişiklik günlüğünü
+dosyalarından baştan dizinler (I7; dosyaların kendisindeki bir boşluk onarılamaz). Hiçbir yük dosyasını
 silmez; eski düzen dosyalarına dokunmaz. Bozuk veritabanı onarılmaz: katalog yeniden kurulur.
 
 Okunamayan dosyalar (`problems`) ve kullanılmayan kopyalar (`superseded`) tutarsızlık değildir; raporda
@@ -43,6 +49,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
+from src.store import changes as changes_mod
 from src.store import codec, files, indexer, layout
 from src.store import manifest as manifest_mod
 from src.store.errors import PayloadCorrupt, PayloadMissing, StoreError
@@ -52,7 +59,7 @@ from src.store.manifest import ErrorMark, SliceEntry
 
 logger = logging.getLogger(__name__)
 
-QUICK_CHECKS: Tuple[str, ...] = ("quick_check", "I1", "I3", "I5", "I6")
+QUICK_CHECKS: Tuple[str, ...] = ("quick_check", "I1", "I3", "I5", "I6", "I7")
 DEEP_CHECKS: Tuple[str, ...] = QUICK_CHECKS + ("I2", "I4", "I9")
 
 INVARIANT_CATALOG = "catalog"  # katalog dosyasının kendisi: kullanılamıyor ya da quick_check geçmiyor
@@ -67,6 +74,9 @@ KIND_EVENT_ROW = "event_row"  # I4
 KIND_PARTICIPANTS = "event_participants"  # I4
 KIND_LAYOUT = "layout"  # I5
 KIND_PENDING = "pending_write"  # I6
+KIND_SEQ_GAP = "seq_gap"  # I7: v3 satırlarının numaraları ardışık değil
+KIND_SEQ_UNINDEXED = "seq_unindexed"  # I7: parçanın tamamı dizinlenmemiş (ya da parça dizinlendikten sonra değişmiş)
+KIND_SEQ_MISMATCH = "seq_mismatch"  # I7 (deep): dosyadaki satır ile dizindeki satır farklı
 KIND_UNKNOWN_FILE = "unknown_file"  # I9
 
 REASON_CORRUPT = "corrupt"
@@ -200,6 +210,7 @@ class _Run:
         self.mark: Dict[int, List[str]] = {}  # v3 maçı → manifestte bozuk işaretlenecek dilim adları
         self.resign: List[int] = []  # satırları tutan ama imzası eskimiş maçlar
         self.pending: List[Tuple[str, int, int]] = []  # (tür, kimlik, sorunun sırası)
+        self.changes: List[int] = []  # I7 sorunlarının sıraları: onarım günlüğü baştan dizinler
 
     def issue(self, invariant: str, kind: str, detail: str = "", *, event_id: Optional[int] = None,
               path: Optional[str] = None, fix: bool = False) -> None:
@@ -231,6 +242,49 @@ class _Run:
             self.issue("I6", KIND_PENDING, f"{kind} {entity_id}: yarım kalmış yazma işareti",
                        event_id=entity_id if kind == "event" else None)
             self.pending.append((kind, entity_id, len(report.issues) - 1))
+        for kind, detail, path in self.change_log_faults(conn):
+            self.issue("I7", kind, detail, path=path)
+            self.changes.append(len(report.issues) - 1)
+
+    def change_log_faults(self, conn: sqlite3.Connection) -> List[Tuple[str, str, Optional[str]]]:
+        """I7: değişiklik günlüğünün v3 parçaları ile dizinleri arasındaki tutarsızlıklar: (tür, açıklama, yol)."""
+        found: List[Tuple[str, str, Optional[str]]] = []
+        legacy = changes_mod.LEGACY_SEGMENT
+        total, low, high = conn.execute(
+            "SELECT count(*), min(seq), max(seq) FROM changes WHERE segment != ?", (legacy,)).fetchone()
+        if total and high - low + 1 != total:
+            found.append((KIND_SEQ_GAP, f"v3 satırlarının numaraları ardışık değil: {low}-{high} aralığında "
+                          f"{total} satır", None))
+        marks = changes_mod._load_marks(self.admin.catalog)
+        on_disk = [segment for segment in changes_mod.segments(self.data_dir) if segment != legacy]
+        indexed = {str(row[0]) for row in conn.execute(
+            "SELECT DISTINCT segment FROM changes WHERE segment != ?", (legacy,))}
+        for segment in sorted(set(on_disk) | indexed | {name for name in marks if name != legacy}):
+            if segment not in on_disk:
+                found.append((KIND_SEQ_UNINDEXED, "dizinde satırı var ama dosyası yok", segment))
+                continue
+            mark = marks.get(segment)
+            try:
+                size = os.stat(layout.resolve(self.data_dir, segment)).st_size
+            except OSError:
+                size = -1
+            if mark is None or mark.size != size:
+                found.append((KIND_SEQ_UNINDEXED, "parçanın tamamı dizinlenmemiş" if mark is None else
+                              f"dosya {size} bayt, dizinlenen {mark.size} bayt", segment))
+                continue
+            if not self.deep:
+                continue
+            expected = {line.seq: line.line for line in changes_mod.read_segment(self.data_dir, segment)}
+            stored = {int(row[0]): str(row[1]) for row in conn.execute(
+                "SELECT seq, row_json FROM changes WHERE segment = ?", (segment,))}
+            missing = sorted(seq for seq in expected if seq not in stored)
+            extra = sorted(seq for seq in stored if seq not in expected)
+            differing = sorted(seq for seq in expected if seq in stored and stored[seq] != expected[seq])
+            if missing or extra or differing:
+                notes = [f"{label}: {', '.join(map(str, numbers[:10]))}" for label, numbers in (
+                    ("dizinde yok", missing), ("dosyada yok", extra), ("satır farklı", differing)) if numbers]
+                found.append((KIND_SEQ_MISMATCH, "; ".join(notes), segment))
+        return found
 
     def _unchanged(self, event_id: int, has_v3: bool, candidates: Sequence[LegacyEventDir],
                    brief: _Brief) -> bool:
@@ -370,7 +424,7 @@ class _Run:
         fixed: List[int] = []
         events = sorted(set(self.reindex) | set(self.mark) | set(self.resign))
         # Yapılacak iş yoksa yazma kilidi de alınmaz (başka bir yazar varken boşuna beklenmesin)
-        with cat.write() if events or self.pending else contextlib.nullcontext():
+        with cat.write() if events or self.pending or self.changes else contextlib.nullcontext():
             for event_id, names in self.mark.items():
                 mark_corrupt(admin, event_id, names)
             for event_id in events:
@@ -379,10 +433,16 @@ class _Run:
             for kind, entity_id, position in self.pending:
                 if kind != "event":
                     continue  # öteki varlıkların dizinleyicisi sonraki adımda gelir
-                admin.index_event(entity_id, candidates=self.candidates.get(entity_id, []))
+                admin.recover_event(entity_id, candidates=self.candidates.get(entity_id, []))
                 cat.connection().execute(
                     "DELETE FROM pending_writes WHERE kind = ? AND entity_id = ?", (kind, entity_id))
                 fixed.append(position)
+            if self.changes:
+                # Günlük dosyalarından baştan dizinlenir; hâlâ duran sorun (dosyalardaki boşluk) açık kalır
+                changes_mod.sync(cat, self.data_dir, full=True)
+                left = {(kind, path) for kind, _detail, path in self.change_log_faults(cat.connection())}
+                fixed.extend(position for position in self.changes
+                             if (report.issues[position].kind, report.issues[position].path) not in left)
         for position in fixed:
             report.issues[position] = dataclasses.replace(report.issues[position], repaired=True)
         for rel in report.leftovers:

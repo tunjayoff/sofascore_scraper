@@ -34,7 +34,7 @@ import shutil
 import tempfile
 import time
 import uuid
-from typing import Any, Callable, Iterator, Optional, Tuple, Union
+from typing import Any, Callable, Collection, Iterator, Optional, Tuple, Union
 
 from src.store import layout
 from src.store.errors import PayloadMissing, StoreError
@@ -316,7 +316,7 @@ def move_to_trash(data_dir: PathLike, path: PathLike) -> str:
     return target
 
 
-def _purge(directory: str) -> int:
+def _purge(directory: str, keep: Optional[Callable[[str], bool]] = None) -> int:
     try:
         names = os.listdir(directory)
     except FileNotFoundError:
@@ -326,6 +326,8 @@ def _purge(directory: str) -> int:
     removed, first_error = 0, None
     for name in names:
         try:
+            if keep is not None and keep(name):
+                continue
             removed += remove_tree(os.path.join(directory, name))
         except StoreError as e:  # kalanları da dene; ilk hatayı sonda bildir
             first_error = first_error or e
@@ -334,9 +336,45 @@ def _purge(directory: str) -> int:
     return removed
 
 
-def purge_staging(data_dir: PathLike) -> int:
-    """.meta/tmp'yi boşaltır (yarıda kalmış hazırlıklar); silinen girdi sayısını döndürür."""
-    return _purge(layout.resolve(data_dir, layout.TMP_DIR))
+def staging_holder(name: str) -> str:
+    """Hazırlık girdisinin sahibi (karar S16): `new_staging_dir`'in verdiği `<etiket>.<rastgele>` adındaki etiket."""
+    label, dot, _ = name.rpartition(".")
+    return label if dot else ""
+
+
+def purge_staging(data_dir: PathLike, holder: Optional[str] = None, *, older_than: Optional[float] = None,
+                  skip: Collection[str] = ()) -> int:
+    """
+    .meta/tmp'deki yarıda kalmış hazırlıkları siler; silinen girdi sayısını döndürür.
+
+    Girdiler sahibinin adını taşır (karar S16; `new_staging_dir(data_dir, etiket)` → `<etiket>.<rastgele>`):
+    bir kilit alındığında yalnızca o sahibin girdileri silinir, çünkü başka bir sahip (dışa aktarma, canlı
+    servis) aynı anda orada hazırlık yapıyor olabilir.
+
+    holder=None: sahibine bakılmaz. holder verilirse yalnızca o etiketi taşıyan girdiler silinir.
+    skip: bu etiketleri taşıyan girdilere dokunulmaz.
+    older_than: yalnızca son değişikliği (mtime) bu kadar saniyeden eski girdiler silinir.
+    Bağımsız değişkensiz çağrı dizinin tamamını boşaltır.
+    """
+    directory = layout.resolve(data_dir, layout.TMP_DIR)
+    if holder is None and older_than is None and not skip:
+        return _purge(directory)
+    deadline = None if older_than is None else time.time() - older_than
+
+    def keep(name: str) -> bool:
+        label = staging_holder(name)
+        if (holder is not None and label != holder) or label in skip:
+            return True
+        if deadline is None:
+            return False
+        try:
+            return os.lstat(os.path.join(directory, name)).st_mtime > deadline
+        except FileNotFoundError:
+            return True  # o arada başkası sildi
+        except OSError as e:
+            raise _store_error(e, os.path.join(directory, name), reading=True) from e
+
+    return _purge(directory, keep)
 
 
 def purge_trash(data_dir: PathLike) -> int:

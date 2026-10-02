@@ -1,9 +1,10 @@
 """
-Maçların okuma API'si: `EventStore` ve bütün okuma API'lerinin ortak türleri
-(docs/design/01-storage.md, bölüm 2.3, 3.7, 6.3 ve 8.4).
+Maçların API'si: `EventStore` (okuma ve yazma) ve bütün okuma API'lerinin ortak türleri
+(docs/design/01-storage.md, bölüm 2.3, 3.7, 5.3, 6.2, 6.3 ve 8.4).
 
-Her soru kataloğa sorulur; dosya ağacı gezilmez. Katalog bir dizindir: `open_store` onu kurmaz, kuran ve
-güncel tutan dizinleyicidir (src/store/indexer.py). Kurulmamış katalogda bütün sorular boş yanıt verir.
+Her soru kataloğa sorulur; dosya ağacı gezilmez. Katalog bir dizindir: açılışta dosyalardan kurulur ya da
+uzlaştırılır, sonra her yazma onu günceller (src/store/indexer.py). Kurulmamış katalogda bütün sorular boş
+yanıt verir.
 
 Yükler dosyadan okunur, ama yerini katalog söyler: `event_slices` satırı "yük var" diyorsa dosya açılır
 (v3: `v3/events/.../<id>/<anahtar>.json.gz`; eski düzen: `<dizin>/<anahtar>.json` ya da birleşik dosya),
@@ -24,21 +25,49 @@ parametre olarak değil, bilinen değerler kümesinden doğrulanmış sabitler o
 
 Store politika bilmez: hangi dilimlerin gerektiği (`missing(required=...)`), yenileme penceresi
 (`refresh_candidates(window_s=...)`) ve "bitmiş" sayılan durum sınıfları çağırandan gelir.
+
+Yazma (`put`, `observe`, `reset_empty_markers`, `delete`). Olay yükleri diske yalnızca `put` ile ulaşır ve her
+yazma v3 düzenine gider (`v3/events/.../<id>/`, bölüm 4.2). Bir maça yazmanın protokolü (bölüm 6.2):
+
+  1. Katalogda yarım yazma işareti (`pending_writes`), kendi işleminde.
+  2. `BEGIN IMMEDIATE`: kataloğun yazma kilidi, veri dizinindeki bütün yazmaların süreçler arası kilididir.
+  3. Maçın `manifest.json`'ı diskten okunur. Maç eski düzendeyse önce v3'e yükseltilir (bölüm 5.3): bütün
+     dosyaları okunur, v3 dizini `.meta/tmp` altında kurulur, geri okunarak doğrulanır ve tek yeniden
+     adlandırmayla yerine konur. Eski dizine dokunulmaz.
+  4. Değişen yük dosyaları yazılır (geçici dosya + yerine koyma).
+  5. Yeni manifest yazılır.
+  6. Varsa değişiklik günlüğü satırı eklenir, katalog satırları dosyalardan yeniden türetilir, işaret silinir;
+     commit.
+
+Manifest kilit altında okunup yazıldığı için aynı maçın farklı dilimlerini yazan iki süreç birbirinin kaydını
+kaybetmez. 1 ile 6 arasında ölen süreç işareti bırakır; bir sonraki açılış ya da aynı maça bir sonraki yazma
+maçı dosyalardan toparlar (`indexer.heal_v3_event`). Katalog satırları elle kurulmaz, dizinleyicinin aynı
+dosyalardan türettiği satırlardır: yazmadan sonra katalog, ağacın sıfırdan kurulmuş haline eşittir.
+
+Hazırlık dizinleri sahibinin adını taşır (karar S16): süreç `writer` kilidini tutuyorsa `writer.<rastgele>`,
+`live` kilidini tutuyorsa `live.<rastgele>`, hiçbirini tutmuyorsa `put.<rastgele>`. Kilidi alan yalnızca
+kendi adını taşıyan girdileri siler (src/store/lease.py).
 """
 from __future__ import annotations
 
 import base64
 import binascii
 import contextlib
+import copy
 import dataclasses
 import json
+import logging
+import math
+import os
 import sqlite3
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Collection,
     Dict,
     Generic,
     Iterable,
@@ -49,15 +78,21 @@ from typing import (
     Sequence,
     Tuple,
     TypeVar,
+    Union,
 )
 
+from src.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
 from src.status import StatusClass
-from src.store import codec, derive, layout, legacy
-from src.store.errors import PayloadMissing
-from src.store.legacy import LegacyReader
+from src.store import codec, derive, files, layout, legacy
+from src.store import manifest as manifest_mod
+from src.store.errors import LayoutError, PayloadCorrupt, PayloadMissing, StoreBusy, StoreError, UnknownEvent
+from src.store.legacy import LegacyEvent, LegacyReader
+from src.store.manifest import EmptyMark, ErrorMark, Manifest, Observation, SliceEntry
 
 if TYPE_CHECKING:
     from src.store.api import Store
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -576,16 +611,269 @@ class _EventFile:
     path: Optional[str]  # eski düzende maç dizini; v3'te None (yol kimlikten türer)
 
 
+# --- yazma: türler ve yardımcılar ----------------------------------------------------------------------
+
+SliceKey = Union[str, Tuple[str, str]]  # dilim anahtarı ya da (anahtar, alt anahtar)
+# Olay yükü değişmek üzereyken çağrılır: (saklanan yük ya da None, yeni yük) → değişiklik günlüğü satırı ya da None
+EventChange = Callable[[Optional[Mapping[str, Any]], Mapping[str, Any]], Optional[Mapping[str, Any]]]
+
+PENDING_KIND = "event"  # `pending_writes.kind`
+STAGING_WRITER = "writer"  # hazırlık dizininin etiketi (karar S16): süreç `writer` kilidini tutuyor
+STAGING_LIVE = "live"  # süreç `live` kilidini tutuyor
+STAGING_UNLEASED = "put"  # süreç ikisini de tutmuyor; girdi yalnızca bir günden eskiyse silinir
+BREAKER_REASON = "breaker"  # açık devre kesici: istek gönderilmedi (src/breaker.BREAKER_OPEN)
+_MARKER_ATTEMPTS = 5
+
+# `_checkpoint` adımları, protokolün sırasıyla (testler süreci bu noktalarda öldürür)
+STEP_MARKER = "marker"  # işaret yazıldı
+STEP_LOCKED = "locked"  # yazma kilidi alındı
+STEP_STAGED = "staged"  # v3 dizini hazırlık alanında kuruldu (yükseltme ya da yeni maç)
+STEP_PUBLISHED = "published"  # hazırlık dizini yerine kondu
+STEP_PAYLOAD = "payload"  # bir yük dosyası yerine yazıldı ("payload:<dilim adı>")
+STEP_MANIFEST = "manifest"  # manifest yazıldı
+STEP_CHANGE_LOG = "change_log"  # değişiklik günlüğü satırı dosyaya eklendi
+STEP_INDEXED = "indexed"  # katalog satırları yazıldı
+STEP_COMMIT = "commit"  # işaret silindi, commit'ten hemen önce
+STEP_DONE = "done"  # commit edildi
+
+
+@dataclass(frozen=True)
+class PutResult:
+    """`EventStore.put` / `observe` sonucu."""
+
+    created: bool  # maçın saklanan yükü yoktu (yeni v3 dizini kuruldu; yükseltme sayılmaz)
+    event_written: bool  # `event` yükünün dosyası değişti
+    superseded: bool  # `event` sonucu yok sayıldı: daha yeni bir gözlem saklı
+    written: Tuple[str, ...]  # yük dosyası değişen dilimlerin adları ("statistics", "odds_all/1")
+    change_seq: Optional[int]  # değişiklik günlüğüne satır yazıldıysa sıra numarası
+    promoted: bool  # maç bu çağrıda eski düzenden v3'e yükseltildi
+
+
+_NOTHING_WRITTEN = PutResult(created=False, event_written=False, superseded=False, written=(), change_seq=None,
+                             promoted=False)
+
+
+@dataclass(frozen=True)
+class _Item:
+    """Uygulanacak bir sonuç: doğrulanmış dilim adı ve sayılıp sayılmayacağı."""
+
+    name: str
+    key: str
+    sub: str
+    outcome: Outcome
+    counted: bool
+
+
+@dataclass
+class _Write:
+    """Bir yazmanın durumu (`EventStore._entity_write`)."""
+
+    recover: bool  # işaret zaten duruyordu: önceki yazma yarım kalmış olabilir
+    touched: bool = False  # diske dokunuldu: hata olursa işaret kalır ve maç sonradan toparlanır
+
+
+@dataclass
+class _Opened:
+    """Yazılacak maçın bulunduğu hal."""
+
+    manifest: Manifest  # üzerinde çalışılacak manifest (bellekte)
+    legacy: Optional[LegacyEvent] = None  # eski düzende duruyor: yazmadan önce yükseltilecek
+    encoded: Optional[Dict[str, codec.Encoded]] = None  # eski düzendeki yüklerin yazılmaya hazır hali
+    created: bool = False  # hiçbir düzende saklanan yükü yok: yeni v3 dizini kurulacak
+    adopt: bool = False  # v3 dizini var ama manifesti yok ya da okunamıyor: yük dosyaları sonradan kaydedilir
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _aware(value: Any, default: datetime, what: str) -> datetime:
+    """Sonucun zamanı: None "şimdi"dir; saat dilimi olmayan zaman UTC sayılır."""
+    if value is None:
+        return default
+    if not isinstance(value, datetime):
+        raise ValueError(f"{what}: expected a datetime, got {value!r}")
+    return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
+
+
+def _slice_file(root: str, key: str, sub: str = "") -> str:
+    """Varlık dizini (gerçek yol) içindeki yük dosyası."""
+    return os.path.join(root, *f"{layout.slice_name(key, sub)}{layout.PAYLOAD_SUFFIX}".split("/"))
+
+
+def _counts_for(count_empties: Union[bool, Collection[str]]) -> Callable[[str], bool]:
+    if isinstance(count_empties, bool):
+        return lambda key: bool(count_empties)
+    if isinstance(count_empties, (str, bytes)):
+        raise ValueError(f"count_empties: expected a bool or a collection of slice keys, got {count_empties!r}")
+    wanted = {layout.validate_key(key) for key in count_empties}
+    return wanted.__contains__
+
+
+def _items(event_id: int, outcomes: Mapping[SliceKey, Outcome],
+           count_empties: Union[bool, Collection[str]]) -> List[_Item]:
+    """
+    `put`'un sonuçlarını doğrular ve uygulanacakları döndürür: `event` önce, gerisi verildiği sırayla.
+    İstek gönderilmemiş sonuçlar (`skipped`; bugünkü çağıranların `failed` / `breaker`'ı) listeye girmez.
+    """
+    if not isinstance(outcomes, Mapping):
+        raise ValueError(f"outcomes: expected a mapping, got {type(outcomes).__name__}")
+    counted = _counts_for(count_empties)
+    found: Dict[str, _Item] = {}
+    for raw, outcome in outcomes.items():
+        if isinstance(raw, str):
+            key, sub = raw, ""
+        elif isinstance(raw, tuple) and len(raw) == 2:
+            key, sub = raw
+        else:
+            raise ValueError(f"outcomes: expected a slice key or a (key, sub) pair, got {raw!r}")
+        name = layout.slice_name(key, sub)
+        if name in found:
+            raise ValueError(f"outcomes: slice {name!r} is given twice")
+        if not isinstance(outcome, Outcome):
+            raise ValueError(f"outcomes[{name!r}]: expected an Outcome, got {type(outcome).__name__}")
+        status = outcome.status
+        if status not in (SLICE_OK, SLICE_EMPTY, SLICE_FAILED, SLICE_SKIPPED):
+            raise ValueError(f"outcomes[{name!r}]: unknown status {status!r}")
+        if status == SLICE_SKIPPED or (status == SLICE_FAILED and outcome.reason == BREAKER_REASON):
+            continue
+        if status == SLICE_OK and outcome.data is None:
+            raise ValueError(f"outcomes[{name!r}]: an ok outcome needs data")
+        if name == EVENT_KEY:
+            payload = outcome.data
+            if status != SLICE_OK:
+                raise ValueError(f"outcomes['event']: the event outcome must be ok, got {status!r}")
+            if (not isinstance(payload, Mapping) or isinstance(payload.get("id"), bool)
+                    or payload.get("id") != event_id):
+                got = payload.get("id") if isinstance(payload, Mapping) else type(payload).__name__
+                raise ValueError(f"outcomes['event']: the payload's id ({got!r}) is not {event_id}")
+        found[name] = _Item(name, key, sub, outcome, counted(key))
+    return sorted(found.values(), key=lambda item: item.name != EVENT_KEY)
+
+
+def _whole_second(value: Optional[float]) -> Optional[datetime]:
+    """Dosya zamanı (epoch saniye) → UTC zaman, tam saniyeye indirilmiş (katalogdaki değerle aynı)."""
+    if value is None:
+        return None
+    return datetime.fromtimestamp(math.floor(value), timezone.utc)
+
+
+def _natural(value: Optional[int]) -> Optional[int]:
+    """Manifestin kabul ettiği tam sayı (negatif değil); değilse None."""
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else None
+
+
+def _change_ts(payload: Mapping[str, Any]) -> Optional[int]:
+    """Olay yükündeki `changes.changeTimestamp`; negatif olmayan bir tam sayı değilse None."""
+    changes = payload.get("changes")
+    return _natural(changes.get("changeTimestamp")) if isinstance(changes, Mapping) else None
+
+
+def manifest_from_legacy(event: LegacyEvent) -> Tuple[Manifest, Dict[str, codec.Encoded]]:
+    """
+    Eski düzendeki bir maçın manifesti (bölüm 2.3'teki eşleme) ve yüklerinin yazılmaya hazır hali (dilim
+    anahtarı → kurallı baytlar, gzip, özet). `event`, yükleriyle okunmuş olmalıdır.
+
+    Manifest dilim durumlarını, sayaçları, hata kayıtlarını ve gözlemi taşır. Zamanlar katalogdaki eski düzen
+    satırlarının değerleridir (dosya zamanları, tam saniye): `created_at` en eski, `updated_at` en yeni yük
+    dosyasının zamanı; `checked_at` yükün, "veri yok" işaretinin ve hata işaretinin zamanlarından en yenisi.
+    Böylece yükseltilen maçın katalog satırları, düzen sütunları dışında değişmez.
+    """
+    if event.payloads is None:
+        raise ValueError("event: expected an event read with its payloads")
+    slices: Dict[str, SliceEntry] = {}
+    encoded: Dict[str, codec.Encoded] = {}
+    times: List[datetime] = []
+    for entry in event.slices:
+        fetched = _whole_second(entry.fetched_at) if entry.has_payload else None
+        out = SliceEntry(state=entry.state, fetched_at=fetched)
+        if entry.has_payload:
+            ready = encoded[entry.key] = codec.encode(event.payloads[entry.key])
+            out.stored_bytes, out.raw_bytes, out.sha256 = ready.stored_bytes, ready.raw_bytes, ready.sha256
+        error = entry.error
+        seen = [moment for moment in (fetched, entry.empty_at, error.at if error else None) if moment is not None]
+        out.checked_at = max(seen) if seen else None
+        if entry.empty_count or entry.unverified_empty_count:
+            out.empty = EmptyMark(count=max(entry.empty_count, 0), unverified=max(entry.unverified_empty_count, 0),
+                                  at=entry.empty_at)
+        if error is not None:
+            out.error = ErrorMark(reason=error.reason, status=_natural(error.status), at=error.at,
+                                  count=max(error.count, 1))
+        if fetched is not None:
+            times.append(fetched)
+        slices[entry.key] = out
+    start = datetime.fromtimestamp(0, timezone.utc)
+    found = Manifest(kind="event", id=event.event_id, created_at=min(times) if times else start,
+                     updated_at=max(times) if times else start, migrated_from=event.path, slices=slices)
+    observation = event.observation
+    if observation is not None:
+        found.observation = Observation(observed_at=observation.observed_at,
+                                        change_ts=_natural(observation.change_ts),
+                                        status_regressed=bool(observation.status_regressed))
+    return found, encoded
+
+
+def promote_legacy(data_dir: Union[str, "os.PathLike[str]"], event: LegacyEvent, *, label: str,
+                   checkpoint: Optional[Callable[[str], None]] = None,
+                   prepared: Optional[Tuple[Manifest, Mapping[str, codec.Encoded]]] = None) -> Manifest:
+    """
+    Eski düzendeki bir maçın v3 kopyasını kurar ve yerine koyar (bölüm 5.3); manifestini döndürür. `event`,
+    `LegacyReader.read_event(..., payloads=True)` sonucudur; `prepared`, aynı maç için `manifest_from_legacy`
+    sonucudur (verilmezse burada hesaplanır). Katalogun yazma kilidi altında çağrılır; katalog satırlarını
+    çağıran günceller.
+
+    Dizin `.meta/tmp/<label>.<rastgele>` altında kurulur: yükü olan her dilim için bir `.json.gz` ve
+    `migrated_from` taşıyan manifest. Yayımlamadan önce doğrulanır (bölüm 5.4, adım 3): her dosya diskten geri
+    okunur, açılır, ayrıştırılır ve eski nesneyle karşılaştırılır; özeti manifesttekiyle karşılaştırılır.
+    Uyuşmazlıkta hazırlık dizini silinir ve StoreError fırlatılır. Sonra tek yeniden adlandırmayla yerine
+    konur. Eski dizine dokunulmaz ve silinmez; dilim, gözlem ya da işaret dosyası olmayan girdileri
+    (`LegacyEvent.extra_files`) kopyalanmaz, eski dizinde kalır.
+    """
+    found, ready = prepared if prepared is not None else manifest_from_legacy(event)
+    if event.payloads is None:
+        raise ValueError("event: expected an event read with its payloads")
+    rel = layout.event_dir(event.event_id)
+    staged = files.new_staging_dir(data_dir, label)
+    try:
+        for key, encoded in ready.items():
+            path = _slice_file(staged, key)
+            files.write_bytes(path, encoded.stored)
+            expected = codec.canonical_bytes(event.payloads[key])
+            try:
+                back = codec.read_raw(path)
+                same = back == expected and codec.canonical_bytes(json.loads(back)) == expected
+            except (StoreError, ValueError, RecursionError):
+                back, same = b"", False
+            if not same or codec.sha256_hex(back) != found.slices[key].sha256:
+                raise StoreError(
+                    f"Yükseltme doğrulanamadı: {key} dilimi geri okunduğunda eski yükle aynı değil "
+                    f"(maç {event.event_id}, {event.path})", path=path, detail=f"{key}: read-back mismatch")
+        manifest_file = os.path.join(staged, layout.MANIFEST_NAME)
+        manifest_mod.write_manifest(manifest_file, found)
+        manifest_mod.read_manifest(manifest_file)
+        if checkpoint is not None:
+            checkpoint(STEP_STAGED)
+        files.publish_dir(staged, layout.resolve(data_dir, rel))
+    except BaseException:
+        with contextlib.suppress(StoreError):
+            files.remove_tree(staged)
+        raise
+    if checkpoint is not None:
+        checkpoint(STEP_PUBLISHED)
+    return found
+
+
 # --- EventStore ---------------------------------------------------------------------------------------
 
 class EventStore:
-    """Maçların ve dilimlerinin okuma API'si (`Store.events`). Yazma yöntemleri sonraki adımlarda eklenir."""
+    """Maçların ve dilimlerinin API'si (`Store.events`): katalogdan okur, v3 düzenine yazar."""
 
     def __init__(self, store: "Store") -> None:
         self._store = store
         self._catalog = store._catalog
         self._data_dir = str(store.data_dir)
         self._reader = LegacyReader(self._data_dir)
+        self._clock: Callable[[], datetime] = _utc_now  # "şimdi": zamanı verilmeyen sonuçlar ve manifest için
 
     @contextlib.contextmanager
     def _read(self) -> Iterator[sqlite3.Connection]:
@@ -915,6 +1203,468 @@ class EventStore:
             ))
         return out
 
+    # -- yazma -----------------------------------------------------------------------------------------
+
+    def put(self, event_id: int, outcomes: Mapping[SliceKey, Outcome], *,
+            count_empties: Union[bool, Collection[str]] = True,
+            on_event_change: Optional[EventChange] = None,
+            status_regressed: Optional[bool] = None) -> PutResult:
+        """
+        Bir maçın dilim sonuçlarını saklar; olay yüklerinin diske ulaştığı tek yoldur (bölüm 2.3).
+
+        outcomes: dilim anahtarı (ya da `(anahtar, alt anahtar)`) → `Outcome`. Anahtar `[a-z][a-z0-9_]{0,39}`,
+        alt anahtar `[a-z0-9_.-]{0,80}` (LayoutError). `"event"` sonucu `ok` olmalı ve yükünün `id`'si
+        `event_id`'ye eşit olmalıdır (ValueError). Sonuç başına:
+
+          * `ok`: kurallı baytların özeti manifesttekine eşitse dosya yazılmaz, yalnızca `fetched_at` /
+            `checked_at` ilerler; değilse dosya atomik değiştirilir. Dilimin "veri yok" ve hata işaretleri silinir.
+          * `empty`, verisi var (boş bir 200 gövdesi): yük saklanır, durum `empty`.
+          * `empty`, verisi yok (404): dosya yazılmaz, var olan yük silinmez; yükü `ok` olan dilim `ok` kalır.
+          * İki `empty` biçiminde de sayaç yalnızca `count_empties` anahtarı kapsıyorsa artar ve önceki hata
+            silinir. Sayılmayan, verisi olmayan `empty` de dilime bir kayıt açar (durum `empty`, sayaç 0).
+          * `failed`: `{reason, status, at, count + 1}` olarak kaydedilir; durum `error` olur, ama `ok` olan
+            dilimin durumu düşmez. Sayaç değişmez.
+          * `skipped`: yok sayılır. Bugünkü çağıranların açık devre kesici için ürettiği `failed` / `breaker`
+            da böyledir: istek gönderilmemiştir.
+
+        `"event"` sonucunun zamanı (`fetched_at`) saklanan gözlemden eskiyse sonuç yok sayılır
+        (`PutResult.superseded`); öteki sonuçlar yine uygulanır. Uygulanan her `"event"` sonucu gözlemi
+        (`observed_at`, `change_ts`) yeniler; yük aynıysa dosya yazılmaz.
+
+        on_event_change(saklanan yük ya da None, yeni yük): yalnızca olay yükü değişmek üzereyken, kritik
+        bölümün içinde ve diske dokunulmadan önce çağrılır. Bir değişiklik günlüğü satırı (`ts_utc` ve
+        `event_id` taşıyan nesne) ya da None döndürür; satır aynı kritik bölümde günlüğe eklenir
+        (`PutResult.change_seq`). Karşılaştırma kuralı (`src/refresh.py`) böylece Store'un dışında kalır.
+        Geri çağrı yazma kilidi tutulurken çalışır: Store'a yazmamalı ve uzun sürmemelidir. Hata fırlatırsa
+        hiçbir şey yazılmamıştır. status_regressed=True, ya da dönen satırdaki doğru bir `status_regressed`
+        alanı, yapışkan bayrağı kurar; bayrak bir daha silinmez.
+
+        Maç eski düzendeyse önce v3'e yükseltilir (`PutResult.promoted`). `"event"` sonucu olmadan, saklanan
+        olay yükü olmayan bir maça yazılamaz (UnknownEvent): yalnızca bir listeden bilinen maç da böyledir.
+        Bütün çağrı bölüm 6.2'deki protokolle çalışır ve kataloğa göre atomiktir. Yazma kilidi `busy_timeout`
+        içinde alınamazsa StoreBusy. Açık bir `Catalog.write()` bloğunun içinden çağrılmamalıdır.
+        """
+        _int(event_id, "event_id", minimum=0)
+        if on_event_change is not None and not callable(on_event_change):
+            raise ValueError("on_event_change: expected a callable")
+        items = _items(event_id, outcomes, count_empties)
+        self._writable()
+        if not items and status_regressed is not True:
+            return _NOTHING_WRITTEN
+        return self._entity_write(
+            event_id, lambda write: self._apply(write, event_id, items, on_event_change, status_regressed))
+
+    def observe(self, event_id: int, payload: Mapping[str, Any], *, observed_at: Optional[datetime] = None,
+                on_event_change: Optional[EventChange] = None,
+                status_regressed: Optional[bool] = None) -> PutResult:
+        """
+        Maçın `/event/{id}` yükünü gözlemler: `put(event_id, {"event": Outcome("ok", payload,
+        fetched_at=observed_at)}, ...)`. Yük aynıysa dosya yazılmaz; manifestteki gözlem ve katalogdaki
+        `observed_at` / `observed_gap` ilerler (bölüm 8.4).
+        """
+        outcome = Outcome(SLICE_OK, payload, fetched_at=observed_at)
+        return self.put(event_id, {EVENT_KEY: outcome}, on_event_change=on_event_change,
+                        status_regressed=status_regressed)
+
+    def reset_empty_markers(self, scope: Optional[Scope] = None, *, include_confirmed: bool = False,
+                            threshold: int = DEFAULT_EMPTY_THRESHOLD) -> Dict[str, int]:
+        """
+        "Bu dilim bu maçta yok" sayaçlarını yeniden denetime açar (bugünkü `reset_unavailable_markers`). Ağ
+        isteği yapmaz. Varsayılan olarak yalnızca kesin yanıtla desteklenmeyen sayımlar
+        (`unverified_empty_count`) sıfırlanır; işlem bu yüzden tekrarlanabilir. include_confirmed=True
+        doğrulanmış sayaçları da sıfırlar. Sayaçları sıfırlanan, yükü ve hata kaydı olmayan dilimin kaydı
+        silinir (durumu `not_requested` olur).
+
+        scope: kapsam (boş = bütün maçlar; her düzendeki maç). Eski düzendeki maç, sayaçları değişecekse önce
+        v3'e yükseltilir. Dönen sözlük bugünkü anahtarları taşır: "scanned" sayacı olan maç, "matches"
+        yeniden beklenir hale gelen dilimi olan maç, "slices" o dilimlerin sayısı (toplam sayımı `threshold`a
+        ulaşmışken altına inenler).
+        """
+        self._writable()
+        _int(threshold, "threshold", minimum=0)
+        conditions, params = _scope_sql(scope)
+        where = _where(["s.empty_count + s.unverified_empty_count > 0", *conditions])
+        with self._read() as conn:
+            found = conn.execute(
+                "SELECT s.event_id, s.empty_count, s.unverified_empty_count FROM event_slices s "
+                f"JOIN events e ON e.id = s.event_id{where} ORDER BY s.event_id", params).fetchall()
+        changing: Dict[int, bool] = {}
+        for event_id, confirmed, unverified in found:
+            change = unverified > 0 or (include_confirmed and confirmed > 0)
+            changing[int(event_id)] = changing.get(int(event_id), False) or bool(change)
+        result = {"matches": 0, "slices": 0, "scanned": len(changing)}
+        for event_id, change in changing.items():
+            if not change:
+                continue
+            reopened = self._entity_write(
+                event_id, lambda write, target=event_id: self._reset(write, target, include_confirmed, threshold))
+            if reopened:
+                result["matches"] += 1
+                result["slices"] += reopened
+        return result
+
+    def delete(self, event_id: int) -> bool:
+        """
+        Maçı siler: v3 dizinini ve eski düzen ağacındaki bütün kopyalarını (aynı maç birden çok yerde durabilir;
+        yalnızca kataloğun bildiği silinseydi maç, kalan eski kopyasıyla yeniden görünürdü). Dizinler önce
+        `.meta/trash` altına taşınır, sonra silinir: yarıda kalan silme, yerinde yarım bir dizin bırakmaz.
+        Katalog satırları aynı kritik bölümde silinir; maç bir program sayfasında listeleniyorsa liste satırına
+        döner. Değişiklik günlüğüne dokunulmaz. Silinecek bir dizin yoksa False döner.
+
+        Eski düzen kopyalarını bulmak için `match_details` ağacı bir kez listelenir (dosya okunmaz); maliyeti
+        eski düzendeki maç dizini sayısıyla doğrusaldır.
+        """
+        _int(event_id, "event_id", minimum=0)
+        self._writable()
+        return self._entity_write(event_id, lambda write: self._delete(write, event_id))
+
+    # -- yazma protokolü (bölüm 6.2) -------------------------------------------------------------------
+
+    def _writable(self) -> None:
+        self._store._require_open()
+        if self._store.readonly:
+            raise StoreError(f"Depo salt okunur açılmış: {self._data_dir}", path=self._data_dir)
+
+    def _checkpoint(self, step: str) -> None:
+        """Protokolün adımları arasında çağrılır (`STEP_*`). Hiçbir şey yapmaz; testler süreci burada öldürür."""
+
+    def _staging_label(self) -> str:
+        """Hazırlık dizininin sahibi (karar S16): bu sürecin tuttuğu kilit."""
+        leases = self._store._leases
+        if leases.held_here(STAGING_WRITER):
+            return STAGING_WRITER
+        if leases.held_here(STAGING_LIVE):
+            return STAGING_LIVE
+        return STAGING_UNLEASED
+
+    def _entity_write(self, event_id: int, body: Callable[[_Write], T]) -> T:
+        """
+        Bir maça yazmanın çerçevesi: işaret (kendi işleminde), yazma kilidi, `body`, işaretin silinmesi, commit.
+
+        İşaret ile kilit arasında başka bir sürecin açılıştaki uzlaştırması işareti silebilir (o anda diskte
+        yarım iş yoktur, maçı yeniden dizinler ve işareti kaldırır). Bu yüzden kilit alındıktan sonra işaretin
+        durduğuna bakılır; yoksa baştan başlanır. `body` hata verirse katalog işlemi geri alınır; diske
+        dokunulduysa işaret kalır ve maç bir sonraki yazmada ya da açılışta toparlanır.
+        """
+        assert self._catalog is not None
+        cat = self._catalog
+        for _ in range(_MARKER_ATTEMPTS):
+            with cat.write() as conn:
+                inserted = conn.execute(
+                    "INSERT OR IGNORE INTO pending_writes (kind, entity_id, started_at) VALUES (?, ?, ?)",
+                    (PENDING_KIND, event_id, int(time.time()))).rowcount
+            self._checkpoint(STEP_MARKER)
+            write = _Write(recover=not inserted)
+            try:
+                with cat.write() as conn:
+                    if conn.execute("SELECT 1 FROM pending_writes WHERE kind = ? AND entity_id = ?",
+                                    (PENDING_KIND, event_id)).fetchone() is None:
+                        continue
+                    self._checkpoint(STEP_LOCKED)
+                    result = body(write)
+                    conn.execute("DELETE FROM pending_writes WHERE kind = ? AND entity_id = ?",
+                                 (PENDING_KIND, event_id))
+                    self._checkpoint(STEP_COMMIT)
+            except BaseException:
+                if inserted and not write.touched:
+                    # Diske dokunulmadı (doğrulama hatası, bilinmeyen maç): toparlanacak bir şey yok
+                    with contextlib.suppress(StoreError, sqlite3.Error):
+                        with cat.write() as conn:
+                            conn.execute("DELETE FROM pending_writes WHERE kind = ? AND entity_id = ?",
+                                         (PENDING_KIND, event_id))
+                raise
+            self._checkpoint(STEP_DONE)
+            return result
+        raise StoreBusy(f"Maç {event_id} için yarım yazma işareti korunamadı: veri dizini başka süreçlerce "
+                        f"sürekli uzlaştırılıyor: {self._data_dir}", path=self._data_dir)
+
+    def _open_for_write(self, write: _Write, event_id: int, *, has_event: bool, now: datetime) -> _Opened:
+        """
+        Yazılacak maçı bulur (kilit altında): v3 manifesti, yoksa kataloğun bildiği eski düzen dizini, o da
+        yoksa yeni maç. Diske yazmaz. `has_event`: çağrı bir olay yükü getiriyor (yeni maç kurulabilir, manifesti
+        okunamayan dizinin üzerine yazılabilir).
+        """
+        from src.store import indexer  # döngüsel içe aktarma: dizinleyici bu modülü kullanır
+
+        if write.recover:
+            indexer.heal_v3_event(self._data_dir, event_id)
+        rel = layout.event_dir(event_id)
+        directory = layout.resolve(self._data_dir, rel)
+        manifest_file = layout.resolve(self._data_dir, layout.manifest_path(rel))
+        try:
+            found = manifest_mod.read_manifest(manifest_file)
+        except PayloadMissing:
+            found = None
+        except PayloadCorrupt as exc:
+            if not has_event:
+                raise
+            # Olay yükü bozuk işaretlenmiş dizinin üzerine yeni yük yazılabilmelidir (bölüm 3.6): manifest baştan
+            # kurulur, dizindeki okunabilen öteki yük dosyaları yazmadan sonra yeniden kaydedilir
+            logger.warning(f"Event {event_id}: the manifest cannot be read and is written anew ({exc.detail or exc})")
+            found = None
+        if found is not None:
+            if found.kind != "event" or found.id != event_id:
+                raise StoreError(f"Manifest bu maç dizinine ait değil ({found.kind} {found.id!r}): {manifest_file}",
+                                 path=manifest_file)
+            return _Opened(manifest=found)
+        fresh = Manifest(kind="event", id=event_id, created_at=now, updated_at=now)
+        if os.path.isdir(directory):
+            return _Opened(manifest=fresh, adopt=True)
+
+        assert self._catalog is not None
+        row = self._catalog.connection().execute(
+            "SELECT path, legacy_path FROM events WHERE id = ?", (event_id,)).fetchone()
+        known = [path for path in ((row["path"], row["legacy_path"]) if row is not None else ()) if path]
+        candidates = sorted(
+            (c for c in (self._reader.event_dir_at(path) for path in dict.fromkeys(known))
+             if c is not None and c.name == str(event_id)), key=indexer.legacy_order)
+        if candidates:
+            event = self._reader.read_event(candidates[0], payloads=True)
+            found, encoded = manifest_from_legacy(event)
+            return _Opened(manifest=found, legacy=event, encoded=encoded)
+        return _Opened(manifest=fresh, created=True)
+
+    def _stored_event(self, opened: _Opened, event_id: int) -> Optional[Mapping[str, Any]]:
+        """Saklanan olay yükü (`on_event_change`'in ilk bağımsız değişkeni); yoksa ya da okunamıyorsa None."""
+        if opened.legacy is not None:
+            payload = (opened.legacy.payloads or {}).get(EVENT_KEY)
+            return payload if isinstance(payload, Mapping) else None
+        entry = opened.manifest.slices.get(EVENT_KEY)
+        if entry is None or not entry.has_payload:
+            return None
+        path = layout.resolve(self._data_dir, layout.slice_path(layout.event_dir(event_id), EVENT_KEY))
+        try:
+            payload = codec.read_payload(path)
+        except StoreError:
+            return None
+        return payload if isinstance(payload, Mapping) else None
+
+    def _apply(self, write: _Write, event_id: int, items: Sequence[_Item], on_event_change: Optional[EventChange],
+               status_regressed: Optional[bool]) -> PutResult:
+        """`put`'un gövdesi; yazma kilidi altında çalışır. Önce her şey bellekte hesaplanır, sonra diske yazılır."""
+        from src.store import changes as changes_mod  # döngüsel içe aktarma: iki modül de bu modülü kullanır
+        from src.store import indexer
+
+        now = self._clock()
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
+        has_event = any(item.name == EVENT_KEY for item in items)
+        opened = self._open_for_write(write, event_id, has_event=has_event, now=now)
+        base = opened.manifest
+        found = copy.deepcopy(base)
+        rel = layout.event_dir(event_id)
+        directory = layout.resolve(self._data_dir, rel)
+
+        payloads: List[Tuple[_Item, codec.Encoded]] = []  # yazılacak yük dosyaları
+        dirty = superseded = False
+        change: Optional[Mapping[str, Any]] = None
+        for item in items:
+            outcome = item.outcome
+            at = _aware(outcome.fetched_at, now, f"outcomes[{item.name!r}].fetched_at")
+            entry = found.slices.get(item.name)
+            if item.name == EVENT_KEY:
+                observation = found.observation
+                stored_at = observation.observed_at if observation is not None else None
+                if stored_at is None and entry is not None and entry.has_payload:
+                    stored_at = entry.fetched_at
+                if stored_at is not None and at < stored_at:
+                    superseded = True
+                    continue
+            dirty = True
+            if outcome.status == SLICE_FAILED:
+                entry = entry if entry is not None else SliceEntry(state="error")
+                entry.error = ErrorMark(reason=outcome.reason or "other", status=_natural(outcome.http_status), at=at,
+                                        count=(entry.error.count if entry.error is not None else 0) + 1)
+                if entry.state != "ok":  # hata, verisi olan dilimin durumunu düşürmez
+                    entry.state = "error"
+                entry.checked_at = at
+                found.slices[item.name] = entry
+                continue
+            if outcome.data is None:  # kesin "veri yok" (404): dosya yazılmaz, var olan yük silinmez
+                entry = entry if entry is not None else SliceEntry(state="empty")
+                if entry.state != "ok":
+                    entry.state = "empty"
+            else:
+                encoded = codec.encode(outcome.data)
+                previous = entry.sha256 if entry is not None else None
+                path = _slice_file(directory, item.key, item.sub)
+                # Özet aynıysa dosya yazılmaz; yerinde durmuyorsa (arkadan silinmiş) yeniden yazılır. Yükseltilecek
+                # maçın değişmeyen dosyalarını yükseltme yazar.
+                if previous != encoded.sha256 or (opened.legacy is None and not os.path.isfile(path)):
+                    payloads.append((item, encoded))
+                if item.name == EVENT_KEY and previous != encoded.sha256 and on_event_change is not None:
+                    change = on_event_change(self._stored_event(opened, event_id), outcome.data)
+                entry = entry if entry is not None else SliceEntry(state="ok")
+                entry.state = "ok" if outcome.status == SLICE_OK else "empty"
+                entry.sha256, entry.raw_bytes, entry.stored_bytes = (
+                    encoded.sha256, encoded.raw_bytes, encoded.stored_bytes)
+                entry.fetched_at = at
+                entry.meta = dict(outcome.meta) if outcome.meta is not None else None
+            entry.checked_at = at
+            entry.error = None  # yanıt geldi: önceki hata geçersiz
+            if outcome.status == SLICE_OK:
+                entry.empty = None
+            elif item.counted:
+                mark = entry.empty if entry.empty is not None else EmptyMark()
+                mark.count += 1
+                mark.reason = outcome.reason or ("empty" if outcome.data is not None else "404")
+                mark.at = at
+                entry.empty = mark
+            found.slices[item.name] = entry
+            if item.name == EVENT_KEY:
+                before = found.observation
+                found.observation = Observation(
+                    observed_at=at, change_ts=_change_ts(outcome.data),
+                    status_regressed=bool(before and before.status_regressed),
+                    extra=dict(before.extra) if before is not None else {})
+
+        if change is not None:
+            if not isinstance(change, Mapping):
+                raise ValueError(f"on_event_change: expected a mapping or None, got {type(change).__name__}")
+            if changes_mod.change_row(0, change, "", "") is None:
+                raise ValueError("on_event_change: the row needs ts_utc (ISO 8601) and event_id (integer)")
+        regressed = status_regressed is True or bool(change is not None and change.get("status_regressed"))
+        if regressed and not (found.observation is not None and found.observation.status_regressed):
+            if found.observation is None:
+                found.observation = Observation()
+            found.observation.status_regressed = True
+            dirty = True
+
+        event_entry = found.slices.get(EVENT_KEY)
+        if event_entry is None or event_entry.state != "ok" or not event_entry.has_payload:
+            # Olay yükü olmayan v3 dizini geçerli bir maç değildir (bölüm 3.4): yeniden kurma onu dizinlemez
+            raise UnknownEvent(event_id=event_id)
+        if dirty:
+            found.updated_at = max(found.updated_at, now)
+
+        # --- disk: yükseltme ya da yeni dizin, sonra yük dosyaları, en son manifest (bölüm 4.4) ---
+        written: List[str] = []
+        if opened.legacy is not None and opened.encoded is not None:
+            self._promote(write, opened.legacy, (base, opened.encoded))
+        if opened.created:
+            staged = files.new_staging_dir(self._data_dir, self._staging_label())
+            try:
+                for item, encoded in payloads:
+                    files.write_bytes(_slice_file(staged, item.key, item.sub), encoded.stored)
+                    written.append(item.name)
+                manifest_mod.write_manifest(os.path.join(staged, layout.MANIFEST_NAME), found)
+                self._checkpoint(STEP_STAGED)
+                try:
+                    files.publish_dir(staged, directory)
+                finally:
+                    write.touched = write.touched or os.path.isdir(directory)
+            except BaseException:
+                with contextlib.suppress(StoreError):
+                    files.remove_tree(staged)
+                raise
+            self._checkpoint(STEP_PUBLISHED)
+        else:
+            for item, encoded in payloads:
+                write.touched = True
+                files.write_bytes(_slice_file(directory, item.key, item.sub), encoded.stored)
+                written.append(item.name)
+                self._checkpoint(f"{STEP_PAYLOAD}:{item.name}")
+            if dirty or opened.adopt:
+                write.touched = True
+                manifest_mod.write_manifest(layout.resolve(self._data_dir, layout.manifest_path(rel)), found)
+                self._checkpoint(STEP_MANIFEST)
+            if opened.adopt:
+                indexer.heal_v3_event(self._data_dir, event_id)  # dizindeki öteki yük dosyaları yeniden kaydedilir
+
+        # --- değişiklik günlüğü ve katalog ---
+        assert self._catalog is not None
+        seq: Optional[int] = None
+        if change is not None:
+            write.touched = True
+            seq = changes_mod.append_row(self._catalog, self._data_dir, change)
+            self._checkpoint(STEP_CHANGE_LOG)
+        self._index(event_id)
+        return PutResult(created=opened.created, event_written=EVENT_KEY in written, superseded=superseded,
+                         written=tuple(written), change_seq=seq, promoted=opened.legacy is not None)
+
+    def _promote(self, write: _Write, event: LegacyEvent,
+                 prepared: Tuple[Manifest, Mapping[str, codec.Encoded]]) -> None:
+        """Eski düzendeki maçı v3'e yükseltir (`promote_legacy`). Yayımlanmadan biten deneme diske dokunmuş sayılmaz."""
+        try:
+            promote_legacy(self._data_dir, event, label=self._staging_label(), checkpoint=self._checkpoint,
+                           prepared=prepared)
+        finally:
+            write.touched = write.touched or os.path.isdir(
+                layout.resolve(self._data_dir, layout.event_dir(event.event_id)))
+
+    def _index(self, event_id: int) -> None:
+        """Maçın katalog satırlarını dosyalardan yeniden türetir (yeniden kurmanın yazacağı satırlar)."""
+        problems: List[Any] = []
+        if self._store.catalog.index_event(event_id, problems=problems) != LAYOUT_V3:
+            detail = "; ".join(f"{p.kind}: {p.detail}" for p in problems) or "v3 dizini dizinlenemedi"
+            raise StoreError(f"Maç {event_id} yazıldı ama dizinlenemedi ({detail})",
+                             path=layout.resolve(self._data_dir, layout.event_dir(event_id)), detail=detail)
+        self._checkpoint(STEP_INDEXED)
+
+    def _reset(self, write: _Write, event_id: int, include_confirmed: bool, threshold: int) -> int:
+        """`reset_empty_markers`'ın bir maç için gövdesi; yeniden beklenir hale gelen dilim sayısını döndürür."""
+        now = self._clock()
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
+        opened = self._open_for_write(write, event_id, has_event=False, now=now)
+        if opened.created or opened.adopt:
+            return 0  # katalog bayat: maçın dizini yok
+        found = copy.deepcopy(opened.manifest)
+        reopened = 0
+        dirty = False
+        for name in list(found.slices):
+            entry = found.slices[name]
+            mark = entry.empty
+            if mark is None:
+                continue
+            keep = 0 if include_confirmed else mark.count
+            total = mark.count + mark.unverified
+            if keep == total:
+                continue
+            dirty = True
+            if total >= threshold > keep:
+                reopened += 1
+            if keep:
+                mark.count, mark.unverified = keep, 0
+            else:
+                entry.empty = None
+                if entry.state == "empty" and not entry.has_payload and entry.error is None:
+                    del found.slices[name]  # hiçbir şey bilinmiyor: dilim yeniden "istenmedi" olur
+        if not dirty:
+            return 0  # katalog bayat: sıfırlanacak sayaç yok
+        if opened.legacy is not None and opened.encoded is not None:
+            self._promote(write, opened.legacy, (opened.manifest, opened.encoded))
+        write.touched = True
+        found.updated_at = max(found.updated_at, now)
+        manifest_mod.write_manifest(
+            layout.resolve(self._data_dir, layout.manifest_path(layout.event_dir(event_id))), found)
+        self._checkpoint(STEP_MANIFEST)
+        self._index(event_id)
+        return reopened
+
+    def _delete(self, write: _Write, event_id: int) -> bool:
+        """`delete`'in gövdesi; yazma kilidi altında çalışır."""
+        from src.store import indexer  # döngüsel içe aktarma: dizinleyici bu modülü kullanır
+
+        doomed: List[str] = []
+        directory = layout.resolve(self._data_dir, layout.event_dir(event_id))
+        if os.path.lexists(directory):
+            doomed.append(directory)
+        for candidate in indexer.legacy_candidates(self._reader).get(str(event_id), []):
+            try:
+                self._reader.read_event(candidate, payloads=False)
+            except LayoutError:
+                continue  # dizinin adı bu kimlik ama içindeki olay yükü başka bir maçın: bu maçın kopyası değil
+            except StoreError:
+                pass  # okunamayan kopya da bu maçın dizinidir
+            doomed.append(self._reader.resolve(candidate.path))
+        for path in doomed:
+            write.touched = True
+            files.remove_tree(files.move_to_trash(self._data_dir, path))
+        self._store.catalog.index_event(event_id, candidates=[])
+        self._checkpoint(STEP_INDEXED)
+        return bool(doomed)
+
 
 # --- sayfalama ----------------------------------------------------------------------------------------
 
@@ -979,6 +1729,15 @@ __all__ = [
     "MissingRow",
     "TournamentSummary",
     "EventStore",
+    "PutResult",
+    "SliceKey",
+    "EventChange",
+    "PENDING_KIND",
+    "STAGING_WRITER",
+    "STAGING_LIVE",
+    "STAGING_UNLEASED",
+    "manifest_from_legacy",
+    "promote_legacy",
     "check_int",
     "int_list",
     "like_pattern",

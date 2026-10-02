@@ -1,0 +1,10 @@
+# src.store.PutResult
+# kaynak: src/store/events.py
+@dataclass(frozen=True)
+class PutResult:
+    created: bool
+    event_written: bool
+    superseded: bool
+    written: Tuple[str, ...]
+    change_seq: Optional[int]
+    promoted: bool
