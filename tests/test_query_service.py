@@ -20,14 +20,18 @@ import logging
 import os
 from pathlib import Path
 from typing import Any, Dict, Optional
+from unittest.mock import MagicMock
 
 import pytest
+from fastapi.testclient import TestClient
 
 import store_fixtures as sf
 from src.match_data_fetcher import DETAIL_SLICE_KEYS
+from src.services import query
 from src.services.query import QueryService, legacy_detail_keys
 from src.status import OBSERVATION_KEY
-from src.store import PayloadCorrupt, open_store
+from src.store import PayloadCorrupt, StoreError, open_store
+from src.web.app import app
 
 ARS = sf.event_id(sf.PL_ARS)  # legacy: iki yerde duran maç (lig/sezon dizini ve bayat düz kopya)
 LIV = sf.event_id(sf.PL_LIV)  # legacy: basic.json'ın yanında birleşik dosya ve gözlem
@@ -261,3 +265,49 @@ def test_event_payload_removed_behind_the_catalog_is_no_record(canonical: sf.Leg
     queries = service(canonical)
     (directory / "basic.json").unlink()
     assert queries.match_detail_legacy(ARS) is None
+
+
+# --- GET /api/matches/{id} ----------------------------------------------------------------------------
+
+client = TestClient(app)
+
+
+def test_route_answers_from_the_service(old_forms: sf.LegacyFixture) -> None:
+    queries = service(old_forms)
+    for event_id in (ARS, LIV, LEE, BRE, AVL):
+        response = client.get(f"/api/matches/{event_id}")
+        assert response.status_code == 200
+        assert response.json() == queries.match_detail_legacy(event_id)
+        assert list(response.json()) == list(queries.match_detail_legacy(event_id))
+    for event_id in (NEW, UNKNOWN, 2 ** 70):
+        response = client.get(f"/api/matches/{event_id}")
+        assert (response.status_code, response.json()) == (404, {"detail": "Match details not found."})
+    assert client.get("/api/matches/abc").status_code == 422
+
+
+def test_route_reads_through_the_store_only(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Uç nokta indirici kurmaz, dizin ağacını gezmez: yanıt servisten gelir."""
+    import src.match_data_fetcher as fetcher_module
+    import src.web.routes.matches as routes
+
+    monkeypatch.setattr(fetcher_module, "MatchDataFetcher", MagicMock(side_effect=AssertionError("not used")))
+    seen = []
+    real = QueryService.match_detail_legacy
+
+    def spy(self: QueryService, event_id: int) -> Optional[Dict[str, Any]]:
+        seen.append(event_id)
+        return real(self, event_id)
+
+    monkeypatch.setattr(routes.QueryService, "match_detail_legacy", spy)
+    assert client.get(f"/api/matches/{ARS}").status_code == 200
+    assert seen == [ARS]
+
+
+def test_route_answers_500_when_the_store_cannot_be_read(
+        canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
+    def broken(self: QueryService, event_id: int) -> Dict[str, Any]:
+        raise StoreError("disk unreadable")
+
+    monkeypatch.setattr(query.QueryService, "match_detail_legacy", broken)
+    response = client.get(f"/api/matches/{ARS}")
+    assert (response.status_code, response.json()) == (500, {"detail": "Error parsing match data."})

@@ -6,8 +6,6 @@ _build_schedule_matches_dataframe:pandas.read_csv
 _detail_match_ids:os.listdir x3
 _detail_match_ids:os.path.exists
 _detail_match_ids:os.path.isdir x3
-_get_match_details_sync:open x2
-_get_match_details_sync:os.path.exists x3
 _get_missing_details_sync:glob.glob x2
 _get_missing_details_sync:os.path.exists x2
 _get_missing_details_sync:pandas.read_csv

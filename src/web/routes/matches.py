@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import asyncio
 import glob
-import json
 import os
 import re
 from datetime import datetime
@@ -15,6 +14,8 @@ from pydantic import BaseModel
 
 from src import breaker as request_breaker
 from src import bridge_health
+from src.services.query import QueryService
+from src.store import open_store
 from src.web import upstream
 from src.web.jobs import JobRunningError
 from src.web.routes.common import (
@@ -366,38 +367,18 @@ def _get_missing_details_sync(league_id: int, season_id: Optional[int], data_dir
 
 
 def _get_match_details_sync(match_id: str) -> Dict[str, Any]:
-    from src.match_data_fetcher import MatchDataFetcher, REQUIRED_FILES
-
-    fetcher = MatchDataFetcher(config_manager=config_manager, data_dir=config_manager.get_data_dir())
-    match_path_info = fetcher._find_match_path(match_id)
-    if not match_path_info:
-        raise _SyncHttpError(404, "Match details not found.")
-
-    _, _, match_path = match_path_info
-    if not os.path.exists(os.path.join(match_path, "basic.json")):
-        raise _SyncHttpError(404, "Match details not found.")
-
-    result: Dict[str, Any] = {}
+    """
+    Maçın saklanan detayı (`basic` ve yükü olan dilimler), depodan okunur (QueryService.match_detail_legacy).
+    Maç bilinmiyorsa ya da olay yükü yoksa 404; depo açılamıyor ya da okunamıyorsa 500.
+    """
     try:
-        full_json_path = os.path.join(match_path, f"{match_id}.json")
-        if os.path.exists(full_json_path):
-            with open(full_json_path, "r", encoding="utf-8") as f:
-                result = json.load(f)
-        else:
-            for fname in REQUIRED_FILES:
-                if not fname.endswith(".json"):
-                    fname = f"{fname}.json"
-                component = fname[:-5]
-                c_path = os.path.join(match_path, fname)
-                if os.path.exists(c_path):
-                    with open(c_path, "r", encoding="utf-8") as f:
-                        result[component] = json.load(f)
-
+        detail = QueryService(open_store(config_manager.get_data_dir())).match_detail_legacy(int(match_id))
     except Exception as e:
         logger.error(f"Error loading match {match_id}: {e}")
         raise _SyncHttpError(500, "Error parsing match data.")
-
-    return result
+    if detail is None:
+        raise _SyncHttpError(404, "Match details not found.")
+    return detail
 
 
 def _single_fetch_reason(outcome: Outcome, before: Optional[Dict[str, Any]]) -> str:
