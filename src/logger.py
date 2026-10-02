@@ -4,8 +4,14 @@ Loglama: konsol + dönen (rotating) log dosyası.
 Konsol: terminalde Rich ile renkli; çıktı terminal değilse (Docker, cron, yönlendirme) dosyadakiyle
 aynı düz biçimde. Kapsayıcıda birincil çıktı stdout'tur ve her zaman açıktır.
 
-Konsol akışı seçilebilir (`set_console_stream`): varsayılan stdout'tur (web sunucusu, eski `main.py`); yeni
-CLI (src/cli) stderr'i seçer, çünkü orada stdout yalnızca komutun sonucunu taşır (docs/design/02-services.md 4.4).
+Konsol akışı seçilebilir (`set_console_stream`): varsayılan stdout'tur (web sunucusu, terminal menüsü); yeni
+CLI (src/cli; `python main.py`nin bayrakları da ona çevrilir) stderr'i seçer, çünkü orada stdout yalnızca
+komutun sonucunu taşır (docs/design/02-services.md 4.4).
+
+Konsol satırının biçimi seçilebilir (`set_log_format`; `[log] format`, `--log-format`): "text" (varsayılan) ya
+da "json", satır başına bir JSON nesnesi (`JsonFormatter`: time, level, logger, pid, message, varsa exc). JSON
+biçimi yalnızca konsolu etkiler: dosya her zaman düz metindir, çünkü tanılama paketi (src/diagnostics.py)
+satırlarını LINE_RE ile ayrıştırır.
 
 Dosya: LOG_DIR (varsayılan: proje kökündeki logs/) altında `sofascore_scraper.log`. Boyutu
 LOG_MAX_MB'ı (varsayılan 5) geçince çevrilir, en fazla LOG_BACKUP_COUNT (varsayılan 5) eski dosya
@@ -20,6 +26,8 @@ LOG_LEVEL / DEBUG çalışırken değişebilir: apply_log_level() (ayarlar kayde
 from __future__ import annotations
 
 import copy
+import datetime as _dt
+import json
 import logging
 import os
 import re
@@ -58,6 +66,9 @@ _FALSY = ("false", "0", "no", "f", "n", "off")
 # Konsol log satırlarının yazıldığı akış (set_console_stream)
 CONSOLE_STREAMS = ("stdout", "stderr")
 _console_stream = "stdout"
+# Konsol log satırlarının biçimi (set_log_format)
+LOG_FORMATS = ("text", "json")
+_log_format = "text"
 
 # Flag to track if logging has been configured
 _configured = False
@@ -143,6 +154,26 @@ def _redacted_copy(record: logging.LogRecord) -> logging.LogRecord:
     clone.msg = message
     clone.args = None
     return clone
+
+
+class JsonFormatter(logging.Formatter):
+    """
+    Satır başına bir JSON nesnesi (`--log-format json`): makinece okunur log. Alanlar: `time` (ISO-8601 UTC,
+    milisaniyeli, `Z`), `level`, `logger`, `pid`, `message` ve varsa `exc` (iz dökümü). Metinler maskelenir.
+    """
+
+    def format(self, record: logging.LogRecord) -> str:
+        stamp = _dt.datetime.fromtimestamp(record.created, tz=_dt.timezone.utc)
+        line = {
+            "time": stamp.strftime("%Y-%m-%dT%H:%M:%S.") + f"{stamp.microsecond // 1000:03d}Z",
+            "level": record.levelname,
+            "logger": record.name,
+            "pid": record.process,
+            "message": redact_text(record.getMessage()),
+        }
+        if record.exc_info and record.exc_info[0] is not None:
+            line["exc"] = redact_text("".join(traceback.format_exception(*record.exc_info)).rstrip())
+        return json.dumps(line, ensure_ascii=True, separators=(",", ":"))
 
 
 class RedactingRichHandler(RichHandler):
@@ -261,12 +292,37 @@ def set_console_stream(name: str) -> None:
         setup_logger(force=True)
 
 
+def log_format() -> str:
+    """Konsol log satırlarının biçimi: "text" ya da "json"."""
+    return _log_format
+
+
+def set_log_format(name: str) -> None:
+    """
+    Konsol log satırlarının biçimini seçer: "text" (varsayılan) ya da "json". Loglama kurulmuşsa konsol
+    handler'ı yeniden kurulur; dosya düz metin kalır. Seçim süreç boyunca geçerlidir.
+    """
+    global _log_format
+    if name not in LOG_FORMATS:
+        raise ValueError(f"unknown log format: {name!r} (expected one of {', '.join(LOG_FORMATS)})")
+    if name == _log_format:
+        return
+    _log_format = name
+    if _configured:
+        setup_logger(force=True)
+
+
 def _build_console_handler() -> logging.Handler:
     # USE_COLOR kontrolü
     if os.getenv("USE_COLOR", "true").strip().lower() != "true":
         os.environ["NO_COLOR"] = "1"
     to_stderr = _console_stream == "stderr"
     stream = sys.stderr if to_stderr else sys.stdout
+    if _log_format == "json":
+        # Makinece okunur satırlar terminalde de aynıdır: renk ve Rich biçimi yok
+        as_json = logging.StreamHandler(stream)
+        as_json.setFormatter(JsonFormatter())
+        return as_json
     try:
         interactive = stream.isatty()
     except (AttributeError, ValueError):
@@ -361,7 +417,7 @@ def apply_log_level(level: Optional[int] = None) -> int:
         # Değişim satırı, iki seviyeden daha ayrıntılı olanı etkinken yazılır (INFO'dan sessizse yazılmaz)
         root.setLevel(min(old, new))
         logging.getLogger("Logger").info(
-            f"Log seviyesi değişti: {logging.getLevelName(old)} -> {logging.getLevelName(new)}"
+            "Log level changed: %s -> %s", logging.getLevelName(old), logging.getLevelName(new)
         )
         root.setLevel(new)
     return new
