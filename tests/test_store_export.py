@@ -310,7 +310,11 @@ def test_a_large_legacy_export_holds_one_payload_at_a_time(tmp_path: Path) -> No
         tracemalloc.stop()
 
     assert report.items == 12 and report.bytes > 6 * PAYLOAD_CHARS
-    assert peak < 3.5 * PAYLOAD_CHARS, peak  # dosya + ayrıştırılmış yük + kurallı baytlar: tek bir yük
+    # Tek bir yükün tepesi json.dumps sırasındadır: ayrıştırılmış değer (1), kaçışlı ara kopya (1) ve
+    # CPython'un metin yazıcısının fazladan ayırdığı tampon (Linux ve macOS'ta 1,25, Windows'ta 1,5;
+    # unicodeobject.c OVERALLOCATE_FACTOR). Ölçülen: Linux 3,33, Windows 3,58 yük. Bir önceki yükün kurallı
+    # baytlarını da tutan bir dışa aktarma en az bir yük daha ekler (Linux'ta ölçülen 4,33): sınır ikisinin arası.
+    assert peak < 4.0 * PAYLOAD_CHARS, peak
 
 
 # --- anlık görüntü ve hatalar ---------------------------------------------------------------------------
