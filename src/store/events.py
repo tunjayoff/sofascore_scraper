@@ -34,10 +34,16 @@ yazma v3 düzenine gider (`v3/events/.../<id>/`, bölüm 4.2). Bir maça yazman�
   3. Maçın `manifest.json`'ı diskten okunur. Maç eski düzendeyse önce v3'e yükseltilir (bölüm 5.3): bütün
      dosyaları okunur, v3 dizini `.meta/tmp` altında kurulur, geri okunarak doğrulanır ve tek yeniden
      adlandırmayla yerine konur. Eski dizine dokunulmaz.
-  4. Değişen yük dosyaları yazılır (geçici dosya + yerine koyma).
+  4. Olay yükü değişiyor ve `on_event_change` bir satır döndürdüyse satır, yeni yükün özetiyle birlikte
+     niyet dosyasına yazılır (`.meta/pending_changes/<id>.json`). Sonra değişen yük dosyaları yazılır (geçici
+     dosya + yerine koyma).
   5. Yeni manifest yazılır.
-  6. Varsa değişiklik günlüğü satırı eklenir, katalog satırları dosyalardan yeniden türetilir, işaret silinir;
-     commit.
+  6. Varsa değişiklik günlüğü satırı eklenir ve niyet dosyası silinir; katalog satırları dosyalardan yeniden
+     türetilir, işaret silinir; commit.
+
+Değişiklik satırı bu yüzden kaybolmaz: 4 ile 6 arasında kesilen yazmanın niyetini, aynı maça bir sonraki yazma
+ya da bir sonraki uzlaştırma kapatır (`recover_change`): diskteki olay yükü niyettekiyse satır günlükte yoksa
+eklenir, yük hiç değişmediyse niyet atılır. Satır günlüğe en çok bir kez girer.
 
 Manifest kilit altında okunup yazıldığı için aynı maçın farklı dilimlerini yazan iki süreç birbirinin kaydını
 kaybetmez. 1 ile 6 arasında ölen süreç işareti bırakır; bir sonraki açılış ya da aynı maça bir sonraki yazma
@@ -627,6 +633,7 @@ _MARKER_ATTEMPTS = 5
 # `_checkpoint` adımları, protokolün sırasıyla (testler süreci bu noktalarda öldürür)
 STEP_MARKER = "marker"  # işaret yazıldı
 STEP_LOCKED = "locked"  # yazma kilidi alındı
+STEP_CHANGE_INTENT = "change_intent"  # değişiklik satırının niyet dosyası yazıldı (diske ilk dokunuş)
 STEP_STAGED = "staged"  # v3 dizini hazırlık alanında kuruldu (yükseltme ya da yeni maç)
 STEP_PUBLISHED = "published"  # hazırlık dizini yerine kondu
 STEP_PAYLOAD = "payload"  # bir yük dosyası yerine yazıldı ("payload:<dilim adı>")
@@ -637,6 +644,10 @@ STEP_INDEXED = "indexed"  # katalog satırları yazıldı
 STEP_COMMIT = "commit"  # işaret silindi, commit'ten hemen önce
 STEP_DONE = "done"  # commit edildi
 
+# Değişiklik satırının niyet dosyaları (bölüm 6.2): `<dizin>/<maç kimliği>.json`, DATA_DIR'e göre
+CHANGE_INTENT_DIR = f"{layout.META_DIR}/pending_changes"
+_LOGGED_ROWS_CHECKED = 20  # niyetteki satır günlükte mi: maçın son bu kadar satırına bakılır
+
 
 @dataclass(frozen=True)
 class PutResult:
@@ -646,7 +657,7 @@ class PutResult:
     event_written: bool  # `event` yükünün dosyası değişti
     superseded: bool  # `event` sonucu yok sayıldı: daha yeni bir gözlem saklı
     written: Tuple[str, ...]  # yük dosyası değişen dilimlerin adları ("statistics", "odds_all/1")
-    change_seq: Optional[int]  # değişiklik günlüğüne satır yazıldıysa sıra numarası
+    change_seq: Optional[int]  # değişiklik günlüğüne satır yazıldıysa sıra numarası (ya da toparlanan satırınki)
     promoted: bool  # maç bu çağrıda eski düzenden v3'e yükseltildi
     history: Tuple[str, ...] = ()  # geçmiş dosyasına anlık görüntü eklenen dilimlerin adları (`keep_history`)
 
@@ -672,6 +683,7 @@ class _Write:
 
     recover: bool  # işaret zaten duruyordu: önceki yazma yarım kalmış olabilir
     touched: bool = False  # diske dokunuldu: hata olursa işaret kalır ve maç sonradan toparlanır
+    recovered_seq: Optional[int] = None  # yarım kalmış önceki yazmanın günlüğe eklenen satırı (`recover_change`)
 
 
 @dataclass
@@ -869,6 +881,115 @@ def promote_legacy(data_dir: Union[str, "os.PathLike[str]"], event: LegacyEvent,
         raise
     if checkpoint is not None:
         checkpoint(STEP_PUBLISHED)
+    return found
+
+
+# --- değişiklik satırının niyet dosyası (bölüm 6.2) ---------------------------------------------------
+#
+# Olay yükü değişirken `on_event_change`'in döndürdüğü satır, yük dosyası değiştirilmeden önce niyet dosyasına
+# yazılır: `{"event_id", "sha256" (yeni olay yükünün özeti), "row"}`. Satır günlüğe eklenince dosya silinir.
+# Yazma arada ölür ya da hata verirse dosya kalır; maça bir sonraki yazma ya da bir sonraki uzlaştırma
+# (açılışta) onu `recover_change` ile kapatır: diskteki olay yükü yeni yükse (özet aynı) satır günlükte yoksa
+# eklenir, varsa yeniden eklenmez; yük yeni değilse (yük dosyası hiç değişmedi) niyet atılır, çünkü yükü
+# yeniden getiren yazma farkı yeniden görür ve satırı kendisi yazar. Niyet dosyası yalnızca kataloğun yazma
+# kilidi altında yazılır ve silinir: kilidi alan biri onu görüyorsa, onu yazan yazma bitmeden ölmüş ya da
+# hata vermiştir.
+
+def _intent_file(data_dir: Union[str, "os.PathLike[str]"], event_id: int) -> str:
+    return layout.resolve(data_dir, f"{CHANGE_INTENT_DIR}/{event_id}.json")
+
+
+def _stored_event_sha256(data_dir: Union[str, "os.PathLike[str]"], event_id: int) -> Optional[str]:
+    """v3 dizinindeki olay yükü dosyasının (açılmış baytlarının) özeti; dosya yoksa ya da okunamıyorsa None."""
+    path = layout.resolve(data_dir, layout.slice_path(layout.event_dir(event_id), EVENT_KEY))
+    try:
+        return codec.sha256_hex(codec.decode(files.read_bytes(path), path))
+    except StoreError:
+        return None
+
+
+def _comparable(row: Mapping[str, Any]) -> Dict[str, Any]:
+    """Günlük satırının `seq` dışındaki hali, JSON'dan geçmiş olarak (dosyadaki satırla karşılaştırmak için)."""
+    return {k: v for k, v in json.loads(json.dumps(row, ensure_ascii=False)).items() if k != "seq"}
+
+
+def write_change_intent(data_dir: Union[str, "os.PathLike[str]"], event_id: int, sha256: str,
+                        row: Mapping[str, Any]) -> None:
+    """Niyet dosyasını yazar (atomik). Satır JSON'a çevrilemezse StoreError; o zaman diske dokunulmamıştır."""
+    try:
+        data = json.dumps({"event_id": event_id, "sha256": sha256, "row": row}, ensure_ascii=False,
+                          sort_keys=True).encode("utf-8")
+    except (TypeError, ValueError, RecursionError) as exc:  # UnicodeEncodeError bir ValueError'dır
+        raise StoreError(f"Değişiklik satırı JSON'a çevrilemedi ({exc})", detail=str(exc)) from exc
+    files.write_bytes(_intent_file(data_dir, event_id), data)
+
+
+def recover_change(cat: Any, data_dir: Union[str, "os.PathLike[str]"], event_id: int) -> Optional[int]:
+    """
+    Maçın niyet dosyası varsa onu kapatır (yukarıdaki kural) ve siler. Günlükte duran (ya da şimdi eklenen)
+    satırın sıra numarasını döndürür; niyet yoksa ya da atıldıysa None. Kataloğun `Catalog.write()` bloğunun
+    içinde çağrılır (satır `changes.append_row` ile eklenir). Okunamayan niyet dosyası bildirilir ve silinir.
+    """
+    from src.store import changes as changes_mod  # döngüsel içe aktarma: changes bu modülü kullanır
+
+    path = _intent_file(data_dir, event_id)
+    try:
+        raw = files.read_bytes(path)
+    except PayloadMissing:
+        return None
+    try:
+        intent = json.loads(raw)
+        sha256, row = intent["sha256"], intent["row"]
+        if intent.get("event_id") != event_id or not isinstance(sha256, str) or not isinstance(row, dict):
+            raise ValueError("unexpected content")
+        if changes_mod.change_row(0, row, "", "") is None:
+            raise ValueError("the row has no ts_utc or event_id")
+    except (ValueError, TypeError, KeyError, AttributeError, RecursionError) as exc:
+        logger.warning(f"Event {event_id}: the change intent of an unfinished write cannot be read and is "
+                       f"removed ({exc}): {path}")
+        files.remove(path)
+        return None
+    seq: Optional[int] = None
+    if _stored_event_sha256(data_dir, event_id) == sha256:
+        changes_mod.sync(cat, data_dir)
+        wanted = _comparable(row)
+        for logged_seq, logged in cat.connection().execute(
+                "SELECT seq, row_json FROM changes WHERE event_id = ? ORDER BY seq DESC LIMIT ?",
+                (event_id, _LOGGED_ROWS_CHECKED)).fetchall():
+            try:
+                if _comparable(json.loads(logged)) == wanted:
+                    seq = int(logged_seq)
+                    break
+            except (ValueError, TypeError, AttributeError, RecursionError):
+                continue
+        if seq is None:
+            seq = changes_mod.append_row(cat, data_dir, row)
+            logger.info(f"Event {event_id}: the change row of an unfinished write was added to the change log "
+                        f"(seq {seq})")
+    files.remove(path)
+    return seq
+
+
+def recover_changes(cat: Any, data_dir: Union[str, "os.PathLike[str]"]) -> int:
+    """
+    Bütün niyet dosyalarını kapatır (`recover_change`); uzlaştırma çağırır (`Catalog.write()` bloğunun içinde).
+    Günlüğe eklenen ya da günlükte bulunan satır sayısını döndürür. Ölen bir yazmanın yarım geçici dosyası
+    (`.<ad>.<rastgele>.tmp`) silinir; adı kurala uymayan öteki girdilere dokunulmaz.
+    """
+    directory = layout.resolve(data_dir, CHANGE_INTENT_DIR)
+    try:
+        names = sorted(os.listdir(directory))
+    except (FileNotFoundError, NotADirectoryError):
+        return 0
+    except OSError as exc:
+        raise StoreError.from_exception(exc, directory, reading=True) from exc
+    found = 0
+    for name in names:
+        stem, dot, suffix = name.partition(".")
+        if dot and suffix == "json" and stem.isdigit() and str(int(stem)) == stem:
+            found += recover_change(cat, data_dir, int(stem)) is not None
+        elif name.startswith(".") and name.endswith(".tmp"):
+            files.remove(os.path.join(directory, name))
     return found
 
 
@@ -1252,6 +1373,9 @@ class EventStore:
         bölümün içinde ve diske dokunulmadan önce çağrılır. Bir değişiklik günlüğü satırı (`ts_utc` ve
         `event_id` taşıyan nesne) ya da None döndürür; satır aynı kritik bölümde günlüğe eklenir
         (`PutResult.change_seq`). Karşılaştırma kuralı (`src/refresh.py`) böylece Store'un dışında kalır.
+        Satır JSON'a çevrilemiyorsa StoreError, diske dokunulmadan. Yazma, yük yerine konduktan sonra ve satır
+        eklenmeden kesildiyse satır kaybolmaz (modül açıklaması): maça bir sonraki yazma onu günlüğe ekler ve,
+        kendisi satır yazmadıysa, onun sıra numarasını `PutResult.change_seq` olarak döndürür.
         Geri çağrı yazma kilidi tutulurken çalışır: Store'a yazmamalı ve uzun sürmemelidir. Hata fırlatırsa
         hiçbir şey yazılmamıştır. status_regressed=True, ya da dönen satırdaki doğru bir `status_regressed`
         alanı, yapışkan bayrağı kurar; bayrak bir daha silinmez.
@@ -1379,7 +1503,16 @@ class EventStore:
                                     (PENDING_KIND, event_id)).fetchone() is None:
                         continue
                     self._checkpoint(STEP_LOCKED)
-                    result = body(write)
+                    write.recovered_seq = recover_change(cat, self._data_dir, event_id)
+                    try:
+                        result = body(write)
+                    except BaseException:
+                        if not write.touched:
+                            # Maçın dosyalarına dokunulmadı: olay yükü değişmedi, değişiklik satırının niyeti de
+                            # geçersizdir. Kilit altında silinir (kilidi sonra alan bir yazmanın niyeti silinmesin)
+                            with contextlib.suppress(StoreError):
+                                files.remove(_intent_file(self._data_dir, event_id))
+                        raise
                     conn.execute("DELETE FROM pending_writes WHERE kind = ? AND entity_id = ?",
                                  (PENDING_KIND, event_id))
                     self._checkpoint(STEP_COMMIT)
@@ -1478,6 +1611,7 @@ class EventStore:
         snapshots: List[Tuple[_Item, codec.Encoded, datetime]] = []  # geçmiş dosyalarına eklenecek anlık görüntüler
         dirty = superseded = False
         change: Optional[Mapping[str, Any]] = None
+        change_sha256 = ""  # olay yükünün, değişiklik satırını doğuran yeni özeti
         for item in items:
             outcome = item.outcome
             at = _aware(outcome.fetched_at, now, f"outcomes[{item.name!r}].fetched_at")
@@ -1514,6 +1648,7 @@ class EventStore:
                     payloads.append((item, encoded))
                 if item.name == EVENT_KEY and previous != encoded.sha256 and on_event_change is not None:
                     change = on_event_change(self._stored_event(opened, event_id), outcome.data)
+                    change_sha256 = encoded.sha256
                 if item.key in keep:
                     mark = entry.history if entry is not None else None
                     if mark is None or mark.last_sha256 != encoded.sha256:
@@ -1561,7 +1696,12 @@ class EventStore:
         if dirty:
             found.updated_at = max(found.updated_at, now)
 
-        # --- disk: yükseltme ya da yeni dizin, sonra yük dosyaları ve geçmiş üyeleri, en son manifest (bölüm 4.4) ---
+        # --- disk: önce değişiklik satırının niyeti, sonra yükseltme ya da yeni dizin, yük dosyaları ve geçmiş
+        # üyeleri, en son manifest (bölüm 4.4 ve 6.2) ---
+        if change is not None:
+            # Yükü henüz değiştirmez: yazma burada biterse niyet atılır (`_entity_write`, `recover_change`)
+            write_change_intent(self._data_dir, event_id, change_sha256, change)
+            self._checkpoint(STEP_CHANGE_INTENT)
         written: List[str] = []
         kept: List[str] = []
 
@@ -1622,9 +1762,11 @@ class EventStore:
             write.touched = True
             seq = changes_mod.append_row(self._catalog, self._data_dir, change)
             self._checkpoint(STEP_CHANGE_LOG)
+            files.remove(_intent_file(self._data_dir, event_id))
         self._index(event_id)
         return PutResult(created=opened.created, event_written=EVENT_KEY in written, superseded=superseded,
-                         written=tuple(written), change_seq=seq, promoted=opened.legacy is not None,
+                         written=tuple(written), change_seq=seq if seq is not None else write.recovered_seq,
+                         promoted=opened.legacy is not None,
                          history=tuple(kept))
 
     def _history_end(self, event_id: int, item: _Item, mark: Optional[manifest_mod.HistoryMark],

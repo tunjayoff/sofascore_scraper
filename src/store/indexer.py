@@ -96,6 +96,7 @@ from typing import (
 from src.store import catalog as catalog_mod
 from src.store import changes as changes_mod
 from src.store import codec, derive, entities, files, layout, legacy
+from src.store import events as events_mod
 from src.store import history as history_mod
 from src.store import manifest as manifest_mod
 from src.store.catalog import Catalog
@@ -1536,6 +1537,8 @@ class CatalogAdmin:
             if event_id is not None:
                 candidates[event_id] = found
 
+        # Yarım kalmış yazmaların değişiklik satırları (niyet dosyaları, bölüm 6.2): maçlar dizinlenmeden önce
+        events_mod.recover_changes(self.catalog, self.data_dir)
         for kind, entity_id in conn.execute(
                 "SELECT kind, entity_id FROM pending_writes ORDER BY kind, entity_id").fetchall():
             if kind == KIND_EVENT:
