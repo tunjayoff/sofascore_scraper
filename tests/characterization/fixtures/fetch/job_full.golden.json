@@ -491,7 +491,12 @@
   }
  },
  "requests": [
-  "sync /unique-tournament/17/seasons 200",
+  {
+   "concurrent": [
+    "async /unique-tournament/17/seasons 200",
+    "async https://www.sofascore.com/ 200"
+   ]
+  },
   {
    "concurrent": [
     "async /unique-tournament/17/season/61627/events/round/1 200",

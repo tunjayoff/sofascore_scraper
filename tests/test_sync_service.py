@@ -42,10 +42,12 @@ from src.season_fetcher import SeasonFetcher
 from src.services import export as export_service
 from src.services.context import DATA_SUBDIRECTORIES, ServiceContext, build_context
 from src.services.export import export_all_csv
+from src.services.listing import ListingResult
 from src.services.sync import (
     DETAILS_PHASES,
     FULL_PHASES,
     DetachedHandle,
+    FailedListing,
     SyncResult,
     SyncSelection,
     SyncService,
@@ -222,6 +224,10 @@ class FakeSeasons:
             raise RuntimeError("season list unavailable")
         return self.seasons.get(league_id, [])
 
+    def list_seasons(self, league_id: int, *, max_age: Optional[float] = None) -> ListingResult:
+        """Servisin tipli yüzü (P14): eski adlı sahte yöntemin sonucu, liste sonucu olarak."""
+        return ListingResult("seasons", league_id, seasons=self.fetch_seasons_for_league(league_id))
+
     def get_seasons_for_league(self, league_id: int) -> List[Dict[str, Any]]:
         return self.seasons.get(league_id, [])
 
@@ -240,6 +246,11 @@ class FakeSchedule:
         if (league_id, season_id) in self.raising:
             raise RuntimeError("schedule unavailable")
         return (league_id, season_id) not in self.empty
+
+    def list_schedule(self, league_id: int, season_id: int, *, max_age: Optional[float] = None) -> ListingResult:
+        """Servisin tipli yüzü (P14): True → maç listelendi, False → boş program; hata fırlatılır."""
+        listed = self.fetch_matches_for_season(league_id, season_id)
+        return ListingResult("schedule", league_id, season_id, chunks=[{"round": 1}] if listed else [])
 
 
 class FakeDetails:
@@ -504,13 +515,18 @@ def test_a_selection_without_seasons_fetches_no_schedule_and_no_details(
 
 
 def test_a_failing_season_list_does_not_stop_the_run(config: ConfigManager, monkeypatch: pytest.MonkeyPatch) -> None:
+    """P14: çekilemeyen sezon listesi başarısız bir iş birimidir (iş `partial` biter); kayıtlı liste kullanılır."""
     seasons = FakeSeasons({17: [{"id": 1}]}, failing=[17])
     schedule = FakeSchedule()
     ctx = make_ctx(config, monkeypatch, seasons=seasons, schedule=schedule)
+    spec = SyncSpec(league_id=17)
+    handle = RecordingHandle(spec)
 
-    result = SyncService(ctx).run(SyncSpec(league_id=17))
+    result = SyncService(ctx).run(spec, handle=handle)
 
-    assert schedule.calls == [(17, 1)] and result.state == "succeeded"
+    assert schedule.calls == [(17, 1)] and result.state == "partial"
+    assert result.failed_listings == (FailedListing("seasons", 17, None, "other"),)
+    assert "The season list of league 17 could not be fetched (other)." in handle.lines
 
 
 def test_empty_and_failing_schedules_are_counted_and_published(
@@ -524,8 +540,10 @@ def test_empty_and_failing_schedules_are_counted_and_published(
 
     result = SyncService(ctx).run(spec, handle=handle)
 
-    assert result.schedule_empty_seasons == 2
-    assert ("publish", {"schedule_empty_seasons": 2}) in handle.events
+    # P14: yalnızca boş program "maç yok" sayılır; çekilemeyen program başarısız bir iş birimidir
+    assert result.schedule_empty_seasons == 1
+    assert ("publish", {"schedule_empty_seasons": 1}) in handle.events
+    assert result.failed_listings == (FailedListing("schedule", 17, 3, "other"),) and result.state == "partial"
     # Bir sezon maç döndürdü: "hiç maç yok" satırı yazılmaz
     assert not any("0 matches" in line or "no matches" in line.lower() for line in handle.lines)
 

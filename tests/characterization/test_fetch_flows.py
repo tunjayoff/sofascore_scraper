@@ -32,7 +32,7 @@ import detail_records
 import legacy_writer
 import src.utils as utils
 from characterization import WORLD, assert_golden, pin_default_settings, snapshot_tree
-from fakes.sofascore import REQUEST_LAYER, FakeSofaScore
+from fakes.sofascore import REQUEST_LAYER, SITE_ROOT, FakeSofaScore
 from src import breaker as request_breaker
 from src.exceptions import APIError, NetworkError, RateLimitError, ResourceNotFoundError
 from src.match_data_fetcher import MatchDataFetcher
@@ -337,9 +337,9 @@ def test_web_job_full_update(
 
 def test_web_job_full_update_run_again(fake: FakeSofaScore, run_job: RunJob, data_dir: Path) -> None:
     """
-    İkinci çalıştırma: sezon listesi ve tur listesi yeniden istenir, diskteki turlar istenmez, sayfalı
-    program yeniden istenir; boş gelen dilimler bir kez daha denenir. Üçüncüde detay isteği kalmaz
-    (program istekleri kalır).
+    İkinci çalıştırma (P14, tazelik kuralı): sezon listesi ve program tazedir (listing.SEASON_LIST_TTL_SECONDS,
+    SCHEDULE_TTL_SECONDS), hiçbiri yeniden istenmez; boş gelen dilimler bir kez daha denenir. Üçüncüde hiç istek
+    kalmaz. Süreler dolduktan sonraki çalıştırma: test_web_job_full_update_past_the_listing_ttl.
     """
     run_job(mode="full", league_id=LEAGUE)
 
@@ -354,6 +354,60 @@ def test_web_job_full_update_run_again(fake: FakeSofaScore, run_job: RunJob, dat
         "third_run": {"requests": fake.canonical_log(), "job": _job_summary(third)},
         "markers": _markers(data_dir),
     })
+
+
+def test_web_job_full_update_past_the_listing_ttl(
+    fake: FakeSofaScore, run_job: RunJob, data_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    Tazelik süreleri dolduysa: sezon listesi, tur listesi ve sayfalı program yeniden istenir; diskteki turlardan
+    tamamlanmış olan hiç, tamamlanmamış olan ROUND_CACHE_TTL_SECONDS içinde istenmez (P14'ten önceki her
+    çalıştırma böyleydi).
+    """
+    from src.services import listing
+
+    run_job(mode="full", league_id=LEAGUE)
+    run_job(mode="full", league_id=LEAGUE)  # boş gelen dilimler ikinci kez: detay isteği kalmaz
+    monkeypatch.setattr(listing, "SEASON_LIST_TTL_SECONDS", 0)
+    monkeypatch.setattr(listing, "SCHEDULE_TTL_SECONDS", 0)
+    fake.reset_log()
+
+    final = run_job(mode="full", league_id=LEAGUE)
+
+    assert sorted(fake.paths()) == sorted([
+        SITE_ROOT, f"/unique-tournament/{LEAGUE}/seasons", SITE_ROOT,
+        f"/unique-tournament/{LEAGUE}/season/{SEASON_WEEKS}/rounds", SITE_ROOT,
+        f"/unique-tournament/{LEAGUE}/season/{SEASON_PAGES}/rounds",
+        f"/unique-tournament/{LEAGUE}/season/{SEASON_PAGES}/events/last/0",
+        f"/unique-tournament/{LEAGUE}/season/{SEASON_PAGES}/events/next/0",
+    ])
+    assert final["status"] == "Completed" and final["schedule_empty_seasons"] == 0
+
+
+def test_web_job_with_a_refused_season_list_is_partial(fake: FakeSofaScore, run_job: RunJob, data_dir: Path) -> None:
+    """
+    P14: çekilemeyen sezon listesi "sezon yok" değildir: başarısız bir iş birimidir, iş günlüğüne yazılır ve iş
+    `partial` biter. Bir programın başarısız turu da öyle.
+    """
+    import src.web.fetch_job as fj
+
+    def state(final: Dict[str, Any]) -> Any:
+        """İşin bitiş durumu (`finished` olayı; eski durum metni `partial` için de "Completed"dır)."""
+        events = fj._job_store.read_events(final["job_id"])
+        return next(e["data"]["state"] for e in events if e["type"] == "finished")
+
+    fake.fail(f"/unique-tournament/{LEAGUE}/seasons", 403)
+    final = run_job(mode="full", league_id=LEAGUE)
+    assert "[Running] The season list of league 17 could not be fetched (403)." in final["log"]
+    assert state(final) == "partial"
+
+    fake.clear_faults()
+    fake.fail(f"/unique-tournament/{LEAGUE}/season/{SEASON_WEEKS}/events/round/2", 500)
+    final = run_job(mode="full", league_id=LEAGUE)
+    assert ("[Running] The match list of league 17, season 61627 could not be fetched completely (5xx)."
+            in final["log"])
+    assert final["schedule_empty_seasons"] == 0
+    assert state(final) == "partial"
 
 
 def test_web_job_details_only(fake: FakeSofaScore, run_job: RunJob, data_dir: Path) -> None:

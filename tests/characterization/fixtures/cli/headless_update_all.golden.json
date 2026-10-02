@@ -402,7 +402,12 @@
  },
  "request_layer_loaded": true,
  "requests": [
-  "sync /unique-tournament/17/seasons 200",
+  {
+   "concurrent": [
+    "async /unique-tournament/17/seasons 200",
+    "async https://www.sofascore.com/ 200"
+   ]
+  },
   {
    "concurrent": [
     "async /unique-tournament/17/season/61627/events/round/1 200",
@@ -455,7 +460,7 @@
  ],
  "sleeps": {
   "request-layer": 33,
-  "src.client.transport": 3
+  "src.client.transport": 4
  },
  "stderr": [],
  "stdout": [
@@ -472,38 +477,27 @@
   "LOG INFO Main: Running in headless mode",
   "LOG INFO Main: Headless update: league_id=None mode=full",
   "LOG INFO SyncService: Refreshing season list for league 17...",
-  "LOG INFO SeasonFetcher: Premier League (ID: 17) için sezonlar çekiliyor...",
-  "LOG INFO SeasonFetcher: Season list of league 17 stored (2 seasons)",
-  "LOG INFO SeasonFetcher: Season lists loaded from the catalog: 1 league(s), 2 season(s)",
-  "LOG INFO SeasonFetcher: Premier League için 2 sezon bulundu",
-  "LOG INFO SyncService: Fetching matches: league 17, season 61627",
-  "LOG INFO MatchFetcher: Fetching matches for season",
-  "LOG INFO MatchFetcher: Fetching all matches for Premier League - Premier League 24/25...",
-  "LOG INFO MatchFetcher: Fetching data up to 50 rounds for the season...",
-  "LOG INFO MatchFetcher: Premier League: Premier League 24/25 için maç programı çekiliyor...",
   {
    "concurrent": [
-    "",
-    "LOG INFO MatchFetcher: Premier League: Premier League 24/25 için 2/2 tur çekildi",
-    "LOG INFO MatchFetcher: Premier League: Premier League 24/25 için eşzamanlı istek limiti: 5"
+    "LOG INFO Listing: Season list of league 17 stored (2 seasons)"
+   ]
+  },
+  "LOG INFO SeasonFetcher: Season lists loaded from the catalog: 1 league(s), 2 season(s)",
+  "LOG INFO SyncService: Fetching matches: league 17, season 61627",
+  {
+   "concurrent": [
+    "LOG INFO Listing: League 17, season 61627: 2 of 2 rounds listed matches"
    ]
   },
   "LOG INFO MatchFetcher: League 17, season 61627: 2 schedule pages, 3 matches listed",
-  "LOG INFO MatchFetcher: Premier League - Premier League 24/25 için 2 hafta verisi çekildi",
   "LOG INFO SyncService: Fetching matches: league 17, season 52186",
-  "LOG INFO MatchFetcher: Fetching matches for season",
-  "LOG INFO MatchFetcher: Fetching all matches for Premier League - Premier League 23/24...",
-  "LOG INFO MatchFetcher: Fetching data up to 50 rounds for the season...",
-  "LOG INFO MatchFetcher: Premier League: Premier League 23/24 için maç programı çekiliyor...",
   {
    "concurrent": [
-    "LOG INFO MatchFetcher: Premier League: Premier League 23/24 için eşzamanlı istek limiti: 5",
-    "LOG INFO MatchFetcher: Premier League: Premier League 23/24 — round schedule unavailable (rounds=1), using event list",
-    "LOG INFO MatchFetcher: Premier League: event listesinden 1 benzersiz maç, 1 sayfa kaydedildi"
+    "LOG INFO Listing: League 17, season 52186: 1 distinct matches in the event pages, 1 pages kept",
+    "LOG INFO Listing: League 17, season 52186: no week-based rounds (1 listed); using the event pages"
    ]
   },
   "LOG INFO MatchFetcher: League 17, season 52186: 1 schedule pages, 1 matches listed",
-  "LOG INFO MatchFetcher: Premier League - Premier League 23/24 için 1 hafta verisi çekildi",
   "LOG INFO SyncService: Checking which matches need details...",
   "Fetching match details for all leagues...",
   "1 leagues to process...",

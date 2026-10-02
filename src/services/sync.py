@@ -5,6 +5,13 @@ Bugünkü web işinin akışını taşır (src/web/fetch_job.py'den buraya geldi
 maç detayları. Akış modül değişkenleri yerine bir iş tutamacıyla (JobHandle) konuşur: iptal sorusu,
 ilerleme (JobProgress), iş günlüğü satırı. Tutamaç verilmezse iş kaydı olmadan çalışır.
 
+Listeler (sezon listesi, sezon programı) tipli iş birimleridir (src/services/listing.py, plan maddesi P14): servis
+onları bağlamdaki SeasonFetcher / MatchFetcher sarmalayıcılarının `list_seasons` / `list_schedule` yüzüyle çalıştırır
+(getirme boru hattı: çalıştırma başına tek ısıtılmış oturum, yazıcı thread'i). Çekilemeyen bir sezon listesi ya da
+tur "sezon yok" / "maç yok" gibi görünmez: başarısız bir iş birimidir (`SyncResult.failed_listings`) ve iş
+`partial` biter. Taze bir liste (sezon listesi SEASON_LIST_TTL_SECONDS, program SCHEDULE_TTL_SECONDS içinde
+çekilmiş) yeniden istenmez.
+
 Komut satırı da aynı servisi çağırır (main.py: `--headless --update-all` ve `--refresh-only`); yalnızca yenileme
 ayrı bir kiptir (`mode="refresh"`: kayıtlı geçici maçların /event'i yeniden okunur, başka istek atılmaz).
 
@@ -28,12 +35,14 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
-from typing import Any, Dict, List, Literal, Mapping, Optional, Protocol, Tuple
+from typing import Any, Callable, Dict, List, Literal, Mapping, Optional, Protocol, Tuple
 
 from src import breaker as request_breaker
 from src.client.context import FetchCancelled, request_context
+from src.exceptions import StorageError
 from src.jobs.progress import JobProgress
 from src.logger import get_logger
+from src.services import listing
 from src.services.context import ServiceContext
 
 logger = get_logger("SyncService")
@@ -113,6 +122,21 @@ class RefreshCounts:
 
 
 @dataclass(frozen=True)
+class FailedListing:
+    """
+    Çekilemeyen bir liste: sezon listesi (`kind` "seasons") ya da sezon programı ("schedule").
+
+    reason  istek katmanının nedeni ("403", "429", "5xx", "timeout", "network", "parse", "other"), "not_found"
+            (SofaScore'da böyle bir turnuva yok), "storage" (alındı ama yazılamadı)
+    """
+
+    kind: str
+    league_id: int
+    season_id: Optional[int]
+    reason: str
+
+
+@dataclass(frozen=True)
 class SyncResult:
     """
     Bir eşitlemenin sonucu.
@@ -120,11 +144,12 @@ class SyncResult:
     state                    "cancelled": iptal edildi; "partial": devre kesici durdurdu ya da en az bir maç
                              indirilemedi / yenilenemedi; "succeeded": diğer her durum (02-services.md 2.8,
                              bitiş durumu kuralı)
-    schedule_empty_seasons   maç listesi boş dönen ya da çekilemeyen sezon sayısı (tam kip)
+    schedule_empty_seasons   maç listesi boş dönen sezon sayısı (tam kip; çekilemeyen sezon `failed_listings`tedir)
     breaker                  devre kesildiyse neden: "403" | "429" | "5xx" | "other"; yoksa None
     progress                 JobProgress.result(): detay sayaçları, başarısız maçlar, yenileme sayıları
     refresh                  yalnızca yenileme kipinde: o çalıştırmanın sayıları; diğer kiplerde ve yenileme
                              başlamadan iptal edildiyse None
+    failed_listings          çekilemeyen sezon listeleri ve programlar (tam kip); varsa iş `partial` biter
     """
 
     state: SyncState
@@ -132,6 +157,7 @@ class SyncResult:
     breaker: Optional[str]
     progress: Mapping[str, Any]
     refresh: Optional[RefreshCounts] = None
+    failed_listings: Tuple[FailedListing, ...] = ()
 
 
 class JobHandle(Protocol):
@@ -225,6 +251,7 @@ class _SyncRun:
         self.breaker = breaker
         self.league_names: Dict[int, str] = {}
         self.empty_schedule = 0
+        self.failed_listings: List[FailedListing] = []
 
     # --- yardımcılar ---------------------------------------------------------------------------------
 
@@ -256,7 +283,8 @@ class _SyncRun:
         state: SyncState
         if cancelled:
             state = "cancelled"
-        elif breaker or progress.get("failed_count") or (refresh is not None and refresh.failed):
+        elif (breaker or progress.get("failed_count") or (refresh is not None and refresh.failed)
+              or self.failed_listings):
             state = "partial"
         else:
             state = "succeeded"
@@ -266,7 +294,38 @@ class _SyncRun:
             breaker=breaker,
             progress=progress,
             refresh=refresh,
+            failed_listings=tuple(self.failed_listings),
         )
+
+    def _listing(self, run: Callable[[], "listing.ListingResult"], kind: str, league_id: int,
+                 season_id: Optional[int] = None) -> Optional["listing.ListingResult"]:
+        """
+        Bir liste biriminin çalıştırılması. Başarısız liste (ya da beklenmeyen hata) `failed_listings`'e ve iş
+        günlüğüne yazılır; None döner. İptal ve kalıcı depolama hatası çağırana çıkar.
+        """
+        what = f"league {league_id}" + (f", season {season_id}" if season_id is not None else "")
+        try:
+            result: Optional[listing.ListingResult] = run()
+            reason = result.reason if result is not None and result.failed else None
+        except (FetchCancelled, KeyboardInterrupt):
+            raise
+        except StorageError as e:
+            if e.fatal:
+                raise
+            logger.error("Storing the %s of %s failed: %s", "season list" if kind == "seasons" else "schedule",
+                         what, e)
+            result, reason = None, "storage"
+        except Exception as e:
+            logger.error("%s failed for %s: %s", "Season list" if kind == "seasons" else "Match list", what, e)
+            result, reason = None, "other"
+        if reason is None:
+            return result
+        self.failed_listings.append(FailedListing(kind, int(league_id), season_id, str(reason)))
+        if kind == "seasons":
+            self.job.log(f"The season list of league {league_id} could not be fetched ({reason}).")
+        else:
+            self.job.log(f"The match list of {what} could not be fetched completely ({reason}).")
+        return None
 
     # --- akış ----------------------------------------------------------------------------------------
 
@@ -360,10 +419,8 @@ class _SyncRun:
                 break
             tracker.set_context(league_id=lid, league_name=self.lname(lid))
             job.log(f"Refreshing season list for league {lid}...")
-            try:
-                ctx.season_fetcher.fetch_seasons_for_league(lid)
-            except Exception as e:
-                logger.error("Season list failed for league %s: %s", lid, e)
+            self._listing(lambda _l=lid: ctx.season_fetcher.list_seasons(
+                _l, max_age=listing.SEASON_LIST_TTL_SECONDS), "seasons", lid)
             tracker.advance(i + 1)
 
         # 2. Maç listeleri: hangi (lig, sezon) çiftleri
@@ -405,12 +462,11 @@ class _SyncRun:
                 break
             tracker.set_context(league_id=lid, league_name=self.lname(lid), season_name=sname)
             job.log(f"Fetching matches: league {lid}, season {sid}")
-            try:
-                ok = ctx.match_fetcher.fetch_matches_for_season(lid, sid)
-            except Exception as e:
-                logger.error("Match list failed for league %s season %s: %s", lid, sid, e)
-                ok = False
-            if not ok:
+            result = self._listing(lambda _l=lid, _s=sid: ctx.match_fetcher.list_schedule(
+                _l, _s, max_age=listing.SCHEDULE_TTL_SECONDS), "schedule", lid, sid)
+            # Boş program: listelendi ama maç yok. Başarısız ya da devre kesici yüzünden yarım kalan program
+            # "maç yok" sayılmaz
+            if result is not None and (result.ok or result.fresh) and not result.has_matches:
                 self.empty_schedule += 1
             tracker.advance(idx + 1)
         job.publish({"schedule_empty_seasons": self.empty_schedule})

@@ -16,12 +16,18 @@
   },
   "request_layer_loaded": true,
   "requests": [
-   "sync /unique-tournament/17/seasons 403",
-   "sync /unique-tournament/17/seasons 403",
-   "sync /unique-tournament/17/seasons 403"
+   {
+    "concurrent": [
+     "async /unique-tournament/17/seasons 403",
+     "async /unique-tournament/17/seasons 403",
+     "async /unique-tournament/17/seasons 403",
+     "async https://www.sofascore.com/ 403"
+    ]
+   }
   ],
   "sleeps": {
-   "request-layer": 2
+   "request-layer": 2,
+   "src.client.transport": 1
   },
   "stderr": [],
   "stdout": [
@@ -38,12 +44,15 @@
    "LOG INFO Main: Running in headless mode",
    "LOG INFO Main: Headless update: league_id=None mode=full",
    "LOG INFO SyncService: Refreshing season list for league 17...",
-   "LOG INFO SeasonFetcher: Premier League (ID: 17) için sezonlar çekiliyor...",
-   "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
-   "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
-   "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
-   "LOG ERROR Utils: 403 Forbidden, denemeler tükendi: https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
-   "LOG ERROR SeasonFetcher: Premier League için sezon verileri çekilemedi: HTTP 403 Forbidden: https://www.sofascore.com/api/v1/unique-tournament/17/seasons (Durum Kodu: 403)",
+   {
+    "concurrent": [
+     "LOG ERROR Listing: Season list of league 17 could not be fetched (403)",
+     "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
+     "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
+     "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons"
+    ]
+   },
+   "LOG INFO SyncService: The season list of league 17 could not be fetched (403).",
    "LOG WARNING SeasonFetcher: No stored season list for league 17",
    "LOG INFO SyncService: Checking which matches need details...",
    "Fetching match details for all leagues...",
@@ -70,12 +79,18 @@
   },
   "request_layer_loaded": true,
   "requests": [
-   "sync /unique-tournament/17/seasons 403",
-   "sync /unique-tournament/17/seasons 403",
-   "sync /unique-tournament/17/seasons 403"
+   {
+    "concurrent": [
+     "async /unique-tournament/17/seasons 403",
+     "async /unique-tournament/17/seasons 403",
+     "async /unique-tournament/17/seasons 403",
+     "async https://www.sofascore.com/ 403"
+    ]
+   }
   ],
   "sleeps": {
-   "request-layer": 2
+   "request-layer": 2,
+   "src.client.transport": 1
   },
   "stderr": [],
   "stdout": [
@@ -92,12 +107,15 @@
    "LOG INFO Main: Running in headless mode",
    "LOG INFO Main: Headless update: league_id=17 mode=full",
    "LOG INFO SyncService: Refreshing season list for league 17...",
-   "LOG INFO SeasonFetcher: Premier League (ID: 17) için sezonlar çekiliyor...",
-   "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
-   "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
-   "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
-   "LOG ERROR Utils: 403 Forbidden, denemeler tükendi: https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
-   "LOG ERROR SeasonFetcher: Premier League için sezon verileri çekilemedi: HTTP 403 Forbidden: https://www.sofascore.com/api/v1/unique-tournament/17/seasons (Durum Kodu: 403)",
+   {
+    "concurrent": [
+     "LOG ERROR Listing: Season list of league 17 could not be fetched (403)",
+     "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
+     "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons",
+     "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/unique-tournament/17/seasons"
+    ]
+   },
+   "LOG INFO SyncService: The season list of league 17 could not be fetched (403).",
    "LOG WARNING SeasonFetcher: No stored season list for league 17",
    "LOG INFO SyncService: Checking which matches need details...",
    "Fetching match details for league ID 17...",
