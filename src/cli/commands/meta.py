@@ -203,8 +203,8 @@ def describe_config() -> Dict[str, Any]:
     }
 
 
-# Canlı kaynaklar (02-services.md 8.2 ve 8.3); `ssc watch --source` ve `[live] source`. page (P24) ve poll vardır;
-# direct sonraki işte gelir (P31) ve o zamana kadar yoklamaya düşer. Liste src/services/live/supervisor.py
+# Canlı kaynaklar (02-services.md 8.2 ve 8.3); `ssc watch --source` ve `[live] source`: page (P24), poll ve açık
+# seçimle direct (P31; uyarısıyla birlikte listelenir). Liste src/services/live/supervisor.py
 # AVAILABLE_SOURCES ile aynıdır (bu modül servisi içe aktarmaz: describe hafif kalır).
 _LIVE_SOURCE_TEXT = {
     "page": "listens to the push connection that SofaScore's own page opens; handles no credential",
@@ -219,7 +219,7 @@ def describe_live_sources() -> List[Dict[str, Any]]:
     from src.config import settings as model
 
     default = model.LiveSettings().source
-    available = ("page", "poll")
+    available = ("page", "direct", "poll")
     return [
         {
             "name": name,

@@ -8,7 +8,7 @@ yapılacağını söyler. Saf bir durum makinesidir: saati çağıran verir, ağ
     PING/PONG) bu yana SILENCE_SECONDS geçmedi. Sitenin istemcisi 120 sn'de bir PING atar (ölçüm:
     docs/push-channel/README.md); eşik bu aralığın bir buçuk katıdır, maçı olmayan sessiz bir sporda da
     bağlantı PING/PONG ile sağlıklı görünür.
-  * **Önde olan.** Push sağlıklıysa `page`, değilse `poll`. Her değişiklik bir `Switch` döndürür; servis onu
+  * **Önde olan.** Push sağlıklıysa push kaynağı (`page` ya da `direct`), değilse `poll`. Her değişiklik bir `Switch` döndürür; servis onu
     `system.live_source_changed` olarak yazar.
   * **Yoklama aralığı.** Push sağlıklıyken yavaş güvenlik aralığı (SAFETY_POLL_SECONDS): push'un hiç anmadığı
     kapsamdaki maçları ve kaçan kareleri yoklama yakalar. Push sessiz ya da kopuksa `poll_interval`.
@@ -16,6 +16,7 @@ yapılacağını söyler. Saf bir durum makinesidir: saati çağıran verir, ağ
     kopukken olan geçiş push'ta tekrarlanmaz (ölçümde kopma pencerelerindeki 36 geçişin 22'si) ve son bilinen
     durum yeni turla tohumlanır.
 
+`direct` kaynağında (P31) bağlantı uygulamanın kendisinindir; hakem aynıdır, yalnızca önde olanın adı `direct`'tir.
 Push hiç yoksa (`push=False`, `--source poll`) önde olan hep `poll`'dur ve hakem değişiklik bildirmez.
 """
 from __future__ import annotations
@@ -24,6 +25,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 LEADER_PAGE = "page"
+LEADER_DIRECT = "direct"
 LEADER_POLL = "poll"
 
 PING_INTERVAL_SECONDS = 120.0  # sitenin istemcisinin PING aralığı (ölçüm)
@@ -54,14 +56,17 @@ class SportArbiter:
     """
     sport            spor adı
     poll_interval    push sağlıksızken yoklama aralığı ([live] poll_interval_seconds)
-    push             bu sporda push kaynağı var mı (`page`); yoksa hep yoklama
+    push             bu sporda push kaynağı var mı (`page` ya da `direct`); yoksa hep yoklama
+    push_name        push kaynağının adı (önde olan push iken bu ad yazılır): "page" ya da "direct"
     safety_interval  push sağlıklıyken yoklama aralığı
     silence          bu kadar sn işaret gelmezse push sessiz sayılır
     """
 
     def __init__(self, sport: str, *, poll_interval: float, push: bool,
-                 safety_interval: float = SAFETY_POLL_SECONDS, silence: float = SILENCE_SECONDS) -> None:
+                 safety_interval: float = SAFETY_POLL_SECONDS, silence: float = SILENCE_SECONDS,
+                 push_name: str = LEADER_PAGE) -> None:
         self.sport = sport
+        self.push_name = push_name
         self.poll_interval = max(1.0, float(poll_interval))
         self.push = push
         self.safety_interval = max(self.poll_interval, float(safety_interval))
@@ -80,7 +85,7 @@ class SportArbiter:
     # --- girdiler -------------------------------------------------------------------------------
 
     def opened(self, at: float) -> None:
-        """Sayfanın push bağlantısı (yeniden) kuruldu: yoklama turu hemen gerekir."""
+        """Push bağlantısı (yeniden) kuruldu: yoklama turu hemen gerekir."""
         self.connected = True
         self.connections += 1
         self.opened_at = at
@@ -133,7 +138,7 @@ class SportArbiter:
         if not self.push:
             return None
         healthy = self.healthy(now)
-        wanted = LEADER_PAGE if healthy else LEADER_POLL
+        wanted = self.push_name if healthy else LEADER_POLL
         if wanted == self.leader:
             return None
         switch = Switch(self.sport, self.leader, wanted, REASON_CONNECTED if healthy else self._reason(now), now)
@@ -145,7 +150,7 @@ class SportArbiter:
         return switch
 
     def interval(self) -> float:
-        return self.safety_interval if self.leader == LEADER_PAGE else self.poll_interval
+        return self.poll_interval if self.leader == LEADER_POLL else self.safety_interval
 
     def poll_due(self, now: float) -> bool:
         if self.poll_pending or self.last_poll is None:
@@ -172,6 +177,7 @@ class SportArbiter:
 
 
 __all__ = [
+    "LEADER_DIRECT",
     "LEADER_PAGE",
     "LEADER_POLL",
     "PING_INTERVAL_SECONDS",

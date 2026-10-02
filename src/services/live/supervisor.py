@@ -38,8 +38,13 @@ Canlı servis (docs/design/02-services.md bölüm 8.1): `ssc watch`'ın çalış
     Push'un gösterdiği ama yoklamanın hiç listelemediği bir maç (ölçüm: biten maçların bir kısmı) kapsamdaysa
     durumu karesinden ve tek bir /event isteğinden kurulur (dakikada en çok UNKNOWN_LOOKUPS_PER_MINUTE).
 
-`direct` sonraki işte gelir (P31) ve o zamana kadar yoklamaya düşer. Saat ve bekleme dışarıdan verilir: testler
-sahte saatle gerçek zaman beklemeden sınar.
+  * **`direct` (P31, açık seçim).** Yalnızca istenen kaynak kelimesi kelimesine `direct` ise servis tek bir push
+    bağlantısı kurar (direct_source.DirectConnection; kimlik bilgisi köprü sayfasının kendi bağlantısından,
+    yalnızca bellekte) ve her sporu `sport.{spor}` konusuyla ona bağlar (direct_source.DirectSource). Kareler
+    `page` kaynağıyla aynı yoldan geçer (LastKnown, hakem, indirgeyici). Hiçbir yedek, hata yolu ya da varsayılan
+    `direct`'i seçmez; `direct` de çalışmazsa servis yoklamayla sürer. Her başlangıçta dört uyarı log'a yazılır.
+
+Saat ve bekleme dışarıdan verilir: testler sahte saatle gerçek zaman beklemeden sınar.
 """
 from __future__ import annotations
 
@@ -94,8 +99,10 @@ MIN_REQUEST_SPACING_SECONDS = 1.0
 DEFAULT_SPORT = "football"  # sporu belirtilmemiş takip (yapılandırmanın varsayılanı)
 
 SOURCE_POLL = "poll"
-SOURCES: Tuple[str, ...] = (SOURCE_PAGE, "direct", SOURCE_POLL)
-AVAILABLE_SOURCES: Tuple[str, ...] = (SOURCE_PAGE, SOURCE_POLL)  # direct: P31
+SOURCE_DIRECT = "direct"
+SOURCES: Tuple[str, ...] = (SOURCE_PAGE, SOURCE_DIRECT, SOURCE_POLL)
+AVAILABLE_SOURCES: Tuple[str, ...] = (SOURCE_PAGE, SOURCE_DIRECT, SOURCE_POLL)
+PUSH_SOURCES: Tuple[str, ...] = (SOURCE_PAGE, SOURCE_DIRECT)
 
 BUSY_RETRY_FIRST_SECONDS = 0.5
 BUSY_RETRY_MAX_SECONDS = 30.0
@@ -305,12 +312,15 @@ def reducer_snapshot(state: Mapping[str, Mapping[str, Any]]) -> Dict[str, str]:
 
 @dataclass
 class _Slot:
-    """Bir sporun kaynakları ve gözetim bilgisi. `source` yoklamadır; `page` push kaynağıdır (yalnızca `page`)."""
+    """
+    Bir sporun kaynakları ve gözetim bilgisi. `source` yoklamadır; `page` push kaynağıdır: `page` seçiliyse
+    PageSource, `direct` seçiliyse DirectSource (aynı arayüz: feed, ensure_open, drain, close), yoksa None.
+    """
 
     tracker: _Tracker
     source: Any
     arbiter: SportArbiter
-    page: Optional[PageSource] = None
+    page: Optional[Any] = None
     started: bool = False
     failures: int = 0
     retry_at: float = 0.0
@@ -331,7 +341,7 @@ class LiveReport:
     started_at: Optional[float] = None
     heartbeat_at: Optional[float] = None
     finished: bool = False  # izlenen maçların hepsi bitti
-    leaders: Dict[str, str] = field(default_factory=dict)  # spor → önde olan kaynak ("page" ya da "poll")
+    leaders: Dict[str, str] = field(default_factory=dict)  # spor → önde olan kaynak ("page", "direct", "poll")
     push_frames: int = 0  # indirgeyiciye verilen push kareleri
     source_switches: int = 0
     last_switch: Optional[Dict[str, Any]] = None
@@ -372,16 +382,20 @@ class LiveService:
     max_event_polls  turda en çok kaç maç sayfası ([live] max_event_polls)
     source_factory   (spor, get, saat) → kaynak; varsayılan PollSource
     confirm          bitişte maçın yükünü sakla (store.events.observe)
-    requested_source "page", "direct" ya da "poll"; `page` sayfaları açar, ötekiler bugün yalnızca yoklar
+    requested_source "page", "direct" ya da "poll"; `page` sayfaları açar, `direct` push sunucusuna kendisi
+                     bağlanır (yalnızca bu değer kelimesi kelimesine verildiyse), `poll` yalnızca yoklar
     page_opener      sayfaları açan (push_source.PageOpener); None: gerçek tarayıcı (canlı profil), yalnızca
                      `page` seçiliyse ve ilk spor eklenince kurulur
+    direct_connection `direct`'in bağlantısı (direct_source.DirectConnection); None: gerçek bağlantı ve kimlik
+                     bilgisi okuyucusu, yalnızca `direct` seçiliyse ve ilk spor eklenince kurulur
     """
 
     def __init__(self, store: Any, scope: Optional[LiveScope] = None, *, fetch: Optional[Fetch] = None,
                  clock: Callable[[], float] = time.time, sleep: Callable[[float], None] = time.sleep,
                  poll_interval: float = LIST_INTERVAL_SECONDS, max_event_polls: int = 20,
                  source_factory: Optional[SourceFactory] = None, confirm: bool = True,
-                 requested_source: str = SOURCE_POLL, page_opener: Optional[PageOpener] = None) -> None:
+                 requested_source: str = SOURCE_POLL, page_opener: Optional[PageOpener] = None,
+                 direct_connection: Optional[Any] = None) -> None:
         from src import throttle
 
         self._store = store
@@ -403,9 +417,12 @@ class LiveService:
         self._blocked_retry_at = 0.0
         self._last_heartbeat: Optional[float] = None
         self.report = LiveReport(requested_source_note(requested_source))
-        self._push = self.report.source == SOURCE_PAGE
+        # Push kaynağı: yalnızca istenen kaynak `page` ya da kelimesi kelimesine `direct` ise (yedek değil)
+        self._push_source: Optional[str] = self.report.source if self.report.source in PUSH_SOURCES else None
+        self._push = self._push_source is not None
         self._pending_confirms: Dict[Tuple[str, int], Tuple[int, float]] = {}
         self._page_opener = page_opener
+        self._direct_connection = direct_connection if self._push_source == SOURCE_DIRECT else None
 
     # --- istekler ---------------------------------------------------------------------------
 
@@ -437,8 +454,9 @@ class LiveService:
             state = self._store.watch.load(sport_scope.sport)
             tracker = _Tracker(self, sport_scope, state)
             sport = sport_scope.sport
-            arbiter = SportArbiter(sport, poll_interval=self._poll_interval, push=self._push)
-            page = PageSource(sport, self._opener(), clock=self._clock) if self._push else None
+            arbiter = SportArbiter(sport, poll_interval=self._poll_interval, push=self._push,
+                                   push_name=self._push_source or SOURCE_PAGE)
+            page = self._push_for(sport)
             self._slots[sport] = _Slot(tracker, self._source_factory(sport, self._get, self._clock), arbiter, page)
             self.report.leaders[sport] = arbiter.leader
         for sport in [s for s in self._slots if scope.sport(s) is None]:
@@ -449,6 +467,26 @@ class LiveService:
             self.report.leaders.pop(sport, None)
         self._scope = scope
         self.report.sports = tuple(sorted(self._slots))
+
+    def _push_for(self, sport: str) -> Optional[Any]:
+        """Sporun push kaynağı: `page` → PageSource, `direct` → DirectSource; yalnızca yoklamada None."""
+        if self._push_source == SOURCE_PAGE:
+            return PageSource(sport, self._opener(), clock=self._clock)
+        if self._push_source == SOURCE_DIRECT:
+            from src.services.live.direct_source import DirectSource
+
+            return DirectSource(sport, self._direct(), clock=self._clock)
+        return None
+
+    def _direct(self) -> Any:
+        """`direct`'in tek bağlantısı. Yalnızca istenen kaynak `direct` iken kurulur; başka hiçbir yol kurmaz."""
+        if self._push_source != SOURCE_DIRECT:
+            raise RuntimeError("the direct push connection is only built when the source is \"direct\"")
+        if self._direct_connection is None:
+            from src.services.live.direct_source import BrowserCredentialReader, DirectConnection
+
+            self._direct_connection = DirectConnection(BrowserCredentialReader())
+        return self._direct_connection
 
     def _opener(self) -> PageOpener:
         if self._page_opener is None:
@@ -486,6 +524,10 @@ class LiveService:
                 self._last_scope_read = started
                 logger.info("Live service started: source %s, sports %s", self.report.source,
                             ", ".join(self.report.sports) or "none")
+                if self._push_source == SOURCE_DIRECT:
+                    from src.config.settings import LIVE_DIRECT_WARNING
+
+                    logger.warning("The live source is \"direct\", chosen explicitly: %s.", LIVE_DIRECT_WARNING)
                 while not stop.is_set():
                     round_started = self._clock()
                     polled = self._round()
@@ -523,6 +565,11 @@ class LiveService:
         for slot in self._slots.values():
             if slot.page is not None:
                 slot.page.close()
+        if self._direct_connection is not None:
+            try:
+                self._direct_connection.close()
+            except Exception as e:
+                logger.warning("The direct push connection could not be closed (%s)", type(e).__name__)
         if self._page_opener is not None:
             try:
                 self._page_opener.close()
@@ -614,10 +661,11 @@ class LiveService:
     def _push_signal(self, slot: _Slot, signal: Signal) -> bool:
         arbiter, sport = slot.arbiter, slot.tracker.sport
         if signal.kind == SIGNAL_OPEN:
-            logger.info("The push connection of the %s page is open", sport)
+            logger.info("The push connection of %s is open (%s source)", sport, self._push_source)
             arbiter.opened(signal.at)
         elif signal.kind == SIGNAL_CLOSE:
-            logger.info("The push connection of the %s page closed; the page reconnects by itself", sport)
+            logger.info("The push connection of %s closed (%s source); it reconnects by itself", sport,
+                        self._push_source)
             arbiter.closed(signal.at)
         elif signal.kind == SIGNAL_PING:
             arbiter.ping(signal.at)
@@ -627,7 +675,7 @@ class LiveService:
             logger.warning("Push frames of %s were dropped (the service fell behind); polling once", sport)
             arbiter.gap()
         elif signal.kind == SIGNAL_ERROR:
-            logger.info("The push server reported an error on the %s page (%s)", sport, signal.text)
+            logger.info("The push server reported an error for %s (%s)", sport, signal.text)
         elif signal.kind == SIGNAL_FRAME and signal.frame is not None:
             arbiter.frame(signal.at)
             return self._push_frame(slot.tracker, signal.frame)
@@ -739,7 +787,7 @@ class LiveService:
         obs = reducer.Observation(event=event, via=via, at=self._clock())
         tracker.state[eid], emitted = reducer.reduce(tracker.state.get(eid), obs, tracker.sport)
         tournament_id = tracker.state[eid].get("tournament_id")
-        source = SOURCE_PAGE if via == VIA_PUSH else SOURCE_POLL
+        source = (self._push_source or SOURCE_PAGE) if via == VIA_PUSH else SOURCE_POLL
         for item in emitted:
             stream_event = reducer.stream_event(item, event, tracker.sport, tournament_id=tournament_id,
                                                 source=source)
@@ -763,7 +811,7 @@ class LiveService:
         if not payload:
             logger.info("Event %s finished but its page could not be read; a later sync stores it", event_id)
             return
-        if source == SOURCE_PAGE and classify_status(dict(payload)).value not in reducer.TERMINAL_CLASSES:
+        if source in PUSH_SOURCES and classify_status(dict(payload)).value not in reducer.TERMINAL_CLASSES:
             # Push bitişi bir saniye içinde gösterir; maç sayfası (CDN) bir süre eski hali verebilir. Eski yük
             # saklanmaz: istek CONFIRM_RETRY_SECONDS sonra (en çok CONFIRM_ATTEMPTS kez) yinelenir.
             self._defer_confirm(tracker.sport, event_id)
@@ -800,7 +848,7 @@ class LiveService:
             if slot is None:
                 self._pending_confirms.pop((sport, event_id), None)
             elif due <= now:
-                self._confirm_terminal(slot.tracker, event_id, {}, VIA_PUSH, SOURCE_PAGE)
+                self._confirm_terminal(slot.tracker, event_id, {}, VIA_PUSH, self._push_source or SOURCE_PAGE)
 
     # --- engellenme ---------------------------------------------------------------------------
 
@@ -878,7 +926,7 @@ def _change_rule(sport: str) -> Callable[[Optional[Mapping[str, Any]], Mapping[s
 
 
 def requested_source_note(requested: str) -> str:
-    """Kullanılan kaynak: `page` ya da `poll`; `direct` bugün `poll`'a düşer (P31 ile gelir)."""
+    """Kullanılan kaynak: istenen (`page`, `direct`, `poll`); bilinmeyen bir değer `poll` olur, asla `direct`."""
     return requested if requested in AVAILABLE_SOURCES else SOURCE_POLL
 
 
@@ -927,6 +975,7 @@ __all__ = [
     "AVAILABLE_SOURCES",
     "LEASE_PURPOSE",
     "LIVE_LEASE",
+    "PUSH_SOURCES",
     "RUNTIME_KEY",
     "SOURCES",
     "Blocked",
