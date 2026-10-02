@@ -14,7 +14,7 @@ from src.logger import attach_file_handler, get_logger
 from src.paths import env_file_path
 from src.version import __version__
 from src.web import deps, errors, security
-from src.web.api import is_v1
+from src.web.api import deprecation_headers, is_v1
 from src.web.missing_ui import MISSING_UI_HTML
 
 dotenv.load_dotenv(env_file_path())
@@ -163,7 +163,8 @@ async def security_boundary(request: Request, call_next: RequestResponseEndpoint
       3. Güvenlik başlıkları: ret yanıtları dahil her yanıta eklenir.
 
     `/api/v1` yanıtları ayrıca istek kimliğini (`X-Request-Id`) taşır ve retler v1 hata modeliyle döner
-    (`unauthorized`, `forbidden_origin`); eski yolların ret gövdeleri değişmez.
+    (`unauthorized`, `forbidden_origin`); eski yolların ret gövdeleri değişmez. Eski her rotanın yanıtına
+    `Deprecation` ve halefini gösteren `Link` başlıkları eklenir (src/web/api/__init__.py).
     """
     # Yönlendiricinin eşleştirdiği yolun kendisi. request.url, Host başlığıyla birleştirilerek kurulur:
     # "*" izin listesinde "x/y?" gibi bir Host, oradan okunan yolu değiştirip belirteç denetimini
@@ -177,6 +178,9 @@ async def security_boundary(request: Request, call_next: RequestResponseEndpoint
         response.headers[name] = value
     if v1:
         response.headers[errors.REQUEST_ID_HEADER] = errors.request_id_of(request)
+    else:
+        for name, value in deprecation_headers(path, request.method):
+            response.headers[name] = value
     return response
 
 
@@ -187,7 +191,8 @@ from src.web.api import v1  # noqa: E402
 from src.web.jobs import JobStoreConflict  # noqa: E402
 from src.web.routes import api  # noqa: E402
 
-app.include_router(api.router)
+# Eski yollar bir sürüm daha durur: belgede `deprecated`, yanıtlarında Deprecation ve Link başlıkları
+app.include_router(api.router, deprecated=True)
 app.include_router(v1.router)
 errors.install(app)
 
