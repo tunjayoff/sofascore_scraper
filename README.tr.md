@@ -535,6 +535,35 @@ python main.py --watch --sport tennis --event-ids 17196038,17210464 --watch-hour
 
 Neden bu sayılar: `events/live` CDN'de 5 sn önbellekte kalıyor; araştırmada düdük → `finished` medyan 20 sn, en fazla 302 sn sürdü (`docs/status-matrix/README.md`). 30 sn'den sık sorgulamak fayda getirmez.
 
+### `ssc watch` canlı kaynakları
+
+Yeni komut satırının canlı servisi `ssc watch`, kaynağını `--source` ile, `sofascore.toml` içindeki `[live] source` ile ya da `SOFASCORE_LIVE__SOURCE` ile seçer (yukarıdaki eski `main.py --watch` her zaman yoklar):
+
+| Kaynak | Nasıl çalışır | Bellek |
+|---|---|---|
+| `page` (varsayılan) | izlenen her spor için bir tarayıcı sayfası açık tutar ve SofaScore'un kendi sayfasının açtığı push bağlantısını dinler; o bağlantının kimlik bilgisini hiç okumaz | spor başına yaklaşık 1,8–2,6 GB |
+| `poll` | yalnızca yukarıda anlatılan yoklama; tarayıcı yok | ek bellek yok |
+| `direct` (açık seçim) | hafif bir istemci push sunucusuna kendisi bağlanır; kimlik bilgisi sayfanın kendi bağlantısından okunur | yaklaşık 0,2 GB |
+
+Yoklama her kaynağın yedeğidir ve hep çalışır: push sağlıklıyken seyrek, bağlantı sessiz ya da kopukken her `poll_interval`'da ve her yeniden bağlanmadan sonra bir kez. `page` açılamaz ya da çökerse servis yoklamayla sürer; `direct`'e asla geçmez.
+
+**`direct` hiçbir zaman sizin yerinize seçilmez.** Yalnızca `direct`'i kendiniz yazdığınızda kullanılır (`--source direct`, `[live] source = "direct"` ya da `SOFASCORE_LIVE__SOURCE=direct`); otomatik bir değer yoktur. Seçmeden önce bilin:
+
+1. SofaScore'un kendi istemci kimlik bilgisini sitenin istemcisi dışında kullanır;
+2. kimlik bilgisi ya da sunucu değişince haber vermeden bozulabilir;
+3. IP adresinizin engellenmesine yol açabilir;
+4. bilerek seçtiğiniz bir kullanım koşulları gri alanıdır.
+
+Aynı dört madde `ssc watch --help`, `ssc describe config`, `ssc config validate` ve `ssc config show` tarafından yazılır ve servis bu kaynakla her başladığında log'a yazılır.
+
+`direct` nasıl davranır:
+
+- **Kimlik bilgisi.** Bir tarayıcı (profil `<profil>-live`) yalnızca kimlik bilgisini okumak için bir spor sayfası açar, bilgiyi o sayfanın kendi bağlantısının `CONNECT` karesinden alır ve kapanır. Kimlik bilgisi yalnızca bellekte tutulur: diske, `state.db`'ye, log'a, bir olaya ya da tanılama paketine hiç yazılmaz; bir log satırında görünürse maskelenir. Sunucu reddederse yeni bir sayfadan yeniden okunur; art arda beş başarısız denemeden sonra kaynak sağlıksız sayılır, servis yoklamayla sürer ve kaynak en çok 30 dakikada bir yeniden dener.
+- **Hat üstünde.** Tek bağlantı; yalnızca abone olur (izlenen her spor için `sport.<spor>`), hiç yayın yapmaz ve joker konu kullanmaz; sitenin istemcisi gibi 120 sn'de bir PING gönderir. Sunucu bağlantıyı yaklaşık 30 dakikada bir düşürür; istemci artan aralıklarla yeniden bağlanır ve yeniden abone olur.
+- **Proxy.** Bir proxy yapılandırılmışsa (`USE_PROXY` / `PROXY_URL`) `direct` bağlanmaz, çünkü bağlantı proxy'yi atlardı; servis onun yerine yoklar.
+
+Ölçülen ve ölçülmeyen (`docs/push-channel/README.md`, bölüm 7): tek akşam, tek bölge, tek bağlantı, yalnızca `sport.football` konusu, yaklaşık 38 dakika ve bir yeniden bağlanma; istemci 216–226 MB kullandı ve düz bir istemci kabul edildi. Ölçülmeyen: tek bağlantıda birden çok konu, saatlerce süren çalışma, birden çok spor ve kimlik bilgisinin ne sıklıkla değiştiği.
+
 ## REST API (özet)
 
 Web uygulaması kök yollarda; JSON API öneki **`/api`**.

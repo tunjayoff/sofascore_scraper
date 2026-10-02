@@ -546,6 +546,35 @@ python main.py --watch --sport tennis --event-ids 17196038,17210464 --watch-hour
 
 Why these numbers: `events/live` is cached for 5 s at the CDN, and whistle → `finished` took a median of 20 s (max 302 s) in the research (`docs/status-matrix/README.md`). Polling faster than 30 s gains nothing.
 
+### Live sources of `ssc watch`
+
+`ssc watch`, the live service of the new command line, picks its source with `--source`, with `[live] source` in `sofascore.toml` or with `SOFASCORE_LIVE__SOURCE` (the legacy `main.py --watch` above always polls):
+
+| Source | How it works | Memory |
+|---|---|---|
+| `page` (default) | keeps one browser page per watched sport open and listens to the push connection that SofaScore's own page opens; it never reads that connection's credential | about 1.8 to 2.6 GB per sport |
+| `poll` | polling only, as described above; no browser | nothing extra |
+| `direct` (explicit opt-in) | a light client connects to the push server itself, with the credential read from the page's own connection | about 0.2 GB |
+
+Polling is the fallback of every source and is always running: slowly while push is healthy, every `poll_interval` when the connection is silent or dropped, and once after every reconnect. When `page` cannot open or crashes, the service keeps polling; it never switches to `direct`.
+
+**`direct` is never chosen for you.** It is used only when you write `direct` yourself (`--source direct`, `[live] source = "direct"` or `SOFASCORE_LIVE__SOURCE=direct`); there is no automatic value. Before you choose it, know that:
+
+1. it uses SofaScore's own client credential outside the site's client;
+2. it may break without notice when the credential or the server changes;
+3. it may get your IP address blocked;
+4. it is a terms-of-use grey area that you choose knowingly.
+
+The same four points are printed by `ssc watch --help`, `ssc describe config`, `ssc config validate` and `ssc config show`, and logged every time the service starts with this source.
+
+How `direct` behaves:
+
+- **Credential.** A browser (profile `<profile>-live`) opens one sport page only to read the credential from the `CONNECT` frame of that page's own connection, then closes. The credential is kept in memory only: it is never written to disk, `state.db`, the log, an event or the diagnostics bundle, and it is masked if it ever appears in a log line. When the server rejects it, it is read again from a fresh page; after five failed attempts in a row the source counts as unhealthy, the service keeps polling, and the source retries at most every 30 minutes.
+- **On the wire.** One connection; it only subscribes (`sport.<sport>` for each watched sport), never publishes and never uses wildcard subjects; it sends a PING every 120 s, as the site's client does. The server drops the connection about every 30 minutes; the client reconnects with back-off and subscribes again.
+- **Proxy.** With a proxy configured (`USE_PROXY` / `PROXY_URL`), `direct` does not connect, because the connection would bypass the proxy; the service polls instead.
+
+What was measured and what was not (`docs/push-channel/README.md`, section 7): one evening, one region, one connection, the single subject `sport.football`, about 38 minutes and one reconnect; the client used 216 to 226 MB and a plain client was accepted. Not measured: several subjects on one connection, runs of hours, several sports, and how often the credential changes.
+
 ## REST API (overview)
 
 All routes are prefixed with `/api` unless noted.
