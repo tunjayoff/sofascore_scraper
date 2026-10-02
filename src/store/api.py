@@ -30,7 +30,9 @@ iş `writer` tutarken depo ilk kez açılıyorsa böyledir) ve şema uyuyorsa ki
 yerinde kurulur; dosyanın yeniden yaratılması gerekiyorsa beklenir (uyarı, katalog bir sonraki açılışa kadar
 kullanılamaz). Uzlaştırma kilit almaz: tek bir yazma işlemidir ve kancalarla aynı kuralla sıralanır.
 Kataloğun güncellenememesi `open_store`'u düşürmez; uyarı yazılır. Açılıştaki uzlaştırmanın özet satırı DEBUG
-düzeyindedir (komut çıktısı değişmez); kurulum, dizinde veri varsa tek bir INFO satırı yazar.
+düzeyindedir (komut çıktısı değişmez); kurulum, dizinde veri varsa tek bir INFO satırı yazar. Karar S17:
+aynı dizinin bir açılışı eski düzen maç dizinlerini bir dakikadan kısa süre önce taradıysa açılış o taramayı
+atlar (`Store._reconcile_on_open`; `STORE_OPEN_RECONCILE_SECONDS`).
 
 Gölge kip (plan maddesi ST-11): dosyaları hâlâ eski düzen yazıcıları (src/match_data_fetcher.py,
 src/match_fetcher.py, src/season_fetcher.py, terminal menüsünün temizleme ve geri yüklemesi) yazar ve her
@@ -100,6 +102,13 @@ CATALOG_RETRY_SECONDS = 30.0  # eşitlenemeyen katalog için kancalar en çok bu
 # Kataloğun güncellenmesini engelleyen, beklenen hatalar: depolama (dolu disk, izin, meşgul veritabanı)
 _CATALOG_ERRORS = (StoreError, sqlite3.Error, OSError)
 
+# Karar S17: açılıştaki uzlaştırmanın sınırı. Aynı dizinin bir açılışı eski düzen maç dizinlerini bundan kısa
+# süre önce taradıysa sonraki açılış o taramayı atlar (liste yarısı yine çalışır). `catalog reconcile` her
+# zaman tarar. Ortam değişkeni süreyi saniye olarak değiştirir; "0" her açılışta taratır.
+OPEN_RECONCILE_SECONDS = 60.0
+OPEN_RECONCILE_ENV = "STORE_OPEN_RECONCILE_SECONDS"
+META_OPEN_RECONCILED = "open_reconciled_at"  # katalogun `meta`'sı: son tam açılış taramasının bittiği an (epoch)
+
 # `Store.clear` kapsamları ve sildikleri eski düzen ağaçları, silme sırasıyla (bugünkü web API'sinin sırası)
 CLEAR_SCOPES: Tuple[str, ...] = ("events", "schedules", "seasons", "all")
 _CLEAR_TREES: Tuple[Tuple[str, str], ...] = (("events", "match_details"), ("schedules", "matches"),
@@ -149,6 +158,17 @@ class ClearReport:
     cleared: Tuple[str, ...]
     v3_events: bool = False
     catalog_rebuilt: bool = False
+
+
+def _open_reconcile_seconds() -> float:
+    """Karar S17'nin süresi (saniye): ortam değişkeni ya da OPEN_RECONCILE_SECONDS; geçersiz değer varsayılandır."""
+    raw = os.environ.get(OPEN_RECONCILE_ENV, "").strip()
+    if not raw:
+        return OPEN_RECONCILE_SECONDS
+    try:
+        return max(0.0, float(raw))
+    except ValueError:
+        return OPEN_RECONCILE_SECONDS
 
 
 def _utc_now() -> str:
@@ -268,7 +288,7 @@ class Store:
             self.catalog = CatalogAdmin(self.data_dir, self._catalog, league_names=self._league_names)
             _shadow_opened(self)
             if sync_catalog:
-                self._sync_catalog()
+                self._sync_catalog(on_open=True)
         except BaseException:
             self.close()
             raise
@@ -326,13 +346,16 @@ class Store:
         except _CATALOG_ERRORS:
             return False
 
-    def _sync_catalog(self) -> bool:
+    def _sync_catalog(self, *, on_open: bool = False) -> bool:
         """
         Kataloğu kullanılır hale getirir ve dosyalarla eşitler; başardıysa True. Açılışta ve, katalog
         eşitlenememişse, kancalardan çağrılır.
 
           * Kullanılabilir katalog uzlaştırılır (bölüm 3.5). Önceki yazar temiz kapanmadıysa önce
             `PRAGMA quick_check` çalışır ve v3 maç dizinleri de imzalarıyla karşılaştırılır.
+          * on_open=True (yalnızca deponun kurucusu): karar S17'nin sınırı uygulanır
+            (`_reconcile_on_open`). Kancaların ve yeniden denemelerin eşitlemesi her zaman tam taramadır:
+            az önce yazılan maç dizini onunla dizinlenir.
           * Kullanılamayan (yok, başka şema ya da türetme sürümü) ya da bozuk katalog yeniden kurulur
             (`_build_catalog`); kurulum zaten bütün ağacı okur, ardından uzlaştırma gerekmez.
 
@@ -351,12 +374,17 @@ class Store:
                     state = CatalogState(exists=True, rebuild_reason=REBUILD_CORRUPT, detail=damage[0])
                 else:
                     try:
-                        self.catalog.reconcile(deep=deep, v3=unclean, quiet=True)
+                        if on_open:
+                            self._reconcile_on_open(deep=deep, unclean=unclean)
+                        else:
+                            self.catalog.reconcile(deep=deep, v3=unclean, quiet=True)
                     except CatalogCorrupt as e:
                         state = CatalogState(exists=True, rebuild_reason=REBUILD_CORRUPT, detail=str(e))
-            if not state.usable and not self._build_catalog(state):
-                self._catalog_ready = False
-                return False
+            if not state.usable:
+                if not self._build_catalog(state):
+                    self._catalog_ready = False
+                    return False
+                self._stamp_open_reconcile()
         except _CATALOG_ERRORS as e:
             self._catalog_ready = False
             log = logger.debug if self._catalog_warned else logger.warning
@@ -375,6 +403,60 @@ class Store:
         self._catalog_warned = False
         _shadow_synced(self)
         return True
+
+    def _reconcile_on_open(self, *, deep: bool, unclean: bool) -> None:
+        """
+        Açılıştaki uzlaştırma, karar S17'nin sınırıyla. Aynı dizinin bir açılışı (bu ya da başka bir süreçte)
+        eski düzen maç dizinlerini `_open_reconcile_seconds()` saniyeden kısa süre önce taradıysa, bekleyen
+        yazma işareti yoksa, önceki yazar temiz kapandıysa ve dizin elle değiştirilmiş sayılmıyorsa (`deep`)
+        o tarama atlanır ve yalnızca liste yarısı çalışır (`sync_listings`: sezon listeleri, programlar,
+        değişiklik günlüğü). Öteki her durumda tam uzlaştırma çalışır ve bittiği an katalogun `meta`'sına
+        yazılır.
+
+        Bedeli: bir 2.x sürecinin, elle düzenlemenin ya da yazma ile kancası arasında çöken bir sürecin maç
+        dizinlerinde yaptığı değişiklik, o süre dolmadan açılan depoda görülmez; süre dolunca ilk açılış ya
+        da `catalog reconcile` görür. Kancalı yazıcıların yazdıkları her zaman görülür.
+        """
+        if not deep and not unclean and self._open_reconciled_recently():
+            self.catalog.sync_listings()
+            return
+        self.catalog.reconcile(deep=deep, v3=unclean, quiet=True)
+        self._stamp_open_reconcile()
+
+    def _open_reconciled_recently(self) -> bool:
+        assert self._catalog is not None
+        window = _open_reconcile_seconds()
+        if window <= 0:
+            return False
+        try:
+            stamp = json.loads(self._catalog.get_meta(META_OPEN_RECONCILED) or "null")
+            at = float(stamp["at"])
+            where = str(stamp["dir"])
+        except (ValueError, TypeError, KeyError):
+            return False
+        if where != self._stamp_dir():
+            return False  # dizin kataloğuyla birlikte başka bir yere kopyalanmış: oradaki tarama sayılmaz
+        if not 0.0 <= time.time() - at < window:
+            return False  # süre doldu ya da saat geri gitti
+        with self._catalog.read() as conn:
+            return conn.execute("SELECT 1 FROM pending_writes LIMIT 1").fetchone() is None
+
+    def _stamp_dir(self) -> str:
+        return os.path.normcase(os.path.realpath(self.data_dir))
+
+    def _stamp_open_reconcile(self) -> None:
+        """
+        Tam açılış taramasının (ya da kurulumun) bittiği anı ve dizinin yolunu yazar; yazılamaması açılışı
+        düşürmez. Yol, kataloğuyla birlikte kopyalanmış bir dizinin (yedekten dönen, taşınan) ilk açılışının
+        taramayı atlamamasını sağlar.
+        """
+        assert self._catalog is not None
+        value = json.dumps({"at": time.time(), "dir": self._stamp_dir()})
+        try:
+            with self._catalog.write():
+                self._catalog.set_meta(META_OPEN_RECONCILED, value)
+        except _CATALOG_ERRORS as e:
+            logger.debug("The time of the reconcile on open could not be stored in %s: %s", self.data_dir, e)
 
     def _build_catalog(self, state: CatalogState) -> bool:
         """
@@ -425,7 +507,7 @@ class Store:
         Katalog bu süreçte dosyalarla eşitlendi ve o günden beri her kanca onu güncelledi mi. False ise
         katalog eşitlenemedi (uyarı yazıldı) ya da bir kanca yazamadı: okuyucular onu güncel saymamalıdır
         (ör. her maçı "eksik" saymak yerine planlamayı reddetmek). Kanca olmadan (elle, 2.x süreciyle)
-        değişen dosyaları bilmez; onları bir sonraki açılışın uzlaştırması görür.
+        değişen dosyaları bilmez; onları açılıştaki uzlaştırma görür (karar S17'nin sınırıyla).
         """
         return not self._closed and self._catalog_ready
 
