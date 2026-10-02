@@ -16,13 +16,18 @@ import os
 import re
 import stat
 import zipfile
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import pytest
 
 import store_fixtures as sf
+from src.services.backup import BackupService
+from src.services.maintenance import MaintenanceService
+from src.store import StoreError, open_store
 from src.web.routes import data as data_routes
+from src.web.routes.common import _SyncHttpError
 
 GOLDEN = Path(__file__).resolve().parent / "golden" / "backup" / "members.json"
 REGEN = os.getenv("REGEN_BACKUP_GOLDEN") == "1"
@@ -88,3 +93,125 @@ def test_a_backup_with_env_is_private(configured: Path, monkeypatch: pytest.Monk
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
     with zipfile.ZipFile(path) as zf:
         assert zf.read(".env").decode("utf-8") == ENV_TEXT
+
+
+# --- BackupService ve Store.backup ----------------------------------------------------------------------
+
+def test_the_service_writes_through_the_store_and_lists_newest_first(configured: Path,
+                                                                     monkeypatch: pytest.MonkeyPatch) -> None:
+    fixture = sf.build_fixture("canonical", configured / "data")
+    store = open_store(fixture.data_dir)
+    service = BackupService(store)
+    leagues = str(configured / "config" / "leagues.txt")
+    assert service.list() == []  # backups/ henüz yok
+
+    older = store.backup.create("seasons", now=datetime(2026, 1, 2, 3, 4, 5))
+    newer = service.create("config", config_files=(leagues, str(configured / "missing.json")), include_secrets=True)
+
+    assert older.name == "backup_seasons_20260102_030405.zip" and older.created_at == "2026-01-02T03:04:05"
+    assert (older.scope, older.with_env) == ("seasons", False)
+    assert newer.scope == "config" and newer.with_env and newer.name.startswith("backup_config_with_env_")
+    assert newer.size == os.path.getsize(newer.path) and os.path.dirname(newer.path) == store.backup.directory
+    with zipfile.ZipFile(newer.path) as zf:
+        assert sorted(zf.namelist()) == [".env", "leagues.txt"]  # olmayan ayar dosyası atlanır
+    (fixture.data_dir / "backups" / "notes.txt").write_text("not a backup", encoding="utf-8")
+    assert [info.name for info in service.list()] == [newer.name, older.name]
+
+
+def test_secrets_stay_out_unless_asked(configured: Path) -> None:
+    fixture = sf.build_fixture("empty", configured / "data")
+    info = BackupService(open_store(fixture.data_dir)).create("all")
+    assert not info.with_env and "_with_env" not in info.name
+    with zipfile.ZipFile(info.path) as zf:
+        assert ".env" not in zf.namelist()
+    # .env yalnızca ayar kapsamlarında pakete girer
+    data_only = open_store(fixture.data_dir).backup.create("matches", env_file=os.environ["SOFASCORE_ENV_FILE"])
+    assert not data_only.with_env
+
+
+def test_a_failed_backup_leaves_no_partial_archive(configured: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fixture = sf.build_fixture("canonical", configured / "data")
+    store = open_store(fixture.data_dir)
+    real_write = zipfile.ZipFile.write
+    calls: List[str] = []
+
+    def failing_write(self: zipfile.ZipFile, filename: Any, arcname: Any = None, *args: Any, **kwargs: Any) -> None:
+        calls.append(str(arcname))
+        if len(calls) == 3:
+            raise OSError(28, "No space left on device")
+        real_write(self, filename, arcname, *args, **kwargs)
+
+    monkeypatch.setattr(zipfile.ZipFile, "write", failing_write)
+    with pytest.raises(StoreError) as caught:
+        store.backup.create("all")
+    assert caught.value.errno == 28 and caught.value.fatal
+    assert list((fixture.data_dir / "backups").iterdir()) == []
+    with pytest.raises(ValueError):
+        store.backup.create("everything")
+
+
+def test_the_route_answers_500_when_the_store_fails(configured: Path, monkeypatch: pytest.MonkeyPatch,
+                                                    caplog: pytest.LogCaptureFixture) -> None:
+    fixture = sf.build_fixture("empty", configured / "data")
+    _use_data_dir(monkeypatch, fixture.data_dir)
+    (fixture.data_dir / "backups").write_text("a file where the directory should be", encoding="utf-8")
+    with pytest.raises(_SyncHttpError) as caught:
+        data_routes._create_backup_sync("all")
+    assert (caught.value.status_code, caught.value.detail) == (500, "Backup failed")
+    assert any(r.getMessage().startswith("Backup failed: ") for r in caplog.records)
+
+
+# --- MaintenanceService.clear ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("scope, cleared, kept", [
+    ("all", ("match_details", "matches", "seasons"), ()),
+    ("match_details", ("match_details",), ("matches", "seasons")),
+    ("events", ("match_details",), ("matches", "seasons")),
+    ("matches", ("matches",), ("match_details", "seasons")),
+    ("schedules", ("matches",), ("match_details", "seasons")),
+    ("seasons", ("seasons",), ("match_details", "matches")),
+])
+def test_clear_maps_todays_scope_names_to_the_store(tmp_path: Path, scope: str, cleared: Tuple[str, ...],
+                                                    kept: Tuple[str, ...]) -> None:
+    fixture = sf.build_fixture("canonical", tmp_path / "data")
+    store = open_store(fixture.data_dir)
+
+    report = MaintenanceService(store=store).clear(scope, confirm=True)  # type: ignore[arg-type]
+
+    assert report.cleared == cleared and report.catalog_rebuilt
+    for tree in cleared:
+        assert (fixture.data_dir / tree).is_dir() and not any((fixture.data_dir / tree).iterdir())
+    for tree in kept:
+        assert any((fixture.data_dir / tree).iterdir())
+    assert (fixture.data_dir / "score_changes.jsonl").exists()  # değişiklik günlüğü temizlenmez
+    assert store.catalog.diff_from_rebuild() == []
+
+
+def test_clear_needs_a_confirmation_and_a_known_scope(tmp_path: Path) -> None:
+    store = open_store(sf.build_fixture("canonical", tmp_path / "data").data_dir)
+    service = MaintenanceService(store=store)
+    with pytest.raises(ValueError):
+        service.clear("all", confirm=False)
+    with pytest.raises(ValueError):
+        service.clear("everything", confirm=True)  # type: ignore[arg-type]
+    with pytest.raises(ValueError):
+        service.recheck_unavailable()  # bağlamsız servis yalnızca temizler
+    with pytest.raises(ValueError):
+        MaintenanceService()
+    assert any((tmp_path / "data" / "match_details").iterdir())
+
+
+def test_clear_reports_only_the_trees_that_existed(tmp_path: Path) -> None:
+    fixture = sf.build_fixture("processed_only", tmp_path / "data")
+    report = MaintenanceService(store=open_store(fixture.data_dir)).clear("all", confirm=True)
+    assert report.cleared == ("match_details",)
+    assert not (fixture.data_dir / "matches").exists() and not (fixture.data_dir / "seasons").exists()
+
+
+def test_the_route_returns_what_the_service_cleared(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fixture = sf.build_fixture("canonical", tmp_path / "data")
+    _use_data_dir(monkeypatch, fixture.data_dir)
+    assert data_routes._clear_data_sync("all") == {"status": "success",
+                                                   "cleared": ["match_details", "matches", "seasons"]}
+    assert data_routes._clear_data_sync("matches") == {"status": "success", "cleared": ["matches"]}
+

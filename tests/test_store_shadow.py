@@ -33,13 +33,14 @@ from src.exceptions import StorageError
 from src.match_data_fetcher import SCORE_CHANGES_FILE, UNAVAILABLE_FILE, MatchDataFetcher
 from src.match_fetcher import MatchFetcher
 from src.season_fetcher import SeasonFetcher
-from src.slices import SLICE_EMPTY, SliceOutcome
+from src.slices import SLICE_EMPTY, SLICE_OK, SliceOutcome
 from src.status import OBSERVATION_KEY
 from src.store import (
     CatalogAdmin,
     EventQuery,
     FollowSpec,
     JobStore,
+    LeaseHeld,
     RebuildReport,
     ReconcileReport,
     Ref,
@@ -697,6 +698,104 @@ def test_clear_rebuilds_the_catalog(canonical: sf.LegacyFixture, monkeypatch: py
                         == fresh.connection().execute(query).fetchone()[0]), table
 
 
+# --- Store.clear (ST-19) ---------------------------------------------------------------------------------
+
+def test_store_clear_removes_the_v3_and_the_legacy_form_and_rebuilds_the_catalog(canonical: sf.LegacyFixture) -> None:
+    data = canonical.data_dir
+    store = open_store(data)
+    store.events.put(NO_DETAIL, {"event": SliceOutcome(SLICE_OK, sf.basic_payload(sf.PL_NO_DETAIL))})
+    assert (data / layout.EVENTS_DIR).is_dir() and store.events.get(NO_DETAIL).has_event_payload
+
+    report = store.clear("events")
+
+    assert report == api_mod.ClearReport(scopes=("events",), cleared=("match_details",), v3_events=True,
+                                         catalog_rebuilt=True)
+    assert not (data / layout.EVENTS_DIR).exists() and not any((data / "match_details").iterdir())
+    assert store.events.get(ARS).row_source == "listing" and store.events.get(NO_DETAIL).row_source == "listing"
+    assert (data / "score_changes.jsonl").exists() and (data / ".meta" / "state.db").exists()
+    assert store.lease_holder("maintenance") is None  # kendi aldığı kilidi bıraktı
+    assert differences(store) == []
+
+
+def test_store_clear_takes_several_scopes_and_removes_the_entity_rows(canonical: sf.LegacyFixture) -> None:
+    store = open_store(canonical.data_dir)
+    assert store.entities.tournaments()
+
+    report = store.clear(["seasons", "schedules", "events"])
+
+    assert report.cleared == ("match_details", "matches", "seasons")  # bugünkü web sırası
+    assert store.entities.tournaments() == [] and store.events.count(EventQuery()) == 0
+    assert differences(store) == []
+
+
+def test_store_clear_runs_under_the_maintenance_lease(canonical: sf.LegacyFixture) -> None:
+    """Bu süreç `maintenance`'ı tutuyorsa onun altında çalışır; başkası dizini kullanıyorsa reddedilir, silmez."""
+    data = canonical.data_dir
+    store = open_store(data)
+    other = api_mod.LeaseManager.for_data_dir(data)
+
+    with other.acquire("writer", purpose="job"):
+        with pytest.raises(LeaseHeld):
+            store.clear("all")
+    assert any((data / "match_details").iterdir())
+
+    jobs = JobStore.for_store(store)
+    with jobs.exclusive("clear"):  # web'in yolu: kilidi iş deposu tutar
+        assert store.clear("schedules").cleared == ("matches",)
+        assert store.lease_holder("maintenance") is not None
+    assert store.lease_holder("maintenance") is None
+
+
+def test_store_clear_rejects_unknown_scopes_and_read_only_stores(canonical: sf.LegacyFixture) -> None:
+    store = open_store(canonical.data_dir)
+    for scope in ("match_details", "everything", ()):
+        with pytest.raises(ValueError):
+            store.clear(scope)
+    with pytest.raises(StoreError):
+        open_store(canonical.data_dir, readonly=True).clear("all")
+    assert any((canonical.data_dir / "match_details").iterdir())
+
+
+def test_a_store_clear_that_fails_half_way_still_rebuilds_the_catalog(canonical: sf.LegacyFixture,
+                                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    """maç detayları silindikten sonra matches/ silinemez: hata çıkar, katalog diskte kalanı anlatır."""
+    data = canonical.data_dir
+    store = open_store(data)
+    remove_tree = api_mod.files.remove_tree
+
+    def failing(path: Any) -> bool:
+        if os.path.basename(os.fspath(path)) == "matches":
+            raise StoreError("disk error", path=os.fspath(path))
+        return remove_tree(path)
+
+    monkeypatch.setattr(api_mod.files, "remove_tree", failing)
+    with pytest.raises(StoreError, match="disk error"):
+        store.clear("all")
+
+    assert not any((data / "match_details").iterdir()) and any((data / "matches").iterdir())
+    assert store.events.get(ARS).row_source == "listing"
+    assert store.lease_holder("maintenance") is None
+    assert differences(store) == []
+
+
+def test_catalog_current_follows_the_sync(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
+    store = open_store(canonical.data_dir)
+    assert store.catalog_current
+
+    def busy(self: CatalogAdmin, *args: Any, **kwargs: Any) -> Any:
+        raise src.store.StoreBusy("catalog.db kilitli", path=str(canonical.data_dir))
+
+    monkeypatch.setattr(CatalogAdmin, "index_event", busy)
+    fetcher_of(canonical.data_dir)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+    assert not store.catalog_current  # kanca yazamadı: okuyucular kataloğu güncel saymamalı
+    monkeypatch.undo()
+    store._catalog_retry_at = 0.0
+    fetcher_of(canonical.data_dir)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+    assert store.catalog_current and differences(store) == []
+    store.close()
+    assert not store.catalog_current
+
+
 # --- kancalar: hata halinde ------------------------------------------------------------------------------
 
 def test_a_catalog_that_cannot_be_written_does_not_fail_the_save(
@@ -799,18 +898,37 @@ def test_the_check_reports_a_write_that_no_hook_follows(canonical: sf.LegacyFixt
 
 def test_the_check_reports_a_clear_that_no_hook_follows(canonical: sf.LegacyFixture,
                                                         monkeypatch: pytest.MonkeyPatch) -> None:
-    """Silme de bir yazmadır: ağaçları silen ürün kodunun ardından kanca çağrılmazsa denetim bunu bildirir."""
-    from src.web.routes import data as data_routes
+    """
+    Silme de bir yazmadır: ağaçları silen ürün kodunun ardından kanca çağrılmazsa denetim bunu bildirir.
+    Web'in temizlemesi Store'un işidir (`Store.clear`, ST-19); ağaçları kendisi silen ürün kodu terminal
+    menüsünün temizlemesidir.
+    """
+    from src.ui import settings_ui
 
     data = canonical.data_dir
     open_store(data)
-    monkeypatch.setattr(data_routes.config_manager, "get_data_dir", lambda: str(data))
+    replies = ["3", "y"]  # maç detayları, onay
+    monkeypatch.setattr(settings_ui, "input", lambda prompt="": replies.pop(0), raising=False)
     monkeypatch.setattr(src.store, "shadow_cleared", lambda *args, **kwargs: None)
 
-    assert data_routes._clear_data_sync("match_details")["status"] == "success"
+    colors = {name: "" for name in ("SUBTITLE", "WARNING", "INFO", "SUCCESS")}
+    settings_ui.SettingsMenuHandler(MagicMock(), str(data), colors)._clear_selected_data()
+    assert replies == [] and not any((data / "match_details").iterdir())
 
     found = api_mod.shadow_check()
     assert len(found) == 1 and "written without a shadow hook afterwards" in found[0]
+
+
+def test_a_clear_through_the_store_needs_no_hook(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`Store.clear` siler ve kataloğu kendisi yeniden kurar: dışarıdaki kanca (`shadow_cleared`) gerekmez."""
+    data = canonical.data_dir
+    store = open_store(data)
+    monkeypatch.setattr(src.store, "shadow_cleared", lambda *args, **kwargs: None)
+
+    report = store.clear("events")
+
+    assert report.cleared == ("match_details",) and report.catalog_rebuilt
+    assert api_mod.shadow_check() == []
 
 
 def test_the_check_reports_a_catalog_that_differs_from_a_rebuild(canonical: sf.LegacyFixture,

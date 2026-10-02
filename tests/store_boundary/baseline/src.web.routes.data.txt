@@ -1,14 +1,6 @@
 # src/web/routes/data.py: Store sınırı ihlalleri (docs/design/01-storage.md bölüm 2.4). Bu liste yalnızca küçülebilir.
 # Bir ihlali gideren PR satırını da siler; açıklama: tests/test_store_boundary.py
 [static]
-_clear_data_sync:os.makedirs x3
-_clear_data_sync:os.path.exists x3
-_clear_data_sync:shutil.rmtree x3
-_create_backup_sync:os.makedirs
-_create_backup_sync:os.path.exists x5
-_create_backup_sync:os.remove
-_create_backup_sync:os.walk
-_create_backup_sync:zipfile.ZipFile
 _export_csv_sync:DataFrame.to_csv
 _export_csv_sync:glob.glob x2
 _export_csv_sync:os.path.getctime

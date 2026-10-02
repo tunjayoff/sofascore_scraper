@@ -1,0 +1,8 @@
+# src.store.BackupManager
+# kaynak: src/store/backup.py
+class BackupManager:
+    def __init__(self, store: 'Store') -> None
+    @property
+    def directory(self) -> str
+    def create(self, scope: str = 'all', *, config_files: Sequence[str] = (), env_file: Optional[str] = None, now: Optional[datetime] = None) -> BackupInfo
+    def list(self) -> List[BackupInfo]

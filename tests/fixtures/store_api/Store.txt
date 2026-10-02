@@ -12,9 +12,12 @@ class Store:
     self.entities
     self.changes
     self.history
+    self.backup
     self.catalog
     @property
     def closed(self) -> bool
+    @property
+    def catalog_current(self) -> bool
     @property
     def jobs(self) -> JobStore
     @property
@@ -22,5 +25,6 @@ class Store:
     def lease(self, name: str, *, purpose: str = '', wait: float = 0.0) -> Lease
     def lease_holder(self, name: str) -> Optional[LeaseInfo]
     def info(self, *, sizes: bool = True) -> StoreInfo
+    def clear(self, scope: Union[str, Iterable[str]]) -> ClearReport
     def close(self) -> None
     def __repr__(self) -> str

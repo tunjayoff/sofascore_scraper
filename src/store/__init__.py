@@ -65,6 +65,8 @@ if _TYPE_CHECKING:  # tür denetleyicileri ve API anlık görüntüsü adları b
     from src.store.api import shadow_changes, shadow_cleared, shadow_event, shadow_schedules, shadow_season_lists
     from src.store.indexer import CatalogAdmin, IndexProblem, RebuildReport, ReconcileReport, SupersededDir
     from src.store.verify import VerifyIssue, VerifyReport
+    from src.store.api import ClearReport
+    from src.store.backup import BackupInfo, BackupManager
 
 _LAZY = {
     "open_store": "src.store.api",
@@ -118,6 +120,9 @@ _LAZY = {
     "SupersededDir": "src.store.indexer",
     "VerifyReport": "src.store.verify",
     "VerifyIssue": "src.store.verify",
+    "ClearReport": "src.store.api",
+    "BackupManager": "src.store.backup",
+    "BackupInfo": "src.store.backup",
     "shadow_event": "src.store.api",
     "shadow_schedules": "src.store.api",
     "shadow_season_lists": "src.store.api",
@@ -191,6 +196,9 @@ __all__ = [
     "SupersededDir",
     "VerifyReport",
     "VerifyIssue",
+    "ClearReport",
+    "BackupManager",
+    "BackupInfo",
     "shadow_event",
     "shadow_schedules",
     "shadow_season_lists",

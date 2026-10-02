@@ -1,0 +1,8 @@
+# src.store.ClearReport
+# kaynak: src/store/api.py
+@dataclass(frozen=True)
+class ClearReport:
+    scopes: Tuple[str, ...]
+    cleared: Tuple[str, ...]
+    v3_events: bool = False
+    catalog_rebuilt: bool = False
