@@ -6,7 +6,8 @@ değil. Dışa açık olanlar: hata sınıfları, cephe (`open_store`, `Store`, 
 `apply_follows`), kilitler (`Lease`, `LeaseInfo`), iş deposu, olay akışları ve kataloğun okuma API'leri
 (`EventStore`, `EntityStore`, `ChangeLog` ile sorgu ve sonuç türleri: `Ref`, `Scope`, `EventQuery`, `Page`,
 `EventRow`, `SliceInfo`, ...), kataloğun yönetimi (`CatalogAdmin` ve raporları) ve eski düzen yazıcılarının
-gölge kip kancaları (`shadow_*`). Yazma API'leri sonraki adımlarda eklenir.
+gölge kip kancaları (`shadow_*`). Maçların yazma API'si `EventStore.put` / `observe` / `reset_empty_markers` /
+`delete` (sonucu `PutResult`) ve `ChangeLog.append`'tir; maç dışı varlıklarınki sonraki adımda eklenir.
 
 Hata sınıfları dışındaki adlar ilk kullanımda yüklenir: kök, cepheyi (SQLite, katalog, türetme) içe
 aktarmadan da alınabilmelidir, çünkü `src.store.files` gibi alt modülleri uygulamanın en alt katmanları
@@ -41,6 +42,7 @@ if _TYPE_CHECKING:  # tür denetleyicileri ve API anlık görüntüsü adları b
         EventStore,
         MissingRow,
         Page,
+        PutResult,
         Ref,
         Scope,
         SliceError,
@@ -73,6 +75,7 @@ _LAZY = {
     "EventState": "src.store.events",
     "MissingRow": "src.store.events",
     "Page": "src.store.events",
+    "PutResult": "src.store.events",
     "Ref": "src.store.events",
     "Scope": "src.store.events",
     "SliceError": "src.store.events",
@@ -142,6 +145,7 @@ __all__ = [
     "EventState",
     "MissingRow",
     "Page",
+    "PutResult",
     "Ref",
     "Scope",
     "SliceError",

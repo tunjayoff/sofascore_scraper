@@ -16,3 +16,7 @@ class EventStore:
     def stale(self, scope: Optional[Scope] = None) -> List[int]
     def open_events(self, *, started_before: float, scope: Optional[Scope] = None) -> List[int]
     def summary(self, scope: Optional[Scope] = None) -> List[TournamentSummary]
+    def put(self, event_id: int, outcomes: Mapping[SliceKey, Outcome], *, count_empties: Union[bool, Collection[str]] = True, on_event_change: Optional[EventChange] = None, status_regressed: Optional[bool] = None) -> PutResult
+    def observe(self, event_id: int, payload: Mapping[str, Any], *, observed_at: Optional[datetime] = None, on_event_change: Optional[EventChange] = None, status_regressed: Optional[bool] = None) -> PutResult
+    def reset_empty_markers(self, scope: Optional[Scope] = None, *, include_confirmed: bool = False, threshold: int = DEFAULT_EMPTY_THRESHOLD) -> Dict[str, int]
+    def delete(self, event_id: int) -> bool
