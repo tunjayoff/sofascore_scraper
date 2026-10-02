@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 
 from src import bridge_health, diagnostics, redact
 from src import logger as app_logger
+from src.store import LeaseHeld
 from src.store.jobs import JOB_COLUMNS
 from src.version import __version__
 from src.web.app import app
@@ -299,6 +300,34 @@ def test_home_directory_is_not_exposed(log_dir, monkeypatch, tmp_path):
     assert str(tmp_path) not in tail and "~" in tail
 
 
+def test_bundle_masks_the_value_of_an_unknown_sink_option_in_the_environment(log_dir, monkeypatch):
+    # Paket bütün SOFASCORE_ değişkenlerini yazar. SOFASCORE_SINKS'te sink'lerin tanımadığı bir anahtar
+    # (yanlış yazılmış `url`, uydurulmuş bir anahtar, başka türün anahtarı) `ssc config show`daki gibi `***` olur.
+    # Değerler sahtedir ve çalışırken parçalardan kurulur.
+    path_part, signing = "-".join(("fake", "path", "part")), "-".join(("fake", "signing", "value"))
+    address = f"https://hooks.example.org/services/T000/B000/{path_part}"
+    monkeypatch.setenv("SOFASCORE_SINKS", json.dumps([
+        {"name": "ops", "type": "webhook", "url": address, "allow_unsigned": True, "batch_size": 50,
+         "webhook_url": address, "note": {"signing": signing}, "keep": 3},
+        {"name": "feed", "type": "file", "path": "out/live.ndjson", "keep": 7, "sports": ["football"], "batch_size": 5},
+    ]))
+    files = _unzip(diagnostics.build_bundle(source="cli"))
+    values = json.loads(files["diagnostics.json"])["settings"]["values"]
+    assert json.loads(values["SOFASCORE_SINKS"]) == [
+        {"name": "ops", "type": "webhook", "url": "https://hooks.example.org/***", "allow_unsigned": True,
+         "batch_size": 50, "webhook_url": "***", "note": "***", "keep": "***"},
+        {"name": "feed", "type": "file", "path": "out/live.ndjson", "keep": 7, "sports": ["football"],
+         "batch_size": "***"},
+    ]
+    for private in (path_part, signing, "/services/"):
+        assert private not in files["diagnostics.json"], private
+    # Tablo listesi olmayan değer, eskisi gibi, tümüyle maskelenir
+    monkeypatch.setenv("SOFASCORE_SINKS", json.dumps([address]))
+    assert diagnostics._settings()["values"]["SOFASCORE_SINKS"] == "***"
+    monkeypatch.setenv("SOFASCORE_SINKS", f"not json {address}")
+    assert diagnostics._settings()["values"]["SOFASCORE_SINKS"] == "***"
+
+
 # --- son iş ------------------------------------------------------------------------------
 
 def test_last_job_summary_comes_from_the_job_store(log_dir, monkeypatch, tmp_path):
@@ -448,6 +477,88 @@ def test_host_names_are_masked_only_where_they_stand_alone():
     masked = diagnostics._mask_hosts({"pc": ["3 upcoming on pc, PC-4242 and pc.lan; 10 left", 10]}, hosts)
     assert masked == {"pc": ["3 upcoming on ***, ***-4242 and ***; 10 left", 10]}
     assert diagnostics._mask_hosts("pc", []) == "pc"
+
+
+# --- log kuyruğu: makine adı ---------------------------------------------------------------
+
+OTHER_HOST = "nas-01.lan"       # bir işin hatasında adı geçen kilit sahibi
+ORIGIN_HOST = "ci-runner-3"     # bir işi başlatan başka makine
+
+
+def _log_a_refused_lease(holder_host):
+    """Çağıranın LeaseHeld'i traceback'iyle log'a yazması; ileti src/store/lease.py'nin kurduğu biçimdedir."""
+    try:
+        raise LeaseHeld(
+            f"'writer' kilidi alınamadı: veri dizini 'writer' kilidiyle başka bir sahipte (pid 77, makine {holder_host})",
+            name="writer", pid=77, host=holder_host,
+        )
+    except LeaseHeld:
+        logging.getLogger("WebAPI").exception("sync could not start")
+
+
+def test_log_tail_of_the_bundle_masks_this_machine_and_the_hosts_of_the_listed_jobs(log_dir, monkeypatch, tmp_path):
+    # Ev dizininin adı makinenin adıyla aynı (kullanıcı adı = makine adı): yol yine `~` olur
+    home = tmp_path / HOST
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    monkeypatch.setattr(socket, "gethostname", lambda: HOST)
+    data_dir = tmp_path / "data"
+    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    store = JobStore(default_db_path(str(data_dir)))
+    store.create_running({"mode": "full"}, kind="fetch", origin={"face": "cli", "pid": 4242, "host": ORIGIN_HOST})
+    store.update(
+        status="Failed",
+        state="failed",
+        error={
+            "code": "job_running",
+            "message": "the writer lease is held",
+            "details": {"holder": {"lease": "writer", "pid": 77, "host": OTHER_HOST}},
+        },
+        finished=True,
+    )
+    log = logging.getLogger("WebAPI")
+    log.warning("started on %s (pid 4242); 3 upcoming matches", HOST)
+    log.info("handing over to %s and to %s", HOST.upper(), ORIGIN_HOST)
+    log.info("export: %s", home / "exports" / "out.csv")
+    _log_a_refused_lease(OTHER_HOST)
+    log.info("a machine that no listed job names: unrelated-box")
+
+    tail = _unzip(diagnostics.build_bundle(source="cli"))["log_tail.txt"]
+    for name in (HOST, HOST.upper(), "nas-01", ORIGIN_HOST, str(home)):
+        assert name not in tail, name
+    # Satırların geri kalanı duruyor: sözcüklerin içi bozulmaz, traceback ve pid kalır
+    assert "started on *** (pid 4242); 3 upcoming matches" in tail
+    assert "handing over to *** and to ***" in tail
+    assert "(pid 77, makine ***)" in tail and "LeaseHeld" in tail and "Traceback" in tail
+    assert "export: ~" in tail
+    # Genel bir makine adı dedektörü değildir: yalnızca bu makinenin ve listelenen işlerin adları
+    assert "unrelated-box" in tail
+    # diagnostics.json aynı adları taşımaz (#71) ve işin kendisi duruyor
+    files = _unzip(diagnostics.build_bundle(source="cli"))
+    doc = json.loads(files["diagnostics.json"])
+    assert doc["jobs"]["recent"][0]["error"]["details"]["holder"]["host"] == "***"
+    assert "log tail" in files["README.txt"] and "log satırlarında" in files["README.txt"]
+
+
+def test_log_tail_masks_this_machine_without_a_job_history(log_dir, monkeypatch, tmp_path):
+    monkeypatch.setattr(socket, "gethostname", lambda: "pc.lan")
+    monkeypatch.setenv("DATA_DIR", str(tmp_path / "nowhere"))
+    logging.getLogger("WebAPI").info("3 upcoming on pc, PC-4242 and pc.lan; 10 left")
+    assert "3 upcoming on ***, ***-4242 and ***; 10 left" in diagnostics.log_tail_text(50)
+    assert not (tmp_path / "nowhere").exists()
+
+
+def test_log_tail_masks_this_machine_when_the_job_history_cannot_be_read(log_dir, monkeypatch):
+    def boom(*_args):
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(socket, "gethostname", lambda: HOST)
+    monkeypatch.setattr(diagnostics, "_jobs", boom)
+    logging.getLogger("WebAPI").info("running on %s", HOST)
+    files = _unzip(diagnostics.build_bundle(source="cli"))
+    assert "running on ***" in files["log_tail.txt"] and HOST not in files["log_tail.txt"]
+    assert json.loads(files["diagnostics.json"])["jobs"] == {"error": "OperationalError: database is locked"}
 
 
 @pytest.mark.parametrize("db_name, extra", [("jobs.db", ()), ("state.db", ("kind", "owner"))])

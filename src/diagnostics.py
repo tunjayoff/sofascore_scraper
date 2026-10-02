@@ -10,7 +10,8 @@ Paket (zip) üç dosya içerir:
 
 Her şey src.redact'ten geçer (token, cookie, proxy parolası `***` olur) ve ev dizini `~` ile
 değiştirilir. İş geçmişinin sütunları adıyla seçilir (_JOB_COLUMNS) ve işi başlatan sürecin makine adı
-pakete girmez; iş metinlerinde ve tarayıcı profili kilidinde geçen makine adı `***` olur.
+pakete girmez; iş metinlerinde, tarayıcı profili kilidinde ve log kuyruğunda geçen makine adı `***` olur
+(log kuyruğunda: bu makinenin adı ve seçilen iş satırlarında kayıtlı adlar; bkz. log_tail_text).
 Okunan dosyalar sabittir: log dosyası yalnızca src.logger'ın yazdığı dosyadır,
 dışarıdan yol alınmaz. Paket üretmek hiçbir şeyi değiştirmez (iş geçmişi salt okunur açılır).
 
@@ -40,7 +41,7 @@ import dotenv
 
 from src import logger as app_logger
 from src.paths import default_league_config_path, env_file_path
-from src.redact import MASK, mask_value, redact_obj, redact_text
+from src.redact import KNOWN_SINK_LIST_KEYS, MASK, mask_value, redact_obj, redact_text
 from src.version import __version__
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -103,15 +104,17 @@ log_tail.txt      the last lines of the application log
 Secrets are masked before anything is written here: tokens, cookies, proxy credentials and any
 .env value whose key looks like a secret appear as ***; your home directory appears as ~.
 Values of .env keys the app does not know are never included, only their names.
-The job history and the setup check do not carry the host name of this machine (where a
-message names it, it appears as ***).
+The job history, the setup check and the log tail do not carry the host name of this machine
+(where a message names it, it appears as ***); the same holds for the host names recorded in
+the listed jobs.
 Have a quick look before attaching this file to a bug report.
 
 ---
 Bu paket hata bildirimine eklenmek içindir. Gizli değerler (token, cookie, proxy parolası,
 .env'deki gizli görünen değerler) yazılmadan önce *** ile maskelenir; ev dizininiz ~ olarak
-görünür. İş geçmişinde ve kurulum denetiminde makinenizin adı yer almaz (bir iletide geçiyorsa
-*** olur). Göndermeden önce içeriğe göz atın.
+görünür. İş geçmişinde, kurulum denetiminde ve log satırlarında makinenizin adı yer almaz (bir
+iletide geçiyorsa *** olur); listelenen işlerde kayıtlı makine adları da öyle. Göndermeden önce
+içeriğe göz atın.
 """
 
 
@@ -282,8 +285,25 @@ def read_log_entries(limit: int = 200, min_level: Optional[str] = None) -> Dict[
     }
 
 
+def _log_hosts() -> List[str]:
+    """
+    Log kuyruğunda maskelenecek makine adları: bu makinenin adı ve paketin seçtiği iş satırlarında kayıtlı
+    adlar (işi başlatan süreç, hatada adı geçen kilit sahibi). İş geçmişi okunamıyorsa yalnızca bu makinenin adı.
+    """
+    names: List[Any] = [socket.gethostname()]
+    try:
+        _jobs(names)
+    except Exception:
+        pass
+    return _host_names(names)
+
+
 def log_tail_text(lines: int = DEFAULT_TAIL_LINES) -> str:
-    """Log dosyasının son `lines` satırı düz metin olarak (maskelenmiş)."""
+    """
+    Log dosyasının son `lines` satırı düz metin olarak (maskelenmiş): gizli değerler `***`, ev dizini `~`,
+    makine adları `***` olur (adlar: _log_hosts; kural: _mask_hosts). Bir LeaseHeld iletisi kilit sahibinin
+    makinesini söyler; çağıran o hatayı ya da traceback'ini log'a yazdığında ad log dosyasına girer.
+    """
     lines = max(0, min(MAX_TAIL_LINES, int(lines)))
     if lines == 0:
         return ""
@@ -303,7 +323,9 @@ def log_tail_text(lines: int = DEFAULT_TAIL_LINES) -> str:
     all_lines = [line for part in reversed(chunks) for line in part][-lines:]
     if not all_lines:
         return ""
-    return _home_scrub(redact_text("\n".join(all_lines))) + "\n"
+    # Sıra: önce gizli değerler ve ev dizini, sonra makine adı (kullanıcı adı makine adıyla aynıysa ev
+    # dizini yine `~` olur)
+    return _mask_hosts(_home_scrub(redact_text("\n".join(all_lines))), _log_hosts()) + "\n"
 
 
 # --- paketin bölümleri --------------------------------------------------------------------
@@ -370,12 +392,31 @@ def _runtime() -> Dict[str, Any]:
     }
 
 
+def _sink_list(raw: str) -> str:
+    """
+    SOFASCORE_SINKS'in pakete girecek hali: her tabloda sink'lerin tanımadığı anahtarların değeri `***` olur
+    (`ssc config show` ile aynı kural: loader.mask_sink_table). Yanlış yazılmış bir anahtar (`webhook_url`)
+    adresi taşıyabilir. `url` alanını ve tablo listesi olmayan değeri redact.mask_value maskeler; öyle bir
+    değer burada olduğu gibi döner.
+    """
+    try:
+        items = json.loads(raw)
+    except ValueError:
+        return raw
+    if not isinstance(items, list) or any(not isinstance(item, dict) for item in items):
+        return raw
+    from src.config import loader
+
+    return json.dumps([loader.mask_sink_table(item) for item in items], ensure_ascii=False, separators=(",", ":"))
+
+
 def _settings() -> Dict[str, Any]:
     """Etkin ayarlar (ortamdan). None: ayarlanmamış, uygulama varsayılanı kullanıyor."""
     values: Dict[str, Optional[str]] = {key: mask_value(key, os.environ.get(key)) for key in SETTING_KEYS}
     for key in sorted(os.environ):
         if key.startswith("SOFASCORE_") and key not in values:
-            values[key] = mask_value(key, os.environ[key])
+            raw = os.environ[key]
+            values[key] = mask_value(key, _sink_list(raw) if key in KNOWN_SINK_LIST_KEYS else raw)
 
     path = env_file_path()
     # Uygulamanın tanımadığı .env anahtarları: değerleri hiç yazılmaz, yalnızca adları
@@ -473,7 +514,7 @@ def _job_hosts(origin: Any, error: Any) -> List[Any]:
     return hosts
 
 
-def _jobs() -> Dict[str, Any]:
+def _jobs(found_hosts: Optional[List[Any]] = None) -> Dict[str, Any]:
     """
     Son işler, iş geçmişinden SALT OKUNUR okunur. JobStore kullanılmaz: kurulurken "running" işleri
     "interrupted" yapar; CLI'dan paket üretmek çalışan web sunucusunun işini bozmamalı.
@@ -482,7 +523,8 @@ def _jobs() -> Dict[str, Any]:
 
     Yalnızca _JOB_COLUMNS'taki sütunlar okunur. Makine adı pakete girmez: işi başlatan sürecin adı atılır
     (_job_origin); satırlarda kayıtlı adlar ve bu makinenin adı, işin metinlerinde de (ör. kilidin sahibini
-    söyleyen hata iletisi) `***` olur.
+    söyleyen hata iletisi) `***` olur. `found_hosts` verilirse satırlarda kayıtlı adlar ona da eklenir
+    (log kuyruğu aynı adları maskeler: _log_hosts).
     """
     meta = os.path.join(os.path.abspath(os.getenv("DATA_DIR", "data")), ".meta")
     db = os.path.join(meta, "state.db")
@@ -520,6 +562,8 @@ def _jobs() -> Dict[str, Any]:
         if "origin" in job:
             job["origin"] = _job_origin(job["origin"], this_host)
         recent.append(_cap_lists(job))
+    if found_hosts is not None:
+        found_hosts.extend(hosts)
     return {"db": db, "exists": True, "recent": _mask_hosts(recent, _host_names(hosts))}
 
 

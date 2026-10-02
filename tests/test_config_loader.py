@@ -25,6 +25,7 @@ from typing import Any, Dict, Mapping, Optional
 import pytest
 
 import conftest
+import test_cli_skeleton as skeleton
 from src import breaker, bridge_health, language, paths, refresh, throttle, watcher
 from src import logger as app_logger
 from src.config import Settings, config_schema, loader
@@ -36,6 +37,9 @@ from src.store import files as store_files
 from src.web import security
 
 ROOT = Path(__file__).resolve().parent.parent
+
+# `main()`i bu süreçte çalıştıran ve süreçteki izlerini geri alan fixture (tests/test_cli_skeleton.py)
+cli = skeleton.cli
 
 # docs/design/02-services.md bölüm 4.3'teki örnek dosya, olduğu gibi
 DESIGN_SAMPLE = '''
@@ -752,6 +756,217 @@ def test_new_style_environment_variables(tmp_path):
 def test_new_style_environment_errors(env, message):
     with pytest.raises(ConfigError, match=message):
         _load(env=env)
+
+
+# --- sink satırlarının hataları: reddedilen değer iletiye yazılmaz ------------------------------------------
+
+
+def fake(*words: str) -> str:
+    """
+    Gizli bir değerin yerini tutan sınama değeri: bilerek sahte ("fake-..."), çalışırken parçalardan kurulur.
+    Depoda gizli değere benzeyen bir sabit durmaz; testler bu metinleri hata iletilerinde ve çıktılarda arar.
+    """
+    return "-".join(("fake", *words))
+
+
+HOOK_PATH_PART, HOOK_QUERY_PART, SIGNING_VALUE = fake("path", "part"), fake("query", "part"), fake("signing", "value")
+# Yolu ve sorgusu belirteç olan bir webhook adresi (sahte)
+HOOK_ADDRESS = f"https://hooks.example.org/services/T000/B000/{HOOK_PATH_PART}?sig={HOOK_QUERY_PART}"
+PRIVATE_PARTS = (HOOK_PATH_PART, HOOK_QUERY_PART, SIGNING_VALUE, "/services/", "hooks.example.org")
+# İmza anahtarını taşıyan ortam değişkeninin adı (bir ad, değer değil)
+HOOK_VARIABLE = "_".join(("HOOK", "SIGNING", "KEY"))
+
+
+def _refused(env: Mapping[str, str]) -> str:
+    """Yükleyicinin hata iletisi; içinde adresin ve gizli değerin hiçbir parçası olmamalı."""
+    with pytest.raises(ConfigError) as error:
+        _load(env=env)
+    message = str(error.value)
+    for private in PRIVATE_PARTS:
+        assert private not in message, private
+    return message
+
+
+@pytest.mark.parametrize("variable", ["SOFASCORE_SINKS", "SOFASCORE_FOLLOWS", "SOFASCORE_SCHEDULE__TASKS"])
+def test_a_list_of_strings_instead_of_tables_is_named_by_its_type(variable):
+    """Tablo yerine dizge listesi: öğeler webhook adresi olabilir; ileti öğenin türünü ve sırasını söyler."""
+    assert _refused({variable: json.dumps([HOOK_ADDRESS])}) == f"{variable}: expected a list of tables, got a string at #1"
+    mixed = json.dumps([{"name": "out", "type": "stdout"}, [HOOK_ADDRESS], HOOK_ADDRESS])
+    assert _refused({variable: mixed}) == f"{variable}: expected a list of tables, got a list at #2"
+
+
+def test_a_list_of_strings_in_the_config_file_is_named_by_its_type(tmp_path):
+    with pytest.raises(ConfigError) as error:
+        _load(tmp_path, toml=f'sink = ["{HOOK_ADDRESS}"]\n')
+    assert str(error.value).endswith("sofascore.toml: [[sink]]: expected a list of tables, got a string at #1")
+    assert HOOK_PATH_PART not in str(error.value)
+    with pytest.raises(ConfigError, match=r"\[\[sink\]\]: expected a list of tables, got a string$"):
+        _load(tmp_path, toml=f'sink = "{HOOK_ADDRESS}"\n')
+
+
+@pytest.mark.parametrize(
+    "table,message",
+    [
+        # Adres yanlış alanda ya da yanlış türde
+        ({"name": "ops", "type": "webhook", "url": [HOOK_ADDRESS]}, "url: expected a string, got a list"),
+        ({"name": "ops", "type": "webhook", "url": {"address": HOOK_ADDRESS}}, "url: expected a string, got a table"),
+        ({"name": "ops", "type": "webhook", "url": None}, "url: expected a string, got null"),
+        ({"name": "ops", "type": HOOK_ADDRESS}, "type: expected one of stdout, file, webhook"),
+        ({"name": "ops", "type": [HOOK_ADDRESS]}, "type: expected a string, got a list"),
+        ({"name": [HOOK_ADDRESS], "type": "stdout"}, "name: expected a string, got a list"),
+        ({"name": "ops", "type": "file", "path": [HOOK_ADDRESS]}, "path: expected a string, got a list"),
+        ({"name": "ops", "type": "stdout", "events": HOOK_ADDRESS}, "events: expected a list of strings, got a string"),
+        ({"name": "ops", "type": "stdout", "events": [7, HOOK_ADDRESS]},
+         "events: expected a list of strings, got a whole number at #1"),
+        ({"name": "ops", "type": "stdout", "events": [HOOK_ADDRESS, " "]},
+         "events: expected a list of strings, got an empty string at #2"),
+        ({"name": "ops", "type": "webhook", "url": HOOK_ADDRESS, "allow_unsigned": HOOK_ADDRESS},
+         "allow_unsigned: expected true or false, got a string"),
+        ({"name": "ops", "type": "webhook", "url": HOOK_ADDRESS, "allow_unsigned": 1.5},
+         "allow_unsigned: expected true or false, got a number"),
+        # İmza anahtarının adı yerine kendisi yazılmış
+        ({"name": "ops", "type": "webhook", "url": HOOK_ADDRESS, "secret_env": SIGNING_VALUE},
+         ": secret_env must be the name of an environment variable (letters, digits and _), not the secret itself"),
+        ({"name": "ops", "type": "webhook", "url": HOOK_ADDRESS, "secret_env": [SIGNING_VALUE]},
+         "secret_env: expected a string, got a list"),
+        ({"name": True, "type": "stdout"}, "name: expected a string, got a boolean"),
+    ],
+)
+def test_sink_errors_name_the_type_of_a_rejected_value_not_the_value(table, message):
+    """Bir sink satırının alanı adres ya da gizli değer olabilir; ileti komutun çıktısına, log'a ve zarfa girer."""
+    separator = "" if message.startswith(":") else " "
+    assert _refused({"SOFASCORE_SINKS": json.dumps([table])}) == f"SOFASCORE_SINKS: [[sink]] #1{separator}{message}"
+
+
+def test_sink_errors_of_the_config_file_do_not_quote_the_value_either(tmp_path):
+    with pytest.raises(ConfigError) as error:
+        _load(tmp_path, toml=f'[[sink]]\nname = "ops"\ntype = "webhook"\nurl = ["{HOOK_ADDRESS}"]\n')
+    assert str(error.value).endswith("sofascore.toml: [[sink]] #1 url: expected a string, got a list")
+    assert HOOK_PATH_PART not in str(error.value)
+    with pytest.raises(ConfigError) as error:
+        _load(tmp_path, toml='[[sink]]\nname = "ops"\ntype = "file"\npath = 1979-05-27\n')
+    assert str(error.value).endswith("[[sink]] #1 path: expected a string, got a date value")
+
+
+def test_other_rows_still_quote_a_rejected_value():
+    """Takip ve zamanlama satırları adres taşımaz: iletileri değeri göstermeye devam eder."""
+    with pytest.raises(ConfigError, match=r"\[\[follow\]\] #1 tournament: expected a whole number, got '17'"):
+        _load(env={"SOFASCORE_FOLLOWS": '[{"tournament": "17"}]'})
+    with pytest.raises(ConfigError, match=r"\[\[schedule.task\]\] #1 run: expected a string, got 5"):
+        _load(env={"SOFASCORE_SCHEDULE__TASKS": '[{"run": 5, "every": "1h"}]'})
+
+
+@pytest.mark.parametrize("value", [
+    json.dumps([HOOK_ADDRESS]),
+    json.dumps([{"name": "ops", "type": "webhook", "url": [HOOK_ADDRESS], "secret_env": HOOK_VARIABLE}]),
+    json.dumps([{"name": "ops", "type": "webhook", "url": HOOK_ADDRESS, "secret_env": SIGNING_VALUE}]),
+], ids=["list-of-strings", "url-as-a-list", "secret-instead-of-its-name"])
+def test_a_command_refused_for_a_wrong_sink_value_prints_no_part_of_it(cli, tmp_path, monkeypatch, value):
+    """Komutun hata zarfı (JSON), metin çıktısı ve log satırları: adresin ve gizli değerin hiçbir parçası yok."""
+    monkeypatch.setenv("SOFASCORE_CONFIG", "none")
+    monkeypatch.setenv("SOFASCORE_SINKS", value)
+    for command in (("config", "validate"), ("config", "show")):
+        as_json = cli(*command, "--json", "--data-dir", tmp_path / "data")
+        as_text = cli(*command, "--data-dir", tmp_path / "data")
+        assert as_json.exit_code == 2 and as_text.exit_code == 2
+        assert as_json.error["code"] == "config_invalid" and as_json.error["message"].startswith("SOFASCORE_SINKS: ")
+        assert as_text.stderr.startswith("Configuration error: SOFASCORE_SINKS: ")
+        for private in PRIVATE_PARTS:
+            for output in (as_json.stdout, as_json.stderr, as_text.stdout, as_text.stderr):
+                assert private not in output, private
+        if SIGNING_VALUE in value:
+            # Komut çıktısındaki maskeleme iletiyi bozmaz ("secret_env: <sözcük>" bir anahtar-değer çifti sayılırdı)
+            assert as_text.stderr.splitlines()[0] == (
+                "Configuration error: SOFASCORE_SINKS: [[sink]] #1: secret_env must be the name of an environment "
+                "variable (letters, digits and _), not the secret itself"
+            )
+
+
+# --- sink seçenekleri: sink'lerin tanımadığı anahtarın değeri gösterilmez ------------------------------------
+
+# Bir webhook sink'i: tanımlı seçenekler, yanlış yazılmış / uydurulmuş anahtarlar ve başka türün bir anahtarı
+SINK_WITH_UNKNOWN_OPTIONS = f'''
+[[sink]]
+name = "ops"
+type = "webhook"
+url = "https://hooks.example.org/in"
+allow_unsigned = true
+batch_size = 50
+max_age = "12h"
+sports = ["football"]
+webhook_url = "{HOOK_ADDRESS}"
+signing = "{SIGNING_VALUE}"
+headers = {{ authorization = "{fake("header", "value")}" }}
+retries = 3
+rotate_size = "50MB"
+[[sink]]
+name = "feed"
+type = "file"
+path = "out/live.ndjson"
+rotate_daily = true
+keep = 7
+fallback = ["{HOOK_ADDRESS}"]
+'''
+SHOWN_OPTIONS = [
+    {
+        "batch_size": 50, "max_age": "12h", "sports": ["football"],
+        "webhook_url": "***", "signing": "***", "headers": "***", "retries": "***",
+        "rotate_size": "***",  # dosya sink'inin anahtarı: webhook için bilinmiyor
+    },
+    {"rotate_daily": True, "keep": 7, "fallback": "***"},
+]
+OPTION_VALUES = (HOOK_PATH_PART, HOOK_QUERY_PART, SIGNING_VALUE, "/services/", fake("header", "value"))
+
+
+def test_describe_masks_the_value_of_a_sink_option_the_sinks_do_not_define(tmp_path):
+    loaded = _load(tmp_path, toml=SINK_WITH_UNKNOWN_OPTIONS)
+    rows = {row["key"]: row["value"] for row in loaded.describe()}
+    assert [sink["options"] for sink in rows["sinks"]] == SHOWN_OPTIONS
+    for private in OPTION_VALUES:
+        assert private not in json.dumps(rows), private
+    # Ayarın kendisi değişmez (sink kurulurken bilinmeyen anahtar reddedilir); istenirse değerler gösterilir
+    assert loaded.settings.sinks[0].options["webhook_url"] == HOOK_ADDRESS
+    plain = {row["key"]: row["value"] for row in loaded.describe(mask_secrets=False)}
+    assert plain["sinks"][0]["options"]["webhook_url"] == HOOK_ADDRESS
+    assert plain["sinks"][1]["options"] == {"rotate_daily": True, "keep": 7, "fallback": [HOOK_ADDRESS]}
+
+
+def test_config_show_never_prints_the_value_of_an_unknown_sink_option(cli, tmp_path):
+    """`ssc config show`, JSON ve metin: anahtarın adı görünür (hangisinin yanlış olduğu), değeri görünmez."""
+    config = tmp_path / "sofascore.toml"
+    config.write_text("schema = 1\n" + SINK_WITH_UNKNOWN_OPTIONS, encoding="utf-8")
+    as_json = cli("config", "show", "--json", "--config", config, "--data-dir", tmp_path / "data")
+    as_text = cli("config", "show", "--config", config, "--data-dir", tmp_path / "data")
+    assert as_json.exit_code == 0 and as_text.exit_code == 0
+    rows = {row["key"]: row["value"] for row in as_json.data["values"]}
+    assert [sink["options"] for sink in rows["sinks"]] == SHOWN_OPTIONS
+    for private in OPTION_VALUES:
+        for output in (as_json.stdout, as_json.stderr, as_text.stdout, as_text.stderr):
+            assert private not in output, private
+    for shown in ('"webhook_url": "***"', '"signing": "***"', '"headers": "***"', '"batch_size": 50', '"keep": 7'):
+        assert shown in as_text.stdout, shown
+
+
+def test_the_shown_sink_options_are_the_ones_the_sinks_define():
+    from src import sinks
+
+    # Her sink türünün seçenek listesi vardır; modelin alanları seçenek sayılmaz
+    assert set(sinks.TYPE_OPTIONS) == set(model.SINK_TYPES)
+    assert set(loader.SINK_KEYS) == {f.name for f in dataclasses.fields(model.SinkSpec)} - {"options"}
+    every = set(sinks.COMMON_OPTIONS) | {key for keys in sinks.TYPE_OPTIONS.values() for key in keys}
+    for kind in model.SINK_TYPES:
+        known = set(sinks.COMMON_OPTIONS) | set(sinks.TYPE_OPTIONS[kind])
+        shown = loader.mask_sink_options(kind, {key: 1 for key in every | {"invented"}})
+        assert {key for key, value in shown.items() if value == 1} == known
+        assert shown["invented"] == "***"
+    # Türü bilinmeyen ya da dizge olmayan (ayrıştırılmamış tablo) bir sink: yalnızca ortak anahtarlar
+    for kind in ("kafka", None, ["webhook"]):
+        assert loader.mask_sink_options(kind, {"sports": ["tennis"], "batch_size": 5}) == {
+            "sports": ["tennis"], "batch_size": "***",
+        }
+    table = {"name": "ops", "type": "webhook", "uri": HOOK_ADDRESS, "url": HOOK_ADDRESS, "batch_size": 5, "keep": 2}
+    assert loader.mask_sink_table(table) == {**table, "uri": "***", "keep": "***"}
+    assert list(loader.mask_sink_table(table)) == list(table)  # anahtarların sırası korunur
 
 
 def test_flags(tmp_path):

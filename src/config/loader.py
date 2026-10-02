@@ -558,6 +558,13 @@ def _read_dotenv(path: Path) -> Dict[str, str]:
 # === bir belgeyi (TOML / overrides.json) katmana çevirme ===========================================
 
 
+# Hata iletisinde değerin yerine yazılan tür adları (bool, int'ten önce: True bir int'tir)
+_SHAPES: Tuple[Tuple[type, str], ...] = (
+    (bool, "a boolean"), (int, "a whole number"), (float, "a number"), (str, "a string"),
+    (dict, "a table"), (list, "a list"), (tuple, "a list"),
+)
+
+
 @dataclass
 class _Layer:
     """Bir kaynaktan gelen değerler. Listeler None ise o kaynak listeyi vermemiştir (alttaki geçerli kalır)."""
@@ -578,9 +585,38 @@ def _table(value: Any, where: str) -> Mapping[str, Any]:
     return value
 
 
+def _shape(value: Any) -> str:
+    """
+    Bir değerin türünün adı ("a string", "a list"). Değeri webhook adresi ya da gizli bir değer olabilen yerlerin
+    hata iletisinde değerin kendisi yerine bu yazılır: ileti komutun çıktısına, log'a ve hata zarfına girer.
+    """
+    if value is None:
+        return "null"
+    for kind, name in _SHAPES:
+        if isinstance(value, kind):
+            return name
+    return f"a {type(value).__name__} value"  # TOML tarih / saat
+
+
+def _item_shape(value: Any) -> str:
+    """Dizge listesi beklenen yerde verilen değerin tarifi: liste ise uymayan ilk öğenin türü ve sırası."""
+    if isinstance(value, (list, tuple)):
+        for index, item in enumerate(value, start=1):
+            if not isinstance(item, str):
+                return f"{_shape(item)} at #{index}"
+            if not item.strip():
+                return f"an empty string at #{index}"
+    return _shape(value)
+
+
 def _table_list(value: Any, where: str) -> List[Mapping[str, Any]]:
-    if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
-        raise ConfigError(f"{where}: expected a list of tables")
+    # Uymayan öğenin kendisi iletiye yazılmaz, türü yazılır: tablo yerine dizge listesi olarak verilmiş bir
+    # SOFASCORE_SINKS'in öğeleri webhook adresidir
+    if not isinstance(value, list):
+        raise ConfigError(f"{where}: expected a list of tables, got {_shape(value)}")
+    for index, item in enumerate(value, start=1):
+        if not isinstance(item, dict):
+            raise ConfigError(f"{where}: expected a list of tables, got {_shape(item)} at #{index}")
     return list(value)
 
 
@@ -666,14 +702,17 @@ def _document_layer(doc: Mapping[str, Any], *, layer: str, name: str, base: Opti
 
 
 _TYPE_NAMES = {int: "a whole number", str: "a string", bool: "true or false"}
+# Bir [[sink]] tablosunun modellenen anahtarları (SinkSpec'in alanları); kalanı türe özgü seçenektir (`options`)
+SINK_KEYS: Tuple[str, ...] = ("name", "type", "events", "url", "secret_env", "allow_unsigned", "path")
 
 
-def _take(table: Mapping[str, Any], key: str, kind: type, where: str, default: Any = None) -> Any:
+def _take(table: Mapping[str, Any], key: str, kind: type, where: str, default: Any = None, *, quote: bool = True) -> Any:
+    """`quote=False`: yanlış türdeki değer iletiye yazılmaz, türü yazılır ([[sink]] satırları; bkz. parse_sinks)."""
     if key not in table:
         return default
     value = table[key]
     if isinstance(value, bool) and kind is not bool or not isinstance(value, kind):
-        raise ConfigError(f"{where} {key}: expected {_TYPE_NAMES[kind]}, got {value!r}")
+        raise ConfigError(f"{where} {key}: expected {_TYPE_NAMES[kind]}, got {repr(value) if quote else _shape(value)}")
     return value
 
 
@@ -745,31 +784,43 @@ def parse_follows(items: Sequence[Mapping[str, Any]], default_seasons: model.Sea
 
 
 def parse_sinks(items: Sequence[Mapping[str, Any]], name: str, base: Optional[Path]) -> Tuple[SinkSpec, ...]:
-    """[[sink]] tabloları -> SinkSpec. Modelin bilmediği anahtarlar `options`a geçer (türe özgü; P22 denetler)."""
-    typed = {"name", "type", "events", "url", "secret_env", "allow_unsigned", "path"}
+    """
+    [[sink]] tabloları -> SinkSpec. Modelin bilmediği anahtarlar `options`a geçer (türe özgü; P22 denetler).
+
+    Buradaki hata iletileri reddedilen değeri yazmaz, türünü yazar: bir sink satırının alanı webhook adresi
+    (yolu ya da sorgusu belirteç olabilir) ya da `secret_env`e adı yerine yazılmış imza anahtarı olabilir ve
+    ileti komutun çıktısına, log'a ve hata zarfına girer. Tek istisna sink'in adıdır (`config show` da gösterir).
+    """
     specs: List[SinkSpec] = []
     seen: Dict[str, int] = {}
     for index, table in enumerate(items, start=1):
         where = f"{name}: [[sink]] #{index}"
-        label = (_take(table, "name", str, where) or "").strip()
+        label = (_take(table, "name", str, where, quote=False) or "").strip()
         if not label:
             raise ConfigError(f"{where}: name is required")
         if label in seen:
             raise ConfigError(f"{where}: the name {label!r} is already used by #{seen[label]}")
         seen[label] = index
-        kind = _take(table, "type", str, where)
+        kind = _take(table, "type", str, where, quote=False)
         if kind not in model.SINK_TYPES:
-            raise ConfigError(f"{where} type: expected one of {', '.join(model.SINK_TYPES)}, got {kind!r}")
+            raise ConfigError(f"{where} type: expected one of {', '.join(model.SINK_TYPES)}")
         try:
             events = _string_list(table.get("events", ["*"]), text=False)
-        except _Reject as e:
-            raise ConfigError(f"{where} events: {e}") from None
-        url = _take(table, "url", str, where, "").strip()
-        secret_env = _take(table, "secret_env", str, where, "").strip()
-        allow_unsigned = _take(table, "allow_unsigned", bool, where, False)
-        path = _take(table, "path", str, where, "").strip()
+        except _Reject:
+            raise ConfigError(
+                f"{where} events: expected a list of strings, got {_item_shape(table['events'])}"
+            ) from None
+        url = _take(table, "url", str, where, "", quote=False).strip()
+        secret_env = _take(table, "secret_env", str, where, "", quote=False).strip()
+        allow_unsigned = _take(table, "allow_unsigned", bool, where, False, quote=False)
+        path = _take(table, "path", str, where, "", quote=False).strip()
         if secret_env and not _ENV_NAME.match(secret_env):
-            raise ConfigError(f"{where} secret_env: expected the name of an environment variable, got {secret_env!r}")
+            # İleti "secret_env: ..." diye yazılmaz: komut çıktısındaki maskeleme (redact_text) bunu bir
+            # `anahtar: değer` çifti sayar ve iki noktadan sonraki sözcüğü `***` yapar
+            raise ConfigError(
+                f"{where}: secret_env must be the name of an environment variable (letters, digits and _), "
+                f"not the secret itself"
+            )
         if kind == "webhook":
             if not url.lower().startswith(("http://", "https://")):
                 raise ConfigError(f"{where} url: a webhook needs an http:// or https:// address")
@@ -786,9 +837,33 @@ def parse_sinks(items: Sequence[Mapping[str, Any]], name: str, base: Optional[Pa
         specs.append(SinkSpec(
             name=label, type=kind, events=events, url=url, secret_env=secret_env, allow_unsigned=allow_unsigned,
             path=_resolve_path(path, base),
-            options=MappingProxyType({k: v for k, v in table.items() if k not in typed}),
+            options=MappingProxyType({k: v for k, v in table.items() if k not in SINK_KEYS}),
         ))
     return tuple(specs)
+
+
+def mask_sink_options(kind: Any, options: Mapping[str, Any]) -> Dict[str, Any]:
+    """
+    Bir sink'in seçeneklerinin gösterilecek hali (`config show`, tanılama paketi): sink'lerin tanımladığı
+    anahtarların (src.sinks: her türün ortak ve türe özgü anahtarları) değeri kalır, başka her anahtarın değeri
+    `***` olur. Tanımlı anahtarlar gizli değer taşımaz; kullanıcının uydurduğu ya da yanlış yazdığı bir anahtar
+    (`webhook_url`, `auth`...) taşıyabilir. Öyle bir anahtar sink kurulurken reddedilir, ama `config show` ve
+    paket onu daha önce gösterir. Anahtarın adı kalır: hangisinin yanlış olduğu görünür.
+    """
+    from src.sinks import COMMON_OPTIONS, TYPE_OPTIONS  # geç içe aktarma: src.sinks ayarları (SinkSpec) kullanır
+
+    known = set(COMMON_OPTIONS) | set(TYPE_OPTIONS.get(kind, ()) if isinstance(kind, str) else ())
+    return {key: value if key in known else MASK for key, value in options.items()}
+
+
+def mask_sink_table(table: Mapping[str, Any]) -> Dict[str, Any]:
+    """
+    Aynı kural, ayrıştırılmamış bir [[sink]] tablosu için (SOFASCORE_SINKS'in bir öğesi): modelin anahtarları
+    (SINK_KEYS) olduğu gibi kalır, seçenekler mask_sink_options'tan geçer. `url` burada maskelenmez
+    (redact.mask_webhook_url çağıranın işidir).
+    """
+    shown = mask_sink_options(table.get("type"), {k: v for k, v in table.items() if k not in SINK_KEYS})
+    return {key: shown.get(key, value) for key, value in table.items()}
 
 
 def parse_duration(text: str) -> float:
@@ -994,7 +1069,9 @@ def _sink_row(spec: SinkSpec, mask_secrets: bool) -> Dict[str, Any]:
         "name": spec.name, "type": spec.type, "events": list(spec.events),
         # Webhook adresinin yolu ve sorgusu da belirteç taşıyabilir: yalnızca şema ve host gösterilir
         "url": mask_webhook_url(spec.url) if mask_secrets else spec.url, "secret_env": spec.secret_env,
-        "allow_unsigned": spec.allow_unsigned, "path": spec.path, "options": dict(spec.options),
+        "allow_unsigned": spec.allow_unsigned, "path": spec.path,
+        # Sink'lerin tanımadığı bir anahtarın değeri gösterilmez (bkz. mask_sink_options)
+        "options": mask_sink_options(spec.type, spec.options) if mask_secrets else dict(spec.options),
     }
 
 
@@ -1419,6 +1496,7 @@ __all__ = [
     "OVERRIDES_FILE_NAME",
     "LegacyVar",
     "LoadedSettings",
+    "SINK_KEYS",
     "Source",
     "activate",
     "active",
@@ -1427,6 +1505,8 @@ __all__ = [
     "env_name",
     "find_config_file",
     "load_settings",
+    "mask_sink_options",
+    "mask_sink_table",
     "note_dotenv_write",
     "parse_duration",
     "parse_follows",
