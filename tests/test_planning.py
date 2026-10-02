@@ -26,7 +26,7 @@ from src.services import planning
 from src.services.planning import WorkItem, compute_need, order_by_need, phase_of, refresh_due, work_item
 from src.services.query import NEED_FULL, NEED_NONE, NEED_REFILL, NEED_REFRESH, QueryService, RefreshPolicy
 from src.sports import SliceSelection, slices_for
-from src.store import EventRow, EventState, Ref, SliceInfo, open_store
+from src.store import EventRow, EventState, Ref, Scope, SliceInfo, open_store
 from test_store_read_api import HOUR, NOW, _random_details
 
 COMMON = tuple(detail.key for detail in slices_for(None, required_only=True))
@@ -178,13 +178,40 @@ def test_phase_of_status_class(status_class: Optional[str], phase: Optional[str]
     assert phase_of(status_class) == phase
 
 
-@pytest.mark.parametrize("status_class", ["not_started", "void", "live", "unknown", "completed"])
-def test_every_status_follows_the_same_rules_today(status_class: str) -> None:
-    """Tasarım tablosunun canlı / başlamamış satırları henüz uygulanmaz: bugünkü kararlar her durumda aynı."""
+@pytest.mark.parametrize("status_class", ["not_started", "void", "unknown", "completed"])
+def test_statuses_outside_the_live_phase_follow_the_refill_and_refresh_rules(status_class: str) -> None:
+    """Başlamamış ve ertelenmiş maç da: kayıt defterinin bugünkü dilimleri ön maç evresinde de istenebilir (P13)."""
     state = complete(status_class=status_class)
     assert compute_need(state, None, POLICY) == NEED_NONE
     assert compute_need(without_slice(state, "incidents"), None, POLICY) == NEED_REFILL
-    assert compute_need(complete(status_class=status_class, stale=True), None, POLICY) == NEED_NONE
+
+
+def test_a_live_record_needs_nothing_it_belongs_to_the_live_service() -> None:
+    """Tasarım tablosunun canlı satırı (P13): eksik dilim ya da yenileme zamanı onu indirmeye sokmaz."""
+    live = complete(status_class="live")
+    assert compute_need(without_slice(live, "incidents"), None, POLICY) == NEED_NONE
+    due = complete(status_class="live", observed_at=START + 2 * HOUR, observed_gap=2 * HOUR)
+    assert compute_need(due, None, POLICY) == NEED_NONE
+
+
+def test_a_not_started_record_without_a_pre_match_slice_needs_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Tasarım tablosunun "başlamamış" satırı (P13): seçimde ön maç evresinde var olabilen dilim yoksa liste yeter."""
+    import src.sports as sports
+
+    post_only = tuple(dataclasses.replace(spec, phases=frozenset({"post"})) for spec in sports.DETAIL_SLICES)
+    monkeypatch.setattr(sports, "DETAIL_SLICES", post_only)
+    for status_class in ("not_started", "void"):
+        assert compute_need(without_slice(complete(status_class=status_class), "incidents"), None, POLICY) == NEED_NONE
+    assert compute_need(without_slice(complete(), "incidents"), None, POLICY) == NEED_REFILL
+
+
+@pytest.mark.parametrize("status_class", ["not_started", "void", "live", "unknown", "completed"])
+def test_a_stale_record_is_refreshed_first(status_class: str) -> None:
+    """Tasarım tablosunun "bayat" satırı (P13): daha yeni bir liste kaydı farklı gösteriyorsa önce /event okunur."""
+    stale = complete(status_class=status_class, stale=True)
+    assert compute_need(stale, None, POLICY) == NEED_REFRESH
+    assert compute_need(without_slice(stale, "incidents"), None, POLICY) == NEED_REFRESH
+    assert work_item(1, stale, NEED_REFRESH).reason == "a newer listing differs from the stored record"
 
 
 def test_work_items() -> None:
@@ -294,18 +321,28 @@ def test_needs_equal_the_catalog_queries_of_rd3(tmp_path: Path, monkeypatch: pyt
     store = open_store(fx.data_dir)
     service = QueryService(store)
     ids = sorted({record.event_id for record in fx.details} | {1, 2})
+    # P13 tasarım tablosunun canlı ve bayat satırlarını uyguladı; RD-3'ün SQL kopyası (src/services/query.py) bunları
+    # bilmez. Eşitlik öteki kayıtlarda aranır; canlı kayıtta planlamanın kararı ayrıca sabitlenir.
+    states = list(store.events.states(Scope(event_ids=tuple(ids))))
+    live = {state.event.id for state in states
+            if state.event.has_event_payload and phase_of(state.event.status_class) == "live"}
+    assert not any(state.event.stale for state in states)
+    shared = [event_id for event_id in ids if event_id not in live]
     for include_unobserved in (False, True):
         policy = RefreshPolicy(now=float(NOW), window_s=window_h * HOUR, min_interval_s=min_interval_h * HOUR,
                                include_unobserved=include_unobserved)
         for threshold in (1, 2, 3):
             for layout in (None, "legacy", "v3"):
-                assert planning.event_needs(store, ids, policy, threshold=threshold, layout=layout) == \
-                    service.detail_needs(ids, policy, threshold=threshold, layout=layout)
+                needs = planning.event_needs(store, ids, policy, threshold=threshold, layout=layout)
+                assert {event_id: needs[event_id] for event_id in shared} == \
+                    service.detail_needs(shared, policy, threshold=threshold, layout=layout)
+                assert all(needs[event_id] in (NEED_NONE, NEED_FULL) for event_id in live)
                 assert [r.id for r in planning.refresh_due_events(store, policy, threshold=threshold, layout=layout)] \
-                    == [r.id for r in service.refresh_due(policy, threshold=threshold, layout=layout)]
+                    == [r.id for r in service.refresh_due(policy, threshold=threshold, layout=layout)
+                        if r.id not in live]
         tournaments = (sf.PL.id,)
         assert [r.id for r in planning.refresh_due_events(store, policy, tournament_ids=tournaments)] == \
-            [r.id for r in service.refresh_due(policy, tournament_ids=tournaments)]
+            [r.id for r in service.refresh_due(policy, tournament_ids=tournaments) if r.id not in live]
 
 
 def test_identifiers_that_are_not_event_ids_are_left_out(tmp_path: Path) -> None:
