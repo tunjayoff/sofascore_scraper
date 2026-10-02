@@ -204,8 +204,8 @@ cp .env.example .env
 ### Kurulumu denetleme (doctor)
 
 ```bash
-python main.py --doctor          # okunur rapor
-python main.py --doctor --json   # aynısı JSON olarak; betikler ve sunucular için
+python main.py --doctor          # okunur rapor (ssc doctor ile aynı)
+python main.py --doctor --json   # aynısı JSON olarak; betikler ve sunucular için (rapor zarfın "data" alanında)
 ```
 
 Denetim SofaScore'a hiç bağlanmaz. Her satır `OK`, `WARN` ya da `FAIL` olur; her sorunun yanında tek satırlık çözümü yazar:
@@ -219,6 +219,7 @@ Denetim SofaScore'a hiç bağlanmaz. Her satır `OK`, `WARN` ya da `FAIL` olur; 
 | `data_dir`, `config_dir` | `DATA_DIR` ve `config/` yazılabilir. |
 | `frontend` | `frontend/dist/` var. Yoksa yalnızca uyarıdır: terminal modları onsuz çalışır. |
 | `env` | `.env` ayrıştırılabiliyor ve değerleri geçerli (sayılar, `true`/`false`, proxy adresi, dil, log düzeyi). |
+| `budget` | Ortak istek bütçesi: varsayılanın (saniyede 5 istek) üstündeyse ya da kapalıysa uyarı. |
 
 ```text
 [ OK ] Python: 3.14.0
@@ -404,9 +405,38 @@ Web uygulamasında **kullanıcı hesabı yoktur**. Varsayılan olarak yalnızca 
 curl -H "Authorization: Bearer $SOFASCORE_API_TOKEN" http://127.0.0.1:8000/api/leagues
 ```
 
-### Headless / otomasyon
+### Komut satırı (`ssc`)
 
-`--headless` ile birlikte **`--update-all` ve/veya `--csv-export`** zorunludur; aksi halde çıkış kodu **2** olur.
+Sunucular ve otomasyon için komut satırı. Hiçbir şey sormaz: sonuç stdout'a, loglar ve hatalar stderr'e gider; ne olduğunu çıkış kodu söyler. `pip install -e .` sonrası `ssc <komut>`, kurulumsuz `python main.py <komut>` ya da `python -m src.cli.main <komut>`.
+
+```bash
+ssc sync                                   # yapılandırılmış her lig: sezon listeleri, programlar, sonra detayı gereken maçlar
+ssc sync --tournament 17 --only events     # tek lig, yalnızca maç detayları
+ssc sync --dry-run                         # istek atmaz: neyin indirileceği ve en az kaç istek gerektiği
+ssc fetch event 12345678 12345679          # bu maçlar, yapılandırılmış olsun olmasın
+ssc fetch tournament 17 --season 61627     # tek turnuva (ya da bütün sezonları)
+ssc refresh [--tournament 17] [--include-legacy]   # yalnızca geçici kayıtları yeniden oku (günlük cron)
+ssc export --out maclar.csv                # geniş CSV (legacy-wide-csv); --out yoksa: match_details/processed/
+ssc export --schema raw --format jsonl --out ham.jsonl   # saklanan yükler olduğu gibi
+ssc data recheck-unavailable [--all]       # "dilim yok" işaretlerini aç (istek atmaz)
+ssc data clear --scope events --yes        # maç detaylarını sil; eski ve yeni düzende birlikte
+ssc follows list | add | remove | export   # canlı servisin izledikleri; export [[follow]] tablolarını yazar
+ssc status [--coverage] [--check]          # veri özeti, depo, kilitler, çalışan ve son iş, canlı servis
+ssc jobs list | show ID | cancel ID | tail ID [--follow]   # iş geçmişi ve denetimi, süreçler arasında
+ssc watch / ssc events                     # canlı servis ve olay günlüğü (bkz. İzleme modu)
+ssc doctor | describe | config | version | diagnostics | migrate | catalog | backup
+```
+
+- **Makinece okunur çıktı.** `--json` tam olarak bir JSON belgesi yazar (`{"ok", "command", "schema": "sofascore.cli/1", "version", "data" | "error", ...}`; şeması `ssc describe schemas`'ta). Akış komutları (`events`, `jobs tail`) satır başına bir JSON nesnesi yazar, her birinde `type` vardır, akış `{"type": "end", ...}` satırıyla biter; akışın ortasındaki hata bir `{"type": "error", ...}` satırıdır. Boruyu erken kapatan okuyucu (`ssc events | head -1`) hata değildir.
+- **Genel bayraklar** (komuttan önce ya da sonra): `--config DOSYA`, `--data-dir DİZİN`, `--json` / `--output text|json|ndjson`, `--quiet`, `--verbose`, `--log-level`, `--log-format text|json` (stderr'deki log satırları birer JSON nesnesi), `--no-color`, `--lang en|tr`, `--rate N|off`, `--ignore-breaker`, `--wait SANİYE` (meşgul veri klasörünü 6 ile çıkmak yerine bekle), `--progress none|text|ndjson` (işin ilerlemesi stderr'e).
+- **Çıkış kodları:** **0** başarı ya da yapılacak iş yok, **1** genel hata (dışa aktarılacak maç olmayan `export`, bilinmeyen iş kimliği, sağlıksız depoda `status --check` da), **2** kullanım ya da yapılandırma hatası, **3** kısmi başarı (iş bitti ama bazı maçlar ya da listeler alınamadı), **4** SofaScore engelliyor: devre kesici işi durdurdu, **5** depolama hatası (disk dolu, izin yok), **6** veri klasörünü başka bir süreç tutuyor (hata onu adıyla söyler), **130** / **143** Ctrl+C / SIGTERM ile iptal.
+- **İşi durdurmak.** Ctrl+C ya da SIGTERM çalışan `sync`, `fetch` ya da `refresh` işini iptal eder: istekler bir sonraki denetimde durur, yazılmakta olan maç ya bütün olarak yazılır ya da hiç yazılmaz, iş `cancelled` olarak saklanır, kilit bırakılır ve sonuç yine yazılır. İkinci Ctrl+C hemen çıkar. `ssc jobs cancel ID` bir işi başka herhangi bir süreçten (web uygulamasının işleri dahil) iptal eder.
+- **Veri klasörü başına tek yazar.** İndirmeler ve `data recheck-unavailable` klasörün yazar kilidini tutar; kilit başkasındaysa **6** ile çıkar ve sahibini (süreç, makine, amaç, başlangıç) yazar. Okuma komutları (`status`, `events`, `export`, `jobs list`) kilit almaz.
+- **Sink'ler.** `sofascore.toml`'un `[[sink]]` çıktıları (stdout, dosya, webhook) tek seferlik işlerin olaylarını da (`job.started`, `job.finished`) alır: iş başlamadan kaydedilirler, iş bitince en çok 10 sn boşaltılırlar. `ssc config validate` onları da denetler.
+
+### Headless / otomasyon (kullanımdan kalkan bayraklar)
+
+`python main.py`nin bayrakları bir sürüm daha çalışır. Her çalıştırma [komut satırının](#komut-satırı-ssc) bir komutuna çevrilir ve stderr'e onu adıyla söyleyen tek bir satır yazar (`--headless --update-all` → `ssc sync`, `--refresh-only` → `ssc refresh`, `--headless --csv-export` → `ssc export`, `--recheck-unavailable` → `ssc data recheck-unavailable`, `--watch` → `ssc watch --source poll --stdout`, `--doctor` → `ssc doctor`, `--diagnostics` → `ssc diagnostics`); o komutun çıktı kurallarını ve çıkış kodlarını kullanır. `--web` ve menü (bayraksız `python main.py`) değişmedi. `--headless` ile birlikte **`--update-all` ve/veya `--csv-export`** zorunludur; aksi halde hiçbir şey çalışmadan çıkış kodu **2** olur.
 
 | Bayrak | Anlamı |
 |--------|--------|
@@ -431,14 +461,15 @@ python main.py --headless --update-all --fetch-mode details --league-id 52
 python main.py --headless --csv-export --data-dir ./data
 ```
 
-Çıkış kodları: **0** başarı, **1** beklenmeyen hata ya da veri diske yazılamadı, **2** headless’te işlem belirtilmedi ya da devre kesici çalışmayı durdurdu, **6** aynı veri klasörüne başka bir süreç zaten yazıyor.
+Çıkış kodları [komut satırınınkilerdir](#komut-satırı-ssc): **0** başarı, **2** kullanım hatası, **3** kısmi başarı, **4** devre kesici çalışmayı durdurdu, **5** veri diske yazılamadı, **6** aynı veri klasörüne başka bir süreç zaten yazıyor, **130** / **143** iptal. 3.0'dan önce devre kesici **2**, depolama hatası **1**, Ctrl+C **0** idi; her isteği reddedilen bir çalıştırma ve dışa aktarılacak maçı olmayan bir CSV dışa aktarması **0** ile bitiyordu.
 
-Bir veri klasörüne aynı anda yalnızca bir süreç yazar. Web uygulamasında ya da başka bir headless çalıştırmada bir indirme sürerken `--headless --update-all`, `--refresh-only` ve `--recheck-unavailable` başlamaz: kilidi kimin tuttuğunu (süreç numarası, makine, amaç, başlangıç) yazar ve **6** ile çıkar. Aynı sporun ikinci `--watch` çalıştırması için de böyledir. Tek başına `--headless --csv-export` bundan etkilenmez.
+Bir veri klasörüne aynı anda yalnızca bir süreç yazar. Web uygulamasında ya da başka bir headless çalıştırmada bir indirme sürerken `--headless --update-all`, `--refresh-only` ve `--recheck-unavailable` başlamaz: kilidi kimin tuttuğunu (süreç numarası, makine, amaç, başlangıç) yazar ve **6** ile çıkar. Başka bir canlı servis ya da izleyici çalışırken `--watch` için de böyledir. Tek başına `--headless --csv-export` bundan etkilenmez. `--config` artık yapılandırma dosyasıdır (`sofascore.toml`); oraya verilen bir lig dosyası (`.txt`) eskisi gibi yok sayılır ve bunu bir uyarı söyler.
 
 ### Yardım
 
 ```bash
-python main.py --help
+python main.py --help            # kullanımdan kalkan bayraklar
+python main.py sync --help       # yeni komut satırının bir komutu (ya da: ssc sync --help)
 python main.py --version
 ```
 
@@ -537,7 +568,7 @@ python main.py --refresh-only --refresh-legacy
 
 ## İzleme modu
 
-`python main.py --watch` canlı maçları takip edip **olay** üretir; hiçbir sonucu sonuçlandırmaz. Olaylarla ne yapılacağına tüketici karar verir: ayrı bir servis, web arayüzü ya da `tail -f` ile siz.
+`python main.py --watch` canlı maçları takip edip **olay** üretir; hiçbir sonucu sonuçlandırmaz. 3.0'dan beri `ssc watch --source poll --stdout`un takma adıdır (yalnızca yoklama: hiçbir zaman tarayıcı başlatmaz): olaylar stdout'a satır başına bir JSON zarfı (`sofascore.event/1`) olarak yazılır ve olay günlüğünde saklanır; `ssc events` ve yapılandırılmış sink'ler oradan okur. Olaylarla ne yapılacağına tüketici karar verir.
 
 ```bash
 python main.py --watch --sport football --league-ids 17,8     # bu liglerin tüm canlı maçları
@@ -554,12 +585,9 @@ python main.py --watch --sport tennis --event-ids 17196038,17210464 --watch-hour
   - tenis: son sette.
 - **Hız bütçesi.** Turda en fazla `WATCH_MAX_EVENT_POLLS` (varsayılan 20) maç sayfası çekilir, istekler arasında en az 1 sn bırakılır. Bu aralığı makinedeki tüm `--watch` süreçleri paylaşır (bkz. [Ortak istek bütçesi](#ortak-istek-bütçesi-tüm-süreçler)); spor başına bir izleyici çalışsa da toplam 1 istek/sn'nin altında kalır, birden çok yoğun izleyicide bir tur 30 sn'den uzun sürebilir. Daha çok maç bitişe yakınsa maç sayfası aralığı 60 sn'ye iner ve uyarı loglanır.
 - **Takılı maç.** Başlangıçtan 4 sa sonra (tenis: `startTimestamp` yalnızca planlanan saat olduğu için gerçek 1. set başlangıcından 6 sa sonra; set süreleri yağmur arası gibi duraklamaları içermediğinden bu başlangıç geç çıkabilir ve `stuck` biraz geç gelebilir) hâlâ canlı ya da başlamamış maç için bir kez `stuck` olayı üretilir, sonra 5 dk'da bir okunur. İptale dönüp başlangıç saati ileri alınmışsa izlemede kalır (askıya alınan tenis maçı aynı id ile ertesi güne taşınabiliyor).
-- **Olaylar.** `DATA_DIR/watch_events.jsonl` dosyasına satır başına bir JSON yazılır:
-  - `status_changed` `{event_id, from, to, at_utc, change_ts, scores}`. `scores` `extract_scores` çıktısıdır. İlk `completed` olayı, yenileme penceresi kapanana kadar `provisional: true` taşır; bkz. [Yenileme politikası](#yenileme-politikası).
-  - `score_changed` canlı skor içindir `{event_id, from, to, at_utc}`.
-  - `stuck`.
-- **Yeniden başlatma.** Her maçın son bilinen sınıfı `DATA_DIR/watch_state_{sport}.json`'da tutulur (spor başına ayrı dosya: aynı anda çalışan farklı spor izleyicileri birbirinin kaydını ezmez); yeniden başlatmada aynı geçiş iki kez olay olmaz. `watch_state.json` eski formattır, okunmaz; silinebilir. Ctrl+C temiz kapatır.
-- **Ne zaman durur?** `--event-ids` ile izlenen maçların hepsi bitince izleyici kapanır.
+- **Olaylar.** `live.status_changed` (`from`, `to`, `change_ts`, `score`; ilk `completed` olayı yenileme penceresi kapanana kadar `provisional: true` taşır, bkz. [Yenileme politikası](#yenileme-politikası)), `live.score_changed` ve `live.stuck`; her birinde `event_id`, `sport`, `tournament_id`, `seq` ve `ts` vardır. `DATA_DIR/watch_events.jsonl` ve `watch_state_{sport}.json` artık yazılmaz; eski dosyalar silinebilir.
+- **Yeniden başlatma.** Her maçın son bilinen durumu veri klasörünün deposunda tutulur; yeniden başlatmada aynı geçiş iki kez olay olmaz. Ctrl+C ya da SIGTERM temiz kapatır, çıkış kodu 0'dır. Bir veri klasöründe tek canlı servis çalışır (ikincisi **6** ile çıkar).
+- **Ne zaman durur?** `--event-ids` ile izlenen maçların hepsi bitince servis kapanır.
 
 Neden bu sayılar: `events/live` CDN'de 5 sn önbellekte kalıyor; araştırmada düdük → `finished` medyan 20 sn, en fazla 302 sn sürdü (`docs/status-matrix/README.md`). 30 sn'den sık sorgulamak fayda getirmez.
 

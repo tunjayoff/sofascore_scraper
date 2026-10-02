@@ -206,8 +206,8 @@ cp .env.example .env
 ### Check your setup (doctor)
 
 ```bash
-python main.py --doctor          # readable report
-python main.py --doctor --json   # the same as JSON, for scripts and servers
+python main.py --doctor          # readable report (the same as: ssc doctor)
+python main.py --doctor --json   # the same as JSON, for scripts and servers (the report is the envelope's "data")
 ```
 
 The check never contacts SofaScore. Each line is `OK`, `WARN` or `FAIL`, and every problem comes with a one-line fix:
@@ -221,6 +221,7 @@ The check never contacts SofaScore. Each line is `OK`, `WARN` or `FAIL`, and eve
 | `data_dir`, `config_dir` | `DATA_DIR` and `config/` are writable. |
 | `frontend` | `frontend/dist/` exists. Missing is a warning: the terminal modes work without it. |
 | `env` | `.env` parses and its values are valid (numbers, `true`/`false`, proxy address, language, log level). |
+| `budget` | The shared request budget: a warning when it is above the default (5 requests/s) or off. |
 
 ```text
 [ OK ] Python: 3.14.0
@@ -406,9 +407,38 @@ The web app has **no user accounts**. By default it listens on this computer onl
 curl -H "Authorization: Bearer $SOFASCORE_API_TOKEN" http://127.0.0.1:8000/api/leagues
 ```
 
-### Headless / automation
+### Command line (`ssc`)
 
-At least one of `--update-all` or `--csv-export` is required with `--headless`. Otherwise the process exits with code **2**.
+The command line for servers and automation. It never asks questions: the result goes to stdout, logs and errors go to stderr, and the exit code tells what happened. `ssc <command>` after `pip install -e .`, or `python main.py <command>` / `python -m src.cli.main <command>` without installing.
+
+```bash
+ssc sync                                   # every configured league: season lists, schedules, then the matches that need details
+ssc sync --tournament 17 --only events     # one league, match details only
+ssc sync --dry-run                         # sends nothing: what would be fetched and at least how many requests
+ssc fetch event 12345678 12345679          # these matches, configured or not
+ssc fetch tournament 17 --season 61627     # one tournament (or every season of it)
+ssc refresh [--tournament 17] [--include-legacy]   # re-read provisional records only (a daily cron)
+ssc export --out matches.csv               # the wide CSV (legacy-wide-csv); without --out: match_details/processed/
+ssc export --schema raw --format jsonl --out raw.jsonl   # the stored payloads as they are
+ssc data recheck-unavailable [--all]       # reopen "slice not available" markers (no request)
+ssc data clear --scope events --yes        # delete match details, old and new layout alike
+ssc follows list | add | remove | export   # what the live service watches; export prints [[follow]] tables
+ssc status [--coverage] [--check]          # data summary, store, locks, running and last job, live service
+ssc jobs list | show ID | cancel ID | tail ID [--follow]   # job history and control, across processes
+ssc watch / ssc events                     # live service and the event log (see Watch mode)
+ssc doctor | describe | config | version | diagnostics | migrate | catalog | backup
+```
+
+- **Machine-readable output.** `--json` prints exactly one JSON document (`{"ok", "command", "schema": "sofascore.cli/1", "version", "data" | "error", ...}`; `ssc describe schemas` has its schema). Streaming commands (`events`, `jobs tail`) write one JSON object per line, each with a `type`, and end with a `{"type": "end", ...}` line; an error in the middle of a stream is a `{"type": "error", ...}` line. A reader that closes the pipe early (`ssc events | head -1`) is not an error.
+- **Global flags** (before or after the command): `--config FILE`, `--data-dir DIR`, `--json` / `--output text|json|ndjson`, `--quiet`, `--verbose`, `--log-level`, `--log-format text|json` (log lines on stderr as one JSON object each), `--no-color`, `--lang en|tr`, `--rate N|off`, `--ignore-breaker`, `--wait SECONDS` (wait for a busy data folder instead of exiting with 6), `--progress none|text|ndjson` (a job's progress on stderr).
+- **Exit codes:** **0** success or nothing to do, **1** general error (also `export` with nothing to export, an unknown job id, `status --check` on an unhealthy store), **2** usage or configuration error, **3** partial success (the job finished but some matches or lists could not be fetched), **4** SofaScore is blocking: the circuit breaker stopped the job, **5** storage error (disk full, no permission), **6** another process holds the data folder (the error names it), **130** / **143** cancelled by Ctrl+C / SIGTERM.
+- **Stopping a job.** Ctrl+C or SIGTERM cancels a running `sync`, `fetch` or `refresh`: requests stop at the next check, the match being written is written whole or not at all, the job is stored as `cancelled`, the lock is released and the result is still printed. A second Ctrl+C exits at once. `ssc jobs cancel ID` cancels a job from any other process (the web app's jobs too).
+- **One writer per data folder.** Downloads and `data recheck-unavailable` hold the folder's writer lock; while it is held elsewhere they exit with **6** and the holder (process, host, purpose, since when). Reading commands (`status`, `events`, `export`, `jobs list`) take no lock.
+- **Sinks.** The `[[sink]]` outputs of `sofascore.toml` (stdout, file, webhook) also receive the events of one-shot jobs (`job.started`, `job.finished`): they are registered before the job and drained for up to 10 s after it. `ssc config validate` checks them.
+
+### Headless / automation (deprecated flags)
+
+The flags of `python main.py` keep working for one release. Each run is translated into a command of the [command line](#command-line-ssc) and prints one line on stderr that names it (`--headless --update-all` is `ssc sync`, `--refresh-only` is `ssc refresh`, `--headless --csv-export` is `ssc export`, `--recheck-unavailable` is `ssc data recheck-unavailable`, `--watch` is `ssc watch --source poll --stdout`, `--doctor` is `ssc doctor`, `--diagnostics` is `ssc diagnostics`); it uses that command's output rules and exit codes. `--web` and the menu (`python main.py` without flags) are unchanged. At least one of `--update-all` or `--csv-export` is required with `--headless`. Otherwise the process exits with code **2** before anything runs.
 
 | Flag | Meaning |
 |------|---------|
@@ -433,14 +463,15 @@ python main.py --headless --update-all --fetch-mode details --league-id 52
 python main.py --headless --csv-export --data-dir ./data
 ```
 
-Exit codes: **0** success, **1** unexpected error or data could not be written, **2** headless with no action, or the circuit breaker stopped the run, **6** another process is already writing to the same data folder.
+Exit codes are those of the [command line](#command-line-ssc): **0** success, **2** usage error, **3** partial success, **4** the circuit breaker stopped the run, **5** data could not be written, **6** another process is already writing to the same data folder, **130** / **143** cancelled. Before 3.0 a breaker stop was **2**, a storage error **1**, Ctrl+C **0**, and a run in which every request was refused or a CSV export with nothing to export ended with **0**.
 
-Only one process writes to a data folder at a time. While a download runs in the web app or in another headless run, `--headless --update-all`, `--refresh-only` and `--recheck-unavailable` do not start: they print who holds the lock (process id, host, purpose, since when) and exit with **6**. The same goes for a second `--watch` of the same sport. `--headless --csv-export` on its own is not affected.
+Only one process writes to a data folder at a time. While a download runs in the web app or in another headless run, `--headless --update-all`, `--refresh-only` and `--recheck-unavailable` do not start: they print who holds the lock (process id, host, purpose, since when) and exit with **6**. The same goes for `--watch` while another live service or watcher runs. `--headless --csv-export` on its own is not affected. `--config` now names the configuration file (`sofascore.toml`); a leagues file (`.txt`) given there is ignored with a warning, as it always was.
 
 ### Command-line help
 
 ```bash
-python main.py --help
+python main.py --help            # the deprecated flags
+python main.py sync --help       # a command of the new command line (or: ssc sync --help)
 python main.py --version
 ```
 
@@ -548,7 +579,7 @@ python main.py --refresh-only --refresh-legacy
 
 ## Watch mode
 
-`python main.py --watch` follows live matches and writes **events**; it does not settle anything. A consumer (a separate service, the web UI, or you with `tail -f`) decides what to do with them.
+`python main.py --watch` follows live matches and writes **events**; it does not settle anything. Since 3.0 it is an alias of `ssc watch --source poll --stdout` (polling only: it never starts a browser): the events are printed on stdout, one JSON envelope (`sofascore.event/1`) per line, and stored in the event log, where `ssc events` and the configured sinks read them. A consumer decides what to do with them.
 
 ```bash
 python main.py --watch --sport football --league-ids 17,8     # every live match of these leagues
@@ -565,12 +596,9 @@ python main.py --watch --sport tennis --event-ids 17196038,17210464 --watch-hour
   - tennis: the deciding set.
 - **Rate budget.** At most `WATCH_MAX_EVENT_POLLS` (default 20) match pages per round, requests at least 1 s apart. The spacing is shared by every `--watch` process on the machine (see [Request budget](#request-budget-all-processes)), so one watcher per sport still stays under 1 request/s in total; with several busy watchers a round can take longer than 30 s. If more matches are near the end than that, match pages drop to every 60 s and a warning is logged.
 - **Stuck match.** Still live or not started 4 h after kick-off (tennis: 6 h after the real first-set start, since its `startTimestamp` is only the scheduled slot; set durations exclude breaks such as rain delays, so this start can come out late and `stuck` fires a little later): one `stuck` event, then polled every 5 min. If it turns void and its start time has moved (suspended tennis continues the next day with the same id), it stays tracked.
-- **Events.** One JSON line per event in `DATA_DIR/watch_events.jsonl`:
-  - `status_changed` `{event_id, from, to, at_utc, change_ts, scores}`. `scores` comes from `extract_scores`. The first `completed` carries `provisional: true` until the refresh window closes; see [Refresh policy](#refresh-policy).
-  - `score_changed` for live scores `{event_id, from, to, at_utc}`.
-  - `stuck`.
-- **Restarts.** The last known class per match is kept in `DATA_DIR/watch_state_{sport}.json`, so a restart does not emit the same transition twice. Each sport has its own file, so watchers for different sports running at the same time do not overwrite each other. `watch_state.json` is the old format; it is no longer read and can be deleted. Ctrl+C stops cleanly.
-- **When it exits.** With `--event-ids`, the watcher exits when every tracked match is over.
+- **Events.** `live.status_changed` (`from`, `to`, `change_ts`, `score`; the first `completed` carries `provisional: true` until the refresh window closes, see [Refresh policy](#refresh-policy)), `live.score_changed` and `live.stuck`, each with `event_id`, `sport`, `tournament_id`, `seq` and `ts`. `DATA_DIR/watch_events.jsonl` and `watch_state_{sport}.json` are no longer written; old files can be deleted.
+- **Restarts.** The last known state per match is kept in the data folder's store, so a restart does not emit the same transition twice. Ctrl+C or SIGTERM stops cleanly with exit code 0. Only one live service runs per data folder (exit code **6** for a second one).
+- **When it exits.** With `--event-ids`, the service exits when every tracked match is over.
 
 Why these numbers: `events/live` is cached for 5 s at the CDN, and whistle → `finished` took a median of 20 s (max 302 s) in the research (`docs/status-matrix/README.md`). Polling faster than 30 s gains nothing.
 
