@@ -588,9 +588,15 @@ def _close_stores_opened_by_the_test():
     api = sys.modules.get("src.store.api")  # cephe hiç yüklenmediyse açılmış depo da yoktur
     if api is None:
         return
+    # Veri dizini silinmiş ama deposu hâlâ açık: Windows açık dosyayı silemez (WinError 32, catalog.db), testin
+    # dizini silmesi orada başarısız olur. Linux'ta silme geçer; bu denetim aynı hatayı burada da yakalar.
+    orphaned = sorted({str(store.data_dir) for store in api._registry.values()
+                       if not store.closed and not store.data_dir.exists()})
     try:
-        differences = api.shadow_check()
+        differences = api.shadow_check() if not orphaned else []
     finally:
         for store in list(api._registry.values()):
             store.close()
+    assert not orphaned, ("data folder removed while its Store was still open (fails on Windows); close the "
+                          "Store before removing the folder:\n" + "\n".join(orphaned))
     assert not differences, "catalog differs from a rebuild after this test:\n" + "\n".join(differences)
