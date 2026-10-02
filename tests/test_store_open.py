@@ -9,11 +9,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import sqlite3
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 from typing import Any, Dict
 
@@ -31,7 +33,9 @@ from src.store import (
     open_store,
 )
 from src.store import api as api_mod
+from src.store import jobs as jobs_mod
 from src.store import layout
+from src.store.jobs import JobStore
 from src.store.catalog import CATALOG_SCHEMA
 from src.store.derive import DERIVE_VERSION
 from src.store.manifest import MANIFEST_FORMAT
@@ -465,3 +469,141 @@ def test_store_paths_match_the_layout(data_dir):
     assert store._leases.locks_dir == layout.resolve(str(data_dir), layout.LOCKS_DIR)
     assert store._state.path == layout.resolve(str(data_dir), layout.STATE_DB)
     assert store._catalog.path == layout.resolve(str(data_dir), layout.CATALOG_DB)
+
+
+# --- kapatma: bitmekte olan iş (PR #93'ün kalan yolu, plan maddesi FX-12) ------------------------------
+
+# Alt süreçte çalışır: düzeltme bozulursa state.db iş thread'inin altından kapanır ve süreç çökebilir
+# (Python 3.14'te sqlite3_last_insert_rowid'de segfault); çöküş test oturumunu öldürmez, testi düşürür.
+_CLOSE_WHILE_A_JOB_FINISHES = r'''
+import json, logging, os, sqlite3, sys, threading, time
+sys.path.insert(0, sys.argv[2])
+from src.jobs.manager import STREAM_JOB_FINISHED, JobManager, local_origin
+from src.jobs.model import JobKind
+from src.store import open_store
+from src.store.streams import StreamLog
+
+data = os.path.join(sys.argv[1], "data")
+rounds = int(sys.argv[3])
+problems = []
+
+class Collect(logging.Handler):
+    def emit(self, record):
+        if record.levelno >= logging.WARNING:
+            problems.append(record.getMessage())
+
+for name in ("Jobs", "Store"):
+    logging.getLogger(name).addHandler(Collect())
+
+def finished_events():
+    conn = sqlite3.connect(os.path.join(data, ".meta", "state.db"))
+    try:
+        return conn.execute("SELECT count(*) FROM stream_events WHERE stream = 'job' AND type = ?",
+                            (STREAM_JOB_FINISHED,)).fetchone()[0]
+    finally:
+        conn.close()
+
+def join_jobs():
+    for thread in threading.enumerate():
+        if thread.name.startswith("job-") and thread is not threading.current_thread():
+            thread.join(60)
+
+# 1. Pencere açık tutulur: `job.finished` akış yazması bir Event'te bekler; Store.close beklemelidir
+entered, release = threading.Event(), threading.Event()
+_append = StreamLog.append
+
+def append(self, stream, events):
+    if any(event.type == STREAM_JOB_FINISHED for event in events) and not release.is_set():
+        entered.set()
+        release.wait(60)
+    return _append(self, stream, events)
+
+StreamLog.append = append
+store = open_store(data)
+manager = JobManager(store.jobs, cancel_poll=0.02, heartbeat=0.05)
+manager.submit(JobKind.FETCH, {}, lambda handle: None, origin=local_origin("library"), background=True)
+assert entered.wait(60), "the job never reached its job.finished stream write"
+closer = threading.Thread(target=store.close, name="closer")
+closer.start()
+closer.join(0.3)
+waited = closer.is_alive()
+release.set()
+closer.join(60)
+join_jobs()
+result = {"waited": waited, "closed": store.closed and not closer.is_alive()}
+StreamLog.append = _append
+
+# 2. Kısa bir zorlama döngüsü (#93'teki gibi): iş satırını bitirdiği an (yansı "çalışmıyor" der) depo kapatılır
+for _ in range(rounds):
+    store = open_store(data)
+    jobs = store.jobs
+    JobManager(jobs, cancel_poll=0.02, heartbeat=0.05).submit(
+        JobKind.FETCH, {}, lambda handle: None, origin=local_origin("library"), background=True)
+    deadline = time.monotonic() + 30
+    while jobs.snapshot().get("is_running") and time.monotonic() < deadline:
+        time.sleep(0.0005)
+    store.close()
+    join_jobs()
+result["finished_events"] = finished_events()
+result["problems"] = problems
+print(json.dumps(result))
+'''
+
+
+def test_closing_the_store_waits_for_a_finishing_job(tmp_path):
+    """
+    `Store.close()`, `Store.jobs`'ta satırını bitirmiş ama son depo erişimleri (`job.finished` akış olayı, geri
+    okuma) süren işi bekler, sonra kapatır: olay yazılır, uyarı yok, süreç çökmez. Döngü Windows koşucusu için
+    kısa tutulur.
+    """
+    rounds = 15
+    proc = subprocess.run(
+        [sys.executable, "-c", _CLOSE_WHILE_A_JOB_FINISHES, str(tmp_path), ROOT, str(rounds)],
+        cwd=ROOT, env={**os.environ, "PYTHONFAULTHANDLER": "1"}, capture_output=True, text=True, timeout=180)
+    assert proc.returncode == 0, f"exit {proc.returncode}\nstdout:\n{proc.stdout}\nstderr:\n{proc.stderr[-4000:]}"
+    result = json.loads(proc.stdout.strip().splitlines()[-1])
+    assert result["waited"] is True and result["closed"] is True, result
+    assert result["finished_events"] == 1 + rounds, result
+    assert result["problems"] == [], result
+
+
+def test_closing_a_store_without_a_job_store_does_not_create_one(data_dir):
+    store = open_store(data_dir)
+    store.close()
+    assert JobStore.wait_for_finishing_job(store) is True
+    assert jobs_mod._by_store.get(store) is None
+
+
+def test_closing_the_store_from_the_finishing_job_itself_does_not_wait(data_dir, monkeypatch):
+    """İşin kendi thread'i depoyu kapatırsa kendini beklemez (yoksa süre dolana kadar takılırdı)."""
+    monkeypatch.setattr(jobs_mod, "_FINISH_WAIT_SECONDS", 5.0)
+    store = open_store(data_dir)
+    jobs = store.jobs
+    started = time.monotonic()
+    with jobs._job_finishing():
+        store.close()
+    assert store.closed and time.monotonic() - started < 2.0
+
+
+def test_a_close_that_waits_too_long_logs_a_warning_and_closes(data_dir, monkeypatch, caplog):
+    monkeypatch.setattr(jobs_mod, "_FINISH_WAIT_SECONDS", 0.1)
+    store = open_store(data_dir)
+    jobs = store.jobs
+    inside, leave = threading.Event(), threading.Event()
+
+    def finishing() -> None:
+        with jobs._job_finishing():
+            inside.set()
+            leave.wait(10)
+
+    thread = threading.Thread(target=finishing)
+    thread.start()
+    assert inside.wait(10)
+    try:
+        with caplog.at_level(logging.WARNING, logger="Store"):
+            store.close()
+    finally:
+        leave.set()
+        thread.join(10)
+    assert store.closed
+    assert any("while a finishing job still uses it" in r.getMessage() for r in caplog.records)

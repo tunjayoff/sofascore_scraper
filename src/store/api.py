@@ -658,7 +658,17 @@ class Store:
             raise StoreError(f"Depo kapatılmış: {self.data_dir}", path=str(self.data_dir))
 
     def close(self) -> None:
-        """Veritabanı bağlantılarını kapatır ve depoyu kayıt defterinden çıkarır. Alınmış kilitler sahiplerinde kalır."""
+        """
+        Veritabanı bağlantılarını kapatır ve depoyu kayıt defterinden çıkarır. Alınmış kilitler sahiplerinde kalır.
+
+        `Store.jobs`'ta bitmekte olan bir iş varsa (satırı bitmiş, son depo erişimleri sürüyor) önce onun bitmesi
+        beklenir (en çok 30 s; `JobStore.wait_for_finishing_job`): state.db onu kullanan iş thread'inin altından
+        kapatılmaz. Ortasında olan bir işi ya da başka bir thread'in süren okumasını beklemez; kapatan, onların
+        bittiğinden emin olmalıdır (docs/design/01-storage.md, bölüm 3.2).
+        """
+        if self._closed:
+            return
+        JobStore.wait_for_finishing_job(self)
         with self._close_lock:
             if self._closed:
                 return

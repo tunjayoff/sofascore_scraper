@@ -438,6 +438,27 @@ class JobStore:
                     self._release_writer()
                 self._finish_done.notify_all()
 
+    @classmethod
+    def wait_for_finishing_job(cls, store: "Store") -> bool:
+        """
+        Store'un iş deposunda (`Store.jobs`) bitmekte olan bir iş varsa (`_job_finishing`), onun son depo
+        erişimleri bitene kadar bekler (en çok _FINISH_WAIT_SECONDS). `Store.close()` state.db'yi kapatmadan önce
+        çağırır: bağlantı, onu kullanan iş thread'inin altından kapatılmaz. İş deposu hiç kurulmadıysa, bekleyecek
+        iş yoksa ya da çağıran o işin kendi thread'iyse hemen True döner; süre dolduysa uyarı yazar ve False
+        döner. Ortasında olan (satırı henüz bitmemiş) bir işi beklemez: o, `close_all`'ın sözleşmesinin
+        dışındadır (docs/design/01-storage.md, bölüm 3.2).
+        """
+        with _by_store_lock:
+            jobs = _by_store.get(store)
+        if jobs is None:
+            return True
+        with jobs._lock:
+            if jobs._wait_for_finish():
+                return True
+        logger.warning("Closing the store %s while a finishing job still uses it (waited %.0f s)",
+                       store.data_dir, _FINISH_WAIT_SECONDS)
+        return False
+
     def _wait_for_finish(self) -> bool:
         """
         Bitmekte olan işin bloğu bitene kadar bekler (kilit tutularak çağrılır; beklerken kilit bırakılır).
