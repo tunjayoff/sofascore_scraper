@@ -7,6 +7,8 @@ ve her modül kendi şemasını, sürüm denetimini ve işlem sarmalayıcıları
   * `check_sqlite_version`: Python'la gelen SQLite en az 3.24 olmalı.
   * `connect` ve `Connection`: `isolation_level=None` (işlemler açıkça başlatılır), satırlar `sqlite3.Row`,
     bağlantı başka iş parçacığından kapatılabilir ve çöpe giderken kendini kapatır.
+  * `create_database_file`: olmayan veritabanı dosyasını SQLite'tan önce, Store'un öteki dosyalarının
+    izniyle oluşturur (karar S15): dosya sürecin umask'ine uyar, `-wal` ve `-shm` dosyaları da onun iznini alır.
   * `configure`: bölüm 3.2'deki PRAGMA'lar. WAL'a geçiş `set_journal_mode` ile yeniden denenir: SQLite kip
     değişimi için `busy_timeout`u beklemez, yeni bir dosyayı aynı anda açan ikinci bağlantıya hemen
     "database is locked" verir. WAL açılamıyorsa (ağ dosya sistemi) DELETE kipine düşülür; `warn_no_wal`
@@ -48,6 +50,9 @@ _SQLITE_CORRUPT_CODES = frozenset({11, 26})  # CORRUPT, NOTADB
 _LINE_COMMENT_RE = re.compile(r"--[^\n]*")
 _BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
 _TRAILING_COMMENT_RE = re.compile(r"[ \t]*--[^\n]*")
+
+# Yeni veritabanı dosyası: yalnızca yoksa oluşturulur (O_EXCL), hiçbir zaman kesilmez; Windows'ta ikili kip
+_CREATE_FLAGS = os.O_RDWR | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0)
 
 _wal_warned: Set[str] = set()
 _wal_warned_lock = threading.Lock()
@@ -119,14 +124,49 @@ class Connection(sqlite3.Connection):
             self.close()
 
 
+def create_database_file(path: PathLike) -> bool:
+    """
+    Veritabanı dosyası yoksa onu boş olarak, Store'un öteki dosyalarının izniyle (`files.STORE_FILE_MODE`)
+    oluşturur; oluşturduysa True döner. SQLite'ın dosyayı yaratabileceği her açılıştan önce çağrılır (karar S15).
+
+    SQLite yeni bir veritabanını 0644 eksi umask ile yaratır: umask 002 altında bile grup yazamaz, oysa
+    veri dizinindeki öteki her dosya 0664'tür ve aynı gruptan ikinci hesap ilk yazmada hata alır. Var olan
+    dosyanın iznine SQLite dokunmaz, `-wal`, `-shm` ve `-journal` dosyalarına da veritabanı dosyasının
+    iznini verir; bu yüzden boş dosyayı önceden doğru izinle oluşturmak yeter. İzni çekirdek umask'e göre
+    belirler: umask okunmaz, chmod yapılmaz (src/store/files.py ile aynı kural).
+
+    O_EXCL: dosya tek bir sistem çağrısıyla "yoksa oluştur" diye açılır. Var olan dosya açılmaz, kesilmez
+    ve izni değişmez; aynı anda oluşturan iki süreçten biri oluşturur, öteki hazır dosyayı bulur. Boş dosya
+    SQLite için geçerli, boş bir veritabanıdır.
+
+    Hata burada bildirilmez (dizin yok, yazılamıyor, salt okunur dosya sistemi, sarkan sembolik bağ): False
+    döner ve aynı yolu hemen ardından açan SQLite kendi hatasını verir, yani çağıranın hata yolu değişmez.
+    Bellekteki (":memory:"), geçici ("") ve URI ile verilen veritabanları dosya değildir: dokunulmaz.
+    """
+    where = os.fspath(path)
+    if not where or where == ":memory:" or where.startswith("file:"):
+        return False
+    # İçe aktarma burada: modül yüklenirken yalnızca hata sınıflarına bağlıdır (Store'un geri kalanını yüklemez)
+    from src.store.files import STORE_FILE_MODE
+
+    try:
+        fd = os.open(where, _CREATE_FLAGS, STORE_FILE_MODE)
+    except OSError:
+        return False
+    os.close(fd)
+    return True
+
+
 def connect(path: PathLike, *, busy_timeout_ms: int = BUSY_TIMEOUT_MS) -> Connection:
     """
     Dosyaya ayarlanmamış bir bağlantı açar (PRAGMA'lar için `configure`). sqlite3 hataları çevrilmez.
+    Dosya yoksa önce `create_database_file` ile oluşturulur: yeni veritabanı sürecin umask'ine uyar.
 
     isolation_level=None: Python kendiliğinden BEGIN atmaz, işlemler açıkça yönetilir.
     check_same_thread=False: bağlantıyı açan iş parçacığı kullanır, ama `ThreadConnections.close_all` ve
     biten iş parçacıklarının temizliği başka bir iş parçacığından kapatabilmelidir.
     """
+    create_database_file(path)
     conn = sqlite3.connect(os.fspath(path), timeout=busy_timeout_ms / 1000.0, isolation_level=None,
                            check_same_thread=False, factory=Connection)
     conn.row_factory = sqlite3.Row
@@ -342,6 +382,7 @@ __all__ = [
     "close_quietly",
     "configure",
     "connect",
+    "create_database_file",
     "is_busy_error",
     "rollback",
     "set_journal_mode",

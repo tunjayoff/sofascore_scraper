@@ -50,6 +50,7 @@ from src.store.sqlite import (
     check_sqlite_version,
     configure,
     connect,
+    create_database_file,
     is_busy_error,
     rollback,
     set_journal_mode,
@@ -220,7 +221,11 @@ class StateDb:
         """
         Dosya ya boş ya da bir state.db olmalı. Denetim, dosyaya hiçbir şey yazmayan ayrı bir bağlantıyla
         ve WAL'a geçmeden önce yapılır: yanlışlıkla verilen başka bir veritabanı (ör. 2.x jobs.db) değişmez.
+
+        Yeni bir state.db'yi yaratan açılış budur (SQLite dosyayı bağlanırken oluşturur), bu yüzden dosya
+        önce Store'un izniyle oluşturulur: umask'e uyar (karar S15). Var olan dosyaya dokunulmaz.
         """
+        create_database_file(self.path)
         probe = sqlite3.connect(self.path, timeout=BUSY_TIMEOUT_MS / 1000, isolation_level=None)
         try:
             probe.execute("BEGIN")  # üç okuma aynı anlık görüntüden
@@ -260,10 +265,14 @@ class StateDb:
         return f"{self.path}{BACKUP_SUFFIX}{version}"
 
     def _backup(self, conn: sqlite3.Connection, version: int) -> None:
-        """Geçişten önce dosyayı SQLite'ın çevrimiçi yedekleme API'siyle kopyalar; eski sürüm başına bir kopya."""
+        """
+        Geçişten önce dosyayı SQLite'ın çevrimiçi yedekleme API'siyle kopyalar; eski sürüm başına bir kopya.
+        Kopya yeni bir dosyadır: state.db'nin o anki iznini değil, sürecin umask'ini izler (karar S15).
+        """
         target = self.backup_path(version)
         tmp = f"{target}.{uuid.uuid4().hex}.tmp"
         try:
+            create_database_file(tmp)
             copy = sqlite3.connect(tmp)
             try:
                 conn.backup(copy)
