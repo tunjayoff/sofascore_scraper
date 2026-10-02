@@ -12,16 +12,11 @@ SettingsMenuHandler._backup_selected_data:os.path.isdir x3
 SettingsMenuHandler._backup_selected_data:shutil.copy2 x2
 SettingsMenuHandler._backup_selected_data:shutil.copytree x3
 SettingsMenuHandler._change_data_directory:os.makedirs x6
-SettingsMenuHandler._clear_all_data:os.listdir
-SettingsMenuHandler._clear_all_data:os.path.exists
-SettingsMenuHandler._clear_all_data:os.path.isdir
-SettingsMenuHandler._clear_all_data:os.remove
-SettingsMenuHandler._clear_all_data:shutil.rmtree
-SettingsMenuHandler._clear_selected_data:os.listdir
-SettingsMenuHandler._clear_selected_data:os.path.exists
-SettingsMenuHandler._clear_selected_data:os.path.isdir
-SettingsMenuHandler._clear_selected_data:os.remove
-SettingsMenuHandler._clear_selected_data:shutil.rmtree
+SettingsMenuHandler._clear_dirs:os.listdir
+SettingsMenuHandler._clear_dirs:os.path.exists
+SettingsMenuHandler._clear_dirs:os.path.isdir
+SettingsMenuHandler._clear_dirs:os.remove
+SettingsMenuHandler._clear_dirs:shutil.rmtree
 SettingsMenuHandler._move_directory_contents:os.listdir
 SettingsMenuHandler._move_directory_contents:os.makedirs
 SettingsMenuHandler._move_directory_contents:os.path.exists x2

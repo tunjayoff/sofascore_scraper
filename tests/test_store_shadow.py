@@ -1167,17 +1167,17 @@ def test_the_check_reports_a_write_that_no_hook_follows(canonical: sf.LegacyFixt
     assert api_mod.shadow_check() == []  # notlar silindi
 
 
-def test_the_check_reports_a_clear_that_no_hook_follows(canonical: sf.LegacyFixture,
-                                                        monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_menus_clear_goes_through_the_store_and_needs_no_hook(canonical: sf.LegacyFixture,
+                                                                   monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Silme de bir yazmadır: ağaçları silen ürün kodunun ardından kanca çağrılmazsa denetim bunu bildirir.
-    Web'in temizlemesi Store'un işidir (`Store.clear`, ST-19); ağaçları kendisi silen ürün kodu terminal
-    menüsünün temizlemesidir.
+    Silme de bir yazmadır: ağaçları silen ürün kodunun ardından kanca çağrılmazsa denetim bunu bildirir. Terminal
+    menüsünün temizlemesi ST-21'den beri ağaçları kendisi silmez, `MaintenanceService.clear` (`Store.clear`)
+    siler ve kataloğu kendisi yeniden kurar: kanca (`shadow_cleared`) devre dışıyken de denetim temizdir.
     """
     from src.ui import settings_ui
 
     data = canonical.data_dir
-    open_store(data)
+    store = open_store(data)
     replies = ["3", "y"]  # maç detayları, onay
     monkeypatch.setattr(settings_ui, "input", lambda prompt="": replies.pop(0), raising=False)
     monkeypatch.setattr(src.store, "shadow_cleared", lambda *args, **kwargs: None)
@@ -1186,8 +1186,8 @@ def test_the_check_reports_a_clear_that_no_hook_follows(canonical: sf.LegacyFixt
     settings_ui.SettingsMenuHandler(MagicMock(), str(data), colors)._clear_selected_data()
     assert replies == [] and not any((data / "match_details").iterdir())
 
-    found = api_mod.shadow_check()
-    assert len(found) == 1 and "written without a shadow hook afterwards" in found[0]
+    assert api_mod.shadow_check() == []
+    assert store.catalog.diff_from_rebuild() == []
 
 
 def test_a_clear_through_the_store_needs_no_hook(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:

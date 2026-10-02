@@ -5,18 +5,26 @@ Bu modül, yapılandırma, renk teması ve sistem ayarları gibi işlemleri içe
 
 import os
 import shutil
-from typing import Dict
+from typing import Dict, List
 
 from src.config_manager import ConfigManager
 from src.logger import get_logger
 from src.paths import env_file_path
 from src.i18n import get_i18n
+from src.services.maintenance import MaintenanceService
 # Gölge kip (docs/design/01-storage.md 3.5): veri ağaçlarını değiştiren her işlemden sonra Store'un kancası
 # çağrılır ve katalog dosyalardan yeniden kurulur. Paket kökü üzerinden: kancalar ilk çağrıda yüklenir.
 from src import store as store_hooks
 
 # Logger'ı al
 logger = get_logger("SettingsUI")
+
+# Menünün temizlediği dizinlerden Store'a ait olanlar (MaintenanceService kapsam adlarıyla, menü sırasıyla).
+# Store bunları iki düzende de siler (eski klasör ve v3; karar S18). datasets/ ve reports/ Store ağacı
+# değildir: onları menü kendisi boşaltır.
+STORE_TREES = ("seasons", "matches", "match_details")
+# `maintenance` kilidinin amacı (Store.clear'ın kendi aldığıyla aynı)
+CLEAR_PURPOSE = "op:clear"
 
 
 class SettingsMenuHandler:
@@ -308,6 +316,7 @@ class SettingsMenuHandler:
         try:
             print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('title_backup_data')}")
             print("-" * 50)
+            print(f"{COLORS['INFO']}{self.i18n.t('notice_menu_backup_old_layout')}")
             print(f"{self.i18n.t('menu_backup_all')}")
             print(f"{self.i18n.t('menu_backup_selected')}")
 
@@ -470,6 +479,7 @@ class SettingsMenuHandler:
         try:
             print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('title_restore_data')}")
             print("-" * 50)
+            print(f"{COLORS['INFO']}{self.i18n.t('notice_menu_backup_old_layout')}")
 
             # Yedek dizinini al
             backup_dir = input(f"{self.i18n.t('backup_dir_prompt')} [backup]: ").strip() or "backup"
@@ -567,6 +577,7 @@ class SettingsMenuHandler:
         try:
             print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('title_clear_data')}")
             print("-" * 50)
+            print(f"{COLORS['INFO']}{self.i18n.t('notice_menu_clear_both_layouts')}")
             print(f"{self.i18n.t('menu_clear_all')}")
             print(f"{self.i18n.t('menu_clear_selected')}")
 
@@ -603,22 +614,7 @@ class SettingsMenuHandler:
                 return
 
             # Veri dizinlerini temizle
-            data_dirs = ["seasons", "matches", "match_details", "datasets", "reports"]
-
-            try:
-                for dir_name in data_dirs:
-                    dir_path = os.path.join(self.data_dir, dir_name)
-                    if os.path.exists(dir_path):
-                        for item in os.listdir(dir_path):
-                            item_path = os.path.join(dir_path, item)
-                            if os.path.isdir(item_path):
-                                shutil.rmtree(item_path)
-                            else:
-                                os.remove(item_path)
-                        print(f"{COLORS['SUCCESS']}{self.i18n.t('success_dir_cleared', name=dir_name)}")
-            finally:
-                # Katalog kalan dosyalardan yeniden kurulur (temizleme yarıda kalsa da)
-                store_hooks.shadow_cleared(self.data_dir)
+            self._clear_dirs(["seasons", "matches", "match_details", "datasets", "reports"])
 
             print(f"\n{COLORS['SUCCESS']}{self.i18n.t('success_clear_all')}")
 
@@ -667,26 +663,46 @@ class SettingsMenuHandler:
                 return
 
             # Seçili dizinleri temizle
-            try:
-                for dir_name in data_types:
-                    dir_path = os.path.join(self.data_dir, dir_name)
-                    if os.path.exists(dir_path):
-                        for item in os.listdir(dir_path):
-                            item_path = os.path.join(dir_path, item)
-                            if os.path.isdir(item_path):
-                                shutil.rmtree(item_path)
-                            else:
-                                os.remove(item_path)
-                        print(f"{COLORS['SUCCESS']}{self.i18n.t('success_dir_cleared', name=dir_name)}")
-            finally:
-                # Katalog kalan dosyalardan yeniden kurulur (temizleme yarıda kalsa da)
-                store_hooks.shadow_cleared(self.data_dir)
+            self._clear_dirs(data_types)
 
             print(f"\n{COLORS['SUCCESS']}{self.i18n.t('success_clear_selected')}")
 
         except Exception as e:
             logger.error(f"Seçili veri türleri temizlenirken hata: {str(e)}")
             print(f"\n{COLORS['WARNING']}{self.i18n.t('error_with_message', error=str(e))}")
+
+    def _clear_dirs(self, dir_names: List[str]) -> None:
+        """
+        Dizinleri temizler. Store'a ait olanları (`STORE_TREES`) `MaintenanceService.clear` siler, bu sürecin
+        aldığı `maintenance` kilidi altında: eski klasörü ve v3 kopyasını birlikte; katalog aynı kilit altında
+        kalan dosyalardan yeniden kurulur (silme yarıda kalsa da). Üçü birden seçilmişse tek bir `all`
+        temizliğidir (katalog bir kez kurulur). datasets/ ve reports/ ardından menü tarafından boşaltılır.
+        Hata (başka bir süreç dizini kullanıyorsa LeaseHeld, dosya sistemi hatası StoreError) çağırana çıkar.
+        """
+        COLORS = self.colors
+        store_trees = [name for name in STORE_TREES if name in dir_names]
+        if store_trees:
+            store = store_hooks.open_store(self.data_dir)
+            service = MaintenanceService(store=store)
+            with store.lease("maintenance", purpose=CLEAR_PURPOSE):
+                if len(store_trees) == len(STORE_TREES):
+                    service.clear("all", confirm=True)
+                else:
+                    for name in store_trees:
+                        service.clear(name, confirm=True)  # type: ignore[arg-type]  # STORE_TREES kapsam adlarıdır
+        for dir_name in dir_names:
+            if dir_name in STORE_TREES:
+                print(f"{COLORS['SUCCESS']}{self.i18n.t('success_dir_cleared', name=dir_name)}")
+                continue
+            dir_path = os.path.join(self.data_dir, dir_name)
+            if os.path.exists(dir_path):
+                for item in os.listdir(dir_path):
+                    item_path = os.path.join(dir_path, item)
+                    if os.path.isdir(item_path):
+                        shutil.rmtree(item_path)
+                    else:
+                        os.remove(item_path)
+                print(f"{COLORS['SUCCESS']}{self.i18n.t('success_dir_cleared', name=dir_name)}")
 
     def show_about(self) -> None:
         """Program hakkında bilgi gösterir."""

@@ -52,6 +52,8 @@ class StatsMenuHandler:
 
             disk = stats["disk_usage"]
             print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('disk_usage_title')}")
+            # Sayılar katalogdan gelir (iki düzen); disk boyutları yalnızca eski klasörleri ölçer (P26'ya kadar)
+            print(f"  {COLORS['INFO']}{self.i18n.t('notice_menu_disk_old_layout')}")
             print(f"  {self.i18n.t('disk_seasons')} {COLORS['SUCCESS']}{self._format_size(disk['seasons'])}")
             print(f"  {self.i18n.t('disk_matches')} {COLORS['SUCCESS']}{self._format_size(disk['matches'])}")
             print(f"  {self.i18n.t('disk_match_details')} {COLORS['SUCCESS']}{self._format_size(disk['details'])}")
@@ -70,7 +72,11 @@ class StatsMenuHandler:
         COLORS = self.colors  # Kısa erişim için
 
         try:
-            league_name = self.config_manager.get_leagues().get(league_id, self.i18n.t("league_fallback_name", league_id=league_id))
+            leagues = self.config_manager.get_leagues()
+            league_name = leagues.get(league_id, self.i18n.t("league_fallback_name", league_id=league_id))
+            # Menü ligleri yapılandırma sırasıyla gösterir: not yalnızca ilk ligin önünde bir kez yazılır
+            if next(iter(leagues), None) == league_id:
+                print(f"\n{COLORS['INFO']}{self.i18n.t('notice_menu_disk_old_layout')}")
             print(f"\n{COLORS['INFO']}● {league_name} {COLORS['DIM']}(ID: {league_id})")
 
             st = stats_service.league_stats(self.data_dir, league_id, league_name)
@@ -96,6 +102,7 @@ class StatsMenuHandler:
         try:
             print(f"\n{COLORS['SUBTITLE']}{self.i18n.t('report_generation_title')}")
             print("-" * 50)
+            print(f"{COLORS['INFO']}{self.i18n.t('notice_menu_disk_old_layout')}")
             print(self.i18n.t('report_system'))
             print(self.i18n.t('report_league'))
             print(self.i18n.t('report_detailed'))
