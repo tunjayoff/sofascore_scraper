@@ -37,8 +37,13 @@ ENV_TEXT = "PROXY_URL=http://example.invalid:1\n"
 
 
 def _members(path: str) -> List[List[Any]]:
+    """
+    Üye başına ad, boyut, CRC ve sıkıştırma türü. Sabit dizinlerin CSV dosyaları maç saatlerini makinenin saat
+    diliminde yazar (içerik makineye bağlı, boyut değil): onların CRC'si altın dosyaya girmez (None).
+    """
     with zipfile.ZipFile(path) as zf:
-        return sorted([info.filename, info.file_size, info.CRC, info.compress_type] for info in zf.infolist())
+        return sorted([info.filename, info.file_size, None if info.filename.endswith(".csv") else info.CRC,
+                       info.compress_type] for info in zf.infolist())
 
 
 @pytest.fixture
