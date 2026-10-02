@@ -4,7 +4,8 @@ Status: **approved on 2026-10-02** (decision P2 in `03-implementation-plan.md`, 
 schema is the public contract, and its field-level document is approved before the code merges). The owner
 delegated the approval to the orchestrator, who approved version 1 as written. Plan item SC-1 (PR #72).
 API v1 (P21) and the exports (SC-2) will serve these records. `ssc events` and the sinks (P22, PR #73)
-already write the LiveEvent envelope, and the live service (P23) settles the content of its `data`.
+already write the LiveEvent envelope, and the live service (P23, PR #91) settled the content of its `data`
+(section "LiveEvent data").
 
 This document can be read on its own. It defines every record the platform gives out, field by field: type,
 unit, whether it can be null, where the value comes from in SofaScore's payload, and what it means. Section 9
@@ -698,10 +699,38 @@ connection gap the events of one match may skip intermediate states.
 
 #### LiveEvent data
 
-Version 1 fixes the envelope. The content of `data` depends on `type` and is **not fixed yet**: it is settled
-by the live service (plan item P23), and this section is updated then (section 9, point 18). Until then:
+Version 1 fixes the envelope. The content of `data` depends on `type`. It was not fixed when version 1 was
+approved and was left to the live service (plan item P23; section 9, point 18). P23 (PR #91) settled it
+(`stream_data` in `src/services/live/reducer.py` and the supervisor in `src/services/live/supervisor.py`).
+The model still types `data` as an object, so the field table above and the JSON Schema do not change;
+this table is the contract for `data`:
 
-| `type` | `data` today (`live.*`: the 2.x watcher, since PR #59) | `data` proposed for the live service |
+| `type` | `data` as settled by P23 |
+|---|---|
+| `live.status_changed` | `from`, `to`: status classes. `change_ts`: SofaScore's `changes.changeTimestamp` of the event, an epoch integer, or null. `provisional`: true or false on the first `completed` of the event (true while the start plus `REFRESH_WINDOW_HOURS` has not passed), null on every other transition. `score`: the [Score](#score) structure of this document for the observed event, null when it cannot be built |
+| `live.score_changed` | `from`, `to`: each a [ScorePair](#scorepair)-like object `{home, away}` of the headline score. `change_ts` as above. `score`: the [Score](#score) structure |
+| `live.stuck` | `status_class`: the class at the time (`live` or `not_started`). `start_utc`: ISO 8601 UTC of the start from which the sport's threshold is counted (the real play start for tennis), or null |
+| `change.recorded` | `change_seq`: the `seq` of the [Change](#change) it announces. Produced since P23 by the live service when its confirmation of a finished match wrote a change row; the pipeline's after a refresh comes with P13 |
+| `job.started`, `job.finished`, `system.sink_dropped` | as in the table below (unchanged) |
+| `system.blocked` | `source` (`poll`), `retry_in_s` (the pause before the next try), `reason` (a short text that names the refusal, such as `RateLimitError` or `APIError 403`); produced by the live service since P23 |
+| `system.recovered` | `source` (`poll`), `blocked_for_s`; produced by the live service since P23 |
+| `system.live_source_changed` | not produced yet (P24); see `02-services.md` 5.1 |
+
+A `live.status_changed` is emitted only when a previous class is known, so `from` is never null. A
+`live.score_changed` is emitted only while the event was live in the previous observation and stays live.
+The same transition is stored once: the stream log keeps one event per stream and `dedup_key` (an append
+with a key that the stream already holds stores nothing), and the key is
+`<id>:<type>:<from>><to>:<change_ts>` for the two change types (`-` for a missing `change_ts`) and
+`<id>:stuck:<start_ts>` for `live.stuck`. Without a `change_ts`, a second identical transition with an
+identical score is therefore not stored again. The `dedup_key` stays internal to the log and is not a field
+of the envelope. The example of the LiveEvent section above shows a `live.status_changed` without its `score`
+field; as produced the field is always present. The legacy `main.py --watch` alias appends the same `data`
+to the log, and keeps its 2.x fields only in its own stdout lines and in `watch_events.jsonl` for one more
+release.
+
+What was stored before P23, and what was proposed when version 1 was approved:
+
+| `type` | `data` before P23 (`live.*`: the 2.x watcher, since PR #59) | `data` proposed for the live service |
 |---|---|---|
 | `live.status_changed` | `from`, `to` (status classes), `at_utc`, `change_ts`, `source` (`live` or `event`: which request showed it), `scores` (the 2.x score sheet, pairs as two-element arrays), `provisional` (only on the first `completed`) | `from`, `to` (status classes), `change_ts`, `provisional`, `score` (the [Score](#score) structure of this document) |
 | `live.score_changed` | `from`, `to` (each `[home, away]` of the headline score), `at_utc`, `change_ts`, `source` | `from`, `to` (each a [ScorePair](#scorepair)), `change_ts`, `score` |
@@ -864,7 +893,8 @@ to one of them is a change of the contract and follows the versioning rule of se
 17. **Change.** `fields[].path` and the old and new values are SofaScore's (`homeScore.normaltime`), not
     normalized names. `seconds_after_start` replaces the 2.x field `hours_after_start` (durations are in
     seconds). The tournament's name, which the 2.x line carries, is dropped (the id is there).
-18. **LiveEvent.** Version 1 fixes the envelope and leaves `data` to P23 (table above). The model is called
+18. **LiveEvent.** Version 1 fixes the envelope and leaves `data` to P23 (table above; P23, PR #91, settled
+    it as "LiveEvent data" states). The model is called
     LiveEvent although the same envelope carries the `change`, `job` and `system` streams. `type` keeps its
     stream prefix (`live.status_changed`), where `00-platform.md` writes `status_changed`.
 19. **Where `schema_version` appears.** Not in every record; in `describe`, in the JSON Schema, and in the

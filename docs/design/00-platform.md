@@ -24,6 +24,11 @@ document is more specific than the outline of the draft; the notes of sections 4
 and sections 5 and 7 have a note each; section 13 has one more row (the schema document) and marks the row
 on the configuration layers as settled.
 
+Revised a fourth time, at the end of 2026-10-02, after batches eight to ten. No decision of the draft
+changed. The state column of section 1 follows the merged work; the notes of sections 4, 6 and 7 say what
+exists now, and section 8 has a note; section 13 has two more rows (a delete that the user asks for, and the
+"finished only" filter of the counts and lists).
+
 ## 1. Decisions (Tuncay, 2026-10-01)
 
 | Topic | Decision | State on 2026-10-02 |
@@ -34,9 +39,9 @@ on the configuration layers as settled.
 | History / live | History: by requests. Live: the push channel, with polling as the fallback. How the push channel is used was decided after the draft: see the two rows at the end of this table | measured, PR #42 |
 | Interfaces | The web UI is for people (a large update on the current base). The CLI is for servers and automation only; the menu-driven terminal UI is removed. Live watching belongs to the CLI only (row at the end of this table) | |
 | Request rate | Default 5 requests per second; the user may take the risk and remove the limit | done, PR #33 |
-| Storage | Raw JSON files stay + a rebuildable SQLite catalog | in progress (`03-implementation-plan.md`, Status): the catalog is built on the first open of a data directory and kept current by the writers (PR #75), and the Store has its read API (PR #68); no feature reads the catalog yet (the first reader items are in review), and the layout on disk is unchanged |
+| Storage | Raw JSON files stay + a rebuildable SQLite catalog | in progress (`03-implementation-plan.md`, Status): the catalog is built on the first open of a data directory and kept current by the writers (PR #75); the dashboard, the statistics, the match lists, the match detail and the season lists read it (PRs #78, #79, #80, #89); the writer of the new layout exists (PR #82) but the downloads do not use it yet, so the layout on disk is unchanged except for the matches that `ssc watch` confirms |
 | Data format | A fixed, versioned common schema + raw data for those who want it | the schema is fixed: `04-schema-v1.md`, approved on 2026-10-02 (PR #72); nothing serves it yet |
-| Match status | Every status is stored (fixture, live, finished, cancelled); filtering happens when reading | |
+| Match status | Every status is stored (fixture, live, finished, cancelled); filtering happens when reading | in progress: the dashboard and the match lists apply `FETCH_ONLY_FINISHED` when they read (decision D21, PRs #78 and #89); the downloads still skip unfinished matches when the setting is on (ST-27) |
 | Language | Default English; Turkish when the system language is Turkish | done, PR #39 |
 | Platform | Linux and Docker are official; Windows and macOS best-effort | |
 | Network access | No account system. Local-only by default; exposing it is the responsibility of whoever installs it (see section 9) | done, PR #43 |
@@ -45,8 +50,8 @@ on the configuration layers as settled.
 | Scheduler | In-app automatic updating is optional, off by default | |
 | Version | These changes are 3.0.0 (manager decision): storage layout, API and CLI change incompatibly | |
 | Merging | The manager session reviews and merges; the release tag is Tuncay's | |
-| Live is not a web feature (2026-10-01, after the draft) | Live data is not part of the web UI and is not exposed over an HTTP endpoint (no SSE stream). A person at a screen can watch live scores on SofaScore itself; the value of the live stream is for servers and programs. Live watching is a CLI service (`watch`) that delivers events to sinks: stdout (JSON lines), file, webhook. A program that wants live data over the network uses the webhook. The event stream is still stored with sequence numbers | the sinks and the `events` command exist (PR #73), and no process hosts the sinks yet; planned: P23 |
-| Live sources (2026-10-01, after the draft) | Two selectable push sources in the CLI, plus polling as the fallback that is always present. `page` (default): the service keeps a real browser page open and listens to the page's own push connection; no credential is handled. `direct` (explicit opt-in): a lightweight client connects to the push server itself with the credential read at runtime from the bridge page's own connection, kept in memory only. `direct` is never the default, is never enabled implicitly, and carries clear warnings wherever it is configured or documented (section 8) | planned: P24, P31 |
+| Live is not a web feature (2026-10-01, after the draft) | Live data is not part of the web UI and is not exposed over an HTTP endpoint (no SSE stream). A person at a screen can watch live scores on SofaScore itself; the value of the live stream is for servers and programs. Live watching is a CLI service (`watch`) that delivers events to sinks: stdout (JSON lines), file, webhook. A program that wants live data over the network uses the webhook. The event stream is still stored with sequence numbers | `ssc watch` exists with polling and delivers to the configured sinks (PR #91); planned: the push sources (P24, P31) |
+| Live sources (2026-10-01, after the draft) | Two selectable push sources in the CLI, plus polling as the fallback that is always present. `page` (default): the service keeps a real browser page open and listens to the page's own push connection; no credential is handled. `direct` (explicit opt-in): a lightweight client connects to the push server itself with the credential read at runtime from the bridge page's own connection, kept in memory only. `direct` is never the default, is never enabled implicitly, and carries clear warnings wherever it is configured or documented (section 8) | in progress: P24 (`page`); P31 (`direct`) after it. Until then `--source page` and `--source direct` fall back to polling with a warning (PR #91) |
 
 Note. The sports, by class, as measured in `docs/all-sports/README.md`:
 
@@ -146,8 +151,14 @@ them, and since PR #64 (P10) so do the headless runs and `--watch` of the comman
 a data directory is refused, whichever face it comes from. The catalog and the state database exist as well
 (`.meta/catalog.db`, `.meta/state.db`). Since PR #75 (ST-11) the catalog is built from the files on the
 first open of a data directory, reconciled on every later open and updated after every write; since PR #69
-(P11) the jobs of every process, web or command line, are in the state database. No feature reads the
-catalog yet: the first reader items (RD-1, RD-4 and RD-5) are open pull requests.
+(P11) the jobs of every process, web or command line, are in the state database. Since PRs #78, #79, #80
+and #89 (RD-4, RD-5, RD-1, RD-2) the dashboard, the statistics, the match lists, the match detail and the
+season lists read the catalog; "only finished matches" is a filter when they read (decision D21), and an
+open of a data directory within a minute of the last full check skips the pass over the match folders
+(decision S17, PR #90). The writer of the new layout (`v3/`, PR #82) and slice history (PR #92) exist and
+are used only by `ssc watch` so far; the downloads switch in plan item ST-21. A delete that the user asks
+for removes the copies of the old layout as well, which section 12 does not foresee: decision S18 (open,
+section 13).
 
 ## 5. HTTP API v1
 
@@ -198,7 +209,8 @@ for the items that use them. The first commands of the new CLI exist next to `ma
 above. The data commands of the table (`sync`, `fetch`, `watch`, `export`, `serve`, `status`) are still to
 come; until then `main.py` does that work. Since PR #73 (P22) there is also `events`, which prints the
 stored event stream, and since PR #69 (P11) the headless runs of `main.py` appear in the job history of the
-web application and can be stopped from another process.
+web application and can be stopped from another process. Since PR #91 (P23) there is `watch` as well
+(below).
 
 ## 7. Output targets (pluggable)
 
@@ -210,8 +222,8 @@ web application and can be stopped from another process.
   HTTP endpoint to pull or stream it from.
 - **message queue**: later, a new target on the same interface.
 
-Note. The stdout, file and webhook targets exist as a library since PR #73 (plan item P22). No command
-hosts them yet: `watch` (P23), `serve` (P25) and the one-shot commands (P19) do so in their own items.
+Note. The stdout, file and webhook targets exist as a library since PR #73 (plan item P22). Since PR #91
+(P23) `watch` hosts them; `serve` (P25) and the one-shot commands (P19) do so in their own items.
 
 ## 8. Live watching
 
@@ -244,6 +256,13 @@ draft waited for (`docs/push-channel/README.md`). The draft's six lines are repl
 - Events are written to the state database with a sequence number; the CLI and the sinks read the same
   stream.
 - The watcher is a supervised background service, separate from download jobs.
+
+Note. `ssc watch` exists since PR #91 (plan item P23), with polling as its only source: `--source page` and
+`--source direct` fall back to polling with a warning until P24 and P31. It is one foreground process for
+every sport, takes the live lease, writes the events into the state database with sequence numbers and a
+key that stores a transition once, delivers them to the configured sinks, and pauses with back-off when
+SofaScore blocks requests. The fields of the live events are settled (`04-schema-v1.md`, LiveEvent). The old
+`--watch` keeps running for one more release and shares the state with `watch`.
 
 ## 9. Network access and security
 
@@ -340,4 +359,6 @@ needed" in `03-implementation-plan.md`.
 | Follow list in the configuration file (section 6) | Three origins of follows: the config file, the API/web UI, and the existing `leagues.txt` for installations without a config file | `02-services.md` 4.3 |
 | Every setting can be overridden by an environment variable (section 6) | The same, with one distinction: the existing `.env` file, which the installers create and the web UI writes, is a layer of its own below the configuration file, so that its lines do not beat the file; variables of the process environment are above the file (decision D19, settled on 2026-10-02) | `02-services.md` 4.3 |
 | The common schema as an outline (section 3) | A field-level contract, approved on 2026-10-02 (decision P2): live event types with their stream prefix, a Slice identified by owner and key, slice payloads raw in version 1, the aggregate for football only | `04-schema-v1.md` |
+| The old layout is never changed outside `migrate` (sections 1 and 12) | Writes, promotion, rebuild and repair never delete old data; a delete or a clear that the user asks for removes every copy of what it names, the old layout's included, because a copy left behind would bring the data back (proposed; decision S18, open) | `01-storage.md` 0 and 2.3 |
+| `FETCH_ONLY_FINISHED` becomes a read filter (section 4) | The same for the counts and the match lists, with one rule: with the setting on, a match counts when it is finished or its details were downloaded (decision D21, settled on 2026-10-02) | `02-services.md` 2.7 |
 | Wave order (section 10) | Kept. Inside wave 3 the Store and the service layer are interleaved PR by PR because they share files; the plan gives the order | `03-implementation-plan.md` |
