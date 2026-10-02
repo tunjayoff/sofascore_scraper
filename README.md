@@ -465,6 +465,8 @@ Exact paths may vary slightly by league naming and migrations.
 
 Match details are stored under `v3/events/<id / 1,000,000>/<(id / 1,000) mod 1,000>/<id>/`, compressed. Folders under `match_details/` written by older versions stay where they are and stay readable in the app; when such a match is written again (a refill, a refresh, a marker reset), its current state is first copied to `v3/` and the old folder is left untouched. Programs that read `match_details/` directly do not see matches downloaded by this version.
 
+In the terminal menu, **Backup** and **Restore** still copy only the old folders (`seasons/`, `matches/`, `match_details/`): to keep matches stored under `v3/`, copy the whole data folder. **Clear data** removes seasons, matches and match details from both the old folders and `v3/`, and is refused while another process is using the data folder. The disk sizes in **Statistics** count the old folders only. Each of these menus says so.
+
 The match list reads the per-season summaries under `matches/`; the export CSV in `match_details/processed/` is only a fallback when no summaries exist.
 
 Next to `config/leagues.txt` (the `name: id` list the CLI also reads), `config/league_sports.json` stores each league's sport as `{"<id>": "football" | "basketball" | "tennis"}`. It is filled when a league is added from the web app, when you pick a sport in the UI, or from a downloaded match of that league.

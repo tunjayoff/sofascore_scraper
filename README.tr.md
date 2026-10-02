@@ -463,6 +463,8 @@ Lig adlandırma ve migrasyonlara göre alt yollar biraz farklı olabilir.
 
 Maç detayları sıkıştırılmış olarak `v3/events/<id / 1.000.000>/<(id / 1.000) mod 1.000>/<id>/` altında saklanır. Önceki sürümlerin `match_details/` altına yazdığı dizinler yerinde kalır ve uygulamada okunmaya devam eder; böyle bir maç yeniden yazıldığında (eksik dilim tamamlama, yenileme, işaretlerin yeniden denetimi) önce bugünkü hali `v3/`'e kopyalanır, eski dizine dokunulmaz. `match_details/`'i doğrudan okuyan programlar bu sürümün indirdiği maçları görmez.
 
+Terminal menüsünde **Yedekleme** ve **Geri yükleme** hâlâ yalnızca eski klasörleri kopyalar (`seasons/`, `matches/`, `match_details/`): `v3/` altında saklanan maçları korumak için veri klasörünün tamamını kopyalayın. **Veri temizleme** sezonları, maçları ve maç detaylarını hem eski klasörlerden hem de `v3/`'ten siler; veri klasörünü başka bir süreç kullanırken reddedilir. **İstatistikler**'deki disk boyutları yalnızca eski klasörleri sayar. Bu menülerin her biri bunu belirtir.
+
 Maç listesi `matches/` altındaki sezon özetlerinden okunur; `match_details/processed/` içindeki export CSV yalnızca hiç özet yoksa yedek olarak kullanılır.
 
 `config/leagues.txt`’nin (CLI’ın da okuduğu `ad: id` listesi) yanında `config/league_sports.json` her ligin sporunu `{"<id>": "football" | "basketball" | "tennis"}` olarak saklar. Lig web’den eklendiğinde, arayüzde spor seçildiğinde veya o ligin indirilmiş bir maçından doldurulur.
