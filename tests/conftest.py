@@ -18,9 +18,11 @@ import os
 import shutil
 import sys
 import tempfile
+import threading
+import time
 import urllib.parse
 import urllib.request
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Collection, Dict, FrozenSet, List, Optional, Sequence, Tuple, Union
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
@@ -153,13 +155,16 @@ _seed()
 # dizinini `conftest.STORE_BOUNDARY.add_data_dir(str(tmp_path))` ile bildirebilir.
 
 # Yol taşıyan dosya sistemi olayları. os.stat / os.path.exists olay üretmez; onları statik denetim görür.
+# `_winapi.CopyFile2(kaynak, hedef, bayraklar)`: Windows'ta Python 3.12'den beri `shutil.copy2` (ve onu kullanan
+# `shutil.copytree`) dosyayı bununla kopyalar ve `shutil.copyfile` ya da `open` olayı üretmez. Yolları
+# `shutil.copyfile`ınkiler gibi ilk iki bağımsız değişkendedir.
 FS_AUDIT_EVENTS = frozenset({
     "open", "os.listdir", "os.scandir", "os.walk", "os.fwalk", "os.mkdir", "os.rmdir", "os.remove", "os.rename",
     "os.chmod", "os.chown", "os.utime", "os.truncate", "os.link", "os.symlink",
     "glob.glob", "glob.glob/2", "pathlib.Path.glob", "pathlib.Path.rglob", "pathlib.Path.walk",
     "shutil.rmtree", "shutil.copyfile", "shutil.copymode", "shutil.copystat", "shutil.copytree", "shutil.move",
     "shutil.make_archive", "shutil.unpack_archive", "shutil.chown",
-    "tempfile.mkstemp", "tempfile.mkdtemp", "sqlite3.connect",
+    "tempfile.mkstemp", "tempfile.mkdtemp", "sqlite3.connect", "_winapi.CopyFile2",
 })
 
 # Tek bir sistem çağrısına karşılık gelen olaylar. Geri kalanlar bir kitaplık işlevinin kendi olayıdır
@@ -360,6 +365,7 @@ def _boundary_audit_hook(event: str, args: Tuple[Any, ...]) -> None:
 _WRITE_AUDIT_EVENTS = frozenset({
     "os.mkdir", "os.rmdir", "os.remove", "os.rename", "os.utime", "os.truncate", "os.link", "os.symlink",
     "shutil.rmtree", "shutil.copyfile", "shutil.copytree", "shutil.move", "shutil.unpack_archive",
+    "_winapi.CopyFile2",
 })
 _WRITE_FLAGS = os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_APPEND
 _BY_TEST, _BY_PRODUCT, _BY_STORE = "test", "product", "store"
@@ -434,6 +440,33 @@ class ShadowEdits:
 BOUNDARY_RECORDERS.append(ShadowEdits(os.path.join(ROOT, "src"), os.path.join(ROOT, "tests")))  # type: ignore[arg-type]
 
 sys.addaudithook(_boundary_audit_hook)
+
+
+# --- İş thread'leri --------------------------------------------------------------------------------------
+#
+# `JobManager.submit(background=True)` işi `job-<tür>` adlı bir thread'de yürütür (işin saati: `job-ticker-…`).
+# İşin satırı "bitti" olduktan sonra da thread depoya dokunur: `job` akışına `job.finished` olayını yazar ve
+# bitmiş işi okur (`JobManager._finish`, `JobManager.run`). Satırın bittiğini görüp hemen depoyu kapatan bir
+# fixture, o an başka bir thread'in kullandığı SQLite bağlantısını kapatır; Python 3.14 bunda süreci
+# segmentation fault ile düşürdü. İş deposunu kapatan fixture'lar önce testin başlattığı iş thread'lerini bekler.
+
+
+def job_threads() -> FrozenSet[threading.Thread]:
+    """Şu an yaşayan iş thread'leri (adı `job-` ile başlayanlar)."""
+    return frozenset(thread for thread in threading.enumerate() if thread.name.startswith("job-"))
+
+
+def join_job_threads(before: Collection[threading.Thread] = (), timeout: float = 20.0) -> None:
+    """
+    `before`da olmayan iş thread'lerinin bitmesini bekler (fixture kurulurken `job_threads()` ile alınır).
+    Süre dolduğunda hâlâ yaşayan varsa AssertionError: depo o thread'in altından kapatılmamalı.
+    """
+    deadline = time.monotonic() + timeout
+    started = [thread for thread in job_threads() if thread not in before]
+    for thread in started:
+        thread.join(max(0.0, deadline - time.monotonic()))
+    alive = sorted(thread.name for thread in started if thread.is_alive())
+    assert not alive, f"job threads still running after {timeout} s: {alive}"
 
 
 import pytest  # noqa: E402
