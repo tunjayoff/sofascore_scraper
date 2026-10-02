@@ -120,10 +120,11 @@ section is what the first tagged release will contain.
 - `SOFASCORE_CONFIG_DIR` and `SOFASCORE_ENV_FILE` to move the config folder and the `.env`
   file.
 - Continuous integration (GitHub Actions): frontend lint, tests and build; `ruff` and
-  `pytest` on Linux with Python 3.10 and 3.14, with a coverage floor (53%); the BrowserBridge
-  run against a local fake site with a real Chromium; and `pytest` on Windows and macOS with
-  Python 3.14 as best-effort jobs that report but do not block. The test suite runs offline
-  against a temporary data set and never touches real data, configuration or `.env` (#22).
+  `pytest` on Linux with Python 3.10 and 3.14, with a coverage floor (85% since #83); the
+  BrowserBridge run against a local fake site with a real Chromium; and `pytest` on Windows and
+  macOS with Python 3.14 as best-effort jobs that report but do not block. The test suite runs
+  offline against a temporary data set and never touches real data, configuration or `.env`
+  (#22).
 - `constraints.txt` pins every Python package (indirect ones too) to verified versions. CI,
   the installers, the launcher and the Docker image install with it; `requirements-dev.txt`
   lists the development tools (#22).
@@ -139,11 +140,12 @@ section is what the first tagged release will contain.
 - Web app screenshots in the READMEs.
 - A command line for servers and automation next to `main.py`:
   `python -m src.cli.main <command>`, or `ssc <command>` after `pip install -e .`. Commands so
-  far: `version`, `doctor`, `describe`, `config show|validate|init|path` and `diagnostics`. The
-  result goes to stdout (`--json` prints one JSON document), logs and errors go to stderr, and
-  the exit codes are fixed: 0 success, 1 error, 2 usage or configuration error, 3 partial
-  success, 4 SofaScore is blocking, 5 storage error, 6 another instance is running. Downloading
-  and the web app are still started with `main.py` (#65).
+  far: `version`, `doctor`, `describe`, `config show|validate|init|path`, `diagnostics`,
+  `events` (#73) and `watch` (#91). The result goes to stdout (`--json` prints one JSON
+  document), logs and errors go to stderr, and the exit codes are fixed: 0 success, 1 error, 2
+  usage or configuration error, 3 partial success, 4 SofaScore is blocking, 5 storage error, 6
+  another instance is running. Downloading and the web app are still started with `main.py`
+  (#65).
 - `ssc doctor` warns when the request budget is above the default of 5 requests per second or
   turned off (#65).
 - `ssc config init` prints a starter `sofascore.toml`; `ssc config init --from-legacy` prints
@@ -165,6 +167,14 @@ section is what the first tagged release will contain.
 - `PATCH /api/v1/settings` stores changes in `config/overrides.json` and refuses a value that
   `sofascore.toml`, the environment or a command-line flag pins, instead of reporting success
   for a change that has no effect (#74).
+- `ssc watch`: the live service, one foreground process for every sport. It watches the follows
+  with `live = true`, or `--sport` with `--event` or `--tournament`. Events go into the event
+  log with sequence numbers and are delivered to the configured sinks (`[[sink]]` or
+  `SOFASCORE_SINKS`). `--stdout` also prints them as JSON lines. Only one live service runs per
+  data directory: a second one, or a `--watch` running beside it, exits with code 6. Finished
+  matches are stored with one `/event` request. When SofaScore blocks requests, the service
+  pauses and backs off instead of stopping. Polling is the only source in this version:
+  `--source page` (the default) and `--source direct` fall back to it with a warning (#91).
 
 ### Changed
 
@@ -196,7 +206,8 @@ section is what the first tagged release will contain.
 - `main.py --help`, the messages of `--watch`, `--refresh-only` and `--headless`, the
   progress lines of a headless download, the launcher and the installers exist in both
   languages. The help and the installers used to be Turkish only and the launcher English
-  only. Log lines are still Turkish (#39).
+  only. Most log lines are still Turkish; those of the data store's locks and state database
+  (#70, #85) and of the season reader (#79) are English (#39).
 - `GET /api/settings` reports `language_explicit`: whether `APP_LANGUAGE` is set (#39).
 - The comments in `.env.example` are in English (#39).
 - `config/leagues.txt` and `config/league_sports.json` are user state and no longer tracked
@@ -283,15 +294,17 @@ section is what the first tagged release will contain.
   both would have written the same files. The lock is an operating-system file lock, so it is
   free again when the process ends, however it ends. On a file system without lock support
   (some network shares) a warning is logged and the folder must be used by one process, as
-  before. `python main.py` runs do not take the lock yet.
+  before. Since #64 the command-line runs (`--headless --update-all`, `--refresh-only`,
+  `--recheck-unavailable`, `--watch`) take the lock too; the interactive terminal menu does not.
 - **Store layer: file modes and sub names.** Payload files, manifests and `.meta/schema.json`
   written by the new Store layer get the mode the process umask gives (0644 with the usual umask
   022) instead of 0600, so a Docker bind mount read by another user, or a backup tool running
-  under another account, can read the data. Files written by today's code keep mode 0600, except
-  `watch_state_<sport>.json`, and `.env` and the browser profile stay private. Slice sub names
-  are lower-case only (`[a-z0-9_.-]`), because Windows and default macOS file systems do not
-  distinguish case. Since #59, `--watch` writes `watch_state_<sport>.json` through the Store's
-  writer, so that one file follows the umask: 0644 with umask 022 (#53).
+  under another account, can read the data. The other files written by today's code keep mode
+  0600, except the lock files (#70), `state.db` and `catalog.db` (#85), which follow the umask,
+  and the files that are appended to (`watch_events.jsonl`, `score_changes.jsonl`), which always
+  did; `.env` and the browser profile stay private. Slice sub names are lower-case only
+  (`[a-z0-9_.-]`), because Windows and default macOS file systems do not distinguish case.
+  Since #91, `--watch` no longer writes `watch_state_<sport>.json` (#53).
 - League search in the web app now follows `API_BASE_URL` like every other request. It was
   the one request that still went to `https://www.sofascore.com/api/v1` whatever the setting
   said. With the default setting nothing changes (#57).
@@ -339,15 +352,100 @@ section is what the first tagged release will contain.
   that already exist keep their permissions (`chmod g+w DATA_DIR/.meta/locks/*.lock` once, or
   delete them while nothing is running). The log line of a state-database migration is English:
   `Store: state.db migration applied: 0001_initial` (#70).
-- The existing `/api/…` routes are deprecated. They keep working unchanged for one more release,
-  are marked deprecated in `/docs`, and answer with `Deprecation: true` and a `Link` header that
-  names the `/api/v1` successor (#74).
+- The existing `/api/…` routes are deprecated. They keep working for one more release, are
+  marked deprecated in `/docs`, and answer with `Deprecation: true` and a `Link` header that
+  names the `/api/v1` successor. The deprecation changes nothing else; the limit on wrong access
+  tokens in the next entry applies to them too (`429 too_many_attempts`) (#74).
 - Access token: `[server] token_env` in `sofascore.toml` can name the environment variable that
   holds the token. Wrong tokens are now limited: after 5 failed attempts from one address
   (sign-in or `Authorization: Bearer`), further attempts from that address are refused for 30
   seconds, doubling up to one hour (`429 too_many_attempts` on the existing routes,
   `401 unauthorized` with `Retry-After` on `/api/v1`). Signed-in browser sessions are not
   affected (#74).
+- The data folder now holds an index of what was downloaded (`.meta/catalog.db`). It is built
+  from the files the first time the folder is opened (one log line,
+  `Catalog built from the files in …`; under a second for a few hundred matches) and updated
+  after every download. The dashboard and the statistics (#78), the season lists (#79), stored
+  matches (#80) and the match lists (#89) are read from it; it can be deleted at any time and is
+  rebuilt (#75).
+- The dashboard and the statistics (web and terminal) now count from the data folder's index
+  instead of walking the files. A match that is listed in two summary files and a league with
+  two season-list files are counted once; details that sit outside a league's season folders
+  (single-match downloads, folders of old versions) are counted; a downloaded match that no
+  schedule lists counts as a match. The match count follows the `FETCH_ONLY_FINISHED` setting
+  when the page is read: with the setting on, scheduled matches that are not finished and have
+  no details are not counted, also in seasons that were downloaded while the setting was off. On
+  folders without these cases the numbers are the same. Disk usage is measured again at most
+  once a minute unless a download or a clear changed the data. In the terminal UI, statistics
+  opened after "clear data" or "restore" show the old counts until the program is restarted
+  (#78).
+- The season list of a league is read from the data folder's index everywhere (web app,
+  downloads, terminal menu), so all of them see the same list. When `seasons/` holds several
+  list files for one league (left by older versions or by renaming a league), the newest one is
+  used whatever its name; before, the web app preferred a bare `<id>_seasons.json` and downloads
+  preferred the file named after the configured league, even when it was the older one. A list
+  named after the league alone (`LaLiga_seasons.json`) and a list that starts with a byte order
+  mark are now found by the web app too; a list file that cannot be read (cut off, or not a JSON
+  object) is skipped in favour of the league's newest readable one. Downloads also find the list
+  and the match files of a league that is no longer in `leagues.txt`, and of a season whose
+  folder was written under another name (#79).
+- `GET /api/leagues` no longer rewrites `config/league_sports.json`: for a league whose sport
+  you did not choose, the sport is read from the downloaded matches on every request (a chosen
+  sport still wins). `GET /api/leagues/search` returns each league's sport instead of `null`
+  (#79).
+- The league and season lists of the web app now open the data folder's index: the first such
+  request creates `.meta/` in the data folder if it is not there yet (#79).
+- Log lines of the season reader are English: `SeasonFetcher started`,
+  `Season lists loaded from the catalog: …`, `No stored season list for league …` (#79).
+- **Stored matches are read through the data folder's index** (`.meta/catalog.db`):
+  `GET /api/matches/{id}` and the check for what a download still has to fetch. Folders written
+  by current versions behave as before. For data saved by early versions: a match stored only as
+  one combined file (`<id>/<id>.json`) is found (it was "not found" and was downloaded again); a
+  match that also has a combined file is refreshed while it is provisional (it never was); a
+  damaged slice file counts as that slice missing instead of making the match unreadable (the
+  API answered 500); and when a match is stored in two folders the newer copy is used (#80).
+- `DATA_DIR/.meta/state.db` and `DATA_DIR/.meta/catalog.db` are created with the permissions the
+  process umask gives (0664 under umask 002) instead of always 0644, like every other file of
+  the data folder, so a second account of the same group can write a data folder it shares.
+  Nothing changes under the usual umask 022. Files that already exist keep their permissions: to
+  share a data folder that an earlier version created, stop everything that uses it and run
+  `chmod g+w DATA_DIR/.meta/state.db* DATA_DIR/.meta/catalog.db*` once. The `*` matters: `-wal`
+  and `-shm` files that a failed attempt of the second account left behind need the same change,
+  by that account or by root. Five more log lines of the data store are English, among them
+  `Store: state.db copied before migration (schema version 1): …`, which an existing data folder
+  logs once when its state database is upgraded (#85).
+- **The match list (`GET /api/matches`) and a season's match list
+  (`GET /api/seasons/{id}/matches`) are read from the data folder's index** (`.meta/catalog.db`)
+  and are much faster. For data written by current versions the rows are the same; matches that
+  start at the same moment may come in a different order. "Only finished matches"
+  (`FETCH_ONLY_FINISHED`) now applies when the list is shown, with the same rule as the
+  dashboard: a match is listed when it is finished or its details were downloaded (a season
+  downloaded with the setting off no longer shows its unfinished matches while the setting is
+  on). A match whose details were downloaded shows the scores and status of its details. For
+  data saved by older versions: a season stored only as `_matches.csv` is listed, matches whose
+  details sit in a flat or `_no_tournament` folder are listed with "details", "details" no
+  longer depends on the league filter, and a match in two summary files appears once. A data
+  folder that holds only an export CSV (`match_details/processed/all_matches_*.csv`) no longer
+  fills the list from it. A season's match list is ordered by start time (#89).
+- **Opening a data folder is faster when it was opened less than a minute ago.** On
+  start, the web server and the commands compare the folder's index (`.meta/catalog.db`)
+  with the match folders on disk. That pass over every match folder is now skipped when
+  another start did it less than 60 seconds earlier; season lists, schedules and the
+  change log are still checked. A change made to the match folders by hand or by a 2.x
+  version within that minute shows after the next start once the minute is over, or
+  with `scripts/catalog_tool.py reconcile`. Set `STORE_OPEN_RECONCILE_SECONDS=0` to check
+  on every start (#90).
+- `main.py --watch` no longer writes `watch_state_<sport>.json`. Its state is kept in the data
+  folder's state database, and an existing file is imported once. It keeps writing its stdout
+  lines and `watch_events.jsonl` in the 2.x format for one more release. It no longer stops when
+  the store is busy for a moment (#91).
+- The `data` of live events in the event log (`ssc events`, the sinks) has its final shape.
+  `live.status_changed` has `from`, `to`, `change_ts`, `provisional` and `score`.
+  `live.score_changed` has `from`, `to` (each `{home, away}`), `change_ts` and `score`.
+  `live.stuck` has `status_class` and `start_utc`. The same transition is stored only once
+  (#91).
+- A data operation (clear, restore) that a running live service or watcher blocks now answers
+  `instance_running` instead of `data_operation_running` (#91).
 
 ### Fixed
 
@@ -437,6 +535,32 @@ section is what the first tagged release will contain.
   be fetched", and no longer reports success when every detail request was refused (#60).
 - A single-match fetch is refused (409 `job_running`) while another process is downloading into
   the same data directory, not only while a job of the same server runs (#60).
+- **Odd slice files and round file names.** A stored match slice whose body has an unexpected
+  shape no longer breaks the "does it contain data" check; in the index of the data folder such
+  a file is marked as unreadable. A downloaded answer of that kind is treated as a failed
+  request: the match is saved without that slice, the slice is not counted as "not available for
+  this match", and it is requested again on the next run. Before, such an answer stopped a
+  download of selected matches and made the single-match fetch answer 500. An empty
+  point-by-point answer (`{"pointByPoint": []}`) counts as "no data" instead of data. A round
+  file whose name has an upper-case letter (`round_1_Final.json`) is read as a schedule page
+  again. The index (`.meta/catalog.db`) is rebuilt once the next time the data folder is opened
+  (one log line, `Catalog built from the files in …`; under a second for about a thousand
+  matches) (#77).
+- On Python 3.10 the application could crash (the process aborted) when a data-folder connection
+  of a finished thread was closed twice at the same moment; closes are now serialized (#79).
+- Stopping a job now also stops the requests that were still waiting for a free request slot.
+  Such a request used to be sent after the stop whenever its place in the request budget had
+  already come: almost every waiting request with the request budget off or set high, and about
+  one request per interval with the default budget on a slow machine (#83).
+- **Terminal menu: clear, restore and "move data directory" keep the data folder's index
+  current.** These functions changed the files without telling the index
+  (`.meta/catalog.db`), so in the same session the statistics showed the old counts and a
+  match lookup could answer for files that were gone, until the program was restarted. The
+  index is now rebuilt from the files after each of them, also when the operation stops
+  half-way (#86).
+- Changing the data folder in Settings right as a download finished could crash the server or
+  lose the job's end; the change is now refused (409 `job_running`) until the job is fully done
+  (#93).
 
 ### Removed
 
@@ -480,12 +604,22 @@ section is what the first tagged release will contain.
   again; before, the saved password was sent to the changed address (#54).
 - The diagnostics bundle no longer carries the host name of the machine in the job history and
   the setup check. The job columns are selected by name, so a column added later is not
-  included by default; of a job's origin only the interface (cli, api) and the pid are kept,
-  and a host name inside a job message or in the browser profile lock appears as `***` (#71).
+  included by default; of a job's origin only the interface (cli, api), the pid and whether it
+  ran on this machine (`same_host`) are kept, and a host name inside a job message or in the
+  browser profile lock appears as `***` (#71).
 - `ssc config show` and the diagnostics bundle show the address of a webhook sink by its host
   only (`https://hooks.example.org/***`). Before, the path and the query of the address were
   shown, and for services such as Slack or Discord those are the credential. This applies to
   `[[sink]]` in the config file and to `SOFASCORE_SINKS` (#73).
+- Three more places where something that should stay on the machine could reach a text that
+  is handed to other people. The log tail of the diagnostics bundle (`log_tail.txt`) shows a
+  host name as `***`: the name of this machine and the host names recorded in the listed
+  jobs, as the job history of the bundle does since #71. The error for a `[[sink]]` entry or
+  a `SOFASCORE_SINKS` value of the wrong shape names the type of the rejected value instead
+  of quoting it (`url: expected a string, got a list`), so a webhook address or a signing
+  secret that was written into the wrong field no longer appears in the error message.
+  `ssc config show` and the diagnostics bundle print `***` for the value of a sink option
+  that the sinks do not define (a misspelt or invented key); the key itself stays visible (#84).
 
 ## Earlier history
 
