@@ -333,10 +333,19 @@ class TournamentSummary:
 
 # --- doğrulama ----------------------------------------------------------------------------------------
 
-def _int(value: Any, what: str) -> int:
+def check_int(value: Any, what: str, *, minimum: Optional[int] = None) -> int:
+    """
+    Tam sayı argümanı (kimlik, sınır, sıra numarası): bool değil, SQLite'ın saklayabildiği 64 bit aralıkta ve
+    verildiyse `minimum`dan küçük değil; değilse ValueError. Okuma API'lerinin ortak denetimi.
+    """
     if isinstance(value, bool) or not isinstance(value, int) or not _INT64_MIN <= value <= _INT64_MAX:
         raise ValueError(f"{what}: expected an integer, got {value!r}")
+    if minimum is not None and value < minimum:
+        raise ValueError(f"{what}: expected an integer >= {minimum}, got {value!r}")
     return value
+
+
+_int = check_int
 
 
 def _number(value: Any, what: str) -> float:
@@ -970,6 +979,7 @@ __all__ = [
     "MissingRow",
     "TournamentSummary",
     "EventStore",
+    "check_int",
     "int_list",
     "like_pattern",
     "encode_cursor",

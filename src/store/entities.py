@@ -62,6 +62,7 @@ from src.store.events import (
     SLICE_COLUMNS,
     Ref,
     SliceInfo,
+    check_int,
     int_list,
     like_pattern,
     not_requested,
@@ -804,12 +805,6 @@ def _participant_row(row: Sequence[Any]) -> ParticipantRow:
                           None if row[9] is None else bool(row[9]), row[10])
 
 
-def _positive(value: Any, what: str) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
-        raise ValueError(f"{what}: expected a positive integer, got {value!r}")
-    return value
-
-
 def _name_filter(sport: Optional[str], text: Optional[str]) -> Tuple[List[str], List[Any]]:
     """Turnuva ve yarışmacı listelerinin ortak süzgeçleri: spor ve adda geçen metin."""
     conditions: List[str] = []
@@ -932,6 +927,7 @@ class EntityStore:
 
     def tournament(self, tournament_id: int) -> Optional[TournamentRow]:
         """Turnuvanın katalog satırı; bilinmiyorsa None."""
+        check_int(tournament_id, "tournament_id")
         with self._read() as conn:
             row = conn.execute(f"{_TOURNAMENT_SELECT} WHERE id = ?", (tournament_id,)).fetchone()
         return _tournament_row(row) if row is not None else None
@@ -941,7 +937,7 @@ class EntityStore:
         """Turnuvalar, ada göre sıralı. text: adda geçen metin (büyük-küçük harf ve aksan ayrımı yok)."""
         conditions, params = _name_filter(sport, text)
         where = (" WHERE " + " AND ".join(conditions)) if conditions else ""
-        params.append(_positive(limit, "limit"))
+        params.append(check_int(limit, "limit", minimum=1))
         with self._read() as conn:
             found = conn.execute(f"{_TOURNAMENT_SELECT}{where} ORDER BY name_folded, id LIMIT ?", params).fetchall()
         return [_tournament_row(row) for row in found]
@@ -951,6 +947,7 @@ class EntityStore:
         Turnuvanın katalogdaki bütün sezonları, en yeni önce (`sort_key`, eşitlikte kimlik). Sezon listesinde
         geçenler `listed` ile işaretlidir; listenin kendi sırası `position`dadır.
         """
+        check_int(tournament_id, "tournament_id")
         with self._read() as conn:
             found = conn.execute(
                 f"{_SEASON_SELECT} WHERE tournament_id = ? ORDER BY sort_key DESC, id DESC",
@@ -959,6 +956,7 @@ class EntityStore:
 
     def season(self, season_id: int) -> Optional[SeasonRow]:
         """Sezonun katalog satırı; bilinmiyorsa None."""
+        check_int(season_id, "season_id")
         with self._read() as conn:
             row = conn.execute(f"{_SEASON_SELECT} WHERE id = ?", (season_id,)).fetchone()
         return _season_row(row) if row is not None else None
@@ -971,7 +969,7 @@ class EntityStore:
         if listed:
             conditions.append(f"id IN ({listed})")
         where = (" WHERE " + " AND ".join(conditions)) if conditions else ""
-        params.append(_positive(limit, "limit"))
+        params.append(check_int(limit, "limit", minimum=1))
         with self._read() as conn:
             found = conn.execute(f"{_PARTICIPANT_SELECT}{where} ORDER BY name_folded, id LIMIT ?", params).fetchall()
         return [_participant_row(row) for row in found]
@@ -981,6 +979,7 @@ class EntityStore:
         Turnuvanın sporu (kısa ad, katalogda yazıldığı gibi): turnuva satırındaki; orada yoksa turnuvanın
         maçlarında en çok geçen spor. Hiçbiri bilinmiyorsa None.
         """
+        check_int(tournament_id, "tournament_id")
         with self._read() as conn:
             row = conn.execute("SELECT sport FROM tournaments WHERE id = ?", (tournament_id,)).fetchone()
             if row is not None and row[0]:

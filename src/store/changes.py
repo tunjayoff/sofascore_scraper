@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple
 from src.store import legacy
 from src.store.catalog import Catalog
 from src.store.entities import storable
+from src.store.events import check_int
 from src.store.legacy import LegacyLine, LegacyProblem, LegacyReader
 
 if TYPE_CHECKING:
@@ -154,12 +155,6 @@ def _change(row: Any) -> ChangeRow:
     )
 
 
-def _whole(value: Any, what: str, minimum: int) -> int:
-    if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
-        raise ValueError(f"{what}: expected an integer >= {minimum}, got {value!r}")
-    return value
-
-
 class ChangeLog:
     """Değişiklik günlüğünün okuma API'si (`Store.changes`); satırlar katalogdaki dizinden gelir."""
 
@@ -175,16 +170,16 @@ class ChangeLog:
         since: zamanı (epoch saniye) bundan önce olmayan satırlar.
         """
         conditions = ["seq > ?"]
-        params: List[Any] = [_whole(after_seq, "after_seq", 0)]
+        params: List[Any] = [check_int(after_seq, "after_seq", minimum=0)]
         if event_id is not None:
             conditions.append("event_id = ?")
-            params.append(_whole(event_id, "event_id", -(2 ** 63)))
+            params.append(check_int(event_id, "event_id"))
         if since is not None:
             if isinstance(since, bool) or not isinstance(since, (int, float)) or since != since:
                 raise ValueError(f"since: expected a number, got {since!r}")
             conditions.append("ts >= ?")
             params.append(since)
-        params.append(_whole(limit, "limit", 1))
+        params.append(check_int(limit, "limit", minimum=1))
         self._store._require_open()
         assert self._catalog is not None
         with self._catalog.read() as conn:

@@ -330,8 +330,9 @@ def test_get_a_listing_only_event_and_an_unknown_one(canon: Store) -> None:
     assert (row.home_name, row.away_name) == ("Manchester City", "Hull City")
     assert row.observed_at is None and row.observed_gap is None
     assert canon.events.get(1) is None
-    with pytest.raises(ValueError):
-        canon.events.get("17")  # type: ignore[arg-type]
+    for bad in ("17", True, 2 ** 70):  # SQLite'ın saklayamayacağı tam sayı da bir argüman hatasıdır
+        with pytest.raises(ValueError):
+            canon.events.get(bad)  # type: ignore[arg-type]
 
 
 def test_get_reports_the_sticky_flags(canon: Store) -> None:
@@ -1476,8 +1477,13 @@ def test_tournaments(canon: Store) -> None:
     assert canon.entities.tournaments(text="%") == [] and canon.entities.tournaments(sport="handball") == []
     assert canon.entities.tournament(17) == found[3]
     assert canon.entities.tournament(35) is None  # yapılandırılmış ama verisi olmayan lig
-    with pytest.raises(ValueError):
-        canon.entities.tournaments(limit=0)
+    for bad in (lambda: canon.entities.tournaments(limit=0), lambda: canon.entities.tournaments(limit=2 ** 70),
+                lambda: canon.entities.tournament("17"),  # type: ignore[arg-type]
+                lambda: canon.entities.tournament(2 ** 70), lambda: canon.entities.seasons(2 ** 70),
+                lambda: canon.entities.season(True), lambda: canon.entities.sport_of_tournament(2 ** 70),
+                lambda: canon.entities.participants(limit=-1)):
+        with pytest.raises(ValueError):
+            bad()
 
 
 def test_seasons_newest_first(canon: Store, old: Store) -> None:
@@ -1747,7 +1753,8 @@ def test_change_log_filters(canon: Store) -> None:
     assert seqs(since=epoch("2026-09-15T13:10:00+00:00")) == [1, 2]  # sınır dahil
     assert seqs(since=epoch("2026-09-15T13:10:01+00:00")) == [2] and seqs(since=NOW) == []
     assert seqs(limit=1) == [1] and seqs(limit=1, after_seq=1) == [2]
-    for bad in ({"after_seq": -1}, {"limit": 0}, {"event_id": "5"}, {"since": "today"}, {"after_seq": True}):
+    for bad in ({"after_seq": -1}, {"limit": 0}, {"event_id": "5"}, {"since": "today"}, {"after_seq": True},
+                {"event_id": 2 ** 70}, {"after_seq": 2 ** 70}, {"limit": 2 ** 70}):
         with pytest.raises(ValueError):
             canon.changes.list(**bad)  # type: ignore[arg-type]
 
