@@ -1,4 +1,3 @@
-from src.i18n import get_i18n
 """
 Sezon programı için uyumluluk sarmalayıcısı (plan maddesi P14).
 
@@ -78,7 +77,6 @@ class MatchFetcher:
     """SofaScore'dan sezon programlarını çeken sınıf (uyumluluk sarmalayıcısı; kurallar src/services/listing.py)."""
 
     # Eski adlar (testler ve betikler okur)
-    _TERMINAL_STATUS_TYPES = listing.TERMINAL_STATUS_TYPES
     ROUND_CACHE_TTL_SECONDS = listing.ROUND_CACHE_TTL_SECONDS
 
     def __init__(self, config_manager: ConfigManager, season_fetcher: SeasonFetcher, data_dir: str = "data"):
@@ -156,27 +154,11 @@ class MatchFetcher:
 
         return is_finished(event)
 
-    @classmethod
-    def _round_is_complete(cls, data: Dict[str, Any]) -> bool:
-        return listing.round_is_complete(data)
-
     def _filter_finished_matches(self, data: Dict[str, Any]) -> Tuple[Dict[str, Any], int, int]:
         """Yalnızca bitmiş maçları tutan kopya, toplam ve bitmiş maç sayısı (listing.filter_finished)."""
         if not data or "events" not in data:
             return data, 0, 0
         return listing.filter_finished(data)
-
-    def _format_timestamp_for_terminal(self, timestamp: int, default_format: str = "%Y-%m-%d %H:%M:%S") -> str:
-        """Terminal çıktısı için timestamp'i yapılandırılmış formata çevirir."""
-        if not timestamp:
-            return ""
-        dt = datetime.datetime.fromtimestamp(timestamp)
-        date_format = self.config_manager.get_date_format()
-        try:
-            return dt.strftime(date_format)
-        except ValueError:
-            logger.warning("Invalid DATE_FORMAT %r; using the default format", date_format)
-            return dt.strftime(default_format)
 
     @staticmethod
     def _parse_season_start_year(season_name: str, season_info: Optional[Dict[str, Any]] = None) -> Optional[int]:
@@ -224,11 +206,6 @@ class MatchFetcher:
 
     # --- eski adlar: depo ve istekler -------------------------------------------------------------------
 
-    def _save_schedule_page(self, league_id: int, season_id: int, sub: str, payload: Dict[str, Any], *,
-                            meta: Dict[str, Any], empty: bool = False) -> None:
-        """Program sayfasını Store'a yazar (listing.ScheduleLister.save_page). Depolama hatası çağırana çıkar."""
-        self._lister().save_page(league_id, season_id, sub, payload, meta=meta, empty=empty)
-
     def _load_cached_round(self, league_id: int, season_id: int, sub: str) -> Optional[Dict[str, Any]]:
         """Saklanan tur sayfası, güncel olmaya devam ediyorsa (listing.ScheduleLister.cached_round)."""
         return self._lister().cached_round(league_id, season_id, sub)
@@ -255,14 +232,13 @@ class MatchFetcher:
             result = await lister.list(league_id, season_id, _legacy_get(session), _inline)
         return result.chunks
 
-    def fetch_all_rounds_parallel(self, league_id, season_id, max_round=50):
-        """Senkron sarmalayıcı. Sayfalar çekildikçe Store'a yazılır ve kataloğa girer."""
-        logger.info(get_i18n().t('fetching_data_up_to_max_rounds', max_round=max_round))
-        return asyncio.run(self.fetch_all_rounds_async(league_id, season_id, max_round=max_round))
-
     def fetch_all_rounds_for_season(self, league_id: int, season_id: int, max_round: int = 50) -> List[Dict[str, Any]]:
-        """Belirli bir lig ve sezon için tüm haftaların maç verilerini çeker (özete giren sayfalar)."""
-        return self.fetch_all_rounds_parallel(league_id, season_id, max_round)
+        """
+        Belirli bir lig ve sezon için tüm haftaların maç verilerini çeker (özete giren sayfalar). Senkron yüz:
+        sayfalar çekildikçe Store'a yazılır ve kataloğa girer.
+        """
+        logger.info("Fetching the schedule (up to %d rounds)", max_round)
+        return asyncio.run(self.fetch_all_rounds_async(league_id, season_id, max_round=max_round))
 
     def _report_season(self, league_id: int, season_id: int, results: List[Dict[str, Any]]) -> None:
         """
@@ -302,8 +278,7 @@ class MatchFetcher:
                 logger.warning("Maximum number of attempts reached (%s); stopped", retry_count)
                 return False
 
-            logger.info(get_i18n().t('fetching_all_matches_for_league_season', league_name=league_name,
-                                     season_name=season_name))
+            logger.info("Fetching the schedule of %s - %s", league_name, season_name)
             results = self.fetch_all_rounds_for_season(league_id, season_id, max_round)
 
             if not results:
@@ -350,7 +325,7 @@ class MatchFetcher:
                     logger.error("No current season id for league %s", league_id)
                     return False
 
-            logger.info(get_i18n().t('fetching_matches_for_season', season_id=season_id, league_id=league_id))
+            logger.info("Fetching the schedule of league %s, season %s", league_id, season_id)
             return self.fetch_all_matches_for_season(league_id, int(season_id or 0), allow_fallback=auto_selected)
 
         except Exception as e:
