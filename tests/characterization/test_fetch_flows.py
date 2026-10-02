@@ -18,6 +18,7 @@ from __future__ import annotations
 import asyncio
 import datetime as dt
 import json
+import os
 import shutil
 import time
 from pathlib import Path
@@ -101,7 +102,14 @@ def _make_provisional(data_dir: Path, fake: FakeSofaScore, event_id: int) -> Non
     observation["observed_at_utc"] = dt.datetime.fromtimestamp(start + 2 * 3600, dt.timezone.utc).isoformat(
         timespec="seconds"
     )
-    path.write_text(json.dumps(observation), encoding="utf-8")
+    # Dosya yerine yenisi konur (yazıcılar gibi) ve dizinin mtime'ı açıkça ilerletilir: yerinde düzenleme dizinin
+    # mtime'ını değiştirmez ve depo, açılıştaki uzlaştırmada böyle bir değişikliği görmez (katalog eski gözlem
+    # anını tutardı; okuyucular gözlemi katalogdan alır)
+    replacement = path.with_name(path.name + ".new")
+    replacement.write_text(json.dumps(observation), encoding="utf-8")
+    os.replace(replacement, path)
+    bumped = max(time.time_ns(), os.stat(path.parent).st_mtime_ns + 1)
+    os.utime(path.parent, ns=(bumped, bumped))
 
 
 def _change_score(fake: FakeSofaScore, event_id: int, home: int) -> None:

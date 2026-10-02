@@ -2,15 +2,7 @@
 # Bir ihlali gideren PR satırını da siler; açıklama: tests/test_store_boundary.py
 [static]
 MatchDataFetcher._append_score_change:open
-MatchDataFetcher._build_match_index:os.listdir x3
-MatchDataFetcher._build_match_index:os.path.exists x2
-MatchDataFetcher._build_match_index:os.path.isdir x3
 MatchDataFetcher._extract_match_ids_from_csv:open
-MatchDataFetcher._find_match_path:os.listdir x2
-MatchDataFetcher._find_match_path:os.path.exists x2
-MatchDataFetcher._find_match_path:os.path.isdir x4
-MatchDataFetcher._load_match_data_from_dir:open x3
-MatchDataFetcher._load_match_data_from_dir:os.path.exists x3
 MatchDataFetcher._load_slice_status:open
 MatchDataFetcher._load_unavailable:open
 MatchDataFetcher._reset_match_markers:os.remove x2

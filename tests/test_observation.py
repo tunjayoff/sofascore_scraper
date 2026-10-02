@@ -6,12 +6,15 @@ from unittest.mock import MagicMock, patch
 
 from src.match_data_fetcher import MatchDataFetcher
 from src.status import OBSERVATION_KEY, observation_record, read_observation
+from src.store import open_store
 
 FIXTURE = Path(__file__).parent / "fixtures" / "status" / "basketball" / "K6_score_changed_after_finished__17006262.json"
 
 
 def _event() -> dict:
-    return json.loads(FIXTURE.read_text(encoding="utf-8"))
+    event = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    event["id"] = event["event_id"]  # SofaScore yükünde kimlik `id`'dir; depo kimliği dizin adına uymayan kaydı maç saymaz
+    return event
 
 
 def _fetcher(tmp_path) -> MatchDataFetcher:
@@ -52,6 +55,7 @@ def test_old_records_without_observation_read_as_none(tmp_path):
         f.fetch_match_data(event["event_id"])
     obs = next(Path(tmp_path).rglob(f"{OBSERVATION_KEY}.json"))
     obs.unlink()  # bu PR'dan önce kaydedilmiş maç
+    open_store(tmp_path).close()  # dosya deponun arkasından silindi: katalog bir sonraki açılışta uzlaşır
     loaded = f._load_match_data_from_dir(str(obs.parent), str(event["event_id"]))
     assert "basic" in loaded
     assert read_observation(loaded) == {"observed_at_utc": None, "change_ts": None}
