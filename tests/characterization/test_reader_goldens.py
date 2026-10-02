@@ -497,7 +497,9 @@ def test_no_stray_golden_files() -> None:
 
 
 def _tree(root: Path) -> Dict[str, bytes]:
-    return {p.relative_to(root).as_posix(): p.read_bytes() for p in sorted(root.rglob("*")) if p.is_file()}
+    """Ağaçtaki dosyalar; `.meta/` (Store'un kendi dosyaları: yazıcıların kancaları depoyu açar) dışında."""
+    return {p.relative_to(root).as_posix(): p.read_bytes() for p in sorted(root.rglob("*"))
+            if p.is_file() and ".meta" not in p.relative_to(root).parts}
 
 
 def _mtimes(root: Path) -> Dict[str, int]:

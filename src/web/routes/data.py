@@ -12,6 +12,7 @@ import pandas as pd
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from src import store as store_hooks  # gölge kip: temizlemeden sonra katalog yeniden kurulur (`shadow_cleared`)
 from src.private_files import create_private_file
 from src.paths import env_file_path
 from src.web import league_sports
@@ -186,6 +187,8 @@ def _clear_data_sync(scope: str) -> dict:
     except Exception as e:
         logger.error(f"Clear data failed: {e}")
         raise _SyncHttpError(500, "Clear data failed") from e
+    finally:
+        store_hooks.shadow_cleared(data_dir)
 
 
 def _export_csv_sync(league_id: Optional[int], data_dir: str, generate: bool = False):
