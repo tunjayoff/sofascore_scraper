@@ -11,6 +11,7 @@ from __future__ import annotations
 import contextlib
 import errno
 import gc
+import logging
 import os
 import stat
 import subprocess
@@ -27,7 +28,7 @@ from src.store import jobs as jobs_mod
 from src.store import lease as lease_mod
 from src.store.jobs import DataOperationRunningError, JobRunningError, JobStore, default_db_path
 from src.store.lease import EXCLUSIVE, SHARED, Lease, LeaseInfo, LeaseManager, lock_plan
-from src.store.state import StateDb
+from src.store.state import StateDb, load_migrations
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -743,6 +744,23 @@ def test_state_migrations_run_inside_the_guard_and_only_when_needed(tmp_path):
     assert calls == ["enter", "exit"]
     StateDb(path, migration_guard=guard).close()  # güncel dosya: kilit istenmez
     assert calls == ["enter", "exit"]
+
+
+def test_a_migration_is_logged_in_english_once_per_script(tmp_path, caplog):
+    """Log iletileri İngilizcedir (plan kural 8); satır CLI golden'larında da geçer."""
+    def logged() -> List[str]:
+        return [r.getMessage() for r in caplog.records if r.name == "Store" and r.levelno == logging.INFO]
+
+    path = tmp_path / "state.db"
+    with caplog.at_level(logging.INFO, logger="Store"):
+        StateDb(path).close()
+        first_open = logged()
+        StateDb(path).close()  # güncel dosya: yeni satır yok
+
+    names = [migration.name for migration in load_migrations()]
+    assert names[0] == "0001_initial"
+    assert first_open == [f"state.db migration applied: {name}" for name in names]
+    assert logged() == first_open
 
 
 def test_a_new_state_db_is_not_created_while_someone_writes_the_directory(tmp_path, monkeypatch):

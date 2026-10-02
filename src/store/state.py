@@ -314,7 +314,7 @@ class StateDb:
                 raise StoreError(f"state.db geçişi başarısız, geri alındı: {migration.name} ({e})",
                                  path=migration.path, detail=str(e)) from e
             raise
-        logger.info("state.db geçişi uygulandı: %s", migration.name)
+        logger.info("state.db migration applied: %s", migration.name)
         return True
 
     # --- meta tablosu -----------------------------------------------------------------------
