@@ -19,6 +19,7 @@ import datetime as dt
 import hashlib
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 import time
@@ -30,12 +31,12 @@ import pytest
 import store_dump
 import store_fixtures as sf
 from src import match_data_fetcher as mdf
-from src import refresh, sports, status, watcher
+from src import refresh, slices, sports, status, watcher
 from src.config_manager import ConfigManager
 from src.match_data_fetcher import MatchDataFetcher
 from src.paths import safe_name
 from src.services import stats as stats_service
-from src.store import codec, legacy
+from src.store import Ref, Store, catalog, codec, derive, layout, legacy, open_store
 from src.store.errors import LayoutError, PayloadCorrupt, PayloadMissing, StoreError
 from src.store.legacy import LegacyEvent, LegacyProblem, LegacyReader, LegacyReport, LegacySliceError
 from src.web.routes import matches as matches_routes
@@ -508,9 +509,9 @@ def test_slice_states_from_files(tmp_path: Path) -> None:
     write(tmp_path, f"{base}/lineups.json", sf.slice_payload("lineups", event, empty=True))  # boş 200
     write(tmp_path, f"{base}/incidents.json", sf.slice_payload("incidents", event, empty=True))  # boş + hata
     write(tmp_path, f"{base}/h2h.json", b'{"teamDuel": {"homeW')  # yarım dosya
-    write(tmp_path, f"{base}/team_streaks.json", "not an object")  # geçerli JSON, yüklem düşer
+    write(tmp_path, f"{base}/team_streaks.json", "not an object")  # geçerli JSON, kural okuyamaz
     write(tmp_path, f"{base}/pregame_form.json", sf.slice_payload("pregame_form", event))
-    write(tmp_path, f"{base}/point_by_point.json", {"pointByPoint": []})  # kendi yüklemi yok: dolu nesne = veri
+    write(tmp_path, f"{base}/point_by_point.json", {"pointByPoint": []})  # kendi kuralı var: boş liste = veri yok
     write(tmp_path, f"{base}/_unavailable.json", {"lineups": 1, "pregame_form": 2, "odds": 2})
     write(tmp_path, f"{base}/_slice_status.json", {
         "lineups": sf.empty_marker(1), "incidents": sf.error_marker("429", 429, 3),
@@ -529,7 +530,7 @@ def test_slice_states_from_files(tmp_path: Path) -> None:
         "h2h": ("error", False, 0, 0, ("corrupt", None, 1)),
         "lineups": ("empty", True, 1, 0, None),
         "incidents": ("error", True, 0, 0, ("429", 429, 3)),
-        "point_by_point": OK,
+        "point_by_point": ("empty", True, 0, 0, None),
     }
     assert event7.slice("h2h").path == f"{base}/h2h.json" and event7.slice("h2h").fetched_at is None
     assert set(event7.payloads) == {"event", "statistics", "team_streaks", "pregame_form", "lineups", "incidents",
@@ -538,6 +539,94 @@ def test_slice_states_from_files(tmp_path: Path) -> None:
     assert [(p.path, p.kind) for p in report.problems] == [
         (base, "unknown_name"), (f"{base}/team_streaks.json", "malformed"), (f"{base}/h2h.json", "corrupt"),
     ]
+
+
+_STAT_GROUPS = [{"statisticsItems": [{"key": "shots"}]}]
+CORRUPT = ("error", True, 0, 0, ("corrupt", None, 1))
+EMPTY = ("empty", True, 0, 0, None)
+
+# (dilim, dosyanın gövdesi, okuyucunun verdiği durum). Üç yanıt: kural "veri var" derse `ok`, "veri yok" derse
+# yüküyle `empty`, okuyamazsa `error` / `corrupt` ve `malformed` sorunu (src.slices.slice_body_state).
+BODY_STATE_CASES: List[Tuple[str, Any, Tuple[Any, ...]]] = [
+    # okunamayan gövdeler: eskiden yüklem hata fırlatıyordu ve okuyucu yakalıyordu; durum aynı
+    ("statistics", "abc", CORRUPT),
+    ("statistics", 0, CORRUPT),
+    ("statistics", ["x"], CORRUPT),
+    ("statistics", [None, {"period": "1ST", "groups": _STAT_GROUPS}], CORRUPT),
+    ("statistics", {"statistics": [{"period": "ALL", "groups": ["x"]}]}, CORRUPT),
+    ("statistics", {"statistics": {"period": "ALL"}}, CORRUPT),
+    ("h2h", {"teamDuel": ["x"]}, CORRUPT),
+    ("h2h", {"teamDuel": "abc", "matches": [1]}, CORRUPT),
+    ("team_streaks", ["x"], CORRUPT),
+    ("team_streaks", "abc", CORRUPT),
+    # eski yüklemin açıkça elediği yanlış türler eskisi gibi "veri yok"tur
+    ("lineups", ["x"], EMPTY),
+    ("lineups", {"home": {"players": "abc"}}, EMPTY),
+    ("h2h", ["x"], EMPTY),
+    ("pregame_form", ["x"], EMPTY),
+    ("incidents", "abc", EMPTY),
+    ("incidents", {"incidents": {"a": 1}}, EMPTY),
+    ("team_streaks", {"general": {"name": "Wins"}}, EMPTY),
+    # point_by_point: kendi kuralı (eskiden dolu olan her değer `ok` idi)
+    ("point_by_point", {"pointByPoint": [{"games": []}]}, OK),
+    ("point_by_point", {"pointByPoint": []}, EMPTY),
+    ("point_by_point", {"pointByPoint": None}, EMPTY),
+    ("point_by_point", {"error": {"code": 404}}, EMPTY),
+    ("point_by_point", {}, EMPTY),
+    ("point_by_point", [], EMPTY),
+    ("point_by_point", {"pointByPoint": {"games": []}}, CORRUPT),
+    ("point_by_point", [{"games": []}], CORRUPT),
+    ("point_by_point", "abc", CORRUPT),
+    ("point_by_point", 0, CORRUPT),
+]
+
+
+@pytest.mark.parametrize("combined", [False, True], ids=["own-file", "combined-file"])
+def test_slice_state_follows_the_three_answers_of_the_presence_rule(tmp_path: Path, combined: bool) -> None:
+    """Her gövde ayrı bir maç dizininde: bir kez dilimin kendi dosyasında, bir kez birleşik dosyada (L4)."""
+    for index, (key, body, _) in enumerate(BODY_STATE_CASES, start=1):
+        base = f"match_details/17_PL/season_x/{index}"
+        write(tmp_path, f"{base}/basic.json", event_of(index, "tennis"))
+        if combined:
+            write(tmp_path, f"{base}/{index}.json", {"basic": event_of(index, "tennis"), key: body})
+        else:
+            write(tmp_path, f"{base}/{key}.json", body)
+    events, report = scan(tmp_path)
+    assert len(events) == len(BODY_STATE_CASES)
+    malformed = []
+    for index, (key, body, expected) in enumerate(BODY_STATE_CASES, start=1):
+        base = f"match_details/17_PL/season_x/{index}"
+        answer = slices.slice_body_state(key, body)
+        assert answer == {OK: "data", EMPTY: "no_data", CORRUPT: "malformed"}[expected], (key, body)
+        assert counters(events[index]) == {key: expected}, (key, body)
+        assert events[index].payloads[key] == body  # yük, durumu ne olursa olsun okunur
+        if expected == CORRUPT:
+            malformed.append((f"{base}/{index}.json" if combined else f"{base}/{key}.json", "malformed"))
+    assert [(p.path, p.kind) for p in report.problems] == malformed
+
+
+def test_reader_never_raises_on_a_slice_body(tmp_path: Path) -> None:
+    """Kurallar toplamdır: okuyucu hiçbir geçerli JSON gövdesinde hata yakalamak zorunda kalmaz."""
+    bodies: List[Any] = [None, True, False, 0, 1, 1.5, "", "abc", [], ["x"], [None], [[]], [{}], {}, {"a": None},
+                         {"statistics": "abc"}, {"statistics": 5}, {"statistics": [[1]]}, {"teamDuel": 5},
+                         {"general": 5}, {"incidents": 5}, {"pointByPoint": 5}, {"home": 5, "away": [1]},
+                         {"homeTeam": 5, "awayTeam": [1]}]
+    cases = [(key, body) for key in LegacyReader(tmp_path).known_slices for body in bodies]
+    for index, (key, body) in enumerate(cases, start=1):
+        write(tmp_path, f"match_details/{index}/basic.json", event_of(index))
+        write(tmp_path, f"match_details/{index}/{key}.json", body)
+    events, report = scan(tmp_path)
+    assert len(events) == len(cases) == 7 * len(bodies)
+    state_of = {"data": "ok", "no_data": "empty", "malformed": "error"}
+    seen = set()
+    for index, (key, body) in enumerate(cases, start=1):
+        entry = events[index].slice(key)
+        assert entry.state == state_of[slices.slice_body_state(key, body)], (key, body)
+        assert entry.has_payload and (entry.error is not None) is (entry.state == "error")
+        seen.add(entry.state)
+    assert seen == {"ok", "empty", "error"}
+    assert {p.kind for p in report.problems} == {"malformed"}
+    assert len(report.problems) == sum(1 for event in events.values() for s in event.slices if s.state == "error")
 
 
 def test_known_slices_can_be_given(tmp_path: Path) -> None:
@@ -700,9 +789,113 @@ def test_read_payload(old_forms: sf.LegacyFixture) -> None:
     ("round_x.json", None), ("round_.json", None), ("events_prev_0.json", None), ("events_last_x.json", None),
     ("round_1.csv", None), ("round_1_matches.csv", None), ("summary.json", None),
     ("round_1_çeyrek.json", None), (f"round_1_{'x' * 80}.json", None),
+    # slug'ında büyük harf olan tur dosyası: alt anahtar küçük harfe katlanır (v3 alt anahtarları küçük harftir)
+    ("round_1_Final.json", ("round", "round_1_final")), ("round_29_FINAL.json", ("round", "round_29_final")),
+    ("round_3_Round-of-16.json", ("round", "round_3_round-of-16")),
+    ("round_2_Qualification.Round_1.json", ("round", "round_2_qualification.round_1")),
+    # katlanan yalnızca slug'dır: önekler ve uzantı yazıcının yazdığı gibi küçük harf olmalı
+    ("Round_1.json", None), ("ROUND_1_final.json", None), ("round_1_Final.JSON", None),
+    ("Events_last_0.json", None), ("events_Last_0.json", None),
+    ("round_1_Çeyrek.json", None), (f"round_1_{'X' * 80}.json", None), (f"round_1_{'X' * 72}.json",
+                                                                        ("round", f"round_1_{'x' * 72}")),
 ])
 def test_schedule_sub(name: str, expected: Optional[Tuple[str, str]]) -> None:
     assert legacy.schedule_sub(name) == expected
+    if expected is not None:
+        assert expected[1] == expected[1].lower() == layout.validate_sub(expected[1])
+
+
+def test_round_file_with_an_upper_case_slug_is_a_schedule_page(tmp_path: Path) -> None:
+    """
+    FX-4'ten beri v3 alt anahtarları küçük harftir; `round_29_Final.json` o günden beri program sayfası
+    sayılmıyor, `unknown_name` olarak bildiriliyordu. Alt anahtar katlanır, dosyanın adı ve yolu aynı kalır.
+    """
+    season = "matches/19_FA_Cup/97110_FA_Cup_26_27"
+    write(tmp_path, f"{season}/round_28_semifinals.json", {"events": [{"id": 1}], "_complete": True}, sf.BASE_MTIME)
+    write(tmp_path, f"{season}/round_29_Final.json", {"events": [{"id": 2}], "_complete": True}, sf.BASE_MTIME + 1)
+    write(tmp_path, f"{season}/Round_30.json", {"events": [{"id": 3}]}, sf.BASE_MTIME + 2)
+    reader = LegacyReader(tmp_path)
+    report = LegacyReport()
+    pages = reader.schedule_pages(report)
+
+    assert [(p.path, p.kind, p.sub, p.superseded_by) for p in pages] == [
+        (f"{season}/round_28_semifinals.json", "round", "round_28_semifinals", None),
+        (f"{season}/round_29_Final.json", "round", "round_29_final", None),
+    ]
+    schedule = reader.read_schedule(pages[1])
+    assert (schedule.payload, schedule.meta) == ({"events": [{"id": 2}]}, {"complete": True})
+    assert reader.signature(pages[1].path) is not None and (tmp_path / season / "round_29_Final.json").is_file()
+    assert [(p.path, p.kind) for p in report.problems] == [(f"{season}/Round_30.json", "unknown_name")]
+    assert report.superseded == []
+
+
+def test_round_files_that_differ_only_in_case_are_one_page(tmp_path: Path) -> None:
+    """Aynı dizinde `round_1_Final.json` ve `round_1_final.json`: tek sayfa, en yenisi geçerli."""
+    season = "matches/19_FA_Cup/97110_FA_Cup_26_27"
+    write(tmp_path, f"{season}/round_1_final.json", {"events": [{"id": 1}]}, sf.BASE_MTIME)
+    write(tmp_path, f"{season}/round_1_Final.json", {"events": [{"id": 2}]}, sf.BASE_MTIME + 5)
+    if len(os.listdir(tmp_path / season)) != 2:
+        pytest.skip("dosya sistemi büyük/küçük harf ayırmıyor: iki ad tek dosya")
+    reader = LegacyReader(tmp_path)
+    report = LegacyReport()
+    pages = reader.schedule_pages(report)
+
+    assert [(p.path, p.sub, p.superseded_by) for p in pages] == [
+        (f"{season}/round_1_final.json", "round_1_final", f"{season}/round_1_Final.json"),
+        (f"{season}/round_1_Final.json", "round_1_final", None),
+    ]
+    assert [(s.kind, s.key, s.path, s.winner) for s in report.superseded] == [
+        ("schedule", "19/97110/round_1_final", f"{season}/round_1_final.json", f"{season}/round_1_Final.json")]
+    assert report.problems == []
+
+
+def test_catalog_picks_up_the_folded_round_page_and_the_new_slice_rule(tmp_path: Path) -> None:
+    """
+    Dizinleyici değişmeden: büyük harfli tur dosyası katalogda bir program dilimidir ve listelediği maç bir
+    olay satırıdır; boş `pointByPoint` listesi `empty` dilimdir. Eski türetme sürümüyle kurulmuş katalog
+    açılışta bir kez yeniden kurulur.
+    """
+    data = tmp_path / "data"
+    season = "matches/19_FA_Cup/97110_FA_Cup_26_27"
+    listed = sf.basic_payload(sf.PL_ARS)
+    write(data, f"{season}/round_29_Final.json", {"events": [listed], "_complete": True})
+    write(data, "match_details/7/basic.json", event_of(7, "tennis"))
+    write(data, "match_details/7/point_by_point.json", {"pointByPoint": []})
+    final = Ref.season(19, 97110)
+
+    def read(store: Store) -> Tuple[Any, ...]:
+        page = store.entities.slice(final, "schedule", "round_29_final")
+        points = store.events.slice(7, "point_by_point")
+        return (page.state, page.has_payload, store.entities.payload(final, "schedule", "round_29_final"),
+                store.events.get(listed["id"]) is not None, points.state, points.has_payload)
+
+    expected = ("ok", True, {"events": [listed]}, True, "empty", True)
+    store = open_store(data)
+    try:
+        assert read(store) == expected
+        assert [s.sub for s in store.entities.slices(final)] == ["round_29_final"]
+        assert store.info(sizes=False).derive_version == derive.DERIVE_VERSION == 2
+    finally:
+        store.close()
+
+    # Eski kuralların kurduğu katalog: sayfa yok, dilim `ok`, sürüm 1
+    with sqlite3.connect(catalog.catalog_path(data)) as conn:
+        conn.execute("DELETE FROM entity_slices WHERE sub = 'round_29_final'")
+        conn.execute("DELETE FROM events WHERE id = ?", (listed["id"],))
+        conn.execute("UPDATE event_slices SET state = 'ok' WHERE key = 'point_by_point'")
+        conn.execute("UPDATE meta SET value = '1' WHERE key = 'derive_version'")
+    conn.close()
+    stale = open_store(data, sync_catalog=False)
+    try:
+        assert stale.info(sizes=False).catalog_rebuild_reason == "derive_version"
+    finally:
+        stale.close()
+    store = open_store(data)
+    try:
+        assert read(store) == expected
+        assert store.info(sizes=False).catalog_rebuild_reason is None
+    finally:
+        store.close()
 
 
 def test_schedule_pages_of_the_canonical_fixture(canonical: sf.LegacyFixture) -> None:

@@ -697,10 +697,9 @@ def test_fidelity_slices_and_names() -> None:
         basic = sf.basic_payload(ev)
         for key in sf.REQUIRED_SLICES + sf.OPTIONAL_SLICES:
             assert fetcher.match_detail_slice_present(key, {key: sf.slice_payload(key, basic)}), key
-            # Bugünkü davranış: tabloda özel denetimi olmayan dilim (point_by_point) boş listeyle de "var" sayılır
-            empty_is_present = key in sf.OPTIONAL_SLICES
+            # Kayıtlı her dilimin kendi kuralı var: içi boş gövde (point_by_point'in boş listesi de) "var" sayılmaz
             empty = {key: sf.slice_payload(key, basic, empty=True)}
-            assert fetcher.match_detail_slice_present(key, empty) is empty_is_present, key
+            assert fetcher.match_detail_slice_present(key, empty) is False, key
         when = dt.datetime(2026, 9, 19, 6, tzinfo=dt.timezone.utc)
         assert observation_record(basic, when) == sf.observation_payload(basic, "2026-09-19T06:00:00+00:00")
     for name in ("Premier League", "Wimbledon, Men", "LaLiga 25/26", "a\\b"):

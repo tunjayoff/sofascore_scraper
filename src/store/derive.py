@@ -14,7 +14,10 @@ yazar.
 
 DERIVE_VERSION: buradaki herhangi bir işlevin çıktısı değişirse (yeni sütun, yeni spor için skor
 çizelgesi, ad katlama kuralı) artırılır; katalog bunu görünce dosyalardan yeniden kurulur (bölüm 7.2).
-tests/golden/derive/event_rows.json değiştiyse sürüm de artmalıdır.
+tests/golden/derive/event_rows.json değiştiyse sürüm de artmalıdır. Aynı dosyalardan başka katalog
+satırları çıkaran her kural değişikliği de sürümü artırır: dilim durumunu belirleyen kurallar
+(src/slices.py) ve eski düzenin ad kuralları (src/store/legacy.py) bu modülün dışında durur ama katalog
+onlardan da türer.
 """
 from __future__ import annotations
 
@@ -32,7 +35,10 @@ from src.store.errors import PayloadCorrupt
 
 logger = logging.getLogger(__name__)
 
-DERIVE_VERSION = 1
+# 1: ilk sürüm
+# 2: point_by_point'in kendi "veri var mı" kuralı var ({"pointByPoint": []} artık `empty`); slug'ında büyük
+#    harf olan eski tur dosyası yine program sayfası (alt anahtar küçük harfe katlanır)
+DERIVE_VERSION = 2
 
 Row = Dict[str, Any]
 Timestamp = Union[datetime, int, float, None]

@@ -317,9 +317,31 @@ class MatchDataFetcher:
         return key, SliceOutcome(SLICE_EMPTY, reason="empty")
 
     def _answered_outcome(self, key: str, data: Any) -> SliceOutcome:
-        """Yanıt gelen (hata olmayan) dilim: içinde veri varsa "ok", yoksa kesin "boş"."""
-        if data is not None and self.match_detail_slice_present(key, {key: data}):
+        """
+        Yanıt gelen (hata olmayan) dilim, gövdenin üç yanıtına göre (src.slices.slice_body_state):
+          - veri var: "ok"
+          - okunabiliyor ama içinde veri yok: kesin "boş" (sayılır; gövde sonuçta durur ve diske yazılır)
+          - okunamadı (gövde beklenen JSON türünde değil): başarısız istek, neden "parse". Kesin bir "yok"
+            yanıtı değildir: sayılmaz, _slice_status.json'a hata olarak yazılır ve dilim sonraki
+            çalıştırmada yeniden istenir. Gövde sonuca konmaz, yani diske yazılmaz.
+
+        Okunamayan gövde devre kesiciye bildirilmez: istek katmanı bu isteği yanıt almış olarak saymıştır
+        ve engellenme belirtisi değildir. Yüklemler toplam olmadan önce böyle bir gövdede hata fırlatırdı;
+        async hatta o hata da aynı yere varırdı (başarısız dilim, kesiciye bildirilmez, gövde yazılmaz),
+        sync hatta ise maçın tamamını düşürürdü.
+        """
+        # İşlev içinde: bu dosyanın import bloğu başka bir plan maddesinindir (RD-1); P13 eşlemeyi taşır.
+        from src.slices import BODY_DATA, BODY_MALFORMED, slice_body_state
+
+        state = slice_body_state(key, data)
+        if state == BODY_DATA:
             return SliceOutcome(SLICE_OK, data=data)
+        if state == BODY_MALFORMED:
+            logger.warning(
+                f"Slice {key}: the answer has an unexpected shape ({type(data).__name__}); "
+                "treated as a failed request, it will be requested again on the next run"
+            )
+            return SliceOutcome(SLICE_FAILED, reason=request_breaker.PARSE)
         return SliceOutcome(SLICE_EMPTY, data=data, reason="empty")
 
     async def fetch_matches_batch_async(self, match_ids, max_concurrent=30, progress_bar=None, progress_callback=None, should_cancel=None, failed_callback=None):

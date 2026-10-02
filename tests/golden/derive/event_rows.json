@@ -1,5 +1,5 @@
 {
- "derive_version": 1,
+ "derive_version": 2,
  "rows": {
   "basketball/A_canceled-70-canceled__16994315": {"id": 16994315, "sport": "basketball", "start_ts": 1789743600, "status_type": "canceled", "status_code": 70, "status_description": "Canceled", "status_class": "void", "scores_json": "{\"family\":\"periods\",\"final\":null,\"format\":null,\"overtime\":null,\"periods\":{},\"regulation\":null}", "observed_at": 1790697289, "change_ts": 1789760650, "observed_gap": 953689, "row_source": "event", "has_event_payload": 1},
   "basketball/A_canceled-70-canceled__17110363": {"id": 17110363, "sport": "basketball", "start_ts": 1789574400, "status_type": "canceled", "status_code": 70, "status_description": "Canceled", "status_class": "void", "scores_json": "{\"family\":\"periods\",\"final\":null,\"format\":null,\"overtime\":null,\"periods\":{},\"regulation\":null}", "observed_at": 1790697288, "change_ts": 1789626980, "observed_gap": 1122888, "row_source": "event", "has_event_payload": 1},

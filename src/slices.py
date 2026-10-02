@@ -1,15 +1,15 @@
 """
-Dilim sonucu (Outcome) ve "bu yanıtta veri var mı" yüklemleri.
+Dilim sonucu (Outcome) ve "bu yanıtta veri var mı" kuralları.
 
 Saf modül: disk, ağ, yapılandırma ve günlük yoktur; import edildiğinde standart kitaplık ile src.exceptions
 dışında hiçbir şey yüklenmez. Çekici (src/match_data_fetcher.py), istemci ve depo aynı sonuç tipini ve aynı
-yüklemleri buradan alır (docs/design/01-storage.md 2.3, docs/design/02-services.md 2.4).
+kuralları buradan alır (docs/design/01-storage.md 2.3, docs/design/02-services.md 2.4).
 """
 from __future__ import annotations
 
 import datetime as dt
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Final, Literal, Mapping, Optional
+from typing import Any, Callable, Dict, Final, FrozenSet, List, Literal, Mapping, Optional
 
 from src.exceptions import ResourceNotFoundError
 
@@ -19,7 +19,7 @@ OutcomeVia = Literal["curl", "bridge"]
 SLICE_OK: Final = "ok"  # yanıt geldi, veri var
 SLICE_EMPTY: Final = "empty"  # kesin yanıt: kaynak yok (404) ya da içinde veri olmayan 200
 SLICE_FAILED: Final = "failed"  # istek başarısız: dilimin var olup olmadığı bilinmiyor
-SLICE_SKIPPED: Final = "skipped"  # istek hiç gönderilmedi; bu durumu henüz hiçbir yol üretmiyor
+SLICE_SKIPPED: Final = "skipped"  # istek hiç gönderilmedi (istemci, devre kesici açıkken bunu döndürür)
 
 
 @dataclass(frozen=True)
@@ -31,8 +31,9 @@ class Outcome:
     data: Any = None
     # SLICE_FAILED: "403" | "429" | "5xx" | "timeout" | "network" | "parse" | "breaker" | "other"
     # SLICE_EMPTY: "404" ya da "empty"
-    # SLICE_SKIPPED: "breaker" | "not_selected" | "not_applicable" | "not_due" | "cancelled" (ileride; açık devre
-    #   kesici bugün SLICE_FAILED / "breaker" olarak bildirilir)
+    # SLICE_SKIPPED: "breaker" (istemci, src/client: devre kesici açık); "not_selected" | "not_applicable" |
+    #   "not_due" | "cancelled" ileride. Çekiciler (from_error, MatchDataFetcher) açık devre kesiciyi hâlâ
+    #   SLICE_FAILED / "breaker" olarak bildirir
     reason: Optional[str] = None
     http_status: Optional[int] = None
     # Yanıtın alındığı an. None: kaydeden "şimdi" sayar
@@ -66,98 +67,213 @@ class Outcome:
 SliceOutcome = Outcome
 
 
-# --- "bu yanıtta veri var mı" yüklemleri -----------------------------------------------------
+# --- "bu yanıtta veri var mı" kuralları ------------------------------------------------------
+#
+# Kayıtlı her dilimin (src/sports.py DETAIL_SLICES) kendi kuralı vardır. Kural tek bir yanıt gövdesine bakar
+# ve üç yanıttan birini verir:
+#
+#   BODY_DATA       gövdede dilimin verisi var
+#   BODY_NO_DATA    gövde okunabiliyor ama içinde veri yok (None, boş nesne, boş liste, ...)
+#   BODY_MALFORMED  kural gövdeyi okuyamadı: içine bakması gereken değer beklenen JSON türünde değil
+#
+# Kurallar toplamdır: hangi değer verilirse verilsin hata fırlatmazlar. Kayıt defterine yeni bir dilim
+# eklendiğinde buraya da kuralı eklenir (tests/test_slices.py eksik kuralı yakalar).
+#
+# Altı eski kuralın BODY_DATA ve BODY_NO_DATA yanıtları MatchDataFetcher'dan taşınan yüklemlerin True ve
+# False yanıtlarıyla aynıdır; BODY_MALFORMED tam olarak o yüklemlerin eskiden hata fırlattığı gövdelerdir
+# (eski düzen okuyucusu bunları zaten bozuk sayıyordu). Eski yüklemin açıkça elediği yanlış türler (ör.
+# `lineups` gövdesinin liste, `incidents` gövdesinin metin olması) eskisi gibi BODY_NO_DATA'dır.
+
+BodyState = Literal["data", "no_data", "malformed"]
+
+BODY_DATA: Final = "data"
+BODY_NO_DATA: Final = "no_data"
+BODY_MALFORMED: Final = "malformed"
+
+
+def _filled_list(value: Any) -> BodyState:
+    return BODY_DATA if isinstance(value, list) and len(value) > 0 else BODY_NO_DATA
+
+
+def _statistics_state(body: Any) -> BodyState:
+    """
+    ALL periyodunda (yoksa ilk periyotta) en az bir dolu grup. Gövde {"statistics": [...]} ya da doğrudan
+    periyot listesidir; yalnızca None "yok" sayılır, nesne ya da liste olmayan her gövde (0 dahil) okunamaz.
+    """
+    if body is None:
+        return BODY_NO_DATA
+    if isinstance(body, list):
+        periods: Any = body
+    elif isinstance(body, dict):
+        periods = body.get("statistics") or []
+    else:
+        return BODY_MALFORMED
+    if not isinstance(periods, list):
+        return BODY_MALFORMED
+    all_periods: List[Dict[str, Any]] = []
+    for period in periods:
+        if not period:
+            continue
+        if not isinstance(period, dict):
+            return BODY_MALFORMED
+        if period.get("period") == "ALL":
+            all_periods.append(period)
+    if not all_periods and periods:
+        first = periods[0]
+        if not isinstance(first, dict):
+            return BODY_MALFORMED  # ALL yokken ilk periyoda bakılır; o da nesne değil
+        all_periods = [first]
+    for period in all_periods:
+        groups = period.get("groups") or []
+        if not isinstance(groups, list):
+            return BODY_MALFORMED
+        for group in groups:
+            if not isinstance(group, dict):
+                return BODY_MALFORMED
+            if group.get("statisticsItems") or []:
+                return BODY_DATA
+    return BODY_NO_DATA
+
+
+def _lineups_state(body: Any) -> BodyState:
+    """İki taraftan birinde en az bir oyuncu."""
+    if not body or not isinstance(body, dict):
+        return BODY_NO_DATA
+    for side in ("home", "away"):
+        block = body.get(side)
+        if isinstance(block, dict) and _filled_list(block.get("players")) == BODY_DATA:
+            return BODY_DATA
+    return BODY_NO_DATA
+
+
+def _h2h_state(body: Any) -> BodyState:
+    """teamDuel sayılarından biri (0 dahil) ya da bir maç listesi. Dolu ama nesne olmayan teamDuel okunamaz."""
+    if not body or not isinstance(body, dict):
+        return BODY_NO_DATA
+    duel = body.get("teamDuel") or {}
+    if not isinstance(duel, dict):
+        return BODY_MALFORMED
+    if any(duel.get(x) is not None for x in ("homeWins", "awayWins", "draws")):
+        return BODY_DATA
+    return _filled_list(body.get("matches") or body.get("events") or duel.get("matches"))
+
+
+def _pregame_form_state(body: Any) -> BodyState:
+    """Bir takımda form listesi ya da position / value / avgRating."""
+    if not body or not isinstance(body, dict):
+        return BODY_NO_DATA
+    for side in ("homeTeam", "awayTeam"):
+        team = body.get(side)
+        if not team or not isinstance(team, dict):
+            continue
+        if _filled_list(team.get("form")) == BODY_DATA:
+            return BODY_DATA
+        if any(team.get(x) is not None for x in ("position", "value", "avgRating")):
+            return BODY_DATA
+    return BODY_NO_DATA
+
+
+def _team_streaks_state(body: Any) -> BodyState:
+    """Yalnızca "general" listesi sayılır. Dolu ama nesne olmayan gövde okunamaz."""
+    if not body:
+        return BODY_NO_DATA
+    if not isinstance(body, dict):
+        return BODY_MALFORMED
+    return _filled_list(body.get("general"))
+
+
+def _incidents_state(body: Any) -> BodyState:
+    """{"incidents": [...]} ya da doğrudan liste."""
+    if body and isinstance(body, dict):
+        body = body.get("incidents")
+    return _filled_list(body)
+
+
+def _point_by_point_state(body: Any) -> BodyState:
+    """
+    {"pointByPoint": [...]}: liste doluysa veri var. None, boş nesne, boş liste, anahtarı olmayan nesne ve
+    boş `pointByPoint` listesi "veri yok"tur; nesne olmayan başka her gövde (dolu liste, metin, sayı) ile
+    liste olmayan `pointByPoint` okunamaz.
+    """
+    if body is None or (isinstance(body, (dict, list)) and not body):
+        return BODY_NO_DATA
+    if not isinstance(body, dict):
+        return BODY_MALFORMED
+    points = body.get("pointByPoint")
+    if points is None:
+        return BODY_NO_DATA
+    if not isinstance(points, list):
+        return BODY_MALFORMED
+    return _filled_list(points)
+
+
+# Dilim anahtarı → kural. Kayıt defterindeki her dilim burada olmalıdır.
+_BODY_RULES: Dict[str, Callable[[Any], BodyState]] = {
+    "statistics": _statistics_state,
+    "lineups": _lineups_state,
+    "h2h": _h2h_state,
+    "team_streaks": _team_streaks_state,
+    "pregame_form": _pregame_form_state,
+    "incidents": _incidents_state,
+    "point_by_point": _point_by_point_state,
+}
+
+# Kendi kuralı olan dilim anahtarları
+PRESENCE_RULE_KEYS: Final[FrozenSet[str]] = frozenset(_BODY_RULES)
+
+
+def slice_body_state(key: str, body: Any) -> BodyState:
+    """
+    Tek bir yanıt gövdesi için üç yanıttan biri: BODY_DATA, BODY_NO_DATA ya da BODY_MALFORMED. Hata
+    fırlatmaz.
+
+    Kuralı olmayan anahtarda ("basic" ve kayıt defterinde olmayan her anahtar) değerin dolu olması yeter;
+    yanıt o zaman hiçbir zaman BODY_MALFORMED olmaz.
+    """
+    rule = _BODY_RULES.get(key)
+    if rule is not None:
+        return rule(body)
+    return BODY_DATA if body else BODY_NO_DATA
+
+
+# --- yüklemler -------------------------------------------------------------------------------
 #
 # Hepsi maçın birleşik sözlüğünü ({"basic": ..., "statistics": ..., ...}) alır ve yalnızca kendi anahtarına
-# bakar. Tek bir yanıt gövdesi için {anahtar: gövde} verilir. Beklenmeyen biçimdeki gövdede (ör. sözlük yerine
-# metin) bazıları AttributeError ile düşer; bu davranış MatchDataFetcher'daki eski metotlardan aynen taşındı.
+# bakar. Tek bir yanıt gövdesi için {anahtar: gövde} verilir. Okunamayan gövde de False verir; "veri yok"
+# ile "okunamadı"yı ayırması gereken çağıran slice_body_state'i kullanır.
 
 
 def statistics_has_data(d: Mapping[str, Any]) -> bool:
-    s = d.get("statistics")
-    if s is None:
-        return False
-    periods = s if isinstance(s, list) else (s.get("statistics") or [])
-    all_periods = [p for p in periods if p and p.get("period") == "ALL"]
-    if not all_periods and periods:
-        all_periods = [periods[0]]
-    for p in all_periods:
-        for g in p.get("groups") or []:
-            if (g.get("statisticsItems") or []):
-                return True
-    return False
+    return _statistics_state(d.get("statistics")) == BODY_DATA
 
 
 def has_lineups_data_dict(d: Mapping[str, Any]) -> bool:
-    L = d.get("lineups")
-    if not L or not isinstance(L, dict):
-        return False
-    for side in ("home", "away"):
-        block = L.get(side)
-        if not isinstance(block, dict):
-            continue
-        players = block.get("players")
-        if isinstance(players, list) and len(players) > 0:
-            return True
-    return False
+    return _lineups_state(d.get("lineups")) == BODY_DATA
 
 
 def has_h2h_data_dict(d: Mapping[str, Any]) -> bool:
-    h = d.get("h2h")
-    if not h or not isinstance(h, dict):
-        return False
-    td = h.get("teamDuel") or {}
-    if td and any(td.get(x) is not None for x in ("homeWins", "awayWins", "draws")):
-        return True
-    raw = h.get("matches") or h.get("events") or td.get("matches")
-    return isinstance(raw, list) and len(raw) > 0
+    return _h2h_state(d.get("h2h")) == BODY_DATA
 
 
 def has_pregame_form_data_dict(d: Mapping[str, Any]) -> bool:
-    p = d.get("pregame_form")
-    if not p or not isinstance(p, dict):
-        return False
-
-    def chk(t: Any) -> bool:
-        if not t or not isinstance(t, dict):
-            return False
-        form = t.get("form")
-        if isinstance(form, list) and len(form) > 0:
-            return True
-        return any(t.get(x) is not None for x in ("position", "value", "avgRating"))
-
-    return chk(p.get("homeTeam")) or chk(p.get("awayTeam"))
+    return _pregame_form_state(d.get("pregame_form")) == BODY_DATA
 
 
 def has_team_streaks_data_dict(d: Mapping[str, Any]) -> bool:
-    g = (d.get("team_streaks") or {}).get("general")
-    return isinstance(g, list) and len(g) > 0
+    return _team_streaks_state(d.get("team_streaks")) == BODY_DATA
 
 
 def has_incidents_data_dict(d: Mapping[str, Any]) -> bool:
-    raw = d.get("incidents")
-    if raw and isinstance(raw, dict) and not isinstance(raw, list):
-        raw = raw.get("incidents")
-    return isinstance(raw, list) and len(raw) > 0
+    return _incidents_state(d.get("incidents")) == BODY_DATA
 
 
-# Kendi yüklemi olan dilimler. Burada olmayan anahtar ("basic" dahil) için değerin dolu olması yeter.
-_PRESENCE_PREDICATES: Dict[str, Callable[[Mapping[str, Any]], bool]] = {
-    "statistics": statistics_has_data,
-    "lineups": has_lineups_data_dict,
-    "h2h": has_h2h_data_dict,
-    "team_streaks": has_team_streaks_data_dict,
-    "pregame_form": has_pregame_form_data_dict,
-    "incidents": has_incidents_data_dict,
-}
+def has_point_by_point_data_dict(d: Mapping[str, Any]) -> bool:
+    return _point_by_point_state(d.get("point_by_point")) == BODY_DATA
 
 
 def match_detail_slice_present(key: str, d: Mapping[str, Any]) -> bool:
     """
-    Maçın birleşik sözlüğünde `key` diliminin verisi var mı. Kendi yüklemi olmayan anahtarda ("basic" ve
-    tabloda olmayan her dilim) değerin dolu olması yeter.
+    Maçın birleşik sözlüğünde `key` diliminin verisi var mı. Hata fırlatmaz: okunamayan gövde False verir.
+    Kuralı olmayan anahtarda ("basic" ve kayıt defterinde olmayan her anahtar) değerin dolu olması yeter.
     """
-    predicate = _PRESENCE_PREDICATES.get(key)
-    if predicate is not None:
-        return predicate(d)
-    return bool(d.get(key))
+    return slice_body_state(key, d.get(key)) == BODY_DATA

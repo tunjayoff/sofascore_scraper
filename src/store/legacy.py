@@ -27,10 +27,12 @@ Kurallar:
   * Bir dilim önce kendi dosyasından (`<anahtar>.json`), dosya yoksa birleşik dosyadan okunur
     (bölüm 5.2). Kendi dosyası olan dilim hiçbir zaman birleşik dosyadaki kopyadan eski değildir: bugünkü
     yazıcıların hepsi ayrı dosyayı yazar, birleşik dosyayı yalnızca yenileme günceller.
-  * Dilim durumu ve sayaçlar bölüm 2.3'teki eşlemeyle çıkar: dosya var ve "veri var" yüklemi doğruysa
-    `ok`, değilse yüküyle birlikte `empty`; `_unavailable.json[k] = c` ve `_slice_status.json[k].empty.count
-    = n` için `empty_count = min(c, n)`, `unverified_empty_count = c - min(c, n)`; `_slice_status.json[k].error`
-    hata alanlarına kopyalanır. Okunamayan dosya `error` / `corrupt` olur ve taramayı durdurmaz.
+  * Dilim durumu ve sayaçlar bölüm 2.3'teki eşlemeyle çıkar: dosya var ve dilimin kuralı
+    (src.slices.slice_body_state) "veri var" diyorsa `ok`, "veri yok" diyorsa yüküyle birlikte `empty`;
+    `_unavailable.json[k] = c` ve `_slice_status.json[k].empty.count = n` için `empty_count = min(c, n)`,
+    `unverified_empty_count = c - min(c, n)`; `_slice_status.json[k].error` hata alanlarına kopyalanır.
+    Okunamayan dosya ve kuralın okuyamadığı gövde (beklenmeyen biçim) `error` / `corrupt` olur ve taramayı
+    durdurmaz.
   * Bir turnuvanın birden çok sezon listesi dosyası varsa adı ne olursa olsun en yenisi geçerlidir;
     `league_seasons.csv` yalnızca JSON dosyası olmayan turnuva için kullanılır.
   * `score_changes.jsonl` satırlarının sıra numarası (seq) satır numarasıdır (1'den başlar).
@@ -49,7 +51,7 @@ from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, Iterator, List, Mapping, Optional, Set, Tuple, Union
 
-from src.slices import match_detail_slice_present
+from src.slices import BODY_DATA, BODY_MALFORMED, slice_body_state
 from src.sports import DETAIL_SLICES
 from src.store import codec, files, layout
 from src.store.errors import LayoutError, PayloadCorrupt, PayloadMissing, StoreError
@@ -375,17 +377,6 @@ def _error_mark(entry: Any) -> Optional[LegacySliceError]:
     )
 
 
-def _has_data(key: str, payload: Any) -> Optional[bool]:
-    """
-    "Bu yanıtta veri var mı" (src/slices.py). Yüklemler beklenmeyen biçimdeki gövdede hata fırlatır;
-    o durumda None döner ve dilim bozuk sayılır.
-    """
-    try:
-        return bool(match_detail_slice_present(key, {key: payload}))
-    except (AttributeError, TypeError, KeyError, IndexError, ValueError):
-        return None
-
-
 def _detail(exc: StoreError) -> str:
     return exc.detail or str(exc)
 
@@ -407,6 +398,11 @@ def schedule_sub(file_name: str) -> Optional[Tuple[str, str]]:
     Program dosyasının adından (tür, v3 alt anahtarı): `round_12.json` → ("round", "round_12"),
     `round_3_final.json` → ("round", "round_3_final"), `events_last_0.json` → ("page", "last_0").
     Program dosyası değilse ya da alt anahtar v3 kuralına uymuyorsa None.
+
+    v3 alt anahtarları küçük harftir (layout.validate_sub büyük harfi reddeder), eski yazıcı ise tur
+    dosyasının adına SofaScore'un slug'ını olduğu gibi koyar. Slug'ında büyük harf olan tur dosyası
+    (`round_1_Final.json`) yine program sayfasıdır: alt anahtar küçük harfe katlanır ("round_1_final"),
+    dosyanın diskteki adı değişmez. `round_` ve `events_` önekleri yazıcının yazdığı gibi küçük harf olmalıdır.
     """
     if not file_name.endswith(".json"):
         return None
@@ -417,7 +413,7 @@ def schedule_sub(file_name: str) -> Optional[Tuple[str, str]]:
     if not _ROUND_RE.fullmatch(stem):
         return None
     try:
-        return "round", layout.validate_sub(stem)
+        return "round", layout.validate_sub(stem.lower())
     except LayoutError:
         return None
 
@@ -752,11 +748,11 @@ class LegacyReader:
 
         if payload is not _MISSING:
             loaded[key] = payload
-            present = _has_data(key, payload)
-            if present is None:
+            body = slice_body_state(key, payload)  # "bu yanıtta veri var mı": üç yanıt (src/slices.py)
+            if body == BODY_MALFORMED:
                 problems.append(LegacyProblem(path or base, PROBLEM_MALFORMED, f"{key}: beklenmeyen biçim"))
                 state, error = STATE_ERROR, corrupt
-            elif present:
+            elif body == BODY_DATA:
                 state = STATE_OK
             else:
                 state = STATE_ERROR if error is not None else STATE_EMPTY
@@ -852,7 +848,8 @@ class LegacyReader:
         """
         Bütün tur dosyaları ve olay sayfaları, mtime sırasıyla (eşitlikte yola göre): katalog liste
         satırlarını bu sırayla işler (bölüm 3.4). İçerik okunmaz. Bir sezonun aynı sayfası iki dizinde
-        duruyorsa en yenisi geçerlidir (eşitlikte yolu küçük olan); ötekilerin `superseded_by` alanı doludur.
+        duruyorsa (ya da aynı dizinde adları yalnızca büyük/küçük harfle ayrılan iki tur dosyası varsa) en
+        yenisi geçerlidir (eşitlikte yolu küçük olan); ötekilerin `superseded_by` alanı doludur.
         """
         problems: List[LegacyProblem] = []
         pages: List[LegacySchedulePage] = []

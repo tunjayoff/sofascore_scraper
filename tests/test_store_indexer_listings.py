@@ -1113,4 +1113,4 @@ def test_new_modules_import_only_what_the_store_may_import() -> None:
     assert {m for m in loaded if not m.startswith("src.store")} == {
         "src", "src.exceptions", "src.slices", "src.sports", "src.status"}
     assert "src.store.indexer" not in loaded  # dizinleyici bu iki modülü kullanır, tersi değil
-    assert catalog_mod.DERIVE_VERSION == derive.DERIVE_VERSION == 1  # türetme çıktısı değişmedi
+    assert catalog_mod.DERIVE_VERSION == derive.DERIVE_VERSION  # bu modüller sürümü kendileri tutmaz
