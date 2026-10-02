@@ -1088,3 +1088,125 @@ def test_api_fetch_starts_a_job_through_the_manager_and_cancel_reaches_another_s
         assert client.get(f"/api/jobs/{foreign}").json()["status"] == "cancelled"
     finally:
         other.close()
+
+
+# === komut satırı ====================================================================================
+
+
+@pytest.fixture
+def cli(data_dir: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
+    """`main.py <argv> --data-dir <geçici dizin>`i bu süreçte çalıştırır; SyncService.run sahtedir."""
+    import main as cli_main
+    from src.services.sync import RefreshCounts, SyncResult, SyncService
+
+    monkeypatch.setenv("DATA_DIR", os.environ["DATA_DIR"])  # main --data-dir ortamı değiştirir: test sonunda geri al
+    state: Dict[str, Any] = {"breaker": None, "error": None, "failed": 0, "cancel": False, "seen": []}
+
+    def run(self: SyncService, spec: Any, *, handle: Any = None) -> SyncResult:
+        state["seen"].append((spec, handle.id, JobManager(JobStore.for_store(open_store(data_dir))).active()))
+        handle.progress.start_phase("details", 2)
+        handle.log("Checking which matches need details...")
+        for n in range(state["failed"]):
+            handle.progress.add_failed(str(n))
+        if state["breaker"]:
+            handle.progress.breaker(state["breaker"])
+        if state["error"] is not None:
+            raise state["error"]
+        if state["cancel"]:
+            # İptal, veri dizinini açmış başka bir depodan gelir (web sunucusu gibi); işin saati bayrağı okur
+            web_store = JobStore(default_db_path(str(data_dir)))
+            try:
+                assert web_store.cancel(handle.id) is True
+            finally:
+                web_store.close()
+            wait_for(handle.cancelled, what="cancel flag")
+            return SyncResult(state="cancelled", schedule_empty_seasons=0, breaker=None,
+                              progress=handle.progress.result())
+        handle.progress.advance(2)
+        progress = handle.progress.result()
+        return SyncResult(
+            state="partial" if progress["breaker"] or progress["failed_count"] else "succeeded",
+            schedule_empty_seasons=0, breaker=progress["breaker"], progress=progress,
+            refresh=RefreshCounts(due=2, refreshed=2) if spec.mode == "refresh" else None,
+        )
+
+    monkeypatch.setattr(SyncService, "run", run)
+
+    def call(*argv: str) -> int:
+        monkeypatch.setattr("sys.argv", ["main.py", *argv, "--data-dir", str(data_dir)])
+        return cli_main.main()
+
+    def jobs() -> List[Job]:
+        return JobManager(JobStore.for_store(open_store(data_dir))).list()
+
+    return SimpleNamespace(call=call, state=state, jobs=jobs)
+
+
+@pytest.mark.parametrize("argv, kind, spec", [
+    (["--headless", "--update-all", "--league-id", "17"], JobKind.SYNC,
+     {"mode": "full", "league_id": 17, "selections": [], "export": False}),
+    (["--refresh-only"], JobKind.REFRESH, {"mode": "refresh", "league_id": None, "selections": [], "export": True}),
+])
+def test_cli_runs_appear_in_the_job_history(cli: Any, data_dir: Path, argv: List[str], kind: JobKind, spec: Dict[str, Any]) -> None:
+    assert cli.call(*argv) == 0
+
+    (job,) = cli.jobs()
+    (seen_spec, handle_id, running), = cli.state["seen"]
+    assert handle_id == job.id and running.id == job.id and running.state is JobState.RUNNING
+    assert (job.kind, job.state, job.spec) == (kind, JobState.SUCCEEDED, spec)
+    assert job.origin == Origin(face="cli", pid=os.getpid(), host=job.origin.host) and job.origin.host
+    assert job.result["details_total"] == 2 and job.finished_at
+
+    # Web sunucusunun iş deposu aynı satırı eski biçimde gösterir (kartın başlığı istek gövdesinden üretilir)
+    web_store = JobStore(default_db_path(str(data_dir)))
+    try:
+        (row,) = web_store.list_jobs()
+        assert (row["id"], row["status"], row["is_running"]) == (job.id, "completed", False)
+        assert row["payload"] == {"league_id": spec["league_id"], "mode": spec["mode"], "selections": None}
+        assert row["log"][0] == "[Running] Checking which matches need details..."
+    finally:
+        web_store.close()
+
+
+def test_cli_job_stopped_by_the_breaker_is_partial_and_exits_with_2(cli: Any) -> None:
+    cli.state["breaker"] = "403"
+    assert cli.call("--headless", "--update-all") == 2
+    (job,) = cli.jobs()
+    assert job.state is JobState.PARTIAL and job.error.code == "blocked"
+
+
+def test_cli_job_with_a_storage_error_is_failed_and_exits_with_1(cli: Any, capsys: pytest.CaptureFixture[str]) -> None:
+    cli.state["error"] = StorageError.from_exception(OSError(errno.ENOSPC, os.strerror(errno.ENOSPC)), "/data/x")
+    assert cli.call("--headless", "--update-all") == 1
+    (job,) = cli.jobs()
+    assert job.state is JobState.FAILED and job.error.code == "storage_error"
+    assert "/data/x" in capsys.readouterr().err
+
+
+def test_cli_job_is_refused_with_exit_code_6_while_another_job_runs(
+    cli: Any, data_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    web_store = JobStore(default_db_path(str(data_dir)))
+    try:
+        web_store.create_running({"mode": "full"})
+        assert cli.call("--headless", "--update-all") == 6
+        assert cli.call("--refresh-only") == 6
+        err = capsys.readouterr().err
+        assert err.count(f"lock writer: pid {os.getpid()}") == 2 and "purpose job" in err
+        assert cli.state["seen"] == [] and len(cli.jobs()) == 1  # yalnızca web işi kayıtlı
+        web_store.update(finished=True)
+        assert cli.call("--refresh-only") == 0
+    finally:
+        web_store.close()
+
+
+@pytest.mark.parametrize("argv", [["--headless", "--update-all"], ["--refresh-only"]])
+def test_cli_job_cancelled_from_another_store_ends_like_ctrl_c(
+    cli: Any, capsys: pytest.CaptureFixture[str], argv: List[str]
+) -> None:
+    cli.state["cancel"] = True
+    assert cli.call(*argv) == 0
+    (job,) = cli.jobs()
+    assert job.state is JobState.CANCELLED and job.cancel_requested is True
+    out = capsys.readouterr().out
+    assert "Program terminated by user." in out and "Download finished" not in out and "Refresh:" not in out
