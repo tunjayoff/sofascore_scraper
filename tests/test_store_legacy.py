@@ -19,6 +19,7 @@ import datetime as dt
 import hashlib
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 import time
@@ -35,7 +36,7 @@ from src.config_manager import ConfigManager
 from src.match_data_fetcher import MatchDataFetcher
 from src.paths import safe_name
 from src.services import stats as stats_service
-from src.store import codec, layout, legacy
+from src.store import Ref, Store, catalog, codec, derive, layout, legacy, open_store
 from src.store.errors import LayoutError, PayloadCorrupt, PayloadMissing, StoreError
 from src.store.legacy import LegacyEvent, LegacyProblem, LegacyReader, LegacyReport, LegacySliceError
 from src.web.routes import matches as matches_routes
@@ -839,6 +840,55 @@ def test_round_files_that_differ_only_in_case_are_one_page(tmp_path: Path) -> No
     assert [(s.kind, s.key, s.path, s.winner) for s in report.superseded] == [
         ("schedule", "19/97110/round_1_final", f"{season}/round_1_final.json", f"{season}/round_1_Final.json")]
     assert report.problems == []
+
+
+def test_catalog_picks_up_the_folded_round_page_and_the_new_slice_rule(tmp_path: Path) -> None:
+    """
+    Dizinleyici değişmeden: büyük harfli tur dosyası katalogda bir program dilimidir ve listelediği maç bir
+    olay satırıdır; boş `pointByPoint` listesi `empty` dilimdir. Eski türetme sürümüyle kurulmuş katalog
+    açılışta bir kez yeniden kurulur.
+    """
+    data = tmp_path / "data"
+    season = "matches/19_FA_Cup/97110_FA_Cup_26_27"
+    listed = sf.basic_payload(sf.PL_ARS)
+    write(data, f"{season}/round_29_Final.json", {"events": [listed], "_complete": True})
+    write(data, "match_details/7/basic.json", event_of(7, "tennis"))
+    write(data, "match_details/7/point_by_point.json", {"pointByPoint": []})
+    final = Ref.season(19, 97110)
+
+    def read(store: Store) -> Tuple[Any, ...]:
+        page = store.entities.slice(final, "schedule", "round_29_final")
+        points = store.events.slice(7, "point_by_point")
+        return (page.state, page.has_payload, store.entities.payload(final, "schedule", "round_29_final"),
+                store.events.get(listed["id"]) is not None, points.state, points.has_payload)
+
+    expected = ("ok", True, {"events": [listed]}, True, "empty", True)
+    store = open_store(data)
+    try:
+        assert read(store) == expected
+        assert [s.sub for s in store.entities.slices(final)] == ["round_29_final"]
+        assert store.info(sizes=False).derive_version == derive.DERIVE_VERSION == 2
+    finally:
+        store.close()
+
+    # Eski kuralların kurduğu katalog: sayfa yok, dilim `ok`, sürüm 1
+    with sqlite3.connect(catalog.catalog_path(data)) as conn:
+        conn.execute("DELETE FROM entity_slices WHERE sub = 'round_29_final'")
+        conn.execute("DELETE FROM events WHERE id = ?", (listed["id"],))
+        conn.execute("UPDATE event_slices SET state = 'ok' WHERE key = 'point_by_point'")
+        conn.execute("UPDATE meta SET value = '1' WHERE key = 'derive_version'")
+    conn.close()
+    stale = open_store(data, sync_catalog=False)
+    try:
+        assert stale.info(sizes=False).catalog_rebuild_reason == "derive_version"
+    finally:
+        stale.close()
+    store = open_store(data)
+    try:
+        assert read(store) == expected
+        assert store.info(sizes=False).catalog_rebuild_reason is None
+    finally:
+        store.close()
 
 
 def test_schedule_pages_of_the_canonical_fixture(canonical: sf.LegacyFixture) -> None:

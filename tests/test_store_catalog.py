@@ -281,7 +281,7 @@ def _edit(path: str, *statements: str) -> None:
     ("PRAGMA application_id = 0", "application_id", False),
     (f"PRAGMA application_id = {0x53465331}", "application_id", False),  # state.db'nin imzası
     ("UPDATE meta SET value = '0' WHERE key = 'derive_version'", "derive_version", True),
-    ("UPDATE meta SET value = '2' WHERE key = 'derive_version'", "derive_version", True),
+    (f"UPDATE meta SET value = '{derive.DERIVE_VERSION + 1}' WHERE key = 'derive_version'", "derive_version", True),
     ("UPDATE meta SET value = 'x' WHERE key = 'derive_version'", "derive_version", True),
     ("DELETE FROM meta", "derive_version", True),
 ], ids=["older-schema", "newer-schema", "no-app-id", "state-db", "older-derive", "newer-derive", "bad-derive",

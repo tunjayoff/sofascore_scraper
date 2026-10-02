@@ -508,7 +508,8 @@ def test_rebuild_meta_and_report(canonical: sf.LegacyFixture, make_admin) -> Non
 
     assert cat.inspect().usable and cat.quick_check() == []
     assert cat.get_meta("built_at") == str(NOW) and cat.get_meta("build_mode") == "recreate"
-    assert cat.get_meta("built_by") == indexer.APP_VERSION and cat.get_meta("derive_version") == "1"
+    assert cat.get_meta("built_by") == indexer.APP_VERSION
+    assert cat.get_meta("derive_version") == str(derive.DERIVE_VERSION)
     assert json.loads(cat.get_meta("counts")) == report.counts
     assert report.counts == {t: count(cat, t) for t in ALL_TABLES if t != "meta"}
     assert (report.events, report.events_legacy, report.events_v3) == (len(canonical.detail_ids),) * 2 + (0,)
