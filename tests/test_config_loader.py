@@ -826,7 +826,7 @@ def test_a_list_of_strings_in_the_config_file_is_named_by_its_type(tmp_path):
          "allow_unsigned: expected true or false, got a number"),
         # İmza anahtarının adı yerine kendisi yazılmış
         ({"name": "ops", "type": "webhook", "url": HOOK_ADDRESS, "secret_env": SIGNING_VALUE},
-         "secret_env: expected the name of an environment variable (letters, digits and _), not the secret itself"),
+         ": secret_env must be the name of an environment variable (letters, digits and _), not the secret itself"),
         ({"name": "ops", "type": "webhook", "url": HOOK_ADDRESS, "secret_env": [SIGNING_VALUE]},
          "secret_env: expected a string, got a list"),
         ({"name": True, "type": "stdout"}, "name: expected a string, got a boolean"),
@@ -834,7 +834,8 @@ def test_a_list_of_strings_in_the_config_file_is_named_by_its_type(tmp_path):
 )
 def test_sink_errors_name_the_type_of_a_rejected_value_not_the_value(table, message):
     """Bir sink satırının alanı adres ya da gizli değer olabilir; ileti komutun çıktısına, log'a ve zarfa girer."""
-    assert _refused({"SOFASCORE_SINKS": json.dumps([table])}) == f"SOFASCORE_SINKS: [[sink]] #1 {message}"
+    separator = "" if message.startswith(":") else " "
+    assert _refused({"SOFASCORE_SINKS": json.dumps([table])}) == f"SOFASCORE_SINKS: [[sink]] #1{separator}{message}"
 
 
 def test_sink_errors_of_the_config_file_do_not_quote_the_value_either(tmp_path):
@@ -873,6 +874,12 @@ def test_a_command_refused_for_a_wrong_sink_value_prints_no_part_of_it(cli, tmp_
         for private in PRIVATE_PARTS:
             for output in (as_json.stdout, as_json.stderr, as_text.stdout, as_text.stderr):
                 assert private not in output, private
+        if SIGNING_VALUE in value:
+            # Komut çıktısındaki maskeleme iletiyi bozmaz ("secret_env: <sözcük>" bir anahtar-değer çifti sayılırdı)
+            assert as_text.stderr.splitlines()[0] == (
+                "Configuration error: SOFASCORE_SINKS: [[sink]] #1: secret_env must be the name of an environment "
+                "variable (letters, digits and _), not the secret itself"
+            )
 
 
 # --- sink seçenekleri: sink'lerin tanımadığı anahtarın değeri gösterilmez ------------------------------------

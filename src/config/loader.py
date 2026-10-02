@@ -815,8 +815,10 @@ def parse_sinks(items: Sequence[Mapping[str, Any]], name: str, base: Optional[Pa
         allow_unsigned = _take(table, "allow_unsigned", bool, where, False, quote=False)
         path = _take(table, "path", str, where, "", quote=False).strip()
         if secret_env and not _ENV_NAME.match(secret_env):
+            # İleti "secret_env: ..." diye yazılmaz: komut çıktısındaki maskeleme (redact_text) bunu bir
+            # `anahtar: değer` çifti sayar ve iki noktadan sonraki sözcüğü `***` yapar
             raise ConfigError(
-                f"{where} secret_env: expected the name of an environment variable (letters, digits and _), "
+                f"{where}: secret_env must be the name of an environment variable (letters, digits and _), "
                 f"not the secret itself"
             )
         if kind == "webhook":
