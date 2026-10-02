@@ -1,0 +1,8 @@
+# Migration: src.store.__all__ içinde değil; açık bir imzada geçtiği için izleniyor
+# kaynak: src/store/state.py
+@dataclass(frozen=True)
+class Migration:
+    version: int
+    name: str
+    path: str
+    def statements(self) -> List[str]

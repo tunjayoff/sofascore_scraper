@@ -8,7 +8,12 @@ Bu modül komutları bilmez: src/cli/commands/ altındaki modüller kendini kayd
 kurulur. Burada duranlar: genel bayraklar (bölüm 4.2), ayrıştırma, ayarların yüklenmesi, sonucun ve hatanın
 yazılması (bölüm 4.4) ve çıkış kodu (bölüm 4.5).
 
-Genel bayraklar komuttan önce de sonra da verilebilir (`ssc --json doctor`, `ssc doctor --json`).
+Genel bayraklar komuttan önce de sonra da verilebilir (`ssc --json doctor`, `ssc doctor --json`). `--wait`,
+`--progress` ve `--log-format` P19 ile geldi: ilk ikisini iş çalıştıran komutlar okur (src/cli/commands/sync.py),
+üçüncüsü ayarlar yüklendikten sonra konsol log satırlarının biçimini seçer (src/logger.py).
+
+Sinyaller (src/cli/signals.py): komut çalışırken SIGTERM, Ctrl+C gibi KeyboardInterrupt olur ve `cancelled`
+(143) olarak yazılır; iş çalıştıran komutlar iş süresince kendi işleyicilerini kurar (iptal, sonuç, 130 / 143).
 
 Çalışma dizini: eski giriş noktası (depo kökündeki main.py) gibi proje köküne geçilir; `.env`, `config/`,
 `data/` ve `./sofascore.toml` iki giriş noktasında da aynı yerdir. Kullanıcının verdiği göreli yollar
@@ -31,9 +36,10 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 from src import language
 from src.cli import MODULE_PROG, PROG, VERSION_TEXT
 from src.cli import commands as registry
-from src.cli.exit_codes import GENERAL_ERROR, exit_code_for
+from src.cli.exit_codes import GENERAL_ERROR, OK, exit_code_for
 from src.cli.output import JSON, OUTPUT_MODES, TEXT, CommandResult, Output, Translator
-from src.errors import INTERNAL, PlatformError, UsageError, to_platform_error
+from src.cli import signals
+from src.errors import INTERNAL, Cancelled, PlatformError, UsageError, to_platform_error
 from src.sports import sport_slugs
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -41,8 +47,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 LOG_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
 # Genel bayrakların argparse `dest` adları: her komutun ayrıştırıcısında bulunurlar, komutun kendi seçeneği değildirler
 GLOBAL_DESTS = (
-    "config", "data_dir", "output", "quiet", "verbose", "log_level", "no_color", "lang", "rate", "ignore_breaker",
+    "config", "data_dir", "output", "quiet", "verbose", "log_level", "log_format", "no_color", "lang", "rate",
+    "ignore_breaker", "wait", "progress",
 )
+LOG_FORMATS = ("text", "json")
+# `--progress`: işin ilerlemesi stderr'e (none: yazılmaz; text: okunur satırlar; ndjson: JobEvent satırları)
+PROGRESS_MODES = ("none", "text", "ndjson")
 
 
 class _Parser(argparse.ArgumentParser):
@@ -86,6 +96,9 @@ class GlobalOptions:
     lang: Optional[str] = None
     rate: Optional[float] = None
     ignore_breaker: bool = False
+    log_format: Optional[str] = None
+    wait: Optional[float] = None
+    progress: Optional[str] = None
 
 
 # --- çeviri ----------------------------------------------------------------------------------------
@@ -119,6 +132,16 @@ def _rate(value: str) -> float:
     return rate
 
 
+def _seconds(value: str) -> float:
+    try:
+        seconds = float(value.strip())
+    except ValueError:
+        seconds = math.nan
+    if not math.isfinite(seconds) or seconds < 0:
+        raise argparse.ArgumentTypeError(f"expected a number of seconds (0 or more), got {value!r}")
+    return seconds
+
+
 def _global_options(t: Translator) -> argparse.ArgumentParser:
     """
     Genel bayrakları taşıyan üst ayrıştırıcı; köke ve her komuta `parents` ile eklenir. Varsayılanlar
@@ -138,12 +161,18 @@ def _global_options(t: Translator) -> argparse.ArgumentParser:
         "--log-level", dest="log_level", type=str.upper, choices=LOG_LEVELS, metavar="LEVEL", default=absent,
         help=t("ssc_help_log_level"),
     )
+    group.add_argument(
+        "--log-format", dest="log_format", type=str.lower, choices=LOG_FORMATS, default=absent,
+        help=t("ssc_help_log_format"),
+    )
     group.add_argument("--no-color", dest="no_color", action="store_true", default=absent, help=t("ssc_help_no_color"))
     group.add_argument("--lang", choices=language.SUPPORTED_LANGUAGES, default=absent, help=t("ssc_help_lang"))
     group.add_argument("--rate", type=_rate, metavar="N|off", default=absent, help=t("ssc_help_rate"))
     group.add_argument(
         "--ignore-breaker", dest="ignore_breaker", action="store_true", default=absent, help=t("ssc_help_ignore_breaker"),
     )
+    group.add_argument("--wait", type=_seconds, metavar="SECONDS", default=absent, help=t("ssc_help_wait"))
+    group.add_argument("--progress", choices=PROGRESS_MODES, default=absent, help=t("ssc_help_progress"))
     return parser
 
 
@@ -327,6 +356,9 @@ def _options(namespace: argparse.Namespace) -> GlobalOptions:
         lang=getattr(namespace, "lang", None),
         rate=getattr(namespace, "rate", None),
         ignore_breaker=bool(getattr(namespace, "ignore_breaker", False)),
+        log_format=getattr(namespace, "log_format", None),
+        wait=getattr(namespace, "wait", None),
+        progress=getattr(namespace, "progress", None),
     )
 
 
@@ -343,6 +375,8 @@ def _setting_flags(options: GlobalOptions, data_dir: Optional[str]) -> Dict[str,
         # `log.debug` (DEBUG=true) seviyeyi DEBUG'a zorlar; açıkça istenen seviye onun da önündedir
         flags["log.level"] = options.log_level
         flags["log.debug"] = False
+    if options.log_format is not None:
+        flags["log.format"] = options.log_format
     if options.no_color:
         flags["display.use_color"] = False
     if options.lang is not None:
@@ -379,6 +413,8 @@ def _report(out: Output, command: Optional[str], exc: BaseException) -> int:
         error = PlatformError(
             INTERNAL, f"a required package is not installed ({exc}); run `{out.prog} doctor` to see what is missing",
         )
+    elif isinstance(exc, signals.Terminated):
+        error = Cancelled("cancelled by a termination signal (SIGTERM)", signal_number=signals.SIGTERM)
     else:
         error = to_platform_error(exc)
         if error.code == INTERNAL:
@@ -452,9 +488,11 @@ def main(argv: Optional[Sequence[str]] = None, *, prog: Optional[str] = None) ->
         )
         inv.config_file = inv.resolve_path(options.config) if options.config else None
         inv.flags = _setting_flags(options, inv.resolve_path(options.data_dir) if options.data_dir else None)
-        if command.settings:
-            registry.activate_settings(inv)
-        result = command.run(inv)
+        with signals.terminate_as_interrupt():
+            if command.settings:
+                registry.activate_settings(inv)
+                _apply_log_format()
+            result = command.run(inv)
         _merge_warnings(inv, result)
         out.result(command_name, result, always_json=command.always_json)
         return int(result.exit_code)
@@ -463,25 +501,36 @@ def main(argv: Optional[Sequence[str]] = None, *, prog: Optional[str] = None) ->
         code = stop.code
         return code if isinstance(code, int) else (0 if code is None else 1)
     except BrokenPipeError:
-        return _closed_pipe()
+        return _closed_pipe(out)
     except (Exception, KeyboardInterrupt) as exc:
         command_name = getattr(exc, "command_path", None) or command_name
         try:
             return _report(out, command_name, exc)
         except BrokenPipeError:
-            return _closed_pipe()
+            return _closed_pipe(out)
 
 
-def _closed_pipe() -> int:
+def _apply_log_format() -> None:
+    """`--log-format` ya da `[log] format`: konsol log satırlarının biçimi (src/logger.py)."""
+    from src import logger as app_logger
+    from src.config import loader
+
+    app_logger.set_log_format(str(loader.active_settings().log.format or "text"))
+
+
+def _closed_pipe(out: Output) -> int:
     """
     Çıktıyı okuyan süreç kapandı (ör. `ssc describe | head`): yazacak yer kalmadı. stdout kapatılır ki
     yorumlayıcı kapanırken kalan tamponu yazmayı deneyip ikinci bir hata basmasın.
+
+    Akış komutunda (`ssc events | head -1`) okuyan yeterince satır almıştır: çıkış kodu 0. Tek seferlik
+    komutun sonucu ise okunamadı: 1.
     """
     try:
         sys.stdout.close()
     except Exception:
         pass
-    return GENERAL_ERROR
+    return OK if out.streaming else GENERAL_ERROR
 
 
 if __name__ == "__main__":

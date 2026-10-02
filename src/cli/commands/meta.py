@@ -58,20 +58,59 @@ def _config_schema_version() -> Optional[int]:
         return None
 
 
+def _data_schema_version() -> Optional[int]:
+    """Normalleştirilmiş kayıt şemasının sürümü (src/schema); paket yüklenemiyorsa None."""
+    try:
+        from src.schema import models
+
+        return int(models.SCHEMA_VERSION)
+    except Exception:
+        return None
+
+
+def store_versions() -> Optional[Dict[str, int]]:
+    """
+    Bu kodun yazdığı ve okuduğu depo sürümleri: düzen (v3 ağacı), catalog.db ve state.db şemaları. Store
+    yüklenemiyorsa None.
+    """
+    try:
+        from src.store import CATALOG_SCHEMA, LAYOUT_VERSION, load_migrations
+
+        migrations = load_migrations()
+        return {
+            "layout": int(LAYOUT_VERSION),
+            "catalog": int(CATALOG_SCHEMA),
+            "state": int(migrations[-1].version) if migrations else 0,
+        }
+    except Exception:
+        return None
+
+
+def _known(value: Any) -> Any:
+    return value if value is not None else "?"
+
+
 @command("version", help="ssc_help_cmd_version")
 def version(inv: Invocation) -> CommandResult:
     config_schema = _config_schema_version()
+    data_schema = _data_schema_version()
+    store = store_versions()
     data = {
         "name": APP_NAME,
         "version": __version__,
         "python": platform.python_version(),
-        "schemas": {"cli": SCHEMA, "config": config_schema},
+        "schemas": {"cli": SCHEMA, "config": config_schema, "data": data_schema},
+        "store": store,
     }
-    text = "\n".join([
+    lines = [
         VERSION_TEXT,
-        inv.t("ssc_version_schemas", cli=SCHEMA, config=config_schema if config_schema is not None else "?"),
-    ])
-    return CommandResult(data=data, text=text)
+        inv.t("ssc_version_schemas", cli=SCHEMA, config=_known(config_schema)),
+        inv.t("ssc_version_data_schema", data=_known(data_schema)),
+    ]
+    if store is not None:
+        lines.append(inv.t("ssc_version_store", layout=store["layout"], catalog=store["catalog"],
+                           state=store["state"]))
+    return CommandResult(data=data, text="\n".join(lines))
 
 
 # === doctor ==========================================================================================
@@ -183,9 +222,12 @@ def describe_schemas() -> Dict[str, Any]:
     from src.config import schema as config_schema
     from src.config import settings as model
 
+    from src import schema as data_schema
+
     return {
         "cli": {"id": SCHEMA, "envelope": ENVELOPE_SCHEMA},
         "config": {"id": config_schema.SCHEMA_ID, "version": model.SCHEMA_VERSION, "describe": "config"},
+        "data": data_schema.describe(),
     }
 
 
@@ -308,10 +350,37 @@ def config_show(inv: Invocation) -> CommandResult:
     return CommandResult(data=data, text="\n".join(lines), warnings=extra)
 
 
+def _check_sinks(loaded: Any) -> None:
+    """
+    Sink'leri açmadan kurar (`sinks.build_sinks`). İmza anahtarı ortamdan ya da `.env`'den okunur; süreç
+    ortamına dokunulmaz. Kurulamayan sink ConfigError'dır (`config_invalid`).
+    """
+    import dotenv
+
+    from src import sinks
+    from src.paths import env_file_path
+
+    try:
+        file_values = {key: value for key, value in dotenv.dotenv_values(env_file_path()).items() if value is not None}
+    except Exception:
+        file_values = {}
+    try:
+        sinks.build_sinks(loaded.settings.sinks, environ={**file_values, **os.environ},
+                          data_dir=os.path.abspath(loaded.settings.storage.data_dir))
+    except ValueError as e:  # sink sınıfının kendi denetimi (ör. adresin biçimi)
+        raise ConfigError(f"[[sink]]: {e}") from None
+
+
 @command("config validate", help="ssc_help_cmd_config_validate")
 def config_validate(inv: Invocation) -> CommandResult:
-    """Dosyayı ve ortamı sürece dokunmadan denetler. Geçersizse ConfigError: `config_invalid`, çıkış kodu 2."""
+    """
+    Dosyayı ve ortamı sürece dokunmadan denetler. Geçersizse ConfigError: `config_invalid`, çıkış kodu 2.
+    Sink'ler de kurulur (açılmadan): bilinmeyen bir seçenek, eksik imza anahtarı ya da veri dizininin içine
+    yazan dosya sink'i burada bildirilir, komut çalışırken değil.
+    """
     loaded = read_settings(inv)
+    if loaded.settings.sinks:
+        _check_sinks(loaded)
     data = {
         "valid": True,
         "config_file": loaded.config_file,

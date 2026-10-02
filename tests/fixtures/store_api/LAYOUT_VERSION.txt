@@ -1,0 +1,3 @@
+# src.store.LAYOUT_VERSION
+# kaynak: src/store/api.py
+LAYOUT_VERSION = 3

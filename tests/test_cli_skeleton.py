@@ -553,10 +553,22 @@ def test_version_flag_is_one_line(cli):
     assert VERSION_TEXT == f"SofaScore Scraper {__version__}"
 
 
+def _store_versions() -> Dict[str, int]:
+    from src.store import CATALOG_SCHEMA, LAYOUT_VERSION, load_migrations
+
+    return {"layout": LAYOUT_VERSION, "catalog": CATALOG_SCHEMA, "state": load_migrations()[-1].version}
+
+
 def test_version_command(cli):
+    from src.schema import SCHEMA_VERSION
+
+    store = _store_versions()
     text = cli("version")
     assert (text.exit_code, text.stderr) == (0, "")
-    assert text.stdout.splitlines() == [VERSION_TEXT, "CLI output schema: sofascore.cli/1", "Config file schema: 1"]
+    assert text.stdout.splitlines() == [
+        VERSION_TEXT, "CLI output schema: sofascore.cli/1", "Config file schema: 1", f"Data schema: {SCHEMA_VERSION}",
+        f"Store: layout {store['layout']}, catalog schema {store['catalog']}, state schema {store['state']}",
+    ]
 
     as_json = cli("version", "--json")
     assert (as_json.exit_code, as_json.stderr) == (0, "")
@@ -566,10 +578,13 @@ def test_version_command(cli):
         "data": {
             "name": "sofascore-scraper", "version": __version__,
             "python": ".".join(str(part) for part in sys.version_info[:3]),
-            "schemas": {"cli": "sofascore.cli/1", "config": 1},
+            "schemas": {"cli": "sofascore.cli/1", "config": 1, "data": SCHEMA_VERSION},
+            "store": store,
         },
         "warnings": [],
     }
+    # Bugünkü sürümler (bir sürüm değişince bu satır bilerek güncellenir)
+    assert (store["layout"], store["state"], SCHEMA_VERSION) == (3, 2, 1)
 
 
 # === doctor ======================================================================================
@@ -1420,7 +1435,7 @@ def test_version_and_doctor_work_before_the_packages_are_installed(box: Sandbox)
 
     assert box.run("--version", code=code).stdout == VERSION_TEXT + "\n"
     version = box.run("version", "--json", code=code)
-    assert version.exit_code == 0 and version.data["schemas"] == {"cli": "sofascore.cli/1", "config": None}
+    assert version.exit_code == 0 and version.data["schemas"] == {"cli": "sofascore.cli/1", "config": None, "data": 1}
     assert box.run("--help", code=code).exit_code == 0
 
     report = box.run("doctor", "--json", "--only", "python,packages,env,budget", code=code)

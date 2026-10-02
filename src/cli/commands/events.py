@@ -18,8 +18,10 @@ almaz ve günlüğe yazmaz.
   * `gap`       `--after`'dan sonraki olayların bir kısmı okunmadan budanmış (günlük 7 gün tutar).
 
 `--json` ile tek bir belge yazılır (zarfın `data` alanı: `stream_id`, `last_seq`, `count`, `gap`, `events`);
-`--follow` bir belgeye sığmaz, `--json` ile birlikte kullanım hatasıdır. `--follow` Ctrl+C ile durduğunda
-`end` satırı yazılmaz ve çıkış kodu 0'dır.
+`--follow` bir belgeye sığmaz, `--json` ile birlikte kullanım hatasıdır. `--follow` Ctrl+C ya da SIGTERM ile
+durduğunda `end` satırı yazılmaz ve çıkış kodu 0'dır. Akışın ortasındaki bir hata stdout'a
+`{"type":"error","error":{...},"exit_code":N}` satırı olarak yazılır; okuyan boruyu erken kapatırsa (`ssc events |
+head -1`) çıkış kodu 0'dır (src/cli/output.py, plan maddesi P19).
 
 Henüz depo olmayan bir veri dizininde (hiçbir komut çalışmamış) olay yoktur: boş sonuç döner; `--follow`
 izleyecek bir günlük bulamaz ve depolama hatasıyla biter.
@@ -30,17 +32,17 @@ from __future__ import annotations
 
 import argparse
 import os
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional
 
 from src.cli.commands import CliWarning, CommandResult, Invocation, command
-from src.cli.output import JSON, NDJSON, TEXT, Translator, dumps
+from src.cli.output import JSON, STREAM_END, Translator
 from src.errors import UsageError
 
 # Günlüğün akışları (src/store/streams.py STREAMS ile aynı; tests/test_sinks.py eşitliği sınar)
 STREAMS = ("live", "change", "job", "system")
 PAGE = 500  # günlükten bir okumada alınan satır
 FOLLOW_WAIT_SECONDS = 1.0  # `--follow`: yeni olay bu aralıklarla beklenir (bekleme yeni olayda hemen biter)
-END_TYPE = "end"
+END_TYPE = STREAM_END
 
 
 def _sequence(value: str) -> int:
@@ -97,15 +99,6 @@ def _gap_warning(after: int) -> CliWarning:
     )
 
 
-def _streamed(inv: Invocation, warnings: Sequence[CliWarning] = (), notes: Sequence[str] = ()) -> CommandResult:
-    """
-    Satırlar yazıldı: sonuç zarfı yazılmaz. Çıktı modülünde akış komutları için ayrı bir yol yok; `ndjson`
-    kipinde zarfın satırlara eklenmemesi için kip metne çevrilir (uyarılar ve notlar yine stderr'e gider).
-    """
-    inv.out.mode = TEXT
-    return CommandResult(warnings=list(warnings), notes=list(notes))
-
-
 @command("events", help="ssc_help_cmd_events", configure=_arguments, settings=True)
 def events(inv: Invocation) -> CommandResult:
     args = inv.args
@@ -134,13 +127,15 @@ def events(inv: Invocation) -> CommandResult:
         note = inv.t("ssc_events_no_store", path=data_dir)
         if as_document:
             return CommandResult(data={"stream_id": None, "last_seq": after, "count": 0, "gap": False, "events": []})
-        inv.out.write(dumps(_end(None, after, 0, False), NDJSON))
-        return _streamed(inv, notes=[note])
+        inv.out.line(_end(None, after, 0, False))
+        return CommandResult(notes=[note])
 
     streams = store.streams
     if follow and args.after is None:
         after = streams.head().last_seq  # `--follow` "şimdi"den başlar
     collected: List[Dict[str, Any]] = []
+    if not as_document:
+        inv.out.begin_stream()  # satırlar stdout'a: sonuç zarfı yazılmaz, hata bir akış satırı olur
     sink = StdoutSink("stdout", flt, write=inv.out.write)
     filters: Dict[str, Any] = {
         "streams": tuple(args.stream or ()),
@@ -184,13 +179,13 @@ def events(inv: Invocation) -> CommandResult:
     except KeyboardInterrupt:
         if not follow:
             raise
-        return _streamed(inv, warnings)  # izleme durduruldu: `end` satırı yok, çıkış kodu 0
+        return CommandResult(warnings=warnings)  # izleme durduruldu: `end` satırı yok, çıkış kodu 0
 
     if as_document:
         data = {"stream_id": stream_id, "last_seq": position, "count": count, "gap": gap, "events": collected}
         return CommandResult(data=data, warnings=warnings)
-    inv.out.write(dumps(_end(stream_id, position, count, gap), NDJSON))
-    return _streamed(inv, warnings)
+    inv.out.line(_end(stream_id, position, count, gap))
+    return CommandResult(warnings=warnings)
 
 
 __all__ = ["END_TYPE", "STREAMS"]
