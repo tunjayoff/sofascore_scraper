@@ -1,0 +1,8 @@
+# src.store.Snapshot
+# kaynak: src/store/history.py
+@dataclass(frozen=True)
+class Snapshot:
+    n: int
+    fetched_at: datetime
+    sha256: str
+    payload: Any

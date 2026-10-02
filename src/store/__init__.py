@@ -49,6 +49,7 @@ if _TYPE_CHECKING:  # tür denetleyicileri ve API anlık görüntüsü adları b
         SliceInfo,
         TournamentSummary,
     )
+    from src.store.history import HistoryStore, Snapshot, SnapshotInfo
     from src.store.follows import ApplyResult, Follow, FollowConflict, FollowSpec, FollowStore, apply_follows
     from src.store.jobs import (
         DataOperationRunningError,
@@ -87,6 +88,9 @@ _LAZY = {
     "ParticipantRow": "src.store.entities",
     "ChangeLog": "src.store.changes",
     "ChangeRow": "src.store.changes",
+    "HistoryStore": "src.store.history",
+    "Snapshot": "src.store.history",
+    "SnapshotInfo": "src.store.history",
     "FollowStore": "src.store.follows",
     "Follow": "src.store.follows",
     "FollowSpec": "src.store.follows",
@@ -157,6 +161,9 @@ __all__ = [
     "ParticipantRow",
     "ChangeLog",
     "ChangeRow",
+    "HistoryStore",
+    "Snapshot",
+    "SnapshotInfo",
     "FollowStore",
     "Follow",
     "FollowSpec",

@@ -11,6 +11,7 @@ class Store:
     self.events
     self.entities
     self.changes
+    self.history
     self.catalog
     @property
     def closed(self) -> bool
