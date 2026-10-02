@@ -321,6 +321,29 @@ def test_file_sink_writes_low_sequence_numbers_of_another_log(tmp_path: Path):
     assert [doc["seq"] for doc in lines_of(path)] == [7, 1, 2]
 
 
+def test_file_sink_syncs_every_batch_to_disk_before_it_returns(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """Dağıtıcı konumu `deliver` döndükten sonra ilerletir: o anda satırlar diskte olmalıdır."""
+    path = tmp_path / "live.ndjson"
+    synced: List[int] = []
+    real_fsync = os.fsync
+
+    def fsync(fd: int) -> None:
+        synced.append(os.fstat(fd).st_size)  # eşitleme anında dosyada olan baytlar
+        real_fsync(fd)
+
+    monkeypatch.setattr(os, "fsync", fsync)
+    sink = FileSink("feed", str(path))
+    sink.deliver(envs(1, 2))
+    assert synced == [path.stat().st_size]  # toplu gönderim başına bir kez, satırlar yazıldıktan sonra
+    sink.deliver(envs(3))
+    assert len(synced) == 2 and synced[1] == path.stat().st_size > synced[0]
+    sink.close()
+    relaxed = FileSink("fast", str(tmp_path / "fast.ndjson"), fsync=False)
+    relaxed.deliver(envs(1))
+    relaxed.close()
+    assert len(synced) == 2
+
+
 def test_file_sink_rotates_by_size(tmp_path: Path):
     path = tmp_path / "live.ndjson"
     clock = FakeClock()
@@ -1317,6 +1340,34 @@ def test_run_survives_errors_of_the_event_log_and_unexpected_errors(store: Store
     assert "The dispatcher failed unexpectedly (RuntimeError); trying again" in caplog.text
 
 
+def test_only_the_long_running_holder_of_the_lease_prunes_the_log(store: Store, running: List[Any],
+                                                                  monkeypatch: pytest.MonkeyPatch):
+    """01-storage.md 9.3: günlüğü `sinks` kilidinin sahibi budar; tek seferlik boşaltma ve kilitsiz izleme budamaz."""
+    calls: List[Any] = []
+
+    def prune(**kwargs: Any) -> int:
+        holder = store.lease_holder("sinks")
+        calls.append((kwargs, holder.purpose if holder is not None else None))
+        return 0
+
+    monkeypatch.setattr(store.streams, "prune", prune)
+    dispatcher = Dispatcher(store, [RecordingSink()])
+    dispatcher.register()
+    emit(store)
+    assert dispatcher.drain(5.0).complete and calls == []
+    stop = threading.Event()
+    follower = Dispatcher(store, [StdoutSink(write=lambda line: None)])
+    thread = threading.Thread(target=follower.follow, args=(stop,), daemon=True)
+    thread.start()
+    wait_until(lambda: follower._started)
+    stop.set()
+    thread.join(timeout=10)
+    assert not thread.is_alive() and calls == []
+    start(dispatcher, running)
+    wait_until(lambda: bool(calls))
+    assert calls == [({"max_age_s": 7 * DAY, "max_rows": 1_000_000}, "dispatcher")]
+
+
 def test_follow_prints_new_events_without_the_lease_and_without_writing(store: Store):
     emit(store)
     lines: List[str] = []
@@ -1583,6 +1634,21 @@ def test_the_diagnostics_bundle_never_contains_a_webhook_address_beyond_its_host
     assert redact.mask_value("SOFASCORE_SINKS", json.dumps([HOOK_URL])) == "***"
     assert redact.mask_webhook_url("https://example.org") == "https://example.org"
     assert redact.mask_webhook_url("http://127.0.0.1:9000/hook") == "http://127.0.0.1:9000/***"
+
+
+def test_no_http_route_and_no_web_module_knows_sinks():
+    """Karar D11: sink'ler yalnızca yapılandırma dosyasından ve ortamdan gelir; HTTP API'si dışarıya adres kaydetmez."""
+    from src.web.app import app
+
+    document = app.openapi()
+    words = ("sink", "webhook")
+    assert [path for path in document["paths"] if any(word in path.lower() for word in words)] == []
+    schemas = document.get("components", {}).get("schemas", {})
+    assert [name for name in schemas if any(word in name.lower() for word in words)] == []
+    web = Path(ROOT) / "src" / "web"
+    importing = [str(path.relative_to(ROOT)) for path in sorted(web.rglob("*.py"))
+                 if "src.sinks" in path.read_text(encoding="utf-8") or "from src import sinks" in path.read_text(encoding="utf-8")]
+    assert importing == []
 
 
 def test_the_secret_is_read_from_the_process_environment_by_default(monkeypatch: pytest.MonkeyPatch):
