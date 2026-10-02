@@ -66,7 +66,7 @@ from src.store.backup import BackupManager
 from src.store.catalog import CATALOG_SCHEMA, REBUILD_CORRUPT, Catalog, CatalogState, catalog_path
 from src.store.changes import ChangeLog
 from src.store.derive import DERIVE_VERSION
-from src.store.entities import EntityStore
+from src.store.entities import KEY_SCHEDULE, KEY_SEASONS, EntityStore, clear_v3_listings
 from src.store.errors import CatalogCorrupt, LeaseHeld, PayloadCorrupt, PayloadMissing, SchemaTooNew, StoreError
 from src.store.events import EventStore
 from src.store.follows import FollowStore
@@ -113,6 +113,8 @@ META_OPEN_RECONCILED = "open_reconciled_at"  # katalogun `meta`'sı: son tam aç
 CLEAR_SCOPES: Tuple[str, ...] = ("events", "schedules", "seasons", "all")
 _CLEAR_TREES: Tuple[Tuple[str, str], ...] = (("events", "match_details"), ("schedules", "matches"),
                                              ("seasons", "seasons"))
+# v3 ağacında aynı kapsamların sildiği liste dilimleri (src/store/entities.py `clear_v3_listings`)
+_CLEAR_V3_LISTINGS = {"schedules": KEY_SCHEDULE, "seasons": KEY_SEASONS}
 _CLEAR_PURPOSE = "op:clear"
 
 
@@ -590,7 +592,8 @@ class Store:
     def clear(self, scope: Union[str, Iterable[str]]) -> ClearReport:
         """
         Verinin bir kısmını siler (bölüm 9.3): `events` maç detaylarını (`match_details/` ve `v3/events`),
-        `schedules` maç listelerini (`matches/`), `seasons` sezon listelerini (`seasons/`), `all` üçünü. Birden
+        `schedules` maç listelerini (`matches/` ve v3'teki program sayfaları), `seasons` sezon listelerini
+        (`seasons/` ve v3'teki sezon listeleri), `all` üçünü. Birden
         çok kapsam bir dizi olarak verilebilir. Var olan eski düzen ağacı silinir ve boş dizin olarak yeniden
         kurulur (bugünkü web temizlemesi); `state.db`, değişiklik günlüğü (`score_changes.jsonl`,
         `changes/`), `backups/`, `exports/` ve bu üç ağacın dışındaki dosyalar kalır. Maçlar tek tek
@@ -624,6 +627,8 @@ class Store:
                         continue
                     if name == "events":
                         v3_events = files.remove_tree(layout.resolve(self.data_dir, layout.EVENTS_DIR))
+                    elif name in _CLEAR_V3_LISTINGS:  # v3'teki program sayfaları ya da sezon listeleri (ST-22)
+                        clear_v3_listings(self.data_dir, _CLEAR_V3_LISTINGS[name])
                     path = os.path.join(self.data_dir, tree)
                     if os.path.exists(path):
                         files.remove_tree(path)

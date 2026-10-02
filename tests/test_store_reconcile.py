@@ -457,11 +457,10 @@ def test_pending_writes_are_reindexed_and_cleared(canonical: sf.LegacyFixture, m
 
     report = admin.reconcile()
 
-    assert (report.pending, report.pending_skipped, report.changed) == (2, 1, True)
-    assert rows(cat, "pending_writes") == [{"kind": "season", "entity_id": 96668, "started_at": NOW}]
+    # ST-22: maç dışı varlığın işareti de (sezon: listesi iki düzenden) yeniden dizinlenip silinir
+    assert (report.pending, report.pending_skipped, report.changed) == (3, 0, True)
+    assert rows(cat, "pending_writes") == []
     assert event_row(cat, ARS)["winner_code"] == 1 and event_row(cat, 424242) is None
-    with cat.write() as conn:
-        conn.execute("DELETE FROM pending_writes")
     assert snapshot(cat) == rebuilt(data, tmp_path, league_names=canonical.leagues)
 
 

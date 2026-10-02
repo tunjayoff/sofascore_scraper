@@ -1238,12 +1238,11 @@ def test_the_v3_entity_indexer_is_called_before_the_legacy_lists_and_for_pending
         return real_lists(*args, **kwargs)
 
     store = open_store(canonical.data_dir)
-    assert not hasattr(entities, indexer.V3_ENTITY_SCAN) and not hasattr(entities, indexer.V3_ENTITY_INDEX)
+    # ST-22 iki giriş noktasını ekledi (EntityStore.put ile birlikte)
+    assert callable(getattr(entities, indexer.V3_ENTITY_SCAN)) and callable(getattr(entities, indexer.V3_ENTITY_INDEX))
     with store._catalog.write():
         store._catalog.upsert("pending_writes", [{"kind": "season", "entity_id": 96668, "started_at": 1},
                                                  {"kind": "tournament", "entity_id": 17, "started_at": 1}])
-    skipped = store.catalog.reconcile()
-    assert (skipped.pending, skipped.pending_skipped) == (0, 2) and len(pending(store)) == 2  # dizinleyicisi yok
 
     monkeypatch.setattr(entities, indexer.V3_ENTITY_SCAN, scan, raising=False)
     monkeypatch.setattr(entities, indexer.V3_ENTITY_INDEX, index, raising=False)

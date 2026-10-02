@@ -392,9 +392,9 @@ def test_a_fetched_list_is_what_the_readers_see_next(data_dir: Path, monkeypatch
     assert fetcher.get_season_name(17, 96668) == "Premier League 26/27"
     assert SeasonFetcher(Leagues(), str(data_dir)).get_seasons_for_league(17) == fresh["seasons"]
     assert get_seasons(17) == {"seasons": fresh["seasons"], "fetched": True}
-    assert sorted(p.name for p in (data_dir / "seasons").iterdir()) == [
-        "17_Premier_League_seasons.json", "17_seasons.json",
-    ]
+    # ST-22: liste v3 düzenine yazılır; eski dosya yerinde kalır, okunmaz
+    assert sorted(p.name for p in (data_dir / "seasons").iterdir()) == ["17_seasons.json"]
+    assert (data_dir / "v3" / "tournaments" / "17" / "seasons.json.gz").is_file()
 
 
 def test_a_list_missing_from_the_bulk_load_is_asked_for_by_id(data_dir: Path) -> None:

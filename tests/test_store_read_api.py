@@ -1440,7 +1440,8 @@ def test_ids_are_written_as_literals_so_long_lists_work(synthetic: Store) -> Non
 def test_store_has_the_entity_store(canon: Store, tmp_path: Path) -> None:
     assert isinstance(canon.entities, EntityStore)
     assert {"EntityStore", "TournamentRow", "SeasonRow", "ParticipantRow"} <= set(src.store.__all__)
-    assert not any(hasattr(EntityStore, name) for name in WRITE_METHODS)
+    # ST-22: yazma yöntemi `put`tur; maç dışı varlıklar gözlenmez, silinmez
+    assert [name for name in WRITE_METHODS if hasattr(EntityStore, name)] == ["put"]
     # kurulmamış katalog boş yanıt verir
     unbuilt = open_store(tmp_path / "data")
     assert unbuilt.entities.tournaments() == [] and unbuilt.entities.seasons(17) == []

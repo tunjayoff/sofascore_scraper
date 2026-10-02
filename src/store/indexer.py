@@ -1272,6 +1272,10 @@ class CatalogAdmin:
                 elif summary.season_id is not None:
                     schedule_dirs.setdefault(directory, []).append(summary.mtime_ns)
                     league_dirs.setdefault(directory.rsplit("/", 1)[0], [])
+            # v3 program sayfası olan sezonlar da sayfalı sezondur: `entities.read_season` iki düzeni birleştirir.
+            # İmzaları yoktur; v3 sayfasını yazan `EntityStore.put` sezonu kendisi yeniden dizinler.
+            for key in entities.v3_schedule_seasons(self.data_dir):
+                scan.pages.setdefault(key, [])
         if wanted & LISTING_SEASON_LISTS:
             scan.season_lists = reader.season_lists(self._league_names(), found)
 
@@ -1425,14 +1429,17 @@ class CatalogAdmin:
             conn.execute("UPDATE events SET listed_in = NULL, stale = 0 WHERE id = ?", (record.event_id,))
             return
         page = conn.execute(
-            "SELECT fetched_at, path FROM entity_slices WHERE kind = ? AND entity_id = ? AND key = ? AND sub = ? "
-            "AND layout = ? AND has_payload = 1",
-            (entities.KIND_SEASON, season_id, entities.KEY_SCHEDULE, listed_in, LAYOUT_LEGACY)).fetchone()
+            "SELECT fetched_at, path, layout FROM entity_slices WHERE kind = ? AND entity_id = ? AND key = ? "
+            "AND sub = ? AND has_payload = 1",
+            (entities.KIND_SEASON, season_id, entities.KEY_SCHEDULE, listed_in)).fetchone()
         if page is None or page["fetched_at"] is None:
             return
         stale = False
         if record.compared_at is not None and page["fetched_at"] > record.compared_at:
-            listed = entities.find_listed(self.reader, page["path"], record.event_id)
+            path = page["path"]
+            if page["layout"] == LAYOUT_V3:  # v3'te satır sezon dizinini gösterir
+                path = layout.slice_path(path, entities.KEY_SCHEDULE, listed_in)
+            listed = entities.find_listed(self.reader, path, record.event_id)
             if listed is None:
                 return
             stale = entities.is_stale(page["fetched_at"], entities.compare_digest(listed), record.compared_at,

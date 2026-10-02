@@ -31,7 +31,7 @@
   "LOG INFO Main: Headless update: league_id=17 mode=full",
   "LOG INFO SyncService: Refreshing season list for league 17...",
   "LOG INFO SeasonFetcher: Premier League (ID: 17) için sezonlar çekiliyor...",
-  "LOG INFO SeasonFetcher: Sezon verileri JSON olarak kaydedildi: <SANDBOX>/data/seasons/17_Premier_League_seasons.json",
+  "LOG INFO SeasonFetcher: Season list of league 17 stored (2 seasons)",
   "LOG INFO SeasonFetcher: Season lists loaded from the catalog: 1 league(s), 2 season(s)",
   "LOG INFO SeasonFetcher: Premier League için 2 sezon bulundu",
   "LOG INFO SyncService: Fetching matches: league 17, season 61627",
@@ -46,8 +46,7 @@
     "LOG INFO MatchFetcher: Premier League: Premier League 24/25 için eşzamanlı istek limiti: 5"
    ]
   },
-  "LOG INFO MatchFetcher: Premier League: Sezon 61627 JSON özeti kaydedildi: <SANDBOX>/data/matches/17_Premier_League/61627_Premier_League_24_25_summary.json",
-  "LOG INFO MatchFetcher: Premier League: Sezon 61627 CSV özeti kaydedildi: <SANDBOX>/data/matches/17_Premier_League/61627_Premier_League_24_25_summary.csv",
+  "LOG INFO MatchFetcher: League 17, season 61627: 2 schedule pages, 3 matches listed",
   "LOG INFO MatchFetcher: Premier League - Premier League 24/25 için 2 hafta verisi çekildi",
   "LOG INFO SyncService: Fetching matches: league 17, season 52186",
   "LOG INFO MatchFetcher: Fetching matches for season",
@@ -61,8 +60,7 @@
     "LOG INFO MatchFetcher: Premier League: event listesinden 1 benzersiz maç, 1 sayfa kaydedildi"
    ]
   },
-  "LOG INFO MatchFetcher: Premier League: Sezon 52186 JSON özeti kaydedildi: <SANDBOX>/data/matches/17_Premier_League/52186_Premier_League_23_24_summary.json",
-  "LOG INFO MatchFetcher: Premier League: Sezon 52186 CSV özeti kaydedildi: <SANDBOX>/data/matches/17_Premier_League/52186_Premier_League_23_24_summary.csv",
+  "LOG INFO MatchFetcher: League 17, season 52186: 1 schedule pages, 1 matches listed",
   "LOG INFO MatchFetcher: Premier League - Premier League 23/24 için 1 hafta verisi çekildi",
   "LOG INFO SyncService: Checking which matches need details...",
   "Fetching match details for league ID 17...",
