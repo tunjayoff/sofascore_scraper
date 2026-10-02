@@ -81,7 +81,14 @@ async def scrape_status_stream(request: Request):
 def cancel_scrape():
     """Çalışan background fetch işlemini iptal eder."""
     if not _job_store.request_cancel():
-        raise HTTPException(status_code=400, detail="No scraping process is running.")
+        # Bu süreçte çalışan iş yok. Veri dizininde başka bir sürecin işi çalışıyorsa (ör. komut satırından
+        # başlatılmış bir indirme) iptal onun satırına yazılır; o süreç bayrağı bir saniye içinde okur.
+        from src.web.fetch_job import job_manager
+
+        manager = job_manager()
+        other = manager.active()
+        if other is None or not manager.cancel(other.id):
+            raise HTTPException(status_code=400, detail="No scraping process is running.")
     _refresh_scraper_state()
     return {"status": "cancelling", "message": "Cancel signal sent."}
 
@@ -89,15 +96,26 @@ def cancel_scrape():
 @router.post("/fetch")
 async def trigger_fetch(payload: FetchRequest):
     """Trigger a background fetch operation. Mode 'full' or 'details'."""
-    # async kalmalı: "çalışıyor mu" kontrolü ile create_running arasında await yok, bu yüzden
+    # async kalmalı: "çalışıyor mu" kontrolü ile işin başlatılması arasında await yok, bu yüzden
     # olay döngüsünde atomik. Threadpool'da iki eşzamanlı istek iki iş başlatabilirdi.
+    import dataclasses
     import threading
 
-    from src.web.fetch_job import run_fetch_job
+    from src.jobs.manager import local_origin
+    from src.jobs.model import JobKind
+    from src.web.fetch_job import _spec_from_payload, job_manager, run_fetch_job
 
     if _refresh_scraper_state().get("is_running"):
         raise HTTPException(status_code=409, detail="Scraping process is already running.")
-    job_id = _job_store.create_running(payload.model_dump())
+    # İş yöneticisi `writer` kilidini alır ve işi kaydeder: kilit başka bir süreçteyse (komut satırı indirmesi,
+    # ikinci bir sunucu) ya da bir veri işlemi sürüyorsa 409 (job_running / data_operation_running; app.py).
+    job = job_manager().start(
+        JobKind.FETCH,
+        dataclasses.asdict(_spec_from_payload(payload)),
+        origin=local_origin("api"),
+        payload=payload.model_dump(),
+    )
+    job_id = job.id
     _refresh_scraper_state()
 
     # Dedicated thread: long scrapes must not occupy Starlette's shared threadpool

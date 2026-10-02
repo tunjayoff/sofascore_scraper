@@ -20,6 +20,7 @@ import sqlite3
 import threading
 import time
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Dict, Iterator, List, Optional
 
 import pytest
@@ -926,3 +927,164 @@ def test_a_health_change_that_cannot_be_stored_does_not_break_the_request(
     for _ in range(int(bridge_health.thresholds()["degraded_after"])):
         bridge_health.record_failure(bridge_health.KIND_FORBIDDEN, "HTTP 403")
     assert bridge_health.snapshot()["state"] == bridge_health.DEGRADED
+
+
+# === web işi =========================================================================================
+
+
+@pytest.fixture
+def web(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
+    """Web işini kendi thread'i olmadan, geçici bir iş deposu ve sahte bir servis bağlamıyla çalıştırır."""
+    import src.web.fetch_job as fj
+    from src.web.routes.scrape import FetchRequest
+
+    jobs = JobStore(str(tmp_path / "web" / ".meta" / "state.db"))
+    monkeypatch.setattr(fj, "_job_store", jobs)
+    monkeypatch.setattr(fj, "_refresh_scraper_state", lambda: jobs.snapshot())
+
+    class Details:
+        rate_limit_breaker_triggered = False
+        last_status_counts: Dict[str, int] = {}
+        refresh_listener = None
+        breaker_on: Optional[str] = None
+        failing: List[str] = []
+
+        def begin_job_cache(self) -> None: ...
+        def end_job_cache(self) -> None: ...
+
+        def collect_detail_match_ids(self, league_id: Any = None, max_seasons: int = 0, only_season_ids: Any = None) -> List[str]:
+            return ["a", "b", "c"]
+
+        def pending_detail_ids(self, ids: List[str]) -> List[str]:
+            return list(ids)
+
+        def fetch_detail_ids(self, ids: List[str], progress_callback: Any = None, should_cancel: Any = None,
+                             failed_callback: Any = None) -> int:
+            for n, match_id in enumerate(ids, start=1):
+                if match_id in self.failing:
+                    failed_callback(match_id)
+                progress_callback(n, len(ids), "")
+            if self.breaker_on:
+                self.rate_limit_breaker_triggered = True
+                self.last_status_counts = {self.breaker_on: 9}
+            return len(ids)
+
+    details = Details()
+    ctx = SimpleNamespace(config=fj.config_manager, match_data_fetcher=details)
+    monkeypatch.setattr(fj, "build_context", lambda config_manager: ctx)
+    monkeypatch.setattr("src.services.sync.export_all_csv", lambda ctx: None)
+
+    def run(**payload: Any) -> Job:
+        request = FetchRequest(**payload)
+        import dataclasses
+
+        job = fj.job_manager().start(JobKind.FETCH, dataclasses.asdict(fj._spec_from_payload(request)),
+                                     origin=local_origin("api"), payload=request.model_dump())
+        fj.run_fetch_job(job.id, request)
+        return fj.job_manager().get(job.id)
+
+    yield SimpleNamespace(run=run, details=details, jobs=jobs, fj=fj)
+    jobs.close()
+
+
+def test_web_job_is_recorded_with_its_kind_origin_and_spec(web: Any) -> None:
+    job = web.run(mode="details", league_id=17)
+
+    assert (job.kind, job.state) == (JobKind.FETCH, JobState.SUCCEEDED)
+    assert job.origin == Origin(face="api", pid=os.getpid(), host=job.origin.host) and job.origin.host
+    assert job.spec == {"mode": "details", "league_id": 17, "selections": [], "export": True}
+    assert job.result["details_done"] == 3 and job.result["schedule_empty_seasons"] == 0
+    row = web.jobs.get_job(job.id)
+    assert row["payload"] == {"league_id": 17, "mode": "details", "selections": None}
+    assert row["log"][0] == "[Running] Starting fetch for 17"
+    assert row["log"][-1] == "[Completed] Background Task Completed Successfully."
+    types = [event.type for event in web.fj.job_manager().events(job.id)]
+    assert types[0] == "started" and types[-1] == "finished" and types.count("phase") == 2
+
+
+def test_web_job_stopped_by_the_breaker_is_partial_and_still_renders_completed(web: Any) -> None:
+    web.details.breaker_on = "429"
+    job = web.run(mode="details", league_id=17)
+
+    assert job.state is JobState.PARTIAL and job.error.code == "rate_limited"
+    assert raw(web.jobs.db_path, "SELECT status FROM jobs WHERE id = ?", job.id) == [("partial",)]
+    row = web.jobs.get_job(job.id)
+    assert (row["status"], row["circuit_breaker_triggered"]) == ("completed", True)
+    assert web.jobs.snapshot()["status"] == "Completed"
+    finished = [event.data for event in web.fj.job_manager().events(job.id) if event.type == "finished"][0]
+    # Sunucunun diline çevrilmiş kart metni yerine kod: istemci metni kendisi üretir
+    assert (finished["code"], finished["params"]) == ("fetch_stopped_by_breaker", {"reason": "429"})
+    assert finished["message"] == row["current_task"]
+
+
+def test_web_job_with_a_failed_match_is_partial(web: Any) -> None:
+    web.details.failing = ["b"]
+    job = web.run(mode="details", league_id=17)
+    assert job.state is JobState.PARTIAL and job.error is None and job.result["failed_count"] == 1
+    assert web.jobs.get_job(job.id)["status"] == "completed"
+
+
+def test_web_job_that_cannot_write_fails_with_the_storage_code(web: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    def full_disk(ids: List[str], **kwargs: Any) -> int:
+        raise StorageError.from_exception(OSError(errno.ENOSPC, os.strerror(errno.ENOSPC)), "/data/match_details/17")
+
+    monkeypatch.setattr(web.details, "fetch_detail_ids", full_disk)
+    job = web.run(mode="details", league_id=17)
+
+    assert job.state is JobState.FAILED and job.error.code == "storage_error"
+    assert job.result["error"] == "storage" and job.result["error_path"] == "/data/match_details/17"
+    finished = [event.data for event in web.fj.job_manager().events(job.id) if event.type == "finished"][0]
+    assert finished["code"] == "storage_error_abort" and finished["params"]["path"] == "/data/match_details/17"
+
+
+def test_a_job_finished_before_its_thread_started_is_left_alone(web: Any, caplog: pytest.LogCaptureFixture) -> None:
+    from src.web.routes.scrape import FetchRequest
+
+    job_id = web.jobs.create_running({})
+    web.jobs.update(status="Cancelled", finished=True)
+    web.fj.run_fetch_job(job_id, FetchRequest(mode="details", league_id=17))
+    assert web.jobs.get_job(job_id)["status"] == "cancelled"
+    assert any("no longer the running job" in record.getMessage() for record in caplog.records)
+
+
+def test_api_fetch_starts_a_job_through_the_manager_and_cancel_reaches_another_stores_job(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from fastapi.testclient import TestClient
+
+    from src.web import fetch_job
+    from src.web.app import app
+    from src.web.routes import api as api_mod
+
+    jobs = api_mod._job_store
+    monkeypatch.setattr(fetch_job, "run_fetch_job", lambda job_id, payload: None)
+    if jobs.snapshot().get("is_running"):
+        jobs.update(status="Cancelled", finished=True)
+    client = TestClient(app)
+
+    started = client.post("/api/fetch", json={"mode": "full", "league_id": 17})
+    assert started.status_code == 200, started.text
+    job_id = started.json()["job_id"]
+    try:
+        record = jobs.get_record(job_id)
+        assert len(job_id) == 26 and record["kind"] == "fetch" and record["origin"]["face"] == "api"
+        assert record["spec"] == {"mode": "full", "league_id": 17, "selections": [], "export": True}
+        assert record["payload"] == {"league_id": 17, "mode": "full", "selections": None}
+    finally:
+        jobs.update(status="Cancelled", finished=True)
+
+    # Bu süreçte çalışan iş yokken iptal: veri dizininde başka bir deponun (sürecin) çalışan işi iptal edilir
+    assert client.post("/api/scrape/cancel").status_code == 400
+    other = JobStore(jobs.db_path)
+    try:
+        foreign = other.create_running({"mode": "full"}, kind="sync", origin={"face": "cli", "pid": 1, "host": "x"})
+        listed = client.get("/api/jobs").json()["jobs"][0]
+        assert (listed["id"], listed["status"], listed["is_running"]) == (foreign, "running", True)
+        assert client.get("/api/scrape/status").json()["is_running"] is False  # yansı süreç içidir
+        cancelled = client.post("/api/scrape/cancel")
+        assert cancelled.status_code == 200 and cancelled.json()["status"] == "cancelling"
+        assert other.poll_cancel(foreign) is True
+        other.update(finished=True)
+        assert client.get(f"/api/jobs/{foreign}").json()["status"] == "cancelled"
+    finally:
+        other.close()
