@@ -7,7 +7,7 @@ Denetlenenler:
      gönderdiği metinden dolar (FX-7).
   2. Hangi maçlar: detayı (olay yükü) saklanan her maç bir kez, başlangıç zamanı sırasıyla; iki düzen de.
   3. `league_folder` / `season_folder`: eski düzende dizin adları, düz kayıtta yok, v3'te eski yazıcının adları.
-  4. Akışa ve dosyaya yazma, lig süzgeci (pandas), boş seçim, desteklenmeyen biçim.
+  4. Akışa ve dosyaya yazma, lig süzgeci (birleşik satırlar, pandas yok), boş seçim, desteklenmeyen biçim.
   5. Yüzler: `GET /api/export/csv` istekte üretir ve diske yazmaz; POST aynı yanıtı verir; terminal menüsü ve
      MatchDataFetcher'ın eski girişleri servisi çağırır.
   6. Web işinin sonunda CSV aşaması yoktur (karar D9).
@@ -36,6 +36,7 @@ from src.services.export import (
     PRIORITY_COLUMNS,
     ExportService,
     ExportSpec,
+    LegacyTable,
     legacy_columns,
     legacy_folders,
     legacy_wide_row,
@@ -233,8 +234,12 @@ def test_export_writes_to_a_stream_and_to_a_path(tmp_path: Path, monkeypatch: py
     assert text.endswith("\r\n")
 
 
-def test_the_league_download_goes_through_pandas(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Birleşik tablonun sütunları kalır; boşluklu tamsayı sütunu `1.0` olur (bilinen kusur, FX-7)."""
+def test_the_league_download_holds_the_rows_of_the_whole_export(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Birleşik tablonun sütunları kalır; satırlar birleşik dışa aktarmadakilerle bayt bayt aynıdır. Eskiden tablo
+    pandas'tan geçiyor, boşluklu tamsayı sütunu `1.0` oluyordu (FX-7).
+    """
     fixture = _fixture("canonical", tmp_path, monkeypatch)
     service = ExportService(open_store(fixture.data_dir))
 
@@ -242,12 +247,27 @@ def test_the_league_download_goes_through_pandas(tmp_path: Path, monkeypatch: py
     league = service.prepare(ExportSpec(league_id=17))
     unknown = service.prepare(ExportSpec(league_id=999))
 
-    table = _table("".join(league.chunks()))
+    text = "".join(league.chunks())
+    table = _table(text)
     assert tuple(table[0]) == whole.columns == league.columns
-    assert {row[1].split("_")[0] for row in table[1:]} == {"17"} and league.rows == len(table) - 1
+    assert {row[1].split("_")[0] for row in table[1:]} == {"17"} and league.rows == len(table) - 1 > 0
     assert league.available == whole.rows == unknown.available and unknown.rows == 0
+    assert table[1:] == [row for row in _table("".join(whole.chunks()))[1:] if row[1].startswith("17_")]
     gaps = table[0].index("home_starting_xi_count")
-    assert any(row[gaps].endswith(".0") for row in table[1:])
+    assert "" in [row[gaps] for row in _table("".join(whole.chunks()))[1:]]  # sütunda boşluk var
+    assert not any(cell.endswith(".0") for row in table[1:] for cell in row)
+    assert text.endswith("\r\n") and "\n" not in text.replace("\r\n", "")
+
+
+def test_the_league_filter_keeps_every_row_when_no_row_has_a_league_folder() -> None:
+    """pandas'lı kodun davranışı korunur: `league_folder` sütunu hiç yoksa (yalnızca düz kayıtlar) süzgeç yoktur."""
+    flat = LegacyTable(("match_id", "round"), ({"match_id": "1", "round": 3}, {"match_id": "2", "round": None}))
+    mixed = LegacyTable(("match_id", "league_folder"), ({"match_id": "1", "league_folder": "17_Premier_League"},
+                                                        {"match_id": "2"},
+                                                        {"match_id": "3", "league_folder": "170_Other"}))
+
+    assert export_module._league_rows(flat, 17) == flat.rows
+    assert [row["match_id"] for row in export_module._league_rows(mixed, 17)] == ["1"]
 
 
 def test_an_empty_data_dir_is_an_empty_export(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

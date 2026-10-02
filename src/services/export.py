@@ -16,11 +16,10 @@ Eski dışa aktarmadan farklar (yalnızca eski biçimli kayıtlarda görünür):
   * Okunamayan bir dilim yalnızca o dilimi, işlenemeyen bir maç yalnızca o maçı düşürür; eskiden bozuk bir
     olay yükü bütün dışa aktarmayı boşaltabiliyordu.
 
-`home_formation` / `away_formation` doludur (plan maddesi FX-7): SofaScore dizilişi metin olarak gönderir
-(`"4-2-3-1"`); eski kod nesne beklediği için bu sütunlar hep boştu.
-
-Bir kusur bilerek olduğu gibi taşındı (plan maddesi FX-7 düzeltir): lig süzgeçli indirme dosyayı pandas'tan
-geçirdiği için boşluklu tamsayı sütunları `1.0` biçiminde çıkar.
+EX-1'in olduğu gibi taşıdığı iki kusur giderildi (plan maddesi FX-7): `home_formation` / `away_formation`
+doludur (SofaScore dizilişi metin olarak gönderir, `"4-2-3-1"`; eski kod nesne beklediği için bu sütunlar hep
+boştu) ve lig süzgeçli indirme artık pandas'tan geçmez: satırları birleşik dışa aktarmadakiyle aynıdır, boşluklu
+tamsayı sütunları `1.0` biçiminde çıkmaz, satır sonu her yerde `\\r\\n`'dir.
 
 Servis dosya yazmaz; yalnızca istenen akışa ya da yola yazar. Web'in GET'i çıktıyı istekte üretip akıtır
 (karar D16); terminal menüsü ve `--headless --csv-export` dosyayı `match_details/processed/` altına yazar
@@ -73,7 +72,7 @@ class ExportSpec:
     tournament_ids, event_ids: boş = süzgeç yok; dolu alanlar birlikte (VE) uygulanır. Yalnızca detayı
         (olay yükü) saklanan maçlar dışa aktarılır.
     league_id: eski lig süzgeçli indirme (`GET /api/export/csv?league_id=`): birleşik tablonun `league_folder`'ı
-        `<lig id>_` ile başlayan satırları; tablo bugünkü gibi pandas'tan geçer (sütunlar birleşik tablonunkiler).
+        `<lig id>_` ile başlayan satırları, birleşik tablodaki değerleriyle (sütunlar birleşik tablonunkiler).
     """
 
     dataset: str = "events"
@@ -179,8 +178,10 @@ class ExportService:
             return PreparedExport(table.columns, len(table.rows), len(table.rows), table.chunks)
         if not table.rows:
             return PreparedExport((), 0, 0, lambda: iter(()))
-        columns, count, text = _league_csv(table, spec.league_id)
-        return PreparedExport(columns, count, len(table.rows), lambda: iter((text,)))
+        part = LegacyTable(table.columns, _league_rows(table, spec.league_id))
+        if not part.rows:
+            return PreparedExport(table.columns, 0, len(table.rows), lambda: iter(()))
+        return PreparedExport(table.columns, len(part.rows), len(table.rows), part.chunks)
 
     def export(self, spec: ExportSpec, dest: Union[str, "os.PathLike[str]", IO[str]]) -> ExportResult:
         """
@@ -280,19 +281,17 @@ def _write_file(path: str, chunks: Iterable[str]) -> int:
     return size
 
 
-def _league_csv(table: LegacyTable, league_id: int) -> Tuple[Tuple[str, ...], int, str]:
+def _league_rows(table: LegacyTable, league_id: int) -> Tuple[Dict[str, Any], ...]:
     """
-    Eski lig süzgeci: birleşik CSV pandas'tan geçer, `league_folder`'ı `<lig id>_` ile başlayan satırlar kalır.
-    pandas tür çıkarımı yaptığı için boşluklu tamsayı sütunları `1.0` olur (FX-7 düzeltir).
+    Eski lig süzgeci: `league_folder`'ı `<lig id>_` ile başlayan satırlar; sütunlar birleşik tablonunkiler kalır.
+    Satırlar birleşik dışa aktarmadaki değerleriyle yazılır (FX-7: eskiden tablo pandas'tan geçiyor, boşluklu
+    tamsayı sütunları `1.0` oluyordu). Tabloda `league_folder` sütunu hiç yoksa (yalnızca düz kayıtlar) süzgeç
+    uygulanmaz ve bütün satırlar kalır: pandas'lı kodun davranışı, olduğu gibi korundu.
     """
-    import pandas as pd
-
-    df = pd.read_csv(io.StringIO("".join(table.chunks())), low_memory=False)
-    if "league_folder" in df.columns:
-        df = df[df["league_folder"].astype(str).str.startswith(f"{league_id}_")]
-    if df.empty:
-        return tuple(str(c) for c in df.columns), 0, ""
-    return tuple(str(c) for c in df.columns), len(df), df.to_csv(index=False)
+    if "league_folder" not in table.columns:
+        return table.rows
+    prefix = f"{league_id}_"
+    return tuple(row for row in table.rows if str(row.get("league_folder") or "").startswith(prefix))
 
 
 # -- satır kuralı ---------------------------------------------------------------------------------------
