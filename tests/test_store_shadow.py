@@ -19,8 +19,10 @@ import importlib.util
 import json
 import logging
 import os
+import shutil
 import sqlite3
 import threading
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from unittest.mock import MagicMock, patch
@@ -33,13 +35,14 @@ from src.exceptions import StorageError
 from src.match_data_fetcher import SCORE_CHANGES_FILE, UNAVAILABLE_FILE, MatchDataFetcher
 from src.match_fetcher import MatchFetcher
 from src.season_fetcher import SeasonFetcher
-from src.slices import SLICE_EMPTY, SliceOutcome
+from src.slices import SLICE_EMPTY, SLICE_OK, SliceOutcome
 from src.status import OBSERVATION_KEY
 from src.store import (
     CatalogAdmin,
     EventQuery,
     FollowSpec,
     JobStore,
+    LeaseHeld,
     RebuildReport,
     ReconcileReport,
     Ref,
@@ -78,6 +81,12 @@ def old_forms(tmp_path: Path) -> sf.LegacyFixture:
 def no_check(monkeypatch: pytest.MonkeyPatch) -> None:
     """Uygulamadaki hal: denetim kipi kapalı (kancalar hata yutmaz mı, not tutulmaz mı)."""
     monkeypatch.delenv(api_mod.SHADOW_CHECK_ENV)
+
+
+@pytest.fixture
+def every_open_reconciles(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Karar S17'nin sınırı kapalı: her açılış eski düzen maç dizinlerini tarar (uzlaştırmanın kendisini sınayanlar)."""
+    monkeypatch.setenv(api_mod.OPEN_RECONCILE_ENV, "0")
 
 
 def differences(store: Store) -> List[str]:
@@ -145,7 +154,8 @@ def test_open_of_an_empty_directory_logs_nothing_about_the_catalog(tmp_path: Pat
 
 
 def test_open_reconciles_files_that_changed_behind_the_catalog(canonical: sf.LegacyFixture, no_check: None,
-                                                               caplog: pytest.LogCaptureFixture) -> None:
+                                                               caplog: pytest.LogCaptureFixture,
+                                                               every_open_reconciles: None) -> None:
     """
     Uygulamadaki hal (denetim kipi kapalı): açılış imzalarla uzlaştırır, yalnızca değişen dizinleri okur.
     Özet satırı DEBUG düzeyindedir: her açılışta çalışan uzlaştırma komut çıktısına satır eklemez.
@@ -268,7 +278,7 @@ def test_first_open_under_a_writer_lease_builds_in_place_without_the_maintenance
 
 
 def test_an_unclean_writer_makes_the_open_check_the_file_and_the_v3_events(
-        canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
+        canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch, every_open_reconciles: None) -> None:
     data = canonical.data_dir
     first = open_store(data)
     writer = first.lease("writer", purpose="job")
@@ -313,7 +323,8 @@ def test_sync_catalog_false_leaves_the_catalog_as_found(canonical: sf.LegacyFixt
 
 
 def test_a_catalog_that_cannot_be_synced_does_not_fail_the_open(
-        canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+        canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture,
+        every_open_reconciles: None) -> None:
     data = canonical.data_dir
     open_store(data).close()
 
@@ -697,6 +708,270 @@ def test_clear_rebuilds_the_catalog(canonical: sf.LegacyFixture, monkeypatch: py
                         == fresh.connection().execute(query).fetchone()[0]), table
 
 
+# --- Store.clear (ST-19) ---------------------------------------------------------------------------------
+
+def test_store_clear_removes_the_v3_and_the_legacy_form_and_rebuilds_the_catalog(canonical: sf.LegacyFixture) -> None:
+    data = canonical.data_dir
+    store = open_store(data)
+    store.events.put(NO_DETAIL, {"event": SliceOutcome(SLICE_OK, sf.basic_payload(sf.PL_NO_DETAIL))})
+    assert (data / layout.EVENTS_DIR).is_dir() and store.events.get(NO_DETAIL).has_event_payload
+
+    report = store.clear("events")
+
+    assert report == api_mod.ClearReport(scopes=("events",), cleared=("match_details",), v3_events=True,
+                                         catalog_rebuilt=True)
+    assert not (data / layout.EVENTS_DIR).exists() and not any((data / "match_details").iterdir())
+    assert store.events.get(ARS).row_source == "listing" and store.events.get(NO_DETAIL).row_source == "listing"
+    assert (data / "score_changes.jsonl").exists() and (data / ".meta" / "state.db").exists()
+    assert store.lease_holder("maintenance") is None  # kendi aldığı kilidi bıraktı
+    assert differences(store) == []
+
+
+def test_store_clear_takes_several_scopes_and_removes_the_entity_rows(canonical: sf.LegacyFixture) -> None:
+    store = open_store(canonical.data_dir)
+    assert store.entities.tournaments()
+
+    report = store.clear(["seasons", "schedules", "events"])
+
+    assert report.cleared == ("match_details", "matches", "seasons")  # bugünkü web sırası
+    assert store.entities.tournaments() == [] and store.events.count(EventQuery()) == 0
+    assert differences(store) == []
+
+
+def test_store_clear_runs_under_the_maintenance_lease(canonical: sf.LegacyFixture) -> None:
+    """Bu süreç `maintenance`'ı tutuyorsa onun altında çalışır; başkası dizini kullanıyorsa reddedilir, silmez."""
+    data = canonical.data_dir
+    store = open_store(data)
+    other = api_mod.LeaseManager.for_data_dir(data)
+
+    with other.acquire("writer", purpose="job"):
+        with pytest.raises(LeaseHeld):
+            store.clear("all")
+    assert any((data / "match_details").iterdir())
+
+    jobs = JobStore.for_store(store)
+    with jobs.exclusive("clear"):  # web'in yolu: kilidi iş deposu tutar
+        assert store.clear("schedules").cleared == ("matches",)
+        assert store.lease_holder("maintenance") is not None
+    assert store.lease_holder("maintenance") is None
+
+
+def test_store_clear_rejects_unknown_scopes_and_read_only_stores(canonical: sf.LegacyFixture) -> None:
+    store = open_store(canonical.data_dir)
+    for scope in ("match_details", "everything", ()):
+        with pytest.raises(ValueError):
+            store.clear(scope)
+    with pytest.raises(StoreError):
+        open_store(canonical.data_dir, readonly=True).clear("all")
+    assert any((canonical.data_dir / "match_details").iterdir())
+
+
+def test_a_store_clear_that_fails_half_way_still_rebuilds_the_catalog(canonical: sf.LegacyFixture,
+                                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    """maç detayları silindikten sonra matches/ silinemez: hata çıkar, katalog diskte kalanı anlatır."""
+    data = canonical.data_dir
+    store = open_store(data)
+    remove_tree = api_mod.files.remove_tree
+
+    def failing(path: Any) -> bool:
+        if os.path.basename(os.fspath(path)) == "matches":
+            raise StoreError("disk error", path=os.fspath(path))
+        return remove_tree(path)
+
+    monkeypatch.setattr(api_mod.files, "remove_tree", failing)
+    with pytest.raises(StoreError, match="disk error"):
+        store.clear("all")
+
+    assert not any((data / "match_details").iterdir()) and any((data / "matches").iterdir())
+    assert store.events.get(ARS).row_source == "listing"
+    assert store.lease_holder("maintenance") is None
+    assert differences(store) == []
+
+
+def test_catalog_current_follows_the_sync(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
+    store = open_store(canonical.data_dir)
+    assert store.catalog_current
+
+    def busy(self: CatalogAdmin, *args: Any, **kwargs: Any) -> Any:
+        raise src.store.StoreBusy("catalog.db kilitli", path=str(canonical.data_dir))
+
+    monkeypatch.setattr(CatalogAdmin, "index_event", busy)
+    fetcher_of(canonical.data_dir)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+    assert not store.catalog_current  # kanca yazamadı: okuyucular kataloğu güncel saymamalı
+    monkeypatch.undo()
+    store._catalog_retry_at = 0.0
+    fetcher_of(canonical.data_dir)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+    assert store.catalog_current and differences(store) == []
+    store.close()
+    assert not store.catalog_current
+
+
+# --- karar S17: açılıştaki uzlaştırmanın sınırı ----------------------------------------------------------
+
+def _spy_reconcile(monkeypatch: pytest.MonkeyPatch) -> Dict[str, int]:
+    calls = {"reconcile": 0, "sync_listings": 0}
+    reconcile, sync_listings = CatalogAdmin.reconcile, CatalogAdmin.sync_listings
+
+    def spy_reconcile(self: CatalogAdmin, **kwargs: Any) -> ReconcileReport:
+        calls["reconcile"] += 1
+        return reconcile(self, **kwargs)
+
+    def spy_sync(self: CatalogAdmin, *args: Any, **kwargs: Any) -> ReconcileReport:
+        calls["sync_listings"] += 1
+        return sync_listings(self, *args, **kwargs)
+
+    monkeypatch.setattr(CatalogAdmin, "reconcile", spy_reconcile)
+    monkeypatch.setattr(CatalogAdmin, "sync_listings", spy_sync)
+    return calls
+
+
+def test_an_open_soon_after_another_skips_the_pass_over_the_event_directories(
+        canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch, no_check: None) -> None:
+    """
+    Bir açılış tam taradıktan sonraki dakika içinde açılan depo maç dizinlerini taramaz; liste yarısı yine
+    çalışır. Kancasız (elle, 2.x süreciyle) değişen maç dizini o süre dolana kadar görülmez; süre dolunca ya
+    da `catalog reconcile` ile görülür.
+    """
+    data = canonical.data_dir
+    open_store(data).close()  # kurulum: zaman damgası yazılır
+    calls = _spy_reconcile(monkeypatch)
+
+    removed = match_dir(canonical, ARS)
+    for path in sorted(removed.iterdir()):
+        path.unlink()
+    removed.rmdir()
+    bump(removed.parent)
+    (data / "seasons" / "8_LaLiga_seasons.json").unlink()
+    bump(data / "seasons")
+
+    store = open_store(data)
+    assert calls == {"reconcile": 0, "sync_listings": 1}
+    assert store.entities.slices(Ref.tournament(sf.LALIGA.id)) == []  # liste değişikliği görüldü
+    assert store.events.get(ARS).has_event_payload  # maç dizini taranmadı: silindiği görülmedi
+    store.close()
+
+    now = time.time()
+    monkeypatch.setattr(api_mod.time, "time", lambda: now + api_mod.OPEN_RECONCILE_SECONDS)  # süre doldu
+    store = open_store(data)
+    assert calls["reconcile"] == 1 and store.events.get(ARS).row_source == "listing"
+    assert differences(store) == []
+
+
+def test_catalog_reconcile_always_runs_the_pass(canonical: sf.LegacyFixture, no_check: None) -> None:
+    data = canonical.data_dir
+    open_store(data).close()
+    shutil.rmtree(match_dir(canonical, ARS))
+    bump(match_dir(canonical, ARS).parent)
+
+    store = open_store(data)
+    assert store.events.get(ARS).has_event_payload
+    report = store.catalog.reconcile()
+    assert report.events_removed == 1 and store.events.get(ARS).row_source == "listing"
+    assert differences(store) == []
+
+
+@pytest.mark.parametrize("case", ["pending_write", "unclean_writer", "copied_directory", "window_zero", "no_stamp",
+                                  "clock_went_back"])
+def test_the_pass_runs_whenever_the_shortcut_is_not_safe(canonical: sf.LegacyFixture, tmp_path: Path,
+                                                         monkeypatch: pytest.MonkeyPatch, no_check: None,
+                                                         case: str) -> None:
+    data = canonical.data_dir
+    store = open_store(data)
+    if case == "pending_write":
+        with store._catalog.write() as conn:
+            conn.execute("INSERT INTO pending_writes (kind, entity_id, started_at) VALUES ('event', ?, 0)", (ARS,))
+    if case == "no_stamp":
+        with store._catalog.write() as conn:
+            conn.execute("DELETE FROM meta WHERE key = ?", (api_mod.META_OPEN_RECONCILED,))
+    store.close()
+    if case == "unclean_writer":
+        Path(api_mod.LeaseManager.for_data_dir(data).unclean_marker).write_text("")
+    if case == "copied_directory":
+        shutil.copytree(data, tmp_path / "copy")
+        data = tmp_path / "copy"
+    if case == "window_zero":
+        monkeypatch.setenv(api_mod.OPEN_RECONCILE_ENV, "0")
+    if case == "clock_went_back":
+        now = time.time()
+        monkeypatch.setattr(api_mod.time, "time", lambda: now - 3600)
+    calls = _spy_reconcile(monkeypatch)
+
+    store = open_store(data)
+
+    assert calls == {"reconcile": 1, "sync_listings": 0}
+    assert differences(store) == []
+
+
+def test_the_window_can_be_set_through_the_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    for raw, seconds in (("", 60.0), ("5", 5.0), ("-3", 0.0), ("soon", 60.0)):
+        monkeypatch.setenv(api_mod.OPEN_RECONCILE_ENV, raw)
+        assert api_mod._open_reconcile_seconds() == seconds
+
+
+# --- iki gerçek süreç: birinde yazar, ötekinde açılış ----------------------------------------------------
+
+_WRITER_SCRIPT = """
+import os, sys
+from src.store import open_store, shadow_event
+data, staged, target, event_id = sys.argv[1:5]
+store = open_store(data)
+lease = store.lease("writer", purpose="job")
+os.replace(staged, target)  # 2.x yazıcısı gibi: dosyalar yerinde, ardından kanca
+shadow_event(data, event_id, target)
+print("written", flush=True)
+sys.stdin.readline()
+lease.release()
+print("released", flush=True)
+"""
+
+
+def test_an_open_in_another_process_sees_what_a_writer_process_hooked(canonical: sf.LegacyFixture,
+                                                                      tmp_path: Path) -> None:
+    """
+    Bir süreç `writer` kilidini tutup bir maç dizini yazar ve kancasını çağırır; aynı dizini başka bir süreç
+    (bu test) açar. Açılış kilitten dolayı düşmez ve, karar S17'nin sınırıyla maç dizinlerini taramasa da,
+    yazılanı kataloğun kendisinden görür.
+    """
+    import subprocess
+    import sys
+
+    data = canonical.data_dir
+    target = match_dir(canonical, ARS)
+    staged = tmp_path / "staged"
+    shutil.move(str(target), str(staged))
+    bump(target.parent)
+    open_store(data).close()  # kurulum: maç yalnızca listede; zaman damgası yazılır
+
+    env = {**os.environ, "PYTHONPATH": str(ROOT)}
+    env.pop(api_mod.SHADOW_CHECK_ENV, None)
+    child = subprocess.Popen([sys.executable, "-c", _WRITER_SCRIPT, str(data), str(staged), str(target), str(ARS)],
+                             cwd=str(ROOT), env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, text=True)
+    try:
+        assert child.stdout is not None and child.stdin is not None
+        assert child.stdout.readline().strip() == "written", child.stderr.read() if child.stderr else ""
+
+        store = open_store(data)
+        assert store.lease_holder("writer") is not None  # öteki süreç hâlâ yazar
+        assert store.events.get(ARS).has_event_payload
+        with pytest.raises(LeaseHeld):
+            store.clear("all")  # yazar çalışırken temizleme reddedilir
+        store.close()
+
+        child.stdin.write("\n")
+        child.stdin.flush()
+        assert child.stdout.readline().strip() == "released"
+        assert child.wait(timeout=30) == 0
+    finally:
+        if child.poll() is None:
+            child.kill()
+            child.wait(timeout=30)
+
+    store = open_store(data)
+    assert store.lease_holder("writer") is None and store.events.get(ARS).has_event_payload
+    assert differences(store) == []
+
+
 # --- kancalar: hata halinde ------------------------------------------------------------------------------
 
 def test_a_catalog_that_cannot_be_written_does_not_fail_the_save(
@@ -799,18 +1074,37 @@ def test_the_check_reports_a_write_that_no_hook_follows(canonical: sf.LegacyFixt
 
 def test_the_check_reports_a_clear_that_no_hook_follows(canonical: sf.LegacyFixture,
                                                         monkeypatch: pytest.MonkeyPatch) -> None:
-    """Silme de bir yazmadır: ağaçları silen ürün kodunun ardından kanca çağrılmazsa denetim bunu bildirir."""
-    from src.web.routes import data as data_routes
+    """
+    Silme de bir yazmadır: ağaçları silen ürün kodunun ardından kanca çağrılmazsa denetim bunu bildirir.
+    Web'in temizlemesi Store'un işidir (`Store.clear`, ST-19); ağaçları kendisi silen ürün kodu terminal
+    menüsünün temizlemesidir.
+    """
+    from src.ui import settings_ui
 
     data = canonical.data_dir
     open_store(data)
-    monkeypatch.setattr(data_routes.config_manager, "get_data_dir", lambda: str(data))
+    replies = ["3", "y"]  # maç detayları, onay
+    monkeypatch.setattr(settings_ui, "input", lambda prompt="": replies.pop(0), raising=False)
     monkeypatch.setattr(src.store, "shadow_cleared", lambda *args, **kwargs: None)
 
-    assert data_routes._clear_data_sync("match_details")["status"] == "success"
+    colors = {name: "" for name in ("SUBTITLE", "WARNING", "INFO", "SUCCESS")}
+    settings_ui.SettingsMenuHandler(MagicMock(), str(data), colors)._clear_selected_data()
+    assert replies == [] and not any((data / "match_details").iterdir())
 
     found = api_mod.shadow_check()
     assert len(found) == 1 and "written without a shadow hook afterwards" in found[0]
+
+
+def test_a_clear_through_the_store_needs_no_hook(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`Store.clear` siler ve kataloğu kendisi yeniden kurar: dışarıdaki kanca (`shadow_cleared`) gerekmez."""
+    data = canonical.data_dir
+    store = open_store(data)
+    monkeypatch.setattr(src.store, "shadow_cleared", lambda *args, **kwargs: None)
+
+    report = store.clear("events")
+
+    assert report.cleared == ("match_details",) and report.catalog_rebuilt
+    assert api_mod.shadow_check() == []
 
 
 def test_the_check_reports_a_catalog_that_differs_from_a_rebuild(canonical: sf.LegacyFixture,

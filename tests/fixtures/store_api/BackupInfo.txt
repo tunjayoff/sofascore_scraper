@@ -1,0 +1,10 @@
+# src.store.BackupInfo
+# kaynak: src/store/backup.py
+@dataclass(frozen=True)
+class BackupInfo:
+    name: str
+    path: str
+    scope: str
+    with_env: bool
+    created_at: str
+    size: int

@@ -12,12 +12,12 @@ import pandas as pd
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-# Depo: özet katalogdan okunur (`open_store`); gölge kip: temizlemeden sonra katalog yeniden kurulur (`shadow_cleared`)
+# Depo: özet katalogdan okunur (`open_store`); yedek ve temizleme Store'un işidir (servisler aracılığıyla)
 from src import store as store_hooks
-from src.private_files import create_private_file
-from src.paths import env_file_path
 from src.web import league_sports
 from src.services import stats as stats_service
+from src.services.backup import BackupService
+from src.services.maintenance import MaintenanceService
 from src.services.status import DataSummary, StatusService
 from src.web.routes.common import (
     _SyncHttpError,
@@ -111,92 +111,37 @@ def _backups_dir() -> str:
 
 
 def _create_backup_sync(scope: str, include_env: bool = False) -> dict:
-    import zipfile
-    import datetime as _dt
-
+    """
+    Yedeği Store yazar (BackupService → `Store.backup`): bugünkü zip düzeni ve adı. Lig dosyası ve spor
+    eşlemesi pakete girer; .env proxy kimlik bilgisi, captcha ve erişim belirteci taşıyabilir, yalnızca açıkça
+    istenirse girer ve dosya adı bunu söyler (gizli değer taşıyan bir yedek veri yedeği sanılıp paylaşılmasın).
+    """
     data_dir = os.path.abspath(config_manager.get_data_dir())
-
-    timestamp = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
-    # .env gerçekten pakete giriyorsa dosya adı bunu söyler: gizli değer taşıyan bir yedek, veri
-    # yedeği sanılıp paylaşılmasın
-    with_env = include_env and scope in ("all", "config") and os.path.exists(env_file_path())
-    backup_filename = f"backup_{scope}{'_with_env' if with_env else ''}_{timestamp}.zip"
-
-    backups_dir = _backups_dir()
-    os.makedirs(backups_dir, exist_ok=True)
-    zip_path = os.path.join(backups_dir, backup_filename)
-
+    config_path = config_manager.league_config_path
     try:
-        if with_env:
-            create_private_file(zip_path)  # içinde .env var: yalnızca sahibi okur (0600)
-        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-            dirs_to_backup = []
-            if scope in ("all", "config"):
-                config_path = config_manager.league_config_path
-                if os.path.exists(config_path):
-                    zf.write(config_path, os.path.basename(config_path))
-                sports_path = league_sports.sidecar_path(config_path)
-                if os.path.exists(sports_path):
-                    zf.write(sports_path, os.path.basename(sports_path))
-                # .env proxy kimlik bilgisi, captcha ve erişim belirteci taşıyabilir; yalnızca açıkça istenirse
-                if with_env:
-                    zf.write(env_file_path(), ".env")
-            if scope in ("all", "seasons"):
-                dirs_to_backup.append(os.path.join(data_dir, "seasons"))
-            if scope in ("all", "matches"):
-                dirs_to_backup.append(os.path.join(data_dir, "matches"))
-            if scope in ("all", "match_details"):
-                dirs_to_backup.append(os.path.join(data_dir, "match_details"))
-
-            for dir_path in dirs_to_backup:
-                if os.path.exists(dir_path):
-                    for root, _, files in os.walk(dir_path):
-                        for f in files:
-                            fp = os.path.join(root, f)
-                            arcname = os.path.relpath(fp, os.path.dirname(data_dir))
-                            zf.write(fp, arcname)
-
-        return {"download_url": f"/api/data/backups/{backup_filename}", "filename": backup_filename}
+        info = BackupService(store_hooks.open_store(data_dir)).create(
+            scope,  # type: ignore[arg-type]  # yolun kapsamı Literal ile denetlendi
+            config_files=(config_path, league_sports.sidecar_path(config_path)),
+            include_secrets=include_env,
+        )
     except Exception as e:
         logger.error(f"Backup failed: {e}")
-        if os.path.exists(zip_path):
-            os.remove(zip_path)
         raise _SyncHttpError(500, "Backup failed") from e
+    return {"download_url": f"/api/data/backups/{info.name}", "filename": info.name}
 
 
 def _clear_data_sync(scope: str) -> dict:
-    import shutil
-
+    """Temizlemeyi Store yapar (MaintenanceService → `Store.clear`); katalog aynı kilit altında yeniden kurulur."""
     data_dir = config_manager.get_data_dir()
     if not os.path.isabs(data_dir):
         data_dir = os.path.abspath(data_dir)
-
-    cleared = []
     try:
-        if scope in ("all", "match_details"):
-            path = os.path.join(data_dir, "match_details")
-            if os.path.exists(path):
-                shutil.rmtree(path)
-                os.makedirs(path, exist_ok=True)
-                cleared.append("match_details")
-        if scope in ("all", "matches"):
-            path = os.path.join(data_dir, "matches")
-            if os.path.exists(path):
-                shutil.rmtree(path)
-                os.makedirs(path, exist_ok=True)
-                cleared.append("matches")
-        if scope in ("all", "seasons"):
-            path = os.path.join(data_dir, "seasons")
-            if os.path.exists(path):
-                shutil.rmtree(path)
-                os.makedirs(path, exist_ok=True)
-                cleared.append("seasons")
-        return {"status": "success", "cleared": cleared}
+        report = MaintenanceService(store=store_hooks.open_store(data_dir)).clear(
+            scope, confirm=True)  # type: ignore[arg-type]  # yolun kapsamı Literal ile denetlendi
     except Exception as e:
         logger.error(f"Clear data failed: {e}")
         raise _SyncHttpError(500, "Clear data failed") from e
-    finally:
-        store_hooks.shadow_cleared(data_dir)
+    return {"status": "success", "cleared": list(report.cleared)}
 
 
 def _export_csv_sync(league_id: Optional[int], data_dir: str, generate: bool = False):
