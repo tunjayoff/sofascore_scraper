@@ -1,9 +1,13 @@
 """
-Test yalıtımı: testler gerçek .env, config/, data/ ve jobs.db'ye dokunmamalı.
+Test yalıtımı: testler gerçek .env, config/, data/ ve state.db'ye dokunmamalı.
 
 Ortam değişkenleri modül yüklenirken ayarlanır — src.* modülleri import anında
 .env'i ve DATA_DIR'i okuduğu için bunun herhangi bir test modülü import edilmeden
 önce olması gerekir. Geçici dizine küçük, sentetik bir veri seti yazılır.
+
+Bütün paket `STORE_SHADOW_CHECK=1` ile çalışır (plan maddesi ST-11): eski düzen yazıcılarının kancaları
+kataloğu güncel tutar ve veri yazan her testin sonunda katalog, aynı ağacın sıfırdan kurulmuş haliyle
+karşılaştırılır (bkz. aşağıda "Gölge denetimi").
 """
 from __future__ import annotations
 
@@ -63,6 +67,8 @@ os.environ["SOFASCORE_THROTTLE_DIR"] = os.path.join(_TMP, "throttle")
 os.environ["SOFASCORE_BROWSER_PROFILE"] = os.path.join(_TMP, "browser-profile")
 # TestClient "testserver" Host başlığını kullanır
 os.environ["SOFASCORE_ALLOWED_HOSTS"] = "localhost,127.0.0.1,testserver"
+# Gölge denetimi (src/store/api.py): kancaların dokunduğu veri dizinleri not edilir, test sonunda karşılaştırılır
+os.environ["STORE_SHADOW_CHECK"] = "1"
 
 
 def _write_json(path: str, data) -> None:
@@ -332,6 +338,101 @@ def _boundary_audit_hook(event: str, args: Tuple[Any, ...]) -> None:
         STORE_BOUNDARY.errors.append(f"{event}: {type(exc).__name__}: {exc}")
 
 
+# --- Gölge denetimi: testin kendi yazdıkları (plan maddesi ST-11) ----------------------------------
+#
+# Karşılaştırma "kancalar kataloğu güncel tutuyor mu" sorusunu sorar. Test, depo açıkken veri dizinine kendisi
+# dosya yazarsa (fixture kurulumu, elle bozma) katalog bunu bilemez. Denetim kancası üç şeyi Store'a bildirir:
+#
+#   * testin yazdığı yol (`shadow_edited`): dizin "kancasız değişti" olarak işaretlenir;
+#   * ürün kodunun, böyle işaretli bir dizine dokunmak üzere olduğu (`shadow_resync`): katalog o anda, imzalara
+#     güvenmeden uzlaştırılır (testler dosyaları yerinde, dizinin mtime'ını değiştirmeden düzenleyebilir).
+#     Böylece ürün kodu, kataloğu dosyalarla eşit bir dizinde çalışmaya başlar ve yazdıklarının kancası
+#     gerçekten sınanır;
+#   * ürün kodunun yazdığı yol (`shadow_written`): dizinlenen bir kökün altındaysa ardından bir kanca beklenir.
+#     Kancası hiç olmayan bir yazma yeri de böylece görülür (deposu hiç açılmamış dizinde bile).
+#
+# Testin son ürün çağrısından sonra yazdıkları eşitlenmeden kalır; o dizinin karşılaştırması atlanır. Erişimi
+# kimin yaptığına çağrı yığını karar verir: içten dışa ilk proje çerçevesi tests/ altındaysa test, src/
+# altındaysa ürün kodudur (src/store/files.py çerçevesi atlanır: yardımcıyı çağırana bakılır). Store'un kendi
+# erişimleri uzlaştırmayı tetiklemez: bir yazma işleminin ortasında olabilir ve okuma API'sinin testleri
+# kataloğun arkasından bozulan dosyaları bilerek kurar.
+
+_WRITE_AUDIT_EVENTS = frozenset({
+    "os.mkdir", "os.rmdir", "os.remove", "os.rename", "os.utime", "os.truncate", "os.link", "os.symlink",
+    "shutil.rmtree", "shutil.copyfile", "shutil.copytree", "shutil.move", "shutil.unpack_archive",
+})
+_WRITE_FLAGS = os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_APPEND
+_BY_TEST, _BY_PRODUCT, _BY_STORE = "test", "product", "store"
+
+
+class ShadowEdits:
+    """Denetim kancasının kaydedicisi: testin yazdıklarını ve ürün kodunun erişimlerini `src.store.api`'ye bildirir."""
+
+    def __init__(self, src_dir: str, tests_dir: str) -> None:
+        self._src = _canonical(src_dir) + os.sep
+        self._store = _canonical(os.path.join(src_dir, "store")) + os.sep
+        self._store_files = _canonical(os.path.join(src_dir, "store", "files.py"))
+        self._tests = _canonical(tests_dir) + os.sep
+        self._owners: Dict[str, Optional[str]] = {}  # dosya adı -> _BY_*; None: proje dışı
+
+    def _owner(self, filename: str) -> Optional[str]:
+        if filename not in self._owners:
+            owner: Optional[str] = None
+            if not filename.startswith("<"):
+                folded = _canonical(filename)
+                if folded.startswith(self._tests):
+                    owner = _BY_TEST
+                elif folded == self._store_files:
+                    owner = None  # dosya yardımcıları: erişimin sahibi onları çağırandır (yazıcı, Store ya da test)
+                elif folded.startswith(self._store):
+                    owner = _BY_STORE
+                elif folded.startswith(self._src):
+                    owner = _BY_PRODUCT
+            self._owners[filename] = owner
+        return self._owners[filename]
+
+    @staticmethod
+    def _writes(event: str, args: Tuple[Any, ...]) -> bool:
+        if event == "open":
+            mode, flags = (args + (None, None))[1:3]
+            if isinstance(mode, str):
+                return any(letter in mode for letter in "wax+")
+            return isinstance(flags, int) and bool(flags & _WRITE_FLAGS)
+        return event in _WRITE_AUDIT_EVENTS
+
+    def audit(self, event: str, args: Tuple[Any, ...]) -> None:
+        # getattr: modül o an yükleniyor olabilir (kısmen kurulmuş modülde işlevler henüz yoktur)
+        api = sys.modules.get("src.store.api")
+        watching = getattr(api, "shadow_watching", None)
+        unsynced = getattr(api, "shadow_unsynced", None)
+        if watching is None or unsynced is None or not watching():
+            return
+        writes = self._writes(event, args)
+        pending = unsynced()
+        if not writes and not pending:
+            return
+        frame = sys._getframe(2)
+        owner = None
+        while frame is not None and owner is None:
+            owner = self._owner(frame.f_code.co_filename)
+            frame = frame.f_back
+        if owner == _BY_TEST and writes:
+            reports = [api.shadow_edited]
+        elif owner == _BY_PRODUCT:
+            reports = [api.shadow_resync] if pending else []
+            if writes and event != "os.mkdir":  # boş dizin kataloğu değiştirmez (yazıcılar kökleri kurarken açar)
+                reports.append(api.shadow_written)
+        else:
+            return
+        for arg in args[:2]:
+            path = _audit_path(arg)
+            if path is not None:
+                for report in reports:
+                    report(path)
+
+
+BOUNDARY_RECORDERS.append(ShadowEdits(os.path.join(ROOT, "src"), os.path.join(ROOT, "tests")))  # type: ignore[arg-type]
+
 sys.addaudithook(_boundary_audit_hook)
 
 
@@ -412,9 +513,19 @@ def _close_stores_opened_by_the_test():
     Testin `open_store` ile açtığı depolar test bitince kapatılır. Depolar süreç boyunca kayıt defterinde
     açık kalır (dizin başına bir tane); her testin kendi geçici dizinini açtığı bir oturumda bu, test başına
     birkaç açık SQLite dosyası demektir ve açık dosya sınırına ulaşılır (macOS'ta 256).
+
+    Kapatmadan önce gölge denetimi çalışır: testte bir yazıcı kancasının dokunduğu her veri dizininin kataloğu,
+    aynı ağacın sıfırdan kurulmuş haline eşit olmalıdır (`src.store.api.shadow_check`). Fark, bir yazma
+    yerinin kancasının eksik olduğunu ya da dizinleyicinin tek kaynağı yeniden dizinlerken yeniden kurmadan
+    farklı davrandığını gösterir.
     """
     yield
     api = sys.modules.get("src.store.api")  # cephe hiç yüklenmediyse açılmış depo da yoktur
-    if api is not None:
+    if api is None:
+        return
+    try:
+        differences = api.shadow_check()
+    finally:
         for store in list(api._registry.values()):
             store.close()
+    assert not differences, "catalog differs from a rebuild after this test:\n" + "\n".join(differences)
