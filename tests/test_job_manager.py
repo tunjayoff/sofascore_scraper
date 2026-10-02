@@ -783,19 +783,39 @@ def test_the_ticker_writes_heartbeats(manager: JobManager, store: JobStore) -> N
 
 
 def test_progress_events_are_coalesced_and_the_last_one_is_kept(store: JobStore) -> None:
-    manager = JobManager(store, cancel_poll=5, heartbeat=5, progress_interval=60)
+    manager = JobManager(store, cancel_poll=0.01, heartbeat=5, progress_interval=60)
 
     def body(handle: JobHandle) -> None:
         handle.progress.start_phase("details", 500)
         for n in range(1, 501):
+            if n % 100 == 0:
+                handle.progress.add_failed(str(n), league_id=17)
             handle.progress.advance(n)
+        time.sleep(0.1)  # işin saati birkaç tur atar: aralık dolmadan bekleyen ilerlemeyi yazmaz
 
     job = manager.submit(JobKind.FETCH, {}, body, origin=WEB, background=False, phases=("details",))
 
-    progress = [event.data for event in manager.events(job.id) if event.type == "progress"]
-    # Aşama olayıyla birlikte bir ilerleme, bitişte bekleyen son ilerleme: 500 yazmadan iki olay
-    assert [(p["done"], p["percent"]) for p in progress] == [(0, 0), (500, 99)]
+    events = list(manager.events(job.id))
+    progress = [event.data for event in events if event.type == "progress"]
+    # İlk ilerleme hemen, bekleyen son ilerleme bitişte: 505 yayından iki ilerleme olayı. Diğer olayların hepsi yazılır.
+    assert [(p["done"], p["percent"], p["failed_count"]) for p in progress] == [(0, 0, 0), (500, 99, 5)]
+    assert [event.data["match_id"] for event in events if event.type == "failed"] == ["100", "200", "300", "400", "500"]
     assert job.progress["done"] == 500 and store.get_job(job.id)["matches_done"] == 500
+
+
+def test_the_ticker_writes_a_waiting_progress_event_once_the_interval_has_passed(store: JobStore) -> None:
+    manager = JobManager(store, cancel_poll=0.01, heartbeat=5, progress_interval=0.05)
+    seen: List[int] = []
+
+    def body(handle: JobHandle) -> None:
+        handle.progress.start_phase("details", 10)
+        handle.progress.advance(4)  # aralık dolmadı: bekler
+        wait_for(lambda: [e for e in manager.events(handle.id) if e.type == "progress" and e.data["done"] == 4],
+                 what="the waiting progress event")
+        seen.append(len([e for e in manager.events(handle.id) if e.type == "progress"]))
+
+    manager.submit(JobKind.FETCH, {}, body, origin=WEB, background=False, phases=("details",))
+    assert seen == [2]
 
 
 def test_events_can_be_followed_until_the_job_ends(manager: JobManager, store: JobStore) -> None:

@@ -222,10 +222,11 @@ class JobHandle:
                     due.append((JobEventType.FAILED, dict(entry) if isinstance(entry, Mapping) else {"item": entry}))
                 if not new_entries:  # liste sınırına (MAX_FAILED_LISTED) ulaşıldı: yalnızca sayı bilinir
                     due.append((JobEventType.FAILED, {"failed_count": failed_now}))
+            # Seyreltme yalnızca ilerleme içindir: son yazılandan bu yana aralık dolmadıysa görüntü bekler ve
+            # yerini bir sonraki alır; bekleyeni işin saati ya da bitişi yazar
             progress = {**detail, "percent": percent}
             now = time.monotonic()
-            if due or now - self._last_progress_at >= self._progress_interval:
-                # Seyreltme yalnızca ilerleme içindir; başka bir olay yazılıyorsa son ilerleme de onunla yazılır
+            if now - self._last_progress_at >= self._progress_interval:
                 due.append((JobEventType.PROGRESS, progress))
                 self._pending_progress = None
                 self._last_progress_at = now
@@ -234,14 +235,19 @@ class JobHandle:
         for type_, data in due:
             self.event(type_, data)
 
-    def flush_progress(self) -> None:
-        """Seyreltme yüzünden bekleyen son ilerleme olayını yazar (saat ve bitiş çağırır)."""
+    def flush_progress(self, *, force: bool = False) -> None:
+        """
+        Seyreltme yüzünden bekleyen son ilerleme olayını yazar. İşin saati aralık dolduysa yazar (saniyede en
+        çok iki ilerleme olayı kuralı bozulmaz); bitiş `force=True` ile her durumda yazar.
+        """
         with self._events_lock:
+            now = time.monotonic()
+            if self._pending_progress is None or (
+                    not force and now - self._last_progress_at < self._progress_interval):
+                return
             pending, self._pending_progress = self._pending_progress, None
-            if pending is not None:
-                self._last_progress_at = time.monotonic()
-        if pending is not None:
-            self.event(JobEventType.PROGRESS, pending)
+            self._last_progress_at = now
+        self.event(JobEventType.PROGRESS, pending)
 
     def note_cancel(self) -> None:
         """İptal isteği fark edildi: olay günlüğüne bir kez yazılır."""
@@ -435,7 +441,7 @@ class JobManager:
         error_data = None if error is None else {"code": error.code, "message": error.message,
                                                  "details": dict(error.details) if error.details else None}
 
-        handle.flush_progress()
+        handle.flush_progress(force=True)
         finished: Dict[str, Any] = {"state": state.value, "message": message}
         if outcome.code:
             finished["code"] = outcome.code
