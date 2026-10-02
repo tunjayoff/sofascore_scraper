@@ -24,6 +24,7 @@ from typing import Any, Dict, Iterator, List, Optional
 
 import pytest
 
+from src import bridge_health
 from src.exceptions import StorageError
 from src.jobs import manager as manager_mod
 from src.jobs.manager import JobHandle, JobManager, JobNotActive, JobOutcome, local_origin
@@ -864,3 +865,64 @@ def test_a_failing_event_write_does_not_stop_the_job(
 
     assert job.state is JobState.SUCCEEDED and store.get_job(job.id)["log"][0] == "[Running] still works"
     assert any("could not be stored" in record.getMessage() for record in caplog.records)
+
+
+# === servis bağlamı ==================================================================================
+
+
+@pytest.fixture
+def context(data_dir: Path) -> Any:
+    from src.config_manager import ConfigManager
+    from src.services.context import build_context
+
+    return build_context(ConfigManager(), data_dir=str(data_dir))
+
+
+def test_the_context_opens_the_store_only_when_it_is_asked_for(context: Any, data_dir: Path) -> None:
+    from src.client import Client
+    from src.store import api
+
+    assert not (data_dir / ".meta").exists() and api._registry == {}
+    assert isinstance(context.client, Client)
+
+    opened = context.store
+    assert opened is open_store(data_dir) and context.store is opened
+    assert sorted(os.listdir(data_dir / ".meta"))[:1] == ["catalog.db"] and (data_dir / ".meta" / "schema.json").is_file()
+
+    jobs = context.jobs
+    assert isinstance(jobs, JobManager) and jobs.store is JobStore.for_store(opened) is context.jobs.store
+    job = jobs.submit(JobKind.SYNC, {}, lambda handle: None, origin=local_origin("cli"), background=False)
+    assert context.jobs.get(job.id).state is JobState.SUCCEEDED
+
+
+def test_bridge_health_changes_reach_the_runtime_facts_of_the_store(context: Any, data_dir: Path) -> None:
+    from src.config_manager import ConfigManager
+    from src.services import context as context_mod
+    from src.services.context import build_context
+
+    for _ in range(3):  # bağlam her işte kurulur: geri çağrı yine tek kez eklenir
+        build_context(ConfigManager(), data_dir=str(data_dir))
+    assert bridge_health._health._change_callbacks.count(context_mod._record_bridge_health) == 1
+
+    for _ in range(int(bridge_health.thresholds()["degraded_after"])):
+        bridge_health.record_failure(bridge_health.KIND_FORBIDDEN, "HTTP 403")
+    fact = open_store(data_dir).runtime.get("bridge_health")
+    assert fact is not None and fact.pid == os.getpid()
+    assert fact.value["state"] == bridge_health.DEGRADED and fact.value == bridge_health.snapshot()
+
+    bridge_health.record_success()
+    assert open_store(data_dir).runtime.get("bridge_health").value["state"] == bridge_health.OK
+
+
+def test_a_health_change_that_cannot_be_stored_does_not_break_the_request(
+    context: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from src.services import context as context_mod
+
+    def refuse(data_dir: Any) -> Any:
+        raise StoreError("state.db is newer than this code")
+
+    monkeypatch.setattr(context_mod, "open_store", refuse)
+    for _ in range(int(bridge_health.thresholds()["degraded_after"])):
+        bridge_health.record_failure(bridge_health.KIND_FORBIDDEN, "HTTP 403")
+    assert bridge_health.snapshot()["state"] == bridge_health.DEGRADED
