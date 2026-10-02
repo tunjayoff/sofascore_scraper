@@ -1,0 +1,1914 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SofaScore Scraper API",
+    "description": "Versioned HTTP API of the SofaScore scraper. Single resources are returned as {\"data\": {...}}, collections as {\"data\": [...], \"page\": {\"limit\", \"next_cursor\"}}, errors as {\"error\": {\"code\", \"message\", \"details\", \"request_id\"}}. Messages are English; clients translate by code. When an access token is configured, every request needs Authorization: Bearer <token> or the session cookie.",
+    "version": "1"
+  },
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Health of the server",
+        "description": "The server is up; whether SofaScore answers it; the request budget.",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/status": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Status of the service",
+        "description": "Service state: versions, access to SofaScore, the request budget and the job that is running now.",
+        "operationId": "getStatus",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sports": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "List sports",
+        "description": "The registered sports, in registry order, each with the detail slices that apply to it.",
+        "operationId": "listSports",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SportListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sports/{slug}": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Get a sport",
+        "operationId": "getSport",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SportResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "List jobs",
+        "description": "Jobs of the data directory, newest first: those of this server and those started from the command line.",
+        "operationId": "listJobs",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "`page.next_cursor` of the previous page.",
+              "title": "Cursor"
+            },
+            "description": "`page.next_cursor` of the previous page."
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobState"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only jobs in one of these states.",
+              "title": "State"
+            },
+            "description": "Only jobs in one of these states."
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobKind"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only jobs of one of these kinds.",
+              "title": "Kind"
+            },
+            "description": "Only jobs of one of these kinds."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Start a job",
+        "description": "Start a job in the background and return it at once (202). Only one job writes to a data directory at a\ntime: while another job or a data operation runs, in this server or in another process, the request is\nrefused with 409 and the holder in `details`.",
+        "operationId": "startJob",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/StartSyncJob"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StartFetchJob"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StartRefreshJob"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StartOtherJob"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "kind",
+                  "mapping": {
+                    "sync": "#/components/schemas/StartSyncJob",
+                    "fetch": "#/components/schemas/StartFetchJob",
+                    "refresh": "#/components/schemas/StartRefreshJob",
+                    "export": "#/components/schemas/StartOtherJob",
+                    "backup": "#/components/schemas/StartOtherJob",
+                    "clear": "#/components/schemas/StartOtherJob",
+                    "rebuild": "#/components/schemas/StartOtherJob"
+                  }
+                },
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden_origin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "job_running, data_operation_running, instance_running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "not_supported",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "507": {
+            "description": "storage_error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Get a job",
+        "description": "One job, whichever process runs or ran it.",
+        "operationId": "getJob",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{job_id}/cancel": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Cancel a job",
+        "description": "Ask a running job to stop. The process that runs it sees the request within a second; the job then ends\nas `cancelled`. A job that has already ended is returned unchanged.",
+        "operationId": "cancelJob",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden_origin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{job_id}/events": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Follow the events of a job (SSE)",
+        "description": "The job's own event log as server-sent events: everything that is retained (the newest 2,000 events per\njob), then new events until the job ends. A comment line is sent every 15 seconds. The stream also ends\nwhen the server shuts down.",
+        "operationId": "streamJobEvents",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Send only events with a sequence number above this.",
+              "title": "After"
+            },
+            "description": "Send only events with a sequence number above this."
+          },
+          {
+            "name": "last-event-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Resume after this event; wins over `after`.",
+              "title": "Last-Event-Id"
+            },
+            "description": "Resume after this event; wins over `after`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A `text/event-stream`. Each message has `id: <seq>`, `event: <type>` and `data: <JobEvent>`; types are started, phase, progress, log, failed, breaker, cancel_requested and finished. The stream ends after the job's last event. When the requested position is older than the retained events, one `stream.gap` event with `oldest_seq` is sent and the stream ends.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "not_supported",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Get the settings",
+        "description": "Every setting with its value, the layer it comes from and whether it can be changed here.",
+        "operationId": "getSettings",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Change settings",
+        "description": "Change settings and return all of them. The request is applied as a whole or not at all. A key that is\npinned by the config file, the environment or a flag is refused (`details.locked`), as is a key that\ncannot be changed through the API (`details.read_only`). Changing `storage.data_dir` is refused while a\njob runs; downloads and the job history then use the new folder, and files are not moved.",
+        "operationId": "updateSettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden_origin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "job_running, data_operation_running, instance_running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "507": {
+            "description": "storage_error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "Machine-readable error code; clients translate by this code."
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "English text for logs and developers; never localised."
+          },
+          "details": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details",
+            "description": "Code-specific details."
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id",
+            "description": "Id of the request; also sent in the X-Request-Id header."
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "request_id"
+        ],
+        "title": "ApiError",
+        "description": "The error object of every `/api/v1` error response."
+      },
+      "ApiErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "title": "ApiErrorResponse"
+      },
+      "BridgeHealth": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded",
+              "blocked"
+            ],
+            "title": "State"
+          },
+          "consecutive_failures": {
+            "type": "integer",
+            "title": "Consecutive Failures"
+          },
+          "last_success_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Success At"
+          },
+          "last_failure_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Failure At"
+          },
+          "failing_since": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failing Since"
+          },
+          "changed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed At"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BridgeLastError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "thresholds": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Thresholds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state",
+          "consecutive_failures",
+          "thresholds"
+        ],
+        "title": "BridgeHealth",
+        "description": "Whether SofaScore answers the requests of this process."
+      },
+      "BridgeLastError": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "description": "challenge, forbidden or browser."
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At",
+            "description": "ISO-8601, UTC."
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "BridgeLastError"
+      },
+      "Health": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "api_version": {
+            "type": "string",
+            "const": "v1",
+            "title": "Api Version"
+          },
+          "bridge": {
+            "$ref": "#/components/schemas/BridgeHealth"
+          },
+          "throttle": {
+            "$ref": "#/components/schemas/ThrottleStatus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "version",
+          "api_version",
+          "bridge",
+          "throttle"
+        ],
+        "title": "Health"
+      },
+      "HealthResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Health"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "HealthResponse"
+      },
+      "Job": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/JobKind"
+          },
+          "state": {
+            "$ref": "#/components/schemas/JobState"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/JobOrigin"
+          },
+          "spec": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Spec",
+            "description": "The service spec the job was started with."
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress",
+            "description": "Phase, counters and failed items; the last progress event for a job of another process."
+          },
+          "result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "ISO-8601, UTC."
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At",
+            "description": "ISO-8601, UTC."
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "ISO-8601, UTC."
+          },
+          "heartbeat_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heartbeat At",
+            "description": "Epoch milliseconds; written every 5 s while running."
+          },
+          "cancel_requested": {
+            "type": "boolean",
+            "title": "Cancel Requested",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "state",
+          "origin",
+          "spec"
+        ],
+        "title": "Job",
+        "description": "A job: a download, a refresh or a data operation, started by any face in any process."
+      },
+      "JobError": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "A code of the error table, e.g. blocked, rate_limited, storage_error."
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "JobError",
+        "description": "The error that stopped the job, or made it partial."
+      },
+      "JobKind": {
+        "type": "string",
+        "enum": [
+          "sync",
+          "fetch",
+          "refresh",
+          "export",
+          "backup",
+          "restore",
+          "clear",
+          "migrate",
+          "rebuild"
+        ],
+        "title": "JobKind",
+        "description": "İşin ne yaptığı. Bugünkü web işi `FETCH` türündedir."
+      },
+      "JobListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Job"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "page"
+        ],
+        "title": "JobListResponse"
+      },
+      "JobOrigin": {
+        "properties": {
+          "face": {
+            "type": "string",
+            "enum": [
+              "cli",
+              "api",
+              "scheduler",
+              "library"
+            ],
+            "title": "Face"
+          },
+          "pid": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pid"
+          },
+          "host": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host"
+          }
+        },
+        "type": "object",
+        "required": [
+          "face"
+        ],
+        "title": "JobOrigin",
+        "description": "Who started the job."
+      },
+      "JobResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Job"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "JobResponse"
+      },
+      "JobSelection": {
+        "properties": {
+          "league_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "League Id"
+          },
+          "season_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Season Ids",
+            "description": "Read by `sync` only."
+          },
+          "match_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Match Ids",
+            "description": "Read by `fetch` only."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "league_id"
+        ],
+        "title": "JobSelection",
+        "description": "One followed tournament and, optionally, the seasons or events of it to work on."
+      },
+      "JobState": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "partial",
+          "failed",
+          "cancelled",
+          "interrupted"
+        ],
+        "title": "JobState",
+        "description": "İşin durumu. `QUEUED` ve `RUNNING` dışındakiler son durumdur."
+      },
+      "PageInfo": {
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "Maximum number of items in this page."
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor",
+            "description": "Pass as `cursor` to get the next page; null on the last page."
+          }
+        },
+        "type": "object",
+        "required": [
+          "limit"
+        ],
+        "title": "PageInfo",
+        "description": "Cursor pagination of a collection response."
+      },
+      "RefreshJobSpec": {
+        "properties": {
+          "league_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "League Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RefreshJobSpec"
+      },
+      "Setting": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "`section.key`, as in the config file."
+          },
+          "value": {
+            "title": "Value",
+            "description": "The value in force. Secrets are masked."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "default",
+              "dotenv",
+              "overrides",
+              "file",
+              "env",
+              "flag"
+            ],
+            "title": "Source",
+            "description": "The layer the value comes from, weakest to strongest in this order."
+          },
+          "source_name": {
+            "type": "string",
+            "title": "Source Name",
+            "description": "The file or the environment variable, when there is one."
+          },
+          "locked": {
+            "type": "boolean",
+            "title": "Locked",
+            "description": "Pinned by the config file, the environment or a flag: a change made here would have no effect."
+          },
+          "writable": {
+            "type": "boolean",
+            "title": "Writable",
+            "description": "Whether PATCH accepts this key right now."
+          },
+          "secret": {
+            "type": "boolean",
+            "title": "Secret"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "value",
+          "source",
+          "source_name",
+          "locked",
+          "writable",
+          "secret"
+        ],
+        "title": "Setting"
+      },
+      "SettingsDocument": {
+        "properties": {
+          "config_file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config File",
+            "description": "Path of the config file in use, if any."
+          },
+          "overrides_file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overrides File",
+            "description": "Path of the file PATCH has written, if any."
+          },
+          "settings": {
+            "items": {
+              "$ref": "#/components/schemas/Setting"
+            },
+            "type": "array",
+            "title": "Settings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "settings"
+        ],
+        "title": "SettingsDocument"
+      },
+      "SettingsPatch": {
+        "properties": {
+          "values": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Values",
+            "description": "`section.key` to the new value; null removes the value written here earlier."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "values"
+        ],
+        "title": "SettingsPatch"
+      },
+      "SettingsResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SettingsDocument"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SettingsResponse"
+      },
+      "Sport": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "SofaScore's English name."
+          },
+          "i18n_key": {
+            "type": "string",
+            "title": "I18N Key",
+            "description": "Translation key of the name for clients."
+          },
+          "score_family": {
+            "type": "string",
+            "title": "Score Family"
+          },
+          "slices": {
+            "items": {
+              "$ref": "#/components/schemas/SportSlice"
+            },
+            "type": "array",
+            "title": "Slices",
+            "description": "Every slice that applies to the sport, disabled ones included."
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "i18n_key",
+          "score_family",
+          "slices"
+        ],
+        "title": "Sport"
+      },
+      "SportListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Sport"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "page"
+        ],
+        "title": "SportListResponse"
+      },
+      "SportResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Sport"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SportResponse"
+      },
+      "SportSlice": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "description": "Path of the slice in SofaScore's API, with `{event_id}`."
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required"
+          },
+          "default_enabled": {
+            "type": "boolean",
+            "title": "Default Enabled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "path",
+          "required",
+          "default_enabled"
+        ],
+        "title": "SportSlice"
+      },
+      "StartFetchJob": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "fetch",
+            "title": "Kind"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/SyncJobSpec"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "StartFetchJob",
+        "description": "Event details only, for the schedules that are already stored."
+      },
+      "StartOtherJob": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "export",
+              "backup",
+              "clear",
+              "rebuild"
+            ],
+            "title": "Kind"
+          },
+          "spec": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Spec"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "StartOtherJob",
+        "description": "Job kinds of the contract that cannot be started through the API yet; answered with 501 `not_supported`."
+      },
+      "StartRefreshJob": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "refresh",
+            "title": "Kind"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/RefreshJobSpec"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "StartRefreshJob",
+        "description": "Re-read the stored events that may still change."
+      },
+      "StartSyncJob": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "sync",
+            "title": "Kind"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/SyncJobSpec"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "StartSyncJob",
+        "description": "Season lists, schedules and event details."
+      },
+      "Status": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "api_version": {
+            "type": "string",
+            "const": "v1",
+            "title": "Api Version"
+          },
+          "auth_required": {
+            "type": "boolean",
+            "title": "Auth Required",
+            "description": "Whether an access token is configured."
+          },
+          "bridge": {
+            "$ref": "#/components/schemas/BridgeHealth"
+          },
+          "throttle": {
+            "$ref": "#/components/schemas/ThrottleStatus"
+          },
+          "active_job": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Job"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The job that runs on the data directory right now, in any process."
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "api_version",
+          "auth_required",
+          "bridge",
+          "throttle"
+        ],
+        "title": "Status"
+      },
+      "StatusResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "StatusResponse"
+      },
+      "SyncJobSpec": {
+        "properties": {
+          "league_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "League Id",
+            "description": "One tournament; not read when `selections` is given."
+          },
+          "selections": {
+            "items": {
+              "$ref": "#/components/schemas/JobSelection"
+            },
+            "type": "array",
+            "title": "Selections"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SyncJobSpec",
+        "description": "What to download. Without `selections` and `league_id`: every followed tournament."
+      },
+      "ThrottleStatus": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "requests_per_second": {
+            "type": "number",
+            "title": "Requests Per Second"
+          },
+          "shared": {
+            "type": "boolean",
+            "title": "Shared"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled",
+          "requests_per_second",
+          "shared"
+        ],
+        "title": "ThrottleStatus",
+        "description": "The request budget shared by all processes of this machine."
+      }
+    }
+  }
+}
