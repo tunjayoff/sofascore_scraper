@@ -2,16 +2,21 @@
 Terminal menüsünün veri dosyalarını değiştiren işlevleri (src/ui/settings_ui.py) ve katalog
 (docs/design/01-storage.md bölüm 3.4 ve 3.5).
 
-Temizleme (`_clear_all_data`, `_clear_selected_data`), geri yükleme (`restore_data`) ve veri dizinini taşıma
-(`_change_data_directory`) dosyaları `shutil` ile değiştirir. Deposu o süreçte zaten açık olan bir veri
-dizininde katalog bir sonraki açılışa kadar eski kalırdı: aynı oturumun istatistikleri eski sayıları gösterir,
-maç araması silinmiş bir dosya için yanıt verirdi. Her işlev artık ardından `shadow_cleared` kancasını çağırır
-(katalog dosyalardan yerinde yeniden kurulur), işlem yarıda kalsa da.
+Geri yükleme (`restore_data`) ve veri dizinini taşıma (`_change_data_directory`) dosyaları `shutil` ile
+değiştirir. Deposu o süreçte zaten açık olan bir veri dizininde katalog bir sonraki açılışa kadar eski kalırdı:
+aynı oturumun istatistikleri eski sayıları gösterir, maç araması silinmiş bir dosya için yanıt verirdi. İkisi de
+ardından `shadow_cleared` kancasını çağırır (katalog dosyalardan yerinde yeniden kurulur), işlem yarıda kalsa da.
+
+Temizleme (`_clear_all_data`, `_clear_selected_data`; plan maddesi ST-21) Store'un ağaçlarını
+`MaintenanceService.clear` ile `maintenance` kilidi altında siler: eski klasörü ve v3 kopyasını birlikte
+(karar S18); katalog `Store.clear` içinde aynı kilit altında yeniden kurulur. datasets/ ve reports/ Store ağacı
+değildir: menü onları kendisi boşaltır.
 
 Ölçüt tests/test_store_shadow.py'deki ile aynıdır: işlevden sonra katalog, aynı ağacın sıfırdan kurulmuş haline
 eşittir (`CatalogAdmin.diff_from_rebuild() == []`) ve `StatusService(store).summary()` depo yeniden açılmadan
 yeni sayıları gösterir. İşlevler gerçek dizinlerde çalışır; yalnızca sorular (`input`, modülün kendi ad
-alanında) ve, yarıda kalan işlemler için, modülün gördüğü tek bir `shutil` işlevi yamalanır.
+alanında) ve, yarıda kalan işlemler için, modülün gördüğü tek bir `shutil` işlevi ya da Store'un ağaç silmesi
+(`src.store.files.remove_tree`) yamalanır.
 """
 from __future__ import annotations
 
@@ -27,11 +32,14 @@ import pytest
 
 import src.store
 import store_fixtures as sf
+from src.match_data_fetcher import MatchDataFetcher
 from src.services.status import StatusService
-from src.store import CatalogAdmin, Store, open_store
+from src.store import CatalogAdmin, LeaseHeld, Store, StoreError, open_store
 from src.store import api as api_mod
+from src.store import files as store_files
 from src.ui import settings_ui
 from src.ui.settings_ui import SettingsMenuHandler
+from src.ui.stats_ui import StatsMenuHandler
 
 ARS = sf.event_id(sf.PL_ARS)  # detayı olan bir maç
 NO_DETAIL = sf.event_id(sf.PL_NO_DETAIL)  # yalnızca listede (matches/ altında)
@@ -174,22 +182,112 @@ def test_a_clear_that_fails_half_way_still_rebuilds_the_catalog(canonical: sf.Le
                                                                 monkeypatch: pytest.MonkeyPatch,
                                                                 capsys: pytest.CaptureFixture[str],
                                                                 function: str, replies: Tuple[str, ...]) -> None:
-    """seasons/ altındaki dosyalar silindikten sonra ilk dizin silinemez: katalog diskte kalanı anlatır."""
+    """
+    Store maç detaylarını sildikten sonra matches/ silinemez (Store'un ağaç silmesi düşer): katalog diskte kalanı
+    anlatır, menünün kendi dizinlerine (datasets/, reports/) sıra gelmez.
+    """
     data = canonical.data_dir
     store = open_store(data)
     handler = handler_of(data)
     answer(monkeypatch, *replies)
-    break_shutil(monkeypatch, "rmtree")
+    (data / "reports").mkdir(exist_ok=True)
+    (data / "reports" / "r.json").write_bytes(b"{}")
+    real_remove = store_files.remove_tree
+
+    def failing(path: Any) -> bool:
+        if Path(path) == data / "matches":
+            raise StoreError(f"disk error: {path}", path=str(path))
+        return real_remove(path)
+
+    monkeypatch.setattr(store_files, "remove_tree", failing)
 
     getattr(handler, function)()  # hata kullanıcıya yazılır, dışarı çıkmaz
 
     out = capsys.readouterr().out
     assert "disk error" in out and handler.i18n.t("success_clear_all") not in out
     assert handler.i18n.t("success_clear_selected") not in out
-    assert not any((data / "seasons").iterdir()) and any((data / "matches").iterdir())
+    assert not any((data / "match_details").iterdir())
+    assert any((data / "matches").iterdir()) and any((data / "seasons").iterdir())
+    assert (data / "reports" / "r.json").exists()
     assert still_open(store, data)
-    assert counts(store) == NO_SEASON_LISTS
+    assert counts(store) == ONLY_LISTS
     assert differences(store) == []
+
+
+def test_the_clear_removes_matches_of_both_layouts(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch,
+                                                   capsys: pytest.CaptureFixture[str]) -> None:
+    """
+    Maç detaylarının temizliği eski klasörü ve v3 kopyasını birlikte siler (karar S18): yeniden yazılıp v3'e
+    yükseltilen bir maç da, yalnızca v3'te duran yeni bir maç da gider. Ayrıca bildirim yazılır.
+    """
+    data = canonical.data_dir
+    store = open_store(data)
+    fetcher = MatchDataFetcher(MagicMock(), data_dir=str(data))
+    fetcher._save_match_data(str(ARS), fetcher._load_match_data_from_dir("", str(ARS)))  # yükseltilir
+    assert store.events.get(ARS).layout == "v3" and (data / "v3" / "events").is_dir()
+    handler = handler_of(data)
+    answer(monkeypatch, "3", YES)
+
+    handler._clear_selected_data()
+
+    out = capsys.readouterr().out
+    assert handler.i18n.t("success_clear_selected") in out
+    assert handler.i18n.t("success_dir_cleared", name="match_details") in out
+    assert not (data / "v3" / "events").exists() and not any((data / "match_details").iterdir())
+    assert not store.events.get(ARS).has_event_payload  # listede kalır (matches/), detayı gider
+    assert counts(store) == ONLY_LISTS
+    assert differences(store) == []
+
+
+def test_the_menu_tells_which_layout_it_covers(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch,
+                                               capsys: pytest.CaptureFixture[str]) -> None:
+    """Yedekleme ve geri yükleme yalnızca eski klasörleri kapsar; temizleme iki düzeni de: menü bunu söyler."""
+    handler = handler_of(canonical.data_dir)
+    answer(monkeypatch, "9", "9", str(canonical.data_dir / "does-not-exist"))
+    handler.clear_data()
+    handler.backup_data()
+    handler.restore_data()
+
+    out = capsys.readouterr().out
+    assert out.count(handler.i18n.t("notice_menu_backup_old_layout")) == 2
+    assert out.count(handler.i18n.t("notice_menu_clear_both_layouts")) == 1
+
+
+def test_the_clear_takes_the_maintenance_lease_and_refuses_while_another_holder_has_it(
+        canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """
+    Temizleme `maintenance` kilidini alır: kilit başkasındaysa (burada: kilit yöneticisi LeaseHeld verir) hiçbir
+    şey silinmez, hata kullanıcıya yazılır. Kilit alınırsa Store.clear onun altında çalışır (ikinci kez almaz).
+    """
+    data = canonical.data_dir
+    store = open_store(data)
+    handler = handler_of(data)
+    taken: List[Tuple[str, str]] = []
+    real_lease = Store.lease
+
+    def busy(self: Store, name: str, *, purpose: str = "", wait: float = 0.0) -> Any:
+        taken.append((name, purpose))
+        raise LeaseHeld(f"lease {name} is held by another process", path=str(self.data_dir))
+
+    monkeypatch.setattr(Store, "lease", busy)
+    answer(monkeypatch, YES, YES)
+    handler._clear_all_data()
+
+    out = capsys.readouterr().out
+    assert "held by another process" in out and handler.i18n.t("success_clear_all") not in out
+    assert taken == [("maintenance", "op:clear")]
+    assert any((data / "match_details").iterdir()) and counts(store) == FULL
+
+    acquired: List[str] = []
+
+    def spy(self: Store, name: str, **kwargs: Any) -> Any:
+        acquired.append(name)
+        return real_lease(self, name, **kwargs)
+
+    monkeypatch.setattr(Store, "lease", spy)
+    answer(monkeypatch, YES, YES)
+    handler._clear_all_data()
+    assert acquired == ["maintenance"] and counts(store) == EMPTY
 
 
 def test_a_catalog_that_cannot_be_rebuilt_does_not_fail_the_clear(canonical: sf.LegacyFixture,
@@ -383,3 +481,25 @@ def test_a_move_that_fails_half_way_still_rebuilds_the_catalog_of_the_target(
     assert counts(target_store) == ONLY_SEASON_LISTS
     assert differences(target_store) == []
     check_reports_only_the_copy_source(data)
+
+
+# --- istatistik menüsü -----------------------------------------------------------------------------------
+
+def test_the_statistics_menu_says_its_disk_sizes_cover_the_old_folders(canonical: sf.LegacyFixture,
+                                                                       capsys: pytest.CaptureFixture[str]) -> None:
+    """
+    Sayılar katalogdan gelir (iki düzen), disk boyutları eski klasörlerden: not sistem görünümünde ve lig
+    dökümünün başında bir kez yazılır.
+    """
+    config = MagicMock()
+    config.get_leagues.return_value = {17: "Premier League", 8: "LaLiga"}
+    colors = {name: "" for name in ("TITLE", "SUBTITLE", "WARNING", "INFO", "SUCCESS", "DIM")}
+    stats = StatsMenuHandler(config, str(canonical.data_dir), colors)
+    notice = stats.i18n.t("notice_menu_disk_old_layout")
+
+    stats.show_system_stats()
+    assert capsys.readouterr().out.count(notice) == 1
+    for league_id in (17, 8):
+        stats.show_league_stats(league_id)
+    out = capsys.readouterr().out
+    assert out.count(notice) == 1 and out.index(notice) < out.index("Premier League")

@@ -76,11 +76,11 @@
   "Processing 4 matches in parallel...",
   {
    "concurrent": [
-    "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_23_24, Maç ID 9100010 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_23_24/9100010",
-    "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100001 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100001",
-    "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100002 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100002",
-    "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100003 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003",
     "LOG INFO MatchDataFetcher: Batch 1/1: 4 başarılı, 0 başarısız (hata yok)",
+    "LOG INFO MatchDataFetcher: Match 9100001 stored (7 files written)",
+    "LOG INFO MatchDataFetcher: Match 9100002 stored (6 files written)",
+    "LOG INFO MatchDataFetcher: Match 9100003 stored (7 files written)",
+    "LOG INFO MatchDataFetcher: Match 9100010 stored (7 files written)",
     "LOG INFO MatchDataFetcher: Processing batch 1/1 (4 matches)"
    ]
   },

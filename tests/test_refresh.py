@@ -1,15 +1,27 @@
-"""Yenileme politikası (src/refresh.py): geçici kayıtlar /event ile yeniden okunur, değişim loglanır."""
+"""
+Yenileme politikası (src/refresh.py): geçici kayıtlar /event ile yeniden okunur, değişim loglanır.
+
+Kayıtlar Store'dadır (plan maddesi ST-21): yenileme `Store.events.observe` ile yazar, değişiklik satırı
+`changes/<yyyy>-<mm>.jsonl` parçasına gider. Gözlemi olmayan kayıt yalnızca eski düzende olabilir (önceki
+sürümlerin yazdığı); o yüzden o kayıtlar tests/legacy_writer.py ile eski düzende kurulur.
+"""
 import copy
 import datetime as dt
 import json
+import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.match_data_fetcher import DETAIL_SLICE_KEYS, UNAVAILABLE_AFTER_ATTEMPTS, UNAVAILABLE_FILE, MatchDataFetcher
+import legacy_writer
+import store_dump
+from src.match_data_fetcher import (DETAIL_SLICE_KEYS, SLICE_EMPTY, UNAVAILABLE_AFTER_ATTEMPTS, UNAVAILABLE_FILE,
+                                    MatchDataFetcher, SliceOutcome)
 from src.refresh import SCORE_CHANGES_FILE, diff_basic
+from src.sports import event_sport_slug, slices_for
 from src.status import OBSERVATION_KEY
+from src.store import open_store
 from src.web.progress import JobProgress
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
@@ -38,22 +50,37 @@ def _fetcher(tmp_path) -> MatchDataFetcher:
 
 
 def _store(f: MatchDataFetcher, basic: dict, observed_after_start_h=None) -> Path:
-    """Dilimleri tam sayılan (hepsi 'yok' işaretli) bir kayıt; observation isteğe bağlı."""
-    data = {"basic": basic}
-    if observed_after_start_h is not None:
-        data[OBSERVATION_KEY] = {
-            "observed_at_utc": _iso(basic["startTimestamp"] + observed_after_start_h * 3600),
-            "change_ts": basic["changes"]["changeTimestamp"],
-        }
-    f._save_match_data(str(basic["id"]), data)
-    match_dir = next(Path(f.match_details_dir).rglob("basic.json")).parent
-    (match_dir / UNAVAILABLE_FILE).write_text(json.dumps({k: UNAVAILABLE_AFTER_ATTEMPTS for k in DETAIL_SLICE_KEYS}))
-    return match_dir
+    """
+    Dilimleri tam sayılan (hepsi 'yok' işaretli) bir kayıt; kaydın dizinini döndürür.
+
+    Gözlem anı verilirse kayıt indiricinin yazıcısıyla Store'a (v3) yazılır: gözlem o an, her `required` dilim
+    iki kez 404 almış. Verilmezse önceki bir sürümün yazdığı gözlemsiz eski kayıt kurulur (eski düzen,
+    `_unavailable.json` doğrulanmamış sayımlarla).
+    """
+    mid = str(basic["id"])
+    if observed_after_start_h is None:
+        match_dir = Path(legacy_writer.save_legacy(f.data_dir, mid, {"basic": basic}))
+        (match_dir / UNAVAILABLE_FILE).write_text(
+            json.dumps({k: UNAVAILABLE_AFTER_ATTEMPTS for k in DETAIL_SLICE_KEYS}))
+        return match_dir
+    keys = [d.key for d in slices_for(event_sport_slug(basic), required_only=True)]
+    data = {"basic": basic, **dict.fromkeys(keys), OBSERVATION_KEY: {
+        "observed_at_utc": _iso(basic["startTimestamp"] + observed_after_start_h * 3600),
+        "change_ts": basic["changes"]["changeTimestamp"],
+    }}
+    outcomes = {k: SliceOutcome(SLICE_EMPTY, reason="404", http_status=404) for k in keys}
+    for _ in range(UNAVAILABLE_AFTER_ATTEMPTS):
+        f._save_match_data(mid, data, outcomes)
+    return Path(f._find_match_path(mid)[2])
 
 
-def _rows(tmp_path) -> list:
-    path = Path(tmp_path) / SCORE_CHANGES_FILE
-    return [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
+def _rows(f: MatchDataFetcher) -> list:
+    """Değişiklik günlüğünün satırları (Store, iki düzen birlikte), sıra numarasıyla sıralı."""
+    return [dict(change.row) for change in open_store(f.data_dir).changes.list()]
+
+
+def _row(f: MatchDataFetcher, mid: str = MID):
+    return open_store(f.data_dir).events.get(int(mid))
 
 
 # --- ihtiyaç hesabı ---------------------------------------------------------------------
@@ -109,8 +136,8 @@ def test_min_interval_between_refreshes(tmp_path, monkeypatch, hours_since_obser
 
 def test_missing_slices_still_come_before_refresh(tmp_path):
     f = _fetcher(tmp_path)
-    match_dir = _store(f, _fixture("football/F2_penalties__16950622"), observed_after_start_h=2)
-    (match_dir / UNAVAILABLE_FILE).unlink()
+    _store(f, _fixture("football/F2_penalties__16950622"), observed_after_start_h=2)
+    assert f.reset_unavailable_markers(include_confirmed=True)["matches"] == 1  # dilimler yeniden beklenir
     assert f._compute_detail_need(MID) == "refill"
 
 
@@ -128,7 +155,7 @@ def test_changed_penalties_are_logged_with_old_and_new(tmp_path):
         data = f.refresh_match(MID)
     fetch.assert_called_once_with(MID)  # yalnızca /event, dilim yok
 
-    rows = _rows(tmp_path)
+    rows = _rows(f)
     assert len(rows) == 1
     row = rows[0]
     assert row["event_id"] == 16950622
@@ -138,26 +165,30 @@ def test_changed_penalties_are_logged_with_old_and_new(tmp_path):
     assert row["start_ts"] == old["startTimestamp"]
     assert row["hours_after_start"] == round((new["changes"]["changeTimestamp"] - old["startTimestamp"]) / 3600, 2)
     assert set(row) >= {"ts_utc", "sport", "tournament", "tier_hint"}
-    assert json.loads((match_dir / "basic.json").read_text())["awayScore"]["penalties"] == 5
-    obs = json.loads((match_dir / f"{OBSERVATION_KEY}.json").read_text())
-    assert obs["change_ts"] == new["changes"]["changeTimestamp"]
-    assert data[OBSERVATION_KEY] == obs
+    store = open_store(f.data_dir)
+    assert store.events.payload(int(MID))["awayScore"]["penalties"] == 5
+    assert store.events.get(int(MID)).change_ts == new["changes"]["changeTimestamp"]
+    assert data[OBSERVATION_KEY]["change_ts"] == new["changes"]["changeTimestamp"]
+    # Satır Store'un değişiklik günlüğüne gider (v3 parçası, LF satır sonu); eski dosyaya bir şey eklenmez
+    segments = sorted((tmp_path / "changes").glob("*.jsonl"))
+    assert len(segments) == 1 and segments[0].read_bytes().count(b"\n") == 1 and b"\r" not in segments[0].read_bytes()
+    assert not (tmp_path / SCORE_CHANGES_FILE).exists()
+    assert (match_dir / "manifest.json").is_file()
 
 
 def test_unchanged_refresh_only_updates_observation(tmp_path):
     f = _fetcher(tmp_path)
     old = _fixture("football/F2_penalties__16950622")
     match_dir = _store(f, old, observed_after_start_h=2)
-    before_obs = json.loads((match_dir / f"{OBSERVATION_KEY}.json").read_text())
-    basic_mtime = (match_dir / "basic.json").stat().st_mtime_ns
+    before = _row(f)
+    payload_mtime = (match_dir / "event.json.gz").stat().st_mtime_ns
 
     with patch.object(f, "_fetch_match_basic", return_value=copy.deepcopy(old)):
         f.refresh_match(MID)
 
-    assert _rows(tmp_path) == []
-    assert (match_dir / "basic.json").stat().st_mtime_ns == basic_mtime
-    obs = json.loads((match_dir / f"{OBSERVATION_KEY}.json").read_text())
-    assert obs["observed_at_utc"] > before_obs["observed_at_utc"]
+    assert _rows(f) == []
+    assert (match_dir / "event.json.gz").stat().st_mtime_ns == payload_mtime  # yük aynı: dosya yazılmadı
+    assert _row(f).observed_at > before.observed_at
     # Pencere artık kapandı (şimdi ≥ başlangıç + 72 sa): kayıt kesin
     f.end_job_cache()
     assert f._compute_detail_need(MID) == "none"
@@ -166,29 +197,57 @@ def test_unchanged_refresh_only_updates_observation(tmp_path):
 def test_status_regression_is_flagged_not_deleted(tmp_path):
     f = _fetcher(tmp_path)
     old = _fixture("basketball/B6_finished_regular__16484334")
-    match_dir = _store(f, old, observed_after_start_h=2)
+    _store(f, old, observed_after_start_h=2)
     new = _fixture("basketball/B9_abandoned__17060394")
     new["id"] = old["id"]
 
     with patch.object(f, "_fetch_match_basic", return_value=new):
-        f.refresh_match(str(old["id"]))
+        data = f.refresh_match(str(old["id"]))
 
-    row = _rows(tmp_path)[0]
+    row = _rows(f)[0]
     assert row["status_regressed"] is True
     assert row["status_class"] == ["completed", "void"]
     assert row["changed"]["status.code"] == [100, 90]
-    obs = json.loads((match_dir / f"{OBSERVATION_KEY}.json").read_text())
-    assert obs["status_regressed"] is True
-    assert (match_dir / "basic.json").exists()
+    assert _row(f, str(old["id"])).status_regressed is True
+    assert data[OBSERVATION_KEY]["status_regressed"] is True
+    assert open_store(f.data_dir).events.payload(old["id"]) == new  # kayıt silinmedi, son hali saklandı
 
 
 def test_failed_fetch_leaves_record_untouched(tmp_path):
     f = _fetcher(tmp_path)
-    match_dir = _store(f, _fixture("football/F2_penalties__16950622"), observed_after_start_h=2)
-    before = (match_dir / f"{OBSERVATION_KEY}.json").read_text()
+    _store(f, _fixture("football/F2_penalties__16950622"), observed_after_start_h=2)
+    before = _row(f)
     with patch.object(f, "_fetch_match_basic", return_value=None):
         assert f.refresh_match(MID) is None
-    assert (match_dir / f"{OBSERVATION_KEY}.json").read_text() == before
+    assert _row(f) == before
+
+
+def test_a_record_of_the_old_layout_is_promoted_by_its_refresh_and_its_folder_is_kept(tmp_path, monkeypatch):
+    """
+    Eski düzendeki kayıt yenilenirken önce v3'e yükseltilir (karar S3); eski dizine dokunulmaz (karar 4): mantıksal
+    döküm yükseltmeden önceki kaydın aynısıdır, yalnızca gözlem ve olay yükü yenidir.
+    """
+    monkeypatch.setenv("REFRESH_LEGACY", "true")
+    f = _fetcher(tmp_path)
+    old = _fixture("football/F2_penalties__16950622")
+    match_dir = _store(f, old)
+    files_before = {p.name: p.read_bytes() for p in match_dir.iterdir()}
+    new = copy.deepcopy(old)
+    new["homeScore"]["penalties"] = 4
+    before = store_dump.dump(tmp_path)["events"][MID]
+
+    with patch.object(f, "_fetch_match_basic", return_value=new):
+        assert f.refresh_match(MID) is not None
+
+    assert {p.name: p.read_bytes() for p in match_dir.iterdir()} == files_before
+    row = _row(f)
+    assert (row.layout, row.legacy_path) == ("v3", Path(os.path.relpath(match_dir, tmp_path)).as_posix())
+    after = store_dump.dump(tmp_path)["events"][MID]
+    assert after["slices"].keys() == before["slices"].keys()
+    assert {k: v for k, v in after["slices"].items() if k != "event"} == {
+        k: v for k, v in before["slices"].items() if k != "event"}
+    assert after["observation"] is not None and before["observation"] is None
+    assert [r["changed"] for r in _rows(f)] == [{"homeScore.penalties": [old["homeScore"].get("penalties"), 4]}]
 
 
 def test_diff_covers_all_score_subfields_status_winner_and_start():

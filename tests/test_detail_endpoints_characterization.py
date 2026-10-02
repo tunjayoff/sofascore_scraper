@@ -10,14 +10,12 @@ tablo değişirse hangi isteğin eklendiği ya da düştüğü burada görünür
   - eksik dilim tamamlama (refill): yalnızca eksik ve "yok" sayılmayan ortak dilimler
 """
 import asyncio
-import json
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.match_data_fetcher import (DETAIL_SLICE_KEYS, REQUIRED_FILES, UNAVAILABLE_AFTER_ATTEMPTS, UNAVAILABLE_FILE,
-                                    MatchDataFetcher)
+import detail_records
+from src.match_data_fetcher import DETAIL_SLICE_KEYS, REQUIRED_FILES, SLICE_EMPTY, MatchDataFetcher, SliceOutcome
 
 MID = "4242"
 EVENT = f"https://www.sofascore.com/api/v1/event/{MID}"
@@ -65,10 +63,6 @@ def _fetcher(tmp_path) -> MatchDataFetcher:
     return MatchDataFetcher(MagicMock(), data_dir=str(tmp_path))
 
 
-def _match_dir(f: MatchDataFetcher) -> Path:
-    return next(Path(f.match_details_dir).rglob("basic.json")).parent
-
-
 def _fetch_async(f: MatchDataFetcher, basic: dict):
     calls = []
 
@@ -111,9 +105,9 @@ def test_batch_download_counts_only_the_six_tracked_slices_as_unavailable(tmp_pa
     f = _fetcher(tmp_path)
     _fetch_async(f, _basic(sport_obj))
 
-    unavailable = json.loads((_match_dir(f) / UNAVAILABLE_FILE).read_text())
+    unavailable = detail_records.legacy_view(f.data_dir, int(MID))["_unavailable.json"]
     assert unavailable == {k: 1 for k in COMMON_KEYS}
-    assert f._expected_slices(str(_match_dir(f))) == COMMON_KEYS
+    assert f._expected_slice_keys(int(MID), None) == COMMON_KEYS
     assert f._compute_detail_need(MID) == "refill"
 
 
@@ -144,10 +138,13 @@ def test_refill_requests_every_missing_tracked_slice(tmp_path, label, sport_obj,
 def test_refill_skips_present_and_unavailable_slices(tmp_path, label, sport_obj, point_by_point):
     f = _fetcher(tmp_path)
     basic = _basic(sport_obj)
-    f._save_match_data(MID, {"basic": basic, "h2h": {"teamDuel": {"homeWins": 1, "awayWins": 0, "draws": 0}}})
-    (_match_dir(f) / UNAVAILABLE_FILE).write_text(
-        json.dumps({"lineups": UNAVAILABLE_AFTER_ATTEMPTS, "incidents": UNAVAILABLE_AFTER_ATTEMPTS, "statistics": 1})
-    )
+    gone = SliceOutcome(SLICE_EMPTY, reason="404", http_status=404)
+    # lineups ve incidents iki kez (artık beklenmez), statistics bir kez 404 almış
+    f._save_match_data(MID, {"basic": basic, "h2h": {"teamDuel": {"homeWins": 1, "awayWins": 0, "draws": 0}},
+                             "lineups": None, "incidents": None, "statistics": None},
+                       {"lineups": gone, "incidents": gone, "statistics": gone})
+    f._save_match_data(MID, {"basic": basic, "lineups": None, "incidents": None},
+                       {"lineups": gone, "incidents": gone})
     calls = []
     with patch("src.match_data_fetcher.make_api_request", new=_sync_api(calls, basic)):
         f.refill_missing_match_slices(MID)

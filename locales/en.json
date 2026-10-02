@@ -592,5 +592,8 @@
     "launcher_leave_open": "Leave this window open. Close it to stop the app.",
     "launcher_server_exited": "Server exited early.",
     "launcher_ready": "Ready: {url}",
-    "launcher_not_ready": "Server started but /health not ready yet — open manually: {url}"
+    "launcher_not_ready": "Server started but /health not ready yet — open manually: {url}",
+    "notice_menu_backup_old_layout": "Note: backup and restore here copy only the old folders (seasons/, matches/, match_details/). Matches stored in the new layout (v3/) are not included; copy the whole data folder to keep them.",
+    "notice_menu_clear_both_layouts": "Note: clearing seasons, matches or match details removes them from both the old folders and the new layout (v3/).",
+    "notice_menu_disk_old_layout": "Note: disk sizes cover the old folders only; matches stored in the new layout (v3/) are in the counts but not in the sizes."
 }

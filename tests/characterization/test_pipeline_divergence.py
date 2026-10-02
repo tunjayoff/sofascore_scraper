@@ -14,12 +14,12 @@ Ağ yok: istekler tests/fakes/sofascore.py'deki sahte taşıyıcıya gider; iste
 from __future__ import annotations
 
 import asyncio
-import json
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, List, Sequence
 
 import pytest
 
+import detail_records
 import src.utils as utils
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import REQUEST_LAYER, SITE_ROOT, FakeSofaScore
@@ -108,17 +108,17 @@ def _api_paths(fake: FakeSofaScore) -> List[str]:
 
 
 def _stored(md: MatchDataFetcher, event_id: int) -> Dict[str, Any]:
-    """Maç dizinindeki dosyalar: ad → içerik; kayıt yoksa {}."""
-    found = md._find_match_path(str(event_id))
-    if not found:
-        return {}
-    return {p.name: json.loads(p.read_text(encoding="utf-8")) for p in sorted(Path(found[2]).iterdir())}
+    """
+    Kaydın hali, eski düzen dizininin dosyaları biçiminde: ad → içerik; kayıt yoksa {}. Kayıtlar ST-21'den beri
+    Store'dadır (v3); hali Store'dan okunur (tests/detail_records.py `legacy_view`).
+    """
+    return detail_records.legacy_view(md.data_dir, event_id)
 
 
 def _store_then_make_partial(fake: FakeSofaScore, md: MatchDataFetcher) -> None:
     """Diskte FINISHED'in bir dilimi eksik kaydı (ihtiyaç: refill), SofaScore'da ise maç artık "oynanıyor"."""
     assert _run_sync(md, [FINISHED]) == []
-    (Path(md._find_match_path(str(FINISHED))[2]) / "h2h.json").unlink()
+    detail_records.drop_slices(md.data_dir, FINISHED, "h2h")
     live = fake.event(FINISHED)
     live["status"] = {"code": 6, "description": "1st half", "type": "inprogress"}
     fake.add_event(live)
@@ -149,7 +149,7 @@ def test_row01_reached_from(fake: FakeSofaScore, data_dir: Path) -> None:
     assert {r.via for r in fake.requests} == {"sync"} and fake.sessions == []
 
     # Async hattın içinden: eksik dilim (refill) sync hatla, başka bir thread'de tamamlanır
-    (Path(md._find_match_path(str(FINISHED))[2]) / "h2h.json").unlink()
+    detail_records.drop_slices(md.data_dir, FINISHED, "h2h")
     fake.reset_log()
     assert _run_async(md, [FINISHED]) == []
     assert [r.label for r in fake.requests if r.path != SITE_ROOT] == [

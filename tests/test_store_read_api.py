@@ -35,10 +35,11 @@ from unittest.mock import MagicMock
 import pytest
 
 import src.store
+import legacy_writer
 import store_fixtures as sf
 import test_store_query_plans as plans
 from src import refresh
-from src.match_data_fetcher import MatchDataFetcher
+from src.match_data_fetcher import UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher
 from src.sports import event_sport_slug, slices_for
 from src.store import (
     ChangeLog,
@@ -977,13 +978,13 @@ def _file_needs(fetcher: MatchDataFetcher, event_ids: Sequence[int]) -> Dict[int
 
 
 def _file_missing_keys(fetcher: MatchDataFetcher, event_id: int) -> Tuple[str, ...]:
-    """Dosya tabanlı kural: beklenen dilimlerden (`_expected_slices`) verisi olmayanlar."""
+    """Dosya tabanlı kural (eski yazıcının `_expected_slices`i, tests/legacy_writer.py): beklenen dilimlerden verisi olmayanlar."""
     found = fetcher._find_match_path(str(event_id))
     assert found is not None
     directory = found[2]
     data = fetcher._load_match_data_from_dir(directory, str(event_id))
     sport = event_sport_slug(data["basic"]) or ""
-    return tuple(key for key in fetcher._expected_slices(directory, sport)
+    return tuple(key for key in legacy_writer.expected_slices(directory, sport, UNAVAILABLE_AFTER_ATTEMPTS)
                  if not fetcher.match_detail_slice_present(key, data))
 
 

@@ -1,23 +1,11 @@
 # src/match_data_fetcher.py: Store sınırı ihlalleri (docs/design/01-storage.md bölüm 2.4). Bu liste yalnızca küçülebilir.
 # Bir ihlali gideren PR satırını da siler; açıklama: tests/test_store_boundary.py
 [static]
-MatchDataFetcher._append_score_change:open
-MatchDataFetcher._load_slice_status:open
-MatchDataFetcher._load_unavailable:open
-MatchDataFetcher._reset_match_markers:os.remove x2
-MatchDataFetcher._save_match_data:os.makedirs
 MatchDataFetcher._season_summary_files:os.listdir x2
 MatchDataFetcher._season_summary_files:os.path.isdir
 MatchDataFetcher._season_summary_files:os.path.isfile
-MatchDataFetcher._update_slice_markers:os.path.exists
-MatchDataFetcher._update_slice_markers:os.remove
 MatchDataFetcher.generate_file_report:Path.exists
 MatchDataFetcher.generate_file_report:Path.glob
 MatchDataFetcher.generate_file_report:Path.is_dir x3
 MatchDataFetcher.generate_file_report:Path.iterdir x2
 MatchDataFetcher.generate_file_report:open x2
-MatchDataFetcher.refresh_match:open
-MatchDataFetcher.refresh_match:os.path.exists
-MatchDataFetcher.reset_unavailable_markers:os.listdir x3
-MatchDataFetcher.reset_unavailable_markers:os.path.isdir x3
-MatchDataFetcher.reset_unavailable_markers:os.path.isfile

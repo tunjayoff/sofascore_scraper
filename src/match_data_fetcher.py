@@ -6,15 +6,13 @@ SofaScore API'sinden detaylı maç verilerini çeken modül.
 import os
 import json
 import csv
-import time  # noqa: F401  (testler `src.match_data_fetcher.time.sleep` yolunu yamalar)
+import time  # testler `src.match_data_fetcher.time.sleep` yolunu yamalar; meşgul depoda bekleme de bununla
 import random
-import re
 import datetime as dt
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Mapping, Optional, Union, Tuple
 from pathlib import Path
 import asyncio
-import threading
 from collections import Counter
 import pandas as pd
 from tqdm import tqdm
@@ -23,16 +21,15 @@ from src import breaker as request_breaker
 from src.client import base_url
 from src.config_manager import ConfigManager
 from src.exceptions import ResourceNotFoundError, StorageError
-from src.fsutil import atomic_write_json
-# Gölge kip (docs/design/01-storage.md 3.5): her yazmadan sonra Store'un bir `shadow_*` kancası çağrılır ve
-# katalog yazılanı diskten yeniden dizinler. Kayıtlı maçlar da aynı kökten okunur (`open_store(...).events`).
-# Paket kökü üzerinden: cephe ilk çağrıda yüklenir.
+# Maçlar Store'a yazılır (`open_store(...).events.put` / `observe`, docs/design/01-storage.md 2.3 ve 6.2) ve
+# Store'dan okunur. Paket kökü üzerinden: cephe ilk çağrıda yüklenir.
 from src import store as store_hooks
 from src.utils import make_api_request, ensure_directory
 from src.match_fetcher import MatchFetcher
 from src.sports import DETAIL_SLICES, event_sport_slug, get_slice, slices_for
 from src.status import OBSERVATION_KEY, observation_record
-from src.refresh import SCORE_CHANGES_FILE, change_row, diff_basic
+# SCORE_CHANGES_FILE: eski düzenin değişiklik günlüğü (yalnızca okunur); eski import'lar için burada da durur
+from src.refresh import SCORE_CHANGES_FILE as SCORE_CHANGES_FILE, change_row, diff_basic
 from src.paths import league_dir_name
 from src.services.export import ExportService, ExportSpec
 from src.services.query import QueryService, RefreshPolicy
@@ -71,29 +68,40 @@ REQUIRED_FILES = ['basic.json'] + [f"{key}.json" for key in DETAIL_SLICE_KEYS]
 
 # Bitmiş bir maçta bu kadar KESİN yanıtta da boş gelen dilim o maç için yok sayılır (ör. tenis
 # maçlarında kadro/olay yok). Kesin yanıt: HTTP 404 ya da içinde veri olmayan 200. Başarısız istek
-# (403/429/5xx/zaman aşımı/ağ/bozuk yanıt) sayılmaz; _slice_status.json'a yazılır ve sonraki
-# çalıştırmada yeniden denenir.
+# (403/429/5xx/zaman aşımı/ağ/bozuk yanıt) sayılmaz; dilimin hata kaydına yazılır ve sonraki
+# çalıştırmada yeniden denenir. Sayaçlar ve hata kayıtları Store'dadır (manifest, `event_slices`).
 UNAVAILABLE_AFTER_ATTEMPTS = 2
-UNAVAILABLE_FILE = "_unavailable.json"
-# Dilim başına son durum: {"<dilim>": {"empty": {"count", "at"}, "error": {"reason", "status", "at", "count"}}}
-#   empty.count  bu sürümün kesin yanıtla saydığı "yok" sayısı. _unavailable.json'daki sayı bundan
-#                büyükse fark eski sürümden kalmadır (geçici hata da olabilir; bkz. reset_unavailable_markers)
-#   error        dilimin son başarısız isteği (neden, HTTP kodu, zaman, art arda kaç kez)
-SLICE_STATUS_FILE = "_slice_status.json"
 
-# uniqueTournament.id'si olmayan maçların sabit dizini: match_details/_no_tournament/<spor>/<maç id>
-NO_TOURNAMENT_DIR = "_no_tournament"
+# Eski düzenin dosya ve dizin adları. Bu modül onları artık yazmaz (maçlar v3 düzenine yazılır); eski düzendeki
+# kayıtları Store okur (src/store/legacy.py, aynı adlar; tests/test_store_legacy.py eşitliği denetler).
+UNAVAILABLE_FILE = "_unavailable.json"  # {dilim: "yok" sayısı}
+SLICE_STATUS_FILE = "_slice_status.json"  # {dilim: {"empty": {...}, "error": {...}}}
+NO_TOURNAMENT_DIR = "_no_tournament"  # uniqueTournament.id'si olmayan maçlar: match_details/_no_tournament/<spor>/<id>
 
-def _utc_now_iso() -> str:
-    return dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+# Depo meşgulken (başka bir süreç yazıyor, StoreBusy) bir yazma bu kadar kez, artan beklemeyle yeniden denenir
+STORE_BUSY_ATTEMPTS = 4
+STORE_BUSY_FIRST_WAIT = 0.5
 
 
-def _path_part(value: Any) -> str:
-    """Kimlikten/slug'dan güvenli dizin adı parçası."""
-    return re.sub(r"[^A-Za-z0-9_.-]", "_", str(value)).strip(".") or "unknown"
+def _v3_event_dir(data_dir: str, event_id: int) -> str:
+    """
+    Maçın v3 dizini: `v3/events/<id // 1000000>/<(id // 1000) % 1000, 3 hane>/<id>` (src/store/layout.py
+    `event_dir`; bu modül Store'un alt modüllerini içe aktarmaz, tests/test_storage_errors.py eşitliği denetler).
+    Yalnızca gösterilir (`_find_match_path`); dosyalara Store dokunur.
+    """
+    return os.path.join(data_dir, "v3", "events", str(event_id // 1_000_000), f"{(event_id // 1000) % 1000:03d}",
+                        str(event_id))
 
-# score_changes.jsonl'a paralel iş parçacıklarından ekleme
-_SCORE_CHANGES_LOCK = threading.Lock()
+
+def _parse_utc(value: Any) -> Optional[dt.datetime]:
+    """ISO 8601 zaman metni → UTC zaman; okunamıyorsa None. Saat dilimi olmayan zaman UTC sayılır (Store'un kuralı)."""
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        moment = dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return moment if moment.tzinfo is not None else moment.replace(tzinfo=dt.timezone.utc)
 
 
 # Tablodan önce de var olan dilim yardımcıları: testler ve dış kod bu adları doğrudan değiştiriyor/çağırıyor.
@@ -127,7 +135,7 @@ def _canonical_id(text: str) -> Optional[int]:
 
 def _stored_observation(row: "EventRow") -> Optional[Dict[str, Any]]:
     """
-    Katalog satırından observation.json'ın karşılığı; kayıt gözlemsizse (eski kayıt) None.
+    Katalog satırından gözlemin (eski düzende observation.json) karşılığı; kayıt gözlemsizse (eski kayıt) None.
     `status_regressed` yapışkan bayraktır: yalnızca doğruysa yazılır (refresh_match gibi).
     Tarih olarak yazılamayan bir gözlem anı (bozuk kayıt) gözlem yokmuş gibi işlenir.
     """
@@ -179,12 +187,15 @@ class SingleFetchReport:
 class MatchDataFetcher:
     """SofaScore API'sinden detaylı maç verilerini çeken ve işleyen sınıf."""
 
-    # --- kayıtlı maçların okunması: depo üzerinden (docs/design/01-storage.md 2.3, 5.2; plan maddesi RD-1) ---
+    # --- kayıtlı maçların okunması ve yazılması: depo üzerinden (docs/design/01-storage.md 2.3, 5.2, 5.3, 6.2;
+    # plan maddeleri RD-1 ve ST-21) ---
     #
-    # Bir maçın yeri ve yükleri kataloğa sorulur (`Store.events`); dizin ağacı gezilmez. Katalog, depo
-    # açılırken dosyalarla eşitlenir ve aşağıdaki yazıcıların her yazmasından sonra güncellenir (`shadow_*`
-    # kancaları). Eski, dizini dosya dosya okuyan okuyuculardan farklar yalnızca eski biçimli kayıtlarda
-    # görünür (01-storage.md 5.1 ve 5.2):
+    # Bir maçın yeri ve yükleri kataloğa sorulur (`Store.events`); dizin ağacı gezilmez. Yazmalar
+    # `Store.events.put` / `observe` ile v3 düzenine gider (`v3/events/.../<id>/`): yeni maç orada kurulur, eski
+    # düzende duran maç ilk yazmasında önce v3'e yükseltilir (eski dizine dokunulmaz, silinmez). Katalog her
+    # yazmada aynı kritik bölümde güncellenir. Kayıt, olay yükü herhangi bir düzende saklanan maçtır. Eski,
+    # dizini dosya dosya okuyan okuyuculardan farklar yalnızca eski biçimli kayıtlarda görünür (01-storage.md
+    # 5.1 ve 5.2):
     #
     #   * yalnızca birleşik dosyası (`<id>/<id>.json`) olan dizin de bir maçtır (eskiden bulunamıyordu);
     #   * dilim önce kendi dosyasından, yoksa birleşik dosyadan okunur ve gözlem her zaman okunur (eskiden
@@ -201,16 +212,24 @@ class MatchDataFetcher:
 
     def _stored_event(self, match_id: Union[int, str]) -> Optional["EventRow"]:
         """
-        Olay yükü eski düzende duran maçın katalog satırı; öyle bir kayıt yoksa None. Yalnızca bir program
-        sayfasından bilinen maç (yükü yok) ve kurallı bir kimlik olmayan metin ("007", "abc") kayıt değildir.
+        Olay yükü saklanan maçın katalog satırı (v3 ya da eski düzen); öyle bir kayıt yoksa None. Yalnızca bir
+        program sayfasından bilinen maç (yükü yok) ve kurallı bir kimlik olmayan metin ("007", "abc") kayıt değildir.
         """
         event_id = _canonical_id(str(match_id))
         if event_id is None:
             return None
         row = self._store().events.get(event_id)
-        if row is None or not row.has_event_payload or row.layout != _LEGACY_LAYOUT or not row.path:
+        if row is None or not row.has_event_payload:
+            return None
+        if row.layout == _LEGACY_LAYOUT and not row.path:
             return None
         return row
+
+    def _record_location(self, row: "EventRow") -> Optional[Tuple[Optional[str], Optional[str], str]]:
+        """Kaydın yeri: eski düzende `_legacy_location`, v3'te (None, None, maçın v3 dizini)."""
+        if row.layout == _LEGACY_LAYOUT:
+            return self._legacy_location(row)
+        return (None, None, _v3_event_dir(self.data_dir, row.id))
 
     def _legacy_location(self, row: "EventRow") -> Optional[Tuple[Optional[str], Optional[str], str]]:
         """Katalogdaki eski düzen yolu (`match_details/[<lig>/<sezon>/]<id>`) → (lig dizini, sezon dizini, maç dizini)."""
@@ -225,19 +244,20 @@ class MatchDataFetcher:
 
     def _find_match_path(self, match_id: str) -> Optional[Tuple[Optional[str], Optional[str], str]]:
         """
-        Kayıtlı maçın yeri: (lig dizini adı, sezon dizini adı, maç dizini); düz kayıtta (`match_details/<id>`)
-        ilk ikisi None. Kayıt yoksa None. Yeri katalog söyler (birincil anahtar araması), ağaç gezilmez.
+        Kayıtlı maçın yeri: eski düzende (lig dizini adı, sezon dizini adı, maç dizini), düz kayıtta
+        (`match_details/<id>`) ilk ikisi None; v3 düzeninde (None, None, maçın v3 dizini). Kayıt yoksa None. Yeri
+        katalog söyler (birincil anahtar araması), ağaç gezilmez.
         """
         row = self._stored_event(match_id)
-        return self._legacy_location(row) if row is not None else None
+        return self._record_location(row) if row is not None else None
 
     def _build_match_index(self) -> Dict[str, Tuple[Optional[str], Optional[str], str]]:
-        """match_id → konum: detayı eski düzende kayıtlı bütün maçlar (katalogdan). İşler bunu kullanmaz."""
+        """match_id → konum (`_find_match_path`): detayı kayıtlı bütün maçlar (katalogdan). İşler bunu kullanmaz."""
         index: Dict[str, Tuple[Optional[str], Optional[str], str]] = {}
         for row in self._store().events.iter(store_hooks.EventQuery(has_details=True)):
-            if row.layout != _LEGACY_LAYOUT or not row.path:
+            if row.layout == _LEGACY_LAYOUT and not row.path:
                 continue
-            location = self._legacy_location(row)
+            location = self._record_location(row)
             if location is not None:
                 index[str(row.id)] = location
         return index
@@ -332,7 +352,7 @@ class MatchDataFetcher:
           - veri var: "ok"
           - okunabiliyor ama içinde veri yok: kesin "boş" (sayılır; gövde sonuçta durur ve diske yazılır)
           - okunamadı (gövde beklenen JSON türünde değil): başarısız istek, neden "parse". Kesin bir "yok"
-            yanıtı değildir: sayılmaz, _slice_status.json'a hata olarak yazılır ve dilim sonraki
+            yanıtı değildir: sayılmaz, dilimin hata kaydına yazılır ve dilim sonraki
             çalıştırmada yeniden istenir. Gövde sonuca konmaz, yani diske yazılmaz.
 
         Okunamayan gövde devre kesiciye bildirilmez: istek katmanı bu isteği yanıt almış olarak saymıştır
@@ -663,85 +683,86 @@ class MatchDataFetcher:
         """Dilimin verisi var mı (src.slices.match_detail_slice_present)."""
         return match_detail_slice_present(key, d)
 
-    def _load_unavailable(self, match_dir: str) -> Dict[str, int]:
-        try:
-            with open(os.path.join(match_dir, UNAVAILABLE_FILE), "r", encoding="utf-8") as f:
-                data = json.load(f)
-            return {str(k): int(v) for k, v in data.items()} if isinstance(data, dict) else {}
-        except (OSError, ValueError, TypeError):
-            return {}
+    # --- Store'a yazma ---------------------------------------------------------------------------------
+    #
+    # Dilim sonuçları `Store.events.put`'a verilir; "veri yok" sayaçları ve hata kayıtları manifestte ve
+    # katalogda tutulur (eski düzendeki `_unavailable.json` / `_slice_status.json`'ın karşılığı, bölüm 2.3).
+    # Bugünkü kurallar çağrının bağımsız değişkenleriyle korunur:
+    #   - sayaçlar ve hata kayıtları yalnızca bitmiş maçta ve sporun `required` dilimlerinde tutulur
+    #     (`count_empties`); öteki dilimlerin ve bitmemiş maçların yalnızca gövdesi olan yükü saklanır;
+    #   - verisi olan dilimin "yok" sayacı ve hata kaydı silinir; 404 ya da içinde veri olmayan 200 sayılır
+    #     (gövde varsa o da saklanır); başarısız istek sayılmaz, hata kaydına yazılır; açık devre kesici
+    #     yüzünden gönderilmeyen istek yok sayılır (Store `failed` / `breaker` sonucunu atlar).
 
-    def _load_slice_status(self, match_dir: str) -> Dict[str, Dict[str, Any]]:
-        """_slice_status.json: dilim başına kesin "yok" sayısı ve son başarısız istek."""
-        try:
-            with open(os.path.join(match_dir, SLICE_STATUS_FILE), "r", encoding="utf-8") as f:
-                data = json.load(f)
-        except (OSError, ValueError):
-            return {}
-        if not isinstance(data, dict):
-            return {}
-        return {str(k): dict(v) for k, v in data.items() if isinstance(v, dict)}
+    def _put_retrying(self, event_id: int, what: str, write: Callable[[], Any]) -> Any:
+        """
+        Store'a bir yazma. Depo meşgulse (başka bir süreç yazıyor, StoreBusy) STORE_BUSY_ATTEMPTS kez, artan
+        beklemeyle yeniden denenir; sonra StoreBusy (kalıcı olmayan bir depolama hatası) çağırana çıkar. Öteki
+        depolama hataları (StoreError, bir StorageError) olduğu gibi çıkar; beklenmeyen hata (ör. Store'un
+        reddettiği bir yük, ValueError) kalıcı olmayan bir StorageError'a çevrilir: yalnızca o maç başarısızdır.
+        """
+        wait = STORE_BUSY_FIRST_WAIT
+        for attempt in range(STORE_BUSY_ATTEMPTS):
+            try:
+                return write()
+            except store_hooks.StoreBusy:
+                if attempt == STORE_BUSY_ATTEMPTS - 1:
+                    raise
+                logger.warning(f"The data store is busy (another process is writing); retrying {what} "
+                               f"(match {event_id}) in {wait:.1f} s")
+                time.sleep(wait)
+                wait *= 2
+            except StorageError:
+                raise
+            except Exception as e:
+                logger.error(f"Could not store {what} (match {event_id}): {e}")
+                raise StorageError.from_exception(e, os.path.join(self.data_dir, "v3", "events")) from e
+        raise AssertionError("unreachable")  # pragma: no cover
 
     @staticmethod
-    def _confirmed_empty_count(entry: Optional[Dict[str, Any]]) -> int:
-        empty = (entry or {}).get("empty")
-        count = empty.get("count") if isinstance(empty, dict) else None
-        return count if isinstance(count, int) and not isinstance(count, bool) and count > 0 else 0
+    def _slice_outcomes(
+        match_data: Mapping[str, Any],
+        outcomes: Mapping[str, SliceOutcome],
+        counted: Tuple[str, ...],
+    ) -> Tuple[Dict[str, SliceOutcome], Tuple[str, ...]]:
+        """
+        `match_data`'daki dilimlerin `put` sonuçları (`basic` ve gözlem hariç) ve "yok" yanıtı sayılacak dilimler
+        (`put`'un `count_empties`'i). counted: sayaçları tutulan dilimler (bitmiş maçta sporun `required`
+        dilimleri; bitmemiş maçta boş); yalnızca bu çağrıda sonucu verilenler sayılır.
 
-    def _update_slice_markers(
-        self,
-        match_dir: str,
-        sport: Optional[str],
-        match_data: Dict[str, Any],
-        outcomes: Dict[str, SliceOutcome],
-    ) -> None:
+          - verisi olan dilim (src.slices.match_detail_slice_present): `ok`, bu çağrıda istenmemiş olsa da (eski
+            yazıcı onun işaretlerini de siliyordu); yükü değişmediyse Store dosyasını yeniden yazmaz;
+          - sayaçları tutulan dilim, sonucu verilmişse: o sonuç (içinde veri olmayan 200'ün gövdesiyle);
+          - öteki dilim: içinde veri olmayan bir gövdesi varsa `empty` olarak, sayılmadan saklanır (eski yazıcı her
+            gövdeyi dosyaya yazardı); gövdesi olmayan dilim yazmaya girmez (Store'da kaydı açılmaz).
         """
-        Bitmiş maçta istenen dilimlerin sonucunu işler:
-          - verisi olan dilim: "yok" sayımı ve hata kaydı silinir
-          - kesin "yok" yanıtı (404 ya da içinde veri olmayan 200): _unavailable.json'da sayılır;
-            UNAVAILABLE_AFTER_ATTEMPTS'e ulaşınca dilim o maç için bir daha beklenmez
-          - başarısız istek: SAYILMAZ; neden ve zamanla _slice_status.json'a yazılır, dilim beklenmeye
-            devam eder (sonraki çalıştırmada yeniden istenir)
-          - sonucu bilinmeyen dilim (bu kayıtta istenmedi): dokunulmaz
-        """
-        unavailable = self._load_unavailable(match_dir)
-        status = self._load_slice_status(match_dir)
-        now = _utc_now_iso()
-        unavailable_changed = status_changed = False
-        for detail in slices_for(sport, required_only=True):
-            key = detail.key
-            if self.match_detail_slice_present(key, match_data):
-                unavailable_changed |= unavailable.pop(key, None) is not None
-                status_changed |= status.pop(key, None) is not None
+        found: Dict[str, SliceOutcome] = {}
+        counts: List[str] = []
+        for key, data in match_data.items():
+            if key in ("basic", OBSERVATION_KEY):
                 continue
             outcome = outcomes.get(key)
-            if outcome is None:
-                continue  # bu kayıtta istenmedi (refill yalnız eksikleri ister) ya da sonucu bilinmiyor
-            if outcome.failed and outcome.reason == request_breaker.BREAKER_OPEN:
-                continue  # devre kesikti, istek hiç gönderilmedi: önceki hata kaydı (varsa) geçerli kalır
-            entry = status.setdefault(key, {})
-            if outcome.failed:
-                previous = entry.get("error") if isinstance(entry.get("error"), dict) else {}
-                entry["error"] = {
-                    "reason": outcome.reason or request_breaker.OTHER,
-                    "status": outcome.http_status,
-                    "at": now,
-                    "count": int(previous.get("count") or 0) + 1,
-                }
-            else:
-                unavailable[key] = unavailable.get(key, 0) + 1
-                unavailable_changed = True
-                entry["empty"] = {"count": self._confirmed_empty_count(entry) + 1, "at": now}
-                entry.pop("error", None)  # yanıt geldi: önceki hata geçersiz
-            status_changed = True
-        if unavailable_changed:
-            atomic_write_json(os.path.join(match_dir, UNAVAILABLE_FILE), unavailable)
-        if status_changed:
-            status_path = os.path.join(match_dir, SLICE_STATUS_FILE)
-            if status:
-                atomic_write_json(status_path, status)
-            elif os.path.exists(status_path):
-                os.remove(status_path)
+            if data is not None and match_detail_slice_present(key, match_data):
+                found[key] = SliceOutcome(SLICE_OK, data=data)
+            elif key in counted and outcome is not None:
+                if outcome.status != SLICE_EMPTY:
+                    found[key] = outcome  # başarısız (devre kesici dahil) ya da gönderilmemiş: Store'un kuralı
+                else:
+                    found[key] = SliceOutcome(SLICE_EMPTY, data=data, reason=outcome.reason,
+                                              http_status=outcome.http_status)
+                    counts.append(key)
+            elif data is not None:
+                found[key] = SliceOutcome(SLICE_EMPTY, data=data, reason="empty")
+        return found, tuple(counts)
+
+    def _expected_slice_keys(self, event_id: int, sport: Optional[str]) -> List[str]:
+        """
+        Beklenen dilimler: o sporun `required` dilimleri, yeterince denenip hep boş gelenler hariç (kesin ve
+        doğrulanmamış "yok" sayısının toplamı UNAVAILABLE_AFTER_ATTEMPTS'e ulaşmış olanlar). Store'dan okunur.
+        """
+        settled = {info.key for info in self._store().events.slices(event_id)
+                   if not info.sub and info.settled_empty(UNAVAILABLE_AFTER_ATTEMPTS)}
+        return [detail.key for detail in slices_for(sport, required_only=True) if detail.key not in settled]
 
     def reset_unavailable_markers(
         self,
@@ -751,93 +772,32 @@ class MatchDataFetcher:
         """
         "Bu dilim bu maçta yok" işaretlerini yeniden denetime açar (--recheck-unavailable; web katmanı
         da çağırabilir). Ağ isteği yapmaz: işaretleri geri alır, dilimler sonraki indirmede yeniden istenir.
+        İşi Store yapar (`Store.events.reset_empty_markers`; eski düzendeki maç, sayaçları değişecekse önce v3'e
+        yükseltilir, eski dizinine dokunulmaz).
 
-        Eski sürümler başarısız isteği de (403/429/5xx/zaman aşımı) "yok" sayıyordu; o işaretlerin
-        hangisinin geçici hata olduğu dosyadan anlaşılamaz. Varsayılan olarak yalnızca kesin yanıtla
-        doğrulanmamış sayımlar geri alınır (_unavailable.json'daki sayı − _slice_status.json'daki
-        empty.count); bu sürümün 404 / boş 200 ile saydıkları kalır. Bu yüzden işlem tekrarlanabilir:
-        yeniden denetimden sonra ikinci kez çalıştırmak hiçbir şeyi değiştirmez.
+        Eski sürümler başarısız isteği de (403/429/5xx/zaman aşımı) "yok" sayıyordu; o işaretlerin hangisinin
+        geçici hata olduğu bilinemez. Varsayılan olarak yalnızca kesin yanıtla doğrulanmamış sayımlar geri
+        alınır; bu sürümün 404 / boş 200 ile saydıkları kalır. Bu yüzden işlem tekrarlanabilir: yeniden
+        denetimden sonra ikinci kez çalıştırmak hiçbir şeyi değiştirmez.
 
         include_confirmed=True: doğrulanmış işaretler de silinir (ör. SofaScore veriyi sonradan eklediyse).
-        league_id: yalnızca `{league_id}_*` dizinleri.
+        league_id: yalnızca bu turnuvanın maçları (maçın turnuvasına bakılır; turnuvası olmayan maç girmez).
 
-        Returns: {"matches": işareti değişen maç, "slices": yeniden istenecek dilim, "scanned": bakılan maç}
+        Returns: {"matches": işareti değişen maç, "slices": yeniden istenecek dilim, "scanned": sayacı olan maç}
         """
-        result = {"matches": 0, "slices": 0, "scanned": 0}
-        if not os.path.isdir(self.match_details_dir):
-            return result
-        for league_name in sorted(os.listdir(self.match_details_dir)):
-            league_path = os.path.join(self.match_details_dir, league_name)
-            if league_name == "processed" or not os.path.isdir(league_path):
-                continue
-            if league_id is not None and not league_name.startswith(f"{league_id}_"):
-                continue
-            for season_name in sorted(os.listdir(league_path)):
-                season_path = os.path.join(league_path, season_name)
-                if not os.path.isdir(season_path):
-                    continue
-                for mid in sorted(os.listdir(season_path)):
-                    match_dir = os.path.join(season_path, mid)
-                    if not os.path.isfile(os.path.join(match_dir, UNAVAILABLE_FILE)):
-                        continue
-                    result["scanned"] += 1
-                    reopened = self._reset_match_markers(match_dir, include_confirmed)
-                    if reopened:
-                        result["matches"] += 1
-                        result["slices"] += reopened
-                        if getattr(self, "_need_cache", None) is not None:
-                            self._need_cache.pop(mid, None)
+        scope = None
+        if league_id is not None:
+            tournament = _canonical_id(str(league_id))
+            if tournament is None:
+                return {"matches": 0, "slices": 0, "scanned": 0}
+            scope = store_hooks.Scope(tournament_ids=(tournament,))
+        result = dict(self._put_retrying(
+            0, "the marker reset", lambda: self._store().events.reset_empty_markers(
+                scope, include_confirmed=include_confirmed, threshold=UNAVAILABLE_AFTER_ATTEMPTS)))
+        cache = getattr(self, "_need_cache", None)
+        if cache is not None and result.get("matches"):
+            cache.clear()  # yeniden beklenen dilimi olan maçların ihtiyacı değişti
         return result
-
-    def _reset_match_markers(self, match_dir: str, include_confirmed: bool) -> int:
-        """Bir maçın işaretlerini geri alır; yeniden beklenir hale gelen dilim sayısını döndürür."""
-        unavailable = self._load_unavailable(match_dir)
-        status = self._load_slice_status(match_dir)
-        reopened = 0
-        changed = status_changed = False
-        for key, count in list(unavailable.items()):
-            keep = 0 if include_confirmed else min(count, self._confirmed_empty_count(status.get(key)))
-            if keep == count:
-                continue
-            changed = True
-            if count >= UNAVAILABLE_AFTER_ATTEMPTS > keep:
-                reopened += 1
-            if keep:
-                unavailable[key] = keep
-            else:
-                del unavailable[key]
-            if include_confirmed and isinstance(status.get(key), dict) and status[key].pop("empty", None) is not None:
-                status_changed = True
-                if not status[key]:
-                    del status[key]
-        if not changed:
-            return 0
-        try:
-            unavailable_path = os.path.join(match_dir, UNAVAILABLE_FILE)
-            if unavailable:
-                atomic_write_json(unavailable_path, unavailable)
-            else:
-                os.remove(unavailable_path)
-            if status_changed:
-                status_path = os.path.join(match_dir, SLICE_STATUS_FILE)
-                if status:
-                    atomic_write_json(status_path, status)
-                else:
-                    os.remove(status_path)
-        except OSError as e:
-            raise StorageError.from_exception(e, match_dir) from e
-        finally:
-            store_hooks.shadow_event(self.data_dir, os.path.basename(match_dir), match_dir)
-        return reopened
-
-    def _expected_slices(self, match_dir: str, sport: Optional[str] = None) -> List[str]:
-        """Beklenen dilimler: o sporun `required` dilimleri, yeterince denenip hep boş gelenler hariç."""
-        unavailable = self._load_unavailable(match_dir)
-        return [
-            detail.key
-            for detail in slices_for(sport, required_only=True)
-            if unavailable.get(detail.key, 0) < UNAVAILABLE_AFTER_ATTEMPTS
-        ]
 
     def _needs_detail_fetch(self, match_id: str) -> str:
         """
@@ -863,15 +823,14 @@ class MatchDataFetcher:
     def _compute_detail_needs(self, match_ids: List[str]) -> Dict[str, str]:
         """
         Maçların ihtiyacı, kataloğa birkaç sorguyla sorulur (QueryService.detail_needs); hiçbir dosya okunmaz.
-        Kayıt, olay yükü eski düzende saklanan maçtır (`_stored_event`); kurallı bir kimlik olmayan metin
+        Kayıt, olay yükü herhangi bir düzende saklanan maçtır (`_stored_event`); kurallı bir kimlik olmayan metin
         ("007", "abc") kayıt değildir. Katalog dosyalarla eşit değilse CatalogNotCurrent (plan yapılmaz).
         """
         ids = {mid: _canonical_id(mid) for mid in match_ids}
         service = QueryService(self._store())
         service.require_current()
         needs = service.detail_needs([event_id for event_id in ids.values() if event_id is not None],
-                                     RefreshPolicy.current(), threshold=UNAVAILABLE_AFTER_ATTEMPTS,
-                                     layout=_LEGACY_LAYOUT)
+                                     RefreshPolicy.current(), threshold=UNAVAILABLE_AFTER_ATTEMPTS)
         return {mid: needs.get(event_id, "full") if event_id is not None else "full" for mid, event_id in ids.items()}
 
     def _order_by_need(self, match_ids: List[Any]) -> Tuple[List[Any], int]:
@@ -900,51 +859,53 @@ class MatchDataFetcher:
 
     def refresh_match(self, match_id: Union[int, str]) -> Optional[Dict[str, Any]]:
         """
-        Geçici kaydı yeniler: yalnızca /event/{id} çekilir. Fark yoksa observation.json güncellenir;
-        fark varsa basic.json da yazılır ve değişim score_changes.jsonl'a eski/yeni değerle eklenir.
-        COMPLETED → VOID olursa kayıt silinmez, observation.json'a status_regressed: true yazılır.
+        Geçici kaydı yeniler: yalnızca /event/{id} çekilir ve Store'a gözlem olarak yazılır
+        (`Store.events.observe`). Yük aynıysa yalnızca gözlem anı ilerler. Yük değiştiyse saklanır; karşılaştırılan
+        alanlardan biri değiştiyse (src/refresh.py `diff_basic`) değişim eski ve yeni değeriyle değişiklik
+        günlüğüne (`changes/<yyyy>-<mm>.jsonl`) aynı kritik bölümde eklenir (`change_row`). COMPLETED → VOID olursa
+        kayıt silinmez, gözleme yapışkan `status_regressed` bayrağı yazılır. Eski düzendeki kayıt önce v3'e
+        yükseltilir (eski dizine dokunulmaz).
         """
         mid = str(match_id)
-        path_info = self._find_match_path(mid)
-        if not path_info:
+        row = self._stored_event(mid)
+        if row is None:
             return None
-        _, _, match_dir = path_info
-        data = self._load_match_data_from_dir(match_dir, mid)
+        data = self._load_match_data_from_dir("", mid)
         old = data.get("basic")
         if not old:
             return None
         new = self._fetch_match_basic(mid)
         if not new:
-            logger.warning(f"Maç {mid} yenileme: /event alınamadı")
+            logger.warning(f"Refresh of match {mid}: /event could not be fetched")
             return None
 
         stored = data.get(OBSERVATION_KEY)
         obs = observation_record(new)
         if isinstance(stored, dict) and stored.get("status_regressed"):
             obs["status_regressed"] = True
-        changed = diff_basic(old, new)
-        try:
-            if changed:
-                row = change_row(old, new, changed, _event_sport(new) or _event_sport(old))
-                if row.get("status_regressed"):
-                    obs["status_regressed"] = True
-                    logger.warning(f"Maç {mid} oynanmış sayılıyordu, şimdi {new.get('status')}; kayıt silinmedi")
-                self._append_score_change(row)
-                atomic_write_json(os.path.join(match_dir, "basic.json"), new)
-                full_json_path = os.path.join(match_dir, f"{mid}.json")
-                if os.path.exists(full_json_path):  # eski tek dosyalı kayıt da güncel kalsın
-                    with open(full_json_path, "r", encoding="utf-8") as f:
-                        full = json.load(f)
-                    full["basic"] = new
-                    atomic_write_json(full_json_path, full)
-                data["basic"] = new
-                logger.info(f"Maç {mid} yenilendi: {len(changed)} alan değişti ({', '.join(list(changed)[:5])})")
-            atomic_write_json(os.path.join(match_dir, f"{OBSERVATION_KEY}.json"), obs)
-        except OSError as e:
-            # Yazılamayan yenileme "yenilendi" sayılmaz; çağıran maçı başarısız işaretler (kalıcıysa iş durur)
-            raise StorageError.from_exception(e, match_dir) from e
-        finally:
-            store_hooks.shadow_event(self.data_dir, mid, match_dir)
+        found: Dict[str, Any] = {"changed": {}, "row": None}
+
+        def on_event_change(previous: Optional[Mapping[str, Any]], payload: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
+            # Kritik bölümde çalışır: Store'a yazmaz, yalnızca karşılaştırır
+            if not previous:
+                return None
+            changed = diff_basic(dict(previous), dict(payload))
+            found["changed"] = changed
+            if not changed:
+                return None
+            found["row"] = change_row(dict(previous), dict(payload), changed,
+                                      _event_sport(dict(payload)) or _event_sport(dict(previous)))
+            return found["row"]
+
+        self._put_retrying(row.id, "the refreshed match page", lambda: self._store().events.observe(
+            row.id, new, on_event_change=on_event_change))
+        changed = found["changed"]
+        if changed:
+            if found["row"] is not None and found["row"].get("status_regressed"):
+                obs["status_regressed"] = True
+                logger.warning(f"Match {mid} counted as played is now {new.get('status')}; the record is kept")
+            data["basic"] = new
+            logger.info(f"Match {mid} refreshed: {len(changed)} fields changed ({', '.join(list(changed)[:5])})")
         data[OBSERVATION_KEY] = obs
 
         self.last_refresh_changed = bool(changed)
@@ -955,20 +916,15 @@ class MatchDataFetcher:
             listener(mid, bool(changed))
         return data
 
-    def _append_score_change(self, row: Dict[str, Any]) -> None:
-        path = os.path.join(self.data_dir, SCORE_CHANGES_FILE)
-        with _SCORE_CHANGES_LOCK:
-            with open(path, "a", encoding="utf-8") as f:
-                f.write(json.dumps(row, ensure_ascii=False) + "\n")
-        store_hooks.shadow_changes(self.data_dir)
-
     def refresh_due_ids(self, league_id: Optional[Union[int, str]] = None) -> List[str]:
         """
         Kayıtlı maçlardan yenilenmesi gerekenler (--refresh-only). Eksik dilimli maçlar dahil değil.
 
-        Katalogdan (QueryService.refresh_due): ağacın her yerindeki kayıtlar, düz ve `_no_tournament/` altındakiler
-        de. league_id: maçın turnuvası (dizin adına bakılmaz). Sıra, kayıt dizinlerinin yol sırasıdır (eski
-        ağaç gezintisinin sırası: lig dizini, sezon dizini, maç kimliği metin olarak).
+        Katalogdan (QueryService.refresh_due): her düzendeki kayıtlar, eski düzenin düz ve `_no_tournament/`
+        dizinlerindekiler de. league_id: maçın turnuvası (dizin adına bakılmaz). Sıra, eski düzen yazıcısının
+        dizinlerinin yol sırasıdır (eski ağaç gezintisinin sırası: lig dizini, sezon dizini, maç kimliği metin
+        olarak): eski düzendeki kayıtta kendi yolu, v3'e yükseltilmiş kayıtta eski yolu, yalnızca v3'te duran
+        kayıtta eski yazıcının o maç için seçeceği adlar (src/services/export.py `legacy_folders`).
         """
         tournament_ids: Tuple[int, ...] = ()
         if league_id is not None:
@@ -979,12 +935,30 @@ class MatchDataFetcher:
         service = QueryService(self._store())
         service.require_current()
         rows = service.refresh_due(RefreshPolicy.current(), tournament_ids=tournament_ids,
-                                   threshold=UNAVAILABLE_AFTER_ATTEMPTS, layout=_LEGACY_LAYOUT)
-        ids = [str(row.id) for row in sorted(rows, key=lambda row: str(row.path).strip("/").split("/"))]
+                                   threshold=UNAVAILABLE_AFTER_ATTEMPTS)
+        ids = [str(row.id) for row in sorted(rows, key=self._legacy_order)]
         cache = getattr(self, "_need_cache", None)
         if cache is not None:
             cache.update((mid, "refresh") for mid in ids)
         return ids
+
+    def _legacy_order(self, row: "EventRow") -> List[str]:
+        """Kaydın eski düzen yolu, parça parça (`refresh_due_ids`'in sırası)."""
+        from src.services.export import legacy_folders
+
+        if row.layout == _LEGACY_LAYOUT:
+            return str(row.path).strip("/").split("/")
+        if row.legacy_path:
+            return str(row.legacy_path).strip("/").split("/")
+        try:
+            basic = self._store().events.payload(row.id)
+        except StorageError:
+            basic = None
+        league, season = legacy_folders(row, basic)
+        if league is None:
+            return [os.path.basename(self.match_details_dir), str(row.id)]
+        season_dir = season if league == NO_TOURNAMENT_DIR else f"season_{season}"
+        return [os.path.basename(self.match_details_dir), league, str(season_dir), str(row.id)]
 
     def refresh_matches(
         self,
@@ -1038,16 +1012,16 @@ class MatchDataFetcher:
         self, match_id: Union[int, str], *, report: Optional[SingleFetchReport] = None
     ) -> Optional[Dict[str, Any]]:
         """
-        Diskte basic.json olan maçta eksik API dilimlerini tamamlar (yeni maç için fetch_match_data kullanın).
+        Saklanan maçta eksik API dilimlerini tamamlar (yeni maç için fetch_match_data kullanın). Eksik: sporun
+        beklenen dilimlerinden (`_expected_slice_keys`) verisi olmayanlar. Maçın sayfası (/event) da yenilenir.
 
         report verilirse /event isteğinin ve istenen dilimlerin sonucu ona yazılır (SingleFetchReport).
         """
         mid = str(match_id)
-        path_info = self._find_match_path(mid)
-        if not path_info:
+        row = self._stored_event(mid)
+        if row is None:
             return None
-        _, _, match_dir = path_info
-        match_data = self._load_match_data_from_dir(match_dir, mid)
+        match_data = self._load_match_data_from_dir("", mid)
         if not match_data.get("basic"):
             return None
 
@@ -1064,7 +1038,7 @@ class MatchDataFetcher:
         match_data[OBSERVATION_KEY] = observation_record(basic_live)
         missing = [
             k
-            for k in self._expected_slices(match_dir, _event_sport(basic_live))
+            for k in self._expected_slice_keys(row.id, _event_sport(basic_live))
             if not self.match_detail_slice_present(k, match_data)
         ]
         if not missing:
@@ -1243,49 +1217,6 @@ class MatchDataFetcher:
         """Maç olaylarını (goller, kartlar, devre vb.) çeker — yanıt genelde {\"incidents\": [...], \"home\": ..., \"away\": ...}."""
         return self._fetch_slice_endpoint(match_id, "incidents", "incidents verisi")
 
-    def _match_storage_dir(self, match_id: str, basic_data: Dict[str, Any]) -> Tuple[Optional[str], Optional[str], str]:
-        """
-        Maçın yazılacağı yer: (lig dizini adı, sezon dizini adı, maç dizini).
-
-        Lig dizini `{uniqueTournament.id}_{ad}` biçimindedir; lig filtreli okuyucular bu id önekine
-        bakar. uniqueTournament.id'si olmayan maç (bazı e-spor / hazırlık maçları) eskiden yalnızca
-        ada göre ("Unknown_League" ya da turnuva adı) bir dizine düşüyordu. Artık sabit bir yere
-        yazılır: match_details/_no_tournament/<spor>/<maç id>. Bu da lig/sezon/maç derinliğindedir,
-        yani dizin ağacını gezen okuyucular (_find_match_path, yenileme taraması, CSV dışa aktarımı,
-        web'deki "detayı olan maçlar") onu bulur. Böyle bir maç zaten diskteyse yeri değişmez:
-        mevcut veri taşınmaz, kaydı olduğu dizinde güncellenir.
-        """
-        tournament_data = (basic_data.get("tournament") or {}).get("uniqueTournament") or {}
-        tournament_id = tournament_data.get("id")
-        if not tournament_id:
-            existing = self._find_match_path(match_id)
-            if existing:
-                return existing
-            sport_dir = _path_part(_event_sport(basic_data) or "unknown")
-            return NO_TOURNAMENT_DIR, sport_dir, os.path.join(
-                self.match_details_dir, NO_TOURNAMENT_DIR, sport_dir, match_id
-            )
-
-        tournament_name = tournament_data.get("name") or "Unknown_League"
-        # Güvenli dizin adı (ID prefix ile standart format)
-        safe_tournament_name = f"{tournament_id}_{tournament_name.replace(' ', '_').replace('/', '_')}"
-
-        # Sezon adı için güvenli string oluştur - öncelikle name kullan, yoksa year
-        season_data = basic_data.get("season") or {}
-        season_id = season_data.get("id")
-        season_name = season_data.get("name", "Unknown_Season")
-        season_year = season_data.get("year", "Unknown_Year")
-        if season_name and season_name != "Unknown_Season":
-            safe_season_name = f"season_{season_name.replace(' ', '_').replace('/', '_')}"
-        elif season_year and season_year != "Unknown_Year":
-            safe_season_name = f"season_{season_year.replace('/', '_')}"
-        else:
-            safe_season_name = f"season_{season_id}"
-
-        # Dizin yapısı: lig/sezon/maç_id
-        match_dir = os.path.join(self.match_details_dir, safe_tournament_name, safe_season_name, match_id)
-        return safe_tournament_name, safe_season_name, match_dir
-
     def _save_match_data(
         self,
         match_id: str,
@@ -1293,47 +1224,49 @@ class MatchDataFetcher:
         outcomes: Optional[Dict[str, SliceOutcome]] = None,
     ) -> None:
         """
-        Maç verilerini lig ve sezon bazında organizasyonla JSON olarak kaydeder.
+        Maçın verilerini Store'a yazar (`Store.events.put`, v3 düzeni: `v3/events/.../<id>/`). Eski düzende
+        duran maç önce v3'e yükseltilir; eski dizine dokunulmaz. Bütün yazma tek bir işlemdir: katalog aynı
+        kritik bölümde güncellenir.
 
         Args:
             match_id: Maç ID'si
-            match_data: Kaydedilecek maç verileri
-            outcomes: Bu kayıtta istenen dilimlerin tipli sonuçları. Yalnızca kesin "yok" yanıtları
-                _unavailable.json'da sayılır; başarısız istekler _slice_status.json'a yazılır.
-                Sonucu verilmeyen boş dilim sayılmaz (istenip istenmediği bilinmiyor).
+            match_data: Kaydedilecek maç verileri: `basic` (/event yükü), varsa gözlem (`observation`;
+                `observed_at_utc` yükün alındığı an olarak saklanır, yoksa şimdi) ve dilimler (anahtar → yük ya
+                da None).
+            outcomes: Bu kayıtta istenen dilimlerin tipli sonuçları. Bitmiş maçta sporun `required` dilimleri
+                için yalnızca kesin "yok" yanıtları sayılır; başarısız istekler dilimin hata kaydına yazılır.
+                Sonucu verilmeyen boş dilim sayılmaz (istenip istenmediği bilinmiyor). Kurallar:
+                `_slice_outcomes`.
 
         Raises:
-            StorageError: veri diske yazılamadı. Hata yutulmaz: yutulursa hiçbir şey yazılmamışken
-                maç "indirildi" sayılır. Çağıran maçı başarısız işaretler; `fatal` ise (disk dolu,
-                izin yok) işi durdurur.
+            StorageError: veri diske yazılamadı (Store'un hatası, StoreError). Hata yutulmaz: yutulursa hiçbir
+                şey yazılmamışken maç "indirildi" sayılır. Çağıran maçı başarısız işaretler; `fatal` ise (disk
+                dolu, izin yok) işi durdurur.
         """
         mid = str(match_id)
         basic_data = match_data.get("basic") or {}
-        match_dir = self.match_details_dir
-        try:
-            league_dir_name, season_dir_name, match_dir = self._match_storage_dir(mid, basic_data)
-            os.makedirs(match_dir, exist_ok=True)
+        event_id = _canonical_id(mid)
+        if event_id is None:
+            raise StorageError(f"Match id is not a canonical event id: {mid!r}", detail="invalid match id")
+        finished = MatchFetcher._is_finished_event(basic_data)
+        sport = _event_sport(basic_data)
+        counted = tuple(detail.key for detail in slices_for(sport, required_only=True)) if finished else ()
+        observation = match_data.get(OBSERVATION_KEY)
+        observed_at = _parse_utc(observation.get("observed_at_utc")) if isinstance(observation, dict) else None
 
-            # Her veri türünü ayrı ayrı kaydet
-            for data_type, data in match_data.items():
-                if data is not None:
-                    atomic_write_json(os.path.join(match_dir, f"{data_type}.json"), data)
-
-            # Bitmiş maçta dilim sonuçlarını işle: kesin "yok"lar sayılır, başarısız istekler not edilir
-            if MatchFetcher._is_finished_event(basic_data):
-                self._update_slice_markers(match_dir, _event_sport(basic_data), match_data, outcomes or {})
-        except StorageError:
-            raise
-        except Exception as e:
-            logger.error(f"Maç ID {match_id} için veriler kaydedilemedi ({match_dir}): {str(e)}")
-            raise StorageError.from_exception(e, match_dir) from e
-        finally:
-            store_hooks.shadow_event(self.data_dir, mid, match_dir)
+        slices, counts = self._slice_outcomes(match_data, outcomes or {}, counted)
+        put: Dict[str, SliceOutcome] = {}
+        if basic_data:
+            put["event"] = SliceOutcome(SLICE_OK, data=basic_data, fetched_at=observed_at)
+        put.update(slices)
+        result = self._put_retrying(event_id, "the match details", lambda: self._store().events.put(
+            event_id, put, count_empties=counts if counts else False))
 
         if getattr(self, "_need_cache", None) is not None:
             self._need_cache.pop(mid, None)
 
-        logger.info(f"{league_dir_name}, {season_dir_name}, Maç ID {match_id} için veriler başarıyla kaydedildi: {match_dir}")
+        how = "promoted from the old layout and stored" if result.promoted else "stored"
+        logger.info(f"Match {mid} {how} ({len(result.written)} files written)")
 
     def fetch_matches_batch(
         self,

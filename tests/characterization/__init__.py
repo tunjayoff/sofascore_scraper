@@ -35,6 +35,8 @@ _MANIFEST_VOLATILE_KEYS = frozenset({"created_at", "updated_at", "fetched_at", "
 _LOCAL_DATETIME = re.compile(r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?")
 # Dosya adındaki çalıştırma zamanı (processed/all_matches_<epoch>.csv)
 _EPOCH_IN_NAME = re.compile(r"_\d{9,}(?=\.)")
+# Değişiklik günlüğünün ay parçası (changes/<yyyy>-<mm>.jsonl, ST-21): adı satırın yazıldığı aydır
+_MONTH_SEGMENT = re.compile(r"^changes/\d{4}-\d{2}(?=\.jsonl$)")
 _TEXT_SUFFIXES = frozenset({".json", ".jsonl", ".csv", ".txt"})
 # Veri dizinindeki durum dosyaları (iş geçmişi; ileride katalog) indirilen veri değildir: özete girmez
 STATE_DIR = ".meta"
@@ -95,7 +97,8 @@ def snapshot_tree(root: Any) -> Dict[str, Any]:
     """
     base = Path(root)
     return {
-        _EPOCH_IN_NAME.sub("_<epoch>", p.relative_to(base).as_posix()): _file_summary(p)
+        _MONTH_SEGMENT.sub("changes/<yyyy-mm>", _EPOCH_IN_NAME.sub("_<epoch>", p.relative_to(base).as_posix())):
+            _file_summary(p)
         for p in sorted(base.rglob("*"))
         if p.is_file() and STATE_DIR not in p.relative_to(base).parts
     }

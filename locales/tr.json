@@ -592,5 +592,8 @@
     "launcher_leave_open": "Bu pencereyi açık bırakın. Uygulamayı durdurmak için kapatın.",
     "launcher_server_exited": "Sunucu erken kapandı.",
     "launcher_ready": "Hazır: {url}",
-    "launcher_not_ready": "Sunucu başladı ama /health henüz hazır değil — elle açın: {url}"
+    "launcher_not_ready": "Sunucu başladı ama /health henüz hazır değil — elle açın: {url}",
+    "notice_menu_backup_old_layout": "Not: Buradaki yedekleme ve geri yükleme yalnızca eski klasörleri kopyalar (seasons/, matches/, match_details/). Yeni düzende (v3/) saklanan maçlar dahil değildir; onları korumak için veri klasörünün tamamını kopyalayın.",
+    "notice_menu_clear_both_layouts": "Not: Sezon, maç ya da maç detayı temizliği bunları hem eski klasörlerden hem de yeni düzenden (v3/) siler.",
+    "notice_menu_disk_old_layout": "Not: Disk boyutları yalnızca eski klasörleri kapsar; yeni düzende (v3/) saklanan maçlar sayılara dahildir, boyutlara dahil değildir."
 }

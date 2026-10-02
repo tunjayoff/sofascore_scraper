@@ -7,70 +7,324 @@
  "files": {
   "added": {
    "data/datasets/": "<empty dir>",
-   "data/match_details/17_Premier_League/season_Premier_League_23_24/9100010/basic.json": "sha256:c30a4892cbe3",
-   "data/match_details/17_Premier_League/season_Premier_League_23_24/9100010/h2h.json": "sha256:d70f49116a50",
-   "data/match_details/17_Premier_League/season_Premier_League_23_24/9100010/incidents.json": "sha256:a2597c3a4cd2",
-   "data/match_details/17_Premier_League/season_Premier_League_23_24/9100010/lineups.json": "sha256:8638bfb622ea",
-   "data/match_details/17_Premier_League/season_Premier_League_23_24/9100010/observation.json": {
-    "change_ts": 1716138000,
-    "observed_at_utc": "<volatile>"
-   },
-   "data/match_details/17_Premier_League/season_Premier_League_23_24/9100010/pregame_form.json": "sha256:23d266be170d",
-   "data/match_details/17_Premier_League/season_Premier_League_23_24/9100010/statistics.json": "sha256:9be2383ec321",
-   "data/match_details/17_Premier_League/season_Premier_League_23_24/9100010/team_streaks.json": "sha256:875eb2f1ef52",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/basic.json": "sha256:b1915a025fe7",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/h2h.json": "sha256:d70f49116a50",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/incidents.json": "sha256:a2597c3a4cd2",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/lineups.json": "sha256:8638bfb622ea",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/observation.json": {
-    "change_ts": 1724507200,
-    "observed_at_utc": "<volatile>"
-   },
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/pregame_form.json": "sha256:23d266be170d",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/statistics.json": "sha256:461cc83fd197",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100001/team_streaks.json": "sha256:875eb2f1ef52",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/_slice_status.json": {
-    "lineups": {
-     "empty": {
-      "at": "<volatile>",
-      "count": 1
-     }
-    },
-    "pregame_form": {
-     "empty": {
-      "at": "<volatile>",
-      "count": 1
-     }
-    }
-   },
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/_unavailable.json": {
-    "lineups": 1,
-    "pregame_form": 1
-   },
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/basic.json": "sha256:f01370edebc5",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/h2h.json": "sha256:d70f49116a50",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/incidents.json": "sha256:a2597c3a4cd2",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/lineups.json": "sha256:0aaeb8655485",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/observation.json": {
-    "change_ts": 1724514400,
-    "observed_at_utc": "<volatile>"
-   },
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/statistics.json": "sha256:b72fef1ea76e",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100002/team_streaks.json": "sha256:875eb2f1ef52",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/basic.json": "sha256:badb7cb6e291",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/h2h.json": "sha256:d70f49116a50",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/incidents.json": "sha256:a2597c3a4cd2",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/lineups.json": "sha256:8638bfb622ea",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/observation.json": {
-    "change_ts": 1725112000,
-    "observed_at_utc": "<volatile>"
-   },
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/pregame_form.json": "sha256:23d266be170d",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/statistics.json": "sha256:6fec673fa7f1",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/team_streaks.json": "sha256:875eb2f1ef52",
    "data/match_details/processed/": "<empty dir>",
    "data/matches/": "<empty dir>",
    "data/seasons/": "<empty dir>",
+   "data/v3/events/9/100/9100001/event.json.gz": "<binary>",
+   "data/v3/events/9/100/9100001/h2h.json.gz": "<binary>",
+   "data/v3/events/9/100/9100001/incidents.json.gz": "<binary>",
+   "data/v3/events/9/100/9100001/lineups.json.gz": "<binary>",
+   "data/v3/events/9/100/9100001/manifest.json": {
+    "created_at": "<volatile>",
+    "format": 1,
+    "id": 9100001,
+    "kind": "event",
+    "observation": {
+     "change_ts": 1724507200,
+     "observed_at_utc": "<volatile>",
+     "status_regressed": false
+    },
+    "slices": {
+     "event": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 780,
+      "sha256": "ca89f835befb384777eadb15c4d287e7e6f4957fe615192c5a4c72844faa00b5",
+      "state": "ok"
+     },
+     "h2h": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 69,
+      "sha256": "654505662d16d7076f62b716d948a019724e08b9020499d3fb1f4d800b487868",
+      "state": "ok"
+     },
+     "incidents": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 91,
+      "sha256": "1ed2e41d02dbf9b3f20f26a25b99ed817baf7e8c2c51365be36f73026c4da06d",
+      "state": "ok"
+     },
+     "lineups": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 254,
+      "sha256": "b533a276a62d09db56ef85008035f97e92cccf6b13f783b84c7f9a1900660b94",
+      "state": "ok"
+     },
+     "pregame_form": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 172,
+      "sha256": "4e583cdf57eea39b346c5173bc94a631bd9ee19d7e2bf47bf940012e5b565c79",
+      "state": "ok"
+     },
+     "statistics": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 148,
+      "sha256": "182baedaaeb3bb71d3645e7641ed06700ac7663ec7f42ef3887175105333d7c2",
+      "state": "ok"
+     },
+     "team_streaks": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 70,
+      "sha256": "ed50a3695300f698cdffa9982e31cf2acdcc04d5b6b753de44a382765edc0feb",
+      "state": "ok"
+     }
+    },
+    "updated_at": "<volatile>"
+   },
+   "data/v3/events/9/100/9100001/pregame_form.json.gz": "<binary>",
+   "data/v3/events/9/100/9100001/statistics.json.gz": "<binary>",
+   "data/v3/events/9/100/9100001/team_streaks.json.gz": "<binary>",
+   "data/v3/events/9/100/9100002/event.json.gz": "<binary>",
+   "data/v3/events/9/100/9100002/h2h.json.gz": "<binary>",
+   "data/v3/events/9/100/9100002/incidents.json.gz": "<binary>",
+   "data/v3/events/9/100/9100002/lineups.json.gz": "<binary>",
+   "data/v3/events/9/100/9100002/manifest.json": {
+    "created_at": "<volatile>",
+    "format": 1,
+    "id": 9100002,
+    "kind": "event",
+    "observation": {
+     "change_ts": 1724514400,
+     "observed_at_utc": "<volatile>",
+     "status_regressed": false
+    },
+    "slices": {
+     "event": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 786,
+      "sha256": "b75cd28ffbf7eaa9822053e5a048d7f96a4a4cc7b431321dd2426d5c8aeeeaf5",
+      "state": "ok"
+     },
+     "h2h": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 69,
+      "sha256": "654505662d16d7076f62b716d948a019724e08b9020499d3fb1f4d800b487868",
+      "state": "ok"
+     },
+     "incidents": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 91,
+      "sha256": "1ed2e41d02dbf9b3f20f26a25b99ed817baf7e8c2c51365be36f73026c4da06d",
+      "state": "ok"
+     },
+     "lineups": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "empty": {
+       "at": "<volatile>",
+       "count": 1,
+       "reason": "empty",
+       "unverified": 0
+      },
+      "fetched_at": "<volatile>",
+      "raw_bytes": 63,
+      "sha256": "2423c1273b903ecd635ea4745c2ca9f82934e973201435661e529a339ac74192",
+      "state": "empty"
+     },
+     "pregame_form": {
+      "checked_at": "<volatile>",
+      "empty": {
+       "at": "<volatile>",
+       "count": 1,
+       "reason": "404",
+       "unverified": 0
+      },
+      "state": "empty"
+     },
+     "statistics": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 148,
+      "sha256": "96301d33d5be21d4ded1d3c78c07f321e4286c94e3eeb1f9aaf628f37a6cb896",
+      "state": "ok"
+     },
+     "team_streaks": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 70,
+      "sha256": "ed50a3695300f698cdffa9982e31cf2acdcc04d5b6b753de44a382765edc0feb",
+      "state": "ok"
+     }
+    },
+    "updated_at": "<volatile>"
+   },
+   "data/v3/events/9/100/9100002/statistics.json.gz": "<binary>",
+   "data/v3/events/9/100/9100002/team_streaks.json.gz": "<binary>",
+   "data/v3/events/9/100/9100003/event.json.gz": "<binary>",
+   "data/v3/events/9/100/9100003/h2h.json.gz": "<binary>",
+   "data/v3/events/9/100/9100003/incidents.json.gz": "<binary>",
+   "data/v3/events/9/100/9100003/lineups.json.gz": "<binary>",
+   "data/v3/events/9/100/9100003/manifest.json": {
+    "created_at": "<volatile>",
+    "format": 1,
+    "id": 9100003,
+    "kind": "event",
+    "observation": {
+     "change_ts": 1725112000,
+     "observed_at_utc": "<volatile>",
+     "status_regressed": false
+    },
+    "slices": {
+     "event": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 786,
+      "sha256": "336ae3aea99ea90fc979621d89dceb2f588951e2a36e8e29a47586b6378cfdfc",
+      "state": "ok"
+     },
+     "h2h": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 69,
+      "sha256": "654505662d16d7076f62b716d948a019724e08b9020499d3fb1f4d800b487868",
+      "state": "ok"
+     },
+     "incidents": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 91,
+      "sha256": "1ed2e41d02dbf9b3f20f26a25b99ed817baf7e8c2c51365be36f73026c4da06d",
+      "state": "ok"
+     },
+     "lineups": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 254,
+      "sha256": "b533a276a62d09db56ef85008035f97e92cccf6b13f783b84c7f9a1900660b94",
+      "state": "ok"
+     },
+     "pregame_form": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 172,
+      "sha256": "4e583cdf57eea39b346c5173bc94a631bd9ee19d7e2bf47bf940012e5b565c79",
+      "state": "ok"
+     },
+     "statistics": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 148,
+      "sha256": "008e484db5c3ed8424f8147eb209042fcf773a504039bb9747e1484fed80f41b",
+      "state": "ok"
+     },
+     "team_streaks": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 70,
+      "sha256": "ed50a3695300f698cdffa9982e31cf2acdcc04d5b6b753de44a382765edc0feb",
+      "state": "ok"
+     }
+    },
+    "updated_at": "<volatile>"
+   },
+   "data/v3/events/9/100/9100003/pregame_form.json.gz": "<binary>",
+   "data/v3/events/9/100/9100003/statistics.json.gz": "<binary>",
+   "data/v3/events/9/100/9100003/team_streaks.json.gz": "<binary>",
+   "data/v3/events/9/100/9100010/event.json.gz": "<binary>",
+   "data/v3/events/9/100/9100010/h2h.json.gz": "<binary>",
+   "data/v3/events/9/100/9100010/incidents.json.gz": "<binary>",
+   "data/v3/events/9/100/9100010/lineups.json.gz": "<binary>",
+   "data/v3/events/9/100/9100010/manifest.json": {
+    "created_at": "<volatile>",
+    "format": 1,
+    "id": 9100010,
+    "kind": "event",
+    "observation": {
+     "change_ts": 1716138000,
+     "observed_at_utc": "<volatile>",
+     "status_regressed": false
+    },
+    "slices": {
+     "event": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 781,
+      "sha256": "cb7d1ea2a690f4f00ff2665fd26e8bffb31d35290f5c4c937fbd1d2f23778b5f",
+      "state": "ok"
+     },
+     "h2h": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 69,
+      "sha256": "654505662d16d7076f62b716d948a019724e08b9020499d3fb1f4d800b487868",
+      "state": "ok"
+     },
+     "incidents": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 91,
+      "sha256": "1ed2e41d02dbf9b3f20f26a25b99ed817baf7e8c2c51365be36f73026c4da06d",
+      "state": "ok"
+     },
+     "lineups": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 254,
+      "sha256": "b533a276a62d09db56ef85008035f97e92cccf6b13f783b84c7f9a1900660b94",
+      "state": "ok"
+     },
+     "pregame_form": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 172,
+      "sha256": "4e583cdf57eea39b346c5173bc94a631bd9ee19d7e2bf47bf940012e5b565c79",
+      "state": "ok"
+     },
+     "statistics": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 148,
+      "sha256": "322c6e2030d115a54c974a1e3c88f36260fe151d4da40842665ed89bb47e6862",
+      "state": "ok"
+     },
+     "team_streaks": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 70,
+      "sha256": "ed50a3695300f698cdffa9982e31cf2acdcc04d5b6b753de44a382765edc0feb",
+      "state": "ok"
+     }
+    },
+    "updated_at": "<volatile>"
+   },
+   "data/v3/events/9/100/9100010/pregame_form.json.gz": "<binary>",
+   "data/v3/events/9/100/9100010/statistics.json.gz": "<binary>",
+   "data/v3/events/9/100/9100010/team_streaks.json.gz": "<binary>",
    "data/v3/tournaments/17/manifest.json": {
     "created_at": "<volatile>",
     "format": 1,
@@ -266,11 +520,11 @@
   "Processing 4 matches in parallel...",
   {
    "concurrent": [
-    "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_23_24, Maç ID 9100010 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_23_24/9100010",
-    "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100001 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100001",
-    "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100002 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100002",
-    "LOG INFO MatchDataFetcher: 17_Premier_League, season_Premier_League_24_25, Maç ID 9100003 için veriler başarıyla kaydedildi: <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003",
     "LOG INFO MatchDataFetcher: Batch 1/1: 4 başarılı, 0 başarısız (hata yok)",
+    "LOG INFO MatchDataFetcher: Match 9100001 stored (7 files written)",
+    "LOG INFO MatchDataFetcher: Match 9100002 stored (6 files written)",
+    "LOG INFO MatchDataFetcher: Match 9100003 stored (7 files written)",
+    "LOG INFO MatchDataFetcher: Match 9100010 stored (7 files written)",
     "LOG INFO MatchDataFetcher: Processing batch 1/1 (4 matches)"
    ]
   },

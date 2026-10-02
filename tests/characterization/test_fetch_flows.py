@@ -12,14 +12,15 @@ Ağ yok: istekler tests/fakes/sofascore.py'deki sahte taşıyıcıya gider; iste
 Beklenen çıktılar fixtures/fetch/*.golden.json'dadır (yeniden üretmek: UPDATE_GOLDENS=1). Bu dosya
 bugünkü davranışı olduğu gibi kaydeder; doğru olduğunu söylemez. Bilinen tutarsızlıklar
 test_pipeline_divergence.py'de satır satır sabitlenir.
+
+Maç detayları ST-21'den beri Store'a, v3 düzenine yazılır (`v3/events/.../<id>/`: manifest ve `.json.gz` yükler);
+kayıtların durumunu kuran adımlar (dilim silmek, gözlemi geriye almak) tests/detail_records.py ile yapılır.
 """
 from __future__ import annotations
 
 import asyncio
 import datetime as dt
 import json
-import os
-import shutil
 import time
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, List
@@ -27,6 +28,8 @@ from typing import Any, Callable, Dict, Iterator, List
 import curl_cffi.requests as cffi_requests
 import pytest
 
+import detail_records
+import legacy_writer
 import src.utils as utils
 from characterization import WORLD, assert_golden, pin_default_settings, snapshot_tree
 from fakes.sofascore import REQUEST_LAYER, FakeSofaScore
@@ -90,26 +93,10 @@ def _fetcher(data_dir: Path) -> MatchDataFetcher:
     return MatchDataFetcher(config_manager, data_dir=str(data_dir))
 
 
-def _match_dir(data_dir: Path, event_id: int) -> Path:
-    return next(p.parent for p in (data_dir / "match_details").rglob("basic.json") if p.parent.name == str(event_id))
-
-
 def _make_provisional(data_dir: Path, fake: FakeSofaScore, event_id: int) -> None:
     """Kaydı geçici yapar: başlangıçtan 2 sa sonra gözlenmiş gibi (yenileme penceresi açık, son gözlem eski)."""
     start = fake.event(event_id)["startTimestamp"]
-    path = _match_dir(data_dir, event_id) / "observation.json"
-    observation = json.loads(path.read_text(encoding="utf-8"))
-    observation["observed_at_utc"] = dt.datetime.fromtimestamp(start + 2 * 3600, dt.timezone.utc).isoformat(
-        timespec="seconds"
-    )
-    # Dosya yerine yenisi konur (yazıcılar gibi) ve dizinin mtime'ı açıkça ilerletilir: yerinde düzenleme dizinin
-    # mtime'ını değiştirmez ve depo, açılıştaki uzlaştırmada böyle bir değişikliği görmez (katalog eski gözlem
-    # anını tutardı; okuyucular gözlemi katalogdan alır)
-    replacement = path.with_name(path.name + ".new")
-    replacement.write_text(json.dumps(observation), encoding="utf-8")
-    os.replace(replacement, path)
-    bumped = max(time.time_ns(), os.stat(path.parent).st_mtime_ns + 1)
-    os.utime(path.parent, ns=(bumped, bumped))
+    detail_records.set_observed_at(data_dir, event_id, dt.datetime.fromtimestamp(start + 2 * 3600, dt.timezone.utc))
 
 
 def _change_score(fake: FakeSofaScore, event_id: int, home: int) -> None:
@@ -132,11 +119,46 @@ def _job_summary(final: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _markers(data_dir: Path) -> Dict[str, Any]:
-    return {
-        path: content
-        for path, content in snapshot_tree(data_dir).items()
-        if path.endswith(("_unavailable.json", "_slice_status.json"))
-    }
+    """
+    "Yok" sayaçları ve hata kayıtları (eski düzende `_unavailable.json` / `_slice_status.json`), Store'dan: maç →
+    dilim → {kesin sayım, doğrulanmamış sayım, hata nedeni}; işareti olmayan maç yer almaz.
+    """
+    from src.store import EventQuery, open_store
+
+    store = open_store(data_dir)
+    out: Dict[str, Any] = {}
+    for row in store.events.iter(EventQuery(has_details=True)):
+        marks = detail_records.slice_marks(data_dir, row.id)
+        if marks:
+            out[str(row.id)] = marks
+    return out
+
+
+def _delete_record(data_dir: Path, event_id: int) -> None:
+    """Maçın kaydını siler (eski düzende dizinini silmenin karşılığı): Store'un silmesi."""
+    from src.store import open_store
+
+    assert open_store(data_dir).events.delete(event_id)
+
+
+def _as_legacy_record(data_dir: Path, event_id: int, *, drop: Any = (), unavailable: Any = None) -> Path:
+    """
+    Saklanan maçı önceki bir sürümün yazdığı eski düzen kaydına çevirir: yükleri Store'dan okunur, v3 kaydı silinir
+    ve eski düzen yazıcısının dondurulmuş kopyasıyla (tests/legacy_writer.py) yazılır; `drop` dilimleri yazılmaz,
+    `unavailable` eski sürümün `_unavailable.json`'ıdır (doğrulanmamış sayımlar). Maç dizinini döndürür.
+    """
+    from src.store import open_store
+    from src.store import api as store_api
+
+    store = open_store(data_dir)
+    payloads = store.events.payloads(event_id)
+    match_data = {("basic" if key == "event" else key): payload for key, payload in payloads.items() if key not in drop}
+    _delete_record(data_dir, event_id)
+    match_dir = Path(legacy_writer.save_legacy(data_dir, event_id, match_data))
+    if unavailable is not None:
+        (match_dir / "_unavailable.json").write_text(json.dumps(unavailable), encoding="utf-8")
+        store_api.shadow_event(data_dir, event_id, match_dir)
+    return match_dir
 
 
 # --- sahte taşıyıcının kendisi ---------------------------------------------------------------
@@ -337,8 +359,8 @@ def test_web_job_full_update_run_again(fake: FakeSofaScore, run_job: RunJob, dat
 def test_web_job_details_only(fake: FakeSofaScore, run_job: RunJob, data_dir: Path) -> None:
     """Yalnızca detay: program istenmez; diskteki özetlerden eksik (full), kısmi (refill) ve geçici (refresh) maçlar."""
     run_job(mode="full", league_id=LEAGUE)
-    (_match_dir(data_dir, 9100001) / "statistics.json").unlink()  # kısmi → refill
-    shutil.rmtree(_match_dir(data_dir, 9100003))  # kayıt yok → full
+    detail_records.drop_slices(data_dir, 9100001, "statistics")  # kısmi → refill
+    _delete_record(data_dir, 9100003)  # kayıt yok → full
     _make_provisional(data_dir, fake, 9100010)  # geçici → refresh
     _change_score(fake, 9100010, home=3)
     # 9100002: ilk çalıştırmada iki dilimi boş geldi → refill
@@ -388,7 +410,7 @@ def test_single_match_route(fake: FakeSofaScore, data_dir: Path, tmp_path: Path,
 
     fetch("new_match", 9100001)
     fetch("complete_match_again", 9100001)
-    (_match_dir(data_dir, 9100001) / "h2h.json").unlink()
+    detail_records.drop_slices(data_dir, 9100001, "h2h")
     fetch("missing_slice", 9100001)
     fetch("empty_slices", 9100002)
     fetch("empty_slices_again", 9100002)
@@ -445,7 +467,8 @@ def test_refresh_only(fake: FakeSofaScore, data_dir: Path) -> None:
         "files": {
             path: content
             for path, content in snapshot_tree(data_dir).items()
-            if path.endswith(("basic.json", "observation.json", "score_changes.jsonl"))
+            if path.endswith(("basic.json", "observation.json", "score_changes.jsonl", "event.json.gz",
+                              "manifest.json")) or path.startswith("changes/")
         },
     })
 
@@ -456,10 +479,8 @@ def test_recheck_unavailable(fake: FakeSofaScore, run_job: RunJob, data_dir: Pat
     """İşaretleri geri almak istek atmaz; geri alınan dilimler sonraki indirmede yeniden istenir."""
     run_job(mode="full", league_id=LEAGUE)
     run_job(mode="details", league_id=LEAGUE)  # 9100002'nin iki dilimi ikinci kez boş: kesin "yok"
-    # Eski sürümden kalma işaret: 9100001'in statistics dilimi doğrulanmadan "yok" sayılmış
-    legacy_dir = _match_dir(data_dir, 9100001)
-    (legacy_dir / "statistics.json").unlink()
-    (legacy_dir / "_unavailable.json").write_text(json.dumps({"statistics": 2}), encoding="utf-8")
+    # Eski sürümden kalma kayıt: 9100001 eski düzende, statistics dilimi doğrulanmadan "yok" sayılmış
+    _as_legacy_record(data_dir, 9100001, drop=("statistics",), unavailable={"statistics": 2})
     md = _fetcher(data_dir)
     result: Dict[str, Any] = {"markers_before": _markers(data_dir)}
 

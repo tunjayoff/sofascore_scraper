@@ -14,8 +14,6 @@ import asyncio
 import contextlib
 import copy
 import datetime as dt
-import json
-from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Dict, List
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -24,7 +22,8 @@ import pytest
 
 import src.utils as utils
 from src import breaker as request_breaker
-from src.match_data_fetcher import DETAIL_SLICE_KEYS, UNAVAILABLE_AFTER_ATTEMPTS, UNAVAILABLE_FILE, MatchDataFetcher
+from src.match_data_fetcher import (DETAIL_SLICE_KEYS, SLICE_EMPTY, UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher,
+                                    SliceOutcome)
 from src.status import OBSERVATION_KEY
 
 CFG = {"max_retries": 3, "request_timeout": 5, "wait_time_min": 0, "wait_time_max": 0}
@@ -91,16 +90,20 @@ def _fetcher(tmp_path, threshold: int = 3) -> MatchDataFetcher:
 
 
 def _store_provisional(f: MatchDataFetcher, ids: List[int]) -> None:
-    """Dilimleri tam sayılan, yenileme penceresi açık kayıtlar: ihtiyaç "refresh"."""
+    """
+    Dilimleri tam sayılan (her dilim iki kez 404 almış), yenileme penceresi açık kayıtlar: ihtiyaç "refresh".
+    İndiricinin yazıcısıyla Store'a yazılır (plan maddesi ST-21).
+    """
     observed = dt.datetime.fromtimestamp(START + 2 * 3600, dt.timezone.utc).isoformat(timespec="seconds")
+    gone = {k: SliceOutcome(SLICE_EMPTY, reason="404", http_status=404) for k in DETAIL_SLICE_KEYS}
     for mid in ids:
         basic = _basic(mid)
-        f._save_match_data(str(mid), {
-            "basic": basic,
+        data = {
+            "basic": basic, **dict.fromkeys(DETAIL_SLICE_KEYS),
             OBSERVATION_KEY: {"observed_at_utc": observed, "change_ts": basic["changes"]["changeTimestamp"]},
-        })
-        match_dir = next(p.parent for p in Path(f.match_details_dir).rglob("basic.json") if p.parent.name == str(mid))
-        (match_dir / UNAVAILABLE_FILE).write_text(json.dumps({k: UNAVAILABLE_AFTER_ATTEMPTS for k in DETAIL_SLICE_KEYS}))
+        }
+        for _ in range(UNAVAILABLE_AFTER_ATTEMPTS):
+            f._save_match_data(str(mid), data, gone)
     assert all(f._compute_detail_need(str(mid)) == "refresh" for mid in ids)
 
 

@@ -17,7 +17,6 @@ istek sırası ve yazılan dosyalar tests/characterization/fixtures/fetch/single
 from __future__ import annotations
 
 import contextlib
-import json
 import subprocess
 import sys
 import time
@@ -28,6 +27,7 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
+import detail_records
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import FakeSofaScore
 from src import bridge_health
@@ -100,14 +100,9 @@ def _fetch(client: TestClient, event_id: int) -> Any:
     return client.post(f"/api/matches/{event_id}/fetch")
 
 
-def _match_dir(data_dir: Path, event_id: int) -> Optional[Path]:
-    found = [p.parent for p in (data_dir / "match_details").rglob("basic.json") if p.parent.name == str(event_id)]
-    return found[0] if found else None
-
-
 def _stored(data_dir: Path, event_id: int) -> List[str]:
-    match_dir = _match_dir(data_dir, event_id)
-    return sorted(p.name for p in match_dir.iterdir()) if match_dir else []
+    """Saklanan yükler (Store; `event` maçın sayfası), ada göre; kayıt yoksa boş liste."""
+    return detail_records.stored_slices(data_dir, event_id)
 
 
 def _typed(reason: str) -> Dict[str, Any]:
@@ -135,7 +130,7 @@ def test_refused_event_request_answers_the_typed_reason(
     assert response.status_code == http
     assert response.json() == _typed(reason)
     assert set(fake.paths()) == {f"/event/{COMPLETE}"}  # dilim istenmedi
-    assert _match_dir(data_dir, COMPLETE) is None  # hiçbir şey yazılmadı
+    assert _stored(data_dir, COMPLETE) == []  # hiçbir şey yazılmadı
 
 
 def test_timeout_and_connection_failure_are_network(fake: FakeSofaScore, client: TestClient) -> None:
@@ -175,7 +170,7 @@ def test_stored_match_with_refused_event_is_not_requested_twice(
     atar: o durum goldende `stored_match_now_live` adımıyla sabit.)
     """
     assert _fetch(client, COMPLETE).status_code == 200
-    (_match_dir(data_dir, COMPLETE) / "h2h.json").unlink()
+    detail_records.drop_slices(data_dir, COMPLETE, "h2h")
     before = _stored(data_dir, COMPLETE)
     fake.reset_log()
     fake.fail(f"/event/{COMPLETE}", 403)
@@ -198,9 +193,10 @@ def test_every_slice_refused_answers_blocked_and_a_later_fetch_completes_the_mat
 
     assert (response.status_code, response.json()) == (502, _typed(upstream.BLOCKED))
     # /event yanıt verdi: maçın kendisi yazılır, başarısız dilimler sayılmadan not edilir (bugünkü gibi)
-    assert _stored(data_dir, COMPLETE) == ["_slice_status.json", "basic.json", "observation.json"]
-    status = json.loads((_match_dir(data_dir, COMPLETE) / "_slice_status.json").read_text(encoding="utf-8"))
-    assert {key: entry["error"]["reason"] for key, entry in status.items()} == dict.fromkeys(SLICE_KEYS, "403")
+    assert _stored(data_dir, COMPLETE) == ["event"]
+    marks = detail_records.slice_marks(data_dir, COMPLETE)
+    assert {key: mark["error"] for key, mark in marks.items()} == dict.fromkeys(SLICE_KEYS, "403")
+    assert not any(mark["empty"] or mark["unverified"] for mark in marks.values())
 
     fake.clear_faults()
     fake.reset_log()
@@ -208,15 +204,14 @@ def test_every_slice_refused_answers_blocked_and_a_later_fetch_completes_the_mat
 
     assert (response.status_code, response.json()) == (200, {"status": "success", "match_id": str(COMPLETE)})
     assert len(fake.paths()) == 1 + len(SLICE_KEYS)
-    assert _stored(data_dir, COMPLETE) == sorted(["basic.json", "observation.json"] + [f"{k}.json" for k in SLICE_KEYS])
+    assert _stored(data_dir, COMPLETE) == sorted(["event", *SLICE_KEYS])
 
 
 def test_refill_with_every_missing_slice_refused_answers_the_reason(
     fake: FakeSofaScore, client: TestClient, data_dir: Path
 ) -> None:
     assert _fetch(client, COMPLETE).status_code == 200
-    for name in ("h2h.json", "lineups.json"):
-        (_match_dir(data_dir, COMPLETE) / name).unlink()
+    detail_records.drop_slices(data_dir, COMPLETE, "h2h", "lineups")
     fake.reset_log()
     fake.fail(f"/event/{COMPLETE}/*", 429)
 
@@ -234,7 +229,7 @@ def test_one_answered_slice_is_enough_for_success(fake: FakeSofaScore, client: T
     response = _fetch(client, COMPLETE)
 
     assert (response.status_code, response.json()) == (200, {"status": "success", "match_id": str(COMPLETE)})
-    assert "h2h.json" in _stored(data_dir, COMPLETE) and "statistics.json" not in _stored(data_dir, COMPLETE)
+    assert "h2h" in _stored(data_dir, COMPLETE) and "statistics" not in _stored(data_dir, COMPLETE)
 
 
 def test_a_definitive_empty_answer_is_an_answer(fake: FakeSofaScore, client: TestClient) -> None:
@@ -369,7 +364,7 @@ def test_without_a_report_the_batch_path_is_unchanged(fake: FakeSofaScore, data_
     with patch.object(fetcher, "_fetch_match_basic", return_value=event) as basic:
         assert fetcher.fetch_match_data(COMPLETE_2) is not None
         basic.assert_called_once_with(str(COMPLETE_2))
-        (_match_dir(data_dir, COMPLETE_2) / "h2h.json").unlink()
+        detail_records.drop_slices(data_dir, COMPLETE_2, "h2h")
         basic.reset_mock()
         assert fetcher.refill_missing_match_slices(COMPLETE_2) is not None
         basic.assert_called_once_with(str(COMPLETE_2))
@@ -440,7 +435,7 @@ def test_fetch_is_refused_while_another_process_holds_the_writer_lease(
 
         assert (response.status_code, response.json()) == (409, JOB_RUNNING)
         assert fake.requests == []  # SofaScore'a istek gitmedi
-        assert _match_dir(data_dir, COMPLETE) is None
+        assert _stored(data_dir, COMPLETE) == []
 
     response = _fetch(shared_client, COMPLETE)  # kilit bırakıldı
 

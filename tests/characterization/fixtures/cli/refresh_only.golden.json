@@ -5,7 +5,7 @@
  "exit_code": 0,
  "files": {
   "added": {
-   "data/score_changes.jsonl": [
+   "data/changes/2026-10.jsonl": [
     {
      "changed": {
       "homeScore.current": [
@@ -25,6 +25,7 @@
      "hours_after_start": 3.0,
      "new_change_ts": 1725115600,
      "old_change_ts": 1725112000,
+     "seq": 1,
      "sport": "football",
      "start_ts": 1725104800,
      "status_class": [
@@ -42,10 +43,75 @@
    "logs/sofascore_scraper.log": "<binary>"
   },
   "changed": {
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/basic.json": "sha256:fe7505d70347",
-   "data/match_details/17_Premier_League/season_Premier_League_24_25/9100003/observation.json": {
-    "change_ts": 1725115600,
-    "observed_at_utc": "<volatile>"
+   "data/v3/events/9/100/9100003/manifest.json": {
+    "created_at": "<volatile>",
+    "format": 1,
+    "id": 9100003,
+    "kind": "event",
+    "observation": {
+     "change_ts": 1725115600,
+     "observed_at_utc": "<volatile>",
+     "status_regressed": false
+    },
+    "slices": {
+     "event": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 786,
+      "sha256": "2bfa832f0fc517a9fe350faeb6668ac986d67afec086deec378351fd763067dd",
+      "state": "ok"
+     },
+     "h2h": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 69,
+      "sha256": "654505662d16d7076f62b716d948a019724e08b9020499d3fb1f4d800b487868",
+      "state": "ok"
+     },
+     "incidents": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 91,
+      "sha256": "1ed2e41d02dbf9b3f20f26a25b99ed817baf7e8c2c51365be36f73026c4da06d",
+      "state": "ok"
+     },
+     "lineups": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 254,
+      "sha256": "b533a276a62d09db56ef85008035f97e92cccf6b13f783b84c7f9a1900660b94",
+      "state": "ok"
+     },
+     "pregame_form": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 172,
+      "sha256": "4e583cdf57eea39b346c5173bc94a631bd9ee19d7e2bf47bf940012e5b565c79",
+      "state": "ok"
+     },
+     "statistics": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 148,
+      "sha256": "008e484db5c3ed8424f8147eb209042fcf773a504039bb9747e1484fed80f41b",
+      "state": "ok"
+     },
+     "team_streaks": {
+      "bytes": "<volatile>",
+      "checked_at": "<volatile>",
+      "fetched_at": "<volatile>",
+      "raw_bytes": 70,
+      "sha256": "ed50a3695300f698cdffa9982e31cf2acdcc04d5b6b753de44a382765edc0feb",
+      "state": "ok"
+     }
+    },
+    "updated_at": "<volatile>"
    }
   }
  },
@@ -65,8 +131,8 @@
   "LOG INFO SeasonFetcher: SeasonFetcher started",
   "LOG INFO SyncService: Refreshing 3 provisional records...",
   "LOG INFO MatchDataFetcher: 3 maç yenileniyor",
-  "LOG WARNING MatchDataFetcher: Maç 9100010 yenileme: /event alınamadı",
-  "LOG INFO MatchDataFetcher: Maç 9100003 yenilendi: 3 alan değişti (homeScore.current, homeScore.display, homeScore.normaltime)",
+  "LOG WARNING MatchDataFetcher: Refresh of match 9100010: /event could not be fetched",
+  "LOG INFO MatchDataFetcher: Match 9100003 refreshed: 3 fields changed (homeScore.current, homeScore.display, homeScore.normaltime)",
   "Refresh: 2 matches refreshed, 1 changed, 1 failed (changes: data/score_changes.jsonl)"
  ]
 }

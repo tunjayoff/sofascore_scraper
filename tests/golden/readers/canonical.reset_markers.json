@@ -2,59 +2,56 @@
  "before": {
   "markers": {
    "match_details/17_Premier_League/season_Premier_League_26_27/17018554": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2}
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null}
    },
-   "match_details/17_Premier_League/season_Premier_League_26_27/17185003": {"_unavailable.json": {"lineups": 1}},
+   "match_details/17_Premier_League/season_Premier_League_26_27/17185003": {
+    "lineups": {"empty": 0, "unverified": 1, "error": null}
+   },
    "match_details/17_Premier_League/season_Premier_League_26_27/17018572": {
-    "_slice_status.json": {
-     "statistics": {"error": {"reason": "403", "status": 403, "at": "2026-09-29T18:00:00+00:00", "count": 2}}
-    }
+    "statistics": {"empty": 0, "unverified": 0, "error": "403"}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/17184988": {
-    "_slice_status.json": {
-     "h2h": {"error": {"reason": "timeout", "status": null, "at": "2026-09-29T18:00:00+00:00", "count": 1}}
-    }
+    "h2h": {"empty": 0, "unverified": 0, "error": "timeout"}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/16872361": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/16951514": {
-    "_unavailable.json": {"lineups": 2, "incidents": 1, "pregame_form": 3},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 1, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {
-      "empty": {"count": 1, "at": "2026-09-29T18:00:00+00:00"},
-      "error": {"reason": "5xx", "status": 503, "at": "2026-09-29T18:00:00+00:00", "count": 1}
-     }
-    }
+    "incidents": {"empty": 1, "unverified": 0, "error": "5xx"},
+    "lineups": {"empty": 1, "unverified": 1, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 3, "error": null}
    },
    "match_details/132_NBA/season_NBA_26_27/17092269": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/132_NBA/season_NBA_26_27/17102381": {
-    "_unavailable.json": {"statistics": 2, "team_streaks": 2, "pregame_form": 2, "h2h": 2, "lineups": 2, "incidents": 2}
+    "h2h": {"empty": 0, "unverified": 2, "error": null},
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 2, "error": null},
+    "statistics": {"empty": 0, "unverified": 2, "error": null},
+    "team_streaks": {"empty": 0, "unverified": 2, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17204710": {
-    "_unavailable.json": {"pregame_form": 2, "lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "pregame_form": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null},
+    "pregame_form": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17206241": {
-    "_unavailable.json": {"pregame_form": 2, "lineups": 2, "incidents": 2}
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 2, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17081861": {
-    "_unavailable.json": {"statistics": 2, "team_streaks": 2, "pregame_form": 2, "h2h": 2, "lineups": 2, "incidents": 2}
+    "h2h": {"empty": 0, "unverified": 2, "error": null},
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 2, "error": null},
+    "statistics": {"empty": 0, "unverified": 2, "error": null},
+    "team_streaks": {"empty": 0, "unverified": 2, "error": null}
    }
   },
   "_needs_detail_fetch": {"14025001": "none", "14025002": "full", "16346148": "full", "16425949": "full", "16484334": "none", "16599919": "full", "16837335": "none", "16837399": "full", "16867839": "none", "16872361": "none", "16950622": "none", "16951514": "refill", "16990001": "none", "17018554": "none", "17018572": "refill", "17058663": "full", "17060394": "refill", "17078471": "refill", "17081861": "none", "17090707": "full", "17092269": "none", "17099711": "refresh", "17102381": "none", "17148292": "full", "17148332": "none", "17184988": "refill", "17185003": "refill", "17203939": "none", "17204710": "refresh", "17206241": "refill", "17207542": "full", "17211681": "refill"}
@@ -63,46 +60,27 @@
   "result": {"matches": 5, "slices": 19, "scanned": 9},
   "markers": {
    "match_details/17_Premier_League/season_Premier_League_26_27/17018572": {
-    "_slice_status.json": {
-     "statistics": {"error": {"reason": "403", "status": 403, "at": "2026-09-29T18:00:00+00:00", "count": 2}}
-    }
+    "statistics": {"empty": 0, "unverified": 0, "error": "403"}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/17184988": {
-    "_slice_status.json": {
-     "h2h": {"error": {"reason": "timeout", "status": null, "at": "2026-09-29T18:00:00+00:00", "count": 1}}
-    }
+    "h2h": {"empty": 0, "unverified": 0, "error": "timeout"}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/16872361": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/16951514": {
-    "_unavailable.json": {"lineups": 1, "incidents": 1},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 1, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {
-      "empty": {"count": 1, "at": "2026-09-29T18:00:00+00:00"},
-      "error": {"reason": "5xx", "status": 503, "at": "2026-09-29T18:00:00+00:00", "count": 1}
-     }
-    }
+    "incidents": {"empty": 1, "unverified": 0, "error": "5xx"},
+    "lineups": {"empty": 1, "unverified": 0, "error": null}
    },
    "match_details/132_NBA/season_NBA_26_27/17092269": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17204710": {
-    "_unavailable.json": {"pregame_form": 2, "lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "pregame_form": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null},
+    "pregame_form": {"empty": 2, "unverified": 0, "error": null}
    }
   },
   "_needs_detail_fetch": {"14025001": "none", "14025002": "full", "16346148": "full", "16425949": "full", "16484334": "none", "16599919": "full", "16837335": "none", "16837399": "full", "16867839": "none", "16872361": "none", "16950622": "none", "16951514": "refill", "16990001": "none", "17018554": "refill", "17018572": "refill", "17058663": "full", "17060394": "refill", "17078471": "refill", "17081861": "refill", "17090707": "full", "17092269": "none", "17099711": "refresh", "17102381": "refill", "17148292": "full", "17148332": "none", "17184988": "refill", "17185003": "refill", "17203939": "none", "17204710": "refresh", "17206241": "refill", "17207542": "full", "17211681": "refill"},
@@ -112,19 +90,13 @@
   "result": {"matches": 8, "slices": 26, "scanned": 9},
   "markers": {
    "match_details/17_Premier_League/season_Premier_League_26_27/17018572": {
-    "_slice_status.json": {
-     "statistics": {"error": {"reason": "403", "status": 403, "at": "2026-09-29T18:00:00+00:00", "count": 2}}
-    }
+    "statistics": {"empty": 0, "unverified": 0, "error": "403"}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/17184988": {
-    "_slice_status.json": {
-     "h2h": {"error": {"reason": "timeout", "status": null, "at": "2026-09-29T18:00:00+00:00", "count": 1}}
-    }
+    "h2h": {"empty": 0, "unverified": 0, "error": "timeout"}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/16951514": {
-    "_slice_status.json": {
-     "incidents": {"error": {"reason": "5xx", "status": 503, "at": "2026-09-29T18:00:00+00:00", "count": 1}}
-    }
+    "incidents": {"empty": 0, "unverified": 0, "error": "5xx"}
    }
   },
   "_needs_detail_fetch": {"14025001": "none", "14025002": "full", "16346148": "full", "16425949": "full", "16484334": "none", "16599919": "full", "16837335": "none", "16837399": "full", "16867839": "none", "16872361": "refill", "16950622": "none", "16951514": "refill", "16990001": "none", "17018554": "refill", "17018572": "refill", "17058663": "full", "17060394": "refill", "17078471": "refill", "17081861": "refill", "17090707": "full", "17092269": "refill", "17099711": "refresh", "17102381": "refill", "17148292": "full", "17148332": "none", "17184988": "refill", "17185003": "refill", "17203939": "none", "17204710": "refill", "17206241": "refill", "17207542": "full", "17211681": "refill"},
@@ -134,55 +106,48 @@
   "result": {"matches": 2, "slices": 4, "scanned": 4},
   "markers": {
    "match_details/17_Premier_League/season_Premier_League_26_27/17018572": {
-    "_slice_status.json": {
-     "statistics": {"error": {"reason": "403", "status": 403, "at": "2026-09-29T18:00:00+00:00", "count": 2}}
-    }
+    "statistics": {"empty": 0, "unverified": 0, "error": "403"}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/17184988": {
-    "_slice_status.json": {
-     "h2h": {"error": {"reason": "timeout", "status": null, "at": "2026-09-29T18:00:00+00:00", "count": 1}}
-    }
+    "h2h": {"empty": 0, "unverified": 0, "error": "timeout"}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/16872361": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/16951514": {
-    "_unavailable.json": {"lineups": 1, "incidents": 1},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 1, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {
-      "empty": {"count": 1, "at": "2026-09-29T18:00:00+00:00"},
-      "error": {"reason": "5xx", "status": 503, "at": "2026-09-29T18:00:00+00:00", "count": 1}
-     }
-    }
+    "incidents": {"empty": 1, "unverified": 0, "error": "5xx"},
+    "lineups": {"empty": 1, "unverified": 0, "error": null}
    },
    "match_details/132_NBA/season_NBA_26_27/17092269": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/132_NBA/season_NBA_26_27/17102381": {
-    "_unavailable.json": {"statistics": 2, "team_streaks": 2, "pregame_form": 2, "h2h": 2, "lineups": 2, "incidents": 2}
+    "h2h": {"empty": 0, "unverified": 2, "error": null},
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 2, "error": null},
+    "statistics": {"empty": 0, "unverified": 2, "error": null},
+    "team_streaks": {"empty": 0, "unverified": 2, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17204710": {
-    "_unavailable.json": {"pregame_form": 2, "lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "pregame_form": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null},
+    "pregame_form": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17206241": {
-    "_unavailable.json": {"pregame_form": 2, "lineups": 2, "incidents": 2}
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 2, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17081861": {
-    "_unavailable.json": {"statistics": 2, "team_streaks": 2, "pregame_form": 2, "h2h": 2, "lineups": 2, "incidents": 2}
+    "h2h": {"empty": 0, "unverified": 2, "error": null},
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 2, "error": null},
+    "statistics": {"empty": 0, "unverified": 2, "error": null},
+    "team_streaks": {"empty": 0, "unverified": 2, "error": null}
    }
   },
   "_needs_detail_fetch": {"14025001": "none", "14025002": "full", "16346148": "full", "16425949": "full", "16484334": "none", "16599919": "full", "16837335": "none", "16837399": "full", "16867839": "none", "16872361": "none", "16950622": "none", "16951514": "refill", "16990001": "none", "17018554": "refill", "17018572": "refill", "17058663": "full", "17060394": "refill", "17078471": "refill", "17081861": "none", "17090707": "full", "17092269": "none", "17099711": "refresh", "17102381": "none", "17148292": "full", "17148332": "none", "17184988": "refill", "17185003": "refill", "17203939": "none", "17204710": "refresh", "17206241": "refill", "17207542": "full", "17211681": "refill"},
@@ -192,59 +157,56 @@
   "result": {"matches": 0, "slices": 0, "scanned": 0},
   "markers": {
    "match_details/17_Premier_League/season_Premier_League_26_27/17018554": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2}
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null}
    },
-   "match_details/17_Premier_League/season_Premier_League_26_27/17185003": {"_unavailable.json": {"lineups": 1}},
+   "match_details/17_Premier_League/season_Premier_League_26_27/17185003": {
+    "lineups": {"empty": 0, "unverified": 1, "error": null}
+   },
    "match_details/17_Premier_League/season_Premier_League_26_27/17018572": {
-    "_slice_status.json": {
-     "statistics": {"error": {"reason": "403", "status": 403, "at": "2026-09-29T18:00:00+00:00", "count": 2}}
-    }
+    "statistics": {"empty": 0, "unverified": 0, "error": "403"}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/17184988": {
-    "_slice_status.json": {
-     "h2h": {"error": {"reason": "timeout", "status": null, "at": "2026-09-29T18:00:00+00:00", "count": 1}}
-    }
+    "h2h": {"empty": 0, "unverified": 0, "error": "timeout"}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/16872361": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/16951514": {
-    "_unavailable.json": {"lineups": 2, "incidents": 1, "pregame_form": 3},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 1, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {
-      "empty": {"count": 1, "at": "2026-09-29T18:00:00+00:00"},
-      "error": {"reason": "5xx", "status": 503, "at": "2026-09-29T18:00:00+00:00", "count": 1}
-     }
-    }
+    "incidents": {"empty": 1, "unverified": 0, "error": "5xx"},
+    "lineups": {"empty": 1, "unverified": 1, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 3, "error": null}
    },
    "match_details/132_NBA/season_NBA_26_27/17092269": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/132_NBA/season_NBA_26_27/17102381": {
-    "_unavailable.json": {"statistics": 2, "team_streaks": 2, "pregame_form": 2, "h2h": 2, "lineups": 2, "incidents": 2}
+    "h2h": {"empty": 0, "unverified": 2, "error": null},
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 2, "error": null},
+    "statistics": {"empty": 0, "unverified": 2, "error": null},
+    "team_streaks": {"empty": 0, "unverified": 2, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17204710": {
-    "_unavailable.json": {"pregame_form": 2, "lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "pregame_form": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null},
+    "pregame_form": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17206241": {
-    "_unavailable.json": {"pregame_form": 2, "lineups": 2, "incidents": 2}
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 2, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17081861": {
-    "_unavailable.json": {"statistics": 2, "team_streaks": 2, "pregame_form": 2, "h2h": 2, "lineups": 2, "incidents": 2}
+    "h2h": {"empty": 0, "unverified": 2, "error": null},
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 2, "error": null},
+    "statistics": {"empty": 0, "unverified": 2, "error": null},
+    "team_streaks": {"empty": 0, "unverified": 2, "error": null}
    }
   },
   "second_call": {"matches": 0, "slices": 0, "scanned": 0}
@@ -253,56 +215,48 @@
   "result": {"matches": 1, "slices": 6, "scanned": 2},
   "markers": {
    "match_details/17_Premier_League/season_Premier_League_26_27/17018554": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2}
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null}
    },
-   "match_details/17_Premier_League/season_Premier_League_26_27/17185003": {"_unavailable.json": {"lineups": 1}},
+   "match_details/17_Premier_League/season_Premier_League_26_27/17185003": {
+    "lineups": {"empty": 0, "unverified": 1, "error": null}
+   },
    "match_details/17_Premier_League/season_Premier_League_26_27/17018572": {
-    "_slice_status.json": {
-     "statistics": {"error": {"reason": "403", "status": 403, "at": "2026-09-29T18:00:00+00:00", "count": 2}}
-    }
+    "statistics": {"empty": 0, "unverified": 0, "error": "403"}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/17184988": {
-    "_slice_status.json": {
-     "h2h": {"error": {"reason": "timeout", "status": null, "at": "2026-09-29T18:00:00+00:00", "count": 1}}
-    }
+    "h2h": {"empty": 0, "unverified": 0, "error": "timeout"}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/16872361": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/16951514": {
-    "_unavailable.json": {"lineups": 2, "incidents": 1, "pregame_form": 3},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 1, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {
-      "empty": {"count": 1, "at": "2026-09-29T18:00:00+00:00"},
-      "error": {"reason": "5xx", "status": 503, "at": "2026-09-29T18:00:00+00:00", "count": 1}
-     }
-    }
+    "incidents": {"empty": 1, "unverified": 0, "error": "5xx"},
+    "lineups": {"empty": 1, "unverified": 1, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 3, "error": null}
    },
    "match_details/132_NBA/season_NBA_26_27/17092269": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17204710": {
-    "_unavailable.json": {"pregame_form": 2, "lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "pregame_form": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null},
+    "pregame_form": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17206241": {
-    "_unavailable.json": {"pregame_form": 2, "lineups": 2, "incidents": 2}
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 2, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17081861": {
-    "_unavailable.json": {"statistics": 2, "team_streaks": 2, "pregame_form": 2, "h2h": 2, "lineups": 2, "incidents": 2}
+    "h2h": {"empty": 0, "unverified": 2, "error": null},
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 2, "error": null},
+    "statistics": {"empty": 0, "unverified": 2, "error": null},
+    "team_streaks": {"empty": 0, "unverified": 2, "error": null}
    }
   },
   "_needs_detail_fetch": {"14025001": "none", "14025002": "full", "16346148": "full", "16425949": "full", "16484334": "none", "16599919": "full", "16837335": "none", "16837399": "full", "16867839": "none", "16872361": "none", "16950622": "none", "16951514": "refill", "16990001": "none", "17018554": "none", "17018572": "refill", "17058663": "full", "17060394": "refill", "17078471": "refill", "17081861": "none", "17090707": "full", "17092269": "none", "17099711": "refresh", "17102381": "refill", "17148292": "full", "17148332": "none", "17184988": "refill", "17185003": "refill", "17203939": "none", "17204710": "refresh", "17206241": "refill", "17207542": "full", "17211681": "refill"},
@@ -312,53 +266,43 @@
   "result": {"matches": 2, "slices": 9, "scanned": 3},
   "markers": {
    "match_details/17_Premier_League/season_Premier_League_26_27/17018554": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2}
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null}
    },
-   "match_details/17_Premier_League/season_Premier_League_26_27/17185003": {"_unavailable.json": {"lineups": 1}},
+   "match_details/17_Premier_League/season_Premier_League_26_27/17185003": {
+    "lineups": {"empty": 0, "unverified": 1, "error": null}
+   },
    "match_details/17_Premier_League/season_Premier_League_26_27/17018572": {
-    "_slice_status.json": {
-     "statistics": {"error": {"reason": "403", "status": 403, "at": "2026-09-29T18:00:00+00:00", "count": 2}}
-    }
+    "statistics": {"empty": 0, "unverified": 0, "error": "403"}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/17184988": {
-    "_slice_status.json": {
-     "h2h": {"error": {"reason": "timeout", "status": null, "at": "2026-09-29T18:00:00+00:00", "count": 1}}
-    }
+    "h2h": {"empty": 0, "unverified": 0, "error": "timeout"}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/16872361": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/16951514": {
-    "_unavailable.json": {"lineups": 2, "incidents": 1, "pregame_form": 3},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 1, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {
-      "empty": {"count": 1, "at": "2026-09-29T18:00:00+00:00"},
-      "error": {"reason": "5xx", "status": 503, "at": "2026-09-29T18:00:00+00:00", "count": 1}
-     }
-    }
+    "incidents": {"empty": 1, "unverified": 0, "error": "5xx"},
+    "lineups": {"empty": 1, "unverified": 1, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 3, "error": null}
    },
    "match_details/132_NBA/season_NBA_26_27/17092269": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/132_NBA/season_NBA_26_27/17102381": {
-    "_unavailable.json": {"statistics": 2, "team_streaks": 2, "pregame_form": 2, "h2h": 2, "lineups": 2, "incidents": 2}
+    "h2h": {"empty": 0, "unverified": 2, "error": null},
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 2, "error": null},
+    "statistics": {"empty": 0, "unverified": 2, "error": null},
+    "team_streaks": {"empty": 0, "unverified": 2, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17204710": {
-    "_unavailable.json": {"pregame_form": 2, "lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "pregame_form": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null},
+    "pregame_form": {"empty": 2, "unverified": 0, "error": null}
    }
   },
   "_needs_detail_fetch": {"14025001": "none", "14025002": "full", "16346148": "full", "16425949": "full", "16484334": "none", "16599919": "full", "16837335": "none", "16837399": "full", "16867839": "none", "16872361": "none", "16950622": "none", "16951514": "refill", "16990001": "none", "17018554": "none", "17018572": "refill", "17058663": "full", "17060394": "refill", "17078471": "refill", "17081861": "refill", "17090707": "full", "17092269": "none", "17099711": "refresh", "17102381": "none", "17148292": "full", "17148332": "none", "17184988": "refill", "17185003": "refill", "17203939": "none", "17204710": "refresh", "17206241": "refill", "17207542": "full", "17211681": "refill"},
@@ -368,59 +312,56 @@
   "result": {"matches": 0, "slices": 0, "scanned": 0},
   "markers": {
    "match_details/17_Premier_League/season_Premier_League_26_27/17018554": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2}
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null}
    },
-   "match_details/17_Premier_League/season_Premier_League_26_27/17185003": {"_unavailable.json": {"lineups": 1}},
+   "match_details/17_Premier_League/season_Premier_League_26_27/17185003": {
+    "lineups": {"empty": 0, "unverified": 1, "error": null}
+   },
    "match_details/17_Premier_League/season_Premier_League_26_27/17018572": {
-    "_slice_status.json": {
-     "statistics": {"error": {"reason": "403", "status": 403, "at": "2026-09-29T18:00:00+00:00", "count": 2}}
-    }
+    "statistics": {"empty": 0, "unverified": 0, "error": "403"}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/17184988": {
-    "_slice_status.json": {
-     "h2h": {"error": {"reason": "timeout", "status": null, "at": "2026-09-29T18:00:00+00:00", "count": 1}}
-    }
+    "h2h": {"empty": 0, "unverified": 0, "error": "timeout"}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/16872361": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/16951514": {
-    "_unavailable.json": {"lineups": 2, "incidents": 1, "pregame_form": 3},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 1, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {
-      "empty": {"count": 1, "at": "2026-09-29T18:00:00+00:00"},
-      "error": {"reason": "5xx", "status": 503, "at": "2026-09-29T18:00:00+00:00", "count": 1}
-     }
-    }
+    "incidents": {"empty": 1, "unverified": 0, "error": "5xx"},
+    "lineups": {"empty": 1, "unverified": 1, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 3, "error": null}
    },
    "match_details/132_NBA/season_NBA_26_27/17092269": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/132_NBA/season_NBA_26_27/17102381": {
-    "_unavailable.json": {"statistics": 2, "team_streaks": 2, "pregame_form": 2, "h2h": 2, "lineups": 2, "incidents": 2}
+    "h2h": {"empty": 0, "unverified": 2, "error": null},
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 2, "error": null},
+    "statistics": {"empty": 0, "unverified": 2, "error": null},
+    "team_streaks": {"empty": 0, "unverified": 2, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17204710": {
-    "_unavailable.json": {"pregame_form": 2, "lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "pregame_form": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null},
+    "pregame_form": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17206241": {
-    "_unavailable.json": {"pregame_form": 2, "lineups": 2, "incidents": 2}
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 2, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17081861": {
-    "_unavailable.json": {"statistics": 2, "team_streaks": 2, "pregame_form": 2, "h2h": 2, "lineups": 2, "incidents": 2}
+    "h2h": {"empty": 0, "unverified": 2, "error": null},
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 2, "error": null},
+    "statistics": {"empty": 0, "unverified": 2, "error": null},
+    "team_streaks": {"empty": 0, "unverified": 2, "error": null}
    }
   },
   "second_call": {"matches": 0, "slices": 0, "scanned": 0}
@@ -429,59 +370,56 @@
   "result": {"matches": 0, "slices": 0, "scanned": 0},
   "markers": {
    "match_details/17_Premier_League/season_Premier_League_26_27/17018554": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2}
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null}
    },
-   "match_details/17_Premier_League/season_Premier_League_26_27/17185003": {"_unavailable.json": {"lineups": 1}},
+   "match_details/17_Premier_League/season_Premier_League_26_27/17185003": {
+    "lineups": {"empty": 0, "unverified": 1, "error": null}
+   },
    "match_details/17_Premier_League/season_Premier_League_26_27/17018572": {
-    "_slice_status.json": {
-     "statistics": {"error": {"reason": "403", "status": 403, "at": "2026-09-29T18:00:00+00:00", "count": 2}}
-    }
+    "statistics": {"empty": 0, "unverified": 0, "error": "403"}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/17184988": {
-    "_slice_status.json": {
-     "h2h": {"error": {"reason": "timeout", "status": null, "at": "2026-09-29T18:00:00+00:00", "count": 1}}
-    }
+    "h2h": {"empty": 0, "unverified": 0, "error": "timeout"}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/16872361": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/17_Premier_League/season_Premier_League_26_27/16951514": {
-    "_unavailable.json": {"lineups": 2, "incidents": 1, "pregame_form": 3},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 1, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {
-      "empty": {"count": 1, "at": "2026-09-29T18:00:00+00:00"},
-      "error": {"reason": "5xx", "status": 503, "at": "2026-09-29T18:00:00+00:00", "count": 1}
-     }
-    }
+    "incidents": {"empty": 1, "unverified": 0, "error": "5xx"},
+    "lineups": {"empty": 1, "unverified": 1, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 3, "error": null}
    },
    "match_details/132_NBA/season_NBA_26_27/17092269": {
-    "_unavailable.json": {"lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/132_NBA/season_NBA_26_27/17102381": {
-    "_unavailable.json": {"statistics": 2, "team_streaks": 2, "pregame_form": 2, "h2h": 2, "lineups": 2, "incidents": 2}
+    "h2h": {"empty": 0, "unverified": 2, "error": null},
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 2, "error": null},
+    "statistics": {"empty": 0, "unverified": 2, "error": null},
+    "team_streaks": {"empty": 0, "unverified": 2, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17204710": {
-    "_unavailable.json": {"pregame_form": 2, "lineups": 2, "incidents": 2},
-    "_slice_status.json": {
-     "pregame_form": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "lineups": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}},
-     "incidents": {"empty": {"count": 2, "at": "2026-09-29T18:00:00+00:00"}}
-    }
+    "incidents": {"empty": 2, "unverified": 0, "error": null},
+    "lineups": {"empty": 2, "unverified": 0, "error": null},
+    "pregame_form": {"empty": 2, "unverified": 0, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17206241": {
-    "_unavailable.json": {"pregame_form": 2, "lineups": 2, "incidents": 2}
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 2, "error": null}
    },
    "match_details/2361_Wimbledon,_Men/season_Wimbledon_Men_Singles_2026/17081861": {
-    "_unavailable.json": {"statistics": 2, "team_streaks": 2, "pregame_form": 2, "h2h": 2, "lineups": 2, "incidents": 2}
+    "h2h": {"empty": 0, "unverified": 2, "error": null},
+    "incidents": {"empty": 0, "unverified": 2, "error": null},
+    "lineups": {"empty": 0, "unverified": 2, "error": null},
+    "pregame_form": {"empty": 0, "unverified": 2, "error": null},
+    "statistics": {"empty": 0, "unverified": 2, "error": null},
+    "team_streaks": {"empty": 0, "unverified": 2, "error": null}
    }
   },
   "second_call": {"matches": 0, "slices": 0, "scanned": 0}

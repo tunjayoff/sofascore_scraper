@@ -28,6 +28,7 @@ from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import pytest
 
+import legacy_writer
 import store_dump
 import store_fixtures as sf
 from src import match_data_fetcher as mdf
@@ -387,8 +388,10 @@ def test_event_slice_and_file_facts(canonical: sf.LegacyFixture) -> None:
 
 
 def expected_today(fetcher: MatchDataFetcher, event: LegacyEvent) -> List[str]:
+    """Eski yazıcının dosya tabanlı kuralı (ST-21'e kadar `MatchDataFetcher._expected_slices`; tests/legacy_writer.py)."""
     match_dir = str(Path(fetcher.data_dir).joinpath(*event.path.split("/")))
-    return fetcher._expected_slices(match_dir, sports.event_sport_slug(event.event) or "")
+    return legacy_writer.expected_slices(match_dir, sports.event_sport_slug(event.event) or "",
+                                         mdf.UNAVAILABLE_AFTER_ATTEMPTS)
 
 
 def expected_from_record(event: LegacyEvent) -> List[str]:
@@ -434,7 +437,7 @@ def test_marker_mapping_for_every_count_combination(tmp_path: Path, unavailable:
     assert len(events) == len(CONFIRMED_VALUES)
     for index, confirmed in enumerate(CONFIRMED_VALUES):
         event = events[500 + index]
-        today = fetcher._load_unavailable(str(tmp_path / base / str(500 + index)))
+        today = legacy_writer.load_unavailable(str(tmp_path / base / str(500 + index)))
         count = max(today.get("lineups", 0), 0)
         valid = confirmed if type(confirmed) is int and confirmed > 0 else 0
         entry = event.slice("lineups")
@@ -496,8 +499,8 @@ def test_unreadable_marker_files_count_as_absent_and_are_reported(tmp_path: Path
         (f"{base}/observation.json", "corrupt"),
     ]
     assert events[7].problems == tuple(report.problems)
-    fetcher = fetcher_for(tmp_path)
-    assert fetcher._load_unavailable(str(tmp_path / base)) == {} == fetcher._load_slice_status(str(tmp_path / base))
+    assert legacy_writer.load_unavailable(str(tmp_path / base)) == {} == legacy_writer.load_slice_status(
+        str(tmp_path / base))
 
 
 def test_slice_states_from_files(tmp_path: Path) -> None:
@@ -1198,36 +1201,26 @@ def walker_results(data_dir: Path, candidates: Set[int]) -> Dict[str, Set[int]]:
     """
     Bugünkü her ağaç gezgininin bulduğu maç id'leri (hepsi sayı; sayı olmayan ad gelirse test düşer).
 
-    `reset_unavailable_markers` sonucu süzdüğü için gezdiği dizinler ölçülür: `_unavailable.json`'ı olan her
-    dizin için `_reset_match_markers`'ı çağırır (burada hiçbir şey yazmaz). `refresh_due_ids` ve web'in eksik
-    detayları RD-3'ten beri ağacı gezmez, katalogdan okur; tabloda değiller.
+    `refresh_due_ids` ve web'in eksik detayları RD-3'ten beri ağacı gezmez, katalogdan okur; tabloda değiller.
+    `reset_unavailable_markers` da ST-21'den beri Store'a sorar (`Store.events.reset_empty_markers`).
     """
     fetcher = fetcher_for(data_dir)
 
     def ids(names: Any) -> Set[int]:
         return {int(name) for name in names}
 
-    with_markers: List[str] = []
-    fetcher._reset_match_markers = (  # type: ignore[method-assign]
-        lambda match_dir, include_confirmed: with_markers.append(os.path.basename(match_dir)) or 0)
-    fetcher.reset_unavailable_markers()
-    del fetcher._reset_match_markers
-
     return {
         "build_match_index": ids(fetcher._build_match_index()),
         "find_match_path": {eid for eid in candidates if fetcher._find_match_path(str(eid))},
-        "reset_markers_walk": ids(with_markers),
         "csv_export": ids(_csv_export_ids(fetcher)),
     }
 
 
-WALKERS = ("build_match_index", "find_match_path", "reset_markers_walk", "csv_export")
+WALKERS = ("build_match_index", "find_match_path", "csv_export")
 
 # Karakterizasyon tablosu: (fixture, gezgin) → (okuyucunun bulup gezginin bulamadığı, gezginin bulup
 # okuyucunun maç saymadığı) id'ler. Tabloda olmayan çift için fark yoktur: `canonical`, `processed_only` ve
-# `empty` dizinlerinde bütün gezginler okuyucuyla aynı kümeyi bulur. `reset_markers_walk` yalnızca
-# `_unavailable.json`'ı olan dizinlere bakar; o, okuyucunun aynı dosyası olan maçlarıyla karşılaştırılır
-# (fixture'larda düz dizinde işaret dosyası yok, bu yüzden farkı görünmüyor: üç düzey bekler, düz dizinleri görmez).
+# `empty` dizinlerinde bütün gezginler okuyucuyla aynı kümeyi bulur.
 WALKER_DIFFERENCES: Dict[Tuple[str, str], Tuple[Set[int], Set[int]]] = {
     # Boş: `build_match_index` ve `find_match_path` RD-1'den, CSV dışa aktarma EX-1'den beri depodan okur ve
     # okuyucuyla aynı kümeyi bulur (yalnızca birleşik dosyası olan dizin de dahil)
@@ -1235,8 +1228,6 @@ WALKER_DIFFERENCES: Dict[Tuple[str, str], Tuple[Set[int], Set[int]]] = {
 
 
 def reader_ids_for(walker: str, events: Dict[int, LegacyEvent]) -> Set[int]:
-    if walker == "reset_markers_walk":
-        return {eid for eid, e in events.items() if legacy.UNAVAILABLE_FILE in e.dir.entries}
     return set(events)
 
 

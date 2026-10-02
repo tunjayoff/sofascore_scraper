@@ -33,7 +33,7 @@
   },
   "stderr": [
    "<progress> Fetching match details: 0/1",
-   "Stopped: data could not be written to <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003 (Permission denied). Free up disk space or fix the permissions, then run it again."
+   "Stopped: data could not be written to <SANDBOX>/data/v3/events/9/100/9100003 (Permission denied). Free up disk space or fix the permissions, then run it again."
   ],
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
@@ -55,13 +55,12 @@
    "Processing 1 matches in parallel...",
    {
     "concurrent": [
-     "LOG ERROR MatchDataFetcher: Maç 9100003 kaydedilemedi: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003",
-     "LOG ERROR MatchDataFetcher: Maç ID 9100003 için asenkron veri çekilirken hata: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003",
-     "LOG ERROR MatchDataFetcher: Maç ID 9100003 için veriler kaydedilemedi (<SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003): [Errno 13] Permission denied: '<SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003'",
+     "LOG ERROR MatchDataFetcher: Maç 9100003 kaydedilemedi: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/v3/events/9/100/9100003",
+     "LOG ERROR MatchDataFetcher: Maç ID 9100003 için asenkron veri çekilirken hata: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/v3/events/9/100/9100003",
      "LOG INFO MatchDataFetcher: Processing batch 1/1 (1 matches)"
     ]
    },
-   "LOG ERROR Main: Depolama hatası, işlem durduruldu: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003"
+   "LOG ERROR Main: Depolama hatası, işlem durduruldu: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/v3/events/9/100/9100003"
   ]
  },
  "one_league": {
@@ -100,7 +99,7 @@
   },
   "stderr": [
    "<progress> Fetching match details: 0/1",
-   "Stopped: data could not be written to <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003 (Permission denied). Free up disk space or fix the permissions, then run it again."
+   "Stopped: data could not be written to <SANDBOX>/data/v3/events/9/100/9100003 (Permission denied). Free up disk space or fix the permissions, then run it again."
   ],
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
@@ -122,13 +121,12 @@
    "Processing 1 matches in parallel...",
    {
     "concurrent": [
-     "LOG ERROR MatchDataFetcher: Maç 9100003 kaydedilemedi: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003",
-     "LOG ERROR MatchDataFetcher: Maç ID 9100003 için asenkron veri çekilirken hata: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003",
-     "LOG ERROR MatchDataFetcher: Maç ID 9100003 için veriler kaydedilemedi (<SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003): [Errno 13] Permission denied: '<SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003'",
+     "LOG ERROR MatchDataFetcher: Maç 9100003 kaydedilemedi: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/v3/events/9/100/9100003",
+     "LOG ERROR MatchDataFetcher: Maç ID 9100003 için asenkron veri çekilirken hata: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/v3/events/9/100/9100003",
      "LOG INFO MatchDataFetcher: Processing batch 1/1 (1 matches)"
     ]
    },
-   "LOG ERROR Main: Depolama hatası, işlem durduruldu: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/match_details/17_Premier_League/season_Premier_League_24_25/9100003"
+   "LOG ERROR Main: Depolama hatası, işlem durduruldu: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/v3/events/9/100/9100003"
   ]
  }
 }
