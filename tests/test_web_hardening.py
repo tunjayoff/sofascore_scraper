@@ -39,6 +39,7 @@ import src.utils as utils
 from src import bridge_health, diagnostics, private_files, redact
 from src.i18n import I18nManager
 from src.paths import env_file_path
+from src.store import open_store
 from src.web import fetch_job, security
 from src.web.app import FRONTEND_DIST, app
 from src.web.missing_ui import MISSING_UI_HTML
@@ -206,29 +207,32 @@ READ_ONLY_GETS = {
 
 # Listede olup yine de bir dosya yazabilen GET uç noktaları ve nedeni. Buraya ekleme, bir GET'in durum
 # değiştirmesine bilerek izin vermektir; liste boş kalmaya yakın tutulur.
+_CATALOG_ON_FIRST_READ = (
+    "DATA_DIR/.meta/: kataloğu okuyan uç nokta veri dizininin deposunu açar (RD-5). Dizin bu süreçte ilk kez "
+    "açılıyorsa schema.json ve katalog (catalog.db: dosyalardan türetilen dizin) kurulur ya da dosyalarla "
+    "eşitlenir. İçeriğini çağıran belirlemez, silinirse yeniden kurulur; veri ve yapılandırma dosyaları "
+    "değişmez. Aşağıdaki özet sınaması depo açıldıktan sonrasını ölçer: ondan sonra hiçbir GET bir şey yazmaz "
+    "(config/league_sports.json da artık yazılmaz)."
+)
 GETS_THAT_MAY_WRITE_A_CACHE = {
-    "/api/leagues": (
-        "config/league_sports.json: sporu kayıtlı olmayan bir ligin sporu yerel maç verisinden çıkarılır ve "
-        "saklanır (src/web/league_sports.resolve_all). Yazma idempotenttir, içeriğini çağıran belirlemez ve "
-        "arayüz bu uca bağlıdır; bilerek GET bırakıldı. Aşağıdaki özet sınamasında bu dosya da değişmez: "
-        "conftest'in tohumladığı ligin sporu kayıtlıdır, çıkarılacak bir şey yoktur."
-    ),
+    "/api/leagues": _CATALOG_ON_FIRST_READ,
+    "/api/leagues/search": _CATALOG_ON_FIRST_READ,
+    "/api/leagues/1/seasons": _CATALOG_ON_FIRST_READ,
     **{
         path: (
             "Sayımlar katalogdan okunur (plan maddesi RD-4), bunun için veri dizininin deposu açılır: ilk açılışta "
             "`.meta/schema.json` ve `.meta/catalog.db` kurulur, sonraki açılışlarda katalog dosyalarla uzlaştırılır. "
             "Katalog, indirilmiş dosyalardan türetilen bir dizindir (silinirse yeniden kurulur); içeriğini çağıran "
-            "belirlemez ve işlem idempotenttir. Veri ve ayar dosyaları değişmez: aşağıdaki özet sınaması deponun "
-            "bu iki dosyasını dışarıda tutar, gerisini karşılaştırır."
+            "belirlemez ve işlem idempotenttir. Veri ve ayar dosyaları değişmez: aşağıdaki özet sınaması depo "
+            "açıldıktan sonrasını ölçer, ondan sonra bu iki dosyanın içeriği de değişmez."
         )
         for path in ("/api/dashboard", "/api/stats/system")
     },
 }
 
 _STATE_DB = "state.db"  # iş deposu (src/store/jobs.py): DATA_DIR/.meta/state.db
-# Deponun türetilmiş dosyaları (DATA_DIR/.meta/): dizinin kimliği ve katalog. Depoyu açan bir GET bunları
-# kurabilir ve kataloğu güncelleyebilir (GETS_THAT_MAY_WRITE_A_CACHE); veri değildirler.
-_STORE_DERIVED = ("schema.json", "catalog.db", "catalog.db-wal", "catalog.db-shm")
+_CATALOG_DB = "catalog.db"  # katalog (src/store/catalog.py): DATA_DIR/.meta/catalog.db
+_SQLITE_FILES = (_STATE_DB, _CATALOG_DB)
 
 
 def _sqlite_content_digest(path: str) -> str:
@@ -243,24 +247,22 @@ def _sqlite_content_digest(path: str) -> str:
 
 def _tree_digest() -> dict:
     """
-    Veri ve yapılandırma dosyalarının içerik özeti (kilit dosyaları ve deponun türetilmiş dosyaları hariç).
+    Veri ve yapılandırma dosyalarının içerik özeti (kilit dosyaları hariç).
 
     İş deposu state.db WAL kipinde bir SQLite dosyasıdır (src/store/state.py). Baytları değil mantıksal
     içeriği özetlenir: WAL'da kayıt varken salt okunur bir bağlantı bile `state.db-shm` dizinine okuyucu
     işareti yazar (ör. GET /api/diagnostics), bir checkpoint de satırları değiştirmeden `state.db-wal`'dan
     ana dosyaya taşır. Böylece iş deposuna satır yazan bir GET yakalanır, SQLite'ın kendi defter tutması
-    yakalanmaz.
+    yakalanmaz. Katalog (catalog.db) da aynı biçimde özetlenir: ona satır yazan bir GET de yakalanır.
     """
     out = {}
     for root in (conftest.DATA_DIR, conftest.CONFIG_DIR):
         for folder, _dirs, files in os.walk(root):
             for name in files:
-                if name in (_STATE_DB + "-wal", _STATE_DB + "-shm") or name.endswith(".lock"):
-                    continue
-                if name in _STORE_DERIVED and os.path.basename(folder) == ".meta":
+                if name.endswith(".lock") or (name[-4:] in ("-wal", "-shm") and name[:-4] in _SQLITE_FILES):
                     continue
                 path = os.path.join(folder, name)
-                if name == _STATE_DB:
+                if name in _SQLITE_FILES:
                     out[path] = _sqlite_content_digest(path)
                     continue
                 with open(path, "rb") as f:
@@ -280,6 +282,9 @@ def test_no_get_route_writes_files_or_sends_requests(monkeypatch):
     monkeypatch.setattr(
         "src.services.export.export_all_csv", lambda ctx: pytest.fail("a GET route wrote an export")
     )
+    # Kataloğu okuyan uç noktalar depoyu açar; ilk açılış `.meta/` altını kurar (GETS_THAT_MAY_WRITE_A_CACHE).
+    # Ölçülen, veri dizini bir kez açıldıktan sonraki GET'lerdir: onlar hiçbir dosyayı ve satırı değiştirmez.
+    open_store(conftest.DATA_DIR)
     before = _tree_digest()
     for path in GET_ROUTES:
         query = {"/api/leagues/search": "?q=prem", "/api/seasons/1/matches": "?league_id=17"}.get(path, "")

@@ -196,16 +196,17 @@ def fx(request: pytest.FixtureRequest, tmp_path: Path, monkeypatch: pytest.Monke
 
 def test_api_leagues(fx: sf.LegacyFixture) -> None:
     """
-    Spor `config/league_sports.json`'dan gelir; orada yoksa ligin indirilmiş bir maçından (`match_details/
-    <lig id>_*/*/*/basic.json`) okunur ve dosyaya yazılır: GET isteğinin yan etkisi, `sports_file_after` ile
-    kaydedilir. `/api/leagues/search` yalnızca config'e bakar ve sporu hiç doldurmaz.
+    Spor `config/league_sports.json`'dan gelir; orada yoksa katalogdan (ligin indirilmiş maçlarının yükünden)
+    okunur. RD-5'ten beri dosyaya yazılmaz: `sports_file_after` dosyanın istekten sonra da olduğu gibi
+    kaldığını kaydeder (eskiden GET isteği dosyayı yeniden yazardı). `/api/leagues/search` aynı sporu döndürür
+    (eskiden hep null).
     """
     ids = list(fx.leagues)
     golden: Dict[str, Any] = {}
     with _configured(fx.leagues):
         first = _get("/api/leagues")
         golden["no sports file"] = {"response": first, "sports_file_after": _sports_file()}
-        assert _get("/api/leagues") == first, "ikinci istek (spor artık dosyadan) aynı yanıtı vermeli"
+        assert _get("/api/leagues") == first, "ikinci istek aynı yanıtı vermeli"
 
     # Kayıtlı değer veriyle çelişse de kazanır; tanınmayan değer yok sayılır ve veriden yeniden çıkarılır
     stored: Dict[str, Any] = {str(ids[0]): "Tennis", str(UNKNOWN_LEAGUE): "basketball", "not-an-id": "football"}
@@ -229,7 +230,11 @@ def test_api_leagues(fx: sf.LegacyFixture) -> None:
 
 
 def test_api_league_seasons(fx: sf.LegacyFixture) -> None:
-    """Yapılandırılmış her lig ve bilinmeyen bir lig. Uç nokta lig listesine bakmaz, yalnızca `seasons/` dizinine."""
+    """
+    Fixture'ın her ligi ve bilinmeyen bir lig. Uygulamanın lig listesinde burada yalnızca conftest'in ligi (17)
+    vardır: adında kimlik olmayan dosya (`LaLiga_seasons.json`) turnuvasına bağlanamaz, o lig için
+    `league_seasons.csv` konuşur (ligin adı yapılandırılmışken: tests/test_tournaments_service.py).
+    """
     golden = {f"league_id={lid}": _get(f"/api/leagues/{lid}/seasons") for lid in list(fx.leagues) + [UNKNOWN_LEAGUE]}
     golden["league_id=abc"] = _get("/api/leagues/abc/seasons")
     check_golden(f"{fx.name}.league_seasons", golden)
@@ -256,9 +261,11 @@ SEASON_FILES: Tuple[Tuple[str, bytes, int], ...] = (
 
 def test_api_league_seasons_file_forms(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Hangi dosya okunur, içeriğinden ne döner: `<id>_seasons.json` adı `<id>_<ad>_seasons.json`'dan önce gelir
-    (daha eski olsa da), birden çok adlı dosyadan mtime'ı en yeni olan seçilir; `seasons` anahtarı liste
-    değilse boş liste ve `fetched: true`, dosya ayrıştırılamıyorsa boş liste ve `fetched: false` döner.
+    Hangi dosya okunur, içeriğinden ne döner (RD-5'ten beri kural src/services/tournaments.py'dedir): ligin
+    dosyalarından, adı ne olursa olsun, mtime'ı en yeni olan seçilir (eskiden yalın `<id>_seasons.json` daha
+    eski olsa da kazanırdı); `seasons` anahtarı liste değilse boş liste ve `fetched: true`; okunamayan dosya
+    (yarım kalmış JSON, nesne yerine dizi ya da metin) sezon listesi sayılmaz: boş liste ve `fetched: false`;
+    başında BOM olan dosya okunur.
     """
     seasons_dir = tmp_path / "data" / "seasons"
     seasons_dir.mkdir(parents=True)

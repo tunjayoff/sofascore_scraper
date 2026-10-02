@@ -3,13 +3,17 @@
   "status": 200,
   "body": {
    "seasons": [
+    {"name": "Premier League 26/27", "year": "26/27", "editor": false, "id": 96668},
     {"name": "Premier League 25/26", "year": "25/26", "editor": false, "id": 76986},
     {"name": "Premier League 24/25", "year": "24/25", "editor": false, "id": 61627}
    ],
    "fetched": true
   }
  },
- "league_id=8": {"status": 200, "body": {"seasons": [], "fetched": false}},
+ "league_id=8": {
+  "status": 200,
+  "body": {"seasons": [{"id": 77559, "name": "LaLiga 25/26", "year": "25/26"}], "fetched": true}
+ },
  "league_id=2361": {
   "status": 200,
   "body": {

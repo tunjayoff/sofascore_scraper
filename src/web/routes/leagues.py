@@ -1,18 +1,24 @@
-"""Lig yapılandırması, lig arama ve sezon listesi uç noktaları."""
+"""
+Lig yapılandırması, lig arama ve sezon listesi uç noktaları.
+
+Saklanan sezon listesi ve liglerin indirilmiş veriden bilinen sporu deponun kataloğundan okunur
+(src/services/tournaments.py). Okuma depoyu açar: yapılandırılmış veri dizininde `.meta/` yoksa kurulur ve
+katalog dosyalardan çıkarılır; uç noktalar başka hiçbir şey yazmaz.
+"""
 from __future__ import annotations
 
 import asyncio
-import json
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator
 
 from src import bridge_health
+from src import store as store_api
 from src.exceptions import SofaScoreScraperError
+from src.services import tournaments
 from src.web import league_sports, upstream
 from src.web.routes.common import (
-    _find_league_seasons_json,
     _job_store,
     config_manager,
     logger,
@@ -133,12 +139,19 @@ def _refresh_league_seasons_sync(league_id: int) -> dict:
     return {"status": "success", "seasons": seasons}
 
 
-def _leagues_with_sport_sync() -> List[LeagueModel]:
-    leagues = config_manager.get_leagues()
-    sports = league_sports.resolve_all(
+def _with_sport(leagues: Dict[int, str]) -> List[LeagueModel]:
+    """
+    Liglerin sporlarıyla listesi. Spor: kullanıcının kaydettiği (config/league_sports.json), yoksa indirilmiş
+    veriden bilinen (katalog). Hiçbir dosya yazılmaz: veriden okunan spor her istekte katalogdan gelir.
+    """
+    sports = league_sports.sports_for(
         config_manager.league_config_path, config_manager.get_data_dir(), leagues.keys()
     )
     return [LeagueModel(id=k, name=v, sport=sports.get(k)) for k, v in leagues.items()]
+
+
+def _leagues_with_sport_sync() -> List[LeagueModel]:
+    return _with_sport(config_manager.get_leagues())
 
 
 @router.get("/leagues", response_model=List[LeagueModel])
@@ -185,7 +198,7 @@ def delete_league(league_id: int) -> Dict[str, str]:
 @router.get("/leagues/search", response_model=List[LeagueModel])
 def search_leagues(q: str = Query(..., min_length=2)) -> List[LeagueModel]:
     leagues = config_manager.get_leagues()
-    return [LeagueModel(id=lid, name=name) for lid, name in leagues.items() if q.lower() in name.lower()]
+    return _with_sport({lid: name for lid, name in leagues.items() if q.lower() in name.lower()})
 
 
 class RemoteLeagueResult(BaseModel):
@@ -212,21 +225,25 @@ async def search_remote_leagues(q: str = Query(..., min_length=2)):
         raise upstream.http_error(e.reason) from e
 
 
+def _stored_seasons(league_id: int) -> Optional[List[Any]]:
+    """
+    Ligin saklanan sezon listesi, katalogdan; listesi yoksa None. Ligin birden çok dosyası varsa en yenisi
+    geçerlidir, okunamayan dosya liste sayılmaz (kural: src/services/tournaments.py). Lig yapılandırılmışsa adı
+    da verilir: adında kimlik olmayan dosya (`<ad>_seasons.json`) onunla bulunur.
+    """
+    store = store_api.open_store(config_manager.get_data_dir())
+    return tournaments.seasons_of(store, league_id, name=config_manager.get_league_by_id(league_id))
+
+
 @router.get("/leagues/{league_id}/seasons")
 def get_league_seasons(league_id: int):
     """Bir ligin yerel olarak kayıtlı sezon listesini döndürür."""
-    data_dir = config_manager.get_data_dir()
-    seasons_file = _find_league_seasons_json(data_dir, league_id)
-    if not seasons_file:
-        return {"seasons": [], "fetched": False}
     try:
-        with open(seasons_file, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        seasons = data.get("seasons", data) if isinstance(data, dict) else data
-        return {"seasons": seasons if isinstance(seasons, list) else [], "fetched": True}
+        seasons = _stored_seasons(league_id)
     except Exception as e:
         logger.error(f"Error reading seasons for league {league_id}: {e}")
         return {"seasons": [], "fetched": False}
+    return {"seasons": seasons or [], "fetched": seasons is not None}
 
 
 @router.post("/leagues/{league_id}/seasons/refresh")

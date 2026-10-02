@@ -41,7 +41,8 @@ def test_infer_from_downloaded_match_and_remember():
     match_dir = os.path.join(data, "match_details", "132_NBA", "season_NBA_25_26", "14441992")
     os.makedirs(match_dir)
     with open(os.path.join(match_dir, "basic.json"), "w", encoding="utf-8") as f:
-        json.dump({"tournament": {"category": {"sport": {"name": "Basketball", "slug": "basketball"}}}}, f)
+        json.dump({"id": 14441992, "tournament": {"uniqueTournament": {"id": 132},
+                                                  "category": {"sport": {"name": "Basketball", "slug": "basketball"}}}}, f)
 
     out = league_sports.resolve_all(cfg, data, [132, 17])
     assert out == {132: "basketball", 17: None}

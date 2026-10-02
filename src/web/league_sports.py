@@ -6,8 +6,10 @@ config/league_sports.json as {"<league id>": "<sport slug>"} (the sports registe
 "football" | "basketball" | "tennis").
 
 A league added through the web UI gets its sport from the remote search result. A league
-added any other way has none until either someone picks it in the UI, or a downloaded
-match's basic.json (tournament.category.sport) tells us; that lookup reads local files only.
+added any other way has none until either someone picks it in the UI, or the downloaded data
+tells us: the catalog of the data directory knows the sport of every tournament it has a match
+of (src/services/tournaments.sport_of; no network, no file scan). `sports_for` answers from both
+and writes nothing; a sport read from the data is not copied into the sidecar.
 
 The sidecar stays the source of truth. After every write the sports are also mirrored into the
 `follows` table of the data directory (origin "legacy", together with the league names; see
@@ -15,16 +17,18 @@ ConfigManager.mirror_follows and src/store/follows.py). The file is never rewrit
 """
 from __future__ import annotations
 
-import glob
 import json
 import os
 import sys
 import threading
-from typing import Dict, Optional
+from typing import Dict, Iterable, Optional
 
 from src import sports
+from src import store as store_api
+from src.exceptions import StorageError
 from src.fsutil import atomic_write_json, file_lock
 from src.logger import get_logger
+from src.services import tournaments
 
 logger = get_logger("LeagueSports")
 
@@ -94,22 +98,37 @@ def set_sport(league_config_path: str, league_id: int, sport: Optional[str]) -> 
 
 
 def infer_from_data(data_dir: str, league_id: int) -> Optional[str]:
-    """Read the sport from any downloaded match of this league (no network)."""
-    pattern = os.path.join(data_dir, "match_details", f"{int(league_id)}_*", "*", "*", "basic.json")
-    for path in glob.iglob(pattern):
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                basic = json.load(f)
-        except (OSError, ValueError):
-            continue
-        found = normalize_sport(sports.event_sport_slug(basic))
-        if found:
-            return found
-    return None
+    """
+    The sport of this league's downloaded matches, from the catalog of the data directory (no network).
+
+    The tournament of a match is the one its payload names, whatever directory the match is stored in.
+    None when nothing is known, the sport is not a registered one, or the catalog cannot be read (the
+    league list is configuration and must not fail because an index is unavailable).
+    """
+    try:
+        return tournaments.sport_of(store_api.open_store(data_dir), int(league_id))
+    except (StorageError, ValueError) as e:  # ValueError: an id outside the range the catalog can hold
+        logger.warning("Sport of league %s could not be read from the catalog of %s: %s", league_id, data_dir, e)
+        return None
+
+
+def sports_for(league_config_path: str, data_dir: str, league_ids: Iterable[int]) -> Dict[int, Optional[str]]:
+    """Sport for each id: stored, else read from the downloaded data, else None. Nothing is written."""
+    stored = load(league_config_path)
+    out: Dict[int, Optional[str]] = {}
+    for lid in league_ids:
+        lid = int(lid)
+        out[lid] = stored.get(lid) or infer_from_data(data_dir, lid)
+    return out
 
 
 def resolve_all(league_config_path: str, data_dir: str, league_ids) -> Dict[int, Optional[str]]:
-    """Sport for each id: stored, else inferred from local data (and then stored), else None."""
+    """
+    Sport for each id: stored, else inferred from local data (and then stored), else None.
+
+    The web app does not call this any more (GET /api/leagues uses `sports_for`, which writes nothing); it
+    is kept for callers that want the learned sport in the sidecar and in the follows table.
+    """
     stored = load(league_config_path)
     out: Dict[int, Optional[str]] = {}
     learned: Dict[int, str] = {}
