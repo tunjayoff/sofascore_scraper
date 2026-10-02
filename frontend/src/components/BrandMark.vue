@@ -30,7 +30,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <RouterLink to="/" class="brand" :aria-label="t('brand')">
+  <RouterLink to="/classic" class="brand" :aria-label="t('brand')">
     <svg class="mark" width="36" height="36" viewBox="0 0 36 36" aria-hidden="true">
       <rect width="36" height="36" rx="10" class="mark-bg" />
       <!-- a pitch seen from above: halfway line and centre circle, with a live trace across -->

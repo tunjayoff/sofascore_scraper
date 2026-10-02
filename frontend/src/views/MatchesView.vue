@@ -195,7 +195,7 @@ onUnmounted(scrape.onFinished(() => void load()))
       <h1 class="page-title">{{ t('matches.title') }}</h1>
       <p class="page-sub">{{ t('matches.sub') }}</p>
     </div>
-    <RouterLink to="/download" class="btn"><AppIcon name="download" :size="16" />{{ t('matches.goDownload') }}</RouterLink>
+    <RouterLink to="/classic/download" class="btn"><AppIcon name="download" :size="16" />{{ t('matches.goDownload') }}</RouterLink>
   </div>
 
   <div class="flex flex-wrap items-end gap-3 mb-5">
@@ -260,7 +260,7 @@ onUnmounted(scrape.onFinished(() => void load()))
     <p class="page-sub max-w-[440px]">{{ sportWithoutLeagues ? t('leagues.noneInSport') : t('matches.empty.body') }}</p>
     <div class="flex gap-2 mt-2">
       <button v-if="hasFilters" type="button" class="btn" @click="clearFilters">{{ t('matches.clearFilters') }}</button>
-      <RouterLink to="/download" class="btn btn-primary">{{ t('matches.empty.cta') }}</RouterLink>
+      <RouterLink to="/classic/download" class="btn btn-primary">{{ t('matches.empty.cta') }}</RouterLink>
     </div>
   </div>
 
@@ -276,7 +276,7 @@ onUnmounted(scrape.onFinished(() => void load()))
     <RouterLink
       v-for="m in items"
       :key="String(m.match_id)"
-      :to="`/match/${m.match_id}`"
+      :to="`/classic/match/${m.match_id}`"
       class="table-row match-row no-underline"
       :style="cols"
     >

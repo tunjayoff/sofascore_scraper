@@ -77,8 +77,8 @@ async function remove(l: LeagueView) {
           <span class="mono text-[13px] w-12" style="color: var(--muted)">{{ l.matches ? pct(l.coverage) : '—' }}</span>
         </span>
         <span class="flex items-center justify-end gap-2">
-          <button type="button" class="btn btn-sm" :disabled="!l.matches" @click="router.push({ path: '/matches', query: { league_id: l.id } })">{{ t('leagues.view') }}</button>
-          <button type="button" class="btn btn-primary btn-sm" @click="router.push({ path: '/download', query: { league: l.id } })">{{ t('leagues.download') }}</button>
+          <button type="button" class="btn btn-sm" :disabled="!l.matches" @click="router.push({ path: '/classic/matches', query: { league_id: l.id } })">{{ t('leagues.view') }}</button>
+          <button type="button" class="btn btn-primary btn-sm" @click="router.push({ path: '/classic/download', query: { league: l.id } })">{{ t('leagues.download') }}</button>
           <button type="button" class="btn btn-ghost btn-sm btn-icon" :aria-label="t('leagues.remove') + ': ' + l.name" :title="t('leagues.remove')" @click="remove(l)"><AppIcon name="trash" :size="16" /></button>
         </span>
       </div>

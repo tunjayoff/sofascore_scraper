@@ -176,7 +176,7 @@ onUnmounted(scrape.onFinished(() => notFetched.value && void load()))
 </script>
 
 <template>
-  <RouterLink to="/matches" class="btn btn-ghost btn-sm mb-3 -ml-3" style="color: var(--muted)"><AppIcon name="chevronLeft" :size="16" />{{ t('match.back') }}</RouterLink>
+  <RouterLink to="/classic/matches" class="btn btn-ghost btn-sm mb-3 -ml-3" style="color: var(--muted)"><AppIcon name="chevronLeft" :size="16" />{{ t('match.back') }}</RouterLink>
 
   <div v-if="loading" class="flex items-center gap-3 py-16" style="color: var(--muted)"><span class="spinner"></span>{{ t('common.loading') }}</div>
 

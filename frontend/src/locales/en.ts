@@ -1,4 +1,5 @@
 import type tr from './tr'
+import ui from './ui/en'
 
 const en: typeof tr = {
   brand: 'SofaScore Scraper',
@@ -334,6 +335,8 @@ const en: typeof tr = {
     invalidNumber: '{field}: enter a number between {min} and {max}.',
     version: 'Version {version}',
   },
+  // The new web UI (src/app, src/ui, src/screens)
+  ui,
 }
 
 export default en
