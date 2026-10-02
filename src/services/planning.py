@@ -23,6 +23,10 @@ politikadadır). Depodan durumları okuyan sarmalayıcılar (`event_needs`, `ref
 
 `refill` iş biriminin dilimleri, maçın eksik olan bütün seçili dilimleridir: tamlık hesabına girmeyen (isteğe
 bağlı) dilimler de (ör. tenisin point_by_point'i), maç zaten yeniden okunuyorsa birlikte istenir.
+
+Liste iş birimleri (`listing`, plan maddesi P14): bir turnuvanın sezon listesi (`season_list_item`: sahibi
+turnuva, dilimi `seasons`) ve bir sezonun maç programı (`schedule_item`: sahibi sezon, dilimi `schedule`; tur
+ya da olay sayfaları). Yürütülmeleri src/services/listing.py'dedir.
 """
 from __future__ import annotations
 
@@ -51,6 +55,11 @@ WorkNeed = Literal["listing", "full", "refill", "refresh", "owner"]
 Selection = Union[SliceSelection, Iterable[str], None]
 
 NEEDS: Tuple[str, ...] = (NEED_FULL, NEED_REFILL, NEED_REFRESH, NEED_NONE)
+NEED_LISTING = "listing"
+
+# Liste iş birimlerinin dilim anahtarları (Store'daki adlarıyla: src/store/entities.py KEY_SEASONS, KEY_SCHEDULE)
+LISTING_SEASONS = "seasons"
+LISTING_SCHEDULE = "schedule"
 _SLICE_OK = "ok"
 
 # Durum sınıfından maçın evresi (dilimin `phases`'ı ile karşılaştırılır); bilinmeyen durumda evre yoktur.
@@ -182,6 +191,17 @@ def work_item(event_id: int, state: Optional["EventState"], need: str, selection
     raise ValueError(f"need must be one of {', '.join(NEEDS)}, got {need!r}")
 
 
+def season_list_item(tournament_id: int, *, reason: str = "season list") -> WorkItem:
+    """Bir turnuvanın sezon listesinin iş birimi (`GET /unique-tournament/{id}/seasons`)."""
+    return WorkItem(Ref.tournament(int(tournament_id)), NEED_LISTING, ((LISTING_SEASONS, ""),), None, reason)
+
+
+def schedule_item(tournament_id: int, season_id: int, *, reason: str = "season schedule") -> WorkItem:
+    """Bir sezonun maç programının iş birimi: tur listesi, sonra turlar ya da `events/last` / `events/next` sayfaları."""
+    return WorkItem(Ref.season(int(tournament_id), int(season_id)), NEED_LISTING, ((LISTING_SCHEDULE, ""),), None,
+                    reason)
+
+
 def order_by_need(ids: Sequence[Any], needs: Dict[str, str]) -> Tuple[List[Any], int]:
     """
     İşlenecek kimlikler: önce full ve refill (verildiği sırayla), sonra refresh; `none` düşer. İkinci değer
@@ -269,6 +289,7 @@ def plan_items(store: "Store", event_ids: Iterable[Any], policy: RefreshPolicy, 
     return items
 
 
-__all__ = ["NEEDS", "Need", "Selection", "WorkItem", "WorkNeed", "compute_need", "event_needs",
-           "expected_slice_keys", "missing_slice_keys", "order_by_need", "phase_of", "plan_items", "refresh_due",
-           "refresh_due_events", "slice_missing", "wanted_slice_keys", "work_item"]
+__all__ = ["LISTING_SCHEDULE", "LISTING_SEASONS", "NEEDS", "NEED_LISTING", "Need", "Selection", "WorkItem",
+           "WorkNeed", "compute_need", "event_needs", "expected_slice_keys", "missing_slice_keys", "order_by_need",
+           "phase_of", "plan_items", "refresh_due", "refresh_due_events", "schedule_item", "season_list_item",
+           "slice_missing", "wanted_slice_keys", "work_item"]

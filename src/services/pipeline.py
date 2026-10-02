@@ -24,6 +24,11 @@ Bekleme yoktur: hızı ortak istek bütçesi (src/throttle.py) ve istek katmanı
 yeniden okur. İstek katmanının gördüğü iptal (FetchCancelled) çağırana çıkar; kalıcı depolama hatası
 (StorageError, `fatal`) da: kalan işler yapılmaz.
 
+Liste iş birimleri (`listing`: sezon listesi, sezon programı; plan maddesi P14) de aynı çalıştırmada, aynı
+oturumla ve aynı yazıcı thread'iyle yürür: boru hattı onları kurucuya verilen liste işleyicisine
+(src/services/listing.py, `ListingHandler`) devreder. Bir birimin sonucu yeni iş birimleri getirebilir
+(`ItemResult.follow_up`, ör. listede yeni biten maçlar): bunlar aynı çalıştırmanın kuyruğunun sonuna eklenir.
+
 Yazmalar tek bir yazıcı thread'inde yapılır; döngü diske dokunmaz. Kuyruk sınırlıdır (`writer_queue`): depo
 yavaşken işçiler bekler, bellek büyümez. Depo meşgulse (StoreBusy) yazma artan beklemeyle yeniden denenir.
 """
@@ -43,9 +48,11 @@ from typing import (
     Dict,
     Iterable,
     List,
+    Awaitable,
     Literal,
     Mapping,
     Optional,
+    Protocol,
     Tuple,
 )
 
@@ -125,6 +132,8 @@ class ItemResult:
     changed  yenilemede ve olay yükü değişen yazmada değişen alanlar ({alan: [eski, yeni]})
     put      Store'un yazma sonucu; yazılmadıysa None
     error    yazmayı bitiren depolama hatası; yoksa None
+    listing  liste biriminde listenin sonucu (src.services.listing.ListingResult); diğer birimlerde None
+    follow_up  bu sonucun getirdiği yeni iş birimleri (aynı çalıştırmanın kuyruğuna eklenir)
     """
 
     item: WorkItem
@@ -136,6 +145,8 @@ class ItemResult:
     changed: Dict[str, List[Any]] = field(default_factory=dict)
     put: Optional["PutResult"] = None
     error: Optional[StorageError] = None
+    listing: Any = None
+    follow_up: Tuple[WorkItem, ...] = ()
 
     @property
     def event_id(self) -> int:
@@ -212,6 +223,17 @@ class PipelineSummary:
 ResultCallback = Callable[[ItemResult], None]
 CancelCheck = Callable[[], bool]
 
+# Liste işleyicisinin gördüğü istek ve yazma: get(yol, deneme sayısı) → sonuç; write(fn) → fn'in değeri, yazıcı
+# thread'inde (depoya her erişim, okuma da)
+ListingGet = Callable[[str, Optional[int]], Awaitable[Outcome]]
+ListingWrite = Callable[[Callable[[], Any]], Awaitable[Any]]
+
+
+class ListingHandler(Protocol):
+    """Liste iş birimlerini yürüten nesne (src/services/listing.py, ListingFetcher)."""
+
+    async def run(self, item: WorkItem, get: ListingGet, write: ListingWrite) -> ItemResult: ...
+
 
 class FetchPipeline:
     """
@@ -229,12 +251,13 @@ class FetchPipeline:
     threshold      "veri yok" eşiği (bilgi için; sayaçları Store tutar)
     writer_queue   bekleyebilecek yazma sayısı
     source         `change.recorded` olaylarının kaynağı
+    listing        liste iş birimlerinin işleyicisi; verilmezse liste birimi ValueError verir
     """
 
     def __init__(self, store: "Store", *, client: Optional[Client] = None, concurrency: int = 5,
                  only_finished: bool = True, selection: "Optional[SliceSelection]" = None,
                  threshold: int = UNAVAILABLE_AFTER_ATTEMPTS, writer_queue: int = DEFAULT_WRITER_QUEUE,
-                 source: str = "job") -> None:
+                 source: str = "job", listing: Optional[ListingHandler] = None) -> None:
         self._store = store
         self._client = client
         self._concurrency = max(1, int(concurrency))
@@ -243,6 +266,7 @@ class FetchPipeline:
         self._threshold = threshold
         self._writer_queue = max(1, int(writer_queue))
         self._source = source
+        self._listing = listing
 
     # --- çalıştırma ------------------------------------------------------------------------------------
 
@@ -294,6 +318,10 @@ class FetchPipeline:
                     summary.cancelled = True
                     return
                 report(result)
+                if result.follow_up:
+                    # Sonucun getirdiği birimler aynı çalıştırmada, kuyruğun sonunda yürür
+                    queue.extend(result.follow_up)
+                    summary.total += len(result.follow_up)
                 if result.error is not None and result.error.fatal:
                     state["stop"] = result.error
                     return
@@ -324,6 +352,8 @@ class FetchPipeline:
 
     async def _process(self, client: Client, item: WorkItem, writer: concurrent.futures.Executor,
                        slots: asyncio.Semaphore) -> ItemResult:
+        if item.need == "listing":
+            return await self._list(client, item, writer, slots)
         if item.owner.kind != "event":
             raise ValueError(f"the pipeline fetches events only, got a {item.owner.kind} work item")
         if item.need == "refresh":
@@ -331,6 +361,22 @@ class FetchPipeline:
         if item.need in ("full", "refill"):
             return await self._fetch(client, item, writer, slots)
         raise ValueError(f"unknown need of a work item: {item.need!r}")
+
+    async def _list(self, client: Client, item: WorkItem, writer: concurrent.futures.Executor,
+                    slots: asyncio.Semaphore) -> ItemResult:
+        """Liste birimi: işleyiciye çalıştırmanın oturumu ve yazıcısı verilir."""
+        handler = self._listing
+        if handler is None:
+            raise ValueError("listing work items need a listing handler (src.services.listing)")
+
+        async def get(path: str, retries: Optional[int] = None) -> Outcome:
+            return await client.get(path, retries=retries)
+
+        async def write(fn: Callable[[], Any]) -> Any:
+            async with slots:
+                return await self._in_writer(writer, fn)
+
+        return await handler.run(item, get, write)
 
     async def _get_event(self, client: Client, item: WorkItem) -> Tuple[Optional[ItemResult], Outcome]:
         """/event isteği. Birim burada bittiyse (başarısız, atlanan, maç yok) sonucu da döner."""
@@ -552,7 +598,8 @@ def put_retrying(store: "Store", event_id: int, what: str, write: Callable[[], A
 
 __all__ = [
     "CHANGE_RECORDED", "CHANGE_STREAM", "EVENT_KEY", "FAIL_NOT_FOUND", "FAIL_NOT_STORED", "FAIL_STORAGE",
-    "FetchPipeline", "ITEM_FAILED", "ITEM_OK", "ITEM_SKIPPED", "ItemResult", "PipelineSummary", "SKIP_BREAKER",
+    "FetchPipeline", "ITEM_FAILED", "ITEM_OK", "ITEM_SKIPPED", "ItemResult", "ListingGet", "ListingHandler",
+    "ListingWrite", "PipelineSummary", "SKIP_BREAKER",
     "SKIP_CANCELLED", "SKIP_NOT_DUE", "STORE_BUSY_ATTEMPTS", "STORE_BUSY_FIRST_WAIT", "UNAVAILABLE_AFTER_ATTEMPTS",
     "answered_outcome", "is_finished", "put_retrying", "upstream_failure",
 ]
