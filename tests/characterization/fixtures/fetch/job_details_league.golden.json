@@ -170,7 +170,7 @@
      "empty": {
       "at": "<volatile>",
       "count": 2,
-      "reason": "empty",
+      "reason": "404",
       "unverified": 0
      },
      "state": "empty"
@@ -454,6 +454,11 @@
  "requests": [
   {
    "concurrent": [
+    "async /event/9100001 200",
+    "async /event/9100001/statistics 200",
+    "async /event/9100002 200",
+    "async /event/9100002/lineups 200",
+    "async /event/9100002/pregame-form 404",
     "async /event/9100003 200",
     "async /event/9100003/h2h 200",
     "async /event/9100003/incidents 200",
@@ -461,13 +466,8 @@
     "async /event/9100003/pregame-form 200",
     "async /event/9100003/statistics 200",
     "async /event/9100003/team-streaks 200",
-    "async https://www.sofascore.com/ 200",
-    "sync /event/9100001 200",
-    "sync /event/9100001/statistics 200",
-    "sync /event/9100002 200",
-    "sync /event/9100002/lineups 200",
-    "sync /event/9100002/pregame-form 404",
-    "sync /event/9100010 200"
+    "async /event/9100010 200",
+    "async https://www.sofascore.com/ 200"
    ]
   }
  ]

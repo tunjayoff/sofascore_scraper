@@ -65,10 +65,10 @@
    },
    {
     "concurrent": [
-     "async https://www.sofascore.com/ 200",
-     "sync /event/9100002 200",
-     "sync /event/9100002/lineups 200",
-     "sync /event/9100002/pregame-form 404"
+     "async /event/9100002 200",
+     "async /event/9100002/lineups 200",
+     "async /event/9100002/pregame-form 404",
+     "async https://www.sofascore.com/ 200"
     ]
    }
   ]

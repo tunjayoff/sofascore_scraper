@@ -135,7 +135,7 @@
      "empty": {
       "at": "<volatile>",
       "count": 2,
-      "reason": "empty",
+      "reason": "404",
       "unverified": 0
      },
      "state": "empty"
@@ -254,9 +254,14 @@
     }
    },
    "requests": [
-    "sync /event/9100003 403",
-    "sync /event/9100003 403",
-    "sync /event/9100003 403"
+    {
+     "concurrent": [
+      "async /event/9100003 403",
+      "async /event/9100003 403",
+      "async /event/9100003 403",
+      "async https://www.sofascore.com/ 200"
+     ]
+    }
    ],
    "status": 502
   },
@@ -268,25 +273,30 @@
     }
    },
    "requests": [
-    "sync /event/9100003 200",
-    "sync /event/9100003/statistics 403",
-    "sync /event/9100003/statistics 403",
-    "sync /event/9100003/statistics 403",
-    "sync /event/9100003/team-streaks 403",
-    "sync /event/9100003/team-streaks 403",
-    "sync /event/9100003/team-streaks 403",
-    "sync /event/9100003/pregame-form 403",
-    "sync /event/9100003/pregame-form 403",
-    "sync /event/9100003/pregame-form 403",
-    "sync /event/9100003/h2h 403",
-    "sync /event/9100003/h2h 403",
-    "sync /event/9100003/h2h 403",
-    "sync /event/9100003/lineups 403",
-    "sync /event/9100003/lineups 403",
-    "sync /event/9100003/lineups 403",
-    "sync /event/9100003/incidents 403",
-    "sync /event/9100003/incidents 403",
-    "sync /event/9100003/incidents 403"
+    {
+     "concurrent": [
+      "async /event/9100003 200",
+      "async /event/9100003/h2h 403",
+      "async /event/9100003/h2h 403",
+      "async /event/9100003/h2h 403",
+      "async /event/9100003/incidents 403",
+      "async /event/9100003/incidents 403",
+      "async /event/9100003/incidents 403",
+      "async /event/9100003/lineups 403",
+      "async /event/9100003/lineups 403",
+      "async /event/9100003/lineups 403",
+      "async /event/9100003/pregame-form 403",
+      "async /event/9100003/pregame-form 403",
+      "async /event/9100003/pregame-form 403",
+      "async /event/9100003/statistics 403",
+      "async /event/9100003/statistics 403",
+      "async /event/9100003/statistics 403",
+      "async /event/9100003/team-streaks 403",
+      "async /event/9100003/team-streaks 403",
+      "async /event/9100003/team-streaks 403",
+      "async https://www.sofascore.com/ 200"
+     ]
+    }
    ],
    "status": 502
   },
@@ -296,7 +306,12 @@
     "status": "success"
    },
    "requests": [
-    "sync /event/9100001 200"
+    {
+     "concurrent": [
+      "async /event/9100001 200",
+      "async https://www.sofascore.com/ 200"
+     ]
+    }
    ],
    "status": 200
   },
@@ -306,13 +321,18 @@
     "status": "success"
    },
    "requests": [
-    "sync /event/9100002 200",
-    "sync /event/9100002/statistics 200",
-    "sync /event/9100002/team-streaks 200",
-    "sync /event/9100002/pregame-form 404",
-    "sync /event/9100002/h2h 200",
-    "sync /event/9100002/lineups 200",
-    "sync /event/9100002/incidents 200"
+    {
+     "concurrent": [
+      "async /event/9100002 200",
+      "async /event/9100002/h2h 200",
+      "async /event/9100002/incidents 200",
+      "async /event/9100002/lineups 200",
+      "async /event/9100002/pregame-form 404",
+      "async /event/9100002/statistics 200",
+      "async /event/9100002/team-streaks 200",
+      "async https://www.sofascore.com/ 200"
+     ]
+    }
    ],
    "status": 200
   },
@@ -322,9 +342,14 @@
     "status": "success"
    },
    "requests": [
-    "sync /event/9100002 200",
-    "sync /event/9100002/pregame-form 404",
-    "sync /event/9100002/lineups 200"
+    {
+     "concurrent": [
+      "async /event/9100002 200",
+      "async /event/9100002/lineups 200",
+      "async /event/9100002/pregame-form 404",
+      "async https://www.sofascore.com/ 200"
+     ]
+    }
    ],
    "status": 200
   },
@@ -334,7 +359,12 @@
     "status": "success"
    },
    "requests": [
-    "sync /event/9100002 200"
+    {
+     "concurrent": [
+      "async /event/9100002 200",
+      "async https://www.sofascore.com/ 200"
+     ]
+    }
    ],
    "status": 200
   },
@@ -344,8 +374,13 @@
     "status": "success"
    },
    "requests": [
-    "sync /event/9100001 200",
-    "sync /event/9100001/h2h 200"
+    {
+     "concurrent": [
+      "async /event/9100001 200",
+      "async /event/9100001/h2h 200",
+      "async https://www.sofascore.com/ 200"
+     ]
+    }
    ],
    "status": 200
   },
@@ -355,13 +390,18 @@
     "status": "success"
    },
    "requests": [
-    "sync /event/9100001 200",
-    "sync /event/9100001/statistics 200",
-    "sync /event/9100001/team-streaks 200",
-    "sync /event/9100001/pregame-form 200",
-    "sync /event/9100001/h2h 200",
-    "sync /event/9100001/lineups 200",
-    "sync /event/9100001/incidents 200"
+    {
+     "concurrent": [
+      "async /event/9100001 200",
+      "async /event/9100001/h2h 200",
+      "async /event/9100001/incidents 200",
+      "async /event/9100001/lineups 200",
+      "async /event/9100001/pregame-form 200",
+      "async /event/9100001/statistics 200",
+      "async /event/9100001/team-streaks 200",
+      "async https://www.sofascore.com/ 200"
+     ]
+    }
    ],
    "status": 200
   },
@@ -370,7 +410,12 @@
     "detail": "Match data could not be fetched (may be unfinished or unavailable)."
    },
    "requests": [
-    "sync /event/9100004 200"
+    {
+     "concurrent": [
+      "async /event/9100004 200",
+      "async https://www.sofascore.com/ 200"
+     ]
+    }
    ],
    "status": 404
   },
@@ -379,8 +424,12 @@
     "detail": "Match data could not be fetched (may be unfinished or unavailable)."
    },
    "requests": [
-    "sync /event/9100001 200",
-    "sync /event/9100001 200"
+    {
+     "concurrent": [
+      "async /event/9100001 200",
+      "async https://www.sofascore.com/ 200"
+     ]
+    }
    ],
    "status": 404
   },
@@ -389,7 +438,12 @@
     "detail": "Match data could not be fetched (may be unfinished or unavailable)."
    },
    "requests": [
-    "sync /event/1 404"
+    {
+     "concurrent": [
+      "async /event/1 404",
+      "async https://www.sofascore.com/ 200"
+     ]
+    }
    ],
    "status": 404
   }

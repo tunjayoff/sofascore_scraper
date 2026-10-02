@@ -64,7 +64,7 @@
        "empty": {
         "at": "<volatile>",
         "count": 2,
-        "reason": "empty",
+        "reason": "404",
         "unverified": 0
        },
        "state": "empty"
@@ -109,10 +109,10 @@
    },
    {
     "concurrent": [
-     "async https://www.sofascore.com/ 200",
-     "sync /event/9100002 200",
-     "sync /event/9100002/lineups 200",
-     "sync /event/9100002/pregame-form 404"
+     "async /event/9100002 200",
+     "async /event/9100002/lineups 200",
+     "async /event/9100002/pregame-form 404",
+     "async https://www.sofascore.com/ 200"
     ]
    }
   ],
@@ -120,9 +120,7 @@
    "request-layer": 6,
    "src.client.transport": 3
   },
-  "stderr": [
-   "<progress> Fetching match details: 1/1"
-  ],
+  "stderr": [],
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
@@ -171,17 +169,11 @@
    "LOG INFO SyncService: Fetching match details: league all (1 matches)…",
    "",
    "Details will be fetched for 1 matches...",
-   "",
-   "Batch 1/1: processing 1 matches (1-1/1)...",
-   "Processing 1 matches in parallel...",
    {
     "concurrent": [
-     "LOG INFO MatchDataFetcher: Batch 1/1: 1 başarılı, 0 başarısız (hata yok)",
-     "LOG INFO MatchDataFetcher: Match 9100002 stored (0 files written)",
-     "LOG INFO MatchDataFetcher: Processing batch 1/1 (1 matches)"
+     "LOG INFO FetchPipeline: Match 9100002 stored (0 files written)"
     ]
    },
-   "✓ Batch 1: 1/1 succeeded",
    "",
    "Done: 1/1 matches (100.0%) processed successfully.",
    "Download finished. Matches that needed details: 1 (1 fetched, 0 failed). Provisional records refreshed: 0 (0 changed)."

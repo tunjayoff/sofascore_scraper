@@ -5,7 +5,8 @@ indirici artık Store'a yazar (plan maddesi ST-21): gözlem manifestte ve katalo
 import datetime as dt
 import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from typing import Any
+from unittest.mock import MagicMock
 
 import legacy_writer
 from src.match_data_fetcher import MatchDataFetcher
@@ -22,11 +23,16 @@ def _event() -> dict:
 
 
 def _fetcher(tmp_path) -> MatchDataFetcher:
-    f = MatchDataFetcher(MagicMock(), data_dir=str(tmp_path))
-    for name in ("_fetch_match_statistics", "_fetch_team_streaks", "_fetch_pregame_form",
-                 "_fetch_h2h", "_fetch_lineups", "_fetch_incidents"):
-        setattr(f, name, MagicMock(return_value=None))
-    return f
+    return MatchDataFetcher(MagicMock(), data_dir=str(tmp_path))
+
+
+def _serving(event: dict) -> Any:
+    """Sahte SofaScore (tests/fakes/sofascore.py): yalnızca maçın /event'i; dilimleri 404 (P13: boru hattından)."""
+    from fakes.sofascore import FakeSofaScore
+
+    fake = FakeSofaScore()
+    fake.add_event(event)
+    return fake
 
 
 def test_observation_record_fields():
@@ -41,7 +47,7 @@ def test_observation_record_fields():
 def test_fetch_saves_observation_with_the_match(tmp_path):
     f = _fetcher(tmp_path)
     event = _event()
-    with patch.object(f, "_fetch_match_basic", return_value=event):
+    with _serving(event):
         data = f.fetch_match_data(event["event_id"])
     assert data[OBSERVATION_KEY]["change_ts"] == event["changes"]["changeTimestamp"]
     assert data[OBSERVATION_KEY]["observed_at_utc"].endswith("+00:00")

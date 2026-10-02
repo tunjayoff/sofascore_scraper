@@ -7,7 +7,8 @@ maçta "yok" sayılmasına doğru sayılır; gerisi başarısızlıktır, not ed
 istenir. src/slices.py'deki kurallar toplam olmadan önce okunamayan gövdede hata fırlatırdı: async hatta
 bu hata başarısız dilime dönüşüyordu, sync hatta ise maçın tamamını (toplu indirmede işin tamamını)
 düşürüyordu. Kurallar artık üç yanıt verir (veri var, veri yok, okunamadı) ve çekici okunamayan gövdeyi
-iki hatta da başarısız / "parse" olarak bildirir.
+iki hatta da başarısız / "parse" olarak bildirir. P13'ten beri iki giriş noktası (lig planı ve kimliğiyle seçilen
+maçlar) aynı boru hattıdır (src/services/pipeline.py); testler ikisini de sınamaya devam eder.
 
 Ağ yok: istekler tests/fakes/sofascore.py'deki sahte taşıyıcıya gider; istek katmanı ve çekici gerçektir.
 Veriyi çekici Store'a yazar (plan maddesi ST-21), testler yalnızca okur: kaydın hali eski düzenin dosyaları
@@ -68,10 +69,9 @@ def _run_sync(md: MatchDataFetcher, ids: Sequence[int]) -> List[str]:
     return failed
 
 
-# İlk çalıştırmada async hat dilimleri _fetch_endpoint_async ile, sync hat _fetch_slice ile ister. Sonraki
-# çalıştırmalarda kayıt "refill" ihtiyacındadır: iki hat da eksik dilimi refill_missing_match_slices ile
-# (sync; async hatta başka bir thread'de) ister.
-PATHS = [pytest.param(_run_async, "async", id="async"), pytest.param(_run_sync, "sync", id="sync")]
+# İki giriş noktası da boru hattının ısıtılmış oturumuyla ister (`async`); sonraki çalıştırmalarda kayıt "refill"
+# ihtiyacındadır ve yalnızca /event ile eksik dilim istenir.
+PATHS = [pytest.param(_run_async, "async", id="async"), pytest.param(_run_sync, "async", id="sync")]
 
 
 @pytest.fixture(autouse=True)
@@ -124,15 +124,16 @@ def _expected(md: MatchDataFetcher, event_id: int) -> List[str]:
 
 
 def _saved_outcomes(md: MatchDataFetcher, monkeypatch: pytest.MonkeyPatch) -> List[Dict[str, SliceOutcome]]:
-    """Çekicinin her kayıtta _save_match_data'ya verdiği dilim sonuçları (kayıt yine gerçek işlevle yapılır)."""
+    """Boru hattının her kayıtta Store.events.put'a verdiği dilim sonuçları, `event` hariç (kayıt yine gerçek)."""
     seen: List[Dict[str, SliceOutcome]] = []
-    save = md._save_match_data
+    events = md._store().events
+    put = events.put
 
-    def spy(match_id: str, match_data: Dict[str, Any], outcomes: Any = None) -> None:
-        seen.append(dict(outcomes or {}))
-        save(match_id, match_data, outcomes)
+    def spy(event_id: int, outcomes: Any, **kwargs: Any) -> Any:
+        seen.append({key: outcome for key, outcome in dict(outcomes).items() if key != "event"})
+        return put(event_id, outcomes, **kwargs)
 
-    monkeypatch.setattr(md, "_save_match_data", spy)
+    monkeypatch.setattr(events, "put", spy)
     return seen
 
 
@@ -202,9 +203,9 @@ def test_repeated_malformed_body_never_becomes_unavailable(
         assert fake.count(path) == 1, attempt  # yeniden istendi; maç düzeyinde yeniden deneme yok
         assert fake.slept(FETCHER_PAUSES) == []
         if attempt > 1:
-            # Kayıt "refill": yalnızca /event ve eksik dilim istenir (iki hatta da sync isteklerle)
-            assert [r.label for r in fake.requests if r.path != SITE_ROOT] == [
-                f"sync /event/{FINISHED} 200", f"sync {path} 200",
+            # Kayıt "refill": yalnızca /event ve eksik dilim istenir
+            assert sorted(r.label for r in fake.requests if r.path != SITE_ROOT) == [
+                f"async /event/{FINISHED} 200", f"async {path} 200",
             ]
         stored = _stored(md, FINISHED)
         assert "_unavailable.json" not in stored and "statistics.json" not in stored
@@ -270,9 +271,8 @@ def test_real_empty_answer_still_counts_towards_unavailable(
     first = outcomes[0]
     assert (first["statistics"].status, first["statistics"].reason) == (SLICE_EMPTY, "empty")
     assert first["statistics"].data == {"statistics": []}
-    # 404: async hat nedeni "404" olarak, sync hat (yardımcısı None döndürür) "empty" olarak bildirir
-    not_found = "404" if via == "async" else "empty"
-    assert (first["lineups"].status, first["lineups"].reason, first["lineups"].data) == (SLICE_EMPTY, not_found, None)
+    # 404'ün nedeni her yolda "404"tür (P13'ten önce sync hat "empty" yazıyordu)
+    assert (first["lineups"].status, first["lineups"].reason, first["lineups"].data) == (SLICE_EMPTY, "404", None)
     stored = _stored(md, FINISHED)
     assert stored["_unavailable.json"] == {"statistics": 1, "lineups": 1}
     assert {k: sorted(v) for k, v in stored["_slice_status.json"].items()} == {
@@ -303,7 +303,7 @@ def test_empty_point_by_point_is_no_data_on_the_async_path(
 ) -> None:
     """
     {"pointByPoint": []} kesin "veri yok" yanıtıdır (eskiden veri sayılırdı); gövde yine sonuçta durur ve
-    diske yazılır. Dilim isteğe bağlıdır: işaret dosyalarına girmez.
+    diske yazılır. P13'ten beri isteğe bağlı dilimin de "yok" sayımı tutulur (tamlık hesabına yine girmez).
     """
     md = _fetcher(data_dir)
     outcomes = _saved_outcomes(md, monkeypatch)
@@ -315,8 +315,8 @@ def test_empty_point_by_point_is_no_data_on_the_async_path(
     assert (outcome.status, outcome.reason, outcome.data) == (SLICE_EMPTY, "empty", {"pointByPoint": []})
     stored = _stored(md, TENNIS)
     assert stored["point_by_point.json"] == {"pointByPoint": []}
-    assert "point_by_point" not in stored.get("_unavailable.json", {})
-    assert "point_by_point" not in stored.get("_slice_status.json", {})
+    assert stored["_unavailable.json"]["point_by_point"] == 1
+    assert list(stored["_slice_status.json"]["point_by_point"]) == ["empty"]
 
 
 def test_malformed_point_by_point_is_failed_on_the_async_path(
@@ -342,23 +342,27 @@ def test_malformed_point_by_point_is_failed_on_the_async_path(
     assert _stored(other, TENNIS)["point_by_point.json"] == points
 
 
-def test_point_by_point_answers_on_the_sync_path(fake: FakeSofaScore, data_dir: Path) -> None:
-    """Sync hat isteğe bağlı dilimi kendiliğinden istemez; dilim isteği (_fetch_slice) aynı üç yanıtı verir."""
-    md = _fetcher(data_dir)
+def test_point_by_point_answers_for_picked_matches(fake: FakeSofaScore, tmp_path: Path,
+                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Kimliğiyle seçilen maç da isteğe bağlı dilimi ister (P13'ten önce sync hat istemezdi); dilim isteği aynı üç
+    yanıtı verir.
+    """
     path = _slice_path(TENNIS, "point-by-point")
     points = fake.routes[path]
+    answers = []
+    for name, body in (("full", points), ("empty", {"pointByPoint": []}), ("malformed", {"pointByPoint": "abc"})):
+        md = _fetcher(tmp_path / name)
+        seen = _saved_outcomes(md, monkeypatch)
+        fake.add(path, body)
+        assert _run_sync(md, [TENNIS]) == []
+        answers.append(seen[0]["point_by_point"])
 
-    full = md._fetch_slice(str(TENNIS), "point_by_point")
+    full, empty, malformed = answers
     assert (full.status, full.data) == (SLICE_OK, points)
-
-    fake.add(path, {"pointByPoint": []})
-    empty = md._fetch_slice(str(TENNIS), "point_by_point")
     assert (empty.status, empty.reason, empty.data) == (SLICE_EMPTY, "empty", {"pointByPoint": []})
-
-    fake.add(path, {"pointByPoint": "abc"})
-    malformed = md._fetch_slice(str(TENNIS), "point_by_point")
-    assert (malformed.status, malformed.reason, malformed.http_status, malformed.data) == (SLICE_FAILED, "parse", None, None)
-    assert {r.via for r in fake.requests} == {"sync"}
+    assert (malformed.status, malformed.reason, malformed.data) == (SLICE_FAILED, "parse", None)
+    assert {r.via for r in fake.requests} == {"async"}
 
 
 # --- sync hattın diğer çağıranları ---------------------------------------------------------------
@@ -366,7 +370,7 @@ def test_point_by_point_answers_on_the_sync_path(fake: FakeSofaScore, data_dir: 
 
 def test_single_match_route_with_a_malformed_slice(fake: FakeSofaScore, data_dir: Path) -> None:
     """
-    Tek maç uç noktası (POST /api/matches/{id}/fetch, sync hat): bir dilimin gövdesi okunamıyorsa maç yine
+    Tek maç uç noktası (POST /api/matches/{id}/fetch, boru hattı): bir dilimin gövdesi okunamıyorsa maç yine
     kaydedilir ve "success" döner (eskiden yüklemin hatası 500 "Match fetch failed" oluyor, hiçbir şey
     kaydedilmiyordu). Yeniden çekim yalnızca o dilimi ister; istenen dilimlerin hiçbiri yanıt almadığı için
     sonuç tipli `upstream` hatasıdır (502), dilim yine "yok" sayılmaz.
@@ -390,39 +394,30 @@ def test_single_match_route_with_a_malformed_slice(fake: FakeSofaScore, data_dir
         matches_routes._fetch_single_match_sync(str(FINISHED))
 
     assert (raised.value.status_code, raised.value.detail["reason"]) == (502, upstream.UPSTREAM)
-    assert fake.paths() == [f"/event/{FINISHED}", path]
+    assert sorted(r.path for r in fake.requests if r.path != SITE_ROOT) == [f"/event/{FINISHED}", path]
     stored = _stored(md, FINISHED)
     assert "h2h.json" not in stored and "_unavailable.json" not in stored
     assert list(stored["_slice_status.json"]["h2h"]) == ["error"]
     assert stored["_slice_status.json"]["h2h"]["error"]["count"] == 2
 
 
-# --- bilinen ayrışma: "falsy" gövde async hatta kurala hiç ulaşmaz --------------------------------
+# --- "falsy" gövde de kurala sorulur ----------------------------------------------------------------
 
 
 @pytest.mark.parametrize("body", [0, False, ""], ids=["zero", "false", "empty-text"])
-def test_falsy_malformed_body_is_still_empty_on_the_async_path(
-    fake: FakeSofaScore, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, body: Any
+@pytest.mark.parametrize("run,via", PATHS)
+def test_falsy_malformed_body_is_a_failed_slice_on_every_path(
+    fake: FakeSofaScore, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, run: Run, via: str, body: Any
 ) -> None:
     """
-    Bugünkü davranışın sabitlenmesi (bu değişiklikten önce de böyleydi): async hat "falsy" her gövdeyi
-    (`if data:`) kurala sormadan gövdesiz "empty" sayar, yani 0 / false / "" gibi okunamayan bir statistics
-    gövdesi orada kesin "boş" yanıt olarak sayılır; sync hat aynı gövdeyi kurala sorar ve başarısız / "parse"
-    bildirir. Hatlar birleştirilirken (plan: P13) async hat da kurala sorar ve bu test değişir.
+    0 / false / "" gibi okunamayan bir statistics gövdesi her yolda kurala sorulur: başarısız / "parse", "yok"
+    sayılmaz. P13'ten önce async hat "falsy" her gövdeyi (`if data:`) kurala sormadan kesin "boş" sayıyordu.
     """
-    path = _slice_path(FINISHED, "statistics")
-    fake.add(path, body)
+    fake.add(_slice_path(FINISHED, "statistics"), body)
 
-    in_async = _fetcher(tmp_path / "async")
-    async_outcomes = _saved_outcomes(in_async, monkeypatch)
-    assert _run_async(in_async, [FINISHED]) == []
-    outcome = async_outcomes[0]["statistics"]
-    assert (outcome.status, outcome.reason, outcome.data) == (SLICE_EMPTY, "empty", None)
-    assert _stored(in_async, FINISHED)["_unavailable.json"] == {"statistics": 1}
-
-    in_sync = _fetcher(tmp_path / "sync")
-    sync_outcomes = _saved_outcomes(in_sync, monkeypatch)
-    assert _run_sync(in_sync, [FINISHED]) == []
-    outcome = sync_outcomes[0]["statistics"]
+    md = _fetcher(tmp_path / "data")
+    outcomes = _saved_outcomes(md, monkeypatch)
+    assert run(md, [FINISHED]) == []
+    outcome = outcomes[0]["statistics"]
     assert (outcome.status, outcome.reason, outcome.data) == (SLICE_FAILED, "parse", None)
-    assert "_unavailable.json" not in _stored(in_sync, FINISHED)
+    assert "_unavailable.json" not in _stored(md, FINISHED)

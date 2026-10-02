@@ -89,10 +89,16 @@
   },
   "request_layer_loaded": true,
   "requests": [
-   "sync /event/9100001 200"
+   {
+    "concurrent": [
+     "async /event/9100001 200",
+     "async https://www.sofascore.com/ 200"
+    ]
+   }
   ],
   "sleeps": {
-   "request-layer": 1
+   "request-layer": 1,
+   "src.client.transport": 1
   },
   "stderr": [],
   "stdout": [
@@ -100,7 +106,10 @@
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO SyncService: Refreshing 1 provisional records...",
-   "LOG INFO MatchDataFetcher: 1 maç yenileniyor",
+   "LOG INFO MatchDataFetcher: Refreshing 1 matches",
+   {
+    "concurrent": []
+   },
    "Refresh: 1 matches refreshed, 0 changed, 0 failed (changes: data/score_changes.jsonl)"
   ]
  },

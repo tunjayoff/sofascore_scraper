@@ -16,7 +16,7 @@ import copy
 import datetime as dt
 from types import SimpleNamespace
 from typing import Any, Dict, List
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -107,74 +107,82 @@ def _store_provisional(f: MatchDataFetcher, ids: List[int]) -> None:
     assert all(f._compute_detail_need(str(mid)) == "refresh" for mid in ids)
 
 
-@contextlib.asynccontextmanager
-async def _fake_session():
-    yield MagicMock()
+@contextlib.contextmanager
+def blocked_world():
+    """Sahte SofaScore (tests/fakes/sofascore.py): maçların her isteği 403 alır; istek katmanı gerçek."""
+    from fakes.sofascore import FakeSofaScore
+
+    with FakeSofaScore() as fake:
+        fake.fail("/event/*", 403)
+        yield fake
 
 
-def test_breaker_trips_on_a_blocked_refresh_batch(tmp_path):
+@pytest.fixture
+def blocked():
+    with blocked_world() as fake:
+        yield fake
+
+
+def _event_requests(fake) -> int:
+    return sum(1 for r in fake.requests if r.path.startswith("/event/"))
+
+
+def test_breaker_trips_on_a_blocked_refresh_batch(tmp_path, blocked):
     """Eskiden yenileme başarısızlığı sayılmıyordu: engelliyken kalan her maç için istek atılıyordu."""
     f = _fetcher(tmp_path, threshold=3)
     ids = list(range(1001, 1021))
     _store_provisional(f, ids)
     failed: List[str] = []
 
-    with _request_layer(), \
-            patch.object(utils.cffi_requests, "get", return_value=Resp(403, text="no")) as get, \
-            patch("src.utils.create_session_async", _fake_session), \
-            patch("src.match_data_fetcher.asyncio.sleep", new=AsyncMock()):
+    with _request_layer():
         results = asyncio.run(f.fetch_matches_batch_async(ids, max_concurrent=1, failed_callback=failed.append))
 
     assert results == {}
     assert f.rate_limit_breaker_triggered is True
     assert f.last_status_counts.get("403") == 3
-    assert get.call_count == 3 * CFG["max_retries"]  # 3 maç × 3 deneme; kalan 17 maç için istek yok
+    assert _event_requests(blocked) == 3 * CFG["max_retries"]  # 3 maç × 3 deneme; kalan 17 maç için istek yok
     assert failed == ["1001", "1002"]  # devreyi kesen ve hiç denenmeyen maçlar "başarısız" sayılmaz
 
 
-def test_refresh_only_loop_stops_when_the_breaker_trips(tmp_path):
+def test_refresh_only_loop_stops_when_the_breaker_trips(tmp_path, blocked):
     """CLI --refresh-only döngüsünün eskiden hiç kesicisi yoktu."""
     f = _fetcher(tmp_path, threshold=3)
     ids = [str(n) for n in range(3001, 3013)]
     _store_provisional(f, [int(i) for i in ids])
 
-    with _request_layer(), \
-            patch.object(utils.cffi_requests, "get", return_value=Resp(403, text="no")) as get, \
-            patch("src.match_data_fetcher.time.sleep"):
+    with _request_layer():
         stats = f.refresh_matches(ids)
 
     assert stats == {"refreshed": 0, "changed": 0, "failed": 3, "breaker": "403", "skipped": 9}
-    assert get.call_count == 3 * CFG["max_retries"]
+    assert _event_requests(blocked) == 3 * CFG["max_retries"]
     assert f.rate_limit_breaker_triggered is True
     assert request_breaker.current() is None  # kesici çağrıyla birlikte kapandı
 
 
 def test_refresh_only_loop_reports_no_breaker_when_requests_succeed(tmp_path):
+    from fakes.sofascore import FakeSofaScore
+
     f = _fetcher(tmp_path, threshold=3)
     _store_provisional(f, [3001, 3002])
 
-    def get(url, **_kw):
-        return Resp(200, {"event": copy.deepcopy(_basic(int(url.rsplit("/", 1)[1])))})
-
-    with _request_layer(), patch.object(utils.cffi_requests, "get", side_effect=get), \
-            patch("src.match_data_fetcher.time.sleep"):
+    with FakeSofaScore() as fake, _request_layer():
+        for mid in (3001, 3002):
+            fake.add_event(copy.deepcopy(_basic(mid)))
         stats = f.refresh_matches(["3001", "3002"])
     assert stats == {"refreshed": 2, "changed": 0, "failed": 0}
 
 
-def test_sync_detail_loop_stops_when_the_breaker_trips(tmp_path):
+def test_detail_batch_stops_when_the_breaker_trips(tmp_path, blocked):
     f = _fetcher(tmp_path, threshold=3)
     failed: List[str] = []
-    with _request_layer(), \
-            patch.object(utils.cffi_requests, "get", return_value=Resp(403, text="no")) as get, \
-            patch("src.match_data_fetcher.time.sleep"):
+    with _request_layer():
         results = f.fetch_matches_batch([str(n) for n in range(1, 11)], failed_callback=failed.append)
     assert results == {} and f.rate_limit_breaker_triggered is True
-    assert get.call_count == 3 * CFG["max_retries"]
-    assert failed == ["1", "2"]
+    assert _event_requests(blocked) == 3 * CFG["max_retries"]
+    assert failed == ["1", "2"]  # devreyi kesen maç ve hiç denenmeyenler "başarısız" sayılmaz
 
 
-def test_cli_refresh_only_exits_with_2_when_the_breaker_trips(tmp_path, monkeypatch, capsys):
+def test_cli_refresh_only_exits_with_2_when_the_breaker_trips(tmp_path, monkeypatch, capsys, blocked):
     import os
 
     import main as cli
@@ -183,12 +191,11 @@ def test_cli_refresh_only_exits_with_2_when_the_breaker_trips(tmp_path, monkeypa
     _store_provisional(f, list(range(4001, 4031)))
     monkeypatch.setenv("DATA_DIR", os.environ["DATA_DIR"])  # main --data-dir ortamı değiştirir: test sonunda geri al
     monkeypatch.setenv("RATE_LIMIT_THRESHOLD_CONSECUTIVE", "3")
+    monkeypatch.setenv("MAX_CONCURRENT", "1")  # maçlar sırayla: devreyi kesen üçüncü maçtan sonra istek yok
     monkeypatch.setattr("sys.argv", ["main.py", "--refresh-only", "--data-dir", str(tmp_path)])
-    with _request_layer(), \
-            patch.object(utils.cffi_requests, "get", return_value=Resp(403, text="no")) as get, \
-            patch("src.match_data_fetcher.time.sleep"):
+    with _request_layer():
         assert cli.main() == 2
-    assert get.call_count == 3 * CFG["max_retries"]
+    assert _event_requests(blocked) == 3 * CFG["max_retries"]
     assert "27" in capsys.readouterr().err  # denenmeyen maç sayısı kullanıcıya söylenir
 
 
@@ -338,15 +345,16 @@ def test_job_with_working_requests_is_not_stopped(job_env, monkeypatch):
 
 
 def test_explicit_match_selection_reports_the_breaker(job_env, monkeypatch, tmp_path):
-    """Seçili maçların (sync) indirme yolu da kesiciye bakar ve karta bildirir."""
+    """Seçili maçların indirme yolu (P13'ten beri lig planlarıyla aynı boru hattı) da kesiciye bakar ve karta bildirir."""
     fj, store = job_env
     monkeypatch.setattr(fj.config_manager, "get_leagues", lambda: {17: "Premier League"})
     md = MatchDataFetcher(fj.config_manager, data_dir=str(tmp_path / "data"))
     ui = SimpleNamespace(match_data_fetcher=md, export_all_to_csv=lambda: None)
     payload = {"mode": "details", "selections": [{"league_id": 17, "match_ids": list(range(1, 11))}]}
-    with patch("src.match_data_fetcher.time.sleep"):
+    monkeypatch.setenv("MAX_CONCURRENT", "1")  # maçlar sırayla: devreyi kesen üçüncü maçtan sonra istek yok
+    with blocked_world() as fake:
         final = _run_job(fj, store, monkeypatch, ui, payload)
 
-    assert final["_gets"] == 3 * CFG["max_retries"]
+    assert _event_requests(fake) == 3 * CFG["max_retries"]
     assert final["circuit_breaker_triggered"] is True and final["circuit_breaker_reason"] == "403"
     assert final["matches_failed"] == 2

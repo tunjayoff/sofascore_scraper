@@ -1,19 +1,21 @@
 """
-İki detay hattının ayrıştığı yerler: docs/design/02-services.md, bölüm 1.4'teki tablonun her satırı bir test.
+Eski iki detay hattının ayrıştığı yerler: docs/design/02-services.md, bölüm 1.4'teki tablonun her satırı bir test.
 
-  async hat: MatchDataFetcher.fetch_detail_ids → fetch_matches_batch_async (lig/sezon planları)
-  sync hat:  MatchDataFetcher.fetch_matches_batch, fetch_match_data, refill_missing_match_slices
-             (kimliğiyle seçilen maçlar, tek maç uç noktası, async hattın içinden refill/refresh)
+  eski async hat: MatchDataFetcher.fetch_detail_ids → fetch_matches_batch_async (lig/sezon planları)
+  eski sync hat:  MatchDataFetcher.fetch_matches_batch, fetch_match_data, refill_missing_match_slices
+                  (kimliğiyle seçilen maçlar, tek maç uç noktası, async hattın içinden refill/refresh)
 
-Testler bugünkü davranışı olduğu gibi sabitler: aynı maçın iki hatta farklı sonuç vermesi burada
-"beklenen"dir. Hatlar tek boru hattında birleştirilirken (plan: P13) her test, değişikliğin adı
-PR metninde anılarak tek tek çevrilir.
+G-01 bu testlerde iki hattın farklı davranışını sabitlemişti. P13'ten beri iki giriş noktası da aynı boru hattına
+(src/services/pipeline.py) gider; her test, eski farkın yerine iki yolun artık AYNI davrandığını ve bu davranışın
+ne olduğunu sabitler (değişiklikler P13'ün PR metninde satır satır anılır). Satır 13 ve 14, FX-5'in bulduğu iki
+farktır (boş sayılan "falsy" gövde, 404'ün iki nedeni).
 
 Ağ yok: istekler tests/fakes/sofascore.py'deki sahte taşıyıcıya gider; istek katmanı gerçektir.
 """
 from __future__ import annotations
 
 import asyncio
+import json
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, List, Sequence
 
@@ -32,8 +34,9 @@ FINISHED_2 = 9100003
 NOT_STARTED = 9100004
 LIVE = 9300001  # futbol, oynanıyor; statistics, lineups, incidents var
 TENNIS = 9200001  # bitti; statistics, h2h, point-by-point var
-SLICES = ["statistics", "team-streaks", "pregame-form", "h2h", "lineups", "incidents"]  # `required` dilimler, istek sırasıyla
+SLICES = ["statistics", "team-streaks", "pregame-form", "h2h", "lineups", "incidents"]  # futbolun dilimleri, tablo sırasıyla
 FETCHER_PAUSES = "src.match_data_fetcher"  # bu modülün time.sleep / asyncio.sleep beklemeleri
+PIPELINE_PAUSES = "src.services.pipeline"  # boru hattının beklemeleri (yalnızca meşgul depoda)
 BUDGET_WARM_UP = "src.throttle"  # oturum ısınmasının bütçe sırası (diğer isteklerinki istek katmanındadır)
 
 
@@ -85,15 +88,15 @@ def _fetcher(data_dir: Path) -> MatchDataFetcher:
     return MatchDataFetcher(config_manager, data_dir=str(data_dir))
 
 
-def _run_async(md: MatchDataFetcher, ids: Sequence[int]) -> List[str]:
-    """Async hat, web işinin lig planında çağırdığı gibi; başarısız sayılan maçları döndürür."""
+def _run_plan(md: MatchDataFetcher, ids: Sequence[int]) -> List[str]:
+    """Eski async hattın giriş noktası (web işinin lig planı); başarısız sayılan maçları döndürür."""
     failed: List[str] = []
     md.fetch_detail_ids([str(i) for i in ids], failed_callback=failed.append)
     return failed
 
 
-def _run_sync(md: MatchDataFetcher, ids: Sequence[int]) -> List[str]:
-    """Sync hat, web işinin seçili maçlarda çağırdığı gibi; başarısız sayılan maçları döndürür."""
+def _run_picked(md: MatchDataFetcher, ids: Sequence[int]) -> List[str]:
+    """Eski sync hattın giriş noktası (web işinin seçili maçları); başarısız sayılan maçları döndürür."""
     failed: List[str] = []
     md.fetch_matches_batch(list(ids), failed_callback=failed.append)
     return failed
@@ -108,16 +111,18 @@ def _api_paths(fake: FakeSofaScore) -> List[str]:
 
 
 def _stored(md: MatchDataFetcher, event_id: int) -> Dict[str, Any]:
-    """
-    Kaydın hali, eski düzen dizininin dosyaları biçiminde: ad → içerik; kayıt yoksa {}. Kayıtlar ST-21'den beri
-    Store'dadır (v3); hali Store'dan okunur (tests/detail_records.py `legacy_view`).
-    """
+    """Kaydın hali, eski düzen dizininin dosyaları biçiminde (tests/detail_records.py `legacy_view`); kayıt yoksa {}."""
     return detail_records.legacy_view(md.data_dir, event_id)
+
+
+def _manifest(md: MatchDataFetcher, event_id: int) -> Dict[str, Any]:
+    path = detail_records.record_dir(md.data_dir, event_id) / "manifest.json"
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _store_then_make_partial(fake: FakeSofaScore, md: MatchDataFetcher) -> None:
     """Diskte FINISHED'in bir dilimi eksik kaydı (ihtiyaç: refill), SofaScore'da ise maç artık "oynanıyor"."""
-    assert _run_sync(md, [FINISHED]) == []
+    assert _run_picked(md, [FINISHED]) == []
     detail_records.drop_slices(md.data_dir, FINISHED, "h2h")
     live = fake.event(FINISHED)
     live["status"] = {"code": 6, "description": "1st half", "type": "inprogress"}
@@ -126,15 +131,15 @@ def _store_then_make_partial(fake: FakeSofaScore, md: MatchDataFetcher) -> None:
 
 
 def test_row01_reached_from(fake: FakeSofaScore, data_dir: Path) -> None:
-    """Hangi giriş noktası hangi hattı kullanır: toplu planlar async, tek tek seçilen maçlar sync."""
+    """Her giriş noktası aynı boru hattına gider: ısıtılmış bir oturumla, eşzamanlı istekler (`async`)."""
     import src.web.routes.matches as matches_routes
 
     md = _fetcher(data_dir)
 
     md.fetch_detail_ids([str(FINISHED)])  # web işi, lig/sezon planı (fetch_job.py)
-    assert {r.via for r in fake.requests} == {"async"}
+    assert {r.via for r in fake.requests} == {"async"} and len(fake.sessions) == 1
 
-    # CLI headless ve terminal menüsü: özet CSV'lerden toplanan maçlar da async hatta
+    # CLI headless ve terminal menüsü: listelerden toplanan maçlar
     summary = data_dir / "matches" / "17_Premier_League" / "61627_Premier_League_24_25_summary.csv"
     summary.parent.mkdir(parents=True)
     summary.write_text(f"match_id\n{FINISHED_2}\n", encoding="utf-8")
@@ -142,100 +147,94 @@ def test_row01_reached_from(fake: FakeSofaScore, data_dir: Path) -> None:
     assert md.fetch_all_match_details(league_id="17") is True
     assert {r.via for r in fake.requests} == {"async"}
 
+    # Kimliğiyle seçilen maçlar, tek maç uç noktası, terminal menüsünün tek maçı: aynı yol, her biri kendi oturumuyla
     fake.reset_log()
-    md.fetch_matches_batch([9100002])  # web işi, kimliğiyle seçilen maçlar
+    md.fetch_matches_batch([9100002])
     assert matches_routes._fetch_single_match_sync("9100010") == {"status": "success", "match_id": "9100010"}
-    assert md.fetch_match_details(TENNIS) is True  # terminal menüsü, tek maç
-    assert {r.via for r in fake.requests} == {"sync"} and fake.sessions == []
+    assert md.fetch_match_details(TENNIS) is True
+    assert {r.via for r in fake.requests} == {"async"} and len(fake.sessions) == 3
 
-    # Async hattın içinden: eksik dilim (refill) sync hatla, başka bir thread'de tamamlanır
+    # Eksik dilim (refill) de aynı oturumda tamamlanır: başka bir thread'e geçilmez
     detail_records.drop_slices(md.data_dir, FINISHED, "h2h")
     fake.reset_log()
-    assert _run_async(md, [FINISHED]) == []
+    assert _run_plan(md, [FINISHED]) == []
     assert [r.label for r in fake.requests if r.path != SITE_ROOT] == [
-        f"sync /event/{FINISHED} 200",
-        f"sync /event/{FINISHED}/h2h 200",
+        f"async /event/{FINISHED} 200",
+        f"async /event/{FINISHED}/h2h 200",
     ]
     assert len(fake.sessions) == 1
 
 
 def test_row02_slices_requested(fake: FakeSofaScore, tmp_path: Path) -> None:
-    """Async hat isteğe bağlı dilimleri de ister (teniste point_by_point); sync hat yalnızca `required` olanları."""
-    in_async, in_sync = _fetcher(tmp_path / "async"), _fetcher(tmp_path / "sync")
+    """İki giriş noktası da sporun bütün dilimlerini ister, isteğe bağlılar dahil (teniste point_by_point)."""
+    in_plan, in_picked = _fetcher(tmp_path / "plan"), _fetcher(tmp_path / "picked")
 
-    assert _run_async(in_async, [TENNIS]) == []
-    async_paths = _api_paths(fake)
+    assert _run_plan(in_plan, [TENNIS]) == []
+    plan_paths = _api_paths(fake)
     fake.reset_log()
-    assert _run_sync(in_sync, [TENNIS]) == []
+    assert _run_picked(in_picked, [TENNIS]) == []
 
-    assert sorted(async_paths) == sorted(_event_paths(TENNIS, SLICES + ["point-by-point"]))
-    assert fake.paths() == _event_paths(TENNIS)
-    assert "point_by_point.json" in _stored(in_async, TENNIS)
-    assert "point_by_point.json" not in _stored(in_sync, TENNIS)
+    expected = sorted(_event_paths(TENNIS, SLICES + ["point-by-point"]))
+    assert sorted(plan_paths) == sorted(_api_paths(fake)) == expected
+    assert "point_by_point.json" in _stored(in_plan, TENNIS)
+    assert "point_by_point.json" in _stored(in_picked, TENNIS)
 
 
 def test_row03_unfinished_events(fake: FakeSofaScore, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """FETCH_ONLY_FINISHED yalnızca async hatta okunur: kapalıyken async hat oynanan maçı kaydeder, sync hat atlar."""
-    in_async, in_sync = _fetcher(tmp_path / "async"), _fetcher(tmp_path / "sync")
+    """
+    FETCH_ONLY_FINISHED iki giriş noktasında da okunur. Açıkken oynanan maç atlanır: yalnızca /event istenir,
+    hiçbir şey yazılmaz ve maç başarısız sayılmaz. Kapalıyken iki yol da maçı bütün dilimleriyle kaydeder.
+    """
+    in_plan, in_picked = _fetcher(tmp_path / "plan"), _fetcher(tmp_path / "picked")
 
-    # Varsayılan (açık): iki hat da yalnızca /event ister ve maçı kaydetmez
-    assert _run_async(in_async, [LIVE]) == [str(LIVE)]
+    assert _run_plan(in_plan, [LIVE]) == []
     assert _api_paths(fake) == [f"/event/{LIVE}"]
     fake.reset_log()
-    assert _run_sync(in_sync, [LIVE]) == [str(LIVE)]
-    assert fake.paths() == [f"/event/{LIVE}"]
-    assert _stored(in_async, LIVE) == {} and _stored(in_sync, LIVE) == {}
+    assert _run_picked(in_picked, [LIVE]) == []
+    assert _api_paths(fake) == [f"/event/{LIVE}"]
+    assert _stored(in_plan, LIVE) == {} and _stored(in_picked, LIVE) == {}
 
     monkeypatch.setattr(utils, "FETCH_ONLY_FINISHED", False)
-    fake.reset_log()
-    assert _run_async(in_async, [LIVE]) == []
-    assert sorted(_api_paths(fake)) == sorted(_event_paths(LIVE))
-    assert sorted(_stored(in_async, LIVE)) == [
-        "basic.json", "incidents.json", "lineups.json", "observation.json", "statistics.json",
-    ]
-    fake.reset_log()
-    assert _run_sync(in_sync, [LIVE]) == [str(LIVE)]
-    assert fake.paths() == [f"/event/{LIVE}"]
-    assert _stored(in_sync, LIVE) == {}
+    for md in (in_plan, in_picked):
+        fake.reset_log()
+        assert (_run_plan if md is in_plan else _run_picked)(md, [LIVE]) == []
+        assert sorted(_api_paths(fake)) == sorted(_event_paths(LIVE))
+        assert sorted(_stored(md, LIVE)) == [
+            "basic.json", "incidents.json", "lineups.json", "observation.json", "statistics.json",
+        ]
 
 
 def test_row04_event_failure(fake: FakeSofaScore, tmp_path: Path) -> None:
     """
-    /event başarısız olursa: async hat maçı 3 kez dener, her denemede istek katmanı 2 istek atar (6 istek);
-    sync hat hatayı yutar, maçı yeniden denemez, istek katmanı varsayılan sayıda (3) istek atar.
+    /event başarısız olursa iki yolda da yalnızca istek katmanı yeniden dener (MAX_RETRIES: 3 istek, aralarında
+    3 ve 6 sn); maç başına ek deneme döngüsü ve bekleme yoktur. Maç başarısız sayılır.
     """
-    in_async, in_sync = _fetcher(tmp_path / "async"), _fetcher(tmp_path / "sync")
+    in_plan, in_picked = _fetcher(tmp_path / "plan"), _fetcher(tmp_path / "picked")
     fake.fail(f"/event/{FINISHED}", 500)
 
-    assert _run_async(in_async, [FINISHED]) == [str(FINISHED)]
-    assert _api_paths(fake) == [f"/event/{FINISHED}"] * 6
-    assert fake.slept(REQUEST_LAYER) == [3.0, 3.0, 3.0]  # her maç denemesinde iki istek arası
-    match_backoff = fake.slept(FETCHER_PAUSES)  # maç denemeleri arası: 1·2ⁿ sn + [0, 1) sn
-    assert len(match_backoff) == 2 and 1.0 <= match_backoff[0] < 2.0 and 2.0 <= match_backoff[1] < 3.0
-    assert in_async.last_status_counts.get("5xx") == 3
-
-    fake.reset_log()
-    assert _run_sync(in_sync, [FINISHED]) == [str(FINISHED)]
-    assert fake.paths() == [f"/event/{FINISHED}"] * 3
-    assert fake.slept(REQUEST_LAYER) == [3.0, 6.0]
-    assert fake.slept(FETCHER_PAUSES) == []
-    assert in_sync.last_status_counts.get("5xx") == 1
+    for md, run in ((in_plan, _run_plan), (in_picked, _run_picked)):
+        fake.reset_log()
+        assert run(md, [FINISHED]) == [str(FINISHED)]
+        assert _api_paths(fake) == [f"/event/{FINISHED}"] * 3
+        assert fake.slept(REQUEST_LAYER) == [3.0, 6.0]
+        assert fake.slept(FETCHER_PAUSES) == [] and fake.slept(PIPELINE_PAUSES) == []
+        assert md.last_status_counts.get("5xx") == 1
 
 
 def test_row05_slice_retries(fake: FakeSofaScore, tmp_path: Path) -> None:
-    """Başarısız dilim: async hatta tek istek (max_retries=1), sync hatta istek katmanının varsayılanı (3)."""
-    in_async, in_sync = _fetcher(tmp_path / "async"), _fetcher(tmp_path / "sync")
+    """Başarısız dilim de iki yolda istek katmanının varsayılanı kadar (3) istenir; sonuç ve hata kaydı aynıdır."""
+    in_plan, in_picked = _fetcher(tmp_path / "plan"), _fetcher(tmp_path / "picked")
     statistics = f"/event/{FINISHED}/statistics"
     fake.fail(statistics, 500)
 
-    assert _run_async(in_async, [FINISHED]) == []
-    assert fake.count(statistics) == 1
+    assert _run_plan(in_plan, [FINISHED]) == []
+    assert fake.count(statistics) == 3
     fake.reset_log()
-    assert _run_sync(in_sync, [FINISHED]) == []
+    assert _run_picked(in_picked, [FINISHED]) == []
     assert fake.count(statistics) == 3
 
-    # Sonuç iki hatta aynı: maç kaydedilir, dilim "yok" sayılmaz, hata not edilir
-    for md in (in_async, in_sync):
+    # Maç kaydedilir, dilim "yok" sayılmaz, hata not edilir
+    for md in (in_plan, in_picked):
         stored = _stored(md, FINISHED)
         assert "statistics.json" not in stored and "_unavailable.json" not in stored
         error = stored["_slice_status.json"]["statistics"]["error"]
@@ -243,158 +242,169 @@ def test_row05_slice_retries(fake: FakeSofaScore, tmp_path: Path) -> None:
 
 
 def test_row06_concurrency(fake: FakeSofaScore, tmp_path: Path) -> None:
-    """Async hatta maçlar ve dilimler eşzamanlı; sync hatta her istek bir öncekinin yanıtından sonra."""
-    in_async, in_sync = _fetcher(tmp_path / "async"), _fetcher(tmp_path / "sync")
+    """İki yolda da maçlar ve bir maçın dilimleri eşzamanlıdır."""
+    in_plan, in_picked = _fetcher(tmp_path / "plan"), _fetcher(tmp_path / "picked")
 
-    assert _run_async(in_async, [FINISHED, FINISHED_2]) == []
-    async_requests = fake.requests
-    fake.reset_log()
-    assert _run_sync(in_sync, [FINISHED, FINISHED_2]) == []
-
-    order = [r.path for r in async_requests]
-    # İkinci maç, birincinin dilimleri gelmeden başlar; bir maçın dilimleri birlikte uçuştadır
-    assert order.index(f"/event/{FINISHED_2}") < order.index(f"/event/{FINISHED}/statistics")
-    assert max(r.in_flight for r in async_requests) > 1
-    assert fake.paths() == _event_paths(FINISHED) + _event_paths(FINISHED_2)
-    assert {r.in_flight for r in fake.requests} == {1}
+    for md, run in ((in_plan, _run_plan), (in_picked, _run_picked)):
+        fake.reset_log()
+        assert run(md, [FINISHED, FINISHED_2]) == []
+        order = [r.path for r in fake.requests]
+        # İkinci maç, birincinin dilimleri gelmeden başlar; bir maçın dilimleri birlikte uçuştadır
+        assert order.index(f"/event/{FINISHED_2}") < order.index(f"/event/{FINISHED}/statistics")
+        assert max(r.in_flight for r in fake.requests) > 1
+        assert sorted(_api_paths(fake)) == sorted(_event_paths(FINISHED) + _event_paths(FINISHED_2))
 
 
 def test_row07_pacing(fake: FakeSofaScore, tmp_path: Path, request_budget: Callable[[str], List[float]]) -> None:
     """
-    İki hat da artık kendi sabit beklemesini eklemez (PR #33'te kalktı): sync hatta maç başına 0,2 sn,
-    async hatta 100'lük batch'ler arasındaki 1 sn (fetch_detail_ids'in dış döngüsü ve
-    fetch_matches_batch_async'in iç döngüsü) yok. İstekleri aralayan tek şey ortak istek bütçesidir
-    (src/throttle.py): her istek, iki hatta da, istek katmanında bütçeden sıra alır ve orada bekler.
-    Testlerde bütçe kapalıdır (tests/conftest.py); burada ikinci yarıda açılır.
-    (--refresh-only'nin maç başına 1 sn'si de kalktı: test_fetch_flows.py::test_refresh_only.)
+    Kendi sabit beklemesi olan yol yoktur (PR #33'te kalktı; 100'lük batch'ler de P13'te kalktı: bir çalıştırma
+    tek oturumdur). İstekleri aralayan tek şey ortak istek bütçesidir (src/throttle.py): her istek, oturum
+    ısınması dahil, bütçeden bir sıra alır ve orada bekler. Testlerde bütçe kapalıdır (tests/conftest.py); burada
+    ikinci yarıda açılır. (--refresh-only'nin maç başına 1 sn'si de kalktı: test_fetch_flows.py::test_refresh_only.)
     """
     md = _fetcher(tmp_path / "data")
-    unknown = [str(n) for n in range(1, 102)]  # 101 maç, hepsi 404: iki batch
+    unknown = [str(n) for n in range(1, 102)]  # 101 maç, hepsi 404
 
-    # Bütçe kapalı: hiçbir hatta maçlar ya da batch'ler arasında bekleme yok
+    # Bütçe kapalı: maçlar arasında bekleme yok
     assert throttle.configured_rate() == 0
-    _run_sync(md, [FINISHED, FINISHED_2, NOT_STARTED])
-    assert fake.slept(FETCHER_PAUSES) == []
+    _run_picked(md, [FINISHED, FINISHED_2, NOT_STARTED])
+    assert fake.slept(FETCHER_PAUSES) == [] and fake.slept(PIPELINE_PAUSES) == []
 
     fake.reset_log()
     md.fetch_detail_ids(unknown)
-    assert fake.slept(FETCHER_PAUSES) == []
-    assert len(fake.sessions) == 2  # dıştaki 100'lük batch başına bir oturum
+    assert fake.slept(FETCHER_PAUSES) == [] and fake.slept(PIPELINE_PAUSES) == []
+    assert len(fake.sessions) == 1  # batch yok: çalıştırma başına bir oturum
 
     fake.reset_log()
     asyncio.run(md.fetch_matches_batch_async(unknown))
-    assert fake.slept(FETCHER_PAUSES) == []
+    assert fake.slept(FETCHER_PAUSES) == [] and fake.slept(PIPELINE_PAUSES) == []
     assert len(fake.sessions) == 1
     assert fake.slept(BUDGET_WARM_UP) == []  # kapalı bütçe kimseyi bekletmez
 
-    # Bütçe açık (1 istek/sn): her istek bütçeden geçer, bekleme istek katmanındadır
+    # Bütçe açık (1 istek/sn): her istek bütçeden geçer, bekleme istek katmanındadır; iki yol aynı sayıda sıra alır
     budget_waits = request_budget("1")
-    fake.reset_log()
-    _run_sync(_fetcher(tmp_path / "sync"), [FINISHED, FINISHED_2])
-    waited = [seconds for seconds in budget_waits if seconds > 0]
-    assert len(budget_waits) == len(fake.requests) == 14  # deneme başına bir sıra
-    assert waited and all(seconds in fake.slept(REQUEST_LAYER) for seconds in waited)
-    assert fake.slept(FETCHER_PAUSES) == []
-
-    fake.reset_log()
-    budget_waits.clear()
-    assert _run_async(_fetcher(tmp_path / "async"), [FINISHED, FINISHED_2]) == []
-    waited = [seconds for seconds in budget_waits if seconds > 0]
-    assert len(budget_waits) == len(fake.requests) == 15  # oturum ısınması da bütçeden sıra alır
-    assert waited and all(seconds in fake.slept(REQUEST_LAYER) + fake.slept(BUDGET_WARM_UP) for seconds in waited)
-    assert fake.slept(FETCHER_PAUSES) == []
+    for md, run in ((_fetcher(tmp_path / "picked"), _run_picked), (_fetcher(tmp_path / "plan"), _run_plan)):
+        fake.reset_log()
+        budget_waits.clear()
+        assert run(md, [FINISHED, FINISHED_2]) == []
+        waited = [seconds for seconds in budget_waits if seconds > 0]
+        assert len(budget_waits) == len(fake.requests) == 15  # 2 × 7 istek + oturum ısınması
+        assert waited and all(seconds in fake.slept(REQUEST_LAYER) + fake.slept(BUDGET_WARM_UP) for seconds in waited)
+        assert fake.slept(FETCHER_PAUSES) == [] and fake.slept(PIPELINE_PAUSES) == []
 
 
 def test_row08_http_session(fake: FakeSofaScore, tmp_path: Path) -> None:
-    """Async hat ısıtılmış tek bir oturum (tek TLS profili) kullanır; sync hat oturumsuz, istek başına profil seçer."""
-    in_async, in_sync = _fetcher(tmp_path / "async"), _fetcher(tmp_path / "sync")
-
-    assert _run_async(in_async, [FINISHED]) == []
-    async_requests, sessions = fake.requests, fake.sessions
-    fake.reset_log()
-    assert _run_sync(in_sync, [FINISHED]) == []
-
-    assert len(sessions) == 1 and sessions[0].impersonate in utils.IMPERSONATE_PROFILES
-    assert async_requests[0].path == SITE_ROOT  # ısınma: ana sayfa, API isteklerinden önce
-    assert {r.session for r in async_requests} == {sessions[0].number}
-    assert {r.impersonate for r in async_requests} == {None}  # profil oturumdan gelir
-
-    assert fake.sessions == [] and SITE_ROOT not in fake.paths()
-    assert all(r.impersonate in utils.IMPERSONATE_PROFILES for r in fake.requests)
+    """İki yol da ısıtılmış tek bir oturum (tek TLS profili) kullanır; ısınma API isteklerinden önce gelir."""
+    for name, run in (("plan", _run_plan), ("picked", _run_picked)):
+        fake.reset_log()
+        assert run(_fetcher(tmp_path / name), [FINISHED]) == []
+        sessions = fake.sessions
+        assert len(sessions) == 1 and sessions[0].impersonate in utils.IMPERSONATE_PROFILES
+        assert fake.requests[0].path == SITE_ROOT
+        assert {r.session for r in fake.requests} == {sessions[0].number}
+        assert {r.impersonate for r in fake.requests} == {None}  # profil oturumdan gelir
 
 
-def test_row09_refill_that_returns_none(fake: FakeSofaScore, tmp_path: Path) -> None:
-    """Refill vazgeçince (maç artık bitmiş görünmüyor) iki hat da tam çekime düşer ve /event'i ikinci kez ister."""
-    in_async, in_sync = _fetcher(tmp_path / "async"), _fetcher(tmp_path / "sync")
+def test_row09_refill_that_cannot_proceed(fake: FakeSofaScore, tmp_path: Path) -> None:
+    """
+    Refill vazgeçince (maç artık bitmiş görünmüyor) /event ikinci kez istenmez: tek istek, kayıt olduğu gibi
+    kalır ve maç başarısız değil atlanmış sayılır.
+    """
+    in_plan, in_picked = _fetcher(tmp_path / "plan"), _fetcher(tmp_path / "picked")
     finished = fake.event(FINISHED)
 
-    _store_then_make_partial(fake, in_sync)
-    assert _run_sync(in_sync, [FINISHED]) == [str(FINISHED)]
-    assert [r.label for r in fake.requests] == [f"sync /event/{FINISHED} 200"] * 2
+    _store_then_make_partial(fake, in_picked)
+    assert _run_picked(in_picked, [FINISHED]) == []
+    assert [r.label for r in fake.requests if r.path != SITE_ROOT] == [f"async /event/{FINISHED} 200"]
 
-    fake.add_event(finished)  # ikinci hat için baştan: SofaScore'da yeniden "bitti"
-    _store_then_make_partial(fake, in_async)
-    assert _run_async(in_async, [FINISHED]) == [str(FINISHED)]
-    assert sorted(r.label for r in fake.requests if r.path != SITE_ROOT) == [
-        f"async /event/{FINISHED} 200",  # tam çekim
-        f"sync /event/{FINISHED} 200",  # refill
-    ]
+    fake.add_event(finished)  # ikinci yol için baştan: SofaScore'da yeniden "bitti"
+    _store_then_make_partial(fake, in_plan)
+    assert _run_plan(in_plan, [FINISHED]) == []
+    assert [r.label for r in fake.requests if r.path != SITE_ROOT] == [f"async /event/{FINISHED} 200"]
 
-    for md in (in_async, in_sync):  # kayıt olduğu gibi kalır
+    for md in (in_plan, in_picked):  # kayıt olduğu gibi kalır
         stored = _stored(md, FINISHED)
         assert stored["basic.json"]["status"]["type"] == "finished" and "h2h.json" not in stored
 
 
 def test_row10_breaker_scope(fake: FakeSofaScore, data_dir: Path) -> None:
-    """Toplu hatların (async ve sync) devre kesicisi vardır; tek maç uç noktasının istekleri kesicisizdir."""
+    """Her yolun istekleri bir devre kesicinin altındadır, tek maç uç noktası dahil (kendi kesicisi)."""
     import src.web.routes.matches as matches_routes
 
     md = _fetcher(data_dir)
     fake.probe = lambda: request_breaker.current() is not None
 
-    assert _run_async(md, [FINISHED]) == []
+    assert _run_plan(md, [FINISHED]) == []
     assert {r.probe for r in fake.requests} == {True}
 
     fake.reset_log()
-    assert _run_sync(md, [FINISHED_2]) == []
+    assert _run_picked(md, [FINISHED_2]) == []
     assert {r.probe for r in fake.requests} == {True}
 
     fake.reset_log()
     matches_routes._fetch_single_match_sync("9100010")
-    assert {r.probe for r in fake.requests} == {False}
+    assert {r.probe for r in fake.requests} == {True}
 
 
 def test_row11_not_finished_outcome(fake: FakeSofaScore, tmp_path: Path) -> None:
-    """Bitmemiş maç iki hatta da "başarısız maç" olarak bildirilir (hata yok, yalnızca indirilecek bir şey yok)."""
-    in_async, in_sync = _fetcher(tmp_path / "async"), _fetcher(tmp_path / "sync")
+    """Bitmemiş maç iki yolda da atlanır: başarısız sayılmaz ve hata sayımlarına girmez."""
+    in_plan, in_picked = _fetcher(tmp_path / "plan"), _fetcher(tmp_path / "picked")
 
-    assert _run_async(in_async, [NOT_STARTED]) == [str(NOT_STARTED)]
-    assert _run_sync(in_sync, [NOT_STARTED]) == [str(NOT_STARTED)]
+    assert _run_plan(in_plan, [NOT_STARTED]) == []
+    assert _run_picked(in_picked, [NOT_STARTED]) == []
 
     assert _api_paths(fake) == [f"/event/{NOT_STARTED}"] * 2
-    assert _stored(in_async, NOT_STARTED) == {} and _stored(in_sync, NOT_STARTED) == {}
-    assert in_async.last_status_counts == {"other": 1}  # async hat bunu "diğer hata" diye sayar
-    assert in_sync.last_status_counts == {}
+    assert _stored(in_plan, NOT_STARTED) == {} and _stored(in_picked, NOT_STARTED) == {}
+    assert in_plan.last_status_counts == {} and in_picked.last_status_counts == {}
 
 
 def test_row12_slice_markers(fake: FakeSofaScore, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """"Yok" işaretleri iki hatta da yalnızca `required` dilimler için ve yalnızca bitmiş maçta tutulur."""
-    in_async, in_sync = _fetcher(tmp_path / "async"), _fetcher(tmp_path / "sync")
+    """
+    "Yok" işaretleri bitmiş maçta istenen her dilim için tutulur, isteğe bağlılar dahil (point_by_point); bitmemiş
+    maçta hiçbiri için tutulmaz.
+    """
+    in_plan, in_picked = _fetcher(tmp_path / "plan"), _fetcher(tmp_path / "picked")
     fake.add(f"/event/{TENNIS}/point-by-point", {"pointByPoint": []})  # isteğe bağlı dilim boş geliyor
 
-    assert _run_async(in_async, [TENNIS]) == []
-    assert _run_sync(in_sync, [TENNIS]) == []
+    assert _run_plan(in_plan, [TENNIS]) == []
+    assert _run_picked(in_picked, [TENNIS]) == []
 
-    empty_required = {"incidents": 1, "lineups": 1, "pregame_form": 1, "team_streaks": 1}
-    for md in (in_async, in_sync):
+    empty = {"incidents": 1, "lineups": 1, "pregame_form": 1, "team_streaks": 1, "point_by_point": 1}
+    for md in (in_plan, in_picked):
         stored = _stored(md, TENNIS)
-        assert stored["_unavailable.json"] == empty_required  # point_by_point sayılmaz
-        assert sorted(stored["_slice_status.json"]) == sorted(empty_required)
-    assert _stored(in_async, TENNIS)["point_by_point.json"] == {"pointByPoint": []}
+        assert stored["_unavailable.json"] == empty
+        assert sorted(stored["_slice_status.json"]) == sorted(empty)
+        assert stored["point_by_point.json"] == {"pointByPoint": []}
 
-    # Bitmemiş maç (yalnızca async hat kaydedebilir, satır 3): boş gelen dilimler işaretlenmez
+    # Bitmemiş maç ("yalnızca bitmiş maçlar" kapalı): boş gelen dilimler işaretlenmez
     monkeypatch.setattr(utils, "FETCH_ONLY_FINISHED", False)
-    assert _run_async(in_async, [LIVE]) == []
-    stored = _stored(in_async, LIVE)
-    assert "basic.json" in stored and "h2h.json" not in stored
-    assert "_unavailable.json" not in stored and "_slice_status.json" not in stored
+    for md, run in ((in_plan, _run_plan), (in_picked, _run_picked)):
+        assert run(md, [LIVE]) == []
+        stored = _stored(md, LIVE)
+        assert "basic.json" in stored and "h2h.json" not in stored
+        assert "_unavailable.json" not in stored and "_slice_status.json" not in stored
+
+
+@pytest.mark.parametrize("body", [0, False, ""])
+def test_row13_falsy_body_is_read_by_the_rule(fake: FakeSofaScore, tmp_path: Path, body: Any) -> None:
+    """
+    Yanlış türde "falsy" bir gövde (0, false, "") her yolda dilimin kuralıyla okunur: başarısız istek, neden
+    `parse`; "yok" sayılmaz ve yazılmaz (FX-5'in bulduğu fark: eski async hat bunu boş sayıyordu).
+    """
+    fake.add(f"/event/{FINISHED}/statistics", body)
+    for name, run in (("plan", _run_plan), ("picked", _run_picked)):
+        md = _fetcher(tmp_path / name)
+        assert run(md, [FINISHED]) == []
+        stored = _stored(md, FINISHED)
+        assert "statistics.json" not in stored and "statistics" not in stored.get("_unavailable.json", {})
+        assert stored["_slice_status.json"]["statistics"]["error"]["reason"] == "parse"
+
+
+def test_row14_a_404_has_one_reason(fake: FakeSofaScore, tmp_path: Path) -> None:
+    """Bir dilimin 404'ü her yolda aynı nedenle ("404") sayılır (eski sync hat "empty" yazıyordu)."""
+    reasons = {}
+    for name, run in (("plan", _run_plan), ("picked", _run_picked)):
+        md = _fetcher(tmp_path / name)
+        assert run(md, [9100002]) == []  # pregame-form: 404
+        reasons[name] = _manifest(md, 9100002)["slices"]["pregame_form"]["empty"]["reason"]
+    assert reasons == {"plan": "404", "picked": "404"}

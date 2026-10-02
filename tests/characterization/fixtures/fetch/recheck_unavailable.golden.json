@@ -53,19 +53,19 @@
  "requests_after_all": [
   {
    "concurrent": [
-    "async https://www.sofascore.com/ 200",
-    "sync /event/9100002 200",
-    "sync /event/9100002/lineups 200",
-    "sync /event/9100002/pregame-form 404"
+    "async /event/9100002 200",
+    "async /event/9100002/lineups 200",
+    "async /event/9100002/pregame-form 404",
+    "async https://www.sofascore.com/ 200"
    ]
   }
  ],
  "requests_after_default": [
   {
    "concurrent": [
-    "async https://www.sofascore.com/ 200",
-    "sync /event/9100001 200",
-    "sync /event/9100001/statistics 200"
+    "async /event/9100001 200",
+    "async /event/9100001/statistics 200",
+    "async https://www.sofascore.com/ 200"
    ]
   }
  ]

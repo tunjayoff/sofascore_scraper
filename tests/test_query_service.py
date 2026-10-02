@@ -20,6 +20,7 @@ tamamıyla sabitler; buradaki testler kuralları tek tek ve nedenleriyle söyler
 """
 from __future__ import annotations
 
+import contextlib
 import csv
 import datetime
 import json
@@ -527,6 +528,19 @@ def test_observation_from_the_catalog_row(row: _Row, expected: Optional[Dict[str
     assert _stored_observation(row) == expected  # type: ignore[arg-type]
 
 
+@contextlib.contextmanager
+def _serving(event: Dict[str, Any]) -> Iterator[Any]:
+    """Sahte SofaScore (tests/fakes/sofascore.py): yalnızca bu maçın /event'i; yenileme boru hattından geçer (P13)."""
+    import copy
+
+    from fakes.sofascore import FakeSofaScore
+
+    fake = FakeSofaScore()
+    fake.add_event(copy.deepcopy(event))
+    with fake:
+        yield fake
+
+
 def test_refresh_keeps_the_sticky_flag_read_from_the_store(canonical: sf.LegacyFixture) -> None:
     """`status_regressed` gözlemle birlikte depodan okunur ve yenilemede korunur (refresh_match)."""
     regressed = next(d for d in canonical.details
@@ -535,8 +549,8 @@ def test_refresh_keeps_the_sticky_flag_read_from_the_store(canonical: sf.LegacyF
     fetcher = fetcher_for(canonical.data_dir)
     directory = folder(canonical, regressed)
     basic = read_json(directory / "basic.json")
-    fetcher._fetch_match_basic = MagicMock(return_value=basic)  # type: ignore[method-assign]
-    data = fetcher.refresh_match(str(regressed.event_id))
+    with _serving(basic):
+        data = fetcher.refresh_match(str(regressed.event_id))
     assert data is not None and data[OBSERVATION_KEY]["status_regressed"] is True
     assert read_json(directory / "observation.json")["status_regressed"] is True
 

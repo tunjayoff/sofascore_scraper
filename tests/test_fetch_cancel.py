@@ -1,72 +1,66 @@
-"""Cancel must stop match-detail loops mid-batch (stdlib assert)."""
+"""
+Durdurma, maç detayı indirmesini maçların arasında keser (P13'ten beri tek yol: src/services/pipeline.py).
+
+Ağ yok: istekler tests/fakes/sofascore.py'deki sahte taşıyıcıya gider; istek katmanı ve Store gerçektir.
+"""
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from pathlib import Path
+from typing import Iterator, List
 from unittest.mock import MagicMock
 
+import pytest
+
+from characterization import WORLD, pin_default_settings
+from fakes.sofascore import SITE_ROOT, FakeSofaScore
 from src.match_data_fetcher import MatchDataFetcher
 
+IDS = [9100001, 9100002, 9100003, 9100010, 9200001]
 
-def test_fetch_matches_batch_honors_should_cancel():
+
+@pytest.fixture(autouse=True)
+def _settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    pin_default_settings(monkeypatch)
+
+
+@pytest.fixture
+def fake() -> Iterator[FakeSofaScore]:
+    with FakeSofaScore.from_file(WORLD) as world:
+        yield world
+
+
+def _fetcher(tmp_path: Path) -> MatchDataFetcher:
     cfg = MagicMock()
-    fetcher = MatchDataFetcher(config_manager=cfg, data_dir="/tmp/ss_cancel_test")
-    calls: List[str] = []
+    cfg.get_max_concurrent.return_value = 1  # maçlar sırayla: durdurmanın yeri belirli
+    cfg.get_rate_limit_threshold_consecutive.return_value = 100
+    cfg.get_rate_limit_threshold_ratio.return_value = 2.0
+    cfg.get_server_error_threshold_consecutive.return_value = 100
+    return MatchDataFetcher(config_manager=cfg, data_dir=str(tmp_path / "data"))
 
-    def fake_needs(mid: str) -> str:
-        return "full"
 
-    def fake_fetch(mid: str) -> Dict[str, Any]:
-        calls.append(str(mid))
-        return {"basic": {"id": int(mid)}}
+def _events(fake: FakeSofaScore) -> List[str]:
+    return [r.path for r in fake.requests if r.path != SITE_ROOT and r.path.count("/") == 2]
 
-    fetcher._needs_detail_fetch = fake_needs  # type: ignore[method-assign]
-    fetcher.fetch_match_data = fake_fetch  # type: ignore[method-assign]
-    fetcher.refill_missing_match_slices = MagicMock(return_value=None)  # type: ignore[method-assign]
 
+def test_fetch_matches_batch_honors_should_cancel(fake: FakeSofaScore, tmp_path: Path) -> None:
+    fetcher = _fetcher(tmp_path)
+    done: List[str] = []
     stop_after = 3
 
-    def should_cancel() -> bool:
-        return len(calls) >= stop_after
+    results = fetcher.fetch_matches_batch(
+        IDS, progress_callback=lambda n, _t, _m: n and done.append(str(n)), should_cancel=lambda: len(done) >= stop_after)
 
-    ids = list(range(1, 21))
-    results = fetcher.fetch_matches_batch(ids, progress_callback=None, should_cancel=should_cancel)
-    assert len(calls) == stop_after, f"expected stop at {stop_after}, got {len(calls)}: {calls}"
     assert len(results) == stop_after
+    assert _events(fake) == [f"/event/{mid}" for mid in IDS[:stop_after]]  # sonraki maçlar için istek yok
 
 
-def test_fetch_all_outer_batch_honors_should_cancel():
-    """Outer batch loop in fetch_all_match_details must not start next batch after cancel."""
-    cfg = MagicMock()
-    cfg.get_max_concurrent.return_value = 2
-    fetcher = MatchDataFetcher(config_manager=cfg, data_dir="/tmp/ss_cancel_batches")
-    started: List[int] = []
-    state = {"n": 0}
+def test_fetch_detail_ids_honors_should_cancel_in_one_session(fake: FakeSofaScore, tmp_path: Path) -> None:
+    """Eski 100'lük dış batch döngüsü yok: bir çalıştırma tek oturumdur ve durdurma sonraki maçı başlatmaz."""
+    fetcher = _fetcher(tmp_path)
+    failed: List[str] = []
 
-    def should_cancel() -> bool:
-        return state["n"] >= 1
+    ok = fetcher.fetch_detail_ids([str(mid) for mid in IDS], should_cancel=lambda: bool(_events(fake)),
+                                  failed_callback=failed.append)
 
-    def tracking_parallel(match_ids, max_concurrent=10, progress_callback=None, should_cancel=None):
-        state["n"] += 1
-        started.append(len(match_ids))
-        return {str(m): {"basic": {"id": m}} for m in list(match_ids)[:1]}
-
-    fetcher.fetch_matches_batch_parallel = tracking_parallel  # type: ignore[method-assign]
-
-    ids = [str(i) for i in range(250)]
-    batch_size = 100
-    ran = 0
-    for i in range(0, len(ids), batch_size):
-        if should_cancel():
-            break
-        batch = ids[i : i + batch_size]
-        fetcher.fetch_matches_batch_parallel(batch, should_cancel=should_cancel)
-        ran += 1
-    assert ran == 1
-    assert state["n"] == 1
-    assert started == [100]
-
-
-if __name__ == "__main__":
-    test_fetch_matches_batch_honors_should_cancel()
-    test_fetch_all_outer_batch_honors_should_cancel()
-    print("cancel ok")
+    assert ok == 1 and failed == []
+    assert _events(fake) == [f"/event/{IDS[0]}"] and len(fake.sessions) == 1

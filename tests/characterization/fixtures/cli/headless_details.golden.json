@@ -249,7 +249,7 @@
        "empty": {
         "at": "<volatile>",
         "count": 2,
-        "reason": "empty",
+        "reason": "404",
         "unverified": 0
        },
        "state": "empty"
@@ -349,6 +349,11 @@
   "requests": [
    {
     "concurrent": [
+     "async /event/9100001 200",
+     "async /event/9100001/statistics 200",
+     "async /event/9100002 200",
+     "async /event/9100002/lineups 200",
+     "async /event/9100002/pregame-form 404",
      "async /event/9100003 200",
      "async /event/9100003/h2h 200",
      "async /event/9100003/incidents 200",
@@ -356,13 +361,8 @@
      "async /event/9100003/pregame-form 200",
      "async /event/9100003/statistics 200",
      "async /event/9100003/team-streaks 200",
-     "async https://www.sofascore.com/ 200",
-     "sync /event/9100001 200",
-     "sync /event/9100001/statistics 200",
-     "sync /event/9100002 200",
-     "sync /event/9100002/lineups 200",
-     "sync /event/9100002/pregame-form 404",
-     "sync /event/9100010 200"
+     "async /event/9100010 200",
+     "async https://www.sofascore.com/ 200"
     ]
    }
   ],
@@ -370,9 +370,7 @@
    "request-layer": 12,
    "src.client.transport": 1
   },
-  "stderr": [
-   "<progress> Fetching match details: 4/4"
-  ],
+  "stderr": [],
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
@@ -388,21 +386,15 @@
    "LOG INFO SyncService: Fetching match details: league all (4 matches)…",
    "",
    "Details will be fetched for 4 matches...",
-   "",
-   "Batch 1/1: processing 4 matches (1-4/4)...",
-   "Processing 4 matches in parallel...",
-   "LOG INFO MatchDataFetcher: 1 maç yenileniyor (geçici kayıt)",
+   "LOG INFO MatchDataFetcher: Refreshing 1 provisional records",
    {
     "concurrent": [
-     "LOG INFO MatchDataFetcher: Batch 1/1: 4 başarılı, 0 başarısız (hata yok)",
-     "LOG INFO MatchDataFetcher: Match 9100001 stored (1 files written)",
-     "LOG INFO MatchDataFetcher: Match 9100002 stored (0 files written)",
-     "LOG INFO MatchDataFetcher: Match 9100003 stored (7 files written)",
-     "LOG INFO MatchDataFetcher: Match 9100010 refreshed: 3 fields changed (homeScore.current, homeScore.display, homeScore.normaltime)",
-     "LOG INFO MatchDataFetcher: Processing batch 1/1 (4 matches)"
+     "LOG INFO FetchPipeline: Match 9100001 stored (1 files written)",
+     "LOG INFO FetchPipeline: Match 9100002 stored (0 files written)",
+     "LOG INFO FetchPipeline: Match 9100003 stored (7 files written)",
+     "LOG INFO FetchPipeline: Match 9100010 refreshed: 3 fields changed (homeScore.current, homeScore.display, homeScore.normaltime)"
     ]
    },
-   "✓ Batch 1: 4/4 succeeded",
    "",
    "Done: 4/4 matches (100.0%) processed successfully.",
    "Download finished. Matches that needed details: 4 (4 fetched, 0 failed). Provisional records refreshed: 1 (1 changed)."
@@ -425,9 +417,7 @@
    "request-layer": 12,
    "src.client.transport": 1
   },
-  "stderr": [
-   "<progress> Fetching match details: 4/4"
-  ],
+  "stderr": [],
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
@@ -443,21 +433,15 @@
    "LOG INFO SyncService: Fetching match details: league 17 (4 matches)…",
    "",
    "Details will be fetched for 4 matches...",
-   "",
-   "Batch 1/1: processing 4 matches (1-4/4)...",
-   "Processing 4 matches in parallel...",
-   "LOG INFO MatchDataFetcher: 1 maç yenileniyor (geçici kayıt)",
+   "LOG INFO MatchDataFetcher: Refreshing 1 provisional records",
    {
     "concurrent": [
-     "LOG INFO MatchDataFetcher: Batch 1/1: 4 başarılı, 0 başarısız (hata yok)",
-     "LOG INFO MatchDataFetcher: Match 9100001 stored (1 files written)",
-     "LOG INFO MatchDataFetcher: Match 9100002 stored (0 files written)",
-     "LOG INFO MatchDataFetcher: Match 9100003 stored (7 files written)",
-     "LOG INFO MatchDataFetcher: Match 9100010 refreshed: 3 fields changed (homeScore.current, homeScore.display, homeScore.normaltime)",
-     "LOG INFO MatchDataFetcher: Processing batch 1/1 (4 matches)"
+     "LOG INFO FetchPipeline: Match 9100001 stored (1 files written)",
+     "LOG INFO FetchPipeline: Match 9100002 stored (0 files written)",
+     "LOG INFO FetchPipeline: Match 9100003 stored (7 files written)",
+     "LOG INFO FetchPipeline: Match 9100010 refreshed: 3 fields changed (homeScore.current, homeScore.display, homeScore.normaltime)"
     ]
    },
-   "✓ Batch 1: 4/4 succeeded",
    "",
    "Done: 4/4 matches (100.0%) processed successfully.",
    "Download finished. Matches that needed details: 4 (4 fetched, 0 failed). Provisional records refreshed: 1 (1 changed)."

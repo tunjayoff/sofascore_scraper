@@ -159,10 +159,11 @@ def test_slice_missing_without_a_definitive_answer_stays_expected(tmp_path, outc
 
 def test_sync_fetch_accepts_aet(tmp_path):
     f = _detail_fetcher(tmp_path)
-    with patch.object(f, "_fetch_match_basic", return_value=_basic(sport="football", desc="AET")):
-        for name in ("_fetch_match_statistics", "_fetch_team_streaks", "_fetch_pregame_form",
-                     "_fetch_h2h", "_fetch_lineups", "_fetch_incidents"):
-            setattr(f, name, MagicMock(return_value=None))
+    from fakes.sofascore import FakeSofaScore
+
+    fake = FakeSofaScore()  # P13: tek maç da boru hattından; dilimler 404
+    fake.add_event(_basic(sport="football", desc="AET"))
+    with fake:
         assert f.fetch_match_data(42) is not None
 
 

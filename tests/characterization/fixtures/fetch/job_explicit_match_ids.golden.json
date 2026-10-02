@@ -135,7 +135,7 @@
      "empty": {
       "at": "<volatile>",
       "count": 1,
-      "reason": "empty",
+      "reason": "404",
       "unverified": 0
      },
      "state": "empty"
@@ -195,7 +195,7 @@
      "empty": {
       "at": "<volatile>",
       "count": 1,
-      "reason": "empty",
+      "reason": "404",
       "unverified": 0
      },
      "state": "empty"
@@ -205,17 +205,25 @@
      "empty": {
       "at": "<volatile>",
       "count": 1,
-      "reason": "empty",
+      "reason": "404",
       "unverified": 0
      },
      "state": "empty"
+    },
+    "point_by_point": {
+     "bytes": "<volatile>",
+     "checked_at": "<volatile>",
+     "fetched_at": "<volatile>",
+     "raw_bytes": 111,
+     "sha256": "f82ab9c35d5be9070b5e4958f3b51a3157c6f44d0c379d186ad4af92f483dfdf",
+     "state": "ok"
     },
     "pregame_form": {
      "checked_at": "<volatile>",
      "empty": {
       "at": "<volatile>",
       "count": 1,
-      "reason": "empty",
+      "reason": "404",
       "unverified": 0
      },
      "state": "empty"
@@ -233,7 +241,7 @@
      "empty": {
       "at": "<volatile>",
       "count": 1,
-      "reason": "empty",
+      "reason": "404",
       "unverified": 0
      },
      "state": "empty"
@@ -241,6 +249,7 @@
    },
    "updated_at": "<volatile>"
   },
+  "v3/events/9/200/9200001/point_by_point.json.gz": "<binary>",
   "v3/events/9/200/9200001/statistics.json.gz": "<binary>"
  },
  "job": {
@@ -251,7 +260,7 @@
    "[Completed] Background Task Completed Successfully."
   ],
   "matches_done": 4,
-  "matches_failed": 1,
+  "matches_failed": 0,
   "matches_total": 4,
   "phases": [
    "details"
@@ -261,13 +270,8 @@
    "breaker": null,
    "details_done": 4,
    "details_total": 4,
-   "failed": [
-    {
-     "league_id": 17,
-     "match_id": "9100004"
-    }
-   ],
-   "failed_count": 1,
+   "failed": [],
+   "failed_count": 0,
    "refresh_changed": 0,
    "refreshed": 0,
    "schedule_empty_seasons": 0
@@ -276,27 +280,33 @@
   "status": "Completed"
  },
  "requests": [
-  "sync /event/9100001 200",
-  "sync /event/9100001/statistics 200",
-  "sync /event/9100001/team-streaks 200",
-  "sync /event/9100001/pregame-form 200",
-  "sync /event/9100001/h2h 200",
-  "sync /event/9100001/lineups 200",
-  "sync /event/9100001/incidents 200",
-  "sync /event/9100002 200",
-  "sync /event/9100002/statistics 200",
-  "sync /event/9100002/team-streaks 200",
-  "sync /event/9100002/pregame-form 404",
-  "sync /event/9100002/h2h 200",
-  "sync /event/9100002/lineups 200",
-  "sync /event/9100002/incidents 200",
-  "sync /event/9100004 200",
-  "sync /event/9200001 200",
-  "sync /event/9200001/statistics 200",
-  "sync /event/9200001/team-streaks 404",
-  "sync /event/9200001/pregame-form 404",
-  "sync /event/9200001/h2h 200",
-  "sync /event/9200001/lineups 404",
-  "sync /event/9200001/incidents 404"
+  {
+   "concurrent": [
+    "async /event/9100001 200",
+    "async /event/9100001/h2h 200",
+    "async /event/9100001/incidents 200",
+    "async /event/9100001/lineups 200",
+    "async /event/9100001/pregame-form 200",
+    "async /event/9100001/statistics 200",
+    "async /event/9100001/team-streaks 200",
+    "async /event/9100002 200",
+    "async /event/9100002/h2h 200",
+    "async /event/9100002/incidents 200",
+    "async /event/9100002/lineups 200",
+    "async /event/9100002/pregame-form 404",
+    "async /event/9100002/statistics 200",
+    "async /event/9100002/team-streaks 200",
+    "async /event/9100004 200",
+    "async /event/9200001 200",
+    "async /event/9200001/h2h 200",
+    "async /event/9200001/incidents 404",
+    "async /event/9200001/lineups 404",
+    "async /event/9200001/point-by-point 200",
+    "async /event/9200001/pregame-form 404",
+    "async /event/9200001/statistics 200",
+    "async /event/9200001/team-streaks 404",
+    "async https://www.sofascore.com/ 200"
+   ]
+  }
  ]
 }

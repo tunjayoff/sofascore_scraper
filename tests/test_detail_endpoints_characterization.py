@@ -1,24 +1,28 @@
 """
-Karakterizasyon: bir maç için istenen detay uç noktaları (spor kayıt defteri öncesi davranış).
+Karakterizasyon: bir maç için istenen detay uç noktaları.
 
 Beklenen listeler bu dosyada elle yazılıdır; kayıt defterinden (src/sports.py) türetilmez. Böylece
-tablo değişirse hangi isteğin eklendiği ya da düştüğü burada görünür. Gerçek ağ yok: istek katmanı sahte.
+tablo değişirse hangi isteğin eklendiği ya da düştüğü burada görünür. Gerçek ağ yok: istekler sahte taşıyıcıya
+gider (tests/fakes/sofascore.py), istek katmanı gerçektir.
 
-Üç yol ayrı ayrı sabitlenir:
-  - toplu (async) indirme: altı ortak dilim; teniste ayrıca point-by-point
-  - tek maç (sync) indirme: altı ortak dilim; teniste de point-by-point YOK
-  - eksik dilim tamamlama (refill): yalnızca eksik ve "yok" sayılmayan ortak dilimler
+P13'ten beri bütün yollar tek boru hattıdır (src/services/pipeline.py); üç giriş noktası yine ayrı ayrı sabitlenir:
+  - toplu indirme: sporun bütün dilimleri, teniste point-by-point dahil
+  - tek maç indirme: aynısı (eskiden teniste de point-by-point yoktu)
+  - eksik dilim tamamlama (refill): yalnızca eksik ve "yok" sayılmayan dilimler, isteğe bağlılar dahil
+Dilimler eşzamanlı istendiği için sıra karşılaştırılmaz.
 """
-import asyncio
-from unittest.mock import MagicMock, patch
+from typing import Iterator
+from unittest.mock import MagicMock
 
 import pytest
 
 import detail_records
+from characterization import pin_default_settings
+from fakes.sofascore import SITE_ROOT, FakeSofaScore
 from src.match_data_fetcher import DETAIL_SLICE_KEYS, REQUIRED_FILES, SLICE_EMPTY, MatchDataFetcher, SliceOutcome
 
 MID = "4242"
-EVENT = f"https://www.sofascore.com/api/v1/event/{MID}"
+EVENT = f"/event/{MID}"
 COMMON = [
     f"{EVENT}/statistics",
     f"{EVENT}/team-streaks",
@@ -63,24 +67,28 @@ def _fetcher(tmp_path) -> MatchDataFetcher:
     return MatchDataFetcher(MagicMock(), data_dir=str(tmp_path))
 
 
-def _fetch_async(f: MatchDataFetcher, basic: dict):
-    calls = []
-
-    async def fake(session, url, max_retries=None, **kw):
-        calls.append(url)
-        return {"event": basic} if url == EVENT else {}
-
-    with patch("src.utils.make_api_request_async", new=fake):
-        data = asyncio.run(f._fetch_match_data_async(object(), MID))
-    return calls, data
+@pytest.fixture(autouse=True)
+def _settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    pin_default_settings(monkeypatch)
 
 
-def _sync_api(calls: list, basic: dict):
-    def fake(url, *a, **kw):
-        calls.append(url)
-        return {"event": basic} if url == EVENT else {}
+@pytest.fixture
+def fake() -> Iterator[FakeSofaScore]:
+    """/event/{MID} testin maçını, her dilim boş bir nesne döndürür."""
+    world = FakeSofaScore()
+    for path in COMMON + [POINT_BY_POINT]:
+        world.add(path, {})
+    with world:
+        yield world
 
-    return fake
+
+def _serve(fake: FakeSofaScore, basic: dict) -> None:
+    fake.add(EVENT, {"event": basic})
+    fake.reset_log()
+
+
+def _calls(fake: FakeSofaScore) -> list:
+    return sorted(r.path for r in fake.requests if r.path != SITE_ROOT)
 
 
 def test_slice_constants_are_unchanged():
@@ -89,53 +97,55 @@ def test_slice_constants_are_unchanged():
 
 
 @pytest.mark.parametrize("label,sport_obj,point_by_point", SPORT_CASES, ids=_IDS)
-def test_batch_download_requests_exactly_these_endpoints(tmp_path, label, sport_obj, point_by_point):
+def test_batch_download_requests_exactly_these_endpoints(tmp_path, fake, label, sport_obj, point_by_point):
     f = _fetcher(tmp_path)
-    calls, data = _fetch_async(f, _basic(sport_obj))
+    _serve(fake, _basic(sport_obj))
+    data = f.fetch_matches_batch([MID])[MID]
 
     expected = [EVENT] + COMMON + ([POINT_BY_POINT] if point_by_point else [])
-    assert calls == expected  # sıra da aynı: tablo sırası istek sırasıdır
+    assert _calls(fake) == sorted(expected)
     expected_keys = ["basic", "observation"] + COMMON_KEYS + (["point_by_point"] if point_by_point else [])
-    assert list(data) == expected_keys
+    assert list(data) == expected_keys  # tablo sırası
 
 
 @pytest.mark.parametrize("label,sport_obj,point_by_point", SPORT_CASES, ids=_IDS)
-def test_batch_download_counts_only_the_six_tracked_slices_as_unavailable(tmp_path, label, sport_obj, point_by_point):
-    """Boş gelen point_by_point "yok" sayımına girmez; tamlık yalnızca altı ortak dilime bakar."""
+def test_batch_download_counts_every_requested_slice_as_unavailable(tmp_path, fake, label, sport_obj,
+                                                                     point_by_point):
+    """Boş gelen her istenen dilim "yok" sayılır, point_by_point dahil; tamlık yalnızca altı ortak dilime bakar."""
     f = _fetcher(tmp_path)
-    _fetch_async(f, _basic(sport_obj))
+    _serve(fake, _basic(sport_obj))
+    f.fetch_matches_batch([MID])
 
     unavailable = detail_records.legacy_view(f.data_dir, int(MID))["_unavailable.json"]
-    assert unavailable == {k: 1 for k in COMMON_KEYS}
+    assert unavailable == {k: 1 for k in COMMON_KEYS + (["point_by_point"] if point_by_point else [])}
     assert f._expected_slice_keys(int(MID), None) == COMMON_KEYS
     assert f._compute_detail_need(MID) == "refill"
 
 
 @pytest.mark.parametrize("label,sport_obj,point_by_point", SPORT_CASES, ids=_IDS)
-def test_single_match_download_requests_exactly_these_endpoints(tmp_path, label, sport_obj, point_by_point):
+def test_single_match_download_requests_exactly_these_endpoints(tmp_path, fake, label, sport_obj, point_by_point):
     f = _fetcher(tmp_path)
-    calls = []
-    with patch("src.match_data_fetcher.make_api_request", new=_sync_api(calls, _basic(sport_obj))):
-        data = f.fetch_match_data(MID)
+    _serve(fake, _basic(sport_obj))
+    data = f.fetch_match_data(MID)
 
-    assert calls == [EVENT] + COMMON  # teniste de point-by-point yok
-    assert list(data) == ["basic", "observation"] + COMMON_KEYS
+    extra = [POINT_BY_POINT] if point_by_point else []
+    assert _calls(fake) == sorted([EVENT] + COMMON + extra)  # toplu indirmeyle aynı dilimler
+    assert list(data) == ["basic", "observation"] + COMMON_KEYS + (["point_by_point"] if point_by_point else [])
 
 
 @pytest.mark.parametrize("label,sport_obj,point_by_point", SPORT_CASES, ids=_IDS)
-def test_refill_requests_every_missing_tracked_slice(tmp_path, label, sport_obj, point_by_point):
+def test_refill_requests_every_missing_slice(tmp_path, fake, label, sport_obj, point_by_point):
     f = _fetcher(tmp_path)
     basic = _basic(sport_obj)
     f._save_match_data(MID, {"basic": basic})
-    calls = []
-    with patch("src.match_data_fetcher.make_api_request", new=_sync_api(calls, basic)):
-        f.refill_missing_match_slices(MID)
+    _serve(fake, basic)
+    f.refill_missing_match_slices(MID)
 
-    assert calls == [EVENT] + COMMON
+    assert _calls(fake) == sorted([EVENT] + COMMON + ([POINT_BY_POINT] if point_by_point else []))
 
 
 @pytest.mark.parametrize("label,sport_obj,point_by_point", SPORT_CASES, ids=_IDS)
-def test_refill_skips_present_and_unavailable_slices(tmp_path, label, sport_obj, point_by_point):
+def test_refill_skips_present_and_unavailable_slices(tmp_path, fake, label, sport_obj, point_by_point):
     f = _fetcher(tmp_path)
     basic = _basic(sport_obj)
     gone = SliceOutcome(SLICE_EMPTY, reason="404", http_status=404)
@@ -145,8 +155,8 @@ def test_refill_skips_present_and_unavailable_slices(tmp_path, label, sport_obj,
                        {"lineups": gone, "incidents": gone, "statistics": gone})
     f._save_match_data(MID, {"basic": basic, "lineups": None, "incidents": None},
                        {"lineups": gone, "incidents": gone})
-    calls = []
-    with patch("src.match_data_fetcher.make_api_request", new=_sync_api(calls, basic)):
-        f.refill_missing_match_slices(MID)
+    _serve(fake, basic)
+    f.refill_missing_match_slices(MID)
 
-    assert calls == [EVENT, f"{EVENT}/statistics", f"{EVENT}/team-streaks", f"{EVENT}/pregame-form"]
+    expected = [EVENT, f"{EVENT}/statistics", f"{EVENT}/team-streaks", f"{EVENT}/pregame-form"]
+    assert _calls(fake) == sorted(expected + ([POINT_BY_POINT] if point_by_point else []))
