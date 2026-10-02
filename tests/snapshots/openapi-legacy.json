@@ -1182,7 +1182,7 @@
           "api"
         ],
         "summary": "Export Csv",
-        "description": "Var olan CSV dışa aktarımını indirir; salt okunur. Dışa aktarım yoksa 404: GET hiçbir şey\nüretmez (bir bağlantı ya da başka bir sitedeki <img> diske dosya yazdıramaz). Üretmek için POST.",
+        "description": "İndirilmiş maçların CSV dışa aktarımı, istekte üretilir; salt okunur, diske hiçbir şey yazmaz.\nleague_id: yalnızca o ligin lig dizinindeki maçlar. İndirilmiş maç yoksa 404.",
         "operationId": "export_csv_api_export_csv_get",
         "deprecated": true,
         "parameters": [
@@ -1229,7 +1229,7 @@
           "api"
         ],
         "summary": "Create Csv Export",
-        "description": "CSV dışa aktarımı yoksa indirilmiş maçlardan üretir (diske yazar), sonra dosyayı döndürür.",
+        "description": "GET /api/export/csv ile aynı yanıt (bir sürüm boyunca takma ad); diske hiçbir şey yazmaz.",
         "operationId": "create_csv_export_api_export_csv_post",
         "deprecated": true,
         "parameters": [

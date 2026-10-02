@@ -1229,9 +1229,8 @@ WALKERS = ("build_match_index", "find_match_path", "reset_markers_walk", "csv_ex
 # `_unavailable.json`'ı olan dizinlere bakar; o, okuyucunun aynı dosyası olan maçlarıyla karşılaştırılır
 # (fixture'larda düz dizinde işaret dosyası yok, bu yüzden farkı görünmüyor: üç düzey bekler, düz dizinleri görmez).
 WALKER_DIFFERENCES: Dict[Tuple[str, str], Tuple[Set[int], Set[int]]] = {
-    # yalnızca birleşik dosyası olan dizini dizin ağacını gezen hiçbir gezgin bulamaz (`build_match_index` ve
-    # `find_match_path` RD-1'den beri depodan okur: okuyucuyla aynı kümeyi bulurlar)
-    ("legacy", "csv_export"): (COMBINED_ONLY["legacy"], set()),
+    # Boş: `build_match_index` ve `find_match_path` RD-1'den, CSV dışa aktarma EX-1'den beri depodan okur ve
+    # okuyucuyla aynı kümeyi bulur (yalnızca birleşik dosyası olan dizin de dahil)
 }
 
 
@@ -1256,11 +1255,11 @@ def test_walker_characterization_table(fx: sf.LegacyFixture) -> None:
     assert actual == expected
 
 
-def test_csv_export_lists_flat_events_twice(old_forms: sf.LegacyFixture) -> None:
-    """Altın dosyalardaki 9. tuhaflık: dışa aktarma düz dizinleri iki kez yazar; okuyucu her maçı bir kez verir."""
+def test_csv_export_lists_every_event_once(old_forms: sf.LegacyFixture) -> None:
+    """Altın dosyalardaki 9. tuhaflık EX-1'de gitti: dışa aktarma düz dizinleri artık iki kez yazmaz."""
     exported = _csv_export_ids(fetcher_for(old_forms.data_dir))
-    assert sorted(e for e in set(exported) if exported.count(e) > 1) == ["16837335", "16867839"]
-    assert exported.count("16837335") == 3
+    assert len(exported) == len(set(exported))
+    assert exported.count("16837335") == 1 and exported.count("16867839") == 1
 
 
 def test_counting_walkers(fx: sf.LegacyFixture, capsys: pytest.CaptureFixture[str]) -> None:

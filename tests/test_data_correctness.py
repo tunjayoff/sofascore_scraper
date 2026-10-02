@@ -207,15 +207,22 @@ def test_missing_details_respects_season_filter():
 
 
 def test_csv_export_filters_by_league():
+    """EX-1: dışa aktarma saklanan maçlardan istekte üretilir; `processed/` altındaki bayat bir dosya sunulmaz."""
     processed = os.path.join(conftest.DATA_DIR, "match_details", "processed")
     os.makedirs(processed, exist_ok=True)
     path = os.path.join(processed, "all_matches_1.csv")
     with open(path, "w") as f:
         f.write("match_id,league_folder\n1,17_Premier_League\n2,8_LaLiga\n3,170_Other\n")
     try:
-        body = client.get("/api/export/csv?league_id=17").text.strip().splitlines()
-        assert body == ["match_id,league_folder", "1,17_Premier_League"]
-        assert len(client.get("/api/export/csv").text.strip().splitlines()) == 4
+        whole = client.get("/api/export/csv").text.strip().splitlines()
+        league = client.get(f"/api/export/csv?league_id={conftest.LEAGUE_ID}").text.strip().splitlines()
+        other = client.get("/api/export/csv?league_id=8")
+        assert whole[0].startswith("match_id,") and len(whole) > 1
+        assert "1,17_Premier_League" not in whole and "2,8_LaLiga" not in whole
+        assert league[0] == whole[0] and len(league) > 1
+        assert all(line.split(",")[1].startswith(f"{conftest.LEAGUE_ID}_") for line in league[1:])
+        assert other.status_code == 404
+        assert os.listdir(processed) == ["all_matches_1.csv"]
     finally:
         os.remove(path)
 

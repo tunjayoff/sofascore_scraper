@@ -31,17 +31,14 @@
   "request_layer_loaded": true,
   "requests": [],
   "sleeps": {},
-  "stderr": [
-   "<progress> Maçlar işleniyor: 4/4"
-  ],
+  "stderr": [],
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO Main: Running in headless mode",
    "LOG INFO Main: Starting CSV export",
-   "LOG INFO MatchDataFetcher: Toplam 4 maç CSV'ye dönüştürülüyor...",
-   "LOG INFO MatchDataFetcher: Tüm maçlar için CSV dosyası oluşturuldu: <SANDBOX>/data/match_details/processed/all_matches_<epoch>.csv",
+   "LOG INFO ExportService: CSV export of 4 matches written: <SANDBOX>/data/match_details/processed/all_matches_<epoch>.csv",
    "CSV file successfully created: <SANDBOX>/data/match_details/processed/all_matches_<epoch>.csv"
   ]
  },
