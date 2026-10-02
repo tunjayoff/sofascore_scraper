@@ -1,5 +1,10 @@
 """
-SofaScore API'sinden lig sezonlarını çeken modül.
+SofaScore API'sinden lig sezonlarını çeken modül (uyumluluk sarmalayıcısı; plan maddesi P14).
+
+Sezon listesinin çekilmesi ve saklanması src/services/listing.py'dedir: eşitleme servisi `list_seasons` ile
+tipli sonucu (`ListingResult`) alır; liste getirme boru hattında çekilir. `fetch_seasons_for_league` (terminal
+menüsü; başarısızlıkta boş liste) ve `fetch_seasons_checked` (web'in "sezonları yenile" uç noktası; tipli hata)
+eski yüzlerdir ve istek katmanının senkron yolunu kullanır.
 
 Saklanan sezon listeleri ve "bu sezonun maç listesi indirilmiş mi" sorusu deponun kataloğundan okunur
 (src/services/tournaments.py; plan maddesi RD-5): bir ligin birden çok sezon listesi dosyası varsa adı ne
@@ -22,8 +27,7 @@ from src.utils import make_api_request, ensure_directory
 # Okumalar ve yazmalar aynı depodan yapılır (`open_store`). Paket kökü üzerinden: cephe ilk çağrıda yüklenir.
 from src import store as store_hooks
 from src.logger import get_logger
-from src.services import tournaments
-from src.slices import SLICE_EMPTY, SLICE_OK, Outcome
+from src.services import listing, tournaments
 
 if TYPE_CHECKING:
     from src.store import Store
@@ -130,10 +134,9 @@ class SeasonFetcher:
         url = f"{self.base_url}/unique-tournament/{league_id}/seasons"
         data = make_api_request(url, max_retries=max_retries, raise_errors=True)
 
-        if not isinstance(data, dict) or not isinstance(data.get("seasons"), list):
+        seasons = listing.season_list_of(data)
+        if seasons is None:
             raise DataParsingError(f"Sezon yanıtı beklenen biçimde değil: {url}")
-
-        seasons = data.get("seasons", [])
 
         # Sezon verilerini kaydet
         self._save_seasons_json(league_id, data)
@@ -144,7 +147,20 @@ class SeasonFetcher:
         logger.info(f"{league_name} için {len(seasons)} sezon bulundu")
         return seasons
 
-    # Senkron wrapper
+    def list_seasons(self, league_id: int, *, max_age: Optional[float] = None) -> "listing.ListingResult":
+        """
+        Ligin sezon listesi, getirme boru hattında: tipli sonuç (`ok`; `failed` ve nedeni; `skipped` / `breaker`
+        ya da `fresh`). max_age: saklanan liste bu kadar saniyeden gençse istenmez. Çekilen liste Store'a yazılır
+        ve bu nesnenin belleğindeki listeyi de günceller.
+        """
+        from src.utils import FETCH_ONLY_FINISHED
+
+        service = listing.ListingService(self._store(), only_finished=bool(FETCH_ONLY_FINISHED))
+        result = service.season_list(int(league_id), max_age=max_age)
+        if result.ok and result.seasons is not None:
+            self.league_seasons[int(league_id)] = result.seasons
+        return result
+
     def get_current_season_id(self, league_id) -> int:
         """
         Belirli bir lig için en güncel sezon ID'sini döndürür.
@@ -304,17 +320,8 @@ class SeasonFetcher:
             return f"Season_{season_id}"
 
     def preferred_download_season_id(self, league_id: int) -> int:
-        """Prefer 2nd-newest season — newest is often fixtures-only / not started yet."""
-        seasons = self.get_seasons_for_league(league_id) or []
-        if not seasons:
-            return 0
-        sorted_seasons = sorted(
-            seasons,
-            key=lambda s: self._get_sortable_year_value(s.get("year", "0")),
-            reverse=True,
-        )
-        pick = sorted_seasons[1] if len(sorted_seasons) > 1 else sorted_seasons[0]
-        return int(pick.get("id") or 0)
+        """Yeniden eskiye ikinci sezon: en yenisi çoğu zaman yalnızca fikstürdür (listing.preferred_season_id)."""
+        return listing.preferred_season_id(self.get_seasons_for_league(league_id) or [])
 
     def resolve_season_id(self, league_id: int, requested_id: int) -> int:
         """
@@ -328,19 +335,7 @@ class SeasonFetcher:
             return int(requested_id or 0)
 
         seasons = self.get_seasons_for_league(league_id) or []
-        if not seasons:
-            return requested_id
-
-        known = {int(s["id"]) for s in seasons if s.get("id") is not None}
-        if requested_id in known:
-            return requested_id
-
-        preferred = self.preferred_download_season_id(league_id)
-        logger.warning(
-            f"Stale season id {requested_id} for league {league_id} "
-            f"(not in refreshed list). Using {preferred}."
-        )
-        return preferred or requested_id
+        return listing.resolve_season_id(seasons, requested_id, lambda: self.preferred_download_season_id(league_id))
 
     def _load_existing_season_data(self) -> Dict[int, List[Dict[str, Any]]]:
         """
@@ -386,65 +381,15 @@ class SeasonFetcher:
             league_id: Lig ID'si
             data: API'den alınan sezon verileri
         """
-        seasons = data.get("seasons") if isinstance(data, dict) else None
-        outcome = Outcome(SLICE_OK if seasons else SLICE_EMPTY, data)
         try:
-            ref = store_hooks.Ref.tournament(int(league_id))
-            self._store().entities.put(ref, {"seasons": outcome}, count_empties=False)
-            logger.info(f"Season list of league {league_id} stored ({len(seasons or [])} seasons)")
+            count = listing.store_season_list(self._store(), int(league_id), data if isinstance(data, dict) else {})
+            logger.info(f"Season list of league {league_id} stored ({count} seasons)")
         except Exception as e:
             logger.error(f"Season list of league {league_id} could not be stored: {e}")
 
     def _get_sortable_year_value(self, year_str: str) -> float:
-        """
-        Sezon yılı dizesini sıralanabilir bir sayısal değere dönüştürür.
-        "24/25", "2024/2025", "2024", "98/99" gibi formatları işler.
-
-        Args:
-            year_str: Sezon yılı dizesi
-
-        Returns:
-            float: Yılı temsil eden sıralanabilir bir değer (yüksek = daha yeni)
-        """
-        if not year_str or year_str == '0':
-            return 0.0
-
-        # Yıl aralıklarını işle (örn. "24/25" veya "2024/2025")
-        if '/' in year_str:
-            parts = year_str.split('/')
-            start_year = parts[0].strip()
-            end_year = parts[1].strip() if len(parts) > 1 else ""
-
-            # 2 basamaklı yılları işle
-            if len(start_year) == 2 and len(end_year) == 2:
-                start_int = int(start_year)
-                end_int = int(end_year)
-
-                # Eğer ilk yıl ikinci yıldan büyükse (örn. 99/00), bu bir yüzyıl geçişidir
-                if start_int > end_int:
-                    # Yüzyıl geçişi: 99/00 -> 2000 (yeni yüzyılı kullan)
-                    return 2000.0 + float(end_int)
-                elif start_int < 50:
-                    # 2000'ler (örn: 20/21 -> 2020)
-                    return 2000.0 + float(start_int)
-                else:
-                    # 1900'ler (örn: 98/99 -> 1998)
-                    return 1900.0 + float(start_int)
-            # 4 basamaklı yılları işle
-            elif len(start_year) == 4:
-                return float(start_year)
-            else:
-                try:
-                    # Diğer formatlar
-                    return float(start_year)
-                except ValueError:
-                    return 0.0
-
-        # Tek yılları işle (örn. "2024")
-        try:
-            return float(year_str)
-        except ValueError:
-            return 0.0
+        """Sezon yılı dizesi → sıralanabilir sayı, yüksek = daha yeni (listing.sortable_year)."""
+        return listing.sortable_year(year_str)
 
     def get_seasons_for_league(self, league_id: int) -> List[Dict[str, Any]]:
         """

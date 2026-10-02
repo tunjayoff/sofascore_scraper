@@ -242,11 +242,28 @@ def job_env(tmp_path, monkeypatch):
     return fj, store
 
 
+def _listing_faces(ui: Any) -> None:
+    """
+    Sahte sezon / program indiricilerine servisin tipli yüzünü (P14: `list_seasons`, `list_schedule`) ekler: eski adlı
+    sahte yöntemlerin sonucu liste sonucu olur (program True → maç listelendi, False → boş).
+    """
+    from src.services.listing import ListingResult
+
+    seasons, schedule = getattr(ui, "season_fetcher", None), getattr(ui, "match_fetcher", None)
+    if seasons is not None and not hasattr(seasons, "list_seasons"):
+        seasons.list_seasons = lambda lid, max_age=None: ListingResult(
+            "seasons", lid, seasons=seasons.fetch_seasons_for_league(lid))
+    if schedule is not None and not hasattr(schedule, "list_schedule"):
+        schedule.list_schedule = lambda lid, sid, max_age=None: ListingResult(
+            "schedule", lid, sid, chunks=[{"round": 1}] if schedule.fetch_matches_for_season(lid, sid) else [])
+
+
 def _run_job(fj, store, monkeypatch, ui, payload: Dict[str, Any]) -> Dict[str, Any]:
     from src.web.routes.scrape import FetchRequest
 
     # `ui` servis bağlamının (ServiceContext) yerini tutar; işin CSV aşaması yok (EX-1), dışa aktarma çağrılırsa ona gider
     ui.config = fj.config_manager
+    _listing_faces(ui)
     monkeypatch.setattr(fj, "build_context", lambda config_manager: ui)
     monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: ctx.export_all_to_csv())
     req = FetchRequest(**payload)

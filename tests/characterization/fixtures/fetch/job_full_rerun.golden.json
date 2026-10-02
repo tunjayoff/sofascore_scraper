@@ -48,21 +48,6 @@
    "status": "Completed"
   },
   "requests": [
-   "sync /unique-tournament/17/seasons 200",
-   {
-    "concurrent": [
-     "async /unique-tournament/17/season/61627/rounds 200",
-     "async https://www.sofascore.com/ 200"
-    ]
-   },
-   {
-    "concurrent": [
-     "async /unique-tournament/17/season/52186/events/last/0 200",
-     "async /unique-tournament/17/season/52186/events/next/0 404",
-     "async /unique-tournament/17/season/52186/rounds 200",
-     "async https://www.sofascore.com/ 200"
-    ]
-   },
    {
     "concurrent": [
      "async /event/9100002 200",
@@ -106,22 +91,6 @@
    "schedule_empty_seasons": 0,
    "status": "Completed"
   },
-  "requests": [
-   "sync /unique-tournament/17/seasons 200",
-   {
-    "concurrent": [
-     "async /unique-tournament/17/season/61627/rounds 200",
-     "async https://www.sofascore.com/ 200"
-    ]
-   },
-   {
-    "concurrent": [
-     "async /unique-tournament/17/season/52186/events/last/0 200",
-     "async /unique-tournament/17/season/52186/events/next/0 404",
-     "async /unique-tournament/17/season/52186/rounds 200",
-     "async https://www.sofascore.com/ 200"
-    ]
-   }
-  ]
+  "requests": []
  }
 }

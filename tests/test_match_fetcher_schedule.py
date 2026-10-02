@@ -1,4 +1,4 @@
-"""Unit tests for schedule URL/strategy helpers and paginated fallback (mocked HTTP)."""
+"""Sezon programı sarmalayıcısı (src/match_fetcher.py): tur yolu, strateji, sayfalı liste, önceki sezona geçiş (sahte HTTP)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import unittest
 from typing import Any, Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from src.exceptions import ResourceNotFoundError
+from src.exceptions import APIError, ResourceNotFoundError
 from src.match_fetcher import MatchFetcher
 from src.store import Ref, open_store
 
@@ -62,7 +62,25 @@ class TestScheduleHelpers(unittest.TestCase):
         self.assertFalse(MatchFetcher.is_week_based_rounds([], max_round=50))
 
 
+def _no_session() -> Any:
+    return AsyncMock(__aenter__=AsyncMock(return_value=MagicMock()), __aexit__=AsyncMock(return_value=False))
+
+
+def _api(pages: Dict[str, Any], calls: List[str]) -> Any:
+    """Eski istek yolunun sahte hali (src.utils.make_api_request_async; göreli yol): bilinmeyen yol 404."""
+
+    async def fake_api(session: Any, url: str, max_retries: Optional[int] = None) -> Any:
+        calls.append(url)
+        if url not in pages:
+            raise ResourceNotFoundError(url)
+        return pages[url]
+
+    return fake_api
+
+
 class TestFetchStrategyMocked(unittest.IsolatedAsyncioTestCase):
+    """Uyumluluk yolu (fetch_all_rounds_async): kurallar src/services/listing.py'den, istekler eski async işlevden."""
+
     def _make_fetcher(self, tmp: str) -> MatchFetcher:
         config = MagicMock()
         config.get_leagues.return_value = {242: "MLS", 17: "Premier League"}
@@ -71,114 +89,64 @@ class TestFetchStrategyMocked(unittest.IsolatedAsyncioTestCase):
         seasons.get_season_name.return_value = "MLS 2025"
         return MatchFetcher(config, seasons, data_dir=tmp)
 
+    async def _rounds(self, fetcher: MatchFetcher, league: int, season: int, pages: Dict[str, Any],
+                      calls: List[str]) -> List[Dict[str, Any]]:
+        with patch("src.utils.make_api_request_async", new=_api(pages, calls)), \
+                patch("src.utils.create_session_async", return_value=_no_session()), \
+                patch("src.utils.FETCH_ONLY_FINISHED", True):
+            return await fetcher.fetch_all_rounds_async(league, season, max_round=50)
+
     async def test_paginated_fallback_when_rounds_missing(self):
         with tempfile.TemporaryDirectory() as tmp:
             fetcher = self._make_fetcher(tmp)
+            base = "/unique-tournament/242/season/70158"
+            calls: List[str] = []
+            pages = {f"{base}/rounds": {"rounds": []},
+                     f"{base}/events/last/0": {"events": [_finished_event(1)], "hasNextPage": False}}
 
-            fetcher._fetch_rounds_metadata = AsyncMock(return_value=[])  # type: ignore
-            fetcher._fetch_and_save_event_pages = AsyncMock(  # type: ignore
-                return_value=[{"events": [_finished_event(1)], "round": "last_0"}]
-            )
-            fetcher._fetch_and_save_round = AsyncMock(return_value=None)  # type: ignore
+            results = await self._rounds(fetcher, 242, 70158, pages, calls)
 
-            with patch(
-                "src.utils.create_session_async",
-                return_value=AsyncMock(
-                    __aenter__=AsyncMock(return_value=MagicMock()),
-                    __aexit__=AsyncMock(return_value=False),
-                ),
-            ):
-                results = await fetcher.fetch_all_rounds_async(242, 70158, max_round=50)
-
-            self.assertEqual(len(results), 1)
-            fetcher._fetch_and_save_event_pages.assert_awaited()  # type: ignore
+            self.assertEqual([r["round"] for r in results], ["last_0"])
+            self.assertEqual(calls, [f"{base}/rounds", f"{base}/events/last/0", f"{base}/events/next/0"])
 
     async def test_week_based_uses_round_urls_not_event_list(self):
         with tempfile.TemporaryDirectory() as tmp:
             fetcher = self._make_fetcher(tmp)
+            base = "/unique-tournament/17/season/96668"
+            calls: List[str] = []
+            pages = {f"{base}/rounds": {"rounds": [{"round": 1}, {"round": 2}]},
+                     f"{base}/events/round/1": {"events": [_finished_event(101)]},
+                     f"{base}/events/round/2": {"events": [_finished_event(102)]}}
 
-            fetcher._fetch_rounds_metadata = AsyncMock(  # type: ignore
-                return_value=[{"round": 1}, {"round": 2}]
-            )
-
-            async def save_round(*args, **kwargs):
-                rn = args[4]  # (semaphore, session, league_id, season_id, round_num)
-                return {"events": [_finished_event(100 + rn)], "round": rn}
-
-            fetcher._fetch_and_save_round = AsyncMock(side_effect=save_round)  # type: ignore
-            fetcher._fetch_and_save_event_pages = AsyncMock(return_value=[])  # type: ignore
-
-            with patch(
-                "src.utils.create_session_async",
-                return_value=AsyncMock(
-                    __aenter__=AsyncMock(return_value=MagicMock()),
-                    __aexit__=AsyncMock(return_value=False),
-                ),
-            ):
-                results = await fetcher.fetch_all_rounds_async(17, 96668, max_round=50)
+            results = await self._rounds(fetcher, 17, 96668, pages, calls)
 
             self.assertEqual(len(results), 2)
-            fetcher._fetch_and_save_event_pages.assert_not_awaited()  # type: ignore
-            calls = fetcher._fetch_and_save_round.await_args_list  # type: ignore
-            self.assertEqual(len(calls), 2)
-            self.assertTrue(all(c.kwargs.get("slug") is None for c in calls))
+            self.assertEqual(sorted(calls), [f"{base}/events/round/1", f"{base}/events/round/2", f"{base}/rounds"])
 
     async def test_cup_slug_passed_for_week_entry(self):
         with tempfile.TemporaryDirectory() as tmp:
             fetcher = self._make_fetcher(tmp)
+            base = "/unique-tournament/17/season/1"
+            calls: List[str] = []
+            pages = {f"{base}/rounds": {"rounds": [{"round": 1, "slug": "week-1"}]},
+                     f"{base}/events/round/1/slug/week-1": {"events": [_finished_event(9)]}}
 
-            fetcher._fetch_rounds_metadata = AsyncMock(  # type: ignore
-                return_value=[{"round": 1, "slug": "week-1"}]
-            )
-            seen_slugs: List[Optional[str]] = []
-
-            async def save_round(*args, **kwargs):
-                seen_slugs.append(kwargs.get("slug"))
-                return {"events": [_finished_event(9)], "round": 1}
-
-            fetcher._fetch_and_save_round = AsyncMock(side_effect=save_round)  # type: ignore
-            fetcher._fetch_and_save_event_pages = AsyncMock(return_value=[])  # type: ignore
-
-            with patch(
-                "src.utils.create_session_async",
-                return_value=AsyncMock(
-                    __aenter__=AsyncMock(return_value=MagicMock()),
-                    __aexit__=AsyncMock(return_value=False),
-                ),
-            ):
-                results = await fetcher.fetch_all_rounds_async(17, 1, max_round=50)
+            results = await self._rounds(fetcher, 17, 1, pages, calls)
 
             self.assertEqual(len(results), 1)
-            self.assertEqual(seen_slugs, ["week-1"])
+            self.assertEqual(calls, [f"{base}/rounds", f"{base}/events/round/1/slug/week-1"])
 
     async def test_event_pages_dedupe_and_save(self):
         with tempfile.TemporaryDirectory() as tmp:
             fetcher = self._make_fetcher(tmp)
-            session = MagicMock()
-
+            base = "/unique-tournament/242/season/1"
+            calls: List[str] = []
             pages = {
-                "/unique-tournament/242/season/1/events/last/0": {
-                    "events": [_finished_event(1), _finished_event(2)],
-                    "hasNextPage": True,
-                },
-                "/unique-tournament/242/season/1/events/last/1": {
-                    "events": [_finished_event(2), _finished_event(3)],
-                    "hasNextPage": False,
-                },
+                f"{base}/events/last/0": {"events": [_finished_event(1), _finished_event(2)], "hasNextPage": True},
+                f"{base}/events/last/1": {"events": [_finished_event(2), _finished_event(3)], "hasNextPage": False},
             }
 
-            async def fake_api(session, url, max_retries=None):
-                if "/events/next/" in url:
-                    raise ResourceNotFoundError("404")
-                val = pages.get(url)
-                if val is None:
-                    raise ResourceNotFoundError(url)
-                return val
-
-            with patch("src.utils.make_api_request_async", new=fake_api), patch(
-                "src.utils.FETCH_ONLY_FINISHED", True
-            ):
-                results = await fetcher._fetch_and_save_event_pages(session, 242, 1)
+            results = await self._rounds(fetcher, 242, 1, pages, calls)
 
             ids = []
             for chunk in results:
@@ -195,6 +163,27 @@ class TestFetchStrategyMocked(unittest.IsolatedAsyncioTestCase):
                 self.assertFalse(os.path.exists(os.path.join(tmp, "matches", "242_MLS")))
             finally:
                 store.close()
+
+    async def test_a_failed_round_does_not_stop_the_other_rounds(self):
+        """Eski yüz başarısızlığı sonuçta göstermez (sayfa listesi); tipli sonuç list_schedule'dadır."""
+        with tempfile.TemporaryDirectory() as tmp:
+            fetcher = self._make_fetcher(tmp)
+            base = "/unique-tournament/17/season/5"
+            calls: List[str] = []
+            pages = {f"{base}/rounds": {"rounds": [{"round": 1}, {"round": 2}]},
+                     f"{base}/events/round/1": {"events": [_finished_event(1)]}}
+
+            async def failing(session: Any, url: str, max_retries: Optional[int] = None) -> Any:
+                if url.endswith("/round/2"):
+                    raise APIError("HTTP 500", status_code=500)
+                return await _api(pages, calls)(session, url, max_retries)
+
+            with patch("src.utils.make_api_request_async", new=failing), \
+                    patch("src.utils.create_session_async", return_value=_no_session()), \
+                    patch("src.utils.FETCH_ONLY_FINISHED", True):
+                results = await fetcher.fetch_all_rounds_async(17, 5)
+
+            self.assertEqual([r["round"] for r in results], [1])
 
 
 class TestFinishedAndSeasonYear(unittest.TestCase):
