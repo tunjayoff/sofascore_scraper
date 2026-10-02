@@ -11,8 +11,12 @@ kaynak vardır:
   * v3'ün aylık parçaları `changes/<yyyy>-<aa>.jsonl` (satırın `ts_utc` ayı): satır başına bir JSON nesnesi,
     bayt olarak ve LF satır sonuyla yazılır. `seq` satırın içindedir; yazan onu yazma kilidi altında
     `max(seq) + 1` olarak verir (`append_row`), yeniden kurma satırdakini okur.
+  * Eski dosyanın taşınmış kopyası `changes/0000-legacy.jsonl` (`migrate`, docs/design/01-storage.md 5.4;
+    `copy_legacy`): eski dosyanın baytlarının aynısıdır, bu yüzden sıra numarası yine satır numarasıdır. Kopya
+    varsa eski dosyanın yerini alır: eski dosya artık dizinlenmez (aynı satırlar iki kez sayılmasın) ve
+    `migrate --delete-legacy` onu kopyası doğrulandıktan sonra siler.
 
-Dizinleme sırası: önce eski dosya, sonra parçalar ada göre, her dosyada satır sırasıyla. Aynı `seq` iki
+Dizinleme sırası: önce eski dosya (ya da kopyası), sonra parçalar ada göre, her dosyada satır sırasıyla. Aynı `seq` iki
 satırda geçerse bu sırada önce gelen geçerlidir, öteki `duplicate_seq` sorunu olarak bildirilir ve dizine
 girmez. Bu yalnızca v3 satırları varken eski dosyaya satır eklenirse olur (2.x ve 3.x yazarları aynı dizinde;
 desteklenmez) ve doğrulamanın I7 kuralı bunu yakalar.
@@ -54,6 +58,9 @@ PathLike = Union[str, "os.PathLike[str]"]
 Row = Dict[str, Any]
 
 LEGACY_SEGMENT = legacy.CHANGES_FILE  # `changes.segment`: satırın geldiği dosya, DATA_DIR'e göre
+LEGACY_COPY = f"{layout.CHANGES_DIR}/0000-legacy.jsonl"  # eski dosyanın `migrate` ile taşınmış kopyası
+# Sıra numarası satır numarası olan dosyalar (satırın içinde `seq` yok): eski dosya ve kopyası
+NUMBERED_SEGMENTS: Tuple[str, ...] = (LEGACY_SEGMENT, LEGACY_COPY)
 META_INDEXED = "changes_indexed"  # meta: dosya → dizinlenmiş uzunluğu (JSON; bkz. `_Mark`)
 PROBLEM_SEQ = "duplicate_seq"  # aynı sıra numarası daha önce gelen bir satırda
 
@@ -117,24 +124,33 @@ def is_segment(name: str) -> bool:
     return _SEGMENT_RE.fullmatch(name) is not None
 
 
+def is_numbered(segment: str) -> bool:
+    """Dosyanın satırlarının sıra numarası satır numarası mı (eski dosya ve taşınmış kopyası)."""
+    return segment in NUMBERED_SEGMENTS
+
+
 def segments(data_dir: PathLike, problems: Optional[List[LegacyProblem]] = None) -> List[str]:
     """
     Diskteki günlük dosyaları (DATA_DIR'e göre), dizinleme sırasıyla: eski düzen dosyası (varsa), sonra
-    `changes/` altındaki aylık parçalar ada göre. `changes/` altında adı kurala uymayan girdi bildirilir.
+    `changes/` altındaki aylık parçalar ada göre. Eski dosyanın taşınmış kopyası (`LEGACY_COPY`) varsa eski
+    dosyanın yerine o gelir; eski dosya listelenmez. `changes/` altında adı kurala uymayan girdi bildirilir.
     """
     found: List[str] = []
-    if os.path.isfile(layout.resolve(data_dir, LEGACY_SEGMENT)):
-        found.append(LEGACY_SEGMENT)
     directory = layout.resolve(data_dir, layout.CHANGES_DIR)
+    copy_name = LEGACY_COPY.rsplit("/", 1)[-1]
     try:
         names = sorted(os.listdir(directory))
     except (FileNotFoundError, NotADirectoryError):
-        return found
+        names = []
     except OSError as exc:
         raise StoreError.from_exception(exc, directory, reading=True) from exc
+    if copy_name in names and os.path.isfile(os.path.join(directory, copy_name)):
+        found.append(LEGACY_COPY)
+    elif os.path.isfile(layout.resolve(data_dir, LEGACY_SEGMENT)):
+        found.append(LEGACY_SEGMENT)
     for name in names:
-        if name.startswith("."):
-            continue  # işletim sisteminin gizli dosyaları
+        if name.startswith(".") or name == copy_name:
+            continue  # işletim sisteminin gizli dosyaları; kopya yukarıda
         if is_segment(name) and os.path.isfile(os.path.join(directory, name)):
             found.append(f"{layout.CHANGES_DIR}/{name}")
         elif problems is not None:
@@ -144,8 +160,8 @@ def segments(data_dir: PathLike, problems: Optional[List[LegacyProblem]] = None)
 
 
 def _order(segment: str) -> Tuple[int, str]:
-    """Dizinleme sırası: eski dosya önce, sonra parçalar ada göre."""
-    return (0, "") if segment == LEGACY_SEGMENT else (1, segment)
+    """Dizinleme sırası: eski dosya (ya da kopyası) önce, sonra parçalar ada göre."""
+    return (0, "") if is_numbered(segment) else (1, segment)
 
 
 @dataclass
@@ -220,11 +236,11 @@ def parse_lines(data: bytes, segment: str, *, first_line: int = 1,
     Bir günlük dosyasının `first_line` numaralı satırdan başlayan baytlarını ayrıştırır. Döndürdükleri:
     dizine girebilen satırlar, tüketilen bayt sayısı (son tam satırın sonu) ve tüketilen satır sayısı.
 
-    Eski dosyada `seq` satır numarasıdır; v3 parçasında satırın içindeki `seq` alanıdır (pozitif tam sayı
+    Eski dosyada (ve kopyasında) `seq` satır numarasıdır; v3 parçasında satırın içindeki `seq` alanıdır (pozitif tam sayı
     olmalı). Boş satır atlanır; ayrıştırılamayan, nesne olmayan ya da dizine giremeyen satır bildirilir.
     Satır sonu olmayan son parça yarım kalmış bir yazmadır: tüketilmez ve bildirilir (bölüm 8.5).
     """
-    numbered = segment == LEGACY_SEGMENT
+    numbered = is_numbered(segment)
     parts = data.split(b"\n")
     torn = parts.pop()  # son "\n"den sonrası: tam dosyada boş
     notes: List[LegacyProblem] = problems if problems is not None else []
@@ -375,6 +391,59 @@ def index_all(cat: Catalog, reader: LegacyReader, problems: Optional[List[Legacy
     ada göre. `Catalog.write()` bloğunun içinde çağrılır; dizindeki satır sayısını döndürür.
     """
     return sync(cat, reader.data_dir, problems, full=True) or 0
+
+
+# --- eski dosyanın taşınması (migrate, bölüm 5.4) -----------------------------------------------------
+
+COPY_NONE = "none"  # eski dosya yok
+COPY_CREATED = "created"  # kopya yazıldı
+COPY_EXTENDED = "extended"  # eski dosya kopyadan sonra uzamıştı (2.x satır ekledi): kopya yeniden yazıldı
+COPY_UNCHANGED = "unchanged"  # kopya eski dosyayla aynı
+COPY_CONFLICT = "conflict"  # kopya eski dosyanın başı değil: hiçbir şey yazılmadı
+
+
+def legacy_copy_state(data_dir: PathLike) -> str:
+    """
+    Eski dosya ile taşınmış kopyası arasındaki durum, hiçbir şey yazmadan: `copy_legacy`'nin yapacağı iş
+    (`COPY_CREATED` yazılacak, `COPY_EXTENDED` yeniden yazılacak, `COPY_UNCHANGED`, `COPY_CONFLICT`,
+    `COPY_NONE`).
+    """
+    source = _read(layout.resolve(data_dir, LEGACY_SEGMENT), 0)
+    if source is None:
+        return COPY_NONE
+    copied = _read(layout.resolve(data_dir, LEGACY_COPY), 0)
+    if copied is None:
+        return COPY_CREATED
+    if copied[0] == source[0]:
+        return COPY_UNCHANGED
+    return COPY_EXTENDED if source[0].startswith(copied[0]) else COPY_CONFLICT
+
+
+def copy_legacy(cat: Catalog, data_dir: PathLike, problems: Optional[List[LegacyProblem]] = None) -> str:
+    """
+    Eski dosyayı (`score_changes.jsonl`) baytı baytına `changes/0000-legacy.jsonl`e kopyalar ve günlüğü
+    yeniden dizinler; `Catalog.write()` bloğunun içinde çağrılır. Satır numaraları, dolayısıyla sıra numaraları
+    değişmez. Kopya atomik yazılır ve geri okunarak doğrulanır (uyuşmazlıkta silinir, StoreError). Eski dosya
+    yerinde kalır; kopya varken dizinlenmez (`segments`). Durumu döndürür (`legacy_copy_state`): kopya eski
+    dosyanın başı değilse hiçbir şey yazılmaz (`COPY_CONFLICT`).
+    """
+    state = legacy_copy_state(data_dir)
+    if state in (COPY_CREATED, COPY_EXTENDED):
+        source = _read(layout.resolve(data_dir, LEGACY_SEGMENT), 0)
+        assert source is not None
+        target = layout.resolve(data_dir, LEGACY_COPY)
+        files.write_bytes(target, source[0])
+        if files.read_bytes(target) != source[0]:
+            files.remove(target)
+            raise StoreError(f"Change log copy could not be verified: {target}", path=target,
+                             detail="read-back mismatch")
+    sync(cat, data_dir, problems)
+    return state
+
+
+def legacy_copy_verified(data_dir: PathLike) -> bool:
+    """Taşınmış kopya var ve eski dosyanın baytlarının aynısı mı (eski dosya silinebilir mi)."""
+    return legacy_copy_state(data_dir) == COPY_UNCHANGED
 
 
 # --- ekleme -------------------------------------------------------------------------------------------
@@ -547,10 +616,21 @@ __all__ = [
     "ChangeLog",
     "SegmentLine",
     "LEGACY_SEGMENT",
+    "LEGACY_COPY",
+    "NUMBERED_SEGMENTS",
+    "COPY_NONE",
+    "COPY_CREATED",
+    "COPY_EXTENDED",
+    "COPY_UNCHANGED",
+    "COPY_CONFLICT",
     "META_INDEXED",
     "PROBLEM_SEQ",
     "change_row",
     "is_segment",
+    "is_numbered",
+    "legacy_copy_state",
+    "copy_legacy",
+    "legacy_copy_verified",
     "segments",
     "parse_lines",
     "read_segment",

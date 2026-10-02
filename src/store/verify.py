@@ -176,12 +176,17 @@ def payload_fault(data_dir: str, directory: str, name: str, entry: SliceEntry) -
 
 
 def directory_files(data_dir: str, directory: str) -> List[str]:
-    """Varlık dizinindeki dosyalar, dizine göre "/" ayırıcılı ve sıralı; `_history` alt ağacı hariç."""
+    """
+    Varlık dizinindeki dosyalar, dizine göre "/" ayırıcılı ve sıralı; `_history` ve `_extra` alt ağaçları
+    hariç. `_extra/`, taşınan eski dizinin tanınmayan dosyalarının olduğu gibi kopyasıdır (src/store/migrate.py).
+    """
     root = layout.resolve(data_dir, directory)
     found: List[str] = []
     for base, dirs, names in os.walk(root):
-        if base == root and layout.HISTORY_DIR_NAME in dirs:
-            dirs.remove(layout.HISTORY_DIR_NAME)  # geçmiş dosyaları I8'in konusu
+        if base == root:
+            for skipped in (layout.HISTORY_DIR_NAME, layout.EXTRA_DIR_NAME):
+                if skipped in dirs:
+                    dirs.remove(skipped)  # geçmiş dosyaları I8'in konusu; `_extra` manifestin dışındadır
         prefix = os.path.relpath(base, root).replace(os.sep, "/")
         for name in names:
             found.append(name if prefix == "." else f"{prefix}/{name}")
@@ -310,17 +315,19 @@ class _Run:
     def change_log_faults(self, conn: sqlite3.Connection) -> List[Tuple[str, str, Optional[str]]]:
         """I7: değişiklik günlüğünün v3 parçaları ile dizinleri arasındaki tutarsızlıklar: (tür, açıklama, yol)."""
         found: List[Tuple[str, str, Optional[str]]] = []
-        legacy = changes_mod.LEGACY_SEGMENT
+        numbered = changes_mod.NUMBERED_SEGMENTS  # eski dosya ve kopyası: numara satır numarasıdır
+        marks_of = ", ".join("?" for _ in numbered)
         total, low, high = conn.execute(
-            "SELECT count(*), min(seq), max(seq) FROM changes WHERE segment != ?", (legacy,)).fetchone()
+            f"SELECT count(*), min(seq), max(seq) FROM changes WHERE segment NOT IN ({marks_of})",
+            numbered).fetchone()
         if total and high - low + 1 != total:
             found.append((KIND_SEQ_GAP, f"v3 satırlarının numaraları ardışık değil: {low}-{high} aralığında "
                           f"{total} satır", None))
         marks = changes_mod._load_marks(self.admin.catalog)
-        on_disk = [segment for segment in changes_mod.segments(self.data_dir) if segment != legacy]
+        on_disk = [segment for segment in changes_mod.segments(self.data_dir) if segment not in numbered]
         indexed = {str(row[0]) for row in conn.execute(
-            "SELECT DISTINCT segment FROM changes WHERE segment != ?", (legacy,))}
-        for segment in sorted(set(on_disk) | indexed | {name for name in marks if name != legacy}):
+            f"SELECT DISTINCT segment FROM changes WHERE segment NOT IN ({marks_of})", numbered)}
+        for segment in sorted(set(on_disk) | indexed | {name for name in marks if name not in numbered}):
             if segment not in on_disk:
                 found.append((KIND_SEQ_UNINDEXED, "dizinde satırı var ama dosyası yok", segment))
                 continue

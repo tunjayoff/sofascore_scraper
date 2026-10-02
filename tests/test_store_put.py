@@ -926,7 +926,6 @@ def test_a_seq_given_twice_keeps_the_first_line_in_scan_order(store: Store) -> N
 def test_files_in_the_changes_directory_that_are_no_segment_are_reported(store: Store) -> None:
     store.changes.append(line_of(1))
     directory = Path(store.data_dir) / "changes"
-    (directory / "0000-legacy.jsonl").write_bytes(json.dumps(line_of(2)).encode() + b"\n")
     (directory / "2026-13.jsonl").write_bytes(b"{}\n")
     (directory / "notes.txt").write_bytes(b"x")
     (directory / ".2026-10.jsonl.swp").write_bytes(b"x")
@@ -935,8 +934,7 @@ def test_files_in_the_changes_directory_that_are_no_segment_are_reported(store: 
 
     assert report.changes == 1
     assert sorted((p.path, p.kind) for p in report.problems) == [
-        ("changes/0000-legacy.jsonl", "unknown_name"), ("changes/2026-13.jsonl", "unknown_name"),
-        ("changes/notes.txt", "unknown_name")]
+        ("changes/2026-13.jsonl", "unknown_name"), ("changes/notes.txt", "unknown_name")]
     assert changes_mod.segments(store.data_dir) == ["changes/2026-10.jsonl"]
     assert changes_mod.is_segment("2026-10.jsonl") and not changes_mod.is_segment("2026-00.jsonl")
 

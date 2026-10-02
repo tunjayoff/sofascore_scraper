@@ -41,6 +41,7 @@ BACKUPS_DIR = "backups"
 
 MANIFEST_NAME = "manifest.json"
 HISTORY_DIR_NAME = "_history"
+EXTRA_DIR_NAME = "_extra"  # taşınan eski maç dizininin tanınmayan dosyaları, olduğu gibi (migrate, bölüm 5.4)
 PAYLOAD_SUFFIX = ".json.gz"  # 3.0 yalnızca gzip yazar; okuyucu sonekten seçer (src/store/codec.py)
 HISTORY_SUFFIX = ".jsonl.gz"
 

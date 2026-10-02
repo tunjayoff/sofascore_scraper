@@ -1,0 +1,7 @@
+# src.store.MigrationProgress
+# kaynak: src/store/migrate.py
+@dataclass(frozen=True)
+class MigrationProgress:
+    stage: str
+    done: int
+    total: int

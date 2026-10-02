@@ -18,7 +18,8 @@ gösterir.
 sayfası ya da aynı turnuvanın sezon listesi iki düzende de duruyorsa v3'teki geçerlidir (okuyucuların ve
 yeniden kurmanın kuralı, bölüm 3.4 adım 5). Değişiklik günlüğünde eski dosyanın satırları (sıra numarası satır
 numarası) ile v3 parçalarının satırları (sıra numarası satırın içinde; dökümde satırdan çıkarılır) sıra
-numarasına göre birleşir.
+numarasına göre birleşir. Eski dosyanın taşınmış kopyası (`changes/0000-legacy.jsonl`, ST-23) varsa eski dosyanın
+yerini alır: satırları v3 dökümünden gelir, eski dosyanınkiler sayılmaz.
 
 v3 dökümü dosyaları kendisi okur: durum ve sayaçlar manifestten, yük özeti yük dosyasının kendisinden gelir
 (manifestteki özetten değil), böylece manifesti ile dosyası uyuşmayan bir dilim dökümde de farklı görünür.
@@ -218,6 +219,8 @@ def dump(data_dir: PathLike, league_names: Optional[Mapping[int, str]] = None) -
     for season, pages in new["schedules"].items():
         out["schedules"].setdefault(season, {}).update(pages)
     out["season_lists"].update(new["season_lists"])
+    if changes_mod.LEGACY_COPY in changes_mod.segments(data_dir):
+        out["changes"] = []  # eski dosyanın taşınmış kopyası onun yerini alır; satırları v3 dökümünde
     out["changes"] = sorted(out["changes"] + new["changes"], key=lambda change: change["seq"])
     return out
 

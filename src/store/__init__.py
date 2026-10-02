@@ -71,6 +71,7 @@ if _TYPE_CHECKING:  # tür denetleyicileri ve API anlık görüntüsü adları b
     from src.store.export import Exporter, ExportReport, ExportSkip
     from src.store.backup import BackupCheck, BackupInvalid, BackupNotFound, RestoreRefused, RestoreReport
     from src.store.streams import DEFAULT_PRUNE_MAX_AGE_SECONDS, DEFAULT_PRUNE_MAX_ROWS, SinkCursor
+    from src.store.migrate import MigrationIssue, MigrationPlan, MigrationProgress, MigrationReport, Migrator
 
 _LAZY = {
     "open_store": "src.store.api",
@@ -145,6 +146,11 @@ _LAZY = {
     "SinkCursor": "src.store.streams",
     "DEFAULT_PRUNE_MAX_AGE_SECONDS": "src.store.streams",
     "DEFAULT_PRUNE_MAX_ROWS": "src.store.streams",
+    "Migrator": "src.store.migrate",
+    "MigrationPlan": "src.store.migrate",
+    "MigrationReport": "src.store.migrate",
+    "MigrationProgress": "src.store.migrate",
+    "MigrationIssue": "src.store.migrate",
 }
 
 
@@ -234,6 +240,11 @@ __all__ = [
     "SinkCursor",
     "DEFAULT_PRUNE_MAX_AGE_SECONDS",
     "DEFAULT_PRUNE_MAX_ROWS",
+    "Migrator",
+    "MigrationPlan",
+    "MigrationReport",
+    "MigrationProgress",
+    "MigrationIssue",
     "StoreError",
     "LeaseHeld",
     "StoreBusy",
