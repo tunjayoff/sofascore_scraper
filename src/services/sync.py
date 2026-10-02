@@ -2,12 +2,14 @@
 Eşitleme servisi: seçilen ligleri, sezonları ve maçları indirir (docs/design/02-services.md 2.7).
 
 Bugünkü web işinin akışını taşır (src/web/fetch_job.py'den buraya geldi): sezon listeleri → maç listeleri →
-maç detayları → CSV. Akış modül değişkenleri yerine bir iş tutamacıyla (JobHandle) konuşur: iptal sorusu,
+maç detayları. Akış modül değişkenleri yerine bir iş tutamacıyla (JobHandle) konuşur: iptal sorusu,
 ilerleme (JobProgress), iş günlüğü satırı. Tutamaç verilmezse iş kaydı olmadan çalışır.
 
-Komut satırı da aynı servisi çağırır (main.py: `--headless --update-all` ve `--refresh-only`). Onun iki farkı
-belirtimdedir: CSV aşaması istenmedikçe çalışmaz (`SyncSpec.export`) ve yalnızca yenileme ayrı bir kiptir
-(`mode="refresh"`: kayıtlı geçici maçların /event'i yeniden okunur, başka istek atılmaz).
+Komut satırı da aynı servisi çağırır (main.py: `--headless --update-all` ve `--refresh-only`); yalnızca yenileme
+ayrı bir kiptir (`mode="refresh"`: kayıtlı geçici maçların /event'i yeniden okunur, başka istek atılmaz).
+
+İşin sonunda CSV yazılmaz (karar D9, plan maddesi EX-1): dışa aktarma istendiğinde üretilir
+(src/services/export.py; web'de `GET /api/export/csv`, komut satırında `--csv-export`).
 
 İşin tek bir devre kesicisi vardır (src/breaker.py). İstek katmanı her isteğin sonucunu ona bildirir; her aşama
 döngüsünde ona bakar. SofaScore engellediğinde kalan lig/sezon/maç için istek atılmaz ve neden iş kartına
@@ -28,7 +30,6 @@ from src.client.context import FetchCancelled, request_context
 from src.jobs.progress import JobProgress
 from src.logger import get_logger
 from src.services.context import ServiceContext
-from src.services.export import export_all_csv
 
 logger = get_logger("SyncService")
 
@@ -36,11 +37,10 @@ SyncMode = Literal["full", "details", "refresh"]
 SyncState = Literal["succeeded", "partial", "cancelled"]
 
 # JobProgress aşamaları, çalıştıkları sırayla
-FULL_PHASES: Tuple[str, ...] = ("seasons", "matches", "details", "export")
-DETAILS_PHASES: Tuple[str, ...] = ("details", "export")
+FULL_PHASES: Tuple[str, ...] = ("seasons", "matches", "details")
+DETAILS_PHASES: Tuple[str, ...] = ("details",)
 # Yalnızca yenileme: kayıtlı maçlar yeniden okunur; ilerleme detay aşamasının sayacıyla gösterilir
 REFRESH_PHASES: Tuple[str, ...] = ("details",)
-EXPORT_PHASE = "export"
 
 # (lig, sezon, sezon adı): maç listesi aşamasının bir adımı
 SeasonStep = Tuple[int, int, Optional[str]]
@@ -67,12 +67,12 @@ class SyncSpec:
     """
     Ne indirilecek.
 
-    mode        "full": sezon listeleri + maç listeleri + detaylar + CSV; "details": yalnızca detaylar + CSV;
-                "refresh": yalnızca kayıtlı geçici maçların yenilenmesi (`selections` ve `export` okunmaz)
+    mode        "full": sezon listeleri + maç listeleri + detaylar; "details": yalnızca detaylar;
+                "refresh": yalnızca kayıtlı geçici maçların yenilenmesi (`selections` okunmaz)
     league_id   tek lig; yoksa yapılandırılmış bütün ligler. `selections` varsa okunmaz.
     selections  hedefli seçimler; boşsa `league_id` geçerlidir
-    export      son aşamada birleşik CSV yazılsın mı. Web işi her zaman yazar; komut satırı yalnızca
-                `--csv-export` verildiğinde, kendi adımı olarak yazar.
+    export      okunmaz. CSV aşaması kalktı (EX-1); alan, onu veren çağıranlar ve iş kayıtlarında saklanmış
+                belirtimler geçerli kalsın diye duruyor ve belirtim `targets`/`phases`'e geçerken (P13) kalkar.
     """
 
     mode: SyncMode = "full"
@@ -85,8 +85,7 @@ class SyncSpec:
         """Bu işin geçeceği JobProgress aşamaları (tutamacın ilerleme nesnesi bunlarla kurulur)."""
         if self.mode == "refresh":
             return REFRESH_PHASES
-        phases = DETAILS_PHASES if self.mode == "details" else FULL_PHASES
-        return phases if self.export else tuple(p for p in phases if p != EXPORT_PHASE)
+        return DETAILS_PHASES if self.mode == "details" else FULL_PHASES
 
 
 @dataclass(frozen=True)
@@ -299,13 +298,6 @@ class _SyncRun:
 
         if cancelled():
             return self.result(cancelled=True)
-
-        # 4. CSV (komut satırı bu aşamayı istemez: `--csv-export` onun ayrı adımıdır)
-        if spec.export:
-            tracker.start_phase(EXPORT_PHASE, 1)
-            job.log("Exporting data to CSV...")
-            export_all_csv(self.ctx)
-            tracker.advance(1)
         return self.result(cancelled=False)
 
     def _refresh(self) -> SyncResult:

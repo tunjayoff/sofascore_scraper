@@ -1,7 +1,7 @@
 """
 Komut satırının çağırdığı servisler (plan maddesi P10; docs/design/02-services.md 2.7):
 
-  * SyncSpec.export: CSV aşaması isteğe bağlıdır (web işi her zaman yazar, komut satırı `--update-all`da yazmaz);
+  * SyncSpec.export: okunmaz; işin CSV aşaması yok (EX-1: dışa aktarma istendiğinde üretilir);
   * SyncService'in yalnızca yenileme kipi (`mode="refresh"`): `main.py --refresh-only`nin satır içi kodundan taşınan
     çağrı sırası, sayılar, devre kesici, iptal ve depolama hatası;
   * MaintenanceService.recheck_unavailable: "yok" işaretlerinin yeniden denetimi.
@@ -153,10 +153,11 @@ def make_ctx(md: Any, *, seasons: Any = None, schedule: Any = None) -> Any:
 # --- SyncSpec: aşamalar ------------------------------------------------------------------------------
 
 
-def test_the_export_phase_is_part_of_the_job_unless_switched_off() -> None:
+def test_the_job_has_no_export_phase_whatever_the_export_switch_says() -> None:
+    """CSV aşaması kalktı (EX-1, karar D9); `export` alanı eski çağıranlar için duruyor ve okunmuyor."""
     assert SyncSpec().export is True
-    assert SyncSpec().job_phases == FULL_PHASES == ("seasons", "matches", "details", "export")
-    assert SyncSpec(mode="details").job_phases == DETAILS_PHASES == ("details", "export")
+    assert SyncSpec().job_phases == FULL_PHASES == ("seasons", "matches", "details")
+    assert SyncSpec(mode="details").job_phases == DETAILS_PHASES == ("details",)
     assert SyncSpec(export=False).job_phases == ("seasons", "matches", "details")
     assert SyncSpec(mode="details", export=False).job_phases == ("details",)
 
@@ -166,24 +167,22 @@ def test_refresh_mode_has_one_phase_whatever_the_export_switch_says() -> None:
     assert SyncSpec(mode="refresh", export=False).job_phases == ("details",)
 
 
-# --- CSV aşaması isteğe bağlı ------------------------------------------------------------------------
+# --- CSV aşaması yok ---------------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("export, expected_calls", [(True, 1), (False, 0)])
-def test_the_csv_phase_runs_only_when_the_spec_asks_for_it(
-    monkeypatch: pytest.MonkeyPatch, export: bool, expected_calls: int
-) -> None:
+@pytest.mark.parametrize("export", [True, False])
+def test_no_csv_is_written_whatever_the_spec_says(monkeypatch: pytest.MonkeyPatch, export: bool) -> None:
     exported: List[Any] = []
-    monkeypatch.setattr("src.services.sync.export_all_csv", exported.append)
+    monkeypatch.setattr("src.services.export.export_all_csv", exported.append)
     ctx = make_ctx(FakeRefresher())
     spec = SyncSpec(mode="details", league_id=17, export=export)
     handle = RecordingHandle(spec)
 
     result = SyncService(ctx).run(spec, handle=handle)
 
-    assert len(exported) == expected_calls
-    assert ("Exporting data to CSV..." in handle.lines) is export
-    assert ("export" in handle.phases) is export
+    assert exported == []
+    assert "Exporting data to CSV..." not in handle.lines
+    assert "export" not in handle.phases
     assert (result.state, result.refresh) == ("succeeded", None)
 
 
@@ -191,7 +190,7 @@ def test_a_run_without_a_handle_and_without_export_never_starts_the_export_phase
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Tutamaçsız çalıştırmanın ilerleme nesnesi `job_phases` ile kurulur: "export" aşaması onda yoktur."""
-    monkeypatch.setattr("src.services.sync.export_all_csv", lambda ctx: pytest.fail("export must not run"))
+    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: pytest.fail("export must not run"))
 
     result = SyncService(make_ctx(FakeRefresher())).run(SyncSpec(mode="details", export=False))
 
@@ -205,7 +204,7 @@ def test_a_run_without_a_handle_and_without_export_never_starts_the_export_phase
 
 def test_refresh_mode_reproduces_the_call_order_of_the_cli(monkeypatch: pytest.MonkeyPatch) -> None:
     """begin_job_cache → refresh_due_ids → refresh_matches → end_job_cache; başka hiçbir indirici çağrılmaz."""
-    monkeypatch.setattr("src.services.sync.export_all_csv", lambda ctx: pytest.fail("export must not run"))
+    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: pytest.fail("export must not run"))
     md = FakeRefresher(due=["1", "2", "3"], stats={"refreshed": 2, "changed": 1, "failed": 1})
     md.changed_ids = ("2",)
 

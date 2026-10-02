@@ -61,7 +61,6 @@
   "match_details/17_Premier_League/season_Premier_League_24_25/9100003/pregame_form.json": "sha256:23d266be170d",
   "match_details/17_Premier_League/season_Premier_League_24_25/9100003/statistics.json": "sha256:6fec673fa7f1",
   "match_details/17_Premier_League/season_Premier_League_24_25/9100003/team_streaks.json": "sha256:875eb2f1ef52",
-  "match_details/processed/all_matches_<epoch>.csv": "sha256:bbb79fb45fde",
   "matches/17_Premier_League/52186_Premier_League_23_24_summary.csv": "sha256:3faf0d3448a3",
   "matches/17_Premier_League/61627_Premier_League_24_25_summary.csv": "sha256:275d72357445",
   "v3/tournaments/17/manifest.json": {
@@ -147,7 +146,6 @@
     "[Running] Fetching matches: league 17, season 52186",
     "[Running] Checking which matches need details...",
     "[Running] Fetching match details: league all (4 matches)…",
-    "[Running] Exporting data to CSV...",
     "[Completed] Background Task Completed Successfully."
    ],
    "matches_done": 4,
@@ -156,8 +154,7 @@
    "phases": [
     "seasons",
     "matches",
-    "details",
-    "export"
+    "details"
    ],
    "progress": 100,
    "result": {
@@ -182,7 +179,6 @@
     "[Running] Fetching matches: league 17, season 52186",
     "[Running] Checking which matches need details...",
     "[Running] Fetching match details: league 17 (4 matches)…",
-    "[Running] Exporting data to CSV...",
     "[Completed] Background Task Completed Successfully."
    ],
    "matches_done": 4,
@@ -191,8 +187,7 @@
    "phases": [
     "seasons",
     "matches",
-    "details",
-    "export"
+    "details"
    ],
    "progress": 100,
    "result": {
@@ -218,7 +213,6 @@
     "[Running] Fetching matches: league 17, season 52186",
     "[Running] Checking which matches need details...",
     "[Running] Fetching match details: league 17 (4 matches)…",
-    "[Running] Exporting data to CSV...",
     "[Completed] Background Task Completed Successfully."
    ],
    "matches_done": 4,
@@ -227,8 +221,7 @@
    "phases": [
     "seasons",
     "matches",
-    "details",
-    "export"
+    "details"
    ],
    "progress": 100,
    "result": {

@@ -17,9 +17,7 @@
   "request_layer_loaded": true,
   "requests": [],
   "sleeps": {},
-  "stderr": [
-   "<progress> Maçlar işleniyor: 0"
-  ],
+  "stderr": [],
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
@@ -31,8 +29,9 @@
    "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO Main: Running in headless mode",
    "LOG INFO Main: Starting CSV export",
-   "LOG INFO MatchDataFetcher: Toplam 0 maç CSV'ye dönüştürülüyor...",
-   "LOG WARNING MatchDataFetcher: İşlenecek maç verisi bulunamadı",
+   "LOG INFO Store: state.db migration applied: 0001_initial",
+   "LOG INFO Store: state.db migration applied: 0002_job_manager",
+   "LOG WARNING ExportService: No downloaded match to export to CSV",
    "Error occurred while creating CSV file."
   ]
  },
@@ -51,17 +50,14 @@
   "request_layer_loaded": true,
   "requests": [],
   "sleeps": {},
-  "stderr": [
-   "<progress> Maçlar işleniyor: 4/4"
-  ],
+  "stderr": [],
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO Main: Running in headless mode",
    "LOG INFO Main: Starting CSV export",
-   "LOG INFO MatchDataFetcher: Toplam 4 maç CSV'ye dönüştürülüyor...",
-   "LOG INFO MatchDataFetcher: Tüm maçlar için CSV dosyası oluşturuldu: <SANDBOX>/data/match_details/processed/all_matches_<epoch>.csv",
+   "LOG INFO ExportService: CSV export of 4 matches written: <SANDBOX>/data/match_details/processed/all_matches_<epoch>.csv",
    "CSV file successfully created: <SANDBOX>/data/match_details/processed/all_matches_<epoch>.csv"
   ]
  }

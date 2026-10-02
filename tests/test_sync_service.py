@@ -8,7 +8,7 @@ test_storage_errors.py ile sabitlidir. Burada servis tek başına, bir iş depos
   * katman: src/web terminal arayüzünü, src/services hiçbir yüzü içe aktarmaz;
   * build_context: veri dizinleri ve üç indirici;
   * SyncService.run: aşamalar, detay planı, iptal, devre kesici, sonuç, istek bağlamının geri alınması;
-  * export_all_csv: menü metni yazdırmaz, hatayı yutar;
+  * export_all_csv: menü metni yazdırmaz, hatayı yutar; işin CSV aşaması yoktur (EX-1);
   * web bağdaştırıcısı: istek → SyncSpec, konsol satırları, iptal kontrolünün iş bitince geri alınması;
   * lig araması API kökünü istemciden alır.
 
@@ -377,8 +377,8 @@ def test_spec_defaults_and_phases() -> None:
     spec = SyncSpec()
 
     assert (spec.mode, spec.league_id, spec.selections) == ("full", None, ())
-    assert spec.job_phases == FULL_PHASES == ("seasons", "matches", "details", "export")
-    assert SyncSpec(mode="details").job_phases == DETAILS_PHASES == ("details", "export")
+    assert spec.job_phases == FULL_PHASES == ("seasons", "matches", "details")
+    assert SyncSpec(mode="details").job_phases == DETAILS_PHASES == ("details",)
     assert SyncSelection(league_id=17) == SyncSelection(league_id=17, season_ids=(), match_ids=())
     with pytest.raises(dataclasses.FrozenInstanceError):
         spec.mode = "details"  # type: ignore[misc]
@@ -387,7 +387,7 @@ def test_spec_defaults_and_phases() -> None:
 # --- SyncService.run: tam kip ------------------------------------------------------------------------
 
 
-def test_full_run_of_one_league_goes_through_the_four_phases(
+def test_full_run_of_one_league_goes_through_the_three_phases(
     config: ConfigManager, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     seasons = FakeSeasons({17: [{"id": 1, "name": "PL 24/25"}, {"id": 2, "year": "23/24"}, {"name": "no id"}]})
@@ -403,16 +403,15 @@ def test_full_run_of_one_league_goes_through_the_four_phases(
     assert schedule.calls == [(17, 1), (17, 2)]
     assert details.collected == [("17", None)]  # tek lig, tüm sezonlar
     assert details.fetched == [["a", "b"]] and details.cache_events == ["begin", "end"]
-    assert details.exports == 1
+    assert details.exports == 0  # CSV aşaması yok (EX-1)
     assert handle.lines == [
         "Refreshing season list for league 17...",
         "Fetching matches: league 17, season 1",
         "Fetching matches: league 17, season 2",
         "Checking which matches need details...",
         "Fetching match details: league 17 (2 matches)…",
-        "Exporting data to CSV...",
     ]
-    assert handle.phases == ["seasons", "matches", "details", "export"]
+    assert handle.phases == ["seasons", "matches", "details"]
     assert ("publish", {"schedule_empty_seasons": 0}) in handle.events
     assert result == SyncResult(
         state="succeeded", schedule_empty_seasons=0, breaker=None, progress=handle.progress.result()
@@ -500,7 +499,6 @@ def test_a_selection_without_seasons_fetches_no_schedule_and_no_details(
     assert handle.lines == [
         "Refreshing season list for league 17...",
         "Checking which matches need details...",
-        "Exporting data to CSV...",
     ]
     assert result.state == "succeeded" and result.schedule_empty_seasons == 0
 
@@ -561,7 +559,7 @@ def test_details_mode_skips_the_listing_phases(config: ConfigManager, monkeypatc
     result = SyncService(ctx).run(spec, handle=handle)
 
     assert seasons.fetched == [] and schedule.calls == []
-    assert handle.phases == ["details", "export"]
+    assert handle.phases == ["details"]
     assert details.collected == [("17", None)] and details.fetched == [["a"]]
     assert not any(kind == "publish" for kind, _ in handle.events)
     assert result.state == "succeeded" and result.schedule_empty_seasons == 0
@@ -597,7 +595,7 @@ def test_selected_matches_are_fetched_once_each_and_failures_name_their_league(
 
     assert details.batches == [[1, 2, 3]]
     assert details.collected == [] and details.cache_events == []
-    assert handle.lines == ["Fetching details for 3 selected matches...", "Exporting data to CSV..."]
+    assert handle.lines == ["Fetching details for 3 selected matches..."]
     assert result.progress["failed"] == [{"match_id": "3", "league_id": 8}]
     assert result.state == "partial" and result.breaker is None
     assert result.progress["details_done"] == 3 and result.progress["details_total"] == 3
@@ -626,7 +624,7 @@ def test_selections_without_matches_do_nothing_in_details_mode(
     result = SyncService(ctx).run(spec)
 
     assert details.batches == [] and details.collected == [] and details.fetched == []
-    assert details.exports == 1 and result.state == "succeeded"
+    assert details.exports == 0 and result.state == "succeeded"
 
 
 def test_run_without_a_handle_works_and_reports_the_result(
@@ -649,7 +647,7 @@ def test_detached_handle_cannot_be_cancelled_and_keeps_progress_to_itself() -> N
     handle.log("a line")
 
     assert handle.cancelled() is False and handle.id == ""
-    assert handle.progress.phases == ["details", "export"]
+    assert handle.progress.phases == ["details"]
 
 
 # --- yenileme sayacı, istek bağlamı ------------------------------------------------------------------
@@ -713,7 +711,7 @@ def test_a_breaker_reported_by_the_detail_fetcher_stops_the_remaining_leagues(
     # İşin kesicisi açılmadı: neden indiricinin sayımından gelir (en sık görülen 403 / 429 / 5xx)
     assert result.breaker == "429" and result.state == "partial"
     assert handle.lines.count("Too many failed requests (429); stopped fetching match details.") == 1
-    assert details.exports == 1  # CSV yine de üretilir
+    assert details.exports == 0  # CSV aşaması yok (EX-1)
     assert details.cache_events == ["begin", "end"]
 
 
@@ -755,7 +753,7 @@ def test_an_open_breaker_stops_every_later_phase_and_is_reported_once(
     assert result.breaker == "403" and result.state == "partial"
     # Hiçbir maç listesi istenmedi: "boş sezon" sayılmaz, "hiç maç yok" satırı yazılmaz
     assert result.schedule_empty_seasons == 0
-    assert details.exports == 1
+    assert details.exports == 0
 
 
 # --- iptal -------------------------------------------------------------------------------------------
@@ -858,7 +856,7 @@ def test_export_swallows_and_logs_an_error_like_the_menu_step_did(
     assert len(logged) == 1 and logged[0].startswith("CSV export failed: ")
 
     result = SyncService(ctx).run(SyncSpec(mode="details", league_id=17))
-    assert result.state == "succeeded" and details.exports == 2
+    assert result.state == "succeeded" and details.exports == 1  # işin CSV aşaması yok (EX-1)
 
 
 def test_export_lets_a_cancel_through(config: ConfigManager, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -942,7 +940,7 @@ def test_the_first_job_log_line_names_the_target() -> None:
     )
 
 
-def test_web_job_prints_its_two_console_lines_and_no_menu_text(
+def test_web_job_prints_its_console_line_and_no_menu_text(
     web_job: Any, capsys: pytest.CaptureFixture[str]
 ) -> None:
     from src.i18n import get_i18n
@@ -951,13 +949,10 @@ def test_web_job_prints_its_two_console_lines_and_no_menu_text(
 
     assert final["status"] == "Completed" and final["progress"] == 100
     assert final["log"][0] == "[Running] Starting fetch for 17"
-    assert final["log"][-2:] == [
-        "[Running] Exporting data to CSV...",
-        "[Completed] Background Task Completed Successfully.",
-    ]
+    assert final["log"][-1] == "[Completed] Background Task Completed Successfully."
+    assert not any("CSV" in line for line in final["log"])
     out = capsys.readouterr().out
     assert [line for line in out.splitlines() if line.startswith("-->")] == [
-        "--> Exporting to CSV...",
         "--> Background Task Completed Successfully.",
     ]
     i18n = get_i18n()

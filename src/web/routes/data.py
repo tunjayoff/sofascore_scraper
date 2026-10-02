@@ -2,13 +2,12 @@
 from __future__ import annotations
 
 import asyncio
-import glob
 import os
 import re
+import time
 import traceback
 from typing import Any, Callable, Dict, Literal, Optional
 
-import pandas as pd
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -144,44 +143,29 @@ def _clear_data_sync(scope: str) -> dict:
     return {"status": "success", "cleared": list(report.cleared)}
 
 
-def _export_csv_sync(league_id: Optional[int], data_dir: str, generate: bool = False):
-    from fastapi.responses import FileResponse, Response
+def _export_csv_sync(league_id: Optional[int], data_dir: str):
+    """
+    CSV dışa aktarımını istekte üretir ve akıtır (ExportService, `legacy-wide-csv` profili); hiçbir dosya yazmaz
+    (karar D16). Maçlar katalogdan bulunur, yükler depodan okunur: iki düzen de (eski ağaç ve v3) dahildir.
+    """
+    from fastapi.responses import StreamingResponse
 
-    csv_dir = os.path.join(data_dir, "match_details", "processed")
-    pattern = os.path.join(csv_dir, "all_matches_*.csv")
-    files = glob.glob(pattern)
+    from src.services.export import ExportService, ExportSpec
 
-    if not files and not generate:
-        raise _SyncHttpError(404, "No CSV export yet. Create it with POST /api/export/csv or run a download.")
-
-    if not files:
-        # İndiricileri (ve onlarla istek katmanını) yalnızca gerektiğinde yükle
-        from src.services.context import build_context
-        from src.services.export import export_all_csv
-
-        try:
-            export_all_csv(build_context(config_manager))
-            files = glob.glob(pattern)
-        except Exception as e:
-            logger.error(f"CSV export failed: {e}")
-            raise _SyncHttpError(500, "CSV generation failed") from e
-
-    if not files:
+    try:
+        prepared = ExportService(store_hooks.open_store(data_dir)).prepare(ExportSpec(league_id=league_id))
+    except Exception as e:
+        logger.error(f"CSV export failed: {e}")
+        raise _SyncHttpError(500, "CSV generation failed") from e
+    if not prepared.available:
         raise _SyncHttpError(404, "No CSV data available. Run a fetch first.")
-
-    latest = max(files, key=os.path.getctime)
-    if not league_id:
-        return FileResponse(latest, filename=os.path.basename(latest), media_type="text/csv")
-
-    # Tek lig: birleşik dosyadan satırları lig klasörüne (`{id}_{ad}`) göre süz
-    df = pd.read_csv(latest, low_memory=False)
-    if "league_folder" in df.columns:
-        df = df[df["league_folder"].astype(str).str.startswith(f"{league_id}_")]
-    if df.empty:
+    if not prepared.rows:
         raise _SyncHttpError(404, f"No exported matches for league {league_id}.")
-    filename = f"league_{league_id}_{os.path.basename(latest)}"
-    return Response(
-        content=df.to_csv(index=False),
+    filename = f"all_matches_{int(time.time())}.csv"
+    if league_id:
+        filename = f"league_{league_id}_{filename}"
+    return StreamingResponse(
+        prepared.chunks(),
         media_type="text/csv",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
@@ -248,8 +232,8 @@ async def clear_data(req: ClearRequest):
 @router.get("/export/csv")
 async def export_csv(league_id: Optional[int] = None):
     """
-    Var olan CSV dışa aktarımını indirir; salt okunur. Dışa aktarım yoksa 404: GET hiçbir şey
-    üretmez (bir bağlantı ya da başka bir sitedeki <img> diske dosya yazdıramaz). Üretmek için POST.
+    İndirilmiş maçların CSV dışa aktarımı, istekte üretilir; salt okunur, diske hiçbir şey yazmaz.
+    league_id: yalnızca o ligin lig dizinindeki maçlar. İndirilmiş maç yoksa 404.
     """
     data_dir = config_manager.get_data_dir()
     try:
@@ -260,9 +244,9 @@ async def export_csv(league_id: Optional[int] = None):
 
 @router.post("/export/csv")
 async def create_csv_export(league_id: Optional[int] = None):
-    """CSV dışa aktarımı yoksa indirilmiş maçlardan üretir (diske yazar), sonra dosyayı döndürür."""
+    """GET /api/export/csv ile aynı yanıt (bir sürüm boyunca takma ad); diske hiçbir şey yazmaz."""
     data_dir = config_manager.get_data_dir()
     try:
-        return await asyncio.to_thread(_export_csv_sync, league_id, data_dir, True)
+        return await asyncio.to_thread(_export_csv_sync, league_id, data_dir)
     except _SyncHttpError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)

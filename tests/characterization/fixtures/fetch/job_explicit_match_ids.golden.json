@@ -77,23 +77,20 @@
    "change_ts": 1720972800,
    "observed_at_utc": "<volatile>"
   },
-  "match_details/2361_Wimbledon/season_Wimbledon_2024/9200001/statistics.json": "sha256:f425c1323009",
-  "match_details/processed/all_matches_<epoch>.csv": "sha256:b396fb009114"
+  "match_details/2361_Wimbledon/season_Wimbledon_2024/9200001/statistics.json": "sha256:f425c1323009"
  },
  "job": {
   "circuit_breaker_triggered": false,
   "log": [
    "[Running] Starting fetch for 2 targeted selection(s)",
    "[Running] Fetching details for 4 selected matches...",
-   "[Running] Exporting data to CSV...",
    "[Completed] Background Task Completed Successfully."
   ],
   "matches_done": 4,
   "matches_failed": 1,
   "matches_total": 4,
   "phases": [
-   "details",
-   "export"
+   "details"
   ],
   "progress": 100,
   "result": {

@@ -256,7 +256,7 @@ def test_web_job_fails_with_a_clear_message_on_enospc(tmp_path, monkeypatch):
     # Servis bağlamının (ServiceContext) yerini tutar; CSV adımı çağrılırsa `exported`a yazılır
     ctx = SimpleNamespace(config=fj.config_manager, match_data_fetcher=FullDisk())
     monkeypatch.setattr(fj, "build_context", lambda config_manager: ctx)
-    monkeypatch.setattr("src.services.sync.export_all_csv", lambda ctx: exported.append(True))
+    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: exported.append(True))
     req = FetchRequest(mode="details", league_id=17)
     fj.run_fetch_job(store.create_running(req.model_dump()), req)
 

@@ -691,6 +691,26 @@ class MatchDataMenuHandler:
             logger.error(f"Tüm maç detaylarını çekerken hata: {str(e)}")
             print(f"\n{self.i18n.t('error_with_message', error=str(e))}")
 
+    def _export_csv(self, *, match_id: Optional[str] = None, league_id: Optional[int] = None) -> Any:
+        """
+        CSV dosyasını dışa aktarma servisi yazar (`legacy-wide-csv`, `match_details/processed/` altına): tek maç ve
+        bütün maçlar için birleşik dosyanın yolu, bir lig için lig başına dosyaların yolları. Yazılacak maç yoksa
+        None (lig için boş liste).
+        """
+        from src.services.export import ExportService, ExportSpec
+        from src.store import open_store
+
+        if match_id is not None and not match_id.isdigit():
+            return None  # maç kimliği olamaz: bulunamayan maç gibi
+        fetcher = self.match_data_fetcher
+        service = ExportService(open_store(fetcher.data_dir))
+        if league_id is not None:
+            spec = ExportSpec(tournament_ids=(int(league_id),))
+            return [r.path for r in service.write_legacy_csv_by_league(fetcher.processed_dir, spec) if r.path]
+        spec = ExportSpec(event_ids=(int(match_id),)) if match_id is not None else ExportSpec()
+        written = service.write_legacy_csv(fetcher.processed_dir, spec)
+        return written.path if written is not None else None
+
     def convert_to_csv(self, scope: str = "interactive") -> None:
         """
         Maç verilerini CSV formatına dönüştürür.
@@ -724,7 +744,7 @@ class MatchDataMenuHandler:
                     print(f"\n❌ {self.i18n.t('valid_match_id_not_found')}")
                     return
 
-                result = self.match_data_fetcher.convert_match_to_csv(match_id)
+                result = self._export_csv(match_id=match_id)
 
                 if result:
                     csv_path = result
@@ -762,7 +782,7 @@ class MatchDataMenuHandler:
 
                     print(f"\n'{league_name}' (ID: {league_id}) {self.i18n.t('creating_csv_for')}")
 
-                    result = self.match_data_fetcher.convert_league_matches_to_csv(league_id)
+                    result = self._export_csv(league_id=league_id)
 
                     if result:
                         csv_paths = result
@@ -778,7 +798,7 @@ class MatchDataMenuHandler:
 
             # Tüm ligler için CSV
             elif option == "3":
-                result = self.match_data_fetcher.convert_all_matches_to_csv()
+                result = self._export_csv()
 
                 if isinstance(result, list):
                     print(f"\n{self.i18n.t('csv_files_created_for_leagues', count=len(result))}")

@@ -310,31 +310,22 @@ def test_remote_league_search_is_post_only(monkeypatch):
     assert calls and all("search/unique-tournaments/premier" in url for url in calls)
 
 
-def test_csv_export_get_only_downloads_and_post_creates(tmp_path, monkeypatch):
+def test_csv_export_get_and_post_compute_the_export_and_write_no_file(tmp_path, monkeypatch):
+    """EX-1 (karar D16): GET dışa aktarmayı istekte üretir ve hiçbir dosya yazmaz; POST bir sürüm boyunca aynı yanıttır."""
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     processed = tmp_path / "match_details" / "processed"
-    generated = []
+    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: pytest.fail("a route wrote an export file"))
 
-    def fake_export(ctx):
-        generated.append(1)
-        processed.mkdir(parents=True, exist_ok=True)
-        (processed / "all_matches_20260101.csv").write_text("match_id,league_folder\n1,17_Premier_League\n", encoding="utf-8")
-
-    monkeypatch.setattr("src.services.export.export_all_csv", fake_export)
-
-    # GET: dışa aktarım yokken hiçbir şey üretmez
+    # İndirilmiş maç yok: 404, hiçbir şey üretilmez
     r = client.get("/api/export/csv")
-    assert r.status_code == 404 and "POST /api/export/csv" in r.json()["detail"]
-    assert generated == [] and not processed.exists()
-    # Başka siteden POST: reddedilir, üretilmez
+    assert r.status_code == 404 and r.json()["detail"] == "No CSV data available. Run a fetch first."
+    assert not processed.exists()
+    # Başka siteden POST: reddedilir
     assert client.post("/api/export/csv", headers={"sec-fetch-site": "cross-site"}).status_code == 403
-    assert generated == []
-    # POST: üretir ve dosyayı döndürür; sonraki GET var olanı indirir
+    # POST: GET ile aynı yanıt, dosya yazmaz
     r = client.post("/api/export/csv")
-    assert r.status_code == 200 and r.text.startswith("match_id,league_folder") and generated == [1]
-    r = client.get("/api/export/csv?league_id=17")
-    assert r.status_code == 200 and r.text.strip().splitlines() == ["match_id,league_folder", "1,17_Premier_League"]
-    assert generated == [1]
+    assert r.status_code == 404 and r.json()["detail"] == "No CSV data available. Run a fetch first."
+    assert not processed.exists()
 
 
 # --- 2. Host izin listesi -------------------------------------------------------------------

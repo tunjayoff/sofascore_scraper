@@ -439,7 +439,7 @@ def service(store: JobStore, monkeypatch: pytest.MonkeyPatch) -> _Details:
     ctx = SimpleNamespace(config=common.config_manager, match_data_fetcher=details)
     monkeypatch.setattr("src.services.context.build_context", lambda config_manager: ctx)
     exported: List[Any] = []
-    monkeypatch.setattr("src.services.sync.export_all_csv", lambda ctx: exported.append(ctx))
+    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: exported.append(ctx))
     details.exported = exported  # type: ignore[attr-defined]
     return details
 

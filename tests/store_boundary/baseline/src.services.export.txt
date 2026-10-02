@@ -1,0 +1,6 @@
+# src/services/export.py: Store sınırı ihlalleri (docs/design/01-storage.md bölüm 2.4). Bu liste yalnızca küçülebilir.
+# Bir ihlali gideren PR satırını da siler; açıklama: tests/test_store_boundary.py
+[static]
+_league_csv:DataFrame.to_csv
+_league_csv:pandas.read_csv
+_write_file:open

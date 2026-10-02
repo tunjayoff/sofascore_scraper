@@ -1,6 +1,6 @@
 """Arka plan veri çekme işi: /api/fetch isteğinin seçtiği ligleri, sezonları ve maçları indirir.
 
-Akışın kendisi (sezon listeleri → maç listeleri → maç detayları → CSV, devre kesici, detay planı)
+Akışın kendisi (sezon listeleri → maç listeleri → maç detayları, devre kesici, detay planı)
 src/services/sync.py'dedir; işi yürüten iş yöneticisidir (src/jobs/manager.py: tutamaç, iptal bayrağının
 satırdan okunması, kalp atışı, olay günlüğü, bitiş durumu). Bu modül web yüzünün bağdaştırıcısıdır: isteği
 SyncSpec'e çevirir, işi sürecin iş deposu üzerinde yürütür ve servisin sonucunu işin bitişine ve kart metnine
@@ -26,7 +26,6 @@ from src.services.sync import SyncSelection, SyncService, SyncSpec
 from src.web.routes.common import _job_store, _refresh_scraper_state, config_manager, logger
 
 if TYPE_CHECKING:
-    from src.jobs.progress import JobProgress
     from src.web.routes.scrape import FetchRequest
 
 
@@ -56,30 +55,6 @@ def _summary(payload: "FetchRequest") -> str:
     if payload.selections:
         return f"{len(payload.selections)} targeted selection(s)"
     return str(payload.league_id) if payload.league_id else "All Leagues"
-
-
-class _ConsoleHandle:
-    """Servisin gördüğü iş (src.services.sync.JobHandle): iş yöneticisinin tutamacı ve sunucu konsolundaki satır."""
-
-    def __init__(self, handle: JobHandle) -> None:
-        self._handle = handle
-        self.id = handle.id
-
-    @property
-    def progress(self) -> "JobProgress":
-        return self._handle.progress
-
-    def cancelled(self) -> bool:
-        return self._handle.cancelled()
-
-    def log(self, message: str) -> None:
-        self._handle.log(message)
-        if self.progress.phase == "export":
-            # Sunucu konsolundaki satır (CSV aşaması başlarken); servis yazdırmadığı için burada
-            print("--> Exporting to CSV...")
-
-    def publish(self, fields: Mapping[str, Any]) -> None:
-        self._handle.publish(fields)
 
 
 def _open_store(ctx: Any) -> None:
@@ -118,7 +93,7 @@ def _fetch(handle: JobHandle, payload: "FetchRequest", spec: SyncSpec) -> JobOut
         # geri sayım olur.
         ctx = build_context(config_manager)
         _open_store(ctx)
-        result = SyncService(ctx).run(spec, handle=_ConsoleHandle(handle))
+        result = SyncService(ctx).run(spec, handle=handle)
     except StorageError as e:
         # Kalıcı depolama hatası (disk dolu, izin yok): kalan maçlar da yazılamaz, iş durur
         params = {"path": e.path or "?", "reason": e.detail or str(e)}
@@ -157,7 +132,7 @@ def _fetch(handle: JobHandle, payload: "FetchRequest", spec: SyncSpec) -> JobOut
     else:
         message = "Background Task Completed Successfully."
     print("--> Background Task Completed Successfully.")
-    logger.info("Background update and export completed.")
+    logger.info("Background update completed.")
     # Bitiş durumu servisin sonucudur: devre kesildiyse ya da bir maç indirilemediyse `partial`
     return JobOutcome(
         state=JobState(result.state),
