@@ -24,6 +24,11 @@ Sahip bilgisi (pid, makine, amaç, başlangıç) state.db'nin `leases` tablosuna
 bilgidir; kararı işletim sistemi kilidi verir. Bilgi kilit dosyasına yazılmaz: Windows'ta kilitli baytlar
 başka süreçlerce okunamaz. Tablo yazılamazsa kilit yine alınır (uyarı loglanır).
 
+Kilit dosyaları Store'un öteki dosyaları gibi `files.STORE_FILE_MODE` ile oluşturulur; izni çekirdek
+sürecin umask'ine göre belirler (022 → 0644, 002 → 0664; karar S15). Böylece veri dizinini paylaşan aynı
+gruptan ikinci bir hesap, ilk hesabın oluşturduğu kilit dosyasını açıp kilit alabilir. Var olan bir kilit
+dosyasının izni değiştirilmez; açılamayan dosya, yolunu taşıyan bir StoreError'dur.
+
 Dosya sistemi kilit desteklemiyorsa (ağ paylaşımı: ENOLCK, ENOTSUP) kilit yine "alınır" ve bir kez
 uyarı yazılır: veri dizinini o zaman yalnızca bir süreç kullanmalıdır (bölüm 6.4, WAL açılamadığındaki
 tek süreç kipiyle aynı kural). 2.x'te çalışan bir kurulum bu yüzden iş başlatamaz hale gelmez.
@@ -46,7 +51,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Any, Callable, List, Optional, Set, Tuple, Union
 
-from src.store import layout
+from src.store import files, layout
 from src.store.errors import LayoutError, LeaseHeld, StoreError
 from src.store.state import StateDb
 
@@ -309,7 +314,7 @@ class LeaseManager:
         path = self.lock_file(lock_name)
         try:
             os.makedirs(self.locks_dir, exist_ok=True)
-            return os.open(path, _OPEN_FLAGS, 0o644)
+            return os.open(path, _OPEN_FLAGS, files.STORE_FILE_MODE)
         except OSError as e:
             raise StoreError.from_exception(e, path) from e
 
@@ -405,7 +410,7 @@ class LeaseManager:
         if not os.path.exists(path):
             return False
         try:
-            fd = os.open(path, _OPEN_FLAGS, 0o644)
+            fd = os.open(path, _OPEN_FLAGS, files.STORE_FILE_MODE)
         except OSError:
             return False
         try:

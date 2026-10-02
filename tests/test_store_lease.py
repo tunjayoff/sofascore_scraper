@@ -12,16 +12,17 @@ import contextlib
 import errno
 import gc
 import os
+import stat
 import subprocess
 import sys
 import threading
 import time
 from pathlib import Path
-from typing import Iterator, Optional
+from typing import Iterator, List, Optional
 
 import pytest
 
-from src.store import LayoutError, LeaseHeld, StoreError, layout
+from src.store import LayoutError, LeaseHeld, StoreError, files, layout
 from src.store import jobs as jobs_mod
 from src.store import lease as lease_mod
 from src.store.jobs import DataOperationRunningError, JobRunningError, JobStore, default_db_path
@@ -283,6 +284,128 @@ def test_a_forked_copy_does_not_drop_the_parents_lease(manager):
         manager.acquire("writer")
     lease.release()
     assert manager.holder("writer") is None
+
+
+# --- kilit dosyalarının izni (karar S15; plan maddesi FX-8) ---------------------------------------
+
+WINDOWS = os.name == "nt"
+posix_modes = pytest.mark.skipif(WINDOWS, reason="POSIX dosya izinleri Windows'ta yok")
+UMASKS = [0o022, 0o077, 0o002, 0o027]
+
+
+def _mode(path) -> int:
+    """rwx bitleri; setgid'li bir üst dizinden miras kalabilen özel bitler sayılmaz."""
+    return stat.S_IMODE(os.stat(path).st_mode) & 0o777
+
+
+def _lock_files(manager: LeaseManager) -> List[str]:
+    return sorted(
+        os.path.join(manager.locks_dir, name) for name in os.listdir(manager.locks_dir) if name.endswith(".lock")
+    )
+
+
+@pytest.fixture(params=UMASKS, ids=lambda m: f"umask-{m:03o}")
+def umask(request) -> Iterator[int]:
+    """Testi verilen umask ile çalıştırır, sonra eskisini geri koyar (umask süreç geneli bir ayardır)."""
+    previous = os.umask(request.param)
+    try:
+        yield request.param
+    finally:
+        os.umask(previous)
+
+
+@posix_modes
+def test_new_lock_files_get_the_mode_of_the_umask(tmp_path, umask):
+    """Store'un öteki dosyaları gibi: 022 → 0644, 002 → 0664 (aynı gruptan ikinci hesap kilidi alabilir)."""
+    manager = LeaseManager(tmp_path / "data" / ".meta" / "locks")
+
+    with manager.acquire("watcher:tennis"), manager.acquire("writer"), manager.acquire("sinks"):
+        pass
+
+    created = _lock_files(manager)
+    assert [os.path.basename(path) for path in created] == [
+        "live.lock", "maintenance.lock", "sinks.lock", "watcher-tennis.lock", "writer.lock"]
+    assert {_mode(path) for path in created} == {0o666 & ~umask}
+    assert _mode(manager.locks_dir) == 0o777 & ~umask
+
+
+@posix_modes
+def test_lock_files_of_an_opened_data_directory_follow_the_umask(tmp_path, umask):
+    """İlk açılış: state.db geçişi `maintenance` kilidini alır; o dosya ve iş deposunun yazar kilidi de umask'e uyar."""
+    jobs = JobStore(default_db_path(str(tmp_path / "data")))
+    try:
+        jobs.create_running({"mode": "full"})
+        manager = LeaseManager(jobs_mod.locks_dir_for(jobs.db_path))
+        assert [os.path.basename(path) for path in _lock_files(manager)] == ["maintenance.lock", "writer.lock"]
+        assert {_mode(path) for path in _lock_files(manager)} == {0o666 & ~umask}
+    finally:
+        jobs.close()
+
+
+@posix_modes
+@pytest.mark.parametrize("old_mode", [0o644, 0o600, 0o666])
+def test_an_existing_lock_file_keeps_its_mode(tmp_path, umask, old_mode):
+    """İzin yalnızca dosya oluşturulurken verilir: önceki sürümün 0644 ile oluşturduğu dosyaya chmod yapılmaz."""
+    manager = LeaseManager(tmp_path / "locks")
+    os.makedirs(manager.locks_dir)
+    for name in ("writer", "maintenance"):
+        with open(manager.lock_file(name), "wb"):
+            pass
+        os.chmod(manager.lock_file(name), old_mode)
+
+    with manager.acquire("writer"):
+        assert manager.holder("writer") is not None  # yoklama da dosyayı açar
+
+    assert {_mode(path) for path in _lock_files(manager)} == {old_mode}
+
+
+def test_every_open_of_a_lock_file_asks_for_the_store_file_mode(tmp_path, monkeypatch):
+    """Kilidi alan açılış da, sahibini yoklayan açılış da (dosyayı o an oluşturabilir) aynı izni ister."""
+    manager = LeaseManager(tmp_path / "locks")
+    opened = []
+    real_open = os.open
+
+    def recording_open(path, flags, mode=0o777, **kwargs):
+        if os.fspath(path).endswith(".lock"):
+            opened.append((os.path.basename(path), mode))
+        return real_open(path, flags, mode, **kwargs)
+
+    monkeypatch.setattr(lease_mod.os, "open", recording_open)
+    with manager.acquire("writer"):
+        assert manager.holder("writer") is not None
+    assert manager.holder("writer") is None
+
+    assert files.STORE_FILE_MODE == 0o666
+    assert opened == [
+        ("maintenance.lock", 0o666), ("writer.lock", 0o666),  # acquire
+        ("writer.lock", 0o666), ("writer.lock", 0o666),  # iki yoklama
+    ]
+
+
+@posix_modes
+@pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0, reason="root her dosyayı açabilir")
+@pytest.mark.parametrize("name, unwritable", [("writer", "writer"), ("writer", "maintenance"), ("sinks", "sinks")])
+def test_a_lock_file_the_caller_cannot_open_for_writing_is_a_store_error_that_names_it(tmp_path, name, unwritable):
+    """
+    Başka bir hesabın 0644 ile oluşturduğu kilit dosyası (FX-8 öncesi, ya da umask 022): grup üyesi onu
+    yazmak için açamaz. Kilit verilmez; hata LeaseHeld değildir ve dosyanın yolunu taşır.
+    """
+    manager = LeaseManager(tmp_path / "locks")
+    with manager.acquire(name):
+        pass
+    path = manager.lock_file(unwritable)
+    os.chmod(path, 0o444)  # sahibi için de salt okunur: başka hesabın 0644 dosyasının grup tarafındaki hali
+
+    with pytest.raises(StoreError) as failed:
+        manager.acquire(name)
+
+    assert not isinstance(failed.value, LeaseHeld)
+    assert failed.value.path == path and failed.value.errno == errno.EACCES
+    assert path in str(failed.value)
+    assert manager.holders() == []  # plandaki öteki dosyaların kilidi bırakıldı
+    os.chmod(path, 0o644)
+    with manager.acquire("maintenance"), manager.acquire("sinks"):
+        pass
 
 
 # --- temiz kapanmama işareti ---------------------------------------------------------------------
