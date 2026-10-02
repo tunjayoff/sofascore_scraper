@@ -521,7 +521,6 @@ def _is_full_run(config: "pytest.Config") -> bool:
 
 
 def pytest_configure(config: "pytest.Config") -> None:
-    _resync_before_planning()
     config.addinivalue_line(
         "markers",
         "store_boundary_last: oturumun sonunda çalışır (çalışma zamanı Store sınırı kayıtlarını değerlendirir)",
@@ -562,6 +561,15 @@ def _isolate_request_layer(request, monkeypatch):
 
         monkeypatch.setattr(cs.BrowserBridge, "_launch", _no_real_browser)
     yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _planning_resync() -> None:
+    """
+    `_resync_before_planning`'i oturumun ilk testinden önce kurar. pytest_configure'da değil: ürün modüllerini
+    o kadar erken yüklemek loglamanın konsol akışını değiştirir (Windows'ta stderr'e yazan testler bozuldu).
+    """
+    _resync_before_planning()
 
 
 @pytest.fixture(autouse=True)
