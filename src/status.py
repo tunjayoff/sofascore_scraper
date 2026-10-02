@@ -19,7 +19,8 @@ logger = logging.getLogger(__name__)
 
 class StatusClass(str, Enum):
     NOT_STARTED = "not_started"  # type notstarted (code 0)
-    LIVE = "live"  # type inprogress (6, 7, 8-12, 13-16, 20, 30, 31)
+    # type inprogress (6, 7, 8-12, 13-16, 20, 21, 28, 29, 30, 31, 1001, 1002) ve kriketin gün sonu: willcontinue (141)
+    LIVE = "live"
     COMPLETED = "completed"  # type finished, code 100/110/120 (oynandı ve bitti)
     DECIDED_WITHOUT_PLAY = "decided_without_play"  # type finished, code 91 Walkover / 92 Retired
     VOID = "void"  # type postponed/canceled/interrupted/suspended (60, 70, 80, 81, 90)
@@ -29,10 +30,16 @@ class StatusClass(str, Enum):
 _COMPLETED_CODES = frozenset({100, 110, 120})
 _WITHOUT_PLAY_CODES = frozenset({91, 92})
 # 11 / 12: 4. ve 5. set (masa tenisi, voleybol; SP-2). Tip inprogress olduğundan zaten LIVE sayılıyorlardı;
-# burada yalnızca tipi olmayan yükte fark eder.
-_LIVE_CODES = frozenset({6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 30, 31})
+# burada yalnızca tipi olmayan yükte fark eder. SP-3'te görülenler de öyle: 21 (kriket 1. innings), 28 / 29
+# (beyzbol 8. / 9. inning), 1001 / 1002 (e-spor 1. / 2. oyun) ve 141 (kriket "End of day 1"). Görülmeyen ara
+# kodlar (22-27 gibi) eklenmedi: tipi olmayan yükte UNKNOWN kalırlar.
+_LIVE_CODES = frozenset({6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21, 28, 29, 30, 31, 141, 1001, 1002})
 _VOID_CODES = frozenset({60, 70, 80, 81, 90})
 
+# Çok günlü kriket maçında gün sonu (kod 141 "End of day 1"): maç sürüyor, yalnızca ertesi güne kadar ara
+# veriliyor. Futbolun devre arası (31) gibi LIVE sayılır; böylece kapalı `status.class` sayımına yeni değer
+# gerekmez (docs/design/04-schema-v1.md bölüm 2, madde 8). Plan maddesi SP-3.
+_LIVE_TYPES = frozenset({"inprogress", "willcontinue"})
 _VOID_TYPES = frozenset({"postponed", "canceled", "interrupted", "suspended"})
 
 # Yalnızca type ve code yoksa kullanılır
@@ -78,7 +85,7 @@ def classify_status(event: Optional[Dict[str, Any]]) -> StatusClass:
     if stype:
         if stype == "notstarted":
             return StatusClass.NOT_STARTED
-        if stype == "inprogress":
+        if stype in _LIVE_TYPES:
             return StatusClass.LIVE
         if stype in _VOID_TYPES:
             return StatusClass.VOID

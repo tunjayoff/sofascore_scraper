@@ -153,6 +153,28 @@ def test_description_only_when_type_and_code_missing(rel):
     assert classify_status(event) is expected
 
 
+# --- B sınıfı sporların kodları ve kriketin gün sonu (plan maddesi SP-3) --------------------------
+
+@pytest.mark.parametrize("code", [21, 28, 29, 141, 1001, 1002])
+def test_new_live_codes_are_live_without_a_type(code, caplog):
+    with caplog.at_level("WARNING", logger="src.status"):
+        assert classify_status({"status": {"code": code}}) is StatusClass.LIVE
+    assert caplog.text == ""
+
+
+def test_cricket_end_of_day_type_is_live():
+    """willcontinue / 141 "End of day 1" (research/all_sports): çok günlü maç ertesi gün sürer."""
+    event = {"status": {"code": 141, "description": "End of day 1", "type": "willcontinue"}}
+    assert classify_status(event) is StatusClass.LIVE and not is_played(event)
+    assert not MatchFetcher._is_finished_event(event)
+
+
+def test_unseen_inning_codes_stay_unknown_without_a_type():
+    """22-27 (2.-7. inning) görülmedi: tipi olmayan yükte bilinmez kalır; tipiyle gelen yük zaten LIVE'dır."""
+    assert classify_status({"status": {"code": 25}}) is StatusClass.UNKNOWN
+    assert classify_status({"status": {"type": "inprogress", "code": 25}}) is StatusClass.LIVE
+
+
 # --- UNKNOWN (tek elle yazılmış girdiler) ------------------------------------------
 
 @pytest.mark.parametrize("event", [
