@@ -32,11 +32,23 @@ Yeniden kurma (`CatalogAdmin.rebuild`) iki kiptedir (bölüm 3.4):
     commit'e kadar eski, tutarlı kataloğu görür; hata olursa eski katalog kalır.
   * yeniden yaratma: `catalog.db.build` kurulur, sonra `catalog.db`'nin yerine konur.
 
-Yeniden kurmanın tarama sırası (bölüm 3.4): sezon listeleri; tur / sayfa dosyası olan sezonların
-listeleri; v3 maçları; eski düzen maçları; yalnızca özet CSV'si olan sezonlar; değişiklik günlüğü. Listeler
-maçlardan önce yazılır, çünkü turnuva ve sezon satırlarının asıl kaynağı onlardır (olay yükü satırı yalnızca
-yoksa ekler). Özet CSV'sinden gelen sezonlar maçlardan sonra yazılır: o satırlar sporunu söylemez, spor
-turnuvanın katalogdaki satırından alınır.
+Yeniden kurmanın tarama sırası (bölüm 3.4): v3 varlık dizinleri (turnuva, sezon, takım, oyuncu, spor; aşağıya
+bakın); sezon listeleri; tur / sayfa dosyası olan sezonların listeleri; v3 maçları; eski düzen maçları;
+yalnızca özet CSV'si olan sezonlar; değişiklik günlüğü (eski dosya, sonra `changes/` altındaki aylık parçalar).
+Listeler maçlardan önce yazılır, çünkü turnuva ve sezon satırlarının asıl kaynağı onlardır (olay yükü satırı
+yalnızca yoksa ekler). Özet CSV'sinden gelen sezonlar maçlardan sonra yazılır: o satırlar sporunu söylemez,
+spor turnuvanın katalogdaki satırından alınır.
+
+v3 varlık dizinlerinin taraması (bölüm 3.4, adım 1 ve 3) src/store/entities.py'nin işidir ve o dizinleri yazan
+adımla (`EntityStore.put`) gelir. Dizinleyici iki giriş noktasını adıyla arar (`V3_ENTITY_SCAN`,
+`V3_ENTITY_INDEX`); modülde yoksa o kaynak henüz yoktur ve maç olmayan varlıkların yarım yazma işaretlerine
+dokunulmaz.
+
+Yarım kalmış yazmalar (bölüm 4.4 ve 6.2): bir varlığa yazan, işe başlamadan önce `pending_writes` tablosuna
+işaret koyar ve iş bitince siler. Süreç arada ölürse işaret kalır; bir sonraki açılış (ya da aynı maça bir
+sonraki yazma) o varlığı dosyalardan yeniden dizinler. v3 maçında önce dizin kendi içinde tutarlı hale
+getirilir (`heal_v3_event`): yük dosyası manifestteki kaydından yeniyse dosyaya güvenilir (özet ve boyut
+dosyadan, `fetched_at` dosyanın zamanından), yarım kalmış geçici dosyalar silinir.
 
 Uzlaştırma (bölüm 3.5), kataloğun arkasından değişen dosyaları yeniden dizinler ve yeniden kurmaktan
 ucuzdur: dosyalar yalnızca imzası değişen dizinlerde okunur. İmzalar: eski düzen maç dizini `events.sig`
@@ -62,6 +74,7 @@ import re
 import tempfile
 import time
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -102,7 +115,8 @@ from src.store.legacy import (
     LegacySummaryFile,
     LegacySuperseded,
 )
-from src.store.manifest import Manifest, SliceEntry
+from src.slices import match_detail_slice_present
+from src.store.manifest import Manifest, Observation, SliceEntry
 from src.version import __version__ as APP_VERSION
 
 if TYPE_CHECKING:
@@ -172,10 +186,20 @@ _DIFF_LISTED = 20  # bir tablodan en çok bu kadar fark yazılır
 SUPERSEDED_BY_V3 = "v3"
 SUPERSEDED_BY_LEGACY = "legacy"
 
+KIND_EVENT = "event"  # `pending_writes.kind`: maç; ötekiler layout.KINDS'teki varlık türleri
+# src/store/entities.py'deki v3 varlık dizinleyicisinin giriş noktaları (modül açıklaması). İmzalar:
+#   apply_v3_entities(cat, data_dir, *, fresh: bool, problems: List[LegacyProblem]) -> None
+#   index_v3_entity(cat, data_dir, kind: str, entity_id: int, *, problems: List[LegacyProblem]) -> None
+V3_ENTITY_SCAN = "apply_v3_entities"
+V3_ENTITY_INDEX = "index_v3_entity"
+
 # `events` satırının dizinleyicinin doldurduğu (yükten türemeyen) sütunları
 EVENT_STORAGE_COLUMNS: Tuple[str, ...] = (
     "status_regressed", "layout", "path", "legacy_path", "sig", "first_seen_at", "updated_at",
 )
+_TMP_PREFIX, _TMP_SUFFIX = ".", ".tmp"  # atomik yazmanın geçici dosyası: `.<ad>.<rastgele>.tmp` (files.py)
+# "Veri var mı" yüklemleri beklenmeyen biçimdeki gövdede bu hataları verebilir
+_PREDICATE_ERRORS = (AttributeError, TypeError, KeyError, IndexError, ValueError)
 SLICE_COLUMNS: Tuple[str, ...] = (
     "event_id", "key", "sub", "state", "has_payload", "fetched_at", "checked_at",
     "empty_count", "unverified_empty_count", "error_reason", "error_status", "error_at", "error_count",
@@ -268,7 +292,7 @@ class ReconcileReport:
     events_indexed: int = 0  # dosyalardan yeniden dizinlenen maç (yeni ya da değişmiş)
     events_removed: int = 0  # dizini kalmadığı için olay satırı silinen (ya da liste satırına dönen) maç
     pending: int = 0  # yeniden dizinlenip silinen yarım yazma işareti
-    pending_skipped: int = 0  # maç olmayan varlıkların işaretleri: dokunulmadı
+    pending_skipped: int = 0  # dizinleyicisi henüz olmayan varlıkların (maç dışı) işaretleri: dokunulmadı
     season_lists: Optional[int] = None  # sezon listeleri yeniden yazıldıysa sayısı; None: değişmemişti
     seasons: List[SeasonKey] = field(default_factory=list)  # listesi yeniden dizinlenen sezonlar
     changes: Optional[int] = None  # değişiklik günlüğü yeniden dizinlendiyse satır sayısı; None: değişmemişti
@@ -464,6 +488,127 @@ def read_v3_event(data_dir: PathLike, event_id: int) -> V3Event:
         raise LayoutError(f"Olay yükündeki id ({got!r}) dizine ({event_id}) eşit değil: {payload_file}",
                           path=payload_file, detail=f"id {got!r}, dizin {event_id}")
     return V3Event(event_id=event_id, path=rel, manifest=found, event=payload, sig=sig)
+
+
+def _v3_payload_files(root: str, leftovers: List[str]) -> List[Tuple[str, str]]:
+    """
+    v3 varlık dizinindeki yük dosyaları: (dilim adı, dosya yolu), ada göre sıralı. `_history` alt ağacına
+    girilmez; adı geçerli bir dilim adı olmayan dosya atlanır. Yarım kalmış geçici dosyalar `leftovers`a yazılır.
+    """
+    found: List[Tuple[str, str]] = []
+    for base, dirs, names in os.walk(root):
+        if base == root and layout.HISTORY_DIR_NAME in dirs:
+            dirs.remove(layout.HISTORY_DIR_NAME)
+        prefix = os.path.relpath(base, root).replace(os.sep, "/")
+        for name in names:
+            path = os.path.join(base, name)
+            if name.startswith(_TMP_PREFIX) and name.endswith(_TMP_SUFFIX):
+                leftovers.append(path)
+                continue
+            if not name.endswith(layout.PAYLOAD_SUFFIX):
+                continue
+            stem = name[: -len(layout.PAYLOAD_SUFFIX)]
+            slice_name = stem if prefix == "." else f"{prefix}/{stem}"
+            try:
+                layout.split_slice_name(slice_name)
+            except LayoutError:
+                continue
+            found.append((slice_name, path))
+    return sorted(found)
+
+
+def _carries_data(key: str, payload: Any) -> bool:
+    """Manifest kaydı olmayan bir yük dosyası için "veri var mı": eski düzendeki kural (src/slices.py)."""
+    if key == EVENT_KEY:
+        return True
+    try:
+        return bool(match_detail_slice_present(key, {key: payload}))
+    except _PREDICATE_ERRORS:
+        return False
+
+
+def _change_ts(payload: Any) -> Optional[int]:
+    """Olay yükündeki `changes.changeTimestamp`; negatif olmayan bir tam sayı değilse None."""
+    changes = payload.get("changes") if isinstance(payload, dict) else None
+    value = changes.get("changeTimestamp") if isinstance(changes, dict) else None
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return None
+    return value
+
+
+def heal_v3_event(data_dir: PathLike, event_id: int) -> bool:
+    """
+    Yarım kalmış bir yazmadan sonra v3 maç dizinini kendi içinde tutarlı hale getirir (bölüm 4.4): yük
+    dosyaları manifestten önce yazılır, arada süreç ölürse dosya manifestteki kaydından yeni kalır. Dosyaya
+    güvenilir: kaydın özeti ve boyutları dosyadan, `fetched_at` dosyanın zamanından alınır; kaydı hiç olmayan
+    dosya da kaydedilir. Olay yükü değiştiyse gözlem de ona göre yenilenir. Yarım kalmış geçici dosyalar silinir.
+
+    Katalogun yazma kilidi altında çağrılır (manifest o kilit altında okunup yazılır, bölüm 6.2). Manifest
+    değiştiyse True döner. Manifesti olmayan ya da okunamayan dizine, okunamayan yük dosyasına ve manifestin
+    var dediği ama diskte olmayan yüke dokunmaz: onları doğrulama bildirir.
+    """
+    rel = layout.event_dir(event_id)
+    root = layout.resolve(data_dir, rel)
+    manifest_file = layout.resolve(data_dir, layout.manifest_path(rel))
+    if not os.path.isdir(root):
+        return False
+    leftovers: List[str] = []
+    try:
+        payload_files = _v3_payload_files(root, leftovers)
+    except OSError as exc:
+        raise StoreError.from_exception(exc, root, reading=True) from exc
+    for path in leftovers:
+        files.remove(path)
+    try:
+        found = manifest_mod.read_manifest(manifest_file)
+    except StoreError:
+        return False
+    if found.kind != "event" or found.id != event_id:
+        return False
+
+    changed = False
+    newest = found.updated_at
+    for name, path in payload_files:
+        key, _sub = layout.split_slice_name(name)
+        try:
+            stored = files.read_bytes(path)
+            st = os.stat(path)
+            raw = codec.decode(stored, path)
+            payload = json.loads(raw)
+        except (StoreError, OSError, ValueError, RecursionError):
+            continue  # okunamayan dosya: doğrulama bozuk olarak işaretler
+        if name == EVENT_KEY and not (isinstance(payload, dict) and not isinstance(payload.get("id"), bool)
+                                      and payload.get("id") == event_id):
+            continue
+        digest = codec.sha256_hex(raw)
+        entry = found.slices.get(name)
+        if entry is not None and (entry.sha256, entry.raw_bytes, entry.stored_bytes) == (digest, len(raw), len(stored)):
+            continue
+        written_at = datetime.fromtimestamp(st.st_mtime_ns // 1000 / 1_000_000, timezone.utc)
+        state = "ok" if _carries_data(key, payload) else "empty"
+        if entry is None:
+            entry = found.slices[name] = SliceEntry(state=state)
+        entry.state = state
+        entry.sha256, entry.raw_bytes, entry.stored_bytes = digest, len(raw), len(stored)
+        entry.fetched_at = written_at
+        entry.checked_at = written_at if entry.checked_at is None else max(entry.checked_at, written_at)
+        entry.error = None  # dosya, hata kaydından sonra yazıldı
+        if state == "ok":
+            entry.empty = None
+        if name == EVENT_KEY:
+            previous = found.observation
+            found.observation = Observation(
+                observed_at=written_at, change_ts=_change_ts(payload),
+                status_regressed=bool(previous and previous.status_regressed),
+                extra=dict(previous.extra) if previous else {})
+        newest = max(newest, written_at)
+        changed = True
+    if changed:
+        found.updated_at = newest
+        manifest_mod.write_manifest(manifest_file, found)
+        logger.info(f"Event {event_id}: the manifest was brought up to date with the payload files of an "
+                    "unfinished write")
+    return changed
 
 
 _meta_json = entities.meta_json
@@ -918,7 +1063,7 @@ class CatalogAdmin:
 
     def _fill(self, cat: Catalog, report: RebuildReport, progress: Optional[Progress],
               should_stop: Optional[Callable[[], bool]]) -> None:
-        """Boş tabloları doldurur (bölüm 3.4, adım 2, 4, 5, 6 ve 8); `cat.write()` bloğunun içinde çağrılır."""
+        """Boş tabloları doldurur (bölüm 3.4, adım 1-6 ve 8); `cat.write()` bloğunun içinde çağrılır."""
 
         def tick(stage: str, done: int, total: int, *, force: bool = False) -> None:
             if should_stop is not None and should_stop():
@@ -931,6 +1076,9 @@ class CatalogAdmin:
         groups = legacy_candidates(self.reader, report.problems)
         scan = self._scan_listings(report.problems, report.superseded_files)
         tick(STAGE_SCAN, 1, 1, force=True)
+
+        # Adım 1 ve 3: v3 varlık dizinleri, eski listelerden önce (v3 kopyası olan liste ve sayfa geçerlidir)
+        self._apply_v3_entities(cat, report.problems, fresh=True)
 
         # Adım 2: sezon listeleri, sonra tur / sayfa dosyası olan sezonlar. Listelenen her maç bir liste satırı
         # alır; olay yükü olanların satırı aşağıda o yükten yeniden yazılır ve `marks`'tan listed_in / stale alır.
@@ -973,7 +1121,7 @@ class CatalogAdmin:
                 self._index_season(cat, scan, key, report.problems)
         self._fill_sports(cat, scan)
 
-        # Adım 6: değişiklik günlüğü; sonra uzlaştırmanın karşılaştıracağı imzalar
+        # Adım 6: değişiklik günlüğü (eski dosya, sonra v3 parçaları); sonra uzlaştırmanın karşılaştıracağı imzalar
         notes: List[LegacyProblem] = []
         report.changes = changes_mod.index_all(cat, self.reader, notes)
         report.problems.extend(_from_legacy(notes))
@@ -1012,6 +1160,28 @@ class CatalogAdmin:
                 record.layout, row["path"] or layout.event_dir(record.event_id), PROBLEM_SEASON_MISMATCH,
                 f"{mark.tournament_id}/{mark.season_id} sezonunda listeleniyor, olay yükü "
                 f"{row['tournament_id']}/{row['season_id']} diyor"))
+
+    # -- v3 varlık dizinleri (taramanın kendisi src/store/entities.py'de) ---------------------------
+
+    def _apply_v3_entities(self, cat: Catalog, problems: List[IndexProblem], *, fresh: bool) -> bool:
+        """v3 varlık dizinlerini dizinler (bölüm 3.4, adım 1 ve 3); dizinleyicisi henüz yoksa False döner."""
+        scan = getattr(entities, V3_ENTITY_SCAN, None)
+        if scan is None:
+            return False
+        notes: List[LegacyProblem] = []
+        scan(cat, self.data_dir, fresh=fresh, problems=notes)
+        problems.extend(IndexProblem(LAYOUT_V3, p.path, p.kind, p.detail) for p in notes)
+        return True
+
+    def _index_v3_entity(self, cat: Catalog, kind: str, entity_id: int, problems: List[IndexProblem]) -> bool:
+        """Maç olmayan tek bir v3 varlığını dosyalarından yeniden dizinler; dizinleyicisi henüz yoksa False döner."""
+        index = getattr(entities, V3_ENTITY_INDEX, None)
+        if index is None:
+            return False
+        notes: List[LegacyProblem] = []
+        index(cat, self.data_dir, kind, entity_id, problems=notes)
+        problems.extend(IndexProblem(LAYOUT_V3, p.path, p.kind, p.detail) for p in notes)
+        return True
 
     # -- listeler ----------------------------------------------------------------------------------
 
@@ -1165,6 +1335,17 @@ class CatalogAdmin:
                     self._index_season(self.catalog, scan, key, problems)
             return found
 
+    def recover_event(self, event_id: int, *, candidates: Optional[Sequence[LegacyEventDir]] = None,
+                      problems: Optional[List[IndexProblem]] = None) -> Optional[str]:
+        """
+        Yarım kalmış bir yazmadan sonra maçı toparlar (bölüm 4.4 ve 6.2): v3 dizini kendi içinde tutarlı hale
+        getirilir (`heal_v3_event`), sonra maç dosyalardan yeniden dizinlenir (`index_event`). Yarım yazma
+        işaretini silmek çağıranın işidir.
+        """
+        with self.catalog.write():
+            heal_v3_event(self.data_dir, event_id)
+            return self.index_event(event_id, candidates=candidates, problems=problems)
+
     def _index_event(self, event_id: int, paths: Sequence[str], candidates: Optional[Sequence[LegacyEventDir]],
                      problems: Optional[List[IndexProblem]], relist: Set[SeasonKey]) -> Optional[str]:
         """`index_event`in gövdesi; açık bir `write()` bloğunun içinde çağrılır. Listesi yeniden dizinlenmesi
@@ -1229,8 +1410,10 @@ class CatalogAdmin:
         """
         Kataloğu, arkasından değişen dosyalarla yeniden eşitler (bölüm 3.5). Tek bir yazma işleminde:
 
-          1. Yarım kalmış yazma işaretleri (`pending_writes`): maçlar dosyalardan yeniden dizinlenir ve
-             işaretleri silinir. Maç olmayan varlıkların işaretlerine dokunulmaz (v3 yazıcısıyla gelir).
+          1. Yarım kalmış yazma işaretleri (`pending_writes`): her varlık dosyalarından yeniden dizinlenir ve
+             işareti silinir. v3 maçında önce manifest, ondan yeni kalmış yük dosyalarıyla eşitlenir
+             (`heal_v3_event`). Maç olmayan varlıkların dizinleyicisi henüz yoksa (modül açıklaması) onların
+             işaretlerine dokunulmaz ve `pending_skipped`'de sayılır.
           2. Eski düzen maç dizinleri: imzası (`events.sig`) ya da geçerli dizini değişen, yeni gelen ve
              dizini kalmayan maçlar yeniden dizinlenir.
           3. Sezon listeleri: herhangi bir dosya değiştiyse hepsi yeniden yazılır.
@@ -1238,7 +1421,8 @@ class CatalogAdmin:
              dizini değiştiyse o ligin yalnızca özet CSV'si olan sezonları da.
           5. Sporu bilinmeyen liste satırı olan bir sezonun turnuvası artık biliniyorsa o sezon da yeniden
              dizinlenir (dosyaları değişmemiş olsa bile; bkz. `_fill_sports`).
-          6. `score_changes.jsonl` değiştiyse baştan dizinlenir (satır numaraları aynı kalır).
+          6. Değişiklik günlüğü (`score_changes.jsonl` ve `changes/` altındaki parçalar): uzayan dosyanın
+             kuyruğu dizinlenir; başka biçimde değişen dosya varsa günlük baştan dizinlenir (numaralar aynı kalır).
 
         v3=True: v3 maç dizinleri de taranır ve manifest imzaları `events.sig` ile karşılaştırılır; yazar
         kilidi temiz bırakılmadıysa (`Lease.unclean`) çağıran bunu ister. Verilmezse v3 maçlarının yalnızca
@@ -1312,10 +1496,12 @@ class CatalogAdmin:
 
         for kind, entity_id in conn.execute(
                 "SELECT kind, entity_id FROM pending_writes ORDER BY kind, entity_id").fetchall():
-            if kind != "event":
+            if kind == KIND_EVENT:
+                heal_v3_event(self.data_dir, int(entity_id))
+                self._index_event(int(entity_id), (), candidates.get(int(entity_id), []), report.problems, seasons)
+            elif not self._index_v3_entity(self.catalog, str(kind), int(entity_id), report.problems):
                 report.pending_skipped += 1
                 continue
-            self._index_event(int(entity_id), (), candidates.get(int(entity_id), []), report.problems, seasons)
             conn.execute("DELETE FROM pending_writes WHERE kind = ? AND entity_id = ?", (kind, entity_id))
             report.pending += 1
 
@@ -1378,9 +1564,13 @@ class CatalogAdmin:
                 self._index_season(cat, scan, key, report.problems)
             report.seasons.extend(key for key in self._fill_sports(cat, scan) if key not in seasons)
 
-        if ROOT_CHANGES_FILE in kinds.values():
+        if wanted & LISTING_CHANGES:
+            # Günlük dosyalarının (eski dosya ve v3 parçaları) dizinlenmiş uzunluğu `meta`dadır: uzamış dosyanın
+            # yalnızca kuyruğu okunur (src/store/changes.py)
             notes: List[LegacyProblem] = []
-            report.changes = changes_mod.index_legacy(cat, self.reader, notes)
+            indexed = changes_mod.sync(cat, self.data_dir, notes, full=report.deep)
+            if indexed is not None:
+                report.changes = indexed
             report.problems.extend(_from_legacy(notes))
         self._write_roots(cat, roots, changed)
 
@@ -1535,4 +1725,8 @@ __all__ = [
     "legacy_record",
     "event_record",
     "delete_event",
+    "heal_v3_event",
+    "KIND_EVENT",
+    "V3_ENTITY_SCAN",
+    "V3_ENTITY_INDEX",
 ]

@@ -205,7 +205,8 @@ def at(seconds: int) -> dt.datetime:
 
 # --- cephe ve dışa açılan adlar -----------------------------------------------------------------------
 
-WRITE_METHODS = ("put", "observe", "reset_empty_markers", "delete", "append")  # sonraki adımlarda eklenir
+# EntityStore'un yazma yöntemleri sonraki adımda eklenir (ST-22); EventStore ve ChangeLog'unkiler ST-20 ile geldi
+WRITE_METHODS = ("put", "observe", "reset_empty_markers", "delete", "append")
 
 
 def test_store_has_the_event_store(canon: Store) -> None:
@@ -215,7 +216,6 @@ def test_store_has_the_event_store(canon: Store) -> None:
     assert isinstance(canon.events, EventStore)
     assert names <= set(src.store.__all__)
     assert src.store.EventStore is events_mod.EventStore
-    assert not any(hasattr(EventStore, name) for name in WRITE_METHODS)
 
 
 def test_an_unbuilt_catalog_answers_empty(tmp_path: Path) -> None:
@@ -1723,7 +1723,6 @@ def test_plan_entity_queries(synthetic: Store, explain: Any) -> None:
 def test_store_has_the_change_log(canon: Store, tmp_path: Path) -> None:
     assert isinstance(canon.changes, ChangeLog)
     assert {"ChangeLog", "ChangeRow"} <= set(src.store.__all__)
-    assert not any(hasattr(ChangeLog, name) for name in WRITE_METHODS)
     unbuilt = open_store(tmp_path / "data")  # kurulmamış katalog
     assert unbuilt.changes.list() == [] and unbuilt.changes.last_seq() == 0
     canon.close()
