@@ -148,6 +148,23 @@ section is what the first tagged release will contain.
   turned off (#65).
 - `ssc config init` prints a starter `sofascore.toml`; `ssc config init --from-legacy` prints
   the equivalent of today's `.env` and `config/leagues.txt` (#65).
+- **`ssc events`.** Prints the event log of the data folder as JSON lines: the status and score
+  changes that `--watch` records and the start and end of every download job, each with a
+  sequence number. `--after SEQ` continues where an earlier run stopped, `--follow` keeps
+  printing new events, and `--stream`, `--type`, `--event` and `--limit` filter. It only reads,
+  so it can run next to a download or a watcher (#73).
+- **API v1 (foundation).** A versioned HTTP API under `/api/v1`: `health`, `status`, `sports`,
+  `jobs` (list, get, start, cancel, and a job's events as a server-sent event stream that
+  resumes with `Last-Event-ID`) and `settings` (read, and change with `PATCH`). Responses use
+  one envelope (`{"data": …}`), errors one model
+  (`{"error": {"code", "message", "details", "request_id"}}`) with stable codes and English
+  messages, and every response carries `X-Request-Id`. Jobs started from the command line are
+  listed there and can be cancelled. The access token, the Host allow-list and the cross-origin
+  check protect `/api/v1` like the existing routes. The contract is recorded in
+  `docs/api/openapi-v1.json` (#74).
+- `PATCH /api/v1/settings` stores changes in `config/overrides.json` and refuses a value that
+  `sofascore.toml`, the environment or a command-line flag pins, instead of reporting success
+  for a change that has no effect (#74).
 
 ### Changed
 
@@ -305,6 +322,32 @@ section is what the first tagged release will contain.
   (#64).
 - The warnings the logger prints to stderr (invalid `LOG_LEVEL`, log file cannot be opened or
   written) are in English (#65).
+- Downloads and refreshes started from the command line (`--headless --update-all`,
+  `--refresh-only`) now appear in the job history of the web app, with their progress and
+  result, and can be stopped from another process: the web app's cancel request stops a
+  command-line run, which then ends like after Ctrl+C. Starting a second server or a
+  command-line run no longer marks a job that is still running as interrupted; a job whose
+  process died is marked interrupted the next time the folder is opened (#69).
+- A download that was stopped early because SofaScore kept refusing requests, or in which some
+  matches could not be fetched, is now recorded as *partial* instead of completed; the web app
+  shows it as before. A job that ends after a stop request is recorded as cancelled (#69).
+- The job history keeps the newest 500 jobs. The data folder's `state.db` moves to schema
+  version 2 (a copy of the old file is kept as `.meta/state.db.bak-v1`) (#69).
+- Lock files under `DATA_DIR/.meta/locks/` are created with the permissions the process umask
+  gives (0664 under umask 002) instead of always 0644, so a second account of the same group can
+  take a lock in a data folder it shares. Nothing changes under the usual umask 022. Lock files
+  that already exist keep their permissions (`chmod g+w DATA_DIR/.meta/locks/*.lock` once, or
+  delete them while nothing is running). The log line of a state-database migration is English:
+  `Store: state.db migration applied: 0001_initial` (#70).
+- The existing `/api/…` routes are deprecated. They keep working unchanged for one more release,
+  are marked deprecated in `/docs`, and answer with `Deprecation: true` and a `Link` header that
+  names the `/api/v1` successor (#74).
+- Access token: `[server] token_env` in `sofascore.toml` can name the environment variable that
+  holds the token. Wrong tokens are now limited: after 5 failed attempts from one address
+  (sign-in or `Authorization: Bearer`), further attempts from that address are refused for 30
+  seconds, doubling up to one hour (`429 too_many_attempts` on the existing routes,
+  `401 unauthorized` with `Retry-After` on `/api/v1`). Signed-in browser sessions are not
+  affected (#74).
 
 ### Fixed
 
@@ -435,6 +478,14 @@ section is what the first tagged release will contain.
 - The saved proxy password is put back in place of `***` only when the proxy's user, scheme,
   host and port are all unchanged. Changing the scheme or the port now asks for the password
   again; before, the saved password was sent to the changed address (#54).
+- The diagnostics bundle no longer carries the host name of the machine in the job history and
+  the setup check. The job columns are selected by name, so a column added later is not
+  included by default; of a job's origin only the interface (cli, api) and the pid are kept,
+  and a host name inside a job message or in the browser profile lock appears as `***` (#71).
+- `ssc config show` and the diagnostics bundle show the address of a webhook sink by its host
+  only (`https://hooks.example.org/***`). Before, the path and the query of the address were
+  shown, and for services such as Slack or Discord those are the credential. This applies to
+  `[[sink]]` in the config file and to `SOFASCORE_SINKS` (#73).
 
 ## Earlier history
 
