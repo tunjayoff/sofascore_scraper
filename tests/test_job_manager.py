@@ -24,6 +24,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Dict, Iterator, List, Optional
 
+import conftest
 import pytest
 
 from src import bridge_health
@@ -84,8 +85,11 @@ def data_dir(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def store(data_dir: Path) -> Iterator[JobStore]:
+    before = conftest.job_threads()
     jobs = JobStore(default_db_path(str(data_dir)))
     yield jobs
+    # Arka plandaki iş, satırı bittikten sonra da depoya yazar: bağlantılar onun altından kapatılmaz
+    conftest.join_job_threads(before)
     jobs.close()
 
 

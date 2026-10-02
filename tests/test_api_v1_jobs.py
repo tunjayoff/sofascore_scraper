@@ -24,6 +24,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
+import conftest
 import pytest
 from fastapi.testclient import TestClient
 
@@ -55,9 +56,12 @@ def wait_for(condition: Any, timeout: float = 20.0, what: str = "condition") -> 
 @pytest.fixture
 def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[JobStore]:
     """v1 rotalarının gördüğü iş deposu: geçici bir dizinde, boş."""
+    before = conftest.job_threads()
     jobs = JobStore(str(tmp_path / "data" / ".meta" / "state.db"))
     monkeypatch.setattr(common, "_job_store", jobs)
     yield jobs
+    # `POST /api/v1/jobs` işi arka planda yürütür; iş, satırı bittikten sonra da depoya yazar
+    conftest.join_job_threads(before)
     if jobs.snapshot().get("is_running"):
         jobs.update(status="Cancelled", finished=True)
     monkeypatch.undo()

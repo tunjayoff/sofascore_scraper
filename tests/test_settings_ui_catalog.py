@@ -108,20 +108,17 @@ def _normal(path: Any) -> str:
     return os.path.normcase(os.path.realpath(os.fspath(path)))
 
 
-def check_reports_at_most_the_copy_source(source: Path) -> None:
+def check_reports_only_the_copy_source(source: Path) -> None:
     """
     Paketin test sonu denetimini (`shadow_check`) şimdi çalıştırır. Denetim kancası bir kopyalamanın kaynağını
-    da "yazıldı" sayar (tests/conftest.py, `shutil.copyfile` ve `shutil.copytree` olaylarının iki yolunu da
-    bildirir); yalnızca okunan kaynak dizin bu yüzden "kancasız yazıldı" diye bildirilir. Olabilecek tek bulgu
-    odur: hedef dizinin kataloğu yeniden kurulmuş haliyle karşılaştırılmış ve eşit bulunmuştur. Windows'ta
-    `shutil.copy2` dosyayı `_winapi.CopyFile2` ile kopyalar: `shutil.copyfile` olayı (ve `open` olayları)
-    yerine `_winapi.CopyFile2` olayı üretilir, kanca onu dinlemez. Yalnızca tek tek dosyaların kopyalandığı
-    bir işlemde (`shutil.copytree` düşerse) kaynak orada bildirilmez. Başka her bulgu testi düşürür; hedefin
-    kataloğu her platformda testin gövdesinde ve burada (kancasız olmayan satırlar) karşılaştırılır.
+    da "yazıldı" sayar (tests/conftest.py, `shutil.copyfile`, `shutil.copytree` ve Windows'ta `shutil.copy2`'nin
+    ürettiği `_winapi.CopyFile2` olaylarının iki yolunu da bildirir); yalnızca okunan kaynak dizin bu yüzden
+    "kancasız yazıldı" diye bildirilir. Beklenen tek bulgu odur: hedef dizinin kataloğu yeniden kurulmuş
+    haliyle karşılaştırılmış ve eşit bulunmuştur. Kaynağın bildirilmemesi de testi düşürür: kanca kopyalamayı
+    görmemiş demektir, o zaman hedefe kancasız bir yazma da görünmez.
     """
     found = api_mod.shadow_check()
-    reported = [_normal(line.partition(UNHOOKED)[0]) for line in found if UNHOOKED in line]
-    assert reported in ([], [_normal(source)]), found
+    assert [_normal(line.partition(UNHOOKED)[0]) for line in found if UNHOOKED in line] == [_normal(source)], found
     assert [line for line in found if UNHOOKED not in line] == []
 
 
@@ -247,7 +244,7 @@ def test_restore_rebuilds_the_catalog_of_the_open_store(tmp_path: Path, monkeypa
     assert counts(store) == FULL
     assert store.events.get(ARS).has_event_payload and store.events.get(NO_DETAIL) is not None
     assert differences(store) == []
-    check_reports_at_most_the_copy_source(backup / "data")
+    check_reports_only_the_copy_source(backup / "data")
 
 
 def test_restore_rebuilds_the_catalog_only_when_data_was_restored(canonical: sf.LegacyFixture, tmp_path: Path,
@@ -286,7 +283,7 @@ def test_restore_rebuilds_the_catalog_only_when_data_was_restored(canonical: sf.
     assert still_open(store, data)
     assert counts(store) == FULL and store.events.get(ARS).has_event_payload
     assert differences(store) == []
-    check_reports_at_most_the_copy_source(backup / "data")
+    check_reports_only_the_copy_source(backup / "data")
 
 
 def test_a_restore_that_fails_half_way_still_rebuilds_the_catalog(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
@@ -314,7 +311,7 @@ def test_a_restore_that_fails_half_way_still_rebuilds_the_catalog(tmp_path: Path
     assert still_open(store, data)
     assert counts(store) == ONLY_SEASON_LISTS
     assert differences(store) == []
-    check_reports_at_most_the_copy_source(backup / "data")
+    check_reports_only_the_copy_source(backup / "data")
 
 
 def test_an_unexpected_catalog_error_does_not_fail_the_restore(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
@@ -362,7 +359,7 @@ def test_moving_the_data_directory_rebuilds_the_catalog_of_the_target(canonical:
     assert counts(target_store) == FULL and target_store.events.get(ARS).has_event_payload
     assert differences(target_store) == []
     assert counts(store) == FULL and differences(store) == []  # kaynak yerinde durur (kopyalama)
-    check_reports_at_most_the_copy_source(data)
+    check_reports_only_the_copy_source(data)
 
 
 def test_a_move_that_fails_half_way_still_rebuilds_the_catalog_of_the_target(
@@ -385,4 +382,4 @@ def test_a_move_that_fails_half_way_still_rebuilds_the_catalog_of_the_target(
     assert still_open(target_store, target)
     assert counts(target_store) == ONLY_SEASON_LISTS
     assert differences(target_store) == []
-    check_reports_at_most_the_copy_source(data)
+    check_reports_only_the_copy_source(data)
