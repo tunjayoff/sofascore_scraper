@@ -654,6 +654,34 @@ def test_sets_keep_a_tiebreak_without_its_set():
     ]
 
 
+def test_malformed_sheets_and_lines_do_not_break_the_mappers():
+    """Beklenmeyen biçimdeki çizelge ya da günlük satırı kaydı düşürmez; okunamayan parça null kalır."""
+    sheet = json.dumps({"family": "periods", "format": "thirds", "final": [3, "x"], "regulation": [None, None],
+                        "overtime": [1], "periods": {"period1": [1, 0], "periodX": [9, 9], "extra": [1, 1],
+                                                     "period2": "1-0", "period3": [None, None]}})
+    score = schema.event_from_row(_row(sport="basketball", scores_json=sheet)).score.to_dict()
+    assert score == {"family": "periods", "home": None, "away": None, "format": None,
+                     "periods": [{"number": 1, "home": 1, "away": 0}], "regulation": None, "overtime": None,
+                     "final": {"home": 3, "away": None}}
+    assert schema.event_from_row(_row(scores_json="[1, 2]")).score.family == "football"  # nesne değil: boş çizelge
+
+    row = ChangeRow(seq=1, ts=1790856000, event_id=9, sport="tennis", tournament_id=3, status_regressed=True,
+                    fields=("winnerCode",), segment="score_changes.jsonl",
+                    row={"changed": {"winnerCode": [1], "status.code": "100"}, "status_class": ["completed"],
+                         "tier_hint": 1, "start_ts": "soon"})
+    record = schema.change_from_row(row).to_dict()
+    assert record["fields"] == [{"path": "winnerCode", "old": None, "new": None},
+                                {"path": "status.code", "old": None, "new": None}]
+    assert (record["old_status_class"], record["new_status_class"], record["tier_hint"]) == (None, None, None)
+    assert (record["start_utc"], record["seconds_after_start"]) == (None, None)
+    assert check(record, "Change") == []
+
+    with pytest.raises(ValueError):  # gösterilemeyen zaman boş metne dönmez
+        schema.change_from_row(dataclasses.replace(row, ts=10 ** 20))
+    with pytest.raises(ValueError):
+        schema.live_event_from_record(StreamRecord(seq=1, stream="live", ts=float("inf"), type="live.stuck", data={}))
+
+
 def test_entity_mappers_need_an_id():
     assert schema.sport_from_row({"name": "Football"}) is None
     assert schema.category_from_row({"name": "England"}) is None
