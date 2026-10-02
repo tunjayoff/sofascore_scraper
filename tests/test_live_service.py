@@ -556,8 +556,8 @@ def test_live_status_reports_the_holder_and_the_heartbeat(store: Store) -> None:
     assert after["running"] is False and after["source"] is None and after["last"]["state"] == "stopped"
 
 
-def test_page_and_poll_run_as_requested_and_direct_falls_back_to_polling(store: Store) -> None:
-    for requested, used in (("page", "page"), ("direct", "poll"), ("poll", "poll")):  # direct: P31
+def test_every_source_runs_as_requested(store: Store) -> None:
+    for requested, used in (("page", "page"), ("direct", "direct"), ("poll", "poll"), ("auto", "poll")):
         report = LiveService(store, explicit_scope(["football"], tournament_ids=[1]), fetch=FakeApi(),
                              requested_source=requested).report
         assert report.source == used
@@ -629,8 +629,12 @@ def fake_service(monkeypatch: pytest.MonkeyPatch) -> FakeApi:
     live, done = finish_scenario()
     api = FakeApi({"football": []}, {500: live})
     clock = Clock(fetched(FB_LIVE))
+    from src.services.live.direct_source import DirectConnection
+
+    idle_direct = DirectConnection(IdleOpener(), blocked=lambda: "no network in tests")  # `direct`: bağlanmaz
     monkeypatch.setattr(watch_command, "SERVICE_OPTIONS", {"fetch": api, "clock": clock, "sleep": clock.sleep,
-                                                           "page_opener": IdleOpener()})
+                                                           "page_opener": IdleOpener(),
+                                                           "direct_connection": idle_direct})
 
     real_run = LiveService.run
 
@@ -663,13 +667,13 @@ def test_watch_stdout_prints_the_new_events_as_json_lines(cli: CliRunner, data_d
     assert "Live watching stopped" in run.stderr
 
 
-def test_watch_uses_the_page_source_by_default_and_warns_that_direct_falls_back(cli: CliRunner, data_dir: Path,
-                                                                                 fake_service: FakeApi) -> None:
+def test_watch_uses_the_page_source_by_default_and_warns_when_direct_is_chosen(cli: CliRunner, data_dir: Path,
+                                                                                fake_service: FakeApi) -> None:
     run = cli("watch", "--data-dir", data_dir, "--sport", "football", "--event", 500, "--json")  # varsayılan: page
     assert run.json["warnings"] == [] and run.data["source"] == run.data["requested_source"] == "page"
     run = cli("watch", "--data-dir", data_dir, "--sport", "football", "--event", 500, "--source", "direct", "--json")
     codes = [w["code"] for w in run.json["warnings"]]
-    assert codes == ["live_direct_source", "live_source_unavailable"]
+    assert codes == ["live_direct_source"] and run.data["source"] == "direct"
     assert "terms-of-use grey area" in run.json["warnings"][0]["message"]
 
 
@@ -710,7 +714,8 @@ def test_watch_and_the_watch_sources_are_described(cli: CliRunner) -> None:
     assert list(sources) == ["page", "direct", "poll"]
     assert sources["page"]["default"] is True and sources["poll"]["available"] is True
     assert sources["page"]["available"] is True
-    assert sources["direct"]["available"] is False and sources["direct"]["opt_in"] is True
+    assert sources["direct"]["available"] is True and sources["direct"]["opt_in"] is True
+    assert sources["direct"]["default"] is False
     assert "terms-of-use grey area" in sources["direct"]["warning"]
     commands = {c["name"]: c for c in cli("describe", "commands").data["commands"]["commands"]}
     flags = [option["flags"][0] for option in commands["watch"]["options"]]
