@@ -15,6 +15,9 @@ from src.exceptions import DataParsingError, SofaScoreScraperError
 from src.utils import make_api_request, ensure_directory
 
 from src.fsutil import atomic_write_json
+# Gölge kip (docs/design/01-storage.md 3.5): her yazmadan sonra Store'un bir `shadow_*` kancası çağrılır ve
+# katalog yazılanı diskten yeniden dizinler. Paket kökü üzerinden: kancalar ilk çağrıda yüklenir.
+from src import store as store_hooks
 from src.logger import get_logger
 from src.paths import matches_season_dir, seasons_file, summary_paths
 
@@ -380,6 +383,7 @@ class SeasonFetcher:
         file_path = seasons_file(self.data_dir, league_id, self.config_manager.get_league_by_id(league_id))
         try:
             atomic_write_json(file_path, data)
+            store_hooks.shadow_season_lists(self.data_dir)
             logger.info(f"Sezon verileri JSON olarak kaydedildi: {file_path}")
         except Exception as e:
             logger.error(f"JSON dosyası kaydedilirken hata: {str(e)}")

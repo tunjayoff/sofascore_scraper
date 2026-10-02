@@ -219,9 +219,12 @@ def test_store_has_the_event_store(canon: Store) -> None:
 
 
 def test_an_unbuilt_catalog_answers_empty(tmp_path: Path) -> None:
-    """`open_store` kataloğun şemasını yaratır ama kurmaz: sorular hata vermez, boş döner."""
+    """
+    Kurulmamış katalog (şeması var, satırları yok): sorular hata vermez, boş döner. Açılış kataloğu kurar
+    (ST-11); bu hal yalnızca kurulum yapılamadığında ya da `sync_catalog=False` ile açıldığında kalır.
+    """
     fx = sf.build_fixture("canonical", tmp_path / "data")
-    store = open_store(fx.data_dir)
+    store = open_store(fx.data_dir, sync_catalog=False)
 
     assert store.info(sizes=False).catalog_rebuild_reason == "derive_version"
     assert store.events.get(ARS) is None
@@ -1258,7 +1261,8 @@ def synthetic_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
 
 @pytest.fixture
 def synthetic(synthetic_dir: Path) -> Store:
-    return open_store(synthetic_dir)
+    # Sentetik katalogun dosyaları yoktur: açılıştaki uzlaştırma (ST-11) dizini olmayan maçları silerdi
+    return open_store(synthetic_dir, sync_catalog=False)
 
 
 @pytest.fixture

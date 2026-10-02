@@ -1,0 +1,16 @@
+# LegacyEventDir: src.store.__all__ içinde değil; açık bir imzada geçtiği için izleniyor
+# kaynak: src/store/legacy.py
+@dataclass(frozen=True)
+class LegacyEventDir:
+    name: str
+    path: str
+    form: str
+    league_dir: Optional[str]
+    season_dir: Optional[str]
+    has_basic: bool
+    combined: bool
+    mtime_ns: int
+    sig: str
+    entries: Tuple[str, ...]
+    @property
+    def tournament_id(self) -> Optional[int]

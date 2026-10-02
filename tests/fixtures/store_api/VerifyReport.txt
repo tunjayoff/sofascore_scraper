@@ -1,0 +1,19 @@
+# src.store.VerifyReport
+# kaynak: src/store/verify.py
+@dataclass
+class VerifyReport:
+    deep: bool
+    repair: bool
+    checked: Tuple[str, ...] = ()
+    events: int = 0
+    events_read: int = 0
+    issues: List[VerifyIssue] = field(default_factory=list)
+    problems: List[IndexProblem] = field(default_factory=list)
+    superseded: List[SupersededDir] = field(default_factory=list)
+    leftovers: List[str] = field(default_factory=list)
+    leftovers_removed: int = 0
+    seconds: float = 0.0
+    @property
+    def open_issues(self) -> List[VerifyIssue]
+    @property
+    def ok(self) -> bool

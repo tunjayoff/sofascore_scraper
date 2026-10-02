@@ -46,6 +46,12 @@ düzenlenir ve zamanı da korunursa değişiklik görülmez (`deep=True` her şe
 
 Yeniden kurma `maintenance` kilidini (bölüm 6.1) gerektirir; kilitler Store cephesindedir, burada alınmaz:
 çağıran, aynı anda başka yazar olmadığından emin olmalıdır.
+
+Gölge kip (plan maddesi ST-11): eski düzen yazıcıları her yazmadan sonra Store'un kancalarını çağırır
+(src/store/api.py, `shadow_*`); kancalar buradaki iki giriş noktasını kullanır. `index_event` yazılan maçı,
+`sync_listings` değişen liste kaynaklarını (program dizinleri, sezon listeleri, değişiklik günlüğü) yeniden
+dizinler; ikisi de yalnızca dokunulan kaynağı okur. `diff_from_rebuild` kataloğu aynı ağacın sıfırdan
+kurulmuş haliyle karşılaştırır: test paketi, yazan her testin sonunda bunu çağırır (STORE_SHADOW_CHECK).
 """
 from __future__ import annotations
 
@@ -53,6 +59,7 @@ import json
 import logging
 import os
 import re
+import tempfile
 import time
 from dataclasses import dataclass, field
 from typing import (
@@ -147,6 +154,20 @@ ROOT_LEAGUE_DIR = "league_dir"  # matches/<turnuva>_<ad>: sezon dizinleri ve öz
 ROOT_SCHEDULE_DIR = "schedule_dir"  # matches/<turnuva>_<ad>/<sezon>_<ad>: tur ve sayfa dosyaları
 ROOT_SEASONS_FILE = "seasons_file"  # seasons/*_seasons.json ve league_seasons.csv
 ROOT_CHANGES_FILE = "changes_file"  # score_changes.jsonl
+
+# Liste kaynaklarının üç grubu (`CatalogAdmin.sync_listings`): her grup ayrı taranır ve ayrı uzlaştırılır
+LISTING_SCHEDULES = frozenset({ROOT_LEAGUE_DIR, ROOT_SCHEDULE_DIR})
+LISTING_SEASON_LISTS = frozenset({ROOT_SEASONS_FILE})
+LISTING_CHANGES = frozenset({ROOT_CHANGES_FILE})
+LISTING_KINDS = LISTING_SCHEDULES | LISTING_SEASON_LISTS | LISTING_CHANGES
+
+# `diff_from_rebuild`: karşılaştırmanın kuralları
+# Uzlaştırma ve kancalar bu tablolardan satır silmez, "yalnızca yoksa eklenen" satır da ilk yazanın
+# değerlerini taşır (bölüm 3.5): yeniden kurmanın her satırı katalogda olmalıdır, fazlası ve farklı değer serbesttir
+DIFF_GROWING_TABLES: Tuple[str, ...] = ("sports", "categories", "tournaments", "seasons", "participants")
+DIFF_SKIPPED_TABLES: Tuple[str, ...] = ("meta",)  # kurulumun kendisini anlatır (zaman, kip, sayımlar)
+DIFF_SKIPPED_COLUMNS: Mapping[str, Tuple[str, ...]] = {"legacy_roots": ("scanned_at",)}  # taramanın saati
+_DIFF_LISTED = 20  # bir tablodan en çok bu kadar fark yazılır
 
 SUPERSEDED_BY_V3 = "v3"
 SUPERSEDED_BY_LEGACY = "legacy"
@@ -718,6 +739,44 @@ def delete_event(cat: Catalog, event_id: int) -> bool:
     return removed > 0
 
 
+def _table_rows(cat: Catalog, table: str) -> Dict[Tuple[Any, ...], Row]:
+    """Tablonun bütün satırları, birincil anahtara göre; karşılaştırma dışı sütunlar çıkarılmış."""
+    conn = cat.connection()
+    primary = tuple(str(row[0]) for row in sorted(
+        conn.execute("SELECT name, pk FROM pragma_table_info(?) WHERE pk > 0", (table,)).fetchall(),
+        key=lambda row: row[1]))
+    skipped = DIFF_SKIPPED_COLUMNS.get(table, ())
+    out: Dict[Tuple[Any, ...], Row] = {}
+    for found in conn.execute(f'SELECT * FROM "{table}"'):
+        row = {name: found[name] for name in found.keys() if name not in skipped}
+        out[tuple(row[name] for name in primary)] = row
+    return out
+
+
+def _diff_catalogs(actual: Catalog, expected: Catalog) -> List[str]:
+    """`actual` ile sıfırdan kurulmuş `expected` arasındaki farklar (`CatalogAdmin.diff_from_rebuild` kuralıyla)."""
+    out: List[str] = []
+    for table in expected.tables():
+        if table in DIFF_SKIPPED_TABLES:
+            continue
+        have, want = _table_rows(actual, table), _table_rows(expected, table)
+        lines: List[str] = []
+        for key in sorted(want.keys() - have.keys(), key=repr):
+            lines.append(f"{table}{list(key)}: missing in the catalog")
+        if table not in DIFF_GROWING_TABLES:
+            for key in sorted(have.keys() - want.keys(), key=repr):
+                lines.append(f"{table}{list(key)}: not in a rebuild")
+            for key in sorted(have.keys() & want.keys(), key=repr):
+                differing = [f"{name}: {have[key][name]!r} (rebuild: {want[key][name]!r})"
+                             for name in want[key] if have[key][name] != want[key][name]]
+                if differing:
+                    lines.append(f"{table}{list(key)}: " + "; ".join(differing))
+        out.extend(lines[:_DIFF_LISTED])
+        if len(lines) > _DIFF_LISTED:
+            out.append(f"{table}: {len(lines) - _DIFF_LISTED} more differences")
+    return out
+
+
 # --- yönetim ------------------------------------------------------------------------------------------
 
 class CatalogAdmin:
@@ -814,10 +873,11 @@ class CatalogAdmin:
             report.completed = True
         report.seconds = time.monotonic() - started
         if report.completed:
-            logger.info(
-                f"Katalog yeniden kuruldu ({report.mode}): {report.events} maç ({report.events_v3} v3, "
-                f"{report.events_legacy} eski düzen), {report.slices} dilim, {len(report.problems)} sorun, "
-                f"{report.seconds:.2f} sn"
+            # DEBUG: süre çıktıyı her çalıştırmada değiştirir; kullanıcıya görünen satırı çağıran yazar (Store açılışı)
+            logger.debug(
+                f"Catalog rebuilt ({report.mode}): {report.events} events ({report.events_v3} v3, "
+                f"{report.events_legacy} legacy), {report.slices} slices, {len(report.problems)} problems, "
+                f"{report.seconds:.2f} s"
             )
         return report
 
@@ -975,33 +1035,40 @@ class CatalogAdmin:
         return f"{max([int(stamp), *newest])}:{count}"
 
     def _scan_listings(self, problems: List[IndexProblem],
-                       superseded: Optional[List[LegacySuperseded]] = None) -> _ListingScan:
+                       superseded: Optional[List[LegacySuperseded]] = None, *,
+                       kinds: Iterable[str] = LISTING_KINDS) -> _ListingScan:
         """
         Eski düzendeki liste kaynaklarını tarar: `matches/` altındaki tur / sayfa ve özet dosyaları (yalnızca
         dizin listeleme ve `stat`), sezon listeleri (dosyalar küçüktür, okunur) ve değişiklik günlüğünün
         imzası. Sonuçtaki `roots`, `legacy_roots` tablosunda durması gereken satırlardır.
+
+        kinds: taranacak kök türleri (`LISTING_*` grupları); verilmeyen grubun kaynaklarına bakılmaz ve
+        `roots`'ta o türden satır olmaz.
         """
         reader = self.reader
+        wanted = frozenset(kinds)
         found = legacy.LegacyReport()
         scan = _ListingScan()
         schedule_dirs: Dict[str, List[int]] = {}  # sezon dizini → içindeki kaynak dosyaların mtime'ları
         league_dirs: Dict[str, List[int]] = {}
 
-        for page in reader.schedule_pages(found):
-            scan.pages.setdefault((page.tournament_id, page.season_id), []).append(page)
-            directory = page.path.rsplit("/", 1)[0]
-            schedule_dirs.setdefault(directory, []).append(page.mtime_ns)
-            league_dirs.setdefault(directory.rsplit("/", 1)[0], [])
-        for summary in reader.summary_files(found):
-            directory = summary.path.rsplit("/", 1)[0]
-            if summary.season_id is not None:
-                scan.summaries.setdefault((summary.tournament_id, summary.season_id), []).append(summary)
-            if not summary.nested:
-                league_dirs.setdefault(directory, []).append(summary.mtime_ns)
-            elif summary.season_id is not None:
-                schedule_dirs.setdefault(directory, []).append(summary.mtime_ns)
+        if wanted & LISTING_SCHEDULES:
+            for page in reader.schedule_pages(found):
+                scan.pages.setdefault((page.tournament_id, page.season_id), []).append(page)
+                directory = page.path.rsplit("/", 1)[0]
+                schedule_dirs.setdefault(directory, []).append(page.mtime_ns)
                 league_dirs.setdefault(directory.rsplit("/", 1)[0], [])
-        scan.season_lists = reader.season_lists(self._league_names(), found)
+            for summary in reader.summary_files(found):
+                directory = summary.path.rsplit("/", 1)[0]
+                if summary.season_id is not None:
+                    scan.summaries.setdefault((summary.tournament_id, summary.season_id), []).append(summary)
+                if not summary.nested:
+                    league_dirs.setdefault(directory, []).append(summary.mtime_ns)
+                elif summary.season_id is not None:
+                    schedule_dirs.setdefault(directory, []).append(summary.mtime_ns)
+                    league_dirs.setdefault(directory.rsplit("/", 1)[0], [])
+        if wanted & LISTING_SEASON_LISTS:
+            scan.season_lists = reader.season_lists(self._league_names(), found)
 
         roots = scan.roots
         for kind, directories in ((ROOT_LEAGUE_DIR, league_dirs), (ROOT_SCHEDULE_DIR, schedule_dirs)):
@@ -1020,7 +1087,7 @@ class CatalogAdmin:
                 # Turnuvası addan bulunan dosya: eşleme değişince (dosya değişmese de) yeniden dizinlenmeli
                 signature = f"{signature}:{item.tournament_id}"
             roots[item.path] = (ROOT_SEASONS_FILE, signature)
-        signature = self._root_signature(legacy.CHANGES_FILE)
+        signature = self._root_signature(legacy.CHANGES_FILE) if wanted & LISTING_CHANGES else None
         if signature is not None:
             roots[legacy.CHANGES_FILE] = (ROOT_CHANGES_FILE, signature)
 
@@ -1084,13 +1151,16 @@ class CatalogAdmin:
 
         Listeler (bölüm 8.2): satırın `listed_in` sütunu korunur ve `stale` yeniden hesaplanır (olay yükü
         listeden eskiyse liste sayfası okunur). Dizini kalmayan maç bir sayfada hâlâ listeleniyorsa satırı
-        silinmez, liste satırına döner: o sezonun listesi yeniden dizinlenir.
+        silinmez, liste satırına döner: o sezonun listesi yeniden dizinlenir. Olay yükü, sporu bilinmeyen
+        liste satırları olan bir turnuvanın sporunu ilk kez getirdiyse o sezonlar da yeniden dizinlenir
+        (yeniden kurma, özet CSV'sinden gelen sezonları bu yüzden maçlardan sonra yazar).
         """
         with self.catalog.write():
             relist: Set[SeasonKey] = set()
             found = self._index_event(event_id, paths, candidates, problems, relist)
+            relist.update(entities.seasons_missing_sport(self.catalog))
             if relist:
-                scan = self._scan_listings(problems if problems is not None else [])
+                scan = self._scan_listings(problems if problems is not None else [], kinds=LISTING_SCHEDULES)
                 for key in sorted(relist):
                     self._index_season(self.catalog, scan, key, problems)
             return found
@@ -1155,7 +1225,7 @@ class CatalogAdmin:
 
     # -- uzlaştırma --------------------------------------------------------------------------------
 
-    def reconcile(self, *, deep: bool = False, v3: bool = False) -> ReconcileReport:
+    def reconcile(self, *, deep: bool = False, v3: bool = False, quiet: bool = False) -> ReconcileReport:
         """
         Kataloğu, arkasından değişen dosyalarla yeniden eşitler (bölüm 3.5). Tek bir yazma işleminde:
 
@@ -1175,6 +1245,8 @@ class CatalogAdmin:
         `legacy_path` sütunu denetlenir.
         deep=True: imzalara bakılmaz, her maç ve her liste yeniden okunur (v3 dahil); ardından
         `verify(deep=True, repair=True)` çalışır ve raporu `ReconcileReport.verify`'da döner.
+        quiet=True: değişiklik bulunduğunda yazılan özet satırı INFO yerine DEBUG düzeyindedir. Depo açılışı
+        böyle çağırır: her açılışta çalışan bir uzlaştırmanın satırı komut çıktısına girmemelidir.
 
         Katalog kullanılabilir durumda değilse (yok, başka şema ya da türetme sürümü) StoreError: önce
         yeniden kurulmalıdır (`ensure`).
@@ -1203,7 +1275,8 @@ class CatalogAdmin:
             report.verify = self.verify(deep=True, repair=True)
         report.seconds = time.monotonic() - started
         if report.changed:
-            logger.info(
+            logger.log(
+                logging.DEBUG if quiet else logging.INFO,
                 f"Catalog reconciled: {report.events_indexed} events re-indexed, {report.events_removed} removed, "
                 f"{report.pending} pending writes, {len(report.seasons)} season listings, "
                 f"season lists {'rewritten' if report.season_lists is not None else 'unchanged'}, "
@@ -1266,13 +1339,16 @@ class CatalogAdmin:
             elif brief is not None:
                 report.events_removed += 1
 
-    def _reconcile_listings(self, report: ReconcileReport, seasons: Set[SeasonKey]) -> None:
+    def _reconcile_listings(self, report: ReconcileReport, seasons: Set[SeasonKey],
+                            kinds: Iterable[str] = LISTING_KINDS) -> None:
+        """Liste kaynaklarını imzalarıyla uzlaştırır; yalnızca `kinds` türündeki kökler taranır ve karşılaştırılır."""
         cat = self.catalog
         conn = cat.connection()
-        scan = self._scan_listings(report.problems)
+        wanted = frozenset(kinds)
+        scan = self._scan_listings(report.problems, kinds=wanted)
         roots = scan.roots
         stored = {str(row[0]): (str(row[1]), str(row[2]))
-                  for row in conn.execute("SELECT path, kind, sig FROM legacy_roots")}
+                  for row in conn.execute("SELECT path, kind, sig FROM legacy_roots") if str(row[1]) in wanted}
         changed = [path for path in sorted(set(stored) | set(roots))
                    if report.deep or stored.get(path) != roots.get(path)]
         kinds = {path: (roots.get(path) or stored[path])[0] for path in changed}
@@ -1297,15 +1373,73 @@ class CatalogAdmin:
             seasons.update(entities.attached_seasons(cat))
         # Yeniden kurmadaki sırayla: önce sayfaları olan sezonlar, sonra yalnızca özeti olanlar
         report.seasons = sorted(seasons, key=lambda key: (key not in scan.pages, key))
-        for key in report.seasons:
-            self._index_season(cat, scan, key, report.problems)
-        report.seasons.extend(key for key in self._fill_sports(cat, scan) if key not in seasons)
+        if wanted & LISTING_SCHEDULES:  # sezonların dosyaları yalnızca program taramasında bilinir
+            for key in report.seasons:
+                self._index_season(cat, scan, key, report.problems)
+            report.seasons.extend(key for key in self._fill_sports(cat, scan) if key not in seasons)
 
         if ROOT_CHANGES_FILE in kinds.values():
             notes: List[LegacyProblem] = []
             report.changes = changes_mod.index_legacy(cat, self.reader, notes)
             report.problems.extend(_from_legacy(notes))
         self._write_roots(cat, roots, changed)
+
+    def sync_listings(self, kinds: Iterable[str] = LISTING_KINDS) -> ReconcileReport:
+        """
+        Uzlaştırmanın liste yarısı (bölüm 3.5, adım 3-6), maç dizinlerine bakmadan: `kinds` türündeki köklerin
+        imzaları `legacy_roots` ile karşılaştırılır ve yalnızca değişenler yeniden dizinlenir. Eski düzen
+        yazıcılarının kancaları bunu çağırır (gölge kip): tur / sayfa ya da sezon özeti yazıldıktan sonra
+        `LISTING_SCHEDULES`, sezon listesi yazıldıktan sonra `LISTING_SEASON_LISTS`, değişiklik günlüğüne satır
+        eklendikten sonra `LISTING_CHANGES`. Program taraması bütün `matches/` ağacını listeler (dosya okumaz);
+        öteki iki grup yalnızca kendi dosyalarına bakar.
+
+        Kendi yazma işlemini açar (açık bir `write()` bloğunun içinde çağrılırsa ona katılır). Katalog
+        kullanılabilir durumda değilse StoreError (`reconcile` ile aynı).
+        """
+        started = time.monotonic()
+        cat = self.catalog
+        state = cat.inspect()
+        if not state.usable:
+            raise StoreError(
+                f"Katalog uzlaştırılamaz, önce yeniden kurulmalı ({state.rebuild_reason}): {cat.path}",
+                path=cat.path, detail=state.detail)
+        report = ReconcileReport(deep=False, v3=False)
+        with cat.write():
+            self._reconcile_listings(report, set(), kinds)
+        report.seconds = time.monotonic() - started
+        return report
+
+    # -- yeniden kurmayla karşılaştırma (gölge denetimi) -------------------------------------------
+
+    def diff_from_rebuild(self) -> List[str]:
+        """
+        Kataloğu, aynı ağacın sıfırdan kurulmuş haliyle satır satır karşılaştırır ve farkları döndürür (boş
+        liste: eşit). Kataloğa ve veri dizinine dokunmaz: karşılaştırılacak katalog sistemin geçici dizininde
+        kurulur ve iş bitince silinir. Yük dosyalarının hepsi okunur (yeniden kurmanın maliyeti); testler ve
+        elle denetim içindir.
+
+        Kural (bölüm 3.5'teki iki farkı karara bağlar):
+          * `meta` karşılaştırılmaz, `legacy_roots.scanned_at` de (kurulumun ve taramanın saati).
+          * Varlık tabloları (`DIFF_GROWING_TABLES`) yalnızca büyür: yeniden kurmanın yazdığı her satır
+            katalogda da olmalıdır; katalogdaki fazla satır ve farklı değer fark sayılmaz.
+          * Öteki bütün tablolar satır satır eşit olmalıdır.
+        Karşılaştırma satırlar üzerindendir, `ReconcileReport.changed` üzerinden değil: en yeni kopyası
+        okunamayan maç her uzlaştırmada yeniden okunur ama satırları değişmez.
+        """
+        main = self.catalog
+        state = main.inspect()
+        if not state.usable:
+            return [f"catalog: not usable ({state.rebuild_reason})"]
+        scratch = tempfile.mkdtemp(prefix="catalog-check-")
+        fresh = Catalog(os.path.join(scratch, "catalog.db"), busy_timeout_ms=main.busy_timeout_ms)
+        try:
+            fresh.prepare()
+            with fresh.write():
+                self._fill(fresh, RebuildReport(mode=MODE_RECREATE, reason=None), None, None)
+            return _diff_catalogs(main, fresh)
+        finally:
+            fresh.close()
+            files.remove_tree(scratch)
 
     # -- doğrulama ve sayımlar ---------------------------------------------------------------------
 
@@ -1367,6 +1501,10 @@ class CatalogAdmin:
 
 
 __all__ = [
+    "LISTING_KINDS",
+    "LISTING_SCHEDULES",
+    "LISTING_SEASON_LISTS",
+    "LISTING_CHANGES",
     "LAYOUT_V3",
     "LAYOUT_LEGACY",
     "MODE_AUTO",

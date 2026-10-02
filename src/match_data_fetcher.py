@@ -24,6 +24,9 @@ from src.client import base_url
 from src.config_manager import ConfigManager
 from src.exceptions import ResourceNotFoundError, StorageError
 from src.fsutil import atomic_write_json
+# Gölge kip (docs/design/01-storage.md 3.5): her yazmadan sonra Store'un bir `shadow_*` kancası çağrılır ve
+# katalog yazılanı diskten yeniden dizinler. Paket kökü üzerinden: kancalar ilk çağrıda yüklenir.
+from src import store as store_hooks
 from src.utils import make_api_request, ensure_directory
 from src.match_fetcher import MatchFetcher
 from src.sports import DETAIL_SLICES, event_sport_slug, get_slice, slices_for
@@ -756,6 +759,8 @@ class MatchDataFetcher:
                     os.remove(status_path)
         except OSError as e:
             raise StorageError.from_exception(e, match_dir) from e
+        finally:
+            store_hooks.shadow_event(self.data_dir, os.path.basename(match_dir), match_dir)
         return reopened
 
     def _expected_slices(self, match_dir: str, sport: Optional[str] = None) -> List[str]:
@@ -855,6 +860,8 @@ class MatchDataFetcher:
         except OSError as e:
             # Yazılamayan yenileme "yenilendi" sayılmaz; çağıran maçı başarısız işaretler (kalıcıysa iş durur)
             raise StorageError.from_exception(e, match_dir) from e
+        finally:
+            store_hooks.shadow_event(self.data_dir, mid, match_dir)
         data[OBSERVATION_KEY] = obs
 
         self.last_refresh_changed = bool(changed)
@@ -870,6 +877,7 @@ class MatchDataFetcher:
         with _SCORE_CHANGES_LOCK:
             with open(path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        store_hooks.shadow_changes(self.data_dir)
 
     def refresh_due_ids(self, league_id: Optional[Union[int, str]] = None) -> List[str]:
         """Kayıtlı maçlardan yenilenmesi gerekenler (--refresh-only). Eksik dilimli maçlar dahil değil."""
@@ -1232,6 +1240,8 @@ class MatchDataFetcher:
         except Exception as e:
             logger.error(f"Maç ID {match_id} için veriler kaydedilemedi ({match_dir}): {str(e)}")
             raise StorageError.from_exception(e, match_dir) from e
+        finally:
+            store_hooks.shadow_event(self.data_dir, mid, match_dir)
 
         if getattr(self, "_match_index", None) is not None:
             self._match_index[mid] = (league_dir_name, season_dir_name, match_dir)

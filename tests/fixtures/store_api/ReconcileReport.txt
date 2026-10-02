@@ -1,0 +1,19 @@
+# src.store.ReconcileReport
+# kaynak: src/store/indexer.py
+@dataclass
+class ReconcileReport:
+    deep: bool
+    v3: bool
+    events_checked: int = 0
+    events_indexed: int = 0
+    events_removed: int = 0
+    pending: int = 0
+    pending_skipped: int = 0
+    season_lists: Optional[int] = None
+    seasons: List[SeasonKey] = field(default_factory=list)
+    changes: Optional[int] = None
+    problems: List[IndexProblem] = field(default_factory=list)
+    verify: Optional['VerifyReport'] = None
+    seconds: float = 0.0
+    @property
+    def changed(self) -> bool

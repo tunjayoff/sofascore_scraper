@@ -1,0 +1,8 @@
+# src.store.SupersededDir
+# kaynak: src/store/indexer.py
+@dataclass(frozen=True)
+class SupersededDir:
+    event_id: int
+    path: str
+    winner: str
+    by: str

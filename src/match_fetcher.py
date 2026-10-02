@@ -21,6 +21,9 @@ from src.status import StatusClass, classify_status
 # İstek fonksiyonu ve FETCH_ONLY_FINISHED fonksiyon içinde import edilir: çağrı anındaki değer okunur (testler patch eder)
 from src.utils import ensure_directory
 from src.fsutil import atomic_write_json, atomic_write_text
+# Gölge kip (docs/design/01-storage.md 3.5): her yazmadan sonra Store'un bir `shadow_*` kancası çağrılır ve
+# katalog yazılanı diskten yeniden dizinler. Paket kökü üzerinden: kancalar ilk çağrıda yüklenir.
+from src import store as store_hooks
 from src.logger import get_logger
 from src.paths import matches_season_dir, summary_paths
 
@@ -494,9 +497,12 @@ class MatchFetcher:
         ensure_directory(output_dir)
 
         logger.info(get_i18n().t('fetching_data_up_to_max_rounds', max_round=max_round))
-        return asyncio.run(
-            self.fetch_all_rounds_async(league_id, season_id, output_dir, max_round=max_round)
-        )
+        try:
+            return asyncio.run(
+                self.fetch_all_rounds_async(league_id, season_id, output_dir, max_round=max_round)
+            )
+        finally:
+            store_hooks.shadow_schedules(self.data_dir)  # tur ve sayfa dosyaları (yarıda kesilen çekim dahil)
 
     def fetch_all_rounds_for_season(self, league_id: int, season_id: int, max_round: int = 50) -> List[Dict[str, Any]]:
         """
@@ -594,6 +600,7 @@ class MatchFetcher:
                 logger.warning(f"{league_name}: Sezon {season_id} için CSV özeti oluşturulamadı - veri bulunamadı")
         except Exception as e:
             logger.error(f"Sezon CSV özeti kaydedilirken hata: {str(e)}")
+        store_hooks.shadow_schedules(self.data_dir)
 
     def _get_nested_value(self, data, keys, default=None):
         """Nested dict/json yapılardan güvenli bir şekilde değer çekmek için yardımcı method"""

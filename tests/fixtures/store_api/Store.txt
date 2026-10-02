@@ -1,7 +1,7 @@
 # src.store.Store
 # kaynak: src/store/api.py
 class Store:
-    def __init__(self, data_dir: PathLike, *, create: bool = True, readonly: bool = False) -> None
+    def __init__(self, data_dir: PathLike, *, create: bool = True, readonly: bool = False, sync_catalog: bool = True) -> None
     self.data_dir
     self.readonly
     self.follows
@@ -11,8 +11,11 @@ class Store:
     self.events
     self.entities
     self.changes
+    self.catalog
     @property
     def closed(self) -> bool
+    @property
+    def jobs(self) -> JobStore
     @property
     def store_id(self) -> str
     def lease(self, name: str, *, purpose: str = '', wait: float = 0.0) -> Lease
