@@ -3,8 +3,9 @@ Durum servisi: veri dizininin özeti (docs/design/02-services.md 2.7; plan madde
 
 `StatusService.summary()` gösterge panelinin ve istatistik ekranlarının sayılarını **katalogdan** verir; dosya
 ağacını gezmez. Sayımlar `Store.events.summary` ve `Store.entities.seasons`'tan, disk kullanımı
-`Store.info`'dan gelir (ağacı gezen Store'dur). Tasarımdaki diğer işler (health, coverage, doctor, tanılama
-paketi) onları getiren plan maddeleriyle eklenir.
+`Store.info`'dan gelir (ağacı gezen Store'dur). `StatusService.coverage()` detayı saklanan maçların dilim
+tamlığını yine katalogdan hesaplar (plan maddesi P15; eski dosya analizi raporunun yerine). Tasarımdaki diğer işler
+(health, doctor, tanılama paketi) onları getiren plan maddeleriyle eklenir.
 
 Sayım kuralları (katalogdaki her maç ve her sezon listesi bir kez sayılır):
 
@@ -28,6 +29,21 @@ dizinlerde pahalıdır; sonuç depo başına `SIZES_MAX_AGE` saniye saklanır ve
 temizleme: satır sayıları ya da en yeni `updated_at` değişir) hemen yeniden ölçülür. Kataloğun görmediği
 değişiklikler (CSV dışa aktarımı, yedekler, elle silinen dosyalar) en geç o süre sonunda görünür.
 
+Kapsam (coverage) kuralları:
+
+  * Yalnızca `/event/{id}` yükü saklanan maçlar sayılır (`details`); yalnızca bir listeden bilinen maç girmez.
+    Eski rapor (src/match_data_fetcher.py `generate_file_report`) `basic.json`'ı olmayan bir dizini de maç
+    sayıyordu ve yalnızca `match_details/<lig>/season_*/` altındaki dizinlere bakıyordu; düz, `_no_tournament/`
+    ve v3 düzenindeki kayıtlar da artık sayılır.
+  * Beklenen dilimler maçın sporuna ve evresine göredir (src/services/planning.py `expected_slice_keys`,
+    tamlık hesabına girenler). Bir dilim eksiktir, planlayıcı onu yeniden isteyecekse
+    (`planning.missing_slice_keys`): satırı yok ya da `ok` değil ve yeterince kesin "veri yok" yanıtı almamış.
+    Yeterince denenip hep boş gelen dilim (ör. tenis maçında kadro) eksik sayılmaz.
+  * Tam maç: eksik dilimi olmayan maç. Oran yüzdedir, iki ondalık (eski raporla aynı yuvarlama).
+
+Rapor hiçbir yere yazılmaz: istendiğinde hesaplanır (eskiden `match_details/processed/` altına JSON ve CSV
+yazılıyordu).
+
 Servis yazdırmaz, kilit almaz ve dosya sistemine dokunmaz.
 """
 from __future__ import annotations
@@ -39,8 +55,9 @@ import weakref
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
+from src.services import planning
 from src.status import StatusClass
-from src.store import EventQuery, Store, TournamentSummary
+from src.store import EventQuery, Scope, Store, TournamentSummary
 
 SIZES_MAX_AGE = 60.0  # ölçülen disk kullanımının saklandığı süre (saniye); 0: her çağrıda yeniden ölçülür
 
@@ -144,6 +161,101 @@ class DataSummary:
         return TournamentCounts(tournament_id)
 
 
+def _rate(complete: int, total: int) -> float:
+    """Tam maçların yüzdesi, iki ondalık; maç yoksa 0."""
+    return round(complete / total * 100, 2) if total else 0.0
+
+
+@dataclass(frozen=True)
+class SeasonCoverage:
+    """
+    Bir sezonun kapsamı. season_id None: sezonu bilinmeyen maçlar. matches: olay yükü saklanan maçlar;
+    complete: eksik dilimi olmayanlar; missing: dilim → o dilimi eksik olan maç sayısı (tablo sırasıyla).
+    """
+
+    season_id: Optional[int]
+    matches: int = 0
+    complete: int = 0
+    missing: Mapping[str, int] = field(default_factory=dict)
+
+    @property
+    def completion_rate(self) -> float:
+        return _rate(self.complete, self.matches)
+
+
+@dataclass(frozen=True)
+class TournamentCoverage:
+    """Bir turnuvanın kapsamı (sezonlarının toplamı). tournament_id None: benzersiz turnuvası olmayan maçlar."""
+
+    tournament_id: Optional[int]
+    matches: int = 0
+    complete: int = 0
+    missing: Mapping[str, int] = field(default_factory=dict)
+    seasons: Tuple[SeasonCoverage, ...] = ()  # sezon kimliği büyükten küçüğe, sezonu bilinmeyenler en sonda
+
+    @property
+    def completion_rate(self) -> float:
+        return _rate(self.complete, self.matches)
+
+
+@dataclass(frozen=True)
+class CoverageReport:
+    """
+    `StatusService.coverage()` sonucu: kapsamdaki, detayı saklanan maçların dilim tamlığı.
+
+    tournaments  maçı olan her turnuva, kimlik sırasıyla; turnuvasız maçların satırı (None) en başta
+    catalog_rebuild_reason  None: katalog kullanılabilir. Doluysa katalog dosyaları anlatmıyor ve sayılar eksik
+                 ya da sıfır olabilir.
+    """
+
+    data_dir: str
+    matches: int = 0
+    complete: int = 0
+    missing: Mapping[str, int] = field(default_factory=dict)
+    tournaments: Tuple[TournamentCoverage, ...] = ()
+    catalog_rebuild_reason: Optional[str] = None
+
+    @property
+    def completion_rate(self) -> float:
+        return _rate(self.complete, self.matches)
+
+    def tournament(self, tournament_id: Optional[int]) -> TournamentCoverage:
+        """Turnuvanın kapsamı; raporun bilmediği turnuva için hepsi sıfır."""
+        for found in self.tournaments:
+            if found.tournament_id == tournament_id:
+                return found
+        return TournamentCoverage(tournament_id)
+
+
+class _Tally:
+    """Kapsam sayaçları (bir sezon, bir turnuva ya da bütün rapor)."""
+
+    def __init__(self) -> None:
+        self.matches = 0
+        self.complete = 0
+        self.missing: Dict[str, int] = {}
+
+    def add(self, missing: Tuple[str, ...]) -> None:
+        self.matches += 1
+        if not missing:
+            self.complete += 1
+        for key in missing:
+            self.missing[key] = self.missing.get(key, 0) + 1
+
+
+def _slice_rank(key: str) -> Tuple[int, str]:
+    """Dilimlerin sırası: kayıt defterinin sırası (src/sports.py), bilinmeyen dilim sonda ve adına göre."""
+    from src.sports import known_slice_names
+
+    names = known_slice_names()
+    return (names.index(key), "") if key in names else (len(names), key)
+
+
+def _season_order(season_id: Optional[int]) -> Tuple[int, int]:
+    """Sezonların sırası: kimlik büyükten küçüğe, sezonu bilinmeyen en sonda."""
+    return (1, 0) if season_id is None else (0, -season_id)
+
+
 # --- disk kullanımı: depo başına saklanan son ölçüm ---------------------------------------------------
 
 Fingerprint = Tuple[Tuple[Tuple[str, int], ...], Optional[int]]
@@ -218,6 +330,55 @@ class StatusService:
             seasons=season_total,
             tournaments=tournaments,
             disk=self._disk(fingerprint, sizes_max_age) if sizes else None,
+            catalog_rebuild_reason=info.catalog_rebuild_reason,
+        )
+
+    def coverage(self, scope: Optional[Scope] = None, *,
+                 threshold: int = planning.DEFAULT_EMPTY_THRESHOLD) -> CoverageReport:
+        """
+        Detayı saklanan maçların dilim tamlığı, katalogdan (kurallar modül belgesinde). Dosya okunmaz; maçlar ve
+        dilim satırları parça parça okunur (`Store.events.states`).
+
+        scope      None: bütün katalog; dolu alanlar birlikte uygulanır (spor, turnuva, sezon, maç)
+        threshold  bu kadar kesin "veri yok" yanıtından sonra dilim eksik sayılmaz (planlayıcıyla aynı eşik)
+
+        Depolama hatası (StoreError) çağırana çıkar.
+        """
+        store = self._store
+        info = store.info(sizes=False)
+        total = _Tally()
+        by_tournament: Dict[Optional[int], _Tally] = {}
+        by_season: Dict[Optional[int], Dict[Optional[int], _Tally]] = {}
+        if info.rows.get("catalog"):
+            for state in store.events.states(scope):
+                row = state.event
+                if not row.has_event_payload:
+                    continue
+                missing = planning.missing_slice_keys(state, threshold=threshold)
+                total.add(missing)
+                by_tournament.setdefault(row.tournament_id, _Tally()).add(missing)
+                by_season.setdefault(row.tournament_id, {}).setdefault(row.season_id, _Tally()).add(missing)
+
+        def ordered(missing: Mapping[str, int]) -> Dict[str, int]:
+            return dict(sorted(missing.items(), key=lambda item: _slice_rank(item[0])))
+
+        tournaments = tuple(
+            TournamentCoverage(
+                tournament_id=tid,
+                matches=tally.matches,
+                complete=tally.complete,
+                missing=ordered(tally.missing),
+                seasons=tuple(
+                    SeasonCoverage(sid, part.matches, part.complete, ordered(part.missing))
+                    for sid, part in sorted(by_season[tid].items(), key=lambda item: _season_order(item[0]))),
+            )
+            for tid, tally in sorted(by_tournament.items(), key=lambda item: (item[0] is not None, item[0] or 0)))
+        return CoverageReport(
+            data_dir=str(store.data_dir),
+            matches=total.matches,
+            complete=total.complete,
+            missing=ordered(total.missing),
+            tournaments=tournaments,
             catalog_rebuild_reason=info.catalog_rebuild_reason,
         )
 
@@ -300,6 +461,9 @@ class StatusService:
 
 __all__ = [
     "AREA_DATASETS",
+    "CoverageReport",
+    "SeasonCoverage",
+    "TournamentCoverage",
     "AREA_DETAILS",
     "AREA_MATCHES",
     "AREA_SEASONS",
