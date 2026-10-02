@@ -192,6 +192,15 @@ READ_ONLY_GETS = {
     "/api/sports",
     "/api/stats/system",
     "/api/status",
+    # API v1 (src/web/api/v1): sağlık, durum, sporlar, iş geçmişi ve olay akışı, ayarların okunması
+    "/api/v1/health",
+    "/api/v1/jobs",
+    "/api/v1/jobs/1",
+    "/api/v1/jobs/1/events",
+    "/api/v1/settings",
+    "/api/v1/sports",
+    "/api/v1/sports/1",
+    "/api/v1/status",
 }
 
 
@@ -524,7 +533,12 @@ def test_with_a_token_every_api_route_needs_it(token, method, path):
         assert r.status_code != 401 or r.json()["detail"]["code"] == "invalid_token"
         return
     assert r.status_code == 401
-    assert r.json() == {"detail": {"code": "auth_required", "message": "An access token is required."}}
+    if path.startswith("/api/v1/"):
+        # v1 hata modeli (src/web/errors.py): kod `unauthorized`; eski yolların gövdesi değişmedi
+        error = r.json()["error"]
+        assert (error["code"], error["message"], error["details"]) == ("unauthorized", "An access token is required.", None)
+    else:
+        assert r.json() == {"detail": {"code": "auth_required", "message": "An access token is required."}}
     assert r.headers["www-authenticate"] == "Bearer"
 
 
