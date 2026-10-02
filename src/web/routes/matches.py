@@ -22,6 +22,7 @@ from src.web.routes.common import (
 )
 
 if TYPE_CHECKING:
+    from src.services.planning import WorkItem
     from src.slices import Outcome
 
 router = APIRouter(prefix="/api", tags=["api"])
@@ -128,35 +129,68 @@ def _single_fetch_reason(outcome: Outcome, before: Optional[Dict[str, Any]]) -> 
     return upstream.UPSTREAM
 
 
+def _single_item(store: Any, event_id: int) -> "WorkItem":
+    """
+    Tek maçın iş birimi: olay yükü saklanan maç için `refill` (sayfası yeniden okunur, eksik dilimleri istenir),
+    diğerleri için `full`.
+    """
+    from src.services import planning
+    from src.services.pipeline import UNAVAILABLE_AFTER_ATTEMPTS
+    from src.store import Ref, Scope
+
+    states = list(store.events.states(Scope(event_ids=(event_id,))))
+    state = states[0] if states else None
+    if state is not None and state.event.has_event_payload:
+        item = planning.work_item(event_id, state, "refill", threshold=UNAVAILABLE_AFTER_ATTEMPTS)
+        if item is not None:
+            return item
+    return planning.WorkItem(Ref.event(event_id), "full", (), None, "single match")
+
+
+def _breaker_outcome(reason: str) -> "Outcome":
+    """Devre kesicinin nedeni ("403" | "429" | "5xx" | "other") → `_single_fetch_reason`'ın okuyacağı başarısız sonuç."""
+    from src.slices import SLICE_FAILED, Outcome
+
+    return Outcome(SLICE_FAILED, reason=reason)
+
+
 def _fetch_single_match_sync(match_id: str) -> dict:
     """
-    Tek maçı çeker. SofaScore /event isteğini ya da istenen dilimlerin hepsini reddettiyse tipli hatayı
-    (src/web/upstream.py: {"detail": {"reason", "message"}}) fırlatır; eskiden ilki 404 "Match data could
-    not be fetched", ikincisi hiçbir dilim kaydedilmeden 200 "success" oluyordu. Maç SofaScore'da yoksa ya
-    da bitmemişse 404; dilimlerden biri bile yanıt aldıysa "success".
-    """
-    from src.match_data_fetcher import MatchDataFetcher, SingleFetchReport
+    Tek maçı boru hattıyla çeker (src/services/pipeline.py), toplu indirmelerle aynı kurallarla: sporun seçilen
+    bütün dilimleri (isteğe bağlılar dahil), "yalnızca bitmiş maçlar" ayarı ve bu çekimin kendi devre kesicisi.
 
-    fetcher = MatchDataFetcher(config_manager=config_manager, data_dir=config_manager.get_data_dir())
-    report = SingleFetchReport()
-    before = bridge_health.snapshot()
+    SofaScore /event isteğini ya da istenen dilimlerin hepsini reddettiyse, ya da devre kesildiyse, tipli hatayı
+    (src/web/upstream.py: {"detail": {"reason", "message"}}) fırlatır. Maç SofaScore'da yoksa ya da bitmemişse
+    404; dilimlerden biri bile yanıt aldıysa "success". Kayıt yazılamadıysa 500.
+    """
+    from src import utils
+    from src.client.context import request_context
+    from src.services.pipeline import ITEM_SKIPPED, SKIP_BREAKER, FetchPipeline
+
     try:
-        result = None
-        if fetcher._find_match_path(match_id):
-            result = fetcher.refill_missing_match_slices(match_id, report=report)
-        # Reddedilen /event, kayıt yokmuş gibi baştan istenmez: neden belli, aynı istek yine reddedilir
-        if result is None and report.upstream_failure() is None:
-            result = fetcher.fetch_match_data(match_id, report=report)
-        failure = report.upstream_failure()
+        store = open_store(config_manager.get_data_dir())
+        item = _single_item(store, int(match_id))
+        breaker = request_breaker.CircuitBreaker.from_config(config_manager)
+        before = bridge_health.snapshot()
+        with request_context(breaker=breaker):
+            summary = FetchPipeline(store, concurrency=1,
+                                    only_finished=bool(utils.FETCH_ONLY_FINISHED)).run_sync([item])
+        result = summary.results[0]
+        if result.error is not None:
+            raise result.error
+        failure = result.upstream_failure()
+        if failure is None and result.status == ITEM_SKIPPED and result.reason == SKIP_BREAKER:
+            failure = _breaker_outcome(breaker.reason())
         if failure is not None:
             reason = _single_fetch_reason(failure, before)
+            what = "the event request" if failure is result.event else (
+                "every slice request" if result.slices else "the circuit breaker")
             logger.error(
-                f"Single match fetch for {match_id} failed ({reason}): "
-                f"{'the event request' if failure is report.event else 'every slice request'} failed "
+                f"Single match fetch for {match_id} failed ({reason}): {what} failed "
                 f"({failure.reason}, HTTP {failure.http_status})"
             )
             raise upstream.http_error(reason)
-        if result is None:
+        if not result.ok:
             raise _SyncHttpError(
                 404,
                 "Match data could not be fetched (may be unfinished or unavailable).",
@@ -165,7 +199,7 @@ def _fetch_single_match_sync(match_id: str) -> dict:
     except (_SyncHttpError, HTTPException):
         raise
     except Exception as e:
-        # İstek hataları buraya ulaşmaz (yukarıda rapordan okunur); kalanlar diske yazma ve benzeri hatalardır
+        # İstek hataları buraya ulaşmaz (sonuçtan okunur); kalanlar diske yazma ve benzeri hatalardır
         logger.error(f"Single match fetch failed for {match_id}: {e}")
         raise _SyncHttpError(500, "Match fetch failed")
 

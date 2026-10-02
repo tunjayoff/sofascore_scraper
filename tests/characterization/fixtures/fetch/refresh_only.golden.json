@@ -257,9 +257,14 @@
  "pause_seconds": [],
  "request_layer_waits": 2,
  "requests": [
-  "sync /event/9100010 404",
-  "sync /event/9100001 200",
-  "sync /event/9100003 200"
+  {
+   "concurrent": [
+    "async /event/9100001 200",
+    "async /event/9100003 200",
+    "async /event/9100010 404",
+    "async https://www.sofascore.com/ 200"
+   ]
+  }
  ],
  "stats": {
   "changed": 1,

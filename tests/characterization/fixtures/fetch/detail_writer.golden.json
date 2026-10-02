@@ -394,11 +394,15 @@
       "async /event/9100003/lineups 200",
       "async /event/9100003/pregame-form 200",
       "async /event/9100003/statistics 500",
+      "async /event/9100003/statistics 500",
+      "async /event/9100003/statistics 500",
       "async /event/9100003/team-streaks 200",
       "async /event/9100004 200",
       "async /event/9100010 200",
       "async /event/9100010/h2h 200",
       "async /event/9100010/incidents 200",
+      "async /event/9100010/lineups 429",
+      "async /event/9100010/lineups 429",
       "async /event/9100010/lineups 429",
       "async /event/9100010/pregame-form 200",
       "async /event/9100010/statistics 200",
@@ -1252,13 +1256,7 @@
     "schedules": {},
     "season_lists": {}
    },
-   "requests": [
-    {
-     "concurrent": [
-      "async https://www.sofascore.com/ 200"
-     ]
-    }
-   ],
+   "requests": [],
    "result": {
     "success": 0
    }
@@ -1664,13 +1662,18 @@
     "season_lists": {}
    },
    "requests": [
-    "sync /event/9100003 200",
-    "sync /event/9100003/statistics 200",
-    "sync /event/9100010 200",
-    "sync /event/9100010/lineups 200",
-    "sync /event/9100002 200",
-    "sync /event/9100002/pregame-form 404",
-    "sync /event/9100002/lineups 200"
+    {
+     "concurrent": [
+      "async /event/9100002 200",
+      "async /event/9100002/lineups 200",
+      "async /event/9100002/pregame-form 404",
+      "async /event/9100003 200",
+      "async /event/9100003/statistics 200",
+      "async /event/9100010 200",
+      "async /event/9100010/lineups 200",
+      "async https://www.sofascore.com/ 200"
+     ]
+    }
    ],
    "result": [
     "9100002",
@@ -2151,9 +2154,14 @@
     "season_lists": {}
    },
    "requests": [
-    "sync /event/9100010 200",
-    "sync /event/9100001 200",
-    "sync /event/9100003 200"
+    {
+     "concurrent": [
+      "async /event/9100001 200",
+      "async /event/9100003 200",
+      "async /event/9100010 200",
+      "async https://www.sofascore.com/ 200"
+     ]
+    }
    ],
    "result": {
     "due": [
@@ -3529,14 +3537,24 @@
     "season_lists": {}
    },
    "requests": [
-    "sync /event/9100001 200",
-    "sync /event/9100001/statistics 200",
-    "sync /event/9100001/team-streaks 200",
-    "sync /event/9100001/pregame-form 200",
-    "sync /event/9100001/h2h 200",
-    "sync /event/9100001/lineups 200",
-    "sync /event/9100001/incidents 200",
-    "sync /event/9300001 200"
+    {
+     "concurrent": [
+      "async /event/9100001 200",
+      "async /event/9100001/h2h 200",
+      "async /event/9100001/incidents 200",
+      "async /event/9100001/lineups 200",
+      "async /event/9100001/pregame-form 200",
+      "async /event/9100001/statistics 200",
+      "async /event/9100001/team-streaks 200",
+      "async https://www.sofascore.com/ 200"
+     ]
+    },
+    {
+     "concurrent": [
+      "async /event/9300001 200",
+      "async https://www.sofascore.com/ 200"
+     ]
+    }
    ],
    "result": {
     "9100001": true,

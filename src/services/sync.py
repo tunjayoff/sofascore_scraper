@@ -8,6 +8,11 @@ ilerleme (JobProgress), iş günlüğü satırı. Tutamaç verilmezse iş kaydı
 Komut satırı da aynı servisi çağırır (main.py: `--headless --update-all` ve `--refresh-only`); yalnızca yenileme
 ayrı bir kiptir (`mode="refresh"`: kayıtlı geçici maçların /event'i yeniden okunur, başka istek atılmaz).
 
+Maç detayları (detay aşaması, kimliğiyle seçilen maçlar, yalnızca yenileme) tek getirme boru hattıyla indirilir
+(src/services/pipeline.py, plan maddesi P13). Servis ona bağlamdaki MatchDataFetcher'ın eski adlı giriş noktalarıyla
+(`fetch_detail_ids`, `fetch_matches_batch`, `refresh_matches`) ulaşır: bunlar yalnızca iş birimlerini kurar; çekici
+P15'te kalktığında çağrılar buraya taşınır. Bitmemiş maç atlanır ve başarısız sayılmaz.
+
 İşin sonunda CSV yazılmaz (karar D9, plan maddesi EX-1): dışa aktarma istendiğinde üretilir
 (src/services/export.py; web'de `GET /api/export/csv`, komut satırında `--csv-export`).
 

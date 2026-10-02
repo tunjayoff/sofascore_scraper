@@ -155,66 +155,91 @@ def _detail_fetcher(tmp_path, threshold=3):
     return MatchDataFetcher(cfg, data_dir=str(tmp_path))
 
 
+def _event(mid) -> dict:
+    return {"id": int(mid), "tournament": {"uniqueTournament": {"id": 77, "name": "Cup"},
+                                           "category": {"sport": {"slug": "football"}}},
+            "status": {"code": 100, "description": "Ended", "type": "finished"}, "startTimestamp": 1790000000}
+
+
+def _api(answer):
+    """
+    İstek katmanının (make_api_request_async) sahtesi; boru hattının istemcisi onu çağırır. `answer(mid, url)` bir
+    gövde döndürür ya da fırlatır. Gerçek katman gibi isteğin sonucunu işin devre kesicisine bildirir.
+    """
+    from src import breaker
+
+    async def fake(session, url, max_retries=None, **_kw):
+        mid = url.split("/event/", 1)[1].split("/", 1)[0]
+        try:
+            data = await answer(mid, url)
+        except Exception as e:
+            breaker.report_exception(e)
+            raise
+        breaker.report_ok()
+        return data
+
+    return patch("src.utils.make_api_request_async", new=fake)
+
+
 def test_breaker_trips_on_repeated_403(tmp_path, monkeypatch):
     monkeypatch.delenv("IGNORE_RATE_LIMIT", raising=False)
     f = _detail_fetcher(tmp_path)
     calls = []
 
-    async def always_403(session, mid):
+    async def always_403(mid, url):
         calls.append(mid)
         raise APIError("blocked", status_code=403)
 
-    f._fetch_match_data_async = always_403
-    with patch("src.utils.create_session_async", _fake_session), \
-            patch("src.match_data_fetcher.asyncio.sleep", new=AsyncMock()):
+    with _api(always_403), patch("src.utils.create_session_async", _fake_session):
         _run(f.fetch_matches_batch_async(list(range(1, 40)), max_concurrent=1))
     assert f.rate_limit_breaker_triggered is True
     assert f.last_status_counts.get("403", 0) >= 3
     assert len(calls) < 39  # tüm maçları denemeden durdu
 
 
-def test_no_fixed_pause_between_batches_of_a_bulk_download(tmp_path):
-    """100'lük batch'ler arasındaki 1 sn'lik bekleme kalktı: hızı ortak istek bütçesi belirler."""
+def test_no_fixed_pause_in_a_bulk_download(tmp_path):
+    """100'lük batch'ler ve aralarındaki 1 sn'lik bekleme kalktı: hızı ortak istek bütçesi belirler."""
     f = _detail_fetcher(tmp_path, threshold=1000)
 
-    async def fetch(session, mid):
-        return {"basic": {"id": mid}}
+    async def answer(mid, url):
+        return {"event": _event(mid)} if url.endswith(f"/event/{mid}") else {}
 
-    f._fetch_match_data_async = fetch
-    with patch("src.utils.create_session_async", _fake_session), \
-            patch("src.match_data_fetcher.asyncio.sleep", new=AsyncMock()) as sleep:
-        results = _run(f.fetch_matches_batch_async(list(range(1, 251)), max_concurrent=10))  # 3 batch
+    with _api(answer), patch("src.utils.create_session_async", _fake_session), \
+            patch("src.services.pipeline.asyncio.sleep", new=AsyncMock()) as sleep:
+        results = _run(f.fetch_matches_batch_async(list(range(1, 251)), max_concurrent=10))
     assert len(results) == 250
     sleep.assert_not_awaited()
 
 
-def test_error_back_off_between_attempts_is_kept(tmp_path, monkeypatch):
-    """Kaldırılan yalnızca hız beklemeleri: hata sonrası geri çekilme (1 sn, 2 sn + rastgele) duruyor."""
+def test_a_failed_event_request_is_not_retried_per_match(tmp_path, monkeypatch):
+    """
+    Maç başına ek deneme döngüsü (1 sn, 2 sn + rastgele aralarla üç deneme) P13'te kalktı: yeniden denemeyi yalnızca
+    istek katmanı yapar (MAX_RETRIES, kendi geri çekilmesiyle; tests/characterization/test_pipeline_divergence.py).
+    """
     monkeypatch.delenv("IGNORE_RATE_LIMIT", raising=False)
     f = _detail_fetcher(tmp_path, threshold=1000)
+    calls = []
 
-    async def always_500(session, mid):
+    async def always_500(mid, url):
+        calls.append(url)
         raise APIError("boom", status_code=500)
 
-    f._fetch_match_data_async = always_500
-    with patch("src.utils.create_session_async", _fake_session), \
-            patch("src.match_data_fetcher.asyncio.sleep", new=AsyncMock()) as sleep:
+    with _api(always_500), patch("src.utils.create_session_async", _fake_session), \
+            patch("src.services.pipeline.asyncio.sleep", new=AsyncMock()) as sleep:
         assert _run(f.fetch_matches_batch_async([1], max_concurrent=1)) == {}
-    waits = [c.args[0] for c in sleep.await_args_list]
-    assert len(waits) == 2 and 1.0 <= waits[0] <= 2.0 and 2.0 <= waits[1] <= 3.0
+    assert len(calls) == 1
+    sleep.assert_not_awaited()
 
 
 def test_cancel_propagates_and_leaves_no_pending_tasks(tmp_path):
     f = _detail_fetcher(tmp_path, threshold=1000)
     started = []
 
-    async def fetch(session, mid):
+    async def answer(mid, url):
         started.append(mid)
-        if mid == 1:
+        if mid == "1":
             raise FetchCancelled()
         await asyncio.sleep(10)
-
-    f._fetch_match_data_async = fetch
 
     async def run():
         with pytest.raises(FetchCancelled):
@@ -222,7 +247,7 @@ def test_cancel_propagates_and_leaves_no_pending_tasks(tmp_path):
         others = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
         assert not [t for t in others if not t.done()]
 
-    with patch("src.utils.create_session_async", _fake_session):
+    with _api(answer), patch("src.utils.create_session_async", _fake_session):
         _run(run())
 
 

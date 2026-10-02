@@ -1,18 +1,20 @@
 from src.i18n import get_i18n
 """
 SofaScore API'sinden detaylı maç verilerini çeken modül.
+
+P13'ten beri maç detaylarını indiren tek yol src/services/pipeline.py'deki FetchPipeline'dır; buradaki eski adlı
+giriş noktaları (toplu indirme, seçilen maçlar, tek maç, refill, yenileme) yalnızca iş birimlerini kurar. Kayıtların
+okunması, yazıcı (`_save_match_data`), ihtiyaç hesabının önbelleği ve CSV / rapor yardımcıları P15'e kadar burada durur.
 """
 
 import os
 import json
 import csv
-import time  # testler `src.match_data_fetcher.time.sleep` yolunu yamalar; meşgul depoda bekleme de bununla
-import random
+import time  # noqa: F401  testler `src.match_data_fetcher.time.sleep` yolunu yamalar (time modülünün kendisi)
 import datetime as dt
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Mapping, Optional, Union, Tuple
 from pathlib import Path
-import asyncio
 from collections import Counter
 import pandas as pd
 from tqdm import tqdm
@@ -20,19 +22,20 @@ from tqdm import tqdm
 from src import breaker as request_breaker
 from src.client import base_url
 from src.config_manager import ConfigManager
-from src.exceptions import ResourceNotFoundError, StorageError
+from src.exceptions import StorageError
 # Maçlar Store'a yazılır (`open_store(...).events.put` / `observe`, docs/design/01-storage.md 2.3 ve 6.2) ve
 # Store'dan okunur. Paket kökü üzerinden: cephe ilk çağrıda yüklenir.
 from src import store as store_hooks
-from src.utils import make_api_request, ensure_directory
+from src.utils import ensure_directory
 from src.match_fetcher import MatchFetcher
-from src.sports import DETAIL_SLICES, event_sport_slug, get_slice, slices_for
+from src.sports import DETAIL_SLICES, event_sport_slug, slices_for
 from src.status import OBSERVATION_KEY, observation_record
 # SCORE_CHANGES_FILE: eski düzenin değişiklik günlüğü (yalnızca okunur); eski import'lar için burada da durur
-from src.refresh import SCORE_CHANGES_FILE as SCORE_CHANGES_FILE, change_row, diff_basic
+from src.refresh import SCORE_CHANGES_FILE as SCORE_CHANGES_FILE
 from src.paths import league_dir_name
 from src.services.export import ExportService, ExportSpec
-from src.services import planning
+from src.services import pipeline, planning
+from src.services.planning import WorkItem
 from src.services.query import QueryService, RefreshPolicy
 from src.services.status import only_finished_setting
 # Sonuç tipi ve "veri var mı" yüklemleri src/slices.py'de durur. `X as X` biçimindekiler buradan taşınan
@@ -80,8 +83,9 @@ SLICE_STATUS_FILE = "_slice_status.json"  # {dilim: {"empty": {...}, "error": {.
 NO_TOURNAMENT_DIR = "_no_tournament"  # uniqueTournament.id'si olmayan maçlar: match_details/_no_tournament/<spor>/<id>
 
 # Depo meşgulken (başka bir süreç yazıyor, StoreBusy) bir yazma bu kadar kez, artan beklemeyle yeniden denenir
-STORE_BUSY_ATTEMPTS = 4
-STORE_BUSY_FIRST_WAIT = 0.5
+# (src/services/pipeline.py `put_retrying`)
+STORE_BUSY_ATTEMPTS = pipeline.STORE_BUSY_ATTEMPTS
+STORE_BUSY_FIRST_WAIT = pipeline.STORE_BUSY_FIRST_WAIT
 
 
 def _v3_event_dir(data_dir: str, event_id: int) -> str:
@@ -103,18 +107,6 @@ def _parse_utc(value: Any) -> Optional[dt.datetime]:
     except ValueError:
         return None
     return moment if moment.tzinfo is not None else moment.replace(tzinfo=dt.timezone.utc)
-
-
-# Tablodan önce de var olan dilim yardımcıları: testler ve dış kod bu adları doğrudan değiştiriyor/çağırıyor.
-# Yeni dilimler buraya eklenmez; _fetch_slice onları tablodaki yolla çeker.
-_LEGACY_SLICE_FETCHERS = {
-    "statistics": "_fetch_match_statistics",
-    "team_streaks": "_fetch_team_streaks",
-    "pregame_form": "_fetch_pregame_form",
-    "h2h": "_fetch_h2h",
-    "lineups": "_fetch_lineups",
-    "incidents": "_fetch_incidents",
-}
 
 
 def _event_sport(basic: Dict[str, Any]) -> str:
@@ -171,18 +163,11 @@ class SingleFetchReport:
 
     def upstream_failure(self) -> Optional[SliceOutcome]:
         """
-        Çekimi SofaScore tarafı engellediyse o başarısız sonuç, aksi halde None:
-          - /event isteği başarısız olduysa (403/429/5xx/zaman aşımı/ağ/bozuk yanıt) onun sonucu;
-          - dilim istendiyse ve HİÇBİRİ yanıt almadıysa en sık görülen başarısızlık (eşitlikte ilk istenen).
-        Kesin "yok" (404, içinde veri olmayan 200) bir yanıttır: tek bir dilim bile yanıt aldıysa None döner.
+        Çekimi SofaScore tarafı engellediyse o başarısız sonuç, aksi halde None (src/services/pipeline.py
+        `upstream_failure`): /event isteği başarısız olduysa onun sonucu; dilim istendiyse ve hiçbiri yanıt
+        almadıysa en sık görülen başarısızlık. Kesin "yok" (404, içinde veri olmayan 200) bir yanıttır.
         """
-        if self.event is not None and self.event.failed:
-            return self.event
-        outcomes = list(self.slices.values())
-        if not outcomes or not all(outcome.failed for outcome in outcomes):
-            return None
-        reason = Counter(outcome.reason for outcome in outcomes).most_common(1)[0][0]
-        return next(outcome for outcome in outcomes if outcome.reason == reason)
+        return pipeline.upstream_failure(self.event, self.slices)
 
 
 class MatchDataFetcher:
@@ -270,340 +255,171 @@ class MatchDataFetcher:
     def end_job_cache(self) -> None:
         self._need_cache = {}
 
-    async def _fetch_match_data_async(self, session, match_id):
-        try:
-            from src.utils import make_api_request_async, FETCH_ONLY_FINISHED
-            from src.exceptions import ResourceNotFoundError
-
-            # Temel veriyi çek (BrowserBridge / 404 korumalı)
-            basic_url = f"{self.base_url}/event/{match_id}"
-            try:
-                data = await make_api_request_async(session, basic_url, max_retries=2)
-            except ResourceNotFoundError:
-                return None
-
-            if not data or not isinstance(data, dict):
-                return None
-            basic_data = data.get("event")
-            if not basic_data:
-                return None
-
-            # Sadece bitmiş maçları işle (eğer FETCH_ONLY_FINISHED aktifse)
-            if FETCH_ONLY_FINISHED and not MatchFetcher._is_finished_event(basic_data):
-                status_desc = basic_data.get("status", {}).get("description", "")
-                logger.debug(f"Maç ID {match_id} henüz bitmemiş (Durum: {status_desc}), atlanıyor.")
-                return None
-
-            match_data = {"basic": basic_data, OBSERVATION_KEY: observation_record(basic_data)}
-
-            # Spor türüne uygun endpoint'leri çağır: dilim tablosu src/sports.py'de (DETAIL_SLICES)
-            details = slices_for(_event_sport(basic_data))
-            tasks = [
-                self._fetch_endpoint_async(session, detail.url(self.base_url, match_id), detail.key)
-                for detail in details
-            ]
-
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            for result in results:
-                # İş iptal edildiyse yarım maçı kaydetme; iptali yukarı taşı
-                if isinstance(result, BaseException) and not isinstance(result, Exception):
-                    raise result
-            outcomes: Dict[str, SliceOutcome] = {}
-            for detail, result in zip(details, results, strict=True):
-                if isinstance(result, tuple) and len(result) == 2 and isinstance(result[1], SliceOutcome):
-                    outcome = result[1]
-                elif isinstance(result, Exception):
-                    outcome = SliceOutcome.from_error(result)
-                else:
-                    continue
-                outcomes[detail.key] = outcome
-                # None da yazılır: dilim istendi ama verisi yok (boş ya da başarısız; ayrım `outcomes`ta)
-                match_data[detail.key] = outcome.data
-
-            # Verileri kaydet: yalnızca kesin "yok" yanıtları sayılır, başarısız istekler not edilir
-            self._save_match_data(match_id, match_data, outcomes)
-            return match_data
-        except Exception as e:
-            logger.error(f"Maç ID {match_id} için asenkron veri çekilirken hata: {str(e)}")
-            raise
-
-    async def _fetch_endpoint_async(self, session, url, key) -> Tuple[str, SliceOutcome]:
-        """
-        Bir dilimi çeker; (anahtar, tipli sonuç) döndürür. Hata yutulmaz: 404 kesin "yok"tur,
-        403/429/5xx/zaman aşımı/ağ/bozuk yanıt ise "başarısız"dır ve devre kesiciye bildirilir.
-        """
-        from src.utils import make_api_request_async
-
-        try:
-            data = await make_api_request_async(session, url, max_retries=1)
-        except Exception as e:
-            outcome = SliceOutcome.from_error(e)
-            if outcome.failed:
-                # İstek katmanı bildirdiyse yeniden sayılmaz (aynı hata nesnesi bir kez sayılır)
-                request_breaker.report_exception(e)
-                logger.warning(f"{url} alınamadı ({outcome.reason}); sonraki çalıştırmada yeniden denenecek")
-            return key, outcome
-        if data:
-            return key, self._answered_outcome(key, data)
-        return key, SliceOutcome(SLICE_EMPTY, reason="empty")
-
     def _answered_outcome(self, key: str, data: Any) -> SliceOutcome:
-        """
-        Yanıt gelen (hata olmayan) dilim, gövdenin üç yanıtına göre (src.slices.slice_body_state):
-          - veri var: "ok"
-          - okunabiliyor ama içinde veri yok: kesin "boş" (sayılır; gövde sonuçta durur ve diske yazılır)
-          - okunamadı (gövde beklenen JSON türünde değil): başarısız istek, neden "parse". Kesin bir "yok"
-            yanıtı değildir: sayılmaz, dilimin hata kaydına yazılır ve dilim sonraki
-            çalıştırmada yeniden istenir. Gövde sonuca konmaz, yani diske yazılmaz.
+        """Yanıt gelen dilim gövdesinin sonucu: boru hattının kuralı (src/services/pipeline.py `answered_outcome`)."""
+        return pipeline.answered_outcome(key, SliceOutcome(SLICE_OK, data=data))
 
-        Okunamayan gövde devre kesiciye bildirilmez: istek katmanı bu isteği yanıt almış olarak saymıştır
-        ve engellenme belirtisi değildir. Yüklemler toplam olmadan önce böyle bir gövdede hata fırlatırdı;
-        async hatta o hata da aynı yere varırdı (başarısız dilim, kesiciye bildirilmez, gövde yazılmaz),
-        sync hatta ise maçın tamamını düşürürdü.
-        """
-        # İşlev içinde: bu dosyanın import bloğu başka bir plan maddesinindir (RD-1); P13 eşlemeyi taşır.
-        from src.slices import BODY_DATA, BODY_MALFORMED, slice_body_state
+    # --- boru hattı (src/services/pipeline.py) ---------------------------------------------------------
+    #
+    # Maç detaylarını indiren tek yol FetchPipeline'dır; aşağıdaki eski giriş noktaları (toplu indirme, seçilen
+    # maçlar, tek maç, refill, yenileme) yalnızca iş birimlerini kurar ve boru hattına verir. Eşitleme servisi ve
+    # terminal menüsü onları bu adlarla çağırır; sınıf P15'te kalkar.
 
-        state = slice_body_state(key, data)
-        if state == BODY_DATA:
-            return SliceOutcome(SLICE_OK, data=data)
-        if state == BODY_MALFORMED:
-            logger.warning(
-                f"Slice {key}: the answer has an unexpected shape ({type(data).__name__}); "
-                "treated as a failed request, it will be requested again on the next run"
-            )
-            return SliceOutcome(SLICE_FAILED, reason=request_breaker.PARSE)
-        return SliceOutcome(SLICE_EMPTY, data=data, reason="empty")
+    def _pipeline(self, concurrency: Optional[int] = None) -> pipeline.FetchPipeline:
+        """Bu veri dizininin boru hattı; "yalnızca bitmiş maçlar" ayarı çağrı anında okunur (src.utils)."""
+        from src import utils
 
-    async def fetch_matches_batch_async(self, match_ids, max_concurrent=30, progress_bar=None, progress_callback=None, should_cancel=None, failed_callback=None):
-        """Birden çok maç için veri çeker (circuit breaker destekli).
+        return pipeline.FetchPipeline(
+            self._store(),
+            concurrency=concurrency if concurrency is not None else self.config_manager.get_max_concurrent(),
+            only_finished=bool(utils.FETCH_ONLY_FINISHED),
+        )
 
-        failed_callback(match_id): denemeleri tükenen ya da kaydı diske yazılamayan her maç için
-        çağrılır (devre kesilince hiç denenmeyenler ve iptal edilenler başarısız sayılmaz).
+    def _after_result(self, result: pipeline.ItemResult) -> None:
+        """Her sonuçtan sonra: işin önbelleği, yenileme dinleyicisi (web iş kartı sayacı)."""
+        cache = getattr(self, "_need_cache", None)
+        if cache is not None and result.put is not None:
+            cache.pop(str(result.event_id), None)
+        if result.item.need == "refresh" and result.ok:
+            self.last_refresh_changed = bool(result.changed)
+            listener = getattr(self, "refresh_listener", None)
+            if listener:
+                listener(str(result.event_id), bool(result.changed))
 
-        Devre kesici işin kesicisidir (src/breaker.py): çağıran kurduysa o, yoksa bu çağrı için
-        yenisi. İstek katmanı her isteğin sonucunu (alt dilimler ve yenileme dahil) ona bildirir.
-        Diske yazılamayan maç başarısız sayılır; disk dolu / izin yok gibi kalıcı hatalarda
-        StorageError yukarı fırlatılır ve iş durur.
-        """
-        with request_breaker.scope(self.config_manager) as breaker:
-            return await self._fetch_matches_batch_async(
-                breaker, match_ids, max_concurrent, progress_bar, progress_callback, should_cancel, failed_callback
-            )
+    def _run_one(self, item: WorkItem) -> pipeline.ItemResult:
+        """Tek bir iş birimi; çağıranın istek bağlamıyla (iptal, devre kesici)."""
+        found: List[pipeline.ItemResult] = []
 
-    async def _fetch_matches_batch_async(
-        self, breaker, match_ids, max_concurrent, progress_bar, progress_callback, should_cancel, failed_callback
-    ):
-        logger.debug(f"Starting batch fetch for {len(match_ids)} matches")
+        def on_result(result: pipeline.ItemResult) -> None:
+            self._after_result(result)
+            found.append(result)
 
-        match_ids_to_process, refresh_count = self._order_by_need(match_ids)
-        skipped = len(match_ids) - len(match_ids_to_process)
+        self._pipeline(concurrency=1).run_sync([item], on_result=on_result)
+        if not found:  # iptal: birim başlamadı
+            return pipeline.ItemResult(item, pipeline.ITEM_SKIPPED, pipeline.SKIP_CANCELLED)
+        return found[0]
+
+    @staticmethod
+    def _match_data(result: pipeline.ItemResult) -> Dict[str, Any]:
+        """Sonucun eski sözlük biçimi: `basic`, gözlem ve bu çağrıda istenen dilimlerin yükleri."""
+        payload = result.payload or {}
+        data: Dict[str, Any] = {"basic": payload, OBSERVATION_KEY: observation_record(payload)}
+        data.update((key, outcome.data) for key, outcome in result.slices.items())
+        return data
+
+    def _batch_items(self, match_ids: List[Any]) -> List[WorkItem]:
+        """Maçların iş birimleri (işin önbelleğindeki kararlarla); tamam olanlar düşer."""
+        mids = [str(mid) for mid in match_ids]
+        self._prepare_needs(mids)
+        needs: Dict[int, str] = {}
+        for mid in mids:
+            event_id = _canonical_id(mid)
+            if event_id is not None:
+                needs[event_id] = self._needs_detail_fetch(mid)
+        store = self._store()
+        items = planning.plan_items(store, list(needs), RefreshPolicy.current(),
+                                    threshold=UNAVAILABLE_AFTER_ATTEMPTS, needs=needs)
+        skipped = len(dict.fromkeys(mids)) - len(items)
+        refresh = sum(1 for item in items if item.need == "refresh")
         if skipped:
-            logger.info(f"{skipped} maç detayları tamam, atlanıyor")
-            if progress_bar:
-                progress_bar.update(skipped)
-        if refresh_count:
-            logger.info(f"{refresh_count} maç yenileniyor (geçici kayıt)")
+            logger.info(f"{skipped} matches are complete; skipped")
+        if refresh:
+            logger.info(f"Refreshing {refresh} provisional records")
+        return items
 
+    def _batch(
+        self,
+        match_ids: List[Any],
+        progress_callback: Optional[Callable[[int, int, str], None]],
+        failed_callback: Optional[Callable[[str], None]],
+        *,
+        progress_bar: Any = None,
+    ) -> Tuple[List[WorkItem], Callable[[pipeline.ItemResult], None], Dict[str, Dict[str, Any]]]:
+        """Toplu indirmenin parçaları: iş birimleri, sonuç geri çağrısı ve sonuç sözlüğü."""
+        items = self._batch_items(match_ids)
         results: Dict[str, Dict[str, Any]] = {}
-        status_counts: Counter = Counter()
-        recent_headers: List[Dict[str, str]] = []
-        cancelled = False
+        total = len(items)
+        done = 0
+        if progress_bar is not None and len(match_ids) > total:
+            progress_bar.update(len(match_ids) - total)
+        if progress_callback and total:
+            progress_callback(0, total, f"Starting {total} match detail requests…")
 
-        batch_size = 100
-        all_batches = [match_ids_to_process[i:i + batch_size] for i in range(0, len(match_ids_to_process), batch_size)]
+        def on_result(result: pipeline.ItemResult) -> None:
+            nonlocal done
+            done += 1
+            self._after_result(result)
+            breaker = request_breaker.current()
+            if result.ok:
+                results[str(result.event_id)] = self._match_data(result)
+            elif result.failed and failed_callback is not None:
+                # Devre kesildiyse istek hatası "başarısız maç" sayılmaz (eski iki hattın kuralı); depolama hatası sayılır
+                if result.reason == pipeline.FAIL_STORAGE or breaker is None or not breaker.tripped:
+                    failed_callback(str(result.event_id))
+            if progress_bar is not None:
+                progress_bar.update(1)
+            if progress_callback and total:
+                progress_callback(min(done, total), total, f"Match details {min(done, total)}/{total}")
 
-        total_m = len(match_ids_to_process)
-        if progress_callback and total_m > 0:
-            progress_callback(0, total_m, f"Starting {total_m} match detail requests…")
-        cumulative_done = 0
+        return items, on_result, results
 
-        from src.utils import create_session_async
-        async with create_session_async() as session:
-            sem = asyncio.Semaphore(max_concurrent)
-            for batch_idx, batch in enumerate(all_batches):
-                if breaker.tripped or cancelled:
-                    break
-                if should_cancel and should_cancel():
-                    cancelled = True
-                    logger.info("Parallel match fetch cancelled before batch %s", batch_idx + 1)
-                    break
-                logger.info(f"Processing batch {batch_idx+1}/{len(all_batches)} ({len(batch)} matches)")
-                batch_status_counts: Counter = Counter()
-                batch_success = 0
-                batch_failed = 0
-
-                async def fetch_one(match_id):
-                    nonlocal batch_success, batch_failed, cancelled
-                    if cancelled or (should_cancel and should_cancel()):
-                        cancelled = True
-                        return None
-                    max_retries = 3
-                    for attempt in range(max_retries):
-                        if cancelled or (should_cancel and should_cancel()):
-                            cancelled = True
-                            return None
-                        if breaker.tripped:
-                            # Devre kesildi: batch'te sırada bekleyen maçlar istek atmasın
-                            return None
-                        try:
-                            async with sem:
-                                if cancelled or (should_cancel and should_cancel()):
-                                    cancelled = True
-                                    return None
-                                if breaker.tripped:
-                                    return None
-                                need = self._needs_detail_fetch(str(match_id))
-                                if need == "refresh":
-                                    result = await asyncio.to_thread(self.refresh_match, str(match_id))
-                                elif need == "refill":
-                                    result = await asyncio.to_thread(self.refill_missing_match_slices, str(match_id))
-                                    if cancelled or (should_cancel and should_cancel()):
-                                        cancelled = True
-                                        return None
-                                    if not (result and "basic" in result):
-                                        result = await self._fetch_match_data_async(session, match_id)
-                                else:
-                                    result = await self._fetch_match_data_async(session, match_id)
-                                if cancelled or (should_cancel and should_cancel()):
-                                    cancelled = True
-                                    return None
-                                if result and "basic" in result:
-                                    batch_success += 1
-                                    if progress_bar:
-                                        progress_bar.update(1)
-                                    return result
-                                if breaker.tripped:
-                                    # İstekler devre kesildiği için gönderilmedi: maç denenmemiş sayılır
-                                    return None
-                                status_counts["other"] += 1
-                                # fetch_one görevleri bu batch bitmeden tamamlanır/iptal edilir
-                                batch_status_counts["other"] += 1  # noqa: B023
-                                break
-                        except StorageError as e:
-                            # Veri çekildi ama diske yazılamadı: istek hatası değil, yeniden istemek çözmez
-                            logger.error(f"Maç {match_id} kaydedilemedi: {e}")
-                            status_counts["storage"] += 1
-                            batch_status_counts["storage"] += 1  # noqa: B023
-                            if e.fatal:
-                                batch_failed += 1
-                                if failed_callback:
-                                    failed_callback(str(match_id))
-                                raise  # disk dolu / izin yok: kalan maçlar da yazılamaz, iş durur
-                            break
-                        except Exception as e:
-                            err = str(e)
-                            status_key = request_breaker.failure_kind(e)
-                            if status_key == request_breaker.BREAKER_OPEN:
-                                return None  # devre kesik: istek gönderilmedi, maç denenmemiş sayılır
-
-                            status_counts[status_key] += 1
-                            batch_status_counts[status_key] += 1  # noqa: B023
-                            # İstek katmanından gelen hata zaten sayıldı; başka kaynaklı hata burada sayılır
-                            breaker.record_exception(e)
-
-                            if status_key in ("403", "429", "5xx"):
-                                recent_headers.append({"match_id": str(match_id), "error": err})
-                                if len(recent_headers) > 20:
-                                    recent_headers.pop(0)
-
-                            if breaker.tripped:
-                                return None
-
-                            if attempt < max_retries - 1:
-                                await asyncio.sleep(1.0 * (2 ** attempt) + random.uniform(0, 1))
-                                continue
-                            break
-
-                    batch_failed += 1
-                    if failed_callback:
-                        failed_callback(str(match_id))
-                    if progress_bar:
-                        progress_bar.update(1)
-                    return None
-
-                batch_tasks = [asyncio.create_task(fetch_one(match_id)) for match_id in batch]
-                batch_completed = 0
-                notify_stride = max(1, min(20, max(total_m // 50, 1)))
-                try:
-                    for fut in asyncio.as_completed(batch_tasks):
-                        if should_cancel and should_cancel():
-                            cancelled = True
-                            break
-                        try:
-                            match_data = await fut
-                        except asyncio.CancelledError:
-                            continue
-                        if cancelled:
-                            break
-                        batch_completed += 1
-                        cumulative_done += 1
-                        if match_data and isinstance(match_data, dict) and "basic" in match_data:
-                            match_id_res = match_data["basic"].get("id")
-                            if match_id_res:
-                                results[str(match_id_res)] = match_data
-                        if progress_callback and total_m > 0:
-                            if (
-                                cumulative_done % notify_stride == 0
-                                or batch_completed == len(batch)
-                                or cumulative_done >= total_m
-                            ):
-                                progress_callback(
-                                    min(cumulative_done, total_m),
-                                    total_m,
-                                    f"Match details {min(cumulative_done, total_m)}/{total_m} (parallel batch {batch_idx + 1}/{len(all_batches)})",
-                                )
-                except BaseException:
-                    # FetchCancelled (iptal), kalıcı depolama hatası veya beklenmeyen hata: kalan görevleri
-                    # iptal edip bekle, oturum kapanmadan ve döngü kapatılmadan önce hiçbiri askıda kalmasın
-                    pending = [t for t in batch_tasks if not t.done()]
-                    for t in pending:
-                        t.cancel()
-                    await asyncio.gather(*pending, return_exceptions=True)
-                    for t in batch_tasks:
-                        if not t.cancelled():
-                            t.exception()  # aynı anda düşen diğer görevlerin hatası "alınmadı" diye loglanmasın
-                    raise
-
-                if cancelled:
-                    # Best-effort: cancel leftovers and don't wait on long sleeps
-                    pending = [t for t in batch_tasks if not t.done()]
-                    for t in pending:
-                        t.cancel()
-                    if pending:
-                        await asyncio.gather(*pending, return_exceptions=True)
-                    break
-
-                status_text = ", ".join([f"{v}x {k}" for k, v in batch_status_counts.items()]) if batch_status_counts else "hata yok"
-                logger.info(f"Batch {batch_idx+1}/{len(all_batches)}: {batch_success} başarılı, {batch_failed} başarısız ({status_text})")
-                # Batch'ler arasında ayrıca beklenmez: hızı ortak istek bütçesi belirler (src/throttle.py)
-
-        if progress_callback and total_m > 0 and not cancelled:
-            progress_callback(total_m, total_m, "Parallel detail batches finished")
-
-        # Maç düzeyindeki sayım + kesicinin gördüğü istek düzeyindeki hatalar (alt dilimler dahil)
-        merged = dict(status_counts)
-        for kind, count in breaker.counts().items():
-            merged[kind] = max(merged.get(kind, 0), count)
-        self.last_status_counts = merged
+    def _batch_finished(self, breaker: request_breaker.CircuitBreaker) -> None:
         self.rate_limit_breaker_triggered = breaker.tripped
-        self.last_rate_limit_headers = recent_headers
+        self.last_status_counts = breaker.counts()
+
+    def fetch_matches_batch(
+        self,
+        match_ids: List[Union[int, str]],
+        progress_callback: Optional[Callable[[int, int, str], None]] = None,
+        should_cancel: Optional[Callable[[], bool]] = None,
+        failed_callback: Optional[Callable[[str], None]] = None,
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Bir grup maçın detayları, boru hattıyla (kimliğiyle seçilen maçlar; lig planlarıyla aynı yol). Döndürür:
+        yazılan maçlar (kimlik → eski sözlük biçimi).
+
+        failed_callback(match_id): /event'i alınamayan, SofaScore'da olmayan ya da yazılamayan her maç için
+        çağrılır. Bitmemiş maç ("yalnızca bitmiş maçlar" açıkken) atlanır, başarısız sayılmaz; devre kesilince
+        denenmeyen ve iptal edilen maçlar da. Kalıcı depolama hatasında (disk dolu, izin yok) StorageError.
+        """
+        self.begin_job_cache()
+        try:
+            return self._run_batch(match_ids, progress_callback, should_cancel, failed_callback)
+        finally:
+            self.end_job_cache()
+
+    def _run_batch(
+        self,
+        match_ids: List[Any],
+        progress_callback: Optional[Callable[[int, int, str], None]],
+        should_cancel: Optional[Callable[[], bool]],
+        failed_callback: Optional[Callable[[str], None]],
+    ) -> Dict[str, Dict[str, Any]]:
+        """`fetch_matches_batch`'in gövdesi; işin önbelleğine dokunmaz (çağıranınkini kullanır)."""
+        self.rate_limit_breaker_triggered = False
+        items, on_result, results = self._batch(match_ids, progress_callback, failed_callback)
+        with request_breaker.scope(self.config_manager) as breaker:
+            try:
+                self._pipeline().run_sync(items, cancelled=should_cancel, on_result=on_result)
+            finally:
+                self._batch_finished(breaker)
         return results
 
-    # Main metodunda çağırmak için senkron wrapper
-    def fetch_matches_batch_parallel(self, match_ids, max_concurrent=10, progress_callback=None, should_cancel=None, failed_callback=None):
-        """Paralel istekler için senkron wrapper."""
-        print(get_i18n().t("details_processing_parallel", count=len(match_ids)))
-        progress = tqdm(total=len(match_ids), desc=get_i18n().t("details_progress_label"))
-
-        try:
-            # asyncio.run: döngüyü kapatır, kalan görevleri iptal eder ve thread'e kapalı döngü bırakmaz
-            return asyncio.run(self.fetch_matches_batch_async(
-                match_ids, max_concurrent, progress, progress_callback, should_cancel, failed_callback
-            ))
-        finally:
-            progress.close()
-
+    async def fetch_matches_batch_async(self, match_ids, max_concurrent=30, progress_bar=None, progress_callback=None,
+                                        should_cancel=None, failed_callback=None):
+        """
+        `fetch_matches_batch`'in eşyordamı (çağıranın döngüsünde; scripts/bench_bulk_rate.py). Devre kesici işin
+        kesicisidir: çağıran kurduysa o, yoksa bu çağrı için yenisi.
+        """
+        self.rate_limit_breaker_triggered = False
+        items, on_result, results = self._batch(list(match_ids), progress_callback, failed_callback,
+                                                progress_bar=progress_bar)
+        with request_breaker.scope(self.config_manager) as breaker:
+            try:
+                await self._pipeline(max_concurrent).run(items, cancelled=should_cancel, on_result=on_result)
+            finally:
+                self._batch_finished(breaker)
+        return results
 
     def __init__(self, config_manager: ConfigManager, data_dir: str = "data"):
         """
@@ -696,29 +512,8 @@ class MatchDataFetcher:
     #     yüzünden gönderilmeyen istek yok sayılır (Store `failed` / `breaker` sonucunu atlar).
 
     def _put_retrying(self, event_id: int, what: str, write: Callable[[], Any]) -> Any:
-        """
-        Store'a bir yazma. Depo meşgulse (başka bir süreç yazıyor, StoreBusy) STORE_BUSY_ATTEMPTS kez, artan
-        beklemeyle yeniden denenir; sonra StoreBusy (kalıcı olmayan bir depolama hatası) çağırana çıkar. Öteki
-        depolama hataları (StoreError, bir StorageError) olduğu gibi çıkar; beklenmeyen hata (ör. Store'un
-        reddettiği bir yük, ValueError) kalıcı olmayan bir StorageError'a çevrilir: yalnızca o maç başarısızdır.
-        """
-        wait = STORE_BUSY_FIRST_WAIT
-        for attempt in range(STORE_BUSY_ATTEMPTS):
-            try:
-                return write()
-            except store_hooks.StoreBusy:
-                if attempt == STORE_BUSY_ATTEMPTS - 1:
-                    raise
-                logger.warning(f"The data store is busy (another process is writing); retrying {what} "
-                               f"(match {event_id}) in {wait:.1f} s")
-                time.sleep(wait)
-                wait *= 2
-            except StorageError:
-                raise
-            except Exception as e:
-                logger.error(f"Could not store {what} (match {event_id}): {e}")
-                raise StorageError.from_exception(e, os.path.join(self.data_dir, "v3", "events")) from e
-        raise AssertionError("unreachable")  # pragma: no cover
+        """Store'a bir yazma, depo meşgulse yeniden denenerek (src/services/pipeline.py `put_retrying`)."""
+        return pipeline.put_retrying(self._store(), event_id, what, write, log=logger)
 
     @staticmethod
     def _slice_outcomes(
@@ -855,62 +650,24 @@ class MatchDataFetcher:
 
     def refresh_match(self, match_id: Union[int, str]) -> Optional[Dict[str, Any]]:
         """
-        Geçici kaydı yeniler: yalnızca /event/{id} çekilir ve Store'a gözlem olarak yazılır
-        (`Store.events.observe`). Yük aynıysa yalnızca gözlem anı ilerler. Yük değiştiyse saklanır; karşılaştırılan
-        alanlardan biri değiştiyse (src/refresh.py `diff_basic`) değişim eski ve yeni değeriyle değişiklik
-        günlüğüne (`changes/<yyyy>-<mm>.jsonl`) aynı kritik bölümde eklenir (`change_row`). COMPLETED → VOID olursa
-        kayıt silinmez, gözleme yapışkan `status_regressed` bayrağı yazılır. Eski düzendeki kayıt önce v3'e
-        yükseltilir (eski dizine dokunulmaz).
+        Geçici kaydı yeniler: boru hattının `refresh` birimi (yalnızca /event çekilir ve Store'a gözlem olarak
+        yazılır, `Store.events.observe`). Yük aynıysa yalnızca gözlem anı ilerler. Yük değiştiyse saklanır;
+        karşılaştırılan alanlardan biri değiştiyse (src/refresh.py `diff_basic`) değişim değişiklik günlüğüne
+        aynı kritik bölümde eklenir ve `change` akışına change.recorded yazılır. COMPLETED → VOID olursa kayıt
+        silinmez, yapışkan `status_regressed` bayrağı kurulur. Eski düzendeki kayıt önce v3'e yükseltilir.
+
+        Kayıt yoksa ya da /event alınamadıysa None; yoksa kaydın yeni hali (eski sözlük biçimi).
         """
         mid = str(match_id)
         row = self._stored_event(mid)
         if row is None:
             return None
-        data = self._load_match_data_from_dir("", mid)
-        old = data.get("basic")
-        if not old:
+        result = self._run_one(WorkItem(store_hooks.Ref.event(row.id), "refresh", (), row.sport, "refresh"))
+        if result.error is not None:
+            raise result.error
+        if not result.ok:
             return None
-        new = self._fetch_match_basic(mid)
-        if not new:
-            logger.warning(f"Refresh of match {mid}: /event could not be fetched")
-            return None
-
-        stored = data.get(OBSERVATION_KEY)
-        obs = observation_record(new)
-        if isinstance(stored, dict) and stored.get("status_regressed"):
-            obs["status_regressed"] = True
-        found: Dict[str, Any] = {"changed": {}, "row": None}
-
-        def on_event_change(previous: Optional[Mapping[str, Any]], payload: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
-            # Kritik bölümde çalışır: Store'a yazmaz, yalnızca karşılaştırır
-            if not previous:
-                return None
-            changed = diff_basic(dict(previous), dict(payload))
-            found["changed"] = changed
-            if not changed:
-                return None
-            found["row"] = change_row(dict(previous), dict(payload), changed,
-                                      _event_sport(dict(payload)) or _event_sport(dict(previous)))
-            return found["row"]
-
-        self._put_retrying(row.id, "the refreshed match page", lambda: self._store().events.observe(
-            row.id, new, on_event_change=on_event_change))
-        changed = found["changed"]
-        if changed:
-            if found["row"] is not None and found["row"].get("status_regressed"):
-                obs["status_regressed"] = True
-                logger.warning(f"Match {mid} counted as played is now {new.get('status')}; the record is kept")
-            data["basic"] = new
-            logger.info(f"Match {mid} refreshed: {len(changed)} fields changed ({', '.join(list(changed)[:5])})")
-        data[OBSERVATION_KEY] = obs
-
-        self.last_refresh_changed = bool(changed)
-        if getattr(self, "_need_cache", None) is not None:
-            self._need_cache.pop(mid, None)
-        listener = getattr(self, "refresh_listener", None)
-        if listener:
-            listener(mid, bool(changed))
-        return data
+        return self._load_match_data_from_dir("", mid) or None
 
     def refresh_due_ids(self, league_id: Optional[Union[int, str]] = None) -> List[str]:
         """
@@ -963,44 +720,47 @@ class MatchDataFetcher:
         should_cancel: Optional[Callable[[], bool]] = None,
     ) -> Dict[str, Any]:
         """
-        Yalnızca yenileme (refresh-only): maçlar sırayla okunur. Hızı ortak istek bütçesi
-        (src/throttle.py) ve her istekten sonraki WAIT_TIME beklemesi belirler; maçlar arasında
-        ayrıca beklenmez.
+        Yalnızca yenileme (refresh-only): her maç için boru hattının `refresh` birimi (yalnızca /event). Hızı ortak
+        istek bütçesi (src/throttle.py) belirler; maçlar arasında ayrıca beklenmez.
 
-        Devre kesilirse (SofaScore engelliyor / sürekli hata) kalan maçlar denenmez; sonuçta
-        `breaker` (neden: "403" / "429" / "5xx" / "other") ve `skipped` (denenmeyen maç) alanları
-        bulunur. Kalıcı depolama hatası (disk dolu, izin yok) StorageError olarak fırlatılır.
+        Devre kesilirse (SofaScore engelliyor / sürekli hata) kalan maçlar denenmez; sonuçta `breaker` (neden:
+        "403" / "429" / "5xx" / "other") ve `skipped` (denenmeyen maç) alanları bulunur. Kalıcı depolama hatası
+        (disk dolu, izin yok) StorageError olarak fırlatılır.
         """
         stats: Dict[str, Any] = {"refreshed": 0, "changed": 0, "failed": 0}
         n = len(match_ids)
         if n:
-            logger.info(f"{n} maç yenileniyor")
+            logger.info(f"Refreshing {n} matches")
+        items: List[WorkItem] = []
+        for mid in match_ids:
+            event_id = _canonical_id(str(mid))
+            if event_id is None:
+                stats["failed"] += 1
+                continue
+            items.append(WorkItem(store_hooks.Ref.event(event_id), "refresh", (), None, "refresh"))
+        done = n - len(items)
+        skipped = 0
+
+        def on_result(result: pipeline.ItemResult) -> None:
+            nonlocal done, skipped
+            done += 1
+            self._after_result(result)
+            if result.ok:
+                stats["refreshed"] += 1
+                stats["changed"] += int(bool(result.changed))
+            elif result.failed:
+                stats["failed"] += 1
+            else:
+                skipped += 1
+            if progress_callback:
+                progress_callback(done, n, f"Refresh {done}/{n}")
+
         with request_breaker.scope(self.config_manager) as breaker:
-            for idx, mid in enumerate(match_ids):
-                if should_cancel and should_cancel():
-                    break
-                if breaker.tripped:
-                    stats["breaker"] = breaker.reason()
-                    stats["skipped"] = n - idx
-                    logger.warning(f"Çok fazla başarısız istek; yenileme durduruldu, {n - idx} maç denenmedi")
-                    break
-                try:
-                    result = self.refresh_match(mid)
-                except StorageError as e:
-                    logger.error(f"Maç {mid} yenilemesi kaydedilemedi: {e}")
-                    if e.fatal:
-                        raise
-                    result = None
-                if result is None:
-                    stats["failed"] += 1
-                else:
-                    stats["refreshed"] += 1
-                    stats["changed"] += int(self.last_refresh_changed)
-                if progress_callback:
-                    progress_callback(idx + 1, n, f"Refresh {idx + 1}/{n}")
+            self._pipeline().run_sync(items, cancelled=should_cancel, on_result=on_result)
             if breaker.tripped:
-                stats.setdefault("breaker", breaker.reason())
-                stats.setdefault("skipped", 0)
+                stats["breaker"] = breaker.reason()
+                stats["skipped"] = skipped
+                logger.warning(f"Too many failed requests; the refresh stopped, {skipped} matches were not tried")
         self.rate_limit_breaker_triggered = bool(stats.get("breaker"))
         return stats
 
@@ -1008,210 +768,45 @@ class MatchDataFetcher:
         self, match_id: Union[int, str], *, report: Optional[SingleFetchReport] = None
     ) -> Optional[Dict[str, Any]]:
         """
-        Saklanan maçta eksik API dilimlerini tamamlar (yeni maç için fetch_match_data kullanın). Eksik: sporun
-        beklenen dilimlerinden (`_expected_slice_keys`) verisi olmayanlar. Maçın sayfası (/event) da yenilenir.
+        Saklanan maçta eksik dilimleri tamamlar (yeni maç için fetch_match_data kullanın): boru hattının `refill`
+        birimi. Maçın sayfası (/event) yeniden okunur ve yazılır; eksik: seçilen dilimlerden (isteğe bağlılar
+        dahil) verisi olmayan ve yeterince "veri yok" yanıtı almamış olanlar. Maç artık bitmemiş görünüyorsa
+        ("yalnızca bitmiş maçlar" açıkken) hiçbir şey yazılmaz ve None döner; /event ikinci kez istenmez.
 
         report verilirse /event isteğinin ve istenen dilimlerin sonucu ona yazılır (SingleFetchReport).
         """
-        mid = str(match_id)
-        row = self._stored_event(mid)
+        row = self._stored_event(str(match_id))
         if row is None:
             return None
-        match_data = self._load_match_data_from_dir("", mid)
-        if not match_data.get("basic"):
-            return None
-
-        basic_live = self._fetch_event(mid, report)
-        if not basic_live:
-            logger.warning(f"Maç {mid} refill: canlı basic alınamadı")
-            return None
-        if not MatchFetcher._is_finished_event(basic_live):
-            status = basic_live.get("status", {})
-            logger.info(f"Maç {mid} bitmemiş ({status.get('description')}/{status.get('type')}), refill atlanıyor.")
-            return None
-
-        match_data["basic"] = basic_live
-        match_data[OBSERVATION_KEY] = observation_record(basic_live)
-        missing = [
-            k
-            for k in self._expected_slice_keys(row.id, _event_sport(basic_live))
-            if not self.match_detail_slice_present(k, match_data)
-        ]
-        if not missing:
-            return match_data
-
-        outcomes: Dict[str, SliceOutcome] = {}
-        for key in missing:
-            outcomes[key] = self._fetch_slice(mid, key)
-            match_data[key] = outcomes[key].data
-        if report is not None:
-            report.slices.update(outcomes)
-        self._save_match_data(mid, match_data, outcomes)
-        return match_data
+        states = list(self._store().events.states(store_hooks.Scope(event_ids=(row.id,))))
+        item = planning.work_item(row.id, states[0] if states else None, "refill",
+                                  threshold=UNAVAILABLE_AFTER_ATTEMPTS)
+        assert item is not None
+        return self._single(item, report)
 
     def fetch_match_data(
         self, match_id: Union[int, str], *, report: Optional[SingleFetchReport] = None
     ) -> Optional[Dict[str, Any]]:
         """
-        Bir maç için tüm detay verilerini çeker.
+        Bir maçın bütün detayları: boru hattının `full` birimi (/event, sonra sporun seçilen bütün dilimleri).
+        Maç yoksa, bitmemişse ("yalnızca bitmiş maçlar" açıkken), /event alınamadıysa ya da yazılamadıysa None.
 
         report verilirse /event isteğinin ve istenen dilimlerin sonucu ona yazılır (SingleFetchReport).
         """
-        match_id = str(match_id)
-        logger.info(f"Maç ID {match_id} için detay verileri çekiliyor...")
-
-        # Önce temel veriyi çek
-        basic_data = self._fetch_event(match_id, report)
-
-        # Temel veri yoksa işleme devam etme
-        if not basic_data:
-            logger.warning(f"Maç ID {match_id} için temel veri bulunamadı")
+        event_id = _canonical_id(str(match_id))
+        if event_id is None:
             return None
+        return self._single(WorkItem(store_hooks.Ref.event(event_id), "full", (), None, "full"), report)
 
-        # Sadece bitmiş maçları işle (uzatma/penaltı ile bitenler dahil)
-        if not MatchFetcher._is_finished_event(basic_data):
-            status = basic_data.get("status", {})
-            logger.info(
-                f"Maç ID {match_id} henüz bitmemiş (Durum: {status.get('description')}/{status.get('type')}), atlanıyor."
-            )
-            return None
-
-        # Diğer verileri çek: bu yol yalnızca `required` dilimleri ister (src/sports.py, DETAIL_SLICES)
-        keys = [detail.key for detail in slices_for(_event_sport(basic_data), required_only=True)]
-        match_data = {
-            "basic": basic_data,
-            OBSERVATION_KEY: observation_record(basic_data),
-            **{key: None for key in keys},
-        }
-
-        # Diğer endpointleri topla
-        outcomes: Dict[str, SliceOutcome] = {}
-        for key in keys:
-            outcomes[key] = self._fetch_slice(match_id, key)
-            match_data[key] = outcomes[key].data
+    def _single(self, item: WorkItem, report: Optional[SingleFetchReport]) -> Optional[Dict[str, Any]]:
+        result = self._run_one(item)
         if report is not None:
-            report.slices.update(outcomes)
+            report.event = result.event
+            report.slices.update(result.slices)
+        if result.error is not None:
+            raise result.error
+        return self._match_data(result) if result.ok else None
 
-        # Verileri kaydet: yalnızca kesin "yok" yanıtları sayılır, başarısız istekler not edilir
-        self._save_match_data(match_id, match_data, outcomes)
-
-        return match_data
-
-    def _fetch_match_basic(self, match_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Temel maç bilgilerini çeker.
-
-        Args:
-            match_id: Maç ID'si
-
-        Returns:
-            Optional[Dict[str, Any]]: Temel maç verisi veya başarısız ise None
-        """
-        url = f"{self.base_url}/event/{match_id}"
-        try:
-            data = make_api_request(url)
-            return data.get("event") if data and "event" in data else None
-        except Exception as e:
-            logger.error(f"Maç ID {match_id} için temel veri çekilirken hata: {str(e)}")
-            return None
-
-    def _fetch_event(self, match_id: str, report: Optional[SingleFetchReport]) -> Optional[Dict[str, Any]]:
-        """
-        fetch_match_data ve refill_missing_match_slices'ın /event isteği. Rapor yoksa bugünkü yol
-        (_fetch_match_basic: hata yutulur, None döner); rapor varsa isteğin tipli sonucu rapora yazılır.
-        """
-        if report is None:
-            return self._fetch_match_basic(match_id)
-        report.event = self._fetch_event_outcome(match_id)
-        return report.event.data
-
-    def _fetch_event_outcome(self, match_id: str) -> SliceOutcome:
-        """
-        /event/{id} isteğinin tipli sonucu. _fetch_match_basic "maç yok" ile "istek başarısız"ı aynı None'a
-        indirger; burada ayrılır: olay geldiyse SLICE_OK (data = olay), maç yoksa (404 ya da içinde olay
-        olmayan yanıt) SLICE_EMPTY, istek başarısızsa SLICE_FAILED (neden ve HTTP koduyla).
-        """
-        url = f"{self.base_url}/event/{match_id}"
-        try:
-            data = make_api_request(url, raise_on_failure=True)
-            event = data.get("event") if data and "event" in data else None
-        except Exception as e:
-            outcome = SliceOutcome.from_error(e)
-            if outcome.failed:
-                logger.error(f"Event request for match {match_id} failed ({outcome.reason}): {e}")
-            return outcome
-        if not event:
-            return SliceOutcome(SLICE_EMPTY, reason="empty")
-        return SliceOutcome(SLICE_OK, data=event)
-
-    def _fetch_slice(self, match_id: str, key: str) -> SliceOutcome:
-        """
-        Bir detay dilimini senkron çeker ve tipli sonucunu döndürür (async yoldaki
-        _fetch_endpoint_async'in karşılığı); eski adlı yardımcısı olan dilimde onu kullanır.
-        Yardımcının döndürdüğü None / boş yanıt kesin "yok"tur; fırlattığı hata başarısızlıktır.
-        """
-        legacy = _LEGACY_SLICE_FETCHERS.get(key)
-        try:
-            data = getattr(self, legacy)(match_id) if legacy else self._fetch_slice_endpoint(match_id, key)
-        except Exception as e:
-            outcome = SliceOutcome.from_error(e)
-            if outcome.failed:
-                # İstek katmanı bildirdiyse yeniden sayılmaz (aynı hata nesnesi bir kez sayılır)
-                request_breaker.report_exception(e)
-            return outcome
-        return self._answered_outcome(key, data)
-
-    def _fetch_slice_endpoint(self, match_id: str, key: str, label: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        """
-        Dilimin uç noktasını (src/sports.py, DETAIL_SLICES) çağırır.
-
-        Args:
-            match_id: Maç ID'si
-            key: Dilim anahtarı
-            label: Hata logunda dilimin adı (varsayılan "{key} verisi")
-
-        Returns:
-            Optional[Dict[str, Any]]: Dilim verisi; kaynak yoksa (404) None
-
-        Raises:
-            İstek başarısızsa (403/429/5xx/zaman aşımı/ağ/bozuk yanıt) istek katmanının tipli hatası.
-            Hata yutulmaz: yutulursa "dilim yok" ile "istek başarısız" ayırt edilemez.
-        """
-        url = get_slice(key).url(self.base_url, match_id)
-        try:
-            return make_api_request(url, raise_on_failure=True)
-        except ResourceNotFoundError:
-            return None
-        except Exception as e:
-            logger.warning(
-                f"Maç ID {match_id} için {label or key + ' verisi'} alınamadı "
-                f"({request_breaker.failure_kind(e)}): {str(e)}"
-            )
-            raise
-
-    def _fetch_match_statistics(self, match_id: str) -> Optional[Dict[str, Any]]:
-        """Maç istatistiklerini çeker."""
-        return self._fetch_slice_endpoint(match_id, "statistics", "istatistik verisi")
-
-    def _fetch_team_streaks(self, match_id: str) -> Optional[Dict[str, Any]]:
-        """Takım serilerini çeker."""
-        return self._fetch_slice_endpoint(match_id, "team_streaks", "takım serileri")
-
-    def _fetch_pregame_form(self, match_id: str) -> Optional[Dict[str, Any]]:
-        """Maç öncesi form verilerini çeker."""
-        return self._fetch_slice_endpoint(match_id, "pregame_form", "form verisi")
-
-    def _fetch_h2h(self, match_id: str) -> Optional[Dict[str, Any]]:
-        """Takımlar arası karşılaşma geçmişini çeker."""
-        return self._fetch_slice_endpoint(match_id, "h2h", "H2H verisi")
-
-    def _fetch_lineups(self, match_id: str) -> Optional[Dict[str, Any]]:
-        """Maç kadro bilgilerini (lineups) çeker."""
-        return self._fetch_slice_endpoint(match_id, "lineups", "lineup verisi")
-
-    def _fetch_incidents(self, match_id: str) -> Optional[Dict[str, Any]]:
-        """Maç olaylarını (goller, kartlar, devre vb.) çeker — yanıt genelde {\"incidents\": [...], \"home\": ..., \"away\": ...}."""
-        return self._fetch_slice_endpoint(match_id, "incidents", "incidents verisi")
 
     def _save_match_data(
         self,
@@ -1264,89 +859,6 @@ class MatchDataFetcher:
         how = "promoted from the old layout and stored" if result.promoted else "stored"
         logger.info(f"Match {mid} {how} ({len(result.written)} files written)")
 
-    def fetch_matches_batch(
-        self,
-        match_ids: List[Union[int, str]],
-        progress_callback: Optional[Callable[[int, int, str], None]] = None,
-        should_cancel: Optional[Callable[[], bool]] = None,
-        failed_callback: Optional[Callable[[str], None]] = None,
-    ) -> Dict[str, Dict[str, Any]]:
-        """Bir grup maç için veri çeker."""
-        self.begin_job_cache()
-        try:
-            return self._fetch_matches_batch(match_ids, progress_callback, should_cancel, failed_callback)
-        finally:
-            self.end_job_cache()
-
-    def _fetch_matches_batch(
-        self,
-        match_ids: List[Union[int, str]],
-        progress_callback: Optional[Callable[[int, int, str], None]],
-        should_cancel: Optional[Callable[[], bool]],
-        failed_callback: Optional[Callable[[str], None]] = None,
-    ) -> Dict[str, Dict[str, Any]]:
-        use_tqdm = True
-        results = {}
-
-        match_ids_to_process, refresh_count = self._order_by_need(match_ids)
-        skipped = len(match_ids) - len(match_ids_to_process)
-        if skipped:
-            logger.info(f"{skipped} maç detayları tamam, atlanıyor")
-        if refresh_count:
-            logger.info(f"{refresh_count} maç yenileniyor (geçici kayıt)")
-
-        n = len(match_ids_to_process)
-        iterator: Any = tqdm(match_ids_to_process) if use_tqdm else match_ids_to_process
-
-        self.rate_limit_breaker_triggered = False
-        with request_breaker.scope(self.config_manager) as breaker:
-            for idx, match_id in enumerate(iterator):
-                if should_cancel and should_cancel():
-                    logger.info("Match detail batch cancelled after %s/%s", idx, n)
-                    break
-                if breaker.tripped:
-                    logger.warning(f"Çok fazla başarısız istek; maç detayları durduruldu, {n - idx} maç denenmedi")
-                    break
-                match_id = str(match_id)
-
-                if use_tqdm:
-                    iterator.set_description(f"Maç ID {match_id}")
-                else:
-                    logger.info(f"Maç verisi çekiliyor: ID {match_id}")
-
-                try:
-                    need = self._needs_detail_fetch(match_id)
-                    if need == "refresh":
-                        match_data = self.refresh_match(match_id)
-                    elif need == "refill":
-                        match_data = self.refill_missing_match_slices(match_id)
-                        if not match_data:
-                            match_data = self.fetch_match_data(match_id)
-                    else:
-                        match_data = self.fetch_match_data(match_id)
-                except StorageError as e:
-                    # Veri çekildi ama diske yazılamadı: maç başarısız; kalıcı hatada (disk dolu, izin yok) iş durur
-                    logger.error(f"Maç {match_id} kaydedilemedi: {e}")
-                    if failed_callback:
-                        failed_callback(match_id)
-                    if e.fatal:
-                        raise
-                    match_data = None
-                else:
-                    if match_data:
-                        results[match_id] = match_data
-                    elif failed_callback and not breaker.tripped:
-                        # Devre kesildiği için gönderilmeyen istek "başarısız maç" değildir
-                        failed_callback(match_id)
-
-                if progress_callback and n > 0:
-                    progress_callback(idx + 1, n, f"Match details {idx + 1}/{n}")
-                # Maçlar arasında ayrıca beklenmez: hızı ortak istek bütçesi belirler (src/throttle.py)
-
-            self.rate_limit_breaker_triggered = breaker.tripped
-            self.last_status_counts = breaker.counts()
-
-        return results
 
     def create_csv_dataset(self, match_ids: Optional[List[Union[int, str]]] = None,
                            separate_by_league: bool = False) -> Union[str, List[str]]:
@@ -1463,12 +975,15 @@ class MatchDataFetcher:
                 return True
 
             total_success = self.fetch_detail_ids(match_ids_to_process, progress_callback, should_cancel)
+            if self.rate_limit_breaker_triggered:
+                # Terminal menüsünün çıkış kodu (main.py'nin etkileşimli dalı okur); web ve servis yolları bunu yazmaz
+                os.environ["APP_EXIT_CODE"] = "2"
             return total_success > 0
 
         except StorageError:
             raise  # disk dolu / izin yok: "başarısız" deyip geçmek yerine çağırana net hata
         except Exception as e:
-            logger.error(f"Tüm maç detayları çekilirken hata: {str(e)}")
+            logger.error(f"Fetching every match detail failed: {e}")
             import traceback
             logger.error(traceback.format_exc())
             return False
@@ -1535,103 +1050,31 @@ class MatchDataFetcher:
         should_cancel: Optional[Callable[[], bool]] = None,
         failed_callback: Optional[Callable[[str], None]] = None,
     ) -> int:
-        """Verilen maçların detaylarını 100'lük paralel batch'lerle çeker; başarılı maç sayısını döndürür.
+        """Verilen maçların detaylarını boru hattıyla çeker; başarılı maç sayısını döndürür.
 
-        Devre kesilirse (rate limit) kalan batch'ler atlanır ve rate_limit_breaker_triggered True kalır.
-        Kesici tüm batch'ler boyunca aynıdır (çağıran kurduysa işin kesicisi): sayaçlar batch başına sıfırlanmaz.
-        Kalıcı depolama hatasında (disk dolu, izin yok) StorageError fırlatılır.
+        Devre kesilirse (rate limit) kalan maçlar denenmez ve rate_limit_breaker_triggered True kalır. Kesici,
+        çağıran kurduysa işin kesicisidir. Kalıcı depolama hatasında (disk dolu, izin yok) StorageError fırlatılır.
         """
         self.last_storage_error = None
-        try:
-            with request_breaker.scope(self.config_manager):
-                return self._fetch_detail_ids(match_ids_to_process, progress_callback, should_cancel, failed_callback)
-        except StorageError as e:
-            # Çağıran hatayı yutsa bile (etkileşimli menüler) neden okunabilsin: main.py çıkışta bildirir
-            self.last_storage_error = e
-            raise
-
-    def _fetch_detail_ids(
-        self,
-        match_ids_to_process: List[str],
-        progress_callback: Optional[Callable[[int, int, str], None]],
-        should_cancel: Optional[Callable[[], bool]],
-        failed_callback: Optional[Callable[[str], None]],
-    ) -> int:
-        self.rate_limit_breaker_triggered = False
-        batch_size = 100  # Her seferde kaç maç işleneceği
-        total_success = 0
         total_attempts = len(match_ids_to_process)
         print("\n" + get_i18n().t("details_total_to_fetch", count=total_attempts))
         if progress_callback:
             progress_callback(0, total_attempts, f"Match details 0/{total_attempts}")
 
-        for i in range(0, len(match_ids_to_process), batch_size):
-            if should_cancel and should_cancel():
-                logger.info("fetch_detail_ids cancelled before batch at index %s", i)
-                break
-            batch = match_ids_to_process[i:i+batch_size]
-            current_batch = i // batch_size + 1
-            total_batches = (len(match_ids_to_process) - 1) // batch_size + 1
-            start_index = i + 1
-            end_index = min(i + len(batch), total_attempts)
-
-            print(
-                "\n"
-                + get_i18n().t(
-                    "details_batch_start",
-                    current=current_batch,
-                    total=total_batches,
-                    size=len(batch),
-                    start=start_index,
-                    end=end_index,
-                    all=total_attempts,
-                )
-            )
-
-            nested_cb: Optional[Callable[[int, int, str], None]] = None
+        def progress(done: int, _total: int, _msg: str) -> None:
             if progress_callback:
-                batch_base = i
+                progress_callback(min(done, total_attempts), total_attempts,
+                                  f"Match details {min(done, total_attempts)}/{total_attempts}")
 
-                def nested_cb(
-                    done_l: int,
-                    total_l: int,
-                    _msg: str,
-                    _base: int = batch_base,
-                    _tb: int = total_batches,
-                    _cb: int = current_batch,
-                ) -> None:
-                    global_done = min(_base + done_l, total_attempts)
-                    progress_callback(
-                        global_done,
-                        total_attempts,
-                        f"Match details {global_done}/{total_attempts} (batch {_cb}/{_tb})",
-                    )
-
-            # Paralel katman fetch_matches_batch_async zaten alt batch'lerde ilerleme verir;
-            # web UI'da 0/total takılı kalmaması için buraya bağlıyoruz.
-            results = self.fetch_matches_batch_parallel(
-                batch,
-                max_concurrent=self.config_manager.get_max_concurrent(),
-                progress_callback=nested_cb,
-                should_cancel=should_cancel,
-                failed_callback=failed_callback,
-            )
-
-            if results:
-                success_count = len(results)
-                total_success += success_count
-                print(get_i18n().t("details_batch_done", current=current_batch, ok=success_count, size=len(batch)))
-            if self.rate_limit_breaker_triggered:
-                i18n = get_i18n()
-                print(i18n.t("error_rate_limit_detected", count=len(results) if results else 0))
-                if self.last_rate_limit_headers:
-                    logger.warning("Son başarısız isteklerden header/debug özeti:")
-                    for idx, header_info in enumerate(self.last_rate_limit_headers[-20:], start=1):
-                        logger.warning(f"{idx}. match_id={header_info.get('match_id')} error={header_info.get('error')}")
-                os.environ["APP_EXIT_CODE"] = "2"
-                break
-
-        # Genel başarı oranı
+        try:
+            results = self._run_batch(match_ids_to_process, progress, should_cancel, failed_callback)
+        except StorageError as e:
+            # Çağıran hatayı yutsa bile (etkileşimli menüler) neden okunabilsin: main.py çıkışta bildirir
+            self.last_storage_error = e
+            raise
+        total_success = len(results)
+        if self.rate_limit_breaker_triggered:
+            print(get_i18n().t("error_rate_limit_detected", count=total_success))
         success_rate = (total_success / total_attempts) * 100 if total_attempts > 0 else 0
         print(
             "\n"
@@ -1641,40 +1084,22 @@ class MatchDataFetcher:
 
     def fetch_match_details(self, match_id: Union[int, str]) -> bool:
         """
-        Bir maç için detay verilerini çeker ve kaydeder.
-        UI tarafından çağrılmak üzere tasarlanmıştır.
-
-        Args:
-            match_id: Maç ID'si
-
-        Returns:
-            bool: İşlem başarılı ise True, değilse False
+        Bir maçın detayları (terminal menüsü): kayıtlıysa eksik dilimleri tamamlanır (`refill`), değilse tam çekim.
+        Başarılıysa True; hata yutulur ve loglanır.
         """
+        match_id = str(match_id)
         try:
-            match_id = str(match_id)
-            logger.info(f"Maç ID {match_id} için detaylar çekiliyor...")
-
-            # Daha önce klasör varsa eksik dilimleri tamamla; yoksa tam çekim
-            match_path = self._find_match_path(match_id)
-            if match_path:
-                match_data = self.refill_missing_match_slices(match_id)
-                if match_data:
-                    return True
-                match_data = self.fetch_match_data(match_id)
-                return bool(match_data)
-
-            # Maç verilerini çek (fetch_match_data zaten match_details altına kaydeder)
-            match_data = self.fetch_match_data(match_id)
-            if not match_data:
-                logger.warning(f"Maç ID {match_id} için veri bulunamadı veya maç henüz bitmemiş.")
+            logger.info(f"Fetching the details of match {match_id}")
+            if self._find_match_path(match_id):
+                return bool(self.refill_missing_match_slices(match_id))
+            if not self.fetch_match_data(match_id):
+                logger.warning(f"No data for match {match_id}, or the match is not finished yet")
                 return False
             return True
-
         except Exception as e:
-            logger.error(f"Maç ID {match_id} için detay çekilirken hata: {str(e)}")
-            import traceback
-            logger.error(traceback.format_exc())
+            logger.error(f"Fetching the details of match {match_id} failed: {e}")
             return False
+
 
     # CSV: dışa aktarma servisine (src/services/export.py, `legacy-wide-csv` profili) yönlendirilir
     def convert_all_matches_to_csv(self, match_ids: Optional[List[str]] = None, separate_by_league: bool = False) -> Union[str, List[str]]:

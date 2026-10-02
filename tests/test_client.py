@@ -758,33 +758,57 @@ def sent_urls(monkeypatch: pytest.MonkeyPatch) -> List[str]:
     return urls
 
 
+@pytest.fixture
+def sent_async_urls(monkeypatch: pytest.MonkeyPatch) -> List[str]:
+    """Oturumdan (async) giden tam adresler (P13'ten beri maç detayları boru hattının oturumundan istenir)."""
+    import contextlib
+
+    urls: List[str] = []
+
+    async def get(url: str, **kwargs: Any) -> FakeResponse:
+        urls.append(url)
+        return FakeResponse(200, json.dumps({"event": EVENT}))
+
+    @contextlib.asynccontextmanager
+    async def session() -> Any:
+        fake_session = MagicMock()
+        fake_session.get = get
+        yield fake_session
+
+    monkeypatch.setattr(transport, "create_session_async", session)
+    monkeypatch.setattr(utils, "_asleep", AsyncMock())
+    return urls
+
+
 def _fetchers(tmp_path: Path) -> Any:
     config = ConfigManager()
     seasons = SeasonFetcher(config, str(tmp_path / "data"))
     return seasons, MatchFetcher(config, seasons, str(tmp_path / "data")), MatchDataFetcher(config, str(tmp_path / "data"))
 
 
-def test_the_default_api_base_is_unchanged(tmp_path: Path, sent_urls: List[str]) -> None:
+def test_the_default_api_base_is_unchanged(tmp_path: Path, sent_urls: List[str],
+                                           sent_async_urls: List[str]) -> None:
     seasons, matches, details = _fetchers(tmp_path)
 
     assert utils.API_BASE_URL == transport.base_url() == DEFAULT_BASE
     assert {seasons.base_url, matches.base_url, details.base_url} == {DEFAULT_BASE}
 
     seasons.fetch_seasons_checked(17)
-    details._fetch_match_basic("1")
     MatchWatcher._default_fetch("/sport/football/events/live")
     utils.make_api_request("/event/1/statistics")
+    details.fetch_match_data("1")
 
     assert sent_urls == [
         f"{DEFAULT_BASE}/unique-tournament/17/seasons",
-        f"{DEFAULT_BASE}/event/1",
         f"{DEFAULT_BASE}/sport/football/events/live",
         f"{DEFAULT_BASE}/event/1/statistics",
     ]
+    assert f"{DEFAULT_BASE}/event/1" in sent_async_urls
+    assert all(url.startswith(f"{DEFAULT_BASE}/event/1") for url in sent_async_urls)
 
 
 def test_a_configured_api_base_reaches_every_fetcher_and_the_watcher(
-    tmp_path: Path, sent_urls: List[str], monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, sent_urls: List[str], sent_async_urls: List[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Eskiden yalnızca göreli yollar API_BASE_URL'i kullanıyordu; sezon, detay ve izleyici istekleri sabit adrese gidiyordu."""
     monkeypatch.setattr(utils, "API_BASE_URL", OTHER_BASE)
@@ -793,20 +817,20 @@ def test_a_configured_api_base_reaches_every_fetcher_and_the_watcher(
     assert {seasons.base_url, matches.base_url, details.base_url} == {OTHER_BASE}
 
     seasons.fetch_seasons_checked(17)
-    details._fetch_match_basic("1")
-    details._fetch_slice_endpoint("1", "statistics")
     MatchWatcher._default_fetch("/sport/football/events/live")
     utils.make_api_request("/event/1/h2h")
     Client().get_sync(endpoints.event(1))
+    monkeypatch.setattr(utils, "FETCH_ONLY_FINISHED", False)  # EVENT'in durum kodu yok: dilimleri de istensin
+    details.fetch_match_data("1")  # maç detayları: boru hattının oturumu (/event ve dilimleri)
 
     assert sent_urls == [
         f"{OTHER_BASE}/unique-tournament/17/seasons",
-        f"{OTHER_BASE}/event/1",
-        f"{OTHER_BASE}/event/1/statistics",
         f"{OTHER_BASE}/sport/football/events/live",
         f"{OTHER_BASE}/event/1/h2h",
         f"{OTHER_BASE}/event/1",
     ]
+    assert {f"{OTHER_BASE}/event/1", f"{OTHER_BASE}/event/1/statistics"} <= set(sent_async_urls)
+    assert all(url.startswith(f"{OTHER_BASE}/event/1") for url in sent_async_urls)
 
 
 def test_an_absolute_url_given_by_the_caller_is_sent_as_it_is(sent_urls: List[str], monkeypatch: pytest.MonkeyPatch) -> None:

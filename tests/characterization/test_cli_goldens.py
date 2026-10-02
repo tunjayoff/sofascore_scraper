@@ -836,7 +836,8 @@ def test_refresh_only_exit_codes(new_box: NewBox, world: FakeSofaScore) -> None:
     gone.remove("/event/9100001")
     all_failed = run_cli(all_failed_box, "--refresh-only", world=gone)
 
-    blocked_box = new_box("blocked", data="seed", env_lines=["RATE_LIMIT_THRESHOLD_CONSECUTIVE=2"])
+    # Maçlar sırayla (P13'ten beri yenileme eşzamanlıdır): devreyi hangi isteğin keseceği belirli kalsın
+    blocked_box = new_box("blocked", data="seed", env_lines=["RATE_LIMIT_THRESHOLD_CONSECUTIVE=2", "MAX_CONCURRENT=1"])
     for event_id in (9100001, 9100003, 9100010):
         _make_provisional(blocked_box.data, world, event_id)
     world.fail("/event/*", 403)

@@ -977,6 +977,27 @@ def _file_needs(fetcher: MatchDataFetcher, event_ids: Sequence[int]) -> Dict[int
     return {event_id: fetcher._needs_detail_fetch(str(event_id)) for event_id in event_ids}
 
 
+def _deferred(store: Store, needs: Dict[int, str]) -> Set[int]:
+    """
+    Planlamanın (P13) evreye ve listeye bakan kurallarıyla karar verilen kayıtlar: canlı kayıt (`none`, canlı
+    servisin işi) ve daha yeni bir listenin bayatlamış saydığı kayıt (`refresh`). Store'un `missing()` ve
+    `refresh_candidates()` sorguları evreye ve `stale`e bakmaz; eşitlik öteki kayıtlarda aranır, bunların kararı
+    burada sabitlenir.
+    """
+    found: Set[int] = set()
+    for event_id, need in needs.items():
+        row = store.events.get(event_id)
+        if row is None or not row.has_event_payload:
+            continue
+        if row.stale:
+            assert need == "refresh", event_id
+            found.add(event_id)
+        elif row.status_class == "live":
+            assert need == "none", event_id
+            found.add(event_id)
+    return found
+
+
 def _file_missing_keys(fetcher: MatchDataFetcher, event_id: int) -> Tuple[str, ...]:
     """Dosya tabanlı kural (eski yazıcının `_expected_slices`i, tests/legacy_writer.py): beklenen dilimlerden verisi olmayanlar."""
     found = fetcher._find_match_path(str(event_id))
@@ -996,11 +1017,12 @@ def test_missing_equals_the_file_based_refill_set(built: Dict[str, sf.LegacyFixt
     fetcher = fetcher_of(fx.data_dir)
     known = ids(list(store.events.iter(EventQuery())))
     needs = _file_needs(fetcher, known)
+    deferred = _deferred(store, needs)
     rows = {row.event_id: row for row in store.events.missing(None, REQUIRED, status_classes=())}
     refill = {event_id for event_id, row in rows.items() if row.has_event_payload}
 
-    assert refill == {event_id for event_id, need in needs.items() if need == "refill"}
-    for event_id in refill - ({AVL} if name == "legacy" else set()):
+    assert refill - deferred == {event_id for event_id, need in needs.items() if need == "refill"}
+    for event_id in refill - deferred - ({AVL} if name == "legacy" else set()):
         assert rows[event_id].missing_keys == _file_missing_keys(fetcher, event_id)
     # `full`: olay yükü yok (RD-1'den beri `_needs_detail_fetch` de depodan okur: birleşik dosyalı dizin dahil eşit)
     full = {event_id for event_id, need in needs.items() if need == "full"}
@@ -1153,10 +1175,11 @@ def test_needs_from_the_catalog_equal_the_file_based_ones_for_random_states(
     store = open_store(fx.data_dir)
     fetcher = fetcher_of(fx.data_dir)
     needs = _file_needs(fetcher, fx.detail_ids)
+    deferred = _deferred(store, needs)
 
     rows = {row.event_id: row for row in store.events.missing(None, REQUIRED, status_classes=())}
     refill = {event_id for event_id, need in needs.items() if need == "refill"}
-    assert set(rows) == refill and all(row.has_event_payload for row in rows.values())
+    assert set(rows) - deferred == refill and all(row.has_event_payload for row in rows.values())
     for event_id in refill:
         assert rows[event_id].missing_keys == _file_missing_keys(fetcher, event_id)
 
@@ -1171,10 +1194,10 @@ def test_needs_from_the_catalog_equal_the_file_based_ones_for_random_states(
         if refresh.refresh_due(basic, observation, now=float(NOW)):
             due.append(record.event_id)
     assert candidates == sorted(due)
-    assert [str(event_id) for event_id in candidates if event_id not in refill] == sorted(
+    assert [str(event_id) for event_id in candidates if event_id not in refill | deferred] == sorted(
         fetcher.refresh_due_ids(), key=int)
-    assert sorted(event_id for event_id, need in needs.items() if need == "refresh") == [
-        event_id for event_id in candidates if event_id not in refill]
+    assert sorted(event_id for event_id, need in needs.items() if need == "refresh" and event_id not in deferred) \
+        == [event_id for event_id in candidates if event_id not in refill | deferred]
 
     # durumu bitmemiş bir sınıfa dönen kayıt: durum süzülmedikçe aday kalır (bölüm 8.3)
     regressed = fx.details[0].event_id

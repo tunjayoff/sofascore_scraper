@@ -11,6 +11,9 @@ yazar (SingleFetchReport) ve uç nokta lig araması ile sezon yenilemenin kullan
 Veri dizinine yazan biri varken (bu sürecin işi ya da `writer` kilidini tutan başka bir süreç) çekim
 409 `job_running` ile reddedilir; eskiden yalnızca bu sürecin işi görülüyordu.
 
+P13'ten beri uç nokta boru hattıyla (src/services/pipeline.py) ve kendi devre kesicisiyle çeker; rapor boru
+hattının sonucudur (ItemResult.upstream_failure, aynı kural). Oturum ısınması (ana sayfa) istek sayılarına girmez.
+
 Ağ yok: istekler tests/fakes/sofascore.py'deki sahte taşıyıcıya gider; istek katmanı gerçektir. Adım adım
 istek sırası ve yazılan dosyalar tests/characterization/fixtures/fetch/single_match_route.golden.json'da durur.
 """
@@ -22,14 +25,13 @@ import sys
 import time
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional
-from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
 
 import detail_records
 from characterization import WORLD, pin_default_settings
-from fakes.sofascore import FakeSofaScore
+from fakes.sofascore import SITE_ROOT, FakeSofaScore
 from src import bridge_health
 from src.exceptions import (
     APIError,
@@ -105,6 +107,11 @@ def _stored(data_dir: Path, event_id: int) -> List[str]:
     return detail_records.stored_slices(data_dir, event_id)
 
 
+def _paths(fake: FakeSofaScore) -> List[str]:
+    """SofaScore API'sine giden istekler, sırasıyla (oturum ısınması hariç)."""
+    return [path for path in fake.paths() if path != SITE_ROOT]
+
+
 def _typed(reason: str) -> Dict[str, Any]:
     return {"detail": upstream.detail(reason)}
 
@@ -129,7 +136,7 @@ def test_refused_event_request_answers_the_typed_reason(
 
     assert response.status_code == http
     assert response.json() == _typed(reason)
-    assert set(fake.paths()) == {f"/event/{COMPLETE}"}  # dilim istenmedi
+    assert set(_paths(fake)) == {f"/event/{COMPLETE}"}  # dilim istenmedi
     assert _stored(data_dir, COMPLETE) == []  # hiçbir şey yazılmadı
 
 
@@ -166,8 +173,8 @@ def test_stored_match_with_refused_event_is_not_requested_twice(
     fake: FakeSofaScore, client: TestClient, data_dir: Path
 ) -> None:
     """
-    Diskteki maçta refill'in /event isteği reddedilirse tam çekim aynı isteği baştan atmaz. (Bitmemiş maçta
-    atar: o durum goldende `stored_match_now_live` adımıyla sabit.)
+    Diskteki maçta refill'in /event isteği reddedilirse tam çekim aynı isteği baştan atmaz. (P13'ten beri bitmemiş
+    maçta da atmaz: goldende `stored_match_now_live` adımı.)
     """
     assert _fetch(client, COMPLETE).status_code == 200
     detail_records.drop_slices(data_dir, COMPLETE, "h2h")
@@ -178,7 +185,7 @@ def test_stored_match_with_refused_event_is_not_requested_twice(
     response = _fetch(client, COMPLETE)
 
     assert (response.status_code, response.json()) == (502, _typed(upstream.BLOCKED))
-    assert fake.paths() == [f"/event/{COMPLETE}"] * 3  # istek katmanının üç denemesi, bir kez
+    assert _paths(fake) == [f"/event/{COMPLETE}"] * 3  # istek katmanının üç denemesi, bir kez
     assert _stored(data_dir, COMPLETE) == before
 
 
@@ -203,7 +210,7 @@ def test_every_slice_refused_answers_blocked_and_a_later_fetch_completes_the_mat
     response = _fetch(client, COMPLETE)
 
     assert (response.status_code, response.json()) == (200, {"status": "success", "match_id": str(COMPLETE)})
-    assert len(fake.paths()) == 1 + len(SLICE_KEYS)
+    assert len(_paths(fake)) == 1 + len(SLICE_KEYS)
     assert _stored(data_dir, COMPLETE) == sorted(["event", *SLICE_KEYS])
 
 
@@ -218,7 +225,7 @@ def test_refill_with_every_missing_slice_refused_answers_the_reason(
     response = _fetch(client, COMPLETE)
 
     assert (response.status_code, response.json()) == (503, _typed(upstream.RATE_LIMITED))
-    assert set(fake.paths()) == {f"/event/{COMPLETE}", f"/event/{COMPLETE}/h2h", f"/event/{COMPLETE}/lineups"}
+    assert set(_paths(fake)) == {f"/event/{COMPLETE}", f"/event/{COMPLETE}/h2h", f"/event/{COMPLETE}/lineups"}
 
 
 def test_one_answered_slice_is_enough_for_success(fake: FakeSofaScore, client: TestClient, data_dir: Path) -> None:
@@ -258,10 +265,12 @@ def test_a_storage_error_is_not_reported_as_an_upstream_block(
     fake: FakeSofaScore, client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Eskiden metninde "403" ya da "rate" geçen her hata 429 "SofaScore rate limit or block" oluyordu."""
-    def fail_to_save(self: MatchDataFetcher, *args: Any, **kwargs: Any) -> None:
+    import src.services.pipeline as pipeline
+
+    def fail_to_save(*args: Any, **kwargs: Any) -> None:
         raise StorageError("disk full: /data/17_Emirates_Cup/9100403")
 
-    monkeypatch.setattr(MatchDataFetcher, "_save_match_data", fail_to_save)
+    monkeypatch.setattr(pipeline, "put_retrying", fail_to_save)
 
     response = _fetch(client, COMPLETE)
 
@@ -333,14 +342,14 @@ def test_fetcher_records_event_and_slice_outcomes(fake: FakeSofaScore, data_dir:
 
     assert data is not None and report.event is not None
     assert report.event.status == SLICE_OK and report.event.data["id"] == SPARSE
-    assert list(report.slices) == SLICE_KEYS  # istek sırasıyla
+    assert list(report.slices) == SLICE_KEYS  # tablo sırasıyla
     assert {key: (o.status, o.reason, o.http_status) for key, o in report.slices.items()} == {
         "statistics": (SLICE_FAILED, "5xx", 500),
-        "team_streaks": (SLICE_OK, None, None),
-        "pregame_form": (SLICE_EMPTY, "empty", None),  # 404: yardımcı None döndürür, kesin "yok"
-        "h2h": (SLICE_OK, None, None),
-        "lineups": (SLICE_EMPTY, "empty", None),  # 200, ama içinde oyuncu yok
-        "incidents": (SLICE_OK, None, None),
+        "team_streaks": (SLICE_OK, None, 200),
+        "pregame_form": (SLICE_EMPTY, "404", 404),  # kesin "yok"; nedeni her yolda "404" (P13)
+        "h2h": (SLICE_OK, None, 200),
+        "lineups": (SLICE_EMPTY, "empty", 200),  # 200, ama içinde oyuncu yok
+        "incidents": (SLICE_OK, None, 200),
     }
 
     fake.clear_faults()
@@ -356,22 +365,18 @@ def test_fetcher_records_event_and_slice_outcomes(fake: FakeSofaScore, data_dir:
         assert report.slices == {} and report.upstream_failure() is None
 
 
-def test_without_a_report_the_batch_path_is_unchanged(fake: FakeSofaScore, data_dir: Path) -> None:
-    """Toplu yollar rapor vermez: /event isteği eskisi gibi _fetch_match_basic'ten geçer ve hata None'a iner."""
+def test_without_a_report_the_same_pipeline_runs(fake: FakeSofaScore, data_dir: Path) -> None:
+    """Rapor istenmese de aynı yol çalışır; reddedilen /event None'a iner."""
     fetcher = _fetcher(data_dir)
-    event = fake.event(COMPLETE_2)
 
-    with patch.object(fetcher, "_fetch_match_basic", return_value=event) as basic:
-        assert fetcher.fetch_match_data(COMPLETE_2) is not None
-        basic.assert_called_once_with(str(COMPLETE_2))
-        detail_records.drop_slices(data_dir, COMPLETE_2, "h2h")
-        basic.reset_mock()
-        assert fetcher.refill_missing_match_slices(COMPLETE_2) is not None
-        basic.assert_called_once_with(str(COMPLETE_2))
+    assert fetcher.fetch_match_data(COMPLETE_2) is not None
+    detail_records.drop_slices(data_dir, COMPLETE_2, "h2h")
+    fake.reset_log()
+    assert fetcher.refill_missing_match_slices(COMPLETE_2) is not None
+    assert sorted(_paths(fake)) == [f"/event/{COMPLETE_2}", f"/event/{COMPLETE_2}/h2h"]
 
     fake.fail(f"/event/{COMPLETE}", 403)
     assert fetcher.fetch_match_data(COMPLETE) is None
-    assert fetcher._fetch_match_basic(str(COMPLETE)) is None
 
 
 # --- veri dizinine başka biri yazarken -----------------------------------------------------------

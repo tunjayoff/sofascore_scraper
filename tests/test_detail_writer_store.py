@@ -12,9 +12,10 @@ Ağ yok.
 """
 from __future__ import annotations
 
+import contextlib
 import io
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict, Iterator
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -97,6 +98,19 @@ def test_a_record_of_the_old_layout_is_promoted_by_its_next_write_and_its_folder
     assert store.catalog.diff_from_rebuild() == []
 
 
+@contextlib.contextmanager
+def _serving(event: Dict[str, Any]) -> Iterator[Any]:
+    """Sahte SofaScore (tests/fakes/sofascore.py): yalnızca bu maçın /event'i; yenileme boru hattından geçer (P13)."""
+    import copy
+
+    from fakes.sofascore import FakeSofaScore
+
+    fake = FakeSofaScore()
+    fake.add_event(copy.deepcopy(event))
+    with fake:
+        yield fake
+
+
 def test_a_change_row_survives_a_refresh_interrupted_before_the_change_log(
         canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
     """
@@ -115,12 +129,12 @@ def test_a_change_row_survives_a_refresh_interrupted_before_the_change_log(
         if step == events_mod.STEP_MANIFEST:
             raise KeyboardInterrupt("process killed after the payload, before the change log")
 
-    with patch.object(fetcher, "_fetch_match_basic", return_value=new), \
+    with _serving(new), \
             patch.object(events_mod.EventStore, "_checkpoint", killed), pytest.raises(KeyboardInterrupt):
         fetcher.refresh_match(str(event_id))
     assert store.changes.last_seq() == last  # satır henüz günlükte yok; niyet dosyasında
 
-    with patch.object(fetcher, "_fetch_match_basic", return_value=new):
+    with _serving(new):
         assert fetcher.refresh_match(str(event_id)) is not None
     rows = store.changes.list(event_id=event_id, after_seq=last)
     assert len(rows) == 1 and "homeScore.current" in rows[0].fields

@@ -117,12 +117,18 @@
  },
  "request_layer_loaded": true,
  "requests": [
-  "sync /event/9100010 404",
-  "sync /event/9100001 200",
-  "sync /event/9100003 200"
+  {
+   "concurrent": [
+    "async /event/9100001 200",
+    "async /event/9100003 200",
+    "async /event/9100010 404",
+    "async https://www.sofascore.com/ 200"
+   ]
+  }
  ],
  "sleeps": {
-  "request-layer": 2
+  "request-layer": 2,
+  "src.client.transport": 1
  },
  "stderr": [],
  "stdout": [
@@ -130,9 +136,14 @@
   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
   "LOG INFO SeasonFetcher: SeasonFetcher started",
   "LOG INFO SyncService: Refreshing 3 provisional records...",
-  "LOG INFO MatchDataFetcher: 3 maç yenileniyor",
-  "LOG WARNING MatchDataFetcher: Refresh of match 9100010: /event could not be fetched",
-  "LOG INFO MatchDataFetcher: Match 9100003 refreshed: 3 fields changed (homeScore.current, homeScore.display, homeScore.normaltime)",
+  "LOG INFO MatchDataFetcher: Refreshing 3 matches",
+  {
+   "concurrent": [
+    "LOG INFO FetchPipeline: Match 9100003 refreshed: 3 fields changed (homeScore.current, homeScore.display, homeScore.normaltime)",
+    "LOG INFO FetchPipeline: Match 9100010: no such event on SofaScore",
+    "LOG WARNING FetchPipeline: Refresh of match 9100010: /event could not be fetched"
+   ]
+  },
   "Refresh: 2 matches refreshed, 1 changed, 1 failed (changes: data/score_changes.jsonl)"
  ]
 }

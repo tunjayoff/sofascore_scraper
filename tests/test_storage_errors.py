@@ -21,7 +21,7 @@ import json
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -34,7 +34,6 @@ from src.store import layout
 from src.store import open_store
 
 MID = "4242"
-BASE = "https://www.sofascore.com/api/v1"
 H2H = {"teamDuel": {"homeWins": 1, "awayWins": 0, "draws": 0}}
 
 
@@ -95,27 +94,33 @@ def _stored(f: MatchDataFetcher, mid: Any) -> bool:
     return row is not None and row.has_event_payload
 
 
-@contextlib.asynccontextmanager
-async def _fake_session():
-    yield MagicMock()
+@contextlib.contextmanager
+def _world(ids: List[str]):
+    """Sahte SofaScore (tests/fakes/sofascore.py): her maçın /event'i, dilimleri boş nesne; istek katmanı gerçek."""
+    from fakes.sofascore import SLICE_PATHS, FakeSofaScore
+
+    fake = FakeSofaScore()
+    for mid in ids:
+        fake.add(f"/event/{mid}", {"event": _basic(mid)})
+        for path in SLICE_PATHS.values():
+            fake.add(path.format(event_id=mid), {})
+    with fake:
+        yield fake
+
+
+def _event_calls(fake) -> List[str]:
+    return [r.path for r in fake.requests if r.path.startswith("/event/") and r.path.count("/") == 2]
 
 
 def _run_batch(f: MatchDataFetcher, ids: List[str], writer, failed: List[str]) -> List[str]:
-    """fetch_matches_batch_async'i sahte istek katmanıyla çalıştırır; istenen URL'leri döndürür."""
-    calls: List[str] = []
-
-    async def fake(session, url, max_retries=None, **_kw):
-        calls.append(url)
-        mid = url.split("/event/", 1)[1].split("/", 1)[0]
-        return {"event": _basic(mid)} if url.endswith(f"/event/{mid}") else {}
-
-    with patch("src.utils.make_api_request_async", new=fake), \
-            patch("src.utils.create_session_async", _fake_session), \
-            patch.object(store_files, "write_bytes", side_effect=writer), \
-            patch("src.match_data_fetcher.asyncio.sleep", new=AsyncMock()):
-        f.last_results = asyncio.run(
-            f.fetch_matches_batch_async(ids, max_concurrent=1, failed_callback=failed.append)
-        )
+    """fetch_matches_batch_async'i sahte SofaScore'la çalıştırır; istenen /event yollarını döndürür."""
+    with _world(ids) as fake, patch.object(store_files, "write_bytes", side_effect=writer):
+        try:
+            f.last_results = asyncio.run(
+                f.fetch_matches_batch_async(ids, max_concurrent=1, failed_callback=failed.append)
+            )
+        finally:
+            calls = _event_calls(fake)
     return calls
 
 
@@ -144,9 +149,9 @@ def test_async_save_failure_reports_the_match_as_failed_and_continues(tmp_path):
 
     assert failed == ["101"]
     assert list(f.last_results) == ["102"]  # yazılamayan maç "indirildi" sayılmadı
-    assert calls.count(f"{BASE}/event/101") == 1  # yeniden istemek kaydı düzeltmez: yeniden denenmedi
-    assert f.last_status_counts.get("storage") == 1
+    assert calls.count("/event/101") == 1  # yeniden istemek kaydı düzeltmez: yeniden denenmedi
     assert f.rate_limit_breaker_triggered is False  # depolama hatası istek hatası değildir
+    assert f.last_status_counts == {}
     assert _stored(f, 102) and not _stored(f, 101)
 
 
@@ -162,45 +167,33 @@ def test_async_enospc_aborts_the_batch(tmp_path):
     assert not any(_stored(f, mid) for mid in ids)
 
 
-def test_sync_save_failure_reports_the_match_as_failed_and_continues(tmp_path):
+def test_picked_matches_save_failure_reports_the_match_as_failed_and_continues(tmp_path):
     f = _fetcher(tmp_path)
     failed: List[str] = []
 
-    def fake(url, *a, **kw):
-        mid = url.split("/event/", 1)[1].split("/", 1)[0]
-        return {"event": _basic(mid)} if url.endswith(f"/event/{mid}") else {}
-
-    with patch("src.match_data_fetcher.make_api_request", new=fake), \
-            patch.object(store_files, "write_bytes", side_effect=_failing_writer(errno.EIO, only_for=101)), \
-            patch("src.match_data_fetcher.time.sleep"):
+    with _world(["101", "102"]), \
+            patch.object(store_files, "write_bytes", side_effect=_failing_writer(errno.EIO, only_for=101)):
         results = f.fetch_matches_batch(["101", "102"], failed_callback=failed.append)
     assert failed == ["101"] and list(results) == ["102"]
 
 
-def test_sync_enospc_aborts_the_batch(tmp_path):
+def test_picked_matches_enospc_aborts_the_batch(tmp_path):
     f = _fetcher(tmp_path)
     failed: List[str] = []
-    requested: List[str] = []
 
-    def fake(url, *a, **kw):
-        requested.append(url)
-        mid = url.split("/event/", 1)[1].split("/", 1)[0]
-        return {"event": _basic(mid)} if url.endswith(f"/event/{mid}") else {}
-
-    with patch("src.match_data_fetcher.make_api_request", new=fake), \
-            patch.object(store_files, "write_bytes", side_effect=_failing_writer(errno.ENOSPC)), \
-            patch("src.match_data_fetcher.time.sleep"):
+    with _world(["101", "102", "103"]) as fake, \
+            patch.object(store_files, "write_bytes", side_effect=_failing_writer(errno.ENOSPC)):
         with pytest.raises(StorageError):
             f.fetch_matches_batch(["101", "102", "103"], failed_callback=failed.append)
+        requested = _event_calls(fake)
     assert failed == ["101"]
-    assert not any("/event/102" in url for url in requested)  # iş durdu: sonraki maç istenmedi
+    assert requested == ["/event/101"]  # iş durdu: sonraki maç istenmedi
 
 
 def test_refresh_write_failure_is_a_storage_error(tmp_path):
     f = _fetcher(tmp_path)
     f._save_match_data(MID, {"basic": _basic()})
-    with patch.object(f, "_fetch_match_basic", return_value=_basic()), \
-            patch.object(store_files, "write_bytes", side_effect=_failing_writer(errno.ENOSPC)):
+    with _world([MID]), patch.object(store_files, "write_bytes", side_effect=_failing_writer(errno.ENOSPC)):
         with pytest.raises(StorageError) as info:
             f.refresh_match(MID)
     assert info.value.fatal
@@ -212,7 +205,7 @@ def test_fetch_all_match_details_lets_fatal_storage_errors_through(tmp_path):
     boom = StorageError.from_exception(OSError(errno.ENOSPC, os.strerror(errno.ENOSPC)), str(tmp_path))
     with patch.object(f, "collect_detail_match_ids", return_value=["1"]), \
             patch.object(f, "pending_detail_ids", return_value=["1"]), \
-            patch.object(f, "fetch_matches_batch_parallel", side_effect=boom):
+            patch.object(f, "_run_batch", side_effect=boom):
         with pytest.raises(StorageError):
             f.fetch_all_match_details()
 

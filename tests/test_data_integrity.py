@@ -12,7 +12,9 @@ Sayaçlar ve hata kayıtları Store'dadır (plan maddesi ST-21; eski düzende `_
 `_slice_status.json`): testler onları `Store.events.slice(...)` ile okur. Eski sürümün işaret dosyaları olan
 kayıtlar tests/legacy_writer.py ile eski düzende kurulur.
 
-Gerçek ağ yok: istek katmanının taşıyıcısı (curl) ya da kendisi sahte.
+Gerçek ağ yok: istek katmanının taşıyıcısı (oturumun `get`'i) ya da kendisi sahte. P13'ten beri her yol aynı
+boru hattıdır (src/services/pipeline.py): eski "async yol" ve "sync yol" testleri aynı kodu iki giriş noktasından
+(tam çekim ve refill) sınar; oturumun ısınma isteği sahte oturumda yoktur.
 """
 from __future__ import annotations
 
@@ -170,10 +172,34 @@ def _async_api(basic: dict, slices: Dict[str, Any], calls: List[str]):
     return fake
 
 
+def _session_of(fake_get: Any):
+    """`create_session_async`'in sahtesi: ısınmasız bir oturum; `get`i verilen (senkron ya da eşyordam) işlevdir."""
+    @contextlib.asynccontextmanager
+    async def session_ctx():
+        async def get(url, **kw):
+            answer = fake_get(url, **kw)
+            return await answer if asyncio.iscoroutine(answer) else answer
+
+        session = MagicMock()
+        session.get = AsyncMock(side_effect=get)
+        yield session
+
+    return session_ctx
+
+
+@contextlib.contextmanager
+def _curl_layer(basic: dict, slices: Dict[str, Any], calls: List[str]):
+    """Gerçek istek katmanı, sahte oturumla (`_curl`'ün yanıtları)."""
+    with _request_layer(), patch("src.utils.create_session_async", _session_of(_curl(basic, slices, calls))):
+        yield
+
+
 def _fetch_async(f: MatchDataFetcher, slices: Dict[str, Any], basic: dict | None = None) -> List[str]:
+    """Maçın tam çekimi; dilim yanıtları istek katmanının yerine geçen sahteden (tipli hatalar olduğu gibi)."""
     calls: List[str] = []
-    with patch("src.utils.make_api_request_async", new=_async_api(basic or _basic(), slices, calls)):
-        asyncio.run(f._fetch_match_data_async(object(), MID))
+    with patch("src.utils.make_api_request_async", new=_async_api(basic or _basic(), slices, calls)), \
+            patch("src.utils.create_session_async", _session_of(lambda url, **kw: None)):
+        f.fetch_match_data(MID)
     return calls
 
 
@@ -231,7 +257,7 @@ def test_async_429_on_slice_is_retried_on_the_next_run(tmp_path):
 
     # Sonraki çalıştırma: maç "refill" ister ve dilim yeniden istenir; bu kez geliyor
     calls: List[str] = []
-    with _request_layer(), patch.object(utils.cffi_requests, "get", side_effect=_curl(_basic(), PRESENT, calls)):
+    with _curl_layer(_basic(), PRESENT, calls):
         assert f._needs_detail_fetch(MID) == "refill"
         f.refill_missing_match_slices(MID)
     assert calls == [EVENT, f"{EVENT}/lineups"]
@@ -280,10 +306,8 @@ def test_async_slice_failure_through_the_real_request_layer(tmp_path):
             return Resp(200, {"event": basic})
         return Resp(429) if key == "statistics" else Resp(200, PRESENT[key])
 
-    session = MagicMock()
-    session.get = AsyncMock(side_effect=fake_get)
-    with _request_layer():
-        data = asyncio.run(f._fetch_match_data_async(session, MID))
+    with _request_layer(), patch("src.utils.create_session_async", _session_of(fake_get)):
+        data = f.fetch_match_data(MID)
     assert data["statistics"] is None
     assert _counts(f) == {}
     assert _errors(f) == {"statistics": "429"}
@@ -298,15 +322,8 @@ def test_breaker_trips_on_blocked_slices_and_does_not_mark_them_unavailable(tmp_
         mid = url.split("/event/", 1)[1].split("/", 1)[0]
         return Resp(200, {"event": _basic(mid)}) if url.endswith(f"/event/{mid}") else Resp(429)
 
-    @contextlib.asynccontextmanager
-    async def session_ctx():
-        session = MagicMock()
-        session.get = AsyncMock(side_effect=fake_get)
-        yield session
-
     failed: List[str] = []
-    with _request_layer(), patch("src.utils.create_session_async", session_ctx), \
-            patch("src.match_data_fetcher.asyncio.sleep", new=AsyncMock()):
+    with _request_layer(), patch("src.utils.create_session_async", _session_of(fake_get)):
         results = asyncio.run(f.fetch_matches_batch_async(ids, max_concurrent=1, failed_callback=failed.append))
 
     assert f.rate_limit_breaker_triggered is True
@@ -318,7 +335,7 @@ def test_breaker_trips_on_blocked_slices_and_does_not_mark_them_unavailable(tmp_
     assert f._compute_detail_need("2001") == "refill"  # sonraki çalıştırmada yeniden denenecek
 
 
-# --- sync yol (tek maç indirme ve refill) --------------------------------------------------
+# --- refill (eskiden sync yol: tek maç indirme ve refill) ------------------------------------
 
 def _stored(f: MatchDataFetcher) -> None:
     """Yalnızca olay yükü saklanan bitmiş maç (refill tüm dilimleri ister)."""
@@ -339,7 +356,7 @@ def test_sync_refill_transient_error_is_recorded_not_counted(tmp_path, answer, r
     _stored(f)
     slices = dict(PRESENT, statistics=answer)
     for _ in range(UNAVAILABLE_AFTER_ATTEMPTS + 1):
-        with _request_layer(), patch.object(utils.cffi_requests, "get", side_effect=_curl(_basic(), slices, [])):
+        with _curl_layer(_basic(), slices, []):
             f.refill_missing_match_slices(MID)
 
     assert _counts(f) == {}
@@ -352,13 +369,11 @@ def test_sync_refill_transient_error_is_recorded_not_counted(tmp_path, answer, r
 def test_sync_refill_retries_the_failed_slice_on_the_next_run(tmp_path):
     f = _fetcher(tmp_path)
     _stored(f)
-    with _request_layer(), patch.object(
-        utils.cffi_requests, "get", side_effect=_curl(_basic(), dict(PRESENT, statistics=Resp(429)), [])
-    ):
+    with _curl_layer(_basic(), dict(PRESENT, statistics=Resp(429)), []):
         f.refill_missing_match_slices(MID)
 
     calls: List[str] = []
-    with _request_layer(), patch.object(utils.cffi_requests, "get", side_effect=_curl(_basic(), PRESENT, calls)):
+    with _curl_layer(_basic(), PRESENT, calls):
         f.refill_missing_match_slices(MID)
     assert calls == [EVENT, f"{EVENT}/statistics"]  # yalnızca başarısız olan dilim yeniden istendi
     assert open_store(f.data_dir).events.payload(int(MID), "statistics") == PRESENT["statistics"]
@@ -372,7 +387,7 @@ def test_sync_refill_404_is_counted(tmp_path):
     slices = {k: v for k, v in PRESENT.items() if k != "lineups"}  # lineups: 404
     for expected in range(1, UNAVAILABLE_AFTER_ATTEMPTS + 1):
         calls: List[str] = []
-        with _request_layer(), patch.object(utils.cffi_requests, "get", side_effect=_curl(_basic(), slices, calls)):
+        with _curl_layer(_basic(), slices, calls):
             f.refill_missing_match_slices(MID)
         assert f"{EVENT}/lineups" in calls
         assert _counts(f) == {"lineups": expected}
@@ -380,7 +395,7 @@ def test_sync_refill_404_is_counted(tmp_path):
 
     # Artık beklenmiyor: bir sonraki refill dilimi istemez (maç zaten tam)
     calls = []
-    with _request_layer(), patch.object(utils.cffi_requests, "get", side_effect=_curl(_basic(), slices, calls)):
+    with _curl_layer(_basic(), slices, calls):
         f.refill_missing_match_slices(MID)
     assert calls == [EVENT]
 
@@ -389,7 +404,7 @@ def test_sync_full_fetch_separates_failure_from_empty(tmp_path):
     f = _fetcher(tmp_path)
     slices = dict(PRESENT, lineups=Resp(429), incidents={"incidents": []})
     slices.pop("pregame_form")  # 404
-    with _request_layer(), patch.object(utils.cffi_requests, "get", side_effect=_curl(_basic(), slices, [])):
+    with _curl_layer(_basic(), slices, []):
         data = f.fetch_match_data(MID)
     assert data["lineups"] is None
     assert _counts(f) == {"pregame_form": 1, "incidents": 1}
@@ -398,14 +413,20 @@ def test_sync_full_fetch_separates_failure_from_empty(tmp_path):
     assert _info(f, "pregame_form").empty_count == 1
 
 
-def test_sync_helper_raises_instead_of_swallowing(tmp_path):
-    """Eski adlı yardımcılar da hatayı yutmaz: None yalnızca "kaynak yok" demektir."""
+def test_a_slice_request_separates_a_failure_from_a_missing_resource(tmp_path):
+    """Dilim isteğinin hatası yutulmaz: 429 başarısız istektir, 404 kesin "yok"tur (nedeni "404")."""
+    from src.match_data_fetcher import SingleFetchReport
+
     f = _fetcher(tmp_path)
-    with _request_layer(), patch.object(utils.cffi_requests, "get", return_value=Resp(429)):
-        with pytest.raises(RateLimitError):
-            f._fetch_lineups(MID)
-    with _request_layer(), patch.object(utils.cffi_requests, "get", return_value=Resp(404)):
-        assert f._fetch_lineups(MID) is None
+    failed, missing = SingleFetchReport(), SingleFetchReport()
+    with _curl_layer(_basic(), dict(PRESENT, lineups=Resp(429)), []):
+        f.fetch_match_data(MID, report=failed)
+    with _curl_layer(_basic(), {k: v for k, v in PRESENT.items() if k != "lineups"}, []):
+        f.fetch_match_data(MID, report=missing)
+    lineups = failed.slices["lineups"]
+    assert (lineups.status, lineups.reason, lineups.http_status) == (SLICE_FAILED, "429", 429)
+    lineups = missing.slices["lineups"]
+    assert (lineups.status, lineups.reason, lineups.http_status) == (SLICE_EMPTY, "404", 404)
 
 
 # --- eski işaretlerin yeniden denetimi -----------------------------------------------------

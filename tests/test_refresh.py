@@ -5,12 +5,14 @@ Kayıtlar Store'dadır (plan maddesi ST-21): yenileme `Store.events.observe` ile
 `changes/<yyyy>-<mm>.jsonl` parçasına gider. Gözlemi olmayan kayıt yalnızca eski düzende olabilir (önceki
 sürümlerin yazdığı); o yüzden o kayıtlar tests/legacy_writer.py ile eski düzende kurulur.
 """
+import contextlib
 import copy
 import datetime as dt
 import json
 import os
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from typing import Any, Iterator, List
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -43,6 +45,25 @@ def _env(monkeypatch):
     monkeypatch.delenv("REFRESH_WINDOW_HOURS", raising=False)
     monkeypatch.delenv("REFRESH_LEGACY", raising=False)
     monkeypatch.delenv("REFRESH_MIN_INTERVAL_HOURS", raising=False)
+
+
+@contextlib.contextmanager
+def _serving(*events: Any) -> Iterator[Any]:
+    """Sahte SofaScore (tests/fakes/sofascore.py): yalnızca verilen maçların /event'i var (None: hiçbiri)."""
+    from fakes.sofascore import FakeSofaScore
+
+    fake = FakeSofaScore()
+    for event in events:
+        if event is not None:
+            fake.add_event(copy.deepcopy(event))
+    with fake:
+        yield fake
+
+
+def _api(fake: Any) -> List[str]:
+    from fakes.sofascore import SITE_ROOT
+
+    return [r.path for r in fake.requests if r.path != SITE_ROOT]
 
 
 def _fetcher(tmp_path) -> MatchDataFetcher:
@@ -151,9 +172,9 @@ def test_changed_penalties_are_logged_with_old_and_new(tmp_path):
     new["awayScore"]["penalties"] = 5
     new["changes"] = {"changes": ["awayScore.penalties"], "changeTimestamp": old["changes"]["changeTimestamp"] + 600}
 
-    with patch.object(f, "_fetch_match_basic", return_value=new) as fetch:
+    with _serving(new) as fake:
         data = f.refresh_match(MID)
-    fetch.assert_called_once_with(MID)  # yalnızca /event, dilim yok
+    assert _api(fake) == [f"/event/{MID}"]  # yalnızca /event, dilim yok
 
     rows = _rows(f)
     assert len(rows) == 1
@@ -183,7 +204,7 @@ def test_unchanged_refresh_only_updates_observation(tmp_path):
     before = _row(f)
     payload_mtime = (match_dir / "event.json.gz").stat().st_mtime_ns
 
-    with patch.object(f, "_fetch_match_basic", return_value=copy.deepcopy(old)):
+    with _serving(copy.deepcopy(old)):
         f.refresh_match(MID)
 
     assert _rows(f) == []
@@ -201,7 +222,7 @@ def test_status_regression_is_flagged_not_deleted(tmp_path):
     new = _fixture("basketball/B9_abandoned__17060394")
     new["id"] = old["id"]
 
-    with patch.object(f, "_fetch_match_basic", return_value=new):
+    with _serving(new):
         data = f.refresh_match(str(old["id"]))
 
     row = _rows(f)[0]
@@ -217,7 +238,7 @@ def test_failed_fetch_leaves_record_untouched(tmp_path):
     f = _fetcher(tmp_path)
     _store(f, _fixture("football/F2_penalties__16950622"), observed_after_start_h=2)
     before = _row(f)
-    with patch.object(f, "_fetch_match_basic", return_value=None):
+    with _serving(None):
         assert f.refresh_match(MID) is None
     assert _row(f) == before
 
@@ -236,7 +257,7 @@ def test_a_record_of_the_old_layout_is_promoted_by_its_refresh_and_its_folder_is
     new["homeScore"]["penalties"] = 4
     before = store_dump.dump(tmp_path)["events"][MID]
 
-    with patch.object(f, "_fetch_match_basic", return_value=new):
+    with _serving(new):
         assert f.refresh_match(MID) is not None
 
     assert {p.name: p.read_bytes() for p in match_dir.iterdir()} == files_before
@@ -270,10 +291,9 @@ def test_diff_covers_all_score_subfields_status_winner_and_start():
 def test_legacy_record_is_untouched_without_flag(tmp_path):
     f = _fetcher(tmp_path)
     _store(f, _fixture("football/F2_penalties__16950622"))
-    with patch.object(f, "_fetch_match_basic") as fetch, patch.object(f, "fetch_match_data") as full:
+    with _serving() as fake:
         assert f.fetch_matches_batch([MID]) == {}
-    fetch.assert_not_called()
-    full.assert_not_called()
+    assert fake.requests == []
     assert f.refresh_due_ids() == []
 
 
@@ -283,7 +303,7 @@ def test_legacy_record_refreshes_once_with_flag(tmp_path, monkeypatch):
     old = _fixture("football/F2_penalties__16950622")
     _store(f, old)
     assert f.refresh_due_ids() == [MID]
-    with patch.object(f, "_fetch_match_basic", return_value=copy.deepcopy(old)):
+    with _serving(copy.deepcopy(old)):
         stats = f.refresh_matches([MID])
     assert stats == {"refreshed": 1, "changed": 0, "failed": 0}
     # observation yazıldı ve pencere çoktan kapalı: bir daha yenilenmez
@@ -295,31 +315,27 @@ def test_batch_refreshes_after_new_matches_and_counts_separately(tmp_path):
     f = _fetcher(tmp_path)
     old = _fixture("football/F2_penalties__16950622")
     _store(f, old, observed_after_start_h=2)
-    order = []
-    f.fetch_match_data = MagicMock(side_effect=lambda mid: order.append(("full", mid)) or {"basic": {"id": mid}})
-    f.refresh_match = MagicMock(side_effect=lambda mid: order.append(("refresh", mid)) or {"basic": old})
-    with patch("src.match_data_fetcher.time.sleep"):
-        f.fetch_matches_batch([MID, "999"])
-    assert order == [("full", "999"), ("refresh", MID)]
     assert f.pending_detail_ids([MID, "999"]) == ["999", MID]
+    with _serving(old) as fake:  # 999 SofaScore'da yok: tam çekim denenir ve başarısız olur
+        f.fetch_matches_batch([MID, "999"])
+    assert _api(fake) == ["/event/999", f"/event/{MID}"]  # önce yeni maç, sonra yenileme
 
 
 def test_no_fixed_pauses_between_matches(tmp_path):
     """
     Maçlar arasındaki sabit beklemeler kalktı (tek tek indirmede 0,2 sn, --refresh-only'de 1 sn,
-    100'lük gruplar arasında 1 sn): hızı ortak istek bütçesi (src/throttle.py) belirler.
+    100'lük gruplar arasında 1 sn; gruplar da P13'te kalktı): hızı ortak istek bütçesi (src/throttle.py) belirler.
     """
     f = _fetcher(tmp_path)
     old = _fixture("football/F2_penalties__16950622")
     _store(f, old, observed_after_start_h=2)
-    f.fetch_match_data = MagicMock(side_effect=lambda mid: {"basic": {"id": mid}})
-    with patch("src.match_data_fetcher.time.sleep") as sleep:
+    others = [dict(copy.deepcopy(old), id=mid) for mid in (997, 998, 999)]
+    with _serving(old, *others) as fake:
         assert len(f.fetch_matches_batch(["997", "998", "999"])) == 3
-        with patch.object(f, "_fetch_match_basic", return_value=copy.deepcopy(old)):
-            assert f.refresh_matches([MID, MID, MID])["refreshed"] == 3
-        f.fetch_matches_batch_parallel = MagicMock(side_effect=lambda batch, **_kw: dict.fromkeys(batch, {}))
-        assert f._fetch_detail_ids([str(n) for n in range(250)], None, None, None) == 250  # 3 grup
-    sleep.assert_not_called()
+        assert f.refresh_matches([MID, MID, MID])["refreshed"] == 3
+        assert f.fetch_detail_ids([str(n) for n in range(1, 251)]) == 0  # 250 maç, hepsi 404: tek oturum
+        assert len(fake.sessions) == 3
+    assert fake.slept("src.match_data_fetcher") == [] and fake.slept("src.services.pipeline") == []
 
 
 def test_job_progress_counts_refreshes():
@@ -338,7 +354,7 @@ def test_refresh_listener_is_called(tmp_path):
     _store(f, old, observed_after_start_h=2)
     calls = []
     f.refresh_listener = lambda mid, changed: calls.append((mid, changed))
-    with patch.object(f, "_fetch_match_basic", return_value=copy.deepcopy(old)):
+    with _serving(copy.deepcopy(old)):
         f.refresh_match(MID)
     assert calls == [(MID, False)]
 

@@ -642,14 +642,28 @@ def test_known_slices_can_be_given(tmp_path: Path) -> None:
 
 @pytest.mark.usefixtures("frozen_clock")
 def test_missing_slices_equal_today_s_refill_need(fx: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Kayıttan hesaplanan "eksik dilim var" kararı, `_needs_detail_fetch` == "refill" ile aynıdır."""
+    """
+    Kayıttan hesaplanan "eksik dilim var" kararı, `_needs_detail_fetch` == "refill" ile aynıdır. P13'ten beri
+    canlı kayıt (`none`: canlı servisin işi) ve daha yeni bir listenin bayatlamış saydığı kayıt (`refresh`) bu kuralın
+    dışındadır; onların kararı ayrıca sabitlenir.
+    """
+    from src.store import open_store
+
     for key in ("REFRESH_WINDOW_HOURS", "REFRESH_MIN_INTERVAL_HOURS", "REFRESH_LEGACY"):
         monkeypatch.delenv(key, raising=False)
     events, _ = scan(fx.data_dir)
     fetcher = fetcher_for(fx.data_dir)
+    store = open_store(fx.data_dir)
     for eid, event in events.items():
         missing = [k for k in expected_from_record(event) if event.slice(k) is None or event.slice(k).state != "ok"]
         need = fetcher._needs_detail_fetch(str(eid))
+        row = store.events.get(eid)
+        if row is not None and row.stale:
+            assert need == "refresh", (event.path, need)
+            continue
+        if row is not None and row.status_class == "live":
+            assert need == "none", (event.path, need)
+            continue
         assert (need == "refill") is bool(missing), (event.path, need, missing)
         if eid in COMBINED_ONLY.get(fx.name, set()):
             assert need == "none" and not missing  # RD-1'den önce bulunamıyordu ("full"); kayıt tam

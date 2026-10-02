@@ -11,17 +11,29 @@
   },
   "request_layer_loaded": true,
   "requests": [
-   "sync /event/9100001 404"
+   {
+    "concurrent": [
+     "async /event/9100001 404",
+     "async https://www.sofascore.com/ 200"
+    ]
+   }
   ],
-  "sleeps": {},
+  "sleeps": {
+   "src.client.transport": 1
+  },
   "stderr": [],
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO SyncService: Refreshing 1 provisional records...",
-   "LOG INFO MatchDataFetcher: 1 maç yenileniyor",
-   "LOG WARNING MatchDataFetcher: Refresh of match 9100001: /event could not be fetched",
+   "LOG INFO MatchDataFetcher: Refreshing 1 matches",
+   {
+    "concurrent": [
+     "LOG INFO FetchPipeline: Match 9100001: no such event on SofaScore",
+     "LOG WARNING FetchPipeline: Refresh of match 9100001: /event could not be fetched"
+    ]
+   },
    "Refresh: 0 matches refreshed, 0 changed, 1 failed (changes: data/score_changes.jsonl)"
   ]
  },
@@ -34,18 +46,24 @@
   "files": {},
   "request_layer_loaded": true,
   "requests": [
-   "sync /event/9100010 403",
-   "sync /event/9100010 403",
-   "sync /event/9100010 403",
-   "sync /event/9100001 403",
-   "sync /event/9100001 403",
-   "sync /event/9100001 403",
-   "sync /event/9100003 403",
-   "sync /event/9100003 403",
-   "sync /event/9100003 403"
+   {
+    "concurrent": [
+     "async /event/9100001 403",
+     "async /event/9100001 403",
+     "async /event/9100001 403",
+     "async /event/9100003 403",
+     "async /event/9100003 403",
+     "async /event/9100003 403",
+     "async /event/9100010 403",
+     "async /event/9100010 403",
+     "async /event/9100010 403",
+     "async https://www.sofascore.com/ 200"
+    ]
+   }
   ],
   "sleeps": {
-   "request-layer": 6
+   "request-layer": 6,
+   "src.client.transport": 1
   },
   "stderr": [],
   "stdout": [
@@ -54,22 +72,26 @@
    "LOG WARNING Main: Rate-limit circuit breaker --ignore-rate-limit ile devre dışı bırakıldı.",
    "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO SyncService: Refreshing 3 provisional records...",
-   "LOG INFO MatchDataFetcher: 3 maç yenileniyor",
-   "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100010",
-   "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100010",
-   "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100010",
-   "LOG ERROR Utils: 403 Forbidden, denemeler tükendi: https://www.sofascore.com/api/v1/event/9100010",
-   "LOG WARNING MatchDataFetcher: Refresh of match 9100010: /event could not be fetched",
-   "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100001",
-   "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100001",
-   "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100001",
-   "LOG ERROR Utils: 403 Forbidden, denemeler tükendi: https://www.sofascore.com/api/v1/event/9100001",
-   "LOG WARNING MatchDataFetcher: Refresh of match 9100001: /event could not be fetched",
-   "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100003",
-   "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100003",
-   "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100003",
-   "LOG ERROR Utils: 403 Forbidden, denemeler tükendi: https://www.sofascore.com/api/v1/event/9100003",
-   "LOG WARNING MatchDataFetcher: Refresh of match 9100003: /event could not be fetched",
+   "LOG INFO MatchDataFetcher: Refreshing 3 matches",
+   {
+    "concurrent": [
+     "LOG WARNING FetchPipeline: Event request for match 9100001 failed (403)",
+     "LOG WARNING FetchPipeline: Event request for match 9100003 failed (403)",
+     "LOG WARNING FetchPipeline: Event request for match 9100010 failed (403)",
+     "LOG WARNING FetchPipeline: Refresh of match 9100001: /event could not be fetched",
+     "LOG WARNING FetchPipeline: Refresh of match 9100003: /event could not be fetched",
+     "LOG WARNING FetchPipeline: Refresh of match 9100010: /event could not be fetched",
+     "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100001",
+     "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100003",
+     "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100010",
+     "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100001",
+     "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100003",
+     "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100010",
+     "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100001",
+     "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100003",
+     "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100010"
+    ]
+   },
    "Refresh: 0 matches refreshed, 0 changed, 3 failed (changes: data/score_changes.jsonl)"
   ]
  },
@@ -107,15 +129,21 @@
   },
   "request_layer_loaded": true,
   "requests": [
-   "sync /event/9100010 403",
-   "sync /event/9100010 403",
-   "sync /event/9100010 403",
-   "sync /event/9100001 403",
-   "sync /event/9100001 403",
-   "sync /event/9100001 403"
+   {
+    "concurrent": [
+     "async /event/9100001 403",
+     "async /event/9100001 403",
+     "async /event/9100001 403",
+     "async /event/9100010 403",
+     "async /event/9100010 403",
+     "async /event/9100010 403",
+     "async https://www.sofascore.com/ 200"
+    ]
+   }
   ],
   "sleeps": {
-   "request-layer": 4
+   "request-layer": 4,
+   "src.client.transport": 1
   },
   "stderr": [
    "Refresh stopped: too many requests to SofaScore failed (403); 1 matches were not attempted. Wait a while and run it again."
@@ -125,19 +153,23 @@
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
    "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO SyncService: Refreshing 3 provisional records...",
-   "LOG INFO MatchDataFetcher: 3 maç yenileniyor",
-   "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100010",
-   "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100010",
-   "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100010",
-   "LOG ERROR Utils: 403 Forbidden, denemeler tükendi: https://www.sofascore.com/api/v1/event/9100010",
-   "LOG WARNING MatchDataFetcher: Refresh of match 9100010: /event could not be fetched",
-   "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100001",
-   "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100001",
-   "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100001",
-   "LOG ERROR Utils: 403 Forbidden, denemeler tükendi: https://www.sofascore.com/api/v1/event/9100001",
-   "LOG WARNING Breaker: Devre kesici açıldı (art arda 2 başarısız istek): 2 istekten 2 başarısız (2x 403). Bu iş SofaScore'a yeni istek göndermeyecek.",
-   "LOG WARNING MatchDataFetcher: Refresh of match 9100001: /event could not be fetched",
-   "LOG WARNING MatchDataFetcher: Çok fazla başarısız istek; yenileme durduruldu, 1 maç denenmedi",
+   "LOG INFO MatchDataFetcher: Refreshing 3 matches",
+   {
+    "concurrent": [
+     "LOG WARNING Breaker: Devre kesici açıldı (art arda 2 başarısız istek): 2 istekten 2 başarısız (2x 403). Bu iş SofaScore'a yeni istek göndermeyecek.",
+     "LOG WARNING FetchPipeline: Event request for match 9100001 failed (403)",
+     "LOG WARNING FetchPipeline: Event request for match 9100010 failed (403)",
+     "LOG WARNING FetchPipeline: Refresh of match 9100001: /event could not be fetched",
+     "LOG WARNING FetchPipeline: Refresh of match 9100010: /event could not be fetched",
+     "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100001",
+     "LOG WARNING Utils: 403 Forbidden (deneme 1/3): https://www.sofascore.com/api/v1/event/9100010",
+     "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100001",
+     "LOG WARNING Utils: 403 Forbidden (deneme 2/3): https://www.sofascore.com/api/v1/event/9100010",
+     "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100001",
+     "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100010"
+    ]
+   },
+   "LOG WARNING MatchDataFetcher: Too many failed requests; the refresh stopped, 1 matches were not tried",
    "LOG INFO SyncService: Too many failed requests (403); stopped fetching provisional records.",
    "Refresh: 0 matches refreshed, 0 changed, 2 failed (changes: data/score_changes.jsonl)"
   ]

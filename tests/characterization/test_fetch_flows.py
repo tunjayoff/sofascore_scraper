@@ -376,18 +376,46 @@ def test_web_job_details_only(fake: FakeSofaScore, run_job: RunJob, data_dir: Pa
 
 
 def test_web_job_explicit_match_ids(fake: FakeSofaScore, run_job: RunJob, data_dir: Path) -> None:
-    """Kimliğiyle seçilen maçlar: sıralı sync yol; program ve özet dosyaları olmadan çalışır."""
+    """
+    Kimliğiyle seçilen maçlar: lig planlarıyla aynı boru hattı (tek ısıtılmış oturum, eşzamanlı istekler);
+    program ve özet dosyaları olmadan çalışır. Bitmemiş maç atlanır, başarısız sayılmaz.
+    """
     final = run_job(mode="details", selections=[
         {"league_id": LEAGUE, "match_ids": [9100001, 9100002, NOT_STARTED]},
         {"league_id": 2361, "match_ids": [TENNIS]},
     ])
 
-    assert fake.sessions == []
+    assert len(fake.sessions) == 1
     assert_golden("job_explicit_match_ids", {
         "requests": fake.canonical_log(),
         "files": snapshot_tree(data_dir),
         "job": _job_summary(final),
     })
+
+
+def test_web_job_runs_are_idempotent(fake: FakeSofaScore, run_job: RunJob, data_dir: Path) -> None:
+    """
+    Yeniden çalıştırma (docs/design/02-services.md 3.5): aynı işi arka arkaya çalıştırmak ikinci kez hiçbir detay
+    isteği yapmaz; oturum da açılmaz. Kimliğiyle seçilen tam maçlarda bu ilk tekrardadır. Lig planında boş gelen
+    dilimler (9100002) "yok" sayılmak için bir kez daha istenir, ardından o da durur.
+    """
+    picked = {"mode": "details", "selections": [{"league_id": LEAGUE, "match_ids": [9100001, 9100003]}]}
+    league = {"mode": "details", "league_id": LEAGUE}
+    runs: Dict[str, Any] = {}
+
+    run_job(**picked)
+    fake.reset_log()
+    runs["picked_again"] = {"requests": fake.canonical_log(), "job": _job_summary(run_job(**picked))}
+
+    run_job(mode="full", league_id=LEAGUE)
+    for name in ("league_second", "league_third"):
+        fake.reset_log()
+        final = run_job(**league)
+        runs[name] = {"requests": fake.canonical_log(), "job": _job_summary(final)}
+
+    assert runs["picked_again"]["requests"] == [] and runs["league_third"]["requests"] == []
+    assert fake.sessions == []
+    assert_golden("job_idempotency", runs)
 
 
 # --- tek maç uç noktası ----------------------------------------------------------------------

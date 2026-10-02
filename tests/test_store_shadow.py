@@ -98,6 +98,17 @@ def differences(store: Store) -> List[str]:
     return store.catalog.diff_from_rebuild()
 
 
+@contextlib.contextmanager
+def serving(event: Dict[str, Any]) -> Any:
+    """Sahte SofaScore (tests/fakes/sofascore.py): yalnızca bu maçın /event'i; yenileme boru hattından geçer (P13)."""
+    from fakes.sofascore import FakeSofaScore
+
+    fake = FakeSofaScore()
+    fake.add_event(copy.deepcopy(event))
+    with fake:
+        yield fake
+
+
 def fetcher_of(data_dir: Path) -> MatchDataFetcher:
     return MatchDataFetcher(config_manager=MagicMock(), data_dir=str(data_dir))
 
@@ -543,7 +554,7 @@ def test_refresh_without_a_change_indexes_the_new_observation(canonical: sf.Lega
     old = read_json(match_dir(canonical, LIV) / "basic.json")
     fetcher = fetcher_of(data)
 
-    with patch.object(fetcher, "_fetch_match_basic", return_value=copy.deepcopy(old)):
+    with serving(old):
         assert fetcher.refresh_match(str(LIV)) is not None
 
     after = store.events.get(LIV)
@@ -562,7 +573,7 @@ def test_refresh_with_a_change_indexes_the_payload_and_the_change_log(canonical:
     new["homeScore"]["current"] = old["homeScore"]["current"] + 1
     fetcher = fetcher_of(data)
 
-    with patch.object(fetcher, "_fetch_match_basic", return_value=new):
+    with serving(new):
         fetcher.refresh_match(str(LIV))
 
     after = store.events.get(LIV)

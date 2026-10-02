@@ -13,9 +13,7 @@
   "request-layer": 33,
   "src.client.transport": 3
  },
- "stderr": [
-  "<progress> Fetching match details: 4/4"
- ],
+ "stderr": [],
  "stdout": [
   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
@@ -71,20 +69,14 @@
   "LOG INFO SyncService: Fetching match details: league 17 (4 matches)…",
   "",
   "Details will be fetched for 4 matches...",
-  "",
-  "Batch 1/1: processing 4 matches (1-4/4)...",
-  "Processing 4 matches in parallel...",
   {
    "concurrent": [
-    "LOG INFO MatchDataFetcher: Batch 1/1: 4 başarılı, 0 başarısız (hata yok)",
-    "LOG INFO MatchDataFetcher: Match 9100001 stored (7 files written)",
-    "LOG INFO MatchDataFetcher: Match 9100002 stored (6 files written)",
-    "LOG INFO MatchDataFetcher: Match 9100003 stored (7 files written)",
-    "LOG INFO MatchDataFetcher: Match 9100010 stored (7 files written)",
-    "LOG INFO MatchDataFetcher: Processing batch 1/1 (4 matches)"
+    "LOG INFO FetchPipeline: Match 9100001 stored (7 files written)",
+    "LOG INFO FetchPipeline: Match 9100002 stored (6 files written)",
+    "LOG INFO FetchPipeline: Match 9100003 stored (7 files written)",
+    "LOG INFO FetchPipeline: Match 9100010 stored (7 files written)"
    ]
   },
-  "✓ Batch 1: 4/4 succeeded",
   "",
   "Done: 4/4 matches (100.0%) processed successfully.",
   "Download finished. Matches that needed details: 4 (4 fetched, 0 failed). Provisional records refreshed: 0 (0 changed)."

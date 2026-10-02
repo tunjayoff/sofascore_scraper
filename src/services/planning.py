@@ -6,18 +6,23 @@ satırları), dilim seçimine ve yenileme politikasına bakar; dosya okumaz, dep
 politikadadır). Depodan durumları okuyan sarmalayıcılar (`event_needs`, `refresh_due_events`) ve sıralama
 (`order_by_need`) da buradadır; src/match_data_fetcher.py'deki planlayıcılar bunlara devreder.
 
-İhtiyaçlar (bugünkü kural; RD-3'ün `QueryService.detail_needs` ile aynı kararlar):
+İhtiyaçlar, öncelik sırasıyla (tasarım tablosu; ilk uyan kural kazanır):
 
   full     kayıt yok: maç katalogda yok ya da olay yükü yok (yalnızca bir listeden biliniyor)
+  refresh  daha yeni bir liste kaydı bayatlamış saydı (`stale`: durum, skor ya da başlangıç zamanı değişmiş);
+           önce /event yeniden okunur (eksik dilimler bir sonraki planda)
+  none     maç oynanıyor (canlı): canlı servisin işidir
+  none     maç başlamamış ya da ertelenmiş / iptal ve seçimde ön maç evresinde var olabilen dilim yok: listeler
+           kaydı güncel tutar. Kayıt defterinin bugünkü dilimleri her evrede istenebildiği için (P12'nin
+           varsayılanları) bu kural varsayılan seçimle uygulanmaz
   refill   olay yükü var; seçilmiş, maçın sporuna uyan, evresinde var olabilen ve tamlık hesabına giren bir
            dilim eksik: satırı yok ya da `ok` değil ve kesin + doğrulanmamış "veri yok" sayısı eşiğin altında
   refresh  dilimler tam, kayıt geçici ve yenileme zamanı gelmiş (src/refresh.py; Store.events.refresh_candidates
            ile aynı koşul)
   none     tamam
 
-Tasarım tablosunun üç satırı henüz uygulanmaz, çünkü bugünkü davranışı değiştirirler (P13 ve dalga 4):
-bayatlamış (`stale`) kaydın önce yenilenmesi, canlı maçın canlı servise bırakılması ve başlamamış maçın ön maç
-dilimi seçilmemişse beklenmemesi. Bugün bu maçlar da yukarıdaki dört kurala göre planlanır.
+`refill` iş biriminin dilimleri, maçın eksik olan bütün seçili dilimleridir: tamlık hesabına girmeyen (isteğe
+bağlı) dilimler de (ör. tenisin point_by_point'i), maç zaten yeniden okunuyorsa birlikte istenir.
 """
 from __future__ import annotations
 
@@ -99,6 +104,18 @@ def missing_slice_keys(state: "EventState", selection: Selection = None, *,
     return tuple(key for key in keys if slice_missing(state.slice(key), threshold))
 
 
+def wanted_slice_keys(state: "EventState", selection: Selection = None, *,
+                      threshold: int = DEFAULT_EMPTY_THRESHOLD) -> Tuple[str, ...]:
+    """
+    Olay yükü saklanan maçta yeniden istenecek dilimler, tablo sırasıyla: seçilmiş, sporuna uyan ve evresinde
+    var olabilen her dilim (tamlık hesabına girmeyenler dahil) `ok` değilse ve yeterince kesin "veri yok"
+    yanıtı almamışsa. `missing_slice_keys` bunların tamlık hesabına girenleridir.
+    """
+    row = state.event
+    specs = select_slices("event", row.sport or None, selection, phase=phase_of(row.status_class))
+    return tuple(spec.key for spec in specs if slice_missing(state.slice(spec.key), threshold))
+
+
 def refresh_due(row: "EventRow", policy: RefreshPolicy) -> bool:
     """
     Kayıt geçici ve yenileme zamanı gelmiş mi (Store.events.refresh_candidates'in koşulu, tek satır için): olay
@@ -121,7 +138,7 @@ def _is_record(row: "EventRow", layout: Optional[str]) -> bool:
 def compute_need(state: Optional["EventState"], selection: Selection, policy: RefreshPolicy, *,
                  threshold: int = DEFAULT_EMPTY_THRESHOLD, layout: Optional[str] = None) -> Need:
     """
-    Bir maçın ihtiyacı (modül belgesindeki dört kural). Saftır: yalnızca argümanlarına bakar.
+    Bir maçın ihtiyacı (modül belgesindeki kurallar, öncelik sırasıyla). Saftır: yalnızca argümanlarına bakar.
 
     state: maçın katalogdaki durumu; None = katalog maçı bilmiyor. selection: dilim seçimi (None = kayıt
     defterinin varsayılanları). policy: yenileme politikası ve an. threshold: bu kadar kesin "veri yok"
@@ -129,9 +146,17 @@ def compute_need(state: Optional["EventState"], selection: Selection, policy: Re
     """
     if state is None or not _is_record(state.event, layout):
         return NEED_FULL
+    row = state.event
+    if row.stale:
+        return NEED_REFRESH
+    phase = phase_of(row.status_class)
+    if phase == "live":
+        return NEED_NONE
+    if phase == "pre" and not select_slices("event", row.sport or None, selection, phase="pre"):
+        return NEED_NONE
     if missing_slice_keys(state, selection, threshold=threshold):
         return NEED_REFILL
-    if refresh_due(state.event, policy):
+    if refresh_due(row, policy):
         return NEED_REFRESH
     return NEED_NONE
 
@@ -147,11 +172,13 @@ def work_item(event_id: int, state: Optional["EventState"], need: str, selection
             "known from a listing only" if not state.event.has_event_payload else "not stored in this layout")
         return WorkItem(Ref.event(event_id), "full", (), sport, reason)
     if need == NEED_REFILL and state is not None:
-        missing = missing_slice_keys(state, selection, threshold=threshold)
+        missing = wanted_slice_keys(state, selection, threshold=threshold)
         return WorkItem(Ref.event(event_id), "refill", tuple((key, "") for key in missing), sport,
                         "missing slices: " + ", ".join(missing))
     if need == NEED_REFRESH:
-        return WorkItem(Ref.event(event_id), "refresh", (), sport, "provisional record due for a refresh")
+        reason = ("a newer listing differs from the stored record" if state is not None and state.event.stale
+                  else "provisional record due for a refresh")
+        return WorkItem(Ref.event(event_id), "refresh", (), sport, reason)
     raise ValueError(f"need must be one of {', '.join(NEEDS)}, got {need!r}")
 
 
@@ -205,6 +232,43 @@ def refresh_due_events(store: "Store", policy: RefreshPolicy, *, tournament_ids:
     return sorted(rows, key=lambda row: row.id)
 
 
+def _canonical(value: Any) -> Optional[int]:
+    """Kimlik olarak yazılabilen değer → sayı (`_event_ids`'in kuralı); değilse None."""
+    found = _event_ids([value])
+    return found[0] if found else None
+
+
+def plan_items(store: "Store", event_ids: Iterable[Any], policy: RefreshPolicy, *, selection: Selection = None,
+               threshold: int = DEFAULT_EMPTY_THRESHOLD, layout: Optional[str] = None,
+               needs: Optional[Dict[int, str]] = None) -> List[WorkItem]:
+    """
+    Maç kimliklerinin iş birimleri, `order_by_need` sırasıyla (önce full ve refill verildiği sırayla, sonra
+    refresh); ihtiyacı `none` olanlar düşer. Durumlar `event_needs` gibi parça parça okunur. needs verilirse
+    (kimlik → ihtiyaç; ör. işin önbelleğinden) karar o olur, durum yalnızca refill dilimleri için okunur.
+    """
+    wanted = set(_event_ids(event_ids))
+    ids = [number for number in dict.fromkeys(_canonical(value) for value in event_ids) if number in wanted]
+    states: Dict[int, "EventState"] = {}
+    for chunk in _chunks(sorted(ids)):
+        states.update((state.event.id, state) for state in store.events.states(Scope(event_ids=tuple(chunk))))
+    decided: Dict[str, str] = {}
+    for event_id in ids:
+        given = needs.get(event_id) if needs is not None else None
+        decided[str(event_id)] = given if given is not None else compute_need(
+            states.get(event_id), selection, policy, threshold=threshold, layout=layout)
+    ordered, _ = order_by_need(ids, decided)
+    items: List[WorkItem] = []
+    for event_id in ordered:
+        state = states.get(event_id)
+        need = decided[str(event_id)]
+        if need == NEED_REFILL and state is None:
+            need = NEED_FULL  # önbellekteki karar eskimiş: kayıt artık yok
+        item = work_item(event_id, state, need, selection, threshold=threshold)
+        if item is not None:
+            items.append(item)
+    return items
+
+
 __all__ = ["NEEDS", "Need", "Selection", "WorkItem", "WorkNeed", "compute_need", "event_needs",
-           "expected_slice_keys", "missing_slice_keys", "order_by_need", "phase_of", "refresh_due",
-           "refresh_due_events", "slice_missing", "work_item"]
+           "expected_slice_keys", "missing_slice_keys", "order_by_need", "phase_of", "plan_items", "refresh_due",
+           "refresh_due_events", "slice_missing", "wanted_slice_keys", "work_item"]
