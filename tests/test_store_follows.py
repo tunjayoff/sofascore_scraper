@@ -863,7 +863,8 @@ def test_a_sport_learned_from_downloaded_data_is_mirrored(setup: Setup):
     match_dir = setup.data_dir / "match_details" / "132_NBA" / "season_NBA_25_26" / "14441992"
     match_dir.mkdir(parents=True)
     (match_dir / "basic.json").write_text(
-        json.dumps({"tournament": {"category": {"sport": {"name": "Basketball", "slug": "basketball"}}}}),
+        json.dumps({"id": 14441992, "tournament": {"uniqueTournament": {"id": 132},
+                                                   "category": {"sport": {"name": "Basketball", "slug": "basketball"}}}}),
         encoding="utf-8",
     )
 

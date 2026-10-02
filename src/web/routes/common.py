@@ -1,9 +1,7 @@
 """Paylaşılan durum: yapılandırma, iş deposu ve senkron worker hataları."""
 from __future__ import annotations
 
-import glob
-import os
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 
 from src.config_manager import ConfigManager
@@ -21,21 +19,6 @@ class _SyncHttpError(Exception):
         self.status_code = status_code
         self.detail = detail
         super().__init__(detail)
-
-
-def _find_league_seasons_json(data_dir: str, league_id: int) -> Optional[str]:
-    """SeasonFetcher kaydı: {id}_{safe_name}_seasons.json; eski format: {id}_seasons.json."""
-    seasons_dir = os.path.join(data_dir, "seasons")
-    if not os.path.isdir(seasons_dir):
-        return None
-    legacy = os.path.join(seasons_dir, f"{league_id}_seasons.json")
-    if os.path.isfile(legacy):
-        return legacy
-    pattern = os.path.join(seasons_dir, f"{league_id}_*_seasons.json")
-    matches = glob.glob(pattern)
-    if not matches:
-        return None
-    return max(matches, key=os.path.getmtime)
 
 
 _job_store = get_job_store(config_manager.get_data_dir())

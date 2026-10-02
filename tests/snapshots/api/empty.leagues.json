@@ -10,7 +10,7 @@
  },
  "no leagues configured": {"response": {"status": 200, "body": []}, "sports_file_after": null},
  "search": {
-  "LEAGUE": {"status": 200, "body": [{"id": 17, "name": "Premier League", "sport": null}]},
+  "LEAGUE": {"status": 200, "body": [{"id": 17, "name": "Premier League", "sport": "football"}]},
   "la": {"status": 200, "body": []},
   "zz": {"status": 200, "body": []},
   "l": {"status": 422},

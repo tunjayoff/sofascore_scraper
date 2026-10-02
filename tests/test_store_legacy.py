@@ -1055,8 +1055,9 @@ def test_season_lists_of_the_canonical_fixture(canonical: sf.LegacyFixture) -> N
 
 def test_season_list_rule_newest_file_of_any_name(old_forms: sf.LegacyFixture) -> None:
     """
-    Premier League'in iki dosyası var; adı ne olursa olsun yenisi geçerli. Bugünkü web okuyucusu yalın
-    `17_seasons.json`'ı seçer (30 gün eski, iki sezon): RD-5 bunu davranış değişikliği olarak yazacak.
+    Premier League'in iki dosyası var; adı ne olursa olsun yenisi geçerli. RD-5'ten beri okuyucular da
+    (web uç noktası, SeasonFetcher) aynı dosyayı seçer; eskiden web okuyucusu yalın `17_seasons.json`'ı
+    seçiyordu (30 gün eski, iki sezon).
     """
     reader = LegacyReader(old_forms.data_dir)
     report = LegacyReport()
@@ -1078,9 +1079,10 @@ def test_season_list_rule_newest_file_of_any_name(old_forms: sf.LegacyFixture) -
         ("season_list", "17", "seasons/17_seasons.json", newest),
     ]
     assert report.problems == []
-    from src.web.routes.common import _find_league_seasons_json
-    today = _find_league_seasons_json(str(old_forms.data_dir), 17)
-    assert Path(today).name == "17_seasons.json"
+    from src.services import tournaments
+    from src.store import open_store
+    today = tournaments.seasons_of(open_store(old_forms.data_dir), 17)
+    assert [x["id"] for x in today] == [96668, 76986, 61627]
 
     # Lig adları verilmezse `<ad>_seasons.json`'ın turnuvası bilinmez; CSV o turnuva için geçerli kalır
     report = LegacyReport()

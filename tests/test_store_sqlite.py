@@ -171,6 +171,35 @@ def test_connection_can_be_closed_from_another_thread(tmp_path):
     sq.close_quietly(conn)  # ikinci kez kapatmak zararsız
 
 
+def test_closing_a_connection_waits_for_a_close_that_is_already_running(tmp_path):
+    """
+    Kapatmalar sıraya girer. Biten bir iş parçacığının bağlantısı `__del__` ile kapanırken `close_all` aynı
+    bağlantıyı başka bir iş parçacığından kapatabilir; Python 3.10'da eşzamanlı iki kapatma süreci düşürür
+    (web uç noktalarının kısa ömürlü iş parçacıkları depoyu okumaya başlayınca CI'da görüldü).
+    """
+    conn = sq.connect(tmp_path / "x.db")
+    conn.execute("CREATE TABLE t (x)")
+    closed = threading.Event()
+
+    def close() -> None:
+        conn.close()
+        closed.set()
+
+    with sq._close_lock:  # bir başka kapatma sürüyor
+        worker = threading.Thread(target=close)
+        worker.start()
+        assert not closed.wait(0.2)
+        assert conn.execute("SELECT count(*) FROM t").fetchone()[0] == 0  # henüz kapanmadı
+    worker.join(5)
+    assert closed.is_set()
+    with pytest.raises(sqlite3.ProgrammingError):
+        conn.execute("SELECT 1")
+    conn.close()  # ikinci kapatma zararsız
+    with sq._close_lock:
+        with sq._close_lock:  # yeniden girilebilir: kapatırken çöp toplayıcı başka bir bağlantıyı kapatabilir
+            sq.connect(tmp_path / "x.db").close()
+
+
 def test_a_dropped_connection_closes_itself_without_a_resource_warning(tmp_path):
     """Python 3.13+ kapatılmamış bağlantı için ResourceWarning verir; alt sınıf çöpe giderken kendini kapatır."""
     conn = sq.connect(tmp_path / "db.sqlite")

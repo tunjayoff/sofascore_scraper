@@ -12,9 +12,7 @@
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
-   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
-   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO SyncService: Refreshing 0 provisional records...",
    "Refresh: 0 matches refreshed, 0 changed, 0 failed (changes: data/score_changes.jsonl)"
   ]
@@ -39,9 +37,7 @@
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
-   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
-   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO Main: Running in headless mode",
    "LOG INFO Main: Starting CSV export",
    "LOG INFO MatchDataFetcher: Toplam 4 maç CSV'ye dönüştürülüyor...",
@@ -67,9 +63,7 @@
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
-   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
-   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG ERROR Main: Data directory is in use by another process: lease=writer pid=<pid> host=<host> purpose=job"
   ]
  },
@@ -88,9 +82,7 @@
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
-   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
-   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG ERROR Main: Data directory is in use by another process: lease=writer pid=<pid> host=<host> purpose=job"
   ]
  },
@@ -109,9 +101,7 @@
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
-   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
-   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG ERROR Main: Data directory is in use by another process: lease=writer pid=<pid> host=<host> purpose=job"
   ]
  },
@@ -135,9 +125,7 @@
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
-   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
-   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG ERROR Main: Data directory is in use by another process: lease=writer pid=<pid> host=<host> purpose=job"
   ]
  },
@@ -161,9 +149,7 @@
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
-   "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
-   "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG ERROR Main: Data directory is in use by another process: lease=writer pid=<pid> host=<host> purpose=job"
   ]
  }
