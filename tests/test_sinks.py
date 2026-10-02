@@ -1545,6 +1545,46 @@ def test_the_diagnostics_bundle_masks_the_secret_of_an_accepted_variable_name(mo
     assert SECRET not in settings and '"SOFASCORE_HOOK_SECRET": "***"' in settings
 
 
+def test_config_show_never_prints_a_webhook_address_beyond_its_host(cli: CliRunner, tmp_path: Path):
+    """Bir komutun çıktısı: adresin kullanıcı bilgisi, yolu ve sorgusu gösterilmez (yol ya da sorgu belirteç olabilir)."""
+    config = tmp_path / "sofascore.toml"
+    config.write_text(
+        f'schema = 1\n[[sink]]\nname = "ops"\ntype = "webhook"\nurl = "{HOOK_URL}"\nsecret_env = "SOFASCORE_HOOK_SECRET"\n',
+        encoding="utf-8",
+    )
+    as_json = cli("config", "show", "--json", "--config", config, "--data-dir", tmp_path / "data")
+    as_text = cli("config", "show", "--config", config, "--data-dir", tmp_path / "data")
+    assert as_json.exit_code == 0 and as_text.exit_code == 0
+    rows = {row["key"]: row["value"] for row in as_json.data["values"]}
+    assert rows["sinks"][0]["url"] == "https://***@hooks.example.org/***" and rows["sinks"][0]["name"] == "ops"
+    for private in PRIVATE_PARTS:
+        for output in (as_json.stdout, as_json.stderr, as_text.stdout, as_text.stderr):
+            assert private not in output, private
+    assert "hooks.example.org" in as_text.stdout  # nereye gittiği (host) görünür
+
+
+def test_the_diagnostics_bundle_never_contains_a_webhook_address_beyond_its_host(monkeypatch: pytest.MonkeyPatch):
+    """Sink'ler ortamdan da gelir (SOFASCORE_SINKS); paket bütün SOFASCORE_ değişkenlerini yazar."""
+    from src import diagnostics, redact
+
+    monkeypatch.setenv("SOFASCORE_HOOK_SECRET", SECRET)
+    monkeypatch.setenv("SOFASCORE_SINKS", json.dumps([
+        {"name": "ops", "type": "webhook", "url": HOOK_URL, "secret_env": "SOFASCORE_HOOK_SECRET"},
+        {"name": "feed", "type": "file", "path": "out/live.ndjson"},
+    ]))
+    assert len(loader.load_settings(config_file=None, dotenv_values={}, overrides_file=None).settings.sinks) == 2
+    document = json.dumps(diagnostics.collect("cli"))
+    for private in PRIVATE_PARTS:
+        assert private not in document, private
+    shown = diagnostics._settings()["values"]["SOFASCORE_SINKS"]
+    assert "https://***@hooks.example.org/***" in shown and '"name":"ops"' in shown and "out/live.ndjson" in shown
+    # Ayrıştırılamayan değer tümüyle maskelenir: içinde adres olabilir
+    assert redact.mask_value("SOFASCORE_SINKS", f"not json {HOOK_URL}") == "***"
+    assert redact.mask_value("SOFASCORE_SINKS", json.dumps([HOOK_URL])) == "***"
+    assert redact.mask_webhook_url("https://example.org") == "https://example.org"
+    assert redact.mask_webhook_url("http://127.0.0.1:9000/hook") == "http://127.0.0.1:9000/***"
+
+
 def test_the_secret_is_read_from_the_process_environment_by_default(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("HOOK_SECRET", SECRET)
     assert sinks.build_sink(spec(**HOOK)).signed

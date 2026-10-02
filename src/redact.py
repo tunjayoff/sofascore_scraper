@@ -18,6 +18,7 @@ Bu modül src.logger tarafından içe aktarılır; o yüzden yalnızca src.paths
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import threading
@@ -35,6 +36,9 @@ MASK = "***"
 KNOWN_SECRET_KEYS = ("SOFA_CAPTCHA_TOKEN", "SOFASCORE_API_TOKEN")
 # Değeri URL olan ve içinde kimlik bilgisi taşıyabilen uygulama anahtarları
 KNOWN_URL_KEYS = ("PROXY_URL", "API_BASE_URL")
+# Değeri [[sink]] tablolarının JSON listesi olan anahtarlar: webhook adresinin yolu ve sorgusu da belirteç
+# taşıyabilir (Slack, Discord...), bu yüzden `url` alanları mask_webhook_url ile gösterilir
+KNOWN_SINK_LIST_KEYS = ("SOFASCORE_SINKS",)
 
 # Bundan kısa değerler "bilinen değer" olarak aranmaz: 3 harflik bir parola her log satırındaki
 # aynı 3 harfi maskelerdi. Kısa değerler yine de kalıplarla (URL, anahtar=değer) yakalanır.
@@ -119,6 +123,37 @@ def mask_url_userinfo(value: str) -> str:
     if parts is None:
         return value
     return f"{parts[0]}{MASK}{parts[2]}"
+
+
+def mask_webhook_url(value: str) -> str:
+    """
+    Bir webhook adresinin gösterilecek hali: şema, host ve port kalır; kullanıcı bilgisi, yol, sorgu ve parça
+    `***` olur ("https://***@hooks.example.org/***"). Bu adreslerde yolun ya da sorgunun kendisi kimlik
+    bilgisidir; `config show` ve tanılama paketi adresi yalnızca bu haliyle yazar.
+    """
+    value = mask_url_userinfo(value)
+    scheme, sep, rest = value.partition("://")
+    if not sep:
+        scheme, rest = "", value
+    cut = min((i for i in (rest.find(c) for c in "/?#") if i >= 0), default=len(rest))
+    if rest[cut:] in ("", "/"):
+        return value
+    return f"{scheme}{sep}{rest[:cut]}/{MASK}"
+
+
+def _mask_sink_list(value: str) -> str:
+    """SOFASCORE_SINKS: listedeki her tablonun `url` alanı maskelenir; ayrıştırılamayan değer tümüyle `***` olur."""
+    try:
+        items = json.loads(value)
+    except ValueError:
+        return MASK
+    if not isinstance(items, list) or any(not isinstance(item, dict) for item in items):
+        return MASK
+    shown = [
+        {k: (mask_webhook_url(v) if isinstance(v, str) else MASK) if k == "url" else v for k, v in item.items()}
+        for item in items
+    ]
+    return json.dumps(shown, ensure_ascii=False, separators=(",", ":"))
 
 
 def _env_file_values() -> Dict[str, str]:
@@ -234,6 +269,8 @@ def mask_value(key: str, value: Optional[str]) -> Optional[str]:
     if is_secret_key(key):
         return MASK
     value = str(value)
+    if key in KNOWN_SINK_LIST_KEYS:
+        value = _mask_sink_list(value)
     if key in KNOWN_URL_KEYS:
         # Değer henüz .env'de / ortamda olmasa da (yeni yazılıyor) kimlik bilgisi yapısal olarak maskelenir
         value = mask_url_userinfo(value)
