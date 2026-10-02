@@ -84,6 +84,7 @@ from src.store.indexer import (
 from src.store.jobs import JobStore, import_legacy_jobs
 from src.store.lease import MAINTENANCE, Lease, LeaseInfo, LeaseManager
 from src.store.manifest import MANIFEST_FORMAT
+from src.store.sqlite import to_store_error
 from src.store.state import RuntimeFacts, StateDb
 from src.store.streams import StreamLog
 from src.store.watch import WatchStateStore
@@ -311,7 +312,17 @@ class Store:
         """
         schema.json'ı yoksa yaratır; varsa ve dizin yazmak için açıldıysa son yazanın sürümlerini günceller.
         state.db'nin yazma kilidi altında yapılır: aynı anda açılan iki süreç iki ayrı `store_id` üretmez.
+
+        state.db okunabildiği halde yazılamıyorsa (ör. başka bir hesaptan kalmış, yazılamayan `-shm` dosyası)
+        SQLite hatası StoreError olarak çıkar (`sqlite.to_store_error`, dosyanın yoluyla): StoreError yakalayan
+        çağıranlar depolama iletisini gösterir.
         """
+        try:
+            return self._sync_schema_locked()
+        except sqlite3.Error as e:
+            raise to_store_error(e, self._state.path) from e
+
+    def _sync_schema_locked(self) -> Dict[str, Any]:
         with self._state.write():
             schema = read_schema(self._schema_path)
             now = _utc_now()
@@ -658,7 +669,17 @@ class Store:
             raise StoreError(f"Depo kapatılmış: {self.data_dir}", path=str(self.data_dir))
 
     def close(self) -> None:
-        """Veritabanı bağlantılarını kapatır ve depoyu kayıt defterinden çıkarır. Alınmış kilitler sahiplerinde kalır."""
+        """
+        Veritabanı bağlantılarını kapatır ve depoyu kayıt defterinden çıkarır. Alınmış kilitler sahiplerinde kalır.
+
+        `Store.jobs`'ta bitmekte olan bir iş varsa (satırı bitmiş, son depo erişimleri sürüyor) önce onun bitmesi
+        beklenir (en çok 30 s; `JobStore.wait_for_finishing_job`): state.db onu kullanan iş thread'inin altından
+        kapatılmaz. Ortasında olan bir işi ya da başka bir thread'in süren okumasını beklemez; kapatan, onların
+        bittiğinden emin olmalıdır (docs/design/01-storage.md, bölüm 3.2).
+        """
+        if self._closed:
+            return
+        JobStore.wait_for_finishing_job(self)
         with self._close_lock:
             if self._closed:
                 return

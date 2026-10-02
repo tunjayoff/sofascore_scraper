@@ -861,7 +861,7 @@ def test_unreadable_legacy_file_does_not_block_and_is_retried(tmp_path, caplog):
 
     with caplog.at_level(logging.WARNING, logger="Store"):
         store = JobStore(default_db_path(str(data_dir)))
-    assert any("Eski iş geçmişi okunamadı" in r.getMessage() for r in caplog.records)
+    assert any("The legacy job history could not be read" in r.getMessage() for r in caplog.records)
     assert store.list_jobs() == []
     job_id = store.create_running({})  # depo çalışıyor
     store.update(finished=True)

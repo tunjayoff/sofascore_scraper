@@ -21,8 +21,10 @@ yazıldı, yerine konmadı: `tmp:<dosya adı>`). İki tür kesinti sınanır:
   * aynı yazma yeniden yapılınca sonuç, hiç kesilmemiş bir çalıştırmanınkiyle aynıdır;
   * hazırlık alanındaki artıklar `writer` kilidi alınınca silinir (karar S16).
 
-Bilinen sınır (bölüm 6.2'nin adım sırası): olay yükü yazıldıktan sonra, değişiklik günlüğü satırı eklenmeden
-kesilen yazmada değişiklik satırı kaybolur; yük yenidir ama günlükte izi yoktur. Testler bunu sabitler.
+Değişiklik satırı kaybolmaz (plan maddesi FX-12; bölüm 6.2): olay yükü değişirken satır, yük dosyası
+değiştirilmeden önce niyet dosyasına yazılır. Olay yükü yazıldıktan sonra, satır günlüğe eklenmeden kesilen
+yazmanın satırı açılıştaki uzlaştırmada günlüğe eklenir; satır eklenmiş ama niyet silinmemişse ikinci kez
+eklenmez. Yük yazılmadan kesilen yazmanın niyeti atılır: yazma yinelenince satırı kendisi yazar.
 """
 from __future__ import annotations
 
@@ -38,8 +40,9 @@ import pytest
 import store_dump
 import store_fixtures as sf
 from src.slices import SLICE_EMPTY, SLICE_OK, Outcome
-from src.store import Scope, Store, open_store
+from src.store import Scope, Store, StoreError, open_store
 from src.store import layout
+from src.store.events import CHANGE_INTENT_DIR
 
 ROOT = Path(__file__).resolve().parent.parent
 UTC = dt.timezone.utc
@@ -56,15 +59,16 @@ KILL, ERROR = "kill", "error"
 # senaryo → (adım, yeniden açıldıktan sonra maçın hali). "mixed": bazı dilimler yeni, manifest onlardan toparlandı
 SCENARIOS: Dict[str, List[Tuple[str, str]]] = {
     "update": [  # v3'te duran maça yazma: olay yükü değişir (günlük satırı), bir dilim değişir, bir dilim 404
-        ("marker", BEFORE), ("locked", BEFORE), ("tmp:event.json.gz", BEFORE), ("payload:event", MIXED),
+        ("marker", BEFORE), ("locked", BEFORE), ("change_intent", BEFORE), ("tmp:event.json.gz", BEFORE),
+        ("payload:event", MIXED),
         ("tmp:statistics.json.gz", MIXED), ("payload:statistics", MIXED), ("tmp:manifest.json", MIXED),
         ("manifest", AFTER), ("change_log", AFTER), ("indexed", AFTER), ("commit", AFTER), ("done", AFTER)],
     "create": [  # yeni maç: dizin hazırlık alanında kurulur, tek yeniden adlandırmayla görünür
         ("marker", BEFORE), ("locked", BEFORE), ("staged", BEFORE), ("published", AFTER), ("indexed", AFTER),
         ("commit", AFTER), ("done", AFTER)],
     "promote": [  # eski düzendeki maça yazma: önce yükseltme (mantıksal olarak hiçbir şey değişmez), sonra yazma
-        ("marker", BEFORE), ("locked", BEFORE), ("staged", BEFORE), ("published", BEFORE), ("payload:event", MIXED),
-        ("payload:statistics", MIXED), ("tmp:manifest.json", MIXED), ("manifest", AFTER), ("change_log", AFTER),
+        ("marker", BEFORE), ("locked", BEFORE), ("change_intent", BEFORE), ("staged", BEFORE), ("published", BEFORE),
+        ("payload:event", MIXED), ("payload:statistics", MIXED), ("tmp:manifest.json", MIXED), ("manifest", AFTER), ("change_log", AFTER),
         ("indexed", AFTER), ("commit", AFTER), ("done", AFTER)],
     "reset": [  # eski düzendeki maçın sayaçlarını sıfırlama: yükseltme, sonra manifest
         ("marker", BEFORE), ("locked", BEFORE), ("staged", BEFORE), ("published", BEFORE), ("manifest", AFTER),
@@ -83,8 +87,6 @@ KILLED: Dict[str, Tuple[str, ...]] = {
     "delete": ("indexed",),
 }
 EVENT_OF = {"update": ARS, "create": NEW, "promote": ARS, "reset": BRE, "delete": ARS}
-# olay yükü yazıldıktan sonra, günlük satırı eklenmeden kesilen yazma: satır kaybolur
-CHANGE_LOST = {"payload:event", "tmp:statistics.json.gz", "payload:statistics", "tmp:manifest.json", "manifest"}
 CASES = [(mode, name, step, expected) for name, steps in SCENARIOS.items() for step, expected in steps
          for mode in (ERROR, KILL) if mode == ERROR or step in KILLED.get(name, ())]
 
@@ -258,6 +260,14 @@ def staging(data_dir: Path) -> List[str]:
         return []
 
 
+def intents(data_dir: Path) -> List[str]:
+    """Değişiklik satırlarının niyet dosyaları (bölüm 6.2)."""
+    try:
+        return sorted(os.listdir(layout.resolve(data_dir, CHANGE_INTENT_DIR)))
+    except FileNotFoundError:
+        return []
+
+
 def legacy_tree(root: Path) -> Dict[str, Tuple[bytes, int]]:
     out: Dict[str, Tuple[bytes, int]] = {}
     for path in sorted((root / "match_details").rglob("*")):
@@ -304,13 +314,14 @@ def test_a_write_interrupted_at_any_step_leaves_a_directory_that_recovers(
     assert all(entry.startswith("writer.") for entry in left_staged)
     store = open_store(data_dir)  # açılış: yarım yazma işareti (ve ölen süreçten sonra temiz kapanmamış yazar)
     consistent(store)
+    assert intents(data_dir) == []  # niyet dosyası ya günlüğe eklendi ya atıldı
     assert legacy_tree(data_dir) == legacy_before or name == "delete"  # eski ağaca dokunulmadı
     found = store_dump.dump(data_dir)
     if expected == BEFORE:
         assert store_dump.diff(before, found) == []
     elif expected == AFTER:
         assert store_dump.diff(after["events"], found["events"]) == []
-        assert found["changes"] == (before if step in CHANGE_LOST else after)["changes"]
+        assert found["changes"] == after["changes"]  # satır, yarıda kalan yazmanın niyetinden günlüğe eklendi
     else:
         # dilimler tek tek "önce" ya da "sonra"; olay yükü yeni, gözlem dosyanın zamanından toparlandı
         slices = found["events"][event]["slices"]
@@ -319,7 +330,7 @@ def test_a_write_interrupted_at_any_step_leaves_a_directory_that_recovers(
         assert all(entry in (old.get(key), new[key]) for key, entry in slices.items())
         assert slices["event"] == new["event"] != old["event"]
         assert found["events"][event]["observation"]["change_ts"] == after["events"][event]["observation"]["change_ts"]
-        assert found["changes"] == before["changes"]
+        assert found["changes"] == after["changes"]  # olay yükü yeni: satırı da günlükte
         assert {k: v for k, v in found["events"].items() if k != event} == {
             k: v for k, v in before["events"].items() if k != event}  # öteki maçlar yerinde
     if expected != BEFORE and name in ("update", "promote"):
@@ -335,8 +346,8 @@ def test_a_write_interrupted_at_any_step_leaves_a_directory_that_recovers(
         assert final["events"][event]["slices"] == after["events"][event]["slices"]
         final["events"][event]["observation"] = after["events"][event]["observation"]
     assert store_dump.diff(after["events"], final["events"]) == []
-    lost = expected != BEFORE and step in CHANGE_LOST
-    assert final["changes"] == (before if lost else after)["changes"]
+    assert final["changes"] == after["changes"]  # satır bir kez: ne kayboldu ne yinelendi
+    assert intents(data_dir) == []
     consistent(store)
     assert legacy_tree(data_dir) == legacy_before or name == "delete"
 
@@ -364,6 +375,109 @@ def test_the_marker_of_an_event_whose_directory_was_never_built_is_cleared_on_op
     assert (report.pending, report.events_indexed, report.events_removed) == (1, 0, 0)
     assert raw.events.get(NEW) is None and pending(raw) == []
     assert not os.path.exists(layout.resolve(data_dir, layout.event_dir(NEW)))
+
+
+def _interrupted_update(data_dir: Path, step: str) -> Store:
+    """`update` senaryosunun yazması bu süreçte `step` adımında kesilir; depo açık döner (uzlaştırma yok)."""
+    prepare("update", data_dir)
+    store = open_store(data_dir)
+
+    def stop() -> None:
+        raise Interrupted(step)
+
+    undo = interrupt_at(store, step, stop)
+    try:
+        with pytest.raises(Interrupted):
+            run_scenario(store, "update")
+    finally:
+        undo()
+    return store
+
+
+def _rerun(store: Store) -> Any:
+    target = {**sf.basic_payload(sf.PL_ARS), "winnerCode": 3}
+    return store.events.observe(ARS, target, observed_at=WHEN + dt.timedelta(minutes=1), on_event_change=on_change)
+
+
+@pytest.mark.parametrize("step", ["payload:event", "manifest", "change_log"])
+def test_the_next_write_of_the_event_adds_the_row_and_reports_it(
+        tmp_path: Path, outcomes: Dict[str, Tuple[Dict[str, Any], Dict[str, Any]]], step: str) -> None:
+    """
+    Açılış beklemeden: aynı maça bir sonraki yazma (yük aynı, kendi satırı yok) niyeti kapatır ve satırın sıra
+    numarasını `change_seq` olarak döndürür; çağıran onu duyurabilir (canlı servisin `change.recorded` olayı).
+    "change_log": satır dosyaya eklenmiş, dizin işlemi geri alınmış: ikinci kez eklenmez, numarası döner.
+    """
+    data_dir = tmp_path / "data"
+    store = _interrupted_update(data_dir, step)
+    assert intents(data_dir) == [f"{ARS}.json"]
+    result = _rerun(store)
+    after = outcomes["update"][1]
+    assert result.change_seq == after["changes"][-1]["seq"] and not result.event_written
+    assert store.changes.last_seq() == result.change_seq
+    assert intents(data_dir) == []
+    store.close()
+    assert store_dump.dump(data_dir)["changes"] == after["changes"]
+    consistent(open_store(data_dir))
+
+
+def test_an_intent_whose_payload_never_landed_is_dropped_and_the_write_records_the_row_itself(
+        tmp_path: Path, outcomes: Dict[str, Tuple[Dict[str, Any], Dict[str, Any]]]) -> None:
+    data_dir = tmp_path / "data"
+    store = _interrupted_update(data_dir, "tmp:event.json.gz")
+    assert intents(data_dir) == [f"{ARS}.json"]  # yük dosyasına dokunuldu (geçici dosya): niyet kaldı
+    result = _rerun(store)
+    after = outcomes["update"][1]
+    assert result.event_written and result.change_seq == after["changes"][-1]["seq"]
+    assert intents(data_dir) == []
+    store.close()
+    assert store_dump.dump(data_dir)["changes"] == after["changes"]
+
+
+def test_an_error_after_the_intent_but_before_the_payload_drops_the_intent(tmp_path: Path) -> None:
+    data_dir = tmp_path / "data"
+    store = _interrupted_update(data_dir, "change_intent")
+    assert intents(data_dir) == [] and pending(store) == []  # diske dokunulmadı: ne niyet ne işaret
+    store.close()
+
+
+@pytest.mark.parametrize("content", [
+    b"{not json",
+    b"[]",
+    b'{"event_id": %d, "sha256": "x", "row": {"event_id": %d}}' % (ARS, ARS),  # satırın ts_utc'si yok
+    b'{"event_id": 1, "sha256": "x", "row": {}}',  # başka maçın niyeti
+], ids=["not-json", "not-an-object", "row-without-ts", "other-event"])
+def test_an_unreadable_intent_is_reported_and_removed(tmp_path: Path, caplog: pytest.LogCaptureFixture,
+                                                      content: bytes) -> None:
+    data_dir = tmp_path / "data"
+    prepare("update", data_dir)
+    before = store_dump.dump(data_dir)
+    directory = Path(layout.resolve(data_dir, CHANGE_INTENT_DIR))
+    directory.mkdir(parents=True)
+    (directory / f"{ARS}.json").write_bytes(content)
+    (directory / ".9.json.0a1b2c3d.tmp").write_bytes(b"{")  # ölen yazmanın yarım geçici dosyası
+    (directory / "notes.txt").write_bytes(b"")  # adı kurala uymayan girdiye dokunulmaz
+    with caplog.at_level("WARNING", logger="src.store.events"):
+        store = open_store(data_dir)
+        store.catalog.reconcile()
+    assert any("change intent of an unfinished write cannot be read" in r.getMessage() for r in caplog.records)
+    assert intents(data_dir) == ["notes.txt"]
+    store.close()
+    assert store_dump.dump(data_dir)["changes"] == before["changes"]
+
+
+def test_a_row_that_is_not_json_fails_before_the_disk_is_touched(tmp_path: Path) -> None:
+    """Satır JSON'a çevrilemezse StoreError, yük dosyası yazılmadan (önceden yük yazılıyor, satır kayboluyordu)."""
+    data_dir = tmp_path / "data"
+    prepare("update", data_dir)
+    before = store_dump.dump(data_dir)
+    store = open_store(data_dir)
+    target = {**sf.basic_payload(sf.PL_ARS), "winnerCode": 3}
+    with pytest.raises(StoreError, match="JSON"):
+        store.events.observe(ARS, target, observed_at=WHEN, on_event_change=lambda old, new: {
+            "ts_utc": WHEN.isoformat(), "event_id": ARS, "changed": {"winnerCode": [1, {3}]}})
+    assert pending(store) == [] and intents(data_dir) == []
+    store.close()
+    assert store_dump.dump(data_dir) == before
 
 
 def test_an_error_before_the_disk_is_touched_leaves_no_marker(tmp_path: Path) -> None:
