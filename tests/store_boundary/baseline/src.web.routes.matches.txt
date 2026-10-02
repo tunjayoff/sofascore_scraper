@@ -1,9 +1,0 @@
-# src/web/routes/matches.py: Store sınırı ihlalleri (docs/design/01-storage.md bölüm 2.4). Bu liste yalnızca küçülebilir.
-# Bir ihlali gideren PR satırını da siler; açıklama: tests/test_store_boundary.py
-[static]
-_detail_match_ids:os.listdir x3
-_detail_match_ids:os.path.exists
-_detail_match_ids:os.path.isdir x3
-_get_missing_details_sync:glob.glob x2
-_get_missing_details_sync:os.path.exists x2
-_get_missing_details_sync:pandas.read_csv

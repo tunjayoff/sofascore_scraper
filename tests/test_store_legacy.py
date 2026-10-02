@@ -39,7 +39,6 @@ from src.services import stats as stats_service
 from src.store import Ref, Store, catalog, codec, derive, layout, legacy, open_store
 from src.store.errors import LayoutError, PayloadCorrupt, PayloadMissing, StoreError
 from src.store.legacy import LegacyEvent, LegacyProblem, LegacyReader, LegacyReport, LegacySliceError
-from src.web.routes import matches as matches_routes
 
 ROOT = Path(__file__).resolve().parent.parent
 LEGACY_SOURCE = ROOT / "src" / "store" / "legacy.py"
@@ -1187,22 +1186,6 @@ def test_watch_state_files(tmp_path: Path) -> None:
 
 # --- bugünkü gezginlerle karşılaştırma (01-storage.md, bölüm 1.2) -------------------------------
 
-PROBE_LEAGUE = 424242
-
-
-def _probe_missing_details(data_dir: Path, candidates: Set[int]) -> Set[int]:
-    """
-    `routes/matches._get_missing_details_sync`'in "detayı var" kümesi: bütün aday id'leri listeleyen sahte
-    bir lig özetiyle çağrılır; "eksik" demedikleri, bulduklarıdır.
-    """
-    summary = data_dir / "matches" / f"{PROBE_LEAGUE}_Probe" / "1_Probe_summary.csv"
-    summary.parent.mkdir(parents=True)
-    summary.write_text("match_id\n" + "".join(f"{eid}\n" for eid in sorted(candidates)), encoding="utf-8")
-    result = matches_routes._get_missing_details_sync(PROBE_LEAGUE, None, str(data_dir))
-    assert result["total_matches"] == len(candidates) and not result["truncated"]
-    return candidates - {row["match_id"] for row in result["missing"]}
-
-
 def _csv_export_ids(fetcher: MatchDataFetcher) -> List[str]:
     path = fetcher.create_csv_dataset()
     if not path:
@@ -1216,8 +1199,8 @@ def walker_results(data_dir: Path, candidates: Set[int]) -> Dict[str, Set[int]]:
     Bugünkü her ağaç gezgininin bulduğu maç id'leri (hepsi sayı; sayı olmayan ad gelirse test düşer).
 
     `reset_unavailable_markers` sonucu süzdüğü için gezdiği dizinler ölçülür: `_unavailable.json`'ı olan her
-    dizin için `_reset_match_markers`'ı çağırır (burada hiçbir şey yazmaz). `refresh_due_ids` RD-3'ten beri
-    ağacı gezmez, katalogdan okur; tabloda değil.
+    dizin için `_reset_match_markers`'ı çağırır (burada hiçbir şey yazmaz). `refresh_due_ids` ve web'in eksik
+    detayları RD-3'ten beri ağacı gezmez, katalogdan okur; tabloda değiller.
     """
     fetcher = fetcher_for(data_dir)
 
@@ -1234,28 +1217,21 @@ def walker_results(data_dir: Path, candidates: Set[int]) -> Dict[str, Set[int]]:
         "build_match_index": ids(fetcher._build_match_index()),
         "find_match_path": {eid for eid in candidates if fetcher._find_match_path(str(eid))},
         "reset_markers_walk": ids(with_markers),
-        "web_detail_match_ids": ids(matches_routes._detail_match_ids(str(data_dir), None)),
-        "web_missing_details": _probe_missing_details(data_dir, candidates),
         "csv_export": ids(_csv_export_ids(fetcher)),
     }
 
 
-WALKERS = ("build_match_index", "find_match_path", "reset_markers_walk", "web_detail_match_ids",
-           "web_missing_details", "csv_export")
+WALKERS = ("build_match_index", "find_match_path", "reset_markers_walk", "csv_export")
 
 # Karakterizasyon tablosu: (fixture, gezgin) → (okuyucunun bulup gezginin bulamadığı, gezginin bulup
 # okuyucunun maç saymadığı) id'ler. Tabloda olmayan çift için fark yoktur: `canonical`, `processed_only` ve
 # `empty` dizinlerinde bütün gezginler okuyucuyla aynı kümeyi bulur. `reset_markers_walk` yalnızca
 # `_unavailable.json`'ı olan dizinlere bakar; o, okuyucunun aynı dosyası olan maçlarıyla karşılaştırılır
 # (fixture'larda düz dizinde işaret dosyası yok, bu yüzden farkı görünmüyor: üç düzey bekler, düz dizinleri görmez).
-FLAT = {16867839, 17018554}  # legacy fixture: düz dizinler (17018554 yalnızca birleşik dosya)
 WALKER_DIFFERENCES: Dict[Tuple[str, str], Tuple[Set[int], Set[int]]] = {
     # yalnızca birleşik dosyası olan dizini dizin ağacını gezen hiçbir gezgin bulamaz (`build_match_index` ve
     # `find_match_path` RD-1'den beri depodan okur: okuyucuyla aynı kümeyi bulurlar)
     ("legacy", "csv_export"): (COMBINED_ONLY["legacy"], set()),
-    ("legacy", "web_missing_details"): (COMBINED_ONLY["legacy"], set()),  # `**/basic.json`: düz dizini bulur
-    # üç düzey bekleyenler düz dizinleri görmez
-    ("legacy", "web_detail_match_ids"): (FLAT, set()),
 }
 
 

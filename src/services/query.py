@@ -8,8 +8,8 @@ yazıcılarının her yazmasından sonra güncellenir (gölge kip, 01-storage.md
 
 Üç iş var: maç detayı (plan maddesi RD-1: `GET /api/matches/{id}` yanıtının bugünkü sözlüğü), maç listeleri
 (RD-2: `GET /api/matches` ile `GET /api/seasons/{id}/matches` satırları) ve indirme planı (RD-3: hangi maçın
-detayı eksik, hangisi yenilenmeli, bir ligin hangi maçları listelerde geçiyor; src/match_data_fetcher.py'deki
-planlayıcılar). Eski `/api` yanıt biçimlerini üreten işlevler burada
+detayı eksik, hangisi yenilenmeli, bir ligin hangi maçları listelerde geçiyor; `GET /api/leagues/{id}/missing-
+details` ve src/match_data_fetcher.py'deki planlayıcılar). Eski `/api` yanıt biçimlerini üreten işlevler burada
 durur ve eski uç noktalarla birlikte kaldırılır (P30).
 
 Maç detayında eski okuyucudan (dizinden dosya dosya okuyan `routes/matches._get_match_details_sync`) farklar;
@@ -40,7 +40,7 @@ kurulur (`LEGACY_LIST_COLUMNS`). Farklar:
 
 İndirme planı (RD-3) eskiden dosyalardan çıkarılıyordu: maçın ihtiyacı (`full` / `refill` / `refresh` / `none`)
 bütün dilim dosyaları ve işaret dosyaları (`_unavailable.json`) okunarak, yenilenecek maçlar
-`match_details/<lig>/<sezon>/<id>` ağacı gezilerek, bir ligin maçları sezon özeti CSV'lerinden.
+`match_details/<lig>/<sezon>/<id>` ağacı gezilerek, bir ligin maçları ve eksik detaylar sezon özeti CSV'lerinden.
 Şimdi hepsi kataloğa sorulur (`Store.events.missing`, `refresh_candidates` ve maç listesi); hiçbir yük okunmaz.
 Bugünkü kodun yazdığı dizinlerde kümeler ve kararlar aynıdır; sıra yalnızca bir ligin maç adaylarında
 değişir. Farklar:
@@ -48,11 +48,15 @@ değişir. Farklar:
   * Yenilenecek maçlar ağacın her yerinden gelir: düz (`match_details/<id>`) ve `_no_tournament/` altındaki
     kayıtlar da; lig süzgeci dizin adının `<lig id>_` önekine değil, maçın turnuvasına bakar (kimliksiz lig
     dizinindeki kayıt da bulunur). Sıra eski gezintininkidir (kayıt dizinlerinin yolu).
-  * Bir ligin maçları (`detail_candidates`) programlarda ve özetlerde geçen maçlardır. "Yalnızca bitmiş maçlar" ayarı okurken uygulanır: bitmiş, detayı indirilmiş
+  * Bir ligin maçları (`detail_candidates`) ve eksik detayları (`missing_details_legacy`) programlarda ve
+    özetlerde geçen maçlardır. "Yalnızca bitmiş maçlar" ayarı okurken uygulanır: bitmiş, detayı indirilmiş
     (maç listeleriyle aynı kural) ya da durumu bilinmeyen maçlar (durum sütunu olmayan özet satırı). Eskiden
     özetler yazılırken süzülüyordu; ayar kapalıyken yazılmış bir sezonun bitmemiş maçları ayar açıkken artık
     plana girmez. Sezonlar yine büyükten küçüğe, bir sezonun içinde sıra başlangıç zamanıdır (eskiden özet
     dosyasının satır sırası); lig verilmezse ligler kimlik sırasıyla (eskiden dizin listeleme sırası).
+  * Eksik detaylarda "detayı var", kataloğun "olay yükü var" bilgisidir: yalnızca birleşik dosyası olan dizin
+    de detaydır (eskiden yalnızca `basic.json` sayılıyordu). İlk sürümün sezon dizinindeki tur özetleri
+    (`<sezon>/round_<n>_matches.csv`) de okunur (katalog onları da dizinler).
 """
 from __future__ import annotations
 
@@ -388,6 +392,32 @@ class QueryService:
                 seasons = seasons[:max_seasons]
             out[tid] = list(dict.fromkeys(event_id for season_id in seasons for event_id in by_tournament[tid][season_id]))
         return out
+
+    def missing_details_legacy(self, tournament_id: int, season_id: Optional[int] = None, *,
+                               only_finished: bool = True, limit: int = 500) -> Dict[str, Any]:
+        """
+        `GET /api/leagues/{id}/missing-details` yanıtı: turnuvanın (verildiyse o sezonun) listelerde geçen
+        maçları (`listed_events`) ve onlardan olay yükü olmayanlar, kimlik sırasıyla en çok `limit` tanesi.
+        Satırlar özet CSV'sinin değerleriyle: takım adları, yerel saatle `match_date`, sezonun adı.
+        """
+        rows = list(self.listed_events(tournament_ids=(tournament_id,),
+                                       season_ids=() if season_id is None else (season_id,),
+                                       only_finished=only_finished))
+        missing = sorted((row for row in rows if not row.has_event_payload), key=lambda row: row.id)
+        names = _Names(self._store, None)
+        shown = [{
+            "match_id": row.id,
+            "home": row.home_name or "",
+            "away": row.away_name or "",
+            "match_date": _match_date(row),
+            "season_name": names.season(row.season_id),
+        } for row in missing[:limit]]
+        return {
+            "total_matches": len({row.id for row in rows}),
+            "missing_count": len(missing),
+            "missing": shown,
+            "truncated": len(missing) > len(shown),
+        }
 
     def _payloads(self, event_id: int, keys: Iterable[str]) -> Dict[str, Any]:
         """

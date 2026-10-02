@@ -2,11 +2,8 @@
 from __future__ import annotations
 
 import asyncio
-import glob
-import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
-import pandas as pd
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
@@ -51,38 +48,6 @@ class MatchListResponse(BaseModel):
     sort: str
 
 
-def _detail_match_ids(data_dir: str, league_id: Optional[str]) -> Set[str]:
-    """
-    Ids of matches whose details are on disk: match_details/<league>/<season>/<id>/basic.json.
-
-    Ürün kodunda çağıranı kalmadı (liste `has_details`'i katalogdan okur, plan maddesi RD-2); eski dizin
-    gezicilerini katalogla karşılaştıran testler (tests/test_store_legacy.py, tests/test_storage_errors.py)
-    için duruyor ve onlarla birlikte kalkar.
-    """
-    base = os.path.join(data_dir, "match_details")
-    if not os.path.isdir(base):
-        return set()
-    ids = _parse_league_ids(league_id)
-    prefixes = {str(i) for i in ids} if ids is not None else None
-    found: Set[str] = set()
-    for league_dir in os.listdir(base):
-        if league_dir == "processed":
-            continue
-        if prefixes is not None and league_dir.split("_")[0] not in prefixes:
-            continue
-        league_path = os.path.join(base, league_dir)
-        if not os.path.isdir(league_path):
-            continue
-        for season_dir in os.listdir(league_path):
-            season_path = os.path.join(league_path, season_dir)
-            if not os.path.isdir(season_path):
-                continue
-            for mid in os.listdir(season_path):
-                if os.path.exists(os.path.join(season_path, mid, "basic.json")):
-                    found.add(mid)
-    return found
-
-
 def _get_matches_sync(
     data_dir: str,
     limit: int,
@@ -123,55 +88,13 @@ _MISSING_LIST_LIMIT = 500
 
 
 def _get_missing_details_sync(league_id: int, season_id: Optional[int], data_dir: str) -> dict:
-    matches_dir = os.path.join(data_dir, "matches")
-    match_details_dir = os.path.join(data_dir, "match_details")
-
-    all_match_ids = set()
-    match_info = {}
-
-    if os.path.exists(matches_dir):
-        # Sezon özetleri `{season_id}_{ad}_summary.csv` adıyla lig dizininde durur
-        csv_glob = f"{season_id}_*.csv" if season_id else "*.csv"
-        pattern = os.path.join(matches_dir, f"{league_id}_*", csv_glob)
-        for csv_file in glob.glob(pattern):
-            try:
-                df = pd.read_csv(csv_file)
-                if "match_id" in df.columns:
-                    for _, row in df.iterrows():
-                        mid = row.get("match_id")
-                        if pd.notna(mid):
-                            mid = int(mid)
-                            all_match_ids.add(mid)
-                            match_info[mid] = {
-                                "match_id": mid,
-                                "home": row.get("home_team", ""),
-                                "away": row.get("away_team", ""),
-                                "match_date": str(row.get("match_date", "")),
-                                "season_name": str(row.get("season_name", row.get("season", ""))),
-                            }
-            except Exception as e:
-                logger.error(f"Error reading CSV for missing details: {e}")
-
-    fetched_ids = set()
-    if os.path.exists(match_details_dir):
-        basic_files = glob.glob(os.path.join(match_details_dir, "**", "basic.json"), recursive=True)
-        for bf in basic_files:
-            parent = os.path.basename(os.path.dirname(bf))
-            try:
-                fetched_ids.add(int(parent))
-            except ValueError:
-                pass
-
-    missing_ids = all_match_ids - fetched_ids
-    missing_all = [match_info[mid] for mid in sorted(missing_ids) if mid in match_info]
-    missing = missing_all[:_MISSING_LIST_LIMIT]
-
-    return {
-        "total_matches": len(all_match_ids),
-        "missing_count": len(missing_ids),
-        "missing": missing,
-        "truncated": len(missing_all) > len(missing),
-    }
+    """
+    Bir ligin (verildiyse bir sezonun) programlarda ve özetlerde geçen maçlarından detayı indirilmemiş olanlar,
+    depodan (QueryService.missing_details_legacy). "Yalnızca bitmiş maçlar" ayarı okurken uygulanır (maç
+    listeleriyle aynı kural); liste en çok `_MISSING_LIST_LIMIT` satırdır.
+    """
+    return QueryService(open_store(data_dir)).missing_details_legacy(
+        league_id, season_id, only_finished=only_finished_setting(), limit=_MISSING_LIST_LIMIT)
 
 
 def _get_match_details_sync(match_id: str) -> Dict[str, Any]:

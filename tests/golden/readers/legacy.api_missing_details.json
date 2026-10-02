@@ -3,11 +3,10 @@
   "status": 200,
   "body": {
    "total_matches": 8,
-   "missing_count": 4,
+   "missing_count": 3,
    "missing": [
     {"match_id": 14025001, "home": "Southampton", "away": "Leicester City", "match_date": "2026-05-24T04:00:00", "season_name": "Premier League 25/26"},
     {"match_id": 14025002, "home": "Watford", "away": "Norwich City", "match_date": "2026-05-24T06:00:00", "season_name": "Premier League 25/26"},
-    {"match_id": 17018554, "home": "Brentford", "away": "Burnley", "match_date": "2026-09-29T13:00:00", "season_name": "Premier League 26/27"},
     {"match_id": 17018572, "home": "Newcastle United", "away": "Sunderland", "match_date": "2026-09-29T12:00:00", "season_name": "Premier League 26/27"}
    ],
    "truncated": false
@@ -17,9 +16,8 @@
   "status": 200,
   "body": {
    "total_matches": 6,
-   "missing_count": 2,
+   "missing_count": 1,
    "missing": [
-    {"match_id": 17018554, "home": "Brentford", "away": "Burnley", "match_date": "2026-09-29T13:00:00", "season_name": "Premier League 26/27"},
     {"match_id": 17018572, "home": "Newcastle United", "away": "Sunderland", "match_date": "2026-09-29T12:00:00", "season_name": "Premier League 26/27"}
    ],
    "truncated": false
