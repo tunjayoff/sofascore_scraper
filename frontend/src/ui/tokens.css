@@ -1,0 +1,325 @@
+/*
+ * Design tokens of the web UI (docs/design/05-web-ui.md section 4). Components use these variables only,
+ * never colour values. tests/tokens.test.ts reads this file and checks every text pair against WCAG 2.2 AA.
+ *
+ * The classic views (src/views, until FE-2b removes them) read the same names from style.css; the values
+ * here win for the names both files define, so both look alike.
+ */
+:root {
+  --bg: #f4f3ee;
+  --surface: #ffffff;
+  --surface-2: #faf9f5;
+  --border: #e2dfd6;
+  --line: #eceae3;
+  --text: #17191e;
+  --text-2: #3a3e46;
+  --muted: #5a5e67;
+  --accent: #1d6b45;
+  --accent-soft: #eef6f1;
+  --on-accent: #ffffff;
+  --ok-bg: #ddeee3;
+  --ok-fg: #14502f;
+  --warn-bg: #fbebd2;
+  --warn-fg: #7a4700;
+  --danger-bg: #fbe4e1;
+  --danger: #a12a1f;
+  --info-bg: #e2eaf6;
+  --info-fg: #1f4478;
+  --neutral-bg: #ecebe6;
+  --neutral-fg: #4a4e57;
+  --focus: #1d6b45;
+  --overlay: rgba(23, 25, 30, 0.38);
+  --shadow-pop: 0 12px 32px rgba(23, 25, 30, 0.18);
+
+  /* 4.4: spacing, radius */
+  --sp-1: 2px;
+  --sp-2: 4px;
+  --sp-3: 8px;
+  --sp-4: 12px;
+  --sp-5: 16px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+  --sp-8: 48px;
+  --sp-9: 64px;
+  --r-control: 6px;
+  --r-card: 10px;
+  --r-pill: 999px;
+
+  /* 4.8: row height by density; compact applies on desktop only (below) */
+  --row-h: 44px;
+  --rail-w: 232px;
+}
+
+html.dark {
+  --bg: #121417;
+  --surface: #1a1d21;
+  --surface-2: #1f2227;
+  --border: #2d3138;
+  --line: #262a30;
+  --text: #eceae4;
+  --text-2: #d2d0c9;
+  --muted: #a9adb5;
+  --accent: #3fa56e;
+  --accent-soft: #1b2e24;
+  --on-accent: #0d1a13;
+  --ok-bg: #1c3326;
+  --ok-fg: #8fd4ab;
+  --warn-bg: #3a2a12;
+  --warn-fg: #f2c27a;
+  --danger-bg: #3b1d1a;
+  --danger: #f19a8f;
+  --info-bg: #1b2738;
+  --info-fg: #9cbcec;
+  --neutral-bg: #262a30;
+  --neutral-fg: #c3c6cc;
+  --focus: #52b67f;
+  --overlay: rgba(0, 0, 0, 0.55);
+  --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+@media (min-width: 1024px) {
+  html[data-density='compact'] {
+    --row-h: 32px;
+  }
+}
+
+/* ---- the new app's frame: base size 14 px in rem, so the browser's font size scales everything ---- */
+.u-app {
+  font-family: Geist, system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+  color: var(--text);
+  background: var(--bg);
+}
+.u-app :focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.u-app a {
+  color: var(--accent);
+}
+
+/* 4.3 typography */
+.u-display {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.u-h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.u-h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  line-height: 1.625rem;
+  font-weight: 600;
+}
+.u-h3 {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  font-weight: 600;
+}
+.u-body {
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+}
+.u-small {
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+.u-caption {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.u-mono {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+.u-muted {
+  color: var(--muted);
+}
+.u-num {
+  font-variant-numeric: tabular-nums;
+}
+.u-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- surfaces: cards are flat with a 1 px border; only floating parts have a shadow (4.4) ---- */
+.u-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+}
+.u-pop {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-pop);
+}
+
+/* a short definition list: label column, value column (results, the services card) */
+.u-result {
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--sp-2) var(--sp-6);
+}
+.u-result dt {
+  color: var(--muted);
+}
+.u-result dd {
+  margin: 0;
+}
+
+/* ---- buttons: the primary action is the only filled button of a page ---- */
+.u-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  min-height: 44px;
+  padding: 0 var(--sp-5);
+  border-radius: var(--r-control);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.u-app a.u-btn {
+  color: var(--text);
+}
+.u-btn:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+.u-btn-primary,
+.u-app a.u-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.u-btn-primary:hover:not(:disabled) {
+  background: var(--accent);
+  filter: brightness(1.08);
+}
+.u-btn-ghost {
+  background: transparent;
+  border-color: transparent;
+}
+.u-btn-danger {
+  color: var(--danger);
+}
+.u-btn-danger-solid {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--surface);
+}
+.u-btn-sm {
+  min-height: 32px;
+  padding: 0 var(--sp-4);
+  font-size: 0.8125rem;
+}
+.u-btn-icon {
+  min-width: 44px;
+  padding: 0;
+}
+.u-btn-sm.u-btn-icon {
+  min-width: 32px;
+}
+.u-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+@media (max-width: 1023px) {
+  /* touch targets: 44 px on phone and tablet (4.4) */
+  .u-btn-sm {
+    min-height: 44px;
+  }
+  .u-btn-sm.u-btn-icon {
+    min-width: 44px;
+  }
+}
+
+/* ---- form controls ---- */
+.u-field {
+  height: 40px;
+  width: 100%;
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.u-field:disabled {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.u-field[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+.u-label {
+  display: block;
+  margin-bottom: var(--sp-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.u-check {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+/* ---- spinner; static when motion is reduced (4.9) ---- */
+.u-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: u-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes u-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .u-spinner {
+    animation: none;
+    border-right-color: currentColor;
+    opacity: 0.6;
+  }
+  .u-app *,
+  .u-app *::before,
+  .u-app *::after {
+    transition: none !important;
+  }
+}
