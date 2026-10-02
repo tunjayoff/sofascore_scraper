@@ -1,3 +1,5 @@
+import ui from './ui/tr'
+
 export default {
   brand: 'SofaScore Scraper',
   brandSub: 'Maç verisi masası',
@@ -333,4 +335,6 @@ export default {
     invalidNumber: '{field}: {min} ile {max} arasında bir sayı girin.',
     version: 'Sürüm {version}',
   },
+  // The new web UI (src/app, src/ui, src/screens)
+  ui,
 }

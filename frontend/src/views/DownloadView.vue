@@ -333,7 +333,7 @@ watch(lastAdded, (id) => {
           <AppIcon name="download" :size="18" />
           {{ seasonCount === 1 ? t('download.startOne') : t('download.start', { n: seasonCount || 0 }) }}
         </button>
-        <button v-if="scrape.visible" type="button" class="btn btn-ghost btn-sm" @click="router.push('/activity')">{{ t('nav.activity') }} →</button>
+        <button v-if="scrape.visible" type="button" class="btn btn-ghost btn-sm" @click="router.push('/classic/activity')">{{ t('nav.activity') }} →</button>
       </div>
     </section>
   </div>

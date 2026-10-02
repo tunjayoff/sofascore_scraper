@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import App from '@/App.vue'
+// The classic views' frame (the former App.vue), under /classic until FE-2b
+import ClassicLayout from '@/classic/ClassicLayout.vue'
 import SettingsView from '@/views/SettingsView.vue'
 import MatchesView from '@/views/MatchesView.vue'
 import { useLeaguesStore } from '@/stores/leagues'
@@ -54,7 +55,7 @@ describe('leagues store', () => {
   })
 })
 
-describe('App', () => {
+describe('ClassicLayout', () => {
   it('shows a failed league load with a retry that clears it', async () => {
     let leaguesAnswer: () => Response = down
     mockFetch({
@@ -64,7 +65,7 @@ describe('App', () => {
     })
     const r = router('/', { template: '<div />' })
     await r.push('/')
-    const w = mount(App, { global: { plugins: [i18n, r] } })
+    const w = mount(ClassicLayout, { global: { plugins: [i18n, r] } })
     await flush()
 
     const card = w.find('[role="alert"]')
