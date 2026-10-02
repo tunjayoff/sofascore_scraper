@@ -38,7 +38,9 @@ logger = logging.getLogger(__name__)
 # 1: ilk sürüm
 # 2: point_by_point'in kendi "veri var mı" kuralı var ({"pointByPoint": []} artık `empty`); slug'ında büyük
 #    harf olan eski tur dosyası yine program sayfası (alt anahtar küçük harfe katlanır)
-DERIVE_VERSION = 2
+# 3: sekiz periyot sporu kayıt defterinde (SP-1): Amerikan futbolu, Aussie kuralları, buz hokeyi, hentbol,
+#    ragbi, futsal, mini futbol ve florbol maçlarının satırı skor çizelgesi (scores_json) alır
+DERIVE_VERSION = 3
 
 Row = Dict[str, Any]
 Timestamp = Union[datetime, int, float, None]

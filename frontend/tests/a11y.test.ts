@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import AddLeagueDialog from '@/components/AddLeagueDialog.vue'
 import SettingsView from '@/views/SettingsView.vue'
 import { useSportStore } from '@/stores/sport'
+import { SPORTS } from '@/lib/sport'
 import { i18n, setLocale } from '@/i18n'
 import { flush, mockFetch } from './helpers'
 
@@ -28,9 +29,7 @@ describe('aria-pressed', () => {
     const w = mount(AddLeagueDialog, { global: { plugins: [i18n] }, attachTo: document.body })
     expect(pressed(w, t('sport.all'))).toEqual([
       [t('common.all'), 'true'],
-      [t('sport.football'), 'false'],
-      [t('sport.basketball'), 'false'],
-      [t('sport.tennis'), 'false'],
+      ...SPORTS.map((s) => [t(`sport.${s}`), 'false']),
     ])
     await w.findAll('button').find((b) => b.text() === t('sport.tennis'))!.trigger('click')
     expect(pressed(w, t('sport.all')).filter(([, p]) => p === 'true')).toEqual([[t('sport.tennis'), 'true']])

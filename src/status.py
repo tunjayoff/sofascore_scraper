@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, NamedTuple, Optional
 
-from src.sports import event_sport_slug, score_family
+from src.sports import event_sport_slug, period_format, score_family
 
 logger = logging.getLogger(__name__)
 
@@ -148,11 +148,26 @@ class FootballScores(ScoreSheet):
 
 @dataclass
 class BasketballScores(ScoreSheet):
-    format: Optional[str] = None  # "quarters" | "halves" (yalnızca period2/period4) | None (periyot yok)
+    # "quarters" | "halves" | "thirds" | None (periyot skoru yok). Basketbolda sezilir: iki yarı yalnızca
+    # period2/period4'te gelir. Öteki sporlarda kayıt defterindeki sabit bölünüş (src/sports.py period_format).
+    format: Optional[str] = None
     periods: Dict[str, Pair] = field(default_factory=dict)
     regulation: Optional[Pair] = None  # normaltime
     overtime: Optional[Pair] = None
     final: Optional[Pair] = None  # current
+
+
+@dataclass
+class PeriodsScores(BasketballScores):
+    """
+    Periyot ailesi, basketbol dışındaki sporlar (plan maddesi SP-1). Basketbolun alanlarına ek olarak
+    penaltı atışları ve iki maçlı eşleşmenin toplamı okunur (hentbolda görüldü: kod 120 AP ile `penalties`,
+    rövanşta `aggregated`). Basketbol çizelgesi bu alanları taşımaz; çıktısı değişmesin diye ayrı sınıf.
+    Hentbolun tek AP örneğinde `current` ve `display` penaltıları içerir (31 = 22 + 5 + 4): `final` de içerir.
+    """
+    penalties: Optional[Pair] = None
+    aggregated: Optional[Pair] = None
+    aggregated_winner_code: Optional[int] = None
 
 
 @dataclass
@@ -214,20 +229,32 @@ def extract_scores(event: Dict[str, Any], sport: Optional[str] = None) -> ScoreS
 
     if family == "periods":
         periods = {k: p for k in ("period1", "period2", "period3", "period4") if (p := _pair(home, away, k))}
-        # İki yarı formatında period1/period3 hiç gelmez; biri varsa çeyrek (maç sürüyor ya da yarıda kalmış olsa da)
-        if {"period1", "period3"} & set(periods):
-            fmt: Optional[str] = "quarters"
-        elif periods:
-            fmt = "halves"
+        fixed = period_format(sport)
+        if not periods:
+            fmt: Optional[str] = None
+        elif fixed is not None:
+            fmt = fixed
+        # Basketbol: iki yarı formatında period1/period3 hiç gelmez; biri varsa çeyrek (maç sürüyor ya da
+        # yarıda kalmış olsa da)
+        elif {"period1", "period3"} & set(periods):
+            fmt = "quarters"
         else:
-            fmt = None
-        return BasketballScores(
-            **common,
+            fmt = "halves"
+        sheet = dict(
+            common,
             format=fmt,
             periods=periods,
             regulation=_pair(home, away, "normaltime"),
             overtime=_pair(home, away, "overtime"),
             final=_pair(home, away, "current"),
+        )
+        if fixed is None:
+            return BasketballScores(**sheet)
+        return PeriodsScores(
+            **sheet,
+            penalties=_pair(home, away, "penalties"),
+            aggregated=_pair(home, away, "aggregated"),
+            aggregated_winner_code=event.get("aggregatedWinnerCode"),
         )
 
     if family == "sets":

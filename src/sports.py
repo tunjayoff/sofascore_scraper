@@ -6,9 +6,9 @@ Okuyanlar: src/status.py (skor ailesi), src/watcher.py (izleyici parametreleri),
 main.py (--sport seçenekleri), src/services/planning.py (bir maçın ihtiyacı: beklenen dilimler).
 
 Yeni spor eklemek:
-  1. SPORTS'a bir SportSpec.
+  1. SPORTS'a bir SportSpec (periyot ailesindeyse `period_format` ile).
   2. Skor biçimi mevcut ailelerden (docs/all-sports/README.md, "Sınıf gerekçeleri") biri değilse
-     src/status.py'de yeni bir extract_scores dalı.
+     src/status.py'de yeni bir extract_scores dalı ve src/schema'da yeni bir skor modeli.
   3. Spora özel detay uç noktası varsa DETAIL_SLICES'a bir satır (ya da var olan satırın `sports` kümesine ekleme).
   4. Web arayüzü listeyi henüz buradan almıyor: frontend/src/lib/sport.ts ve locales/{tr,en}.ts
      (tests/test_sports_registry.py ikisinin eşit kaldığını denetler).
@@ -26,6 +26,12 @@ from typing import Any, Dict, FrozenSet, Iterable, Literal, Optional, Tuple, Uni
 #   periods:  periyot toplamları, normal süre, uzatma (BasketballScores)
 #   sets:     kazanılan set + set başına oyun/sayı, tie-break (TennisScores)
 ScoreFamily = Literal["football", "periods", "sets"]
+
+# Periyot ailesinde normal sürenin bölünüşü (src/status.py BasketballScores.format, şemada PeriodsScore.format):
+#   quarters: dört çeyrek (period1..period4)
+#   halves:   iki yarı; basketbolun iki yarılı liglerinde period2/period4, öteki sporlarda period1/period2
+#   thirds:   üç periyot (period1..period3)
+PeriodFormat = Literal["quarters", "halves", "thirds"]
 
 # Bitişe yakınlık kuralı (src/watcher.py'deki _NEAR_END_RULES):
 #   football_minute: 2. yarı ≥ 80. dk ya da uzatma dakikası görüldü; uzatma/penaltı kodları
@@ -60,6 +66,8 @@ class SportSpec:
     score_family: ScoreFamily
     watcher: WatcherParams = DEFAULT_WATCHER_PARAMS
     aliases: Tuple[str, ...] = ()  # normalize_sport için ek tam adlar (küçük harf)
+    # Periyot ailesinde normal sürenin sabit bölünüşü. None: skorlardan sezilir (basketbol: çeyrek ya da iki yarı)
+    period_format: Optional[PeriodFormat] = None
 
     @property
     def detail_slices(self) -> Tuple[str, ...]:
@@ -92,14 +100,83 @@ SPORTS: Tuple[SportSpec, ...] = (
         # başlangıçtan > 4 sa sonra bitti (maks 5,46 sa). Ölçü gerçek oyun başlangıcı, eşik 6 sa.
         watcher=WatcherParams(near_end_rule="last_set", stuck_after_seconds=6 * 3600, stuck_from_play_start=True),
     ),
+    # --- A sınıfı, periyot tabanlı sporlar (docs/all-sports/README.md, "Sınıf gerekçeleri"; plan maddesi SP-1) ---
+    # Ad: SofaScore'un tournament.category.sport.name değeri (research/all_sports/samples). Skorlar basketbolun
+    # anahtarlarıyla gelir (periodN, normaltime, overtime, current); bölünüş sabittir.
+    # Bitişe yakınlık: kayıtlı yüklerin çoğu ya da bir kısmı time.periodLength / totalPeriodCount / played taşıyan
+    # sporlarda `played_ratio`; hiç saat verisi görülmeyenlerde (Aussie kuralları, futsal, florbol) `never`.
+    SportSpec(
+        slug="american-football",
+        name="American football",
+        i18n_key="sport.american-football",
+        score_family="periods",
+        period_format="quarters",
+        # Bitmiş 30 maçın 1'inde son değişiklik başlangıçtan 4,05 sa sonra (research/all_sports/events)
+        watcher=WatcherParams(near_end_rule="played_ratio", stuck_after_seconds=5 * 3600),
+    ),
+    SportSpec(
+        slug="aussie-rules",
+        name="Aussie rules",
+        i18n_key="sport.aussie-rules",
+        score_family="periods",
+        period_format="quarters",
+    ),
+    SportSpec(
+        slug="ice-hockey",
+        name="Hockey",  # SofaScore buz hokeyine "Hockey" der
+        i18n_key="sport.ice-hockey",
+        score_family="periods",
+        period_format="thirds",
+        watcher=WatcherParams(near_end_rule="played_ratio"),
+        aliases=("ice hockey",),
+    ),
+    SportSpec(
+        slug="handball",
+        name="Handball",
+        i18n_key="sport.handball",
+        score_family="periods",
+        period_format="halves",
+        watcher=WatcherParams(near_end_rule="played_ratio"),
+    ),
+    SportSpec(
+        slug="rugby",
+        name="Rugby",
+        i18n_key="sport.rugby",
+        score_family="periods",
+        period_format="halves",
+        watcher=WatcherParams(near_end_rule="played_ratio"),
+    ),
+    SportSpec(
+        slug="futsal",
+        name="Futsal",
+        i18n_key="sport.futsal",
+        score_family="periods",
+        period_format="halves",
+    ),
+    SportSpec(
+        slug="minifootball",
+        name="Minifootball",
+        i18n_key="sport.minifootball",
+        score_family="periods",
+        period_format="halves",
+        watcher=WatcherParams(near_end_rule="played_ratio"),
+        aliases=("mini football",),
+    ),
+    SportSpec(
+        slug="floorball",
+        name="Floorball",
+        i18n_key="sport.floorball",
+        score_family="periods",
+        period_format="thirds",
+    ),
 )
 
 _BY_SLUG: Dict[str, SportSpec] = {s.slug: s for s in SPORTS}
 
 # normalize_sport'un kayıt defterinden önceki eşlemesi: alt dizgi, bu sırayla. Davranış değişmesin diye
-# korunuyor; tam eşleşme (slug / ad / alias) her zaman önce denenir. Bu yüzden ileride "table-tennis" ya da
-# "american-football" kayıt defterine eklenince kendi slug'ına çözülür; eklenene kadar eskisi gibi
-# "tennis" / "football" sayılır. Yeni sporlar buraya EKLENMEZ.
+# korunuyor; tam eşleşme (slug / ad / alias) her zaman önce denenir. Bu yüzden "american-football" ve
+# "minifootball" kendi slug'larına çözülür (SP-1); "table-tennis" eklenene kadar eskisi gibi "tennis" sayılır.
+# Yeni sporlar buraya EKLENMEZ.
 _LEGACY_SUBSTRINGS: Tuple[Tuple[str, str], ...] = (
     ("basket", "basketball"),
     ("tennis", "tennis"),
@@ -157,6 +234,12 @@ def event_sport_slug(event: Optional[Dict[str, Any]]) -> Optional[str]:
 def score_family(slug: object) -> Optional[ScoreFamily]:
     spec = get_sport(slug)
     return spec.score_family if spec else None
+
+
+def period_format(slug: object) -> Optional[PeriodFormat]:
+    """Periyot ailesindeki sporun sabit bölünüşü; sezilen (basketbol) ya da kayıtlı olmayan sporda None."""
+    spec = get_sport(slug)
+    return spec.period_format if spec else None
 
 
 def watcher_params(slug: object) -> WatcherParams:

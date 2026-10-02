@@ -1,0 +1,41 @@
+{
+  "case_id": "A_finished-120-ap",
+  "event_id": 15251094,
+  "fetched_at_utc": "2026-10-01T14:00:58+00:00",
+  "source_file": "research/all_sports/status_examples/handball/event_finished-120-ap__15251094.json",
+  "status": {
+    "code": 120,
+    "description": "AP",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 31,
+    "display": 31,
+    "period1": 11,
+    "period2": 11,
+    "normaltime": 22,
+    "overtime": 5,
+    "penalties": 4
+  },
+  "awayScore": {
+    "current": 30,
+    "display": 30,
+    "period1": 11,
+    "period2": 11,
+    "normaltime": 22,
+    "overtime": 5,
+    "penalties": 3
+  },
+  "startTimestamp": 1776530700,
+  "time": {
+    "played": 4201,
+    "periodLength": 1800,
+    "overtimeLength": 300,
+    "totalPeriodCount": 2,
+    "currentPeriodStartTimestamp": 1776539060
+  },
+  "changes": {
+    "changeTimestamp": 1776539434
+  }
+}

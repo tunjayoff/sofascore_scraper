@@ -82,7 +82,7 @@ def golden() -> dict:
 
 def test_golden_covers_every_status_fixture_and_names_the_derive_version(golden):
     assert sorted(golden["rows"]) == sorted(_key(p) for p in PATHS)
-    assert len(PATHS) == 154
+    assert len(PATHS) == 179  # 154 + 25 örnek: SP-1'in sekiz periyot sporu
     # Sürüm artınca altın dosya yeniden üretilir; altın dosya değişince sürüm artırılır
     assert golden["derive_version"] == derive.DERIVE_VERSION
 
@@ -109,7 +109,8 @@ def test_status_class_and_scores_equal_the_status_module(path):
     # scores_json: çizelgenin ayrı sütunu olmayan bütün alanları + ailesi
     common = {f.name for f in dataclasses.fields(ScoreSheet)}
     stored = json.loads(row["scores_json"])
-    family = {"FootballScores": "football", "BasketballScores": "periods", "TennisScores": "sets"}[type(sheet).__name__]
+    family = {"FootballScores": "football", "BasketballScores": "periods", "PeriodsScores": "periods",
+              "TennisScores": "sets"}[type(sheet).__name__]
     assert stored == {"family": family, **{k: v for k, v in expected.items() if k not in common}}
     assert common == {"sport", "status_class", "winner_code", "raw_change_ts", "raw_changed_fields"}
 
@@ -273,9 +274,9 @@ def test_sport_hint_is_used_only_when_the_payload_does_not_name_its_sport():
     assert json.loads(derive.event_row(bare, sport="tennis")["scores_json"])["family"] == "sets"
     assert derive.event_row(EVENT, sport="tennis")["sport"] == "football"  # yükteki spor önceliklidir
     # Kayıt defterinde olmayan spor: satır yazılır, çizelge yok
-    handball = dict(bare, tournament={"category": {"sport": {"slug": "handball"}}})
-    row = derive.event_row(handball)
-    assert (row["sport"], row["scores_json"], row["status_class"], row["home_score"]) == ("handball", None, "completed", 2)
+    volleyball = dict(bare, tournament={"category": {"sport": {"slug": "volleyball"}}})
+    row = derive.event_row(volleyball)
+    assert (row["sport"], row["scores_json"], row["status_class"], row["home_score"]) == ("volleyball", None, "completed", 2)
 
 
 def test_invalid_input_is_rejected():

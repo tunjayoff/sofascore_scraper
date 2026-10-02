@@ -481,11 +481,12 @@ Not mapped in version 1: the goals of each half of extra time (`extra1`, `extra2
 | `family` | constant `periods` | no |  | sport registry | Always `periods`. |
 | `home` | integer | yes | points | `homeScore.display`, else `homeScore.current` | Headline score of the home side: points including overtime. |
 | `away` | integer | yes | points | `awayScore.display`, else `awayScore.current` | Headline score of the away side: points including overtime. |
-| `format` | string, open set: `quarters`, `halves` | yes |  | `quarters` when `period1` or `period3` is present, `halves` when only `period2` / `period4` are | How regulation time is divided. Null while no period score exists. |
+| `format` | string, open set: `quarters`, `halves`, `thirds` | yes |  | sport registry (`src/sports.py`); basketball: `quarters` when `period1` or `period3` is present, `halves` when only `period2` / `period4` are | How regulation time is divided. Null while no period score exists. |
 | `periods` | array of [PeriodScore](#periodscore) | no |  | `period1` to `period4` | Points of each period of regulation time that has a score, in order. |
 | `regulation` | [ScorePair](#scorepair) | yes | points | `normaltime` | Points at the end of regulation time. |
 | `overtime` | [ScorePair](#scorepair) | yes | points | `overtime` | Points scored in overtime alone. Null without overtime. |
 | `final` | [ScorePair](#scorepair) | yes | points | `current` | Final points including overtime. |
+| `penalties` | [ScorePair](#scorepair) | yes | goals | `penalties` | Goals of the penalty shoot-out alone. Null without a shoot-out, and always null for basketball. In the one recorded handball shoot-out, `final` and the headline score include these goals. |
 <!-- /fields:PeriodsScore -->
 
 ```json example:PeriodsScore
@@ -493,7 +494,7 @@ Not mapped in version 1: the goals of each half of extra time (`extra1`, `extra2
  "periods": [{"number": 1, "home": 24, "away": 20}, {"number": 2, "home": 21, "away": 26},
              {"number": 3, "home": 25, "away": 22}, {"number": 4, "home": 22, "away": 24}],
  "regulation": {"home": 92, "away": 92}, "overtime": {"home": 8, "away": 9},
- "final": {"home": 100, "away": 101}}
+ "final": {"home": 100, "away": 101}, "penalties": null}
 ```
 
 A game of two halves (seen in the French lower leagues) has its two scores in SofaScore's `period2`
@@ -504,9 +505,9 @@ and `period4`; the schema numbers them 1 and 2 and says `"format": "halves"`.
 <!-- fields:PeriodScore -->
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
-| `number` | integer | no |  | `periodN`: N for `quarters`; `period2` is 1 and `period4` is 2 for `halves` | Position of the period within the format, starting at 1: quarter 1 to 4, or half 1 to 2. |
-| `home` | integer | yes | points | `homeScore.periodN` | Points of the home side in the period. |
-| `away` | integer | yes | points | `awayScore.periodN` | Points of the away side in the period. |
+| `number` | integer | no |  | `periodN`: N, except for basketball `halves`, where `period2` is 1 and `period4` is 2 | Position of the period within the format, starting at 1: quarter 1 to 4, half 1 to 2, or period 1 to 3. |
+| `home` | integer | yes | points | `homeScore.periodN` | Points of the home side in the period (goals in the goal sports). |
+| `away` | integer | yes | points | `awayScore.periodN` | Points of the away side in the period (goals in the goal sports). |
 <!-- /fields:PeriodScore -->
 
 #### SetsScore

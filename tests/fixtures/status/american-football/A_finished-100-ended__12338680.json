@@ -1,0 +1,41 @@
+{
+  "case_id": "A_finished-100-ended",
+  "event_id": 12338680,
+  "fetched_at_utc": "2026-10-01T12:50:51+00:00",
+  "source_file": "research/all_sports/status_examples/american-football/event_finished-100-ended__12338680.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 38,
+    "display": 38,
+    "period1": 14,
+    "period2": 10,
+    "period3": 7,
+    "period4": 7,
+    "normaltime": 38
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "period2": 0,
+    "period3": 0,
+    "period4": 0,
+    "normaltime": 0
+  },
+  "startTimestamp": 1736112300,
+  "time": {
+    "played": 3600,
+    "periodLength": 900,
+    "overtimeLength": 600,
+    "totalPeriodCount": 4,
+    "currentPeriodStartTimestamp": 1736121893
+  },
+  "changes": {
+    "changeTimestamp": 1736122802
+  }
+}

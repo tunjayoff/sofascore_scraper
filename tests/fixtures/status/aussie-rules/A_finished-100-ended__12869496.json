@@ -1,0 +1,37 @@
+{
+  "case_id": "A_finished-100-ended",
+  "event_id": 12869496,
+  "fetched_at_utc": "2026-10-01T13:59:47+00:00",
+  "source_file": "research/all_sports/status_examples/aussie-rules/event_finished-100-ended__12869496.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {
+    "current": 33,
+    "display": 33,
+    "period1": 9,
+    "period2": 8,
+    "period3": 3,
+    "period4": 13,
+    "normaltime": 33
+  },
+  "awayScore": {
+    "current": 41,
+    "display": 41,
+    "period1": 13,
+    "period2": 14,
+    "period3": 13,
+    "period4": 1,
+    "normaltime": 41
+  },
+  "startTimestamp": 1729845900,
+  "time": {
+    "currentPeriodStartTimestamp": 1729852388
+  },
+  "changes": {
+    "changeTimestamp": 1729852391
+  }
+}

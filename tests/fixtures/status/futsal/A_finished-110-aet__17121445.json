@@ -1,0 +1,27 @@
+{
+  "case_id": "A_finished-110-aet",
+  "event_id": 17121445,
+  "fetched_at_utc": "2026-10-01T13:11:05+00:00",
+  "source_file": "research/all_sports/status_examples/futsal/event_finished-110-aet__17121445.json",
+  "status": {
+    "code": 110,
+    "description": "AET",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 8,
+    "display": 8,
+    "series": 1
+  },
+  "awayScore": {
+    "current": 2,
+    "display": 2,
+    "series": 1
+  },
+  "startTimestamp": 1790811000,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 1790822752
+  }
+}

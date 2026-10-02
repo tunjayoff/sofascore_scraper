@@ -42,7 +42,7 @@ from src import schema
 from src.refresh import DEFAULT_REFRESH_WINDOW_HOURS
 from src.schema import jsonschema as schema_doc
 from src.schema import mappers, models
-from src.sports import SPORTS, ScoreFamily, score_family
+from src.sports import SPORTS, PeriodFormat, ScoreFamily, period_format, score_family
 from src.status import StatusClass, classify_status
 from src.store import (
     ChangeRow,
@@ -411,15 +411,18 @@ def _expected_score(event: Mapping[str, Any], sport: str) -> Dict[str, Any]:
         }
     if family == "periods":
         present = [n for n in (1, 2, 3, 4) if _expected_pair(home, away, f"period{n}")]
+        fixed = period_format(sport)  # basketbol dışındaki sporlar: kayıt defterindeki bölünüş, periodN = N
         quarters = 1 in present or 3 in present
-        numbers = {n: n for n in present} if quarters else {2: 1, 4: 2}
+        numbers = {n: n for n in present} if fixed or quarters else {2: 1, 4: 2}
+        fmt = fixed if fixed else "quarters" if quarters else "halves"
         return {
             "family": "periods", **common,
-            "format": "quarters" if quarters else ("halves" if present else None),
+            "format": fmt if present else None,
             "periods": [{"number": numbers[n], **_expected_pair(home, away, f"period{n}")} for n in present],
             "regulation": _expected_pair(home, away, "normaltime"),
             "overtime": _expected_pair(home, away, "overtime"),
             "final": _expected_pair(home, away, "current"),
+            "penalties": _expected_pair(home, away, "penalties") if fixed else None,
         }
     sets = []
     for n in range(1, 6):
@@ -483,13 +486,14 @@ def test_golden_shows_every_status_class_and_every_settlement(golden_events):
     assert {"football", "periods", "sets"} <= {r["score"]["family"] for r in records}
     assert {r["winner"] for r in records} == {"home", "away", "draw", None}
     assert {r["score"].get("format") for r in records if r["score"]["family"] == "periods"} == {
-        "quarters", "halves", None}
+        "quarters", "halves", "thirds", None} == {None, *typing.get_args(PeriodFormat)}
     assert any(r["score"].get("after_extra_time") for r in records)
-    assert any(r["score"].get("penalties") for r in records)
+    assert any(r["score"].get("penalties") for r in records if r["score"]["family"] == "football")
+    assert any(r["score"].get("penalties") for r in records if r["score"]["family"] == "periods")
     assert any(r["score"].get("overtime") for r in records)
     assert any(r["score"].get("match_tiebreak") for r in records)
     assert any(s["tiebreak"] for r in records for s in r["score"].get("sets", ()))
-    assert sum(r["aggregate"] is not None for r in records) == 2
+    assert sum(r["aggregate"] is not None for r in records) == 3  # iki futbol maçı, bir hentbol rövanşı (SP-1)
     assert any(r["quality"]["change_ts"] is None for r in records)
 
 
@@ -640,8 +644,8 @@ def test_score_keeps_the_family_of_the_sport_without_a_sheet():
     football = schema.event_from_row(_row(scores_json=None, home_score=1, away_score=0)).score
     assert football == models.FootballScore(family="football", home=1, away=0, half_time=None, regulation=None,
                                             after_extra_time=None, penalties=None)
-    plain = schema.event_from_row(_row(sport="handball", scores_json=None, home_score=31, away_score=30)).score
-    assert plain == models.PlainScore(family=None, home=31, away=30)
+    plain = schema.event_from_row(_row(sport="volleyball", scores_json=None, home_score=3, away_score=1)).score
+    assert plain == models.PlainScore(family=None, home=3, away=1)
 
 
 def test_sets_keep_a_tiebreak_without_its_set():
@@ -656,13 +660,13 @@ def test_sets_keep_a_tiebreak_without_its_set():
 
 def test_malformed_sheets_and_lines_do_not_break_the_mappers():
     """Beklenmeyen biçimdeki çizelge ya da günlük satırı kaydı düşürmez; okunamayan parça null kalır."""
-    sheet = json.dumps({"family": "periods", "format": "thirds", "final": [3, "x"], "regulation": [None, None],
+    sheet = json.dumps({"family": "periods", "format": "fifths", "final": [3, "x"], "regulation": [None, None],
                         "overtime": [1], "periods": {"period1": [1, 0], "periodX": [9, 9], "extra": [1, 1],
                                                      "period2": "1-0", "period3": [None, None]}})
     score = schema.event_from_row(_row(sport="basketball", scores_json=sheet)).score.to_dict()
     assert score == {"family": "periods", "home": None, "away": None, "format": None,
                      "periods": [{"number": 1, "home": 1, "away": 0}], "regulation": None, "overtime": None,
-                     "final": {"home": 3, "away": None}}
+                     "final": {"home": 3, "away": None}, "penalties": None}
     assert schema.event_from_row(_row(scores_json="[1, 2]")).score.family == "football"  # nesne değil: boş çizelge
 
     row = ChangeRow(seq=1, ts=1790856000, event_id=9, sport="tennis", tournament_id=3, status_regressed=True,
@@ -697,8 +701,8 @@ def test_registered_sports_are_the_registry():
                       for spec in SPORTS]
     assert schema.sport_from_spec(SPORTS[0], sport_id=1).id == 1
     # kayıtlı olmayan spor: ad yükten, skor ailesi yok
-    assert schema.sport_from_row({"slug": "Handball", "id": 6, "name": "Handball"}).to_dict() == {
-        "slug": "handball", "name": "Handball", "id": 6, "score_family": None}
+    assert schema.sport_from_row({"slug": "Volleyball", "id": 23, "name": "Volleyball"}).to_dict() == {
+        "slug": "volleyball", "name": "Volleyball", "id": 23, "score_family": None}
     assert schema.sport_from_row({"slug": "tennis"}).to_dict() == {
         "slug": "tennis", "name": "Tennis", "id": None, "score_family": "sets"}
 

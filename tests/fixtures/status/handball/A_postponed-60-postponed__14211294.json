@@ -1,0 +1,19 @@
+{
+  "case_id": "A_postponed-60-postponed",
+  "event_id": 14211294,
+  "fetched_at_utc": "2026-10-01T14:00:58+00:00",
+  "source_file": "research/all_sports/status_examples/handball/event_postponed-60-postponed__14211294.json",
+  "status": {
+    "code": 60,
+    "description": "Postponed",
+    "type": "postponed"
+  },
+  "winnerCode": null,
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1777824000,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 1775817474
+  }
+}

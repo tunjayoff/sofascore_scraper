@@ -890,7 +890,7 @@ def test_catalog_picks_up_the_folded_round_page_and_the_new_slice_rule(tmp_path:
     try:
         assert read(store) == expected
         assert [s.sub for s in store.entities.slices(final)] == ["round_29_final"]
-        assert store.info(sizes=False).derive_version == derive.DERIVE_VERSION == 2
+        assert store.info(sizes=False).derive_version == derive.DERIVE_VERSION >= 2  # FX-5: 2, SP-1: 3
     finally:
         store.close()
 

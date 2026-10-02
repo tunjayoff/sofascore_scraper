@@ -1,0 +1,19 @@
+{
+  "case_id": "A_canceled-70-canceled",
+  "event_id": 16341235,
+  "fetched_at_utc": "2026-10-01T14:01:56+00:00",
+  "source_file": "research/all_sports/status_examples/ice-hockey/event_canceled-70-canceled__16341235.json",
+  "status": {
+    "code": 70,
+    "description": "Canceled",
+    "type": "canceled"
+  },
+  "winnerCode": null,
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1790872200,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 1789471017
+  }
+}
