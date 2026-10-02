@@ -347,8 +347,8 @@ class LeaseManager:
             _unsupported_warned.add(self.locks_dir)
         if first:
             logger.warning(
-                "Dosya sistemi kilit desteklemiyor (%s); süreçler arası kilit devre dışı: veri dizinini aynı anda "
-                "yalnızca bir süreç kullanmalı: %s", exc.strerror or exc, self.locks_dir,
+                "The file system does not support file locks (%s); leases cannot keep other processes out. "
+                "Only one process at a time may use this data directory: %s", exc.strerror or exc, self.locks_dir,
             )
 
     def _mark_unclean(self, lease: Lease) -> None:
@@ -356,7 +356,7 @@ class LeaseManager:
             with open(self.unclean_marker, "w", encoding="utf-8") as f:
                 f.write(f"{lease.pid} {lease.host} {int(lease.acquired_at)}\n")
         except OSError as e:
-            logger.warning("Temiz kapanmama işareti yazılamadı: %s: %s", self.unclean_marker, e)
+            logger.warning("Could not write the unclean-shutdown marker: %s: %s", self.unclean_marker, e)
 
     def _record(self, lease: Lease) -> None:
         if self.state is None:
@@ -370,7 +370,7 @@ class LeaseManager:
                     (lease.name, lease.holder, lease.pid, lease.host, lease.purpose, at, at),
                 )
         except (sqlite3.Error, StoreError) as e:
-            logger.warning("Kilit sahibi bilgisi yazılamadı (%s): %s", lease.name, e)
+            logger.warning("Could not record the holder of the lease (%s): %s", lease.name, e)
 
     def _forget(self, lease: Lease) -> None:
         """Temiz bırakılış: işaret ve sahip satırı, işletim sistemi kilidi hâlâ tutulurken silinir."""
@@ -383,7 +383,7 @@ class LeaseManager:
             with self.state.write() as conn:
                 conn.execute("DELETE FROM leases WHERE name = ? AND holder = ?", (lease.name, lease.holder))
         except (sqlite3.Error, StoreError) as e:
-            logger.debug("Kilit sahibi bilgisi silinemedi (%s): %s", lease.name, e)
+            logger.debug("Could not remove the holder record of the lease (%s): %s", lease.name, e)
 
     # --- kim tutuyor ------------------------------------------------------------------------
 

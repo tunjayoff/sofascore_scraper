@@ -289,7 +289,7 @@ class StateDb:
         finally:
             with contextlib.suppress(StoreError):
                 files.remove(tmp)
-        logger.info("state.db şema sürümü %s kopyalandı: %s", version, target)
+        logger.info("state.db copied before migration (schema version %s): %s", version, target)
 
     @staticmethod
     def _column_exists(conn: sqlite3.Connection, statement: str) -> bool:
