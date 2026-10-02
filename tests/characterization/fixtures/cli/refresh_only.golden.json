@@ -62,9 +62,7 @@
  "stdout": [
   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-  "LOG INFO SeasonFetcher: 1 lig için JSON sezon verileri yüklendi",
-  "LOG INFO SeasonFetcher: Toplam 1 lig için 2 sezon yüklendi",
-  "LOG INFO SeasonFetcher: SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi",
+  "LOG INFO SeasonFetcher: SeasonFetcher started",
   "LOG INFO SyncService: Refreshing 3 provisional records...",
   "LOG INFO MatchDataFetcher: 3 maç yenileniyor",
   "LOG WARNING MatchDataFetcher: Maç 9100010 yenileme: /event alınamadı",

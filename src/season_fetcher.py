@@ -1,11 +1,14 @@
 """
 SofaScore API'sinden lig sezonlarını çeken modül.
+
+Saklanan sezon listeleri ve "bu sezonun maç listesi indirilmiş mi" sorusu deponun kataloğundan okunur
+(src/services/tournaments.py; plan maddesi RD-5): bir ligin birden çok sezon listesi dosyası varsa adı ne
+olursa olsun en yenisi geçerlidir ve web uç noktaları da aynı listeyi görür. Listeyi yazan hâlâ bu modüldür
+(`_save_seasons_json`); yazdıktan sonra kataloğu güncelleyen kancayı çağırır.
 """
 
 import os
-import csv
-import json
-from typing import Dict, List, Optional, Any
+from typing import TYPE_CHECKING, Dict, List, Optional, Any, Tuple
 import datetime
 import re
 
@@ -16,10 +19,15 @@ from src.utils import make_api_request, ensure_directory
 
 from src.fsutil import atomic_write_json
 # Gölge kip (docs/design/01-storage.md 3.5): her yazmadan sonra Store'un bir `shadow_*` kancası çağrılır ve
-# katalog yazılanı diskten yeniden dizinler. Paket kökü üzerinden: kancalar ilk çağrıda yüklenir.
+# katalog yazılanı diskten yeniden dizinler. Okumalar da aynı depodan yapılır (`open_store`). Paket kökü
+# üzerinden: kancalar ve cephe ilk çağrıda yüklenir.
 from src import store as store_hooks
 from src.logger import get_logger
-from src.paths import matches_season_dir, seasons_file, summary_paths
+from src.paths import seasons_file
+from src.services import tournaments
+
+if TYPE_CHECKING:
+    from src.store import Store
 
 logger = get_logger("SeasonFetcher")
 
@@ -28,7 +36,8 @@ class SeasonFetcher:
 
     def __init__(self, config_manager: ConfigManager, data_dir: str = "data"):
         """
-        SeasonFetcher sınıfını başlatır ve mevcut sezon verilerini yükler.
+        SeasonFetcher sınıfını başlatır. Saklanan sezon listeleri burada yüklenmez: ilk kullanıldıklarında
+        katalogdan okunurlar (`league_seasons`), böylece kurucu depoyu açmaz ve `.meta/` altında bir şey yaratmaz.
 
         Args:
             config_manager: Lig yapılandırmalarını yöneten ConfigManager örneği
@@ -43,13 +52,54 @@ class SeasonFetcher:
         ensure_directory(self.data_dir)
         ensure_directory(self.seasons_dir)
 
-        # Sezon verilerini saklamak için sözlük
-        self.league_seasons = {}
+        # Sezon verilerini saklamak için sözlük; None: henüz yüklenmedi (bkz. league_seasons)
+        self._league_seasons: Optional[Dict[int, List[Dict[str, Any]]]] = None
 
-        # Mevcut sezon verilerini otomatik olarak yükle
-        self._load_existing_season_data()
+        logger.info("SeasonFetcher started")
 
-        logger.info("SeasonFetcher başlatıldı - mevcut sezon verileri yüklendi")
+    @property
+    def league_seasons(self) -> Dict[int, List[Dict[str, Any]]]:
+        """
+        {lig kimliği: sezonlar}: saklanan sezon listeleri. İlk erişimde katalogdan yüklenir
+        (`_load_existing_season_data`), sonra bu nesnenin çektiği listelerle güncellenir.
+        """
+        if self._league_seasons is None:
+            self._league_seasons = self._load_existing_season_data()
+        return self._league_seasons
+
+    @league_seasons.setter
+    def league_seasons(self, value: Dict[int, List[Dict[str, Any]]]) -> None:
+        self._league_seasons = value
+
+    def _store(self) -> "Store":
+        """Veri dizininin deposu (süreçte dizin başına tek nesne); açılamazsa StoreError fırlar."""
+        return store_hooks.open_store(self.data_dir)
+
+    def _league_name(self, league_id: int) -> Optional[str]:
+        """Ligin yapılandırmadaki adı: diskteki dosya ve dizin adları bu addan kurulur."""
+        name = self.config_manager.get_league_by_id(league_id)
+        return name if isinstance(name, str) else None
+
+    def _read_seasons(self, league_id: int) -> Optional[List[Dict[str, Any]]]:
+        """Ligin saklanan sezon listesi (katalogdan); listesi yoksa None. Depolama hatası çağırana çıkar."""
+        return tournaments.seasons_of(self._store(), league_id, name=self._league_name(league_id))
+
+    def _stored_seasons(self, league_id: int) -> List[Dict[str, Any]]:
+        """
+        Ligin bellekteki sezon listesi. Toplu yüklemede olmayan lig (listesi yüklemeden sonra başka bir süreçte
+        yazılmış olabilir) kimliğiyle bir kez daha sorulur; listesi yoksa ya da okunamıyorsa boş liste.
+        """
+        cache = self.league_seasons
+        seasons = cache.get(league_id)
+        if seasons is None:
+            try:
+                seasons = self._read_seasons(league_id)
+            except Exception as e:
+                logger.debug("Stored season list of league %s could not be read: %s", league_id, e)
+                seasons = None
+            if seasons:
+                cache[league_id] = seasons
+        return seasons or []
 
     def fetch_seasons_for_league(self, league_id: int) -> List[Dict[str, Any]]:
         """
@@ -187,18 +237,8 @@ class SeasonFetcher:
 
             logger.debug(f"Sezon {season_name} (ID: {season_id}, Yıl: {season_year_str}): Tür = {'active' if season in active_seasons else 'future' if season in future_seasons else 'past'}")
 
-            # Maç dosyasının varlığını kontrol et
-            season["has_matches"] = False
-            season["match_count"] = 0
-
-            league_name = self.config_manager.get_league_by_id(league_id)
-            season_dir = matches_season_dir(self.data_dir, league_id, league_name, season_id, season_name)
-            summary_json_path, _ = summary_paths(self.data_dir, league_id, league_name, season_id, season_name)
-            if os.path.isdir(season_dir):
-                season["match_count"] = len(
-                    [f for f in os.listdir(season_dir) if f.startswith(("round_", "events_")) and f.endswith(".json")]
-                )
-            season["has_matches"] = season["match_count"] > 0 or os.path.exists(summary_json_path)
+            # Maç listesi indirilmiş mi: katalogdaki program sayfaları (dizin adına bakılmaz)
+            season["match_count"], season["has_matches"] = self._downloaded_matches(league_id, season_id)
 
             if season["has_matches"]:
                 logger.info(f"Sezon {season_name} (ID: {season_id}) için {season['match_count']} maç dosyası bulundu")
@@ -254,10 +294,9 @@ class SeasonFetcher:
                 season_id = int(season_id) if str(season_id).isdigit() else 0
 
             # Lig ve sezon verilerini kontrol et
-            if league_id in self.league_seasons:
-                for season in self.league_seasons[league_id]:
-                    if season and isinstance(season, dict) and season.get("id") == season_id:
-                        return season.get("name", f"Season_{season_id}")
+            for season in self._stored_seasons(league_id):
+                if season and isinstance(season, dict) and season.get("id") == season_id:
+                    return season.get("name", f"Season_{season_id}")
 
             return f"Season_{season_id}"
 
@@ -304,73 +343,39 @@ class SeasonFetcher:
         )
         return preferred or requested_id
 
-    def _load_existing_season_data(self):
-        """Daha önce kaydedilmiş sezon verilerini yükler."""
-        seasons_csv = os.path.join(self.data_dir, "league_seasons.csv")
-        json_files = {}
+    def _load_existing_season_data(self) -> Dict[int, List[Dict[str, Any]]]:
+        """
+        Daha önce kaydedilmiş sezon listelerini katalogdan yükler: sezon listesi saklanan her lig için
+        {lig kimliği: sezonlar} (yapılandırılmamış ligler dahil). Dosya seçimi `tournaments.seasons_of`
+        kuralıdır (en yeni dosya; `league_seasons.csv` yalnızca JSON listesi olmayan lig için). Okunamazsa
+        boş sözlük.
+        """
+        try:
+            leagues = self.config_manager.get_leagues()
+            names = dict(leagues) if isinstance(leagues, dict) else {}
+            loaded = tournaments.season_lists(self._store(), names)
+        except Exception as e:
+            logger.error("Stored season lists could not be loaded: %s", e)
+            return {}
 
-        # İlk olarak, her lig için JSON dosyalarını kontrol et
-        if os.path.exists(self.seasons_dir):
-            for file_name in os.listdir(self.seasons_dir):
-                if file_name.endswith('_seasons.json'):
-                    try:
-                        # Dosya adından lig ID'sini çıkar (örn: "17_Premier_League_seasons.json")
-                        league_id_str = file_name.split('_')[0]
-                        league_id = int(league_id_str)
-
-                        # JSON dosyasını oku
-                        file_path = os.path.join(self.seasons_dir, file_name)
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            data = json.load(f)
-
-                        if "seasons" in data:
-                            json_files[league_id] = data["seasons"]
-                    except (ValueError, KeyError, json.JSONDecodeError) as e:
-                        logger.warning(f"JSON sezon dosyası yüklenirken hata: {file_name} - {str(e)}")
-
-        # JSON verilerinden league_seasons'ı doldur
-        if json_files:
-            self.league_seasons = json_files
-            logger.info(f"{len(json_files)} lig için JSON sezon verileri yüklendi")
-
-        # Eğer JSON dosyaları yoksa veya eksikse, CSV dosyasını kontrol et
-        if not self.league_seasons and os.path.exists(seasons_csv):
-            # CSV'den lig ve sezon bilgilerini okuyarak sözlüğü oluştur
-            try:
-                csv_leagues = {}
-
-                with open(seasons_csv, 'r', encoding='utf-8', newline='') as f:
-                    reader = csv.DictReader(f)
-                    for row in reader:
-                        try:
-                            league_id = int(row['Lig ID'])
-                            season_id = int(row['Sezon ID'])
-
-                            if league_id not in csv_leagues:
-                                csv_leagues[league_id] = []
-
-                            csv_leagues[league_id].append({
-                                "id": season_id,
-                                "name": row['Sezon Adı'],
-                                "year": row['Sezon Yılı']
-                            })
-                        except (ValueError, KeyError) as e:
-                            logger.warning(f"CSV satırı işlenirken hata: {row} - {str(e)}")
-
-                # CSV verilerinden league_seasons'ı doldur
-                if csv_leagues:
-                    self.league_seasons = csv_leagues
-                    logger.info(f"{len(csv_leagues)} lig için CSV sezon verileri yüklendi")
-
-            except Exception as e:
-                logger.error(f"Sezon CSV dosyası yüklenirken hata: {str(e)}")
-
-        # Toplam yüklenen sezon sayısını logla
-        total_seasons = sum(len(seasons) for seasons in self.league_seasons.values())
+        total_seasons = sum(len(seasons) for seasons in loaded.values())
         if total_seasons > 0:
-            logger.info(f"Toplam {len(self.league_seasons)} lig için {total_seasons} sezon yüklendi")
+            logger.info("Season lists loaded from the catalog: %d league(s), %d season(s)", len(loaded), total_seasons)
         else:
-            logger.info("Mevcut sezon verisi bulunamadı")
+            logger.info("No stored season list found")
+        return loaded
+
+    def _downloaded_matches(self, league_id: int, season_id: Any) -> Tuple[int, bool]:
+        """
+        (saklanan program sayfası sayısı, sezonun maç listesi indirilmiş mi), katalogdan. Sezonun dizini hangi
+        adla yazılmış olursa olsun görülür; sayfası kalmamış ama özet dosyasından bilinen sezon da "indirilmiş"
+        sayılır. Kimliği olmayan sezon öğesi için (0, False).
+        """
+        if isinstance(season_id, bool) or not isinstance(season_id, int):
+            return 0, False
+        store = self._store()
+        pages = tournaments.schedule_pages(store, league_id, season_id)
+        return pages, pages > 0 or tournaments.has_matches(store, league_id, season_id)
 
     def _save_seasons_json(self, league_id: int, data: Dict[str, Any]):
         """
@@ -441,45 +446,25 @@ class SeasonFetcher:
 
     def get_seasons_for_league(self, league_id: int) -> List[Dict[str, Any]]:
         """
-        Belirli bir lig için kayıtlı tüm sezonları döndürür.
+        Belirli bir lig için kayıtlı tüm sezonları döndürür: katalogdaki sezon listesi yükü, SofaScore'un
+        verdiği sırayla. Ligin birden çok sezon listesi dosyası varsa en yenisi geçerlidir; adında kimlik
+        olmayan dosya (`<ad>_seasons.json`) ligin yapılandırmadaki adıyla bulunur.
 
         Args:
             league_id: Lig ID
 
         Returns:
-            List[Dict[str, Any]]: Sezon verileri listesi
+            List[Dict[str, Any]]: Sezon verileri listesi (listesi yoksa ya da okunamıyorsa boş liste)
         """
-        # Yüklenmiş veri varsa onu kullan
         try:
-            # Lig adını alıp güvenli dosya adı oluşturuyoruz
-            league_name = self.config_manager.get_league_by_id(league_id)
-            file_path = seasons_file(self.data_dir, league_id, league_name)
-
-            if not os.path.exists(file_path):
-                # Eski biçimler: boşluklu ad, ID'siz ad, config'de olmayan lig için eski yer tutucu
-                alt_file_paths = [
-                    os.path.join(self.seasons_dir, f"{league_id}_{league_name}_seasons.json"),
-                    os.path.join(self.seasons_dir, f"{league_name}_seasons.json"),
-                    os.path.join(self.seasons_dir, f"{league_id}_unknown_league_{league_id}_seasons.json"),
-                ]
-
-                for alt_path in alt_file_paths:
-                    if os.path.exists(alt_path):
-                        file_path = alt_path
-                        logger.info(f"Alternatif sezon dosyası kullanılıyor: {alt_path}")
-                        break
-                else:
-                    logger.warning(f"Sezon verisi bulunamadı: {file_path}")
-                    return []
-
-            with open(file_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                if "seasons" in data and isinstance(data["seasons"], list):
-                    return data["seasons"]
+            seasons = self._read_seasons(league_id)
         except Exception as e:
-            logger.error(f"Sezon verisi okuma hatası: {str(e)}")
-
-        return []
+            logger.error("Stored season list of league %s could not be read: %s", league_id, e)
+            return []
+        if seasons is None:
+            logger.warning("No stored season list for league %s", league_id)
+            return []
+        return seasons
 
     def get_season_info(self, league_id: int, season_id: int) -> Optional[Dict[str, Any]]:
         """
