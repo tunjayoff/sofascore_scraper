@@ -43,9 +43,10 @@ source = ["src"]
 branch = true
 
 [tool.coverage.report]
-# Taban, ölçülen değerin (2026-10-01: %54,1) hemen altındadır: kapsam yalnızca yukarı gidebilir.
-# Test ekleyip değeri yükselttiğinizde tabanı da yükseltin.
-fail_under = 53
+# The floor sits about five points below the measured value (about 90 % on 2026-10-02). The margin covers
+# the differences between runs and the planned changes that delete code together with its tests.
+# When the measured value rises for good, raise the floor with it.
+fail_under = 85
 skip_covered = true
 
 [tool.ruff]
