@@ -1,0 +1,26 @@
+{
+  "case_id": "M2_split_decision",
+  "event_id": 11366500,
+  "fetched_at_utc": "2026-10-01T12:41:53+00:00",
+  "source_file": "research/all_sports/samples/mma/team-id-events-last-id__1.json; startTimestamp from research/all_sports/events/mma.jsonl",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1687626604,
+  "time": {
+    "period1": 300,
+    "period2": 300,
+    "period3": 300,
+    "totalPeriodCount": 3
+  },
+  "changes": {
+    "changeTimestamp": 1687627992
+  },
+  "winType": "SD",
+  "finalRound": 3
+}

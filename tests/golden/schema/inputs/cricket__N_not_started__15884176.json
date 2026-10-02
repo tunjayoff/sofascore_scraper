@@ -1,0 +1,240 @@
+{
+ "source_file": "research/all_sports/samples/cricket/event-id__1.json",
+ "fetched_at_utc": "2026-10-01T12:42:41+00:00",
+ "event": {
+  "tournament": {
+   "name": "West Indies in India, 3 ODI Series",
+   "slug": "west-indies-in-india-3-odi-series",
+   "category": {
+    "name": "World",
+    "slug": "world",
+    "sport": {
+     "name": "Cricket",
+     "slug": "cricket",
+     "id": 62
+    },
+    "priority": 0,
+    "country": {},
+    "id": 1343,
+    "flag": "international"
+   },
+   "uniqueTournament": {
+    "name": "One Day International",
+    "slug": "one-day-international",
+    "primaryColorHex": "#0680b1",
+    "secondaryColorHex": "#00c6ad",
+    "category": {
+     "name": "World",
+     "slug": "world",
+     "sport": {
+      "name": "Cricket",
+      "slug": "cricket",
+      "id": 62
+     },
+     "priority": 0,
+     "country": {},
+     "id": 1343,
+     "flag": "international"
+    },
+    "userCount": 4835,
+    "hasRounds": true,
+    "hasPerformanceGraphFeature": false,
+    "liveActivityEnabled": false,
+    "country": {},
+    "id": 11190,
+    "hasEventPlayerStatistics": false,
+    "displayInverseHomeAwayTeams": false
+   },
+   "priority": 96,
+   "isGroup": false,
+   "id": 179154,
+   "endTimestamp": 1790985600,
+   "startTimestamp": 1790467200
+  },
+  "season": {
+   "name": "2026",
+   "year": "2026",
+   "editor": false,
+   "id": 77922
+  },
+  "customId": "kfAbspfAb",
+  "status": {
+   "code": 0,
+   "description": "Not started",
+   "type": "notstarted"
+  },
+  "venue": {
+   "city": {
+    "name": "Mullanpur",
+    "country": {
+     "alpha2": "IN",
+     "alpha3": "IND",
+     "name": "India",
+     "slug": "india"
+    },
+    "id": 27536
+   },
+   "hidden": true,
+   "slug": "maharaja-yadavindra-singh-international-cricket-stadium",
+   "name": "Maharaja Yadavindra Singh International Cricket Stadium",
+   "country": {
+    "alpha2": "IN",
+    "alpha3": "IND",
+    "name": "India",
+    "slug": "india"
+   },
+   "id": 42109,
+   "stadium": {
+    "name": "Maharaja Yadavindra Singh International Cricket Stadium"
+   }
+  },
+  "homeTeam": {
+   "name": "India",
+   "slug": "india",
+   "shortName": "IND",
+   "gender": "M",
+   "sport": {
+    "name": "Cricket",
+    "slug": "cricket",
+    "id": 62
+   },
+   "userCount": 178098,
+   "manager": {
+    "name": "Gautam Gambhir",
+    "slug": "gautam-gambhir",
+    "shortName": "G. Gambhir",
+    "country": {
+     "alpha2": "IN",
+     "alpha3": "IND",
+     "name": "India",
+     "slug": "india"
+    },
+    "id": 805904
+   },
+   "venue": {
+    "city": {
+     "name": "Mumbai",
+     "country": {
+      "alpha2": "IN",
+      "alpha3": "IND",
+      "name": "India",
+      "slug": "india"
+     },
+     "id": 18332
+    },
+    "hidden": true,
+    "slug": "wankhede-stadium",
+    "name": "Wankhede Stadium",
+    "capacity": 33000,
+    "country": {
+     "alpha2": "IN",
+     "alpha3": "IND",
+     "name": "India",
+     "slug": "india"
+    },
+    "id": 24773,
+    "stadium": {
+     "name": "Wankhede Stadium",
+     "capacity": 33000
+    }
+   },
+   "nameCode": "IND",
+   "class": 1,
+   "disabled": false,
+   "national": true,
+   "type": 0,
+   "country": {
+    "alpha2": "IN",
+    "alpha3": "IND",
+    "name": "India",
+    "slug": "india"
+   },
+   "id": 187765,
+   "fullName": "India",
+   "subTeams": [],
+   "teamColors": {
+    "primary": "#00b8ff",
+    "secondary": "#ff4500",
+    "text": "#ff4500"
+   },
+   "timeActive": []
+  },
+  "awayTeam": {
+   "name": "West Indies",
+   "slug": "west-indies",
+   "shortName": "WI",
+   "gender": "M",
+   "sport": {
+    "name": "Cricket",
+    "slug": "cricket",
+    "id": 62
+   },
+   "userCount": 11127,
+   "venue": {
+    "city": {
+     "name": "Bridgetown",
+     "country": {
+      "alpha2": "BB",
+      "alpha3": "BRB",
+      "name": "Barbados",
+      "slug": "barbados"
+     },
+     "id": 20301
+    },
+    "hidden": true,
+    "slug": "kensington-oval",
+    "name": "Kensington Oval",
+    "capacity": 28000,
+    "country": {
+     "alpha2": "BB",
+     "alpha3": "BRB",
+     "name": "Barbados",
+     "slug": "barbados"
+    },
+    "id": 25009,
+    "stadium": {
+     "name": "Kensington Oval",
+     "capacity": 28000
+    }
+   },
+   "nameCode": "WIN",
+   "disabled": false,
+   "national": true,
+   "type": 0,
+   "country": {},
+   "id": 187760,
+   "fullName": "West Indies",
+   "subTeams": [],
+   "teamColors": {
+    "primary": "#7c003f",
+    "secondary": "#ffff00",
+    "text": "#ffff00"
+   },
+   "timeActive": []
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "coverage": 1,
+  "time": {},
+  "changes": {
+   "changeTimestamp": 0
+  },
+  "hasGlobalHighlights": false,
+  "crowdsourcingDataDisplayEnabled": false,
+  "id": 15884176,
+  "endTimestamp": 1791045000,
+  "slug": "india-west-indies",
+  "startTimestamp": 1791016200,
+  "periods": {
+   "current": "Match",
+   "inning1": "1st Inning",
+   "inning2": "2nd Inning",
+   "inning3": "3rd Inning",
+   "inning4": "4th Inning"
+  },
+  "finalResultOnly": false,
+  "feedLocked": false,
+  "showTotoPromo": true,
+  "isEditor": false
+ }
+}

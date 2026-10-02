@@ -1,0 +1,71 @@
+{
+  "case_id": "A_finished-110-aet",
+  "event_id": 9861550,
+  "fetched_at_utc": "2026-10-01T12:45:56+00:00",
+  "source_file": "research/all_sports/status_examples/baseball/event_finished-110-aet__9861550.json",
+  "status": {
+    "code": 110,
+    "description": "AET",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 6,
+    "display": 6,
+    "period1": 0,
+    "period2": 1,
+    "period3": 0,
+    "period4": 0,
+    "period5": 0,
+    "period6": 1,
+    "period7": 0,
+    "normaltime": 3,
+    "overtime": 3,
+    "innings": {
+      "inning1": {
+        "run": 0
+      },
+      "inning2": {
+        "run": 1
+      },
+      "__trimmed_keys__": 8
+    },
+    "inningsBaseball": {
+      "run": 6,
+      "hits": 10,
+      "__trimmed_keys__": 1
+    }
+  },
+  "awayScore": {
+    "current": 5,
+    "display": 5,
+    "period1": 0,
+    "period2": 0,
+    "period3": 0,
+    "period4": 0,
+    "period5": 1,
+    "period6": 2,
+    "period7": 0,
+    "normaltime": 3,
+    "overtime": 2,
+    "innings": {
+      "inning1": {
+        "run": 0
+      },
+      "inning2": {
+        "run": 0
+      },
+      "__trimmed_keys__": 8
+    },
+    "inningsBaseball": {
+      "run": 5,
+      "hits": 10,
+      "__trimmed_keys__": 1
+    }
+  },
+  "startTimestamp": 1657408500,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 1773325830
+  }
+}

@@ -207,6 +207,24 @@ def _point_by_point_state(body: Any) -> BodyState:
     return _filled_list(points)
 
 
+def _esports_games_state(body: Any) -> BodyState:
+    """
+    {"games": [...]} (e-spor, SP-3): liste doluysa veri var. Kuralı point_by_point'inkiyle aynıdır: None, boş
+    nesne, boş liste ve `games` anahtarı olmayan nesne "veri yok"; nesne olmayan başka gövde ile liste olmayan
+    `games` okunamaz.
+    """
+    if body is None or (isinstance(body, (dict, list)) and not body):
+        return BODY_NO_DATA
+    if not isinstance(body, dict):
+        return BODY_MALFORMED
+    games = body.get("games")
+    if games is None:
+        return BODY_NO_DATA
+    if not isinstance(games, list):
+        return BODY_MALFORMED
+    return _filled_list(games)
+
+
 # Dilim anahtarı → kural. Kayıt defterindeki her dilim burada olmalıdır.
 _BODY_RULES: Dict[str, Callable[[Any], BodyState]] = {
     "statistics": _statistics_state,
@@ -216,6 +234,7 @@ _BODY_RULES: Dict[str, Callable[[Any], BodyState]] = {
     "pregame_form": _pregame_form_state,
     "incidents": _incidents_state,
     "point_by_point": _point_by_point_state,
+    "esports_games": _esports_games_state,
 }
 
 # Kendi kuralı olan dilim anahtarları
@@ -269,6 +288,10 @@ def has_incidents_data_dict(d: Mapping[str, Any]) -> bool:
 
 def has_point_by_point_data_dict(d: Mapping[str, Any]) -> bool:
     return _point_by_point_state(d.get("point_by_point")) == BODY_DATA
+
+
+def has_esports_games_data_dict(d: Mapping[str, Any]) -> bool:
+    return _esports_games_state(d.get("esports_games")) == BODY_DATA
 
 
 def match_detail_slice_present(key: str, d: Mapping[str, Any]) -> bool:

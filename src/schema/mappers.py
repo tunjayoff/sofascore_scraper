@@ -24,10 +24,15 @@ from src.schema.models import (
     Category,
     Change,
     ChangedField,
+    CricketInnings,
+    CricketScore,
     Event,
     EventParticipant,
     EventParticipants,
+    FightScore,
     FootballScore,
+    InningScore,
+    InningsScore,
     LiveEvent,
     Participant,
     PeriodScore,
@@ -47,7 +52,7 @@ from src.schema.models import (
     Status,
     Tournament,
 )
-from src.sports import SPORTS, PeriodFormat, SportSpec, get_sport, score_family
+from src.sports import SPORTS, PeriodFormat, SetFormat, SportSpec, get_sport, score_family
 from src.status import StatusClass
 
 if TYPE_CHECKING:
@@ -346,13 +351,65 @@ def score_from_row(row: Union["EventRow", RowLike]) -> Score:
             penalties=_pair(sheet.get("penalties")),
         )
     if family == "sets":
+        fmt = sheet.get("format")
+        if fmt is None and isinstance(sheet.get("games"), list):
+            fmt = "games"  # tenisin 2.x çizelgesi (TennisScores) birimini yazmaz: setleri oyunla sayılır
         return SetsScore(
             family="sets", home=home, away=away,
+            format=fmt if fmt in get_args(SetFormat) else None,
             sets_won=_pair(sheet.get("sets_won")),
             sets=_sets(sheet),
             match_tiebreak=bool(sheet.get("match_tiebreak")),
         )
+    if family == "innings":
+        return InningsScore(
+            family="innings", home=home, away=away,
+            innings=tuple(InningScore(number=number, home=pair.home, away=pair.away)
+                          for number, pair in _numbered_pairs(sheet.get("innings"))),
+            regulation=_pair(sheet.get("regulation")),
+            extra_innings=_pair(sheet.get("extra_innings")),
+            hits=_pair(sheet.get("hits")),
+            errors=_pair(sheet.get("errors")),
+        )
+    if family == "cricket":
+        return CricketScore(family="cricket", home=home, away=away,
+                            innings=_cricket_innings(sheet, "home") + _cricket_innings(sheet, "away"))
+    if family == "fight":
+        method = sheet.get("method")
+        return FightScore(family="fight", home=home, away=away,
+                          method=method if isinstance(method, str) and method else None,
+                          final_round=_int(sheet.get("final_round")))
     return PlainScore(family=None, home=home, away=away)
+
+
+def _numbered_pairs(raw: Any) -> List[Tuple[int, ScorePair]]:
+    """Numaralı çiftler ({"1": [0, 1], "2": [2, 0]}) → numara sırasıyla (numara, çift); okunamayan atlanır."""
+    found = []
+    for key, value in (raw.items() if isinstance(raw, dict) else ()):
+        pair = _pair(value)
+        if pair is not None and str(key).isdigit() and int(key) > 0:
+            found.append((int(key), pair))
+    return sorted(found, key=lambda item: item[0])
+
+
+def _number(value: Any) -> Optional[float]:
+    """Sonlu sayı (bool değil): over gibi ondalık değerler için; tam sayı olduğu gibi kalır."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return value if math.isfinite(value) else None
+
+
+def _cricket_innings(sheet: Mapping[str, Any], side: str) -> Tuple[CricketInnings, ...]:
+    """Kriket çizelgesinde bir tarafın innings'leri ({"1": {"runs", "wickets", "overs"}}) → numara sırasıyla."""
+    raw = sheet.get(f"{side}_innings")
+    found = []
+    for key, value in (raw.items() if isinstance(raw, dict) else ()):
+        if str(key).isdigit() and int(key) > 0 and isinstance(value, Mapping):
+            found.append(CricketInnings(
+                side=side,  # type: ignore[arg-type]
+                number=int(key), runs=_int(value.get("runs")), wickets=_int(value.get("wickets")),
+                overs=_number(value.get("overs"))))
+    return tuple(sorted(found, key=lambda innings: innings.number))
 
 
 def aggregate_from_row(row: Union["EventRow", RowLike]) -> Optional[Aggregate]:

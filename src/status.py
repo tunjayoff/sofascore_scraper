@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import datetime as dt
 import logging
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, NamedTuple, Optional
@@ -19,7 +20,8 @@ logger = logging.getLogger(__name__)
 
 class StatusClass(str, Enum):
     NOT_STARTED = "not_started"  # type notstarted (code 0)
-    LIVE = "live"  # type inprogress (6, 7, 8-12, 13-16, 20, 30, 31)
+    # type inprogress (6, 7, 8-12, 13-16, 20, 21, 28, 29, 30, 31, 1001, 1002) ve kriketin gün sonu: willcontinue (141)
+    LIVE = "live"
     COMPLETED = "completed"  # type finished, code 100/110/120 (oynandı ve bitti)
     DECIDED_WITHOUT_PLAY = "decided_without_play"  # type finished, code 91 Walkover / 92 Retired
     VOID = "void"  # type postponed/canceled/interrupted/suspended (60, 70, 80, 81, 90)
@@ -29,10 +31,16 @@ class StatusClass(str, Enum):
 _COMPLETED_CODES = frozenset({100, 110, 120})
 _WITHOUT_PLAY_CODES = frozenset({91, 92})
 # 11 / 12: 4. ve 5. set (masa tenisi, voleybol; SP-2). Tip inprogress olduğundan zaten LIVE sayılıyorlardı;
-# burada yalnızca tipi olmayan yükte fark eder.
-_LIVE_CODES = frozenset({6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 30, 31})
+# burada yalnızca tipi olmayan yükte fark eder. SP-3'te görülenler de öyle: 21 (kriket 1. innings), 28 / 29
+# (beyzbol 8. / 9. inning), 1001 / 1002 (e-spor 1. / 2. oyun) ve 141 (kriket "End of day 1"). Görülmeyen ara
+# kodlar (22-27 gibi) eklenmedi: tipi olmayan yükte UNKNOWN kalırlar.
+_LIVE_CODES = frozenset({6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21, 28, 29, 30, 31, 141, 1001, 1002})
 _VOID_CODES = frozenset({60, 70, 80, 81, 90})
 
+# Çok günlü kriket maçında gün sonu (kod 141 "End of day 1"): maç sürüyor, yalnızca ertesi güne kadar ara
+# veriliyor. Futbolun devre arası (31) gibi LIVE sayılır; böylece kapalı `status.class` sayımına yeni değer
+# gerekmez (docs/design/04-schema-v1.md bölüm 2, madde 8). Plan maddesi SP-3.
+_LIVE_TYPES = frozenset({"inprogress", "willcontinue"})
 _VOID_TYPES = frozenset({"postponed", "canceled", "interrupted", "suspended"})
 
 # Yalnızca type ve code yoksa kullanılır
@@ -78,7 +86,7 @@ def classify_status(event: Optional[Dict[str, Any]]) -> StatusClass:
     if stype:
         if stype == "notstarted":
             return StatusClass.NOT_STARTED
-        if stype == "inprogress":
+        if stype in _LIVE_TYPES:
             return StatusClass.LIVE
         if stype in _VOID_TYPES:
             return StatusClass.VOID
@@ -196,14 +204,107 @@ class SetsScores(ScoreSheet):
         set her zaman 10'u geçer.
       - snooker (frames): `current` kazanılan frame'dir; period1 `current`'ı tekrarladığı için set sayılmaz.
     """
-    format: Optional[str] = None  # "games" | "points" | "frames" (src/sports.py set_format)
+    # "games" | "points" | "frames" | "legs" | "legs_won" | "games_won" (src/sports.py SetFormat)
+    format: Optional[str] = None
     sets_won: Optional[Pair] = None  # current
     sets: Dict[int, Pair] = field(default_factory=dict)  # set no → periodN
     tiebreaks: Dict[int, Pair] = field(default_factory=dict)  # set no → periodNTieBreak
     match_tiebreak: bool = False
 
 
+@dataclass
+class InningsScores(ScoreSheet):
+    """
+    Beyzbol (plan maddesi SP-3). İki takım her inning'de sırayla vurur; `innings` inning numarası → o inning'in
+    sayıları (run). Kaynak `innings.inningN.run`; o inning yoksa `periodN` (NPB, KBO ve MLB hazırlık maçları
+    ikisini de yollar, değerler aynıdır; bazı yüklerde `innings` kırpık ya da eksik gelebilir).
+    `regulation` normaltime, `extra_innings` overtime (uzatma inning'lerinin toplamı; kod 110 "AET"),
+    `hits` / `errors` maçın toplamı (`inningsBaseball`). Başlık skoru (display / current) toplam sayıdır.
+    """
+    innings: Dict[int, Pair] = field(default_factory=dict)
+    regulation: Optional[Pair] = None
+    extra_innings: Optional[Pair] = None
+    hits: Optional[Pair] = None
+    errors: Optional[Pair] = None
+
+
+@dataclass
+class CricketScores(ScoreSheet):
+    """
+    Kriket (plan maddesi SP-3). İki tarafın innings'leri birbirinden bağımsız numaralanır: `homeScore.innings`
+    ev sahibinin 1. ve 2. innings'i, `awayScore.innings` konuğunkiler. Hangi tarafın önce vurduğu yükte yok.
+    Her innings: runs (score), wickets, overs (SofaScore'un yazımı: 68.1 = 68 over 1 top). Başlık skoru
+    (display / current) tarafın innings'lerinin toplam sayısıdır.
+    """
+    home_innings: Dict[int, Dict[str, Any]] = field(default_factory=dict)
+    away_innings: Dict[int, Dict[str, Any]] = field(default_factory=dict)
+
+
+@dataclass
+class FightScores(ScoreSheet):
+    """
+    MMA (plan maddesi SP-3): skor yok (homeScore / awayScore boş gelir). Sonuç: kazanan `winnerCode`
+    (ScoreSheet.winner_code), yöntem `winType` (UD, SD, TKO, SUB görüldü; olduğu gibi), bittiği raunt `finalRound`.
+    """
+    method: Optional[str] = None
+    final_round: Optional[int] = None
+
+
 _MAX_SETS = 7
+# Bir yükten okunan en çok inning / innings (beyzbolda uzatma inning'leri 9'dan sonra sürer)
+_MAX_INNINGS = 30
+_INNING_KEY = re.compile(r"inning(\d+)")
+
+
+def _numbered(node: Any) -> Dict[int, Any]:
+    """`{"inning1": ..., "inning2": ...}` → {1: ..., 2: ...}; başka anahtarlar (kırpma işareti gibi) atlanır."""
+    if not isinstance(node, dict):
+        return {}
+    found = {}
+    for key, value in node.items():
+        match = _INNING_KEY.fullmatch(str(key))
+        if match and 0 < int(match.group(1)) <= _MAX_INNINGS:
+            found[int(match.group(1))] = value
+    return found
+
+
+def _baseball_innings(home: Dict[str, Any], away: Dict[str, Any]) -> Dict[int, Pair]:
+    """Inning başına sayı: `innings.inningN.run`, o inning'de yoksa `periodN`."""
+    by_side = []
+    for side in (home, away):
+        runs = {n: v.get("run") for n, v in _numbered(side.get("innings")).items() if isinstance(v, dict)}
+        for n in range(1, _MAX_INNINGS + 1):
+            if runs.get(n) is None and side.get(f"period{n}") is not None:
+                runs[n] = side.get(f"period{n}")
+        by_side.append(runs)
+    numbers = sorted(n for n in set(by_side[0]) | set(by_side[1])
+                     if by_side[0].get(n) is not None or by_side[1].get(n) is not None)
+    return {n: Pair(by_side[0].get(n), by_side[1].get(n)) for n in numbers}
+
+
+def _cricket_innings(side: Dict[str, Any]) -> Dict[int, Dict[str, Any]]:
+    """Bir tarafın innings'leri: numara → {"runs", "wickets", "overs"} (SofaScore'un score / wickets / overs)."""
+    return {
+        n: {"runs": v.get("score"), "wickets": v.get("wickets"), "overs": v.get("overs")}
+        for n, v in sorted(_numbered(side.get("innings")).items()) if isinstance(v, dict)
+    }
+
+
+def _set_unit(event: Dict[str, Any], sport: Optional[str]) -> Optional[str]:
+    """
+    Set ailesinde setin birimi (src/sports.py set_format). Dart'ta maç olaya göre değişir: bestOfSets varsa set
+    usulüdür (`legs`: periodN o setteki leg'ler), yoksa yalnızca leg sayılır (`legs_won`).
+    """
+    unit = set_format(sport)
+    if unit == "legs":
+        best_of_sets = event.get("bestOfSets")
+        if not (isinstance(best_of_sets, int) and not isinstance(best_of_sets, bool) and best_of_sets > 0):
+            return "legs_won"
+    return unit
+
+
+# Set listesi olmayan birimler: başlık skoru sayının kendisidir, periodN bir set skoru değildir
+_COUNT_ONLY_UNITS = frozenset({"frames", "legs_won", "games_won"})
 
 
 def _is_match_tiebreak(games: List[Pair]) -> bool:
@@ -282,8 +383,8 @@ def extract_scores(event: Dict[str, Any], sport: Optional[str] = None) -> ScoreS
             aggregated_winner_code=event.get("aggregatedWinnerCode"),
         )
 
-    if family == "sets" and (unit := set_format(sport)) is not None:
-        by_set = {} if unit == "frames" else {
+    if family == "sets" and (unit := _set_unit(event, sport)) is not None:
+        by_set = {} if unit in _COUNT_ONLY_UNITS else {
             n: p for n in range(1, _MAX_SETS + 1) if (p := _pair(home, away, f"period{n}"))}
         set_tiebreaks = {} if unit != "games" else {
             n: p for n in range(1, _MAX_SETS + 1) if (p := _pair(home, away, f"period{n}TieBreak"))}
@@ -312,6 +413,30 @@ def extract_scores(event: Dict[str, Any], sport: Optional[str] = None) -> ScoreS
             retired=code == 92,
             walkover=code == 91,
             match_tiebreak=_is_match_tiebreak(games),
+        )
+
+    if family == "innings":
+        totals_home, totals_away = home.get("inningsBaseball") or {}, away.get("inningsBaseball") or {}
+        totals_home = totals_home if isinstance(totals_home, dict) else {}
+        totals_away = totals_away if isinstance(totals_away, dict) else {}
+        return InningsScores(
+            **common,
+            innings=_baseball_innings(home, away),
+            regulation=_pair(home, away, "normaltime"),
+            extra_innings=_pair(home, away, "overtime"),
+            hits=_pair(totals_home, totals_away, "hits"),
+            errors=_pair(totals_home, totals_away, "errors"),
+        )
+
+    if family == "cricket":
+        return CricketScores(**common, home_innings=_cricket_innings(home), away_innings=_cricket_innings(away))
+
+    if family == "fight":
+        final_round = event.get("finalRound")
+        return FightScores(
+            **common,
+            method=event.get("winType") if isinstance(event.get("winType"), str) else None,
+            final_round=final_round if isinstance(final_round, int) and not isinstance(final_round, bool) else None,
         )
 
     logger.warning(f"extract_scores: desteklenmeyen spor {sport!r} (event {event.get('id')})")

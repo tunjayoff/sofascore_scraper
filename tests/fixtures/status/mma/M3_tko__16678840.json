@@ -1,0 +1,25 @@
+{
+  "case_id": "M3_tko",
+  "event_id": 16678840,
+  "fetched_at_utc": "2026-10-01T12:40:37+00:00",
+  "source_file": "research/all_sports/samples/mma/unique-tournament-id-scheduled-mma-main-events-2026-09__1.json; startTimestamp from research/all_sports/events/mma.jsonl",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1788644396,
+  "time": {
+    "period1": 155,
+    "played": 155,
+    "totalPeriodCount": 5
+  },
+  "changes": {
+    "changeTimestamp": 1788645040
+  },
+  "winType": "TKO",
+  "finalRound": 1
+}

@@ -1,0 +1,25 @@
+{
+  "case_id": "A_canceled-90-abandoned",
+  "event_id": 16526543,
+  "fetched_at_utc": "2026-10-01T12:43:41+00:00",
+  "source_file": "research/all_sports/status_examples/cricket/event_canceled-90-abandoned__16526543.json",
+  "status": {
+    "code": 90,
+    "description": "Abandoned",
+    "type": "canceled"
+  },
+  "winnerCode": null,
+  "homeScore": {
+    "current": 0,
+    "display": 0
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0
+  },
+  "startTimestamp": 1790827200,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 1790843959
+  }
+}

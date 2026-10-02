@@ -1,0 +1,37 @@
+{
+  "case_id": "A_inprogress-1002-second-game",
+  "event_id": 17223320,
+  "fetched_at_utc": "2026-10-01T12:57:16+00:00",
+  "source_file": "research/all_sports/status_examples/esports/event_inprogress-1002-second-game__17223320.json",
+  "status": {
+    "code": 1002,
+    "description": "Second game",
+    "type": "inprogress"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 1,
+    "display": 1,
+    "period1": 1,
+    "period2": 0,
+    "period3": 0,
+    "period4": 0,
+    "period5": 0
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "period2": 0,
+    "period3": 0,
+    "period4": 0,
+    "period5": 0
+  },
+  "startTimestamp": 1790853000,
+  "time": {
+    "currentPeriodStartTimestamp": 1790856306
+  },
+  "changes": {
+    "changeTimestamp": 1790856313
+  }
+}

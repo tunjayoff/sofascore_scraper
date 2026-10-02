@@ -47,6 +47,7 @@ TYPED_FUNCTIONS = {
     "team_streaks": "has_team_streaks_data_dict",
     "incidents": "has_incidents_data_dict",
     "point_by_point": "has_point_by_point_data_dict",
+    "esports_games": "has_esports_games_data_dict",
 }
 # Kendi kuralı olan dilimler: kayıt defterindeki her dilim
 RULE_KEYS = tuple(TYPED_FUNCTIONS)
@@ -82,6 +83,8 @@ PRESENT: Dict[str, Any] = {
     "lineups": {"home": {"players": [{"player": {"id": 1}}]}, "away": {"players": []}},
     "incidents": {"incidents": [{"incidentType": "goal"}]},
     "point_by_point": {"pointByPoint": [{"games": []}]},
+    # research/all_sports/samples/esports/event-id-esports-games__1.json biçiminde, kısaltılmış
+    "esports_games": {"games": [{"id": 588243, "status": {"code": 100, "type": "finished"}, "winnerCode": 1}]},
     "graph": {"graphPoints": [{"minute": 1, "value": 3}]},
 }
 
@@ -159,6 +162,13 @@ BODY_CASES: List[Tuple[str, Any, bool]] = [
     ("point_by_point", {"error": {"code": 404, "message": "Not Found"}}, False),
     ("point_by_point", {"pointByPoint": [{"games": []}]}, True),
     ("point_by_point", {"pointByPoint": [{}]}, True),
+    # --- esports_games: {"games": [...]} listesi dolu olmalı (SP-3)
+    ("esports_games", {}, False),
+    ("esports_games", [], False),
+    ("esports_games", {"games": []}, False),
+    ("esports_games", {"games": None}, False),
+    ("esports_games", {"error": {"code": 404, "message": "Not Found"}}, False),
+    ("esports_games", {"games": [{"id": 588244, "status": {"code": 20, "type": "inprogress"}}]}, True),
     # --- kendi kuralı olmayan anahtarlar: bool(değer)
     ("basic", {}, False),
     ("basic", {"id": 1}, True),
@@ -200,6 +210,11 @@ MALFORMED_CASES: List[Tuple[str, Any]] = [
     ("point_by_point", {"pointByPoint": {"games": []}}),
     ("point_by_point", {"pointByPoint": "abc"}),
     ("point_by_point", {"pointByPoint": 0}),
+    ("esports_games", "abc"),
+    ("esports_games", 0),
+    ("esports_games", [{"id": 588243}]),  # sarmalayıcısız liste bilinen bir biçim değil
+    ("esports_games", {"games": {"id": 588243}}),
+    ("esports_games", {"games": "abc"}),
 ]
 
 
@@ -469,6 +484,7 @@ def test_rules_are_total(key: str):
     """Hangi değer verilirse verilsin hata yok; yüklem yalnızca "veri var" yanıtında True."""
     bodies = [body for templates in _TEMPLATES.values() for template in templates for body in map(template, _ATOMS)]
     bodies += [{"pointByPoint": atom} for atom in _ATOMS]
+    bodies += [{"games": atom} for atom in _ATOMS]
     bodies += [("a", "tuple"), {1, 2}, b"bytes", object(), float("nan"), {1: 2}, {None: [1]}]  # JSON'da olmayanlar
     for body in bodies:
         state = slices.slice_body_state(key, body)

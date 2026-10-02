@@ -1,0 +1,63 @@
+{
+  "case_id": "A_inprogress-29-9th-inning",
+  "event_id": 16754636,
+  "fetched_at_utc": "2026-10-01T12:45:56+00:00",
+  "source_file": "research/all_sports/status_examples/baseball/event_inprogress-29-9th-inning__16754636.json",
+  "status": {
+    "code": 29,
+    "description": "9th Inning",
+    "type": "inprogress"
+  },
+  "winnerCode": null,
+  "homeScore": {
+    "current": 1,
+    "display": 1,
+    "period1": 0,
+    "period2": 0,
+    "period3": 0,
+    "period4": 0,
+    "period5": 0,
+    "period6": 1,
+    "period7": 0,
+    "period8": 0,
+    "period9": 0,
+    "innings": {
+      "inning1": {
+        "run": 0
+      },
+      "inning2": {
+        "run": 0
+      },
+      "__trimmed_keys__": 7
+    }
+  },
+  "awayScore": {
+    "current": 2,
+    "display": 2,
+    "period1": 0,
+    "period2": 0,
+    "period3": 0,
+    "period4": 1,
+    "period5": 0,
+    "period6": 0,
+    "period7": 0,
+    "period8": 1,
+    "period9": 0,
+    "innings": {
+      "inning1": {
+        "run": 0
+      },
+      "inning2": {
+        "run": 0
+      },
+      "__trimmed_keys__": 7
+    }
+  },
+  "startTimestamp": 1790845200,
+  "time": {
+    "currentPeriodStartTimestamp": 1790845253
+  },
+  "changes": {
+    "changeTimestamp": 1790857369
+  }
+}

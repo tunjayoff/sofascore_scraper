@@ -42,7 +42,9 @@ logger = logging.getLogger(__name__)
 #    ragbi, futsal, mini futbol ve florbol maçlarının satırı skor çizelgesi (scores_json) alır
 # 4: beş set sporu kayıt defterinde (SP-2): voleybol, badminton, masa tenisi, padel ve snooker maçlarının satırı
 #    skor çizelgesi (scores_json) alır
-DERIVE_VERSION = 4
+# 5: beş B sınıfı spor kayıt defterinde (SP-3): beyzbol, kriket, e-spor, dart ve MMA maçlarının satırı skor
+#    çizelgesi alır; kriketin `willcontinue` durumu (gün sonu) UNKNOWN değil LIVE sınıfındadır
+DERIVE_VERSION = 5
 
 Row = Dict[str, Any]
 Timestamp = Union[datetime, int, float, None]

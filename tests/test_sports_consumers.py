@@ -15,7 +15,8 @@ from src.web.app import app
 
 REGISTERED = ("football", "basketball", "tennis", "american-football", "aussie-rules", "ice-hockey", "handball",
               "rugby", "futsal", "minifootball", "floorball",  # SP-1: + sekiz periyot sporu
-              "volleyball", "badminton", "table-tennis", "padel", "snooker")  # SP-2: + beş set sporu
+              "volleyball", "badminton", "table-tennis", "padel", "snooker",  # SP-2: + beş set sporu
+              "baseball", "cricket", "esports", "darts", "mma")  # SP-3: + beş B sınıfı spor
 COMMON_KEYS = ("statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents")
 
 

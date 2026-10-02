@@ -618,7 +618,7 @@ def test_reader_never_raises_on_a_slice_body(tmp_path: Path) -> None:
         write(tmp_path, f"match_details/{index}/basic.json", event_of(index))
         write(tmp_path, f"match_details/{index}/{key}.json", body)
     events, report = scan(tmp_path)
-    assert len(events) == len(cases) == 7 * len(bodies)
+    assert len(events) == len(cases) == len(sports.DETAIL_SLICES) * len(bodies)
     state_of = {"data": "ok", "no_data": "empty", "malformed": "error"}
     seen = set()
     for index, (key, body) in enumerate(cases, start=1):

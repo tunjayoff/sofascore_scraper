@@ -158,7 +158,7 @@ and tennis.
 | `slug` | string | no |  | `tournament.category.sport.slug` | SofaScore's slug of the sport, lower case. The key of a sport everywhere in the schema. |
 | `name` | string | yes |  | `tournament.category.sport.name` | English name of the sport. |
 | `id` | integer | yes |  | `tournament.category.sport.id` | SofaScore's numeric id of the sport; null when no stored payload has shown it. |
-| `score_family` | string, open set: `football`, `periods`, `sets` | yes |  | sport registry (`src/sports.py`) | Which score structure events of this sport carry (see Score). Null for a sport the platform has no score mapping for. |
+| `score_family` | string, open set: `football`, `periods`, `sets`, `innings`, `cricket`, `fight` | yes |  | sport registry (`src/sports.py`) | Which score structure events of this sport carry (see Score). Null for a sport the platform has no score mapping for. |
 <!-- /fields:Sport -->
 
 ```json example:Sport
@@ -274,7 +274,7 @@ A match. One record per SofaScore event id.
 | `start_utc` | string | yes | ISO 8601 UTC | `startTimestamp` | Scheduled start. For tennis this is the planned time, not the first point. |
 | `status` | [Status](#status) | no |  | `status` | Status: SofaScore's triple and the platform's class. |
 | `participants` | [EventParticipants](#eventparticipants) | no |  | `homeTeam`, `awayTeam` | The two sides. |
-| `score` | [FootballScore](#footballscore) or [PeriodsScore](#periodsscore) or [SetsScore](#setsscore) or [PlainScore](#plainscore) | no |  | `homeScore`, `awayScore` | The score, in the structure of the sport's score family. |
+| `score` | [FootballScore](#footballscore) or [PeriodsScore](#periodsscore) or [SetsScore](#setsscore) or [InningsScore](#inningsscore) or [CricketScore](#cricketscore) or [FightScore](#fightscore) or [PlainScore](#plainscore) | no |  | `homeScore`, `awayScore` | The score, in the structure of the sport's score family. |
 | `winner` | string, one of `home`, `away`, `draw` | yes |  | `winnerCode`: 1 is `home`, 2 is `away`, 3 is `draw` | Who won. Null while undecided and when SofaScore names no winner. |
 | `aggregate` | [Aggregate](#aggregate) | yes |  | `homeScore.aggregated`, `awayScore.aggregated`, `aggregatedWinnerCode` | Aggregate of a two-legged tie. Null for every other event. |
 | `slug` | string | yes |  | `slug` | SofaScore's slug of the event. |
@@ -305,10 +305,10 @@ The parts of an Event follow.
 <!-- fields:Status -->
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
-| `type` | string, open set: `notstarted`, `inprogress`, `finished`, `postponed`, `canceled`, `interrupted`, `suspended` | yes |  | `status.type` | SofaScore's status type. |
+| `type` | string, open set: `notstarted`, `inprogress`, `finished`, `postponed`, `canceled`, `interrupted`, `suspended`, `willcontinue` | yes |  | `status.type` | SofaScore's status type. |
 | `code` | integer | yes |  | `status.code` | SofaScore's status code, for example 100 (ended), 110 (after extra time), 120 (after penalties), 91 (walkover), 92 (retired). |
 | `description` | string | yes |  | `status.description` | SofaScore's status text, in English, for example `Ended`, `2nd half`. |
-| `class` | string, one of `not_started`, `live`, `completed`, `decided_without_play`, `void`, `unknown` | no |  | derived from `status.type`, then `status.code`, then `status.description` (`src/status.py`) | The platform's class of the status. `not_started`: not begun. `live`: in progress. `completed`: played and finished. `decided_without_play`: finished by walkover or retirement. `void`: postponed, cancelled, interrupted, suspended or abandoned. `unknown`: none of these; never silently treated as completed. |
+| `class` | string, one of `not_started`, `live`, `completed`, `decided_without_play`, `void`, `unknown` | no |  | derived from `status.type`, then `status.code`, then `status.description` (`src/status.py`) | The platform's class of the status. `not_started`: not begun. `live`: in progress, breaks included (half time, the night between two days of a cricket match: type `willcontinue`). `completed`: played and finished. `decided_without_play`: finished by walkover or retirement. `void`: postponed, cancelled, interrupted, suspended or abandoned. `unknown`: none of these; never silently treated as completed. |
 <!-- /fields:Status -->
 
 `class` is decided in this order: by `type`; for `type` `finished` by `code`; without a `type` by `code`;
@@ -518,13 +518,14 @@ and `period4`; the schema numbers them 1 and 2 and says `"format": "halves"`.
 | `family` | constant `sets` | no |  | sport registry | Always `sets`. |
 | `home` | integer | yes | sets | `homeScore.display`, else `homeScore.current` | Headline score of the home side: sets won. |
 | `away` | integer | yes | sets | `awayScore.display`, else `awayScore.current` | Headline score of the away side: sets won. |
+| `format` | string, open set: `games`, `points`, `frames`, `legs`, `legs_won`, `games_won` | yes |  | sport registry (`src/sports.py`); darts: `legs` when the event has `bestOfSets`, else `legs_won` | What the score counts. `games`, `points`, `legs`: sets won, and each set counts games (tennis, padel), points (volleyball, badminton, table tennis) or legs (darts played in sets). `frames`, `legs_won`, `games_won`: no sets; `sets_won` and the headline score are the frames (snooker), legs (darts played in legs only) or games (e-sports) won. Null when the record has no score sheet. |
 | `sets_won` | [ScorePair](#scorepair) | yes | sets | `current` | Sets won by each side. |
 | `sets` | array of [SetScore](#setscore) | no |  | `period1` to `period5`, `period1TieBreak` to `period5TieBreak` | The sets that have a score, in order. |
 | `match_tiebreak` | boolean | no |  | derived from the set scores (`src/status.py`) | True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more. |
 <!-- /fields:SetsScore -->
 
 ```json example:SetsScore
-{"family": "sets", "home": 1, "away": 1, "sets_won": {"home": 1, "away": 1},
+{"family": "sets", "home": 1, "away": 1, "format": "games", "sets_won": {"home": 1, "away": 1},
  "sets": [{"number": 1, "home": 6, "away": 7, "tiebreak": {"home": 6, "away": 8}},
           {"number": 2, "home": 6, "away": 2, "tiebreak": null},
           {"number": 3, "home": 1, "away": 0, "tiebreak": null}],
@@ -546,6 +547,66 @@ and walkover are told by the status, not by the score (section 9, point 10). The
 | `tiebreak` | [ScorePair](#scorepair) | yes | points | `periodNTieBreak` | Points of the set's tie-break. Null when the set had none. |
 <!-- /fields:SetScore -->
 
+#### InningsScore
+
+<!-- fields:InningsScore -->
+| Field | Type | Null | Unit | Source | Meaning |
+|---|---|---|---|---|---|
+| `family` | constant `innings` | no |  | sport registry | Always `innings`. |
+| `home` | integer | yes | runs | `homeScore.display`, else `homeScore.current` | Headline score of the home side: runs, extra innings included. |
+| `away` | integer | yes | runs | `awayScore.display`, else `awayScore.current` | Headline score of the away side: runs, extra innings included. |
+| `innings` | array of [InningScore](#inningscore) | no |  | `innings.inningN.run`, else `periodN` | Runs of each inning that has a score, in order. SofaScore gives the innings in `innings`; some leagues also give them as `period1` to `period9`, with the same values. An inning missing from `innings` is read from `periodN`. |
+| `regulation` | [ScorePair](#scorepair) | yes | runs | `normaltime` | Runs after the scheduled innings. Null when SofaScore does not give it. |
+| `extra_innings` | [ScorePair](#scorepair) | yes | runs | `overtime` | Runs scored in extra innings alone. Null without extra innings. |
+| `hits` | [ScorePair](#scorepair) | yes | hits | `inningsBaseball.hits` | Hits of each side in the whole game. |
+| `errors` | [ScorePair](#scorepair) | yes | errors | `inningsBaseball.errors` | Errors of each side in the whole game. |
+<!-- /fields:InningsScore -->
+
+#### InningScore
+
+<!-- fields:InningScore -->
+| Field | Type | Null | Unit | Source | Meaning |
+|---|---|---|---|---|---|
+| `number` | integer | no |  | `innings.inningN`, else `periodN`: N | Number of the inning, starting at 1; extra innings go on after 9. |
+| `home` | integer | yes | runs | `homeScore.innings.inningN.run`, else `homeScore.periodN` | Runs of the home side in the inning. |
+| `away` | integer | yes | runs | `awayScore.innings.inningN.run`, else `awayScore.periodN` | Runs of the away side in the inning. |
+<!-- /fields:InningScore -->
+
+#### CricketScore
+
+<!-- fields:CricketScore -->
+| Field | Type | Null | Unit | Source | Meaning |
+|---|---|---|---|---|---|
+| `family` | constant `cricket` | no |  | sport registry | Always `cricket`. |
+| `home` | integer | yes | runs | `homeScore.display`, else `homeScore.current` | Headline score of the home side: runs of all its innings. |
+| `away` | integer | yes | runs | `awayScore.display`, else `awayScore.current` | Headline score of the away side: runs of all its innings. |
+| `innings` | array of [CricketInnings](#cricketinnings) | no |  | `homeScore.innings`, `awayScore.innings` | The innings of both sides, the home side's first, each side's in its own order. SofaScore numbers each side's innings separately and does not say which side batted first. |
+<!-- /fields:CricketScore -->
+
+#### CricketInnings
+
+<!-- fields:CricketInnings -->
+| Field | Type | Null | Unit | Source | Meaning |
+|---|---|---|---|---|---|
+| `side` | string, one of `home`, `away` | no |  | `homeScore.innings` or `awayScore.innings` | The side that batted. |
+| `number` | integer | no |  | `inningN`: N | Number of the innings of this side, starting at 1. |
+| `runs` | integer | yes | runs | `inningN.score` | Runs scored. |
+| `wickets` | integer | yes | wickets | `inningN.wickets` | Wickets lost. |
+| `overs` | number | yes | overs | `inningN.overs` | Overs bowled, in SofaScore's notation: the digit after the point counts balls, so 68.1 is 68 overs and one ball. |
+<!-- /fields:CricketInnings -->
+
+#### FightScore
+
+<!-- fields:FightScore -->
+| Field | Type | Null | Unit | Source | Meaning |
+|---|---|---|---|---|---|
+| `family` | constant `fight` | no |  | sport registry | Always `fight`. |
+| `home` | integer | yes |  | `homeScore.display`, else `homeScore.current` | Headline score of the home side; SofaScore gives none for a fight, so null. |
+| `away` | integer | yes |  | `awayScore.display`, else `awayScore.current` | Headline score of the away side; SofaScore gives none for a fight, so null. |
+| `method` | string | yes |  | `winType` | How the fight was decided, as SofaScore abbreviates it, for example `UD` (unanimous decision), `SD` (split decision), `TKO`, `SUB` (submission); text, not an enumeration of the platform. Null while undecided. |
+| `final_round` | integer | yes |  | `finalRound` | The round in which the fight ended. Null while undecided. |
+<!-- /fields:FightScore -->
+
 #### PlainScore
 
 <!-- fields:PlainScore -->
@@ -566,7 +627,7 @@ event the slices are the event payload itself (key `event`) and its detail endpo
 |---|---|---|---|---|---|
 | `owner_kind` | string, open set: `event`, `tournament`, `season`, `team`, `player`, `sport` | no |  | the request that fetched it | What the slice belongs to. |
 | `owner_id` | integer | no |  | the request that fetched it | Id of the owner; for `event` the event id. |
-| `key` | string, open set: `event`, `statistics`, `team_streaks`, `pregame_form`, `h2h`, `lineups`, `incidents`, `point_by_point`, `seasons`, `schedule` | no |  | slice registry (`src/sports.py`) | Name of the slice, for example `event`, `statistics`, `lineups`, `incidents`. |
+| `key` | string, open set: `event`, `statistics`, `team_streaks`, `pregame_form`, `h2h`, `lineups`, `incidents`, `point_by_point`, `esports_games`, `seasons`, `schedule` | no |  | slice registry (`src/sports.py`) | Name of the slice, for example `event`, `statistics`, `lineups`, `incidents`. |
 | `sub` | string | yes |  | slice registry | Sub-key for a slice that has several payloads per owner, for example the round of a schedule page. Null when the slice has one payload. |
 | `state` | string, one of `ok`, `empty`, `error`, `not_requested` | no |  | the platform's bookkeeping | `ok`: a payload with data is stored. `empty`: SofaScore answered that it has no such data (404, or a response without content). `error`: the last attempt failed and it is unknown whether data exists. `not_requested`: the platform has not asked for it. |
 | `has_payload` | boolean | no |  | the platform's bookkeeping | True when a payload is stored. A slice in state `error` can still hold the payload of an earlier successful read. |
