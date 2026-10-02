@@ -1,0 +1,42 @@
+{
+  "case_id": "A_inprogress-21-1st-inning",
+  "event_id": 16526541,
+  "fetched_at_utc": "2026-10-01T12:43:41+00:00",
+  "source_file": "research/all_sports/status_examples/cricket/event_inprogress-21-1st-inning__16526541.json",
+  "status": {
+    "code": 21,
+    "description": "1st Inning",
+    "type": "inprogress"
+  },
+  "winnerCode": null,
+  "homeScore": {
+    "current": 184,
+    "display": 184,
+    "innings": {
+      "inning1": {
+        "score": 184,
+        "wickets": 5,
+        "overs": 36.5,
+        "runRate": 5,
+        "targetRunRate": 6
+      }
+    }
+  },
+  "awayScore": {
+    "current": 299,
+    "display": 299,
+    "innings": {
+      "inning1": {
+        "score": 299,
+        "wickets": 7,
+        "overs": 50,
+        "runRate": 5.98
+      }
+    }
+  },
+  "startTimestamp": 1790834400,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 1790858531
+  }
+}

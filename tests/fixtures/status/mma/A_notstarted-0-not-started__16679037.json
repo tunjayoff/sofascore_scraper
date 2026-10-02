@@ -1,0 +1,21 @@
+{
+  "case_id": "A_notstarted-0-not-started",
+  "event_id": 16679037,
+  "fetched_at_utc": "2026-10-01T12:42:21+00:00",
+  "source_file": "research/all_sports/status_examples/mma/event_notstarted-0-not-started__16679037.json",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "winnerCode": null,
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1792278000,
+  "time": {
+    "totalPeriodCount": 5
+  },
+  "changes": {
+    "changeTimestamp": 0
+  }
+}

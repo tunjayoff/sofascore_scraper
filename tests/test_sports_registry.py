@@ -14,7 +14,9 @@ PERIOD_SPORTS = ("american-football", "aussie-rules", "ice-hockey", "handball", 
                  "floorball")
 # A sınıfı, set tabanlı beş spor (plan maddesi SP-2)
 SET_SPORTS = ("volleyball", "badminton", "table-tennis", "padel", "snooker")
-REGISTERED = ORIGINAL + PERIOD_SPORTS + SET_SPORTS
+# B sınıfı: kendi durum ya da skor mantığı olan beş spor (plan maddesi SP-3)
+CLASS_B_SPORTS = ("baseball", "cricket", "esports", "darts", "mma")
+REGISTERED = ORIGINAL + PERIOD_SPORTS + SET_SPORTS + CLASS_B_SPORTS
 COMMON_KEYS = ("statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents")
 
 # SofaScore'un spor menüsündeki 26 slug (docs/all-sports/README.md) ve arama sonuçlarında gelen adlar
@@ -55,7 +57,8 @@ SOFASCORE_NAME = {
     "american-football": "American football", "aussie-rules": "Aussie rules", "ice-hockey": "Hockey",
     "handball": "Handball", "rugby": "Rugby", "futsal": "Futsal", "minifootball": "Minifootball",
     "floorball": "Floorball", "volleyball": "Volleyball", "badminton": "Badminton", "table-tennis": "Table tennis",
-    "padel": "Padel", "snooker": "Snooker",
+    "padel": "Padel", "snooker": "Snooker", "baseball": "Baseball", "cricket": "Cricket", "esports": "E-sports",
+    "darts": "Darts", "mma": "Mixed Martial Arts",
 }
 
 
@@ -77,6 +80,7 @@ def test_score_families():
     assert [sports.score_family(s) for s in ORIGINAL] == ["football", "periods", "sets"]
     assert all(sports.score_family(s) == "periods" for s in PERIOD_SPORTS)
     assert all(sports.score_family(s) == "sets" for s in SET_SPORTS)
+    assert [sports.score_family(s) for s in CLASS_B_SPORTS] == ["innings", "cricket", "sets", "sets", "fight"]
     assert sports.score_family("waterpolo") is None
     assert sports.score_family(None) is None
 
@@ -87,7 +91,7 @@ def test_period_formats():
         "football": None, "basketball": None, "tennis": None,
         "american-football": "quarters", "aussie-rules": "quarters", "ice-hockey": "thirds", "handball": "halves",
         "rugby": "halves", "futsal": "halves", "minifootball": "halves", "floorball": "thirds",
-        **{s: None for s in SET_SPORTS},
+        **{s: None for s in SET_SPORTS + CLASS_B_SPORTS},
     }
     assert sports.period_format("waterpolo") is None and sports.period_format(None) is None
     assert all((s.period_format is None) == (s.slug == "basketball") for s in sports.SPORTS
@@ -98,7 +102,7 @@ def test_set_formats():
     """Tenis kendi çizelgesini kullanır (None); öteki set sporlarında setin birimi sabittir."""
     assert {s: sports.set_format(s) for s in REGISTERED if sports.score_family(s) == "sets"} == {
         "tennis": None, "volleyball": "points", "badminton": "points", "table-tennis": "points", "padel": "games",
-        "snooker": "frames",
+        "snooker": "frames", "esports": "games_won", "darts": "legs",
     }
     assert all(s.set_format is None for s in sports.SPORTS if s.score_family != "sets")
     assert sports.set_format("waterpolo") is None and sports.set_format(None) is None
@@ -118,12 +122,14 @@ def test_set_formats():
     ("Minifootball", "minifootball"), ("Mini football", "minifootball"), ("Floorball", "floorball"),
     ("Volleyball", "volleyball"), ("Badminton", "badminton"), ("Table tennis", "table-tennis"),
     ("table-tennis", "table-tennis"), ("Padel", "padel"), ("Snooker", "snooker"),
+    ("Baseball", "baseball"), ("Cricket", "cricket"), ("E-sports", "esports"), ("esports", "esports"),
+    ("Darts", "darts"), ("Mixed Martial Arts", "mma"), ("MMA", "mma"),
 ])
 def test_normalize_names_sofascore_uses(raw, expected):
     assert sports.normalize_sport(raw) == expected
 
 
-@pytest.mark.parametrize("raw", ["waterpolo", "esports", "beach-volley", "", "   ", None, 0, 17, {}])
+@pytest.mark.parametrize("raw", ["waterpolo", "motorsport", "beach-volley", "", "   ", None, 0, 17, {}])
 def test_normalize_unknown_is_none(raw):
     assert sports.normalize_sport(raw) is None
 
@@ -132,7 +138,8 @@ def _normalize_with_the_registry(raw):
     """Kayıt defterindeki sporların tam adı ve slug'ı kendi slug'ına; geri kalanı kayıt defterinden önceki gibi."""
     key = str(raw or "").strip().lower().replace(" ", "-")
     exact = {slug: slug for slug in REGISTERED} | {
-        "soccer": "football", "hockey": "ice-hockey", "mini-football": "minifootball"}
+        "soccer": "football", "hockey": "ice-hockey", "mini-football": "minifootball", "e-sports": "esports",
+        "mixed-martial-arts": "mma"}
     return exact.get(key) or _normalize_before_registry(raw)
 
 
@@ -197,6 +204,12 @@ def test_watcher_params_per_sport():
         assert sports.watcher_params(sport) == WatcherParams("last_set", 4 * 3600, False)
     assert sports.watcher_params("padel") == WatcherParams("last_set", 6 * 3600, True)
     assert sports.watcher_params("snooker") == WatcherParams("never", 6 * 3600, False)  # set kodu yok
+    # B sınıfı (SP-3): bitişe yakınlık kuralı yok; kriketin çok günlü maçları için 6 gün
+    assert sports.watcher_params("baseball") == WatcherParams("never", 6 * 3600, False)
+    assert sports.watcher_params("cricket") == WatcherParams("never", 6 * 86400, False)
+    assert sports.watcher_params("esports") == WatcherParams("never", 6 * 3600, False)
+    for sport in ("darts", "mma"):
+        assert sports.watcher_params(sport) == WatcherParams("never", 4 * 3600, False)
 
 
 @pytest.mark.parametrize("sport", ["waterpolo", "Tennis", "", None])
@@ -215,11 +228,14 @@ def test_detail_slice_table():
         ("lineups", "/event/{event_id}/lineups"),
         ("incidents", "/event/{event_id}/incidents"),
         ("point_by_point", "/event/{event_id}/point-by-point"),
+        ("esports_games", "/event/{event_id}/esports-games"),
     ]
     assert all(s.default_enabled for s in sports.DETAIL_SLICES)
-    assert [s.key for s in sports.DETAIL_SLICES if not s.required] == ["point_by_point"]
+    assert [s.key for s in sports.DETAIL_SLICES if not s.required] == ["point_by_point", "esports_games"]
     assert sports.get_slice("point_by_point").sports == frozenset({"tennis"})
-    assert all(s.sports is None for s in sports.DETAIL_SLICES if s.key != "point_by_point")
+    assert sports.get_slice("esports_games").sports == frozenset({"esports"})
+    assert sports.get_slice("esports_games").phases == frozenset({"live", "post"})  # oyunlar maç başlayınca var
+    assert all(s.sports is None for s in sports.DETAIL_SLICES if s.key not in ("point_by_point", "esports_games"))
 
 
 def test_slice_table_is_consistent():
@@ -244,6 +260,8 @@ def test_slice_url():
     ("handball", COMMON_KEYS),
     ("volleyball", COMMON_KEYS),
     ("table-tennis", COMMON_KEYS),  # point_by_point yalnızca tenisin
+    ("esports", COMMON_KEYS + ("esports_games",)),
+    ("darts", COMMON_KEYS),
     ("waterpolo", COMMON_KEYS),
     ("", COMMON_KEYS),
     (None, COMMON_KEYS),
@@ -256,6 +274,7 @@ def test_slices_for_sport(sport, expected):
 def test_sport_spec_lists_its_slices():
     assert sports.get_sport("football").detail_slices == COMMON_KEYS
     assert sports.get_sport("tennis").detail_slices == COMMON_KEYS + ("point_by_point",)
+    assert sports.get_sport("esports").detail_slices == COMMON_KEYS + ("esports_games",)
 
 
 # --- web arayüzü listesi kayıt defteriyle aynı kalmalı (henüz /api/sports'tan okumuyor) ------
@@ -285,8 +304,10 @@ def test_frontend_locales_have_every_sport_label(locale):
 def test_detail_slice_is_the_slice_spec_with_todays_defaults():
     assert sports.DetailSlice is sports.SliceSpec
     for s in sports.DETAIL_SLICES:
+        # e-sporun oyunları (SP-3) maç başlamadan yoktur: yalnızca canlı ve bitmiş evrede
+        phases = frozenset({"live", "post"}) if s.key == "esports_games" else sports.ALL_PHASES
         assert (s.owner, s.subs, s.phases, s.group, s.keep_history, s.max_age) == (
-            "event", None, sports.ALL_PHASES, "core", False, None)
+            "event", None, phases, "core", False, None)
         assert s.counts_for_completeness is s.required
     extra = sports.DetailSlice("innings", "/event/{event_id}/innings", sports=frozenset({"basketball"}))
     assert extra.required and extra.default_enabled and extra.owner == "event"

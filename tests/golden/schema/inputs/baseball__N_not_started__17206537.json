@@ -1,0 +1,299 @@
+{
+ "source_file": "research/all_sports/samples/baseball/event-id__1.json",
+ "fetched_at_utc": "2026-10-01T12:44:18+00:00",
+ "event": {
+  "tournament": {
+   "name": "MLB Postseason",
+   "slug": "mlb-playoffs",
+   "category": {
+    "name": "USA",
+    "slug": "usa",
+    "sport": {
+     "name": "Baseball",
+     "slug": "baseball",
+     "id": 64
+    },
+    "priority": 1,
+    "country": {
+     "alpha2": "US",
+     "alpha3": "USA",
+     "name": "USA",
+     "slug": "usa"
+    },
+    "id": 1374,
+    "flag": "usa",
+    "alpha2": "US"
+   },
+   "uniqueTournament": {
+    "name": "MLB",
+    "slug": "mlb",
+    "primaryColorHex": "#051E42",
+    "secondaryColorHex": "#BF0D3E",
+    "category": {
+     "name": "USA",
+     "slug": "usa",
+     "sport": {
+      "name": "Baseball",
+      "slug": "baseball",
+      "id": 64
+     },
+     "priority": 1,
+     "country": {
+      "alpha2": "US",
+      "alpha3": "USA",
+      "name": "USA",
+      "slug": "usa"
+     },
+     "id": 1374,
+     "flag": "usa",
+     "alpha2": "US"
+    },
+    "userCount": 19775,
+    "hasRounds": false,
+    "hasPerformanceGraphFeature": false,
+    "liveActivityEnabled": true,
+    "country": {},
+    "id": 11205,
+    "hasEventPlayerStatistics": false,
+    "hasBoxScore": true,
+    "displayInverseHomeAwayTeams": true
+   },
+   "priority": 16,
+   "isGroup": false,
+   "competitionType": 2,
+   "isLive": false,
+   "id": 108845
+  },
+  "season": {
+   "name": "MLB 2026",
+   "year": "2026",
+   "editor": false,
+   "id": 84695
+  },
+  "roundInfo": {
+   "round": 5,
+   "name": "Wild Card Round",
+   "slug": "wild-card-round",
+   "cupRoundType": 8
+  },
+  "customId": "Kxbsgyb",
+  "status": {
+   "code": 0,
+   "description": "Not started",
+   "type": "notstarted"
+  },
+  "venue": {
+   "city": {
+    "name": "Atlanta",
+    "state": "US-GA",
+    "country": {
+     "alpha2": "US",
+     "alpha3": "USA",
+     "name": "USA",
+     "slug": "usa"
+    },
+    "id": 24659
+   },
+   "venueCoordinates": {
+    "latitude": 33.890672,
+    "longitude": -84.467641
+   },
+   "hidden": false,
+   "slug": "truist-park",
+   "name": "Truist Park",
+   "capacity": 41084,
+   "stadiumType": "outdoor",
+   "country": {
+    "alpha2": "US",
+    "alpha3": "USA",
+    "name": "USA",
+    "slug": "usa"
+   },
+   "id": 25571,
+   "stadium": {
+    "name": "Truist Park",
+    "capacity": 41084
+   }
+  },
+  "homeTeam": {
+   "name": "Atlanta Braves",
+   "slug": "atlanta-braves",
+   "shortName": "Braves",
+   "gender": "M",
+   "sport": {
+    "name": "Baseball",
+    "slug": "baseball",
+    "id": 64
+   },
+   "userCount": 40687,
+   "manager": {
+    "name": "Walt Weiss",
+    "slug": "weiss-walt",
+    "shortName": "W. Weiss",
+    "country": {
+     "alpha2": "US",
+     "alpha3": "USA",
+     "name": "USA",
+     "slug": "usa"
+    },
+    "id": 818603
+   },
+   "venue": {
+    "city": {
+     "name": "Atlanta",
+     "state": "US-GA",
+     "country": {
+      "alpha2": "US",
+      "alpha3": "USA",
+      "name": "USA",
+      "slug": "usa"
+     },
+     "id": 24659
+    },
+    "venueCoordinates": {
+     "latitude": 33.890672,
+     "longitude": -84.467641
+    },
+    "hidden": false,
+    "slug": "truist-park",
+    "name": "Truist Park",
+    "capacity": 41084,
+    "stadiumType": "outdoor",
+    "country": {
+     "alpha2": "US",
+     "alpha3": "USA",
+     "name": "USA",
+     "slug": "usa"
+    },
+    "id": 25571,
+    "stadium": {
+     "name": "Truist Park",
+     "capacity": 41084
+    }
+   },
+   "nameCode": "ATL",
+   "national": false,
+   "type": 0,
+   "country": {
+    "alpha2": "US",
+    "alpha3": "USA",
+    "name": "USA",
+    "slug": "usa"
+   },
+   "id": 3656,
+   "fullName": "Atlanta Braves",
+   "subTeams": [],
+   "teamColors": {
+    "primary": "#000066",
+    "secondary": "#000066",
+    "text": "#000066"
+   },
+   "timeActive": []
+  },
+  "awayTeam": {
+   "name": "Philadelphia Phillies",
+   "slug": "philadelphia-phillies",
+   "shortName": "Phillies",
+   "gender": "M",
+   "sport": {
+    "name": "Baseball",
+    "slug": "baseball",
+    "id": 64
+   },
+   "userCount": 37624,
+   "manager": {
+    "name": "Don Mattingly",
+    "slug": "mattingly-don",
+    "shortName": "D. Mattingly",
+    "country": {
+     "alpha2": "US",
+     "alpha3": "USA",
+     "name": "USA",
+     "slug": "usa"
+    },
+    "id": 821525
+   },
+   "venue": {
+    "city": {
+     "name": "Philadelphia",
+     "state": "US-PA",
+     "country": {
+      "alpha2": "US",
+      "alpha3": "USA",
+      "name": "USA",
+      "slug": "usa"
+     },
+     "id": 28862
+    },
+    "venueCoordinates": {
+     "latitude": 39.9059929,
+     "longitude": -75.1666401
+    },
+    "hidden": false,
+    "slug": "citizens-bank-park",
+    "name": "Citizens Bank Park",
+    "capacity": 42792,
+    "stadiumType": "outdoor",
+    "country": {
+     "alpha2": "US",
+     "alpha3": "USA",
+     "name": "USA",
+     "slug": "usa"
+    },
+    "id": 8091,
+    "stadium": {
+     "name": "Citizens Bank Park",
+     "capacity": 42792
+    }
+   },
+   "nameCode": "PHI",
+   "disabled": false,
+   "national": false,
+   "type": 0,
+   "country": {
+    "alpha2": "US",
+    "alpha3": "USA",
+    "name": "USA",
+    "slug": "usa"
+   },
+   "id": 3635,
+   "fullName": "Philadelphia Phillies",
+   "subTeams": [],
+   "teamColors": {
+    "primary": "#cf1043",
+    "secondary": "#cf1043",
+    "text": "#cf1043"
+   },
+   "timeActive": []
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "changes": {
+   "changeTimestamp": 0
+  },
+  "hasGlobalHighlights": false,
+  "crowdsourcingDataDisplayEnabled": false,
+  "id": 17206537,
+  "slug": "atlanta-braves-philadelphia-phillies",
+  "startTimestamp": 1790899200,
+  "periods": {
+   "current": "Match",
+   "inning1": "1st Inning",
+   "inning2": "2nd Inning",
+   "inning3": "3rd Inning",
+   "inning4": "4th Inning",
+   "inning5": "5th Inning",
+   "inning6": "6th Inning",
+   "inning7": "7th Inning",
+   "inning8": "8th Inning",
+   "inning9": "9th Inning",
+   "extra1": "10th Inning"
+  },
+  "finalResultOnly": false,
+  "feedLocked": false,
+  "cupMatchesInRound": 3,
+  "showTotoPromo": true,
+  "isEditor": false
+ }
+}

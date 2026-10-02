@@ -1,0 +1,198 @@
+{
+ "source_file": "research/all_sports/samples/darts/event-id__1.json",
+ "fetched_at_utc": "2026-10-01T12:55:44+00:00",
+ "event": {
+  "firstToServe": 2,
+  "firstToServeInMatch": 2,
+  "tournament": {
+   "name": "World Grand Prix",
+   "slug": "world-grand-prix",
+   "category": {
+    "name": "International",
+    "slug": "international",
+    "sport": {
+     "name": "Darts",
+     "slug": "darts",
+     "id": 22
+    },
+    "priority": 11,
+    "country": {},
+    "id": 104,
+    "flag": "international"
+   },
+   "uniqueTournament": {
+    "name": "World Grand Prix",
+    "slug": "world-grand-prix",
+    "primaryColorHex": "#1e285c",
+    "secondaryColorHex": "#80c1ea",
+    "category": {
+     "name": "International",
+     "slug": "international",
+     "sport": {
+      "name": "Darts",
+      "slug": "darts",
+      "id": 22
+     },
+     "priority": 11,
+     "country": {},
+     "id": 104,
+     "flag": "international"
+    },
+    "userCount": 2155,
+    "hasRounds": true,
+    "hasPerformanceGraphFeature": false,
+    "liveActivityEnabled": false,
+    "country": {},
+    "id": 751,
+    "hasEventPlayerStatistics": false,
+    "displayInverseHomeAwayTeams": false
+   },
+   "priority": 178,
+   "competitionType": 2,
+   "id": 200192,
+   "endTimestamp": 1791072000,
+   "startTimestamp": 1790553600
+  },
+  "season": {
+   "name": "World Grand Prix 2026",
+   "year": "2026",
+   "editor": false,
+   "id": 84943
+  },
+  "roundInfo": {
+   "round": 5,
+   "name": "Round of 16",
+   "slug": "round-of-16",
+   "cupRoundType": 8
+  },
+  "customId": "qiBbsFBBb",
+  "status": {
+   "code": 100,
+   "description": "Ended",
+   "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeTeam": {
+   "name": "Luke Woodhouse",
+   "slug": "woodhouse-luke",
+   "shortName": "Woodhouse L.",
+   "gender": "M",
+   "sport": {
+    "name": "Darts",
+    "slug": "darts",
+    "id": 22
+   },
+   "userCount": 637,
+   "playerTeamInfo": {
+    "id": 19842,
+    "underage": false
+   },
+   "nameCode": "WOO",
+   "class": 0,
+   "disabled": false,
+   "national": false,
+   "type": 1,
+   "country": {
+    "alpha2": "EN",
+    "alpha3": "ENG",
+    "name": "England",
+    "slug": "england"
+   },
+   "id": 191330,
+   "fullName": "Luke Woodhouse",
+   "subTeams": [],
+   "teamColors": {
+    "primary": "#374df5",
+    "secondary": "#374df5",
+    "text": "#ffffff"
+   },
+   "timeActive": []
+  },
+  "awayTeam": {
+   "name": "Nathan Aspinall",
+   "slug": "aspinall-nathan",
+   "shortName": "Aspinall N.",
+   "gender": "M",
+   "sport": {
+    "name": "Darts",
+    "slug": "darts",
+    "id": 22
+   },
+   "userCount": 4181,
+   "playerTeamInfo": {
+    "id": 30581,
+    "underage": false
+   },
+   "nameCode": "ASP",
+   "class": 4,
+   "disabled": false,
+   "national": false,
+   "type": 1,
+   "country": {
+    "alpha2": "EN",
+    "alpha3": "ENG",
+    "name": "England",
+    "slug": "england"
+   },
+   "id": 190416,
+   "fullName": "Nathan Aspinall",
+   "subTeams": [],
+   "teamColors": {
+    "primary": "#374df5",
+    "secondary": "#374df5",
+    "text": "#ffffff"
+   },
+   "timeActive": []
+  },
+  "homeScore": {
+   "current": 0,
+   "display": 0,
+   "period1": 0,
+   "period2": 1,
+   "period3": 2,
+   "normaltime": 0
+  },
+  "awayScore": {
+   "current": 3,
+   "display": 3,
+   "period1": 3,
+   "period2": 3,
+   "period3": 3,
+   "normaltime": 3
+  },
+  "time": {
+   "currentPeriodStartTimestamp": 1790804674
+  },
+  "changes": {
+   "changes": [
+    "time.currentPeriodStart"
+   ],
+   "changeTimestamp": 1790804763
+  },
+  "hasGlobalHighlights": false,
+  "crowdsourcingDataDisplayEnabled": false,
+  "id": 17099318,
+  "bestOfSets": 5,
+  "bestOfLegs": 5,
+  "slug": "luke-woodhouse-nathan-aspinall",
+  "currentPeriodStartTimestamp": 1790804674,
+  "startTimestamp": 1790802360,
+  "finalResultOnly": false,
+  "hasBet365LiveStream": true,
+  "bet365ExcludedCountryCodes": [
+   "GB",
+   "GG",
+   "IE",
+   "IM",
+   "JE",
+   "IR",
+   "GR",
+   "RU",
+   "CH",
+   "CA"
+  ],
+  "feedLocked": false,
+  "showTotoPromo": true,
+  "isEditor": false
+ }
+}

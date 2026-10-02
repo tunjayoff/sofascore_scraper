@@ -1,0 +1,37 @@
+{
+  "case_id": "A_inprogress-1001-first-game",
+  "event_id": 17060161,
+  "fetched_at_utc": "2026-10-01T12:57:16+00:00",
+  "source_file": "research/all_sports/status_examples/esports/event_inprogress-1001-first-game__17060161.json",
+  "status": {
+    "code": 1001,
+    "description": "First game",
+    "type": "inprogress"
+  },
+  "winnerCode": 3,
+  "homeScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "period2": 0,
+    "period3": 0,
+    "period4": 0,
+    "period5": 0
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "period2": 0,
+    "period3": 0,
+    "period4": 0,
+    "period5": 0
+  },
+  "startTimestamp": 1790857200,
+  "time": {
+    "currentPeriodStartTimestamp": 1790857082
+  },
+  "changes": {
+    "changeTimestamp": 1790857088
+  }
+}

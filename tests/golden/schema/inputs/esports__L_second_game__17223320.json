@@ -1,0 +1,165 @@
+{
+ "source_file": "research/all_sports/samples/esports/event-id__1.json",
+ "fetched_at_utc": "2026-10-01T12:56:52+00:00",
+ "event": {
+  "tournament": {
+   "name": "CCT Europe Playoffs",
+   "slug": "cct-europe-playoffs",
+   "category": {
+    "name": "Counter Strike",
+    "slug": "csgo",
+    "sport": {
+     "name": "E-sports",
+     "slug": "esports",
+     "id": 72
+    },
+    "priority": 0,
+    "country": {},
+    "id": 1572,
+    "flag": "counter-strike"
+   },
+   "uniqueTournament": {
+    "name": "CCT Europe",
+    "slug": "cct-europe",
+    "category": {
+     "name": "Counter Strike",
+     "slug": "csgo",
+     "sport": {
+      "name": "E-sports",
+      "slug": "esports",
+      "id": 72
+     },
+     "priority": 0,
+     "country": {},
+     "id": 1572,
+     "flag": "counter-strike"
+    },
+    "userCount": 89,
+    "hasRounds": false,
+    "hasPerformanceGraphFeature": false,
+    "liveActivityEnabled": false,
+    "country": {},
+    "id": 22286,
+    "hasEventPlayerStatistics": false,
+    "displayInverseHomeAwayTeams": false
+   },
+   "priority": 0,
+   "isGroup": false,
+   "id": 129344,
+   "endTimestamp": 1791133200,
+   "startTimestamp": 1790420400
+  },
+  "season": {
+   "name": "Challengers Series season 7 2026",
+   "year": "2026",
+   "editor": false,
+   "id": 104670
+  },
+  "customId": "DtqisdMXj",
+  "status": {
+   "code": 1002,
+   "description": "Second game",
+   "type": "inprogress"
+  },
+  "winnerCode": 1,
+  "homeTeam": {
+   "name": "maybe",
+   "slug": "maybe",
+   "sport": {
+    "name": "E-sports",
+    "slug": "esports",
+    "id": 72
+   },
+   "userCount": 1,
+   "nameCode": "MAY",
+   "national": false,
+   "type": 0,
+   "country": {
+    "alpha2": "UA",
+    "alpha3": "UKR",
+    "name": "Ukraine",
+    "slug": "ukraine"
+   },
+   "id": 1244353,
+   "fullName": "maybe",
+   "subTeams": [],
+   "teamColors": {
+    "primary": "#374df5",
+    "secondary": "#374df5",
+    "text": "#ffffff"
+   },
+   "timeActive": []
+  },
+  "awayTeam": {
+   "name": "eternal premium",
+   "slug": "eternal-premium",
+   "sport": {
+    "name": "E-sports",
+    "slug": "esports",
+    "id": 72
+   },
+   "userCount": 13,
+   "nameCode": "EP",
+   "national": false,
+   "type": 0,
+   "country": {
+    "alpha2": "RU",
+    "alpha3": "RUS",
+    "name": "Russia",
+    "slug": "russia"
+   },
+   "id": 1040928,
+   "fullName": "eternal premium",
+   "subTeams": [],
+   "teamColors": {
+    "primary": "#374df5",
+    "secondary": "#374df5",
+    "text": "#ffffff"
+   },
+   "timeActive": []
+  },
+  "homeScore": {
+   "current": 1,
+   "display": 1,
+   "period1": 1,
+   "period2": 0,
+   "period3": 0,
+   "period4": 0,
+   "period5": 0
+  },
+  "awayScore": {
+   "current": 0,
+   "display": 0,
+   "period1": 0,
+   "period2": 0,
+   "period3": 0,
+   "period4": 0,
+   "period5": 0
+  },
+  "coverage": 91,
+  "time": {
+   "currentPeriodStartTimestamp": 1790856306
+  },
+  "changes": {
+   "changes": [
+    "status.code",
+    "status.description",
+    "time.currentPeriodStart"
+   ],
+   "changeTimestamp": 1790856313
+  },
+  "hasGlobalHighlights": true,
+  "crowdsourcingDataDisplayEnabled": false,
+  "id": 17223320,
+  "bestOf": 3,
+  "eventType": "best_of",
+  "roundsInAHalf": 12,
+  "slug": "maybe-eternal-premium",
+  "currentPeriodStartTimestamp": 1790856306,
+  "startTimestamp": 1790853000,
+  "finalResultOnly": false,
+  "feedLocked": false,
+  "showTotoPromo": true,
+  "isEditor": false
+ }
+}

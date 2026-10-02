@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from src.status import (BasketballScores, FootballScores, Pair, PeriodsScores, SetsScores, StatusClass,
-                        TennisScores, classify_status, extract_scores)
+from src.status import (BasketballScores, CricketScores, FightScores, FootballScores, InningsScores, Pair,
+                        PeriodsScores, SetsScores, StatusClass, TennisScores, classify_status, extract_scores)
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
 
@@ -344,6 +344,117 @@ def test_set_sport_without_a_score(rel):
     s = extract_scores(_load(rel), rel.split("/")[0])
     assert isinstance(s, SetsScores)
     assert s.sets_won is None and s.sets == {} and not s.match_tiebreak
+
+
+# --- B sınıfı sporlar (plan maddesi SP-3; research/all_sports örnekleri) ----------------------------------
+
+def test_baseball_innings_hits_and_errors():
+    """MLB: `innings.inningN.run` ile `periodN` aynı değerler; isabet ve hata toplamı `inningsBaseball`'da."""
+    s = extract_scores(_load("baseball/S1_innings_and_periods__16288374"), "baseball")
+    assert isinstance(s, InningsScores)
+    assert sorted(s.innings) == list(range(1, 10))
+    assert s.innings[9] == Pair(0, 4) and s.innings[1] == Pair(0, 1)
+    assert s.regulation == Pair(0, 6) and s.extra_innings is None
+    assert (s.hits, s.errors) == (Pair(4, 9), Pair(1, 2))
+    assert sum(p.away for p in s.innings.values()) == 6  # inning'lerin toplamı başlık skoru
+
+
+def test_baseball_extra_innings_and_trimmed_innings_fall_back_to_periods():
+    """
+    Araştırma kaydı `innings`'i iki girdiye kırptı (`__trimmed_keys__`); eksik inning'ler `periodN`'den okunur.
+    Kod 110 "AET" uzatma inning'leridir: `overtime` yalnızca uzatmada atılan sayı.
+    """
+    event = _load("baseball/A_finished-110-aet__9861550")
+    assert "__trimmed_keys__" in event["homeScore"]["innings"]
+    s = extract_scores(event, "baseball")
+    assert sorted(s.innings) == list(range(1, 8))
+    assert s.innings[6] == Pair(1, 2)
+    assert s.regulation == Pair(3, 3) and s.extra_innings == Pair(3, 2)
+    assert s.hits == Pair(10, 10) and s.errors is None  # errors da kırpılmış
+    assert s.status_class is StatusClass.COMPLETED
+
+
+def test_baseball_innings_win_over_periods():
+    event = {"status": {"type": "inprogress", "code": 28},
+             "homeScore": {"current": 5, "period1": 9, "innings": {"inning1": {"run": 5}, "inning2": {"run": None}}},
+             "awayScore": {"current": 0, "period2": 0, "innings": {"inning1": {"run": 0}}}}
+    s = extract_scores(event, "baseball")
+    assert s.innings == {1: Pair(5, 0), 2: Pair(None, 0)}
+
+
+def test_cricket_innings_of_each_side():
+    s = extract_scores(_load("cricket/C1_two_innings_each__16894534"), "cricket")
+    assert isinstance(s, CricketScores)
+    assert s.home_innings == {1: {"runs": 103, "wickets": 10, "overs": 22.3},
+                              2: {"runs": 110, "wickets": 9, "overs": 24.2}}
+    assert s.away_innings[2] == {"runs": 332, "wickets": 10, "overs": 63.2}
+    # SofaScore'un `current` değeri tarafın innings'lerinin toplamı
+    event = _load("cricket/C1_two_innings_each__16894534")
+    assert event["homeScore"]["current"] == sum(i["runs"] for i in s.home_innings.values())
+
+
+def test_cricket_end_of_day_keeps_the_score_and_is_live():
+    s = extract_scores(_load("cricket/A_willcontinue-141-end-of-day-1__16586046"), "cricket")
+    assert s.status_class is StatusClass.LIVE and not s.settleable
+    assert s.home_innings == {1: {"runs": 21, "wickets": 2, "overs": 7}}
+    assert s.away_innings == {1: {"runs": 237, "wickets": 10, "overs": 68.1}}
+
+
+@pytest.mark.parametrize("rel,unit,sets_won,sets", [
+    ("darts/D1_sets__17099318", "legs", Pair(0, 3), {1: Pair(0, 3), 2: Pair(1, 3), 3: Pair(2, 3)}),
+    ("darts/D1_sets__17099319", "legs", Pair(3, 1), {1: Pair(3, 0), 2: Pair(2, 3), 3: Pair(3, 1), 4: Pair(3, 1)}),
+    # setsiz maç: `current` kazanılan leg; canlı yükte period1 `current`'ı tekrarlar ve bir set değildir
+    ("darts/D2_legs_only__17180772", "legs_won", Pair(4, 2), {}),
+    ("darts/A_inprogress-20-started__17225298", "legs_won", Pair(1, 3), {}),
+])
+def test_darts_sets_or_legs_by_best_of_sets(rel, unit, sets_won, sets):
+    s = extract_scores(_load(rel), "darts")
+    assert isinstance(s, SetsScores)
+    assert (s.format, s.sets_won, s.sets, s.tiebreaks, s.match_tiebreak) == (unit, sets_won, sets, {}, False)
+
+
+@pytest.mark.parametrize("best_of_sets", [None, 0, False, "5"])
+def test_darts_without_a_positive_best_of_sets_counts_legs(best_of_sets):
+    event = dict(_load("darts/D1_sets__17099318"), bestOfSets=best_of_sets)
+    assert extract_scores(event, "darts").format == "legs_won"
+
+
+def test_esports_counts_games_won_and_keeps_no_sets():
+    """periodN yalnızca oyunu kimin aldığını söyler (1 / 0); oynanmamış oyunlar da 0-0 gelir."""
+    event = _load("esports/A_inprogress-30-pause__17200404")
+    assert event["homeScore"]["period5"] == event["awayScore"]["period5"] == 0
+    s = extract_scores(event, "esports")
+    assert (s.format, s.sets_won, s.sets) == ("games_won", Pair(1, 1), {})
+    assert s.status_class is StatusClass.LIVE
+
+
+@pytest.mark.parametrize("rel,method,final_round,winner", [
+    ("mma/M1_unanimous_decision__16822910", "UD", 5, 1),
+    ("mma/M2_split_decision__11366500", "SD", 3, 2),
+    ("mma/M3_tko__16678840", "TKO", 1, 2),
+    ("mma/M4_submission__16875874", "SUB", 3, 1),
+    ("mma/A_notstarted-0-not-started__16679037", None, None, None),
+])
+def test_mma_result_without_a_score(rel, method, final_round, winner):
+    event = _load(rel)
+    assert event["homeScore"] == event["awayScore"] == {}
+    s = extract_scores(event, "mma")
+    assert isinstance(s, FightScores)
+    assert (s.method, s.final_round, s.winner_code) == (method, final_round, winner)
+    assert _values(s) == []
+
+
+def test_fight_ignores_values_of_the_wrong_type():
+    s = extract_scores({"status": {"type": "finished", "code": 100}, "winType": 3, "finalRound": True}, "mma")
+    assert (s.method, s.final_round) == (None, None)
+
+
+def test_class_b_sports_are_no_longer_unsupported(caplog):
+    with caplog.at_level("WARNING", logger="src.status"):
+        for path in sorted(FIXTURES.glob("*/*.json")):
+            if path.parent.name in ("baseball", "cricket", "esports", "darts", "mma"):
+                extract_scores(json.loads(path.read_text(encoding="utf-8")), path.parent.name)
+    assert caplog.text == ""
 
 
 # --- ortak ------------------------------------------------------------------------------

@@ -1,0 +1,47 @@
+{
+  "case_id": "C2_innings_victory",
+  "event_id": 16894535,
+  "fetched_at_utc": "2026-10-01T12:42:42+00:00",
+  "source_file": "research/all_sports/samples/cricket/unique-tournament-id-scheduled-events-date__1.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 266,
+    "display": 266,
+    "innings": {
+      "inning1": {
+        "score": 266,
+        "wickets": 10,
+        "overs": 69.2,
+        "runRate": 3.84
+      }
+    }
+  },
+  "awayScore": {
+    "current": 243,
+    "display": 243,
+    "innings": {
+      "inning1": {
+        "score": 128,
+        "wickets": 10,
+        "overs": 44.4,
+        "runRate": 2.87
+      },
+      "inning2": {
+        "score": 115,
+        "wickets": 10,
+        "overs": 35.3,
+        "runRate": 3.24
+      }
+    }
+  },
+  "startTimestamp": 1790571600,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 1790691427
+  }
+}

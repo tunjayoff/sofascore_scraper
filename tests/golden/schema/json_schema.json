@@ -56,7 +56,10 @@
      "examples": [
       "football",
       "periods",
-      "sets"
+      "sets",
+      "innings",
+      "cricket",
+      "fight"
      ],
      "description": "Which score structure events of this sport carry (see Score). Null for a sport the platform has no score mapping for.",
      "x-source": "sport registry (`src/sports.py`)"
@@ -427,6 +430,15 @@
        "$ref": "#/$defs/SetsScore"
       },
       {
+       "$ref": "#/$defs/InningsScore"
+      },
+      {
+       "$ref": "#/$defs/CricketScore"
+      },
+      {
+       "$ref": "#/$defs/FightScore"
+      },
+      {
        "$ref": "#/$defs/PlainScore"
       }
      ],
@@ -505,7 +517,8 @@
       "postponed",
       "canceled",
       "interrupted",
-      "suspended"
+      "suspended",
+      "willcontinue"
      ],
      "description": "SofaScore's status type.",
      "x-source": "`status.type`"
@@ -536,7 +549,7 @@
       "void",
       "unknown"
      ],
-     "description": "The platform's class of the status. `not_started`: not begun. `live`: in progress. `completed`: played and finished. `decided_without_play`: finished by walkover or retirement. `void`: postponed, cancelled, interrupted, suspended or abandoned. `unknown`: none of these; never silently treated as completed.",
+     "description": "The platform's class of the status. `not_started`: not begun. `live`: in progress, breaks included (half time, the night between two days of a cricket match: type `willcontinue`). `completed`: played and finished. `decided_without_play`: finished by walkover or retirement. `void`: postponed, cancelled, interrupted, suspended or abandoned. `unknown`: none of these; never silently treated as completed.",
      "x-source": "derived from `status.type`, then `status.code`, then `status.description` (`src/status.py`)"
     }
    }
@@ -1089,11 +1102,12 @@
   "SetsScore": {
    "type": "object",
    "title": "SetsScore",
-   "description": "Score family `sets`: sets won and the score of each set. Tennis and padel count games per set; volleyball, badminton and table tennis count points; snooker gives frames won and no sets.",
+   "description": "Score family `sets`: sets won and the score of each set. Tennis and padel count games per set; volleyball, badminton and table tennis count points; darts played in sets counts legs per set; snooker, darts played in legs only and e-sports give only the frames, legs or games won and no sets.",
    "required": [
     "family",
     "home",
     "away",
+    "format",
     "sets_won",
     "sets",
     "match_tiebreak"
@@ -1121,6 +1135,22 @@
      "description": "Headline score of the away side: sets won.",
      "x-unit": "sets",
      "x-source": "`awayScore.display`, else `awayScore.current`"
+    },
+    "format": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "examples": [
+      "games",
+      "points",
+      "frames",
+      "legs",
+      "legs_won",
+      "games_won"
+     ],
+     "description": "What the score counts. `games`, `points`, `legs`: sets won, and each set counts games (tennis, padel), points (volleyball, badminton, table tennis) or legs (darts played in sets). `frames`, `legs_won`, `games_won`: no sets; `sets_won` and the headline score are the frames (snooker), legs (darts played in legs only) or games (e-sports) won. Null when the record has no score sheet.",
+     "x-source": "sport registry (`src/sports.py`); darts: `legs` when the event has `bestOfSets`, else `legs_won`"
     },
     "sets_won": {
      "anyOf": [
@@ -1199,6 +1229,291 @@
     }
    }
   },
+  "InningsScore": {
+   "type": "object",
+   "title": "InningsScore",
+   "description": "Score family `innings`: runs by inning, with hits and errors (baseball).",
+   "required": [
+    "family",
+    "home",
+    "away",
+    "innings",
+    "regulation",
+    "extra_innings",
+    "hits",
+    "errors"
+   ],
+   "properties": {
+    "family": {
+     "const": "innings",
+     "description": "Always `innings`.",
+     "x-source": "sport registry"
+    },
+    "home": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Headline score of the home side: runs, extra innings included.",
+     "x-unit": "runs",
+     "x-source": "`homeScore.display`, else `homeScore.current`"
+    },
+    "away": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Headline score of the away side: runs, extra innings included.",
+     "x-unit": "runs",
+     "x-source": "`awayScore.display`, else `awayScore.current`"
+    },
+    "innings": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/InningScore"
+     },
+     "description": "Runs of each inning that has a score, in order. SofaScore gives the innings in `innings`; some leagues also give them as `period1` to `period9`, with the same values. An inning missing from `innings` is read from `periodN`.",
+     "x-source": "`innings.inningN.run`, else `periodN`"
+    },
+    "regulation": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/ScorePair"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Runs after the scheduled innings. Null when SofaScore does not give it.",
+     "x-unit": "runs",
+     "x-source": "`normaltime`"
+    },
+    "extra_innings": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/ScorePair"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Runs scored in extra innings alone. Null without extra innings.",
+     "x-unit": "runs",
+     "x-source": "`overtime`"
+    },
+    "hits": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/ScorePair"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Hits of each side in the whole game.",
+     "x-unit": "hits",
+     "x-source": "`inningsBaseball.hits`"
+    },
+    "errors": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/ScorePair"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Errors of each side in the whole game.",
+     "x-unit": "errors",
+     "x-source": "`inningsBaseball.errors`"
+    }
+   }
+  },
+  "InningScore": {
+   "type": "object",
+   "title": "InningScore",
+   "description": "Runs of one inning.",
+   "required": [
+    "number",
+    "home",
+    "away"
+   ],
+   "properties": {
+    "number": {
+     "type": "integer",
+     "description": "Number of the inning, starting at 1; extra innings go on after 9.",
+     "x-source": "`innings.inningN`, else `periodN`: N"
+    },
+    "home": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Runs of the home side in the inning.",
+     "x-unit": "runs",
+     "x-source": "`homeScore.innings.inningN.run`, else `homeScore.periodN`"
+    },
+    "away": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Runs of the away side in the inning.",
+     "x-unit": "runs",
+     "x-source": "`awayScore.innings.inningN.run`, else `awayScore.periodN`"
+    }
+   }
+  },
+  "CricketScore": {
+   "type": "object",
+   "title": "CricketScore",
+   "description": "Score family `cricket`: the innings of both sides with runs, wickets and overs.",
+   "required": [
+    "family",
+    "home",
+    "away",
+    "innings"
+   ],
+   "properties": {
+    "family": {
+     "const": "cricket",
+     "description": "Always `cricket`.",
+     "x-source": "sport registry"
+    },
+    "home": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Headline score of the home side: runs of all its innings.",
+     "x-unit": "runs",
+     "x-source": "`homeScore.display`, else `homeScore.current`"
+    },
+    "away": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Headline score of the away side: runs of all its innings.",
+     "x-unit": "runs",
+     "x-source": "`awayScore.display`, else `awayScore.current`"
+    },
+    "innings": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/CricketInnings"
+     },
+     "description": "The innings of both sides, the home side's first, each side's in its own order. SofaScore numbers each side's innings separately and does not say which side batted first.",
+     "x-source": "`homeScore.innings`, `awayScore.innings`"
+    }
+   }
+  },
+  "CricketInnings": {
+   "type": "object",
+   "title": "CricketInnings",
+   "description": "One innings of one side in cricket.",
+   "required": [
+    "side",
+    "number",
+    "runs",
+    "wickets",
+    "overs"
+   ],
+   "properties": {
+    "side": {
+     "type": "string",
+     "enum": [
+      "home",
+      "away"
+     ],
+     "description": "The side that batted.",
+     "x-source": "`homeScore.innings` or `awayScore.innings`"
+    },
+    "number": {
+     "type": "integer",
+     "description": "Number of the innings of this side, starting at 1.",
+     "x-source": "`inningN`: N"
+    },
+    "runs": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Runs scored.",
+     "x-unit": "runs",
+     "x-source": "`inningN.score`"
+    },
+    "wickets": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Wickets lost.",
+     "x-unit": "wickets",
+     "x-source": "`inningN.wickets`"
+    },
+    "overs": {
+     "type": [
+      "number",
+      "null"
+     ],
+     "description": "Overs bowled, in SofaScore's notation: the digit after the point counts balls, so 68.1 is 68 overs and one ball.",
+     "x-unit": "overs",
+     "x-source": "`inningN.overs`"
+    }
+   }
+  },
+  "FightScore": {
+   "type": "object",
+   "title": "FightScore",
+   "description": "Score family `fight`: no score; how the fight was decided and in which round (MMA). The winner is the event's `winner`.",
+   "required": [
+    "family",
+    "home",
+    "away",
+    "method",
+    "final_round"
+   ],
+   "properties": {
+    "family": {
+     "const": "fight",
+     "description": "Always `fight`.",
+     "x-source": "sport registry"
+    },
+    "home": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Headline score of the home side; SofaScore gives none for a fight, so null.",
+     "x-source": "`homeScore.display`, else `homeScore.current`"
+    },
+    "away": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Headline score of the away side; SofaScore gives none for a fight, so null.",
+     "x-source": "`awayScore.display`, else `awayScore.current`"
+    },
+    "method": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "How the fight was decided, as SofaScore abbreviates it, for example `UD` (unanimous decision), `SD` (split decision), `TKO`, `SUB` (submission); text, not an enumeration of the platform. Null while undecided.",
+     "x-source": "`winType`"
+    },
+    "final_round": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "The round in which the fight ended. Null while undecided.",
+     "x-source": "`finalRound`"
+    }
+   }
+  },
   "Slice": {
    "type": "object",
    "title": "Slice",
@@ -1245,6 +1560,7 @@
       "lineups",
       "incidents",
       "point_by_point",
+      "esports_games",
       "seasons",
       "schedule"
      ],

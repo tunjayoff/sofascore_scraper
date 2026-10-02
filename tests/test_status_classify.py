@@ -31,8 +31,14 @@ EXPECTED = {
     ("inprogress", 15): StatusClass.LIVE,
     ("inprogress", 16): StatusClass.LIVE,  # 4th quarter
     ("inprogress", 20): StatusClass.LIVE,  # Started
+    ("inprogress", 21): StatusClass.LIVE,  # 1st Inning (kriket; docs/all-sports/README.md, SP-3)
+    ("inprogress", 28): StatusClass.LIVE,  # 8th Inning (beyzbol)
+    ("inprogress", 29): StatusClass.LIVE,  # 9th Inning (beyzbol)
     ("inprogress", 30): StatusClass.LIVE,  # Pause
     ("inprogress", 31): StatusClass.LIVE,  # Halftime
+    ("inprogress", 1001): StatusClass.LIVE,  # First game (e-spor)
+    ("inprogress", 1002): StatusClass.LIVE,  # Second game (e-spor)
+    ("willcontinue", 141): StatusClass.LIVE,  # End of day 1 (kriket; SP-3 kararı: gün arası canlıdır)
     ("finished", 100): StatusClass.COMPLETED,  # Ended
     ("finished", 110): StatusClass.COMPLETED,  # AET
     ("finished", 120): StatusClass.COMPLETED,  # AP
@@ -62,7 +68,7 @@ def _legacy_is_finished(event: dict) -> bool:
 
 
 def test_fixture_set_is_not_empty():
-    assert len(ALL) >= 149
+    assert len(ALL) >= 231  # 203 + SP-3'ün 28 örneği
 
 
 @pytest.mark.parametrize("path", ALL, ids=lambda p: f"{p.parent.name}/{p.stem}")
@@ -153,20 +159,26 @@ def test_description_only_when_type_and_code_missing(rel):
     assert classify_status(event) is expected
 
 
-# --- B sınıfı sporların kodları ve kriketin gün sonu (plan maddesi SP-3) --------------------------
+# --- kriketin gün sonu ve B sınıfı sporların kodları (plan maddesi SP-3) ------------------------
+
+def test_cricket_end_of_day_is_live_and_not_finished():
+    """
+    willcontinue / 141 "End of day 1": çok günlü maç ertesi gün sürer. Kapalı `status.class` sayımına yeni değer
+    eklemek yerine LIVE (devre arası 31 gibi); maç bitmiş sayılmaz, FETCH_ONLY_FINISHED anlamı değişmez.
+    """
+    event = _load("cricket/A_willcontinue-141-end-of-day-1__16586046")
+    assert classify_status(event) is StatusClass.LIVE
+    assert not is_played(event)
+    assert not MatchFetcher._is_finished_event(event)
+    del event["status"]["type"]  # kod tek başına da canlı
+    assert classify_status(event) is StatusClass.LIVE
+
 
 @pytest.mark.parametrize("code", [21, 28, 29, 141, 1001, 1002])
 def test_new_live_codes_are_live_without_a_type(code, caplog):
     with caplog.at_level("WARNING", logger="src.status"):
         assert classify_status({"status": {"code": code}}) is StatusClass.LIVE
     assert caplog.text == ""
-
-
-def test_cricket_end_of_day_type_is_live():
-    """willcontinue / 141 "End of day 1" (research/all_sports): çok günlü maç ertesi gün sürer."""
-    event = {"status": {"code": 141, "description": "End of day 1", "type": "willcontinue"}}
-    assert classify_status(event) is StatusClass.LIVE and not is_played(event)
-    assert not MatchFetcher._is_finished_event(event)
 
 
 def test_unseen_inning_codes_stay_unknown_without_a_type():

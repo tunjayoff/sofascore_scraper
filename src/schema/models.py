@@ -25,7 +25,7 @@ import dataclasses
 from dataclasses import dataclass, field
 from typing import Any, ClassVar, Dict, Literal, Mapping, Optional, Tuple, Union
 
-from src.sports import PeriodFormat, ScoreFamily
+from src.sports import PeriodFormat, ScoreFamily, SetFormat
 
 # Sürüm: alan eklemek serbesttir; alan silmek, yeniden adlandırmak, tipini, birimini ya da anlamını
 # değiştirmek ve kapalı bir sayıma değer eklemek sürümü artırır (belge, bölüm 3).
@@ -38,6 +38,7 @@ StatusClassName = Literal["not_started", "live", "completed", "decided_without_p
 Side = Literal["home", "away", "draw"]
 ParticipantType = Literal["team", "player", "pair", "other"]
 PeriodsFormat = PeriodFormat  # src/sports.py: "quarters", "halves", "thirds"
+SetsFormat = SetFormat  # src/sports.py: "games", "points", "frames", "legs", "legs_won", "games_won"
 Settlement = Literal["open", "provisional", "final"]
 RecordSource = Literal["event", "listing"]
 SliceState = Literal["ok", "empty", "error", "not_requested"]
@@ -191,13 +192,15 @@ class Status(Model):
 
     type: Optional[str] = spec(
         "SofaScore's status type.", source="`status.type`", open_enum=True,
-        known=("notstarted", "inprogress", "finished", "postponed", "canceled", "interrupted", "suspended"))
+        known=("notstarted", "inprogress", "finished", "postponed", "canceled", "interrupted", "suspended",
+               "willcontinue"))
     code: Optional[int] = spec("SofaScore's status code, for example 100 (ended), 110 (after extra time), "
                                "120 (after penalties), 91 (walkover), 92 (retired).", source="`status.code`")
     description: Optional[str] = spec("SofaScore's status text, in English, for example `Ended`, `2nd half`.",
                                       source="`status.description`")
     class_: StatusClassName = spec(
-        "The platform's class of the status. `not_started`: not begun. `live`: in progress. `completed`: played "
+        "The platform's class of the status. `not_started`: not begun. `live`: in progress, breaks included (half "
+        "time, the night between two days of a cricket match: type `willcontinue`). `completed`: played "
         "and finished. `decided_without_play`: finished by walkover or retirement. `void`: postponed, cancelled, "
         "interrupted, suspended or abandoned. `unknown`: none of these; never silently treated as completed.",
         source="derived from `status.type`, then `status.code`, then `status.description` (`src/status.py`)",
@@ -312,19 +315,29 @@ class SetScore(Model):
 @dataclass(frozen=True)
 class SetsScore(Model):
     """
-    Set ailesi skoru: tenis, padel (oyun), voleybol, badminton, masa tenisi (sayı) ve snooker (yalnızca kazanılan
-    frame; set listesi boş). Alan tabloları belgeyle bağlı olduğundan birimler tenisin birimleri kalır (SP-2).
+    Set ailesi skoru: tenis, padel (oyun), voleybol, badminton, masa tenisi (sayı), dart (set usulünde leg) ve
+    yalnızca bir sayı veren snooker (frame), setsiz dart (leg) ve e-spor (oyun); bu üçünde set listesi boştur.
+    Alan tabloları belgeyle bağlı olduğundan birimler tenisin birimleri kalır (SP-2); neyin sayıldığını `format`
+    söyler (SP-3).
     """
 
     SUMMARY: ClassVar[str] = (
         "Score family `sets`: sets won and the score of each set. Tennis and padel count games per set; volleyball, "
-        "badminton and table tennis count points; snooker gives frames won and no sets.")
+        "badminton and table tennis count points; darts played in sets counts legs per set; snooker, darts "
+        "played in legs only and e-sports give only the frames, legs or games won and no sets.")
 
     family: Literal["sets"] = spec("Always `sets`.", source="sport registry")
     home: Optional[int] = spec("Headline score of the home side: sets won.", unit="sets",
                                source="`homeScore.display`, else `homeScore.current`")
     away: Optional[int] = spec("Headline score of the away side: sets won.", unit="sets",
                                source="`awayScore.display`, else `awayScore.current`")
+    format: Optional[SetsFormat] = spec(
+        "What the score counts. `games`, `points`, `legs`: sets won, and each set counts games (tennis, padel), "
+        "points (volleyball, badminton, table tennis) or legs (darts played in sets). `frames`, `legs_won`, "
+        "`games_won`: no sets; `sets_won` and the headline score are the frames (snooker), legs (darts played "
+        "in legs only) or games (e-sports) won. Null when the record has no score sheet.",
+        source="sport registry (`src/sports.py`); darts: `legs` when the event has `bestOfSets`, else `legs_won`",
+        open_enum=True)
     sets_won: Optional[ScorePair] = spec("Sets won by each side.", unit="sets", source="`current`")
     sets: Tuple[SetScore, ...] = spec("The sets that have a score, in order.",
                                       source="`period1` to `period5`, `period1TieBreak` to `period5TieBreak`")
@@ -334,7 +347,99 @@ class SetsScore(Model):
         source="derived from the set scores (`src/status.py`)")
 
 
-Score = Union[FootballScore, PeriodsScore, SetsScore, PlainScore]
+@dataclass(frozen=True)
+class InningScore(Model):
+    """Beyzbolda bir inning."""
+
+    SUMMARY: ClassVar[str] = "Runs of one inning."
+
+    number: int = spec("Number of the inning, starting at 1; extra innings go on after 9.",
+                       source="`innings.inningN`, else `periodN`: N")
+    home: Optional[int] = spec("Runs of the home side in the inning.", unit="runs",
+                               source="`homeScore.innings.inningN.run`, else `homeScore.periodN`")
+    away: Optional[int] = spec("Runs of the away side in the inning.", unit="runs",
+                               source="`awayScore.innings.inningN.run`, else `awayScore.periodN`")
+
+
+@dataclass(frozen=True)
+class InningsScore(Model):
+    """İnning ailesi skoru (beyzbol)."""
+
+    SUMMARY: ClassVar[str] = "Score family `innings`: runs by inning, with hits and errors (baseball)."
+
+    family: Literal["innings"] = spec("Always `innings`.", source="sport registry")
+    home: Optional[int] = spec("Headline score of the home side: runs, extra innings included.", unit="runs",
+                               source="`homeScore.display`, else `homeScore.current`")
+    away: Optional[int] = spec("Headline score of the away side: runs, extra innings included.", unit="runs",
+                               source="`awayScore.display`, else `awayScore.current`")
+    innings: Tuple[InningScore, ...] = spec(
+        "Runs of each inning that has a score, in order. SofaScore gives the innings in `innings`; some leagues "
+        "also give them as `period1` to `period9`, with the same values. An inning missing from `innings` is "
+        "read from `periodN`.", source="`innings.inningN.run`, else `periodN`")
+    regulation: Optional[ScorePair] = spec("Runs after the scheduled innings. Null when SofaScore does not give it.",
+                                           unit="runs", source="`normaltime`")
+    extra_innings: Optional[ScorePair] = spec("Runs scored in extra innings alone. Null without extra innings.",
+                                              unit="runs", source="`overtime`")
+    hits: Optional[ScorePair] = spec("Hits of each side in the whole game.", unit="hits",
+                                     source="`inningsBaseball.hits`")
+    errors: Optional[ScorePair] = spec("Errors of each side in the whole game.", unit="errors",
+                                       source="`inningsBaseball.errors`")
+
+
+@dataclass(frozen=True)
+class CricketInnings(Model):
+    """Kriket: bir tarafın bir innings'i."""
+
+    SUMMARY: ClassVar[str] = "One innings of one side in cricket."
+
+    side: Literal["home", "away"] = spec("The side that batted.",
+                                         source="`homeScore.innings` or `awayScore.innings`")
+    number: int = spec("Number of the innings of this side, starting at 1.", source="`inningN`: N")
+    runs: Optional[int] = spec("Runs scored.", unit="runs", source="`inningN.score`")
+    wickets: Optional[int] = spec("Wickets lost.", unit="wickets", source="`inningN.wickets`")
+    overs: Optional[float] = spec(
+        "Overs bowled, in SofaScore's notation: the digit after the point counts balls, so 68.1 is 68 overs and one "
+        "ball.", unit="overs", source="`inningN.overs`")
+
+
+@dataclass(frozen=True)
+class CricketScore(Model):
+    """Kriket ailesi skoru."""
+
+    SUMMARY: ClassVar[str] = "Score family `cricket`: the innings of both sides with runs, wickets and overs."
+
+    family: Literal["cricket"] = spec("Always `cricket`.", source="sport registry")
+    home: Optional[int] = spec("Headline score of the home side: runs of all its innings.", unit="runs",
+                               source="`homeScore.display`, else `homeScore.current`")
+    away: Optional[int] = spec("Headline score of the away side: runs of all its innings.", unit="runs",
+                               source="`awayScore.display`, else `awayScore.current`")
+    innings: Tuple[CricketInnings, ...] = spec(
+        "The innings of both sides, the home side's first, each side's in its own order. SofaScore numbers each "
+        "side's innings separately and does not say which side batted first.",
+        source="`homeScore.innings`, `awayScore.innings`")
+
+
+@dataclass(frozen=True)
+class FightScore(Model):
+    """Dövüş ailesi skoru (MMA): skor yok, sonuç yöntemi ve son raunt."""
+
+    SUMMARY: ClassVar[str] = ("Score family `fight`: no score; how the fight was decided and in which round (MMA). "
+                              "The winner is the event's `winner`.")
+
+    family: Literal["fight"] = spec("Always `fight`.", source="sport registry")
+    home: Optional[int] = spec("Headline score of the home side; SofaScore gives none for a fight, so null.",
+                               source="`homeScore.display`, else `homeScore.current`")
+    away: Optional[int] = spec("Headline score of the away side; SofaScore gives none for a fight, so null.",
+                               source="`awayScore.display`, else `awayScore.current`")
+    method: Optional[str] = spec(
+        "How the fight was decided, as SofaScore abbreviates it, for example `UD` (unanimous decision), `SD` "
+        "(split decision), `TKO`, `SUB` (submission); text, not an enumeration of the platform. Null while "
+        "undecided.", source="`winType`")
+    final_round: Optional[int] = spec("The round in which the fight ended. Null while undecided.",
+                                      source="`finalRound`")
+
+
+Score = Union[FootballScore, PeriodsScore, SetsScore, InningsScore, CricketScore, FightScore, PlainScore]
 
 
 @dataclass(frozen=True)
@@ -495,7 +600,7 @@ class Slice(Model):
     key: str = spec("Name of the slice, for example `event`, `statistics`, `lineups`, `incidents`.",
                     source="slice registry (`src/sports.py`)", open_enum=True,
                     known=("event", "statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents",
-                           "point_by_point", "seasons", "schedule"))
+                           "point_by_point", "esports_games", "seasons", "schedule"))
     sub: Optional[str] = spec("Sub-key for a slice that has several payloads per owner, for example the round "
                               "of a schedule page. Null when the slice has one payload.",
                               source="slice registry")
@@ -598,6 +703,7 @@ MODELS: Tuple[type, ...] = (
     Sport, Category, Tournament, Season, Participant,
     Event, Status, EventParticipants, EventParticipant, Stage, Round, Aggregate, Quality,
     ScorePair, PlainScore, FootballScore, PeriodsScore, PeriodScore, SetsScore, SetScore,
+    InningsScore, InningScore, CricketScore, CricketInnings, FightScore,
     Slice, SliceError,
     Change, ChangedField,
     LiveEvent,
@@ -633,6 +739,11 @@ __all__ = [
     "PeriodScore",
     "SetsScore",
     "SetScore",
+    "InningsScore",
+    "InningScore",
+    "CricketScore",
+    "CricketInnings",
+    "FightScore",
     "Slice",
     "SliceError",
     "Change",
@@ -642,6 +753,7 @@ __all__ = [
     "Side",
     "ParticipantType",
     "PeriodsFormat",
+    "SetsFormat",
     "Settlement",
     "RecordSource",
     "SliceState",

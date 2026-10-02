@@ -1,0 +1,61 @@
+{
+  "case_id": "A_inprogress-28-8th-inning",
+  "event_id": 16977347,
+  "fetched_at_utc": "2026-10-01T12:45:56+00:00",
+  "source_file": "research/all_sports/status_examples/baseball/event_inprogress-28-8th-inning__16977347.json",
+  "status": {
+    "code": 28,
+    "description": "8th Inning",
+    "type": "inprogress"
+  },
+  "winnerCode": null,
+  "homeScore": {
+    "current": 9,
+    "display": 9,
+    "period1": 2,
+    "period2": 0,
+    "period3": 0,
+    "period4": 4,
+    "period5": 0,
+    "period6": 0,
+    "period7": 2,
+    "period8": 1,
+    "innings": {
+      "inning1": {
+        "run": 2
+      },
+      "inning2": {
+        "run": 0
+      },
+      "__trimmed_keys__": 6
+    }
+  },
+  "awayScore": {
+    "current": 7,
+    "display": 7,
+    "period1": 0,
+    "period2": 0,
+    "period3": 4,
+    "period4": 0,
+    "period5": 1,
+    "period6": 0,
+    "period7": 2,
+    "period8": 0,
+    "innings": {
+      "inning1": {
+        "run": 0
+      },
+      "inning2": {
+        "run": 0
+      },
+      "__trimmed_keys__": 6
+    }
+  },
+  "startTimestamp": 1790847000,
+  "time": {
+    "currentPeriodStartTimestamp": 1790847040
+  },
+  "changes": {
+    "changeTimestamp": 1790858475
+  }
+}

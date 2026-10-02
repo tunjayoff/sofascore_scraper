@@ -1,0 +1,19 @@
+{
+  "case_id": "A_notstarted-0-not-started",
+  "event_id": 16754641,
+  "fetched_at_utc": "2026-10-01T12:45:56+00:00",
+  "source_file": "research/all_sports/status_examples/baseball/event_notstarted-0-not-started__16754641.json",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "winnerCode": null,
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1790931600,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 0
+  }
+}

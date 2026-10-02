@@ -24,8 +24,11 @@ from typing import Any, Dict, FrozenSet, Iterable, Literal, Optional, Tuple, Uni
 # Skorun biçimi (src/status.py'deki ScoreSheet alt sınıfı):
 #   football: devre / 90 dk / uzatma / penaltı ayrımı (FootballScores)
 #   periods:  periyot toplamları, normal süre, uzatma (BasketballScores)
-#   sets:     kazanılan set + set başına oyun/sayı, tie-break (TennisScores)
-ScoreFamily = Literal["football", "periods", "sets"]
+#   sets:     kazanılan set + set başına oyun/sayı, tie-break (TennisScores, SetsScores)
+#   innings:  beyzbol: inning başına sayı (run), uzatma inning'leri, isabet ve hata toplamı (InningsScores)
+#   cricket:  kriket: iki tarafın innings'leri: sayı, düşen kale, over (CricketScores)
+#   fight:    skor yok; sonuç yöntemi ve son raunt (MMA; FightScores)
+ScoreFamily = Literal["football", "periods", "sets", "innings", "cricket", "fight"]
 
 # Periyot ailesinde normal sürenin bölünüşü (src/status.py BasketballScores.format, şemada PeriodsScore.format):
 #   quarters: dört çeyrek (period1..period4)
@@ -37,7 +40,12 @@ PeriodFormat = Literal["quarters", "halves", "thirds"]
 #   games:  oyun; set tie-break'i ve match tie-break olabilir (padel; tenis kendi çizelgesini kullanır)
 #   points: sayı (voleybol, badminton, masa tenisi); tie-break yok
 #   frames: yalnızca kazanılan frame sayısı (snooker); periodN set skoru değildir
-SetFormat = Literal["games", "points", "frames"]
+#   legs:   set başına leg (dart, set usulü maç: olayda bestOfSets var)
+#   legs_won:  yalnızca kazanılan leg sayısı (dart, setsiz maç). Kayıt defterinde durmaz: src/status.py olayın
+#              bestOfSets alanı yoksa `legs`'i buna çevirir
+#   games_won: yalnızca kazanılan oyun (harita) sayısı (e-spor). periodN yalnızca oyunu kimin aldığını (1 / 0)
+#              söyler ve oynanmamış oyunlar da 0-0 gelir; oyunların skoru /event/{id}/esports-games dilimindedir
+SetFormat = Literal["games", "points", "frames", "legs", "legs_won", "games_won"]
 
 # Bitişe yakınlık kuralı (src/watcher.py'deki _NEAR_END_RULES):
 #   football_minute: 2. yarı ≥ 80. dk ya da uzatma dakikası görüldü; uzatma/penaltı kodları
@@ -225,6 +233,51 @@ SPORTS: Tuple[SportSpec, ...] = (
         # Uzun maçlar oturumlara bölünür; bitmiş 4 maçın birinde son değişiklik başlangıçtan 4,27 sa sonra
         watcher=WatcherParams(stuck_after_seconds=6 * 3600),
     ),
+    # --- B sınıfı: kendi durum ya da skor mantığı olan sporlar (docs/all-sports/README.md; plan maddesi SP-3) ---
+    # Bitişe yakınlık kuralı hiçbirinde yok (`never`): inning, oyun ve raunt kodları için kural tanımlı değil.
+    SportSpec(
+        slug="baseball",
+        name="Baseball",
+        i18n_key="sport.baseball",
+        score_family="innings",
+        # Ölçülemedi: araştırmadaki bitmiş maçların changeTimestamp'i sonradan yapılan düzeltmelerdir. Uzatma
+        # inning'leri ve yağmur arası maçı 4 saatin ötesine taşıyabildiği için eşik 6 sa.
+        watcher=WatcherParams(stuck_after_seconds=6 * 3600),
+    ),
+    SportSpec(
+        slug="cricket",
+        name="Cricket",
+        i18n_key="sport.cricket",
+        score_family="cricket",
+        # Birinci sınıf maçlar günlerce sürer; gün sonu durumu `willcontinue` (kod 141, "End of day 1") canlı
+        # sayılır (src/status.py). Dört günlük bir maçın son değişikliği başlangıçtan 32,6 sa sonra
+        # (research/all_sports/events). Beş günlük test maçı ve aralar için eşik 6 gün.
+        watcher=WatcherParams(stuck_after_seconds=6 * 86400),
+    ),
+    SportSpec(
+        slug="esports",
+        name="E-sports",  # SofaScore'un adı (research/all_sports/samples/esports)
+        i18n_key="sport.esports",
+        score_family="sets",
+        set_format="games_won",
+        # bestOf 5'e kadar seriler; araştırmada bitmiş seri yok. Eşik 6 sa.
+        watcher=WatcherParams(stuck_after_seconds=6 * 3600),
+    ),
+    SportSpec(
+        slug="darts",
+        name="Darts",
+        i18n_key="sport.darts",
+        score_family="sets",
+        # Set usulü maç (bestOfSets); setsiz maç src/status.py'de `legs_won` olur. Bitmiş 9 maçın en uzunu
+        # başlangıçtan 0,85 sa sonra bitti: varsayılan takılı eşiği (4 sa) yeter.
+        set_format="legs",
+    ),
+    SportSpec(
+        slug="mma",
+        name="Mixed Martial Arts",  # SofaScore'un adı (research/all_sports/samples/mma)
+        i18n_key="sport.mma",
+        score_family="fight",
+    ),
 )
 
 _BY_SLUG: Dict[str, SportSpec] = {s.slug: s for s in SPORTS}
@@ -392,6 +445,10 @@ DETAIL_SLICES: Tuple[SliceSpec, ...] = (
     SliceSpec("lineups", "/event/{event_id}/lineups"),
     SliceSpec("incidents", "/event/{event_id}/incidents"),
     SliceSpec("point_by_point", "/event/{event_id}/point-by-point", sports=frozenset({"tennis"}), required=False),
+    # E-sporda her oyunun (haritanın) durumu, kazananı ve yarı skorları (SP-3). Oyun nesneleri maç olarak
+    # dizinlenmez: yanıt maçın bir dilimidir. Oyunlar maç başlayınca vardır.
+    SliceSpec("esports_games", "/event/{event_id}/esports-games", sports=frozenset({"esports"}), required=False,
+              phases=frozenset({"live", "post"})),
 )
 
 

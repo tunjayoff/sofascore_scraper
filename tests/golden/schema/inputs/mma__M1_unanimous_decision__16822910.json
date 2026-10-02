@@ -1,0 +1,289 @@
+{
+ "source_file": "research/all_sports/samples/mma/event-id__1.json",
+ "fetched_at_utc": "2026-10-01T12:41:32+00:00",
+ "event": {
+  "venue": {
+   "city": {
+    "name": "Los Angeles",
+    "state": "US-CA",
+    "country": {
+     "alpha2": "US",
+     "alpha3": "USA",
+     "name": "USA",
+     "slug": "usa"
+    },
+    "id": 18688
+   },
+   "hidden": true,
+   "slug": "crypto-com-arena",
+   "name": "Crypto.com Arena",
+   "capacity": 20000,
+   "country": {
+    "alpha2": "US",
+    "alpha3": "USA",
+    "name": "USA",
+    "slug": "usa"
+   },
+   "id": 6008,
+   "stadium": {
+    "name": "Crypto.com Arena",
+    "capacity": 20000
+   }
+  },
+  "fightType": "maincard",
+  "weightClass": "fly",
+  "winType": "UD",
+  "tournament": {
+   "name": "UFC 331: Van vs. Pantoja 2",
+   "slug": "ufc-331",
+   "category": {
+    "name": "World",
+    "slug": "world",
+    "sport": {
+     "name": "Mixed Martial Arts",
+     "slug": "mma",
+     "id": 76
+    },
+    "priority": 0,
+    "country": {},
+    "id": 1708,
+    "flag": "international"
+   },
+   "uniqueTournament": {
+    "name": "UFC",
+    "slug": "ufc",
+    "primaryColorHex": "#F7787C",
+    "category": {
+     "name": "World",
+     "slug": "world",
+     "sport": {
+      "name": "Mixed Martial Arts",
+      "slug": "mma",
+      "id": 76
+     },
+     "priority": 0,
+     "country": {},
+     "id": 1708,
+     "flag": "international"
+    },
+    "userCount": 100437,
+    "hasRounds": true,
+    "hasPerformanceGraphFeature": false,
+    "liveActivityEnabled": false,
+    "country": {
+     "alpha2": "US",
+     "alpha3": "USA",
+     "name": "USA",
+     "slug": "usa"
+    },
+    "id": 19906,
+    "hasEventPlayerStatistics": false,
+    "displayInverseHomeAwayTeams": false
+   },
+   "priority": 0,
+   "isGroup": false,
+   "isLive": false,
+   "id": 192393,
+   "endTimestamp": 1789874390,
+   "startTimestamp": 1789853400,
+   "location": "Los Angeles"
+  },
+  "season": {
+   "name": "UFC 331: Van vs. Pantoja 2",
+   "year": "2026",
+   "editor": false,
+   "id": 98613
+  },
+  "customId": "eFJdsVHRd",
+  "status": {
+   "code": 100,
+   "description": "Ended",
+   "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeTeam": {
+   "name": "Joshua Van",
+   "slug": "joshua-van",
+   "shortName": "J. Van",
+   "gender": "M",
+   "sport": {
+    "name": "Mixed Martial Arts",
+    "slug": "mma",
+    "id": 76
+   },
+   "userCount": 3434,
+   "teamRankings": [
+    {
+     "position": 0,
+     "rankingTypeName": "UFC Flyweight",
+     "rankingTypeSlug": "ufc-flyweight",
+     "uniqueTournamentId": 19906,
+     "uniqueTournamentName": "UFC",
+     "uniqueTournamentSlug": "ufc",
+     "weightClass": "fly",
+     "gender": "M"
+    }
+   ],
+   "playerTeamInfo": {
+    "nickname": "The Fearless",
+    "height": 1.65,
+    "reach": 1.65,
+    "weight": 56,
+    "fightingStyle": "mma",
+    "weightClass": "fly",
+    "id": 11916,
+    "birthDateTimestamp": 1002672000,
+    "underage": false,
+    "currentRanking": 0
+   },
+   "nameCode": "JVA",
+   "ranking": 0,
+   "disabled": false,
+   "national": false,
+   "type": 1,
+   "country": {
+    "alpha2": "MM",
+    "alpha3": "MMR",
+    "name": "Myanmar",
+    "slug": "myanmar"
+   },
+   "id": 481645,
+   "fullName": "Joshua Van",
+   "subTeams": [],
+   "teamColors": {
+    "primary": "#374df5",
+    "secondary": "#374df5",
+    "text": "#ffffff"
+   },
+   "wdlRecord": {
+    "wins": 18,
+    "draws": 0,
+    "losses": 2
+   },
+   "timeActive": []
+  },
+  "awayTeam": {
+   "name": "Alexandre Pantoja",
+   "slug": "alexandre-pantoja",
+   "shortName": "A. Pantoja",
+   "gender": "M",
+   "sport": {
+    "name": "Mixed Martial Arts",
+    "slug": "mma",
+    "id": 76
+   },
+   "userCount": 5200,
+   "teamRankings": [
+    {
+     "position": 2,
+     "rankingTypeName": "UFC Flyweight",
+     "rankingTypeSlug": "ufc-flyweight",
+     "uniqueTournamentId": 19906,
+     "uniqueTournamentName": "UFC",
+     "uniqueTournamentSlug": "ufc",
+     "weightClass": "fly",
+     "gender": "M"
+    }
+   ],
+   "playerTeamInfo": {
+    "nickname": "THE CANNIBAL",
+    "height": 1.65,
+    "reach": 1.7,
+    "weight": 56,
+    "fightingStyle": "brazilian-jiu-jitsu",
+    "weightClass": "fly",
+    "birthCity": {
+     "name": "Rio de Janeiro",
+     "country": {
+      "alpha2": "BR",
+      "alpha3": "BRA",
+      "name": "Brazil",
+      "slug": "brazil"
+     },
+     "id": 19026
+    },
+    "residenceCity": {
+     "name": "Arraial do Cabo, Rio de Janeiro",
+     "country": {
+      "alpha2": "BR",
+      "alpha3": "BRA",
+      "name": "Brazil",
+      "slug": "brazil"
+     },
+     "id": 36069
+    },
+    "id": 6098,
+    "birthplace": "Rio de Janeiro, Brazil",
+    "birthDateTimestamp": 640224000,
+    "underage": false,
+    "residence": "Arraial do Cabo, Rio de Janeiro, Brazil",
+    "currentUniqueTournamentSinceTimestamp": 1485561600,
+    "currentRanking": 2
+   },
+   "nameCode": "APA",
+   "ranking": 2,
+   "disabled": false,
+   "national": false,
+   "type": 1,
+   "country": {
+    "alpha2": "BR",
+    "alpha3": "BRA",
+    "name": "Brazil",
+    "slug": "brazil"
+   },
+   "id": 461504,
+   "fullName": "Alexandre Pantoja",
+   "subTeams": [],
+   "teamColors": {
+    "primary": "#374df5",
+    "secondary": "#374df5",
+    "text": "#ffffff"
+   },
+   "wdlRecord": {
+    "wins": 30,
+    "draws": 0,
+    "losses": 7
+   },
+   "timeActive": []
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {
+   "period1": 300,
+   "period2": 300,
+   "period3": 300,
+   "period4": 300,
+   "period5": 300,
+   "played": 1500,
+   "totalPeriodCount": 5
+  },
+  "changes": {
+   "changes": [
+    "time.period1",
+    "time.period2",
+    "time.period3",
+    "time.period4",
+    "time.period5",
+    "time.played",
+    "time.playedLastUpdated"
+   ],
+   "changeTimestamp": 1790065110
+  },
+  "hasGlobalHighlights": false,
+  "crowdsourcingDataDisplayEnabled": false,
+  "id": 16822910,
+  "order": 12,
+  "finalRound": 5,
+  "gender": "M",
+  "defaultPeriodCount": 5,
+  "defaultPeriodLength": 5,
+  "slug": "joshua-van-alexandre-pantoja",
+  "startTimestamp": 1789874390,
+  "finalResultOnly": false,
+  "feedLocked": false,
+  "showTotoPromo": true,
+  "awayTeamRanking": 1,
+  "homeTeamRanking": 0,
+  "isEditor": false
+ }
+}

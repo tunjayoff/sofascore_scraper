@@ -7,7 +7,8 @@ Altın dosyalar tests/golden/schema altındadır:
   payloads.json      inputs/ altındaki tam olay yüklerinin Event kaydı ve içlerindeki varlıklar
   store.json         kanonik fixture dizininin Store satırlarından kayıtlar (dilim, değişiklik, akış olayı, ...)
   json_schema.json   üretilen JSON Schema belgesi
-  inputs/*.json      research/status_samples'tan alınmış tam olay yükleri (çeviri alanları atılmış)
+  inputs/*.json      research/status_samples'tan (SP-3'ün beş sporu: research/all_sports/samples'tan) alınmış
+                     tam olay yükleri (çeviri alanları atılmış)
 
 Çıktı bilerek değiştirildiyse altın dosyalar şöyle yeniden üretilir ve fark gözden geçirilir:
 
@@ -295,11 +296,14 @@ def test_importing_the_package_loads_no_store_and_no_io_module():
 
 def test_enums_follow_the_domain_modules():
     assert typing.get_args(models.StatusClassName) == tuple(member.value for member in StatusClass)
-    assert typing.get_args(ScoreFamily) == ("football", "periods", "sets")
+    assert typing.get_args(ScoreFamily) == ("football", "periods", "sets", "innings", "cricket", "fight")
     families = {typing.get_args(typing.get_type_hints(model)["family"])[0]
-                for model in (models.FootballScore, models.PeriodsScore, models.SetsScore)}
+                for model in (models.FootballScore, models.PeriodsScore, models.SetsScore, models.InningsScore,
+                              models.CricketScore, models.FightScore)}
     assert families == set(typing.get_args(ScoreFamily)) == {spec.score_family for spec in SPORTS}
     assert typing.get_args(models.SliceState) == ("ok", "empty", "error", "not_requested")
+    assert typing.get_args(models.SetsFormat) == ("games", "points", "frames", "legs", "legs_won", "games_won")
+    assert {spec.set_format for spec in SPORTS} - {None} < set(typing.get_args(models.SetsFormat))  # legs_won: olaydan
     assert mappers.TERMINAL_CLASSES == {"completed", "decided_without_play", "void"}
     assert mappers.DEFAULT_REFRESH_WINDOW_S == 72 * 3600
 
@@ -327,7 +331,8 @@ def test_to_dict_is_plain_json_in_field_order():
         id=1, sport="tennis", category_id=None, tournament_id=None, season_id=None, stage=None, round=None,
         start_utc=None, status=models.Status(type=None, code=None, description=None, class_="unknown"),
         participants=models.EventParticipants(home=None, away=models.EventParticipant(id=2, name="B")),
-        score=models.SetsScore(family="sets", home=None, away=None, sets_won=None, match_tiebreak=False, sets=(
+        score=models.SetsScore(family="sets", home=None, away=None, format="games", sets_won=None,
+                               match_tiebreak=False, sets=(
             models.SetScore(number=1, home=6, away=4, tiebreak=None),)),
         winner=None, aggregate=None, slug=None, custom_id=None,
         quality=models.Quality(source="listing", observed_at_utc=None, change_ts=None, settlement="open",
@@ -424,19 +429,49 @@ def _expected_score(event: Mapping[str, Any], sport: str) -> Dict[str, Any]:
             "final": _expected_pair(home, away, "current"),
             "penalties": _expected_pair(home, away, "penalties") if fixed else None,
         }
+    if family == "innings":  # beyzbol (SP-3): inningN.run, o inning yoksa periodN
+        def runs(score: Mapping[str, Any], n: int) -> Any:
+            inning = (score.get("innings") or {}).get(f"inning{n}")
+            run = inning.get("run") if isinstance(inning, dict) else None
+            return run if run is not None else score.get(f"period{n}")
+
+        totals = (home.get("inningsBaseball") or {}, away.get("inningsBaseball") or {})
+        return {
+            "family": "innings", **common,
+            "innings": [{"number": n, "home": runs(home, n), "away": runs(away, n)} for n in range(1, 31)
+                        if runs(home, n) is not None or runs(away, n) is not None],
+            "regulation": _expected_pair(home, away, "normaltime"),
+            "extra_innings": _expected_pair(home, away, "overtime"),
+            "hits": _expected_pair(*totals, "hits"),
+            "errors": _expected_pair(*totals, "errors"),
+        }
+    if family == "cricket":  # kriket (SP-3): her tarafın innings'leri, önce ev sahibi
+        return {
+            "family": "cricket", **common,
+            "innings": [{"side": side, "number": n, "runs": inning.get("score"), "wickets": inning.get("wickets"),
+                         "overs": inning.get("overs")}
+                        for side, score in (("home", home), ("away", away))
+                        for n in range(1, 5) if (inning := (score.get("innings") or {}).get(f"inning{n}"))],
+        }
+    if family == "fight":  # MMA (SP-3): skor yok
+        return {"family": "fight", **common, "method": event.get("winType"), "final_round": event.get("finalRound")}
     unit = set_format(sport)  # None: tenis
+    if unit == "legs" and not event.get("bestOfSets"):  # dart: setsiz maç yalnızca leg sayar
+        unit = "legs_won"
     sets = []
     for n in range(1, 6 if unit is None else 8):
         games = _expected_pair(home, away, f"period{n}")
         tiebreak = _expected_pair(home, away, f"period{n}TieBreak") if unit in (None, "games") else None
         if unit is None and games is None:  # tenis: ilk boş sette durur
             break
-        if unit == "frames" or (games is None and tiebreak is None):  # snooker: period1 bir set değildir
+        # snooker, setsiz dart, e-spor: periodN bir set değildir
+        if unit in ("frames", "legs_won", "games_won") or (games is None and tiebreak is None):
             continue
         sets.append({"number": n, **(games or {"home": None, "away": None}), "tiebreak": tiebreak})
     last = sets[-1] if len(sets) in (3, 5) and unit in (None, "games") else None
     return {
         "family": "sets", **common,
+        "format": unit or "games",  # tenisin setleri oyunla sayılır
         "sets_won": _expected_pair(home, away, "current"),
         "sets": sets,
         "match_tiebreak": bool(last) and max(last["home"] or 0, last["away"] or 0) >= 10,
@@ -487,7 +522,7 @@ def test_golden_shows_every_status_class_and_every_settlement(golden_events):
     assert {r["status"]["class"] for r in records} == {
         "not_started", "live", "completed", "decided_without_play", "void"}
     assert {r["quality"]["settlement"] for r in records} == {"open", "provisional", "final"}
-    assert {"football", "periods", "sets"} <= {r["score"]["family"] for r in records}
+    assert {"football", "periods", "sets", "innings", "cricket", "fight"} <= {r["score"]["family"] for r in records}
     assert {r["winner"] for r in records} == {"home", "away", "draw", None}
     assert {r["score"].get("format") for r in records if r["score"]["family"] == "periods"} == {
         "quarters", "halves", "thirds", None} == {None, *typing.get_args(PeriodFormat)}
@@ -499,6 +534,14 @@ def test_golden_shows_every_status_class_and_every_settlement(golden_events):
     assert any(s["tiebreak"] for r in records for s in r["score"].get("sets", ()))
     assert sum(r["aggregate"] is not None for r in records) == 3  # iki futbol maçı, bir hentbol rövanşı (SP-1)
     assert any(r["quality"]["change_ts"] is None for r in records)
+    # SP-3: kriketin gün sonu canlıdır; her set birimi, uzatma inning'i, iki innings'li taraf ve sonuç yöntemi
+    assert {r["status"]["class"] for r in records if r["status"]["type"] == "willcontinue"} == {"live"}
+    assert {r["score"]["format"] for r in records if r["score"]["family"] == "sets"} == set(
+        typing.get_args(models.SetsFormat))
+    assert any(r["score"].get("extra_innings") for r in records)
+    assert any(r["score"].get("hits") and r["score"].get("errors") for r in records)
+    assert any(len([i for i in r["score"].get("innings", ()) if i.get("side") == "away"]) == 2 for r in records)
+    assert {r["score"]["method"] for r in records if r["score"]["family"] == "fight"} == {"UD", "SD", "TKO", "SUB", None}
 
 
 # --- altın kayıtlar: tam yükler ------------------------------------------------------------------------
@@ -510,11 +553,11 @@ def golden_payloads() -> Dict[str, Any]:
 
 def test_inputs_are_the_reviewed_set(golden_payloads):
     assert sorted(golden_payloads) == sorted(path.stem for path in INPUTS)
-    assert len(INPUTS) == 7
+    assert len(INPUTS) == 12  # SC-1'in yedisi + SP-3'ün beş sporundan birer tam yük
     for path in INPUTS:
         document = json.loads(path.read_text(encoding="utf-8"))
         assert sorted(document) == ["event", "fetched_at_utc", "source_file"]
-        assert document["source_file"].startswith("research/status_samples/")
+        assert document["source_file"].startswith(("research/status_samples/", "research/all_sports/samples/"))
 
 
 @pytest.mark.parametrize("path", INPUTS, ids=lambda path: path.stem)
@@ -542,7 +585,9 @@ def test_entities_equal_the_payload_paths(path):
     assert records["sport"] == {"slug": category["sport"]["slug"], "name": category["sport"]["name"],
                                 "id": category["sport"]["id"],
                                 "score_family": {"football": "football", "basketball": "periods",
-                                                 "tennis": "sets"}[category["sport"]["slug"]]}
+                                                 "tennis": "sets", "baseball": "innings", "cricket": "cricket",
+                                                 "esports": "sets", "darts": "sets",
+                                                 "mma": "fight"}[category["sport"]["slug"]]}
     assert records["category"] == {"id": category["id"], "sport": category["sport"]["slug"],
                                    "name": category["name"], "slug": category["slug"],
                                    "country_code": category.get("alpha2")}
@@ -580,6 +625,13 @@ def test_entities_equal_the_payload_paths(path):
 def test_inputs_cover_the_participant_types_and_a_country_category(golden_payloads):
     types = {p["type"] for records in golden_payloads.values() for p in records["participants"]}
     assert types == {"team", "player", "pair"}
+    # Dart ve MMA'da taraflar kişidir (karar 13 yalnızca futbol, basketbol ve teniste doğrulanmıştı; SP-3)
+    persons = {records["sport"]["slug"]: {p["type"] for p in records["participants"]}
+               for records in golden_payloads.values() if records["sport"]["slug"] in ("darts", "mma")}
+    assert persons == {"darts": {"player"}, "mma": {"player"}}
+    teams = {records["sport"]["slug"]: {p["type"] for p in records["participants"]}
+             for records in golden_payloads.values() if records["sport"]["slug"] in ("baseball", "cricket", "esports")}
+    assert teams == {"baseball": {"team"}, "cricket": {"team"}, "esports": {"team"}}
     codes = {records["category"]["country_code"] for records in golden_payloads.values()}
     assert {"EN", None} <= codes  # ülke kategorisi ve ülke olmayan kategori (ATP)
     rounds = [records["event"]["round"] for records in golden_payloads.values()]
@@ -672,6 +724,41 @@ def test_numbered_sets_keep_their_number():
     bad = json.dumps({"family": "sets", "sets": {"x": [1, 0], "2": [None, None], "3": "1-0", "1": [25, 20]}})
     assert schema.event_from_row(_row(sport="volleyball", scores_json=bad)).score.to_dict()["sets"] == [
         {"number": 1, "home": 25, "away": 20, "tiebreak": None}]
+
+
+def test_class_b_scores_from_rows():
+    """SP-3: beyzbol, kriket ve MMA çizelgeleri; okunamayan parça atlanır ya da null kalır, kayıt düşmez."""
+    innings = json.dumps({"family": "innings", "innings": {"2": [1, 0], "1": [0, None], "x": [1, 1], "0": [5, 5],
+                                                            "3": "1-0"},
+                          "regulation": [3, 3], "extra_innings": None, "hits": [7, "x"], "errors": [0, 1]})
+    score = schema.event_from_row(_row(sport="baseball", scores_json=innings, home_score=4, away_score=3)).score
+    assert score.to_dict() == {
+        "family": "innings", "home": 4, "away": 3,
+        "innings": [{"number": 1, "home": 0, "away": None}, {"number": 2, "home": 1, "away": 0}],
+        "regulation": {"home": 3, "away": 3}, "extra_innings": None, "hits": {"home": 7, "away": None},
+        "errors": {"home": 0, "away": 1}}
+    cricket = json.dumps({"family": "cricket",
+                          "home_innings": {"2": {"runs": 110, "wickets": 9, "overs": 24.2},
+                                           "1": {"runs": 103, "wickets": "ten", "overs": float("inf")}},
+                          "away_innings": {"1": "237/10", "x": {"runs": 1}}})
+    score = schema.event_from_row(_row(sport="cricket", scores_json=cricket)).score
+    assert [i.to_dict() for i in score.innings] == [
+        {"side": "home", "number": 1, "runs": 103, "wickets": None, "overs": None},
+        {"side": "home", "number": 2, "runs": 110, "wickets": 9, "overs": 24.2}]
+    fight = json.dumps({"family": "fight", "method": "", "final_round": 2.0})
+    assert schema.event_from_row(_row(sport="mma", scores_json=fight)).score.to_dict() == {
+        "family": "fight", "home": None, "away": None, "method": None, "final_round": 2}
+    # sporun ailesi, çizelge yokken de
+    assert schema.event_from_row(_row(sport="mma", scores_json=None)).score.family == "fight"
+    assert schema.event_from_row(_row(sport="cricket", scores_json=None)).score.innings == ()
+    # set biriminin bilinmeyen değeri null olur; tenisin 2.x çizelgesi oyunla sayar
+    odd = json.dumps({"family": "sets", "format": "rounds", "sets_won": [1, 0], "sets": {}})
+    assert schema.event_from_row(_row(sport="darts", scores_json=odd)).score.format is None
+    tennis = json.dumps({"family": "sets", "sets_won": [2, 0], "games": [[6, 1], [6, 2]], "tiebreaks": {}})
+    assert schema.event_from_row(_row(sport="tennis", scores_json=tennis)).score.format == "games"
+    for record in (innings, cricket, fight):
+        family = json.loads(record)["family"]
+        assert check(schema.event_from_row(_row(sport="x", scores_json=record)).to_dict(), "Event") == [], family
 
 
 def test_malformed_sheets_and_lines_do_not_break_the_mappers():
@@ -882,13 +969,19 @@ def test_schema_types_by_hand():
     assert defs["Event"]["properties"]["sport"]["type"] == ["string", "null"]
     assert defs["Event"]["properties"]["winner"]["enum"] == ["home", "away", "draw", None]
     assert defs["Event"]["properties"]["score"]["oneOf"] == [
-        {"$ref": f"#/$defs/{name}"} for name in ("FootballScore", "PeriodsScore", "SetsScore", "PlainScore")]
+        {"$ref": f"#/$defs/{name}"} for name in ("FootballScore", "PeriodsScore", "SetsScore", "InningsScore",
+                                                  "CricketScore", "FightScore", "PlainScore")]
     assert defs["Event"]["properties"]["stage"]["anyOf"] == [{"$ref": "#/$defs/Stage"}, {"type": "null"}]
     assert defs["Status"]["properties"]["class"]["enum"] == [member.value for member in StatusClass]
     assert defs["FootballScore"]["properties"]["family"]["const"] == "football"
     assert defs["PlainScore"]["properties"]["family"]["type"] == "null"
     assert defs["PeriodsScore"]["properties"]["periods"]["items"] == {"$ref": "#/$defs/PeriodScore"}
     assert defs["SetsScore"]["properties"]["match_tiebreak"]["type"] == "boolean"
+    assert defs["SetsScore"]["properties"]["format"]["examples"][-1] == "games_won"
+    assert defs["InningsScore"]["properties"]["innings"]["items"] == {"$ref": "#/$defs/InningScore"}
+    assert defs["CricketInnings"]["properties"]["overs"]["type"] == ["number", "null"]
+    assert defs["CricketInnings"]["properties"]["side"]["enum"] == ["home", "away"]
+    assert defs["FightScore"]["properties"]["method"]["type"] == ["string", "null"]
     assert defs["Quality"]["properties"]["settlement"]["enum"] == ["open", "provisional", "final"]
     assert defs["Quality"]["properties"]["observed_at_utc"]["format"] == "date-time"
     assert defs["Slice"]["properties"]["state"]["enum"] == ["ok", "empty", "error", "not_requested"]
@@ -896,7 +989,7 @@ def test_schema_types_by_hand():
     assert defs["LiveEvent"]["properties"]["data"]["type"] == "object"
     assert defs["LiveEvent"]["properties"]["type"]["examples"][0] == "live.status_changed"
     assert defs["Sport"]["properties"]["score_family"] == {
-        "type": ["string", "null"], "examples": ["football", "periods", "sets"],
+        "type": ["string", "null"], "examples": ["football", "periods", "sets", "innings", "cricket", "fight"],
         "description": defs["Sport"]["properties"]["score_family"]["description"],
         "x-source": "sport registry (`src/sports.py`)",
     }

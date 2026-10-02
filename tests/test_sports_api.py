@@ -6,7 +6,8 @@ from src.web.app import app
 
 REGISTERED = ("football", "basketball", "tennis", "american-football", "aussie-rules", "ice-hockey", "handball",
               "rugby", "futsal", "minifootball", "floorball",  # SP-1: + sekiz periyot sporu
-              "volleyball", "badminton", "table-tennis", "padel", "snooker")  # SP-2: + beş set sporu
+              "volleyball", "badminton", "table-tennis", "padel", "snooker",  # SP-2: + beş set sporu
+              "baseball", "cricket", "esports", "darts", "mma")  # SP-3: + beş B sınıfı spor
 COMMON_KEYS = ("statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents")
 
 
@@ -33,6 +34,12 @@ def test_api_lists_sports_and_their_slices():
         "key": "point_by_point", "path": "/event/{event_id}/point-by-point", "required": False, "default_enabled": True,
     }
     assert [s["key"] for s in by_slug["tennis"]["slices"]] == list(COMMON_KEYS) + ["point_by_point"]
+    # SP-3: e-sporun oyunları kendi dilimi; yeni skor aileleri
+    assert by_slug["esports"]["slices"][-1] == {
+        "key": "esports_games", "path": "/event/{event_id}/esports-games", "required": False, "default_enabled": True,
+    }
+    assert [by_slug[s]["score_family"] for s in ("baseball", "cricket", "esports", "darts", "mma")] == [
+        "innings", "cricket", "sets", "sets", "fight"]
 
 
 def test_api_sports_follows_the_registry(monkeypatch):

@@ -225,6 +225,77 @@
     {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
     {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
    ]
+  },
+  {
+   "slug": "baseball",
+   "name": "Baseball",
+   "i18n_key": "sport.baseball",
+   "score_family": "innings",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
+  },
+  {
+   "slug": "cricket",
+   "name": "Cricket",
+   "i18n_key": "sport.cricket",
+   "score_family": "cricket",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
+  },
+  {
+   "slug": "esports",
+   "name": "E-sports",
+   "i18n_key": "sport.esports",
+   "score_family": "sets",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true},
+    {"key": "esports_games", "path": "/event/{event_id}/esports-games", "required": false, "default_enabled": true}
+   ]
+  },
+  {
+   "slug": "darts",
+   "name": "Darts",
+   "i18n_key": "sport.darts",
+   "score_family": "sets",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
+  },
+  {
+   "slug": "mma",
+   "name": "Mixed Martial Arts",
+   "i18n_key": "sport.mma",
+   "score_family": "fight",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
   }
  ]
 }

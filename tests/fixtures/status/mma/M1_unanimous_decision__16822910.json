@@ -1,0 +1,29 @@
+{
+  "case_id": "M1_unanimous_decision",
+  "event_id": 16822910,
+  "fetched_at_utc": "2026-10-01T12:41:32+00:00",
+  "source_file": "research/all_sports/samples/mma/event-id__1.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1789874390,
+  "time": {
+    "period1": 300,
+    "period2": 300,
+    "period3": 300,
+    "period4": 300,
+    "period5": 300,
+    "played": 1500,
+    "totalPeriodCount": 5
+  },
+  "changes": {
+    "changeTimestamp": 1790065110
+  },
+  "winType": "UD",
+  "finalRound": 5
+}

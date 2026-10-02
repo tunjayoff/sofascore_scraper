@@ -1,0 +1,29 @@
+{
+  "case_id": "D2_legs_only",
+  "event_id": 17180772,
+  "fetched_at_utc": "2026-10-01T12:55:48+00:00",
+  "source_file": "research/all_sports/events/darts.jsonl",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 4,
+    "display": 4,
+    "normaltime": 4
+  },
+  "awayScore": {
+    "current": 2,
+    "display": 2,
+    "normaltime": 2
+  },
+  "startTimestamp": 1790769960,
+  "time": {
+    "currentPeriodStartTimestamp": 1790770783
+  },
+  "changes": {
+    "changeTimestamp": 1790771763
+  }
+}

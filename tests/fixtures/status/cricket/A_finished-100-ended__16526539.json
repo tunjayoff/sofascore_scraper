@@ -1,0 +1,42 @@
+{
+  "case_id": "A_finished-100-ended",
+  "event_id": 16526539,
+  "fetched_at_utc": "2026-10-01T12:43:41+00:00",
+  "source_file": "research/all_sports/status_examples/cricket/event_finished-100-ended__16526539.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {
+    "current": 174,
+    "display": 174,
+    "innings": {
+      "inning1": {
+        "score": 174,
+        "wickets": 10,
+        "overs": 38.5,
+        "runRate": 4.48,
+        "targetRunRate": 5.72
+      }
+    }
+  },
+  "awayScore": {
+    "current": 285,
+    "display": 285,
+    "innings": {
+      "inning1": {
+        "score": 285,
+        "wickets": 4,
+        "overs": 50,
+        "runRate": 5.7
+      }
+    }
+  },
+  "startTimestamp": 1790811000,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 1790834124
+  }
+}

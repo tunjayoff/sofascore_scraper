@@ -82,7 +82,8 @@ def golden() -> dict:
 
 def test_golden_covers_every_status_fixture_and_names_the_derive_version(golden):
     assert sorted(golden["rows"]) == sorted(_key(p) for p in PATHS)
-    assert len(PATHS) == 203  # 154 + 25 örnek: SP-1'in sekiz periyot sporu; + 24 örnek: SP-2'nin beş set sporu
+    # 154 + 25 örnek: SP-1'in sekiz periyot sporu; + 24: SP-2'nin beş set sporu; + 28: SP-3'ün beş B sınıfı sporu
+    assert len(PATHS) == 231
     # Sürüm artınca altın dosya yeniden üretilir; altın dosya değişince sürüm artırılır
     assert golden["derive_version"] == derive.DERIVE_VERSION
 
@@ -110,7 +111,8 @@ def test_status_class_and_scores_equal_the_status_module(path):
     common = {f.name for f in dataclasses.fields(ScoreSheet)}
     stored = json.loads(row["scores_json"])
     family = {"FootballScores": "football", "BasketballScores": "periods", "PeriodsScores": "periods",
-              "TennisScores": "sets", "SetsScores": "sets"}[type(sheet).__name__]
+              "TennisScores": "sets", "SetsScores": "sets", "InningsScores": "innings",
+              "CricketScores": "cricket", "FightScores": "fight"}[type(sheet).__name__]
     assert stored == {"family": family, **{k: v for k, v in expected.items() if k not in common}}
     assert common == {"sport", "status_class", "winner_code", "raw_change_ts", "raw_changed_fields"}
 

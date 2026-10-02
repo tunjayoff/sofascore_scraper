@@ -1,0 +1,51 @@
+{
+  "case_id": "A_finished-100-ended",
+  "event_id": 723764,
+  "fetched_at_utc": "2026-10-01T12:45:56+00:00",
+  "source_file": "research/all_sports/status_examples/baseball/event_finished-100-ended__723764.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {
+    "current": 1,
+    "display": 1,
+    "innings": {
+      "inning1": {
+        "run": 0,
+        "hits": 0,
+        "errors": 0
+      },
+      "inning2": {
+        "run": 0,
+        "hits": 0,
+        "errors": 0
+      },
+      "__trimmed_keys__": 7
+    }
+  },
+  "awayScore": {
+    "current": 4,
+    "display": 4,
+    "innings": {
+      "inning1": {
+        "run": 0,
+        "hits": 0,
+        "errors": 0
+      },
+      "inning2": {
+        "run": 0,
+        "hits": 0,
+        "errors": 0
+      },
+      "__trimmed_keys__": 7
+    }
+  },
+  "startTimestamp": 1207955100,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 0
+  }
+}
