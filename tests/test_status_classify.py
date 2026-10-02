@@ -24,6 +24,8 @@ EXPECTED = {
     ("inprogress", 8): StatusClass.LIVE,  # 1st set
     ("inprogress", 9): StatusClass.LIVE,  # 2nd set
     ("inprogress", 10): StatusClass.LIVE,  # 3rd set
+    ("inprogress", 11): StatusClass.LIVE,  # 4th set (masa tenisi; docs/all-sports/README.md, SP-2)
+    ("inprogress", 12): StatusClass.LIVE,  # 5th set
     ("inprogress", 13): StatusClass.LIVE,  # 1st quarter
     ("inprogress", 14): StatusClass.LIVE,
     ("inprogress", 15): StatusClass.LIVE,

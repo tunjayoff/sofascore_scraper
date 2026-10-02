@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class StatusClass(str, Enum):
     NOT_STARTED = "not_started"  # type notstarted (code 0)
-    LIVE = "live"  # type inprogress (6, 7, 8, 9, 10, 13-16, 20, 30, 31)
+    LIVE = "live"  # type inprogress (6, 7, 8-12, 13-16, 20, 30, 31)
     COMPLETED = "completed"  # type finished, code 100/110/120 (oynandı ve bitti)
     DECIDED_WITHOUT_PLAY = "decided_without_play"  # type finished, code 91 Walkover / 92 Retired
     VOID = "void"  # type postponed/canceled/interrupted/suspended (60, 70, 80, 81, 90)
@@ -28,7 +28,9 @@ class StatusClass(str, Enum):
 
 _COMPLETED_CODES = frozenset({100, 110, 120})
 _WITHOUT_PLAY_CODES = frozenset({91, 92})
-_LIVE_CODES = frozenset({6, 7, 8, 9, 10, 13, 14, 15, 16, 20, 30, 31})
+# 11 / 12: 4. ve 5. set (masa tenisi, voleybol; SP-2). Tip inprogress olduğundan zaten LIVE sayılıyorlardı;
+# burada yalnızca tipi olmayan yükte fark eder.
+_LIVE_CODES = frozenset({6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 30, 31})
 _VOID_CODES = frozenset({60, 70, 80, 81, 90})
 
 _VOID_TYPES = frozenset({"postponed", "canceled", "interrupted", "suspended"})
