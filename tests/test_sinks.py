@@ -1,6 +1,7 @@
 """
 Sink'ler (plan maddesi P22; docs/design/02-services.md bölüm 5): zarf, süzgeç, stdout ve dosya sink'leri,
-dağıtıcı (konumlar, yeniden deneme, yaş sınırı, kilit, tek seferlik boşaltma) ve yapılandırmadan kurulum. Tümü çevrimdışı; zamana bağlı her şey sahte saatle sınanır.
+dağıtıcı (konumlar, yeniden deneme, yaş sınırı, kilit, tek seferlik boşaltma), yapılandırmadan kurulum ve
+`ssc events` komutu. Tümü çevrimdışı; zamana bağlı her şey sahte saatle sınanır.
 
 Webhook'un HTTP sözleşmesi (yerel bir sunucuya karşı) tests/test_webhook_contract.py'dedir.
 """
@@ -12,6 +13,8 @@ import json
 import logging
 import math
 import os
+import select
+import signal
 import subprocess
 import sys
 import threading
@@ -26,6 +29,7 @@ import pytest
 import conftest
 import test_cli_skeleton as skeleton
 from src import sinks
+from src.cli.commands import events as events_command
 from src.config import SinkSpec, loader
 from src.exceptions import ConfigError
 from src.jobs.manager import JobManager, local_origin
@@ -38,8 +42,10 @@ from src.sinks.stdout import StdoutSink
 from src.sinks.webhook import WebhookSink
 from src.store import JobStore, Store, StoreBusy, StreamEvent, open_store
 from src.store import streams as store_streams
+from test_cli_skeleton import CliRunner
 
-# Ayrı bir süreçte çalıştıran fixture (tests/test_cli_skeleton.py)
+# `main()`i bu süreçte çalıştıran ve süreçteki izlerini geri alan fixture (tests/test_cli_skeleton.py)
+cli = skeleton.cli
 box = skeleton.box
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -143,7 +149,7 @@ def system_events(store: Store, type_: str = "system.sink_dropped") -> List[Dict
 
 
 def test_stream_names_are_the_ones_of_the_store():
-    assert base.STREAMS == store_streams.STREAMS
+    assert base.STREAMS == store_streams.STREAMS == events_command.STREAMS
     assert base.SYSTEM_STREAM == store_streams.SYSTEM_STREAM
 
 
@@ -949,10 +955,10 @@ def test_drain_leaves_the_backlog_to_the_holder_of_the_lease(store: Store):
 
 # Başka bir süreç: depoyu açar, `sinks` kilidini alır, "ready" yazar ve stdin'den bir satır gelince bırakır.
 LEASE_HOLDER = """
-import sys
+import os, sys
 from src.store import open_store
 lease = open_store(sys.argv[1]).lease("sinks", purpose="dispatcher")
-print("ready", flush=True)
+print("ready", os.getpid(), flush=True)
 sys.stdin.readline()
 lease.release()
 """
@@ -966,9 +972,10 @@ def test_drain_leaves_the_backlog_to_another_process_that_dispatches(store: Stor
     holder = subprocess.Popen([sys.executable, "-c", LEASE_HOLDER, str(store.data_dir)], cwd=ROOT,
                               stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
     try:
-        assert holder.stdout.readline().strip() == "ready"
+        ready, pid = holder.stdout.readline().split()  # sürecin kendi bildirdiği kimlik (Windows'ta başlatıcı ayrı süreçtir)
+        assert ready == "ready"
         report = dispatcher.drain(10.0)
-        assert report.lease_held and report.holder_pid == holder.pid and probe.attempts == []
+        assert report.lease_held and report.holder_pid == int(pid) and probe.attempts == []
         holder.stdin.write("\n")
         holder.stdin.flush()
         assert holder.wait(timeout=30) == 0
@@ -1334,3 +1341,224 @@ def test_the_package_root_is_light_and_loads_sinks_on_first_use(box: skeleton.Sa
     assert run.stdout.strip() == "[] True"
     with pytest.raises(AttributeError):
         sinks.NoSuchName  # noqa: B018
+
+
+# === `ssc events` ================================================================================
+
+
+@pytest.fixture
+def log_dir(data_dir: Path) -> Path:
+    """Dört olaylı bir günlük: iki canlı olay (iki ayrı maç), bir iş olayı, bir sistem olayı."""
+    opened = open_store(data_dir)
+    emit(opened, "live.status_changed", event_id=101, sport="football", tournament_id=17, ts=1790856421.5,
+         data={"from": "live", "to": "completed"})
+    emit(opened, "job.started", source="job", data={"job_id": "01J"})
+    emit(opened, "live.score_changed", event_id=102, sport="football", data={"scores": [1, 0]})
+    emit(opened, "system.blocked", source="system", data={})
+    return data_dir
+
+
+def stream_lines(run: skeleton.Run) -> List[Dict[str, Any]]:
+    return [json.loads(line) for line in run.stdout.splitlines()]
+
+
+def test_events_prints_the_log_as_json_lines_and_ends_with_an_end_line(cli: CliRunner, log_dir: Path):
+    run = cli("events", "--data-dir", log_dir)
+    assert (run.exit_code, run.stderr) == (0, "")
+    documents = stream_lines(run)
+    assert all("type" in document for document in documents)
+    assert [document["type"] for document in documents] == [
+        "live.status_changed", "job.started", "live.score_changed", "system.blocked", "end"]
+    assert documents[0] == {
+        "stream": "live", "seq": 1, "type": "live.status_changed", "ts": "2026-10-01T12:07:01.500Z", "event_id": 101,
+        "sport": "football", "tournament_id": 17, "source": "poll", "data": {"from": "live", "to": "completed"},
+    }
+    stream_id = open_store(log_dir).streams.head().stream_id
+    assert documents[-1] == {"type": "end", "stream_id": stream_id, "last_seq": 4, "count": 4, "gap": False}
+
+
+def test_events_ndjson_mode_prints_no_envelope(cli: CliRunner, log_dir: Path):
+    text, ndjson = cli("events", "--data-dir", log_dir), cli("events", "--data-dir", log_dir, "--output", "ndjson")
+    assert ndjson.stdout == text.stdout and ndjson.stderr == ""
+    assert not any("ok" in document for document in stream_lines(ndjson))
+
+
+def test_events_json_mode_is_one_document(cli: CliRunner, log_dir: Path):
+    run = cli("events", "--data-dir", log_dir, "--stream", "job", "--json")
+    assert run.exit_code == 0
+    data = run.data
+    assert (data["count"], data["last_seq"], data["gap"]) == (1, 4, False)
+    assert [event["type"] for event in data["events"]] == ["job.started"]
+    assert data["events"][0] == stream_lines(cli("events", "--data-dir", log_dir, "--stream", "job"))[0]
+
+
+def test_events_filters(cli: CliRunner, log_dir: Path):
+    def types(*args: str) -> List[str]:
+        return [document["type"] for document in stream_lines(cli("events", "--data-dir", log_dir, *args))[:-1]]
+
+    assert types("--stream", "live") == ["live.status_changed", "live.score_changed"]
+    assert types("--stream", "live", "--stream", "system") == ["live.status_changed", "live.score_changed",
+                                                               "system.blocked"]
+    assert types("--type", "live.*") == ["live.status_changed", "live.score_changed"]
+    assert types("--type", "job.started", "--type", "system.blocked") == ["job.started", "system.blocked"]
+    assert types("--type", "*.s*") == ["live.status_changed", "job.started", "live.score_changed"]
+    assert types("--event", "102") == ["live.score_changed"]
+    assert types("--event", "101", "--event", "102", "--type", "live.score_changed") == ["live.score_changed"]
+    assert types("--type", "nothing.*") == []
+    assert types("--after", "2") == ["live.score_changed", "system.blocked"]
+    assert types("--after", "99") == []
+
+
+def test_events_limit_stops_at_the_last_printed_event_so_that_after_resumes(cli: CliRunner, log_dir: Path):
+    first = stream_lines(cli("events", "--data-dir", log_dir, "--type", "live.*", "--limit", "1"))
+    assert [document["type"] for document in first] == ["live.status_changed", "end"]
+    assert (first[-1]["last_seq"], first[-1]["count"]) == (1, 1)
+    rest = stream_lines(cli("events", "--data-dir", log_dir, "--type", "live.*", "--after", first[-1]["last_seq"]))
+    assert [document["seq"] for document in rest[:-1]] == [3] and rest[-1]["last_seq"] == 4
+
+
+def test_events_reads_a_long_log_in_pages(cli: CliRunner, data_dir: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(events_command, "PAGE", 3)
+    opened = open_store(data_dir)
+    seqs = [emit(opened, "live.x" if n % 2 else "job.x") for n in range(10)]
+    documents = stream_lines(cli("events", "--data-dir", data_dir, "--type", "live.*"))
+    assert [document["seq"] for document in documents[:-1]] == seqs[1::2]
+    assert documents[-1]["last_seq"] == seqs[-1] and documents[-1]["count"] == 5
+
+
+def test_events_reports_a_gap_after_pruning(cli: CliRunner, data_dir: Path):
+    opened = open_store(data_dir)
+    for _ in range(3):
+        emit(opened, ts=time.time() - 30 * DAY)
+    kept = emit(opened)
+    opened.streams.prune(max_age_s=7 * DAY)
+    run = cli("events", "--data-dir", data_dir, "--after", "1")
+    documents = stream_lines(run)
+    assert [document["seq"] for document in documents[:-1]] == [kept] and documents[-1]["gap"] is True
+    assert run.stderr == ("Warning: events after sequence 1 were pruned from the event log before they were read; "
+                          "some are missing\n")
+    as_json = cli("events", "--data-dir", data_dir, "--after", "1", "--json").json
+    assert as_json["data"]["gap"] is True and [w["code"] for w in as_json["warnings"]] == ["stream_gap"]
+    assert stream_lines(cli("events", "--data-dir", data_dir, "--after", kept))[-1]["gap"] is False
+
+
+def test_events_on_a_folder_that_is_not_a_store_is_empty_and_creates_nothing(cli: CliRunner, tmp_path: Path):
+    empty = tmp_path / "fresh"
+    run = cli("events", "--data-dir", empty)
+    assert run.exit_code == 0
+    assert stream_lines(run) == [{"type": "end", "stream_id": None, "last_seq": 0, "count": 0, "gap": False}]
+    assert run.stderr.startswith("The data folder has no event log yet: ") and str(empty) in run.stderr
+    assert cli("events", "--data-dir", empty, "--after", "7", "--json").data == {
+        "stream_id": None, "last_seq": 7, "count": 0, "gap": False, "events": []}
+    assert not empty.exists()
+    assert "Veri klasöründe henüz bir olay günlüğü yok" in cli("events", "--data-dir", empty, "--lang", "tr").stderr
+    follow = cli("events", "--data-dir", empty, "--follow", "--output", "ndjson")
+    assert follow.exit_code == 5 and json.loads(follow.stdout)["error"]["code"] == "storage_error"
+
+
+def test_events_takes_no_lease_and_writes_no_cursor(cli: CliRunner, log_dir: Path):
+    opened = open_store(log_dir)
+    with opened.lease("sinks"), opened.lease("writer"):
+        assert cli("events", "--data-dir", log_dir).exit_code == 0
+    assert opened._state.connection().execute("SELECT count(*) FROM sink_cursors").fetchone()[0] == 0
+    assert opened.info(sizes=False).leases == ()
+
+
+@pytest.mark.parametrize("argv, message", [
+    (["--follow", "--json"], "--follow writes a stream of lines"),
+    (["--after", "-1"], "argument --after: expected a sequence number"),
+    (["--after", "x"], "argument --after: expected a sequence number"),
+    (["--limit", "0"], "argument --limit: expected a number of events"),
+    (["--stream", "nope"], "argument --stream: invalid choice"),
+    (["--event", "abc"], "argument --event: invalid int value"),
+    (["--type", ""], "--type: expected an event type or a pattern"),
+])
+def test_events_usage_errors(cli: CliRunner, log_dir: Path, argv: List[str], message: str):
+    run = cli("events", "--data-dir", log_dir, *argv, "--json")
+    assert run.exit_code == 2 and run.error["code"] == "invalid_request" and message in run.error["message"]
+
+
+def test_events_is_described_with_the_options_of_the_design(cli: CliRunner):
+    described_commands = cli("describe", "commands").data["commands"]["commands"]
+    commands = {command["name"]: command for command in described_commands}
+    described = commands["events"]
+    assert described["loads_settings"] and not described["always_json"]
+    assert [option["flags"] for option in described["options"]] == [
+        ["--stream"], ["--after"], ["--follow"], ["--type"], ["--event"], ["--limit"]]
+    assert described["options"][0]["choices"] == ["live", "change", "job", "system"]
+    assert "events" in cli("--help").stdout and "olay günlüğündeki" in cli("--help", "--lang", "tr").stdout
+
+
+FOLLOWER = """
+import signal, sys
+from src.cli.main import main
+signal.signal(signal.SIGINT, signal.default_int_handler)  # testi çalıştıran kabuk SIGINT'i yok saydırmış olabilir
+sys.exit(main(["events", "--data-dir", sys.argv[1], "--follow", *sys.argv[2:]]))
+"""
+
+
+def follow(box: skeleton.Sandbox, data_dir: Path, *args: str) -> "subprocess.Popen[str]":
+    return subprocess.Popen(
+        [sys.executable, "-c", FOLLOWER, str(data_dir), *args], cwd=box.cwd, env=box.environ(),
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+    )
+
+
+def test_events_follow_starts_at_now_and_prints_events_of_another_process(box: skeleton.Sandbox, log_dir: Path):
+    opened = open_store(log_dir)
+    proc = follow(box, log_dir, "--type", "live.*", "--limit", "2")
+    try:
+        # İzleyici "şimdi"den başlar: eski dört olayı yazmaz. Başladığını bilmenin yolu yok; olaylar, izleyici
+        # ikisini de görene kadar aralıklarla eklenir.
+        deadline = time.monotonic() + 60
+        while proc.poll() is None and time.monotonic() < deadline:
+            emit(opened, "job.started", source="job")
+            emit(opened, "live.status_changed", event_id=7)
+            time.sleep(0.2)
+        out, err = proc.communicate(timeout=30)
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+    assert proc.returncode == 0, err
+    documents = [json.loads(line) for line in out.splitlines()]
+    assert [document["type"] for document in documents] == ["live.status_changed", "live.status_changed", "end"]
+    assert documents[0]["seq"] > 4 and documents[-1]["count"] == 2
+    assert documents[-1]["last_seq"] == documents[1]["seq"]
+
+
+def test_events_follow_resumes_after_a_sequence_number(box: skeleton.Sandbox, log_dir: Path):
+    proc = follow(box, log_dir, "--after", "2", "--limit", "2")
+    try:
+        out, err = proc.communicate(timeout=60)
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+    assert proc.returncode == 0, err
+    assert [json.loads(line).get("seq") for line in out.splitlines()] == [3, 4, None]
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="SIGINT cannot be sent to a child process on Windows")
+def test_events_follow_stops_cleanly_on_ctrl_c(box: skeleton.Sandbox, log_dir: Path):
+    opened = open_store(log_dir)
+    proc = follow(box, log_dir)
+    try:
+        first = None
+        deadline = time.monotonic() + 60
+        while first is None and time.monotonic() < deadline:
+            emit(opened, "live.status_changed", event_id=9)
+            ready = _readable(proc.stdout, 0.2)
+            if ready:
+                first = proc.stdout.readline()
+        assert first and json.loads(first)["type"] == "live.status_changed"
+        proc.send_signal(signal.SIGINT)
+        out, err = proc.communicate(timeout=30)
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+    assert proc.returncode == 0, err
+    assert all(json.loads(line)["type"] != "end" for line in out.splitlines())  # durdurulan izleme `end` yazmaz
+    assert "Traceback" not in err
+
+
+def _readable(stream: Any, timeout: float) -> bool:
+    return bool(select.select([stream], [], [], timeout)[0])
