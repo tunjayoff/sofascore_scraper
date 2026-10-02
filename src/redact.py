@@ -2,7 +2,7 @@
 Gizli değerleri log satırlarından ve tanılama paketinden ayıklar.
 
 Log dosyası ve tanılama paketi hata bildirimine eklenmek içindir; içlerinde token, cookie
-ya da proxy parolası bulunmamalı. İki katman birlikte çalışır:
+ya da proxy parolası bulunmamalı. Üç katman birlikte çalışır:
 
   1. Bilinen değerler: .env dosyasındaki, adı gizli bir şeye benzeyen anahtarların değerleri
      (TOKEN, SECRET, PASSWORD, KEY, COOKIE...), ayrıca SOFA_CAPTCHA_TOKEN, web erişim belirteci
@@ -10,7 +10,9 @@ ya da proxy parolası bulunmamalı. İki katman birlikte çalışır:
      değerlerin (PROXY_URL) içindeki kullanıcı adı/parola; adres şemasız yazılmış olsa da
      ("kullanıcı:parola@host:8080"). Metinde geçtikleri her yerde, hangi biçimde yazılmış
      olurlarsa olsunlar `***` olur.
-  2. Kalıplar: `scheme://kullanıcı:parola@host`, JWT (sofa_captcha böyle bir token),
+  2. Çalışma anında öğrenilen, hiçbir ayarın adı olmayan değerler (add_runtime_secret): `direct` canlı
+     kaynağının sitenin sayfasından okuduğu push kimlik bilgisi gibi. Yalnızca süreç belleğindedir.
+  3. Kalıplar: `scheme://kullanıcı:parola@host`, JWT (sofa_captcha böyle bir token),
      Cookie / Authorization / X-Captcha başlıkları, `token=...` gibi anahtar=değer çiftleri.
      Bunlar .env'de hiç yazmayan değerleri de (tarayıcıdan gelen cookie) yakalar.
 
@@ -24,7 +26,7 @@ import re
 import threading
 import time
 from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import unquote
+from urllib.parse import quote, unquote
 
 import dotenv
 
@@ -65,10 +67,12 @@ _HEADER_RE = re.compile(
     r"""(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\r\n]+)""",
     re.IGNORECASE,
 )
-# anahtar=değer / "anahtar": "değer": adı gizli bir şeye benzeyen anahtarın değeri
+# anahtar=değer / "anahtar": "değer": adı gizli bir şeye benzeyen anahtarın değeri. Adı `_env` ile biten anahtar
+# (`secret_env`, `token_env`) bir değişkenin ADINI taşır, değerini değil: "secret_env: expected ..." gibi bir hata
+# iletisinde sonraki sözcük yutulmasın diye eşleşmez.
 _PAIR_RE = re.compile(
     r"""(\b(?:sofa_captcha|cf_clearance|__cf_bm|[\w\-]{0,40}(?:token|password|passwd|secret|api[_\-]?key)[\w\-]{0,40})"""
-    r"""["']?\s*[:=]\s*)("[^"\r\n]*"|'[^'\r\n]*'|[^\s"',;&}\]]+)""",
+    r"""(?<![_\-]env)["']?\s*[:=]\s*)("[^"\r\n]*"|'[^'\r\n]*'|[^\s"',;&}\]]+)""",
     re.IGNORECASE,
 )
 
@@ -81,6 +85,9 @@ _cached_at: Optional[float] = None
 _file_cache: Tuple[Optional[Tuple[str, int, int]], Dict[str, str]] = (None, {})
 # Bilinen değerler toplanırken aynı thread'den gelen log satırı için (bkz. secret_values)
 _collecting = threading.local()
+# Çalışma anında öğrenilen gizli değerler ve yazımları (add_runtime_secret), uzun olan önce. Yalnızca bellekte.
+_runtime_lock = threading.Lock()
+_runtime_values: Tuple[str, ...] = ()
 
 
 def is_secret_key(key: str) -> bool:
@@ -229,6 +236,27 @@ def secret_values() -> Tuple[str, ...]:
     return _known()[0]
 
 
+def add_runtime_secret(value: Optional[str]) -> None:
+    """
+    Çalışma anında öğrenilen, adı olan bir ayar olmayan gizli değeri bu süreç boyunca her metinde maskeler (log
+    satırları, tanılama özeti, hata iletileri). Değer yalnızca bellekte tutulur. JSON'a kaçışlı ve yüzde
+    kodlanmış yazımları da aranır. MIN_SECRET_LENGTH'ten kısa değer aranmaz (her satırdaki aynı harfleri
+    maskelerdi): çağıran böyle bir değeri hiçbir yere yazmamalıdır.
+    """
+    global _runtime_values
+    if not isinstance(value, str) or len(value) < MIN_SECRET_LENGTH:
+        return
+    forms = {value, json.dumps(value, ensure_ascii=False)[1:-1], json.dumps(value)[1:-1], quote(value, safe="")}
+    with _runtime_lock:
+        merged = set(_runtime_values) | {form for form in forms if len(form) >= MIN_SECRET_LENGTH}
+        _runtime_values = tuple(sorted(merged, key=len, reverse=True))
+
+
+def runtime_secret_count() -> int:
+    """Çalışma anında öğrenilmiş kaç gizli yazım aranıyor (değerlerin kendisi hiçbir yerden verilmez)."""
+    return len(_runtime_values)
+
+
 def refresh() -> None:
     """Ayar değişti (.env yazıldı / yeniden yüklendi): bilinen değerleri hemen yeniden oku."""
     global _cached_at, _file_cache
@@ -245,6 +273,9 @@ def redact_text(text: str) -> str:
         return text
     try:
         values, userinfo = _known()
+        for value in _runtime_values:
+            if value in text:
+                text = text.replace(value, MASK)
         for value in values:
             if value in text:
                 text = text.replace(value, MASK)
