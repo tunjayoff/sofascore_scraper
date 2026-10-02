@@ -1,19 +1,29 @@
 #!/usr/bin/env python3
 """
-Kataloğu (DATA_DIR/.meta/catalog.db) elle yönetmek için küçük araç: yeniden kurma, doğrulama, sayımlar.
+Kataloğu (DATA_DIR/.meta/catalog.db) elle yönetmek için küçük araç: yeniden kurma, uzlaştırma, doğrulama,
+sayımlar.
 
 Katalog, yük dosyalarının türetilmiş dizinidir (docs/design/01-storage.md, bölüm 3); silinebilir ve
-dosyalardan yeniden kurulur. Uygulama henüz kataloğu okumuyor: bu araç onu denemek ve bir veri dizininde
-neyin dizinlendiğine bakmak içindir. Yerini `catalog rebuild|verify` CLI komutları alınca kaldırılacak.
+dosyalardan yeniden kurulur. Uygulama kataloğu açılışta kurar ve yazdıkça günceller, ama henüz okumuyor
+(gölge kip): bu araç onu denemek ve bir veri dizininde neyin dizinlendiğine bakmak içindir. Yerini
+`catalog rebuild|reconcile|verify` CLI komutları alınca kaldırılacak.
 
 Kullanım:
     python scripts/catalog_tool.py [--data-dir DİZİN] rebuild [--mode auto|in_place|recreate] [--json]
+    python scripts/catalog_tool.py [--data-dir DİZİN] reconcile [--deep] [--v3] [--json]
     python scripts/catalog_tool.py [--data-dir DİZİN] verify [--deep] [--repair] [--json]
     python scripts/catalog_tool.py [--data-dir DİZİN] stats [--json]
 
 Veri dizini: --data-dir, yoksa DATA_DIR ortam değişkeni, o da yoksa "data". `.env` dosyası okunmaz.
-`rebuild` ve `verify --repair` çalışırken aynı veri dizinine yazan başka bir süreç (indirme, izleyici)
-olmamalıdır; araç kilit almaz.
+
+Dizin bir depoysa (`.meta/schema.json` ve `.meta/state.db` var) araç depoyu açar, ama açılıştaki otomatik
+güncellemeyi çalıştırmaz: katalog bulunduğu haliyle görülür. O zaman
+  * adında turnuva kimliği olmayan sezon listesi dosyaları (`<ad>_seasons.json`) turnuva takiplerindeki
+    adlarla çözülür (uygulamanın açılışta yaptığı gibi);
+  * `rebuild`, `reconcile --deep` ve `verify --repair`, `maintenance` kilidini alır: aynı dizinde bir indirme
+    ya da izleyici çalışıyorsa reddedilir (çıkış kodu 3, kilidin sahibi yazılır).
+Dizin henüz bir depo değilse (yalnızca dosyalar var) araç eskisi gibi yalnızca kataloğu açar; kilit yoktur ve
+ad eşlemesi verilmez. O durumda yazan başka bir süreç olmadığından çağıran emin olmalıdır.
 
 Çıkış kodları: 0 başarılı / tutarlı, 1 tutarsızlık bulundu ya da kurulum tamamlanmadı, 2 kullanım hatası
 ya da veri dizini yok, 3 depolama hatası.
@@ -21,17 +31,18 @@ ya da veri dizini yok, 3 depolama hatası.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import dataclasses
 import json
 import os
 import sys
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, Iterator, List, Optional, Sequence
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.store.errors import StoreError
-from src.store.indexer import MODE_AUTO, MODE_IN_PLACE, MODE_RECREATE, CatalogAdmin, RebuildReport
-from src.store.verify import VerifyReport
+from src.store import CatalogAdmin, RebuildReport, ReconcileReport, Store, StoreError, VerifyReport, open_store
+from src.store import layout
+from src.store.indexer import MODE_AUTO, MODE_IN_PLACE, MODE_RECREATE
 
 EXIT_OK = 0
 EXIT_ISSUES = 1
@@ -63,12 +74,23 @@ def _superseded_lines(report: Any) -> List[str]:
     return [f"{s.event_id}: {s.path} (geçerli olan: {s.winner})" for s in report.superseded]
 
 
-def run_rebuild(admin: CatalogAdmin, args: argparse.Namespace) -> int:
+@contextlib.contextmanager
+def _maintenance(store: Optional[Store], purpose: str) -> Iterator[None]:
+    """Dizin bir depoysa blok boyunca `maintenance` kilidini tutar; değilse kilit yoktur (modül belgesi)."""
+    if store is None:
+        yield
+        return
+    with store.lease("maintenance", purpose=purpose):
+        yield
+
+
+def run_rebuild(admin: CatalogAdmin, args: argparse.Namespace, store: Optional[Store] = None) -> int:
     def progress(stage: str, done: int, total: int) -> None:
         if not args.json:
             print(f"  {stage}: {done}/{total}", file=sys.stderr)
 
-    report: RebuildReport = admin.rebuild(mode=args.mode, progress=progress)
+    with _maintenance(store, "op:rebuild"):
+        report: RebuildReport = admin.rebuild(mode=args.mode, progress=progress)
     if args.json:
         _emit(dataclasses.asdict(report))
     else:
@@ -80,8 +102,31 @@ def run_rebuild(admin: CatalogAdmin, args: argparse.Namespace) -> int:
     return EXIT_OK if report.completed else EXIT_ISSUES
 
 
-def run_verify(admin: CatalogAdmin, args: argparse.Namespace) -> int:
-    report: VerifyReport = admin.verify(deep=args.deep, repair=args.repair)
+def run_reconcile(admin: CatalogAdmin, args: argparse.Namespace, store: Optional[Store] = None) -> int:
+    # Derin uzlaştırma onarım da yapar (verify --deep --repair): kilit ister. Hızlı olan tek bir yazma işlemidir.
+    with _maintenance(store if args.deep else None, "op:reconcile"):
+        report: ReconcileReport = admin.reconcile(deep=args.deep, v3=args.v3)
+    ok = report.verify is None or report.verify.ok
+    if args.json:
+        _emit({**dataclasses.asdict(report), "changed": report.changed})
+        return EXIT_OK if ok else EXIT_ISSUES
+    print(f"Katalog uzlaştırıldı ({'derin' if report.deep else 'imzalarla'}): "
+          f"{'değişiklik var' if report.changed else 'değişiklik yok'}")
+    print(f"  bakılan maç: {report.events_checked}, yeniden dizinlenen: {report.events_indexed}, "
+          f"silinen: {report.events_removed}, yarım yazma işareti: {report.pending}, süre: {report.seconds:.2f} sn")
+    print(f"  sezon listeleri: {'değişmedi' if report.season_lists is None else report.season_lists}, "
+          f"değişiklik günlüğü: {'değişmedi' if report.changes is None else report.changes}")
+    _listed("Listesi yeniden dizinlenen sezonlar", [f"{tournament}/{season}" for tournament, season in report.seasons])
+    _listed("Okunamayan ya da tanınmayan girdiler", _problem_lines(report))
+    if report.verify is not None:
+        print("Katalog dosyalarla tutarlı." if ok else
+              f"{len(report.verify.open_issues)} tutarsızlık giderilmedi (rebuild).")
+    return EXIT_OK if ok else EXIT_ISSUES
+
+
+def run_verify(admin: CatalogAdmin, args: argparse.Namespace, store: Optional[Store] = None) -> int:
+    with _maintenance(store if args.repair else None, "op:verify"):
+        report: VerifyReport = admin.verify(deep=args.deep, repair=args.repair)
     if args.json:
         _emit({**dataclasses.asdict(report), "ok": report.ok})
     else:
@@ -103,7 +148,7 @@ def run_verify(admin: CatalogAdmin, args: argparse.Namespace) -> int:
     return EXIT_OK if report.ok else EXIT_ISSUES
 
 
-def run_stats(admin: CatalogAdmin, args: argparse.Namespace) -> int:
+def run_stats(admin: CatalogAdmin, args: argparse.Namespace, store: Optional[Store] = None) -> int:
     stats = admin.stats()
     if args.json:
         _emit(stats)
@@ -128,7 +173,8 @@ def run_stats(admin: CatalogAdmin, args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Kataloğu (catalog.db) yeniden kurar, doğrular, sayımlarını gösterir")
+    parser = argparse.ArgumentParser(
+        description="Kataloğu (catalog.db) yeniden kurar, uzlaştırır, doğrular, sayımlarını gösterir")
     parser.add_argument("--data-dir", default=None, help='veri dizini (varsayılan: DATA_DIR ortam değişkeni, yoksa "data")')
     commands = parser.add_subparsers(dest="command", required=True)
 
@@ -136,6 +182,12 @@ def build_parser() -> argparse.ArgumentParser:
     rebuild.add_argument("--mode", choices=(MODE_AUTO, MODE_IN_PLACE, MODE_RECREATE), default=MODE_AUTO,
                          help="auto: şema uyuyorsa yerinde, yoksa dosyayı yeniden yaratarak")
     rebuild.set_defaults(run=run_rebuild)
+
+    reconcile = commands.add_parser("reconcile", help="kataloğu, arkasından değişen dosyalarla yeniden eşitler")
+    reconcile.add_argument("--deep", action="store_true",
+                           help="imzalara bakmaz: her maçı ve her listeyi yeniden okur, sonra doğrular ve onarır")
+    reconcile.add_argument("--v3", action="store_true", help="v3 maç dizinlerini de imzalarıyla karşılaştırır")
+    reconcile.set_defaults(run=run_reconcile)
 
     verify = commands.add_parser("verify", help="kataloğu dosyalarla karşılaştırır")
     verify.add_argument("--deep", action="store_true", help="her maçı ve v3 yüklerinin hepsini yeniden okur")
@@ -145,9 +197,14 @@ def build_parser() -> argparse.ArgumentParser:
     stats = commands.add_parser("stats", help="kataloğun halini ve satır sayılarını gösterir")
     stats.set_defaults(run=run_stats)
 
-    for command in (rebuild, verify, stats):
+    for command in (rebuild, reconcile, verify, stats):
         command.add_argument("--json", action="store_true", help="çıktıyı JSON olarak yazar")
     return parser
+
+
+def _is_store(data_dir: str) -> bool:
+    """Dizin bir depo mu (`open_store(create=False)` ile açılabilir mi): schema.json ve state.db yerinde."""
+    return all(os.path.isfile(layout.resolve(data_dir, name)) for name in (layout.SCHEMA_FILE, layout.STATE_DB))
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -157,6 +214,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print(f"Veri dizini yok: {data_dir}", file=sys.stderr)
         return EXIT_USAGE
     try:
+        if _is_store(data_dir):
+            # Katalog bulunduğu haliyle: açılıştaki otomatik kurma / uzlaştırma çalışmaz, komut kendisi yapar
+            store = open_store(data_dir, create=False, sync_catalog=False)
+            try:
+                return int(args.run(store.catalog, args, store))
+            finally:
+                store.close()
         with CatalogAdmin(data_dir) as admin:
             return int(args.run(admin, args))
     except StoreError as exc:
