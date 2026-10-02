@@ -1055,8 +1055,8 @@ def test_refresh_candidates_equal_refresh_due_ids(built: Dict[str, sf.LegacyFixt
                                                   monkeypatch: pytest.MonkeyPatch, name: str) -> None:
     """
     `refresh_due_ids` eksik dilimi olan maçı vermez (o `refill`dir): adaylardan `missing()` çıkarılınca iki
-    küme eşittir. Eski biçimlerdeki bilinen fark: düz dizinleri `refresh_due_ids` gezmiyor (LEE, BRE). Birleşik
-    dosyası olan kaydın (LIV) gözlemi RD-1'den beri iki tarafta da okunur.
+    küme eşittir. RD-3'ten beri `refresh_due_ids` de katalogdan okur: düz dizinler (LEE, BRE) dahil fark yoktur.
+    Birleşik dosyası olan kaydın (LIV) gözlemi RD-1'den beri iki tarafta da okunur.
     """
     fx = built[name]
     store = open_store(fx.data_dir)
@@ -1079,8 +1079,8 @@ def test_refresh_candidates_equal_refresh_due_ids(built: Dict[str, sf.LegacyFixt
     with monkeypatch.context() as patch:
         patch.setenv("REFRESH_LEGACY", "true")
         legacy_only = differences(catalog(include_unobserved=True), fetcher.refresh_due_ids())
-        # düz dizinler (biri yalnızca birleşik dosya): bugünkü gezinti bunlara ulaşmaz
-        assert legacy_only == ({str(LEE), str(BRE)} if name == "legacy" else set())
+        # düz dizinler (biri yalnızca birleşik dosya): RD-3'e kadar ağaç gezintisi bunlara ulaşmıyordu
+        assert legacy_only == set()
     with monkeypatch.context() as patch:
         patch.setenv("REFRESH_WINDOW_HOURS", "0")
         assert fetcher.refresh_due_ids() == [] == store.events.refresh_candidates(

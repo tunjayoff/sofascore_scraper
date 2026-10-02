@@ -1215,19 +1215,14 @@ def walker_results(data_dir: Path, candidates: Set[int]) -> Dict[str, Set[int]]:
     """
     Bugünkü her ağaç gezgininin bulduğu maç id'leri (hepsi sayı; sayı olmayan ad gelirse test düşer).
 
-    İki gezgin sonucu süzdüğü için gezdiği dizinler ölçülür: `refresh_due_ids` her dizin için
-    `_needs_detail_fetch`'i çağırır (burada hepsine "refresh" denir), `reset_unavailable_markers`
-    `_unavailable.json`'ı olan her dizin için `_reset_match_markers`'ı (burada hiçbir şey yazmaz).
+    `reset_unavailable_markers` sonucu süzdüğü için gezdiği dizinler ölçülür: `_unavailable.json`'ı olan her
+    dizin için `_reset_match_markers`'ı çağırır (burada hiçbir şey yazmaz). `refresh_due_ids` RD-3'ten beri
+    ağacı gezmez, katalogdan okur; tabloda değil.
     """
     fetcher = fetcher_for(data_dir)
 
     def ids(names: Any) -> Set[int]:
         return {int(name) for name in names}
-
-    visited: List[str] = []
-    fetcher._needs_detail_fetch = lambda mid: visited.append(mid) or "refresh"  # type: ignore[method-assign]
-    assert fetcher.refresh_due_ids() == visited
-    del fetcher._needs_detail_fetch
 
     with_markers: List[str] = []
     fetcher._reset_match_markers = (  # type: ignore[method-assign]
@@ -1238,7 +1233,6 @@ def walker_results(data_dir: Path, candidates: Set[int]) -> Dict[str, Set[int]]:
     return {
         "build_match_index": ids(fetcher._build_match_index()),
         "find_match_path": {eid for eid in candidates if fetcher._find_match_path(str(eid))},
-        "refresh_due_ids_walk": ids(visited),
         "reset_markers_walk": ids(with_markers),
         "web_detail_match_ids": ids(matches_routes._detail_match_ids(str(data_dir), None)),
         "web_missing_details": _probe_missing_details(data_dir, candidates),
@@ -1246,14 +1240,14 @@ def walker_results(data_dir: Path, candidates: Set[int]) -> Dict[str, Set[int]]:
     }
 
 
-WALKERS = ("build_match_index", "find_match_path", "refresh_due_ids_walk", "reset_markers_walk",
-           "web_detail_match_ids", "web_missing_details", "csv_export")
+WALKERS = ("build_match_index", "find_match_path", "reset_markers_walk", "web_detail_match_ids",
+           "web_missing_details", "csv_export")
 
 # Karakterizasyon tablosu: (fixture, gezgin) → (okuyucunun bulup gezginin bulamadığı, gezginin bulup
 # okuyucunun maç saymadığı) id'ler. Tabloda olmayan çift için fark yoktur: `canonical`, `processed_only` ve
 # `empty` dizinlerinde bütün gezginler okuyucuyla aynı kümeyi bulur. `reset_markers_walk` yalnızca
 # `_unavailable.json`'ı olan dizinlere bakar; o, okuyucunun aynı dosyası olan maçlarıyla karşılaştırılır
-# (fixture'larda düz dizinde işaret dosyası yok, bu yüzden farkı görünmüyor: kuralı `refresh_due_ids_walk` ile aynı).
+# (fixture'larda düz dizinde işaret dosyası yok, bu yüzden farkı görünmüyor: üç düzey bekler, düz dizinleri görmez).
 FLAT = {16867839, 17018554}  # legacy fixture: düz dizinler (17018554 yalnızca birleşik dosya)
 WALKER_DIFFERENCES: Dict[Tuple[str, str], Tuple[Set[int], Set[int]]] = {
     # yalnızca birleşik dosyası olan dizini dizin ağacını gezen hiçbir gezgin bulamaz (`build_match_index` ve
@@ -1262,9 +1256,6 @@ WALKER_DIFFERENCES: Dict[Tuple[str, str], Tuple[Set[int], Set[int]]] = {
     ("legacy", "web_missing_details"): (COMBINED_ONLY["legacy"], set()),  # `**/basic.json`: düz dizini bulur
     # üç düzey bekleyenler düz dizinleri görmez
     ("legacy", "web_detail_match_ids"): (FLAT, set()),
-    # yenileme taraması ayrıca basic.json'a bakmaz: olay yükü olmayan dizine de girer (ihtiyaç hesabı onu
-    # "full" bulduğu için sonuçta dönmez)
-    ("legacy", "refresh_due_ids_walk"): (FLAT, NO_EVENT_PAYLOAD["legacy"]),
 }
 
 
@@ -1294,34 +1285,6 @@ def test_csv_export_lists_flat_events_twice(old_forms: sf.LegacyFixture) -> None
     exported = _csv_export_ids(fetcher_for(old_forms.data_dir))
     assert sorted(e for e in set(exported) if exported.count(e) > 1) == ["16837335", "16867839"]
     assert exported.count("16837335") == 3
-
-
-# Lig süzgeci: bugünkü gezginler dizin adının `<lig id>_` önekine bakar; okuyucuda lig, olay yükündeki
-# uniqueTournament.id'dir. (fixture, lig) → dizin önekiyle bulunamayan maçlar.
-LEAGUE_FILTER_MISSES: Dict[Tuple[str, int], Set[int]] = {
-    ("legacy", 8): {15000001},  # ID'siz lig dizini (L2)
-    ("legacy", 17): FLAT,  # düz dizinler
-}
-
-
-def test_league_filter_characterization(fx: sf.LegacyFixture) -> None:
-    events, _ = scan(fx.data_dir)
-    fetcher = fetcher_for(fx.data_dir)
-    fetcher._needs_detail_fetch = lambda mid: "refresh"  # type: ignore[method-assign]
-    actual = {}
-    by_league: Dict[int, Set[int]] = {}
-    for eid, event in events.items():
-        league = ((event.event.get("tournament") or {}).get("uniqueTournament") or {}).get("id")
-        if league is not None:
-            by_league.setdefault(league, set()).add(eid)
-    for league, mine in sorted(by_league.items()):
-        web = {int(m) for m in matches_routes._detail_match_ids(str(fx.data_dir), str(league))}
-        due = {int(m) for m in fetcher.refresh_due_ids(league)}
-        assert web <= mine and web <= due
-        assert due - web <= NO_EVENT_PAYLOAD.get(fx.name, set())  # yenileme taraması basic.json'a bakmaz
-        if mine != web:
-            actual[(fx.name, league)] = mine - web
-    assert actual == {key: value for key, value in LEAGUE_FILTER_MISSES.items() if key[0] == fx.name}
 
 
 def test_counting_walkers(fx: sf.LegacyFixture, capsys: pytest.CaptureFixture[str]) -> None:
