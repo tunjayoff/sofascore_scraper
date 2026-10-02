@@ -11,6 +11,9 @@ from src.config_manager import ConfigManager
 from src.logger import get_logger
 from src.paths import env_file_path
 from src.i18n import get_i18n
+# Gölge kip (docs/design/01-storage.md 3.5): veri ağaçlarını değiştiren her işlemden sonra Store'un kancası
+# çağrılır ve katalog dosyalardan yeniden kurulur. Paket kökü üzerinden: kancalar ilk çağrıda yüklenir.
+from src import store as store_hooks
 
 # Logger'ı al
 logger = get_logger("SettingsUI")
@@ -182,19 +185,23 @@ class SettingsMenuHandler:
             if move_data in ["e", "evet", "y", "yes", "true", "1"]:
                 print(f"\n{COLORS['INFO']}{self.i18n.t('moving_data')}")
 
-                # Alt dizinleri oluştur
-                os.makedirs(os.path.join(new_data_dir, "seasons"), exist_ok=True)
-                os.makedirs(os.path.join(new_data_dir, "matches"), exist_ok=True)
-                os.makedirs(os.path.join(new_data_dir, "match_details"), exist_ok=True)
-                os.makedirs(os.path.join(new_data_dir, "datasets"), exist_ok=True)
-                os.makedirs(os.path.join(new_data_dir, "reports"), exist_ok=True)
+                try:
+                    # Alt dizinleri oluştur
+                    os.makedirs(os.path.join(new_data_dir, "seasons"), exist_ok=True)
+                    os.makedirs(os.path.join(new_data_dir, "matches"), exist_ok=True)
+                    os.makedirs(os.path.join(new_data_dir, "match_details"), exist_ok=True)
+                    os.makedirs(os.path.join(new_data_dir, "datasets"), exist_ok=True)
+                    os.makedirs(os.path.join(new_data_dir, "reports"), exist_ok=True)
 
-                # Verileri taşı
-                self._move_directory_contents(os.path.join(current_data_dir, "seasons"), os.path.join(new_data_dir, "seasons"))
-                self._move_directory_contents(os.path.join(current_data_dir, "matches"), os.path.join(new_data_dir, "matches"))
-                self._move_directory_contents(os.path.join(current_data_dir, "match_details"), os.path.join(new_data_dir, "match_details"))
-                self._move_directory_contents(os.path.join(current_data_dir, "datasets"), os.path.join(new_data_dir, "datasets"))
-                self._move_directory_contents(os.path.join(current_data_dir, "reports"), os.path.join(new_data_dir, "reports"))
+                    # Verileri taşı
+                    self._move_directory_contents(os.path.join(current_data_dir, "seasons"), os.path.join(new_data_dir, "seasons"))
+                    self._move_directory_contents(os.path.join(current_data_dir, "matches"), os.path.join(new_data_dir, "matches"))
+                    self._move_directory_contents(os.path.join(current_data_dir, "match_details"), os.path.join(new_data_dir, "match_details"))
+                    self._move_directory_contents(os.path.join(current_data_dir, "datasets"), os.path.join(new_data_dir, "datasets"))
+                    self._move_directory_contents(os.path.join(current_data_dir, "reports"), os.path.join(new_data_dir, "reports"))
+                finally:
+                    # Hedef dizinin kataloğu kopyalanan dosyalardan yeniden kurulur (kopyalama yarıda kalsa da)
+                    store_hooks.shadow_cleared(new_data_dir)
 
                 print(f"\n{COLORS['SUCCESS']}✅ {self.i18n.t('data_moved_success')}")
 
@@ -503,35 +510,40 @@ class SettingsMenuHandler:
                     shutil.copy2(env_file, env_file_path())
                     print(f"{COLORS['SUCCESS']}{self.i18n.t('success_restore_env_vars')}")
 
-            # Lig ve sezon verilerini geri yükle
-            if 2 in selected:
-                print(f"\n{COLORS['INFO']}{self.i18n.t('info_restoring_league_season_data')}")
-                src_dir = os.path.join(backup_dir, "data", "seasons")
-                if os.path.exists(src_dir) and os.path.isdir(src_dir):
-                    dst_dir = os.path.join(self.data_dir, "seasons")
-                    os.makedirs(dst_dir, exist_ok=True)
-                    shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
-                    print(f"{COLORS['SUCCESS']}{self.i18n.t('success_restore_season_data')}{dst_dir}")
+            try:
+                # Lig ve sezon verilerini geri yükle
+                if 2 in selected:
+                    print(f"\n{COLORS['INFO']}{self.i18n.t('info_restoring_league_season_data')}")
+                    src_dir = os.path.join(backup_dir, "data", "seasons")
+                    if os.path.exists(src_dir) and os.path.isdir(src_dir):
+                        dst_dir = os.path.join(self.data_dir, "seasons")
+                        os.makedirs(dst_dir, exist_ok=True)
+                        shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
+                        print(f"{COLORS['SUCCESS']}{self.i18n.t('success_restore_season_data')}{dst_dir}")
 
-            # Maç verilerini geri yükle
-            if 3 in selected:
-                print(f"\n{COLORS['INFO']}{self.i18n.t('info_restoring_match_data')}")
-                src_dir = os.path.join(backup_dir, "data", "matches")
-                if os.path.exists(src_dir) and os.path.isdir(src_dir):
-                    dst_dir = os.path.join(self.data_dir, "matches")
-                    os.makedirs(dst_dir, exist_ok=True)
-                    shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
-                    print(f"{COLORS['SUCCESS']}{self.i18n.t('success_restore_match_data')}{dst_dir}")
+                # Maç verilerini geri yükle
+                if 3 in selected:
+                    print(f"\n{COLORS['INFO']}{self.i18n.t('info_restoring_match_data')}")
+                    src_dir = os.path.join(backup_dir, "data", "matches")
+                    if os.path.exists(src_dir) and os.path.isdir(src_dir):
+                        dst_dir = os.path.join(self.data_dir, "matches")
+                        os.makedirs(dst_dir, exist_ok=True)
+                        shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
+                        print(f"{COLORS['SUCCESS']}{self.i18n.t('success_restore_match_data')}{dst_dir}")
 
-            # Maç detaylarını geri yükle
-            if 4 in selected:
-                print(f"\n{COLORS['INFO']}{self.i18n.t('info_restoring_match_details')}")
-                src_dir = os.path.join(backup_dir, "data", "match_details")
-                if os.path.exists(src_dir) and os.path.isdir(src_dir):
-                    dst_dir = os.path.join(self.data_dir, "match_details")
-                    os.makedirs(dst_dir, exist_ok=True)
-                    shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
-                    print(f"{COLORS['SUCCESS']}{self.i18n.t('success_restore_match_details')}{dst_dir}")
+                # Maç detaylarını geri yükle
+                if 4 in selected:
+                    print(f"\n{COLORS['INFO']}{self.i18n.t('info_restoring_match_details')}")
+                    src_dir = os.path.join(backup_dir, "data", "match_details")
+                    if os.path.exists(src_dir) and os.path.isdir(src_dir):
+                        dst_dir = os.path.join(self.data_dir, "match_details")
+                        os.makedirs(dst_dir, exist_ok=True)
+                        shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
+                        print(f"{COLORS['SUCCESS']}{self.i18n.t('success_restore_match_details')}{dst_dir}")
+            finally:
+                # Katalog geri yüklenen dosyalardan yeniden kurulur (geri yükleme yarıda kalsa da)
+                if any(choice in selected for choice in (2, 3, 4)):
+                    store_hooks.shadow_cleared(self.data_dir)
 
             # Yapılandırmayı yeniden yükle
             if 1 in selected:
@@ -593,16 +605,20 @@ class SettingsMenuHandler:
             # Veri dizinlerini temizle
             data_dirs = ["seasons", "matches", "match_details", "datasets", "reports"]
 
-            for dir_name in data_dirs:
-                dir_path = os.path.join(self.data_dir, dir_name)
-                if os.path.exists(dir_path):
-                    for item in os.listdir(dir_path):
-                        item_path = os.path.join(dir_path, item)
-                        if os.path.isdir(item_path):
-                            shutil.rmtree(item_path)
-                        else:
-                            os.remove(item_path)
-                    print(f"{COLORS['SUCCESS']}{self.i18n.t('success_dir_cleared', name=dir_name)}")
+            try:
+                for dir_name in data_dirs:
+                    dir_path = os.path.join(self.data_dir, dir_name)
+                    if os.path.exists(dir_path):
+                        for item in os.listdir(dir_path):
+                            item_path = os.path.join(dir_path, item)
+                            if os.path.isdir(item_path):
+                                shutil.rmtree(item_path)
+                            else:
+                                os.remove(item_path)
+                        print(f"{COLORS['SUCCESS']}{self.i18n.t('success_dir_cleared', name=dir_name)}")
+            finally:
+                # Katalog kalan dosyalardan yeniden kurulur (temizleme yarıda kalsa da)
+                store_hooks.shadow_cleared(self.data_dir)
 
             print(f"\n{COLORS['SUCCESS']}{self.i18n.t('success_clear_all')}")
 
@@ -651,16 +667,20 @@ class SettingsMenuHandler:
                 return
 
             # Seçili dizinleri temizle
-            for dir_name in data_types:
-                dir_path = os.path.join(self.data_dir, dir_name)
-                if os.path.exists(dir_path):
-                    for item in os.listdir(dir_path):
-                        item_path = os.path.join(dir_path, item)
-                        if os.path.isdir(item_path):
-                            shutil.rmtree(item_path)
-                        else:
-                            os.remove(item_path)
-                    print(f"{COLORS['SUCCESS']}{self.i18n.t('success_dir_cleared', name=dir_name)}")
+            try:
+                for dir_name in data_types:
+                    dir_path = os.path.join(self.data_dir, dir_name)
+                    if os.path.exists(dir_path):
+                        for item in os.listdir(dir_path):
+                            item_path = os.path.join(dir_path, item)
+                            if os.path.isdir(item_path):
+                                shutil.rmtree(item_path)
+                            else:
+                                os.remove(item_path)
+                        print(f"{COLORS['SUCCESS']}{self.i18n.t('success_dir_cleared', name=dir_name)}")
+            finally:
+                # Katalog kalan dosyalardan yeniden kurulur (temizleme yarıda kalsa da)
+                store_hooks.shadow_cleared(self.data_dir)
 
             print(f"\n{COLORS['SUCCESS']}{self.i18n.t('success_clear_selected')}")
 
