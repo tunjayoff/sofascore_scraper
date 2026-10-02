@@ -529,7 +529,7 @@ def test_sport_of_a_tournament_comes_from_the_payloads_not_from_directory_names(
     basket = _event(21, 132, 80229, 1_790_000_000)
     basket["tournament"]["category"]["sport"] = {"slug": "basketball", "name": "Basketball"}
     volley = _event(22, 777, 5, 1_790_000_000)
-    volley["tournament"]["category"]["sport"] = {"slug": "volleyball", "name": "Volleyball"}
+    volley["tournament"]["category"]["sport"] = {"slug": "waterpolo", "name": "Waterpolo"}
     write(data_dir, "match_details/NBA/season_NBA_26_27/21/basic.json", basket)  # lig dizininde kimlik yok
     write(data_dir, "match_details/_no_tournament/football/23/basic.json", _event(23, 17, 96668, 1_790_000_000))
     write(data_dir, "match_details/777_CEV/season_CEV/22/basic.json", volley)

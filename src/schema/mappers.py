@@ -289,11 +289,19 @@ def _periods(sheet: Mapping[str, Any]) -> Tuple[PeriodScore, ...]:
 
 
 def _sets(sheet: Mapping[str, Any]) -> Tuple[SetScore, ...]:
-    """`games` listesi ile `tiebreaks` sözlüğü ({"1": [7, 5]}) → set listesi."""
+    """
+    Tenisin `games` listesi ya da öteki set sporlarının numaralı `sets` sözlüğü ({"4": [9, 6]}; SP-2) ile
+    `tiebreaks` sözlüğü ({"1": [7, 5]}) → set listesi.
+    """
     games = sheet.get("games")
     by_number: Dict[int, Optional[ScorePair]] = {}
     for index, value in enumerate(games if isinstance(games, list) else (), start=1):
         by_number[index] = _pair(value)
+    numbered = sheet.get("sets")
+    for key, value in (numbered.items() if isinstance(numbered, dict) else ()):
+        pair = _pair(value)
+        if pair is not None and str(key).isdigit():
+            by_number[int(key)] = pair
     tiebreaks: Dict[int, ScorePair] = {}
     raw = sheet.get("tiebreaks")
     for key, value in (raw.items() if isinstance(raw, dict) else ()):

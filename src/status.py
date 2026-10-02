@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, NamedTuple, Optional
 
-from src.sports import event_sport_slug, period_format, score_family
+from src.sports import event_sport_slug, period_format, score_family, set_format
 
 logger = logging.getLogger(__name__)
 
@@ -183,6 +183,29 @@ class TennisScores(ScoreSheet):
     match_tiebreak: bool = False  # sezgisel, bkz. _is_match_tiebreak
 
 
+@dataclass
+class SetsScores(ScoreSheet):
+    """
+    Set ailesi, tenis dışındaki sporlar (plan maddesi SP-2): voleybol, badminton, masa tenisi, padel, snooker.
+    Tenisin çizelgesinden farkları:
+      - `sets` set numarasıyla tutulur (periodN → N), sıra boşluklu olabilir: masa tenisinin canlı yükü yalnızca
+        o anki seti taşıyabiliyor (yalnız period4). En çok 7 set okunur (masa tenisinde 7 setlik maçlar var;
+        kayıtlı yüklerde en çok period5 görüldü).
+      - retired / walkover bayrakları yok: durum söyler (04-schema-v1.md karar 10).
+      - match tie-break sezgisi yalnızca oyunla sayılan sette (padel) uygulanır; sayıyla sayılan sporlarda bir
+        set her zaman 10'u geçer.
+      - snooker (frames): `current` kazanılan frame'dir; period1 `current`'ı tekrarladığı için set sayılmaz.
+    """
+    format: Optional[str] = None  # "games" | "points" | "frames" (src/sports.py set_format)
+    sets_won: Optional[Pair] = None  # current
+    sets: Dict[int, Pair] = field(default_factory=dict)  # set no → periodN
+    tiebreaks: Dict[int, Pair] = field(default_factory=dict)  # set no → periodNTieBreak
+    match_tiebreak: bool = False
+
+
+_MAX_SETS = 7
+
+
 def _is_match_tiebreak(games: List[Pair]) -> bool:
     """
     Sezgisel: 3. ya da 5. set (son oynanan set) ≥ 10 ise normal set olamaz (normal set en çok 7),
@@ -257,6 +280,20 @@ def extract_scores(event: Dict[str, Any], sport: Optional[str] = None) -> ScoreS
             penalties=_pair(home, away, "penalties"),
             aggregated=_pair(home, away, "aggregated"),
             aggregated_winner_code=event.get("aggregatedWinnerCode"),
+        )
+
+    if family == "sets" and (unit := set_format(sport)) is not None:
+        by_set = {} if unit == "frames" else {
+            n: p for n in range(1, _MAX_SETS + 1) if (p := _pair(home, away, f"period{n}"))}
+        set_tiebreaks = {} if unit != "games" else {
+            n: p for n in range(1, _MAX_SETS + 1) if (p := _pair(home, away, f"period{n}TieBreak"))}
+        return SetsScores(
+            **common,
+            format=unit,
+            sets_won=_pair(home, away, "current"),
+            sets=by_set,
+            tiebreaks=set_tiebreaks,
+            match_tiebreak=unit == "games" and _is_match_tiebreak([by_set[n] for n in sorted(by_set)]),
         )
 
     if family == "sets":

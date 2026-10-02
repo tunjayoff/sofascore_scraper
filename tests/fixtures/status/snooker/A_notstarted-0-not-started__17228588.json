@@ -1,0 +1,19 @@
+{
+  "case_id": "A_notstarted-0-not-started",
+  "event_id": 17228588,
+  "fetched_at_utc": "2026-10-01T12:58:20+00:00",
+  "source_file": "research/all_sports/status_examples/snooker/event_notstarted-0-not-started__17228588.json",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "winnerCode": null,
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1790920800,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 0
+  }
+}

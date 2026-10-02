@@ -42,7 +42,7 @@ from src import schema
 from src.refresh import DEFAULT_REFRESH_WINDOW_HOURS
 from src.schema import jsonschema as schema_doc
 from src.schema import mappers, models
-from src.sports import SPORTS, PeriodFormat, ScoreFamily, period_format, score_family
+from src.sports import SPORTS, PeriodFormat, ScoreFamily, period_format, score_family, set_format
 from src.status import StatusClass, classify_status
 from src.store import (
     ChangeRow,
@@ -424,13 +424,17 @@ def _expected_score(event: Mapping[str, Any], sport: str) -> Dict[str, Any]:
             "final": _expected_pair(home, away, "current"),
             "penalties": _expected_pair(home, away, "penalties") if fixed else None,
         }
+    unit = set_format(sport)  # None: tenis
     sets = []
-    for n in range(1, 6):
+    for n in range(1, 6 if unit is None else 8):
         games = _expected_pair(home, away, f"period{n}")
-        if games is None:
+        tiebreak = _expected_pair(home, away, f"period{n}TieBreak") if unit in (None, "games") else None
+        if unit is None and games is None:  # tenis: ilk boş sette durur
             break
-        sets.append({"number": n, **games, "tiebreak": _expected_pair(home, away, f"period{n}TieBreak")})
-    last = sets[-1] if len(sets) in (3, 5) else None
+        if unit == "frames" or (games is None and tiebreak is None):  # snooker: period1 bir set değildir
+            continue
+        sets.append({"number": n, **(games or {"home": None, "away": None}), "tiebreak": tiebreak})
+    last = sets[-1] if len(sets) in (3, 5) and unit in (None, "games") else None
     return {
         "family": "sets", **common,
         "sets_won": _expected_pair(home, away, "current"),
@@ -644,7 +648,7 @@ def test_score_keeps_the_family_of_the_sport_without_a_sheet():
     football = schema.event_from_row(_row(scores_json=None, home_score=1, away_score=0)).score
     assert football == models.FootballScore(family="football", home=1, away=0, half_time=None, regulation=None,
                                             after_extra_time=None, penalties=None)
-    plain = schema.event_from_row(_row(sport="volleyball", scores_json=None, home_score=3, away_score=1)).score
+    plain = schema.event_from_row(_row(sport="waterpolo", scores_json=None, home_score=3, away_score=1)).score
     assert plain == models.PlainScore(family=None, home=3, away=1)
 
 
@@ -656,6 +660,18 @@ def test_sets_keep_a_tiebreak_without_its_set():
         {"number": 1, "home": 7, "away": 6, "tiebreak": {"home": 7, "away": 3}},
         {"number": 3, "home": None, "away": None, "tiebreak": {"home": 1, "away": 0}},
     ]
+
+
+def test_numbered_sets_keep_their_number():
+    """Tenis dışındaki set sporları (SP-2): `sets` sözlüğü set numarasıyla; canlı yükte yalnızca o anki set."""
+    sheet = json.dumps({"family": "sets", "format": "points", "sets_won": [1, 2], "sets": {"4": [9, 6]},
+                        "tiebreaks": {}, "match_tiebreak": False})
+    score = schema.event_from_row(_row(sport="table-tennis", scores_json=sheet)).score.to_dict()
+    assert score["sets"] == [{"number": 4, "home": 9, "away": 6, "tiebreak": None}]
+    assert score["sets_won"] == {"home": 1, "away": 2}
+    bad = json.dumps({"family": "sets", "sets": {"x": [1, 0], "2": [None, None], "3": "1-0", "1": [25, 20]}})
+    assert schema.event_from_row(_row(sport="volleyball", scores_json=bad)).score.to_dict()["sets"] == [
+        {"number": 1, "home": 25, "away": 20, "tiebreak": None}]
 
 
 def test_malformed_sheets_and_lines_do_not_break_the_mappers():
@@ -701,8 +717,8 @@ def test_registered_sports_are_the_registry():
                       for spec in SPORTS]
     assert schema.sport_from_spec(SPORTS[0], sport_id=1).id == 1
     # kayıtlı olmayan spor: ad yükten, skor ailesi yok
-    assert schema.sport_from_row({"slug": "Volleyball", "id": 23, "name": "Volleyball"}).to_dict() == {
-        "slug": "volleyball", "name": "Volleyball", "id": 23, "score_family": None}
+    assert schema.sport_from_row({"slug": "Waterpolo", "id": 24, "name": "Waterpolo"}).to_dict() == {
+        "slug": "waterpolo", "name": "Waterpolo", "id": 24, "score_family": None}
     assert schema.sport_from_row({"slug": "tennis"}).to_dict() == {
         "slug": "tennis", "name": "Tennis", "id": None, "score_family": "sets"}
 

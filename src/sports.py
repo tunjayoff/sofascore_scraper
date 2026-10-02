@@ -6,7 +6,7 @@ Okuyanlar: src/status.py (skor ailesi), src/watcher.py (izleyici parametreleri),
 main.py (--sport seçenekleri), src/services/planning.py (bir maçın ihtiyacı: beklenen dilimler).
 
 Yeni spor eklemek:
-  1. SPORTS'a bir SportSpec (periyot ailesindeyse `period_format` ile).
+  1. SPORTS'a bir SportSpec (periyot ailesindeyse `period_format`, set ailesindeyse `set_format` ile).
   2. Skor biçimi mevcut ailelerden (docs/all-sports/README.md, "Sınıf gerekçeleri") biri değilse
      src/status.py'de yeni bir extract_scores dalı ve src/schema'da yeni bir skor modeli.
   3. Spora özel detay uç noktası varsa DETAIL_SLICES'a bir satır (ya da var olan satırın `sports` kümesine ekleme).
@@ -32,6 +32,12 @@ ScoreFamily = Literal["football", "periods", "sets"]
 #   halves:   iki yarı; basketbolun iki yarılı liglerinde period2/period4, öteki sporlarda period1/period2
 #   thirds:   üç periyot (period1..period3)
 PeriodFormat = Literal["quarters", "halves", "thirds"]
+
+# Set ailesinde bir setin neyle sayıldığı (src/status.py SetsScores.format; plan maddesi SP-2):
+#   games:  oyun; set tie-break'i ve match tie-break olabilir (padel; tenis kendi çizelgesini kullanır)
+#   points: sayı (voleybol, badminton, masa tenisi); tie-break yok
+#   frames: yalnızca kazanılan frame sayısı (snooker); periodN set skoru değildir
+SetFormat = Literal["games", "points", "frames"]
 
 # Bitişe yakınlık kuralı (src/watcher.py'deki _NEAR_END_RULES):
 #   football_minute: 2. yarı ≥ 80. dk ya da uzatma dakikası görüldü; uzatma/penaltı kodları
@@ -68,6 +74,8 @@ class SportSpec:
     aliases: Tuple[str, ...] = ()  # normalize_sport için ek tam adlar (küçük harf)
     # Periyot ailesinde normal sürenin sabit bölünüşü. None: skorlardan sezilir (basketbol: çeyrek ya da iki yarı)
     period_format: Optional[PeriodFormat] = None
+    # Set ailesinde setin birimi. None: tenis (2.x çizelgesi TennisScores, retired / walkover bayraklarıyla)
+    set_format: Optional[SetFormat] = None
 
     @property
     def detail_slices(self) -> Tuple[str, ...]:
@@ -169,14 +177,61 @@ SPORTS: Tuple[SportSpec, ...] = (
         score_family="periods",
         period_format="thirds",
     ),
+    # --- A sınıfı, set tabanlı sporlar (docs/all-sports/README.md, "Sınıf gerekçeleri"; plan maddesi SP-2) ---
+    # Skorlar tenisin anahtarlarıyla gelir: `current` kazanılan set, `periodN` o setteki sayı ya da oyun.
+    # Çekilme ve hükmen galibiyet skorda bayrak değil, durumdur (04-schema-v1.md karar 10): bu sporların çizelgesi
+    # (SetsScores) retired / walkover taşımaz. Bitişe yakınlık `last_set`: defaultPeriodCount, yoksa 3 set; kod
+    # 8-12 (1.-5. set). Snooker'da set kodu yok (canlı kod 20 "Started"): `never`.
+    SportSpec(
+        slug="volleyball",
+        name="Volleyball",
+        i18n_key="sport.volleyball",
+        score_family="sets",
+        set_format="points",
+        # Bitmiş 19 maçın 3'ünde son değişiklik başlangıçtan 4,2 / 4,22 / 5,17 sa sonra (research/all_sports/events)
+        watcher=WatcherParams(near_end_rule="last_set", stuck_after_seconds=6 * 3600),
+    ),
+    SportSpec(
+        slug="badminton",
+        name="Badminton",
+        i18n_key="sport.badminton",
+        score_family="sets",
+        set_format="points",
+        watcher=WatcherParams(near_end_rule="last_set"),
+    ),
+    SportSpec(
+        slug="table-tennis",
+        name="Table tennis",
+        i18n_key="sport.table-tennis",
+        score_family="sets",
+        set_format="points",
+        watcher=WatcherParams(near_end_rule="last_set"),
+    ),
+    SportSpec(
+        slug="padel",
+        name="Padel",
+        i18n_key="sport.padel",
+        score_family="sets",
+        set_format="games",
+        # Tenis gibi sıralı kort programı: startTimestamp planlanan saattir; ölçü gerçek oyun başlangıcı, eşik 6 sa
+        watcher=WatcherParams(near_end_rule="last_set", stuck_after_seconds=6 * 3600, stuck_from_play_start=True),
+    ),
+    SportSpec(
+        slug="snooker",
+        name="Snooker",
+        i18n_key="sport.snooker",
+        score_family="sets",
+        set_format="frames",
+        # Uzun maçlar oturumlara bölünür; bitmiş 4 maçın birinde son değişiklik başlangıçtan 4,27 sa sonra
+        watcher=WatcherParams(stuck_after_seconds=6 * 3600),
+    ),
 )
 
 _BY_SLUG: Dict[str, SportSpec] = {s.slug: s for s in SPORTS}
 
 # normalize_sport'un kayıt defterinden önceki eşlemesi: alt dizgi, bu sırayla. Davranış değişmesin diye
 # korunuyor; tam eşleşme (slug / ad / alias) her zaman önce denenir. Bu yüzden "american-football" ve
-# "minifootball" kendi slug'larına çözülür (SP-1); "table-tennis" eklenene kadar eskisi gibi "tennis" sayılır.
-# Yeni sporlar buraya EKLENMEZ.
+# "minifootball" (SP-1) ile "table-tennis" (SP-2) kendi slug'larına çözülür. Yeni sporlar buraya EKLENMEZ.
 _LEGACY_SUBSTRINGS: Tuple[Tuple[str, str], ...] = (
     ("basket", "basketball"),
     ("tennis", "tennis"),
@@ -240,6 +295,12 @@ def period_format(slug: object) -> Optional[PeriodFormat]:
     """Periyot ailesindeki sporun sabit bölünüşü; sezilen (basketbol) ya da kayıtlı olmayan sporda None."""
     spec = get_sport(slug)
     return spec.period_format if spec else None
+
+
+def set_format(slug: object) -> Optional[SetFormat]:
+    """Set ailesindeki sporun set birimi; tenis (kendi çizelgesi) ya da kayıtlı olmayan sporda None."""
+    spec = get_sport(slug)
+    return spec.set_format if spec else None
 
 
 def watcher_params(slug: object) -> WatcherParams:
