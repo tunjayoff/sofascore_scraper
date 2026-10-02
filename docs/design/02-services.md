@@ -20,6 +20,13 @@ give-back (FX-6), the single-match route (FX-1), the error table and the first c
 1.7, 2.1, 2.3, 2.4, 2.6 to 2.8, 3.4, 4.1 to 4.7, 5.1, 6, 7.1 and 8. References marked `f286723` are to
 `origin/main` at that commit. Section 11 lists the corrections.
 
+Revised a third time on 2026-10-02 (the second revision of that day) after batches five to seven (PRs #68
+to #75). The job manager and what the service context holds now (P11, #69), the job columns of the
+diagnostics bundle (#71), the schema package (SC-1, #72), the sinks and `ssc events` (P22, #73) and the
+foundation of API v1 (P20, #74) are described as built, again as the current stage with what later items
+add: sections 1.7, 2.1 to 2.8, 3.4, 4.1 to 4.6, 5, 6, 8.1, 8.4, 8.6 and 9 to 12. References marked
+`e0bae0c` are to `origin/main` at that commit. Section 11 lists the corrections (items 37 to 59).
+
 Conventions used here: "event" is a SofaScore match; "slice" is one data type of an owner entity
 (event, season, team, player); "face" is one of Python library, CLI, HTTP API.
 The CLI executable is written `ssc` below (final name: decision D2).
@@ -175,9 +182,13 @@ the terminal menu keeps its own wiring in `src/SofaScoreUi.py` until P26.
 - **Jobs are single-process.** The active job, cancel flag and exclusive slot live in memory
   (`web/jobs.py:54-58`, `:239-241`); constructing a second `JobStore` marks every running row interrupted
   (`:129-148`). The CLI does not use the job store at all, so a cron run and a web job can write the same
-  data directory concurrently; only the request budget is shared (`throttle.py`).
+  data directory concurrently; only the request budget is shared (`throttle.py`). P11 (PR #69) ended this
+  for the web job and for the headless downloads and refreshes of `main.py`: they run through the job
+  manager, which takes the `writer` lease and reads the cancel flag from the job row (2.8). The terminal
+  menu still uses neither the job store nor a lease.
 - **Bridge health is per process** (`bridge_health.py:24-26`), so a fresh `status` process cannot know
-  whether the server is blocked.
+  whether the server is blocked. Since P11 every transition is also written to `state.db` (2.3); no
+  command reads the stored value yet.
 - **Typed outcomes stop at event slices.** Season lists return `[]` on any failure (`season_fetcher.py:63-67`),
   rounds return `None` on any exception (`match_fetcher.py:480-482`), the watcher's 404 branch is unreachable
   (`watcher.py:188-191` with `utils.py:315-321`).
@@ -216,6 +227,11 @@ the terminal menu keeps its own wiring in `src/SofaScoreUi.py` until P26.
    `src.web.league_sports`: no service exists for these yet. The status and follows services replace them
    (P19, P21, P26). Command modules keep their module-level imports light; a test allows only `src.cli.*`,
    `src.errors`, `src.exceptions`, `src.language`, `src.sports` and `src.version` at import time.
+   The `events` command (P22, PR #73) imports `src.sinks` and `src.store` inside its function: it reads the
+   stream log itself, because there is no `LiveService.events` yet. The v1 routes (P20, PR #74) import
+   `src.sports`, `src.bridge_health`, `src.throttle`, `src.redact` and, for the error classes, `src.store`
+   (`src/web/errors.py:39`, `src/web/api/v1/settings.py:46` at `e0bae0c`); the query and status services
+   replace the direct reads (P21).
 2. Only `src/client` sends requests to SofaScore. Only `src/store` touches `DATA_DIR`, including every SQLite
    file and every lock file in it.
 3. Services never print, never read `os.environ`, never call `sys.exit`. They take a `ServiceContext`,
@@ -223,9 +239,19 @@ the terminal menu keeps its own wiring in `src/SofaScoreUi.py` until P26.
    As built by P08 the services do not print, with three leftovers of the transition: `build_context`
    writes `NO_COLOR` into `os.environ` when `USE_COLOR` is off (carried over from the terminal UI's
    constructor; it goes with the terminal progress bar, P14 and P15), `SyncService` reads one job-log text
-   from the locale files (`fetch_zero_matches`, as today; codes replace it in P11), and the storage error
+   from the locale files (`fetch_zero_matches`, as today), and the storage error
    is `src.exceptions.StorageError` until `src/errors.py` arrives with P18.
+   P11 (PR #69) did not replace that text by a code: `JobHandle.log` accepts `code=`
+   (`src/jobs/manager.py:153` at `e0bae0c`), but `SyncService` still logs the translated text
+   (`src/services/sync.py:425`), so it reaches the job log in the server's language. P13 passes
+   `code="fetch_zero_matches"`.
 4. Domain modules (`sports`, `status`, `refresh`, `slices`, `schema`) are pure and import nothing above them.
+   As built (SC-1, PR #72): `src/schema` imports `src.sports`, `src.status` and `src.refresh` at run time
+   and names the Store's row classes only under `TYPE_CHECKING` (`src/schema/mappers.py:53-54` at
+   `e0bae0c`), which is how "pure" and "mappers from Store rows" fit together. `tests/test_layers.py`
+   checks the Store's imports only; the purity of `src/schema` is checked in `tests/test_schema_v1.py`
+   (`test_package_imports_only_domain_modules` and a subprocess test that pins the exact set of `src`
+   modules that importing the package loads).
 5. `src/client` and `src/store` do not import each other. `src/jobs` uses `src/store` for persistence and
    leases and contains no SQL and no access to the data directory. The test enforces what imports can show:
    no face module and no `sqlite3` in `src/jobs` (`tests/test_jobs_model.py`); the manager may use `os` for
@@ -241,6 +267,7 @@ src/
     settings.py             Settings (frozen dataclasses), defaults
     loader.py               file + env + flags merge, validation, legacy .env / leagues.txt import
     schema.py               JSON Schema of the config file (for `describe config`)
+    overrides.py            the one writer of CONFIG_DIR/overrides.json (P20; 4.3)
   client/
     __init__.py             Client, request_context
     transport.py            curl transport + bridge fallback   (from utils.py:299-624)
@@ -251,7 +278,8 @@ src/
   store/                    designed in 01-storage.md; services use its public API directly
   sports.py status.py refresh.py                 domain
   slices.py                 Outcome, presence predicates (match_data_fetcher.py:65-89, :559-637)
-  schema/                   normalized schema v1: models, mappers from catalog rows and payloads, JSON Schema
+  schema/                   normalized schema v1 (SC-1): models.py, mappers.py (from catalog rows and the dicts
+                            that store.derive returns, not from payloads), jsonschema.py
   services/
     context.py              ServiceContext, build_context(settings), Clock
     planning.py             targets → WorkItems; need computation (from match_data_fetcher.py:813-854)
@@ -269,18 +297,29 @@ src/
     query.py tournaments.py QueryService (read side), incl. the legacy response shapes
   jobs/
     model.py                Job, JobKind, JobState, Origin, ErrorInfo (P07); JobEvent (P11)
-    manager.py              JobManager, JobHandle
+    manager.py              JobManager, JobHandle, JobOutcome, JobNotActive (P11)
     progress.py             JobProgress               (from web/progress.py)
     scheduler.py            optional in-app scheduler
-  sinks/
+  sinks/                    (P22)
+    __init__.py             build_sinks, dispatcher_for, drain_at_exit, validation of the sink options
     base.py dispatcher.py stdout.py file.py webhook.py
   cli/
     main.py output.py exit_codes.py signals.py legacy_flags.py commands/*.py
   web/
     app.py errors.py deps.py sse.py (job events only) security.py (PR #43)
-    api/v1/*.py             one router per resource; no live router
+    openapi.py              the committed OpenAPI document of v1 (P20; section 6)
+    api/__init__.py         prefixes, and the v1 successor of every legacy route (6.1)
+    api/v1/*.py             one router per resource; no live router (P20: meta.py, jobs.py, settings.py)
     api/legacy.py           the old /api paths as adapters
 ```
+
+What of this layout exists at `e0bae0c`: `errors.py`, `config/` (with `overrides.py` since P20, PR #74),
+`client/` (the bridge is still `src/challenge_solver.py`), `store/`, the domain modules, `schema/` (SC-1,
+PR #72), `services/context.py`, `sync.py`, `export.py` and `maintenance.py`, `jobs/model.py`, `manager.py`
+(P11, PR #69) and `progress.py`, `sinks/` (P22, PR #73), `cli/main.py`, `output.py`, `exit_codes.py` and
+the command modules `meta.py` and `events.py`, and in `web/` everything listed except `api/legacy.py`: the
+legacy routes are still the modules of `src/web/routes/` (P21 turns them into adapters). Not there yet:
+`src/api.py`, the other service modules, `jobs/scheduler.py`, `cli/signals.py` and `cli/legacy_flags.py`.
 
 `src/` stays the import package during the build-out (decision D1).
 
@@ -320,8 +359,8 @@ query, export and status work, everything else raises `NotSupportedError`.
 adapter that reads from the active `Settings`, so existing call sites keep working. P09 (PR #56) did that:
 every getter reads `loader.active()`, and `ConfigManager.get_settings()` returns the active `Settings`.
 
-The block above is the target. The current stage, as built by P08 (PR #57) and ST-17 (PR #62;
-`src/services/context.py` at `f286723`):
+The block above is the target. The current stage, as built by P08 (PR #57), ST-17 (PR #62) and P11
+(PR #69; `src/services/context.py` at `e0bae0c`):
 
 ```python
 @dataclass(frozen=True)
@@ -331,29 +370,61 @@ class ServiceContext:
     season_fetcher: SeasonFetcher
     match_fetcher: MatchFetcher
     match_data_fetcher: MatchDataFetcher  # details, refresh and the CSV flattening
+    client: Client | None = None          # P11; None when the base URL is not http(s)
+
+    @property
+    def store(self) -> Store: ...         # P11: open_store(self.data_dir), opened at the first access
+    @property
+    def jobs(self) -> JobManager: ...     # P11: JobManager(JobStore.for_store(self.store))
 
 def build_context(config_manager: ConfigManager, *, data_dir: str | None = None) -> ServiceContext: ...
     # creates the data directory and its four subdirectories (seasons, matches, match_details, datasets),
-    # brings the follows table up to date and builds the three fetchers; raises OSError when a directory
-    # cannot be created
+    # brings the follows table up to date and builds the three fetchers and the client; raises OSError
+    # when a directory cannot be created
 ```
 
-- It carries the fetchers, because today's flow is theirs. There is no `settings`, `store`, `client`,
-  `jobs` or `clock` field, no `readonly` argument, no follows and no health wiring: none of those existed
-  when it was written, and opening the Store in a web job would have created `.meta` files, which is not
-  behaviour-preserving.
+- It carries the fetchers, because today's flow is theirs. There is no `settings` and no `clock` field and
+  no `readonly` argument. Since P11 it has a `client` field, and `store` and `jobs` as properties.
+- The Store is opened lazily (P11). `store` and `jobs` are properties, not fields
+  (`src/services/context.py:66-77` at `e0bae0c`): building a context opens no Store, and the first access
+  to `ctx.store` creates what is missing under `.meta/` (`schema.json`, `state.db`, `catalog.db`). The
+  first version of this section had `build_context` open the Store. Two tests of earlier items pin the lazy
+  form: a context without follows creates no `.meta/` and survives an unusable `state.db`
+  (`tests/test_store_follows.py`, ST-17), and `--headless --csv-export` opens no Store
+  (`tests/test_cli_services.py`, P10). What opens it today: the headless downloads and refreshes of
+  `main.py` through `ctx.jobs`, a web job, and a bridge-health transition (below).
+- `ctx.jobs` is a new `JobManager` at every access, over the one job store of the open Store
+  (`JobStore.for_store`; since ST-11, PR #75, the same object is also the lazy property `Store.jobs`). The
+  CLI runs its jobs through it. The web does not: its routes and its job use the process-wide job store of
+  `src/web/routes/common.py`, which is created when that module is imported (2.8).
+- A web job opens the Store of its data directory, best effort (P11): `fetch_job._open_store`
+  (`src/web/fetch_job.py:85-96` at `e0bae0c`) touches `ctx.store` once before the service runs, so
+  `.meta/schema.json` and `.meta/catalog.db` appear next to `state.db` at the first job, and a directory
+  used only through the web UI is a Store for `open_store(create=False)`. If the Store cannot be opened
+  (newer layout, busy, corrupt file) a warning is logged and the job runs as before. The v1 job body does
+  the same (`src/web/api/v1/jobs.py:303-308`).
+- Bridge health (P11). `build_context` builds a `Client` with one module-level function as its
+  `on_health_change` callback (`_record_bridge_health`, `src/services/context.py:132-143`). The health
+  source keeps a callback once, so the function is added once however many contexts are built, and no
+  `client.close()` is needed when a context is replaced (the first version asked for it). The function
+  writes the snapshot to `store.runtime` under the key `bridge_health` in the data directory of the latest
+  context, which opens the Store there if it was not open; a write that fails is logged at DEBUG and does
+  not disturb the request. Nothing reads the key yet (`/api/v1/status` reports this process's own
+  snapshot); `ssc status` is its reader (P19). The fetchers do not send their requests through
+  `ctx.client` yet (P13).
 - A context belongs to one job or one request: the fetchers carry state (the job cache, the last request
   counts). `build_context` is called once per job and once per season-refresh or CSV-export request.
 - Follows (ST-17, PR #62). `build_context` applies the `[[follow]]` entries of the config file with origin
   `config` and then mirrors the league files, right after the data directories are created. It does not
-  open the Store for that and the context has no `store` field: it calls `apply_follows(data_dir, ...)`,
-  which updates the table over a short-lived connection (`01-storage.md` 2.3). `ConfigManager` does the same
-  for the league files after every load and change.
-- What the later items add. P11: the Store, the client with `on_health_change` wired to
-  `store.runtime.set("bridge_health", ...)` (and `client.close()` when a context is replaced) and the
-  `JobManager`; `apply_follows` then becomes `store.follows.apply`. P13: the pipeline uses the context's
-  client. P15: the fetchers leave the context, and `settings` takes the place of `config`. `readonly` and the
-  `Platform` class come with the library face.
+  open the Store for that: it calls `apply_follows(data_dir, ...)`, which updates the table over a
+  short-lived connection (`01-storage.md` 2.3). `ConfigManager` does the same for the league files after
+  every load and change. P11 left this unchanged: `apply_follows` did not become `store.follows.apply`,
+  because that would open the Store in every context. Only a config file with `[[follow]]` entries makes
+  `build_context` create `state.db`.
+- What the later items add. P13: the pipeline uses the context's client. P15: the fetchers leave the
+  context, and `settings` takes the place of `config`. `readonly` and the `Platform` class come with the
+  library face. Whether the Store is ever opened eagerly is decided with the library face; nothing needs
+  it today.
 - Tests fake the context with a `SimpleNamespace` that has `config`, `season_fetcher`, `match_fetcher` and
   `match_data_fetcher` (`test_breaker_phases`, `test_job_progress`, `test_storage_errors`,
   `test_sync_service`), so a new field that a service reads has to be added to those fakes.
@@ -452,13 +523,20 @@ Semantics:
   the default settings used to leave 65 reservations.
 - A request that waits for its slot inside the browser bridge stops within 0.25 s when its job is cancelled,
   on the sync path as well (FX-6), and raises `FetchCancelled`. A caller that waits for a shared challenge
-  solve (up to 90 s) or for the page's `fetch()` (up to 20 s) still cannot be interrupted on the sync path,
-  and with the budget off or not the limit, requests that already wait for the request semaphore are still
-  sent after a stop (`03-implementation-plan.md` section 15).
+  solve (up to 90 s) or for the page's `fetch()` (up to 20 s) still cannot be interrupted on the sync path.
+- Requests that already wait for the request semaphore can still be sent after a stop. `_request_async`
+  checks for a cancel before it waits for the semaphore and not after (`src/client/transport.py:553` and
+  `:564` at `e0bae0c`), so a waiter whose reserved slot is already due is sent. The previous revision said
+  this happens only with the budget off or not the limit. That was too narrow: with the budget as the limit
+  it also happens whenever cancelling the queue takes longer than one interval, because a waiter that
+  reserves after the end of the queue has passed gets a slot that is due. The diagnostics fix (PR #71)
+  found it: `tests/test_throttle.py::test_stopped_bulk_job_leaves_no_queue_behind` pins the behaviour at
+  one request per second and flakes on a slow runner for this reason. The fix is one cancel check after
+  the semaphore is taken (plan item FX-9).
 - The client writes nothing under `DATA_DIR`. It reports each bridge-health transition through
-  `on_health_change`; `build_context` will store the snapshot with `store.runtime.set("bridge_health", ...)`,
-  so another process (`ssc status`, a second server) can read the last known state. That wiring is P11's:
-  the context has no Store yet (2.3).
+  `on_health_change`; since P11 (PR #69) `build_context` stores the snapshot with
+  `store.runtime.set("bridge_health", ...)`, so another process (`ssc status`, a second server) can read
+  the last known state (2.3).
 
 As built (P05), where the first version of this section differed:
 
@@ -495,7 +573,7 @@ temporary directory. The proposed operations map as follows:
 | reset "unavailable" marks | `store.events.reset_empty_markers(scope, include_confirmed=...)` |
 | per-event state for planning, without a tree walk | `store.events.missing(...)`, `refresh_candidates(...)`, `stale(...)`, `open_events(...)` for the common questions; `store.events.states(scope)` for the general case |
 | listing state (complete flag, age) | `store.entities.slice(ref, "schedule", sub)` → `SliceInfo.meta["complete"]`, `fetched_at` |
-| event rows and lists for the faces | `store.events.get/list/count/iter` return catalog rows; `src/schema` maps rows and payloads to the normalized v1 records |
+| event rows and lists for the faces | `store.events.get/list/count/iter` return catalog rows; `src/schema` maps the rows to the normalized v1 records (it maps rows, not payloads; see below the table) |
 | raw payload | `store.events.payload(id, key, sub, raw=True)`, `store.entities.payload(...)`: the stored JSON bytes. They are the parsed response serialised again, value-identical but not byte-identical to the wire (`01-storage.md` 4.1) |
 | tournaments, seasons, changes, summary | `store.entities.tournaments/seasons`, `store.changes.list`, `store.events.summary`, `store.info` |
 | export rows | `store.events.iter` + `src/schema` mappers + `store.export.rows`; raw export is `store.export.raw` |
@@ -503,6 +581,18 @@ temporary directory. The proposed operations map as follows:
 | durable streams with sequence numbers | `store.streams.append/read/wait/head/prune`; sink positions with `store.streams.cursor/set_cursor` |
 | watcher state | `store.watch.load/save` |
 | jobs, job events, cancel across processes, leases | `store.jobs`, `store.lease(name)` |
+
+As built (SC-1, PR #72; `src/schema` at `e0bae0c`). The mappers take the Store's row classes (`EventRow`,
+`TournamentRow`, `SeasonRow`, `ParticipantRow`, `SliceInfo`, `ChangeRow`, `StreamRecord`) and the dicts that
+`store.derive` returns, never a SofaScore payload. The only reader of a status class and a score from a
+payload is `src/store/derive.py`, and `src/schema` may not import the Store at run time (2.1), so a payload
+is mapped as `schema.event_from_row(derive.event_row(payload, "event", observed_at))` by a caller that may
+import both. The earlier text of 2.2 and of this table said "rows and payloads". Slice payloads are given
+out raw in schema v1 (`schema.slice_from_info(info, payload=...)`); normalized slice models are later,
+additive items (`04-schema-v1.md` section 9, approved on 2026-10-02). Categories and sports have no read
+method and no row class in the Store yet, so `category_from_row` and `sport_from_row` take a mapping; the
+read methods come with ST-22, and P21 needs them for `/tournaments`. `store.jobs` exists since ST-11
+(PR #75) as a lazy property.
 
 Requirements and how they are met:
 
@@ -559,16 +649,34 @@ table above, row by row.
   anything else `internal`. `data_operation_running` therefore has two classes in the code: `ConflictError`
   and the job store's `DataOperationRunningError`.
 - `errors.lease_error_code(name, purpose)` gives `job_running`, `data_operation_running` or
-  `instance_running` for a held lease, with the holder in `details`. The job store of the web (ST-10) still
-  uses its own `conflict_from_lease`, which has no `instance_running`: a `live` or `watcher:<sport>` holder
-  that blocks a data operation is reported there as `data_operation_running`, until the job manager takes
-  over (P11). `LeaseHeld` is a `StorageError`, so a caller that catches `StorageError` catches `LeaseHeld`
-  first, as `main.py` does since P10.
+  `instance_running` for a held lease, with the holder in `details`. The job store (ST-10) still uses its
+  own `conflict_from_lease`, which has no `instance_running`: a `live` or `watcher:<sport>` holder that
+  blocks a data operation is reported there as `data_operation_running`. The previous revision expected that
+  to end with the job manager. P11 (PR #69) did not change it (`src/store/jobs.py:207-218` at `e0bae0c`),
+  and the job manager raises the job store's two classes. A job cannot meet the case: it takes `writer`,
+  which `live` and `watcher` never hold, so the case exists only for data operations. API v1 does not go
+  through that mapping when the conflict comes from a lease: it maps the `LeaseHeld` behind the conflict
+  with `lease_error_code`, so v1 can answer `instance_running` (`src/web/errors.py:176-177`). `LeaseHeld` is
+  a `StorageError`, so a caller that catches `StorageError` catches `LeaseHeld` first, as `main.py` does
+  since P10.
 - `message` is meant to be English. The messages of `StorageError` and of the Store's errors are Turkish in
   the code. The mapping builds an English message from the OS reason and the path when they exist and passes
   the Store's text through otherwise.
 - The module imports only the standard library and `src/exceptions.py`, so `version` and `doctor` run
   before the packages are installed; it recognises the Store's classes through `sys.modules`.
+- HTTP statuses as used by API v1 (P20, PR #74; `src/web/errors.py:137-144` at `e0bae0c`).
+  `invalid_request` is 422 for a rejected value (body, query or header validation; a route raises
+  `errors.ValidationFailed`) and 400 for a well-formed request that is refused (a locked or read-only
+  setting, an unknown cursor; a route raises `UsageError`). `cancelled` has no HTTP status; if it ever
+  leaves a route it is answered with 500.
+- The table has no row for too many failed token attempts, and none was added. While a client address is
+  locked (section 6), a v1 route answers 401 `unauthorized` with a `Retry-After` header and
+  `details = {reason: "too_many_attempts", retry_after}`; a legacy route and `POST /api/auth/login` answer
+  429 with the legacy body `{"detail": {"code": "too_many_attempts", "message", "retry_after"}}`
+  (`src/web/app.py:87-101`). `too_many_attempts` is therefore a legacy code and a v1 detail, not a code of
+  this table.
+- A refused Host header is outside the error model: it is Starlette's plain-text `400 Invalid host header`
+  from the outermost middleware, on v1 as on the legacy routes, without a request id.
 
 `describe errors` prints this table; a test asserts that every `PlatformError` subclass has a row.
 
@@ -663,16 +771,19 @@ class SyncResult:
   (`matches`, `slices`, `scanned`), a typed wrapper of `MatchDataFetcher.reset_unavailable_markers`. It takes
   a league id, because there is no `Scope` type yet; `clear`, `migrate` and `rebuild_catalog` come with
   their items (ST-19, ST-23).
-- The services take no lease and raise no `JobRunningError`: the caller holds the lease. `main.py` takes it
-  with `open_store(data_dir).lease(...)` and `LeaseHeld` reaches it unchanged (2.8, 4.6). The job manager
-  takes that over (P11).
+- The services take no lease and raise no `JobRunningError`: the caller holds the lease. Since P11 (PR #69)
+  that caller is the job manager for a download and a refresh, on the web and in `main.py` (2.8); `main.py`
+  still takes the lease itself for `--recheck-unavailable` alone and for `--watch` (4.6). The handle a
+  service gets is the manager's `JobHandle`; `DetachedHandle` remains for a caller without a job and is no
+  longer used by `main.py`.
 - `SyncService` does not count a season list that could not be fetched: a run in which every request is
   refused ends `succeeded` (`03-implementation-plan.md` section 15). After a breaker stop the batch fetcher
   returns for the matches in flight without reporting them as failed and still advances the progress to the
   total, so the progress says that every detail is done and none failed.
 - `SyncResult.state` already follows the terminal-state rule (`partial` for a breaker stop or a failed
-  match). The web adapter (`src/web/fetch_job.py`) still writes Completed with the card text; P11 stores the
-  state.
+  match). Since P11 the state is stored: the web adapter (`src/web/fetch_job.py`) and `main.py` hand it to
+  the job manager as a `JobOutcome`, and the job row says `partial`. The legacy API and the card still show
+  Completed with the card text (2.8).
 
 ```python
 # services/refresh.py
@@ -750,55 +861,90 @@ class JobState(str, Enum): QUEUED, RUNNING, SUCCEEDED, PARTIAL, FAILED, CANCELLE
 
 @dataclass(frozen=True)
 class Job:
-    id: str                    # a plain string; uuid4 today (src/store/jobs.py:278 at 0aa73b4), sortable from P11 on
+    id: str                    # a plain string; a sortable 26-character id (ULID) since P11, uuid4 in older rows
     kind: JobKind; state: JobState
     origin: Origin             # face: cli|api|scheduler|library, pid, host (pure data; the caller fills pid and host)
     spec: Mapping[str, Any]    # the service spec, JSON
-    progress: Mapping[str, Any] | None      # JobProgress.detail()
+    progress: Mapping[str, Any] | None      # JobProgress.detail(); for another process's job: its last progress event
     result: Mapping[str, Any] | None
     error: ErrorInfo | None    # code from 2.6 + message + details
     created_at: str | None; started_at: str | None; finished_at: str | None   # ISO-8601 UTC, as in today's rows
     heartbeat_at: int | None   # epoch milliseconds
     cancel_requested: bool
 
+@dataclass(frozen=True)
+class JobEvent:                # one row of the job's own event log (the job_events table)
+    job_id: str; seq: int      # seq starts at 1 for every job
+    ts_ms: int                 # epoch milliseconds
+    type: str                  # started | phase | progress | log | failed | breaker | cancel_requested | finished
+    data: Mapping[str, Any]
+
+@dataclass(frozen=True)
+class JobOutcome:              # what a job body may return; anything else: the terminal-state rule decides
+    state: JobState | None = None; result: Mapping[str, Any] | None = None; error: ErrorInfo | None = None
+    message: str | None = None             # card text and last job-log line (free text, for today's clients)
+    code: str | None = None; params: Mapping[str, Any] = {}   # translation key of `message` and its parameters
+    percent: int | None = None
+
+class JobNotActive(RuntimeError): ...      # `run` was called for a job that is not the running job of this process
+
 class JobManager:
-    def submit(self, kind: JobKind, spec: Mapping, fn: Callable[[JobHandle], Any], *, origin: Origin,
-               background: bool, wait_for_lease: float = 0.0) -> Job: ...
-        # background=True: dedicated thread (web, scheduler); False: caller's thread (CLI, library)
+    def __init__(self, store: JobStore, *, cancel_poll=1.0, heartbeat=5.0, progress_interval=0.5): ...
+    def start(self, kind: JobKind, spec: Mapping, *, origin: Origin, wait_for_lease: float = 0.0,
+              payload: Mapping | None = None, lease_purpose: str | None = None) -> Job: ...
+        # takes the `writer` lease and writes the row as running; does not execute the job
         # raises JobRunningError / DataOperationRunningError when the lease is held and the wait expires
+    def run(self, job_id: str, fn: Callable[[JobHandle], Any], *, phases: Sequence[str] = (),
+            on_change: Callable[[], Any] | None = None, on_log: Callable[[str], Any] | None = None) -> Job: ...
+        # executes a started job in the caller's thread and returns the finished job
+    def submit(self, kind: JobKind, spec: Mapping, fn: Callable[[JobHandle], Any], *, origin: Origin,
+               background: bool, wait_for_lease: float = 0.0, phases=(), payload=None, lease_purpose=None,
+               on_change=None, on_log=None) -> Job: ...
+        # start + run. background=True: dedicated thread (web, scheduler); False: caller's thread (CLI, library)
     def get(self, job_id) -> Job | None ; def list(self, *, limit=20, kinds=None, states=None) -> list[Job]
-    def active(self) -> Job | None
+    def active(self) -> Job | None                         # the job running on the data directory, in any process
     def cancel(self, job_id) -> bool                       # works from any process
-    def events(self, job_id, *, after: int = 0, follow: bool = False) -> Iterator[JobEvent]
+    def events(self, job_id, *, after: int = 0, follow: bool = False, poll: float = 0.25) -> Iterator[JobEvent]
     def reap_stale(self) -> int
 
 class JobHandle:                                           # what a service sees
     id: str
     def cancelled(self) -> bool
-    progress: JobProgress
-    def log(self, message: str, **fields) -> None
+    progress: JobProgress                                  # built by the manager from `phases`
+    def log(self, message: str, **fields) -> None          # `code=...` lets a client build the text from the code
+    def publish(self, fields: Mapping[str, Any]) -> None   # job fields that JobProgress does not carry
 ```
 
-`JobManager` does not exist yet. Until P11, `src/services/sync.py` declares `JobHandle` as a Protocol with
-`id`, `progress`, `cancelled()`, `log(message)` (no fields) and one more method, `publish(fields)`: the flow
-writes `schedule_empty_seasons` to the job record in the middle of a run and `JobProgress` does not carry it.
-`progress` must be built with `SyncSpec.job_phases`. The web adapter implements the Protocol on the job
-store; P11's handle takes its place.
+The block is the job model and the job manager as built by P07 (PR #35) and P11 (PR #69; `src/jobs/model.py`
+and `src/jobs/manager.py` at `e0bae0c`). The first version of this section had `submit` as the only entry of
+the manager, a handle without `publish`, and neither `JobOutcome` nor `JobNotActive`; "As built" at the end
+of the section says why each differs. Both faces use the manager since P11: the web job of
+`POST /api/fetch`, `POST /api/v1/jobs` (section 6), and the headless downloads (`--headless --update-all`,
+kind `sync`) and refreshes (`--refresh-only`, kind `refresh`) of `main.py`. A headless run therefore appears
+in the job history (`/api/jobs`) with its progress, log lines and result.
 
 Mechanics:
 
-- **Storage.** The `jobs` and `job_events` tables of `DATA_DIR/.meta/state.db`, reached through `store.jobs`
-  (`01-storage.md` 3.3). Today's columns are kept, so old rows stay readable; `.meta/jobs.db` is imported once
-  and left in place. State names are normalised on read: a completed row whose `circuit_breaker_triggered`
-  column is set becomes `partial` (the column, not the text, because the text is localised). `created_at` has
-  no column until migration 0002 (P11); rows written before it read `started_at`. `Origin` and `ErrorInfo`
-  are defined in `src/jobs/model.py` (P07, PR #35); `JobEvent` comes with P11.
+- **Storage.** The `jobs` and `job_events` tables of `DATA_DIR/.meta/state.db` (`01-storage.md` 3.3),
+  written by the job store (`src/store/jobs.py`). The manager stands on a job store and holds no state of
+  its own: the context builds it on `JobStore.for_store(store)` (2.3; since ST-11, PR #75, the same object
+  is `store.jobs`), the web on its process-wide job store. Today's columns are kept, so old rows stay
+  readable; `.meta/jobs.db` is imported once and left in place. Migration 0002 (P11) added the columns
+  `origin_json`, `spec_json`, `error_json`, `heartbeat_at` and `created_at` and the `job_events` table, so
+  `state.db` is at schema version 2 and a build from before P11 refuses the directory afterwards
+  (`SchemaTooNew`). A row written before the migration reads `started_at` as its `created_at` and has the
+  origin `api`. State names are normalised on read. Success is still written to the `status` column as
+  `completed`, the 2.x name, and read as `succeeded`; `partial` is the only new value in the column. A
+  `completed` row whose `circuit_breaker_triggered` column is set (a row from before P11) reads as `partial`
+  (the column, not the text, because the text is localised), and a status text that is not recognised reads
+  as `failed`. `Origin` and `ErrorInfo` are defined in `src/jobs/model.py` since P07 (PR #35), `JobEvent`
+  since P11.
 - **Leases** are the Store's (`01-storage.md` 6.1), taken with `store.lease(name)`:
 
   | Job kind | Lease |
   |---|---|
-  | sync, fetch, refresh | `writer` (purpose `job`; the headless runs of `main.py` use `headless` and `refresh`) |
-  | reset of the "unavailable" markers (`--recheck-unavailable`) | `writer` (purpose `recheck-unavailable`): it rewrites marker files of stored matches |
+  | sync, fetch, refresh | `writer` (purpose `job`; the headless runs of `main.py` pass `headless` and `refresh` through `lease_purpose`) |
+  | reset of the "unavailable" markers (`--recheck-unavailable`) | `writer` (purpose `recheck-unavailable`): it rewrites marker files of stored matches. Not a job: `main.py` takes the lease itself |
   | backup | `writer`, as a data operation (purpose `op:backup`), so a refused request gets `data_operation_running` |
   | migrate | `writer`, and no live service may be running |
   | clear, restore, rebuild, data-directory change | `maintenance` |
@@ -807,27 +953,156 @@ Mechanics:
   | sink dispatcher | `sinks` |
 
   This preserves today's rule "one job at a time" (`web/jobs.py:151-168`, `:193-223`) and extends it to all
-  processes.
-- **Liveness.** A job is running if its row says so **and** the lease is held. A running row whose lease is
-  free is marked `interrupted` by whoever notices (`reap_stale`); this replaces the unconditional sweep at
-  `web/jobs.py:129-148`, which would be wrong with two processes. `heartbeat_at` is written every 5 s for display.
-  The sweep is still there (ST-10 kept it): a second web server that starts on the same directory marks the
-  first one's running job row `interrupted` until that job's next progress update rewrites it. The leases
-  that make the right check possible exist since ST-10: the row says running and
-  `store.lease_holder("writer")` is None.
-- **Cancel.** `cancel()` sets `cancel_requested` in the row. The runner keeps an in-memory flag (same
-  process: set directly) refreshed from the row every second by a ticker; `JobHandle.cancelled` is the cancel
-  check installed in the request context, so waits and retries stop within a fraction of a second as today
-  (`fetch_job.py:73-76`).
-- **Progress and events.** `JobProgress` publishes into the row (as today) and appends coalesced
-  `job_events` (at most two progress events per second, all phase/log/failed/breaker events, last 2,000 kept
-  per job). `job.started` and `job.finished` are also appended to the `job` stream for sinks (section 5).
+  processes. As built: `JobManager.start` takes `writer` through the job store. `main.py` no longer takes it
+  for a download or a refresh; its helper `_data_dir_lease` (`main.py:160` at `e0bae0c`) still opens the
+  Store for the lease and closes it afterwards, and is used only by `--recheck-unavailable` alone and by
+  `--watch` (`watcher:<sport>`). The P10 tests pin the purposes `headless` and `refresh`, which is why
+  `start` has `lease_purpose`; a refused process still reads `purpose headless` in the holder's text.
+- **Start and run.** `start` takes the lease and writes the row; `run` executes a started job in the
+  caller's thread; `submit` is both. The split exists because of the web: the route calls `start`, which
+  answers a held lease with 409 in the request itself, and the thread calls `run`
+  (`src/web/routes/scrape.py:113`, `src/web/fetch_job.py:179` at `e0bae0c`). Tests pin
+  `run_fetch_job(job_id, payload)` for a job that already exists and replace that function as a hook.
+  `phases` are the `JobProgress` phases the handle's `progress` is built with (for a sync,
+  `SyncSpec.job_phases`). `payload` is the request body the legacy API shows and builds the card title from;
+  without it the spec is stored in its place. `lease_purpose` is what a refused process is told (default
+  `job`). `on_change` is called after every write to the job row (the web refreshes its live mirror);
+  `on_log` is called with every job-log line (`main.py` writes it to the log as before). `wait_for_lease`
+  retries the lease every 0.1 s until the time is up. The manager refuses a second job on a job store that
+  already runs one (`create_running(replace_running=False)`, `JobRunningError`); a direct call of
+  `JobStore.create_running` still reuses the lease, and since P11 it leaves the first row `interrupted`
+  instead of running forever. When the body raises, the job is stored as `failed` with the code of the error
+  table and a masked message (Ctrl+C: `cancelled`), the lease is released and the exception goes on to the
+  caller; in a background thread it is logged. `run` raises `JobNotActive` for a job that is not the running
+  job of this process.
+- **Liveness.** A job is running if its row says so **and** the `writer` lease is held. A running row whose
+  lease is free is marked `interrupted` by whoever notices (`reap_stale`, `src/store/jobs.py:449` at
+  `e0bae0c`): when a job store is opened or rebound, when a job is created (under the lease) and whenever
+  the history is read (`get`, `list`, `active`, `cancel`). As long as another process holds `writer`, no row
+  is touched, so starting a second server or a CLI run no longer marks the first one's running job
+  interrupted (2.x and ST-10 swept unconditionally, `web/jobs.py:129-148`), and a job whose process died is
+  marked interrupted by the next process that opens the directory, lists the history or starts a job. The
+  unconditional sweep was kept as `mark_stale_running_interrupted`, an explicit call for a process that
+  gives up its own job; nothing calls it by itself, and `tests/characterization/test_api_misc_goldens.py`
+  still uses it, so that file is unchanged. `heartbeat_at` is written to the job row every 5 s by the job's
+  ticker thread, for display only; `leases.heartbeat_at` is not written.
+- **Cancel.** `cancel(job_id)` sets `cancel_requested` in the row and works from any process. The process
+  that runs the job keeps the flag in memory (a cancel in the same process sets it directly); the ticker
+  reads the row every second (`poll_cancel`) and copies a request of another process into it.
+  `JobHandle.cancelled` is the cancel check installed in the request context, so waits and retries stop
+  within a fraction of a second as today (`fetch_job.py:73-76`). `POST /api/scrape/cancel` cancels the
+  server's own job, and when the server itself runs no job it cancels the job another process runs on the
+  data directory (`src/web/routes/scrape.py:80-94`), for example a headless run. A CLI run cancelled that
+  way prints `Program terminated by user.`, as after Ctrl+C, without the summary line, and exits with 0
+  (`main.py:248-251`). The progress write of the job store used to write `cancel_requested` from its
+  in-memory copy and could overwrite a request of another process; it now writes the larger of the row and
+  the copy (`src/store/jobs.py:802`).
+- **Progress and events.** `JobProgress` publishes into the row (as today), and the handle derives the job's
+  events from two successive progress snapshots: every phase change, log line, failed item and breaker stop
+  is appended to `job_events`, progress events at most two per second (the last pending one is written by
+  the ticker or at the end). A failed-item event does not carry a progress event with it, so a burst of
+  failures stays within that limit. Event types: `started` ({kind, origin}), `phase`, `progress`, `log`
+  ({message, plus the fields given to `log`}), `failed`, `breaker` ({reason}), `cancel_requested`,
+  `finished` ({state, message, and `error` when there is one}). The `finished` event also carries `code` and
+  `params` when the body gave them: the translation key of the card text, today `fetch_stopped_by_breaker`,
+  `fetch_completed_with_warning`, `storage_error_abort` and `refresh_stopped_by_breaker`. `Job.error.code`
+  is a code of the error table (a breaker stop: `blocked`, `rate_limited` or `upstream_error`).
+  `Job.progress` is the live value for a job of this process; for a job of another process it is that job's
+  last `progress` event, which lags by up to one ticker round (1 s). `events(follow=True)` yields new events
+  until the job ends, also for a job of another process.
+- **Stream events.** `job.started` and `job.finished` are appended to the `job` stream for sinks (section
+  5), with source `job`: `job.started` has the data {job_id, kind, origin}, `job.finished` {job_id, kind,
+  state, counts, error_code}, where `counts` are `details_done`, `details_total`, `failed_count`,
+  `refreshed` and `refresh_changed`. The appends are best effort: one that fails (a busy `state.db`) is
+  logged and not retried, so a sink can miss the start or the end of a job.
+- **Origin in job events (decision D20 of 2026-10-02, `03-implementation-plan.md` section 13).** The origin
+  is {face, pid, host}, so `job.started` and the `started` event carry the host name and the pid of the
+  process that started the job, a sink subscribed to `job.*` delivers them, and API v1 shows `origin.pid`
+  and `origin.host`. This is kept: a sink and the
+  API deliver to the operator's own systems. The diagnostics bundle is different, because it is made to be
+  shared with others, and it no longer carries the host name (below).
 - **Where jobs run.** In the process that created them. There is no daemon and no queue; `queued` exists
   only for the in-app scheduler, which coalesces (a task whose previous run still holds the lease is skipped
-  and logged).
+  and logged). As built, `queued` is still never written, also not while `submit` waits for the lease: the
+  row is written after the lease is taken.
 - **Terminal state rule.** `failed` if a fatal error aborted the job; else `cancelled` if cancelled; else
-  `partial` if the breaker stopped it or any item failed; else `succeeded`. Today a breaker stop is shown as
-  "Completed" with a text (`fetch_job.py:223-226`).
+  `partial` if the breaker stopped it or any item failed; else `succeeded` (`model.terminal_state`). As
+  built (P11): a job stopped by the circuit breaker, or one with a failed match, is stored as `partial`,
+  with the breaker's error code in `error`. A job that finishes after a cancel request is stored as
+  `cancelled`, including the case where its body returned success while the status was still Running. A
+  final status the job store does not recognise is stored as `failed` with a warning instead of verbatim
+  (`src/store/jobs.py:839-858`). At `0aa73b4` a breaker stop was shown as "Completed" with a text
+  (`fetch_job.py:223-226`); the legacy API and the live mirror still show a `partial` job as `completed` /
+  `Completed`, because the goldens of G-04 pin those shapes.
+- **Retention.** When a job is created, finished job rows beyond the newest 500 are removed, with their
+  events; each job keeps its newest 2,000 events (`JOB_HISTORY_LIMIT`, `JOB_EVENTS_LIMIT`,
+  `src/store/jobs.py:66-67`). The events of a job are pruned at every hundredth event, so a job can briefly
+  hold up to 99 more.
+- **Ids.** New jobs get a 26-character sortable id (a ULID: 48 bits of time, 80 random bits, Crockford
+  base32; `model.new_job_id`) instead of a UUID; ids made in the same millisecond of one process still
+  increase. Rows written before keep their UUID, so an id is an opaque string.
+- **A busy `state.db`.** A `state.db` that another writer keeps locked for more than 5 s (`StoreBusy`) no
+  longer fails a job on a progress or log write: the write is skipped, the next one completes the row, and
+  the first skip is logged as a warning. Event appends and stream appends are best effort in the same way.
+  The end of a job is tried three times; if it still cannot be written, the error goes to the caller and the
+  next reader marks the row `interrupted`. Other errors of a row write (a full disk, a corrupt file) are
+  raised as before.
+- **What the legacy routes show.** `/api/jobs` and `/api/jobs/{id}` return the 18 columns of 2.x with
+  `partial` shown as `completed`; two jobs started in the same second are now listed newest first (the order
+  was undefined). They still show an interrupted job with its last `current_task`, a cancel request without
+  a log line, and the live mirror keeps the last finished job; the goldens pin that. In the new model these
+  facts are events (`finished` with state `interrupted`, `cancel_requested`), and `JobManager.active()`
+  never returns a finished job or a row whose owner died. `/api/scrape/status` and `/api/scrape/stream`
+  still show only the server's own job: a headless run is visible in `/api/jobs` and in API v1, not on the
+  live card. The web adapter wraps the handle only to print the console line of the CSV phase
+  (`_ConsoleHandle`); EX-1 removes it with that phase.
+- **The command line.** `main.py` submits inline with origin `cli`
+  (`ctx.jobs.submit(..., background=False)`, `main.py:412`). It catches the job store's conflict and
+  re-raises the `LeaseHeld` behind it, so a refused lease still prints the holder and exits with 6. Its exit
+  codes are today's: a breaker stop exits 2, and `partial` has no exit code of its own until P19 (4.5).
+  `DetachedHandle` of `src/services/sync.py` is no longer used by `main.py`. For P19:
+  `ssc jobs list|show|cancel|tail` are `ctx.jobs.list`, `get`, `cancel` and `events(follow=True)`, and
+  `--wait` is `submit(wait_for_lease=)`.
+- **Job rows in the diagnostics bundle (PR #71).** Since migration 0002 a job row holds the host name of the
+  process that ran the job, and `src/diagnostics.py` read the history with `SELECT *`, so every bundle built
+  after a job carried it. The bundle now selects the job columns by name (`_JOB_COLUMNS`,
+  `src/diagnostics.py:63-69` at `e0bae0c`); a column added to the table later is not in the bundle unless it
+  is added to that list, and a column the file does not have is skipped, so the 2.x `jobs.db` is read as
+  before. Kept: the 18 columns of 2.x, `kind`, `created_at` and `heartbeat_at`. The origin is given as
+  {face, pid, same_host} without the host name (`same_host` says whether the job was started on the machine
+  that builds the bundle; null when no name was recorded). `spec_json` and `error_json` are decoded and
+  redacted like every other section. `owner` (the random id of the lease holder) is dropped. The host names
+  recorded in the selected rows (the origin, the lease holder in an error's details) and this machine's name
+  are replaced by `***` in every string of a job, where the name stands as a whole word. The setup check's
+  profile-lock detail no longer carries the lock's host name either (`"lock": "***-4242"`). One gap is left:
+  `log_tail.txt` in the bundle is not masked for the host name. The masking replaces the name as a whole
+  word in the job rows and in the setup check, and the log tail does not go through it, so a `LeaseHeld`
+  text that a caller logs would carry the name (plan item FX-10).
+
+As built (P11), where the first version of this section differed:
+
+- **`start` and `run` next to `submit`**, for the web's route and thread, as above.
+- **`JobHandle.publish(fields)`.** The Protocol in `src/services/sync.py` needs it: the flow writes
+  `schedule_empty_seasons` to the job record in the middle of a run and `JobProgress` does not carry it.
+  `log(message, **fields)` is as designed; the services do not pass `code=` yet (2.1).
+- **More arguments.** `phases`, `payload`, `lease_purpose`, `on_change` and `on_log` on `submit` and `start`
+  / `run` were not in the design; `JobOutcome` and `JobNotActive` are new. The job store's `update` takes
+  `job_id` (a late write of a finished job is ignored when it is not the running job), `state` and `error`.
+- **The Store is not opened by `build_context`** (2.3).
+- **`queued`, `completed` and `Job.progress`** as described under the mechanics above.
+
+Not built yet (with the owning item where the plan names one):
+
+- `ssc jobs` commands and `--wait`; exit codes 3 and 4 for `partial` and a breaker stop (P19).
+- `instance_running` in the job store's conflict mapping (2.6).
+- A committed golden for the job row that a real `main.py` subprocess leaves (section 10).
+- The web UI has no Stop button for a job of another process: the button exists only on the live card of the
+  server's own job (FE-2).
+- The single-match fetch still only asks `writer_busy()` and does not hold the `writer` lease
+  (`src/web/routes/matches.py:514` at `e0bae0c`; P13).
+- The web's process-wide job store is created when `src/web/routes/common.py` is imported, so a web job
+  still creates a job database under the data directory even when the job store in use lives elsewhere. P21
+  moves the creation out of import time.
 
 ---
 
@@ -965,10 +1240,15 @@ What unification settles (each line is a deliberate behaviour change against one
   `main.py:344`). When it trips, the pipeline stops, the job ends `partial` with `error.code` =
   `blocked` | `rate_limited` | `upstream_error` (from `CircuitBreaker.reason()`, `breaker.py:241-247`) and the
   CLI exits 4. `--ignore-breaker` maps to today's `IGNORE_RATE_LIMIT` (`breaker.py:107-108`).
+  As built: the breaker is still installed by `SyncService` in its own request context (2.7), not by the job
+  manager. Since P11 (PR #69) a job that the breaker stopped is stored as `partial` with that `error.code`
+  (2.8); `main.py` still exits 2.
 - Throttle: the shared budget of 2.4, `[client] rate`; `concurrency` only bounds in-flight requests. Since
   FX-6 a request that is cancelled while it waits for its slot gives the slot back, so a stopped job no
   longer delays the next one. The pipeline wraps every wait for a slot in
-  `throttle.give_back_if_interrupted(delay)`, also around an `await`.
+  `throttle.give_back_if_interrupted(delay)`, also around an `await`. A request that still waits for the
+  request semaphore when the job stops is a separate defect: it can be sent after the stop, with the budget
+  as the limit too (2.4; plan item FX-9).
 - Sizing note: at 5 req/s a football event costs 7 requests (1.4 s), a 380-event season about 9 minutes.
   `sync --dry-run` reports `estimated_requests` and `estimated_seconds` from the plan.
 
@@ -1020,14 +1300,18 @@ registers itself, so a PR that adds a command adds a file and does not edit a sh
 As built so far (P18, PR #65; `src/cli/` at `f286723`). The entry point is `python -m src.cli.main <command>`,
 or `ssc <command>` after `pip install -e .`; only an editable install is supported, because the version, the
 locale files and the web UI build are read from the project folder. `main.py` is untouched until P19. The
-commands that exist are `version`, `doctor`, `describe`, `config show|validate|init|path` and `diagnostics`.
+commands that exist are `version`, `doctor`, `describe`, `config show|validate|init|path`, `diagnostics`
+and, since P22 (PR #73), `events`.
 
 - A command registers itself with `@command("jobs list", help=<locale key>, configure=fn, settings=True)`
   (and `group("jobs", help=...)` for a parent) and returns a `CommandResult(data, text, exit_code, warnings,
   notes)`; it raises a `PlatformError` or lets `LeaseHeld`, `StorageError` and `ConfigError` through, which
   are mapped. `settings=True` loads the settings and moves the log lines to stderr before the command runs.
 - `version` prints the application version and two schema versions, the CLI envelope's and the config
-  file's. The Store does not export its layout, catalog and state versions from its root yet.
+  file's. The Store does not export its layout, catalog and state versions from its root yet. The version
+  of the data schema is not printed either: `schema.SCHEMA_VERSION` exists since SC-1 (PR #72) and is not
+  wired, and `describe schemas` does not include `schema.describe()` (the JSON Schema of the normalized
+  records). `src/cli/commands/meta.py` was not owned by SC-1; P19 wires both.
 - `doctor` reads `.env` and the environment, as `main.py --doctor` does, not the config file. `ssc doctor`
   passes the effective request rate (config file and `--rate` included) to a new check, `budget`, which
   warns when the budget is above the default or off. That check runs only in the new CLI
@@ -1040,6 +1324,25 @@ commands that exist are `version`, `doctor`, `describe`, `config show|validate|i
 - `--version`, `version`, `--help` and `doctor` run with only the standard library. A command that needs a
   missing package ends with `internal` and a pointer to `doctor`.
 - The `--help` description names the sports of the registry.
+- `events` (P22, PR #73; `src/cli/commands/events.py` at `e0bae0c`) reads the stream log with the options of
+  the table: `--stream` (repeatable), `--after SEQ`, `--follow`, `--type` (repeatable; shell patterns such
+  as `live.*`), `--event` (repeatable) and `--limit N`. It opens the Store read-only, takes no lease and
+  writes no cursor and no event, so it can run next to a download or a watcher (opening a Store brings the
+  catalog up to date since ST-11, PR #75, also for a read-only open). In text and `ndjson` mode it prints
+  one envelope per line (5.1) and, when the stream ends by itself, the line
+  `{"type":"end","stream_id":…,"last_seq":…,"count":…,"gap":…}`; `last_seq` is the value to pass as
+  `--after` next time. `--json` prints one document whose `data` has `stream_id`, `last_seq`, `count`, `gap`
+  and `events`; `--follow --json` is a usage error. `--follow` starts at "now" unless `--after` is given,
+  and Ctrl+C ends it with exit code 0 and no `end` line. Events that were pruned before they were read are
+  reported as `gap: true` and as the warning `stream_gap`. A data directory that is not a Store yet reads as
+  empty and nothing is created; with `--follow` it is a storage error.
+- Limits of `events` as built. It reads `store.streams` itself, because `LiveService.events` (2.7) does not
+  exist. The output module has no path for streaming commands: the command writes its lines itself, and an
+  error in the middle of a stream is printed as the error envelope, which has no `type` field (P19 gives the
+  output module that path, for `jobs tail` and `watch --stdout` too). `ssc events | head -1` exits with 1 on
+  the closed pipe, without a traceback: the CLI's general handling of a closed stdout, not changed by P22.
+- `diagnostics` writes the bundle of `src/diagnostics.py`. What the bundle takes from a job row is in 2.8
+  (PR #71); how it shows a webhook address is in 4.3 (PR #73).
 
 ### 4.2 Global flags
 
@@ -1051,7 +1354,7 @@ commands that exist are `version`, `doctor`, `describe`, `config show|validate|i
 As built (P18): all of these except `--log-format`, `--wait` and `--progress`, which nothing could honour
 yet (`[log] format` has no consumer, and no command of P18 takes a lease or runs a job); P19 adds them. The
 flags are accepted before or after the command. `main.py` has no `--wait` either: a refused lease fails at
-once.
+once. The job manager can wait since P11 (`submit(wait_for_lease=)`, 2.8); no face passes a wait yet.
 
 ### 4.3 Configuration file
 
@@ -1202,7 +1505,7 @@ environment and are rejected in the file: the access token and the captcha token
 |---|---|
 | `default` | the defaults in the code |
 | `dotenv` | a legacy name (`DATA_DIR`, `MAX_CONCURRENT`, …) whose value this process applied from `.env` |
-| `overrides` | `CONFIG_DIR/overrides.json`, machine-written by the web UI (nothing writes it yet); the shape of the config file without `[[follow]]`, `[[sink]]` and `[[schedule.task]]` (decision D11) |
+| `overrides` | `CONFIG_DIR/overrides.json`, machine-written: since P20 (PR #74) by `PATCH /api/v1/settings` through `src/config/overrides.py` (below); the Settings page of the web UI still writes `.env`. The shape of the config file without `[[follow]]`, `[[sink]]` and `[[schedule.task]]` (decision D11) |
 | `file` | `sofascore.toml` |
 | `env` | the process environment: the legacy names, then `SOFASCORE_<SECTION>__<KEY>`; when both are given the new name wins |
 | `flag` | command-line flags, handed over by the caller as `flags={"storage.data_dir": ...}` |
@@ -1230,9 +1533,45 @@ above them. Consequences, all as built:
   are still refreshed, and a value saved on the Settings page still takes effect at once
   (`loader.note_dotenv_write`).
 - With a config file that pins a value, the Settings page still reports success when that value is saved:
-  the value goes to `.env` and has no effect. The locked fields of the settings API end that (P20).
+  the value goes to `.env` and has no effect. API v1 ended that for its own route (P20, PR #74):
+  `GET /api/v1/settings` flags the value as `locked` and `PATCH` refuses it. The Settings page uses the
+  legacy `POST /api/settings`, which is unchanged until P21.
 
-The position of `.env` is decision D19 in `03-implementation-plan.md`; the owner confirms it.
+The position of `.env` is point (a) of decision D19 (`03-implementation-plan.md` section 13). D19 was
+settled on 2026-10-02 as built by P09, with all four of its points: the `.env` layer below the overrides
+file and the config file; a proxy given in the config file switches the proxy on; the legacy-name warning is
+logged only when a config file is present; and an empty `token_env` means "no other variable".
+
+**The overrides writer** (P20, PR #74; `src/config/overrides.py` at `e0bae0c`).
+`write_overrides({"client.rate": 3, "display.language": None})` is the one writer of
+`CONFIG_DIR/overrides.json`, and `PATCH /api/v1/settings` is its one caller. A value of None removes the
+key, so that the weaker layer's value is in force again. Every value is checked with the loader's own rule
+before it is written; the file is written atomically under a lock file (`overrides.json.lock`) with mode
+0600, because a proxy address can carry a password; then the settings are reloaded. If the reload fails, the
+file is put back and the previous settings stay in force. The writer does not look at locks: refusing a
+value that a stronger layer pins is the caller's job.
+
+The route (`src/web/api/v1/settings.py`) applies a request as a whole or not at all. A key whose value comes
+from `sofascore.toml`, the process environment or a flag is refused with 400 `invalid_request` and
+`details.locked` (key, layer and source name); removing such a key with `null` is allowed. A key the API may
+not change is refused with `details.read_only`. The keys it may change are the table `WRITABLE` of that
+module, the settings of today's Settings page: `display.language`, `display.use_color`,
+`display.date_format`, `client.base_url` (https on SofaScore's hosts only), `client.use_proxy`,
+`client.proxy`, `client.max_concurrent`, `client.rate`, `client.wait_time_min`, `client.wait_time_max`,
+`client.timeout_seconds`, `client.retries`, `breaker.rate_limit_consecutive`, `breaker.rate_limit_ratio`,
+`breaker.server_error_consecutive`, `fetch.only_finished`, `fetch.save_empty_rounds`,
+`refresh.window_hours`, `log.level`, `log.debug` and `storage.data_dir`. The table adds upper bounds to the
+loader's rules. `storage.data_dir` must stay inside the project or the home directory, cannot be removed
+with `null`, and a change of it is refused while a job runs; the job store is opened in the new directory
+first, and if that fails nothing is written. Everything else (the bind address and the Host list, the token,
+directory paths, the live source, follows, sinks) is read-only through the API.
+
+**Shadowing between the two settings routes** (found by P20, pinned, not fixed). `overrides.json` ranks
+above `.env`. Once `PATCH /api/v1/settings` has written a key, the legacy `POST /api/settings` (the current
+Settings page) still writes that key to `.env`, reports success, and the value has no effect until the key
+is removed through v1 with `null`. It takes someone who uses both routes; the web UI uses only the legacy
+one. `tests/test_api_v1_settings.py::test_a_value_written_here_shadows_a_later_save_of_the_legacy_route`
+pins it. It ends when P21's legacy adapter writes through `src.config.overrides`.
 
 **Environment.** `SOFASCORE_<SECTION>__<KEY>`, e.g. `SOFASCORE_CLIENT__RATE=5`, `SOFASCORE_SERVER__PORT=9000`,
 `SOFASCORE_STORAGE__DATA_DIR=/data`. Lists are JSON: `SOFASCORE_FOLLOWS`, `SOFASCORE_SINKS`,
@@ -1271,6 +1610,13 @@ or empty is a `ConfigError`, for both keys, so protection cannot be switched off
 and `proxy_env` in the same layer is an error; `proxy_env` from the same or a stronger layer replaces
 `proxy`. The token itself is `settings.server.token`.
 
+Since P20 (PR #74) `[server] token_env` takes effect for the web app: `src/web/app.py` reads the token
+through Settings and hands it to `security._startup_token` (`_token_from_settings`, `src/web/app.py:28-38`
+at `e0bae0c`), because `src/web/security.py` still reads the environment itself (P30 makes it read Settings,
+and the hand-over goes). A `token_env` that names an unset variable stops the start of the web app. The
+start-up warning for a token that is too short names `SOFASCORE_API_TOKEN` even when `token_env` names
+another variable (`src/web/app.py:41-44`).
+
 **Proxy.** With the legacy names a proxy is used only when `USE_PROXY=true`, as today. In the config file
 (and in the new names and flags) giving `proxy` or `proxy_env` switches the proxy on, unless
 `use_proxy = false` is set in the same or a stronger layer. The first version said nothing either way.
@@ -1291,6 +1637,32 @@ yet is rejected. Slice names and the `run` names of schedule tasks are not check
   model does not know go to `SinkSpec.options` for the sink's own code. The path of a file sink is made
   absolute. A webhook without `secret_env` and without `allow_unsigned = true` is rejected at load
   (decision D12).
+  The option keys are defined and checked by `src/sinks` since P22 (PR #73; `TYPE_OPTIONS` and `build_sink`
+  in `src/sinks/__init__.py` at `e0bae0c`):
+
+  | Sink type | Option keys | Default |
+  |---|---|---|
+  | every type | `sports = ["football"]`, `tournaments = [17]`: only events of these sports or tournaments | no filter |
+  | `file` | `rotate_daily` (rotate when the UTC day changes), `rotate_size` (`"50MB"` or a number of bytes, at least 1024), `keep` (rotated files to keep) | no rotation; every rotated file is kept |
+  | `webhook` | `batch_size` (1 to 100), `flush_seconds` (0 to 60), `max_age` (`"24h"` or seconds), `timeout_seconds` (above 0, at most 120) | 20, 1 s, 24 h, 10 s |
+  | `stdout` | none | |
+
+  They are checked when a sink is built, not when the settings are loaded: an unknown key or a value out of
+  range is a `ConfigError` (`config_invalid`) of `sinks.build_sinks`, which nothing calls outside the tests
+  yet. `config validate` does not build sinks, so it accepts a wrong option today; P19 makes it call
+  `build_sinks`. Three more rules of `build_sink`: the secret is read from the environment when the sink is
+  built, and a named variable that is empty is an error; the name in `secret_env` must look like a secret
+  (contain SECRET, TOKEN, KEY, PASSWORD, ...), because the diagnostics bundle and the log masking recognise
+  values by the name of their variable; and a file sink whose path is inside the data directory is refused,
+  because only the Store touches that directory. Sink names must be unique.
+  Where a sink's address is shown. `ssc config show` and the diagnostics bundle show a webhook address by
+  its host only (`https://hooks.example.org/***`, `redact.mask_webhook_url`; P22, PR #73): the path and the
+  query of such an address are the credential for services such as Slack or Discord. This covers `[[sink]]`
+  in the config file and the `url` fields inside `SOFASCORE_SINKS`. Two places are left: a `SOFASCORE_SINKS`
+  value of the wrong shape (a JSON list of strings instead of tables) is quoted in the loader's
+  `ConfigError` text, so an address written that way appears in the error message of the command, and
+  `config show` prints a sink's `options` as they are (the keys defined above carry no secret; a key the
+  user invents would be shown). The plan gives both to FX-10.
 - A `[[schedule.task]]` becomes a `ScheduleTask` with `run`, `every`, `every_seconds`, `cron` and `options`;
   exactly one of `every` and `cron` is required.
 
@@ -1321,12 +1693,16 @@ are per request and per web request, not per file.
 
 **What uses the model today.** `ConfigManager`'s getters, and through the bridge every module that reads a
 legacy name. The `[[follow]]` entries are applied to the follows table since ST-17, and nothing reads the
-table yet. Modelled and validated but not used by anything: sinks (P22), schedule tasks (P29), the slice
+table yet. Modelled and validated but not used by anything: schedule tasks (P29), the slice
 selection (P27), `[server] host` and `port` (P25), `[log] format` (P19), `[client] odds_provider` (P28) and
 `[live]` (P23, P24, P31). There is no `[live] enabled` key and no `sources` list. `loader.load_settings(config_file=...)` validates a file without touching the process
 (`config validate`), `loader.find_config_file()` is `config path`, and `config_schema()` is the JSON Schema
 of the file. Constructing the `Settings` creates no file; constructing `ConfigManager` still creates
 `config/leagues.txt` (`03-implementation-plan.md` section 15).
+Two parts of the model got a user in this revision. Since P20 (PR #74) the web app takes its token through
+`[server] token_env`, and API v1 reads and writes the settings (section 6). Since P22 (PR #73) `src/sinks`
+builds sinks from `settings.sinks`; no process hosts the dispatcher yet, so a configured `[[sink]]` is still
+not served (section 5).
 
 Follows have three origins (`01-storage.md` 2.3):
 
@@ -1387,6 +1763,14 @@ settings, not to `--help` and not to errors raised before the settings are loade
 argparse help on a terminal; the CLI turns that off, so that `error.details.usage` never carries colour
 codes. Locale keys of the CLI are flat, with the prefix `ssc_`.
 
+As built (SC-1, PR #72 and P22, PR #73). The first streaming command is `events` (4.1): its lines are the
+envelopes of 5.1 and its `end` line is `{"type":"end","stream_id","last_seq","count","gap"}`. Two points of
+the field rules are settled by the schema (`04-schema-v1.md`). A timestamp written by the stream log has
+milliseconds, always (`2026-10-01T12:00:00.123Z`), so that a parser sees one format. And the rule
+"timestamps ISO-8601 UTC with `Z`" has one exception: `change_ts`, which is SofaScore's own change time and
+stays an epoch integer, as the envelope of 5.1 and `00-platform.md` name it; the schema follows 5.1 and
+states the exception. "Ids are integers" is about SofaScore's ids; a job id is a string (2.8).
+
 ### 4.5 Exit codes
 
 | Code | Meaning | Typical source |
@@ -1415,6 +1799,11 @@ P10: an unexpected error in the detail phase ends a headless run with exit 1 ins
 swallowed, and an `APP_EXIT_CODE` variable in the calling environment no longer overrides the exit code of
 a headless run. The new CLI (P18) has the whole table in `src/cli/exit_codes.py`, read from the error table,
 with `combine()` for the precedence.
+P11 (PR #69) moved the headless download and refresh to the job manager and changed no exit code: a breaker
+stop still exits 2, a download stored as `partial` because of a failed match still exits 0 (a refresh in
+which every match failed: 1), and the held lease still exits 6. One case is new: a run that is cancelled
+from another process (2.8) prints `Program terminated by user.` and exits 0, as after Ctrl+C. Codes 3 and 4
+come with P19.
 
 ### 4.6 Signals, single instance, running as a service
 
@@ -1432,6 +1821,13 @@ with `combine()` for the precedence.
   `--watch`; a refused lease prints the holder (process id, host, purpose, since when) in the application's
   language on stderr and exits with 6. There is no `--wait`: the run fails at once. `--headless --csv-export`
   alone takes no lease. Ctrl+C during a run that holds a lease is not tested.
+  Since P11 (PR #69) the job manager takes `writer` for `--headless --update-all` and `--refresh-only`
+  (2.8); `main.py` takes a lease itself only for `--recheck-unavailable` alone and for `--watch`. What is
+  printed and the exit code are unchanged. A Ctrl+C that reaches the job body ends the job as `cancelled`
+  and releases the lease (tested on the manager, not through `main.py`).
+- Not built: the SIGHUP reload. `src/sinks` has no reload of its sinks, and no process hosts the dispatcher
+  yet (section 5); the reload comes with the hosts (P23, P25). The 10 s flush of the sinks at a graceful
+  stop is built into `Dispatcher.run` (5.2).
 - Service operation: `docs/` ships two systemd units (`sofascore-serve.service`, `sofascore-watch.service`,
   `Restart=on-failure`, `KillSignal=SIGTERM`) and a timer example for `ssc sync`. The Docker entrypoint
   becomes `ssc serve --host 0.0.0.0` and passes any other arguments to `ssc`; `serve` never widens
@@ -1473,6 +1869,12 @@ Aliases use the new exit codes and the new output rules (decision D5).
 
 ## 5. Output sinks and event streams
 
+As built (P22, PR #73; `src/sinks/` at `e0bae0c`): the sink library, its dispatcher and the command
+`ssc events` (4.1) exist. **No process hosts the dispatcher yet**: nothing outside the tests calls
+`Dispatcher.run`, `register` or `drain`, so the options of a configured `[[sink]]` are checked by nothing
+and the sink is served by nothing after P22 alone. The hosts are `ssc watch` (P23), `ssc serve` (P25) and
+the one-shot commands with their drain at exit (P19). Until then the stream log is read with `ssc events`.
+
 ### 5.1 Streams
 
 Producers never call a sink. They append to a durable stream through `store.streams.append` and get a sequence
@@ -1491,7 +1893,7 @@ shown by the web UI comes from the `job_events` table through `/api/v1/jobs/{id}
 Envelope (schema `sofascore.event/1`):
 
 ```json
-{"stream": "live", "seq": 1842, "type": "live.status_changed", "ts": "2026-10-01T18:52:04Z",
+{"stream": "live", "seq": 1842, "type": "live.status_changed", "ts": "2026-10-01T18:52:04.123Z",
  "event_id": 17124861, "sport": "football", "tournament_id": 17, "source": "push",
  "data": {"from": "live", "to": "completed", "provisional": true, "change_ts": 1790856421, "score": {}}}
 ```
@@ -1502,42 +1904,171 @@ directory. It identifies a message for as long as the
 stream id (`store.streams.head().stream_id`) stays the same; consumers de-duplicate on `seq`. Numbers increase
 strictly but are not consecutive within a stream.
 
-As built so far (ST-18, PR #59): the 2.x watcher is the only producer. It appends its events to the `live`
-stream with the fields it has always written, as they are: `from`, `to`, `at_utc`, `change_ts`, `source`
+As built so far (ST-18, PR #59): the 2.x watcher is the only producer of the `live` stream. It appends its
+events with the fields it has always written, as they are: `from`, `to`, `at_utc`, `change_ts`, `source`
 (`live` or `event`: which request showed the change), `scores`, `provisional`, `start_ts`, `status_class`.
 The envelope's `source` is always `poll`, and no `dedup_key` is set. The `data` shape shown above and the
 key are the live service's to settle (P23, 8.1); until then a consumer of the stream sees the 2.x fields.
 
+What is produced today (`e0bae0c`). The live event types carry the stream's prefix (`live.status_changed`,
+not `status_changed`): the stream log, the sinks and the schema use these names. In the `live` stream only
+the 2.x watcher's `live.status_changed`, `live.score_changed` and `live.stuck` exist. The job manager
+appends `job.started` and `job.finished` since P11 (PR #69; data in 2.8). The dispatcher appends
+`system.sink_dropped` (5.2). `change.recorded`, `system.blocked`, `system.recovered` and
+`system.live_source_changed` have no producer yet; the pipeline and the live service bring them.
+
+The envelope as built (SC-1, PR #72 and P22, PR #73):
+
+- `ts` has milliseconds, always: `2026-10-01T12:00:00.123Z`. The first version of the example showed whole
+  seconds; the stream log stores milliseconds (`StreamRecord.ts`) and one fixed format is easier to parse.
+  The example above was changed.
+- The `data` of the example (`from`, `to`, `provisional`, `change_ts`, `score`) is not what is stored today:
+  a consumer gets the 2.x watcher's fields listed above, with `scores` as the 2.x score sheet. The schema
+  types `data` as an object and documents both shapes (`04-schema-v1.md`, "LiveEvent data"); P23 settles the
+  shape per event type. The sinks pass `data` through as stored.
+- `change_ts` inside `data` is an epoch integer, the one exception to the timestamp rule of 4.4.
+- A field that does not apply is `null`: a `job.started` event has `event_id`, `sport` and `tournament_id`
+  null, and its `source` is `job`. `dedup_key` is internal to the log and not part of the envelope.
+- Every sink writes the same bytes: one line of ASCII JSON (`ensure_ascii`) per envelope, in the field order
+  of the example.
+- Two functions build the envelope. `schema.live_event_from_record(record).to_dict()` is the schema's form
+  (SC-1), and SC-1 asked the sinks to write the envelope with it. The sinks and `ssc events` do not call it:
+  they use their own `Envelope.from_record(record).to_dict()` (`src/sinks/base.py:103-122` at `e0bae0c`),
+  because nothing outside `src/schema` imports the schema package yet. The two give the same document for
+  the same record today (checked by hand for this revision, with a live and a job record), and no test
+  compares them. P23, the next owner of the envelope's `data`, makes them one or adds that test.
+
 ### 5.2 Sink interface
 
 ```python
-class Sink(Protocol):
+class Sink(Protocol):                                          # src/sinks/base.py
     name: str
     def accepts(self, env: Envelope) -> bool: ...              # compiled from the `events` globs and filters
     def deliver(self, batch: Sequence[Envelope]) -> None: ...  # raise RetryableSinkError / FatalSinkError
     def close(self) -> None: ...
 
-class Dispatcher:
-    def run(self, stop: StopToken) -> None: ...                # long-running hosts
-    def drain(self, timeout: float) -> DrainReport: ...        # one-shot commands before exit
+class Dispatcher:                                              # src/sinks/dispatcher.py
+    def __init__(self, store: Store, sinks: Sequence[Sink], *, clock: Clock | None = None,
+                 jitter: Callable[[], float] | None = None, read_limit: int = 500): ...
+    def register(self) -> None: ...                            # records new sinks at "now"; needs no lease
+    def step(self, *, flush: bool = False, until: Callable[[], bool] | None = None) -> float: ...
+        # one round over all sinks; returns the seconds until the next work (inf: nothing pending)
+    def run(self, stop: StopToken, *, flush_timeout: float = 10.0) -> None: ...   # long-running hosts
+    def follow(self, stop: StopToken) -> None: ...             # sinks without a cursor (stdout), no lease
+    def drain(self, timeout: float = 10.0) -> DrainReport: ... # one-shot commands before exit
+    def status(self) -> tuple[SinkStatus, ...]: ...            # per sink, in this process
+    def close(self) -> None: ...                               # closes the sinks
+
+# src/sinks/__init__.py
+def build_sinks(specs: Sequence[SinkSpec], *, environ=None, data_dir=None, clock=None) -> list[Sink]: ...
+def dispatcher_for(store: Store, specs: Sequence[SinkSpec], *, environ=None, clock=None) -> Dispatcher | None: ...
+def drain_at_exit(dispatcher: Dispatcher | None, timeout: float | None = None) -> DrainReport | None: ...
 ```
+
+The block is the interface as built by P22 (PR #73, `src/sinks/` at `e0bae0c`). The `Sink` protocol is the
+one of the first version. The first version's `Dispatcher` had `run` and `drain` only; `register`,
+`step(until=)`, `follow`, `status` and `close` were added, and the three functions of the package root are
+what a host calls. `StopToken` (anything with `is_set()` and `wait(timeout)`, for example a
+`threading.Event`) and `Clock` are defined in `src/sinks/base.py`, because `src/services/context.py` has no
+`Clock` yet. Besides the protocol the dispatcher reads four optional attributes of a sink (`uses_cursor`,
+`batch_size`, `linger_seconds`, `max_age_seconds`) and an optional `last_delivered()`; `BaseSink` carries
+their defaults.
 
 The dispatcher keeps one cursor per sink (`store.streams.cursor(sink)`). It reads after the cursor, delivers
 in order, and advances the cursor only on success: at-least-once, ordered, resumable after restart. Exactly
-one process dispatches at a time (the `sinks` lease): `serve` and `watch` hold it while they run; a one-shot
-command tries it at exit, drains for up to 10 s, and otherwise leaves the backlog to the holder or to the next
-run.
+one process dispatches at a time (the `sinks` lease). How that is built:
+
+- **A new sink starts at "now".** The design did not say where a sink without a cursor starts; starting at
+  the beginning would send up to seven days of old events to a webhook the first time it is configured. A
+  sink is known once `store.runtime` holds the key `sink:<name>`; a known sink resumes at its cursor, also
+  when that cursor is 0. A sink without a cursor (a configured `type = "stdout"`) starts at "now" at every
+  start.
+- **Long-running hosts: `run(stop)`.** It takes the `sinks` lease, dispatches until `stop` is set, then
+  flushes for up to 10 s and releases the lease. The first version said that `serve` and `watch` hold the
+  lease while they run. They cannot both hold it, so `run()` waits when another process holds the lease (it
+  tries again every 5 s) and takes over when the lease is free: the two services can run side by side on one
+  data directory, and one of them dispatches. `run()` does not close the sinks; the host calls `close()`.
+- **One-shot commands: `register()`, then `drain(timeout)`.** `register()` records new sinks without the
+  lease, before the job, so that the job's own events are delivered at exit; without it a sink that is first
+  seen at exit starts after those events. `drain` tries the lease, delivers the backlog for up to `timeout`
+  seconds and returns a `DrainReport` (`complete`, `timed_out`, `lease_held`, `holder_pid`, per-sink
+  status). When the lease is held elsewhere it delivers nothing and says so: the backlog is left to the
+  holder. `sinks.drain_at_exit(dispatcher)` wraps it for a command: 10 s by default, it never raises, closes
+  the sinks, and does nothing for `None`. `sinks.dispatcher_for(store, settings.sinks)` returns `None` when
+  no sink is configured; it builds the sinks with `build_sinks`, which raises `ConfigError` for a bad option
+  or a missing secret (4.3).
+- **`follow(stop)`** serves sinks without a cursor and takes no lease, does not prune and writes nothing to
+  `state.db`. `watch --stdout` is `Dispatcher(store, [StdoutSink()]).follow(stop)` (P23).
+- **Stopping.** A stop request and the time limit of `drain` are checked before every sink and after every
+  delivery (`step(until=)`). A stop or a drain can therefore overrun by the one delivery in progress, for a
+  webhook at most its request time-out (10 s by default); no further delivery is started after the time is
+  up.
+- **One thread delivers for all sinks.** Deliveries are made one after the other in the dispatcher's thread.
+  A `deliver()` that never returns (stdout into a pipe nobody reads, a file on a hung network mount) blocks
+  the other sinks and the shutdown; the webhook is bounded by its time-out. A host runs the dispatcher in a
+  daemon thread and joins it with a time-out.
+- **Retries.** A `RetryableSinkError`, and any unexpected exception of a sink, is retried with exponential
+  back-off and jitter, 1 s doubling to 5 min, each delay multiplied by a random factor between 0.5 and 1; a
+  receiver's `Retry-After` is honoured up to the 5 min cap. The head batch blocks its sink, and the other
+  sinks continue. A `FatalSinkError` disables the sink until restart; its cursor stays.
+- **Max age is the age of the event.** The first version dropped "the head batch" after `max_age`. As built
+  the age is `now - ts` of an event, checked after a failed attempt: a receiver that is up gets a backlog of
+  any age, and one that is down loses the events older than the sink's `max_age`. All expired events are
+  dropped in one go instead of one failed request per batch, and the range is recorded as one
+  `system.sink_dropped` event with the data {sink, reason, first_seq, last_seq, count, max_age_seconds},
+  reason `max_age`. Only the webhook has a `max_age` (24 h by default); a file sink never drops and waits at
+  its head batch.
+- **Events pruned before delivery** (`StreamBatch.gap`) count as lost and are recorded the same way, with
+  reason `pruned` and `count: null`, once per incident.
+- **Store errors.** The design did not say that Store calls can raise plain `sqlite3.Error`. The Store turns
+  only a lock time-out into `StoreBusy`; other SQLite errors (a locked database when WAL is not available,
+  an I/O error) leave it as `sqlite3.Error`. A long-running caller has to catch both (`STORE_ERRORS`,
+  `src/sinks/dispatcher.py:63`). In the dispatcher either one on a read or a cursor write delays the sink
+  and does not end the dispatcher; a cursor that could not be written is written at the next step; `run()`
+  logs any other unexpected error and goes on after 5 s.
+- **A replaced log.** The dispatcher remembers the stream id and starts its positions again when a read
+  reports another one (`state.db` was recreated). With today's Store this cannot happen inside one process;
+  it is a guard.
+- **Pruning is the lease holder's.** While `run()` holds the `sinks` lease it prunes the stream log once per
+  hour, to 7 days and 1,000,000 rows (`01-storage.md` 9.3). `drain` and `follow` do not prune. The two
+  limits are constants of the dispatcher (`PRUNE_MAX_AGE_SECONDS`, `PRUNE_MAX_ROWS`) until ST-24 makes them
+  the defaults of `StreamLog.prune`. When no sink is configured there is no dispatcher, so the live service
+  has to prune itself (P23).
+- **No reload.** A SIGHUP reload of the sinks (4.6) is absent; a changed `[[sink]]` needs a restart of the
+  host.
+
+Delivery guarantees as built, in one place: at least once (a crash between a delivery and the cursor write
+replays the batch, and receivers de-duplicate on `seq`); in order per sink; the head batch blocks its sink
+and nothing is skipped, except events dropped by `max_age` or lost to pruning, and both are recorded in the
+`system` stream; resumable at the cursor after a restart; one dispatching process per data directory.
 
 | Sink | Behaviour |
 |---|---|
-| `stdout` | NDJSON lines; no cursor (starts at "now" or `--after`); this is `watch --stdout` and `events --follow` |
-| `file` | append NDJSON; rotation by size or day; cursor recovered from the last line of the newest file |
+| `stdout` | NDJSON lines; no cursor (starts at "now" or `--after`); this is `watch --stdout` and `events --follow`. As built: `ssc events` reads the log itself and uses `StdoutSink` only to write its lines; a configured `type = "stdout"` sink is served by the lease holder and starts at "now" at every start; a closed stdout disables the sink |
+| `file` | append NDJSON; rotation by size or day; cursor recovered from the last line of the newest file. As built: LF line ends, one `fsync` per batch before the cursor moves; the active file is always `path`, a rotated file is renamed to `<stem>.<time of its last write><ext>` (`live.20261001T235958Z.ndjson`), and `keep` limits the rotated files; an incomplete last line left by a crash is removed at the next open; the cursor is recovered from the last line only when the stored cursor is behind that line and the line equals the event in the log, so a file left over from another log is ignored |
 | database | the supported database output is the SQLite export in the public schema (`ssc export --format sqlite`); a PostgreSQL sink later implements `Sink` with an upsert on `seq`. `catalog.db` and `state.db` are internal files (decision S5) |
 | `webhook` | below |
 | message queue | later, same interface |
 
+One limit of the file sink: a batch that is retried in the same process does not repeat the lines it has
+written, but that holds only for a failure after the write. A write that fails in the middle (a full disk)
+can leave the complete lines of that batch in the file, and the retry writes the whole batch again. It is at
+least once, as designed.
+
 Sinks are configured only in the config file or environment, never through the HTTP API: with no accounts,
-an API that registers outbound URLs would be an open relay (decision D11).
+an API that registers outbound URLs would be an open relay (decision D11). P22 added no route, and a test
+pins it. The option keys of each sink type are in 4.3.
+
+Secrets and addresses. The signing secret and the webhook address (its user, password, path and query can be
+the credential) never reach a log line, `sink_cursors.last_error`, a stream event, `repr()` or a status
+object: error texts are built from the status code or the exception class, and the address, its parts and
+the secret are scrubbed from every text as a second line of defence. In logs a webhook is named by its sink
+name and host. `ssc config show` and the diagnostics bundle show the address by its host only (4.3).
+
+Not built, with the item that owns it: a host for the dispatcher (P23 in `watch`, P25 in `serve`, P19 for
+the drain at exit of one-shot commands); `ssc status` per sink, which needs the cursor listing of ST-24
+(`Dispatcher.status()` covers one process only); `config validate` for sink options (P19); the SIGHUP reload
+(with the hosts); a message-queue and a database sink (later).
 
 ### 5.3 Webhook contract
 
@@ -1554,12 +2085,44 @@ an API that registers outbound URLs would be an open relay (decision D11).
 - Receivers de-duplicate on `seq`; replays after a crash are expected.
 - `ssc status` shows per sink: cursor, newest sequence, lag, last error.
 
+As built (P22, PR #73; `src/sinks/webhook.py` at `e0bae0c`, with `tests/test_webhook_contract.py` against a
+real HTTP server on 127.0.0.1). The request is as above. What the list does not say:
+
+- The delivery id stays the same for the retries of one batch, and the signature is made again with the
+  current time at every attempt. "Per attempt group" holds within one process: after a restart the same
+  events get a new delivery id, and a new `Idempotency-Key` if more events joined the batch.
+- A 410 raises `FatalSinkError`: the sink is disabled until the process restarts, its cursor stays where it
+  is, and the other sinks go on.
+- A redirect is not followed (the signed body is not sent to an address that is not in the configuration);
+  it counts as another response and is retried. `Retry-After` is honoured (5.2).
+- `max_age` is per event age, and all expired events are dropped together (5.2).
+- A user and password in the address (`https://user:pass@host/…`) are taken out of the address and sent as
+  `Authorization: Basic`; `urllib` does not accept them in the address.
+- The request is made with `urllib` and an opener built from its default handlers, so the `http_proxy` /
+  `https_proxy` variables of the environment apply to it. The time-out (`timeout_seconds`, 10 s by default)
+  covers the connection and every read; it does not cover name resolution.
+- Errors are recorded without the address. A network error is recorded by its class and the operating
+  system's message, a refused delivery by its HTTP status, and an unexpected error of the transport by its
+  class only, because its text could carry the address or a header.
+- `webhook.verify_signature(secret, header, body, tolerance=300)` is the receiver's side of the contract: it
+  rejects a missing header, a wrong or forged signature and a timestamp older than the tolerance. A forged
+  header with non-ASCII characters is rejected, not an error.
+- `ssc status` per sink is not built (ST-24). The last error of a sink is stored with its cursor
+  (`sink_cursors.last_error`).
+
 ---
 
 ## 6. HTTP API v1 (resource level)
 
 The field-level contract is a later task (plan item SC-1 for the schema, P21 for the routes). Fixed here:
 prefix, resources, envelopes, error model, streaming, raw access, aliases.
+
+State at `e0bae0c`. The schema half exists: `04-schema-v1.md` and `src/schema` (SC-1, PR #72), approved on
+2026-10-02 (decision P2). The foundation of the API exists (P20, PR #74): the error model with request ids,
+the router, the access token with its attempt limit, the committed OpenAPI document, and the routes for
+health, status, sports, jobs and settings. The resource routes of the table below (tournaments, seasons,
+events, changes, follows, exports, backups, diagnostics, logs) are P21's. "As built" after the error
+paragraph describes the foundation.
 
 - Prefix `/api/v1`. `/health` stays unversioned for load balancers and the launcher.
 - Every route declares a response model. `docs/api/openapi-v1.json` is committed;
@@ -1601,6 +2164,14 @@ line is sent every 15 s. If `after` is older than the retained events of the job
 server sends one `stream.gap` event with `oldest_seq` and closes; the client resynchronises through
 `/jobs/{id}`.
 
+SSE as built (P20; `src/web/sse.py` at `e0bae0c`): as designed, with three additions. The first bytes of a
+stream are the comment line `: stream open`, so that the client sees the connection open. The `data` of a
+message is `{job_id, seq, ts_ms, type, data}`, and the data of `stream.gap` is
+`{job_id, after, oldest_seq}`. The stream ends after the job's last event, when the client leaves and when
+the server shuts down. `Last-Event-ID` wins over `?after=`, and a value that is not a sequence number is
+422. The stream works for a job that another process runs. Without the `sse-starlette` package the route
+answers 501 `not_supported`.
+
 Errors: `{"error": {"code": "job_running", "message": "…", "details": {…}, "request_id": "…"}}` with the
 status from the table in 2.6. `message` is English; clients translate by `code`. Upstream trouble during a
 request that calls SofaScore is 503 `blocked`/`rate_limited` or 502 `upstream_error`, never 429. At
@@ -1614,12 +2185,87 @@ it with 503 (the table of 2.6); P13 maps the route to the v1 codes when it moves
 route is refused with 409 `job_running` while a job of the same server runs or another process holds the
 writer lease.
 
+As built: the foundation (P20, PR #74; `src/web/app.py`, `errors.py`, `deps.py`, `sse.py`, `openapi.py` and
+`src/web/api/` at `e0bae0c`).
+
+- **Routes that exist.** `GET /api/v1/health`, `/status`, `/sports` and `/sports/{slug}`; `GET /jobs`
+  (filters `state` and `kind`, cursor paging), `GET /jobs/{id}`, `POST /jobs`, `POST /jobs/{id}/cancel` and
+  `GET /jobs/{id}/events` (SSE, resuming on `Last-Event-ID`); `GET /settings` and `PATCH /settings`. There
+  is no live route and no live stream, and a test asserts that on the whole OpenAPI document. The
+  unversioned `/health` stays as it is.
+- **Jobs.** The routes read and write through `JobManager` on the web's process-wide job store
+  (`src/web/deps.py`), so jobs of other processes are listed and can be cancelled, and a job started through
+  v1 is the job the legacy UI shows. `POST /jobs` answers 202 with a `Location` header and starts the job in
+  a background thread. It starts only `sync`, `fetch` and `refresh`, on `SyncService` without the CSV phase;
+  the spec is today's `SyncSpec` shape (`league_id`, `selections` with `season_ids` or `match_ids`) and
+  changes when the pipeline moves to targets and phases (P13). `export`, `backup`, `clear` and `rebuild` are
+  in the request schema and answer 501 `not_supported` until their services stand behind the job manager
+  (P21, with EX-1 and ST-24). A held lease is 409 with the holder in `details`. The job in a response has
+  the fields of the job model with the new state names; it shows `origin.pid` and `origin.host`, which is
+  kept (decision of 2026-10-02, 2.8).
+- **`/status`** has `version`, `api_version`, `auth_required`, `bridge`, `throttle` and `active_job`. It has
+  no live-service fields yet (lease, leading source, last heartbeat): P23 adds them to `Status` in
+  `src/web/api/v1/meta.py`. It has no data summary and no coverage yet (P21).
+- **Settings.** `GET /settings` lists every setting of the model with its value, layer, source name,
+  `locked`, `writable` and `secret`; secrets are masked. `PATCH /settings` writes
+  `CONFIG_DIR/overrides.json` and refuses locked and read-only keys (4.3).
+- **Error model and request ids.** Every v1 error has the body above with the status of the table in 2.6;
+  `invalid_request` is 422 for a rejected value and 400 for a refused well-formed request (2.6). The
+  framework's own errors on v1 paths (unknown path, wrong method, validation) use the same body; validation
+  details carry location, message and type, never the submitted value. A storage error gets an English
+  message and the Store's own (Turkish) text in `details.store_message`; the text of an unexpected error is
+  logged with the request id and not returned. Every v1 response carries `X-Request-Id`; an id sent by the
+  client is used when it is 1 to 64 characters of letters, digits, `.`, `_` and `-`. The legacy routes are
+  untouched by all of this: the handlers look at the path. A refused Host is outside the model (2.6).
+- **Access token.** A missing or wrong token on `/api/v1` is 401 `unauthorized`; the legacy routes keep 401
+  `auth_required`. The token, Origin and Host checks and the response headers of PR #43 apply to `/api/v1`
+  as to the legacy routes, because they hang on the `/api` prefix. The token comes from Settings
+  (`[server] token_env`); the hand-over to `security._startup_token` and the warning for a short token are
+  described in 4.3.
+- **Attempt limit.** Wrong tokens are limited (`deps.AttemptLimiter`). After 5 failed attempts from one
+  address further attempts from that address are refused for 30 s, and every failed attempt after a lock
+  doubles the lock, up to one hour. `POST /api/auth/login` and wrong `Authorization: Bearer` headers share
+  one counter, because a limit on the sign-in alone could be bypassed by guessing through any other route. A
+  request without credentials and a request with a valid session cookie are neither counted nor locked.
+  While an address is locked its attempts are not evaluated, the right token included: a v1 route answers
+  401 `unauthorized` with `Retry-After`, a legacy route and the sign-in answer 429 `too_many_attempts`
+  (2.6). The right token resets the counter, and it is forgotten after 15 minutes without a failed attempt.
+  The limit is per remote address and in memory only: it ends with the process, there is no trusted-proxy
+  setting, and behind a reverse proxy every client has the proxy's address, so five wrong Bearer tokens lock
+  all Bearer clients (browser sessions keep working). The plan puts that into the deploy documentation of
+  P25. The web UI has no text for `too_many_attempts` yet (FE-2).
+- **OpenAPI document.** `docs/api/openapi-v1.json` is committed. It is the v1 view of the application's
+  document: the paths under `/api/v1` and the schemas they use, with `info.version` "1".
+  `tests/test_openapi_snapshot.py` compares it with what the application generates and fails on any
+  undeclared change; `python -m src.web.openapi --write` regenerates it and `--check` exits 1 when it is out
+  of date. Run as a program, the module loads the application with temporary directories and writes log
+  lines to stderr. Frontend types are not generated from the file yet; the frontend still uses the legacy
+  routes.
+- **Import-time state.** Importing `src.web.app` creates the job store, `config/leagues.txt` and the log
+  file, because `src/web/routes/common.py` builds its `ConfigManager` and the process-wide job store when it
+  is imported. `src/web/deps.py` reads those objects at call time. P21 removes the module state, which is
+  also the remaining cause of the job database that a web job creates under the data directory (2.8).
+
 ### 6.1 Existing `/api` routes
 
 They stay for one release as `src/web/api/legacy.py`: same paths, same response shapes (pinned by the
 goldens of plan items G-02 and G-04), implemented on the same services, marked `deprecated` in OpenAPI and
 answered with `Deprecation: true` and `Link: <…>; rel="successor-version"`. The web UI moves to v1 with the
 frontend update.
+
+As built (P20, PR #74). The legacy routes are still the modules of `src/web/routes/`; the adapters on the
+services are P21's. The deprecation marks exist: each of the 38 legacy operations is `deprecated: true` in
+OpenAPI (`GET /health` and the SPA fallback are not legacy routes and are not marked), and every legacy
+response carries `Deprecation: true` and `Link: </api/v1/…>; rel="successor-version"`. Bodies, status codes
+and the route list are unchanged, with the one exception of the 429 of the attempt limit (section 6).
+`Deprecation: true` is the form of the Internet-Draft; RFC 9745 defines the field as a date
+(`Deprecation: @<unix time>`). It was built as this section says and is not changed here. The successors are
+the table `LEGACY_SUCCESSORS` (`src/web/api/__init__.py:31-68` at `e0bae0c`), one row per legacy route, with
+the successors of the table below; the `Link` value is the successor's path only, without a query and
+without the job body.
+`tests/test_openapi_snapshot.py::test_every_legacy_operation_has_a_successor_and_the_table_has_no_stale_row`
+fails for a legacy operation without a row and for a row without an operation. Most successors do not exist
+yet: the header says where to go once P21 has added the route.
 
 The line numbers in this table are at `0aa73b4`; P08, FX-2 and FX-1 have moved lines in `routes/data.py`,
 `routes/leagues.py`, `routes/scrape.py`, `routes/settings.py` and `routes/matches.py` since.
@@ -1646,6 +2292,11 @@ The line numbers in this table are at `0aa73b4`; P08, FX-2 and FX-1 have moved l
 | `GET /api/sports` (`routes/sports.py:43`) | `/sports` |
 | `GET /api/logs`, `GET /api/diagnostics`, `GET /api/diagnostics/bundle` (`routes/diagnostics.py:18`, `:29`, `:35`; added by PR #24) | `/logs`, `/diagnostics`, `/diagnostics/bundle` |
 | `GET /api/auth`, `POST /api/auth/login`, `POST /api/auth/logout` (`routes/auth.py:29`, `:38`, `:63`; PR #43) | the same paths under `/api/v1`; the token check covers both prefixes |
+
+The auth row is not built. `/api/v1/auth`, `/api/v1/auth/login` and `/api/v1/auth/logout` do not exist,
+although the `Link` header of the three legacy routes already points there. No brief owned them when P20 was
+written; the plan now gives them to P21, together with `security.AUTH_OPEN_PATHS` (`src/web/security.py:123`
+at `e0bae0c`), which has to name the v1 paths so that they can be reached without a token.
 
 ---
 
@@ -1731,7 +2382,8 @@ Two owner decisions of 2026-10-01, taken after the push channel was measured
 - **Sources produce observations, not events.** An observation is `(event_id, partial or full event object,
   source, received_at)`. The three sources are described in 8.2.
 - **Reducer** is the pure core of `MatchWatcher._observe` (`watcher.py:232-307`):
-  `(LiveState, Observation) → (LiveState, [LiveEvent])`. It emits `status_changed`, `score_changed`, `stuck`,
+  `(LiveState, Observation) → (LiveState, [LiveEvent])`. It emits `live.status_changed`,
+  `live.score_changed` and `live.stuck` (the type names carry the stream's prefix, 5.1),
   sets `provisional` by the refresh window, and de-duplicates across sources with the stream's `dedup_key`
   `(event_id, type, change_ts or state hash)`, so a transition seen by push and by poll is stored once.
   It keeps the last known state per event and derives events from the difference between that state and the
@@ -1747,6 +2399,11 @@ Two owner decisions of 2026-10-01, taken after the push channel was measured
   event append and the state save at the end of the round still emits that transition again after the
   restart, as 2.x did; and an append that meets `StoreBusy` ends the `--watch` run, as an `OSError` on the
   events file did before. The live service chooses the key and retries a busy append with back-off (P23).
+- **Sinks today.** P22 (PR #73) changed nothing in what is stored: the watcher's events are the 2.x fields
+  of 5.1, and a sink would deliver them as they are. No sink delivers them yet, because nothing hosts the
+  dispatcher (section 5). Until P23 a live event leaves the process through `--watch`'s own stdout line and
+  `watch_events.jsonl`, as in 2.x, and can be read from the stream log with `ssc events` (4.1), also while
+  the watcher runs.
 - **Confirmation.** A terminal status from push is emitted immediately, then confirmed by one `/event/{id}`
   request that stores the full payload. That stored event is what a later `sync` completes with post-match
   slices; the live service does not download details unless `live.detail_slices` asks for them.
@@ -1837,6 +2494,13 @@ reducer is identical for the three sources.
   source uses the bridge page only to read the credential and needs no second profile.
 - The legacy `main.py --watch` alias runs `ssc watch --source poll`, so that existing cron and systemd setups
   keep polling and do not start a browser (decision D18).
+- Hosting the sink dispatcher (P22 built it, nothing hosts it yet). `ssc watch` hosts it with P23:
+  `sinks.dispatcher_for(store, settings.sinks)`, which is `None` without sinks, then `dispatcher.run(stop)`
+  in a daemon thread next to the live service; on shutdown the host sets `stop`, joins the thread with a
+  time-out and calls `dispatcher.close()`. `ssc serve` hosts it the same way with P25. The two can run on
+  one data directory: `run()` waits for the `sinks` lease, so one of them dispatches (5.2). `watch --stdout`
+  needs no lease (`follow`). A sink is therefore served whenever `watch` or `serve` runs, not only while the
+  live service runs.
 
 ### 8.5 Operational notes: memory
 
@@ -1867,6 +2531,8 @@ processes of the profile.
 Polling first (P23): supervisor, reducer, state in the Store, sequence-numbered events, `watch`, sinks. The
 `page` source and the arbiter second (P24). The `direct` source third (P31), with its warnings and its opt-in
 test. Everything downstream of the reducer is identical for all three, so P24 and P31 each add one source.
+The sink library and `ssc events` came before the live service (P22, PR #73); P23 hosts the dispatcher in
+`watch` and settles the `data` of the live events.
 
 ---
 
@@ -1891,8 +2557,14 @@ document map to it as follows:
 | P27 | ST-27 (all statuses, stale-listing refresh) and P27 (slice selection) |
 | P28, P29, P30 | same ids |
 
-Added to the plan after the drafts: P31 (the `direct` live source, section 8.3) and the fix items FX-1 to FX-7
-(`03-implementation-plan.md` sections 10 and 15).
+Added to the plan after the drafts: P31 (the `direct` live source, section 8.3) and the fix items FX-1 to
+FX-11 (`03-implementation-plan.md` sections 10 and 15). Three of them come from this revision: FX-9 (the
+cancel check after the request semaphore, 2.4), FX-10 (redaction: the host name in the log tail of the
+diagnostics bundle, sink addresses in a `ConfigError` text and sink options in `config show`; 2.8, 4.3)
+and FX-11 (the SQLite files of the Store follow the umask; `01-storage.md`).
+
+State on 2026-10-02 (`e0bae0c`): of the items with a draft id, P05, P07 to P11, P18, P20 and P22 are
+merged. `03-implementation-plan.md` has the state of every item.
 
 ## 10. Testing strategy
 
@@ -1909,7 +2581,29 @@ Added to the plan after the drafts: P31 (the `direct` live source, section 8.3) 
 - Services are tested against a real Store in a temporary directory; there is no second Store implementation
   to keep in step.
 - Cross-process tests use `subprocess`: lease contention (exit 6), cancel from another process, stale reaping.
+  As built (P11, PR #69): `tests/test_jobs_cross_process.py` runs a job in a helper process and covers lease
+  contention and waiting, cancel from another process, a row that is reaped only after its owner was killed,
+  the heartbeat, and the web API against another process's job. A test simulates a crash with
+  `store.close()`: the lease drops and the row stays running; opening a second job store no longer
+  interrupts anything. There is no committed golden for the job row that a real `main.py` subprocess leaves:
+  the in-process tests run `main.main()` with a fake `SyncService`, and the real runs were checked by hand
+  through the G-03 harness (`--headless --update-all --league-id 17` leaves a `sync` row `completed` with 14
+  events and both stream events; the 403 scenario leaves a `partial` row with the error code `blocked`).
 - An import-linter test enforces the layer rules of 2.1.
+  As built there is no single such test. `tests/test_layers.py` checks the Store's imports only; the other
+  rules are checked next to the code they are about: `tests/test_jobs_model.py` (rule 5),
+  `tests/test_client.py` (client and Store do not import each other), `tests/test_schema_v1.py` (the purity
+  of `src/schema`, rule 4) and the import-time test of the CLI (rule 1).
+- The webhook contract is tested against a real HTTP server on 127.0.0.1 (`tests/test_webhook_contract.py`),
+  the dispatcher with a fake clock, so that no back-off is really waited for (`tests/test_sinks.py`);
+  nothing is sent to an address outside the machine.
+- API v1 has its record: `docs/api/openapi-v1.json` with `tests/test_openapi_snapshot.py` (section 6). The
+  per-route security tests of `tests/test_api_v1_errors.py` run for every v1 operation of that document, so
+  a new v1 route joins them by itself.
+- One test is timing-dependent for a reason in the product:
+  `tests/test_throttle.py::test_stopped_bulk_job_leaves_no_queue_behind` can fail on a slow runner until
+  FX-9 adds the cancel check after the request semaphore (2.4). A fake clock in the test would hide the
+  defect.
 - The coverage floor (`pyproject.toml`, `fail_under = 53`) applies to every PR; PRs that delete tested code
   must move its tests, not drop them.
 
@@ -2016,6 +2710,111 @@ Changes after batches three and four (2026-10-02):
     what the CLI imports beyond rule 1; what `config init --from-legacy` writes (2.1, 2.6, 4.1 to 4.4, 4.7;
     P18).
 
+Changes after batches five to seven (2026-10-02, second revision of that day; references at
+`e0bae0c`):
+
+37. **Job manager entries.** The document had `submit` as the only entry. Built: `start` (lease and row),
+    `run` (execute a started job) and `submit` (both), because the web starts the job in the route and runs
+    it in a thread, and tests pin `run_fetch_job(job_id, payload)` (2.8; P11, PR #69).
+38. **Job handle and arguments.** The document gave the handle `log(message, **fields)` only and `submit` no
+    further arguments. Built: `publish(fields)` on the handle; `phases`, `payload`, `lease_purpose`,
+    `on_change` and `on_log` on `submit`, `start` and `run`; `JobOutcome` and `JobNotActive`; `JobEvent` as
+    printed now (2.8; P11, PR #69).
+39. **What the context holds.** The document said P11 would open the Store in `build_context`, turn
+    `apply_follows` into `store.follows.apply` and call `client.close()` when a context is replaced. Built:
+    a `client` field, `store` and `jobs` as lazy properties, `apply_follows` unchanged, and one module-level
+    health callback that is added once and writes the runtime key `bridge_health` into the data directory of
+    the latest context. A web job opens the Store of its data directory best effort (2.3, 2.4; P11, PR #69).
+40. **Job states as stored.** The document said state names are normalised on read and left open what is
+    written. Built: success is still written as `completed` and read as `succeeded`, `partial` is the only
+    new value in the column, `queued` is still never written, and `Job.progress` of another process's job is
+    its last `progress` event (2.8; P11, PR #69).
+41. **Liveness.** The previous revision said the unconditional sweep is still there and a second server
+    interrupts the first one's job. Built: `reap_stale` marks a running row interrupted only while the
+    `writer` lease is free, at open, at job creation and at every read of the history;
+    `mark_stale_running_interrupted` stays as an explicit call. The heartbeat goes to the job row every 5 s,
+    not to the lease (2.8; P11, PR #69).
+42. **Cancel across processes.** The document described the mechanism; built with it:
+    `POST /api/scrape/cancel` cancels a headless run when the server itself runs no job, the CLI run then
+    prints `Program terminated by user.` and exits 0, and the progress write no longer overwrites a cancel
+    request of another process (2.8, 4.5; P11, PR #69).
+43. **Terminal state, ids, retention, a busy store.** The document said a breaker stop is shown as Completed
+    and that ids are uuid4 until P11. Built: `partial` is stored for a breaker stop or a failed match, a job
+    that finishes after a cancel request is `cancelled`, an unrecognised final status is stored as `failed`;
+    the legacy API still shows `completed`. Ids are ULIDs; the newest 500 jobs and the newest 2,000 events
+    per job are kept; a `state.db` locked for more than 5 s no longer fails a job (2.7, 2.8; P11, PR #69).
+44. **Who takes the lease in `main.py`.** The previous revision said `main.py` takes `writer` for the
+    headless download and the refresh. Built: the job manager takes it; `_data_dir_lease` still opens and
+    closes the Store and serves only `--recheck-unavailable` alone and `--watch`. Exit codes are unchanged,
+    and `partial` has none of its own until P19 (2.7, 2.8, 4.5, 4.6; P11, PR #69).
+45. **Job events and their origin.** The document listed `job.started` and `job.finished` "with state,
+    counts, error code". Built: `job.started` is {job_id, kind, origin}, `job.finished` {job_id, kind,
+    state, counts, error_code}, source `job`, appended best effort. The origin carries the host name and the
+    pid; the decision of 2026-10-02 keeps that for sinks and for API v1 (2.8, 5.1, 6; P11, P22, P20).
+46. **Lease conflicts and the error table.** The previous revision said `conflict_from_lease` lacks
+    `instance_running` "until the job manager takes over (P11)". Built: it still lacks it; a job cannot meet
+    the case. The table has no row for too many failed attempts: v1 answers 401 `unauthorized` with
+    `Retry-After`, the legacy routes 429 `too_many_attempts`. `invalid_request` is 422 for a rejected value
+    and 400 for a refused well-formed request; a refused Host is plain-text 400 outside the model (2.6; P11,
+    PR #69 and P20, PR #74).
+47. **The job-log text.** The document said codes replace the translated `fetch_zero_matches` text in P11.
+    Built: `JobHandle.log` accepts `code=`, the service still logs the text; P13 passes the code (2.1; P11,
+    PR #69).
+48. **Requests behind the semaphore after a stop.** The previous revision said they are sent only with the
+    budget off or not the limit. Found: also with the budget as the limit, whenever cancelling the queue
+    takes longer than one interval, because the cancel check stands before the semaphore and not after it.
+    Plan item FX-9 (2.4, 3.4; PR #71).
+49. **Diagnostics bundle.** The document did not say what the bundle takes from a job row, and since P11 the
+    bundle carried the host name. Built: the job columns are selected by name, the origin is {face, pid,
+    same_host}, `spec_json` and `error_json` are decoded and redacted, `owner` is dropped, host names are
+    masked in every job string and in the profile-lock detail. The log tail is not masked (FX-10) (2.8;
+    PR #71).
+50. **The schema maps rows.** The document said `src/schema` maps "catalog rows and payloads". Built: rows
+    and the dicts `store.derive` returns; the only payload reader for status class and score is
+    `src/store/derive.py`, and `src/schema` names the Store only under `TYPE_CHECKING`. Its purity is
+    checked in `tests/test_schema_v1.py`; `tests/test_layers.py` checks the Store only (2.1, 2.2, 2.5, 10;
+    SC-1, PR #72).
+51. **The envelope.** The example showed `ts` in whole seconds; it has milliseconds. The example's `data` is
+    not what is stored today (the 2.x watcher's fields; P23). `change_ts` is an epoch integer, the one
+    exception to the timestamp rule of 4.4. 8.1 named the live event types without the `live.` prefix. The
+    sinks build the envelope with their own `Envelope.to_dict()`, not with the schema's mapper (4.4, 5.1,
+    8.1; SC-1, PR #72 and P22, PR #73).
+52. **Sinks as built.** The document did not say where a new sink starts (at "now"); it dropped "the head
+    batch" after `max_age` (the age is per event, and all expired events go together); it had `serve` and
+    `watch` both hold the `sinks` lease (`run()` waits and takes over); it had a dispatcher with `run` and
+    `drain` only (also `register`, `step(until=)`, `follow`, `status`, `close`); it did not say that Store
+    calls can raise plain `sqlite3.Error`. Pruning is the lease holder's, with 7 days and 1,000,000 rows as
+    the dispatcher's constants until ST-24. Nothing hosts the dispatcher yet, and the SIGHUP reload is
+    absent (4.6, 5, 5.2, 5.3, 8.4; P22, PR #73).
+53. **Sink options and addresses.** 4.3 did not list the option keys of the sink types; the table is there
+    now. `config show` and the diagnostics bundle showed the path and the query of a webhook address; they
+    show the host only. A wrong-shaped `SOFASCORE_SINKS` value in a `ConfigError` text and a sink's
+    `options` in `config show` are left to FX-10 (4.3; P22, PR #73).
+54. **`ssc events`.** The command exists, with the options of 4.1. It reads `store.streams` itself, has its
+    own `end` line, and exits 1 on a closed pipe. The pull request said it writes nothing; since ST-11 every
+    open of a Store, a read-only one included, brings the catalog up to date (2.1, 4.1, 4.4; P22, PR #73).
+55. **The overrides file has a writer.** 4.3 said nothing writes `overrides.json` yet. Built:
+    `PATCH /api/v1/settings` writes it through `src/config/overrides.py`, for the keys of the `WRITABLE`
+    table, and refuses a value pinned by `sofascore.toml`, the environment or a flag. `[server] token_env`
+    takes effect for the web app. A value written through v1 shadows a later save of the legacy settings
+    route until P21 (4.3, 12; P20, PR #74).
+56. **Decision D19.** 4.3 said the owner confirms the position of `.env`. D19 was settled on 2026-10-02 as
+    built by P09, with all four points (4.3).
+57. **API v1 foundation.** Section 6 had `POST /jobs` start seven kinds and `/status` report the live
+    service. Built: `sync`, `fetch` and `refresh` start, and `export`, `backup`, `clear` and `rebuild`
+    answer 501 `not_supported` (P21 with EX-1 and ST-24); `/status` has no live-service fields (P23) and no
+    data summary (P21). New in the document: the attempt limit and its limits behind a proxy, request ids,
+    the SSE details, the committed OpenAPI document, the import-time state of `routes/common.py` (6; P20,
+    PR #74).
+58. **Deprecation headers and the auth successors.** 6.1 said the legacy routes are answered with
+    `Deprecation: true` and a `Link` header; that is built, from the table `LEGACY_SUCCESSORS`, and
+    `Deprecation: true` is the draft form (RFC 9745 defines a date). 6.1 named `/api/v1/auth*` as
+    successors: those routes do not exist although the header points there; the plan gives them to P21 (6.1;
+    P20, PR #74).
+59. **Module layout.** 2.2 listed `sinks/`, `schema/`, `web/api/v1` and the job manager as planned and had
+    no `config/overrides.py`, `web/openapi.py` or `web/api/__init__.py`. They exist; the paragraph under the
+    layout says what does and what does not (2.2; P11, SC-1, P22, P20).
+
 ---
 
 ## 12. Risks
@@ -2057,11 +2856,32 @@ Changes after batches three and four (2026-10-02):
   its source.
   Until the settings API has locked fields (P20) this already happens: with a config file, the Settings
   page reports success for a pinned value and the value has no effect (4.3).
+  API v1 has the locked fields since P20 (PR #74), but the Settings page still uses the legacy route, so
+  the user still sees it. A second form came with P20: a value written through `PATCH /api/v1/settings`
+  shadows a later save of the same key on the Settings page, until P21's legacy adapter writes through
+  `src.config.overrides` (4.3).
 - The environment bridge of 4.3 writes settings into `os.environ`. It is correct only while every direct
   reader of a legacy name is in the loader's table; a module that starts reading a new variable by itself is
   not covered by the config file. `tests/test_config_loader.py` lists today's readers.
 - Webhook head-of-line blocking: a receiver that is down blocks its sink for up to `max_age` (24 h by
   default); a low `max_age` loses events. Operators need the lag shown in status.
+  As built (P22) the lag is not shown anywhere yet (`ssc status` per sink is ST-24's), and one thread
+  delivers for all sinks: a `deliver()` that never returns blocks the other sinks and the shutdown. The
+  webhook is bounded by its time-out; stdout into a pipe nobody reads and a file on a hung network mount
+  are not.
+- A configured sink that nothing serves. Until P23, P25 and P19 host the dispatcher, a `[[sink]]` in the
+  config file is accepted and delivers nothing, and `config validate` does not check its options (section 5,
+  4.3). The item that adds the first host adds the changelog entry for sinks.
+- Job events carry the host name and the pid of the process that started the job, to every sink subscribed
+  to `job.*` and through API v1 (decision of 2026-10-02, 2.8). An operator who forwards job events to a
+  third party forwards them too. The diagnostics bundle does not carry the host name in its job rows since
+  PR #71, but its log tail is not masked for it (FX-10).
+- The attempt limit of the access token is per remote address and in memory. Behind a reverse proxy all
+  Bearer clients share one address and therefore one lock, and a restart clears it (section 6); the deploy
+  documentation of P25 has to say so.
+- Since P11 the liveness of a job rests on the `writer` lease (2.8). Where the lease holder cannot be seen,
+  a running row of another process reads as stale and the next process that opens the directory marks it
+  interrupted, as 2.x swept at start.
 - Legacy `/api` adapters must reproduce shapes that were by-products of pandas (NaN handling, date strings,
   column names from CSV). Without the goldens these would drift unnoticed and break the current web UI before
   it moves to v1.
