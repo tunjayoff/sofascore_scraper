@@ -1,7 +1,6 @@
 """Kayıt defterini (src/sports.py) okuyan modüller: lig sporları, skor çıkarımı, izleyici, indirici."""
 import asyncio
 import dataclasses
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -138,9 +137,8 @@ def test_disabled_slice_is_neither_requested_nor_expected(tmp_path, monkeypatch)
     assert _batch_urls(tmp_path, "football") == ["", "/statistics", "/team-streaks", "/pregame-form", "/h2h",
                                                   "/incidents"]
     f = MatchDataFetcher(MagicMock(), data_dir=str(tmp_path))
-    match_dir = str(next(Path(f.match_details_dir).rglob("basic.json")).parent)
-    assert f._expected_slices(match_dir, "football") == ["statistics", "team_streaks", "pregame_form", "h2h",
-                                                         "incidents"]
+    assert f._expected_slice_keys(42, "football") == ["statistics", "team_streaks", "pregame_form", "h2h",
+                                                      "incidents"]
 
 
 def test_sport_specific_required_slice_is_fetched_by_every_path(tmp_path, monkeypatch):
@@ -164,8 +162,7 @@ def test_sport_specific_required_slice_is_fetched_by_every_path(tmp_path, monkey
             data = f.fetch_match_data("42")
         assert ("/innings" in calls) is wanted
         assert ("innings" in data) is wanted
-        match_dir = str(next(Path(f.match_details_dir).rglob("basic.json")).parent)
-        assert ("innings" in f._expected_slices(match_dir, sport)) is wanted
+        assert ("innings" in f._expected_slice_keys(42, sport)) is wanted
 
         calls.clear()
         with patch("src.match_data_fetcher.make_api_request", new=fake):

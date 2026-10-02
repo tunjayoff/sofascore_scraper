@@ -10,17 +10,18 @@ düşürüyordu. Kurallar artık üç yanıt verir (veri var, veri yok, okunamad
 iki hatta da başarısız / "parse" olarak bildirir.
 
 Ağ yok: istekler tests/fakes/sofascore.py'deki sahte taşıyıcıya gider; istek katmanı ve çekici gerçektir.
-Veriyi çekici yazar (gölge kancalarıyla), testler yalnızca okur.
+Veriyi çekici Store'a yazar (plan maddesi ST-21), testler yalnızca okur: kaydın hali eski düzenin dosyaları
+biçiminde sorulur (tests/detail_records.py `legacy_view`).
 """
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, List, Sequence, Tuple
 
 import pytest
 from fastapi import HTTPException
 
+import detail_records
 from characterization import WORLD, pin_default_settings
 from fakes.sofascore import SITE_ROOT, FakeSofaScore
 from src import breaker as request_breaker
@@ -112,18 +113,14 @@ def _fetcher(data_dir: Path) -> MatchDataFetcher:
 
 
 def _stored(md: MatchDataFetcher, event_id: int) -> Dict[str, Any]:
-    """Maç dizinindeki dosyalar: ad → içerik; kayıt yoksa {}."""
-    found = md._find_match_path(str(event_id))
-    if not found:
-        return {}
-    return {p.name: json.loads(p.read_text(encoding="utf-8")) for p in sorted(Path(found[2]).iterdir())}
+    """Kaydın hali, eski düzen dizininin dosyaları biçiminde (Store'dan): ad → içerik; kayıt yoksa {}."""
+    return detail_records.legacy_view(md.data_dir, event_id)
 
 
 def _expected(md: MatchDataFetcher, event_id: int) -> List[str]:
     """Bu maçta hâlâ beklenen `required` dilimler ("yok" sayılanlar hariç)."""
-    found = md._find_match_path(str(event_id))
-    assert found is not None
-    return md._expected_slices(found[2], "football")
+    assert md._find_match_path(str(event_id)) is not None
+    return md._expected_slice_keys(event_id, "football")
 
 
 def _saved_outcomes(md: MatchDataFetcher, monkeypatch: pytest.MonkeyPatch) -> List[Dict[str, SliceOutcome]]:

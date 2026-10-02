@@ -8,6 +8,10 @@ kurulmuş haline eşittir (`CatalogAdmin.diff_from_rebuild() == []`). Aynı dene
 bütün test paketinde her testin sonunda çalışır (tests/conftest.py); buradaki testler her kancayı tek tek ve
 denetimin kendisini sınar. Tümü çevrimdışıdır: ağ istekleri yamalanır.
 
+Maç detaylarının indiricisi ST-21'den beri eski düzene yazmaz: maçları `Store.events.put` ile v3'e yazar ve yazma
+kataloğu kendisi günceller (kanca yok). `shadow_event` kancasının kendisini sınayan testler eski düzen yazıcısının
+dondurulmuş kopyasını kullanır (tests/legacy_writer.py: dosyalar, ardından kanca).
+
 İmzalar mtime'a bakar: elle değiştirilen dizinlerin mtime'ı `bump` ile açıkça ileri alınır.
 """
 from __future__ import annotations
@@ -29,14 +33,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+import legacy_writer
 import src.store
 import store_fixtures as sf
 from src.exceptions import StorageError
 from src.match_data_fetcher import SCORE_CHANGES_FILE, UNAVAILABLE_FILE, MatchDataFetcher
 from src.match_fetcher import MatchFetcher
 from src.season_fetcher import SeasonFetcher
+from src.services import stats as stats_service
 from src.slices import SLICE_EMPTY, SLICE_OK, SliceOutcome
-from src.status import OBSERVATION_KEY
 from src.store import (
     CatalogAdmin,
     EventQuery,
@@ -96,6 +101,11 @@ def differences(store: Store) -> List[str]:
 
 def fetcher_of(data_dir: Path) -> MatchDataFetcher:
     return MatchDataFetcher(config_manager=MagicMock(), data_dir=str(data_dir))
+
+
+def legacy_save(data_dir: Path, event_id: int, match_data: Dict[str, Any], outcomes: Any = None) -> str:
+    """Eski düzen yazıcısı (dondurulmuş kopya): dosyalar, ardından kanca (`shadow_event`)."""
+    return legacy_writer.save_legacy(data_dir, event_id, match_data, outcomes)
 
 
 def match_dir(fx: sf.LegacyFixture, event_id: int) -> Path:
@@ -335,14 +345,14 @@ def test_a_catalog_that_cannot_be_synced_does_not_fail_the_open(
     with caplog.at_level(logging.WARNING):
         store = open_store(data)
         store.runtime.set("bridge_health", {"ok": True})  # depo kullanılabilir
-        fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+        legacy_save(data, NO_DETAIL, {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
     assert len(warnings_of(caplog)) == 1 and "could not be brought up to date" in warnings_of(caplog)[0]
     assert store.events.get(NO_DETAIL).row_source == "listing"  # kanca kataloğa yazmadı
     assert api_mod.shadow_check() == []
 
     monkeypatch.undo()
     store._catalog_retry_at = 0.0
-    fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+    legacy_save(data, NO_DETAIL, {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
     assert store.events.get(NO_DETAIL).has_event_payload and differences(store) == []
 
 
@@ -371,9 +381,10 @@ def test_store_has_the_job_store(tmp_path: Path) -> None:
         _ = store.jobs
 
 
-# --- kancalar: maç dizinleri ----------------------------------------------------------------------------
+# --- maç detayları: indiricinin yazması (Store, v3) ve eski düzen yazıcısının kancası --------------------
 
 def test_saving_a_match_indexes_it(canonical: sf.LegacyFixture) -> None:
+    """İndirici Store'a yazar (ST-21): maç v3'e gider ve katalog aynı işlemde güncellenir, kanca gerekmez."""
     data = canonical.data_dir
     store = open_store(data)
     before = store.events.get(NO_DETAIL)
@@ -384,15 +395,17 @@ def test_saving_a_match_indexes_it(canonical: sf.LegacyFixture) -> None:
         "basic": basic, "statistics": sf.slice_payload("statistics", basic), "lineups": None})
 
     row = store.events.get(NO_DETAIL)
-    assert (row.row_source, row.has_event_payload, row.layout, row.listed_in) == ("event", True, "legacy", "round_2")
-    assert row.path == f"match_details/{sf.league_dir(sf.PL)}/season_{sf.safe_name(sf.PL_2627.name)}/{NO_DETAIL}"
+    assert (row.row_source, row.has_event_payload, row.layout, row.listed_in) == ("event", True, "v3", "round_2")
+    assert (row.path, row.legacy_path) == (None, None)
+    assert not (data / "match_details" / sf.league_dir(sf.PL) / f"season_{sf.safe_name(sf.PL_2627.name)}"
+                / str(NO_DETAIL)).exists()  # eski düzene yazılmadı
     assert store.events.slice(NO_DETAIL, "statistics").state == "ok"
     assert store.events.payload(NO_DETAIL, "statistics") == sf.slice_payload("statistics", basic)
     assert differences(store) == []
 
 
 def test_saving_into_a_directory_that_was_never_opened_builds_the_catalog(tmp_path: Path) -> None:
-    """Yazıcı, deposu hiç açılmamış bir dizine yazar: kanca depoyu açar, katalog maçı gösterir."""
+    """İndirici, deposu hiç açılmamış bir dizine yazar: yazma depoyu açar, katalog maçı gösterir."""
     data = tmp_path / "data"
     basic = sf.basic_payload(sf.NBA_A)
 
@@ -405,18 +418,24 @@ def test_saving_into_a_directory_that_was_never_opened_builds_the_catalog(tmp_pa
 
 
 def test_a_match_without_a_tournament_is_indexed_where_the_writer_put_it(tmp_path: Path) -> None:
+    """Eski düzen yazıcısı turnuvası olmayan maçı `_no_tournament/` altına yazar; kanca onu orada dizinler."""
     data = tmp_path / "data"
     event_id = sf.event_id(sf.FRIENDLY_A)
 
-    fetcher_of(data)._save_match_data(str(event_id), {"basic": sf.basic_payload(sf.FRIENDLY_A)})
+    legacy_save(data, event_id, {"basic": sf.basic_payload(sf.FRIENDLY_A)})
 
     store = open_store(data)
     assert store.events.get(event_id).path == f"match_details/_no_tournament/football/{event_id}"
     assert differences(store) == []
+    # İndirici aynı maçı v3'e yazar (yeri kimlikten türer); eski dizin yerinde kalır
+    fetcher_of(data)._save_match_data(str(event_id), {"basic": sf.basic_payload(sf.FRIENDLY_A)})
+    row = store.events.get(event_id)
+    assert (row.layout, row.legacy_path) == ("v3", f"match_details/_no_tournament/football/{event_id}")
+    assert differences(store) == []
 
 
 def test_saves_from_several_threads_are_all_indexed(tmp_path: Path) -> None:
-    """Detay indirme eşzamanlı yazar: kancalar aynı anda çağrılır; ilki depoyu açar, hepsi dizinlenir."""
+    """Detay indirme eşzamanlı yazar: yazmalar aynı anda gelir; ilki depoyu açar, hepsi dizinlenir."""
     data = tmp_path / "data"
     events = [sf.PL_ARS, sf.PL_LIV, sf.PL_BRE, sf.PL_NO_DETAIL, sf.NBA_A, sf.NBA_B]
     fetcher = fetcher_of(data)
@@ -441,12 +460,12 @@ def test_saves_from_several_threads_are_all_indexed(tmp_path: Path) -> None:
 
     assert errors == [] and not any(thread.is_alive() for thread in threads)
     store = open_store(data)
-    assert store.info(sizes=False).events_by_layout == {"legacy": len(events)}
+    assert store.info(sizes=False).events_by_layout == {"v3": len(events)}
     assert differences(store) == []
 
 
 def test_marker_updates_are_indexed_with_the_save(canonical: sf.LegacyFixture) -> None:
-    """Bitmiş maçta kesin "yok" yanıtı sayılır (_unavailable.json, _slice_status.json): dilim satırı onu gösterir."""
+    """Bitmiş maçta kesin "yok" yanıtı sayılır (manifestteki işaret): dilim satırı onu gösterir."""
     data = canonical.data_dir
     store = open_store(data)
     basic = sf.basic_payload(sf.PL_NO_DETAIL)
@@ -463,33 +482,44 @@ def test_marker_updates_are_indexed_with_the_save(canonical: sf.LegacyFixture) -
     assert differences(store) == []
 
 
-def test_a_failed_save_still_indexes_what_reached_the_disk(canonical: sf.LegacyFixture,
-                                                           monkeypatch: pytest.MonkeyPatch) -> None:
-    """Kanca `finally` içindedir: yarıda kalan yazma kataloğu geride bırakmaz."""
-    import src.match_data_fetcher as fetcher_mod
+def test_a_failed_save_leaves_the_catalog_equal_to_the_disk(canonical: sf.LegacyFixture,
+                                                             monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Yarıda kalan yazma kataloğu diskten ayırmaz: yeni maç hazırlık dizininde kurulur, disk dolunca hiçbir şey
+    yayımlanmaz (kalıcı StorageError); var olan maçta yazma yarıda kalırsa işaret kalır ve sonraki yazma ya da
+    açılış maçı dosyalardan toparlar.
+    """
+    from src.store import files as store_files
 
     data = canonical.data_dir
     store = open_store(data)
     basic = sf.basic_payload(sf.PL_NO_DETAIL)
-    real = fetcher_mod.atomic_write_json
+    real = store_files.write_bytes
 
-    def disk_full_after_the_event(path: str, payload: Any) -> None:
-        if not path.endswith("basic.json"):
-            raise OSError(28, "No space left on device", path)
-        real(path, payload)
+    def disk_full_on_the_statistics(path: Any, payload: bytes, **kwargs: Any) -> None:
+        if os.path.basename(os.fspath(path)).startswith("statistics"):
+            raise store_files._store_error(OSError(28, "No space left on device", os.fspath(path)), path)
+        real(path, payload, **kwargs)
 
-    monkeypatch.setattr(fetcher_mod, "atomic_write_json", disk_full_after_the_event)
-    with pytest.raises(StorageError):
+    monkeypatch.setattr(store_files, "write_bytes", disk_full_on_the_statistics)
+    with pytest.raises(StorageError) as info:
         fetcher_of(data)._save_match_data(str(NO_DETAIL), {
             "basic": basic, "statistics": sf.slice_payload("statistics", basic)})
+    assert info.value.fatal
 
-    assert store.events.get(NO_DETAIL).has_event_payload
-    assert store.events.slice(NO_DETAIL, "statistics").state == "not_requested"
+    assert not store.events.get(NO_DETAIL).has_event_payload
     assert differences(store) == []
+    monkeypatch.undo()
+    fetcher_of(data)._save_match_data(str(NO_DETAIL), {
+        "basic": basic, "statistics": sf.slice_payload("statistics", basic)})
+    assert store.events.slice(NO_DETAIL, "statistics").state == "ok" and differences(store) == []
 
 
 def test_marker_reset_is_indexed(canonical: sf.LegacyFixture) -> None:
-    """--recheck-unavailable: eski sürümün saydığı "yok" işaretleri silinir, dilimler yeniden beklenir."""
+    """
+    --recheck-unavailable: eski sürümün saydığı "yok" işaretleri silinir, dilimler yeniden beklenir. İşi Store yapar:
+    maç v3'e yükseltilir, eski dizinindeki işaret dosyasına dokunulmaz.
+    """
     data = canonical.data_dir
     store = open_store(data)
     before = store.events.slice(BRE, "lineups")
@@ -497,7 +527,8 @@ def test_marker_reset_is_indexed(canonical: sf.LegacyFixture) -> None:
 
     result = fetcher_of(data).reset_unavailable_markers()
 
-    assert result["matches"] >= 1 and not (match_dir(canonical, BRE) / UNAVAILABLE_FILE).exists()
+    assert result["matches"] >= 1 and (match_dir(canonical, BRE) / UNAVAILABLE_FILE).exists()
+    assert store.events.get(BRE).layout == "v3"
     assert store.events.slice(BRE, "lineups").state == "not_requested"
     assert differences(store) == []
     # İkinci çalıştırma hiçbir şeyi değiştirmez: yazma da kanca da yok
@@ -540,8 +571,9 @@ def test_refresh_with_a_change_indexes_the_payload_and_the_change_log(canonical:
     assert store.changes.last_seq() == len(sf.SCORE_CHANGES) + 1
     newest = store.changes.list(event_id=LIV)[-1]
     assert newest.seq == store.changes.last_seq() and "homeScore.current" in newest.fields
-    assert len((data / SCORE_CHANGES_FILE).read_text(encoding="utf-8").splitlines()) == newest.seq
-    assert read_json(match_dir(canonical, LIV) / f"{OBSERVATION_KEY}.json")["change_ts"] is not None
+    assert newest.segment.startswith("changes/")  # Store'un günlüğü; eski dosyaya satır eklenmez
+    assert len((data / SCORE_CHANGES_FILE).read_text(encoding="utf-8").splitlines()) == len(sf.SCORE_CHANGES)
+    assert after.layout == "v3" and after.change_ts is not None
     assert differences(store) == []
 
 
@@ -798,11 +830,11 @@ def test_catalog_current_follows_the_sync(canonical: sf.LegacyFixture, monkeypat
         raise src.store.StoreBusy("catalog.db kilitli", path=str(canonical.data_dir))
 
     monkeypatch.setattr(CatalogAdmin, "index_event", busy)
-    fetcher_of(canonical.data_dir)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+    legacy_save(canonical.data_dir, NO_DETAIL, {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
     assert not store.catalog_current  # kanca yazamadı: okuyucular kataloğu güncel saymamalı
     monkeypatch.undo()
     store._catalog_retry_at = 0.0
-    fetcher_of(canonical.data_dir)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+    legacy_save(canonical.data_dir, NO_DETAIL, {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
     assert store.catalog_current and differences(store) == []
     store.close()
     assert not store.catalog_current
@@ -980,7 +1012,6 @@ def test_a_catalog_that_cannot_be_written_does_not_fail_the_save(
         canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
     data = canonical.data_dir
     store = open_store(data)
-    fetcher = fetcher_of(data)
     index_event = CatalogAdmin.index_event
 
     def busy(self: CatalogAdmin, event_id: int, **kwargs: Any) -> Optional[str]:
@@ -988,10 +1019,10 @@ def test_a_catalog_that_cannot_be_written_does_not_fail_the_save(
 
     monkeypatch.setattr(CatalogAdmin, "index_event", busy)
     with caplog.at_level(logging.WARNING):
-        fetcher._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})  # hata yok
+        legacy_save(data, NO_DETAIL, {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})  # hata yok
         assert store.events.get(NO_DETAIL).row_source == "listing"  # kanca kataloğa yazamadı
         # Sonraki kanca önce baştan uzlaştırır (kaçan yazma kataloğa girer), sonra kendi maçında yine düşer
-        fetcher._save_match_data(str(ARS), {"basic": sf.basic_payload(sf.PL_ARS)})
+        legacy_save(data, ARS, {"basic": sf.basic_payload(sf.PL_ARS)})
     warned = warnings_of(caplog)
     assert len(warned) == 1 and "was not updated after a write to event" in warned[0]  # veri dizini başına bir uyarı
     assert str(NO_DETAIL) in warned[0]
@@ -1000,8 +1031,40 @@ def test_a_catalog_that_cannot_be_written_does_not_fail_the_save(
 
     # Katalog yeniden yazılabiliyor: sonraki kanca kataloğu eşitler; yeni bir hata yeniden uyarır
     monkeypatch.setattr(CatalogAdmin, "index_event", index_event)
-    fetcher._save_match_data(str(ARS), {"basic": sf.basic_payload(sf.PL_ARS)})
+    legacy_save(data, ARS, {"basic": sf.basic_payload(sf.PL_ARS)})
     assert differences(store) == [] and api_mod._shadow_warned == {}
+
+
+def test_a_catalog_that_stays_busy_fails_the_save_of_the_downloader(
+        canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+    """
+    İndiricinin yazması Store'dadır (ST-21): katalog yazmanın kilididir. Kilit alınamazsa yazma birkaç kez,
+    artan beklemeyle yeniden denenir, sonra maç başarısız olur (kalıcı olmayan StorageError: iş sürer); diske
+    yarım bir şey yazılmaz. Kilit açılınca sonraki yazma başarılır.
+    """
+    import src.match_data_fetcher as fetcher_mod
+    from src.store import events as events_mod
+
+    data = canonical.data_dir
+    store = open_store(data)
+    entity_write = events_mod.EventStore._entity_write
+    waits: List[float] = []
+
+    def busy(self: Any, event_id: int, body: Any) -> Any:
+        raise src.store.StoreBusy("catalog.db kilitli", path=str(data))
+
+    monkeypatch.setattr(events_mod.EventStore, "_entity_write", busy)
+    monkeypatch.setattr(fetcher_mod.time, "sleep", waits.append)
+    with caplog.at_level(logging.WARNING), pytest.raises(StorageError) as info:
+        fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+    assert isinstance(info.value, src.store.StoreBusy) and not info.value.fatal
+    assert waits == [0.5, 1.0, 2.0]  # STORE_BUSY_ATTEMPTS = 4 deneme
+    assert len(messages(caplog, "MatchDataFetcher", level=logging.WARNING)) == 3
+    assert store.events.get(NO_DETAIL).row_source == "listing" and differences(store) == []
+
+    monkeypatch.setattr(events_mod.EventStore, "_entity_write", entity_write)
+    fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+    assert store.events.get(NO_DETAIL).has_event_payload and differences(store) == []
 
 
 def test_a_store_that_cannot_be_opened_does_not_fail_the_save(tmp_path: Path,
@@ -1010,15 +1073,19 @@ def test_a_store_that_cannot_be_opened_does_not_fail_the_save(tmp_path: Path,
     open_store(data).close()
     schema = data / ".meta" / "schema.json"
     schema.write_text(json.dumps({**read_json(schema), "layout_version": 99, "min_reader_layout": 99}))
-    fetcher = fetcher_of(data)
 
     with caplog.at_level(logging.WARNING):
-        fetcher._save_match_data(str(ARS), {"basic": sf.basic_payload(sf.PL_ARS)})
-        fetcher._save_match_data(str(LIV), {"basic": sf.basic_payload(sf.PL_LIV)})
+        legacy_save(data, ARS, {"basic": sf.basic_payload(sf.PL_ARS)})
+        legacy_save(data, LIV, {"basic": sf.basic_payload(sf.PL_LIV)})
 
     assert len(list(data.rglob("basic.json"))) == 2  # dosyalar yazıldı
     assert len(warnings_of(caplog)) == 1 and "was not updated after a write to event" in warnings_of(caplog)[0]
     assert api_mod.shadow_check() == []  # kancası depoyu açamayan dizin karşılaştırılmaz
+
+    # İndirici Store'a yazar: daha yeni bir sürümün dizinine yazmaz, maç başarısız olur (dosya yazılmaz)
+    with pytest.raises(src.store.SchemaTooNew):
+        fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+    assert not (data / "v3").exists()
 
 
 def test_an_unexpected_indexer_error_is_logged_not_raised_outside_the_check_mode(
@@ -1032,7 +1099,7 @@ def test_an_unexpected_indexer_error_is_logged_not_raised_outside_the_check_mode
 
     monkeypatch.setattr(CatalogAdmin, "index_event", broken)
     with caplog.at_level(logging.ERROR):
-        fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+        legacy_save(data, NO_DETAIL, {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
 
     assert [m for m in messages(caplog, "Store") if m.startswith("Unexpected error while updating the catalog")]
     assert api_mod._shadow_notes == {}  # denetim kipi kapalıyken not tutulmaz
@@ -1048,8 +1115,18 @@ def test_an_unexpected_indexer_error_fails_the_writer_in_the_check_mode(
 
     monkeypatch.setattr(CatalogAdmin, "index_event", broken)
     with pytest.raises(RuntimeError, match="dizinleyicide hata"):
+        api_mod.shadow_event(data, NO_DETAIL)
+    assert api_mod.shadow_check() == []  # kanca düştü: dizin karşılaştırılmaz
+
+    # İndiricinin Store'a yazması: dizinleyicinin hatası yazmayı düşürür (kalıcı olmayan StorageError); yazma
+    # yarım kaldığı için işaret durur, sonraki açılış maçı dosyalardan toparlar
+    with pytest.raises(StorageError, match="dizinleyicide hata"):
         fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
-    assert any("missing in the catalog" in line or "has_event_payload" in line for line in api_mod.shadow_check())
+    monkeypatch.undo()
+    for store in list(api_mod._registry.values()):
+        store.close()
+    store = open_store(data)
+    assert store.events.get(NO_DETAIL).has_event_payload and differences(store) == []
 
 
 def test_an_id_that_is_not_a_match_id_is_ignored() -> None:
@@ -1061,16 +1138,32 @@ def test_an_id_that_is_not_a_match_id_is_ignored() -> None:
 
 # --- denetim: test paketinin her testin sonunda çalıştırdığı karşılaştırma -------------------------------
 
-def test_the_check_reports_a_write_that_no_hook_follows(canonical: sf.LegacyFixture,
+def _menu(data_dir: Path, monkeypatch: pytest.MonkeyPatch, *replies: str) -> Any:
+    """Terminal menüsünün ayarlar işleyicisi; soruları sırayla yanıtlanır."""
+    from src.ui import settings_ui
+
+    pending = list(replies)
+    monkeypatch.setattr(settings_ui, "input", lambda prompt="": pending.pop(0), raising=False)
+    colors = {name: "" for name in ("SUBTITLE", "WARNING", "INFO", "SUCCESS")}
+    return settings_ui.SettingsMenuHandler(MagicMock(), str(data_dir), colors)
+
+
+def test_the_check_reports_a_write_that_no_hook_follows(canonical: sf.LegacyFixture, tmp_path: Path,
                                                        monkeypatch: pytest.MonkeyPatch) -> None:
-    data = canonical.data_dir
-    monkeypatch.setattr(src.store, "shadow_event", lambda *args, **kwargs: None)  # kancası unutulmuş yazıcı
+    """
+    Store'un dışında ağaçlara yazan ürün kodu kancasını çağırmalıdır. ST-21'den beri böyle yazan bir indirici
+    yok; terminal menüsünün geri yüklemesi `match_details/`'i kopyalar ve ardından `shadow_cleared`'ı çağırır.
+    """
+    data = tmp_path / "restored"
+    shutil.copytree(canonical.data_dir / "match_details", tmp_path / "backup" / "data" / "match_details")
+    open_store(data)
+    monkeypatch.setattr(src.store, "shadow_cleared", lambda *args, **kwargs: None)  # kancası unutulmuş yazıcı
 
-    fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+    _menu(data, monkeypatch, str(tmp_path / "backup"), "4").restore_data()
 
-    found = api_mod.shadow_check()
+    found = [line for line in api_mod.shadow_check() if line.startswith(str(data))]
     assert len(found) == 1 and "written without a shadow hook afterwards" in found[0]
-    assert str(NO_DETAIL) in found[0]
+    assert "match_details" in found[0]
     assert api_mod.shadow_check() == []  # notlar silindi
 
 
@@ -1109,17 +1202,20 @@ def test_a_clear_through_the_store_needs_no_hook(canonical: sf.LegacyFixture, mo
     assert api_mod.shadow_check() == []
 
 
-def test_the_check_reports_a_catalog_that_differs_from_a_rebuild(canonical: sf.LegacyFixture,
+def test_the_check_reports_a_catalog_that_differs_from_a_rebuild(canonical: sf.LegacyFixture, tmp_path: Path,
                                                                  monkeypatch: pytest.MonkeyPatch) -> None:
-    data = canonical.data_dir
+    """Kanca çağrıldı ama kataloğu yanlış güncelledi (burada: hiç güncellemedi): denetim farkı bildirir."""
+    data = tmp_path / "restored"
+    shutil.copytree(canonical.data_dir / "match_details", tmp_path / "backup" / "data" / "match_details")
     open_store(data)
-    monkeypatch.setattr(CatalogAdmin, "index_event", lambda self, event_id, **kwargs: None)  # kanca yanlış dizinliyor
+    monkeypatch.setattr(CatalogAdmin, "rebuild", lambda self, **kwargs: None)  # kanca yanlış dizinliyor
 
-    fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+    _menu(data, monkeypatch, str(tmp_path / "backup"), "4").restore_data()
+    monkeypatch.undo()  # denetimin karşılaştırması gerçek yeniden kurmayla yapılır
 
-    found = api_mod.shadow_check()
-    assert any(f"events[{NO_DETAIL}]" in line and "has_event_payload: 0 (rebuild: 1)" in line for line in found)
-    assert any(f"event_slices[{NO_DETAIL}, 'event', '']: missing in the catalog" in line for line in found)
+    found = [line for line in api_mod.shadow_check() if line.startswith(str(data))]
+    assert any(f"events[{ARS}]" in line for line in found)
+    assert any(f"event_slices[{ARS}, 'event', '']: missing in the catalog" in line for line in found)
 
 
 def test_what_the_test_writes_itself_is_reconciled_before_the_next_product_write(canonical: sf.LegacyFixture) -> None:
@@ -1137,7 +1233,8 @@ def test_what_the_test_writes_itself_is_reconciled_before_the_next_product_write
     os.utime(basic_file, ns=(stamp, stamp))
     assert store.events.get(ARS).home_score_current != 9 and api_mod.shadow_unsynced()
 
-    fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+    # Ürün kodu dizine dokunur (Store'un dışında: istatistik menüsünün disk boyutları dosya ağacını gezer)
+    stats_service.league_stats(str(data), PL)
 
     assert not api_mod.shadow_unsynced() and store.events.get(ARS).home_score_current == 9
     assert differences(store) == [] and api_mod.shadow_check() == []
@@ -1146,7 +1243,7 @@ def test_what_the_test_writes_itself_is_reconciled_before_the_next_product_write
 def test_a_directory_the_test_edits_last_is_not_compared(canonical: sf.LegacyFixture) -> None:
     data = canonical.data_dir
     open_store(data)
-    fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+    legacy_save(data, NO_DETAIL, {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
     (match_dir(canonical, ARS) / "statistics.json").unlink()  # son ürün çağrısından sonra, kancasız
 
     assert api_mod.shadow_check() == []

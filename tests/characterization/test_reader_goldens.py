@@ -43,6 +43,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 import conftest
+import detail_records
+import legacy_writer
 import store_fixtures as sf
 from src.config_manager import ConfigManager
 from src.match_data_fetcher import MatchDataFetcher
@@ -454,16 +456,15 @@ def test_needs_are_the_same_with_the_job_cache(fx: sf.LegacyFixture, frozen_cloc
 
 
 def _marker_files(fixture: sf.LegacyFixture) -> Dict[str, Dict[str, Any]]:
+    """
+    Kayıtların "yok" sayaçları ve hata kayıtları, Store'dan (ST-21'den beri işaretleri Store sıfırlar ve eski düzen
+    dosyalarına dokunmaz): kaydın eski düzen yolu → dilim → {kesin, doğrulanmamış sayım, hata nedeni}.
+    """
     out: Dict[str, Dict[str, Any]] = {}
     for record in fixture.details:
-        folder = fixture.data_dir.joinpath(*record.path.split("/"))
-        state = {
-            name: json.loads((folder / name).read_text(encoding="utf-8"))
-            for name in ("_unavailable.json", "_slice_status.json")
-            if (folder / name).is_file()
-        }
-        if state:
-            out[record.path] = state
+        marks = detail_records.slice_marks(fixture.data_dir, record.event_id)
+        if marks:
+            out[record.path] = marks
     return out
 
 
@@ -588,11 +589,14 @@ def test_listed_matches_have_distinct_dates(name: str, tmp_path: Path) -> None:
 
 
 def test_fidelity_detail_directories(tmp_path: Path) -> None:
-    """Maç dizininin yeri (L1, L5) ve dosyaları: MatchDataFetcher._save_match_data aynısını yazar."""
+    """
+    Maç dizininin yeri (L1, L5) ve dosyaları: eski düzen yazıcısı aynısını yazar. Yazıcı ST-21'den beri v3'e yazar;
+    fabrika eski sürümlerin verisini kurar, karşılaştırma eski yazıcının dondurulmuş kopyasıyladır
+    (tests/legacy_writer.py).
+    """
     built_root = tmp_path / "built"
     built = _tree(sf.build_fixture("canonical", built_root / "canonical").data_dir)
     built.update(_tree(sf.build_fixture("legacy", built_root / "legacy").data_dir))
-    fetcher = _fetcher(tmp_path / "written")
     for detail in (sf.Detail(sf.PL_ARS, observed="2026-09-19T06:00:00+00:00"), sf.Detail(sf.CUP_AET),
                    sf.Detail(sf.NBA_RECENT, observed="2026-10-01T08:00:00+00:00"),
                    sf.Detail(sf.LIGA_NEXT, slices=("team_streaks", "pregame_form", "h2h")),
@@ -602,24 +606,23 @@ def test_fidelity_detail_directories(tmp_path: Path) -> None:
         data: Dict[str, Any] = {"basic": basic, **{key: sf.slice_payload(key, basic) for key in detail.slices}}
         if detail.observed:
             data["observation"] = sf.observation_payload(basic, detail.observed)
-        fetcher._save_match_data(str(basic["id"]), data)
+        legacy_writer.save_legacy(tmp_path / "written", basic["id"], data)
         base = sf.detail_dir(detail)
         written = {f: d for f, d in _tree(tmp_path / "written").items() if f.startswith(base + "/")}
         assert written and written == {f: d for f, d in built.items() if f.startswith(base + "/")}, base
 
 
 def test_fidelity_marker_files(tmp_path: Path) -> None:
-    """_unavailable.json ve _slice_status.json: yazıcının ürettiği biçim fabrikanınkiyle aynı (zaman hariç)."""
+    """_unavailable.json ve _slice_status.json: eski yazıcının ürettiği biçim fabrikanınkiyle aynı (zaman hariç)."""
     from src.match_data_fetcher import SLICE_EMPTY, SLICE_FAILED, SliceOutcome
 
-    fetcher = _fetcher(tmp_path)
     basic = sf.basic_payload(sf.PL_BHA)
     data = {"basic": basic, **{key: sf.slice_payload(key, basic) for key in sf.REQUIRED_SLICES if key != "lineups"}}
     data["incidents"] = sf.slice_payload("incidents", basic, empty=True)
     outcomes = {"lineups": SliceOutcome(SLICE_EMPTY, reason="404", http_status=404),
                 "incidents": SliceOutcome(SLICE_FAILED, reason="5xx", http_status=503)}
     for _ in range(2):
-        fetcher._save_match_data(str(basic["id"]), data, outcomes)
+        legacy_writer.save_legacy(tmp_path, basic["id"], data, outcomes)
     folder = tmp_path / sf.detail_dir(sf.Detail(sf.PL_BHA))
 
     def without_time(value: Any) -> Any:

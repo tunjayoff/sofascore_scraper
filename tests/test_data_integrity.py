@@ -3,10 +3,14 @@ Veri bütünlüğü: dilim isteklerinin tipli sonucu ve "bu dilim bu maçta yok"
 
 Sabitlenen kurallar:
   - Yalnızca kesin yanıt (HTTP 404 ya da içinde veri olmayan 200) "yok" sayılır. Başarısız istek
-    (403/429/5xx/zaman aşımı/ağ/bozuk yanıt) sayılmaz, nedeni ve zamanıyla _slice_status.json'a
+    (403/429/5xx/zaman aşımı/ağ/bozuk yanıt) sayılmaz, nedeni ve zamanıyla dilimin hata kaydına
     yazılır, sonraki çalıştırmada yeniden istenir ve devre kesiciyi besler. Async ve sync yollar aynı.
   - Eski sürümlerden kalan işaretler kendiliğinden sıfırlanmaz; --recheck-unavailable ile yeniden
     denetime açılır (kesin yanıtla doğrulanmış olanlar korunur).
+
+Sayaçlar ve hata kayıtları Store'dadır (plan maddesi ST-21; eski düzende `_unavailable.json` ve
+`_slice_status.json`): testler onları `Store.events.slice(...)` ile okur. Eski sürümün işaret dosyaları olan
+kayıtlar tests/legacy_writer.py ile eski düzende kurulur.
 
 Gerçek ağ yok: istek katmanının taşıyıcısı (curl) ya da kendisi sahte.
 """
@@ -22,10 +26,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+import legacy_writer
 import src.utils as utils
 from src.exceptions import APIError, DataParsingError, NetworkError, RateLimitError, ResourceNotFoundError
-from src.match_data_fetcher import (DETAIL_SLICE_KEYS, SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_STATUS_FILE,
+from src.match_data_fetcher import (DETAIL_SLICE_KEYS, SLICE_EMPTY, SLICE_FAILED, SLICE_OK,
                                     UNAVAILABLE_AFTER_ATTEMPTS, UNAVAILABLE_FILE, MatchDataFetcher, SliceOutcome)
+from src.store import SliceInfo, open_store
+from src.store import api as store_api
 
 MID = "4242"
 BASE = "https://www.sofascore.com/api/v1"
@@ -75,12 +82,25 @@ def _fetcher(tmp_path, threshold: int = 1000) -> MatchDataFetcher:
     return MatchDataFetcher(cfg, data_dir=str(tmp_path))
 
 
-def _match_dir(f: MatchDataFetcher, mid: str = MID) -> Path:
-    return next(p.parent for p in Path(f.match_details_dir).rglob("basic.json") if p.parent.name == mid)
+def _info(f: MatchDataFetcher, key: str, mid: str = MID) -> SliceInfo:
+    """Dilimin Store'daki durumu: sayaçlar, hata kaydı, yük."""
+    return open_store(f.data_dir).events.slice(int(mid), key)
 
 
-def _json(path: Path) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
+def _counts(f: MatchDataFetcher, mid: str = MID) -> Dict[str, int]:
+    """"Yok" sayımları (kesin + doğrulanmamış), sayımı olan dilimler: eski `_unavailable.json`'ın karşılığı."""
+    infos = open_store(f.data_dir).events.slices(int(mid))
+    return {i.key: i.empty_count + i.unverified_empty_count for i in infos
+            if i.empty_count + i.unverified_empty_count}
+
+
+def _errors(f: MatchDataFetcher, mid: str = MID) -> Dict[str, str]:
+    """Hata kaydı olan dilimler → neden."""
+    return {i.key: i.error.reason for i in open_store(f.data_dir).events.slices(int(mid)) if i.error is not None}
+
+
+def _legacy_dir(mid: str = MID) -> str:
+    return f"match_details/77_Cup/season_Cup_26/{mid}"
 
 
 def _slice_of(url: str) -> str:
@@ -194,14 +214,13 @@ def test_async_transient_slice_error_is_recorded_not_counted(tmp_path, reason, e
     slices = dict(PRESENT, lineups=error)
     for _ in range(UNAVAILABLE_AFTER_ATTEMPTS + 1):  # eski kuralda ikinci denemede "yok" olurdu
         _fetch_async(f, slices)
-    match_dir = _match_dir(f)
 
-    assert not (match_dir / UNAVAILABLE_FILE).exists()
-    record = _json(match_dir / SLICE_STATUS_FILE)["lineups"]["error"]
-    assert record["reason"] == reason and record["status"] == http_status
-    assert record["count"] == UNAVAILABLE_AFTER_ATTEMPTS + 1 and record["at"].endswith("+00:00")
-    assert not (match_dir / "lineups.json").exists()
-    assert "lineups" in f._expected_slices(str(match_dir), "football")
+    assert _counts(f) == {}
+    record = _info(f, "lineups").error
+    assert record.reason == reason and record.http_status == http_status
+    assert record.count == UNAVAILABLE_AFTER_ATTEMPTS + 1 and record.at is not None and record.at.utcoffset() is not None
+    assert not _info(f, "lineups").has_payload
+    assert "lineups" in f._expected_slice_keys(int(MID), "football")
     assert f._compute_detail_need(MID) == "refill"  # maç tam görünmüyor
 
 
@@ -216,9 +235,8 @@ def test_async_429_on_slice_is_retried_on_the_next_run(tmp_path):
         assert f._needs_detail_fetch(MID) == "refill"
         f.refill_missing_match_slices(MID)
     assert calls == [EVENT, f"{EVENT}/lineups"]
-    match_dir = _match_dir(f)
-    assert _json(match_dir / "lineups.json") == PRESENT["lineups"]
-    assert not (match_dir / SLICE_STATUS_FILE).exists()  # hata kaydı veri gelince silinir
+    assert open_store(f.data_dir).events.payload(int(MID), "lineups") == PRESENT["lineups"]
+    assert _errors(f) == {}  # hata kaydı veri gelince silinir
     assert f._compute_detail_need(MID) == "none"
 
 
@@ -226,29 +244,29 @@ def test_async_404_on_slice_is_counted_and_stops_being_expected(tmp_path):
     f = _fetcher(tmp_path)
     slices = dict(PRESENT, lineups=ResourceNotFoundError("x"))
     _fetch_async(f, slices)
-    match_dir = _match_dir(f)
-    assert _json(match_dir / UNAVAILABLE_FILE) == {"lineups": 1}
+    assert _counts(f) == {"lineups": 1}
     assert f._compute_detail_need(MID) == "refill"
 
     _fetch_async(f, slices)
-    assert _json(match_dir / UNAVAILABLE_FILE) == {"lineups": UNAVAILABLE_AFTER_ATTEMPTS}
-    assert _json(match_dir / SLICE_STATUS_FILE)["lineups"]["empty"]["count"] == UNAVAILABLE_AFTER_ATTEMPTS
-    assert "lineups" not in f._expected_slices(str(match_dir), "football")
+    assert _counts(f) == {"lineups": UNAVAILABLE_AFTER_ATTEMPTS}
+    assert _info(f, "lineups").empty_count == UNAVAILABLE_AFTER_ATTEMPTS
+    assert "lineups" not in f._expected_slice_keys(int(MID), "football")
     assert f._compute_detail_need(MID) == "none"
 
 
 def test_async_empty_200_is_counted(tmp_path):
     f = _fetcher(tmp_path)
     _fetch_async(f, dict(PRESENT, incidents={"incidents": []}, lineups={}))
-    assert _json(_match_dir(f) / UNAVAILABLE_FILE) == {"lineups": 1, "incidents": 1}
+    assert _counts(f) == {"lineups": 1, "incidents": 1}
+    assert _info(f, "incidents").has_payload  # içinde veri olmayan gövde de saklanır
 
 
 def test_definitive_answer_after_a_failure_clears_the_error(tmp_path):
     f = _fetcher(tmp_path)
     _fetch_async(f, dict(PRESENT, lineups=APIError("HTTP 403 Forbidden", status_code=403)))
     _fetch_async(f, dict(PRESENT, lineups=ResourceNotFoundError("x")))
-    entry = _json(_match_dir(f) / SLICE_STATUS_FILE)["lineups"]
-    assert "error" not in entry and entry["empty"]["count"] == 1
+    entry = _info(f, "lineups")
+    assert entry.error is None and entry.empty_count == 1
 
 
 def test_async_slice_failure_through_the_real_request_layer(tmp_path):
@@ -267,9 +285,8 @@ def test_async_slice_failure_through_the_real_request_layer(tmp_path):
     with _request_layer():
         data = asyncio.run(f._fetch_match_data_async(session, MID))
     assert data["statistics"] is None
-    match_dir = _match_dir(f)
-    assert not (match_dir / UNAVAILABLE_FILE).exists()
-    assert _json(match_dir / SLICE_STATUS_FILE)["statistics"]["error"]["reason"] == "429"
+    assert _counts(f) == {}
+    assert _errors(f) == {"statistics": "429"}
 
 
 def test_breaker_trips_on_blocked_slices_and_does_not_mark_them_unavailable(tmp_path):
@@ -296,19 +313,16 @@ def test_breaker_trips_on_blocked_slices_and_does_not_mark_them_unavailable(tmp_
     assert f.last_status_counts.get("429") == 6
     assert list(results) == ["2001"]  # ilk maçın altı dilimi devreyi kesti; ikinci maç hiç başlamadı
     assert failed == []
-    match_dir = next(Path(f.match_details_dir).rglob("basic.json")).parent
-    assert not (match_dir / UNAVAILABLE_FILE).exists()
-    errors = json.loads((match_dir / SLICE_STATUS_FILE).read_text())
-    assert {key: entry["error"]["reason"] for key, entry in errors.items()} == {k: "429" for k in DETAIL_SLICE_KEYS}
+    assert _counts(f, "2001") == {}
+    assert _errors(f, "2001") == {k: "429" for k in DETAIL_SLICE_KEYS}
     assert f._compute_detail_need("2001") == "refill"  # sonraki çalıştırmada yeniden denenecek
 
 
 # --- sync yol (tek maç indirme ve refill) --------------------------------------------------
 
-def _stored(f: MatchDataFetcher) -> Path:
-    """Diskte yalnızca basic'i olan bitmiş maç (refill tüm dilimleri ister)."""
+def _stored(f: MatchDataFetcher) -> None:
+    """Yalnızca olay yükü saklanan bitmiş maç (refill tüm dilimleri ister)."""
     f._save_match_data(MID, {"basic": _basic()})
-    return _match_dir(f)
 
 
 @pytest.mark.parametrize("answer,reason,http_status", [
@@ -322,22 +336,22 @@ def _stored(f: MatchDataFetcher) -> Path:
 ], ids=["429", "503", "403", "500", "timeout", "network", "parse"])
 def test_sync_refill_transient_error_is_recorded_not_counted(tmp_path, answer, reason, http_status):
     f = _fetcher(tmp_path)
-    match_dir = _stored(f)
+    _stored(f)
     slices = dict(PRESENT, statistics=answer)
     for _ in range(UNAVAILABLE_AFTER_ATTEMPTS + 1):
         with _request_layer(), patch.object(utils.cffi_requests, "get", side_effect=_curl(_basic(), slices, [])):
             f.refill_missing_match_slices(MID)
 
-    assert not (match_dir / UNAVAILABLE_FILE).exists()
-    record = _json(match_dir / SLICE_STATUS_FILE)["statistics"]["error"]
-    assert (record["reason"], record["status"]) == (reason, http_status)
-    assert record["count"] == UNAVAILABLE_AFTER_ATTEMPTS + 1
+    assert _counts(f) == {}
+    record = _info(f, "statistics").error
+    assert (record.reason, record.http_status) == (reason, http_status)
+    assert record.count == UNAVAILABLE_AFTER_ATTEMPTS + 1
     assert f._compute_detail_need(MID) == "refill"
 
 
 def test_sync_refill_retries_the_failed_slice_on_the_next_run(tmp_path):
     f = _fetcher(tmp_path)
-    match_dir = _stored(f)
+    _stored(f)
     with _request_layer(), patch.object(
         utils.cffi_requests, "get", side_effect=_curl(_basic(), dict(PRESENT, statistics=Resp(429)), [])
     ):
@@ -347,21 +361,21 @@ def test_sync_refill_retries_the_failed_slice_on_the_next_run(tmp_path):
     with _request_layer(), patch.object(utils.cffi_requests, "get", side_effect=_curl(_basic(), PRESENT, calls)):
         f.refill_missing_match_slices(MID)
     assert calls == [EVENT, f"{EVENT}/statistics"]  # yalnızca başarısız olan dilim yeniden istendi
-    assert _json(match_dir / "statistics.json") == PRESENT["statistics"]
-    assert not (match_dir / SLICE_STATUS_FILE).exists()
+    assert open_store(f.data_dir).events.payload(int(MID), "statistics") == PRESENT["statistics"]
+    assert _errors(f) == {}
     assert f._compute_detail_need(MID) == "none"
 
 
 def test_sync_refill_404_is_counted(tmp_path):
     f = _fetcher(tmp_path)
-    match_dir = _stored(f)
+    _stored(f)
     slices = {k: v for k, v in PRESENT.items() if k != "lineups"}  # lineups: 404
     for expected in range(1, UNAVAILABLE_AFTER_ATTEMPTS + 1):
         calls: List[str] = []
         with _request_layer(), patch.object(utils.cffi_requests, "get", side_effect=_curl(_basic(), slices, calls)):
             f.refill_missing_match_slices(MID)
         assert f"{EVENT}/lineups" in calls
-        assert _json(match_dir / UNAVAILABLE_FILE) == {"lineups": expected}
+        assert _counts(f) == {"lineups": expected}
     assert f._compute_detail_need(MID) == "none"
 
     # Artık beklenmiyor: bir sonraki refill dilimi istemez (maç zaten tam)
@@ -378,11 +392,10 @@ def test_sync_full_fetch_separates_failure_from_empty(tmp_path):
     with _request_layer(), patch.object(utils.cffi_requests, "get", side_effect=_curl(_basic(), slices, [])):
         data = f.fetch_match_data(MID)
     assert data["lineups"] is None
-    match_dir = _match_dir(f)
-    assert _json(match_dir / UNAVAILABLE_FILE) == {"pregame_form": 1, "incidents": 1}
-    status = _json(match_dir / SLICE_STATUS_FILE)
-    assert status["lineups"]["error"]["reason"] == "429" and "empty" not in status["lineups"]
-    assert status["pregame_form"]["empty"]["count"] == 1
+    assert _counts(f) == {"pregame_form": 1, "incidents": 1}
+    lineups = _info(f, "lineups")
+    assert lineups.error.reason == "429" and lineups.empty_count == 0 and lineups.state == "error"
+    assert _info(f, "pregame_form").empty_count == 1
 
 
 def test_sync_helper_raises_instead_of_swallowing(tmp_path):
@@ -397,20 +410,34 @@ def test_sync_helper_raises_instead_of_swallowing(tmp_path):
 
 # --- eski işaretlerin yeniden denetimi -----------------------------------------------------
 
+def _legacy_record(f: MatchDataFetcher, match_data: Dict[str, Any], outcomes: Any = None) -> Path:
+    """Eski bir sürümün yazdığı kayıt (eski düzen); maç dizinini döndürür."""
+    return Path(legacy_writer.save_legacy(f.data_dir, MID, match_data, outcomes))
+
+
 def _legacy_markers(match_dir: Path, markers: Dict[str, int]) -> None:
+    """Eski sürümün işaret dosyası; eski yazıcılar gibi ardından Store'un kancası (katalog dosyayı görür)."""
     (match_dir / UNAVAILABLE_FILE).write_text(json.dumps(markers), encoding="utf-8")
+    store_api.shadow_event(match_dir.parents[3], match_dir.name, match_dir)
+
+
+def _files(match_dir: Path) -> Dict[str, bytes]:
+    return {p.name: p.read_bytes() for p in match_dir.iterdir()}
 
 
 def test_recheck_reopens_legacy_markers(tmp_path):
     f = _fetcher(tmp_path)
-    f._save_match_data(MID, {"basic": _basic(), **{k: v for k, v in PRESENT.items() if k not in ("lineups", "incidents")}})
-    match_dir = _match_dir(f)
+    match_dir = _legacy_record(f, {"basic": _basic(), **{k: v for k, v in PRESENT.items()
+                                                          if k not in ("lineups", "incidents")}})
     _legacy_markers(match_dir, {"lineups": 2, "incidents": 2})  # eski sürüm: neden boş geldiği bilinmiyor
+    before = _files(match_dir)
     assert f._compute_detail_need(MID) == "none"
 
     assert f.reset_unavailable_markers() == {"matches": 1, "slices": 2, "scanned": 1}
-    assert not (match_dir / UNAVAILABLE_FILE).exists()
+    assert _counts(f) == {}
     assert f._compute_detail_need(MID) == "refill"
+    # Kayıt v3'e yükseltildi; eski dizine dokunulmadı (karar 4)
+    assert open_store(f.data_dir).events.get(int(MID)).layout == "v3" and _files(match_dir) == before
     # İkinci kez çalıştırmak hiçbir şeyi değiştirmez
     assert f.reset_unavailable_markers() == {"matches": 0, "slices": 0, "scanned": 0}
 
@@ -420,48 +447,49 @@ def test_recheck_keeps_markers_confirmed_by_a_definitive_answer(tmp_path):
     slices = dict(PRESENT, lineups=ResourceNotFoundError("x"))
     for _ in range(UNAVAILABLE_AFTER_ATTEMPTS):
         _fetch_async(f, slices)
-    match_dir = _match_dir(f)
-    before = (match_dir / UNAVAILABLE_FILE).read_text()
+    before = _counts(f)
 
     assert f.reset_unavailable_markers() == {"matches": 0, "slices": 0, "scanned": 1}
-    assert (match_dir / UNAVAILABLE_FILE).read_text() == before
+    assert _counts(f) == before == {"lineups": UNAVAILABLE_AFTER_ATTEMPTS}
     assert f._compute_detail_need(MID) == "none"
 
     assert f.reset_unavailable_markers(include_confirmed=True) == {"matches": 1, "slices": 1, "scanned": 1}
-    assert not (match_dir / UNAVAILABLE_FILE).exists() and not (match_dir / SLICE_STATUS_FILE).exists()
+    assert _counts(f) == {} and _errors(f) == {} and _info(f, "lineups").state == "not_requested"
     assert f._compute_detail_need(MID) == "refill"
 
 
 def test_recheck_drops_only_the_unverified_part_of_a_count(tmp_path):
     f = _fetcher(tmp_path)
-    _fetch_async(f, dict(PRESENT, lineups=ResourceNotFoundError("x")))  # 1 kesin "yok"
-    match_dir = _match_dir(f)
+    match_dir = _legacy_record(f, {"basic": _basic(), **PRESENT, "lineups": None},
+                               {"lineups": SliceOutcome.from_error(ResourceNotFoundError("x"))})  # 1 kesin "yok"
     _legacy_markers(match_dir, {"lineups": 2})  # biri eski sürümden
+    assert (_info(f, "lineups").empty_count, _info(f, "lineups").unverified_empty_count) == (1, 1)
     assert f.reset_unavailable_markers()["slices"] == 1
-    assert _json(match_dir / UNAVAILABLE_FILE) == {"lineups": 1}
+    assert _counts(f) == {"lineups": 1} and _info(f, "lineups").empty_count == 1
 
 
 def test_recheck_can_be_limited_to_one_league(tmp_path):
     f = _fetcher(tmp_path)
-    f._save_match_data(MID, {"basic": _basic()})
-    match_dir = _match_dir(f)
+    match_dir = _legacy_record(f, {"basic": _basic()})
     _legacy_markers(match_dir, {"lineups": 2})
     assert f.reset_unavailable_markers(league_id=999)["scanned"] == 0
-    assert (match_dir / UNAVAILABLE_FILE).exists()
+    assert _counts(f) == {"lineups": 2}
     assert f.reset_unavailable_markers(league_id=77)["slices"] == 1
+    assert _counts(f) == {}
 
 
 def test_recheck_cli_flag_resets_and_exits_without_network(tmp_path, monkeypatch, capsys):
     import main as cli
 
     f = _fetcher(tmp_path)
-    f._save_match_data(MID, {"basic": _basic()})
-    _legacy_markers(_match_dir(f), {"lineups": 2, "incidents": 1})
+    match_dir = _legacy_record(f, {"basic": _basic()})
+    _legacy_markers(match_dir, {"lineups": 2, "incidents": 1})
     monkeypatch.setenv("DATA_DIR", os.environ["DATA_DIR"])  # main --data-dir ortamı değiştirir: test sonunda geri al
     monkeypatch.setattr("sys.argv", ["main.py", "--recheck-unavailable", "--data-dir", str(tmp_path)])
     with patch.object(utils.cffi_requests, "get", side_effect=AssertionError("ağ isteği yapılmamalı")):
         assert cli.main() == 0
-    assert not (_match_dir(f) / UNAVAILABLE_FILE).exists()
+    assert _counts(f) == {}
+    assert (match_dir / UNAVAILABLE_FILE).exists()  # eski dizine dokunulmaz: geçerli kopya artık v3'te
     assert "1" in capsys.readouterr().out
 
 

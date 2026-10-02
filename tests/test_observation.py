@@ -1,9 +1,13 @@
-"""observation.json: bizim gözlem anımız + changes.changeTimestamp (kesinlik takibi için)."""
+"""
+Gözlem: bizim gözlem anımız + changes.changeTimestamp (kesinlik takibi için). Eski düzende `observation.json`;
+indirici artık Store'a yazar (plan maddesi ST-21): gözlem manifestte ve katalogda (`observed_at`, `change_ts`).
+"""
 import datetime as dt
 import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import legacy_writer
 from src.match_data_fetcher import MatchDataFetcher
 from src.status import OBSERVATION_KEY, observation_record, read_observation
 from src.store import open_store
@@ -34,7 +38,7 @@ def test_observation_record_fields():
     }
 
 
-def test_fetch_saves_observation_next_to_basic(tmp_path):
+def test_fetch_saves_observation_with_the_match(tmp_path):
     f = _fetcher(tmp_path)
     event = _event()
     with patch.object(f, "_fetch_match_basic", return_value=event):
@@ -42,21 +46,20 @@ def test_fetch_saves_observation_next_to_basic(tmp_path):
     assert data[OBSERVATION_KEY]["change_ts"] == event["changes"]["changeTimestamp"]
     assert data[OBSERVATION_KEY]["observed_at_utc"].endswith("+00:00")
 
-    saved = list(Path(tmp_path).rglob(f"{OBSERVATION_KEY}.json"))
-    assert len(saved) == 1 and (saved[0].parent / "basic.json").exists()
-    loaded = f._load_match_data_from_dir(str(saved[0].parent), str(event["event_id"]))
+    row = open_store(tmp_path).events.get(event["event_id"])
+    assert row.layout == "v3" and row.change_ts == event["changes"]["changeTimestamp"]
+    observed = dt.datetime.fromisoformat(data[OBSERVATION_KEY]["observed_at_utc"]).timestamp()
+    assert row.observed_at == int(observed)  # katalog tam saniye tutar
+    assert not list(Path(tmp_path).rglob(f"{OBSERVATION_KEY}.json"))  # eski düzene yazılmaz
+    loaded = f._load_match_data_from_dir("", str(event["event_id"]))
     assert read_observation(loaded) == data[OBSERVATION_KEY]
 
 
 def test_old_records_without_observation_read_as_none(tmp_path):
     f = _fetcher(tmp_path)
     event = _event()
-    with patch.object(f, "_fetch_match_basic", return_value=event):
-        f.fetch_match_data(event["event_id"])
-    obs = next(Path(tmp_path).rglob(f"{OBSERVATION_KEY}.json"))
-    obs.unlink()  # bu PR'dan önce kaydedilmiş maç
-    open_store(tmp_path).close()  # dosya deponun arkasından silindi: katalog bir sonraki açılışta uzlaşır
-    loaded = f._load_match_data_from_dir(str(obs.parent), str(event["event_id"]))
+    legacy_writer.save_legacy(tmp_path, event["event_id"], {"basic": event})  # gözlemden önceki bir sürümün kaydı
+    loaded = f._load_match_data_from_dir("", str(event["event_id"]))
     assert "basic" in loaded
     assert read_observation(loaded) == {"observed_at_utc": None, "change_ts": None}
     assert read_observation(None) == {"observed_at_utc": None, "change_ts": None}

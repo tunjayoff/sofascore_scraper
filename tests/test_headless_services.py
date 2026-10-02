@@ -335,19 +335,29 @@ def _write_json(path: Path, value: Any) -> None:
 
 
 def test_recheck_unavailable_reopens_the_markers_on_disk(tmp_path: Path) -> None:
-    """Gerçek indiriciyle: doğrulanmamış işaret geri alınır, doğrulanmış olan yalnızca include_confirmed ile."""
-    ctx = build_context(ConfigManager(), data_dir=str(tmp_path))
+    """
+    Gerçek indiriciyle: doğrulanmamış işaret geri alınır, doğrulanmış olan yalnızca include_confirmed ile. Kayıt
+    eski düzende (önceki bir sürümün yazdığı); işaretler Store'da sıfırlanır (kayıt v3'e yükseltilir, eski dizine
+    dokunulmaz; plan maddesi ST-21). Lig süzgeci maçın turnuvasına bakar.
+    """
     match_dir = tmp_path / "match_details" / "17_Premier_League" / "season_24_25" / "4242"
-    _write_json(match_dir / "basic.json", {"id": 4242})
+    _write_json(match_dir / "basic.json", {"id": 4242, "tournament": {"uniqueTournament": {"id": 17}},
+                                           "status": {"type": "finished", "code": 100}})
     # lineups: eski sürümden kalma, doğrulanmamış sayım; incidents: iki kesin yanıtla doğrulanmış
     _write_json(match_dir / "_unavailable.json", {"lineups": 2, "incidents": 2})
     _write_json(match_dir / "_slice_status.json", {"incidents": {"empty": {"count": 2}}})
+    ctx = build_context(ConfigManager(), data_dir=str(tmp_path))
     service = MaintenanceService(ctx)
+
+    def counts() -> Dict[str, Any]:
+        return {i.key: (i.empty_count, i.unverified_empty_count) for i in ctx.store.events.slices(4242)
+                if i.empty_count or i.unverified_empty_count}
 
     assert service.recheck_unavailable(8) == ResetCounts(matches=0, slices=0, scanned=0)  # başka lig
     assert service.recheck_unavailable(17) == ResetCounts(matches=1, slices=1, scanned=1)
-    assert json.loads((match_dir / "_unavailable.json").read_text(encoding="utf-8")) == {"incidents": 2}
+    assert counts() == {"incidents": (2, 0)}
     assert service.recheck_unavailable(17) == ResetCounts(matches=0, slices=0, scanned=1)  # tekrarlanabilir
 
     assert service.recheck_unavailable(include_confirmed=True) == ResetCounts(matches=1, slices=1, scanned=1)
-    assert not (match_dir / "_unavailable.json").exists()
+    assert counts() == {}
+    assert json.loads((match_dir / "_unavailable.json").read_text(encoding="utf-8")) == {"lineups": 2, "incidents": 2}

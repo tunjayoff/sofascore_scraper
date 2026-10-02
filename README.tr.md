@@ -448,15 +448,20 @@ Tipik düzen:
 
 ```text
 data/
+├── v3/
+│   └── events/        # Maç detayları, maç başına bir dizin: manifest.json + sıkıştırılmış dilimler (*.json.gz)
+├── changes/           # Yenilemede bulunan bitiş sonrası değişiklikler, ay başına bir dosya (bkz. Yenileme politikası)
 ├── seasons/           # Lig başına sezon meta dosyaları
 ├── matches/           # Lig ve sezona göre maç / özet CSV
-├── match_details/     # Maç başına JSON (basic, statistics, …)
+├── match_details/     # Önceki sürümlerin yazdığı maç başına JSON (basic, statistics, …)
 │   └── processed/     # Birleştirilmiş CSV export
 ├── datasets/          # Yardımcı / ayrılmış kullanım
-└── score_changes.jsonl  # Yenilemede bulunan bitiş sonrası değişiklikler (bkz. Yenileme politikası)
+└── score_changes.jsonl  # Önceki sürümlerin değişiklik kaydı (durur, artık eklenmez)
 ```
 
 Lig adlandırma ve migrasyonlara göre alt yollar biraz farklı olabilir.
+
+Maç detayları sıkıştırılmış olarak `v3/events/<id / 1.000.000>/<(id / 1.000) mod 1.000>/<id>/` altında saklanır. Önceki sürümlerin `match_details/` altına yazdığı dizinler yerinde kalır ve uygulamada okunmaya devam eder; böyle bir maç yeniden yazıldığında (eksik dilim tamamlama, yenileme, işaretlerin yeniden denetimi) önce bugünkü hali `v3/`'e kopyalanır, eski dizine dokunulmaz. `match_details/`'i doğrudan okuyan programlar bu sürümün indirdiği maçları görmez.
 
 Maç listesi `matches/` altındaki sezon özetlerinden okunur; `match_details/processed/` içindeki export CSV yalnızca hiç özet yoksa yedek olarak kullanılır.
 
@@ -466,10 +471,10 @@ Desteklenen sporlar tek yerde, `src/sports.py`’deki kayıt defterinde tanıml�
 
 ### Eksik dilimler, başarısız istekler ve devre kesici
 
-Her maç dizininde detay dilimi başına bir JSON dosyası bulunur (`statistics`, `lineups`, `incidents`, …). Yanlarında iki kayıt dosyası durur:
+Her maç dizininde detay dilimi başına bir dosya bulunur (`statistics`, `lineups`, `incidents`, …); dilim başına iki kayıt tutulur (maçın `manifest.json`'ında; önceki sürümlerin dizinlerinde `_unavailable.json` ve `_slice_status.json`):
 
-- `_unavailable.json`, bitmiş bir maçta SofaScore'un dilim için kaç kez **kesin** "burada bir şey yok" yanıtı verdiğini sayar: HTTP 404 ya da içinde veri olmayan bir 200 yanıtı. İki kesin yanıttan sonra dilim o maç için beklenmez (ör. teniste kadro yoktur) ve maç tam sayılır.
-- `_slice_status.json`, dilim başına son **başarısız** isteği tutar: `reason` (`403`, `429`, `5xx`, `timeout`, `network`, `parse`), HTTP kodu, UTC zamanı ve art arda kaç kez olduğu. Başarısız istek hiçbir zaman "yok" sayılmaz: dilim beklenmeye devam eder, maç eksik görünür ve sonraki indirme dilimi yeniden ister.
+- "yok" sayısı: bitmiş bir maçta SofaScore'un dilim için kaç kez **kesin** "burada bir şey yok" yanıtı verdiği: HTTP 404 ya da içinde veri olmayan bir 200 yanıtı. İki kesin yanıttan sonra dilim o maç için beklenmez (ör. teniste kadro yoktur) ve maç tam sayılır.
+- hata kaydı: dilimin son **başarısız** isteği: `reason` (`403`, `429`, `5xx`, `timeout`, `network`, `parse`), HTTP kodu, UTC zamanı ve art arda kaç kez olduğu. Başarısız istek hiçbir zaman "yok" sayılmaz: dilim beklenmeye devam eder, maç eksik görünür ve sonraki indirme dilimi yeniden ister.
 
 Önceki sürümler boş gelen her sonucu sayıyordu; engelleme ya da kesinti sırasında başarısız olan istekler de buna dahildi. O işaretler gerçek olanlardan ayırt edilemez. Bu yüzden oldukları gibi bırakılır ve kendiliğinden **sıfırlanmaz**: sıfırlansaydı, "kadrosu yok" işaretli her tenis maçı sonraki çalıştırmada yeniden istenirdi. Yeniden denetlemek için:
 
@@ -486,20 +491,20 @@ Bayrağın kendisi istek göndermez; yeniden açılan dilimleri bir sonraki deta
 
 **Depolama hataları.** Dosyaları yazılamayan maç indirilmiş değil, başarısız olarak bildirilir. Neden her maçta tekrarlanacaksa (disk ya da kota dolu, izin yok, salt okunur dosya sistemi) iş, yolu ve nedeni söyleyen bir mesajla durur.
 
-SofaScore unique-tournament kimliği olmayan maçlar `match_details/_no_tournament/<spor>/<maç id>/` altına yazılır; diskte zaten bulunan kayıtlar yerinde kalır.
+Her maç kimliğine göre saklanır, SofaScore unique-tournament kimliği olmayan maç da (önceki sürümler bunları `match_details/_no_tournament/<spor>/<maç id>/` altına yazardı; o dizinler yerinde kalır).
 
 ## Yenileme politikası
 
 SofaScore bazı sonuçları maç bittikten sonra da düzenliyor. Araştırma ölçümünde (`docs/status-matrix/README.md`, "Geriye dönük") nihai ya da periyot skoru `finished` sonrasında değişti: alt lig basketbolda 255 maçın 78'inde, alt lig futbolda 240 maçın 6'sında, üst lig basketbolda 145 maçın 4'ünde. En geç nihai skor değişikliği başlangıçtan 66,4 sa sonra geldi. Bu yüzden bir kez indirilen maç, SofaScore'un son hâlinden farklı kalabilir.
 
-- **Kayıt ne zaman yenilenir?** Kaydedilen her maçta `basic.json` yanında bir `observation.json` bulunur. Bu dosya bizim okuduğumuz anı (`observed_at_utc`) ve SofaScore'un `changes.changeTimestamp` değerini tutar. `observed_at_utc < startTimestamp + REFRESH_WINDOW_HOURS` (varsayılan **72**) olduğu sürece kayıt *geçici* sayılır. Geçici kayıtlar sonraki indirmede (web işi, `--update-all` ya da `--refresh-only`) yeniden okunur. Bu sırada yalnızca `/event/{id}` çekilir, istatistik ve kadro çekilmez. Yenilemeler yeni ve eksik maçlardan sonra çalışır, iş kartında da ayrı sayılır ("N yenilendi (M değişti)"). Aynı kayıt en fazla `REFRESH_MIN_INTERVAL_HOURS` (varsayılan 6, ileri düzey `.env` ayarı) saatte bir yeniden okunur; saatlik indirmede aynı maç 72 kez çekilmez. Pencere kapandıktan sonra yapılan bir okumayla kayıt kesinleşir ve bir daha çekilmez.
+- **Kayıt ne zaman yenilenir?** Kaydedilen her maç, bizim okuduğumuz anı (`observed_at_utc`) ve SofaScore'un `changes.changeTimestamp` değerini tutar (`manifest.json`'da; önceki sürümlerin dizinlerinde `basic.json` yanındaki `observation.json`'da). `observed_at_utc < startTimestamp + REFRESH_WINDOW_HOURS` (varsayılan **72**) olduğu sürece kayıt *geçici* sayılır. Geçici kayıtlar sonraki indirmede (web işi, `--update-all` ya da `--refresh-only`) yeniden okunur. Bu sırada yalnızca `/event/{id}` çekilir, istatistik ve kadro çekilmez. Yenilemeler yeni ve eksik maçlardan sonra çalışır, iş kartında da ayrı sayılır ("N yenilendi (M değişti)"). Aynı kayıt en fazla `REFRESH_MIN_INTERVAL_HOURS` (varsayılan 6, ileri düzey `.env` ayarı) saatte bir yeniden okunur; saatlik indirmede aynı maç 72 kez çekilmez. Pencere kapandıktan sonra yapılan bir okumayla kayıt kesinleşir ve bir daha çekilmez.
 - **Eski kayıtlar.** Bu özellikten önce kaydedilen maçlarda `observation.json` yok. Bunlar kesin sayılır, yani varsayılan ayar mevcut veri için **hiç** ek istek yapmaz. `--refresh-legacy` bu kayıtların her birini bir kez yeniden okur.
 - **Kapatma.** `REFRESH_WINDOW_HOURS=0` (`.env` ya da **Ayarlar**).
-- **Değişiklik kaydı.** Status üçlüsü, `winnerCode`, `homeScore`/`awayScore` alt alanlarından biri ya da `startTimestamp` farklıysa `basic.json` üzerine yazılır. Ayrıca `DATA_DIR/score_changes.jsonl` dosyasına (git'e girmez) bir satır eklenir. Satır biçimi için İngilizce README'deki örneğe bakın.
+- **Değişiklik kaydı.** Status üçlüsü, `winnerCode`, `homeScore`/`awayScore` alt alanlarından biri ya da `startTimestamp` farklıysa saklanan maç sayfası yenisiyle değiştirilir ve `DATA_DIR/changes/<yyyy>-<mm>.jsonl` dosyasına (git'e girmez) bir satır eklenir (önceki sürümler `score_changes.jsonl`'a eklerdi; o dosya durur ve okunmaya devam eder). Satır maçla aynı adımda yazılır, yarıda kesilen bir yazmada kaybolmaz: o maça bir sonraki yazmada ya da bir sonraki açılışta eklenir. Satır biçimi için İngilizce README'deki örneğe bakın.
   - `changed`: her alanın eski ve yeni değeri. SofaScore'un `changes` alanı yalnızca değişen alanın adını verir; skorun *ne kadar* değiştiği ilk kez bu dosyada kayda geçer.
   - `hours_after_start`: yeni `changeTimestamp` eksi başlangıç.
   - `tier_hint`: SofaScore'un oyuncu istatistiği kapsam bayrağı. Ligin gerçek seviyesini değil, SofaScore'un kapsam seviyesini gösterir.
-  - Oynanmış sayılan bir maç sonradan iptale dönerse (`completed` → `void`) satıra `"status_regressed": true` yazılır. Aynı işaret `observation.json`'a da konur. Kayıt **silinmez**; silme kararı kullanıcınındır.
+  - Oynanmış sayılan bir maç sonradan iptale dönerse (`completed` → `void`) satıra `"status_regressed": true` yazılır. Aynı işaret maçın gözlemine de konur ve bir daha silinmez. Kayıt **silinmez**; silme kararı kullanıcınındır.
 
 ```bash
 python main.py --refresh-only                 # yalnızca geçici kayıtları yenile (ör. günlük cron)

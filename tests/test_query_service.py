@@ -398,7 +398,7 @@ def test_job_cache_keeps_only_the_needs(old_forms: sf.LegacyFixture, frozen_cloc
 
 
 def test_match_saved_during_a_job_is_found_at_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Yazıcının kancası kataloğu günceller: iş içinde kaydedilen maçın yeri ve ihtiyacı hemen doğru okunur."""
+    """Yazma kataloğu aynı işlemde günceller: iş içinde kaydedilen maçın yeri (v3) ve ihtiyacı hemen doğru okunur."""
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     fetcher = fetcher_for(tmp_path)
     fetcher.begin_job_cache()
@@ -407,9 +407,11 @@ def test_match_saved_during_a_job_is_found_at_once(tmp_path: Path, monkeypatch: 
     data = {"basic": event, **{key: sf.slice_payload(key, event) for key in sf.REQUIRED_SLICES}}
     fetcher._save_match_data(str(ARS), data)
     found = fetcher._find_match_path(str(ARS))
-    assert found is not None and os.path.isfile(os.path.join(found[2], "basic.json"))
+    assert found is not None and os.path.isfile(os.path.join(found[2], "event.json.gz"))
     assert fetcher._needs_detail_fetch(str(ARS)) == "none"
-    assert fetcher._load_match_data_from_dir(found[2], str(ARS)) == data
+    loaded = fetcher._load_match_data_from_dir(found[2], str(ARS))
+    assert loaded.pop(OBSERVATION_KEY)["observed_at_utc"] is not None  # Store her olay yükünü gözlem olarak saklar
+    assert loaded == data
 
 
 # --- MatchDataFetcher: kaydın yüklenmesi ---------------------------------------------------------------

@@ -1,22 +1,16 @@
 {
  "markers": {
-  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/_slice_status.json": {
+  "9100002": {
    "lineups": {
-    "empty": {
-     "at": "<volatile>",
-     "count": 2
-    }
+    "empty": 2,
+    "error": null,
+    "unverified": 0
    },
    "pregame_form": {
-    "empty": {
-     "at": "<volatile>",
-     "count": 2
-    }
+    "empty": 2,
+    "error": null,
+    "unverified": 0
    }
-  },
-  "match_details/17_Premier_League/season_Premier_League_24_25/9100002/_unavailable.json": {
-   "lineups": 2,
-   "pregame_form": 2
   }
  },
  "second_run": {

@@ -7,9 +7,10 @@ docs/design/01-storage.md bölüm 2.3, 3.4-3.6, 4.4, 6.2 ve 8.5).
 
   * Bir yazmadan sonra katalog, aynı ağacın sıfırdan kurulmuş haline eşittir (`diff_from_rebuild() == []`) ve
     hızlı / derin doğrulama temizdir (`consistent`).
-  * Dilim durumu kuralları bugünkü yazıcıyla (`MatchDataFetcher._save_match_data` ve içindeki
-    `_update_slice_markers`) aynı sonucu verir: aynı sonuç dizisi bir yanda eski düzen dizinine, öte yanda
-    `put` ile v3'e uygulanır ve iki maçın mantıksal dökümü (tests/store_dump.py) karşılaştırılır.
+  * Dilim durumu kuralları eski düzen yazıcısıyla (ST-21'e kadarki `MatchDataFetcher._save_match_data` ve
+    içindeki `_update_slice_markers`; dondurulmuş kopyası tests/legacy_writer.py) aynı sonucu verir: aynı sonuç
+    dizisi bir yanda eski düzen dizinine, öte yanda `put` ile v3'e uygulanır ve iki maçın mantıksal dökümü
+    (tests/store_dump.py) karşılaştırılır.
 
 Ağ yok. Yükseltme tests/test_store_promotion.py'de, süreç ölümü tests/test_store_crash.py'de, eşzamanlılık
 tests/test_store_concurrency.py'dedir; ortak yardımcılar buradan içe aktarılır.
@@ -23,14 +24,13 @@ import os
 import random
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
-from unittest.mock import MagicMock
 
 import pytest
 
 import src.store
 import store_dump
 import store_fixtures as sf
-from src.match_data_fetcher import MatchDataFetcher
+import legacy_writer
 from src.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
 from src.status import observation_record
 from src.store import (
@@ -121,10 +121,6 @@ def staging(store: Store) -> List[str]:
         return sorted(os.listdir(layout.resolve(store.data_dir, layout.TMP_DIR)))
     except FileNotFoundError:
         return []
-
-
-def fetcher_of(data_dir: Path) -> MatchDataFetcher:
-    return MatchDataFetcher(config_manager=MagicMock(), data_dir=str(data_dir))
 
 
 @pytest.fixture
@@ -332,11 +328,10 @@ def _step_outcome(step: str, key: str, basic: Mapping[str, Any]) -> Tuple[Any, O
 
 
 class _Twin:
-    """Aynı maçı bir yanda bugünkü yazıcıyla eski düzene, öte yanda `put` ile v3'e yazar."""
+    """Aynı maçı bir yanda eski düzen yazıcısıyla (tests/legacy_writer.py) eski düzene, öte yanda `put` ile v3'e yazar."""
 
     def __init__(self, tmp_path: Path) -> None:
         self.legacy_dir = tmp_path / "legacy"
-        self.fetcher = fetcher_of(self.legacy_dir)
         self.store = open_store(tmp_path / "v3")
         self.clock = 0
 
@@ -354,12 +349,13 @@ class _Twin:
             match_data[key] = data
             legacy_outcomes[key] = outcome
             outcomes[key] = outcome
-        self.fetcher._save_match_data(str(event_id), match_data, legacy_outcomes)
+        legacy_writer.save_legacy(self.legacy_dir, event_id, match_data, legacy_outcomes)
         self.store.events.put(event_id, outcomes)
 
     def dumps(self, event_id: int) -> Tuple[Any, Any]:
         basic = basic_of(event_id=event_id)
-        directory = os.path.relpath(self.fetcher._match_storage_dir(str(event_id), basic)[2], self.legacy_dir)
+        directory = os.path.relpath(legacy_writer.legacy_match_dir(self.legacy_dir, str(event_id), basic)[2],
+                                    self.legacy_dir)
         return (store_dump.dump_legacy_event(self.legacy_dir, directory.replace(os.sep, "/")),
                 store_dump.dump_v3_event(self.store.data_dir, event_id))
 
@@ -643,7 +639,7 @@ def test_reset_empty_markers_gives_todays_counts_and_todays_result(tmp_path: Pat
         store = open_store(new.data_dir)
         slices_before = {e: {s.key: s.state for s in store.events.slices(e)} for e in new.detail_ids}
 
-        expected = fetcher_of(old.data_dir).reset_unavailable_markers(include_confirmed=include_confirmed)
+        expected = legacy_writer.reset_legacy_markers(old.data_dir, include_confirmed=include_confirmed)
         result = store.events.reset_empty_markers(include_confirmed=include_confirmed)
 
         assert result == expected and result["matches"] > 0 and result["slices"] > result["matches"]
@@ -660,7 +656,7 @@ def test_reset_empty_markers_gives_todays_counts_and_todays_result(tmp_path: Pat
 
         again = store.events.reset_empty_markers(include_confirmed=include_confirmed)
         assert (again["matches"], again["slices"]) == (0, 0)  # işlem tekrarlanabilir
-        assert again == fetcher_of(old.data_dir).reset_unavailable_markers(include_confirmed=include_confirmed)
+        assert again == legacy_writer.reset_legacy_markers(old.data_dir, include_confirmed=include_confirmed)
         store.close()
 
 

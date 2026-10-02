@@ -450,15 +450,20 @@ Typical structure:
 
 ```text
 data/
+├── v3/
+│   └── events/        # Match details, one folder per match: manifest.json + compressed slices (*.json.gz)
+├── changes/           # Post-finish changes found by refresh, one file per month (see Refresh policy)
 ├── seasons/           # Season metadata per league
 ├── matches/           # Match list / summary CSVs by league & season
-├── match_details/     # Per-match JSON folders (basic, stats, lineups, …)
+├── match_details/     # Per-match JSON folders written by older versions (basic, stats, lineups, …)
 │   └── processed/     # Aggregated CSV exports
 ├── datasets/          # Reserved / auxiliary
-└── score_changes.jsonl  # Post-finish changes found by refresh (see Refresh policy)
+└── score_changes.jsonl  # Change log of older versions (kept, no longer appended to)
 ```
 
 Exact paths may vary slightly by league naming and migrations.
+
+Match details are stored under `v3/events/<id / 1,000,000>/<(id / 1,000) mod 1,000>/<id>/`, compressed. Folders under `match_details/` written by older versions stay where they are and stay readable in the app; when such a match is written again (a refill, a refresh, a marker reset), its current state is first copied to `v3/` and the old folder is left untouched. Programs that read `match_details/` directly do not see matches downloaded by this version.
 
 The match list reads the per-season summaries under `matches/`; the export CSV in `match_details/processed/` is only a fallback when no summaries exist.
 
@@ -468,10 +473,10 @@ The supported sports are defined in one place, the registry in `src/sports.py`: 
 
 ### Missing slices, failed requests and the circuit breaker
 
-Each match folder holds one JSON file per detail slice (`statistics`, `lineups`, `incidents`, …). Two bookkeeping files sit next to them:
+Each match folder holds one file per detail slice (`statistics`, `lineups`, `incidents`, …) and, per slice, two kinds of bookkeeping (in the match's `manifest.json`; folders of older versions keep them in `_unavailable.json` and `_slice_status.json`):
 
-- `_unavailable.json` counts, per slice, how often SofaScore gave a **definitive** "nothing here" answer for a finished match: HTTP 404, or a 200 response with no data in it. After two such answers the slice is no longer expected for that match (tennis has no lineups, for example) and the match counts as complete.
-- `_slice_status.json` records the last **failed** request per slice: `reason` (`403`, `429`, `5xx`, `timeout`, `network`, `parse`), the HTTP status, the UTC time and how many times in a row. A failed request is never counted as "not available": the slice stays expected, the match stays incomplete, and the next download asks for it again.
+- an "empty" count: how often SofaScore gave a **definitive** "nothing here" answer for a finished match: HTTP 404, or a 200 response with no data in it. After two such answers the slice is no longer expected for that match (tennis has no lineups, for example) and the match counts as complete.
+- an error mark: the last **failed** request for the slice: `reason` (`403`, `429`, `5xx`, `timeout`, `network`, `parse`), the HTTP status, the UTC time and how many times in a row. A failed request is never counted as "not available": the slice stays expected, the match stays incomplete, and the next download asks for it again.
 
 Earlier releases counted every empty result, including requests that failed during a block or an outage. Those markers cannot be told apart from genuine ones, so they are left alone and are **not** reset automatically: that would re-request every "no lineups" tennis match on the next run. To re-check them:
 
@@ -488,16 +493,16 @@ The flag itself sends no requests; the reopened slices are requested by the next
 
 **Storage errors.** A match whose files cannot be written is reported as failed, not as downloaded. If the cause will repeat for every match (disk or quota full, permission denied, read-only file system), the job stops with a message naming the path and the reason.
 
-Matches without a SofaScore unique-tournament id are stored under `match_details/_no_tournament/<sport>/<match id>/`; records already on disk stay where they are.
+Every match is stored by its id, also one without a SofaScore unique-tournament id (older versions put those under `match_details/_no_tournament/<sport>/<match id>/`; such folders stay where they are).
 
 ## Refresh policy
 
 SofaScore keeps editing some results after a match has finished. In the research run (`docs/status-matrix/README.md`, "Geriye dönük"), the final or period score changed after `finished` in 78 of 255 lower-tier basketball matches, 6 of 240 lower-tier football matches and 4 of 145 upper-tier basketball matches. The latest final-score change came 66.4 h after kick-off. A match downloaded once can therefore differ from SofaScore's own final state.
 
-- **When a record is refreshed.** Every saved match has `observation.json` next to `basic.json`, holding when we read it (`observed_at_utc`) and SofaScore's `changes.changeTimestamp`. A record is *provisional* while `observed_at_utc < startTimestamp + REFRESH_WINDOW_HOURS` (default **72**). On the next download (web job, `--update-all`, or `--refresh-only`), provisional records are re-read. Only `/event/{id}` is fetched; the stats and lineups are not. Refreshes run after new and incomplete matches, and the job card counts them separately ("N refreshed (M changed)"). A record is re-read at most once every `REFRESH_MIN_INTERVAL_HOURS` (default 6, advanced `.env` setting), so hourly downloads do not fetch the same match 72 times. Once a read lands after the window, the record is final and never fetched again.
+- **When a record is refreshed.** Every saved match records when we read it (`observed_at_utc`) and SofaScore's `changes.changeTimestamp` (in `manifest.json`; older folders: `observation.json` next to `basic.json`). A record is *provisional* while `observed_at_utc < startTimestamp + REFRESH_WINDOW_HOURS` (default **72**). On the next download (web job, `--update-all`, or `--refresh-only`), provisional records are re-read. Only `/event/{id}` is fetched; the stats and lineups are not. Refreshes run after new and incomplete matches, and the job card counts them separately ("N refreshed (M changed)"). A record is re-read at most once every `REFRESH_MIN_INTERVAL_HOURS` (default 6, advanced `.env` setting), so hourly downloads do not fetch the same match 72 times. Once a read lands after the window, the record is final and never fetched again.
 - **Older records.** Matches saved before this feature have no `observation.json`. They count as final, so the default setting adds **no** requests for existing data. `--refresh-legacy` re-reads each of them once.
 - **Turning it off.** Set `REFRESH_WINDOW_HOURS=0` (in `.env` or under **Settings**).
-- **Change log.** When the status triple, `winnerCode`, any `homeScore`/`awayScore` field or `startTimestamp` differs, `basic.json` is overwritten and one line is appended to `DATA_DIR/score_changes.jsonl` (ignored by git):
+- **Change log.** When the status triple, `winnerCode`, any `homeScore`/`awayScore` field or `startTimestamp` differs, the stored match page is replaced and one line is appended to `DATA_DIR/changes/<yyyy>-<mm>.jsonl` (ignored by git; older versions appended to `score_changes.jsonl`, which stays and is still read). The line is written in the same step as the match, so an interrupted write cannot lose it: it is added on the next write of that match or the next start.
 
 ```json
 {"ts_utc": "2026-09-30T08:00:00+00:00", "event_id": 16950622, "sport": "football",
@@ -510,7 +515,7 @@ SofaScore keeps editing some results after a match has finished. In the research
   - `changed` gives the old and new value of each field. `changes` from SofaScore only names the fields, so this file is the first record of *how much* a result changed.
   - `hours_after_start` is the new `changeTimestamp` minus kick-off.
   - `tier_hint` is SofaScore's player-statistics coverage flag (tournament or event level). It shows how much SofaScore covers the league, not the league's real level.
-  - If a match that counted as played turns void (`completed` → `void`, e.g. cancelled afterwards), the line carries `"status_regressed": true`. The same flag goes into `observation.json`. The record is **not** deleted; that decision is yours.
+  - If a match that counted as played turns void (`completed` → `void`, e.g. cancelled afterwards), the line carries `"status_regressed": true`. The same flag is kept with the match's observation and never cleared. The record is **not** deleted; that decision is yours.
 
 ```bash
 python main.py --refresh-only                 # re-read provisional records only (e.g. a daily cron)

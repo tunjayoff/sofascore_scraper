@@ -49,7 +49,8 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Unio
 import pytest
 
 from characterization import STATE_DIR, UPDATE_ENV, WORLD, snapshot_tree
-from characterization.test_fetch_flows import _change_score, _make_provisional, _match_dir
+import detail_records
+from characterization.test_fetch_flows import _as_legacy_record, _change_score, _delete_record, _make_provisional
 from fakes.sofascore import REQUEST_LAYER_MODULES, FakeSofaScore
 from src.version import __version__
 
@@ -681,8 +682,8 @@ def test_headless_details_only(new_box: NewBox, world: FakeSofaScore) -> None:
     runs: Dict[str, CliRun] = {}
     for name, extra in (("all_leagues", []), ("one_league", ["--league-id", str(LEAGUE)])):
         box = new_box(name, data="seed")
-        (_match_dir(box.data, 9100001) / "statistics.json").unlink()  # kısmi → refill
-        shutil.rmtree(_match_dir(box.data, 9100003))  # kayıt yok → full
+        detail_records.drop_slices(box.data, 9100001, "statistics")  # kısmi → refill
+        _delete_record(box.data, 9100003)  # kayıt yok → full
         _make_provisional(box.data, world, 9100010)  # geçici → refresh (skoru SofaScore'da düzeltilmiş)
         # 9100002: ilk çalıştırmada iki dilimi boş geldi → refill
         runs[name] = run_cli(box, "--headless", "--update-all", "--fetch-mode", "details", *extra, world=world)
@@ -740,13 +741,14 @@ def test_headless_storage_error_exits_with_1(new_box: NewBox) -> None:
     runs: Dict[str, CliRun] = {}
     for name, extra in (("all_leagues", []), ("one_league", ["--league-id", str(LEAGUE)])):
         box = new_box(name, data="settled")  # yapılacak tek iş, yazılamayacak olan maç
-        season_dir = _match_dir(box.data, 9100003).parent
-        shutil.rmtree(season_dir / "9100003")
-        os.chmod(season_dir, 0o555)
+        _delete_record(box.data, 9100003)
+        # Maçın v3 dizininin üst dizini (src/store/layout.py `event_dir`): yeni maç oraya yayımlanamaz
+        events_dir = box.data / "v3" / "events" / "9" / "100"
+        os.chmod(events_dir, 0o555)
         try:
             runs[name] = run_cli(box, "--headless", "--update-all", "--fetch-mode", "details", *extra)
         finally:
-            os.chmod(season_dir, 0o755)
+            os.chmod(events_dir, 0o755)
 
     assert {name: run.exit_code for name, run in runs.items()} == {"all_leagues": 1, "one_league": 1}
     assert_cli_golden("headless_storage_error", {name: run.golden() for name, run in runs.items()})
@@ -852,8 +854,11 @@ def test_refresh_only_exit_codes(new_box: NewBox, world: FakeSofaScore) -> None:
 
 
 def test_refresh_legacy_flag(seeded: Sandbox) -> None:
-    """observation.json'ı olmayan eski kayıt kesin sayılır; --refresh-legacy ile bir kez yenilenir."""
-    (_match_dir(seeded.data, 9100001) / "observation.json").unlink()
+    """
+    observation.json'ı olmayan eski kayıt kesin sayılır; --refresh-legacy ile bir kez yenilenir. Gözlemsiz kayıt
+    yalnızca eski düzende olabilir: 9100001 önceki bir sürümün kaydına çevrilir (tests/legacy_writer.py).
+    """
+    _as_legacy_record(seeded.data, 9100001)
 
     without_flag = run_cli(seeded, "--refresh-only")
     with_flag = run_cli(seeded, "--refresh-only", "--refresh-legacy")
@@ -875,10 +880,8 @@ def test_recheck_unavailable(new_box: NewBox, settled: Seed) -> None:
     # 9100002'nin iki dilimi ikinci kez boş geldi: kesin "yok"
     steps: Dict[str, Dict[str, Any]] = {"details_run_confirms_markers": settled.run.golden()}
     seeded = new_box(data="settled")
-    # Eski sürümden kalma işaret: 9100001'in statistics dilimi doğrulanmadan "yok" sayılmış
-    legacy_dir = _match_dir(seeded.data, 9100001)
-    (legacy_dir / "statistics.json").unlink()
-    (legacy_dir / "_unavailable.json").write_text(json.dumps({"statistics": 2}), encoding="utf-8")
+    # Eski sürümden kalma kayıt: 9100001 eski düzende, statistics dilimi doğrulanmadan "yok" sayılmış
+    _as_legacy_record(seeded.data, 9100001, drop=("statistics",), unavailable={"statistics": 2})
 
     default = run_cli(seeded, "--recheck-unavailable")
     assert terminal_ui_modules(default) == []
