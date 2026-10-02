@@ -766,5 +766,11 @@ def test_fidelity_watcher_files(tmp_path: Path) -> None:
     root = tmp_path / "written"
     written = {p.relative_to(root).as_posix(): p.read_bytes() for p in sorted(root.rglob("*"))
                if p.is_file() and p.relative_to(root).parts[0] != ".meta"}
-    assert set(written) == {"watch_events.jsonl", "watch_state_football.json", "watch_state_tennis.json"}
+    assert set(written) == {"watch_events.jsonl"}
     assert written == {f: built[f] for f in written}
+    # Durum yalnızca state.db'dedir (P23: 2.x durum dosyaları artık yazılmaz); içeriği fabrikadaki dosyalarınkidir
+    from src.store import open_store
+
+    store = open_store(root)
+    for sport in ("football", "tennis"):
+        assert store.watch.load(sport) == json.loads(built[f"watch_state_{sport}.json"])

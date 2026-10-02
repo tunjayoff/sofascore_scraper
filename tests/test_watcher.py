@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from src.store import open_store
 from src.watcher import (EVENT_INTERVAL_SLOW_SECONDS, MatchWatcher, STUCK_INTERVAL_SECONDS, WATCH_EVENTS_FILE,
                          near_end, play_start)
 
@@ -112,7 +113,7 @@ def test_restart_from_state_does_not_repeat_the_event(tmp_path):
     assert len(_events(tmp_path)) == 1
 
 
-def test_watchers_sharing_a_data_dir_keep_separate_state_files(tmp_path):
+def test_watchers_sharing_a_data_dir_keep_separate_state(tmp_path):
     fb = _fx("football/A_inprogress-7-2nd-half__17018572", eid=500)
     tn = _fx("tennis/A_inprogress-9-2nd-set__17208186", eid=600)
     clock = Clock(_now_of("football/A_inprogress-7-2nd-half__17018572"))
@@ -122,9 +123,11 @@ def test_watchers_sharing_a_data_dir_keep_separate_state_files(tmp_path):
     w2.start()
     w1.tick()
     w2.tick()
-    assert set(json.loads((Path(tmp_path) / "watch_state_football.json").read_text())) == {"500"}
-    assert set(json.loads((Path(tmp_path) / "watch_state_tennis.json").read_text())) == {"600"}
-    assert not (Path(tmp_path) / "watch_state.json").exists()
+    # Durum state.db'dedir (izleyici adı = spor); 2.x durum dosyaları artık yazılmaz (P23)
+    store = open_store(str(tmp_path))
+    assert set(store.watch.load("football")) == {"500"}
+    assert set(store.watch.load("tennis")) == {"600"}
+    assert not list(Path(tmp_path).glob("watch_state*.json"))
 
 
 def test_run_stops_when_all_event_ids_are_done(tmp_path):
@@ -151,13 +154,13 @@ def test_rate_budget_slows_event_pages_and_warns(tmp_path, caplog):
     clock = Clock(_now_of("football/A_inprogress-7-2nd-half__17018572"))
     w = _watcher(tmp_path, api, clock, league_ids=[17])
     per_tick = []
-    with caplog.at_level("WARNING", logger="src.watcher"):
+    with caplog.at_level("WARNING", logger="src.services.live.poll_source"):
         for _ in range(3):
             before = len(api.calls)
             w.tick()
             per_tick.append(sum(1 for c in api.calls[before:] if c.startswith("/event/")))
     assert w.event_interval == EVENT_INTERVAL_SLOW_SECONDS
-    assert "hız bütçesi" in caplog.text
+    assert "rate budget" in caplog.text
     assert all(n <= 20 for n in per_tick) and sum(per_tick) > 0  # turda en fazla WATCH_MAX_EVENT_POLLS
     # liste 2/dk + maç sayfaları: 30 sn'lik turlarda en fazla 20 → dakikada ≤ 42 istek (< 1/sn)
     assert max(per_tick) * 2 + 2 <= 42

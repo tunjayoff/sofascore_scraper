@@ -36,21 +36,6 @@
       "type": "score_changed"
      }
     ],
-    "data/watch_state_football.json": {
-     "9300001": {
-      "class": "live",
-      "done": false,
-      "last_event_poll": "<volatile>",
-      "near_end": false,
-      "score": [
-       2,
-       0
-      ],
-      "start_ts": 1725700000,
-      "stuck": true,
-      "tournament_id": 17
-     }
-    },
     "logs/sofascore_scraper.log": "<binary>"
    }
   },
@@ -134,23 +119,7 @@
       "to": "completed",
       "type": "status_changed"
      }
-    ],
-    "data/watch_state_football.json": {
-     "9300001": {
-      "class": "completed",
-      "completed_emitted": true,
-      "done": true,
-      "last_event_poll": "<volatile>",
-      "near_end": false,
-      "score": [
-       2,
-       0
-      ],
-      "start_ts": 1725700000,
-      "stuck": false,
-      "tournament_id": 17
-     }
-    }
+    ]
    }
   },
   "request_layer_loaded": true,
@@ -168,7 +137,7 @@
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
    "{\"type\": \"status_changed\", \"event_id\": 9300001, \"from\": \"live\", \"to\": \"completed\", \"at_utc\": \"<volatile>\", \"change_ts\": 1725706600, \"source\": \"event\", \"scores\": {\"sport\": \"football\", \"status_class\": \"completed\", \"winner_code\": 1, \"raw_change_ts\": 1725706600, \"raw_changed_fields\": [], \"ht\": [2, 0], \"ft90\": null, \"aet\": null, \"penalties\": null, \"aggregated\": null, \"aggregated_winner_code\": null}, \"provisional\": false}",
-   "LOG INFO src.watcher: İzlenen tüm maçlar bitti"
+   "LOG INFO src.watcher: All watched events have finished"
   ]
  }
 }

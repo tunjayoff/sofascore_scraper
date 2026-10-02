@@ -199,7 +199,37 @@ def describe_config() -> Dict[str, Any]:
         "precedence": list(loader.LAYERS),
         "environment_only": config_schema.environment_only_keys(),
         "schema": config_schema.config_schema(),
+        "live_sources": describe_live_sources(),
     }
+
+
+# Canlı kaynaklar (02-services.md 8.2 ve 8.3); `ssc watch --source` ve `[live] source`. Bu sürümde yalnızca
+# yoklama vardır (P23); page ve direct sonraki işlerde gelir ve o zamana kadar yoklamaya düşer.
+_LIVE_SOURCE_TEXT = {
+    "page": "listens to the push connection that SofaScore's own page opens; handles no credential",
+    "direct": "connects a lightweight client to the push server itself, with the site's own client credential "
+              "read at runtime; an explicit opt-in, never chosen for you",
+    "poll": "requests the live list per sport every poll interval, and the pages of dropped, near-end and stuck "
+            "events; the fallback of every source",
+}
+
+
+def describe_live_sources() -> List[Dict[str, Any]]:
+    from src.config import settings as model
+
+    default = model.LiveSettings().source
+    available = ("poll",)
+    return [
+        {
+            "name": name,
+            "default": name == default,
+            "available": name in available,
+            "opt_in": name == "direct",
+            "description": _LIVE_SOURCE_TEXT[name],
+            "warning": model.LIVE_DIRECT_WARNING if name == "direct" else None,
+        }
+        for name in model.LIVE_SOURCES
+    ]
 
 
 def describe_errors() -> List[Dict[str, Any]]:

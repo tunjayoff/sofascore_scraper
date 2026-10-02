@@ -1,0 +1,997 @@
+{
+ "basketball_score_change": {
+  "sport": "basketball",
+  "steps": [
+   {
+    "events": [],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": false,
+     "score": [
+      48,
+      52
+     ],
+     "start_ts": 1790693100,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": false,
+     "score": [
+      48,
+      52
+     ],
+     "start_ts": 1790693100,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [
+     {
+      "at_utc": "2026-09-29T15:52:38+00:00",
+      "change_ts": 1790697021,
+      "event_id": 900,
+      "from": [
+       48,
+       52
+      ],
+      "source": "live",
+      "to": [
+       50,
+       52
+      ],
+      "type": "score_changed"
+     }
+    ],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": false,
+     "score": [
+      50,
+      52
+     ],
+     "start_ts": 1790693100,
+     "stuck": false,
+     "tournament_id": null
+    }
+   }
+  ]
+ },
+ "basketball_score_jump": {
+  "sport": "basketball",
+  "steps": [
+   {
+    "events": [],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": false,
+     "score": [
+      48,
+      52
+     ],
+     "start_ts": 1790693100,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [
+     {
+      "at_utc": "2026-09-29T15:56:38+00:00",
+      "change_ts": 1790697021,
+      "event_id": 901,
+      "from": [
+       48,
+       52
+      ],
+      "source": "live",
+      "to": [
+       55,
+       57
+      ],
+      "type": "score_changed"
+     }
+    ],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": false,
+     "score": [
+      55,
+      57
+     ],
+     "start_ts": 1790693100,
+     "stuck": false,
+     "tournament_id": null
+    }
+   }
+  ]
+ },
+ "completed_after_the_window": {
+  "sport": "football",
+  "steps": [
+   {
+    "events": [
+     {
+      "at_utc": "2026-10-01T12:59:00+00:00",
+      "event_id": 501,
+      "start_ts": 1790683200,
+      "status_class": "live",
+      "type": "stuck"
+     }
+    ],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": true,
+     "score": [
+      1,
+      0
+     ],
+     "start_ts": 1790683200,
+     "stuck": true,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [
+     {
+      "at_utc": "2026-10-01T13:00:00+00:00",
+      "change_ts": 1789477727,
+      "event_id": 501,
+      "from": "live",
+      "provisional": false,
+      "scores": {
+       "aet": null,
+       "aggregated": null,
+       "aggregated_winner_code": null,
+       "ft90": [
+        2,
+        1
+       ],
+       "ht": [
+        2,
+        1
+       ],
+       "penalties": null,
+       "raw_change_ts": 1789477727,
+       "raw_changed_fields": [
+        "providerLock.status",
+        "providerLock.statusSource"
+       ],
+       "sport": "football",
+       "status_class": "completed",
+       "winner_code": 1
+      },
+      "source": "event",
+      "to": "completed",
+      "type": "status_changed"
+     }
+    ],
+    "state": {
+     "class": "completed",
+     "completed_emitted": true,
+     "done": true,
+     "near_end": false,
+     "score": [
+      2,
+      1
+     ],
+     "start_ts": 1790683200,
+     "stuck": false,
+     "tournament_id": null
+    }
+   }
+  ]
+ },
+ "completed_seen_twice": {
+  "sport": "football",
+  "steps": [
+   {
+    "events": [],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": true,
+     "score": [
+      1,
+      0
+     ],
+     "start_ts": 1790683200,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": true,
+     "score": [
+      1,
+      0
+     ],
+     "start_ts": 1790683200,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": true,
+     "score": [
+      1,
+      0
+     ],
+     "start_ts": 1790683200,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [
+     {
+      "at_utc": "2026-09-29T13:45:36+00:00",
+      "change_ts": 1789477727,
+      "event_id": 500,
+      "from": "live",
+      "provisional": true,
+      "scores": {
+       "aet": null,
+       "aggregated": null,
+       "aggregated_winner_code": null,
+       "ft90": [
+        2,
+        1
+       ],
+       "ht": [
+        2,
+        1
+       ],
+       "penalties": null,
+       "raw_change_ts": 1789477727,
+       "raw_changed_fields": [
+        "providerLock.status",
+        "providerLock.statusSource"
+       ],
+       "sport": "football",
+       "status_class": "completed",
+       "winner_code": 1
+      },
+      "source": "event",
+      "to": "completed",
+      "type": "status_changed"
+     }
+    ],
+    "state": {
+     "class": "completed",
+     "completed_emitted": true,
+     "done": true,
+     "near_end": false,
+     "score": [
+      2,
+      1
+     ],
+     "start_ts": 1790683200,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [],
+    "state": {
+     "class": "completed",
+     "completed_emitted": true,
+     "done": true,
+     "near_end": false,
+     "score": [
+      2,
+      1
+     ],
+     "start_ts": 1790683200,
+     "stuck": false,
+     "tournament_id": null
+    }
+   }
+  ]
+ },
+ "finish_after_drop": {
+  "sport": "football",
+  "steps": [
+   {
+    "events": [],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": true,
+     "score": [
+      1,
+      0
+     ],
+     "start_ts": 1790683200,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": true,
+     "score": [
+      1,
+      0
+     ],
+     "start_ts": 1790683200,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": true,
+     "score": [
+      1,
+      0
+     ],
+     "start_ts": 1790683200,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [
+     {
+      "at_utc": "2026-09-29T13:45:36+00:00",
+      "change_ts": 1789477727,
+      "event_id": 500,
+      "from": "live",
+      "provisional": true,
+      "scores": {
+       "aet": null,
+       "aggregated": null,
+       "aggregated_winner_code": null,
+       "ft90": [
+        2,
+        1
+       ],
+       "ht": [
+        2,
+        1
+       ],
+       "penalties": null,
+       "raw_change_ts": 1789477727,
+       "raw_changed_fields": [
+        "providerLock.status",
+        "providerLock.statusSource"
+       ],
+       "sport": "football",
+       "status_class": "completed",
+       "winner_code": 1
+      },
+      "source": "event",
+      "to": "completed",
+      "type": "status_changed"
+     }
+    ],
+    "state": {
+     "class": "completed",
+     "completed_emitted": true,
+     "done": true,
+     "near_end": false,
+     "score": [
+      2,
+      1
+     ],
+     "start_ts": 1790683200,
+     "stuck": false,
+     "tournament_id": null
+    }
+   }
+  ]
+ },
+ "gap_live_to_completed": {
+  "sport": "football",
+  "steps": [
+   {
+    "events": [],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": false,
+     "score": [
+      0,
+      0
+     ],
+     "start_ts": 1790686800,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [
+     {
+      "at_utc": "2026-09-29T16:43:58+00:00",
+      "change_ts": 1789477727,
+      "event_id": 510,
+      "from": "live",
+      "provisional": true,
+      "scores": {
+       "aet": null,
+       "aggregated": null,
+       "aggregated_winner_code": null,
+       "ft90": [
+        2,
+        1
+       ],
+       "ht": [
+        2,
+        1
+       ],
+       "penalties": null,
+       "raw_change_ts": 1789477727,
+       "raw_changed_fields": [
+        "providerLock.status",
+        "providerLock.statusSource"
+       ],
+       "sport": "football",
+       "status_class": "completed",
+       "winner_code": 1
+      },
+      "source": "event",
+      "to": "completed",
+      "type": "status_changed"
+     }
+    ],
+    "state": {
+     "class": "completed",
+     "completed_emitted": true,
+     "done": true,
+     "near_end": false,
+     "score": [
+      3,
+      1
+     ],
+     "start_ts": 1790686800,
+     "stuck": false,
+     "tournament_id": null
+    }
+   }
+  ]
+ },
+ "gap_not_started_to_completed": {
+  "sport": "football",
+  "steps": [
+   {
+    "events": [],
+    "state": {
+     "class": "not_started",
+     "done": false,
+     "near_end": false,
+     "score": [
+      null,
+      null
+     ],
+     "start_ts": 1790686800,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [
+     {
+      "at_utc": "2026-09-29T15:00:00+00:00",
+      "change_ts": 1789477727,
+      "event_id": 520,
+      "from": "not_started",
+      "provisional": true,
+      "scores": {
+       "aet": null,
+       "aggregated": null,
+       "aggregated_winner_code": null,
+       "ft90": [
+        2,
+        1
+       ],
+       "ht": [
+        2,
+        1
+       ],
+       "penalties": null,
+       "raw_change_ts": 1789477727,
+       "raw_changed_fields": [
+        "providerLock.status",
+        "providerLock.statusSource"
+       ],
+       "sport": "football",
+       "status_class": "completed",
+       "winner_code": 1
+      },
+      "source": "event",
+      "to": "completed",
+      "type": "status_changed"
+     }
+    ],
+    "state": {
+     "class": "completed",
+     "completed_emitted": true,
+     "done": true,
+     "near_end": false,
+     "score": [
+      2,
+      1
+     ],
+     "start_ts": 1790686800,
+     "stuck": false,
+     "tournament_id": null
+    }
+   }
+  ]
+ },
+ "halftime_and_goal": {
+  "sport": "football",
+  "steps": [
+   {
+    "events": [],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": false,
+     "score": [
+      0,
+      0
+     ],
+     "start_ts": 1790686800,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [
+     {
+      "at_utc": "2026-09-29T14:13:58+00:00",
+      "change_ts": 1790693445,
+      "event_id": 530,
+      "from": [
+       0,
+       0
+      ],
+      "source": "live",
+      "to": [
+       0,
+       1
+      ],
+      "type": "score_changed"
+     }
+    ],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": false,
+     "score": [
+      0,
+      1
+     ],
+     "start_ts": 1790686800,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [
+     {
+      "at_utc": "2026-09-29T14:43:58+00:00",
+      "change_ts": 1790687855,
+      "event_id": 530,
+      "from": [
+       0,
+       1
+      ],
+      "source": "live",
+      "to": [
+       1,
+       0
+      ],
+      "type": "score_changed"
+     }
+    ],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": true,
+     "score": [
+      1,
+      0
+     ],
+     "start_ts": 1790686800,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [
+     {
+      "at_utc": "2026-09-29T14:44:28+00:00",
+      "change_ts": 1790687915,
+      "event_id": 530,
+      "from": [
+       1,
+       0
+      ],
+      "source": "live",
+      "to": [
+       2,
+       0
+      ],
+      "type": "score_changed"
+     }
+    ],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": true,
+     "score": [
+      2,
+      0
+     ],
+     "start_ts": 1790686800,
+     "stuck": false,
+     "tournament_id": null
+    }
+   }
+  ]
+ },
+ "stuck_cleared_by_a_new_start": {
+  "sport": "football",
+  "steps": [
+   {
+    "events": [
+     {
+      "at_utc": "2026-09-29T18:00:00+00:00",
+      "event_id": 701,
+      "start_ts": 1790686800,
+      "status_class": "not_started",
+      "type": "stuck"
+     }
+    ],
+    "state": {
+     "class": "not_started",
+     "done": false,
+     "near_end": false,
+     "score": [
+      null,
+      null
+     ],
+     "start_ts": 1790686800,
+     "stuck": true,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [],
+    "state": {
+     "class": "not_started",
+     "done": false,
+     "near_end": false,
+     "score": [
+      null,
+      null
+     ],
+     "start_ts": 1790773200,
+     "stuck": false,
+     "tournament_id": null
+    }
+   }
+  ]
+ },
+ "stuck_not_started": {
+  "sport": "football",
+  "steps": [
+   {
+    "events": [
+     {
+      "at_utc": "2026-09-29T18:00:00+00:00",
+      "event_id": 700,
+      "start_ts": 1790686800,
+      "status_class": "not_started",
+      "type": "stuck"
+     }
+    ],
+    "state": {
+     "class": "not_started",
+     "done": false,
+     "near_end": false,
+     "score": [
+      null,
+      null
+     ],
+     "start_ts": 1790686800,
+     "stuck": true,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [],
+    "state": {
+     "class": "not_started",
+     "done": false,
+     "near_end": false,
+     "score": [
+      null,
+      null
+     ],
+     "start_ts": 1790686800,
+     "stuck": true,
+     "tournament_id": null
+    }
+   }
+  ]
+ },
+ "tennis_stuck_from_play_start": {
+  "sport": "tennis",
+  "steps": [
+   {
+    "events": [],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": true,
+     "play_start": 1790683285,
+     "score": [
+      1,
+      1
+     ],
+     "start_ts": 1790676085,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [
+     {
+      "at_utc": "2026-09-29T19:01:25+00:00",
+      "event_id": 810,
+      "start_ts": 1790683285,
+      "status_class": "live",
+      "type": "stuck"
+     }
+    ],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": true,
+     "play_start": 1790683285,
+     "score": [
+      1,
+      1
+     ],
+     "start_ts": 1790676085,
+     "stuck": true,
+     "tournament_id": null
+    }
+   }
+  ]
+ },
+ "tennis_without_time": {
+  "sport": "tennis",
+  "steps": [
+   {
+    "events": [],
+    "state": {
+     "class": "not_started",
+     "done": false,
+     "near_end": false,
+     "play_start": null,
+     "score": [
+      null,
+      null
+     ],
+     "start_ts": 1790733600,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [
+     {
+      "at_utc": "2026-09-30T08:30:00+00:00",
+      "event_id": 820,
+      "start_ts": 1790733600,
+      "status_class": "not_started",
+      "type": "stuck"
+     }
+    ],
+    "state": {
+     "class": "not_started",
+     "done": false,
+     "near_end": false,
+     "play_start": null,
+     "score": [
+      null,
+      null
+     ],
+     "start_ts": 1790733600,
+     "stuck": true,
+     "tournament_id": null
+    }
+   }
+  ]
+ },
+ "void_with_a_moved_start": {
+  "sport": "tennis",
+  "steps": [
+   {
+    "events": [],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": false,
+     "play_start": 1790684764,
+     "score": [
+      0,
+      1
+     ],
+     "start_ts": 1790684100,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": false,
+     "play_start": 1790684764,
+     "score": [
+      0,
+      1
+     ],
+     "start_ts": 1790684100,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [
+     {
+      "at_utc": "2026-09-29T13:46:13+00:00",
+      "change_ts": 1790693787,
+      "event_id": 800,
+      "from": "live",
+      "scores": {
+       "games": [
+        [
+         2,
+         6
+        ]
+       ],
+       "match_tiebreak": false,
+       "raw_change_ts": 1790693787,
+       "raw_changed_fields": [
+        "status.code",
+        "status.description",
+        "status.type"
+       ],
+       "retired": false,
+       "sets_won": [
+        0,
+        1
+       ],
+       "sport": "tennis",
+       "status_class": "void",
+       "tiebreaks": {},
+       "walkover": false,
+       "winner_code": null
+      },
+      "source": "event",
+      "to": "void",
+      "type": "status_changed"
+     }
+    ],
+    "state": {
+     "class": "void",
+     "done": false,
+     "near_end": false,
+     "play_start": 1790684764,
+     "score": [
+      0,
+      1
+     ],
+     "start_ts": 1790761513,
+     "stuck": false,
+     "tournament_id": null
+    }
+   }
+  ]
+ },
+ "void_without_a_new_start": {
+  "sport": "tennis",
+  "steps": [
+   {
+    "events": [],
+    "state": {
+     "class": "live",
+     "done": false,
+     "near_end": false,
+     "play_start": 1790684764,
+     "score": [
+      0,
+      1
+     ],
+     "start_ts": 1790684100,
+     "stuck": false,
+     "tournament_id": null
+    }
+   },
+   {
+    "events": [
+     {
+      "at_utc": "2026-09-29T13:46:13+00:00",
+      "change_ts": 1790693787,
+      "event_id": 802,
+      "from": "live",
+      "scores": {
+       "games": [
+        [
+         2,
+         6
+        ]
+       ],
+       "match_tiebreak": false,
+       "raw_change_ts": 1790693787,
+       "raw_changed_fields": [
+        "status.code",
+        "status.description",
+        "status.type"
+       ],
+       "retired": false,
+       "sets_won": [
+        0,
+        1
+       ],
+       "sport": "tennis",
+       "status_class": "void",
+       "tiebreaks": {},
+       "walkover": false,
+       "winner_code": null
+      },
+      "source": "event",
+      "to": "void",
+      "type": "status_changed"
+     }
+    ],
+    "state": {
+     "class": "void",
+     "done": true,
+     "near_end": false,
+     "play_start": 1790684764,
+     "score": [
+      0,
+      1
+     ],
+     "start_ts": 1790684100,
+     "stuck": false,
+     "tournament_id": null
+    }
+   }
+  ]
+ }
+}
