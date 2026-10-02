@@ -418,11 +418,8 @@ def test_the_schedule_writer_stores_what_the_legacy_writer_wrote(league: sf.Leag
 
     written = store_dump.dump(data)
     assert written["schedules"] == {key: expected}
-    # Eski düzende yalnızca sezon özeti CSV'si kalır (geçici köprü, RD-3'e kadar), eski yazıcınınkiyle aynı baytlar;
-    # tur / sayfa dosyaları ve özet JSON'u yazılmaz
-    legacy_files = {name: blob for name, blob in tree(data).items() if name.startswith("matches/")}
-    csv_name = f"matches/{sf.league_dir(league)}/{sf.season_dir(season)}_summary.csv"
-    assert legacy_files == {csv_name: tree(built.data_dir)[csv_name]}
+    # Eski düzende hiçbir dosya yazılmaz: tur / sayfa dosyaları, özet JSON'u ve özet CSV'si (karar S4)
+    assert [name for name in tree(data) if name.startswith("matches/")] == []
 
     store = open_store(data)
     rows = QueryService(store).season_matches_legacy(season.id, league.id, only_finished=False)
