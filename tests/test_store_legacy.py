@@ -35,7 +35,7 @@ from src.config_manager import ConfigManager
 from src.match_data_fetcher import MatchDataFetcher
 from src.paths import safe_name
 from src.services import stats as stats_service
-from src.store import codec, legacy
+from src.store import codec, layout, legacy
 from src.store.errors import LayoutError, PayloadCorrupt, PayloadMissing, StoreError
 from src.store.legacy import LegacyEvent, LegacyProblem, LegacyReader, LegacyReport, LegacySliceError
 from src.web.routes import matches as matches_routes
@@ -781,9 +781,64 @@ def test_read_payload(old_forms: sf.LegacyFixture) -> None:
     ("round_x.json", None), ("round_.json", None), ("events_prev_0.json", None), ("events_last_x.json", None),
     ("round_1.csv", None), ("round_1_matches.csv", None), ("summary.json", None),
     ("round_1_çeyrek.json", None), (f"round_1_{'x' * 80}.json", None),
+    # slug'ında büyük harf olan tur dosyası: alt anahtar küçük harfe katlanır (v3 alt anahtarları küçük harftir)
+    ("round_1_Final.json", ("round", "round_1_final")), ("round_29_FINAL.json", ("round", "round_29_final")),
+    ("round_3_Round-of-16.json", ("round", "round_3_round-of-16")),
+    ("round_2_Qualification.Round_1.json", ("round", "round_2_qualification.round_1")),
+    # katlanan yalnızca slug'dır: önekler ve uzantı yazıcının yazdığı gibi küçük harf olmalı
+    ("Round_1.json", None), ("ROUND_1_final.json", None), ("round_1_Final.JSON", None),
+    ("Events_last_0.json", None), ("events_Last_0.json", None),
+    ("round_1_Çeyrek.json", None), (f"round_1_{'X' * 80}.json", None), (f"round_1_{'X' * 72}.json",
+                                                                        ("round", f"round_1_{'x' * 72}")),
 ])
 def test_schedule_sub(name: str, expected: Optional[Tuple[str, str]]) -> None:
     assert legacy.schedule_sub(name) == expected
+    if expected is not None:
+        assert expected[1] == expected[1].lower() == layout.validate_sub(expected[1])
+
+
+def test_round_file_with_an_upper_case_slug_is_a_schedule_page(tmp_path: Path) -> None:
+    """
+    FX-4'ten beri v3 alt anahtarları küçük harftir; `round_29_Final.json` o günden beri program sayfası
+    sayılmıyor, `unknown_name` olarak bildiriliyordu. Alt anahtar katlanır, dosyanın adı ve yolu aynı kalır.
+    """
+    season = "matches/19_FA_Cup/97110_FA_Cup_26_27"
+    write(tmp_path, f"{season}/round_28_semifinals.json", {"events": [{"id": 1}], "_complete": True}, sf.BASE_MTIME)
+    write(tmp_path, f"{season}/round_29_Final.json", {"events": [{"id": 2}], "_complete": True}, sf.BASE_MTIME + 1)
+    write(tmp_path, f"{season}/Round_30.json", {"events": [{"id": 3}]}, sf.BASE_MTIME + 2)
+    reader = LegacyReader(tmp_path)
+    report = LegacyReport()
+    pages = reader.schedule_pages(report)
+
+    assert [(p.path, p.kind, p.sub, p.superseded_by) for p in pages] == [
+        (f"{season}/round_28_semifinals.json", "round", "round_28_semifinals", None),
+        (f"{season}/round_29_Final.json", "round", "round_29_final", None),
+    ]
+    schedule = reader.read_schedule(pages[1])
+    assert (schedule.payload, schedule.meta) == ({"events": [{"id": 2}]}, {"complete": True})
+    assert reader.signature(pages[1].path) is not None and (tmp_path / season / "round_29_Final.json").is_file()
+    assert [(p.path, p.kind) for p in report.problems] == [(f"{season}/Round_30.json", "unknown_name")]
+    assert report.superseded == []
+
+
+def test_round_files_that_differ_only_in_case_are_one_page(tmp_path: Path) -> None:
+    """Aynı dizinde `round_1_Final.json` ve `round_1_final.json`: tek sayfa, en yenisi geçerli."""
+    season = "matches/19_FA_Cup/97110_FA_Cup_26_27"
+    write(tmp_path, f"{season}/round_1_final.json", {"events": [{"id": 1}]}, sf.BASE_MTIME)
+    write(tmp_path, f"{season}/round_1_Final.json", {"events": [{"id": 2}]}, sf.BASE_MTIME + 5)
+    if len(os.listdir(tmp_path / season)) != 2:
+        pytest.skip("dosya sistemi büyük/küçük harf ayırmıyor: iki ad tek dosya")
+    reader = LegacyReader(tmp_path)
+    report = LegacyReport()
+    pages = reader.schedule_pages(report)
+
+    assert [(p.path, p.sub, p.superseded_by) for p in pages] == [
+        (f"{season}/round_1_final.json", "round_1_final", f"{season}/round_1_Final.json"),
+        (f"{season}/round_1_Final.json", "round_1_final", None),
+    ]
+    assert [(s.kind, s.key, s.path, s.winner) for s in report.superseded] == [
+        ("schedule", "19/97110/round_1_final", f"{season}/round_1_final.json", f"{season}/round_1_Final.json")]
+    assert report.problems == []
 
 
 def test_schedule_pages_of_the_canonical_fixture(canonical: sf.LegacyFixture) -> None:

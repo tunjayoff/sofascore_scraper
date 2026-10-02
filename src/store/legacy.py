@@ -398,6 +398,11 @@ def schedule_sub(file_name: str) -> Optional[Tuple[str, str]]:
     Program dosyasının adından (tür, v3 alt anahtarı): `round_12.json` → ("round", "round_12"),
     `round_3_final.json` → ("round", "round_3_final"), `events_last_0.json` → ("page", "last_0").
     Program dosyası değilse ya da alt anahtar v3 kuralına uymuyorsa None.
+
+    v3 alt anahtarları küçük harftir (layout.validate_sub büyük harfi reddeder), eski yazıcı ise tur
+    dosyasının adına SofaScore'un slug'ını olduğu gibi koyar. Slug'ında büyük harf olan tur dosyası
+    (`round_1_Final.json`) yine program sayfasıdır: alt anahtar küçük harfe katlanır ("round_1_final"),
+    dosyanın diskteki adı değişmez. `round_` ve `events_` önekleri yazıcının yazdığı gibi küçük harf olmalıdır.
     """
     if not file_name.endswith(".json"):
         return None
@@ -408,7 +413,7 @@ def schedule_sub(file_name: str) -> Optional[Tuple[str, str]]:
     if not _ROUND_RE.fullmatch(stem):
         return None
     try:
-        return "round", layout.validate_sub(stem)
+        return "round", layout.validate_sub(stem.lower())
     except LayoutError:
         return None
 
@@ -843,7 +848,8 @@ class LegacyReader:
         """
         Bütün tur dosyaları ve olay sayfaları, mtime sırasıyla (eşitlikte yola göre): katalog liste
         satırlarını bu sırayla işler (bölüm 3.4). İçerik okunmaz. Bir sezonun aynı sayfası iki dizinde
-        duruyorsa en yenisi geçerlidir (eşitlikte yolu küçük olan); ötekilerin `superseded_by` alanı doludur.
+        duruyorsa (ya da aynı dizinde adları yalnızca büyük/küçük harfle ayrılan iki tur dosyası varsa) en
+        yenisi geçerlidir (eşitlikte yolu küçük olan); ötekilerin `superseded_by` alanı doludur.
         """
         problems: List[LegacyProblem] = []
         pages: List[LegacySchedulePage] = []
