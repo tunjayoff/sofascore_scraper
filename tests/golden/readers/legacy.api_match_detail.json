@@ -518,7 +518,115 @@
    }
   }
  },
- "17018554": {"status": 404, "body": {"detail": "Match details not found."}},
+ "17018554": {
+  "status": 200,
+  "body": {
+   "basic": {
+    "tournament": {
+     "name": "Premier League",
+     "slug": "premier-league",
+     "category": {"name": "England", "slug": "england", "sport": {"name": "Football", "slug": "football", "id": 1}},
+     "uniqueTournament": {
+      "name": "Premier League",
+      "slug": "premier-league",
+      "category": {"name": "England", "slug": "england", "sport": {"name": "Football", "slug": "football", "id": 1}},
+      "id": 17,
+      "hasEventPlayerStatistics": true
+     }
+    },
+    "season": {"name": "Premier League 26/27", "year": "26/27", "id": 96668},
+    "roundInfo": {"round": 1},
+    "status": {"code": 100, "description": "Ended", "type": "finished"},
+    "winnerCode": 2,
+    "homeScore": {"current": 0, "display": 0, "period1": 0, "period2": 0, "normaltime": 0},
+    "awayScore": {"current": 2, "display": 2, "period1": 1, "period2": 1, "normaltime": 2},
+    "time": {"injuryTime1": 2, "injuryTime2": 3, "currentPeriodStartTimestamp": 1790690598, "lastPeriodEndTimestamp": 1790689697},
+    "changes": {"changes": ["status.code", "status.description", "status.type"], "changeTimestamp": 1790693506},
+    "homeTeam": {"name": "Brentford", "slug": "brentford", "id": 1850},
+    "awayTeam": {"name": "Burnley", "slug": "burnley", "id": 1629},
+    "id": 17018554,
+    "slug": "brentford-burnley",
+    "startTimestamp": 1790686800,
+    "venue": {"name": "Brentford Stadium", "id": 554},
+    "referee": {"name": "Referee 4", "id": 204}
+   },
+   "statistics": {
+    "statistics": [
+     {
+      "period": "ALL",
+      "groups": [
+       {
+        "groupName": "Match overview",
+        "statisticsItems": [
+         {"name": "Ball possession", "home": "47", "away": "50", "compareCode": 2, "statisticsType": "positive", "valueType": "event", "homeValue": 47, "awayValue": 50, "renderType": 1, "key": "ballPossession"},
+         {"name": "Total shots", "home": "12", "away": "15", "compareCode": 2, "statisticsType": "positive", "valueType": "event", "homeValue": 12, "awayValue": 15, "renderType": 1, "key": "totalShotsOnGoal"}
+        ]
+       }
+      ]
+     },
+     {
+      "period": "1ST",
+      "groups": [
+       {
+        "groupName": "Match overview",
+        "statisticsItems": [
+         {"name": "Ball possession", "home": "23", "away": "25", "compareCode": 2, "statisticsType": "positive", "valueType": "event", "homeValue": 23, "awayValue": 25, "renderType": 1, "key": "ballPossession"},
+         {"name": "Total shots", "home": "6", "away": "7", "compareCode": 2, "statisticsType": "positive", "valueType": "event", "homeValue": 6, "awayValue": 7, "renderType": 1, "key": "totalShotsOnGoal"}
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   "team_streaks": {
+    "general": [
+     {"name": "Wins", "value": "4", "team": "home", "continued": true},
+     {"name": "No losses", "value": "7", "team": "away", "continued": true}
+    ],
+    "head2head": [{"name": "More than 2.5 goals", "value": "4/5", "team": "both", "continued": true}]
+   },
+   "pregame_form": {
+    "homeTeam": {"avgRating": "6.04", "position": 5, "value": "14", "form": ["W", "D", "W", "L", "W"]},
+    "awayTeam": {"avgRating": "6.11", "position": 9, "value": "12", "form": ["L", "W", "D", "D", "W"]},
+    "label": "Pts"
+   },
+   "h2h": {"teamDuel": {"homeWins": 4, "awayWins": 1, "draws": 2}, "managerDuel": null},
+   "lineups": {
+    "confirmed": true,
+    "home": {
+     "players": [
+      {"player": {"name": "Brentford Starter", "id": 18501}, "shirtNumber": 1, "position": "G", "substitute": false},
+      {
+       "player": {"name": "Brentford Substitute", "id": 18502},
+       "shirtNumber": 12,
+       "position": "F",
+       "substitute": true
+      }
+     ],
+     "formation": "4-3-3"
+    },
+    "away": {
+     "players": [
+      {"player": {"name": "Burnley Starter", "id": 16291}, "shirtNumber": 1, "position": "G", "substitute": false},
+      {"player": {"name": "Burnley Substitute", "id": 16292}, "shirtNumber": 12, "position": "F", "substitute": true}
+     ],
+     "formation": "4-4-2"
+    }
+   },
+   "incidents": {
+    "incidents": [
+     {"text": "FT", "homeScore": 0, "awayScore": 2, "isLive": false, "time": 90, "incidentType": "period"},
+     {
+      "player": {"name": "Brentford Starter", "id": 18501},
+      "isHome": true,
+      "time": 24,
+      "incidentClass": "regular",
+      "incidentType": "goal"
+     }
+    ]
+   }
+  }
+ },
  "17018572": {"status": 404, "body": {"detail": "Match details not found."}},
  "17099711": {
   "status": 200,
@@ -629,6 +737,101 @@
    }
   }
  },
- "17185003": {"status": 500, "body": {"detail": "Error parsing match data."}},
+ "17185003": {
+  "status": 200,
+  "body": {
+   "basic": {
+    "tournament": {
+     "name": "Premier League",
+     "slug": "premier-league",
+     "category": {"name": "England", "slug": "england", "sport": {"name": "Football", "slug": "football", "id": 1}},
+     "uniqueTournament": {
+      "name": "Premier League",
+      "slug": "premier-league",
+      "category": {"name": "England", "slug": "england", "sport": {"name": "Football", "slug": "football", "id": 1}},
+      "id": 17,
+      "hasEventPlayerStatistics": true
+     }
+    },
+    "season": {"name": "Premier League 26/27", "year": "26/27", "id": 96668},
+    "roundInfo": {"round": 2},
+    "status": {"code": 100, "description": "Ended", "type": "finished"},
+    "winnerCode": 1,
+    "homeScore": {"current": 5, "display": 5, "period1": 3, "period2": 2, "normaltime": 5},
+    "awayScore": {"current": 0, "display": 0, "period1": 0, "period2": 0, "normaltime": 0},
+    "time": {"periodLength": 2700, "overtimeLength": 900, "totalPeriodCount": 2, "currentPeriodStartTimestamp": 1790691180},
+    "changes": {
+     "changes": [
+      "providerLock.status", "providerLock.statusSource", "status.code", "status.description", "status.type"
+     ],
+     "changeTimestamp": 1790693899
+    },
+    "homeTeam": {"name": "Aston Villa", "slug": "aston-villa", "id": 2203},
+    "awayTeam": {"name": "Wolverhampton", "slug": "wolverhampton", "id": 3370},
+    "id": 17185003,
+    "slug": "aston-villa-wolverhampton",
+    "startTimestamp": 1790687400,
+    "venue": {"name": "Aston Villa Stadium", "id": 503},
+    "referee": {"name": "Referee 3", "id": 203}
+   },
+   "team_streaks": {
+    "general": [
+     {"name": "Wins", "value": "5", "team": "home", "continued": true},
+     {"name": "No losses", "value": "6", "team": "away", "continued": false}
+    ],
+    "head2head": [{"name": "More than 2.5 goals", "value": "4/5", "team": "both", "continued": true}]
+   },
+   "pregame_form": {
+    "homeTeam": {"avgRating": "6.43", "position": 8, "value": "23", "form": ["W", "D", "W", "L", "W"]},
+    "awayTeam": {"avgRating": "6.50", "position": 11, "value": "11", "form": ["L", "W", "D", "D", "W"]},
+    "label": "Pts"
+   },
+   "h2h": {"teamDuel": {"homeWins": 3, "awayWins": 1, "draws": 3}, "managerDuel": null},
+   "lineups": {
+    "confirmed": true,
+    "home": {
+     "players": [
+      {"player": {"name": "Aston Villa Starter", "id": 22031}, "shirtNumber": 1, "position": "G", "substitute": false},
+      {
+       "player": {"name": "Aston Villa Substitute", "id": 22032},
+       "shirtNumber": 12,
+       "position": "F",
+       "substitute": true
+      }
+     ],
+     "formation": "4-3-3"
+    },
+    "away": {
+     "players": [
+      {
+       "player": {"name": "Wolverhampton Starter", "id": 33701},
+       "shirtNumber": 1,
+       "position": "G",
+       "substitute": false
+      },
+      {
+       "player": {"name": "Wolverhampton Substitute", "id": 33702},
+       "shirtNumber": 12,
+       "position": "F",
+       "substitute": true
+      }
+     ],
+     "formation": "4-4-2"
+    }
+   },
+   "incidents": {
+    "incidents": [
+     {"text": "FT", "homeScore": 5, "awayScore": 0, "isLive": false, "time": 90, "incidentType": "period"},
+     {
+      "player": {"name": "Aston Villa Starter", "id": 22031},
+      "isHome": true,
+      "time": 13,
+      "incidentClass": "regular",
+      "incidentType": "goal"
+     }
+    ]
+   }
+  }
+ },
  "1": {"status": 404, "body": {"detail": "Match details not found."}}
 }

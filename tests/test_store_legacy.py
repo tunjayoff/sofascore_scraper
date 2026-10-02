@@ -4,8 +4,8 @@ src/store/legacy.py: eski düzenin salt okunur okuyucusu (plan maddesi ST-05).
 Üç şey denetlenir:
   1. Okuyucu, `tests/store_fixtures.py`'nin kurduğu her biçimi (L1-L5, program, özetler, sezon listeleri,
      değişiklik günlüğü, izleyici dosyaları) tanır ve bölüm 2.3 / 5.1 / 5.2'deki kuralları uygular.
-  2. Bugünkü okuyucularla ilişkisi: maç kümesi `MatchDataFetcher._build_match_index` ile aynıdır (tek fark
-     aşağıda adıyla yazılıdır), beklenen dilimler `_expected_slices` ile aynıdır, ve bugünkü ağaç
+  2. Bugünkü okuyucularla ilişkisi: maç kümesi `MatchDataFetcher._build_match_index` ile aynıdır (RD-1'den
+     beri o da depodan okur), beklenen dilimler `_expected_slices` ile aynıdır, ve bugünkü ağaç
      gezginlerinin hangisinin daha az ya da daha çok maç bulduğu `WALKER_DIFFERENCES` tablosunda durur.
   3. Modül yalnızca okur ve katman kuralına uyar.
 
@@ -127,8 +127,9 @@ def test_names_equal_the_writers_constants() -> None:
 
 # --- keşif: her biçim ---------------------------------------------------------------------------
 
-# Okuyucunun bulup bugünkü hiçbir gezginin bulamadığı tek kayıt: yalnızca birleşik dosyası (L4) olan düz
-# dizin. Tasarım (5.1) onu maç dizini sayar; bugün `basic.json`'ı olmayan dizin hiçbir yerde görünmez.
+# Okuyucunun bulup dizin ağacını gezen hiçbir gezginin bulamadığı tek kayıt: yalnızca birleşik dosyası (L4)
+# olan düz dizin. Tasarım (5.1) onu maç dizini sayar. Depodan okuyanlar (RD-1: `_find_match_path`,
+# `_build_match_index`, `/api/matches/{id}`) onu bulur; gezginler için `basic.json`'ı olmayan dizin görünmez.
 COMBINED_ONLY = {"legacy": {17018554}}
 # Dizini olduğu halde maç sayılmayanlar (olay yükü yok): fixture adı → maç id'leri
 NO_EVENT_PAYLOAD = {"legacy": {17018572}}
@@ -138,7 +139,7 @@ def test_event_ids_equal_build_match_index(fx: sf.LegacyFixture) -> None:
     events, _ = scan(fx.data_dir)
     index = fetcher_for(fx.data_dir)._build_match_index()
     assert all(mid.isdigit() for mid in index)
-    assert set(events) - COMBINED_ONLY.get(fx.name, set()) == {int(mid) for mid in index}
+    assert set(events) == {int(mid) for mid in index}  # RD-1: dizin de depodan okunur (birleşik dosyalı dizin dahil)
     assert COMBINED_ONLY.get(fx.name, set()) <= set(events)
     assert set(events) == set(fx.detail_ids) - NO_EVENT_PAYLOAD.get(fx.name, set())
 
@@ -248,12 +249,16 @@ def test_event_directory_needs_a_payload_whose_id_is_the_directory_name(tmp_path
 
 
 def test_first_level_directory_with_basic_json_is_a_flat_event_as_today(tmp_path: Path) -> None:
-    """`_build_match_index` gibi: birinci düzeyde basic.json varsa dizin düz kayıttır, altına bakılmaz."""
+    """
+    Birinci düzeyde basic.json varsa dizin düz kayıttır, altına bakılmaz (RD-1 öncesinin `_build_match_index`'i
+    gibi). O dizin, kimliği adına uymadığı için maç sayılmaz; depodan okuyan `_build_match_index` de onu vermez
+    (eskiden dizin adıyla, "17_PL" olarak veriyordu).
+    """
     write(tmp_path, "match_details/17_PL/basic.json", event_of(1))
     write(tmp_path, "match_details/17_PL/season_x/7/basic.json", event_of(7))
     events, report = scan(tmp_path)
     assert events == {} and [(p.path, p.kind) for p in report.problems] == [("match_details/17_PL", "id_mismatch")]
-    assert set(fetcher_for(tmp_path)._build_match_index()) == {"17_PL"}
+    assert fetcher_for(tmp_path)._build_match_index() == {}
 
 
 # --- aynı maç birden çok yerde -------------------------------------------------------------------
@@ -554,10 +559,9 @@ def test_missing_slices_equal_today_s_refill_need(fx: sf.LegacyFixture, monkeypa
     for eid, event in events.items():
         missing = [k for k in expected_from_record(event) if event.slice(k) is None or event.slice(k).state != "ok"]
         need = fetcher._needs_detail_fetch(str(eid))
+        assert (need == "refill") is bool(missing), (event.path, need, missing)
         if eid in COMBINED_ONLY.get(fx.name, set()):
-            assert need == "full" and not missing  # bugün bulunamıyor; okuyucuya göre kayıt tam
-        else:
-            assert (need == "refill") is bool(missing), (event.path, need, missing)
+            assert need == "none" and not missing  # RD-1'den önce bulunamıyordu ("full"); kayıt tam
 
 
 # --- gözlem -------------------------------------------------------------------------------------
@@ -597,7 +601,7 @@ def test_observation_time_parsing(tmp_path: Path, value: Any, expected: Optional
 
 
 def test_combined_file_next_to_basic_json(old_forms: sf.LegacyFixture) -> None:
-    """Olay yükü basic.json'dan, dilimler birleşik dosyadan; gözlem dosyası da okunur (bugünkü yükleyici okumaz)."""
+    """Olay yükü basic.json'dan, dilimler birleşik dosyadan; gözlem dosyası da okunur (RD-1'den beri yükleyici de okur)."""
     events, _ = scan(old_forms.data_dir)
     event = events[17099711]
     base = f"{PL_DIR}/17099711"
@@ -607,8 +611,9 @@ def test_combined_file_next_to_basic_json(old_forms: sf.LegacyFixture) -> None:
     assert {(s.path, s.in_combined, s.size) for s in event.slices[1:]} == {(f"{base}/17099711.json", True, None)}
     assert event.observation.observed_at == dt.datetime(2026, 9, 15, 13, 10, tzinfo=UTC)
     today = fetcher_for(old_forms.data_dir)._load_match_data_from_dir(str(old_forms.data_dir / base), "17099711")
+    observation = today.pop("observation")  # RD-1: depodan okunur; eskiden gözlem okunmaz, kayıt hiç yenilenmezdi
     assert {("event" if k == "basic" else k): v for k, v in today.items()} == event.payloads
-    assert "observation" not in today  # altın dosyalardaki 5. tuhaflık: bu kayıt bugün hiç yenilenmez
+    assert observation["observed_at_utc"] == "2026-09-15T13:10:00+00:00"
 
 
 def test_combined_file_alone_is_an_event_directory(old_forms: sf.LegacyFixture) -> None:
@@ -617,7 +622,9 @@ def test_combined_file_alone_is_an_event_directory(old_forms: sf.LegacyFixture) 
     assert (event.path, event.dir.has_basic, event.dir.combined) == ("match_details/17018554", False, True)
     assert {(s.path, s.in_combined) for s in event.slices} == {("match_details/17018554/17018554.json", True)}
     assert counters(event) == ALL_OK and event.event["id"] == 17018554
-    assert fetcher_for(old_forms.data_dir)._find_match_path("17018554") is None  # bugün bulunamıyor
+    # RD-1: yer katalogdan sorulur; dizini gezen eski arama bu kaydı bulamıyordu
+    assert fetcher_for(old_forms.data_dir)._find_match_path("17018554") == (
+        None, None, os.path.join(str(old_forms.data_dir), "match_details", "17018554"))
 
 
 def test_slice_file_wins_over_the_combined_copy(tmp_path: Path) -> None:
@@ -1058,9 +1065,8 @@ WALKERS = ("build_match_index", "find_match_path", "refresh_due_ids_walk", "rese
 FLAT = {16867839, 17018554}  # legacy fixture: düz dizinler (17018554 yalnızca birleşik dosya)
 NO_TOURNAMENT = {15500001, 15500002, 15500003}  # legacy fixture: _no_tournament/<spor>/ altındakiler
 WALKER_DIFFERENCES: Dict[Tuple[str, str], Tuple[Set[int], Set[int]]] = {
-    # yalnızca birleşik dosyası olan dizini bugün hiçbir gezgin bulamaz
-    ("legacy", "build_match_index"): (COMBINED_ONLY["legacy"], set()),
-    ("legacy", "find_match_path"): (COMBINED_ONLY["legacy"], set()),
+    # yalnızca birleşik dosyası olan dizini dizin ağacını gezen hiçbir gezgin bulamaz (`build_match_index` ve
+    # `find_match_path` RD-1'den beri depodan okur: okuyucuyla aynı kümeyi bulurlar)
     ("legacy", "csv_export"): (COMBINED_ONLY["legacy"], set()),
     ("legacy", "web_missing_details"): (COMBINED_ONLY["legacy"], set()),  # `**/basic.json`: düz dizini bulur
     # üç düzey bekleyenler düz dizinleri görmez

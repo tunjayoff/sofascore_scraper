@@ -1001,17 +1001,15 @@ def test_missing_equals_the_file_based_refill_set(built: Dict[str, sf.LegacyFixt
     assert refill == {event_id for event_id, need in needs.items() if need == "refill"}
     for event_id in refill - ({AVL} if name == "legacy" else set()):
         assert rows[event_id].missing_keys == _file_missing_keys(fetcher, event_id)
-    # `full`: olay yükü yok. Tek fark: yalnızca birleşik dosyası olan dizini bugünkü okuyucu göremez
+    # `full`: olay yükü yok (RD-1'den beri `_needs_detail_fetch` de depodan okur: birleşik dosyalı dizin dahil eşit)
     full = {event_id for event_id, need in needs.items() if need == "full"}
-    assert {event_id for event_id, row in rows.items() if not row.has_event_payload} == full - (
-        {BRE} if name == "legacy" else set())
+    assert {event_id for event_id, row in rows.items() if not row.has_event_payload} == full
     if name == "canonical":
         assert len(refill) == 8 and len(full) == 12
     if name == "legacy":
         assert refill == {15500003, AVL} and store.events.get(BRE).has_event_payload  # type: ignore[union-attr]
-        # yarıda kesilmiş dilim dosyası: bugünkü okuyucu maçın bütün dosyalarını bırakır, katalog yalnızca o dilimi
-        assert rows[AVL].missing_keys == ("statistics",)
-        assert _file_missing_keys(fetcher, AVL) == tuple(sf.REQUIRED_SLICES)
+        # yarıda kesilmiş dilim dosyası yalnızca o dilimi düşürür (RD-1 öncesinin okuyucusu maçın bütün dosyalarını bırakırdı)
+        assert rows[AVL].missing_keys == ("statistics",) == _file_missing_keys(fetcher, AVL)
 
 
 # --- refresh_candidates -------------------------------------------------------------------------------
@@ -1057,8 +1055,8 @@ def test_refresh_candidates_equal_refresh_due_ids(built: Dict[str, sf.LegacyFixt
                                                   monkeypatch: pytest.MonkeyPatch, name: str) -> None:
     """
     `refresh_due_ids` eksik dilimi olan maçı vermez (o `refill`dir): adaylardan `missing()` çıkarılınca iki
-    küme eşittir. Eski biçimlerdeki bilinen farklar: birleşik dosyası olan kaydın gözlemini bugünkü okuyucu
-    görmüyor (LIV: gözlemsiz sayılıyor), düz dizinleri de `refresh_due_ids` gezmiyor (LEE, BRE).
+    küme eşittir. Eski biçimlerdeki bilinen fark: düz dizinleri `refresh_due_ids` gezmiyor (LEE, BRE). Birleşik
+    dosyası olan kaydın (LIV) gözlemi RD-1'den beri iki tarafta da okunur.
     """
     fx = built[name]
     store = open_store(fx.data_dir)
@@ -1072,15 +1070,16 @@ def test_refresh_candidates_equal_refresh_due_ids(built: Dict[str, sf.LegacyFixt
         return set(found) ^ set(expected)
 
     known = differences(catalog(), fetcher.refresh_due_ids())
-    assert known == ({str(LIV)} if name == "legacy" else set())
+    assert known == set()
+    if name == "legacy":
+        assert str(LIV) in fetcher.refresh_due_ids()
     for league_id in fx.leagues:
         scoped = catalog(scope=Scope(tournament_ids=[league_id]))
         assert differences(scoped, fetcher.refresh_due_ids(league_id)) <= known
     with monkeypatch.context() as patch:
         patch.setenv("REFRESH_LEGACY", "true")
         legacy_only = differences(catalog(include_unobserved=True), fetcher.refresh_due_ids())
-        # düz dizinler (biri yalnızca birleşik dosya): bugünkü gezinti bunlara ulaşmaz. LIV iki tarafta da var:
-        # katalogda geçici kayıt olarak, dosya tarafında gözlemsiz sayıldığı için
+        # düz dizinler (biri yalnızca birleşik dosya): bugünkü gezinti bunlara ulaşmaz
         assert legacy_only == ({str(LEE), str(BRE)} if name == "legacy" else set())
     with monkeypatch.context() as patch:
         patch.setenv("REFRESH_WINDOW_HOURS", "0")

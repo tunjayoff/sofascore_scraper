@@ -11,7 +11,7 @@ import random
 import re
 import datetime as dt
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Union, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union, Tuple
 from pathlib import Path
 import asyncio
 import threading
@@ -25,13 +25,15 @@ from src.config_manager import ConfigManager
 from src.exceptions import ResourceNotFoundError, StorageError
 from src.fsutil import atomic_write_json
 # Gölge kip (docs/design/01-storage.md 3.5): her yazmadan sonra Store'un bir `shadow_*` kancası çağrılır ve
-# katalog yazılanı diskten yeniden dizinler. Paket kökü üzerinden: kancalar ilk çağrıda yüklenir.
+# katalog yazılanı diskten yeniden dizinler. Kayıtlı maçlar da aynı kökten okunur (`open_store(...).events`).
+# Paket kökü üzerinden: cephe ilk çağrıda yüklenir.
 from src import store as store_hooks
 from src.utils import make_api_request, ensure_directory
 from src.match_fetcher import MatchFetcher
 from src.sports import DETAIL_SLICES, event_sport_slug, get_slice, slices_for
 from src.status import OBSERVATION_KEY, observation_record
 from src.refresh import SCORE_CHANGES_FILE, change_row, diff_basic, refresh_due
+from src.services.query import QueryService
 # Sonuç tipi ve "veri var mı" yüklemleri src/slices.py'de durur. `X as X` biçimindekiler buradan taşınan
 # adlardır: eski import'lar (from src.match_data_fetcher import SliceOutcome, SLICE_*) çalışmaya devam eder.
 from src.slices import (
@@ -49,6 +51,9 @@ from src.slices import (
 )
 
 from src.logger import get_logger
+
+if TYPE_CHECKING:
+    from src.store import EventRow, Store
 
 logger = get_logger("MatchDataFetcher")
 
@@ -105,6 +110,31 @@ def _event_sport(basic: Dict[str, Any]) -> str:
     return event_sport_slug(basic) or ""
 
 
+# Eski düzendeki kayıtların katalogdaki `layout` değeri (src/store)
+_LEGACY_LAYOUT = "legacy"
+_MAX_EVENT_ID = 2 ** 63 - 1  # kataloğun saklayabildiği en büyük kimlik
+
+
+def _stored_observation(row: "EventRow") -> Optional[Dict[str, Any]]:
+    """
+    Katalog satırından observation.json'ın karşılığı; kayıt gözlemsizse (eski kayıt) None.
+    `status_regressed` yapışkan bayraktır: yalnızca doğruysa yazılır (refresh_match gibi).
+    Tarih olarak yazılamayan bir gözlem anı (bozuk kayıt) gözlem yokmuş gibi işlenir.
+    """
+    observed: Optional[str] = None
+    if row.observed_at is not None:
+        try:
+            observed = dt.datetime.fromtimestamp(row.observed_at, dt.timezone.utc).isoformat(timespec="seconds")
+        except (OverflowError, OSError, ValueError):
+            observed = None
+    if observed is None and not row.status_regressed:
+        return None
+    observation: Dict[str, Any] = {"observed_at_utc": observed, "change_ts": row.change_ts}
+    if row.status_regressed:
+        observation["status_regressed"] = True
+    return observation
+
+
 @dataclass
 class SingleFetchReport:
     """
@@ -139,72 +169,74 @@ class SingleFetchReport:
 class MatchDataFetcher:
     """SofaScore API'sinden detaylı maç verilerini çeken ve işleyen sınıf."""
 
-    def _find_match_path(self, match_id: str) -> Optional[Tuple[str, str, str]]:
+    # --- kayıtlı maçların okunması: depo üzerinden (docs/design/01-storage.md 2.3, 5.2; plan maddesi RD-1) ---
+    #
+    # Bir maçın yeri ve yükleri kataloğa sorulur (`Store.events`); dizin ağacı gezilmez. Katalog, depo
+    # açılırken dosyalarla eşitlenir ve aşağıdaki yazıcıların her yazmasından sonra güncellenir (`shadow_*`
+    # kancaları). Eski, dizini dosya dosya okuyan okuyuculardan farklar yalnızca eski biçimli kayıtlarda
+    # görünür (01-storage.md 5.1 ve 5.2):
+    #
+    #   * yalnızca birleşik dosyası (`<id>/<id>.json`) olan dizin de bir maçtır (eskiden bulunamıyordu);
+    #   * dilim önce kendi dosyasından, yoksa birleşik dosyadan okunur ve gözlem her zaman okunur (eskiden
+    #     birleşik dosya varsa yalnızca o okunuyordu: böyle bir kayıt hiç yenilenmiyordu);
+    #   * okunamayan (yarıda kesilmiş) dilim dosyası yalnızca o dilimi düşürür (eskiden ondan sonraki
+    #     dilimler de okunmuyordu);
+    #   * aynı maç iki dizinde duruyorsa olay yükü en yeni olan kopya geçerlidir (eskiden arama lig/sezon
+    #     dizinindekini, iş önbelleği ilk listeleneni seçiyordu);
+    #   * adı kimlik olmayan ya da içindeki yükün kimliği adına uymayan dizin maç sayılmaz.
+
+    def _store(self) -> "Store":
+        """Veri dizininin deposu. Süreçte dizin başına tek nesnedir; ilk açılış kataloğu kurar ya da uzlaştırır."""
+        return store_hooks.open_store(self.data_dir)
+
+    def _stored_event(self, match_id: Union[int, str]) -> Optional["EventRow"]:
         """
-        Find the full path information for a match ID in the new folder structure.
-
-        Args:
-            match_id: Match ID to search for
-
-        Returns:
-            Optional[Tuple[str, str, str]]: Tuple of (league_dir, season_dir, full_path) if found, None otherwise
+        Olay yükü eski düzende duran maçın katalog satırı; öyle bir kayıt yoksa None. Yalnızca bir program
+        sayfasından bilinen maç (yükü yok) ve kurallı bir kimlik olmayan metin ("007", "abc") kayıt değildir.
         """
-        match_id = str(match_id)
-        index = getattr(self, "_match_index", None)
-        if index is not None:
-            return index.get(match_id)
+        text = str(match_id)
+        if not (text.isascii() and text.isdigit()) or str(int(text)) != text or int(text) > _MAX_EVENT_ID:
+            return None
+        row = self._store().events.get(int(text))
+        if row is None or not row.has_event_payload or row.layout != _LEGACY_LAYOUT or not row.path:
+            return None
+        return row
 
-        # Search through the directory structure
-        for league_name in os.listdir(self.match_details_dir):
-            league_path = os.path.join(self.match_details_dir, league_name)
-            if not os.path.isdir(league_path) or league_name == "processed":
-                continue
-
-            for season_name in os.listdir(league_path):
-                season_path = os.path.join(league_path, season_name)
-                if not os.path.isdir(season_path):
-                    continue
-
-                match_path = os.path.join(season_path, match_id)
-                if os.path.isdir(match_path) and os.path.exists(os.path.join(match_path, "basic.json")):
-                    return (league_name, season_name, match_path)
-
-        # Check old structure as fallback
-        old_match_path = os.path.join(self.match_details_dir, match_id)
-        if os.path.isdir(old_match_path) and os.path.exists(os.path.join(old_match_path, "basic.json")):
-            return (None, None, old_match_path)
-
+    def _legacy_location(self, row: "EventRow") -> Optional[Tuple[Optional[str], Optional[str], str]]:
+        """Katalogdaki eski düzen yolu (`match_details/[<lig>/<sezon>/]<id>`) → (lig dizini, sezon dizini, maç dizini)."""
+        parts = str(row.path).strip("/").split("/")
+        if parts[0] != os.path.basename(self.match_details_dir):
+            return None
+        if len(parts) == 2:  # eski düz yapı
+            return (None, None, os.path.join(self.match_details_dir, parts[1]))
+        if len(parts) == 4:
+            return (parts[1], parts[2], os.path.join(self.match_details_dir, *parts[1:]))
         return None
 
+    def _find_match_path(self, match_id: str) -> Optional[Tuple[Optional[str], Optional[str], str]]:
+        """
+        Kayıtlı maçın yeri: (lig dizini adı, sezon dizini adı, maç dizini); düz kayıtta (`match_details/<id>`)
+        ilk ikisi None. Kayıt yoksa None. Yeri katalog söyler (birincil anahtar araması), ağaç gezilmez.
+        """
+        row = self._stored_event(match_id)
+        return self._legacy_location(row) if row is not None else None
+
     def _build_match_index(self) -> Dict[str, Tuple[Optional[str], Optional[str], str]]:
-        """match_id → konum; bir iş boyunca her maç için dizin ağacını baştan taramamak için."""
+        """match_id → konum: detayı eski düzende kayıtlı bütün maçlar (katalogdan). İşler bunu kullanmaz."""
         index: Dict[str, Tuple[Optional[str], Optional[str], str]] = {}
-        if not os.path.isdir(self.match_details_dir):
-            return index
-        for league_name in os.listdir(self.match_details_dir):
-            league_path = os.path.join(self.match_details_dir, league_name)
-            if not os.path.isdir(league_path) or league_name == "processed":
+        for row in self._store().events.iter(store_hooks.EventQuery(has_details=True)):
+            if row.layout != _LEGACY_LAYOUT or not row.path:
                 continue
-            if os.path.exists(os.path.join(league_path, "basic.json")):
-                index.setdefault(league_name, (None, None, league_path))  # eski düz yapı
-                continue
-            for season_name in os.listdir(league_path):
-                season_path = os.path.join(league_path, season_name)
-                if not os.path.isdir(season_path):
-                    continue
-                for mid in os.listdir(season_path):
-                    match_path = os.path.join(season_path, mid)
-                    if os.path.exists(os.path.join(match_path, "basic.json")):
-                        index.setdefault(mid, (league_name, season_name, match_path))
+            location = self._legacy_location(row)
+            if location is not None:
+                index[str(row.id)] = location
         return index
 
     def begin_job_cache(self) -> None:
-        """Bir iş boyunca maç konumlarını ve 'eksik mi' sonuçlarını önbelleğe al."""
-        self._match_index = self._build_match_index()
+        """Bir iş boyunca 'eksik mi' sonuçlarını önbelleğe al (maç konumları katalogdan sorulur, önbelleği yok)."""
         self._need_cache: Dict[str, str] = {}
 
     def end_job_cache(self) -> None:
-        self._match_index = None
         self._need_cache = {}
 
     async def _fetch_match_data_async(self, session, match_id):
@@ -548,29 +580,32 @@ class MatchDataFetcher:
         ensure_directory(self.processed_dir)
 
     def _load_match_data_from_dir(self, match_dir: str, match_id: str) -> Dict[str, Any]:
-        """match_details/.../match_id içinden API ile aynı birleşik sözlüğü yükler."""
+        """
+        Kayıtlı maçın birleşik sözlüğü: `basic`, yükü olan `required` dilimler (tablo sırasıyla) ve varsa
+        `observation`. Depodan okunur (QueryService.match_detail_legacy); kayıt yoksa ya da okunamıyorsa boş
+        sözlük. Dosyası okunamayan dilim sözlükte yer almaz (eksik sayılır ve yeniden istenir).
+
+        match_dir, `_find_match_path`'in verdiği dizindir ve yalnızca eski çağrılar için durur: hangi dizinin
+        okunacağını katalog söyler (aynı maçın iki kopyası varsa olay yükü en yeni olan).
+
+        Gözlem katalog satırından kurulur (gözlem anı tam saniye; `change_ts` saklanan olay yükününküdür):
+        okuyanlar yalnızca `observed_at_utc` ve `status_regressed` alanlarına bakar.
+        """
         mid = str(match_id)
-        result: Dict[str, Any] = {}
-        full_json_path = os.path.join(match_dir, f"{mid}.json")
         try:
-            if os.path.exists(full_json_path):
-                with open(full_json_path, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            for fname in REQUIRED_FILES:
-                if not fname.endswith(".json"):
-                    fname = f"{fname}.json"
-                component = fname[:-5]
-                c_path = os.path.join(match_dir, fname)
-                if os.path.exists(c_path):
-                    with open(c_path, "r", encoding="utf-8") as f:
-                        result[component] = json.load(f)
-            obs_path = os.path.join(match_dir, f"{OBSERVATION_KEY}.json")  # isteğe bağlı; eski kayıtlarda yok
-            if os.path.exists(obs_path):
-                with open(obs_path, "r", encoding="utf-8") as f:
-                    result[OBSERVATION_KEY] = json.load(f)
+            row = self._stored_event(mid)
+            if row is None:
+                return {}
+            result = QueryService(self._store()).match_detail_legacy(row.id)
+            if result is None:
+                return {}
+            observation = _stored_observation(row)
+            if observation is not None:
+                result[OBSERVATION_KEY] = observation
+            return result
         except Exception as e:
-            logger.warning(f"Maç {mid} dizininden yüklenirken hata: {e}")
-        return result
+            logger.warning(f"Match {mid} could not be loaded from the store ({match_dir}): {e}")
+            return {}
 
     # "Bu yanıtta veri var mı" yüklemleri src/slices.py'dedir; metot adları eski çağrılar için durur.
 
@@ -1243,8 +1278,6 @@ class MatchDataFetcher:
         finally:
             store_hooks.shadow_event(self.data_dir, mid, match_dir)
 
-        if getattr(self, "_match_index", None) is not None:
-            self._match_index[mid] = (league_dir_name, season_dir_name, match_dir)
         if getattr(self, "_need_cache", None) is not None:
             self._need_cache.pop(mid, None)
 
