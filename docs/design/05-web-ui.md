@@ -1026,7 +1026,7 @@ The prompt covers the app whenever an API call answers 401 `unauthorized`.
 | Too many attempts | "Too many wrong tokens. Try again in 27 s." with a countdown; the button waits | 401 with `details.reason = "too_many_attempts"`, `Retry-After` | `details.retry_after` |
 | Sign out | in `⋯` and in Settings; only when a token is in use | `POST /api/v1/auth/logout` (P21) | — |
 
-"Tries left" is shown only if the server says it; today it does not, so the line is "Wrong token."
+The server does not say how many attempts are left, so the prompt does not show a count.
 
 ### 6.16 Settings
 
