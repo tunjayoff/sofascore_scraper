@@ -1,0 +1,35 @@
+{
+  "case_id": "S4_five_sets",
+  "event_id": 16885517,
+  "fetched_at_utc": "2026-10-01T12:54:19+00:00",
+  "source_file": "research/all_sports/events/volleyball.jsonl",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 3,
+    "display": 3,
+    "period1": 25,
+    "period2": 13,
+    "period3": 17,
+    "period4": 25,
+    "period5": 15
+  },
+  "awayScore": {
+    "current": 2,
+    "display": 2,
+    "period1": 20,
+    "period2": 25,
+    "period3": 25,
+    "period4": 23,
+    "period5": 12
+  },
+  "startTimestamp": 1790812800,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 1790821464
+  }
+}

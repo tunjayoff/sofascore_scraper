@@ -12,7 +12,9 @@ ORIGINAL = ("football", "basketball", "tennis")
 # A sınıfı, periyot tabanlı sekiz spor (plan maddesi SP-1)
 PERIOD_SPORTS = ("american-football", "aussie-rules", "ice-hockey", "handball", "rugby", "futsal", "minifootball",
                  "floorball")
-REGISTERED = ORIGINAL + PERIOD_SPORTS
+# A sınıfı, set tabanlı beş spor (plan maddesi SP-2)
+SET_SPORTS = ("volleyball", "badminton", "table-tennis", "padel", "snooker")
+REGISTERED = ORIGINAL + PERIOD_SPORTS + SET_SPORTS
 COMMON_KEYS = ("statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents")
 
 # SofaScore'un spor menüsündeki 26 slug (docs/all-sports/README.md) ve arama sonuçlarında gelen adlar
@@ -52,7 +54,8 @@ SOFASCORE_NAME = {
     "football": "Football", "basketball": "Basketball", "tennis": "Tennis",
     "american-football": "American football", "aussie-rules": "Aussie rules", "ice-hockey": "Hockey",
     "handball": "Handball", "rugby": "Rugby", "futsal": "Futsal", "minifootball": "Minifootball",
-    "floorball": "Floorball",
+    "floorball": "Floorball", "volleyball": "Volleyball", "badminton": "Badminton", "table-tennis": "Table tennis",
+    "padel": "Padel", "snooker": "Snooker",
 }
 
 
@@ -64,7 +67,7 @@ def test_get_sport_by_slug(slug):
     assert spec.name == SOFASCORE_NAME[slug]
 
 
-@pytest.mark.parametrize("raw", ["Football", "FOOTBALL", " football", "soccer", "Handball", "volleyball", "", None, 7,
+@pytest.mark.parametrize("raw", ["Football", "FOOTBALL", " football", "soccer", "Handball", "waterpolo", "", None, 7,
                                  ["football"]])
 def test_get_sport_is_exact_and_unknown_is_none(raw):
     assert sports.get_sport(raw) is None
@@ -73,7 +76,8 @@ def test_get_sport_is_exact_and_unknown_is_none(raw):
 def test_score_families():
     assert [sports.score_family(s) for s in ORIGINAL] == ["football", "periods", "sets"]
     assert all(sports.score_family(s) == "periods" for s in PERIOD_SPORTS)
-    assert sports.score_family("volleyball") is None
+    assert all(sports.score_family(s) == "sets" for s in SET_SPORTS)
+    assert sports.score_family("waterpolo") is None
     assert sports.score_family(None) is None
 
 
@@ -83,10 +87,21 @@ def test_period_formats():
         "football": None, "basketball": None, "tennis": None,
         "american-football": "quarters", "aussie-rules": "quarters", "ice-hockey": "thirds", "handball": "halves",
         "rugby": "halves", "futsal": "halves", "minifootball": "halves", "floorball": "thirds",
+        **{s: None for s in SET_SPORTS},
     }
-    assert sports.period_format("volleyball") is None and sports.period_format(None) is None
+    assert sports.period_format("waterpolo") is None and sports.period_format(None) is None
     assert all((s.period_format is None) == (s.slug == "basketball") for s in sports.SPORTS
                if s.score_family == "periods")
+
+
+def test_set_formats():
+    """Tenis kendi çizelgesini kullanır (None); öteki set sporlarında setin birimi sabittir."""
+    assert {s: sports.set_format(s) for s in REGISTERED if sports.score_family(s) == "sets"} == {
+        "tennis": None, "volleyball": "points", "badminton": "points", "table-tennis": "points", "padel": "games",
+        "snooker": "frames",
+    }
+    assert all(s.set_format is None for s in sports.SPORTS if s.score_family != "sets")
+    assert sports.set_format("waterpolo") is None and sports.set_format(None) is None
 
 
 # --- ad normalizasyonu ------------------------------------------------------------------
@@ -101,12 +116,14 @@ def test_period_formats():
     ("Hockey", "ice-hockey"), ("Ice hockey", "ice-hockey"), ("ice-hockey", "ice-hockey"),
     ("Handball", "handball"), ("Rugby", "rugby"), ("Futsal", "futsal"),
     ("Minifootball", "minifootball"), ("Mini football", "minifootball"), ("Floorball", "floorball"),
+    ("Volleyball", "volleyball"), ("Badminton", "badminton"), ("Table tennis", "table-tennis"),
+    ("table-tennis", "table-tennis"), ("Padel", "padel"), ("Snooker", "snooker"),
 ])
 def test_normalize_names_sofascore_uses(raw, expected):
     assert sports.normalize_sport(raw) == expected
 
 
-@pytest.mark.parametrize("raw", ["volleyball", "esports", "beach-volley", "", "   ", None, 0, 17, {}])
+@pytest.mark.parametrize("raw", ["waterpolo", "esports", "beach-volley", "", "   ", None, 0, 17, {}])
 def test_normalize_unknown_is_none(raw):
     assert sports.normalize_sport(raw) is None
 
@@ -129,22 +146,24 @@ def test_normalize_keeps_the_pre_registry_function_for_everything_else(raw):
 
 def test_unregistered_lookalikes_keep_the_legacy_mapping():
     """Kayıt defterinde olmayan benzer adlar eskisi gibi çözülür (bilinen sınır; spor eklenince düzelir)."""
-    assert sports.normalize_sport("table-tennis") == "tennis"
-    assert sports.normalize_sport("Table tennis") == "tennis"
+    assert sports.normalize_sport("beach tennis") == "tennis"
     assert sports.normalize_sport("beach football") == "football"
 
 
 def test_registered_lookalikes_resolve_to_their_own_sport():
-    """SP-1'den önce "American football" ve "minifootball" futbol sayılıyordu."""
+    """SP-1'den önce "American football" ve "minifootball" futbol, SP-2'den önce "Table tennis" tenis sayılıyordu."""
     assert _normalize_before_registry("American football") == "football"
     assert sports.normalize_sport("American football") == "american-football"
     assert sports.normalize_sport("minifootball") == "minifootball"
+    assert _normalize_before_registry("Table tennis") == "tennis"
+    assert sports.normalize_sport("Table tennis") == "table-tennis"
 
 
 def test_exact_name_wins_over_legacy_substring_once_a_sport_is_registered(monkeypatch):
-    monkeypatch.setitem(sports._BY_EXACT_NAME, "table-tennis", "table-tennis")
-    assert sports.normalize_sport("table-tennis") == "table-tennis"
-    assert sports.normalize_sport("Table tennis") == "table-tennis"
+    monkeypatch.setitem(sports._BY_EXACT_NAME, "beach-tennis", "beach-tennis")
+    monkeypatch.setitem(sports._BY_SLUG, "beach-tennis", sports.get_sport("tennis"))
+    assert sports.normalize_sport("beach-tennis") == "beach-tennis"
+    assert sports.normalize_sport("Beach tennis") == "beach-tennis"
     assert sports.normalize_sport("Tennis") == "tennis"
 
 
@@ -173,9 +192,14 @@ def test_watcher_params_per_sport():
         assert sports.watcher_params(sport) == WatcherParams("played_ratio", 4 * 3600, False)
     for sport in ("aussie-rules", "futsal", "floorball"):  # kayıtlı yüklerde saat verisi yok
         assert sports.watcher_params(sport) == WatcherParams("never", 4 * 3600, False)
+    assert sports.watcher_params("volleyball") == WatcherParams("last_set", 6 * 3600, False)
+    for sport in ("badminton", "table-tennis"):
+        assert sports.watcher_params(sport) == WatcherParams("last_set", 4 * 3600, False)
+    assert sports.watcher_params("padel") == WatcherParams("last_set", 6 * 3600, True)
+    assert sports.watcher_params("snooker") == WatcherParams("never", 6 * 3600, False)  # set kodu yok
 
 
-@pytest.mark.parametrize("sport", ["volleyball", "Tennis", "", None])
+@pytest.mark.parametrize("sport", ["waterpolo", "Tennis", "", None])
 def test_watcher_params_for_unregistered_sport_are_the_defaults(sport):
     assert sports.watcher_params(sport) == WatcherParams("never", 4 * 3600, False)
 
@@ -219,6 +243,8 @@ def test_slice_url():
     ("tennis", COMMON_KEYS + ("point_by_point",)),
     ("handball", COMMON_KEYS),
     ("volleyball", COMMON_KEYS),
+    ("table-tennis", COMMON_KEYS),  # point_by_point yalnızca tenisin
+    ("waterpolo", COMMON_KEYS),
     ("", COMMON_KEYS),
     (None, COMMON_KEYS),
 ])

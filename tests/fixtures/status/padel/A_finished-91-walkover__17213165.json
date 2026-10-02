@@ -1,0 +1,19 @@
+{
+  "case_id": "A_finished-91-walkover",
+  "event_id": 17213165,
+  "fetched_at_utc": "2026-10-01T13:07:26+00:00",
+  "source_file": "research/all_sports/status_examples/padel/event_finished-91-walkover__17213165.json",
+  "status": {
+    "code": 91,
+    "description": "Walkover",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1790798400,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 0
+  }
+}

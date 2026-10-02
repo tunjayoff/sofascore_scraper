@@ -1,0 +1,21 @@
+{
+  "case_id": "A_finished-91-walkover",
+  "event_id": 17197207,
+  "fetched_at_utc": "2026-10-01T13:01:10+00:00",
+  "source_file": "research/all_sports/status_examples/badminton/event_finished-91-walkover__17197207.json",
+  "status": {
+    "code": 91,
+    "description": "Walkover",
+    "type": "finished"
+  },
+  "winnerCode": null,
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1790928000,
+  "time": {
+    "currentPeriodStartTimestamp": 1790841440
+  },
+  "changes": {
+    "changeTimestamp": 1790841445
+  }
+}

@@ -155,6 +155,76 @@
     {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
     {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
    ]
+  },
+  {
+   "slug": "volleyball",
+   "name": "Volleyball",
+   "i18n_key": "sport.volleyball",
+   "score_family": "sets",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
+  },
+  {
+   "slug": "badminton",
+   "name": "Badminton",
+   "i18n_key": "sport.badminton",
+   "score_family": "sets",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
+  },
+  {
+   "slug": "table-tennis",
+   "name": "Table tennis",
+   "i18n_key": "sport.table-tennis",
+   "score_family": "sets",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
+  },
+  {
+   "slug": "padel",
+   "name": "Padel",
+   "i18n_key": "sport.padel",
+   "score_family": "sets",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
+  },
+  {
+   "slug": "snooker",
+   "name": "Snooker",
+   "i18n_key": "sport.snooker",
+   "score_family": "sets",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
   }
  ]
 }

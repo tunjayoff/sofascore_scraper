@@ -1,0 +1,31 @@
+{
+  "case_id": "A_finished-100-ended",
+  "event_id": 17218595,
+  "fetched_at_utc": "2026-10-01T12:58:20+00:00",
+  "source_file": "research/all_sports/status_examples/snooker/event_finished-100-ended__17218595.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 0,
+    "normaltime": 0
+  },
+  "awayScore": {
+    "current": 5,
+    "display": 5,
+    "period1": 5,
+    "normaltime": 5
+  },
+  "startTimestamp": 1790834400,
+  "time": {
+    "currentPeriodStartTimestamp": 1790842237
+  },
+  "changes": {
+    "changeTimestamp": 1790842239
+  }
+}

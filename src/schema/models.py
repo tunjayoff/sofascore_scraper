@@ -311,9 +311,14 @@ class SetScore(Model):
 
 @dataclass(frozen=True)
 class SetsScore(Model):
-    """Set ailesi skoru (tenis)."""
+    """
+    Set ailesi skoru: tenis, padel (oyun), voleybol, badminton, masa tenisi (sayı) ve snooker (yalnızca kazanılan
+    frame; set listesi boş). Alan tabloları belgeyle bağlı olduğundan birimler tenisin birimleri kalır (SP-2).
+    """
 
-    SUMMARY: ClassVar[str] = "Score family `sets`: sets won and games per set (tennis)."
+    SUMMARY: ClassVar[str] = (
+        "Score family `sets`: sets won and the score of each set. Tennis and padel count games per set; volleyball, "
+        "badminton and table tennis count points; snooker gives frames won and no sets.")
 
     family: Literal["sets"] = spec("Always `sets`.", source="sport registry")
     home: Optional[int] = spec("Headline score of the home side: sets won.", unit="sets",

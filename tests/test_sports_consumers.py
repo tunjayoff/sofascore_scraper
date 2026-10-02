@@ -14,7 +14,8 @@ from src.web import league_sports
 from src.web.app import app
 
 REGISTERED = ("football", "basketball", "tennis", "american-football", "aussie-rules", "ice-hockey", "handball",
-              "rugby", "futsal", "minifootball", "floorball")  # SP-1: + sekiz periyot sporu
+              "rugby", "futsal", "minifootball", "floorball",  # SP-1: + sekiz periyot sporu
+              "volleyball", "badminton", "table-tennis", "padel", "snooker")  # SP-2: + beş set sporu
 COMMON_KEYS = ("statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents")
 
 
@@ -44,7 +45,7 @@ def test_extract_scores_class_follows_the_score_family(sport, cls):
     assert type(extract_scores(by_name)) is cls
 
 
-@pytest.mark.parametrize("sport", ["volleyball", "table-tennis", "", None])
+@pytest.mark.parametrize("sport", ["waterpolo", "beach-volley", "", None])
 def test_extract_scores_for_unregistered_sport_is_a_bare_sheet(sport, caplog):
     event = {"id": 1, "status": {"code": 100, "type": "finished"}, "homeScore": {"current": 30},
              "awayScore": {"current": 28}, "winnerCode": 1}
@@ -72,7 +73,7 @@ def test_every_registered_near_end_rule_is_implemented():
 def test_near_end_is_false_for_unregistered_sport():
     live_last_period = {"status": {"code": 7, "type": "inprogress"}, "time": {"injuryTime2": 4}}
     assert watcher.near_end(live_last_period, "football", 0.0) is True
-    assert watcher.near_end(live_last_period, "volleyball", 0.0) is False
+    assert watcher.near_end(live_last_period, "waterpolo", 0.0) is False
     assert watcher.near_end(live_last_period, "futsal", 0.0) is False  # kayıtlı, kuralı "never"
     assert watcher.near_end(live_last_period, "Football", 0.0) is False  # slug tam eşleşir
 

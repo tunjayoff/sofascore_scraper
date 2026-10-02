@@ -1,0 +1,29 @@
+{
+  "case_id": "A_inprogress-20-started",
+  "event_id": 17220573,
+  "fetched_at_utc": "2026-10-01T12:58:20+00:00",
+  "source_file": "research/all_sports/status_examples/snooker/event_inprogress-20-started__17220573.json",
+  "status": {
+    "code": 20,
+    "description": "Started",
+    "type": "inprogress"
+  },
+  "winnerCode": null,
+  "homeScore": {
+    "current": 2,
+    "display": 2,
+    "period1": 2
+  },
+  "awayScore": {
+    "current": 2,
+    "display": 2,
+    "period1": 2
+  },
+  "startTimestamp": 1790854200,
+  "time": {
+    "currentPeriodStartTimestamp": 1790854504
+  },
+  "changes": {
+    "changeTimestamp": 1790857965
+  }
+}

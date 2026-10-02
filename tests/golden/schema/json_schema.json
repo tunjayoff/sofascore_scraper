@@ -1089,7 +1089,7 @@
   "SetsScore": {
    "type": "object",
    "title": "SetsScore",
-   "description": "Score family `sets`: sets won and games per set (tennis).",
+   "description": "Score family `sets`: sets won and the score of each set. Tennis and padel count games per set; volleyball, badminton and table tennis count points; snooker gives frames won and no sets.",
    "required": [
     "family",
     "home",

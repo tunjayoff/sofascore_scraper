@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from src.status import (BasketballScores, FootballScores, Pair, PeriodsScores, StatusClass, TennisScores,
-                        extract_scores)
+from src.status import (BasketballScores, FootballScores, Pair, PeriodsScores, SetsScores, StatusClass,
+                        TennisScores, classify_status, extract_scores)
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
 
@@ -235,8 +235,115 @@ def test_period_sport_without_a_score(rel):
 def test_new_sports_are_no_longer_unsupported(caplog):
     with caplog.at_level("WARNING", logger="src.status"):
         extract_scores(_load("rugby/A_finished-100-ended__16237238"), "rugby")
-        extract_scores(_load("rugby/A_finished-100-ended__16237238"), "volleyball")
-    assert caplog.text.count("desteklenmeyen spor") == 1 and "'volleyball'" in caplog.text
+        extract_scores(_load("volleyball/A_finished-100-ended__16506696"), "volleyball")
+        extract_scores(_load("rugby/A_finished-100-ended__16237238"), "waterpolo")
+    assert caplog.text.count("desteklenmeyen spor") == 1 and "'waterpolo'" in caplog.text
+
+
+# --- set tabanlı sporlar (plan maddesi SP-2; research/all_sports örnekleri) ---------------------------------
+
+def test_tennis_keeps_its_own_sheet():
+    s = extract_scores(_load("tennis/T2_retired__17081861"), "tennis")
+    assert type(s) is TennisScores and s.retired
+
+
+def test_volleyball_five_sets_of_points():
+    s = extract_scores(_load("volleyball/S4_five_sets__16885517"), "volleyball")
+    assert type(s) is SetsScores
+    assert s.format == "points"
+    assert s.sets_won == Pair(3, 2)
+    assert s.sets == {1: Pair(25, 20), 2: Pair(13, 25), 3: Pair(17, 25), 4: Pair(25, 23), 5: Pair(15, 12)}
+    assert s.tiebreaks == {}
+    assert not s.match_tiebreak  # sayıyla sayılan sette 15 puan match tie-break değildir
+    assert s.winner_code == 1 and s.settleable
+
+
+@pytest.mark.parametrize("rel,sets_won,sets", [
+    ("volleyball/A_finished-100-ended__16506696", Pair(3, 0), {1: Pair(25, 14), 2: Pair(25, 23), 3: Pair(25, 23)}),
+    ("badminton/A_finished-100-ended__17185944", Pair(2, 1), {1: Pair(11, 21), 2: Pair(21, 16), 3: Pair(21, 19)}),
+    ("table-tennis/A_finished-100-ended__17214760", Pair(3, 1),
+     {1: Pair(13, 11), 2: Pair(8, 11), 3: Pair(12, 10), 4: Pair(11, 7)}),
+    ("padel/A_finished-100-ended__17213163", Pair(2, 0), {1: Pair(6, 3), 2: Pair(6, 3)}),
+])
+def test_sets_won_follow_the_set_scores(rel, sets_won, sets):
+    s = extract_scores(_load(rel), rel.split("/")[0])
+    assert s.sets_won == sets_won and s.sets == sets
+    won = Pair(sum(p.home > p.away for p in sets.values()), sum(p.away > p.home for p in sets.values()))
+    assert won == sets_won
+    assert not s.match_tiebreak
+
+
+def test_padel_tiebreaks_like_tennis():
+    s = extract_scores(_load("padel/S5_tiebreaks__17213167"), "padel")
+    assert s.format == "games"
+    assert s.sets == {1: Pair(7, 6), 2: Pair(5, 7), 3: Pair(6, 7)}
+    assert s.tiebreaks == {1: Pair(7, 4), 3: Pair(6, 8)}
+    assert s.sets_won == Pair(1, 2) and s.winner_code == 2
+    assert not s.match_tiebreak  # 3. set 6:7 normal set
+
+
+def test_padel_match_tiebreak_heuristic():
+    event = _load("padel/S5_tiebreaks__17213167")
+    event["homeScore"] = {"current": 1, "period1": 6, "period2": 3, "period3": 10}
+    event["awayScore"] = {"current": 2, "period1": 4, "period2": 6, "period3": 8}
+    assert extract_scores(event, "padel").match_tiebreak
+
+
+def test_table_tennis_live_payload_keeps_the_set_number():
+    """Canlı listedeki yük yalnızca o anki seti taşıyabiliyor: set numarası korunur, boşluk doldurulmaz."""
+    event = _load("table-tennis/A_inprogress-11-4th-set__17220207")
+    s = extract_scores(event, "table-tennis")
+    assert s.sets == {4: Pair(9, 6)}
+    assert s.sets_won == Pair(1, 2)
+    assert s.status_class is StatusClass.LIVE
+
+
+@pytest.mark.parametrize("code", [11, 12])
+def test_fourth_and_fifth_set_codes_are_live_without_a_type(code):
+    event = _load("table-tennis/A_inprogress-11-4th-set__17220207")
+    event["status"] = {"code": code}
+    assert classify_status(event) is StatusClass.LIVE
+
+
+def test_seven_sets_are_read():
+    """Masa tenisinde 7 setlik maç: kayıtlı yüklerde görülmedi, period6-7 okunur."""
+    event = _load("table-tennis/A_inprogress-12-5th-set__17225596")
+    event["homeScore"] = dict(event["homeScore"], period6=11, period7=11, current=4)
+    event["awayScore"] = dict(event["awayScore"], period6=9, period7=5, current=3)
+    s = extract_scores(event, "table-tennis")
+    assert sorted(s.sets) == [1, 2, 3, 4, 5, 6, 7] and s.sets[7] == Pair(11, 5)
+
+
+@pytest.mark.parametrize("rel,frames", [("snooker/A_finished-100-ended__17218595", Pair(0, 5)),
+                                        ("snooker/A_inprogress-20-started__17220573", Pair(2, 2))])
+def test_snooker_counts_frames_and_has_no_sets(rel, frames):
+    """Snooker: `current` kazanılan frame; period1 `current`'ı tekrarlar, set sayılmaz."""
+    event = _load(rel)
+    assert event["homeScore"]["period1"] == event["homeScore"]["current"]
+    s = extract_scores(event, "snooker")
+    assert s.format == "frames"
+    assert s.sets_won == frames and s.sets == {} and s.tiebreaks == {}
+    assert not s.match_tiebreak
+
+
+@pytest.mark.parametrize("rel", ["badminton/A_finished-91-walkover__17197207",
+                                 "table-tennis/A_finished-91-walkover__17220159",
+                                 "padel/A_finished-91-walkover__17213165"])
+def test_walkover_is_told_by_the_status_not_by_the_score(rel):
+    """04-schema-v1.md karar 10: tenis dışındaki set sporlarının çizelgesinde retired / walkover bayrağı yok."""
+    s = extract_scores(_load(rel), rel.split("/")[0])
+    assert s.status_class is StatusClass.DECIDED_WITHOUT_PLAY
+    assert not hasattr(s, "walkover") and not hasattr(s, "retired")
+    assert s.sets_won is None and s.sets == {}
+    assert not s.settleable
+
+
+@pytest.mark.parametrize("rel", ["volleyball/A_notstarted-0-not-started__16450376",
+                                 "badminton/A_canceled-70-canceled__17185946"])
+def test_set_sport_without_a_score(rel):
+    s = extract_scores(_load(rel), rel.split("/")[0])
+    assert isinstance(s, SetsScores)
+    assert s.sets_won is None and s.sets == {} and not s.match_tiebreak
 
 
 # --- ortak ------------------------------------------------------------------------------

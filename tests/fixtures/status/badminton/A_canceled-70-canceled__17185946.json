@@ -1,0 +1,19 @@
+{
+  "case_id": "A_canceled-70-canceled",
+  "event_id": 17185946,
+  "fetched_at_utc": "2026-10-01T13:01:10+00:00",
+  "source_file": "research/all_sports/status_examples/badminton/event_canceled-70-canceled__17185946.json",
+  "status": {
+    "code": 70,
+    "description": "Canceled",
+    "type": "canceled"
+  },
+  "winnerCode": null,
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1790838000,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 1790792672
+  }
+}

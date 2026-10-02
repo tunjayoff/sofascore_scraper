@@ -1,0 +1,19 @@
+{
+  "case_id": "A_notstarted-0-not-started",
+  "event_id": 16450376,
+  "fetched_at_utc": "2026-10-01T12:54:19+00:00",
+  "source_file": "research/all_sports/status_examples/volleyball/event_notstarted-0-not-started__16450376.json",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "winnerCode": null,
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1790955000,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 0
+  }
+}

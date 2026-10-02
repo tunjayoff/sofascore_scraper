@@ -40,7 +40,9 @@ logger = logging.getLogger(__name__)
 #    harf olan eski tur dosyası yine program sayfası (alt anahtar küçük harfe katlanır)
 # 3: sekiz periyot sporu kayıt defterinde (SP-1): Amerikan futbolu, Aussie kuralları, buz hokeyi, hentbol,
 #    ragbi, futsal, mini futbol ve florbol maçlarının satırı skor çizelgesi (scores_json) alır
-DERIVE_VERSION = 3
+# 4: beş set sporu kayıt defterinde (SP-2): voleybol, badminton, masa tenisi, padel ve snooker maçlarının satırı
+#    skor çizelgesi (scores_json) alır
+DERIVE_VERSION = 4
 
 Row = Dict[str, Any]
 Timestamp = Union[datetime, int, float, None]

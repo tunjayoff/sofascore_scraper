@@ -21,7 +21,8 @@ def test_normalize_sport():
     assert league_sports.normalize_sport("basketball") == "basketball"
     assert league_sports.normalize_sport("Tennis") == "tennis"
     assert league_sports.normalize_sport("ice-hockey") == "ice-hockey"  # SP-1
-    assert league_sports.normalize_sport("volleyball") is None
+    assert league_sports.normalize_sport("volleyball") == "volleyball"  # SP-2
+    assert league_sports.normalize_sport("waterpolo") is None
     assert league_sports.normalize_sport(None) is None
 
 

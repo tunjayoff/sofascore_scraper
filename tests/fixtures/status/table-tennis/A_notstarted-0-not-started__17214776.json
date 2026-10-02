@@ -1,0 +1,19 @@
+{
+  "case_id": "A_notstarted-0-not-started",
+  "event_id": 17214776,
+  "fetched_at_utc": "2026-10-01T13:45:30+00:00",
+  "source_file": "research/all_sports/status_examples/table-tennis/event_notstarted-0-not-started__17214776.json",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "winnerCode": null,
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1790780400,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 0
+  }
+}

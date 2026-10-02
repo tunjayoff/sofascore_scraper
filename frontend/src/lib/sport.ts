@@ -2,9 +2,9 @@
  * The sports the platform follows, in the order of the sport registry (src/sports.py).
  * tests/test_sports_registry.py checks that both lists below equal the registry.
  */
-export type SportKey = 'football' | 'basketball' | 'tennis' | 'american-football' | 'aussie-rules' | 'ice-hockey' | 'handball' | 'rugby' | 'futsal' | 'minifootball' | 'floorball'
+export type SportKey = 'football' | 'basketball' | 'tennis' | 'american-football' | 'aussie-rules' | 'ice-hockey' | 'handball' | 'rugby' | 'futsal' | 'minifootball' | 'floorball' | 'volleyball' | 'badminton' | 'table-tennis' | 'padel' | 'snooker'
 
-export const SPORTS: SportKey[] = ['football', 'basketball', 'tennis', 'american-football', 'aussie-rules', 'ice-hockey', 'handball', 'rugby', 'futsal', 'minifootball', 'floorball']
+export const SPORTS: SportKey[] = ['football', 'basketball', 'tennis', 'american-football', 'aussie-rules', 'ice-hockey', 'handball', 'rugby', 'futsal', 'minifootball', 'floorball', 'volleyball', 'badminton', 'table-tennis', 'padel', 'snooker']
 
 /** Exact names and slugs, as src/sports.py normalize_sport matches them (lower case, spaces as dashes). */
 const EXACT: Record<string, SportKey> = {
@@ -14,6 +14,7 @@ const EXACT: Record<string, SportKey> = {
   hockey: 'ice-hockey', // Sofascore's name for ice hockey
   'ice-hockey': 'ice-hockey',
   'mini-football': 'minifootball',
+  'table-tennis': 'table-tennis', // before the "tennis" substring below
 }
 for (const s of SPORTS) EXACT[s] = s
 
@@ -34,10 +35,13 @@ export function sportKey(raw: unknown): SportKey | null {
 /** How regulation time is divided, as the score's `format` (src/sports.py period_format). */
 const QUARTERS: SportKey[] = ['basketball', 'american-football', 'aussie-rules']
 const THIRDS: SportKey[] = ['ice-hockey', 'floorball']
+/** Sports scored in sets, as the score family `sets` (src/sports.py); snooker sends only the frames won. */
+const SETS: SportKey[] = ['tennis', 'volleyball', 'badminton', 'table-tennis', 'padel']
 
 /** Column labels for the per-period score line, by sport. */
 export function periodLabel(sport: SportKey | null, n: number, t: (k: string, v?: Record<string, unknown>) => string): string {
-  if (sport === 'tennis') return t('match.period.set', { n })
+  if (sport && SETS.includes(sport)) return t('match.period.set', { n })
+  if (sport === 'snooker') return t('match.period.frames', { n })
   if (sport && QUARTERS.includes(sport)) return t('match.period.quarter', { n })
   if (sport && THIRDS.includes(sport)) return t('match.period.period', { n })
   return t('match.period.half', { n })

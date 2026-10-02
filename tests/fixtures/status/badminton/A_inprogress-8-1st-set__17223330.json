@@ -1,0 +1,29 @@
+{
+  "case_id": "A_inprogress-8-1st-set",
+  "event_id": 17223330,
+  "fetched_at_utc": "2026-10-01T13:01:10+00:00",
+  "source_file": "research/all_sports/status_examples/badminton/event_inprogress-8-1st-set__17223330.json",
+  "status": {
+    "code": 8,
+    "description": "1st set",
+    "type": "inprogress"
+  },
+  "winnerCode": null,
+  "homeScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 10
+  },
+  "awayScore": {
+    "current": 0,
+    "display": 0,
+    "period1": 13
+  },
+  "startTimestamp": 1790859000,
+  "time": {
+    "currentPeriodStartTimestamp": 1790858996
+  },
+  "changes": {
+    "changeTimestamp": 1790859597
+  }
+}
