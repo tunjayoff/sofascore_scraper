@@ -11,7 +11,7 @@
   "_needs_detail_fetch (only where it differs from the default)": {},
   "refresh_due_ids()": []
  },
- "collect_detail_match_ids() sorted": null,
+ "collect_detail_match_ids() sorted": [],
  "collect_detail_match_ids(league_id='17')": null,
  "collect_detail_match_ids(league_id='17', max_seasons=1)": null,
  "collect_detail_match_ids(league_id='999')": null,

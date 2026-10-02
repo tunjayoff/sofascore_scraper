@@ -32,8 +32,10 @@ from src.utils import make_api_request, ensure_directory
 from src.match_fetcher import MatchFetcher
 from src.sports import DETAIL_SLICES, event_sport_slug, get_slice, slices_for
 from src.status import OBSERVATION_KEY, observation_record
-from src.refresh import SCORE_CHANGES_FILE, change_row, diff_basic, refresh_due
-from src.services.query import QueryService
+from src.refresh import SCORE_CHANGES_FILE, change_row, diff_basic
+from src.paths import league_dir_name
+from src.services.query import QueryService, RefreshPolicy
+from src.services.status import only_finished_setting
 # Sonuç tipi ve "veri var mı" yüklemleri src/slices.py'de durur. `X as X` biçimindekiler buradan taşınan
 # adlardır: eski import'lar (from src.match_data_fetcher import SliceOutcome, SLICE_*) çalışmaya devam eder.
 from src.slices import (
@@ -115,6 +117,13 @@ _LEGACY_LAYOUT = "legacy"
 _MAX_EVENT_ID = 2 ** 63 - 1  # kataloğun saklayabildiği en büyük kimlik
 
 
+def _canonical_id(text: str) -> Optional[int]:
+    """Kurallı maç kimliği metni ("123") → sayı; "007", "abc", "-1" ve kataloğun sınırını aşan sayı None."""
+    if not (text.isascii() and text.isdigit()) or str(int(text)) != text or int(text) > _MAX_EVENT_ID:
+        return None
+    return int(text)
+
+
 def _stored_observation(row: "EventRow") -> Optional[Dict[str, Any]]:
     """
     Katalog satırından observation.json'ın karşılığı; kayıt gözlemsizse (eski kayıt) None.
@@ -194,10 +203,10 @@ class MatchDataFetcher:
         Olay yükü eski düzende duran maçın katalog satırı; öyle bir kayıt yoksa None. Yalnızca bir program
         sayfasından bilinen maç (yükü yok) ve kurallı bir kimlik olmayan metin ("007", "abc") kayıt değildir.
         """
-        text = str(match_id)
-        if not (text.isascii() and text.isdigit()) or str(int(text)) != text or int(text) > _MAX_EVENT_ID:
+        event_id = _canonical_id(str(match_id))
+        if event_id is None:
             return None
-        row = self._store().events.get(int(text))
+        row = self._store().events.get(event_id)
         if row is None or not row.has_event_payload or row.layout != _LEGACY_LAYOUT or not row.path:
             return None
         return row
@@ -847,22 +856,26 @@ class MatchDataFetcher:
         return need
 
     def _compute_detail_need(self, mid: str) -> str:
-        path_info = self._find_match_path(mid)
-        if not path_info:
-            return "full"
-        _, _, match_dir = path_info
-        data = self._load_match_data_from_dir(match_dir, mid)
-        if not data.get("basic"):
-            return "full"
-        for key in self._expected_slices(match_dir, _event_sport(data["basic"])):
-            if not self.match_detail_slice_present(key, data):
-                return "refill"
-        if refresh_due(data["basic"], data.get(OBSERVATION_KEY) or {}):
-            return "refresh"
-        return "none"
+        """Bir maçın ihtiyacı, katalogdan (`_compute_detail_needs`)."""
+        return self._compute_detail_needs([str(mid)])[str(mid)]
+
+    def _compute_detail_needs(self, match_ids: List[str]) -> Dict[str, str]:
+        """
+        Maçların ihtiyacı, kataloğa birkaç sorguyla sorulur (QueryService.detail_needs); hiçbir dosya okunmaz.
+        Kayıt, olay yükü eski düzende saklanan maçtır (`_stored_event`); kurallı bir kimlik olmayan metin
+        ("007", "abc") kayıt değildir. Katalog dosyalarla eşit değilse CatalogNotCurrent (plan yapılmaz).
+        """
+        ids = {mid: _canonical_id(mid) for mid in match_ids}
+        service = QueryService(self._store())
+        service.require_current()
+        needs = service.detail_needs([event_id for event_id in ids.values() if event_id is not None],
+                                     RefreshPolicy.current(), threshold=UNAVAILABLE_AFTER_ATTEMPTS,
+                                     layout=_LEGACY_LAYOUT)
+        return {mid: needs.get(event_id, "full") if event_id is not None else "full" for mid, event_id in ids.items()}
 
     def _order_by_need(self, match_ids: List[Any]) -> Tuple[List[Any], int]:
         """İşlenecek maçlar: önce full/refill, sonra refresh. İkinci değer yenilenecek maç sayısı."""
+        self._prepare_needs([str(mid) for mid in match_ids])
         first, refresh = [], []
         for mid in match_ids:
             need = self._needs_detail_fetch(str(mid))
@@ -871,6 +884,18 @@ class MatchDataFetcher:
             elif need != "none":
                 first.append(mid)
         return first + refresh, len(refresh)
+
+    def _prepare_needs(self, match_ids: List[str]) -> None:
+        """
+        İş önbelleği açıksa (`begin_job_cache`) önbellekte olmayan maçların ihtiyacı tek seferde hesaplanır ve
+        önbelleğe yazılır; ardından gelen `_needs_detail_fetch` çağrıları kataloğa tek tek sormaz.
+        """
+        cache = getattr(self, "_need_cache", None)
+        if cache is None:
+            return
+        wanted = [mid for mid in dict.fromkeys(match_ids) if mid not in cache]
+        if wanted:
+            cache.update(self._compute_detail_needs(wanted))
 
     def refresh_match(self, match_id: Union[int, str]) -> Optional[Dict[str, Any]]:
         """
@@ -937,23 +962,27 @@ class MatchDataFetcher:
         store_hooks.shadow_changes(self.data_dir)
 
     def refresh_due_ids(self, league_id: Optional[Union[int, str]] = None) -> List[str]:
-        """Kayıtlı maçlardan yenilenmesi gerekenler (--refresh-only). Eksik dilimli maçlar dahil değil."""
-        ids: List[str] = []
-        if not os.path.isdir(self.match_details_dir):
-            return ids
-        for league_name in sorted(os.listdir(self.match_details_dir)):
-            league_path = os.path.join(self.match_details_dir, league_name)
-            if league_name == "processed" or not os.path.isdir(league_path):
-                continue
-            if league_id is not None and not league_name.startswith(f"{league_id}_"):
-                continue
-            for season_name in sorted(os.listdir(league_path)):
-                season_path = os.path.join(league_path, season_name)
-                if not os.path.isdir(season_path):
-                    continue
-                for mid in sorted(os.listdir(season_path)):
-                    if os.path.isdir(os.path.join(season_path, mid)) and self._needs_detail_fetch(mid) == "refresh":
-                        ids.append(mid)
+        """
+        Kayıtlı maçlardan yenilenmesi gerekenler (--refresh-only). Eksik dilimli maçlar dahil değil.
+
+        Katalogdan (QueryService.refresh_due): ağacın her yerindeki kayıtlar, düz ve `_no_tournament/` altındakiler
+        de. league_id: maçın turnuvası (dizin adına bakılmaz). Sıra, kayıt dizinlerinin yol sırasıdır (eski
+        ağaç gezintisinin sırası: lig dizini, sezon dizini, maç kimliği metin olarak).
+        """
+        tournament_ids: Tuple[int, ...] = ()
+        if league_id is not None:
+            tournament = _canonical_id(str(league_id))
+            if tournament is None:
+                return []
+            tournament_ids = (tournament,)
+        service = QueryService(self._store())
+        service.require_current()
+        rows = service.refresh_due(RefreshPolicy.current(), tournament_ids=tournament_ids,
+                                   threshold=UNAVAILABLE_AFTER_ATTEMPTS, layout=_LEGACY_LAYOUT)
+        ids = [str(row.id) for row in sorted(rows, key=lambda row: str(row.path).strip("/").split("/"))]
+        cache = getattr(self, "_need_cache", None)
+        if cache is not None:
+            cache.update((mid, "refresh") for mid in ids)
         return ids
 
     def refresh_matches(
@@ -2018,55 +2047,50 @@ class MatchDataFetcher:
         max_seasons: int = 0,
         only_season_ids: Optional[List[int]] = None,
     ) -> Optional[List[str]]:
-        """Sezon özet CSV'lerindeki benzersiz maç ID'leri; maç ya da lig dizini yoksa None."""
-        matches_dir = os.path.join(self.data_dir, "matches")
-        if not os.path.exists(matches_dir):
-            logger.warning("Maç dizini bulunamadı!")
-            return None
+        """
+        Detayı indirilecek maçların adayları: programlarda ve sezon özetlerinde geçen benzersiz maç kimlikleri,
+        katalogdan (QueryService.detail_candidates). Lig başına sezon kimliği büyükten küçüğe, sezon içinde
+        başlangıç zamanı sırasıyla; ligler kimlik sırasıyla. "Yalnızca bitmiş maçlar" ayarı okurken uygulanır
+        (maç listeleriyle aynı kural). İstenen ligin listelerde hiç maçı yoksa None (eskiden: ligin `matches/`
+        dizini yoksa; `matches/` dizini hiç yoksa lig verilmeden de None dönüyordu, şimdi boş liste).
+        """
+        service = QueryService(self._store())
+        service.require_current()
+        tournament = _canonical_id(str(league_id)) if league_id else None
+        candidates = service.detail_candidates(
+            tournament, only_finished=only_finished_setting(), max_seasons=max_seasons,
+            only_season_ids=only_season_ids) if tournament is not None or not league_id else {}
 
-        league_dirs = []
-        # Belirli bir lig seçilmişse sadece o ligi işle
         if league_id:
             print(get_i18n().t("details_fetching_league", league_id=league_id))
-            for dir_name in os.listdir(matches_dir):
-                if dir_name.startswith(f"{league_id}_"):
-                    league_dirs.append(dir_name)
-                    break
-
-            if not league_dirs:
+            if tournament not in candidates:
                 print(get_i18n().t("details_league_dir_missing", league_id=league_id))
                 return None
         else:
             print(get_i18n().t("details_fetching_all"))
-            league_dirs = [dir_name for dir_name in os.listdir(matches_dir)
-                          if os.path.isdir(os.path.join(matches_dir, dir_name))]
 
-        print(get_i18n().t("details_league_count", count=len(league_dirs)))
+        print(get_i18n().t("details_league_count", count=len(candidates)))
 
         match_ids: List[str] = []
-        for league_dir in league_dirs:
-            league_path = os.path.join(matches_dir, league_dir)
-            if not os.path.isdir(league_path):
-                continue
-
-            print("\n" + get_i18n().t("details_league_dir", name=league_dir))
-
-            summary_files = self._season_summary_files(league_path, only_season_ids, max_seasons)
-
-            # Özet dosyalarından maç ID'lerini çıkar
-            current_ids = []
-            for file_path in summary_files:
-                if os.path.isfile(file_path):
-                    ids_from_csv = self._extract_match_ids_from_csv(file_path)
-                    if ids_from_csv:
-                        current_ids.extend(ids_from_csv)
-
-            if current_ids:
-                print(get_i18n().t("details_league_ids_found", count=len(current_ids)))
-                match_ids.extend(current_ids)
+        for tid, event_ids in candidates.items():
+            print("\n" + get_i18n().t("details_league_dir", name=league_dir_name(tid, self._league_name(tid))))
+            if event_ids:
+                print(get_i18n().t("details_league_ids_found", count=len(event_ids)))
+                match_ids.extend(str(event_id) for event_id in event_ids)
 
         # Tekrarlanan ID'leri temizle (sırayı koru)
         return list(dict.fromkeys(match_ids))
+
+    def _league_name(self, league_id: int) -> Optional[str]:
+        """Ligin dizin adındaki adı (yazıcılarla aynı kaynak): yapılandırmadaki ad, yoksa katalogdaki turnuva adı."""
+        try:
+            name = self.config_manager.get_league_by_id(league_id)
+        except Exception:
+            name = None
+        if isinstance(name, str) and name:
+            return name
+        found = self._store().entities.tournament(league_id)
+        return found.name if found is not None and found.name else None
 
     def pending_detail_ids(self, match_ids: List[str]) -> List[str]:
         """Detay dilimleri eksik ya da kısmi olan maçlar, ardından yenilenecek (geçici) maçlar."""

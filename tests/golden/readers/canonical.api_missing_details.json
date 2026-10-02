@@ -117,31 +117,10 @@
   "status": 200,
   "body": {"total_matches": 0, "missing_count": 0, "missing": [], "truncated": false}
  },
- "league_id=8": {
-  "status": 200,
-  "body": {
-   "total_matches": 5,
-   "missing_count": 3,
-   "missing": [
-    {"match_id": 16425949, "home": "Celta Vigo", "away": "Mallorca", "match_date": "2026-09-20T16:00:00", "season_name": "LaLiga 26/27"},
-    {"match_id": 16599919, "home": "Villarreal", "away": "Osasuna", "match_date": "2026-09-20T15:00:00", "season_name": "LaLiga 26/27"},
-    {"match_id": 17148292, "home": "Girona", "away": "Getafe", "match_date": "2026-09-21T08:00:00", "season_name": "LaLiga 26/27"}
-   ],
-   "truncated": false
-  }
- },
+ "league_id=8": {"status": 200, "body": {"total_matches": 2, "missing_count": 0, "missing": [], "truncated": false}},
  "league_id=8&season_id=97532": {
   "status": 200,
-  "body": {
-   "total_matches": 5,
-   "missing_count": 3,
-   "missing": [
-    {"match_id": 16425949, "home": "Celta Vigo", "away": "Mallorca", "match_date": "2026-09-20T16:00:00", "season_name": "LaLiga 26/27"},
-    {"match_id": 16599919, "home": "Villarreal", "away": "Osasuna", "match_date": "2026-09-20T15:00:00", "season_name": "LaLiga 26/27"},
-    {"match_id": 17148292, "home": "Girona", "away": "Getafe", "match_date": "2026-09-21T08:00:00", "season_name": "LaLiga 26/27"}
-   ],
-   "truncated": false
-  }
+  "body": {"total_matches": 2, "missing_count": 0, "missing": [], "truncated": false}
  },
  "league_id=8&season_id=1": {
   "status": 200,

@@ -281,8 +281,6 @@ def test_match_without_unique_tournament_goes_to_the_fallback_directory(tmp_path
 
 
 def test_fallback_directory_is_found_by_readers(tmp_path):
-    from src.web.routes.matches import _detail_match_ids
-
     f = _fetcher(tmp_path)
     f._save_match_data(MID, {"basic": _basic(unique_tournament=False, sport="esports")})
     expected = str(Path(f.match_details_dir) / NO_TOURNAMENT_DIR / "esports" / MID)
@@ -290,7 +288,6 @@ def test_fallback_directory_is_found_by_readers(tmp_path):
     assert f._find_match_path(MID) == (NO_TOURNAMENT_DIR, "esports", expected)
     assert f._build_match_index()[MID] == (NO_TOURNAMENT_DIR, "esports", expected)
     assert f._compute_detail_need(MID) == "refill"  # kaydı okunuyor: eksik dilimleri tamamlanabilir
-    assert _detail_match_ids(str(tmp_path), None) == {MID}  # web: "detayı olan maçlar"
 
 
 def test_fallback_directory_is_deterministic_without_sport(tmp_path):

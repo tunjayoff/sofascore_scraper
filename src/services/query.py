@@ -6,10 +6,11 @@ Okuyucular dosya ağacını gezmez; her soru deponun okuma API'sine sorulur (`St
 yazıcılarının her yazmasından sonra güncellenir (gölge kip, 01-storage.md 3.5); iki düzen de (eski
 `match_details/` ağacı ve v3) aynı çağrılarla okunur.
 
-Şimdilik iki iş var: maç detayı (plan maddesi RD-1: `GET /api/matches/{id}` yanıtının bugünkü sözlüğü) ve maç
-listeleri (RD-2: `GET /api/matches` ile `GET /api/seasons/{id}/matches` satırları). Eksik detay / ihtiyaç
-sorguları (RD-3) kendi plan maddesiyle eklenir; eski `/api` yanıt biçimlerini üreten işlevler burada durur ve
-eski uç noktalarla birlikte kaldırılır (P30).
+Üç iş var: maç detayı (plan maddesi RD-1: `GET /api/matches/{id}` yanıtının bugünkü sözlüğü), maç listeleri
+(RD-2: `GET /api/matches` ile `GET /api/seasons/{id}/matches` satırları) ve indirme planı (RD-3: hangi maçın
+detayı eksik, hangisi yenilenmeli, bir ligin hangi maçları listelerde geçiyor; `GET /api/leagues/{id}/missing-
+details` ve src/match_data_fetcher.py'deki planlayıcılar). Eski `/api` yanıt biçimlerini üreten işlevler burada
+durur ve eski uç noktalarla birlikte kaldırılır (P30).
 
 Maç detayında eski okuyucudan (dizinden dosya dosya okuyan `routes/matches._get_match_details_sync`) farklar;
 hepsi yalnızca eski biçimli kayıtlarda görünür, bugünkü kodun yazdığı dizinlerde yanıt aynıdır (01-storage.md
@@ -36,20 +37,42 @@ kurulur (`LEGACY_LIST_COLUMNS`). Farklar:
     listesinin sırası başlangıç zamanıdır (eskiden özet dosyalarının dizin ve satır sırası).
   * Dışa aktarma CSV'sine (`match_details/processed/all_matches_*.csv`) geri düşülmez (tasarım kararı S14):
     özeti ve detayı olmayan bir veri dizininin listesi boştur.
+
+İndirme planı (RD-3) eskiden dosyalardan çıkarılıyordu: maçın ihtiyacı (`full` / `refill` / `refresh` / `none`)
+bütün dilim dosyaları ve işaret dosyaları (`_unavailable.json`) okunarak, yenilenecek maçlar
+`match_details/<lig>/<sezon>/<id>` ağacı gezilerek, bir ligin maçları ve eksik detaylar sezon özeti CSV'lerinden.
+Şimdi hepsi kataloğa sorulur (`Store.events.missing`, `refresh_candidates` ve maç listesi); hiçbir yük okunmaz.
+Bugünkü kodun yazdığı dizinlerde kümeler ve kararlar aynıdır; sıra yalnızca bir ligin maç adaylarında
+değişir. Farklar:
+
+  * Yenilenecek maçlar ağacın her yerinden gelir: düz (`match_details/<id>`) ve `_no_tournament/` altındaki
+    kayıtlar da; lig süzgeci dizin adının `<lig id>_` önekine değil, maçın turnuvasına bakar (kimliksiz lig
+    dizinindeki kayıt da bulunur). Sıra eski gezintininkidir (kayıt dizinlerinin yolu).
+  * Bir ligin maçları (`detail_candidates`) ve eksik detayları (`missing_details_legacy`) programlarda ve
+    özetlerde geçen maçlardır. "Yalnızca bitmiş maçlar" ayarı okurken uygulanır: bitmiş, detayı indirilmiş
+    (maç listeleriyle aynı kural) ya da durumu bilinmeyen maçlar (durum sütunu olmayan özet satırı). Eskiden
+    özetler yazılırken süzülüyordu; ayar kapalıyken yazılmış bir sezonun bitmemiş maçları ayar açıkken artık
+    plana girmez. Sezonlar yine büyükten küçüğe, bir sezonun içinde sıra başlangıç zamanıdır (eskiden özet
+    dosyasının satır sırası); lig verilmezse ligler kimlik sırasıyla (eskiden dizin listeleme sırası).
+  * Eksik detaylarda "detayı var", kataloğun "olay yükü var" bilgisidir: yalnızca birleşik dosyası olan dizin
+    de detaydır (eskiden yalnızca `basic.json` sayılıyordu). İlk sürümün sezon dizinindeki tur özetleri
+    (`<sezon>/round_<n>_matches.csv`) de okunur (katalog onları da dizinler).
 """
 from __future__ import annotations
 
 import heapq
 import re
+import time
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Tuple
 
+from src import refresh
 from src.logger import get_logger
 from src.paths import league_dir_name
-from src.sports import DETAIL_SLICES
+from src.sports import DETAIL_SLICES, slices_for
 from src.status import StatusClass
-from src.store import EventQuery, PayloadCorrupt, PayloadMissing, Scope
+from src.store import EventQuery, PayloadCorrupt, PayloadMissing, Scope, StoreError
 
 if TYPE_CHECKING:
     from src.store import EventRow, Store
@@ -70,6 +93,7 @@ FINISHED_CLASSES: Tuple[str, ...] = (StatusClass.COMPLETED.value, StatusClass.DE
 _NOT_FINISHED: Tuple[str, ...] = tuple(m.value for m in StatusClass if m.value not in FINISHED_CLASSES)
 _STORE_SORT = {SORT_ASC: "start_asc", SORT_DESC: "start_desc"}
 _LEGACY_LAYOUT = "legacy"
+_LISTING_SOURCE = "listing"  # `events.row_source`: maç yalnızca bir listeden biliniyor
 _MATCH_DETAILS_DIR = "match_details"
 _ROUND_SUB_RE = re.compile(r"round_(\d+)(?:_.*)?")
 # Tarih süzgecinin ISO önekleri: "2026", "2026-09", "2026-09-15", "2026-09-15T13", "…T13:30", "…T13:30:00".
@@ -85,6 +109,89 @@ def legacy_detail_keys() -> Tuple[str, ...]:
     (src/sports.py, DETAIL_SLICES). İsteğe bağlı dilimler (ör. tenisin `point_by_point`'i) eski yanıtta yoktur.
     """
     return tuple(detail.key for detail in DETAIL_SLICES if detail.required)
+
+
+# -- indirme planı (RD-3) -------------------------------------------------------------------------------
+
+# Bir maçın ihtiyacı (src/match_data_fetcher.py `_needs_detail_fetch`'in dönüş değerleri)
+NEED_FULL = "full"  # kayıt yok ya da olay yükü yok: baştan indirilir
+NEED_REFILL = "refill"  # olay yükü var, beklenen dilimlerden en az biri eksik
+NEED_REFRESH = "refresh"  # dilimler tam ama kayıt geçici ve yenileme zamanı geldi (src/refresh.py)
+NEED_NONE = "none"  # tamam
+# Bu kadar kesin "veri yok" yanıtından sonra dilim o maçta artık beklenmez (src/match_data_fetcher.py
+# UNAVAILABLE_AFTER_ATTEMPTS ile aynı değer; çağıran kendi değerini verebilir)
+DEFAULT_EMPTY_THRESHOLD = 2
+_ID_CHUNK = 500  # bir sorgunun kapsamına yazılan en çok kimlik
+
+
+def required_detail_keys() -> Dict[str, Tuple[str, ...]]:
+    """
+    `Store.events.missing`'in `required` argümanı: her sporda beklenen dilimler `""` altında, yalnızca bazı
+    sporlarda beklenenler o sporun kısa adı altında. Kural `slices_for(spor, required_only=True)`'dur (dilim
+    tablosu, src/sports.py): bir maçın beklediği dilimler, `""` ile kendi sporunun anahtarlarının birleşimidir.
+    """
+    common = tuple(detail.key for detail in slices_for(None, required_only=True))
+    required: Dict[str, Tuple[str, ...]] = {"": common}
+    for sport in sorted({sport for detail in DETAIL_SLICES if detail.sports for sport in detail.sports}):
+        extra = tuple(detail.key for detail in slices_for(sport, required_only=True) if detail.key not in common)
+        if extra:
+            required[sport] = extra
+    return required
+
+
+@dataclass(frozen=True)
+class RefreshPolicy:
+    """
+    Yenileme politikası (src/refresh.py) saniye cinsinden, bir an için. window_s <= 0: politika kapalı.
+    include_unobserved: gözlemi olmayan (eski) kayıtlar da yenilenir (--refresh-legacy).
+    """
+
+    now: float
+    window_s: float
+    min_interval_s: float
+    include_unobserved: bool = False
+
+    @classmethod
+    def current(cls, now: Optional[float] = None) -> "RefreshPolicy":
+        """Ayarların o anki değerleri (REFRESH_WINDOW_HOURS, REFRESH_MIN_INTERVAL_HOURS, REFRESH_LEGACY)."""
+        return cls(
+            now=time.time() if now is None else now,
+            window_s=refresh.refresh_window_hours() * 3600,
+            min_interval_s=refresh.refresh_min_interval_hours() * 3600,
+            include_unobserved=refresh.refresh_legacy_enabled(),
+        )
+
+
+class CatalogNotCurrent(StoreError):
+    """
+    Katalog dosyalarla eşit değil (açılışta eşitlenemedi ya da bir yazma kancası onu güncelleyemedi): indirme
+    planı ondan çıkarılmaz. Eksik bir katalog her maçı "eksik" gösterir ve gereksiz istek yaptırırdı.
+    """
+
+    default_message = "The data folder's index (.meta/catalog.db) is not up to date; no download is planned from it"
+
+
+def _event_ids(values: Iterable[Any]) -> List[int]:
+    """Kimlik listesi: tam sayı olarak yazılabilenler, tekrarsız ve sıralı; geri kalanı hiçbir maçın kimliği değildir."""
+    found = set()
+    for value in values:
+        if isinstance(value, bool):
+            continue
+        if isinstance(value, int):
+            number = value
+        else:
+            text = str(value)
+            if not (text.isascii() and text.isdigit()) or str(int(text)) != text:
+                continue
+            number = int(text)
+        if _ID_RANGE[0] <= number <= _ID_RANGE[1]:
+            found.add(number)
+    return sorted(found)
+
+
+def _chunks(values: Sequence[int], size: int = _ID_CHUNK) -> Iterator[Sequence[int]]:
+    for start in range(0, len(values), size):
+        yield values[start:start + size]
 
 
 @dataclass(frozen=True)
@@ -178,6 +285,140 @@ class QueryService:
         names = _Names(self._store, None)
         return [_legacy_row(row, names) for row in _merged(self._store, queries, descending=False)]
 
+    # -- indirme planı (RD-3) ------------------------------------------------------------------------
+
+    def require_current(self) -> None:
+        """Katalog dosyalarla eşit değilse CatalogNotCurrent (`Store.catalog_current`): plan ondan çıkarılmaz."""
+        if not self._store.catalog_current:
+            raise CatalogNotCurrent(path=str(self._store.data_dir))
+
+    def detail_needs(self, event_ids: Iterable[Any], policy: RefreshPolicy, *,
+                     threshold: int = DEFAULT_EMPTY_THRESHOLD, layout: Optional[str] = None) -> Dict[int, str]:
+        """
+        Her maçın ihtiyacı (`NEED_*`), kimlik → ihtiyaç; kimlik olamayan değerler sonuçta yer almaz.
+
+          full     kayıt yok: maç bilinmiyor ya da olay yükü yok (yalnızca bir listeden biliniyor)
+          refill   olay yükü var, beklenen bir dilim eksik: satırı yok ya da `ok` değil ve kesin "veri yok"
+                   sayısı `threshold`un altında (`Store.events.missing`, `required_detail_keys()`)
+          refresh  dilimler tam, kayıt geçici ve yenileme zamanı gelmiş (`Store.events.refresh_candidates`)
+          none     tamam
+
+        layout verilirse yalnızca o düzende saklanan olay yükü kayıt sayılır (eski düzen indiricisi `legacy`
+        verir: yalnızca o dizinleri tamamlayabilir ve yenileyebilir). Kimlikler 500'lük parçalarla sorulur;
+        parça başına üç ya da dört sorgu çalışır ve hiçbir yük okunmaz.
+        """
+        required = required_detail_keys()
+        needs: Dict[int, str] = {}
+        for chunk in _chunks(_event_ids(event_ids)):
+            scope = Scope(event_ids=tuple(chunk))
+            records = {row.id for row in self._store.events.iter(EventQuery(scope=scope, has_details=True))
+                       if layout is None or (row.layout == layout and row.path)}
+            refill = {row.event_id for row in self._store.events.missing(
+                scope, required, status_classes=(), threshold=threshold) if row.has_event_payload}
+            due = set(self._store.events.refresh_candidates(
+                now=policy.now, window_s=policy.window_s, min_interval_s=policy.min_interval_s, scope=scope,
+                include_unobserved=policy.include_unobserved)) if records else set()
+            for event_id in chunk:
+                if event_id not in records:
+                    needs[event_id] = NEED_FULL
+                elif event_id in refill:
+                    needs[event_id] = NEED_REFILL
+                elif event_id in due:
+                    needs[event_id] = NEED_REFRESH
+                else:
+                    needs[event_id] = NEED_NONE
+        return needs
+
+    def refresh_due(self, policy: RefreshPolicy, *, tournament_ids: Sequence[int] = (),
+                    threshold: int = DEFAULT_EMPTY_THRESHOLD, layout: Optional[str] = None) -> List["EventRow"]:
+        """
+        Yenilenecek kayıtlar (ihtiyacı `refresh` olanlar), kimlik sırasıyla: yenileme adayları, eksik dilimi
+        olanlar hariç (onlar `refill`dir). tournament_ids: boş = süzgeç yok; maçın turnuvasına bakılır.
+        layout: `detail_needs` ile aynı.
+        """
+        scope = Scope(tournament_ids=tuple(tournament_ids))
+        candidates = self._store.events.refresh_candidates(
+            now=policy.now, window_s=policy.window_s, min_interval_s=policy.min_interval_s, scope=scope,
+            include_unobserved=policy.include_unobserved)
+        required = required_detail_keys()
+        rows: List["EventRow"] = []
+        for chunk in _chunks(candidates):
+            chunk_scope = Scope(event_ids=tuple(chunk))
+            refill = {row.event_id for row in self._store.events.missing(
+                chunk_scope, required, status_classes=(), threshold=threshold)}
+            rows.extend(row for row in self._store.events.iter(EventQuery(scope=chunk_scope, has_details=True))
+                        if row.id not in refill and (layout is None or (row.layout == layout and row.path)))
+        return sorted(rows, key=lambda row: row.id)
+
+    def listed_events(self, *, tournament_ids: Sequence[int] = (), season_ids: Sequence[int] = (),
+                      only_finished: bool = True) -> Iterator["EventRow"]:
+        """
+        Bir programda ya da özette geçen maçlar (liste satırı olanlar ve olay yükü olup bir listenin bağladığı
+        maçlar), başlangıç zamanı sırasıyla (eşitlikte kimlik; başlangıcı bilinmeyenler başta).
+
+        only_finished: "yalnızca bitmiş maçlar" ayarı (`_planned`): bitmiş, detayı indirilmiş ya da durumu
+        bilinmeyen maçlar.
+        """
+        scope = Scope(tournament_ids=tuple(tournament_ids), season_ids=tuple(season_ids))
+        return (row for row in self._store.events.iter(EventQuery(scope=scope, sort=_STORE_SORT[SORT_ASC]))
+                if (row.row_source == _LISTING_SOURCE or row.listed_in is not None)
+                and (not only_finished or _planned(row)))
+
+    def detail_candidates(self, tournament_id: Optional[int] = None, *, only_finished: bool = True,
+                          max_seasons: int = 0, only_season_ids: Optional[Sequence[int]] = None
+                          ) -> Dict[int, List[int]]:
+        """
+        Detayı indirilecek maçların adayları, turnuva başına (`collect_detail_match_ids`): listelerde geçen
+        maçlar (`listed_events`), sezon kimliği büyükten küçüğe, sezon içinde başlangıç zamanı sırasıyla.
+        Listede maçı olan her turnuva sonuçta yer alır (süzgeçler bütün maçlarını eleyince boş listeyle);
+        turnuvalar kimlik sırasıyla. only_season_ids: yalnızca bu sezonlar; max_seasons > 0: en yeni N sezon.
+        """
+        by_tournament: Dict[int, Dict[int, List[int]]] = {}
+        for row in self.listed_events(tournament_ids=() if tournament_id is None else (tournament_id,),
+                                      only_finished=False):
+            if row.tournament_id is None or row.season_id is None:
+                continue
+            seasons = by_tournament.setdefault(row.tournament_id, {})
+            if only_finished and not _planned(row):  # süzülen maçın turnuvası yine de sonuçta yer alır
+                continue
+            seasons.setdefault(row.season_id, []).append(row.id)
+        allowed = None if only_season_ids is None else {int(season_id) for season_id in only_season_ids}
+        out: Dict[int, List[int]] = {}
+        for tid in sorted(by_tournament):
+            seasons = sorted(by_tournament[tid], reverse=True)
+            if allowed is not None:
+                seasons = [season_id for season_id in seasons if season_id in allowed]
+            if max_seasons > 0:
+                seasons = seasons[:max_seasons]
+            out[tid] = list(dict.fromkeys(event_id for season_id in seasons for event_id in by_tournament[tid][season_id]))
+        return out
+
+    def missing_details_legacy(self, tournament_id: int, season_id: Optional[int] = None, *,
+                               only_finished: bool = True, limit: int = 500) -> Dict[str, Any]:
+        """
+        `GET /api/leagues/{id}/missing-details` yanıtı: turnuvanın (verildiyse o sezonun) listelerde geçen
+        maçları (`listed_events`) ve onlardan olay yükü olmayanlar, kimlik sırasıyla en çok `limit` tanesi.
+        Satırlar özet CSV'sinin değerleriyle: takım adları, yerel saatle `match_date`, sezonun adı.
+        """
+        rows = list(self.listed_events(tournament_ids=(tournament_id,),
+                                       season_ids=() if season_id is None else (season_id,),
+                                       only_finished=only_finished))
+        missing = sorted((row for row in rows if not row.has_event_payload), key=lambda row: row.id)
+        names = _Names(self._store, None)
+        shown = [{
+            "match_id": row.id,
+            "home": row.home_name or "",
+            "away": row.away_name or "",
+            "match_date": _match_date(row),
+            "season_name": names.season(row.season_id),
+        } for row in missing[:limit]]
+        return {
+            "total_matches": len({row.id for row in rows}),
+            "missing_count": len(missing),
+            "missing": shown,
+            "truncated": len(missing) > len(shown),
+        }
+
     def _payloads(self, event_id: int, keys: Iterable[str]) -> Dict[str, Any]:
         """
         Maçın istenen dilimlerinden yükü olanlar (anahtar → yük). Katalog "yük var" derken dosya okunamıyorsa
@@ -213,6 +454,16 @@ def _list_queries(scope: Scope, details: Optional[bool], only_finished: bool, so
         return [replace(base, has_details=False, status_classes=FINISHED_CLASSES)]
     return [replace(base, status_classes=FINISHED_CLASSES),
             replace(base, status_classes=_NOT_FINISHED, has_details=True)]
+
+
+def _planned(row: "EventRow") -> bool:
+    """
+    "Yalnızca bitmiş maçlar" ayarı açıkken indirme planına giren liste satırı: bitmiş, detayı indirilmiş (maç
+    listeleriyle aynı kural) ya da durumu bilinmeyen maç. Sonuncusu, durum sütunu olmayan bir özet CSV'sinin
+    satırıdır: özetin satırları eskiden süzülmeden okunurdu (özet yazılırken süzülmüştür).
+    """
+    return (row.status_class in FINISHED_CLASSES or row.has_event_payload
+            or row.status_class == StatusClass.UNKNOWN.value)
 
 
 def _sort_key(row: "EventRow") -> Tuple[bool, int, int]:
@@ -335,5 +586,6 @@ def _legacy_row(row: "EventRow", names: _Names) -> Dict[str, Any]:
     }
 
 
-__all__ = ["EVENT_KEY", "LEGACY_EVENT_KEY", "LEGACY_LIST_COLUMNS", "LegacyMatchPage", "QueryService",
-           "legacy_detail_keys"]
+__all__ = ["CatalogNotCurrent", "DEFAULT_EMPTY_THRESHOLD", "EVENT_KEY", "LEGACY_EVENT_KEY", "LEGACY_LIST_COLUMNS",
+           "LegacyMatchPage", "NEED_FULL", "NEED_NONE", "NEED_REFILL", "NEED_REFRESH", "QueryService", "RefreshPolicy",
+           "legacy_detail_keys", "required_detail_keys"]

@@ -439,6 +439,29 @@ class ShadowEdits:
 
 BOUNDARY_RECORDERS.append(ShadowEdits(os.path.join(ROOT, "src"), os.path.join(ROOT, "tests")))  # type: ignore[arg-type]
 
+
+def _resync_before_planning() -> None:
+    """
+    Gölge denetimi, indirme planı (plan maddesi RD-3). Planlayıcılar (`_needs_detail_fetch`, `refresh_due_ids`,
+    `collect_detail_match_ids`) dosyalara dokunmaz, kataloğa sorar; eskiden dosya okudukları için denetim
+    kancası testin elle yazdıklarını o anda kataloğa alırdı (`shadow_resync`). Aynı güvence artık planın
+    başında verilir: `QueryService.require_current` çağrılırken kancasız değişmiş bir dizin varsa katalog önce
+    uzlaştırılır. Okuma API'sinin öteki çağrıları tetiklemez (kataloğun arkasından bozulan dosyaları bilerek
+    kuran testler vardır).
+    """
+    from src.services.query import QueryService
+    from src.store import api as store_api
+
+    original = QueryService.require_current
+
+    def require_current(self: QueryService) -> None:
+        if store_api.shadow_unsynced():
+            store_api.shadow_resync(self._store.data_dir)
+        original(self)
+
+    QueryService.require_current = require_current  # type: ignore[method-assign]
+
+
 sys.addaudithook(_boundary_audit_hook)
 
 
@@ -538,6 +561,15 @@ def _isolate_request_layer(request, monkeypatch):
 
         monkeypatch.setattr(cs.BrowserBridge, "_launch", _no_real_browser)
     yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _planning_resync() -> None:
+    """
+    `_resync_before_planning`'i oturumun ilk testinden önce kurar. pytest_configure'da değil: ürün modüllerini
+    o kadar erken yüklemek loglamanın konsol akışını değiştirir (Windows'ta stderr'e yazan testler bozuldu).
+    """
+    _resync_before_planning()
 
 
 @pytest.fixture(autouse=True)

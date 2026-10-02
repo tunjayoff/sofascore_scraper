@@ -6,7 +6,7 @@
  "refresh_due_ids(league_id=2361)": [],
  "REFRESH_LEGACY=true": {
   "_needs_detail_fetch (only where it differs from the default)": {"15500002": "refresh", "16867839": "refresh", "17018554": "refresh"},
-  "refresh_due_ids()": ["17099711", "15500001", "15500002"]
+  "refresh_due_ids()": ["16867839", "17018554", "17099711", "15500001", "15500002"]
  },
  "REFRESH_WINDOW_HOURS=0": {
   "_needs_detail_fetch (only where it differs from the default)": {"15500001": "none", "17099711": "none"},
@@ -21,13 +21,13 @@
   "17185003"
  ],
  "collect_detail_match_ids(league_id='17')": [
-  "16837335", "17099711", "16867839", "17018554", "17185003", "17018572", "14025001", "14025002"
+  "17099711", "16837335", "17018572", "17018554", "17185003", "16867839", "14025001", "14025002"
  ],
  "collect_detail_match_ids(league_id='17', max_seasons=1)": [
-  "16837335", "17099711", "16867839", "17018554", "17185003", "17018572"
+  "17099711", "16837335", "17018572", "17018554", "17185003", "16867839"
  ],
  "collect_detail_match_ids(league_id='17', only_season_ids=[96668])": [
-  "16837335", "17099711", "16867839", "17018554", "17185003", "17018572"
+  "17099711", "16837335", "17018572", "17018554", "17185003", "16867839"
  ],
  "collect_detail_match_ids(league_id='17', only_season_ids=[76986])": ["14025001", "14025002"],
  "collect_detail_match_ids(league_id='8')": ["15000001", "15000002"],
