@@ -69,8 +69,8 @@ def test_backup_is_outside_static_and_excludes_env():
     assert "static" not in path
     with zipfile.ZipFile(path) as zf:
         names = zf.namelist()
-    assert ".env" not in names
-    assert "leagues.txt" in names
+    assert "config/.env" not in names  # biçim 2 (ST-24): ayarlar config/ altında
+    assert "config/leagues.txt" in names
 
     dl = client.get(body["download_url"])
     assert dl.status_code == 200

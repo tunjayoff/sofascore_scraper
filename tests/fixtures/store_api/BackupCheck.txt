@@ -1,0 +1,12 @@
+# src.store.BackupCheck
+# kaynak: src/store/backup.py
+@dataclass(frozen=True)
+class BackupCheck:
+    name: str
+    ok: bool
+    format: Optional[int]
+    scope: Optional[str]
+    manifest: Mapping[str, Any] = field(default_factory=dict)
+    members: int = 0
+    bytes: int = 0
+    problems: Tuple[str, ...] = ()

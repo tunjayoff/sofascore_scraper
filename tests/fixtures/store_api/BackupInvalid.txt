@@ -1,0 +1,4 @@
+# src.store.BackupInvalid
+# kaynak: src/store/backup.py
+class BackupInvalid(StoreError):
+    default_message = ...

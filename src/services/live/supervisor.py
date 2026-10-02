@@ -879,15 +879,14 @@ class LiveService:
     # --- bakım ve durum -----------------------------------------------------------------------
 
     def _prune_if_due(self) -> None:
-        from src.sinks.dispatcher import PRUNE_MAX_AGE_SECONDS, PRUNE_MAX_ROWS
-        from src.store import StoreError
+        from src.store import DEFAULT_PRUNE_MAX_AGE_SECONDS, DEFAULT_PRUNE_MAX_ROWS, StoreError
 
         now = self._clock()
         if self._last_prune is not None and now - self._last_prune < PRUNE_INTERVAL_SECONDS:
             return
         self._last_prune = now
         try:
-            removed = self._store.streams.prune(max_age_s=PRUNE_MAX_AGE_SECONDS, max_rows=PRUNE_MAX_ROWS)
+            removed = self._store.streams.prune(max_age_s=DEFAULT_PRUNE_MAX_AGE_SECONDS, max_rows=DEFAULT_PRUNE_MAX_ROWS)
         except StoreError as e:
             logger.warning("The event log could not be pruned (%s)", type(e).__name__)
             return

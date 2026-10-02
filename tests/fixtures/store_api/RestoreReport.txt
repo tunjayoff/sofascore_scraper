@@ -1,0 +1,17 @@
+# src.store.RestoreReport
+# kaynak: src/store/backup.py
+@dataclass(frozen=True)
+class RestoreReport:
+    name: str
+    format: int
+    scope: Optional[str]
+    dry_run: bool
+    force: bool
+    restored: Tuple[str, ...] = ()
+    replaced: Tuple[str, ...] = ()
+    skipped: Tuple[str, ...] = ()
+    occupied: Tuple[str, ...] = ()
+    counts: Mapping[str, int] = field(default_factory=dict)
+    catalog_rebuilt: bool = False
+    verify_ok: Optional[bool] = None
+    verify_issues: int = 0
