@@ -19,8 +19,12 @@ istenir, bu yüzden `cancel` her süreçten çalışır.
 ilerleme olaylarının ise saniyede en çok ikisi yazılır; iş başına en yeni 2.000 olay tutulur. İşin başladığı
 ve bittiği ayrıca `job` akışına (`job.started`, `job.finished`) eklenir; sink'ler oradan okur.
 
-Olay ve akış yazmaları en iyi çabadır: yazılamayan bir olay işi durdurmaz (uyarı loglanır, yeniden denenmez).
-İşin satırına yapılan yazmalar ise bugünkü gibi hata verir.
+state.db'nin meşgul olması (StoreBusy: başka bir yazar kilidi 5 saniyeden uzun tuttu) bir işi bitirmez:
+  * olay ve akış yazmaları en iyi çabadır; yazılamayan olay atlanır (uyarı loglanır, yeniden denenmez);
+  * ilerleme ve günlük satırı yazmaları da atlanır: yansı güncellenmiştir ve bir sonraki yazma satırı tamamlar;
+  * işin bitişi FINAL_WRITE_ATTEMPTS kez denenir; yazılamazsa hata çağırana çıkar ve satırı sonraki okuyan
+    `interrupted` yapar.
+Satıra yapılan yazmaların diğer hataları (dolu disk, bozuk dosya) bugünkü gibi fırlar.
 """
 from __future__ import annotations
 
@@ -50,7 +54,7 @@ from src.jobs.model import (
 )
 from src.jobs.progress import JobProgress
 from src.redact import redact_text
-from src.store import JobStore
+from src.store import JobStore, StoreBusy
 
 logger = logging.getLogger("Jobs")
 
@@ -58,6 +62,7 @@ CANCEL_POLL_SECONDS = 1.0  # işi çalıştıran süreç iptal bayrağını sat�
 HEARTBEAT_SECONDS = 5.0  # `heartbeat_at` bu aralıkla yazılır (yalnızca gösterim için)
 PROGRESS_EVENT_SECONDS = 0.5  # ilerleme olayları: saniyede en çok iki tane
 EVENTS_POLL_SECONDS = 0.25  # `events(follow=True)` yeni olayları bu aralıkla yoklar
+FINAL_WRITE_ATTEMPTS = 3  # işin bitişi, state.db meşgulse (StoreBusy) bu kadar kez denenir
 
 STREAM_JOB_STARTED = "job.started"
 STREAM_JOB_FINISHED = "job.finished"
@@ -136,6 +141,7 @@ class JobHandle:
         self._last_progress_at = 0.0
         self._cancel_noted = False
         self._event_failures = 0
+        self._busy_writes = 0
         self.progress = JobProgress(list(phases), self._publish_progress)
 
     # --- servisin kullandığı yüz ---------------------------------------------------------------------
@@ -149,7 +155,7 @@ class JobHandle:
         İş günlüğüne ve kartın görev satırına bir satır yazar; yüzdeye dokunmaz. `fields` olayın verisine
         eklenir: `code` verilirse istemci metni koddan üretir (ör. code="fetch_zero_matches").
         """
-        self._store.update(job_id=self.id, current_task=message, append_log=f"[Running] {message}")
+        self._write(current_task=message, append_log=f"[Running] {message}")
         self.event(JobEventType.LOG, {"message": message, **fields})
         if self._on_log is not None:
             self._on_log(message)
@@ -157,8 +163,20 @@ class JobHandle:
 
     def publish(self, fields: Mapping[str, Any]) -> None:
         """JobProgress'in taşımadığı iş alanlarını satıra yazar (bugün yalnızca `schedule_empty_seasons`)."""
-        self._store.update(job_id=self.id, **dict(fields))
+        self._write(**dict(fields))
         self._changed()
+
+    def _write(self, **fields: Any) -> None:
+        """
+        İşin satırına (ve yansıya) yazar. state.db meşgulse yazma atlanır: yansı güncellenmiştir, bir sonraki
+        yazma satırı tamamlar; iş bu yüzden durmaz. Diğer hatalar çağırana çıkar.
+        """
+        try:
+            self._store.update(job_id=self.id, **fields)
+        except StoreBusy as e:
+            self._busy_writes += 1
+            log = logger.warning if self._busy_writes == 1 else logger.debug
+            log("Job row could not be written, the state database is busy (job %s): %s", self.id, e)
 
     # --- olaylar -------------------------------------------------------------------------------------
 
@@ -177,7 +195,7 @@ class JobHandle:
 
     def _publish_progress(self, fields: Dict[str, Any]) -> None:
         """JobProgress'in her yayını: satıra hemen, olay günlüğüne seyreltilerek."""
-        self._store.update(job_id=self.id, **fields)
+        self._write(**fields)
         detail = fields.get("detail")
         if isinstance(detail, Mapping):
             self._events_from(detail, fields.get("progress"))
@@ -429,17 +447,27 @@ class JobManager:
         handle.event(JobEventType.FINISHED, finished)
 
         legacy_status = _LEGACY_STATUS[state]
-        store.update(
-            job_id=handle.id,
-            status=legacy_status,
-            progress=int(percent),
-            current_task=message,
-            append_log=f"[{legacy_status}] {message}",
-            result=dict(outcome.result) if outcome.result is not None else None,
-            state=state.value,
-            error=error_data,
-            finished=True,
-        )
+        log_line = f"[{legacy_status}] {message}"
+        for attempt in range(1, FINAL_WRITE_ATTEMPTS + 1):
+            try:
+                store.update(
+                    job_id=handle.id,
+                    status=legacy_status,
+                    progress=int(percent),
+                    current_task=message,
+                    # Yinelenen denemede satır yansıya bir kez daha eklenmez
+                    append_log=log_line if attempt == 1 else None,
+                    result=dict(outcome.result) if outcome.result is not None else None,
+                    state=state.value,
+                    error=error_data,
+                    finished=True,
+                )
+                break
+            except StoreBusy as e:
+                if attempt == FINAL_WRITE_ATTEMPTS:
+                    raise
+                logger.warning("The end of job %s could not be written, the state database is busy; "
+                               "trying again (%d/%d): %s", handle.id, attempt, FINAL_WRITE_ATTEMPTS, e)
         handle._changed()
         self._announce(STREAM_JOB_FINISHED, {
             "job_id": handle.id,

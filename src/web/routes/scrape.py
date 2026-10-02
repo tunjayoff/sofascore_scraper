@@ -83,9 +83,10 @@ def cancel_scrape():
     if not _job_store.request_cancel():
         # Bu süreçte çalışan iş yok. Veri dizininde başka bir sürecin işi çalışıyorsa (ör. komut satırından
         # başlatılmış bir indirme) iptal onun satırına yazılır; o süreç bayrağı bir saniye içinde okur.
-        from src.web.fetch_job import job_manager
+        # (İstek katmanını yüklememek için iş yöneticisi burada kurulur, src.web.fetch_job içe aktarılmaz.)
+        from src.jobs.manager import JobManager
 
-        manager = job_manager()
+        manager = JobManager(_job_store)
         other = manager.active()
         if other is None or not manager.cancel(other.id):
             raise HTTPException(status_code=400, detail="No scraping process is running.")

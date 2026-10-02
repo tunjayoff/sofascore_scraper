@@ -82,6 +82,20 @@ class _ConsoleHandle:
         self._handle.publish(fields)
 
 
+def _open_store(ctx: Any) -> None:
+    """
+    İşin veri dizinini tam bir depo yapar: bağlamın deposuna ilk erişim `.meta/` altında eksik olanları kurar
+    (iş deposunun state.db'sinin yanına schema.json ve catalog.db). Böylece yalnızca web arayüzüyle kullanılan
+    bir dizin de `open_store(create=False)` için bir depodur ve köprü sağlığı işin deposuna yazılır.
+
+    Depo açılamazsa iş yine çalışır (bugünkü gibi dosyalara doğrudan yazar); neden uyarı olarak loglanır.
+    """
+    try:
+        getattr(ctx, "store", None)
+    except Exception as e:  # depo açılamadı (daha yeni düzen, meşgul ya da bozuk dosya): iş bunsuz da çalışır
+        logger.warning("The store of the data directory could not be opened; the job runs without it: %s", e)
+
+
 def _error_info(exc: BaseException) -> ErrorInfo:
     """İşi durduran hata, hata tablosundaki koduyla; metin log satırları gibi maskelenir."""
     error = to_platform_error(exc)
@@ -102,7 +116,9 @@ def _fetch(handle: JobHandle, payload: "FetchRequest", spec: SyncSpec) -> JobOut
         # arasındaki beklemeler) ona bakar, böylece "Durdur" geçerli sezonun ya da 2 dakikalık bir 403 geri
         # çekilmesinin sonunda değil, saniyenin kesri içinde etkili olur. 429/403 geri çekilmeleri de kartta
         # geri sayım olur.
-        result = SyncService(build_context(config_manager)).run(spec, handle=_ConsoleHandle(handle))
+        ctx = build_context(config_manager)
+        _open_store(ctx)
+        result = SyncService(ctx).run(spec, handle=_ConsoleHandle(handle))
     except StorageError as e:
         # Kalıcı depolama hatası (disk dolu, izin yok): kalan maçlar da yazılamaz, iş durur
         params = {"path": e.path or "?", "reason": e.detail or str(e)}

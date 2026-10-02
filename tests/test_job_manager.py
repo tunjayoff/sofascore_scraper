@@ -12,6 +12,7 @@
 """
 from __future__ import annotations
 
+import contextlib
 import errno
 import json
 import os
@@ -42,7 +43,15 @@ from src.jobs.model import (
     new_job_id,
     terminal_state,
 )
-from src.store import DataOperationRunningError, JobRunningError, JobStore, LeaseHeld, StoreError, open_store
+from src.store import (
+    DataOperationRunningError,
+    JobRunningError,
+    JobStore,
+    LeaseHeld,
+    StoreBusy,
+    StoreError,
+    open_store,
+)
 from src.store import jobs as store_jobs
 from src.store import state as state_mod
 from src.store.jobs import default_db_path
@@ -868,6 +877,96 @@ def test_a_failing_event_write_does_not_stop_the_job(
     assert any("could not be stored" in record.getMessage() for record in caplog.records)
 
 
+def _busy_updates(store: JobStore, monkeypatch: pytest.MonkeyPatch, fail: Any) -> List[Dict[str, Any]]:
+    """
+    `fail(alanlar)` True döndürdüğü `store.update` çağrılarında state.db yazma kilidini vermez: gerçekte olduğu
+    gibi StoreBusy yazma işlemi başlarken, yansı güncellendikten sonra fırlar.
+    """
+    calls: List[Dict[str, Any]] = []
+    busy = {"on": False}
+    real_update, real_write = store.update, store._state.write
+
+    @contextlib.contextmanager
+    def write() -> Iterator[Any]:
+        if busy["on"]:
+            raise StoreBusy("state.db meşgul", detail="database is locked")
+        with real_write() as conn:
+            yield conn
+
+    def update(**fields: Any) -> None:
+        calls.append(fields)
+        busy["on"] = bool(fail(fields))
+        try:
+            real_update(**fields)
+        finally:
+            busy["on"] = False
+
+    monkeypatch.setattr(store._state, "write", write)
+    monkeypatch.setattr(store, "update", update)
+    return calls
+
+
+def test_a_busy_state_database_does_not_end_the_job(
+    manager: JobManager, store: JobStore, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Başka bir yazar kilidi 5 saniyeden uzun tutarsa (StoreBusy) ilerleme yazması atlanır, iş sürer."""
+    calls = _busy_updates(store, monkeypatch, lambda fields: not fields.get("finished") and len(calls) % 2 == 1)
+
+    def body(handle: JobHandle) -> None:
+        handle.progress.start_phase("details", 4)
+        handle.log("working")
+        for n in range(1, 5):
+            handle.progress.advance(n)
+        handle.publish({"schedule_empty_seasons": 2})
+
+    job = manager.submit(JobKind.FETCH, {}, body, origin=WEB, background=False, phases=("details",))
+
+    assert job.state is JobState.SUCCEEDED and len(calls) >= 7
+    row = store.get_job(job.id)  # atlanan yazmaları sonraki yazma tamamladı: satır eksiksiz
+    assert (row["matches_done"], row["matches_total"], row["schedule_empty_seasons"]) == (4, 4, 2)
+    assert row["log"] == ["[Running] working", "[Completed] Finished"]
+    busy = [record for record in caplog.records if "state database is busy" in record.getMessage()]
+    assert len([record for record in busy if record.levelname == "WARNING"]) == 1  # bir kez uyarı, sonrası ayıklama
+
+
+def test_the_end_of_a_job_is_retried_when_the_state_database_is_busy(
+    manager: JobManager, store: JobStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    finals: List[int] = []
+
+    def fail(fields: Dict[str, Any]) -> bool:
+        if fields.get("finished"):
+            finals.append(1)
+            return len(finals) < 3
+        return False
+
+    _busy_updates(store, monkeypatch, fail)
+    job = manager.submit(JobKind.FETCH, {}, lambda handle: handle.log("working"), origin=WEB, background=False)
+
+    assert len(finals) == 3 and job.state is JobState.SUCCEEDED
+    assert store.get_job(job.id)["log"] == ["[Running] working", "[Completed] Finished"]  # son satır bir kez
+    assert store._leases.holder("writer") is None and store.snapshot()["is_running"] is False
+
+
+def test_a_job_whose_end_cannot_be_written_is_reaped_later(
+    manager: JobManager, store: JobStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _busy_updates(store, monkeypatch, lambda fields: bool(fields.get("finished")))
+    with pytest.raises(StoreBusy):
+        manager.submit(JobKind.FETCH, {}, lambda handle: None, origin=WEB, background=False)
+    monkeypatch.undo()
+
+    # Kilit bırakıldı, satır "running" kaldı: dizini açan başka bir depo onu kesilmiş sayar
+    assert store._leases.holder("writer") is None and store.snapshot()["is_running"] is False
+    other = JobStore(store.db_path)
+    try:
+        (row,) = other.list_jobs()
+        assert row["status"] == "interrupted"
+    finally:
+        other.close()
+    assert manager.submit(JobKind.FETCH, {}, lambda handle: None, origin=WEB, background=False).state.terminal
+
+
 # === servis bağlamı ==================================================================================
 
 
@@ -1035,6 +1134,47 @@ def test_web_job_that_cannot_write_fails_with_the_storage_code(web: Any, monkeyp
     assert job.result["error"] == "storage" and job.result["error_path"] == "/data/match_details/17"
     finished = [event.data for event in web.fj.job_manager().events(job.id) if event.type == "finished"][0]
     assert finished["code"] == "storage_error_abort" and finished["params"]["path"] == "/data/match_details/17"
+
+
+def test_a_web_job_makes_its_data_directory_a_full_store(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Gerçek bağlamla: iş, deposunu açar; `.meta/` altında schema.json ve catalog.db de oluşur."""
+    import src.web.fetch_job as fj
+    from src.web.routes.scrape import FetchRequest
+
+    data_dir = tmp_path / "data"
+    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    jobs = JobStore(default_db_path(str(data_dir)))  # web sunucusunun iş deposu: yalnızca state.db kurar
+    monkeypatch.setattr(fj, "_job_store", jobs)
+    monkeypatch.setattr(fj, "_refresh_scraper_state", lambda: jobs.snapshot())
+    monkeypatch.setattr("src.services.sync.export_all_csv", lambda ctx: None)
+    try:
+        with pytest.raises(StoreError):
+            open_store(data_dir, create=False)  # henüz bir depo değil: schema.json yok
+
+        fj.run_fetch_job(jobs.create_running({"mode": "details"}), FetchRequest(mode="details", league_id=17))
+
+        assert jobs.snapshot()["status"] == "Completed"
+        assert {"schema.json", "state.db", "catalog.db"} <= set(os.listdir(data_dir / ".meta"))
+        assert open_store(data_dir, create=False).info(sizes=False).rows["state"]["jobs"] == 1
+
+        # Depo açılamazsa iş yine çalışır
+        class NoStore:
+            def __init__(self, ctx: Any) -> None:
+                self.config, self.match_data_fetcher = ctx.config, ctx.match_data_fetcher
+
+            @property
+            def store(self) -> Any:
+                raise StoreError("state.db bu koddan yeni")
+
+        real = fj.build_context
+        monkeypatch.setattr(fj, "build_context", lambda config_manager: NoStore(real(config_manager)))
+        fj.run_fetch_job(jobs.create_running({"mode": "details"}), FetchRequest(mode="details", league_id=17))
+        assert jobs.snapshot()["status"] == "Completed"
+        assert any("could not be opened" in record.getMessage() for record in caplog.records)
+    finally:
+        jobs.close()
 
 
 def test_a_job_finished_before_its_thread_started_is_left_alone(web: Any, caplog: pytest.LogCaptureFixture) -> None:
