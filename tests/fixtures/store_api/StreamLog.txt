@@ -6,6 +6,7 @@ class StreamLog:
     def read(self, *, after: int = 0, limit: int = DEFAULT_READ_LIMIT, streams: Sequence[str] = (), types: Sequence[str] = (), event_ids: Sequence[int] = (), sport: Optional[str] = None, tournament_ids: Sequence[int] = ()) -> StreamBatch
     def head(self) -> StreamHead
     def wait(self, *, after: int, timeout: float) -> bool
-    def prune(self, *, max_age_s: Optional[float] = None, max_rows: Optional[int] = None) -> int
+    def prune(self, *, max_age_s: Optional[float] = DEFAULT_PRUNE_MAX_AGE_SECONDS, max_rows: Optional[int] = DEFAULT_PRUNE_MAX_ROWS) -> int
     def cursor(self, sink: str) -> int
+    def cursors(self) -> List[SinkCursor]
     def set_cursor(self, sink: str, seq: int, *, error: Optional[str] = None) -> None

@@ -1,0 +1,4 @@
+# src.store.BackupNotFound
+# kaynak: src/store/backup.py
+class BackupNotFound(StoreError):
+    default_message = ...

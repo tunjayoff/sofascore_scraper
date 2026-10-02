@@ -8,3 +8,4 @@ class BackupInfo:
     with_env: bool
     created_at: str
     size: int
+    format: Optional[int] = None

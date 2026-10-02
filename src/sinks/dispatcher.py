@@ -51,7 +51,13 @@ from src.sinks.base import (
     StopToken,
     SystemClock,
 )
-from src.store import LeaseHeld, StoreError, StreamEvent
+from src.store import (
+    DEFAULT_PRUNE_MAX_AGE_SECONDS,
+    DEFAULT_PRUNE_MAX_ROWS,
+    LeaseHeld,
+    StoreError,
+    StreamEvent,
+)
 
 if TYPE_CHECKING:
     from src.store import Store
@@ -75,10 +81,9 @@ LEASE_RETRY_SECONDS = 5.0
 ERROR_RETRY_SECONDS = 5.0  # `run`: beklenmeyen bir hatadan sonra döngü bu kadar bekler ve sürer
 DRAIN_TIMEOUT_SECONDS = 10.0
 
-# Günlüğün saklama süresi (01-storage.md 9.3); ST-24 bunları `StreamLog.prune`'un varsayılanı yapana kadar burada
+# Günlük saatte bir budanır; saklama süresi `StreamLog.prune`'un varsayılanlarıdır (01-storage.md 9.3: 7 gün,
+# 1.000.000 satır; src/store/streams.py)
 PRUNE_INTERVAL_SECONDS = 3600.0
-PRUNE_MAX_AGE_SECONDS = 7 * 24 * 3600.0
-PRUNE_MAX_ROWS = 1_000_000
 
 REASON_MAX_AGE = "max_age"
 REASON_PRUNED = "pruned"
@@ -589,7 +594,8 @@ class Dispatcher:
             return
         self._last_prune = now
         try:
-            removed = self._store.streams.prune(max_age_s=PRUNE_MAX_AGE_SECONDS, max_rows=PRUNE_MAX_ROWS)
+            removed = self._store.streams.prune(max_age_s=DEFAULT_PRUNE_MAX_AGE_SECONDS,
+                                                max_rows=DEFAULT_PRUNE_MAX_ROWS)
         except STORE_ERRORS as e:
             logger.warning("The event log could not be pruned (%s)", type(e).__name__)
             return
@@ -660,8 +666,6 @@ __all__ = [
     "DRAIN_TIMEOUT_SECONDS",
     "LEASE_NAME",
     "PRUNE_INTERVAL_SECONDS",
-    "PRUNE_MAX_AGE_SECONDS",
-    "PRUNE_MAX_ROWS",
     "READ_LIMIT",
     "REASON_MAX_AGE",
     "REASON_PRUNED",

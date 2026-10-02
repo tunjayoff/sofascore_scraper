@@ -52,6 +52,11 @@ STREAMS: Tuple[str, ...] = (LIVE_STREAM, CHANGE_STREAM, JOB_STREAM, SYSTEM_STREA
 DEFAULT_READ_LIMIT = 500
 WAIT_POLL_SECONDS = 0.2  # başka süreçlerin eklemeleri bu aralıkla yoklanır
 
+# Günlüğün saklama süresi (docs/design/01-storage.md 9.3): `prune`'un varsayılanları. Budamayı `live` ya da
+# `sinks` kilidini tutan süreç saatte bir çalıştırır (src/sinks/dispatcher.py, src/services/live/supervisor.py).
+DEFAULT_PRUNE_MAX_AGE_SECONDS = 7 * 24 * 3600.0
+DEFAULT_PRUNE_MAX_ROWS = 1_000_000
+
 META_STREAM_ID = "stream_id"
 META_PRUNED = "stream_pruned"  # JSON: akış adı → o akışta budanan en büyük sıra numarası
 
@@ -124,6 +129,22 @@ class StreamHead:
     stream_id: str
     first_seq: int
     last_seq: int
+
+
+@dataclass(frozen=True)
+class SinkCursor:
+    """
+    Bir sink'in kayıtlı konumu (`sink_cursors` satırı). Kaldırılmış sink'lerin satırları da kalır.
+
+    seq         sink'e en son teslim edilen sıra numarası
+    updated_at  satırın son yazıldığı an (epoch saniye)
+    last_error  son teslim denemesinin hatası; None: hata yok
+    """
+
+    sink: str
+    seq: int
+    updated_at: int
+    last_error: Optional[str] = None
 
 
 def _check_stream(stream: Any) -> str:
@@ -356,11 +377,13 @@ class StreamLog:
 
     # --- budama -----------------------------------------------------------------------------
 
-    def prune(self, *, max_age_s: Optional[float] = None, max_rows: Optional[int] = None) -> int:
+    def prune(self, *, max_age_s: Optional[float] = DEFAULT_PRUNE_MAX_AGE_SECONDS,
+              max_rows: Optional[int] = DEFAULT_PRUNE_MAX_ROWS) -> int:
         """
         `max_age_s` saniyeden eski satırları ve en yeni `max_rows` satırın dışında kalanları siler; silinen
-        satır sayısını döndürür. İkisi de None ise hiçbir şey silinmez. Silinenlerin gerisinde kalmış bir
-        tüketici bir sonraki `read`'de `gap=True` görür.
+        satır sayısını döndürür. Varsayılanlar bölüm 9.3'ünkiler (7 gün, 1.000.000 satır); None o ölçütü
+        kapatır, ikisi de None ise hiçbir şey silinmez. Silinenlerin gerisinde kalmış bir tüketici bir sonraki
+        `read`'de `gap=True` görür.
         """
         if max_age_s is not None and max_age_s < 0:
             raise StoreError(f"max_age_s negatif olamaz: {max_age_s!r}", detail="max_age_s")
@@ -414,6 +437,16 @@ class StreamLog:
         row = self._state.connection().execute("SELECT seq FROM sink_cursors WHERE sink = ?", (sink,)).fetchone()
         return int(row[0]) if row is not None else 0
 
+    def cursors(self) -> List[SinkCursor]:
+        """
+        Kayıtlı bütün sink konumları, ada göre sıralı (`ssc status` sink başına konum, gecikme ve son hata için
+        okur). Hiç teslim yapmamış bir sink'in satırı yoktur; kaldırılmış sink'lerin satırları kalır.
+        """
+        rows = self._state.connection().execute(
+            "SELECT sink, seq, updated_at, last_error FROM sink_cursors ORDER BY sink").fetchall()
+        return [SinkCursor(sink=str(row[0]), seq=int(row[1]), updated_at=int(row[2]),
+                           last_error=None if row[3] is None else str(row[3])) for row in rows]
+
     def set_cursor(self, sink: str, seq: int, *, error: Optional[str] = None) -> None:
         """
         Sink'in konumunu yazar. `error`: son teslim denemesinin hatası (konum ilerlemeden de yazılabilir);
@@ -436,12 +469,15 @@ class StreamLog:
 
 __all__ = [
     "CHANGE_STREAM",
+    "DEFAULT_PRUNE_MAX_AGE_SECONDS",
+    "DEFAULT_PRUNE_MAX_ROWS",
     "DEFAULT_READ_LIMIT",
     "JOB_STREAM",
     "LIVE_STREAM",
     "STREAMS",
     "SYSTEM_STREAM",
     "WAIT_POLL_SECONDS",
+    "SinkCursor",
     "StreamBatch",
     "StreamEvent",
     "StreamHead",

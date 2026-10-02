@@ -149,15 +149,15 @@ def test_config_backup_is_allowed_while_a_job_runs(scratch_data_dir, running_job
     r = client.post("/api/data/backup?scope=config")
     assert r.status_code == 200, r.text
     with zipfile.ZipFile(scratch_data_dir / "backups" / r.json()["filename"]) as zf:
-        assert "leagues.txt" in zf.namelist()
-        assert not any(n.startswith("data/") for n in zf.namelist())
+        assert "config/leagues.txt" in zf.namelist()  # biçim 2 (ST-24): ayar dosyaları config/ altında
+        assert not any(n.startswith(("seasons/", "matches/", "match_details/", "v3/")) for n in zf.namelist())
 
 
 def test_backup_works_when_no_job_runs(scratch_data_dir):
     r = client.post("/api/data/backup")
     assert r.status_code == 200, r.text
     with zipfile.ZipFile(scratch_data_dir / "backups" / r.json()["filename"]) as zf:
-        assert "data/matches/17_Premier_League/x.json" in zf.namelist()
+        assert "matches/17_Premier_League/x.json" in zf.namelist()  # biçim 2: veri dizinine göre yol
     assert client.post("/api/fetch", json={"mode": "full", "league_id": 17}).status_code == 200
 
 

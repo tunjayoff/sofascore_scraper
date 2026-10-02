@@ -69,6 +69,8 @@ if _TYPE_CHECKING:  # tür denetleyicileri ve API anlık görüntüsü adları b
     from src.store.backup import BackupInfo, BackupManager
     from src.store.entities import CategoryRow, SportRow
     from src.store.export import Exporter, ExportReport, ExportSkip
+    from src.store.backup import BackupCheck, BackupInvalid, BackupNotFound, RestoreRefused, RestoreReport
+    from src.store.streams import DEFAULT_PRUNE_MAX_AGE_SECONDS, DEFAULT_PRUNE_MAX_ROWS, SinkCursor
 
 _LAZY = {
     "open_store": "src.store.api",
@@ -135,6 +137,14 @@ _LAZY = {
     "Exporter": "src.store.export",
     "ExportReport": "src.store.export",
     "ExportSkip": "src.store.export",
+    "BackupCheck": "src.store.backup",
+    "BackupInvalid": "src.store.backup",
+    "BackupNotFound": "src.store.backup",
+    "RestoreRefused": "src.store.backup",
+    "RestoreReport": "src.store.backup",
+    "SinkCursor": "src.store.streams",
+    "DEFAULT_PRUNE_MAX_AGE_SECONDS": "src.store.streams",
+    "DEFAULT_PRUNE_MAX_ROWS": "src.store.streams",
 }
 
 
@@ -216,6 +226,14 @@ __all__ = [
     "Exporter",
     "ExportReport",
     "ExportSkip",
+    "BackupCheck",
+    "BackupInvalid",
+    "BackupNotFound",
+    "RestoreRefused",
+    "RestoreReport",
+    "SinkCursor",
+    "DEFAULT_PRUNE_MAX_AGE_SECONDS",
+    "DEFAULT_PRUNE_MAX_ROWS",
     "StoreError",
     "LeaseHeld",
     "StoreBusy",

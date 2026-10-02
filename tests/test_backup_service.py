@@ -1,11 +1,12 @@
 """
 Veri yedeği (plan maddesi ST-19; docs/design/01-storage.md bölüm 9.1).
 
-Yedek, web API'sinin bugünkü zip düzeninde ve adıyla üretilir: `backups/backup_<kapsam>[_with_env]_<zaman>.zip`;
-ayar dosyaları zip'in kökünde (dosya adlarıyla), `.env` yalnızca istenirse `.env` adıyla, veri ağaçları
-`<veri dizininin adı>/seasons/...` biçiminde. Altın dosya (tests/golden/backup/members.json) sabit veri
-dizinlerinde (`store_fixtures`) her kapsamın üye listesini tutar: ad, boyut, CRC ve sıkıştırma türü (zaman
-damgası ve dosya tarihleri hariç). Yeniden üretmek için:
+Yedek biçim 2'dedir (ST-24): `backups/backup_<kapsam>[_with_env]_<zaman>.zip`; `backup.json`, ayar dosyaları
+`config/<ad>`, `.env` yalnızca istenirse `config/.env`, veri ağaçları veri dizinine göre (`seasons/...`).
+Altın dosya (tests/golden/backup/members.json) sabit veri dizinlerinde (`store_fixtures`) her kapsamın üye
+listesini tutar: ad, boyut, CRC ve sıkıştırma türü (zaman damgası ve dosya tarihleri hariç; `backup.json`,
+`.meta/schema.json` ve `.meta/state.db` her çalıştırmada değişen kimlik ve zaman taşıdığı için yalnızca adlarıyla).
+Yeniden üretmek için:
 
     REGEN_BACKUP_GOLDEN=1 python -m pytest tests/test_backup_service.py
 """
@@ -36,13 +37,18 @@ NAME_RE = r"backup_{scope}{env}_\d{{8}}_\d{{6}}\.zip"
 ENV_TEXT = "PROXY_URL=http://example.invalid:1\n"
 
 
+# Her yedekte değişen üyeler (deponun kimliği, zaman damgaları): boyutları ve CRC'leri altın dosyaya girmez
+VOLATILE = ("backup.json", ".meta/schema.json", ".meta/state.db")
+
+
 def _members(path: str) -> List[List[Any]]:
     """
     Üye başına ad, boyut, CRC ve sıkıştırma türü. Sabit dizinlerin CSV dosyaları maç saatlerini makinenin saat
     diliminde yazar (içerik makineye bağlı, boyut değil): onların CRC'si altın dosyaya girmez (None).
     """
     with zipfile.ZipFile(path) as zf:
-        return sorted([info.filename, info.file_size, None if info.filename.endswith(".csv") else info.CRC,
+        return sorted([info.filename, None if info.filename in VOLATILE else info.file_size,
+                       None if info.filename.endswith(".csv") or info.filename in VOLATILE else info.CRC,
                        info.compress_type] for info in zf.infolist())
 
 
@@ -100,7 +106,7 @@ def test_a_backup_with_env_is_private(configured: Path, monkeypatch: pytest.Monk
     path = fixture.data_dir / "backups" / made["filename"]
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
     with zipfile.ZipFile(path) as zf:
-        assert zf.read(".env").decode("utf-8") == ENV_TEXT
+        assert zf.read("config/.env").decode("utf-8") == ENV_TEXT
 
 
 # --- BackupService ve Store.backup ----------------------------------------------------------------------
@@ -121,7 +127,7 @@ def test_the_service_writes_through_the_store_and_lists_newest_first(configured:
     assert newer.scope == "config" and newer.with_env and newer.name.startswith("backup_config_with_env_")
     assert newer.size == os.path.getsize(newer.path) and os.path.dirname(newer.path) == store.backup.directory
     with zipfile.ZipFile(newer.path) as zf:
-        assert sorted(zf.namelist()) == [".env", "leagues.txt"]  # olmayan ayar dosyası atlanır
+        assert sorted(zf.namelist()) == ["backup.json", "config/.env", "config/leagues.txt"]  # olmayan atlanır
     (fixture.data_dir / "backups" / "notes.txt").write_text("not a backup", encoding="utf-8")
     assert [info.name for info in service.list()] == [newer.name, older.name]
 

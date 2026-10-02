@@ -1,0 +1,3 @@
+# src.store.DEFAULT_PRUNE_MAX_AGE_SECONDS
+# kaynak: src/store/streams.py
+DEFAULT_PRUNE_MAX_AGE_SECONDS = 7 * 24 * 3600.0

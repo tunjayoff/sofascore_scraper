@@ -1,0 +1,3 @@
+# src.store.DEFAULT_PRUNE_MAX_ROWS
+# kaynak: src/store/streams.py
+DEFAULT_PRUNE_MAX_ROWS = 1000000

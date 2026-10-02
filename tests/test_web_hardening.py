@@ -1125,13 +1125,13 @@ def test_backup_with_env_says_so_in_its_name(tmp_path, monkeypatch):
     plain = client.post("/api/data/backup?scope=config").json()
     assert "with_env" not in plain["filename"]
     with zipfile.ZipFile(os.path.join(data_mod._backups_dir(), plain["filename"])) as zf:
-        assert ".env" not in zf.namelist()
+        assert "config/.env" not in zf.namelist()  # biçim 2 (ST-24): ayarlar config/ altında
 
     with_env = client.post("/api/data/backup?scope=config&include_env=true").json()
     assert re.fullmatch(r"backup_config_with_env_\d{8}_\d{6}\.zip", with_env["filename"])
     path = os.path.join(data_mod._backups_dir(), with_env["filename"])
     with zipfile.ZipFile(path) as zf:
-        assert ".env" in zf.namelist() and "leagues.txt" in zf.namelist()
+        assert "config/.env" in zf.namelist() and "config/leagues.txt" in zf.namelist()
     if os.name == "posix":
         assert _mode(path) == 0o600
     # İndirme bağlantısı yeni adla da çalışır
