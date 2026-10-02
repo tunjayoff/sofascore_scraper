@@ -1,0 +1,19 @@
+{
+  "case_id": "A_notstarted-0-not-started",
+  "event_id": 16419100,
+  "fetched_at_utc": "2026-10-01T14:00:58+00:00",
+  "source_file": "research/all_sports/status_examples/handball/event_notstarted-0-not-started__16419100.json",
+  "status": {
+    "code": 0,
+    "description": "Not started",
+    "type": "notstarted"
+  },
+  "winnerCode": null,
+  "homeScore": {},
+  "awayScore": {},
+  "startTimestamp": 1791118800,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 0
+  }
+}

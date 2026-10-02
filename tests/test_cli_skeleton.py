@@ -47,6 +47,7 @@ from src.cli.output import CliWarning, CommandResult, Output
 from src.config import loader
 from src.exceptions import ConfigError as LegacyConfigError
 from src.exceptions import StorageError
+from src.sports import sport_slugs
 from src.version import __version__
 
 REPO = Path(__file__).resolve().parents[1]
@@ -1157,7 +1158,8 @@ def test_language_of_the_config_file_applies_to_the_text_of_commands_that_load_i
 def test_help_names_every_sport_and_not_only_football(cli):
     run = cli("--help")
     assert run.exit_code == 0 and run.stderr == ""
-    assert "match data (football, basketball, tennis)" in run.stdout
+    assert f"match data ({', '.join(sport_slugs())})" in run.stdout  # src/sports.py, SP-1: 11 spor
+    assert "football, basketball, tennis, american-football" in run.stdout
     assert "usage: ssc [global options] [--version] COMMAND ..." in run.stdout
     for name in ("config", "describe", "diagnostics", "doctor", "version"):
         assert re.search(rf"^    {name}\s", run.stdout, re.MULTILINE), name

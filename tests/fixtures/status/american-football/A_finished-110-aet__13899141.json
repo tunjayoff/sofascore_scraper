@@ -1,0 +1,43 @@
+{
+  "case_id": "A_finished-110-aet",
+  "event_id": 13899141,
+  "fetched_at_utc": "2026-10-01T12:50:51+00:00",
+  "source_file": "research/all_sports/status_examples/american-football/event_finished-110-aet__13899141.json",
+  "status": {
+    "code": 110,
+    "description": "AET",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 23,
+    "display": 23,
+    "period1": 0,
+    "period2": 9,
+    "period3": 0,
+    "period4": 11,
+    "normaltime": 20,
+    "overtime": 3
+  },
+  "awayScore": {
+    "current": 20,
+    "display": 20,
+    "period1": 7,
+    "period2": 7,
+    "period3": 6,
+    "period4": 0,
+    "normaltime": 20,
+    "overtime": 0
+  },
+  "startTimestamp": 1763920800,
+  "time": {
+    "played": 4383,
+    "periodLength": 900,
+    "overtimeLength": 600,
+    "totalPeriodCount": 4,
+    "currentPeriodStartTimestamp": 1763933749
+  },
+  "changes": {
+    "changeTimestamp": 1763934685
+  }
+}

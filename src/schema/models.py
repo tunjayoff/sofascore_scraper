@@ -25,7 +25,7 @@ import dataclasses
 from dataclasses import dataclass, field
 from typing import Any, ClassVar, Dict, Literal, Mapping, Optional, Tuple, Union
 
-from src.sports import ScoreFamily
+from src.sports import PeriodFormat, ScoreFamily
 
 # Sürüm: alan eklemek serbesttir; alan silmek, yeniden adlandırmak, tipini, birimini ya da anlamını
 # değiştirmek ve kapalı bir sayıma değer eklemek sürümü artırır (belge, bölüm 3).
@@ -37,7 +37,7 @@ EVENT_ENVELOPE_ID = "sofascore.event/1"
 StatusClassName = Literal["not_started", "live", "completed", "decided_without_play", "void", "unknown"]
 Side = Literal["home", "away", "draw"]
 ParticipantType = Literal["team", "player", "pair", "other"]
-PeriodsFormat = Literal["quarters", "halves"]
+PeriodsFormat = PeriodFormat  # src/sports.py: "quarters", "halves", "thirds"
 Settlement = Literal["open", "provisional", "final"]
 RecordSource = Literal["event", "listing"]
 SliceState = Literal["ok", "empty", "error", "not_requested"]
@@ -256,11 +256,11 @@ class PeriodScore(Model):
     SUMMARY: ClassVar[str] = "Points of one period."
 
     number: int = spec(
-        "Position of the period within the format, starting at 1: quarter 1 to 4, or half 1 to 2.",
-        source="`periodN`: N for `quarters`; `period2` is 1 and `period4` is 2 for `halves`")
-    home: Optional[int] = spec("Points of the home side in the period.", unit="points",
+        "Position of the period within the format, starting at 1: quarter 1 to 4, half 1 to 2, or period 1 to 3.",
+        source="`periodN`: N, except for basketball `halves`, where `period2` is 1 and `period4` is 2")
+    home: Optional[int] = spec("Points of the home side in the period (goals in the goal sports).", unit="points",
                                source="`homeScore.periodN`")
-    away: Optional[int] = spec("Points of the away side in the period.", unit="points",
+    away: Optional[int] = spec("Points of the away side in the period (goals in the goal sports).", unit="points",
                                source="`awayScore.periodN`")
 
 
@@ -268,7 +268,8 @@ class PeriodScore(Model):
 class PeriodsScore(Model):
     """Periyot ailesi skoru (basketbol)."""
 
-    SUMMARY: ClassVar[str] = "Score family `periods`: points by period (basketball)."
+    SUMMARY: ClassVar[str] = ("Score family `periods`: points by period (basketball, American football, Aussie rules, "
+                              "ice hockey, handball, rugby, futsal, minifootball, floorball).")
 
     family: Literal["periods"] = spec("Always `periods`.", source="sport registry")
     home: Optional[int] = spec("Headline score of the home side: points including overtime.", unit="points",
@@ -277,7 +278,8 @@ class PeriodsScore(Model):
                                source="`awayScore.display`, else `awayScore.current`")
     format: Optional[PeriodsFormat] = spec(
         "How regulation time is divided. Null while no period score exists.",
-        source="`quarters` when `period1` or `period3` is present, `halves` when only `period2` / `period4` are",
+        source="sport registry (`src/sports.py`); basketball: `quarters` when `period1` or `period3` is present, "
+               "`halves` when only `period2` / `period4` are",
         open_enum=True)
     periods: Tuple[PeriodScore, ...] = spec("Points of each period of regulation time that has a score, in order.",
                                             source="`period1` to `period4`")
@@ -286,6 +288,10 @@ class PeriodsScore(Model):
     overtime: Optional[ScorePair] = spec("Points scored in overtime alone. Null without overtime.",
                                          unit="points", source="`overtime`")
     final: Optional[ScorePair] = spec("Final points including overtime.", unit="points", source="`current`")
+    penalties: Optional[ScorePair] = spec(
+        "Goals of the penalty shoot-out alone. Null without a shoot-out, and always null for basketball. In the "
+        "one recorded handball shoot-out, `final` and the headline score include these goals.",
+        unit="goals", source="`penalties`")
 
 
 @dataclass(frozen=True)

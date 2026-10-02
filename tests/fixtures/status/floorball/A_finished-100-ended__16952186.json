@@ -1,0 +1,35 @@
+{
+  "case_id": "A_finished-100-ended",
+  "event_id": 16952186,
+  "fetched_at_utc": "2026-10-01T13:13:04+00:00",
+  "source_file": "research/all_sports/status_examples/floorball/event_finished-100-ended__16952186.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 6,
+    "display": 6,
+    "period1": 2,
+    "period2": 0,
+    "period3": 4,
+    "normaltime": 6
+  },
+  "awayScore": {
+    "current": 4,
+    "display": 4,
+    "period1": 1,
+    "period2": 2,
+    "period3": 1,
+    "normaltime": 4
+  },
+  "startTimestamp": 1790184600,
+  "time": {
+    "currentPeriodStartTimestamp": 1790190641
+  },
+  "changes": {
+    "changeTimestamp": 1790190666
+  }
+}

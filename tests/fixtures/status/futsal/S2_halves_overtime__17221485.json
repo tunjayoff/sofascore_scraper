@@ -1,0 +1,33 @@
+{
+  "case_id": "S2_halves_overtime",
+  "event_id": 17221485,
+  "fetched_at_utc": "2026-10-01T13:11:05+00:00",
+  "source_file": "research/all_sports/events/futsal.jsonl",
+  "status": {
+    "code": 110,
+    "description": "AET",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 6,
+    "display": 6,
+    "period1": 2,
+    "period2": 2,
+    "normaltime": 4,
+    "overtime": 2
+  },
+  "awayScore": {
+    "current": 5,
+    "display": 5,
+    "period1": 0,
+    "period2": 4,
+    "normaltime": 4,
+    "overtime": 1
+  },
+  "startTimestamp": 1790809200,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 1790816823
+  }
+}

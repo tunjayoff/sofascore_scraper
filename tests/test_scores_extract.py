@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from src.status import (BasketballScores, FootballScores, Pair, StatusClass, TennisScores,
+from src.status import (BasketballScores, FootballScores, Pair, PeriodsScores, StatusClass, TennisScores,
                         extract_scores)
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
@@ -154,6 +154,89 @@ def test_tennis_match_tiebreak_heuristic():
     s = extract_scores(_load("tennis/T8_match_tiebreak__17078471"), "tennis")
     assert s.games[-1] == Pair(10, 4)
     assert s.match_tiebreak
+
+
+# --- periyot tabanlı sporlar (plan maddesi SP-1; research/all_sports örnekleri) ---------------------------
+
+def test_basketball_keeps_its_own_sheet_without_the_new_fields():
+    s = extract_scores(_load("basketball/K1_overtime_finished__16346148"), "basketball")
+    assert type(s) is BasketballScores
+    assert not hasattr(s, "penalties")
+
+
+def test_handball_shootout():
+    """Hentbol AP: normal süre, uzatma ve penaltılar ayrı; `current` penaltıları içerir (22 + 5 + 4 = 31)."""
+    s = extract_scores(_load("handball/A_finished-120-ap__15251094"), "handball")
+    assert isinstance(s, PeriodsScores)
+    assert s.format == "halves"
+    assert s.periods == {"period1": Pair(11, 11), "period2": Pair(11, 11)}
+    assert s.regulation == Pair(22, 22)
+    assert s.overtime == Pair(5, 5)
+    assert s.penalties == Pair(4, 3)
+    assert s.final == Pair(31, 30)
+    assert s.aggregated is None and s.aggregated_winner_code is None
+    assert s.winner_code == 1 and s.settleable
+
+
+def test_handball_aggregate():
+    s = extract_scores(_load("handball/S1_aggregated__15986085"), "handball")
+    assert s.aggregated == Pair(80, 65)
+    assert s.aggregated_winner_code is None  # örnekte alan yok
+    assert s.final == Pair(45, 37) and s.penalties is None
+
+
+def test_ice_hockey_overtime_in_thirds():
+    s = extract_scores(_load("ice-hockey/A_finished-110-aet__16356203"), "ice-hockey")
+    assert s.format == "thirds"
+    assert list(s.periods) == ["period1", "period2", "period3"]
+    assert s.regulation == Pair(5, 5) and s.overtime == Pair(1, 0) and s.final == Pair(6, 5)
+
+
+def test_american_football_overtime_in_quarters():
+    s = extract_scores(_load("american-football/A_finished-110-aet__13899141"), "american-football")
+    assert s.format == "quarters"
+    assert sum(p.home for p in s.periods.values()) == s.regulation.home == 20
+    assert s.overtime == Pair(3, 0) and s.final == Pair(23, 20)
+
+
+@pytest.mark.parametrize("rel,fmt", [
+    ("aussie-rules/A_finished-100-ended__12869496", "quarters"),
+    ("floorball/A_finished-100-ended__16952186", "thirds"),
+    ("rugby/A_finished-100-ended__16237238", "halves"),
+    ("minifootball/A_finished-100-ended__17218801", "halves"),
+    ("futsal/S2_halves_overtime__17221485", "halves"),
+])
+def test_periods_add_up_to_regulation(rel, fmt):
+    sport = rel.split("/")[0]
+    s = extract_scores(_load(rel), sport)
+    assert s.format == fmt
+    assert len(s.periods) == {"quarters": 4, "halves": 2, "thirds": 3}[fmt]
+    assert sum(p.home for p in s.periods.values()) == s.regulation.home
+    assert sum(p.away for p in s.periods.values()) == s.regulation.away
+
+
+@pytest.mark.parametrize("rel", ["futsal/A_finished-100-ended__16129341", "futsal/A_finished-110-aet__17121445",
+                                 "floorball/S3_normaltime_only__17049250"])
+def test_headline_only_scores_have_no_format(rel):
+    """Bazı futsal ve florbol turnuvaları periyot skoru vermez: bölünüş yok, sonuç yine okunur."""
+    s = extract_scores(_load(rel), rel.split("/")[0])
+    assert s.format is None and s.periods == {}
+    assert s.final is not None
+
+
+@pytest.mark.parametrize("rel", ["handball/A_notstarted-0-not-started__16419100",
+                                 "ice-hockey/A_canceled-70-canceled__16341235"])
+def test_period_sport_without_a_score(rel):
+    s = extract_scores(_load(rel), rel.split("/")[0])
+    assert isinstance(s, PeriodsScores)
+    assert s.format is None and s.final is None and s.penalties is None and s.aggregated is None
+
+
+def test_new_sports_are_no_longer_unsupported(caplog):
+    with caplog.at_level("WARNING", logger="src.status"):
+        extract_scores(_load("rugby/A_finished-100-ended__16237238"), "rugby")
+        extract_scores(_load("rugby/A_finished-100-ended__16237238"), "volleyball")
+    assert caplog.text.count("desteklenmeyen spor") == 1 and "'volleyball'" in caplog.text
 
 
 # --- ortak ------------------------------------------------------------------------------

@@ -940,7 +940,7 @@
   "PeriodsScore": {
    "type": "object",
    "title": "PeriodsScore",
-   "description": "Score family `periods`: points by period (basketball).",
+   "description": "Score family `periods`: points by period (basketball, American football, Aussie rules, ice hockey, handball, rugby, futsal, minifootball, floorball).",
    "required": [
     "family",
     "home",
@@ -949,7 +949,8 @@
     "periods",
     "regulation",
     "overtime",
-    "final"
+    "final",
+    "penalties"
    ],
    "properties": {
     "family": {
@@ -982,10 +983,11 @@
      ],
      "examples": [
       "quarters",
-      "halves"
+      "halves",
+      "thirds"
      ],
      "description": "How regulation time is divided. Null while no period score exists.",
-     "x-source": "`quarters` when `period1` or `period3` is present, `halves` when only `period2` / `period4` are"
+     "x-source": "sport registry (`src/sports.py`); basketball: `quarters` when `period1` or `period3` is present, `halves` when only `period2` / `period4` are"
     },
     "periods": {
      "type": "array",
@@ -1033,6 +1035,19 @@
      "description": "Final points including overtime.",
      "x-unit": "points",
      "x-source": "`current`"
+    },
+    "penalties": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/ScorePair"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Goals of the penalty shoot-out alone. Null without a shoot-out, and always null for basketball. In the one recorded handball shoot-out, `final` and the headline score include these goals.",
+     "x-unit": "goals",
+     "x-source": "`penalties`"
     }
    }
   },
@@ -1048,15 +1063,15 @@
    "properties": {
     "number": {
      "type": "integer",
-     "description": "Position of the period within the format, starting at 1: quarter 1 to 4, or half 1 to 2.",
-     "x-source": "`periodN`: N for `quarters`; `period2` is 1 and `period4` is 2 for `halves`"
+     "description": "Position of the period within the format, starting at 1: quarter 1 to 4, half 1 to 2, or period 1 to 3.",
+     "x-source": "`periodN`: N, except for basketball `halves`, where `period2` is 1 and `period4` is 2"
     },
     "home": {
      "type": [
       "integer",
       "null"
      ],
-     "description": "Points of the home side in the period.",
+     "description": "Points of the home side in the period (goals in the goal sports).",
      "x-unit": "points",
      "x-source": "`homeScore.periodN`"
     },
@@ -1065,7 +1080,7 @@
       "integer",
       "null"
      ],
-     "description": "Points of the away side in the period.",
+     "description": "Points of the away side in the period (goals in the goal sports).",
      "x-unit": "points",
      "x-source": "`awayScore.periodN`"
     }

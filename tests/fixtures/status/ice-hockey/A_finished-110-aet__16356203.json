@@ -1,0 +1,35 @@
+{
+  "case_id": "A_finished-110-aet",
+  "event_id": 16356203,
+  "fetched_at_utc": "2026-10-01T14:01:56+00:00",
+  "source_file": "research/all_sports/status_examples/ice-hockey/event_finished-110-aet__16356203.json",
+  "status": {
+    "code": 110,
+    "description": "AET",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 6,
+    "display": 6,
+    "period1": 3,
+    "period2": 1,
+    "period3": 1,
+    "normaltime": 5,
+    "overtime": 1
+  },
+  "awayScore": {
+    "current": 5,
+    "display": 5,
+    "period1": 3,
+    "period2": 1,
+    "period3": 1,
+    "normaltime": 5,
+    "overtime": 0
+  },
+  "startTimestamp": 1790809200,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 1790820375
+  }
+}

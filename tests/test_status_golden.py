@@ -20,6 +20,7 @@ from pathlib import Path
 
 import pytest
 
+from src.sports import sport_slugs
 from src.status import extract_scores
 from src.watcher import MatchWatcher
 
@@ -71,7 +72,7 @@ def golden(tmp_path_factory) -> dict:
 
 def test_golden_covers_every_fixture(golden):
     assert sorted(golden) == sorted(_key(p) for p in PATHS)
-    assert {k.split("/")[0] for k in golden} == {"football", "basketball", "tennis"}
+    assert {k.split("/")[0] for k in golden} == set(sport_slugs())
 
 
 @pytest.mark.parametrize("path", PATHS, ids=_key)

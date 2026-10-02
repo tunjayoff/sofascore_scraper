@@ -1,0 +1,37 @@
+{
+  "case_id": "A_finished-100-ended",
+  "event_id": 14203138,
+  "fetched_at_utc": "2026-10-01T14:00:58+00:00",
+  "source_file": "research/all_sports/status_examples/handball/event_finished-100-ended__14203138.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 2,
+  "homeScore": {
+    "current": 26,
+    "display": 26,
+    "period1": 14,
+    "period2": 12,
+    "normaltime": 26
+  },
+  "awayScore": {
+    "current": 30,
+    "display": 30,
+    "period1": 14,
+    "period2": 16,
+    "normaltime": 30
+  },
+  "startTimestamp": 1777215600,
+  "time": {
+    "played": 3600,
+    "periodLength": 1800,
+    "overtimeLength": 300,
+    "totalPeriodCount": 2,
+    "currentPeriodStartTimestamp": 1777221147
+  },
+  "changes": {
+    "changeTimestamp": 1777221151
+  }
+}

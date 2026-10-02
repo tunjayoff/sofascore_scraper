@@ -1,0 +1,37 @@
+{
+  "case_id": "A_finished-100-ended",
+  "event_id": 16237238,
+  "fetched_at_utc": "2026-10-01T13:02:09+00:00",
+  "source_file": "research/all_sports/status_examples/rugby/event_finished-100-ended__16237238.json",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 45,
+    "display": 45,
+    "period1": 21,
+    "period2": 24,
+    "normaltime": 45
+  },
+  "awayScore": {
+    "current": 42,
+    "display": 42,
+    "period1": 28,
+    "period2": 14,
+    "normaltime": 42
+  },
+  "startTimestamp": 1790835000,
+  "time": {
+    "played": 4898,
+    "periodLength": 2400,
+    "overtimeLength": 600,
+    "totalPeriodCount": 2,
+    "currentPeriodStartTimestamp": 1790840831
+  },
+  "changes": {
+    "changeTimestamp": 1790840835
+  }
+}

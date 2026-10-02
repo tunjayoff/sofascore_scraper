@@ -43,6 +43,118 @@
     {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true},
     {"key": "point_by_point", "path": "/event/{event_id}/point-by-point", "required": false, "default_enabled": true}
    ]
+  },
+  {
+   "slug": "american-football",
+   "name": "American football",
+   "i18n_key": "sport.american-football",
+   "score_family": "periods",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
+  },
+  {
+   "slug": "aussie-rules",
+   "name": "Aussie rules",
+   "i18n_key": "sport.aussie-rules",
+   "score_family": "periods",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
+  },
+  {
+   "slug": "ice-hockey",
+   "name": "Hockey",
+   "i18n_key": "sport.ice-hockey",
+   "score_family": "periods",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
+  },
+  {
+   "slug": "handball",
+   "name": "Handball",
+   "i18n_key": "sport.handball",
+   "score_family": "periods",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
+  },
+  {
+   "slug": "rugby",
+   "name": "Rugby",
+   "i18n_key": "sport.rugby",
+   "score_family": "periods",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
+  },
+  {
+   "slug": "futsal",
+   "name": "Futsal",
+   "i18n_key": "sport.futsal",
+   "score_family": "periods",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
+  },
+  {
+   "slug": "minifootball",
+   "name": "Minifootball",
+   "i18n_key": "sport.minifootball",
+   "score_family": "periods",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
+  },
+  {
+   "slug": "floorball",
+   "name": "Floorball",
+   "i18n_key": "sport.floorball",
+   "score_family": "periods",
+   "slices": [
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+   ]
   }
  ]
 }

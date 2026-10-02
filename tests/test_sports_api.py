@@ -4,7 +4,8 @@ from fastapi.testclient import TestClient
 from src import sports
 from src.web.app import app
 
-REGISTERED = ("football", "basketball", "tennis")
+REGISTERED = ("football", "basketball", "tennis", "american-football", "aussie-rules", "ice-hockey", "handball",
+              "rugby", "futsal", "minifootball", "floorball")  # SP-1: + sekiz periyot sporu
 COMMON_KEYS = ("statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents")
 
 

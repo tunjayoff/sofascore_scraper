@@ -1,0 +1,27 @@
+{
+  "case_id": "S3_normaltime_only",
+  "event_id": 17049250,
+  "fetched_at_utc": "2026-10-01T13:13:04+00:00",
+  "source_file": "research/all_sports/events/floorball.jsonl",
+  "status": {
+    "code": 100,
+    "description": "Ended",
+    "type": "finished"
+  },
+  "winnerCode": 1,
+  "homeScore": {
+    "current": 7,
+    "display": 7,
+    "normaltime": 7
+  },
+  "awayScore": {
+    "current": 3,
+    "display": 3,
+    "normaltime": 3
+  },
+  "startTimestamp": 1790793000,
+  "time": {},
+  "changes": {
+    "changeTimestamp": 1790805910
+  }
+}

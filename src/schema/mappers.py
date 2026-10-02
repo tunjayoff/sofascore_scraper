@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 import math
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple, Union, get_args
 
 from src.refresh import DEFAULT_REFRESH_WINDOW_HOURS
 from src.schema.models import (
@@ -47,7 +47,7 @@ from src.schema.models import (
     Status,
     Tournament,
 )
-from src.sports import SPORTS, SportSpec, get_sport, score_family
+from src.sports import SPORTS, PeriodFormat, SportSpec, get_sport, score_family
 from src.status import StatusClass
 
 if TYPE_CHECKING:
@@ -271,7 +271,8 @@ def participant_from_row(row: Union["ParticipantRow", RowLike]) -> Optional[Part
 def _periods(sheet: Mapping[str, Any]) -> Tuple[PeriodScore, ...]:
     """`periods` çizelgesi ({"period2": [38, 33], ...}) → sıra numaralı liste."""
     raw = sheet.get("periods")
-    halves = sheet.get("format") == "halves"
+    # Basketbolun iki yarısı period2/period4'te gelir; öteki sporların yarıları period1/period2'de (SP-1)
+    halves = sheet.get("format") == "halves" and isinstance(raw, dict) and not {"period1", "period3"} & set(raw)
     found: List[PeriodScore] = []
     for key, value in (raw.items() if isinstance(raw, dict) else ()):
         pair = _pair(value)
@@ -329,11 +330,12 @@ def score_from_row(row: Union["EventRow", RowLike]) -> Score:
         fmt = sheet.get("format")
         return PeriodsScore(
             family="periods", home=home, away=away,
-            format=fmt if fmt in ("quarters", "halves") else None,
+            format=fmt if fmt in get_args(PeriodFormat) else None,
             periods=_periods(sheet),
             regulation=_pair(sheet.get("regulation")),
             overtime=_pair(sheet.get("overtime")),
             final=_pair(sheet.get("final")),
+            penalties=_pair(sheet.get("penalties")),
         )
     if family == "sets":
         return SetsScore(
@@ -346,7 +348,7 @@ def score_from_row(row: Union["EventRow", RowLike]) -> Score:
 
 
 def aggregate_from_row(row: Union["EventRow", RowLike]) -> Optional[Aggregate]:
-    """İki maçlı eşleşmenin toplam skoru; bugün yalnızca futbol çizelgesi taşır. Yoksa None."""
+    """İki maçlı eşleşmenin toplam skoru; futbol ve basketbol dışındaki periyot sporlarının çizelgesi taşır. Yoksa None."""
     sheet = _sheet(row)
     pair = _pair(sheet.get("aggregated"))
     winner = _side(sheet.get("aggregated_winner_code"))
