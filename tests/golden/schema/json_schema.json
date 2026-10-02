@@ -1,0 +1,1628 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "sofascore.data/1",
+ "title": "Normalized schema",
+ "description": "The records the platform gives out: API v1 resources, export datasets, stream events. Every field is always present; an unknown value is null. Fields may be added without a new version, so ignore fields you do not know.",
+ "x-schema-version": 1,
+ "x-records": [
+  "Sport",
+  "Category",
+  "Tournament",
+  "Season",
+  "Participant",
+  "Event",
+  "Slice",
+  "Change",
+  "LiveEvent"
+ ],
+ "$defs": {
+  "Sport": {
+   "type": "object",
+   "title": "Sport",
+   "description": "A sport.",
+   "required": [
+    "slug",
+    "name",
+    "id",
+    "score_family"
+   ],
+   "properties": {
+    "slug": {
+     "type": "string",
+     "description": "SofaScore's slug of the sport, lower case. The key of a sport everywhere in the schema.",
+     "x-source": "`tournament.category.sport.slug`"
+    },
+    "name": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "English name of the sport.",
+     "x-source": "`tournament.category.sport.name`"
+    },
+    "id": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "SofaScore's numeric id of the sport; null when no stored payload has shown it.",
+     "x-source": "`tournament.category.sport.id`"
+    },
+    "score_family": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "examples": [
+      "football",
+      "periods",
+      "sets"
+     ],
+     "description": "Which score structure events of this sport carry (see Score). Null for a sport the platform has no score mapping for.",
+     "x-source": "sport registry (`src/sports.py`)"
+    }
+   }
+  },
+  "Category": {
+   "type": "object",
+   "title": "Category",
+   "description": "A country or region, or a tour such as ATP, that groups tournaments.",
+   "required": [
+    "id",
+    "sport",
+    "name",
+    "slug",
+    "country_code"
+   ],
+   "properties": {
+    "id": {
+     "type": "integer",
+     "description": "SofaScore's category id.",
+     "x-source": "`tournament.category.id`"
+    },
+    "sport": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Slug of the sport the category belongs to.",
+     "x-source": "`tournament.category.sport.slug`"
+    },
+    "name": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Name of the category, in English.",
+     "x-source": "`tournament.category.name`"
+    },
+    "slug": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "SofaScore's slug of the category.",
+     "x-source": "`tournament.category.slug`"
+    },
+    "country_code": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "SofaScore's two-letter code of the category's country, as given (mostly ISO 3166-1 alpha-2; SofaScore uses `EN` for England). Null for a category that is not a country, such as ATP.",
+     "x-source": "`tournament.category.alpha2`"
+    }
+   }
+  },
+  "Tournament": {
+   "type": "object",
+   "title": "Tournament",
+   "description": "A competition: SofaScore's unique tournament.",
+   "required": [
+    "id",
+    "sport",
+    "category_id",
+    "name",
+    "slug"
+   ],
+   "properties": {
+    "id": {
+     "type": "integer",
+     "description": "SofaScore's unique-tournament id.",
+     "x-source": "`tournament.uniqueTournament.id`"
+    },
+    "sport": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Slug of the sport.",
+     "x-source": "`tournament.uniqueTournament.category.sport.slug`, else `tournament.category.sport.slug`"
+    },
+    "category_id": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Id of the tournament's Category.",
+     "x-source": "`tournament.uniqueTournament.category.id`, else `tournament.category.id`"
+    },
+    "name": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Name of the tournament, in English.",
+     "x-source": "`tournament.uniqueTournament.name`"
+    },
+    "slug": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "SofaScore's slug of the tournament.",
+     "x-source": "`tournament.uniqueTournament.slug`"
+    }
+   }
+  },
+  "Season": {
+   "type": "object",
+   "title": "Season",
+   "description": "One edition of a tournament.",
+   "required": [
+    "id",
+    "tournament_id",
+    "name",
+    "year"
+   ],
+   "properties": {
+    "id": {
+     "type": "integer",
+     "description": "SofaScore's season id.",
+     "x-source": "`season.id`; `seasons[].id` of the season list"
+    },
+    "tournament_id": {
+     "type": "integer",
+     "description": "Id of the Tournament the season belongs to.",
+     "x-source": "`tournament.uniqueTournament.id` of the event that names the season, or the tournament whose season list holds it"
+    },
+    "name": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Name of the season, for example `Premier League 26/27`.",
+     "x-source": "`season.name`; `seasons[].name`"
+    },
+    "year": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "The season's year text as SofaScore writes it: `26/27`, `2025`.",
+     "x-source": "`season.year`; `seasons[].year`"
+    }
+   }
+  },
+  "Participant": {
+   "type": "object",
+   "title": "Participant",
+   "description": "A competitor of an event: a team, a single player or a pair.",
+   "required": [
+    "id",
+    "sport",
+    "type",
+    "name",
+    "short_name",
+    "slug",
+    "name_code",
+    "country_code",
+    "gender",
+    "national"
+   ],
+   "properties": {
+    "id": {
+     "type": "integer",
+     "description": "SofaScore's id of the competitor (the id space of `homeTeam` / `awayTeam`: teams, single players and pairs share it; it is not the person id of a squad player).",
+     "x-source": "`homeTeam.id`, `awayTeam.id`"
+    },
+    "sport": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Slug of the sport.",
+     "x-source": "`homeTeam.sport.slug`, else the sport of the event"
+    },
+    "type": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      "team",
+      "player",
+      "pair",
+      "other",
+      null
+     ],
+     "description": "What the competitor is: `team`, `player` (one person, as in tennis singles), `pair` (two persons, as in tennis doubles) or `other` (a type code the platform does not know). Null when SofaScore gave no type.",
+     "x-source": "`homeTeam.type`: 0 is `team`, 1 is `player`, 2 is `pair`"
+    },
+    "name": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Name, in English.",
+     "x-source": "`homeTeam.name`"
+    },
+    "short_name": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Short name.",
+     "x-source": "`homeTeam.shortName`"
+    },
+    "slug": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "SofaScore's slug.",
+     "x-source": "`homeTeam.slug`"
+    },
+    "name_code": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Three-letter code, for example `ARS`.",
+     "x-source": "`homeTeam.nameCode`"
+    },
+    "country_code": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "SofaScore's two-letter country code, as given.",
+     "x-source": "`homeTeam.country.alpha2`"
+    },
+    "gender": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "examples": [
+      "M",
+      "F"
+     ],
+     "description": "Gender as SofaScore gives it.",
+     "x-source": "`homeTeam.gender`"
+    },
+    "national": {
+     "type": [
+      "boolean",
+      "null"
+     ],
+     "description": "True for a national team.",
+     "x-source": "`homeTeam.national`"
+    }
+   }
+  },
+  "Event": {
+   "type": "object",
+   "title": "Event",
+   "description": "A match.",
+   "required": [
+    "id",
+    "sport",
+    "category_id",
+    "tournament_id",
+    "season_id",
+    "stage",
+    "round",
+    "start_utc",
+    "status",
+    "participants",
+    "score",
+    "winner",
+    "aggregate",
+    "slug",
+    "custom_id",
+    "quality"
+   ],
+   "properties": {
+    "id": {
+     "type": "integer",
+     "description": "SofaScore's event id.",
+     "x-source": "`id`"
+    },
+    "sport": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Slug of the sport. Null when no stored payload says it.",
+     "x-source": "`tournament.category.sport.slug`"
+    },
+    "category_id": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Id of the Category.",
+     "x-source": "`tournament.category.id`"
+    },
+    "tournament_id": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Id of the Tournament. Null for an event without a unique tournament.",
+     "x-source": "`tournament.uniqueTournament.id`"
+    },
+    "season_id": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Id of the Season.",
+     "x-source": "`season.id`"
+    },
+    "stage": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/Stage"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "The part of the tournament. Null when neither id nor name is known.",
+     "x-source": "`tournament`"
+    },
+    "round": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/Round"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "The round. Null when the event has no round information.",
+     "x-source": "`roundInfo`"
+    },
+    "start_utc": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date-time",
+     "description": "Scheduled start. For tennis this is the planned time, not the first point.",
+     "x-unit": "ISO 8601 UTC",
+     "x-source": "`startTimestamp`"
+    },
+    "status": {
+     "$ref": "#/$defs/Status",
+     "description": "Status: SofaScore's triple and the platform's class.",
+     "x-source": "`status`"
+    },
+    "participants": {
+     "$ref": "#/$defs/EventParticipants",
+     "description": "The two sides.",
+     "x-source": "`homeTeam`, `awayTeam`"
+    },
+    "score": {
+     "oneOf": [
+      {
+       "$ref": "#/$defs/FootballScore"
+      },
+      {
+       "$ref": "#/$defs/PeriodsScore"
+      },
+      {
+       "$ref": "#/$defs/SetsScore"
+      },
+      {
+       "$ref": "#/$defs/PlainScore"
+      }
+     ],
+     "description": "The score, in the structure of the sport's score family.",
+     "x-source": "`homeScore`, `awayScore`"
+    },
+    "winner": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      "home",
+      "away",
+      "draw",
+      null
+     ],
+     "description": "Who won. Null while undecided and when SofaScore names no winner.",
+     "x-source": "`winnerCode`: 1 is `home`, 2 is `away`, 3 is `draw`"
+    },
+    "aggregate": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/Aggregate"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Aggregate of a two-legged tie. Null for every other event.",
+     "x-source": "`homeScore.aggregated`, `awayScore.aggregated`, `aggregatedWinnerCode`"
+    },
+    "slug": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "SofaScore's slug of the event.",
+     "x-source": "`slug`"
+    },
+    "custom_id": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "SofaScore's short id of the pairing, used in its page addresses.",
+     "x-source": "`customId`"
+    },
+    "quality": {
+     "$ref": "#/$defs/Quality",
+     "description": "Provenance and reliability of the record.",
+     "x-source": "derived"
+    }
+   }
+  },
+  "Status": {
+   "type": "object",
+   "title": "Status",
+   "description": "The status of an event: SofaScore's triple and the platform's class.",
+   "required": [
+    "type",
+    "code",
+    "description",
+    "class"
+   ],
+   "properties": {
+    "type": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "examples": [
+      "notstarted",
+      "inprogress",
+      "finished",
+      "postponed",
+      "canceled",
+      "interrupted",
+      "suspended"
+     ],
+     "description": "SofaScore's status type.",
+     "x-source": "`status.type`"
+    },
+    "code": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "SofaScore's status code, for example 100 (ended), 110 (after extra time), 120 (after penalties), 91 (walkover), 92 (retired).",
+     "x-source": "`status.code`"
+    },
+    "description": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "SofaScore's status text, in English, for example `Ended`, `2nd half`.",
+     "x-source": "`status.description`"
+    },
+    "class": {
+     "type": "string",
+     "enum": [
+      "not_started",
+      "live",
+      "completed",
+      "decided_without_play",
+      "void",
+      "unknown"
+     ],
+     "description": "The platform's class of the status. `not_started`: not begun. `live`: in progress. `completed`: played and finished. `decided_without_play`: finished by walkover or retirement. `void`: postponed, cancelled, interrupted, suspended or abandoned. `unknown`: none of these; never silently treated as completed.",
+     "x-source": "derived from `status.type`, then `status.code`, then `status.description` (`src/status.py`)"
+    }
+   }
+  },
+  "EventParticipants": {
+   "type": "object",
+   "title": "EventParticipants",
+   "description": "Both sides of an event.",
+   "required": [
+    "home",
+    "away"
+   ],
+   "properties": {
+    "home": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/EventParticipant"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "The home side (the first-named side). Null when neither its id nor its name is known.",
+     "x-source": "`homeTeam`"
+    },
+    "away": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/EventParticipant"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "The away side (the second-named side). Null when neither its id nor its name is known.",
+     "x-source": "`awayTeam`"
+    }
+   }
+  },
+  "EventParticipant": {
+   "type": "object",
+   "title": "EventParticipant",
+   "description": "A side of an event.",
+   "required": [
+    "id",
+    "name"
+   ],
+   "properties": {
+    "id": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Id of the Participant.",
+     "x-source": "`homeTeam.id` / `awayTeam.id`"
+    },
+    "name": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Name of the participant at the time the event was read.",
+     "x-source": "`homeTeam.name` / `awayTeam.name`"
+    }
+   }
+  },
+  "Stage": {
+   "type": "object",
+   "title": "Stage",
+   "description": "The part of a tournament an event belongs to: SofaScore's (non-unique) tournament object.",
+   "required": [
+    "id",
+    "name"
+   ],
+   "properties": {
+    "id": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "SofaScore's id of the stage.",
+     "x-source": "`tournament.id`"
+    },
+    "name": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Name of the stage, for example `UEFA Champions League, Group A` or `Wimbledon, London, GB, Qualifying, 1st - 2nd Round`.",
+     "x-source": "`tournament.name`"
+    }
+   }
+  },
+  "Round": {
+   "type": "object",
+   "title": "Round",
+   "description": "The round of an event.",
+   "required": [
+    "number",
+    "name",
+    "slug"
+   ],
+   "properties": {
+    "number": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Number of the round.",
+     "x-source": "`roundInfo.round`"
+    },
+    "name": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Name of the round, for example `Quarterfinals`. League rounds have none.",
+     "x-source": "`roundInfo.name`"
+    },
+    "slug": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "SofaScore's slug of the round.",
+     "x-source": "`roundInfo.slug`"
+    }
+   }
+  },
+  "Aggregate": {
+   "type": "object",
+   "title": "Aggregate",
+   "description": "The aggregate score of a two-legged tie, as shown with this leg.",
+   "required": [
+    "home",
+    "away",
+    "winner"
+   ],
+   "properties": {
+    "home": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Aggregate score of this event's home side.",
+     "x-source": "`homeScore.aggregated`"
+    },
+    "away": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Aggregate score of this event's away side.",
+     "x-source": "`awayScore.aggregated`"
+    },
+    "winner": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      "home",
+      "away",
+      "draw",
+      null
+     ],
+     "description": "Who won the tie.",
+     "x-source": "`aggregatedWinnerCode`: 1 is `home`, 2 is `away`, 3 is `draw`"
+    }
+   }
+  },
+  "Quality": {
+   "type": "object",
+   "title": "Quality",
+   "description": "How much the record can be trusted, and where it comes from.",
+   "required": [
+    "source",
+    "observed_at_utc",
+    "change_ts",
+    "settlement",
+    "provisional",
+    "tier_hint",
+    "stale",
+    "status_regressed"
+   ],
+   "properties": {
+    "source": {
+     "type": "string",
+     "enum": [
+      "event",
+      "listing"
+     ],
+     "description": "`event`: the record derives from the stored `/event/{id}` payload. `listing`: the event is known only from a schedule page (a fixture, or a match whose details were never fetched); slices do not exist.",
+     "x-source": "which stored payload the record derives from"
+    },
+    "observed_at_utc": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date-time",
+     "description": "When the platform read the `/event/{id}` payload the record derives from. Null for a `listing` record and for a record stored by a version that did not note the time.",
+     "x-unit": "ISO 8601 UTC",
+     "x-source": "time of the platform's request"
+    },
+    "change_ts": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "SofaScore's own time of its last change to the event. Carried as given; compare it for equality or order to detect a change.",
+     "x-unit": "epoch seconds",
+     "x-source": "`changes.changeTimestamp`"
+    },
+    "settlement": {
+     "type": "string",
+     "enum": [
+      "open",
+      "provisional",
+      "final"
+     ],
+     "description": "`open`: the event has not reached a terminal status, or has no `/event/{id}` payload. `provisional`: terminal status, but it was last read before start time plus the refresh window, so the result may still be corrected. `final`: it was read after the window closed (or the time of the read or the start time is unknown, or the refresh policy is off); the platform will not read it again by itself.",
+     "x-source": "derived: status class, `observed_at_utc`, `start_utc` and the refresh window setting"
+    },
+    "provisional": {
+     "type": "boolean",
+     "description": "True exactly when `settlement` is `provisional`.",
+     "x-source": "derived"
+    },
+    "tier_hint": {
+     "type": [
+      "boolean",
+      "null"
+     ],
+     "description": "True when SofaScore offers player statistics for the event or its tournament, which marks the better covered competitions (their results are corrected sooner). False when both flags are false, null when neither is given.",
+     "x-source": "`tournament.uniqueTournament.hasEventPlayerStatistics`, `hasEventPlayerStatistics`"
+    },
+    "stale": {
+     "type": "boolean",
+     "description": "True when a schedule page read later than the event payload disagrees with it in status, winner, start time or a score field. The next refresh reads the event again.",
+     "x-source": "derived by comparing stored payloads"
+    },
+    "status_regressed": {
+     "type": "boolean",
+     "description": "True when the event was stored as completed and a later read showed it as void.",
+     "x-source": "derived from the change log"
+    }
+   }
+  },
+  "ScorePair": {
+   "type": "object",
+   "title": "ScorePair",
+   "description": "A score of both sides.",
+   "required": [
+    "home",
+    "away"
+   ],
+   "properties": {
+    "home": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Value of the home side.",
+     "x-source": "`homeScore.<key>`"
+    },
+    "away": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Value of the away side.",
+     "x-source": "`awayScore.<key>`"
+    }
+   }
+  },
+  "PlainScore": {
+   "type": "object",
+   "title": "PlainScore",
+   "description": "The score of an event whose sport has no score family: only the headline score.",
+   "required": [
+    "family",
+    "home",
+    "away"
+   ],
+   "properties": {
+    "family": {
+     "type": "null",
+     "description": "Always null: the sport has no score mapping.",
+     "x-source": "sport registry"
+    },
+    "home": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Headline score of the home side, as SofaScore displays it.",
+     "x-source": "`homeScore.display`, else `homeScore.current`"
+    },
+    "away": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Headline score of the away side, as SofaScore displays it.",
+     "x-source": "`awayScore.display`, else `awayScore.current`"
+    }
+   }
+  },
+  "FootballScore": {
+   "type": "object",
+   "title": "FootballScore",
+   "description": "Score family `football`: goals by stage of the match.",
+   "required": [
+    "family",
+    "home",
+    "away",
+    "half_time",
+    "regulation",
+    "after_extra_time",
+    "penalties"
+   ],
+   "properties": {
+    "family": {
+     "const": "football",
+     "description": "Always `football`.",
+     "x-source": "sport registry"
+    },
+    "home": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Headline score of the home side: goals including extra time, without the penalty shoot-out.",
+     "x-unit": "goals",
+     "x-source": "`homeScore.display`, else `homeScore.current`"
+    },
+    "away": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Headline score of the away side: goals including extra time, without the penalty shoot-out.",
+     "x-unit": "goals",
+     "x-source": "`awayScore.display`, else `awayScore.current`"
+    },
+    "half_time": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/ScorePair"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Goals in the first half.",
+     "x-unit": "goals",
+     "x-source": "`period1`"
+    },
+    "regulation": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/ScorePair"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Goals after 90 minutes.",
+     "x-unit": "goals",
+     "x-source": "`normaltime`"
+    },
+    "after_extra_time": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/ScorePair"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Goals after extra time (cumulative, without the shoot-out). Null unless the match went to extra time.",
+     "x-unit": "goals",
+     "x-source": "`display`, only when `status.code` is 110 or 120"
+    },
+    "penalties": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/ScorePair"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Goals of the penalty shoot-out alone.",
+     "x-unit": "goals",
+     "x-source": "`penalties`"
+    }
+   }
+  },
+  "PeriodsScore": {
+   "type": "object",
+   "title": "PeriodsScore",
+   "description": "Score family `periods`: points by period (basketball).",
+   "required": [
+    "family",
+    "home",
+    "away",
+    "format",
+    "periods",
+    "regulation",
+    "overtime",
+    "final"
+   ],
+   "properties": {
+    "family": {
+     "const": "periods",
+     "description": "Always `periods`.",
+     "x-source": "sport registry"
+    },
+    "home": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Headline score of the home side: points including overtime.",
+     "x-unit": "points",
+     "x-source": "`homeScore.display`, else `homeScore.current`"
+    },
+    "away": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Headline score of the away side: points including overtime.",
+     "x-unit": "points",
+     "x-source": "`awayScore.display`, else `awayScore.current`"
+    },
+    "format": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "examples": [
+      "quarters",
+      "halves"
+     ],
+     "description": "How regulation time is divided. Null while no period score exists.",
+     "x-source": "`quarters` when `period1` or `period3` is present, `halves` when only `period2` / `period4` are"
+    },
+    "periods": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/PeriodScore"
+     },
+     "description": "Points of each period of regulation time that has a score, in order.",
+     "x-source": "`period1` to `period4`"
+    },
+    "regulation": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/ScorePair"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Points at the end of regulation time.",
+     "x-unit": "points",
+     "x-source": "`normaltime`"
+    },
+    "overtime": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/ScorePair"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Points scored in overtime alone. Null without overtime.",
+     "x-unit": "points",
+     "x-source": "`overtime`"
+    },
+    "final": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/ScorePair"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Final points including overtime.",
+     "x-unit": "points",
+     "x-source": "`current`"
+    }
+   }
+  },
+  "PeriodScore": {
+   "type": "object",
+   "title": "PeriodScore",
+   "description": "Points of one period.",
+   "required": [
+    "number",
+    "home",
+    "away"
+   ],
+   "properties": {
+    "number": {
+     "type": "integer",
+     "description": "Position of the period within the format, starting at 1: quarter 1 to 4, or half 1 to 2.",
+     "x-source": "`periodN`: N for `quarters`; `period2` is 1 and `period4` is 2 for `halves`"
+    },
+    "home": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Points of the home side in the period.",
+     "x-unit": "points",
+     "x-source": "`homeScore.periodN`"
+    },
+    "away": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Points of the away side in the period.",
+     "x-unit": "points",
+     "x-source": "`awayScore.periodN`"
+    }
+   }
+  },
+  "SetsScore": {
+   "type": "object",
+   "title": "SetsScore",
+   "description": "Score family `sets`: sets won and games per set (tennis).",
+   "required": [
+    "family",
+    "home",
+    "away",
+    "sets_won",
+    "sets",
+    "match_tiebreak"
+   ],
+   "properties": {
+    "family": {
+     "const": "sets",
+     "description": "Always `sets`.",
+     "x-source": "sport registry"
+    },
+    "home": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Headline score of the home side: sets won.",
+     "x-unit": "sets",
+     "x-source": "`homeScore.display`, else `homeScore.current`"
+    },
+    "away": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Headline score of the away side: sets won.",
+     "x-unit": "sets",
+     "x-source": "`awayScore.display`, else `awayScore.current`"
+    },
+    "sets_won": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/ScorePair"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Sets won by each side.",
+     "x-unit": "sets",
+     "x-source": "`current`"
+    },
+    "sets": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/SetScore"
+     },
+     "description": "The sets that have a score, in order.",
+     "x-source": "`period1` to `period5`, `period1TieBreak` to `period5TieBreak`"
+    },
+    "match_tiebreak": {
+     "type": "boolean",
+     "description": "True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more.",
+     "x-source": "derived from the set scores (`src/status.py`)"
+    }
+   }
+  },
+  "SetScore": {
+   "type": "object",
+   "title": "SetScore",
+   "description": "One set.",
+   "required": [
+    "number",
+    "home",
+    "away",
+    "tiebreak"
+   ],
+   "properties": {
+    "number": {
+     "type": "integer",
+     "description": "Number of the set, starting at 1.",
+     "x-source": "`periodN`"
+    },
+    "home": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Games the home side won in the set; points when the set is a match tie-break.",
+     "x-unit": "games",
+     "x-source": "`homeScore.periodN`"
+    },
+    "away": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Games the away side won in the set; points when the set is a match tie-break.",
+     "x-unit": "games",
+     "x-source": "`awayScore.periodN`"
+    },
+    "tiebreak": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/ScorePair"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "Points of the set's tie-break. Null when the set had none.",
+     "x-unit": "points",
+     "x-source": "`periodNTieBreak`"
+    }
+   }
+  },
+  "Slice": {
+   "type": "object",
+   "title": "Slice",
+   "description": "One stored response of SofaScore about an event or another entity, and its state.",
+   "required": [
+    "owner_kind",
+    "owner_id",
+    "key",
+    "sub",
+    "state",
+    "has_payload",
+    "fetched_at_utc",
+    "checked_at_utc",
+    "error",
+    "payload"
+   ],
+   "properties": {
+    "owner_kind": {
+     "type": "string",
+     "examples": [
+      "event",
+      "tournament",
+      "season",
+      "team",
+      "player",
+      "sport"
+     ],
+     "description": "What the slice belongs to.",
+     "x-source": "the request that fetched it"
+    },
+    "owner_id": {
+     "type": "integer",
+     "description": "Id of the owner; for `event` the event id.",
+     "x-source": "the request that fetched it"
+    },
+    "key": {
+     "type": "string",
+     "examples": [
+      "event",
+      "statistics",
+      "team_streaks",
+      "pregame_form",
+      "h2h",
+      "lineups",
+      "incidents",
+      "point_by_point",
+      "seasons",
+      "schedule"
+     ],
+     "description": "Name of the slice, for example `event`, `statistics`, `lineups`, `incidents`.",
+     "x-source": "slice registry (`src/sports.py`)"
+    },
+    "sub": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Sub-key for a slice that has several payloads per owner, for example the round of a schedule page. Null when the slice has one payload.",
+     "x-source": "slice registry"
+    },
+    "state": {
+     "type": "string",
+     "enum": [
+      "ok",
+      "empty",
+      "error",
+      "not_requested"
+     ],
+     "description": "`ok`: a payload with data is stored. `empty`: SofaScore answered that it has no such data (404, or a response without content). `error`: the last attempt failed and it is unknown whether data exists. `not_requested`: the platform has not asked for it.",
+     "x-source": "the platform's bookkeeping"
+    },
+    "has_payload": {
+     "type": "boolean",
+     "description": "True when a payload is stored. A slice in state `error` can still hold the payload of an earlier successful read.",
+     "x-source": "the platform's bookkeeping"
+    },
+    "fetched_at_utc": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date-time",
+     "description": "When the stored payload was read.",
+     "x-unit": "ISO 8601 UTC",
+     "x-source": "time of the platform's request"
+    },
+    "checked_at_utc": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date-time",
+     "description": "When the slice was last asked for, whatever the outcome.",
+     "x-unit": "ISO 8601 UTC",
+     "x-source": "time of the platform's request"
+    },
+    "error": {
+     "anyOf": [
+      {
+       "$ref": "#/$defs/SliceError"
+      },
+      {
+       "type": "null"
+      }
+     ],
+     "description": "The last failure. Null unless the state is `error`.",
+     "x-source": "the platform's bookkeeping"
+    },
+    "payload": {
+     "description": "The stored SofaScore response, unchanged (see Raw on request). Present only when asked for; null otherwise.",
+     "x-source": "the whole response"
+    }
+   }
+  },
+  "SliceError": {
+   "type": "object",
+   "title": "SliceError",
+   "description": "The last failed attempt to fetch a slice.",
+   "required": [
+    "reason",
+    "http_status",
+    "at_utc",
+    "count"
+   ],
+   "properties": {
+    "reason": {
+     "type": "string",
+     "examples": [
+      "403",
+      "429",
+      "5xx",
+      "timeout",
+      "network",
+      "parse",
+      "breaker",
+      "corrupt",
+      "other"
+     ],
+     "description": "Why it failed.",
+     "x-source": "the platform's request"
+    },
+    "http_status": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "HTTP status of the failed response, when there was one.",
+     "x-source": "the platform's request"
+    },
+    "at_utc": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date-time",
+     "description": "When the attempt failed.",
+     "x-unit": "ISO 8601 UTC",
+     "x-source": "time of the platform's request"
+    },
+    "count": {
+     "type": "integer",
+     "description": "How many attempts in a row have failed.",
+     "x-source": "the platform's bookkeeping"
+    }
+   }
+  },
+  "Change": {
+   "type": "object",
+   "title": "Change",
+   "description": "A change of an already stored event that a later read found.",
+   "required": [
+    "seq",
+    "recorded_at_utc",
+    "event_id",
+    "sport",
+    "tournament_id",
+    "start_utc",
+    "seconds_after_start",
+    "old_status_class",
+    "new_status_class",
+    "old_change_ts",
+    "new_change_ts",
+    "status_regressed",
+    "tier_hint",
+    "fields"
+   ],
+   "properties": {
+    "seq": {
+     "type": "integer",
+     "description": "Sequence number of the change log. Increases by one per change; pass the last one seen to read the next changes.",
+     "x-source": "the platform's change log"
+    },
+    "recorded_at_utc": {
+     "type": "string",
+     "format": "date-time",
+     "description": "When the platform found the change.",
+     "x-unit": "ISO 8601 UTC",
+     "x-source": "time of the platform's request"
+    },
+    "event_id": {
+     "type": "integer",
+     "description": "Id of the Event.",
+     "x-source": "`id`"
+    },
+    "sport": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Slug of the sport.",
+     "x-source": "`tournament.category.sport.slug`"
+    },
+    "tournament_id": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Id of the Tournament.",
+     "x-source": "`tournament.uniqueTournament.id`"
+    },
+    "start_utc": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date-time",
+     "description": "Scheduled start of the event after the change.",
+     "x-unit": "ISO 8601 UTC",
+     "x-source": "`startTimestamp`"
+    },
+    "seconds_after_start": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "How long after the scheduled start SofaScore made the change: its change time, or the time the platform found the change when SofaScore gave none, minus the start.",
+     "x-unit": "seconds",
+     "x-source": "`changes.changeTimestamp` - `startTimestamp`"
+    },
+    "old_status_class": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      "not_started",
+      "live",
+      "completed",
+      "decided_without_play",
+      "void",
+      "unknown",
+      null
+     ],
+     "description": "Status class before.",
+     "x-source": "derived from `status`"
+    },
+    "new_status_class": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "enum": [
+      "not_started",
+      "live",
+      "completed",
+      "decided_without_play",
+      "void",
+      "unknown",
+      null
+     ],
+     "description": "Status class after.",
+     "x-source": "derived from `status`"
+    },
+    "old_change_ts": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "SofaScore's change time before.",
+     "x-unit": "epoch seconds",
+     "x-source": "`changes.changeTimestamp` of the stored payload"
+    },
+    "new_change_ts": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "SofaScore's change time after.",
+     "x-unit": "epoch seconds",
+     "x-source": "`changes.changeTimestamp` of the new payload"
+    },
+    "status_regressed": {
+     "type": "boolean",
+     "description": "True when the event went from completed to void.",
+     "x-source": "derived"
+    },
+    "tier_hint": {
+     "type": [
+      "boolean",
+      "null"
+     ],
+     "description": "As `Event.quality.tier_hint`, at the time of the change.",
+     "x-source": "`tournament.uniqueTournament.hasEventPlayerStatistics`, `hasEventPlayerStatistics`"
+    },
+    "fields": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/ChangedField"
+     },
+     "description": "The fields that changed, ordered by path. Compared are the status triple, the winner code, the start time and every score field.",
+     "x-source": "difference of the two payloads"
+    }
+   }
+  },
+  "ChangedField": {
+   "type": "object",
+   "title": "ChangedField",
+   "description": "One field that changed between two reads of an event.",
+   "required": [
+    "path",
+    "old",
+    "new"
+   ],
+   "properties": {
+    "path": {
+     "type": "string",
+     "description": "Path of the field in SofaScore's event object: `status.type`, `status.code`, `status.description`, `winnerCode`, `startTimestamp`, `homeScore.<key>`, `awayScore.<key>`.",
+     "x-source": "the path itself"
+    },
+    "old": {
+     "description": "Value before, as SofaScore gave it. Null when the field did not exist.",
+     "x-source": "the stored payload"
+    },
+    "new": {
+     "description": "Value after, as SofaScore gave it. Null when the field no longer exists.",
+     "x-source": "the new payload"
+    }
+   }
+  },
+  "LiveEvent": {
+   "type": "object",
+   "title": "LiveEvent",
+   "description": "An event of a stream: the envelope `sofascore.event/1` that sinks and `ssc events` write.",
+   "required": [
+    "stream",
+    "seq",
+    "type",
+    "ts",
+    "event_id",
+    "sport",
+    "tournament_id",
+    "source",
+    "data"
+   ],
+   "properties": {
+    "stream": {
+     "type": "string",
+     "examples": [
+      "live",
+      "change",
+      "job",
+      "system"
+     ],
+     "description": "The stream the event belongs to.",
+     "x-source": "the producer"
+    },
+    "seq": {
+     "type": "integer",
+     "description": "Sequence number, one sequence for all streams of a data directory. Strictly increasing, not consecutive. De-duplicate on it.",
+     "x-source": "the platform's stream log"
+    },
+    "type": {
+     "type": "string",
+     "examples": [
+      "live.status_changed",
+      "live.score_changed",
+      "live.stuck",
+      "change.recorded",
+      "job.started",
+      "job.finished",
+      "system.blocked",
+      "system.recovered",
+      "system.live_source_changed",
+      "system.sink_dropped"
+     ],
+     "description": "Type of the event, prefixed with its stream.",
+     "x-source": "the producer"
+    },
+    "ts": {
+     "type": "string",
+     "format": "date-time",
+     "description": "When the platform recorded the event, with milliseconds.",
+     "x-unit": "ISO 8601 UTC",
+     "x-source": "the platform's clock"
+    },
+    "event_id": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Id of the Event it is about. Null for events about no match.",
+     "x-source": "`id`"
+    },
+    "sport": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Slug of the sport.",
+     "x-source": "the producer"
+    },
+    "tournament_id": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Id of the Tournament.",
+     "x-source": "`tournament.uniqueTournament.id`"
+    },
+    "source": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "examples": [
+      "push",
+      "poll",
+      "job",
+      "system"
+     ],
+     "description": "How the platform learned of it.",
+     "x-source": "the producer"
+    },
+    "data": {
+     "type": "object",
+     "description": "Type-specific content (see LiveEvent data).",
+     "x-source": "the producer"
+    }
+   }
+  }
+ }
+}

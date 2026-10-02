@@ -1,0 +1,188 @@
+{
+ "source_file": "research/status_samples/football/A_notstarted-0-not-started__17211671.json",
+ "fetched_at_utc": "2026-09-29T15:52:58+00:00",
+ "event": {
+  "eventState": {},
+  "tournament": {
+   "name": "U19 Friendly Games",
+   "slug": "u19-friendly-games",
+   "category": {
+    "name": "World",
+    "slug": "world",
+    "sport": {
+     "name": "Football",
+     "slug": "football",
+     "id": 1
+    },
+    "priority": 20,
+    "country": {},
+    "id": 1468,
+    "flag": "international"
+   },
+   "uniqueTournament": {
+    "name": "U19 Friendly Games",
+    "slug": "u19-friendly-games",
+    "primaryColorHex": "#25497d",
+    "secondaryColorHex": "#d38f1d",
+    "category": {
+     "name": "World",
+     "slug": "world",
+     "sport": {
+      "name": "Football",
+      "slug": "football",
+      "id": 1
+     },
+     "priority": 20,
+     "country": {},
+     "id": 1468,
+     "flag": "international"
+    },
+    "userCount": 2282,
+    "hasRounds": true,
+    "hasPerformanceGraphFeature": false,
+    "showBanner": true,
+    "liveActivityEnabled": false,
+    "country": {},
+    "id": 856,
+    "hasEventPlayerStatistics": false,
+    "displayInverseHomeAwayTeams": false
+   },
+   "priority": 0,
+   "isGroup": false,
+   "competitionType": 3,
+   "isLive": false,
+   "id": 5799
+  },
+  "season": {
+   "name": "U19 Friendly Games 2026",
+   "year": "2026",
+   "editor": false,
+   "id": 87180
+  },
+  "customId": "iajsmaj",
+  "status": {
+   "code": 0,
+   "description": "Not started",
+   "type": "notstarted"
+  },
+  "homeTeam": {
+   "name": "Finland U19",
+   "slug": "finland-u19",
+   "shortName": "Finland U19",
+   "gender": "M",
+   "sport": {
+    "name": "Football",
+    "slug": "football",
+    "id": 1
+   },
+   "userCount": 2088,
+   "manager": {
+    "name": "Peter Lundberg",
+    "slug": "peter-lundberg",
+    "shortName": "P. Lundberg",
+    "country": {
+     "alpha2": "FI",
+     "alpha3": "FIN",
+     "name": "Finland",
+     "slug": "finland"
+    },
+    "id": 788188
+   },
+   "nameCode": "FIN",
+   "class": 1,
+   "disabled": false,
+   "national": true,
+   "type": 0,
+   "country": {
+    "alpha2": "FI",
+    "alpha3": "FIN",
+    "name": "Finland",
+    "slug": "finland"
+   },
+   "id": 22508,
+   "fullName": "Finland U19",
+   "subTeams": [],
+   "teamColors": {
+    "primary": "#ffffff",
+    "secondary": "#0066b3",
+    "text": "#0066b3"
+   },
+   "foundationDateTimestamp": -1976227200,
+   "timeActive": []
+  },
+  "awayTeam": {
+   "name": "Germany U19",
+   "slug": "germany-u19",
+   "shortName": "Germany U19",
+   "gender": "M",
+   "sport": {
+    "name": "Football",
+    "slug": "football",
+    "id": 1
+   },
+   "userCount": 11944,
+   "manager": {
+    "name": "Christian Worns",
+    "slug": "christian-worns",
+    "shortName": "C. Worns",
+    "country": {
+     "alpha2": "DE",
+     "alpha3": "DEU",
+     "name": "Germany",
+     "slug": "germany"
+    },
+    "id": 786433
+   },
+   "nameCode": "GER",
+   "class": 1,
+   "disabled": false,
+   "national": true,
+   "type": 0,
+   "country": {
+    "alpha2": "DE",
+    "alpha3": "DEU",
+    "name": "Germany",
+    "slug": "germany"
+   },
+   "id": 22512,
+   "fullName": "Germany U19",
+   "subTeams": [],
+   "teamColors": {
+    "primary": "#ffffff",
+    "secondary": "#000000",
+    "text": "#000000"
+   },
+   "timeActive": []
+  },
+  "homeScore": {},
+  "awayScore": {},
+  "time": {},
+  "changes": {
+   "changeTimestamp": 0
+  },
+  "hasGlobalHighlights": false,
+  "crowdsourcingDataDisplayEnabled": false,
+  "id": 17211671,
+  "defaultPeriodCount": 2,
+  "defaultPeriodLength": 45,
+  "defaultOvertimeLength": 15,
+  "slug": "germany-u19-finland-u19",
+  "startTimestamp": 1790758800,
+  "finalResultOnly": false,
+  "feedLocked": false,
+  "showTotoPromo": true,
+  "isEditor": false,
+  "eventFilters": {
+   "category": [
+    "national"
+   ],
+   "level": [
+    "pro",
+    "youth"
+   ],
+   "gender": [
+    "M"
+   ]
+  }
+ }
+}
