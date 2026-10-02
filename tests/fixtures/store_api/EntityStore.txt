@@ -11,3 +11,8 @@ class EntityStore:
     def season(self, season_id: int) -> Optional[SeasonRow]
     def participants(self, *, text: Optional[str] = None, sport: Optional[str] = None, ids: Sequence[int] = (), limit: int = 50) -> List[ParticipantRow]
     def sport_of_tournament(self, tournament_id: int) -> Optional[str]
+    def category(self, category_id: int) -> Optional[CategoryRow]
+    def categories(self, *, sport: Optional[str] = None, ids: Sequence[int] = (), limit: int = 100) -> List[CategoryRow]
+    def sport(self, slug: str) -> Optional[SportRow]
+    def sports(self) -> List[SportRow]
+    def put(self, ref: Ref, outcomes: Mapping[SliceKey, Outcome], *, count_empties: Union[bool, Collection[str]] = True, keep_history: Collection[str] = ()) -> PutResult

@@ -1,0 +1,7 @@
+# src.store.SportRow
+# kaynak: src/store/entities.py
+@dataclass(frozen=True)
+class SportRow:
+    slug: str
+    id: Optional[int]
+    name: Optional[str]

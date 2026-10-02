@@ -7,7 +7,7 @@ değil. Dışa açık olanlar: hata sınıfları, cephe (`open_store`, `Store`, 
 (`EventStore`, `EntityStore`, `ChangeLog` ile sorgu ve sonuç türleri: `Ref`, `Scope`, `EventQuery`, `Page`,
 `EventRow`, `SliceInfo`, ...), kataloğun yönetimi (`CatalogAdmin` ve raporları) ve eski düzen yazıcılarının
 gölge kip kancaları (`shadow_*`). Maçların yazma API'si `EventStore.put` / `observe` / `reset_empty_markers` /
-`delete` (sonucu `PutResult`) ve `ChangeLog.append`'tir; maç dışı varlıklarınki sonraki adımda eklenir.
+`delete` (sonucu `PutResult`) ve `ChangeLog.append`'tir; maç dışı varlıklarınki `EntityStore.put`.
 
 Hata sınıfları dışındaki adlar ilk kullanımda yüklenir: kök, cepheyi (SQLite, katalog, türetme) içe
 aktarmadan da alınabilmelidir, çünkü `src.store.files` gibi alt modülleri uygulamanın en alt katmanları
@@ -67,6 +67,7 @@ if _TYPE_CHECKING:  # tür denetleyicileri ve API anlık görüntüsü adları b
     from src.store.verify import VerifyIssue, VerifyReport
     from src.store.api import ClearReport
     from src.store.backup import BackupInfo, BackupManager
+    from src.store.entities import CategoryRow, SportRow
 
 _LAZY = {
     "open_store": "src.store.api",
@@ -128,6 +129,8 @@ _LAZY = {
     "shadow_season_lists": "src.store.api",
     "shadow_changes": "src.store.api",
     "shadow_cleared": "src.store.api",
+    "CategoryRow": "src.store.entities",
+    "SportRow": "src.store.entities",
 }
 
 
@@ -204,6 +207,8 @@ __all__ = [
     "shadow_season_lists",
     "shadow_changes",
     "shadow_cleared",
+    "CategoryRow",
+    "SportRow",
     "StoreError",
     "LeaseHeld",
     "StoreBusy",

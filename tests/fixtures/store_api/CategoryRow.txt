@@ -1,0 +1,9 @@
+# src.store.CategoryRow
+# kaynak: src/store/entities.py
+@dataclass(frozen=True)
+class CategoryRow:
+    id: int
+    sport: Optional[str]
+    name: Optional[str]
+    slug: Optional[str]
+    alpha2: Optional[str]
