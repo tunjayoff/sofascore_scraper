@@ -1013,13 +1013,6 @@ def test_summary_files(fx: sf.LegacyFixture) -> None:
     csv_paths = [s.path for s in summaries if s.kind in ("summary_csv", "matches_csv") and not s.nested]
     assert sorted(csv_paths) == sorted(fx.summary_files)
     assert [s.path for s in summaries] == sorted(s.path for s in summaries)
-    # Aynı dosyalar: `_season_summary_files` (lig dizini başına), sezon id'si olanlar
-    today: Set[str] = set()
-    matches_dir = fx.data_dir / "matches"
-    for league in sorted(matches_dir.iterdir()) if matches_dir.is_dir() else []:
-        for path in MatchDataFetcher._season_summary_files(str(league), None, 0):
-            today.add(Path(path).relative_to(fx.data_dir).as_posix())
-    assert {s.path for s in summaries if s.path.endswith(".csv") and s.season_id is not None} == today
     for summary in summaries:
         if summary.kind == "summary_json":
             assert isinstance(reader.read_summary_json(summary), list)

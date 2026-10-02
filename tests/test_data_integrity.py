@@ -33,6 +33,7 @@ import src.utils as utils
 from src.exceptions import APIError, DataParsingError, NetworkError, RateLimitError, ResourceNotFoundError
 from src.match_data_fetcher import (DETAIL_SLICE_KEYS, SLICE_EMPTY, SLICE_FAILED, SLICE_OK,
                                     UNAVAILABLE_AFTER_ATTEMPTS, UNAVAILABLE_FILE, MatchDataFetcher, SliceOutcome)
+from src.services import pipeline
 from src.store import SliceInfo, open_store
 from src.store import api as store_api
 
@@ -229,7 +230,7 @@ def test_outcome_from_error_separates_not_found_from_failure():
     (None, SLICE_EMPTY),
 ])
 def test_answered_slice_is_ok_only_when_it_carries_data(tmp_path, body, status):
-    assert _fetcher(tmp_path)._answered_outcome("incidents", body).status == status
+    assert pipeline.answered_outcome("incidents", SliceOutcome(SLICE_OK, data=body)).status == status
 
 
 # --- async yol (toplu indirme) -------------------------------------------------------------

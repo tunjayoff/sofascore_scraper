@@ -1,6 +1,0 @@
-# src/match_data_fetcher.py: Store sınırı ihlalleri (docs/design/01-storage.md bölüm 2.4). Bu liste yalnızca küçülebilir.
-# Bir ihlali gideren PR satırını da siler; açıklama: tests/test_store_boundary.py
-[static]
-MatchDataFetcher._season_summary_files:os.listdir x2
-MatchDataFetcher._season_summary_files:os.path.isdir
-MatchDataFetcher._season_summary_files:os.path.isfile

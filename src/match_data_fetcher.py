@@ -1,10 +1,14 @@
-from src.i18n import get_i18n
 """
 SofaScore API'sinden detaylı maç verilerini çeken modül.
 
 P13'ten beri maç detaylarını indiren tek yol src/services/pipeline.py'deki FetchPipeline'dır; buradaki eski adlı
-giriş noktaları (toplu indirme, seçilen maçlar, tek maç, refill, yenileme) yalnızca iş birimlerini kurar. Kayıtların
-okunması, yazıcı (`_save_match_data`), ihtiyaç hesabının önbelleği ve CSV / rapor yardımcıları P15'e kadar burada durur.
+giriş noktaları (toplu indirme, seçilen maçlar, tek maç, refill, yenileme) yalnızca iş birimlerini kurar.
+
+Plan maddesi P15'ten beri sınıf yalnızca eski adlı yüzdür: eşitleme servisi (src/services/sync.py), dışa aktarma ve
+bakım servisleri ile terminal menüsü onu bu adlarla çağırır. İş başka modüllerdedir: boru hattı ve planlama
+(src/services/pipeline.py, planning.py), okumalar (src/services/query.py), CSV (src/services/export.py), kapsam
+raporu (src/services/status.py `StatusService.coverage`). Modül yazdırmaz; ilerleme ve sonuç günlüğe yazılır.
+Eski düzenin yazıcısı `_save_match_data` testlerin kayıt kurma aracı olarak durur (ürün kodu çağırmaz).
 """
 
 import os
@@ -39,13 +43,7 @@ from src.slices import (
     SLICE_FAILED as SLICE_FAILED,
     SLICE_OK as SLICE_OK,
     SliceOutcome as SliceOutcome,
-    has_h2h_data_dict,
-    has_incidents_data_dict,
-    has_lineups_data_dict,
-    has_pregame_form_data_dict,
-    has_team_streaks_data_dict,
     match_detail_slice_present,
-    statistics_has_data,
 )
 
 from src.logger import get_logger
@@ -249,10 +247,6 @@ class MatchDataFetcher:
     def end_job_cache(self) -> None:
         self._need_cache = {}
 
-    def _answered_outcome(self, key: str, data: Any) -> SliceOutcome:
-        """Yanıt gelen dilim gövdesinin sonucu: boru hattının kuralı (src/services/pipeline.py `answered_outcome`)."""
-        return pipeline.answered_outcome(key, SliceOutcome(SLICE_OK, data=data))
-
     # --- boru hattı (src/services/pipeline.py) ---------------------------------------------------------
     #
     # Maç detaylarını indiren tek yol FetchPipeline'dır; aşağıdaki eski giriş noktaları (toplu indirme, seçilen
@@ -429,13 +423,10 @@ class MatchDataFetcher:
         self.processed_dir = os.path.join(self.match_details_dir, "processed")
         self.base_url = base_url()
         self.rate_limit_breaker_triggered = False
-        self.last_rate_limit_headers: List[Dict[str, str]] = []
         self.last_status_counts: Dict[str, int] = {}
         # refresh_match her yenilemede (match_id, değişti_mi) ile çağırır (web iş kartı sayacı)
         self.refresh_listener: Optional[Callable[[str, bool], None]] = None
         self.last_refresh_changed = False
-        # Toplu indirmeyi durduran kalıcı depolama hatası (disk dolu, izin yok); yoksa None
-        self.last_storage_error: Optional[StorageError] = None
 
         # Veri dizinlerinin var olduğundan emin ol
         ensure_directory(self.data_dir)
@@ -469,30 +460,6 @@ class MatchDataFetcher:
         except Exception as e:
             logger.warning(f"Match {mid} could not be loaded from the store ({match_dir}): {e}")
             return {}
-
-    # "Bu yanıtta veri var mı" yüklemleri src/slices.py'dedir; metot adları eski çağrılar için durur.
-
-    def _statistics_has_data(self, d: Dict[str, Any]) -> bool:
-        return statistics_has_data(d)
-
-    def _has_lineups_data_dict(self, d: Dict[str, Any]) -> bool:
-        return has_lineups_data_dict(d)
-
-    def _has_h2h_data_dict(self, d: Dict[str, Any]) -> bool:
-        return has_h2h_data_dict(d)
-
-    def _has_pregame_form_data_dict(self, d: Dict[str, Any]) -> bool:
-        return has_pregame_form_data_dict(d)
-
-    def _has_team_streaks_data_dict(self, d: Dict[str, Any]) -> bool:
-        return has_team_streaks_data_dict(d)
-
-    def _has_incidents_data_dict(self, d: Dict[str, Any]) -> bool:
-        return has_incidents_data_dict(d)
-
-    def match_detail_slice_present(self, key: str, d: Dict[str, Any]) -> bool:
-        """Dilimin verisi var mı (src.slices.match_detail_slice_present)."""
-        return match_detail_slice_present(key, d)
 
     # --- Store'a yazma ---------------------------------------------------------------------------------
     #
@@ -880,38 +847,6 @@ class MatchDataFetcher:
         result = service.write_legacy_csv(self.processed_dir, spec)
         return result.path if result is not None and result.path else ""
 
-    @staticmethod
-    def _season_summary_files(
-        league_path: str, only_season_ids: Optional[List[int]], max_seasons: int
-    ) -> List[str]:
-        """
-        Bir lig dizinindeki sezon özet CSV'leri (`{sid}_..._summary.csv`, eski `_matches.csv`
-        dahil), sezon ID'si sayısal olarak büyükten küçüğe. only_season_ids verilirse yalnızca
-        onlar; max_seasons > 0 ise en yeni N sezon.
-        """
-        by_season: Dict[int, List[str]] = {}
-
-        def add(path: str, sid_text: str) -> None:
-            if sid_text.isdigit():
-                by_season.setdefault(int(sid_text), []).append(path)
-
-        for name in os.listdir(league_path):
-            path = os.path.join(league_path, name)
-            if os.path.isfile(path) and name.endswith(("_summary.csv", "_matches.csv")):
-                add(path, name.split("_", 1)[0])
-            elif os.path.isdir(path):
-                for inner in os.listdir(path):
-                    if inner.endswith(("_summary.csv", "_matches.csv")):
-                        add(os.path.join(path, inner), name.split("_", 1)[0])
-
-        season_ids = sorted(by_season, reverse=True)
-        if only_season_ids is not None:
-            allowed = {int(s) for s in only_season_ids}
-            season_ids = [sid for sid in season_ids if sid in allowed]
-        if max_seasons > 0:
-            season_ids = season_ids[:max_seasons]
-        return [path for sid in season_ids for path in by_season[sid]]
-
     def fetch_all_match_details(
         self,
         league_id: Optional[str] = None,
@@ -953,19 +888,19 @@ class MatchDataFetcher:
             match_ids = self.collect_detail_match_ids(league_id, max_seasons, only_season_ids)
             if match_ids is None:
                 return False
-            print(get_i18n().t("details_unique_ids_found", count=len(match_ids)))
+            logger.info("Found %d unique match ids", len(match_ids))
 
             if not match_ids:
-                print(get_i18n().t("details_no_ids"))
+                logger.warning("No match ids found")
                 return False
 
             match_ids_to_process = self.pending_detail_ids(match_ids)
             complete_count = len(match_ids) - len(match_ids_to_process)
             if complete_count:
-                print(get_i18n().t("details_some_complete", count=complete_count))
+                logger.info("%d matches already have every detail slice", complete_count)
 
             if not match_ids_to_process:
-                print(get_i18n().t("details_all_complete"))
+                logger.info("Every match already has every detail slice")
                 return True
 
             total_success = self.fetch_detail_ids(match_ids_to_process, progress_callback, should_cancel)
@@ -1003,21 +938,17 @@ class MatchDataFetcher:
             only_season_ids=only_season_ids) if tournament is not None or not league_id else {}
 
         if league_id:
-            print(get_i18n().t("details_fetching_league", league_id=league_id))
+            logger.info("Fetching match details for league %s", league_id)
             if tournament not in candidates:
-                print(get_i18n().t("details_league_dir_missing", league_id=league_id))
+                logger.warning("League %s has no listed matches", league_id)
                 return None
         else:
-            print(get_i18n().t("details_fetching_all"))
-
-        print(get_i18n().t("details_league_count", count=len(candidates)))
+            logger.info("Fetching match details for all leagues")
 
         match_ids: List[str] = []
         for tid, event_ids in candidates.items():
-            print("\n" + get_i18n().t("details_league_dir", name=league_dir_name(tid, self._league_name(tid))))
-            if event_ids:
-                print(get_i18n().t("details_league_ids_found", count=len(event_ids)))
-                match_ids.extend(str(event_id) for event_id in event_ids)
+            logger.info("League %s: %d match ids", league_dir_name(tid, self._league_name(tid)), len(event_ids))
+            match_ids.extend(str(event_id) for event_id in event_ids)
 
         # Tekrarlanan ID'leri temizle (sırayı koru)
         return list(dict.fromkeys(match_ids))
@@ -1049,9 +980,8 @@ class MatchDataFetcher:
         Devre kesilirse (rate limit) kalan maçlar denenmez ve rate_limit_breaker_triggered True kalır. Kesici,
         çağıran kurduysa işin kesicisidir. Kalıcı depolama hatasında (disk dolu, izin yok) StorageError fırlatılır.
         """
-        self.last_storage_error = None
         total_attempts = len(match_ids_to_process)
-        print("\n" + get_i18n().t("details_total_to_fetch", count=total_attempts))
+        logger.info("Details will be fetched for %d matches", total_attempts)
         if progress_callback:
             progress_callback(0, total_attempts, f"Match details 0/{total_attempts}")
 
@@ -1060,20 +990,15 @@ class MatchDataFetcher:
                 progress_callback(min(done, total_attempts), total_attempts,
                                   f"Match details {min(done, total_attempts)}/{total_attempts}")
 
-        try:
-            results = self._run_batch(match_ids_to_process, progress, should_cancel, failed_callback)
-        except StorageError as e:
-            # Çağıran hatayı yutsa bile (etkileşimli menüler) neden okunabilsin: main.py çıkışta bildirir
-            self.last_storage_error = e
-            raise
+        results = self._run_batch(match_ids_to_process, progress, should_cancel, failed_callback)
         total_success = len(results)
         if self.rate_limit_breaker_triggered:
-            print(get_i18n().t("error_rate_limit_detected", count=total_success))
+            logger.warning("Too many failed requests (rate limit or IP block); %d matches were stored. Wait 30 "
+                           "minutes to 2 hours, keep REQUEST_RATE_LIMIT at its default or use another IP, then "
+                           "run again", total_success)
         success_rate = (total_success / total_attempts) * 100 if total_attempts > 0 else 0
-        print(
-            "\n"
-            + get_i18n().t("details_finished", ok=total_success, total=total_attempts, rate=f"{success_rate:.1f}")
-        )
+        logger.info("Done: %d/%d matches (%.1f%%) processed successfully", total_success, total_attempts,
+                    success_rate)
         return total_success
 
     def fetch_match_details(self, match_id: Union[int, str]) -> bool:

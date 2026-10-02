@@ -260,15 +260,14 @@ def test_keys_used_by_the_cli_and_the_launcher_exist():
     assert used <= set(en), sorted(used - set(en))
     # Kullanılmayan çeviri kalmasın (bu değişiklikle eklenen ön ekler için)
     main_text = (REPO / "main.py").read_text(encoding="utf-8")
-    fetcher_text = (REPO / "src" / "match_data_fetcher.py").read_text(encoding="utf-8")
     doctor_text = (REPO / "src" / "doctor.py").read_text(encoding="utf-8")
+    # `details_*` anahtarlarını P15'e kadar MatchDataFetcher yazdırıyordu; artık günlük satırıdırlar ve anahtarlar
+    # terminal menüsüyle (P26) kullanım taramasından sonra silinir
     for key in en:
         if key.startswith("launcher_"):
             assert f'"{key[len("launcher_"):]}"' in launcher, key
         elif key.startswith("cli_"):
             assert f'"{key}"' in main_text or f'"{key}"' in doctor_text, key
-        elif key.startswith("details_"):
-            assert f'"{key}"' in fetcher_text, key
 
 
 @pytest.mark.parametrize("lang", ["en", "tr"])

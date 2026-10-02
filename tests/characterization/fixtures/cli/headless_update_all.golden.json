@@ -499,14 +499,10 @@
   },
   "LOG INFO MatchFetcher: League 17, season 52186: 1 schedule pages, 1 matches listed",
   "LOG INFO SyncService: Checking which matches need details...",
-  "Fetching match details for all leagues...",
-  "1 leagues to process...",
-  "",
-  "League folder: 17_Premier_League",
-  "Found 4 match IDs for the league.",
+  "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
+  "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
   "LOG INFO SyncService: Fetching match details: league all (4 matches)…",
-  "",
-  "Details will be fetched for 4 matches...",
+  "LOG INFO MatchDataFetcher: Details will be fetched for 4 matches",
   {
    "concurrent": [
     "LOG INFO FetchPipeline: Match 9100001 stored (7 files written)",
@@ -515,8 +511,7 @@
     "LOG INFO FetchPipeline: Match 9100010 stored (7 files written)"
    ]
   },
-  "",
-  "Done: 4/4 matches (100.0%) processed successfully.",
+  "LOG INFO MatchDataFetcher: Done: 4/4 matches (100.0%) processed successfully",
   "Download finished. Matches that needed details: 4 (4 fetched, 0 failed). Provisional records refreshed: 0 (0 changed)."
  ]
 }

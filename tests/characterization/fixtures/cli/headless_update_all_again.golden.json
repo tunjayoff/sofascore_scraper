@@ -119,21 +119,16 @@
    "LOG INFO SyncService: Fetching matches: league 17, season 52186",
    "LOG INFO Listing: Schedule of league 17, season 52186 is fresh; not requested",
    "LOG INFO SyncService: Checking which matches need details...",
-   "Fetching match details for all leagues...",
-   "1 leagues to process...",
-   "",
-   "League folder: 17_Premier_League",
-   "Found 4 match IDs for the league.",
+   "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
+   "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league all (1 matches)…",
-   "",
-   "Details will be fetched for 1 matches...",
+   "LOG INFO MatchDataFetcher: Details will be fetched for 1 matches",
    {
     "concurrent": [
      "LOG INFO FetchPipeline: Match 9100002 stored (0 files written)"
     ]
    },
-   "",
-   "Done: 1/1 matches (100.0%) processed successfully.",
+   "LOG INFO MatchDataFetcher: Done: 1/1 matches (100.0%) processed successfully",
    "Download finished. Matches that needed details: 1 (1 fetched, 0 failed). Provisional records refreshed: 0 (0 changed)."
   ]
  },
@@ -161,11 +156,8 @@
    "LOG INFO SyncService: Fetching matches: league 17, season 52186",
    "LOG INFO Listing: Schedule of league 17, season 52186 is fresh; not requested",
    "LOG INFO SyncService: Checking which matches need details...",
-   "Fetching match details for all leagues...",
-   "1 leagues to process...",
-   "",
-   "League folder: 17_Premier_League",
-   "Found 4 match IDs for the league.",
+   "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
+   "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
    "Download finished. Matches that needed details: 0 (0 fetched, 0 failed). Provisional records refreshed: 0 (0 changed)."
   ]
  }

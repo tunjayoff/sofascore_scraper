@@ -642,20 +642,20 @@ def test_fidelity_slices_and_names() -> None:
     """Dilim listesi, "veri var mı" denetimleri, dizin adları ve gözlem kaydı kodla aynı."""
     from src import paths
     from src.match_data_fetcher import DETAIL_SLICE_KEYS, NO_TOURNAMENT_DIR
+    from src.slices import match_detail_slice_present
     from src.sports import slices_for
     from src.status import observation_record
 
     assert sf.REQUIRED_SLICES == DETAIL_SLICE_KEYS
     assert tuple(s.key for s in slices_for("tennis") if not s.required) == sf.OPTIONAL_SLICES
     assert NO_TOURNAMENT_DIR in sf.detail_dir(sf.Detail(sf.FRIENDLY_A, form="L5"))
-    fetcher = MatchDataFetcher.__new__(MatchDataFetcher)
     for ev in (sf.PL_ARS, sf.NBA_A, sf.WIM_A):
         basic = sf.basic_payload(ev)
         for key in sf.REQUIRED_SLICES + sf.OPTIONAL_SLICES:
-            assert fetcher.match_detail_slice_present(key, {key: sf.slice_payload(key, basic)}), key
+            assert match_detail_slice_present(key, {key: sf.slice_payload(key, basic)}), key
             # Kayıtlı her dilimin kendi kuralı var: içi boş gövde (point_by_point'in boş listesi de) "var" sayılmaz
             empty = {key: sf.slice_payload(key, basic, empty=True)}
-            assert fetcher.match_detail_slice_present(key, empty) is False, key
+            assert match_detail_slice_present(key, empty) is False, key
         when = dt.datetime(2026, 9, 19, 6, tzinfo=dt.timezone.utc)
         assert observation_record(basic, when) == sf.observation_payload(basic, "2026-09-19T06:00:00+00:00")
     for name in ("Premier League", "Wimbledon, Men", "LaLiga 25/26", "a\\b"):

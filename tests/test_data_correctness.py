@@ -230,15 +230,6 @@ def test_menu_shows_the_file_report(tmp_path, capsys, monkeypatch):
     assert "JSON:" not in out and "CSV:" not in out
 
 
-def test_summary_files_sorted_numerically_and_limited(tmp_path):
-    for sid in (9999, 10000, 500):
-        (tmp_path / f"{sid}_S_summary.csv").write_text("match_id\n")
-    files = MatchDataFetcher._season_summary_files(str(tmp_path), None, 2)
-    assert [os.path.basename(p).split("_")[0] for p in files] == ["10000", "9999"]
-    only = MatchDataFetcher._season_summary_files(str(tmp_path), [500], 0)
-    assert [os.path.basename(p) for p in only] == ["500_S_summary.csv"]
-
-
 # --- yol düzeni -----------------------------------------------------------------
 
 def test_path_helpers_match_existing_layout():

@@ -55,8 +55,7 @@
    "LOG INFO SyncService: The season list of league 17 could not be fetched (403).",
    "LOG WARNING SeasonFetcher: No stored season list for league 17",
    "LOG INFO SyncService: Checking which matches need details...",
-   "Fetching match details for all leagues...",
-   "0 leagues to process...",
+   "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
    "Download finished. Matches that needed details: 0 (0 fetched, 0 failed). Provisional records refreshed: 0 (0 changed)."
   ]
  },
@@ -118,8 +117,8 @@
    "LOG INFO SyncService: The season list of league 17 could not be fetched (403).",
    "LOG WARNING SeasonFetcher: No stored season list for league 17",
    "LOG INFO SyncService: Checking which matches need details...",
-   "Fetching match details for league ID 17...",
-   "No match folder found for league ID 17!",
+   "LOG INFO MatchDataFetcher: Fetching match details for league 17",
+   "LOG WARNING MatchDataFetcher: League 17 has no listed matches",
    "Download finished. Matches that needed details: 0 (0 fetched, 0 failed). Provisional records refreshed: 0 (0 changed)."
   ]
  }

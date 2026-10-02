@@ -3,8 +3,8 @@ src/slices.py: sonuç tipi (Outcome) ve "bu yanıtta veri var mı" kuralları.
 
 Beklenen değerler tabloya elle yazıldı ve yüklemler src/slices.py'ye taşınmadan ÖNCEKİ kodla
 (MatchDataFetcher metotları, src/match_data_fetcher.py'deki SliceOutcome) doğrulandı. Aynı tablolar
-IMPLEMENTATIONS'taki her uygulamaya uygulanır: MatchDataFetcher'ın eski metotları ile src.slices'taki
-işlevler aynı tablodan geçer, yani aynı sonucu verir.
+IMPLEMENTATIONS'taki her uygulamaya uygulanır (src.slices'taki işlevler, tek tek ve dağıtıcı üzerinden).
+MatchDataFetcher'ın vekil metotları P15'te kalktı; onların iki satırı tablodan çıktı.
 
 Kurallar toplamdır ve üç yanıt verir (slice_body_state: veri var, veri yok, okunamadı). Altı eski kuralın
 yanıtı, taşınan yüklemlerin bu dosyada saklanan kopyasıyla (`_REFERENCE`) üretilmiş gövdeler üzerinde
@@ -31,24 +31,21 @@ from src.exceptions import (
     ResourceNotFoundError,
 )
 from src import match_data_fetcher, slices, sports
-from src.match_data_fetcher import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, MatchDataFetcher, SliceOutcome
+from src.match_data_fetcher import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SliceOutcome
+from src.services import pipeline
 from src.slices import BODY_DATA, BODY_MALFORMED, BODY_NO_DATA, SLICE_SKIPPED, Outcome
 
 FIXTURES = Path(__file__).parent / "fixtures" / "status"
 
-# MatchDataFetcher'da kendi metodu olan dilimler: anahtar → metot adı. src.slices'taki işlev aynı adı
-# baştaki alt çizgi olmadan taşır.
-TYPED_METHODS = {
-    "statistics": "_statistics_has_data",
-    "lineups": "_has_lineups_data_dict",
-    "h2h": "_has_h2h_data_dict",
-    "pregame_form": "_has_pregame_form_data_dict",
-    "team_streaks": "_has_team_streaks_data_dict",
-    "incidents": "_has_incidents_data_dict",
-}
-# src.slices'ta kendi işlevi olan dilimler (kuralı sonradan eklenenlerin MatchDataFetcher'da metodu yoktur)
+# src.slices'ta kendi işlevi olan dilimler: anahtar → işlev adı (ilk altısı eskiden MatchDataFetcher'ın
+# metotlarıydı, adları baştaki alt çizgiyle)
 TYPED_FUNCTIONS = {
-    **{key: name.lstrip("_") for key, name in TYPED_METHODS.items()},
+    "statistics": "statistics_has_data",
+    "lineups": "has_lineups_data_dict",
+    "h2h": "has_h2h_data_dict",
+    "pregame_form": "has_pregame_form_data_dict",
+    "team_streaks": "has_team_streaks_data_dict",
+    "incidents": "has_incidents_data_dict",
     "point_by_point": "has_point_by_point_data_dict",
 }
 # Kendi kuralı olan dilimler: kayıt defterindeki her dilim
@@ -57,19 +54,12 @@ RULE_KEYS = tuple(TYPED_FUNCTIONS)
 GENERIC_KEYS = ("basic", "graph")
 ALL_KEYS = RULE_KEYS + GENERIC_KEYS
 
-# Yüklemler örnek durumuna bakmaz; kurucu (dizin tarama, ConfigManager) burada gereksiz
-_FETCHER = MatchDataFetcher.__new__(MatchDataFetcher)
-
 Predicate = Callable[[str, Dict[str, Any]], bool]
 
 
-def _method_dispatch(key: str, d: Dict[str, Any]) -> bool:
-    return _FETCHER.match_detail_slice_present(key, d)
-
-
-def _method_direct(key: str, d: Dict[str, Any]) -> bool:
-    name = TYPED_METHODS.get(key)
-    return getattr(_FETCHER, name)(d) if name else _FETCHER.match_detail_slice_present(key, d)
+def _answered(key: str, body: Any) -> SliceOutcome:
+    """Yanıt gelen dilimin sonucu: boru hattının kuralı (eskiden MatchDataFetcher._answered_outcome vekili)."""
+    return pipeline.answered_outcome(key, SliceOutcome(SLICE_OK, data=body))
 
 
 def _function_direct(key: str, d: Dict[str, Any]) -> bool:
@@ -78,8 +68,6 @@ def _function_direct(key: str, d: Dict[str, Any]) -> bool:
 
 
 IMPLEMENTATIONS: List[Tuple[str, Predicate]] = [
-    ("method-dispatch", _method_dispatch),
-    ("method-direct", _method_direct),
     ("function-dispatch", slices.match_detail_slice_present),
     ("function-direct", _function_direct),
 ]
@@ -497,24 +485,24 @@ def test_fetcher_maps_the_three_answers_to_outcomes():
     tests/test_malformed_slice_body.py).
     """
     for key, body in MALFORMED_CASES:
-        outcome = _FETCHER._answered_outcome(key, body)
+        outcome = _answered(key, body)
         assert (outcome.status, outcome.reason, outcome.http_status, outcome.data) == (
             SLICE_FAILED, "parse", None, None,
         ), (key, body)
         assert outcome.failed
     for key, body, expected in BODY_CASES:
-        outcome = _FETCHER._answered_outcome(key, body)
+        outcome = _answered(key, body)
         if expected:
             assert (outcome.status, outcome.reason, outcome.data) == (SLICE_OK, None, body), (key, body)
         else:
             assert (outcome.status, outcome.reason, outcome.data) == (SLICE_EMPTY, "empty", body), (key, body)
-    empty_points = _FETCHER._answered_outcome("point_by_point", {"pointByPoint": []})
+    empty_points = _answered("point_by_point", {"pointByPoint": []})
     assert (empty_points.status, empty_points.reason) == (SLICE_EMPTY, "empty")  # eskiden "ok"
     assert empty_points.data == {"pointByPoint": []}  # gövde yine sonuçta durur ve diske yazılır
-    assert _FETCHER._answered_outcome("point_by_point", PRESENT["point_by_point"]).status == SLICE_OK
+    assert _answered("point_by_point", PRESENT["point_by_point"]).status == SLICE_OK
     # Kuralı olmayan anahtar hiçbir zaman "okunamadı" değildir
-    assert _FETCHER._answered_outcome("graph", "abc").status == SLICE_OK
-    assert _FETCHER._answered_outcome("graph", 0).status == SLICE_EMPTY
+    assert _answered("graph", "abc").status == SLICE_OK
+    assert _answered("graph", 0).status == SLICE_EMPTY
 
 
 @pytest.mark.parametrize("name,impl", IMPLEMENTATIONS, ids=[name for name, _ in IMPLEMENTATIONS])
@@ -619,9 +607,8 @@ def test_moved_names_stay_importable_from_match_data_fetcher():
     assert match_data_fetcher.SliceOutcome is Outcome
     for name in ("SLICE_OK", "SLICE_EMPTY", "SLICE_FAILED"):
         assert getattr(match_data_fetcher, name) is getattr(slices, name)
-    for method in list(TYPED_METHODS.values()) + ["match_detail_slice_present"]:
-        assert callable(getattr(MatchDataFetcher, method))
-        assert callable(getattr(slices, method.lstrip("_")))
+    for name in list(TYPED_FUNCTIONS.values()) + ["match_detail_slice_present"]:
+        assert callable(getattr(slices, name))
 
 
 def test_outcome_fields_and_new_defaults():
