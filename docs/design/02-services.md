@@ -27,6 +27,16 @@ foundation of API v1 (P20, #74) are described as built, again as the current sta
 add: sections 1.7, 2.1 to 2.8, 3.4, 4.1 to 4.6, 5, 6, 8.1, 8.4, 8.6 and 9 to 12. References marked
 `e0bae0c` are to `origin/main` at that commit. Section 11 lists the corrections (items 37 to 59).
 
+Revised a fourth time on 2026-10-02 (the third revision of that day) after batches eight to ten (PRs #77 to
+#93). The readers that moved to the Store (RD-1 #80, RD-2 #89, RD-4 #78, RD-5 #79), the three answers of a
+slice body (FX-5 #77 with its fix commit), the cancel check after the request semaphore (FX-9 #83), the
+redaction fixes (FX-10 #84), backup and clear in the Store (ST-19 #90), the live service and the first host
+of the sink dispatcher (P23 #91), and the end of a job (#88, #93) are described as built, again as the
+current stage with what later items add: sections 1.4, 2.1 to 2.8, 3.4, 4.1, 4.3, 4.6, 5, 6, 7.1, 8, 9, 10
+and 12. References marked `9b03c64` are to `origin/main` at that commit. Decisions S17, P3 and D21 and the
+fix item FX-12 of `03-implementation-plan.md` section 13 are referred to by those names. Section 11 lists
+the corrections (items 60 to 75).
+
 Conventions used here: "event" is a SofaScore match; "slice" is one data type of an owner entity
 (event, season, team, player); "face" is one of Python library, CLI, HTTP API.
 The CLI executable is written `ssc` below (final name: decision D2).
@@ -112,6 +122,8 @@ interactive branch of `main.py` still reads it.
 | Breaker scope | job breaker via `scope()` (`:286`) | batch has one (`:1483`); the single-match route has none |
 | "Not finished" outcome | reported as a failed match (`:368-379`, `:415-417`) | reported as a failed match (`:1519-1521`) |
 | Slice markers | both paths: only for `required` slices (`:684`) and only when the event is finished (`:1228-1229`) | same |
+| Falsy body (`0`, `false`, `""`), found by FX-5 (PR #77) | `_fetch_endpoint_async` answers `empty` / `empty` for any falsy body without asking the rule (`if data:`, `src/match_data_fetcher.py:315` at `9b03c64`), so such a body counts towards "unavailable" | the rule is asked: a falsy body of the wrong shape is `failed` / `parse`. Pinned by `test_falsy_malformed_body_is_still_empty_on_the_async_path`; P13 removes the shortcut |
+| Reason of a 404, found by FX-5 | `empty` / `404` | `empty` / `empty` (the helper returns None for a 404). Both count towards "unavailable"; P13 gives a 404 one reason |
 
 Consequence visible to users: the same match downloaded by "select matches" and by "download league" ends up
 with different files, and `FETCH_ONLY_FINISHED=false` works on one path only.
@@ -232,6 +244,14 @@ the terminal menu keeps its own wiring in `src/SofaScoreUi.py` until P26.
    `src.sports`, `src.bridge_health`, `src.throttle`, `src.redact` and, for the error classes, `src.store`
    (`src/web/errors.py:39`, `src/web/api/v1/settings.py:46` at `e0bae0c`); the query and status services
    replace the direct reads (P21).
+   The `watch` command (P23, PR #91) imports `src.sinks`, `src.config.loader`, `src.store` and
+   `src.services.live.supervisor` inside its function (`src/cli/commands/watch.py:112-115` at `9b03c64`): it
+   opens the Store and hosts the dispatcher itself, because the context has no Store field and no live
+   service (2.3). The legacy routes that read through the Store since RD-1, RD-2, RD-4 and RD-5 open it with
+   `open_store` and hand it to the service (`src/web/routes/matches.py:101`, `src/web/routes/data.py:34`).
+   Two modules below the services import a service, the reverse direction: `src.match_data_fetcher` imports
+   `src.services.query` (RD-1) and `src.season_fetcher` imports `src.services.tournaments` (RD-5). It lasts
+   until the fetchers leave the context (P15).
 2. Only `src/client` sends requests to SofaScore. Only `src/store` touches `DATA_DIR`, including every SQLite
    file and every lock file in it.
 3. Services never print, never read `os.environ`, never call `sys.exit`. They take a `ServiceContext`,
@@ -245,6 +265,12 @@ the terminal menu keeps its own wiring in `src/SofaScoreUi.py` until P26.
    (`src/jobs/manager.py:153` at `e0bae0c`), but `SyncService` still logs the translated text
    (`src/services/sync.py:425`), so it reaches the job log in the server's language. P13 passes
    `code="fetch_zero_matches"`.
+   RD-4 (PR #78) added a fourth leftover: `src/services/status.py` reads `FETCH_ONLY_FINISHED` from the
+   environment at call time (`only_finished_setting`, `src/services/status.py:56-61` at `9b03c64`), as the
+   Settings route does, and the legacy match lists take it from there too. The writers read
+   `src.utils.FETCH_ONLY_FINISHED` once at import, so after a change in the web UI the counts and lists follow
+   at once and the downloads only after a restart. P30 switches the read to `fetch.only_finished` of the
+   Settings.
 4. Domain modules (`sports`, `status`, `refresh`, `slices`, `schema`) are pure and import nothing above them.
    As built (SC-1, PR #72): `src/schema` imports `src.sports`, `src.status` and `src.refresh` at run time
    and names the Store's row classes only under `TYPE_CHECKING` (`src/schema/mappers.py:53-54` at
@@ -294,7 +320,8 @@ src/
     maintenance.py          MaintenanceService
     status.py               StatusService (health, summary, coverage); doctor stays src/doctor.py
     follows.py              FollowsService
-    query.py tournaments.py QueryService (read side), incl. the legacy response shapes
+    query.py                QueryService (read side), incl. the legacy response shapes
+    tournaments.py          season lists, schedule pages and sports of tournaments: functions on a Store (RD-5)
   jobs/
     model.py                Job, JobKind, JobState, Origin, ErrorInfo (P07); JobEvent (P11)
     manager.py              JobManager, JobHandle, JobOutcome, JobNotActive (P11)
@@ -320,6 +347,18 @@ PR #72), `services/context.py`, `sync.py`, `export.py` and `maintenance.py`, `jo
 the command modules `meta.py` and `events.py`, and in `web/` everything listed except `api/legacy.py`: the
 legacy routes are still the modules of `src/web/routes/` (P21 turns them into adapters). Not there yet:
 `src/api.py`, the other service modules, `jobs/scheduler.py`, `cli/signals.py` and `cli/legacy_flags.py`.
+
+What was added by `9b03c64`: `services/query.py` (RD-1, PR #80; the match lists with RD-2, PR #89),
+`services/status.py` (RD-4, PR #78), `services/tournaments.py` (RD-5, PR #79), `services/backup.py` and
+`clear` in `maintenance.py` (ST-19, PR #90), `services/live/` with `supervisor.py`, `reducer.py` and
+`poll_source.py` (P23, PR #91; the push sources and the arbiter are P24 and P31), and the command module
+`cli/commands/watch.py`. `tournaments.py` is not a class under `QueryService`, as the layout first said: it
+is a module of functions that take a Store (`seasons_of`, `season_lists`, `schedule_pages`, `has_matches`,
+`sport_of`; `src/services/tournaments.py:89-165` at `9b03c64`), because `SeasonFetcher`, a member of the
+context, calls it. `services/stats.py` stays as the
+forwarder that turns `StatusService.summary()` into the old response keys for the web routes and the
+terminal menu (2.7); only its per-league disk sizes, which the terminal menu alone shows, still walk the
+league directories.
 
 `src/` stays the import package during the build-out (decision D1).
 
@@ -421,6 +460,24 @@ def build_context(config_manager: ConfigManager, *, data_dir: str | None = None)
   every load and change. P11 left this unchanged: `apply_follows` did not become `store.follows.apply`,
   because that would open the Store in every context. Only a config file with `[[follow]]` entries makes
   `build_context` create `state.db`.
+- Services that take a Store, not a context (RD-1, RD-4, ST-19; `9b03c64`). The block above shows every
+  service as a member of `Platform` built on the context. As built, the read services and the two data
+  operations are constructed on a Store: `QueryService(store)` (`src/services/query.py:98-102`),
+  `StatusService(store)` (`src/services/status.py:177-181`), `BackupService(store)`
+  (`src/services/backup.py:25-29`) and `MaintenanceService(ctx=None, *, store=None)`
+  (`src/services/maintenance.py:60-65`), where `clear` needs only the Store and `recheck_unavailable` still
+  needs the context for its fetcher. The reason is the cost and the side effects of a context: importing
+  `src/services/context.py` loads the three fetchers and the request layer, which a dashboard route must not
+  do, and `build_context` creates `seasons/`, `matches/`, `match_details/` and `datasets/`, which would change
+  what a clear leaves behind. The context still has no `store` field (`ctx.store` is the property above),
+  and nothing wires `query`, `status` or `backup` into it; the faces build the service on
+  `open_store(data_dir)` at the call. Whether `Platform` (library face) holds services built on its Store or
+  on a context is decided with the library face.
+- Reading opens the Store. Since RD-1, RD-2, RD-4 and RD-5 the legacy GET routes of match detail, match
+  lists, dashboard and statistics, leagues and season lists open the Store of the data directory, so the
+  first such request creates `.meta/schema.json` and `.meta/catalog.db` when they are missing and every open
+  reconciles the catalog with the files (bounded by decision S17 since ST-19). A route that reads therefore
+  may create and update those derived files (6.1).
 - What the later items add. P13: the pipeline uses the context's client. P15: the fetchers leave the
   context, and `settings` takes the place of `config`. `readonly` and the `Platform` class come with the
   library face. Whether the Store is ever opened eagerly is decided with the library face; nothing needs
@@ -488,7 +545,21 @@ Semantics:
   404, so the client's answer to a 404 is `empty/404`. `Outcome` exists since ST-02 (PR #36) in
   `src/slices.py`; `fetched_at`, `via` and `meta` are left None by `from_error` and filled by the client.
 - A 200 whose body is empty (`{}`, `[]`) is `empty` with reason `empty` and the body in `data`. Whether a
-  non-empty body carries data for its slice stays with the predicates of `src/slices.py`. A 200 whose body
+  non-empty body carries data for its slice is decided by `slices.slice_body_state(key, body)`
+  (`src/slices.py:225` at `9b03c64`; FX-5, PR #77), which has three answers, not the two of a presence
+  predicate: `BODY_DATA` (`ok`), `BODY_NO_DATA` (`empty` / `empty`, the body kept; `{"pointByPoint": []}` is
+  no data since FX-5) and `BODY_MALFORMED` (a body of an unexpected shape). As built by the fix commit of
+  FX-5 (`5456182`), `MatchDataFetcher._answered_outcome` maps a fetched malformed body to `failed` / `parse`
+  (`src/match_data_fetcher.py:319-345`): it is not counted as an empty answer, not written to disk, not
+  reported to the circuit breaker, and requested again on the next run. Before FX-5 the presence predicate
+  raised on such a body: the async path reached the same result through the exception (reason `other`), the
+  async refill retried the match three times and reported it failed, and the sync path ended the whole batch
+  (`fetch_matches_batch` caught only `StorageError`) and made the single-match route answer 500; now the
+  match is saved without that slice. The first commit of FX-5 reported such a body as `empty` / `empty` for
+  a moment; the fix commit replaced that before the merge. P13 keeps the mapping when it moves the code
+  (`tests/test_malformed_slice_body.py` pins it on both paths). Two divergences are left for P13 (1.4): the
+  async path answers `empty` / `empty` for any falsy body (`0`, `false`, `""`) without asking the rule, and
+  a 404 has the reason `404` on the async path and `empty` on the sync path. A 200 whose body
   is JSON `null` is `failed/other`: it is the reachable form of "the request layer returned None without an
   exception" (the line the first version cited, `utils.py:624`, was `:629` on main and cannot be reached
   with at least one retry).
@@ -497,7 +568,9 @@ Semantics:
   to `src/client/transport.py` instead: the G-01 goldens pin sync requests as such, and five callers still
   use `make_api_request`. `get_sync` uses that body and opens no session; every request is its own
   connection. The sync body can go when its callers have moved to the client (the fetch paths in P13, the
-  watcher's default fetch in P23).
+  watcher's default fetch in P23). P23 (PR #91) kept it: the live service's default fetch is still
+  `make_api_request(api_url(path), raise_on_failure=True)` (`src/services/live/supervisor.py:613-628` at
+  `9b03c64`), because the client has no "blocked" report for that path (8.1).
 - A curl session belongs to the event loop that opened it, and every job runs its own `asyncio.run`. The
   client therefore keeps one session per loop, opened (with the warm-up request) by the first `get` on that
   loop. `aclose()` closes the running loop's session only; a job opens and closes its session with
@@ -524,15 +597,30 @@ Semantics:
 - A request that waits for its slot inside the browser bridge stops within 0.25 s when its job is cancelled,
   on the sync path as well (FX-6), and raises `FetchCancelled`. A caller that waits for a shared challenge
   solve (up to 90 s) or for the page's `fetch()` (up to 20 s) still cannot be interrupted on the sync path.
-- Requests that already wait for the request semaphore can still be sent after a stop. `_request_async`
-  checks for a cancel before it waits for the semaphore and not after (`src/client/transport.py:553` and
-  `:564` at `e0bae0c`), so a waiter whose reserved slot is already due is sent. The previous revision said
-  this happens only with the budget off or not the limit. That was too narrow: with the budget as the limit
-  it also happens whenever cancelling the queue takes longer than one interval, because a waiter that
-  reserves after the end of the queue has passed gets a slot that is due. The diagnostics fix (PR #71)
-  found it: `tests/test_throttle.py::test_stopped_bulk_job_leaves_no_queue_behind` pins the behaviour at
-  one request per second and flakes on a slow runner for this reason. The fix is one cancel check after
-  the semaphore is taken (plan item FX-9).
+- Requests that already waited for the request semaphore could still be sent after a stop, until FX-9.
+  `_request_async` checked for a cancel before it waited for the semaphore and not after
+  (`src/client/transport.py:553` and `:564` at `e0bae0c`), so a waiter whose reserved slot was already due
+  was sent: with the budget off or not the limit every waiter, and with the budget as the limit one request
+  per interval for as long as cancelling the queue took. The diagnostics fix (PR #71) found it through
+  `tests/test_throttle.py::test_stopped_bulk_job_leaves_no_queue_behind`, which flaked on a slow runner.
+  As built by FX-9 (PR #83): one `raise_if_cancelled()` directly after `async with semaphore:`, before
+  `breaker.check(url)` and before the reservation, on the curl path and on the browser-first path of
+  `_request_async` (`src/client/transport.py:539-541` and `:566-573` at `9b03c64`). A waiter that gets the
+  semaphore after the stop raises `FetchCancelled`, makes no reservation and is not reported to the breaker.
+  Measured offline with the budget not the limit and `MAX_CONCURRENT=10`: of 70 requests 70 were sent
+  before and 10 (those in flight at the stop) after; browser-first, of 30 requests 30 before and 10 after.
+  P13 keeps both checks when it rewrites the request paths.
+- What FX-9 left. (1) A request that already holds the semaphore and is inside the bridge call when the job
+  stops is still sent if its slot is due: `_wait_for_slot` (`src/challenge_solver.py:170-189`) looks at the
+  cancel only while it sleeps, so a browser-first request that waits for `ensure_ready()` at the stop goes
+  on to `fetch_json`. `test_stop_reaches_browser_first_requests_waiting_for_a_request_slot` pins that number
+  (10 sent) and expects 0 once the bridge checks the cancel before the reservation (P24, which moves the
+  bridge). (2) The two paths disagree about a response that arrives during a stop: the curl path returns
+  the data that is in hand, while the browser-first path raises `FetchCancelled` from the pause after the
+  bridge's answer (`src/client/transport.py:549-550`) and drops the data. Not pinned. (3) The sync path and
+  the bridge still have no check between the reservation and the send. The FX-6 rule "a slot whose time has
+  come is not given back" was made because waiters behind the semaphore did not look at the cancel; on the
+  async curl path that reason is gone, and the rule is left as it is.
 - The client writes nothing under `DATA_DIR`. It reports each bridge-health transition through
   `on_health_change`; since P11 (PR #69) `build_context` stores the snapshot with
   `store.runtime.set("bridge_health", ...)`, so another process (`ssc status`, a second server) can read
@@ -649,16 +737,20 @@ table above, row by row.
   anything else `internal`. `data_operation_running` therefore has two classes in the code: `ConflictError`
   and the job store's `DataOperationRunningError`.
 - `errors.lease_error_code(name, purpose)` gives `job_running`, `data_operation_running` or
-  `instance_running` for a held lease, with the holder in `details`. The job store (ST-10) still uses its
-  own `conflict_from_lease`, which has no `instance_running`: a `live` or `watcher:<sport>` holder that
-  blocks a data operation is reported there as `data_operation_running`. The previous revision expected that
-  to end with the job manager. P11 (PR #69) did not change it (`src/store/jobs.py:207-218` at `e0bae0c`),
-  and the job manager raises the job store's two classes. A job cannot meet the case: it takes `writer`,
-  which `live` and `watcher` never hold, so the case exists only for data operations. API v1 does not go
-  through that mapping when the conflict comes from a lease: it maps the `LeaseHeld` behind the conflict
-  with `lease_error_code`, so v1 can answer `instance_running` (`src/web/errors.py:176-177`). `LeaseHeld` is
-  a `StorageError`, so a caller that catches `StorageError` catches `LeaseHeld` first, as `main.py` does
-  since P10.
+  `instance_running` for a held lease, with the holder in `details`. The job store (ST-10) uses its own
+  `conflict_from_lease`, which until P23 had no `instance_running`: a `live` or `watcher:<sport>` holder
+  that blocked a data operation was reported there as `data_operation_running`. The previous revision
+  expected that to end with the job manager. P11 (PR #69) did not change it (`src/store/jobs.py:207-218` at
+  `e0bae0c`), and the job manager raises the job store's classes. A job cannot meet the case: it takes
+  `writer`, which `live` and `watcher` never hold, so the case exists only for data operations. P23 (PR #91) added
+  the case with the lease that makes it reachable: a data operation (clear, restore) that a running live
+  service or `--watch` blocks raises `InstanceRunningConflict`, a subclass of `DataOperationRunningError`
+  with the code `instance_running` (`src/store/jobs.py:210-238` at `9b03c64`); `.operation` is still the
+  holder's purpose and `.lease` the lease name, so callers that catch `DataOperationRunningError` keep
+  working. API v1 does not go through that mapping when the conflict comes from a lease: it maps the
+  `LeaseHeld` behind the conflict with `lease_error_code`, so v1 can answer `instance_running`
+  (`src/web/errors.py:176-177`). `LeaseHeld` is a `StorageError`, so a caller that catches `StorageError`
+  catches `LeaseHeld` first, as `main.py` does since P10.
 - `message` is meant to be English. The messages of `StorageError` and of the Store's errors are Turkish in
   the code. The mapping builds an English message from the OS reason and the path when they exist and passes
   the Store's text through otherwise.
@@ -770,7 +862,7 @@ class SyncResult:
   `MaintenanceService(ctx).recheck_unavailable(league_id=None, *, include_confirmed=False) -> ResetCounts`
   (`matches`, `slices`, `scanned`), a typed wrapper of `MatchDataFetcher.reset_unavailable_markers`. It takes
   a league id, because there is no `Scope` type yet; `clear`, `migrate` and `rebuild_catalog` come with
-  their items (ST-19, ST-23).
+  their items (ST-19, ST-23). `clear` came with ST-19 (PR #90; below the next block).
 - The services take no lease and raise no `JobRunningError`: the caller holds the lease. Since P11 (PR #69)
   that caller is the job manager for a download and a refresh, on the web and in `main.py` (2.8); `main.py`
   still takes the lease itself for `--recheck-unavailable` alone and for `--watch` (4.6). The handle a
@@ -852,6 +944,145 @@ class QueryService:
     def tournaments(...) ; def seasons(...) ; def changes(since, page) ; def sports() -> list[SportInfo]
     # plus the functions that reproduce today's response shapes for the legacy /api routes
 ```
+
+The block above is the target. What exists at `9b03c64`, as built by RD-1 (PR #80), RD-2 (PR #89), RD-4
+(PR #78), RD-5 (PR #79), ST-19 (PR #90) and P23 (PR #91). Each service takes a Store (2.3), prints nothing,
+takes no lease, and serves the legacy routes and the terminal menu; the typed v1 methods above come with
+P15 and P21.
+
+```python
+# services/status.py (RD-4)
+@dataclass(frozen=True)
+class TournamentCounts:            # tournament_id None: the events without a unique tournament
+    tournament_id: int | None
+    matches: int; details: int; events: int; finished: int
+    seasons: int                   # seasons in the tournament's season list
+    seasons_with_events: int       # distinct seasons among its events
+    last_update: int | None        # newest change of an indexed file (epoch s); None without details
+    coverage: float                # property: details / matches in percent, one decimal
+
+@dataclass(frozen=True)
+class DiskUsage:
+    entries: Mapping[str, int]     # Store.info().bytes: every top-level entry of the data directory
+    measured_at: float             # epoch seconds of the measurement
+    seasons, matches, details, datasets, total: int   # properties; total = the four areas
+
+@dataclass(frozen=True)
+class DataSummary:
+    data_dir: str; only_finished: bool              # which match rule was applied
+    matches: int; details: int; seasons: int         # the whole catalog, unconfigured leagues included
+    tournaments: tuple[TournamentCounts, ...]       # every tournament with events, plus the requested ones
+    disk: DiskUsage | None                          # None with sizes=False
+    catalog_rebuild_reason: str | None              # set: the catalog does not describe the files
+
+class StatusService:
+    def __init__(self, store: Store): ...
+    def summary(self, *, tournament_ids=(), only_finished: bool | None = None, sizes: bool = True,
+                sizes_max_age: float = 60.0) -> DataSummary: ...
+
+# services/query.py (RD-1, RD-2)
+class QueryService:
+    def __init__(self, store: Store): ...
+    def match_detail_legacy(self, event_id: int) -> dict | None: ...    # GET /api/matches/{id}
+    def matches_legacy(self, *, tournament_ids=(), season_id=None, date=None, details=None,
+                       only_finished=True, sort="desc", offset=0, limit=25,
+                       league_names=None) -> LegacyMatchPage: ...
+    def season_matches_legacy(self, season_id: int, tournament_id: int, *, only_finished=True) -> list[dict]: ...
+
+# services/tournaments.py (RD-5): functions on a Store
+def seasons_of(store, tournament_id, *, name=None) -> list | None: ...      # SofaScore's own season objects
+def season_lists(store, names: Mapping[int, str | None]) -> dict[int, list]: ...
+def schedule_pages(store, tournament_id, season_id) -> int: ...
+def has_matches(store, tournament_id, season_id) -> bool: ...   # stored pages, or events from a listing
+def sport_of(store, tournament_id) -> str | None: ...
+
+# services/backup.py, services/maintenance.py (ST-19)
+class BackupService:
+    def __init__(self, store: Store): ...
+    def create(self, scope: BackupScope = "all", *, config_files: Sequence[str] = (),
+               include_secrets: bool = False) -> BackupInfo: ...
+        # BackupScope: all | config | seasons | matches | match_details
+    def list(self) -> list[BackupInfo]: ...
+class MaintenanceService:
+    def __init__(self, ctx: ServiceContext | None = None, *, store: Store | None = None): ...
+    def clear(self, scope: DataScope, *, confirm: bool) -> ClearReport: ...
+    def recheck_unavailable(self, league_id: int | None = None, *, include_confirmed=False) -> ResetCounts: ...
+```
+
+- **Counting rules (decision D21, settled 2026-10-02).** (a) The match count comes from the catalog's
+  events, and `FETCH_ONLY_FINISHED` applies at read time: with the setting on, an event counts when it is
+  finished (`completed` or `decided_without_play`) or has stored details; with it off, every event counts.
+  Before RD-4 the count came from the rows of the summary CSVs, filtered when they were written. (b) A match
+  with stored details that no schedule lists counts as a match. `details` counts every event with a stored
+  `/event` payload wherever its directory is (league or season directory, flat, `_no_tournament/`, combined
+  file only), so it is always a subset of `matches`. `StatusService._match_counts`
+  (`src/services/status.py:242-257` at `9b03c64`) applies (a) as finished events plus one pass over the
+  unfinished events with details. RD-2 applies the same rule to the two match lists, so a list total and
+  the dashboard agree. On the owner's data every count equals main's.
+- **The setting is read at call time.** `only_finished_setting()` reads the environment at each call
+  (2.1, rule 3); P30 moves it to the Settings.
+- **Disk usage.** The walk is inside the Store (`Store.info(sizes=True)`), which has no cache of its own.
+  The cache is in the service (`_sizes`, `forget_sizes(store)`; `src/services/status.py:150-174`): one
+  measurement per Store is kept for 60 s (`SIZES_MAX_AGE`) and is dropped at once when the catalog changes
+  (its row counts or its newest `updated_at`), that is after a download or a clear. Changes the catalog does
+  not see (a CSV export, a backup, files deleted by hand) show after at most a minute. If `Store.info`
+  gets a cache of its own, this one goes. The per-league disk sizes of the terminal menu
+  (`league_stats(...)["disk"]` in `src/services/stats.py`) still walk the league directories, because
+  `StoreInfo.bytes` has one number per top-level entry; eight file-system calls stay in the boundary
+  baseline for them.
+- **Cost.** `summary()` takes about 1.9 ms on the owner's data with kept sizes (17 ms when the sizes are
+  measured; the file walk of main took 21 ms), 72 ms at 50,000 events and about 470 ms at 300,000 events in
+  2,000 tournaments (synthetic, tmpfs, warm cache).
+- **What the summary cannot see.** `catalog_rebuild_reason` is set when the catalog does not describe the
+  files; the counts are then zero or partial, and the legacy routes do not show it (P21 does). Files
+  changed by hand while a process runs are counted after the Store is opened again (the limit of the
+  reconcile on open, `01-storage.md` 3.5). `coverage(scope)` goes next to `summary` with P15.
+- **Match lists (RD-2).** `matches_legacy` and `season_matches_legacy` build the ten columns of the old
+  summary CSV from catalog rows (`LEGACY_LIST_COLUMNS` and `_legacy_row`: round from `listed_in`, scores
+  from `*_score_current` with 0 as default, tournament from `stage_name`, `match_date` as local ISO text).
+  `EventQuery` joins its conditions with AND, so rule (a) runs as two disjoint queries, finished events and
+  unfinished events with details, merged in the catalog's order (`_list_queries`, `_merged`;
+  `src/services/query.py:203-227`); an OR option on `EventQuery` would let the list page in SQL. Both lists
+  are ordered by start time with ties broken by event id; the season list used to keep the order of the
+  summary files, and ties on the kick-off time are common on real data. The date filter stays what it was,
+  a substring of the local ISO text of `match_date`: the service narrows the query to a start-time range
+  only when the text is an ISO prefix, and then keeps the substring test. `league_folder` comes from the
+  legacy detail directory when there is one and otherwise from `src/paths.league_dir_name(id, name)` with
+  the configured or the catalog's tournament name, because a listing-only row or a v3 event has no path. A
+  match with stored details shows the score and status of its stored payload. The export CSV is no longer a
+  fallback (decision S14). On the owner's data all 738 rows and every total equal main's; only the order of
+  matches with the same kick-off time differs, and the full list takes 2.7 to 9.7 ms instead of 96 to
+  208 ms. Missing details (`_get_missing_details_sync`) still walk the files and do not apply
+  `FETCH_ONLY_FINISHED` (RD-3).
+- **Match detail (RD-1).** `match_detail_legacy` returns `basic` and one key per `required` slice with a
+  payload, each read from its own file first, then from the combined file; an unreadable slice file drops
+  only that slice. `MatchDataFetcher` forwards its loader to the service.
+- **Season lists and sports (RD-5).** Every reader (web route, `SeasonFetcher`, terminal menu) takes the
+  newest list file of a league by modification time, whatever its name. `seasons_of` returns SofaScore's
+  own season objects from the stored payload, because `SeasonRow` does not carry them. The has-matches
+  check of `SeasonFetcher` is `has_matches` (stored schedule pages, or events known from a listing), and
+  `schedule_pages` gives the page count. `src/web/league_sports.sports_for` is the sport lookup that writes
+  nothing: `GET /api/leagues` no longer writes `config/league_sports.json`, so a sport learned from the data
+  no longer reaches that file, the follows table or `config init --from-legacy` (a sport the user chose
+  still wins). `league_sports.resolve_all` has no caller in `src` any more; two tests keep it until P21.
+- **Is the catalog current.** `open_store` does not fail when the catalog could not be synced, and a
+  reader then sees a stale or empty catalog; for a need computation an empty catalog would mean "full" for
+  every match. Since ST-19 `Store.catalog_current` (`src/store/api.py:504-512`) says whether the catalog was
+  synced in this process and every hook has updated it since. No reader asks it yet. A reader that plans
+  work (RD-3, P12) refuses to plan when it is False.
+- **Backup (ST-19).** `BackupService(store).create` writes today's zip (five scopes, config files at the
+  root of the zip, `.env` only with `include_secrets=True`) through `Store.backup`; there is no `dest` and
+  no `handle`. The caller passes the config files, because the path of the sport sidecar lives in
+  `src/web/league_sports.py`, and the caller holds the `writer` lease (the route through
+  `JobStore.exclusive("backup")`). `verify`, `restore`, the format 2 and pruning are ST-24's.
+- **Clear (ST-19).** `MaintenanceService(store=...).clear(scope, confirm=True)` calls `Store.clear`, which
+  takes `maintenance` itself when this process does not hold it and rebuilds the catalog under the same
+  lease. `DataScope` accepts today's names (`match_details`, `matches`, `seasons`, `all`) and the Store's
+  (`events`, `schedules`). The terminal menu's clear does not call it yet (7.1).
+- **Live (P23).** `LiveService(store, scope, ...).run(stop, until_seconds=None)` returns a `LiveReport`, and
+  `services.live.live_status(store)` is the status function for any process. `LiveService.status()` gives
+  only the report of the service in this process, and `events()` does not exist: `ssc events` reads the
+  stream log itself (4.1, section 8).
 
 ### 2.8 Jobs: one model for web and CLI, across processes
 
@@ -975,6 +1206,25 @@ Mechanics:
   table and a masked message (Ctrl+C: `cancelled`), the lease is released and the exception goes on to the
   caller; in a background thread it is logged. `run` raises `JobNotActive` for a job that is not the running
   job of this process.
+- **The end of a job and its lease (#88, #93).** The text above says the lease is released when the job
+  ends. Until #93 it was released in the final row update (`update(finished=True)`), while the job thread
+  still appended `job.finished` and read the job back. Closing the state database in that window
+  (`JobStore.rebind` after a data-folder change in the Settings, or `JobStore.close()` / `Store.close()` by
+  a library user while a background job finishes) closed the SQLite connection under the job thread and
+  could crash the process; #88 found it while making the tests join the job thread before teardown (4 of
+  100 runs crashed before), and a stress run crashed 14 of 60 processes on main. As built since #93:
+  `JobManager.run` wraps its last store accesses (the final row, the `job.finished` stream event, the
+  read-back) in the job store's private `_job_finishing()` block (`src/jobs/manager.py:358-375`,
+  `src/store/jobs.py:417-448` at `9b03c64`), and the `writer` lease is released when the block ends. While
+  the block lasts, `rebind` and `exclusive` raise `JobRunningError` (409 `job_running`), `JobStore.close`
+  waits for it (at most 30 s, then it logs a warning and closes), and `create_running` on the same job store
+  waits instead of reusing the lease that is still held. Another process can see the row terminal while the
+  lease is held a few milliseconds longer; that window existed between the commit and the release before.
+  A direct caller of `update(finished=True)` outside the block releases the lease in the update, as before.
+  Not covered: `Store.close()` closes its state database directly and does not wait for a finishing job of
+  `store.jobs` (`src/store/api.py:655-666`); one wait through a small public `JobStore` helper closes that
+  last path (plan item FX-12). Closing a Store while a job is in the middle of its run is not covered
+  either.
 - **Liveness.** A job is running if its row says so **and** the `writer` lease is held. A running row whose
   lease is free is marked `interrupted` by whoever notices (`reap_stale`, `src/store/jobs.py:449` at
   `e0bae0c`): when a job store is opened or rebound, when a job is created (under the lease) and whenever
@@ -1074,10 +1324,14 @@ Mechanics:
   redacted like every other section. `owner` (the random id of the lease holder) is dropped. The host names
   recorded in the selected rows (the origin, the lease holder in an error's details) and this machine's name
   are replaced by `***` in every string of a job, where the name stands as a whole word. The setup check's
-  profile-lock detail no longer carries the lock's host name either (`"lock": "***-4242"`). One gap is left:
-  `log_tail.txt` in the bundle is not masked for the host name. The masking replaces the name as a whole
-  word in the job rows and in the setup check, and the log tail does not go through it, so a `LeaseHeld`
-  text that a caller logs would carry the name (plan item FX-10).
+  profile-lock detail no longer carries the lock's host name either (`"lock": "***-4242"`). One gap was
+  left: `log_tail.txt` in the bundle was not masked for the host name, so a `LeaseHeld` text that a caller
+  logs carried the name. FX-10 (PR #84) closed it: `log_tail_text()` applies the same masking after the
+  secret redaction and the home-directory scrub, for this machine's name and the host names recorded in the
+  listed job rows (`_log_hosts`, `src/diagnostics.py:288-328` at `9b03c64`); if the job history cannot be
+  read, the tail is masked for this machine's name alone. The order matters: with the host names first, a
+  home directory named like the machine would no longer become `~`. `GET /api/logs` (the log view of the
+  web UI) is not masked: it shows the log on the machine itself.
 
 As built (P11), where the first version of this section differed:
 
@@ -1094,7 +1348,8 @@ As built (P11), where the first version of this section differed:
 Not built yet (with the owning item where the plan names one):
 
 - `ssc jobs` commands and `--wait`; exit codes 3 and 4 for `partial` and a breaker stop (P19).
-- `instance_running` in the job store's conflict mapping (2.6).
+- `instance_running` in the job store's conflict mapping (2.6). Built by P23 (PR #91).
+- `Store.close()` waiting for a finishing job of `store.jobs` (above; FX-12).
 - A committed golden for the job row that a real `main.py` subprocess leaves (section 10).
 - The web UI has no Stop button for a job of another process: the button exists only on the live card of the
   server's own job (FE-2).
@@ -1247,8 +1502,11 @@ What unification settles (each line is a deliberate behaviour change against one
   FX-6 a request that is cancelled while it waits for its slot gives the slot back, so a stopped job no
   longer delays the next one. The pipeline wraps every wait for a slot in
   `throttle.give_back_if_interrupted(delay)`, also around an `await`. A request that still waits for the
-  request semaphore when the job stops is a separate defect: it can be sent after the stop, with the budget
-  as the limit too (2.4; plan item FX-9).
+  request semaphore when the job stops was a separate defect: it could be sent after the stop, with the
+  budget as the limit too. Since FX-9 (PR #83) it is not sent: the async request paths check the cancel
+  right after the semaphore, before the breaker check and the reservation (2.4). What is left is inside the
+  bridge (`_wait_for_slot` checks the cancel only while it sleeps; P24) and on the sync path, which has no
+  check between the reservation and the send (2.4).
 - Sizing note: at 5 req/s a football event costs 7 requests (1.4 s), a 380-event season about 9 minutes.
   `sync --dry-run` reports `estimated_requests` and `estimated_seconds` from the plan.
 
@@ -1301,7 +1559,7 @@ As built so far (P18, PR #65; `src/cli/` at `f286723`). The entry point is `pyth
 or `ssc <command>` after `pip install -e .`; only an editable install is supported, because the version, the
 locale files and the web UI build are read from the project folder. `main.py` is untouched until P19. The
 commands that exist are `version`, `doctor`, `describe`, `config show|validate|init|path`, `diagnostics`
-and, since P22 (PR #73), `events`.
+and, since P22 (PR #73), `events`, and since P23 (PR #91), `watch`.
 
 - A command registers itself with `@command("jobs list", help=<locale key>, configure=fn, settings=True)`
   (and `group("jobs", help=...)` for a parent) and returns a `CommandResult(data, text, exit_code, warnings,
@@ -1319,8 +1577,12 @@ and, since P22 (PR #73), `events`.
   file shows as a warning, not as a failed check.
 - `describe slices` shows today's registry (`DetailSlice`: key, path, sports, `default_enabled`, and
   `required` as `counts_for_completeness`); `owner` is always `event`. The `SliceSpec` fields come with P12
-  and P27. `describe` has no section for the watch sources yet; the choices of `[live] source` and the
-  warning of `direct` appear through `describe config`.
+  and P27. `describe` has no topic for the watch sources, because `tests/test_cli_describe.py` pins the
+  topic list: P23 added the key `live_sources` to `describe config` instead (name, default, available,
+  opt_in, description and, for `direct`, the warning; `describe_live_sources`,
+  `src/cli/commands/meta.py:217-232` at `9b03c64`). Only `poll` is available today; P24 and P31 update its
+  `available` list together with `AVAILABLE_SOURCES` of the supervisor. The `--source` help text carries the
+  four warnings of 8.3.
 - `--version`, `version`, `--help` and `doctor` run with only the standard library. A command that needs a
   missing package ends with `internal` and a pointer to `doctor`.
 - The `--help` description names the sports of the registry.
@@ -1343,6 +1605,15 @@ and, since P22 (PR #73), `events`.
   the closed pipe, without a traceback: the CLI's general handling of a closed stdout, not changed by P22.
 - `diagnostics` writes the bundle of `src/diagnostics.py`. What the bundle takes from a job row is in 2.8
   (PR #71); how it shows a webhook address is in 4.3 (PR #73).
+- `watch` (P23, PR #91; `src/cli/commands/watch.py` at `9b03c64`) runs the live service in the foreground
+  (section 8) with the options `--sport` (repeatable), `--event ID` and `--tournament ID` (repeatable; both
+  need `--sport` and replace the follows), `--source page|direct|poll`, `--stdout` and `--hours H`. The
+  table's `--for DURATION` is `--hours` as built. Without `--event` and `--tournament` it watches the follows
+  with `live = true`, narrowed by `--sport`; nothing to watch is a usage error. A second live service, or a
+  `--watch` beside it, makes it exit 6. `page` and `direct` fall back to polling with the warning
+  `live_source_unavailable`, and `--source direct` adds the warning `live_direct_source`. `--stdout` prints
+  the new events as envelope lines (5.1) and the summary goes to stderr; it is a usage error with `--json`.
+  SIGTERM stops it like Ctrl+C. The command hosts the sink dispatcher (8.4).
 
 ### 4.2 Global flags
 
@@ -1648,8 +1919,9 @@ yet is rejected. Slice names and the `run` names of schedule tasks are not check
   | `stdout` | none | |
 
   They are checked when a sink is built, not when the settings are loaded: an unknown key or a value out of
-  range is a `ConfigError` (`config_invalid`) of `sinks.build_sinks`, which nothing calls outside the tests
-  yet. `config validate` does not build sinks, so it accepts a wrong option today; P19 makes it call
+  range is a `ConfigError` (`config_invalid`) of `sinks.build_sinks`, which nothing called outside the
+  tests until `ssc watch` (P23, PR #91) built the sinks at its start; a bad option makes `watch` exit 2.
+  `config validate` does not build sinks, so it accepts a wrong option today; P19 makes it call
   `build_sinks`. Three more rules of `build_sink`: the secret is read from the environment when the sink is
   built, and a named variable that is empty is an error; the name in `secret_env` must look like a secret
   (contain SECRET, TOKEN, KEY, PASSWORD, ...), because the diagnostics bundle and the log masking recognise
@@ -1657,12 +1929,28 @@ yet is rejected. Slice names and the `run` names of schedule tasks are not check
   because only the Store touches that directory. Sink names must be unique.
   Where a sink's address is shown. `ssc config show` and the diagnostics bundle show a webhook address by
   its host only (`https://hooks.example.org/***`, `redact.mask_webhook_url`; P22, PR #73): the path and the
-  query of such an address are the credential for services such as Slack or Discord. This covers `[[sink]]`
-  in the config file and the `url` fields inside `SOFASCORE_SINKS`. Two places are left: a `SOFASCORE_SINKS`
-  value of the wrong shape (a JSON list of strings instead of tables) is quoted in the loader's
-  `ConfigError` text, so an address written that way appears in the error message of the command, and
-  `config show` prints a sink's `options` as they are (the keys defined above carry no secret; a key the
-  user invents would be shown). The plan gives both to FX-10.
+  query of such an address are the credential for services such as Slack or Discord. The previous revision
+  said this covers `[[sink]]` in the config file and the `url` fields inside `SOFASCORE_SINKS` for both. As
+  built, `config show` covers both, and the bundle has no `[[sink]]` at all: it prints the environment
+  variable `SOFASCORE_SINKS` through `redact.mask_value`, which masks its `url` fields. The previous revision
+  left two places to FX-10, and one of them was described wrongly: a `SOFASCORE_SINKS` value that is a JSON
+  list of strings was never quoted (`_table_list` answers `expected a list of tables` and has not quoted the
+  value since P09); what did quote the rejected value were the errors of one sink row in `parse_sinks`. As
+  built by FX-10 (PR #84; `src/config/loader.py` at `9b03c64`):
+  - The errors of a sink row (`[[sink]]` or an item of `SOFASCORE_SINKS`) name the type of a rejected value,
+    never the value: `url: expected a string, got a list`, `type: expected one of stdout, file, webhook`,
+    `events: expected a list of strings, got a whole number at #1`. A `secret_env` that is not a variable
+    name (the secret itself written there) gets a message worded so that the CLI's output redaction leaves
+    it whole. A list of strings in place of tables names the type and the position (`expected a list of
+    tables, got a string at #1`), also for `SOFASCORE_FOLLOWS` and `SOFASCORE_SCHEDULE__TASKS`. The errors of
+    `[[follow]]` and `[[schedule.task]]` rows still quote the value (they hold no address), and the
+    duplicate-name error quotes the sink's name, a label.
+  - `config show` masks a sink's options by the sink's type: the value of a key defined for that type
+    (`sinks.COMMON_OPTIONS` plus `sinks.TYPE_OPTIONS[type]`) is shown, any other key is shown with `***` as
+    its value, so the user still sees which key is wrong; a key of another type (`rotate_size` on a webhook)
+    counts as unknown (`loader.mask_sink_options`, `:845-856`). The bundle applies the same rule to each
+    table of `SOFASCORE_SINKS` (`loader.mask_sink_table`, `diagnostics._sink_list`) before `mask_value`
+    masks the address. `SINK_KEYS` (`:706`) is the list of the modelled keys of a sink table.
 - A `[[schedule.task]]` becomes a `ScheduleTask` with `run`, `every`, `every_seconds`, `cron` and `options`;
   exactly one of `every` and `cron` is required.
 
@@ -1695,14 +1983,17 @@ are per request and per web request, not per file.
 legacy name. The `[[follow]]` entries are applied to the follows table since ST-17, and nothing reads the
 table yet. Modelled and validated but not used by anything: schedule tasks (P29), the slice
 selection (P27), `[server] host` and `port` (P25), `[log] format` (P19), `[client] odds_provider` (P28) and
-`[live]` (P23, P24, P31). There is no `[live] enabled` key and no `sources` list. `loader.load_settings(config_file=...)` validates a file without touching the process
+`[live]` (P23, P24, P31). Since P23 `ssc watch` reads `[live] source`, `poll_interval_seconds` (the
+interval of the live list) and `max_event_polls`; `detail_slices` and `detail_interval_seconds` are still
+unused. There is no `[live] enabled` key and no `sources` list.
+`loader.load_settings(config_file=...)` validates a file without touching the process
 (`config validate`), `loader.find_config_file()` is `config path`, and `config_schema()` is the JSON Schema
 of the file. Constructing the `Settings` creates no file; constructing `ConfigManager` still creates
 `config/leagues.txt` (`03-implementation-plan.md` section 15).
 Two parts of the model got a user in this revision. Since P20 (PR #74) the web app takes its token through
 `[server] token_env`, and API v1 reads and writes the settings (section 6). Since P22 (PR #73) `src/sinks`
-builds sinks from `settings.sinks`; no process hosts the dispatcher yet, so a configured `[[sink]]` is still
-not served (section 5).
+builds sinks from `settings.sinks`; since P23 (PR #91) `ssc watch` hosts the dispatcher, so a configured
+`[[sink]]` is served while `watch` runs (section 5).
 
 Follows have three origins (`01-storage.md` 2.3):
 
@@ -1825,9 +2116,13 @@ come with P19.
   (2.8); `main.py` takes a lease itself only for `--recheck-unavailable` alone and for `--watch`. What is
   printed and the exit code are unchanged. A Ctrl+C that reaches the job body ends the job as `cancelled`
   and releases the lease (tested on the manager, not through `main.py`).
-- Not built: the SIGHUP reload. `src/sinks` has no reload of its sinks, and no process hosts the dispatcher
-  yet (section 5); the reload comes with the hosts (P23, P25). The 10 s flush of the sinks at a graceful
-  stop is built into `Dispatcher.run` (5.2).
+- Not built: the SIGHUP reload. `src/sinks` has no reload of its sinks; the reload comes with the hosts
+  (P23, P25). The 10 s flush of the sinks at a graceful stop is built into `Dispatcher.run` (5.2). P23
+  (PR #91) did not add it: `ssc watch` re-reads the follows every 60 s instead
+  (`SCOPE_RELOAD_SECONDS`, `src/services/live/supervisor.py:64` at `9b03c64`), and a changed `[[sink]]` or
+  `[live]` value needs a restart. `watch` handles SIGINT and SIGTERM alike: the service stops after its
+  round, saves its state, releases `live`, and the host stops the sink threads within bounded times (8.4);
+  the exit code is 0. The signal handling of the other commands is P19's.
 - Service operation: `docs/` ships two systemd units (`sofascore-serve.service`, `sofascore-watch.service`,
   `Restart=on-failure`, `KillSignal=SIGTERM`) and a timer example for `ssc sync`. The Docker entrypoint
   becomes `ssc serve --host 0.0.0.0` and passes any other arguments to `ssc`; `serve` never widens
@@ -1875,6 +2170,10 @@ As built (P22, PR #73; `src/sinks/` at `e0bae0c`): the sink library, its dispatc
 and the sink is served by nothing after P22 alone. The hosts are `ssc watch` (P23), `ssc serve` (P25) and
 the one-shot commands with their drain at exit (P19). Until then the stream log is read with `ssc events`.
 
+Since P23 (PR #91) `ssc watch` is the first host (8.4): a configured sink is served while `watch` runs, and
+`watch --stdout` follows the log without the lease. `ssc serve` (P25) and the one-shot commands (P19) are
+still to come, so a sink is not served while only the web server or a download runs.
+
 ### 5.1 Streams
 
 Producers never call a sink. They append to a durable stream through `store.streams.append` and get a sequence
@@ -1904,28 +2203,52 @@ directory. It identifies a message for as long as the
 stream id (`store.streams.head().stream_id`) stays the same; consumers de-duplicate on `seq`. Numbers increase
 strictly but are not consecutive within a stream.
 
-As built so far (ST-18, PR #59): the 2.x watcher is the only producer of the `live` stream. It appends its
+As built by ST-18 (PR #59): the 2.x watcher was the only producer of the `live` stream. It appended its
 events with the fields it has always written, as they are: `from`, `to`, `at_utc`, `change_ts`, `source`
 (`live` or `event`: which request showed the change), `scores`, `provisional`, `start_ts`, `status_class`.
-The envelope's `source` is always `poll`, and no `dedup_key` is set. The `data` shape shown above and the
-key are the live service's to settle (P23, 8.1); until then a consumer of the stream sees the 2.x fields.
+The envelope's `source` was always `poll`, and no `dedup_key` was set. The `data` shape shown above and the
+key were the live service's to settle (P23, 8.1).
 
-What is produced today (`e0bae0c`). The live event types carry the stream's prefix (`live.status_changed`,
-not `status_changed`): the stream log, the sinks and the schema use these names. In the `live` stream only
-the 2.x watcher's `live.status_changed`, `live.score_changed` and `live.stuck` exist. The job manager
-appends `job.started` and `job.finished` since P11 (PR #69; data in 2.8). The dispatcher appends
-`system.sink_dropped` (5.2). `change.recorded`, `system.blocked`, `system.recovered` and
-`system.live_source_changed` have no producer yet; the pipeline and the live service bring them.
+As built by P23 (PR #91; `src/services/live/reducer.py:306-327` at `9b03c64`). The live service and the
+legacy `--watch` alias share one reducer, so both append the settled `data`; the 2.x fields remain only in
+the alias's own stdout lines and `watch_events.jsonl`. The `data` per type (also in `04-schema-v1.md`,
+"LiveEvent data"):
+
+| `type` | `data` |
+|---|---|
+| `live.status_changed` | `from`, `to` (status classes), `change_ts`, `provisional` (true or false on the first `completed` of the event, null otherwise), `score` (the schema's Score structure, null when it cannot be built) |
+| `live.score_changed` | `from`, `to` (each `{home, away}`, the headline score), `change_ts`, `score` |
+| `live.stuck` | `status_class`, `start_utc` (ISO 8601 UTC of the start from which the threshold is counted) |
+| `change.recorded` | `change_seq`, the sequence of the change-log row it announces |
+| `system.blocked` | `source`, `retry_in_s`, `reason` |
+| `system.recovered` | `source`, `blocked_for_s` |
+
+Every live event carries a `dedup_key`, so the same transition is stored once:
+`<id>:<type>:<from>><to>:<change_ts>` for `status_changed` and `score_changed`, with `-` for a missing
+`change_ts`, and `<id>:stuck:<start_ts>` for `stuck` (`change.recorded` uses `change:<change_seq>`). 8.1
+named `(event_id, type, change_ts or state hash)`; there is no state hash, so without a `change_ts` a
+repeated identical transition with an identical score is a duplicate. The envelope's `source` is `poll`
+for every live event today (`push` comes with P24).
+
+What is produced today (`9b03c64`). The live event types carry the stream's prefix (`live.status_changed`,
+not `status_changed`): the stream log, the sinks and the schema use these names. The `live` stream has
+`live.status_changed`, `live.score_changed` and `live.stuck` from the live service and from the legacy
+alias. The job manager appends `job.started` and `job.finished` since P11 (PR #69; data in 2.8). The
+dispatcher appends `system.sink_dropped` (5.2). Since P23 the live service appends `change.recorded` after a
+confirmation wrote a change-log row (8.1), and `system.blocked` and `system.recovered` (source `system`).
+`system.live_source_changed` has no producer yet (the arbiter, P24), and the pipeline's `change.recorded`
+after a refresh comes with P13.
 
 The envelope as built (SC-1, PR #72 and P22, PR #73):
 
 - `ts` has milliseconds, always: `2026-10-01T12:00:00.123Z`. The first version of the example showed whole
   seconds; the stream log stores milliseconds (`StreamRecord.ts`) and one fixed format is easier to parse.
   The example above was changed.
-- The `data` of the example (`from`, `to`, `provisional`, `change_ts`, `score`) is not what is stored today:
-  a consumer gets the 2.x watcher's fields listed above, with `scores` as the 2.x score sheet. The schema
-  types `data` as an object and documents both shapes (`04-schema-v1.md`, "LiveEvent data"); P23 settles the
-  shape per event type. The sinks pass `data` through as stored.
+- The `data` of the example (`from`, `to`, `provisional`, `change_ts`, `score`) was not what was stored
+  until P23: a consumer got the 2.x watcher's fields listed above, with `scores` as the 2.x score sheet.
+  P23 settled the shape per event type (table above). The schema still types `data` as an object; the
+  section "LiveEvent data" of `04-schema-v1.md` states the settled shape. The sinks pass `data` through as
+  stored.
 - `change_ts` inside `data` is an epoch integer, the one exception to the timestamp rule of 4.4.
 - A field that does not apply is `null`: a `job.started` event has `event_id`, `sport` and `tournament_id`
   null, and its `source` is `job`. `dedup_key` is internal to the log and not part of the envelope.
@@ -1935,8 +2258,8 @@ The envelope as built (SC-1, PR #72 and P22, PR #73):
   (SC-1), and SC-1 asked the sinks to write the envelope with it. The sinks and `ssc events` do not call it:
   they use their own `Envelope.from_record(record).to_dict()` (`src/sinks/base.py:103-122` at `e0bae0c`),
   because nothing outside `src/schema` imports the schema package yet. The two give the same document for
-  the same record today (checked by hand for this revision, with a live and a job record), and no test
-  compares them. P23, the next owner of the envelope's `data`, makes them one or adds that test.
+  the same record. P23 (PR #91) pinned that with a test for live, change and job records rather than
+  building `Envelope.to_dict` from the schema, so that `src/sinks/base.py` stays standard-library only.
 
 ### 5.2 Sink interface
 
@@ -2006,7 +2329,12 @@ one process dispatches at a time (the `sinks` lease). How that is built:
 - **One thread delivers for all sinks.** Deliveries are made one after the other in the dispatcher's thread.
   A `deliver()` that never returns (stdout into a pipe nobody reads, a file on a hung network mount) blocks
   the other sinks and the shutdown; the webhook is bounded by its time-out. A host runs the dispatcher in a
-  daemon thread and joins it with a time-out.
+  daemon thread and joins it with a time-out. As built by the first host, `ssc watch` (P23, PR #91): the
+  `--stdout` follower runs in a thread of its own, so a reader of stdout that stops does not hold up the
+  configured sinks; the configured sinks still share one dispatcher thread. The shutdown is bounded: both
+  threads are daemon threads, joined for at most 15 s (sinks) and 5 s (stdout), then `drain_at_exit`
+  delivers for up to 10 s, which is skipped and replaced by `close()` when the sink thread hung
+  (`src/cli/commands/watch.py:157-174` at `9b03c64`).
 - **Retries.** A `RetryableSinkError`, and any unexpected exception of a sink, is retried with exponential
   back-off and jitter, 1 s doubling to 5 min, each delay multiplied by a random factor between 0.5 and 1; a
   receiver's `Retry-After` is honoured up to the 5 min cap. The head batch blocks its sink, and the other
@@ -2033,7 +2361,8 @@ one process dispatches at a time (the `sinks` lease). How that is built:
   hour, to 7 days and 1,000,000 rows (`01-storage.md` 9.3). `drain` and `follow` do not prune. The two
   limits are constants of the dispatcher (`PRUNE_MAX_AGE_SECONDS`, `PRUNE_MAX_ROWS`) until ST-24 makes them
   the defaults of `StreamLog.prune`. When no sink is configured there is no dispatcher, so the live service
-  has to prune itself (P23).
+  prunes itself: once per hour while it holds `live`, with the same two limits, which it imports from
+  `src.sinks.dispatcher` (P23; ST-24 moves the constants for both).
 - **No reload.** A SIGHUP reload of the sinks (4.6) is absent; a changed `[[sink]]` needs a restart of the
   host.
 
@@ -2065,8 +2394,9 @@ object: error texts are built from the status code or the exception class, and t
 the secret are scrubbed from every text as a second line of defence. In logs a webhook is named by its sink
 name and host. `ssc config show` and the diagnostics bundle show the address by its host only (4.3).
 
-Not built, with the item that owns it: a host for the dispatcher (P23 in `watch`, P25 in `serve`, P19 for
-the drain at exit of one-shot commands); `ssc status` per sink, which needs the cursor listing of ST-24
+Not built, with the item that owns it: a host for the dispatcher in `serve` (P25) and the drain at exit of
+one-shot commands (P19; `watch` hosts it since P23);
+`ssc status` per sink, which needs the cursor listing of ST-24
 (`Dispatcher.status()` covers one process only); `config validate` for sink options (P19); the SIGHUP reload
 (with the hosts); a message-queue and a database sink (later).
 
@@ -2204,8 +2534,12 @@ As built: the foundation (P20, PR #74; `src/web/app.py`, `errors.py`, `deps.py`,
   the fields of the job model with the new state names; it shows `origin.pid` and `origin.host`, which is
   kept (decision of 2026-10-02, 2.8).
 - **`/status`** has `version`, `api_version`, `auth_required`, `bridge`, `throttle` and `active_job`. It has
-  no live-service fields yet (lease, leading source, last heartbeat): P23 adds them to `Status` in
-  `src/web/api/v1/meta.py`. It has no data summary and no coverage yet (P21).
+  no live-service fields yet (lease, leading source, last heartbeat). P23 was to add them to `Status` in
+  `src/web/api/v1/meta.py` and did not, because that would have needed `docs/api/openapi-v1.json`
+  regenerated, which its batch could not edit. `services.live.live_status(store)` gives them (`running`,
+  `pid`, `host`, `source`, `sports`, `heartbeat_at`, `blocked`, `last`;
+  `src/services/live/supervisor.py:631-649` at `9b03c64`), ready for P21 here and P19 for `ssc status`. It
+  has no data summary and no coverage yet (P21).
 - **Settings.** `GET /settings` lists every setting of the model with its value, layer, source name,
   `locked`, `writable` and `secret`; secrets are masked. `PATCH /settings` writes
   `CONFIG_DIR/overrides.json` and refuses locked and read-only keys (4.3).
@@ -2267,6 +2601,19 @@ without the job body.
 fails for a legacy operation without a row and for a row without an operation. Most successors do not exist
 yet: the header says where to go once P21 has added the route.
 
+Reading routes write derived files (RD-1, RD-2, RD-4, RD-5). The rule of #43, pinned by
+`tests/test_web_hardening.py::test_no_get_route_writes_files_or_sends_requests`, is that a GET route writes
+nothing. Since the readers moved to the Store, the GET routes of match detail, match lists, dashboard,
+statistics, leagues, league search and season lists open the Store of the data directory, so the first such
+request of a process creates `.meta/schema.json` and `.meta/catalog.db` when they are missing (also when the
+configured data directory did not exist yet) and every open reconciles the catalog with the files: about
+15 ms on a copy of the owner's data, 0.75 s when the catalog has to be built. The test leaves those derived
+files out of its digest (`_STORE_DERIVED`) and names the routes in `GETS_THAT_MAY_WRITE_A_CACHE` with the
+reason: the catalog is an index derived from the downloaded files, the caller does not choose its content,
+and the operation is idempotent; data and settings files do not change. In the other direction, `GET
+/api/leagues` no longer writes `config/league_sports.json` (RD-5, 2.7). The match-detail route no longer
+creates `match_details/` and `match_details/processed/` by building a fetcher (RD-1).
+
 The line numbers in this table are at `0aa73b4`; P08, FX-2 and FX-1 have moved lines in `routes/data.py`,
 `routes/leagues.py`, `routes/scrape.py`, `routes/settings.py` and `routes/matches.py` since.
 
@@ -2318,6 +2665,15 @@ State on 2026-10-02: P08 (PR #57) did 2, 6 and the web half of 1 and 3, and P10 
 web nor a headless run imports the terminal UI. `main.py` imports it only on the interactive branch.
 `src/SofaScoreUi.py` keeps its own copy of the wiring, and three methods that nothing calls any more, until
 P26.
+
+State at `9b03c64`. The menu's statistics count from the catalog through `StatusService` since RD-4 (2.7);
+only their per-league disk sizes still walk the league directories. Its clear, restore and data-folder move
+call the catalog hooks since #86. Its clear does not call `MaintenanceService.clear` yet (ST-19 left it,
+because `tests/test_settings_ui_catalog.py` makes the menu's clear fail half-way by replacing the module's
+own `shutil.rmtree`, which a clear inside the Store does not use): it still takes no lease and also empties
+`datasets/` and `reports/`, while the web clear takes `maintenance` through the Store. ST-21 moves it onto
+`MaintenanceService(store=...).clear` under the `maintenance` lease, changes that test to make the Store's
+delete fail, and keeps `datasets/` and `reports/` in the menu, since they are not Store trees.
 
 Between the PR that starts writing the new layout (ST-21) and the removal of the menu (P26), the menu's list,
 statistics, backup, restore and clear items see only the legacy trees. ST-21 adds a one-line notice to those
@@ -2386,6 +2742,10 @@ Two owner decisions of 2026-10-01, taken after the push channel was measured
   `live.score_changed` and `live.stuck` (the type names carry the stream's prefix, 5.1),
   sets `provisional` by the refresh window, and de-duplicates across sources with the stream's `dedup_key`
   `(event_id, type, change_ts or state hash)`, so a transition seen by push and by poll is stored once.
+  As built (P23): `reduce(state, Observation, sport)` in `src/services/live/reducer.py`, checked against
+  goldens recorded from `_observe` before the move (`tests/golden/live/reducer.json`, 14 scenarios with the
+  gap cases). The key is `<id>:<type>:<from>><to>:<change_ts>`, with `-` when there is no `change_ts`, and
+  `<id>:stuck:<start_ts>` for `stuck`; there is no state hash (5.1).
   It keeps the last known state per event and derives events from the difference between that state and the
   observation. It must tolerate gaps: a source can miss intermediate states (the push connection is dropped
   about every 30 minutes), so a status may jump and a score may move by more than one step.
@@ -2399,14 +2759,33 @@ Two owner decisions of 2026-10-01, taken after the push channel was measured
   event append and the state save at the end of the round still emits that transition again after the
   restart, as 2.x did; and an append that meets `StoreBusy` ends the `--watch` run, as an `OSError` on the
   events file did before. The live service chooses the key and retries a busy append with back-off (P23).
-- **Sinks today.** P22 (PR #73) changed nothing in what is stored: the watcher's events are the 2.x fields
-  of 5.1, and a sink would deliver them as they are. No sink delivers them yet, because nothing hosts the
-  dispatcher (section 5). Until P23 a live event leaves the process through `--watch`'s own stdout line and
-  `watch_events.jsonl`, as in 2.x, and can be read from the stream log with `ssc events` (4.1), also while
-  the watcher runs.
+  As built (P23): the copy is gone (`mirror_legacy_state` was removed), and the 2.x file is imported once
+  (`store.watch.import_legacy`). The service keeps its state under the sport's name, the same watcher name as
+  the 2.x watcher, not under a name of its own as the plan's brief said: the `live` and `watcher:<sport>`
+  leases exclude each other, and sharing the state means that switching between `--watch` and `ssc watch`
+  neither emits a transition again nor loses one. Both set the key, and both retry an append that meets
+  `StoreBusy` with back-off (0.5 s up to 30 s; three attempts while stopping), so a busy store no longer
+  ends `--watch`.
+- **Sinks.** P22 (PR #73) changed nothing in what was stored, and nothing hosted the dispatcher, so until
+  P23 a live event left the process through `--watch`'s own stdout line and `watch_events.jsonl`, as in
+  2.x, and could be read from the stream log with `ssc events`. Since P23 the events carry the settled
+  `data` (5.1), `ssc watch` delivers them to the configured sinks and to `--stdout` (8.4), and `ssc events`
+  reads them as before. The legacy alias still writes its 2.x stdout lines and `watch_events.jsonl` for one
+  release.
 - **Confirmation.** A terminal status from push is emitted immediately, then confirmed by one `/event/{id}`
   request that stores the full payload. That stored event is what a later `sync` completes with post-match
   slices; the live service does not download details unless `live.detail_slices` asks for them.
+  As built (P23; `_confirm_terminal`, `src/services/live/supervisor.py:507-534` at `9b03c64`): a
+  `status_changed` to `completed` or `decided_without_play` is confirmed by one `/event/{id}` request, or by
+  none when the observation already came from the event page, and stored with `store.events.observe`. The
+  design did not say when that writes a change row. As built, it follows the refresh rule of
+  `src/refresh.py`: a row is written only when the stored payload was already terminal and the new one
+  differs (`_change_rule`, `:590-605`); a first stored payload, or an older payload of a match that had not
+  finished, is not a change. When a row was written, `change.recorded` is appended with its `change_seq`.
+  `live.detail_slices` and `detail_interval_seconds` are not used yet. Since the service calls `observe`,
+  the defect of `EventStore._apply` that writes the change-log line last (a write killed between the payload
+  and that line loses the row; `01-storage.md` 6.2) is reachable through `ssc watch`; FX-12 changes the
+  order.
 - **Arbitration and fallback.** Per sport the arbiter tracks push health (connection open, last frame, last
   ping). Push healthy: polling drops to a slow safety interval. Push silent beyond the threshold or
   disconnected: polling returns to `poll_interval` (30 s, `watcher.py:33`). After every reconnect one poll
@@ -2417,6 +2796,17 @@ Two owner decisions of 2026-10-01, taken after the push channel was measured
 - **Supervision.** The supervisor restarts a crashed source with back-off, records heartbeats and counters
   for `LiveService.status()`, pauses and backs off when the client reports `blocked` (it never "trips and
   stops"), and reloads the scope when follows change or on SIGHUP.
+  As built (P23): a crashed source is built again with back-off (5 s up to 5 min). The client has no
+  "blocked" report on the path the service uses (2.4), so a `RateLimitError` (429), an `APIError` with
+  status 403 and a `CircuitOpenError` from `make_api_request(raise_on_failure=True)` count as blocked
+  (`_default_fetch`, `src/services/live/supervisor.py:613-628`): the service appends `system.blocked`, waits
+  1 min doubling up to 10 min, and appends `system.recovered` after the first good round. The heartbeat and
+  the counters go to `store.runtime["live"]` every round, and `live_status(store)` reads them with the
+  holder of the `live` lease; `LiveService.status()` gives only this process's report. SIGHUP is not
+  handled: the scope is re-read from the follows every 60 s. The service runs in its own request context
+  without a job breaker (`request_context(breaker=None)`) and takes its turns from the `watch` lane of the shared budget. The scope comes from follows with `live = true` (tournament, event and
+  team follows; a player follow is skipped with the warning `live_follow_skipped`) or from `--sport` with
+  `--event` or `--tournament`.
 
 ### 8.2 The sources
 
@@ -2451,6 +2841,15 @@ Facts both push sources rest on (`docs/push-channel/README.md`; one evening, one
 `sports.WatcherParams` (`sports.py:40-48`). `PageSource` routes the page's requests through the shared
 throttle or aborts them, and blocks ads, analytics, images, media and fonts. Everything downstream of the
 reducer is identical for the three sources.
+
+As built (P23, PR #91): `PollSource` is in `src/services/live/poll_source.py` and works through a tracker
+protocol; a source implements `start(tracker, event_ids)` and `tick(tracker)` and is passed to the service
+as `LiveService(source_factory=...)`. Polling is the only source: `AVAILABLE_SOURCES` of the supervisor is
+`("poll",)` (`src/services/live/supervisor.py:55` at `9b03c64`), and `--source page`, `--source direct` and
+`[live] source = "page"` (the default) fall back to polling with the warning `live_source_unavailable`. P24
+and P31 add their source to `AVAILABLE_SOURCES` and to the `available` list of `describe config`
+(`live_sources`), merge a partial push frame into the last event object before they build an
+`Observation`, and raise `Blocked` from a fetch to pause the service.
 
 ### 8.3 The `direct` source: opt-in, and what the user is told
 
@@ -2493,11 +2892,23 @@ reducer is identical for the three sources.
   (`<profile>-live`) to leave the bridge profile free for jobs in other processes (decision D10). The `direct`
   source uses the bridge page only to read the credential and needs no second profile.
 - The legacy `main.py --watch` alias runs `ssc watch --source poll`, so that existing cron and systemd setups
-  keep polling and do not start a browser (decision D18).
-- Hosting the sink dispatcher (P22 built it, nothing hosts it yet). `ssc watch` hosts it with P23:
+  keep polling and do not start a browser (decision D18). Not yet as built: after P23 (PR #91) the alias
+  still runs `MatchWatcher` under `watcher:<sport>`, because `main.py` was not P23's file. `src/watcher.py`
+  is now a wrapper on the shared reducer and `PollSource`, keeps its public names and its 2.x outputs, and
+  shares the state with the service (watcher name = sport), so `--watch` and `ssc watch` exclude each other
+  and either one continues where the other stopped. P19, which owns `main.py` and `src/cli/legacy_flags.py`
+  and translates the legacy flags (4.7), completes the mapping; P30 removes `src/watcher.py`,
+  `WatchStateStore.append_legacy_events` and `watch_events.jsonl`.
+- Hosting the sink dispatcher (P22 built it; P23 hosts it). `ssc watch` hosts it with P23:
   `sinks.dispatcher_for(store, settings.sinks)`, which is `None` without sinks, then `dispatcher.run(stop)`
   in a daemon thread next to the live service; on shutdown the host sets `stop`, joins the thread with a
-  time-out and calls `dispatcher.close()`. `ssc serve` hosts it the same way with P25. The two can run on
+  time-out and calls `dispatcher.close()`. As built (`src/cli/commands/watch.py:132-174` at `9b03c64`):
+  `register()` before the service starts, so that a new sink starts before the first event; `run(stop)` in
+  the thread `watch-sinks`; `--stdout` as a lease-free follower
+  (`Dispatcher(store, [StdoutSink(...)]).follow(stop)`) in a thread of its own, positioned at "now" with one
+  `step()` before the service starts; on shutdown the threads are joined for at most 15 s and 5 s, and
+  `drain_at_exit` (up to 10 s) replaces `close()` unless the sink thread hung (5.2). P25 hosts it in `serve`
+  the same way. `ssc serve` hosts it the same way with P25. The two can run on
   one data directory: `run()` waits for the `sinks` lease, so one of them dispatches (5.2). `watch --stdout`
   needs no lease (`follow`). A sink is therefore served whenever `watch` or `serve` runs, not only while the
   live service runs.
@@ -2524,7 +2935,9 @@ processes of the profile.
 - `ssc watch --source poll` needs no browser. `ssc watch --source direct` needs the browser only while it
   reads the credential.
 - `ssc status` shows the leading source per sport and the last source switch, so a service that silently
-  fell back to polling is visible.
+  fell back to polling is visible. Not built: `ssc status` is P19's, and the live fields of `/api/v1/status`
+  are P21's; both read `services.live.live_status(store)` (P23), which gives the lease holder, the source,
+  the sports, the last heartbeat and whether the service is blocked.
 
 ### 8.6 Order of delivery
 
@@ -2532,7 +2945,10 @@ Polling first (P23): supervisor, reducer, state in the Store, sequence-numbered 
 `page` source and the arbiter second (P24). The `direct` source third (P31), with its warnings and its opt-in
 test. Everything downstream of the reducer is identical for all three, so P24 and P31 each add one source.
 The sink library and `ssc events` came before the live service (P22, PR #73); P23 hosts the dispatcher in
-`watch` and settles the `data` of the live events.
+`watch` and settles the `data` of the live events. P23 is merged (PR #91): polling, the supervisor, the
+reducer, the state in the Store, sequenced and de-duplicated events, `ssc watch` and the dispatcher host.
+Left by P23: `system.live_source_changed` and the arbiter (P24), `live.detail_slices`, the SIGHUP reload,
+the live fields of `ssc status` and `/api/v1/status` (P19, P21), and the alias mapping of D18 (P19).
 
 ---
 
@@ -2565,6 +2981,12 @@ and FX-11 (the SQLite files of the Store follow the umask; `01-storage.md`).
 
 State on 2026-10-02 (`e0bae0c`): of the items with a draft id, P05, P07 to P11, P18, P20 and P22 are
 merged. `03-implementation-plan.md` has the state of every item.
+
+State at `9b03c64`: P23 is merged as well (PR #91), four of the five readers of the draft's P16 (RD-1 #80,
+RD-2 #89, RD-4 #78, RD-5 #79; RD-3 is in progress), the backup and clear half of the draft's P17 (ST-19
+#90), and the fix items FX-5 (#77), FX-9 (#83), FX-10 (#84) and FX-11 (#85). A new fix item, FX-12, comes
+from this batch: a write keeps its change-log row (the order of `01-storage.md` 6.2) and `Store.close()`
+waits for a finishing job (2.8).
 
 ## 10. Testing strategy
 
@@ -2600,12 +3022,31 @@ merged. `03-implementation-plan.md` has the state of every item.
 - API v1 has its record: `docs/api/openapi-v1.json` with `tests/test_openapi_snapshot.py` (section 6). The
   per-route security tests of `tests/test_api_v1_errors.py` run for every v1 operation of that document, so
   a new v1 route joins them by itself.
-- One test is timing-dependent for a reason in the product:
-  `tests/test_throttle.py::test_stopped_bulk_job_leaves_no_queue_behind` can fail on a slow runner until
-  FX-9 adds the cancel check after the request semaphore (2.4). A fake clock in the test would hide the
-  defect.
-- The coverage floor (`pyproject.toml`, `fail_under = 53`) applies to every PR; PRs that delete tested code
-  must move its tests, not drop them.
+- One test was timing-dependent for a reason in the product:
+  `tests/test_throttle.py::test_stopped_bulk_job_leaves_no_queue_behind` could fail on a slow runner until
+  FX-9 added the cancel check after the request semaphore (2.4). It no longer fails at random: since FX-9
+  (PR #83) it makes 6 reservations in the suite's environment (`MAX_CONCURRENT=5`, seeded by
+  `tests/conftest.py`) where it made 70. One timing limit is left by design: with a real budget of one
+  request per second it fails if a single reservation takes a full second (measured: it passes at 800 ms per
+  reservation and fails at 1,100 ms); removing that would need a fake clock, which would hide the defect.
+  The four tests FX-9 added do not depend on the clock: the stop runs in the same loop turn as the first
+  step of every request, and the `request_slots` fixture pins the width of the semaphore to 10.
+- Tests that close a job store join the job thread first (#88): a background job thread used the store
+  after its row was finished, and closing it in that window crashed the test session at random
+  (`tests/test_job_manager.py::test_events_can_be_followed_until_the_job_ends`). #93 fixed the product side
+  (2.8).
+- The readers of RD-1 to RD-5 are tested in process against a real Store; there is no test with a writer
+  in one process and a reader in another. A test that writes files while the Store is open has to reopen
+  the Store before a reader sees them, because a reader that goes through the catalog touches no file and
+  the shadow recorder of `tests/conftest.py` therefore does not resync; a test that edits event directories
+  and reopens the same path within a minute sets `STORE_OPEN_RECONCILE_SECONDS=0` (decision S17).
+- The live service is tested with a fake clock and a fake fetch (`tests/test_live_service.py`); the reducer
+  against goldens recorded from the 2.x watcher (`tests/golden/live/reducer.json`). Nothing ran against
+  SofaScore.
+- The coverage floor (`pyproject.toml`, `fail_under`) applies to every PR; PRs that delete tested code
+  must move its tests, not drop them. The floor was 53; it is 85 since FX-9 (PR #83; decision P3, settled at
+  85 on 2026-10-02), and CI measured 91.10 % on that pull request, so a PR that deletes code has about six
+  points of room.
 
 ---
 
@@ -2763,7 +3204,8 @@ Changes after batches five to seven (2026-10-02, second revision of that day; re
 48. **Requests behind the semaphore after a stop.** The previous revision said they are sent only with the
     budget off or not the limit. Found: also with the budget as the limit, whenever cancelling the queue
     takes longer than one interval, because the cancel check stands before the semaphore and not after it.
-    Plan item FX-9 (2.4, 3.4; PR #71).
+    Plan item FX-9 (2.4, 3.4; PR #71). No longer true since FX-9 (PR #83): the check stands after the
+    semaphore too, and a waiter is not sent after a stop on the async paths (item 62).
 49. **Diagnostics bundle.** The document did not say what the bundle takes from a job row, and since P11 the
     bundle carried the host name. Built: the job columns are selected by name, the origin is {face, pid,
     same_host}, `spec_json` and `error_json` are decoded and redacted, `owner` is dropped, host names are
@@ -2814,6 +3256,91 @@ Changes after batches five to seven (2026-10-02, second revision of that day; re
 59. **Module layout.** 2.2 listed `sinks/`, `schema/`, `web/api/v1` and the job manager as planned and had
     no `config/overrides.py`, `web/openapi.py` or `web/api/__init__.py`. They exist; the paragraph under the
     layout says what does and what does not (2.2; P11, SC-1, P22, P20).
+60. **Services that take a Store.** 2.2 listed `tournaments.py` as part of `QueryService`, and 2.3 and 2.7
+    showed every service built on the context, which held a Store. Built: `QueryService(store)`,
+    `StatusService(store)`, `BackupService(store)` and `MaintenanceService(ctx=None, *, store=None)`;
+    `tournaments.py` is a module of functions on a Store, because `SeasonFetcher` calls it. The context has
+    no `store` field (`ctx.store` is a property) and nothing wires `query`, `status` or `backup` into it;
+    importing the context would load the fetchers and the request layer, and `build_context` creates data
+    directories (2.1, 2.2, 2.3, 2.7; RD-1, PR #80, RD-4, PR #78, RD-5, PR #79, ST-19, PR #90).
+61. **Three answers for a slice body.** 2.4 said that whether a body carries data stays with the presence
+    predicates. Built: `slices.slice_body_state` has three answers (data, no data, malformed), and since the
+    fix commit of FX-5 a fetched malformed body is `failed` / `parse`: not counted as empty, not written,
+    not reported to the breaker, requested again; it no longer aborts the sync batch or makes the
+    single-match route answer 500. Two divergences of the async path stay for P13: a falsy body is `empty`
+    without asking the rule, and a 404 has two reasons (1.4, 2.4; FX-5, PR #77).
+62. **The cancel check after the semaphore.** 2.4 and 3.4 said that a request waiting for the request
+    semaphore can be sent after a stop (FX-9). Built: one check right after the semaphore on the curl and
+    the browser-first path of `_request_async`, before the breaker check and the reservation. Left: a
+    request already inside the bridge is sent if its slot is due (`_wait_for_slot`, P24), the browser-first
+    path drops a response that arrives during a stop, and the sync path has no check between reservation
+    and send. Item 48 is history (2.4, 3.4, 10, 11; FX-9, PR #83).
+63. **The data summary as built.** 2.7 named `StatusService.summary() -> DataSummary` without defining it.
+    Built: `DataSummary`, `TournamentCounts` and `DiskUsage`, counted from the catalog under decision D21
+    (a match is finished or has stored details while `FETCH_ONLY_FINISHED` is on, every event while it is
+    off; a match with details that no schedule lists counts). The disk sizes are cached in the service for
+    60 s and dropped when the catalog changes; `Store.info` has no cache. The setting is read from the
+    environment at call time, a leftover of rule 3 until P30. The terminal menu's per-league sizes still
+    walk the files (2.1, 2.7; RD-4, PR #78).
+64. **Match and season lists from the catalog.** The document did not say how the legacy lists are read.
+    Built: rule D21 as two disjoint queries merged in order, because `EventQuery` joins conditions with AND;
+    both lists ordered by start time with ties by event id; the date filter kept as a substring of local
+    ISO text; `league_folder` derived for rows without a legacy path; no fallback to the export CSV (S14).
+    Season lists: the newest file of a league whatever its name, for every reader; `GET /api/leagues` no
+    longer writes `league_sports.json` (2.7; RD-2, PR #89, RD-5, PR #79).
+65. **A legacy GET route may write `.meta/`.** The rule of #43 is that a GET route writes nothing, and
+    neither design document said otherwise. Since RD-1, RD-2, RD-4 and RD-5 the reading routes open the
+    Store, so the first read creates `.meta/schema.json` and `.meta/catalog.db` and every open reconciles
+    the catalog; the hardening test excludes those derived files and names the routes (2.3, 6.1; RD-4,
+    PR #78, RD-5, PR #79).
+66. **Is the catalog current.** The read API had no public way to ask it, and `open_store` does not fail
+    when the catalog could not be synced. Built by ST-19: `Store.catalog_current`. No reader asks it yet; a
+    reader that plans work refuses to plan when it is False (2.7; RD-1, PR #80, ST-19, PR #90).
+67. **Backup and clear.** 2.7 gave `BackupService.create(scope, *, include_secrets, dest, handle)` and a
+    `MaintenanceService` on the context. Built: `BackupService(store).create(scope, *, config_files=(),
+    include_secrets=False)` with today's five scopes and no `dest` or `handle`; the caller holds `writer`.
+    `MaintenanceService(store=...).clear` calls `Store.clear`, which takes `maintenance` itself;
+    `DataScope` takes today's names and the Store's. The terminal menu's clear does not use it yet (ST-21)
+    (2.7, 7.1; ST-19, PR #90).
+68. **The end of a job.** 2.8 said the lease is released when the job ends. Built since #93: after the
+    job's last store access (`job.finished` and the read-back), inside a private finishing block during
+    which `rebind` and `exclusive` raise `JobRunningError`, `JobStore.close` waits up to 30 s and
+    `create_running` waits. Found by #88 (a job store closed under a finishing job thread crashed the
+    process). `Store.close()` does not wait yet (FX-12) (2.8, 10, 12; #88, #93).
+69. **Redaction as built.** 2.8 left the log tail of the bundle unmasked, and 4.3 said a wrong-shaped
+    `SOFASCORE_SINKS` value is quoted in a `ConfigError` text and that the bundle shows `[[sink]]` by host.
+    Built: the log tail masks this machine's name and the host names of the listed jobs; the errors of a
+    sink row name the type, never the value (the list-of-strings case was never quoted); `config show`
+    masks option keys the sink's type does not define; the bundle has no `[[sink]]` and prints
+    `SOFASCORE_SINKS` through `mask_value` after the same option rule (2.8, 4.3, 12; FX-10, PR #84).
+70. **The live service as built.** Section 8 described the target. Built: polling only; the scope from
+    follows with `live = true`, re-read every 60 s (no SIGHUP); state under the sport's name, shared with
+    the alias; the key `id:type:from>to:change_ts` (`-` without a `change_ts`) and `id:stuck:start_ts`;
+    a change row on confirmation only when the stored payload was already terminal; 429, 403 and an open
+    breaker count as blocked; `--source page` and `direct` fall back to polling with a warning until P24
+    and P31; `live_status(store)` for P19 and P21; `describe config` has `live_sources` (4.1, 4.6, 5.1, 6,
+    8; P23, PR #91).
+71. **The first host of the dispatcher.** Sections 5 and 8.4 said nothing hosts the dispatcher. Built:
+    `ssc watch` hosts it; `--stdout` runs in its own thread, the configured sinks share one dispatcher
+    thread, and the shutdown is bounded (joins of 15 s and 5 s, then a drain of up to 10 s, skipped when the
+    thread hung). The live service prunes the log hourly itself. `serve` (P25) and the one-shot commands
+    (P19) are still to come (4.3, 5, 5.2, 8.4, 12; P23, PR #91).
+72. **The live data settled.** 5.1 and `04-schema-v1.md` gave the 2.x fields as stored and a proposal.
+    Built: `live.status_changed` {from, to, change_ts, provisional, score}, `live.score_changed` {from, to
+    as {home, away}, change_ts, score}, `live.stuck` {status_class, start_utc}; `change.recorded`,
+    `system.blocked` and `system.recovered` have a producer; a test pins that the sinks' envelope equals the
+    schema's (5.1; P23, PR #91).
+73. **The legacy `--watch` alias.** 8.4 said, after D18, that the alias runs `ssc watch --source poll`.
+    Built: it still runs `MatchWatcher` under `watcher:<sport>`, now a wrapper on the shared reducer and
+    poll source; it no longer writes `watch_state_<sport>.json` and no longer stops when the store is busy.
+    P19 completes the mapping (4.7, 8.4; P23, PR #91).
+74. **`instance_running` in the job store.** 2.6 and 2.8 said `conflict_from_lease` has no
+    `instance_running`. Built by P23: `InstanceRunningConflict`, a subclass of `DataOperationRunningError`,
+    for a data operation that a live service or `--watch` blocks (2.6, 2.8; P23, PR #91).
+75. **Coverage floor and the timing test.** Section 10 gave the floor as 53 and the throttle test as
+    timing-dependent until FX-9. Built: the floor is 85 (decision P3; CI 91.10 %), and the test no longer
+    fails at random; one timing limit of one second per reservation remains by design (10; FX-9, PR #83,
+    #88).
 
 ---
 
@@ -2868,14 +3395,18 @@ Changes after batches five to seven (2026-10-02, second revision of that day; re
   As built (P22) the lag is not shown anywhere yet (`ssc status` per sink is ST-24's), and one thread
   delivers for all sinks: a `deliver()` that never returns blocks the other sinks and the shutdown. The
   webhook is bounded by its time-out; stdout into a pipe nobody reads and a file on a hung network mount
-  are not.
+  are not. Since P23 `ssc watch` runs `--stdout` in a thread of its own, so a stopped reader of stdout no
+  longer holds up the configured sinks, and its shutdown does not wait for a hung sink thread beyond 15 s;
+  the configured sinks still block each other.
 - A configured sink that nothing serves. Until P23, P25 and P19 host the dispatcher, a `[[sink]]` in the
   config file is accepted and delivers nothing, and `config validate` does not check its options (section 5,
-  4.3). The item that adds the first host adds the changelog entry for sinks.
+  4.3). The item that adds the first host adds the changelog entry for sinks. Since P23 a sink is served
+  while `ssc watch` runs and a bad option stops `watch` at its start; while only `serve` or a download runs,
+  a sink still delivers nothing until P25 and P19, and `config validate` still does not check it.
 - Job events carry the host name and the pid of the process that started the job, to every sink subscribed
   to `job.*` and through API v1 (decision of 2026-10-02, 2.8). An operator who forwards job events to a
   third party forwards them too. The diagnostics bundle does not carry the host name in its job rows since
-  PR #71, but its log tail is not masked for it (FX-10).
+  PR #71, and since FX-10 (PR #84) its log tail is masked for it too.
 - The attempt limit of the access token is per remote address and in memory. Behind a reverse proxy all
   Bearer clients share one address and therefore one lock, and a restart clears it (section 6); the deploy
   documentation of P25 has to say so.
@@ -2887,5 +3418,12 @@ Changes after batches five to seven (2026-10-02, second revision of that day; re
   it moves to v1.
 - One file chain is long: `src/match_data_fetcher.py` has exactly one owning PR at a time through eleven PRs
   (`03-implementation-plan.md`). A stalled PR in that chain blocks everything behind it.
+- Closing a Store under a job. Since #93 a job store does not close the state database under a finishing
+  job thread, but `Store.close()` closes it directly, so a library user who closes the Store while a
+  background job of `store.jobs` finishes or runs can still crash the process (2.8; FX-12).
+- A lost change row through `ssc watch`. The live confirmation calls `store.events.observe` (8.1), and a
+  write killed between the stored payload and the change-log line loses the row for good, because a
+  repeated write sees an identical payload (`01-storage.md` 6.2). FX-12 changes the order before ST-21
+  makes the downloads write through the Store.
 - asyncio pipeline with a writer thread: a Store write that blocks (the catalog mutex held by the live
   service, a slow disk) backs up the result queue; the queue is bounded, which in turn slows fetching.
