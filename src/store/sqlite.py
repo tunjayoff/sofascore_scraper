@@ -56,6 +56,9 @@ _CREATE_FLAGS = os.O_RDWR | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0)
 
 _wal_warned: Set[str] = set()
 _wal_warned_lock = threading.Lock()
+# Bağlantı kapatmaları sıraya sokulur (bkz. `Connection.close`). Yeniden girilebilir: kapatma sırasında çöp
+# toplayıcı aynı iş parçacığında başka bir bağlantının `__del__`ini çalıştırabilir.
+_close_lock = threading.RLock()
 
 
 # --- sürüm ve hata çevirisi ---------------------------------------------------------------------------
@@ -117,7 +120,18 @@ class Connection(sqlite3.Connection):
     Python 3.13+ kapatılmamış bağlantı için ResourceWarning'i bağlantının kendi sonlandırıcısından verir ve
     döngüsel çöpte o sonlandırıcı, sarmalayan nesnenin `__del__`inden önce çalışabilir; bu yüzden kapatma
     sarmalayıcıda değil burada yapılır. Python alt sınıfı olduğu için zayıf başvuruyla da izlenebilir.
+
+    Kapatma sıraya sokulur: aynı bağlantıyı iki iş parçacığı aynı anda kapatabilir. Biten bir iş parçacığının
+    bağlantısı o iş parçacığında `__del__` ile kapanırken, `ThreadConnections.close_all` / `close_finished`
+    onu zayıf kayıttan (sonlandırıcı sürerken hâlâ görünür) alıp başka bir iş parçacığından da kapatabilir.
+    Python 3.10'da `sqlite3.Connection.close`, `sqlite3_close`'u iki çağrı için de çalıştırır ve süreç çöker
+    (SIGABRT); 3.11'den beri ikinci çağrı zararsızdır. Kilit ikinci çağrıyı birincinin bitmesine bekletir, o
+    zaman bağlantı zaten kapalıdır.
     """
+
+    def close(self) -> None:
+        with _close_lock:
+            super().close()
 
     def __del__(self) -> None:
         with contextlib.suppress(Exception):
