@@ -584,6 +584,22 @@ def test_many_batches_are_spread_over_steps(store: Store, monkeypatch: pytest.Mo
     assert probe.seqs == seqs
 
 
+def test_a_long_run_of_unwanted_events_is_passed_in_bounded_steps(store: Store, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(dispatcher_mod, "MAX_READS_PER_BATCH", 2)
+    rare, other = RecordingSink("rare", events=["job.finished"]), RecordingSink("other")
+    dispatcher = make(store, rare, other, read_limit=2)
+    dispatcher.register()
+    seqs = [emit(store) for _ in range(9)]
+    wanted = emit(store, "job.finished", source="job")
+    assert dispatcher.step() == 0.0  # dört satır geçildi; sıra diğer sink'e geçti
+    assert cursor_row(store, "rare")["seq"] == seqs[3] and not dispatcher.status()[0].caught_up
+    assert other.seqs == seqs + [wanted]
+    while dispatcher.step() == 0.0:
+        pass
+    assert rare.seqs == [wanted] and cursor_row(store, "rare")["seq"] == wanted
+    assert make(store, rare, other).drain(10.0).complete
+
+
 # === dağıtıcı: hata ve yeniden deneme ============================================================
 
 

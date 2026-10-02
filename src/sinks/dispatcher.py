@@ -57,6 +57,7 @@ RUNTIME_PREFIX = "sink:"  # store.runtime anahtarı: "sink:<ad>" -> {"since_seq"
 
 READ_LIMIT = 500
 MAX_BATCHES_PER_STEP = 20  # bir sink bir turda en çok bu kadar toplu gönderim yapar: diğer sink'ler beklemez
+MAX_READS_PER_BATCH = 20  # istenmeyen olayların üzerinden geçerken bir turda en çok bu kadar okuma yapılır
 BACKOFF_FIRST_SECONDS = 1.0
 BACKOFF_MAX_SECONDS = 300.0
 IDLE_WAIT_SECONDS = 0.5  # `run` durdurma isteğine en geç bu kadar sonra bakar
@@ -297,9 +298,9 @@ class Dispatcher:
         """
         Konumdan sonraki, sink'in kabul ettiği ilk toplu gönderim: (olaylar, başarıda konumun geleceği numara,
         bekleme). Olay listesi boşsa teslim edilecek bir şey yoktur: bekleme `inf` (günlüğün sonu) ya da toplu
-        gönderimin dolması için kalan süredir.
+        gönderimin dolması için kalan süredir; 0 ise okunacak daha çok satır vardır (sıra diğer sink'lere geçer).
         """
-        while True:
+        for _read in range(MAX_READS_PER_BATCH):
             read = self._store.streams.read(after=st.cursor, limit=self._read_limit)
             self._note_gap(st, read.gap, read.events[0].seq - 1 if read.events else read.last_seq)
             exhausted = len(read.events) < self._read_limit
@@ -327,6 +328,8 @@ class Dispatcher:
             # sondaki, bu sink'in istemediği olaylar da geçilmiş olur
             covers = read.last_seq if len(accepted) <= st.batch_size else batch[-1].seq
             return batch, covers, 0.0
+        st.caught_up = False
+        return [], st.cursor, 0.0
 
     # --- hata, yeniden deneme, bırakma --------------------------------------------------------
 
