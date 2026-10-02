@@ -449,7 +449,8 @@ Tipik düzen:
 ```text
 data/
 ├── v3/
-│   └── events/        # Maç detayları, maç başına bir dizin: manifest.json + sıkıştırılmış dilimler (*.json.gz)
+│   ├── events/        # Maç detayları, maç başına bir dizin: manifest.json + sıkıştırılmış dilimler (*.json.gz)
+│   └── tournaments/   # Lig ve sezon başına sezon listeleri ve maç programları (sıkıştırılmış)
 ├── changes/           # Yenilemede bulunan bitiş sonrası değişiklikler, ay başına bir dosya (bkz. Yenileme politikası)
 ├── seasons/           # Lig başına sezon meta dosyaları
 ├── matches/           # Lig ve sezona göre maç / özet CSV
@@ -464,6 +465,26 @@ Lig adlandırma ve migrasyonlara göre alt yollar biraz farklı olabilir.
 Maç detayları sıkıştırılmış olarak `v3/events/<id / 1.000.000>/<(id / 1.000) mod 1.000>/<id>/` altında saklanır. Önceki sürümlerin `match_details/` altına yazdığı dizinler yerinde kalır ve uygulamada okunmaya devam eder; böyle bir maç yeniden yazıldığında (eksik dilim tamamlama, yenileme, işaretlerin yeniden denetimi) önce bugünkü hali `v3/`'e kopyalanır, eski dizine dokunulmaz. `match_details/`'i doğrudan okuyan programlar bu sürümün indirdiği maçları görmez.
 
 Terminal menüsünde **Yedekleme** ve **Geri yükleme** hâlâ yalnızca eski klasörleri kopyalar (`seasons/`, `matches/`, `match_details/`): `v3/` altında saklanan maçları korumak için veri klasörünün tamamını kopyalayın. **Veri temizleme** sezonları, maçları ve maç detaylarını hem eski klasörlerden hem de `v3/`'ten siler; veri klasörünü başka bir süreç kullanırken reddedilir. **İstatistikler**'deki disk boyutları yalnızca eski klasörleri sayar. Bu menülerin her biri bunu belirtir.
+
+### Eski verinin yeni düzene taşınması (`ssc migrate`)
+
+Önceki sürümlerin yazdığı veri kendiliğinden taşınmaz. `ssc migrate` onu siz istediğinizde dönüştürür: `match_details/` altındaki maç klasörleri, `matches/` altındaki tur ve sayfa dosyaları, `seasons/` altındaki sezon listeleri ve `score_changes.jsonl` (aynı sıra numaralarıyla `changes/0000-legacy.jsonl` dosyasına kopyalanır). Her yeni kopya yerine konmadan önce geri okunur ve eskisiyle karşılaştırılır. Eski dosyalar, silinmelerini de istemedikçe yerinde kalır; bu aynı çalıştırmada ya da sonra yapılabilir.
+
+```bash
+ssc migrate --dry-run                   # neyin dönüştürüleceği, önceki ve sonraki boyut; hiçbir şeyi değiştirmez
+ssc migrate                             # dönüştür ve doğrula; eski dosyalar yerinde kalır
+ssc migrate --tournament 17 --limit 200 # tek lig, en çok 200 maç; devam etmek için yeniden çalıştırın
+ssc migrate --delete-legacy --yes       # yeni kopyası yeniden doğrulanan her eski kopyayı da sil
+ssc migrate --purge-derived --yes       # programı olan sezonların özetlerini ve match_details/processed/'i sil
+```
+
+- Maç klasöründeki maç verisi olmayan dosyalar (örneğin kendi notlarınız) yeni klasörün `_extra/` alt klasörüne olduğu gibi kopyalanır.
+- Yalnızca özet CSV dosyası olan (tur ya da sayfa dosyası olmayan) bir sezon dönüştürülemez: yerinde kalır, okunmaya devam eder ve listelenir. Tanınmayan klasör ve dosyalar da öyle.
+- Aynı veri klasöründe bir indirme, `ssc watch` ya da `--watch` çalışırken komut reddedilir (çıkış kodu **6**). Bazı girdiler başarısız olursa çalışma biter, o girdilerin eski kopyası yerinde kalır ve çıkış kodu **3**'tür. `--json` sonucun tamamını yazar.
+- Komut başlamadan önce `config/leagues.txt`'yi takiplere yansıtır (uygulamanın her başlangıçta yaptığı gibi): yalnızca lig adıyla adlandırılmış bir sezon listesi (`<ad>_seasons.json`) böyle çözülür.
+- Sahibin verisinde (detaylı 423 maç, 90 program sayfası, 6 sezon listesi) dönüştürülen dosyalar 71,7 MB yerine 7,2 MB tutar; çalışma yaklaşık 3 saniye sürdü.
+
+`ssc catalog verify [--deep] [--repair]`, `ssc catalog reconcile [--deep]` ve `ssc catalog rebuild` saklanan dosyaların dizinini (`.meta/catalog.db`) denetler, günceller ya da yeniden kurar. `scripts/catalog_tool.py`'nin yerini alırlar; lig klasörlerini yerinde yeniden adlandıran `scripts/migrate_match_details.py` de kaldırıldı, çünkü yeni düzen klasör adlarına bağlı değildir.
 
 Maç listesi `matches/` altındaki sezon özetlerinden okunur; `match_details/processed/` içindeki export CSV yalnızca hiç özet yoksa yedek olarak kullanılır.
 
