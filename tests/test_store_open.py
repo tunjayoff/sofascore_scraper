@@ -471,6 +471,36 @@ def test_store_paths_match_the_layout(data_dir):
     assert store._catalog.path == layout.resolve(str(data_dir), layout.CATALOG_DB)
 
 
+@pytest.mark.parametrize("message, errno_code", [
+    ("attempt to write a readonly database", "EROFS"),
+    ("unable to open database file", None),
+])
+def test_a_state_db_that_cannot_be_written_on_open_raises_a_store_error(data_dir, monkeypatch, message, errno_code):
+    """
+    state.db okunabiliyor ama WAL dizini yazılamıyorsa (başka hesaptan kalmış salt okunur `-shm`, FX-11'in
+    bulgusu) `_sync_schema`'nın SQLite hatası çıplak `sqlite3.OperationalError` değil, yolu taşıyan StoreError
+    olarak çıkar; açılış yarım kalan depoyu kapatır ve kayıt defterine koymaz.
+    """
+    import errno as errno_mod
+    from src.store.state import StateDb
+
+    open_store(data_dir).close()
+
+    def refuse(self):
+        raise sqlite3.OperationalError(message)
+
+    monkeypatch.setattr(StateDb, "write", refuse)
+    with pytest.raises(StoreError) as raised:
+        open_store(data_dir)
+    assert not isinstance(raised.value, sqlite3.Error)
+    assert isinstance(raised.value.__cause__, sqlite3.OperationalError)
+    assert raised.value.path == str(data_dir / ".meta" / "state.db")
+    assert message in str(raised.value)
+    assert raised.value.errno == (getattr(errno_mod, errno_code) if errno_code else None)
+    assert raised.value.fatal is (errno_code is not None)
+    assert api_mod._registry == {}
+
+
 # --- kapatma: bitmekte olan iş (PR #93'ün kalan yolu, plan maddesi FX-12) ------------------------------
 
 # Alt süreçte çalışır: düzeltme bozulursa state.db iş thread'inin altından kapanır ve süreç çökebilir
