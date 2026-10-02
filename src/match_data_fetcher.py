@@ -8,16 +8,10 @@ okunması, yazıcı (`_save_match_data`), ihtiyaç hesabının önbelleği ve CS
 """
 
 import os
-import json
-import csv
 import time  # noqa: F401  testler `src.match_data_fetcher.time.sleep` yolunu yamalar (time modülünün kendisi)
 import datetime as dt
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Mapping, Optional, Union, Tuple
-from pathlib import Path
-from collections import Counter
-import pandas as pd
-from tqdm import tqdm
 
 from src import breaker as request_breaker
 from src.client import base_url
@@ -37,7 +31,7 @@ from src.services.export import ExportService, ExportSpec
 from src.services import pipeline, planning
 from src.services.planning import WorkItem
 from src.services.query import QueryService, RefreshPolicy
-from src.services.status import only_finished_setting
+from src.services.status import CoverageReport, StatusService, only_finished_setting
 # Sonuç tipi ve "veri var mı" yüklemleri src/slices.py'de durur. `X as X` biçimindekiler buradan taşınan
 # adlardır: eski import'lar (from src.match_data_fetcher import SliceOutcome, SLICE_*) çalışmaya devam eder.
 from src.slices import (
@@ -1108,161 +1102,88 @@ class MatchDataFetcher:
 
     def generate_file_report(self, base_path: Optional[str] = None) -> Dict[str, Any]:
         """
-        Maç dosyalarının durumunu analiz eden ve rapor üreten fonksiyon.
+        Kapsam raporu (terminal menüsünün "dosya analizi"): katalogdan hesaplanır (StatusService.coverage, plan
+        maddesi P15) ve eski sözlük biçimiyle döner (`legacy_file_report`). Hiçbir dosya yazılmaz; eskiden
+        `match_details/processed/` altına `match_files_stats.json` ve `match_files_report.csv` yazılıyordu.
 
         Args:
-            base_path: İncelenecek dizin yolu. Eğer None ise, varsayılan match_details dizini kullanılır.
+            base_path: Başka bir veri klasörü (ya da onun `match_details` dizini). None: bu nesnenin klasörü.
+                Deposu olmayan bir dizin (bu sürümün hiç açmadığı, `.meta/` yok) için boş sözlük: rastgele bir
+                dizinde depo kurulmaz.
 
         Returns:
-            Dict[str, Any]: Rapor sonuçlarını içeren sözlük
+            {"league_stats": ..., "overall_stats": ...}; lig anahtarı eski dizin adıdır (`<id>_<ad>`, turnuvasız
+            maçlar `_no_tournament`), sezon anahtarı `season_<id>`. Depolama hatası çağırana çıkar.
         """
-        # Varsayılan dizini kullan
+        store = self._report_store(base_path)
+        if store is None:
+            return {}
+        return legacy_file_report(StatusService(store).coverage(), self._league_name_in(store))
+
+    def _report_store(self, base_path: Optional[str]) -> Optional["Store"]:
+        """Raporun deposu: bu klasörünki ya da `base_path`'in gösterdiği veri klasörününki (yoksa None)."""
         if base_path is None:
-            base_path = self.match_details_dir
+            return self._store()
+        target = os.path.abspath(base_path).rstrip(os.sep) or os.sep
+        if os.path.basename(target) == os.path.basename(self.match_details_dir):
+            target = os.path.dirname(target)
+        if target == os.path.abspath(self.data_dir):
+            return self._store()
+        try:
+            return store_hooks.open_store(target, create=False)
+        except store_hooks.StoreError as e:
+            logger.warning("No coverage report for %s: not a data folder of this version (%s)", base_path, e)
+            return None
 
-        base_path = Path(base_path)
-        print(f"Maç dosyaları analiz ediliyor: {base_path}")
+    def _league_name_in(self, store: "Store") -> Callable[[int], Optional[str]]:
+        """Lig adı (dizin adındaki): yapılandırmadaki ad, yoksa raporun deposundaki turnuva adı."""
 
-        # Sonuçları başlat
-        missing_files_counter = Counter()
-        total_matches = 0
-        matches_with_all_files = 0
-        league_stats = {}
+        def name_of(league_id: int) -> Optional[str]:
+            try:
+                name = self.config_manager.get_league_by_id(league_id)
+            except Exception:
+                name = None
+            if isinstance(name, str) and name:
+                return name
+            found = store.entities.tournament(league_id)
+            return found.name if found is not None and found.name else None
 
-        # Tüm ligleri döngüyle incele
-        for league_dir in tqdm(list(base_path.iterdir()), desc="Ligler işleniyor"):
-            if not league_dir.is_dir():
-                continue
+        return name_of
 
-            league_name = league_dir.name
-            league_stats[league_name] = {
-                "total_matches": 0,
-                "complete_matches": 0,
-                "missing_files": Counter(),
-                "seasons": {}
-            }
 
-            # Tüm sezonları döngüyle incele
-            for season_dir in league_dir.glob("season_*"):
-                if not season_dir.is_dir():
-                    continue
+def _legacy_counts(matches: int, complete: int, missing: Mapping[str, int], rate: float) -> Dict[str, Any]:
+    return {
+        "total_matches": matches,
+        "complete_matches": complete,
+        "missing_files": {f"{key}.json": count for key, count in missing.items()},
+        "completion_rate": rate,
+    }
 
-                season_name = season_dir.name
-                league_stats[league_name]["seasons"][season_name] = {
-                    "total_matches": 0,
-                    "complete_matches": 0,
-                    "missing_files": Counter()
-                }
 
-                # Tüm maçları döngüyle incele
-                for match_dir in season_dir.iterdir():
-                    if not match_dir.is_dir():
-                        continue
-
-                    total_matches += 1
-                    league_stats[league_name]["total_matches"] += 1
-                    league_stats[league_name]["seasons"][season_name]["total_matches"] += 1
-
-                    # Gerekli dosyaları kontrol et
-                    missing_files = []
-                    for req_file in REQUIRED_FILES:
-                        file_path = match_dir / req_file
-                        if not file_path.exists():
-                            missing_files.append(req_file)
-
-                    # İstatistikleri güncelle
-                    if not missing_files:
-                        matches_with_all_files += 1
-                        league_stats[league_name]["complete_matches"] += 1
-                        league_stats[league_name]["seasons"][season_name]["complete_matches"] += 1
-                    else:
-                        for missing_file in missing_files:
-                            missing_files_counter[missing_file] += 1
-                            league_stats[league_name]["missing_files"][missing_file] += 1
-                            league_stats[league_name]["seasons"][season_name]["missing_files"][missing_file] += 1
-
-        # Genel istatistikleri hesapla
-        overall_stats = {
-            "total_matches": total_matches,
-            "matches_with_all_files": matches_with_all_files,
-            "completion_rate": round(matches_with_all_files / total_matches * 100, 2) if total_matches > 0 else 0,
-            "missing_files": dict(missing_files_counter),
+def legacy_file_report(report: CoverageReport, league_name: Callable[[int], Optional[str]]) -> Dict[str, Any]:
+    """
+    Kapsam raporu → eski `generate_file_report` sözlüğü: `league_stats` (lig dizini adı → sayılar ve sezonları)
+    ve `overall_stats`. Eksik dilimler eski dosya adlarıyla (`lineups.json`) sayılır; `basic.json` hiç eksik
+    olmaz (yalnızca olay yükü saklanan maçlar sayılır). Sezonu bilinmeyen maçlar `season_unknown` altındadır.
+    """
+    leagues: Dict[str, Dict[str, Any]] = {}
+    for tournament in report.tournaments:
+        tid = tournament.tournament_id
+        key = NO_TOURNAMENT_DIR if tid is None else league_dir_name(tid, league_name(tid))
+        entry = _legacy_counts(tournament.matches, tournament.complete, tournament.missing,
+                               tournament.completion_rate)
+        entry["seasons"] = {
+            f"season_{season.season_id if season.season_id is not None else 'unknown'}": _legacy_counts(
+                season.matches, season.complete, season.missing, season.completion_rate)
+            for season in tournament.seasons
         }
-
-        # Her lig için tamamlanma oranını hesapla
-        for league in league_stats:
-            total = league_stats[league]["total_matches"]
-            complete = league_stats[league]["complete_matches"]
-            league_stats[league]["completion_rate"] = round(complete / total * 100, 2) if total > 0 else 0
-
-            # Her sezon için tamamlanma oranını hesapla
-            for season in league_stats[league]["seasons"]:
-                season_total = league_stats[league]["seasons"][season]["total_matches"]
-                season_complete = league_stats[league]["seasons"][season]["complete_matches"]
-                league_stats[league]["seasons"][season]["completion_rate"] = round(season_complete / season_total * 100, 2) if season_total > 0 else 0
-
-        # Raporu ekrana yazdır
-        print("=" * 80)
-        print("MAÇ DOSYALARI ANALİZ RAPORU")
-        print("=" * 80)
-
-        print(f"\nToplam analiz edilen maç: {overall_stats['total_matches']}")
-        print(f"Tüm gerekli dosyaları olan maçlar: {overall_stats['matches_with_all_files']} ({overall_stats['completion_rate']}%)")
-
-        # En sık eksik olan dosyalar
-        print("\nEksik dosya dağılımı:")
-        for file, count in sorted(overall_stats['missing_files'].items(), key=lambda x: x[1], reverse=True):
-            percentage = round(count / overall_stats['total_matches'] * 100, 2)
-            print(f"  - {file}: {count} maçta eksik ({percentage}%)")
-
-        # Lig istatistikleri
-        print("\nLig istatistikleri:")
-        league_data = []
-        for league, stats in league_stats.items():
-            league_data.append({
-                'Lig': league,
-                'Toplam Maç': stats['total_matches'],
-                'Tam Maç': stats['complete_matches'],
-                'Tamamlanma Oranı': f"{stats['completion_rate']}%"
-            })
-
-        if league_data:
-            league_df = pd.DataFrame(league_data)
-            print(league_df.sort_values('Tamamlanma Oranı', ascending=False).to_string(index=False))
-
-        # Detaylı istatistikleri JSON olarak dışa aktar
-        json_file_path = os.path.join(self.processed_dir, 'match_files_stats.json')
-        with open(json_file_path, 'w', encoding='utf-8') as f:
-            json.dump({
-                'league_stats': league_stats,
-                'overall_stats': overall_stats
-            }, f, ensure_ascii=False, indent=2)
-
-        print(f"\nDetaylı istatistikler '{json_file_path}' dosyasına kaydedildi")
-
-        # CSV raporu oluştur
-        csv_file_path = os.path.join(self.processed_dir, 'match_files_report.csv')
-        with open(csv_file_path, 'w', encoding='utf-8', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(['Lig', 'Sezon', 'Toplam Maç', 'Tam Maç', 'Tamamlanma Oranı', 'Eksik Dosyalar'])
-
-            for league, league_data in league_stats.items():
-                for season, season_data in league_data['seasons'].items():
-                    missing_str = "; ".join([f"{file}: {count}" for file, count in season_data['missing_files'].items()])
-                    writer.writerow([
-                        league,
-                        season,
-                        season_data['total_matches'],
-                        season_data['complete_matches'],
-                        f"{season_data['completion_rate']}%",
-                        missing_str
-                    ])
-
-        print(f"CSV raporu '{csv_file_path}' dosyasına kaydedildi")
-
-        return {
-            'league_stats': league_stats,
-            'overall_stats': overall_stats,
-            'json_report_path': json_file_path,
-            'csv_report_path': csv_file_path
-        }
+        leagues[key] = entry
+    return {
+        "league_stats": leagues,
+        "overall_stats": {
+            "total_matches": report.matches,
+            "matches_with_all_files": report.complete,
+            "completion_rate": report.completion_rate,
+            "missing_files": {f"{key}.json": count for key, count in report.missing.items()},
+        },
+    }

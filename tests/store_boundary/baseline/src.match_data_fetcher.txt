@@ -4,8 +4,3 @@
 MatchDataFetcher._season_summary_files:os.listdir x2
 MatchDataFetcher._season_summary_files:os.path.isdir
 MatchDataFetcher._season_summary_files:os.path.isfile
-MatchDataFetcher.generate_file_report:Path.exists
-MatchDataFetcher.generate_file_report:Path.glob
-MatchDataFetcher.generate_file_report:Path.is_dir x3
-MatchDataFetcher.generate_file_report:Path.iterdir x2
-MatchDataFetcher.generate_file_report:open x2

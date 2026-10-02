@@ -1269,18 +1269,16 @@ def test_csv_export_lists_every_event_once(old_forms: sf.LegacyFixture) -> None:
 
 def test_counting_walkers(fx: sf.LegacyFixture, capsys: pytest.CaptureFixture[str]) -> None:
     """
-    Yalnızca sayı veren iki okuyucu. İstatistikler katalogdan gelir (RD-4): okuyucunun bulduğu her maç bir kez
-    sayılır. Dosya raporu hâlâ ağacı gezer ve yalnızca `season_*` dizinlerine bakar.
+    Yalnızca sayı veren iki okuyucu. İstatistikler (RD-4) ve dosya raporu (P15, StatusService.coverage)
+    katalogdan gelir: okuyucunun bulduğu her maç bir kez sayılır. Eski rapor ağacı geziyor, yalnızca `season_*`
+    dizinlerine bakıyor ve olay yükü olmayan dizini de sayıyordu.
     """
     events, _ = scan(fx.data_dir)
-    in_season_dirs = {eid for eid, e in events.items() if (e.dir.season_dir or "").startswith("season_")}
     system = stats_service.system_stats(str(fx.data_dir), fx.leagues)
     assert system["details"] == len(events)
     report = fetcher_for(fx.data_dir).generate_file_report()
-    capsys.readouterr()
-    # dosya raporu basic.json'a da bakmaz: olay yükü olmayan dizini de sayar
-    without_payload = NO_EVENT_PAYLOAD.get(fx.name, set())
-    assert report["overall_stats"]["total_matches"] == len(in_season_dirs) + len(without_payload)
+    assert capsys.readouterr().out == ""
+    assert report["overall_stats"]["total_matches"] == len(events)
 
 
 # --- yalnızca okur; katman kuralı -----------------------------------------------------------------

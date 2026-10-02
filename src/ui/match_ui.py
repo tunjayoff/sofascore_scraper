@@ -861,12 +861,9 @@ class MatchDataMenuHandler:
             else:
                 result = self.match_data_fetcher.generate_file_report()
 
-            # Sonuçları göster (fonksiyon zaten ekrana yazdırıyor)
+            # Rapor katalogdan hesaplanır ve dosyaya yazılmaz (StatusService.coverage); burada gösterilir
             if result:
-                # Opsiyonel olarak CSV ve JSON dosya yollarını göster
-                print(f"\n{self.i18n.t('report_files')}")
-                print(f"JSON: {result.get('json_report_path', self.i18n.t('not_created'))}")
-                print(f"CSV: {result.get('csv_report_path', self.i18n.t('not_created'))}")
+                self._print_coverage(result)
             else:
                 print(f"\n{self.i18n.t('report_error')}")
 
@@ -875,3 +872,24 @@ class MatchDataMenuHandler:
             import traceback
             logger.error(traceback.format_exc())
             print(f"\n❌ {self.i18n.t('error_with_message', error=str(e))}")
+
+    def _print_coverage(self, result: Dict[str, Any]) -> None:
+        """Kapsam raporunu (MatchDataFetcher.generate_file_report sözlüğü) ekrana yazar."""
+        overall = result.get("overall_stats") or {}
+        total = int(overall.get("total_matches") or 0)
+        print(f"\n{self.i18n.t('coverage_total', count=total)}")
+        print(self.i18n.t('coverage_complete', count=overall.get('matches_with_all_files', 0),
+                          rate=overall.get('completion_rate', 0)))
+        missing = overall.get("missing_files") or {}
+        if missing:
+            print(f"\n{self.i18n.t('coverage_missing_title')}")
+            for name, count in sorted(missing.items(), key=lambda item: item[1], reverse=True):
+                rate = round(count / total * 100, 2) if total else 0
+                print(self.i18n.t('coverage_missing_line', slice=name.removesuffix(".json"), count=count, rate=rate))
+        leagues = result.get("league_stats") or {}
+        if leagues:
+            print(f"\n{self.i18n.t('coverage_leagues_title')}")
+            for name, stats in sorted(leagues.items(), key=lambda item: item[1].get("completion_rate", 0),
+                                      reverse=True):
+                print(self.i18n.t('coverage_league_line', league=name, complete=stats.get('complete_matches', 0),
+                                  total=stats.get('total_matches', 0), rate=stats.get('completion_rate', 0)))
