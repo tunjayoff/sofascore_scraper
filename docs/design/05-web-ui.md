@@ -1,8 +1,8 @@
-# 05 — Web UI: screens for approval (FE-1)
+# 05 — Web UI: screens (FE-1)
 
-**State: waiting for the owner's approval.** Nothing here is built. FE-2 starts after the owner has
-approved this document or changed the points of section 10 ("Decisions for the owner")
-(`00-platform.md` section 10, item 12; decision P2, second half, in `03-implementation-plan.md` section 13).
+**State: approved by the owner on 2026-10-02**, with all 22 decisions of section 10 as chosen. Nothing
+here is built yet; FE-2 implements it (`00-platform.md` section 10, item 12; decision P2, second half, in
+`03-implementation-plan.md` section 13).
 
 Checked against `origin/main` at `aff0bb0` (2026-10-02). At that commit P20 (#74) has built the first
 routes of `/api/v1`, and P24 (#95), P31 (#101), EX-1 (#99) and FX-12 (#100) are merged. The resource
@@ -19,7 +19,7 @@ routes (follows, events, exports, backups and the rest) are P21's and do not exi
 7. API routes the UI needs: what exists, what is planned, what is missing
 8. Notes for FE-2 (implementation)
 9. What the web UI deliberately does not do
-10. Decisions for the owner
+10. Decisions taken (approved 2026-10-02)
 
 ---
 
@@ -1177,10 +1177,10 @@ empty, error and the 401 / 409 paths with a fake API; no test calls a real serve
   SofaScore", which the user clicks.
 - No analytics, no charts beyond the small coverage bars (decision 12).
 
-## 10. Decisions for the owner
+## 10. Decisions taken (approved 2026-10-02)
 
-Each line: the choice in this document, then one alternative. Approve the list as it is, or name the
-numbers to change.
+The owner approved every choice below as chosen on 2026-10-02. Each line keeps the alternative that was
+offered, so a later change can start from it.
 
 1. **Start page.** Chosen: Overview (health, numbers, running job, attention list). Alternative: the
    Events list as the start page.
