@@ -50,7 +50,10 @@ jobs:
     needs: frontend
     name: python (${{ matrix.os }}, ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    # A guard against a hung run, not a performance budget: about twice the slowest normal run.
+    # On 2026-10-02 the slowest job, Windows, takes 10 to 15 minutes (Linux and macOS 3 to 7); the
+    # previous limit of 15 cancelled Windows runs in which no test had failed.
+    timeout-minutes: 30
     # Support policy: Linux and Docker are the officially supported platforms; Windows and macOS are
     # best-effort. Their jobs (`best-effort: true` below) still run and show their result, but a
     # failure there does not fail the workflow, so it can block neither a pull request nor a release
