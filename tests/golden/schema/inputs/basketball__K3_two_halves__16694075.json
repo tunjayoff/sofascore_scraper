@@ -1,0 +1,308 @@
+{
+ "source_file": "research/status_samples/basketball/K3_two_halves__16694075.json",
+ "fetched_at_utc": "2026-09-29T15:55:31+00:00",
+ "event": {
+  "officials": [],
+  "tournament": {
+   "name": "Nationale 2 - Groupe A",
+   "slug": "nationale-2-groupe-a",
+   "category": {
+    "name": "France",
+    "slug": "france",
+    "sport": {
+     "name": "Basketball",
+     "slug": "basketball",
+     "id": 2
+    },
+    "priority": 0,
+    "country": {
+     "alpha2": "FR",
+     "alpha3": "FRA",
+     "name": "France",
+     "slug": "france"
+    },
+    "id": 110,
+    "flag": "france",
+    "alpha2": "FR"
+   },
+   "uniqueTournament": {
+    "name": "Nationale 2",
+    "slug": "nationale-2",
+    "category": {
+     "name": "France",
+     "slug": "france",
+     "sport": {
+      "name": "Basketball",
+      "slug": "basketball",
+      "id": 2
+     },
+     "priority": 0,
+     "country": {
+      "alpha2": "FR",
+      "alpha3": "FRA",
+      "name": "France",
+      "slug": "france"
+     },
+     "id": 110,
+     "flag": "france",
+     "alpha2": "FR"
+    },
+    "userCount": 73,
+    "hasRounds": true,
+    "hasPerformanceGraphFeature": false,
+    "liveActivityEnabled": false,
+    "country": {},
+    "id": 19373,
+    "hasEventPlayerStatistics": false,
+    "displayInverseHomeAwayTeams": false
+   },
+   "priority": 0,
+   "isGroup": true,
+   "groupName": "Groupe A",
+   "competitionType": 1,
+   "isLive": false,
+   "id": 106801
+  },
+  "season": {
+   "name": "Nationale 2 26/27",
+   "year": "26/27",
+   "editor": true,
+   "seasonCoverageInfo": {
+    "editorCoverageLevel": 1
+   },
+   "id": 99529
+  },
+  "roundInfo": {
+   "round": 4
+  },
+  "customId": "IJjdsbIFd",
+  "status": {
+   "code": 100,
+   "description": "Ended",
+   "type": "finished"
+  },
+  "winnerCode": 1,
+  "venue": {
+   "city": {
+    "name": "Saint-Just-Saint-Rambert",
+    "country": {
+     "alpha2": "FR",
+     "alpha3": "FRA",
+     "name": "France",
+     "slug": "france"
+    },
+    "id": 26336
+   },
+   "venueCoordinates": {
+    "latitude": 45.5047347,
+    "longitude": 4.2633954
+   },
+   "hidden": true,
+   "slug": "salle-de-la-bonbonniere",
+   "name": "Salle de la Bonbonnière",
+   "capacity": 400,
+   "country": {
+    "alpha2": "FR",
+    "alpha3": "FRA",
+    "name": "France",
+    "slug": "france"
+   },
+   "id": 49577,
+   "stadium": {
+    "name": "Salle de la Bonbonnière",
+    "capacity": 400
+   }
+  },
+  "homeTeam": {
+   "name": "Pontoise Ulr Basket St Just St Rambert",
+   "slug": "pontoise-ulr-basket-st-just-st-rambert",
+   "shortName": "La Pontoise ULR",
+   "gender": "M",
+   "sport": {
+    "name": "Basketball",
+    "slug": "basketball",
+    "id": 2
+   },
+   "userCount": 18,
+   "venue": {
+    "city": {
+     "name": "Saint-Just-Saint-Rambert",
+     "country": {
+      "alpha2": "FR",
+      "alpha3": "FRA",
+      "name": "France",
+      "slug": "france"
+     },
+     "id": 26336
+    },
+    "venueCoordinates": {
+     "latitude": 45.5047347,
+     "longitude": 4.2633954
+    },
+    "hidden": true,
+    "slug": "salle-de-la-bonbonniere",
+    "name": "Salle de la Bonbonnière",
+    "capacity": 400,
+    "country": {
+     "alpha2": "FR",
+     "alpha3": "FRA",
+     "name": "France",
+     "slug": "france"
+    },
+    "id": 49577,
+    "stadium": {
+     "name": "Salle de la Bonbonnière",
+     "capacity": 400
+    }
+   },
+   "nameCode": "PUB",
+   "national": false,
+   "type": 0,
+   "country": {
+    "alpha2": "FR",
+    "alpha3": "FRA",
+    "name": "France",
+    "slug": "france"
+   },
+   "id": 451651,
+   "fullName": "Pontoise Ulr Basket St Just St Rambert",
+   "subTeams": [],
+   "teamColors": {
+    "primary": "#374df5",
+    "secondary": "#374df5",
+    "text": "#ffffff"
+   },
+   "createdByEditor": true,
+   "timeActive": []
+  },
+  "awayTeam": {
+   "name": "US Avignon/Le Pontet",
+   "slug": "us-avignonle-pontet",
+   "shortName": "Avignon/Le Pontet",
+   "gender": "M",
+   "sport": {
+    "name": "Basketball",
+    "slug": "basketball",
+    "id": 2
+   },
+   "userCount": 46,
+   "venue": {
+    "city": {
+     "name": "Avignon",
+     "country": {
+      "alpha2": "FR",
+      "alpha3": "FRA",
+      "name": "France",
+      "slug": "france"
+     },
+     "id": 18884
+    },
+    "venueCoordinates": {
+     "latitude": 43.9321062,
+     "longitude": 4.8402445
+    },
+    "hidden": true,
+    "slug": "cosec-st-chamand",
+    "name": "COSEC St-Chamand",
+    "capacity": 1500,
+    "country": {
+     "alpha2": "FR",
+     "alpha3": "FRA",
+     "name": "France",
+     "slug": "france"
+    },
+    "id": 49511,
+    "stadium": {
+     "name": "COSEC St-Chamand",
+     "capacity": 1500
+    }
+   },
+   "nameCode": "AVI",
+   "national": false,
+   "type": 0,
+   "country": {
+    "alpha2": "FR",
+    "alpha3": "FRA",
+    "name": "France",
+    "slug": "france"
+   },
+   "id": 399233,
+   "fullName": "US Avignon/Le Pontet",
+   "subTeams": [],
+   "teamColors": {
+    "primary": "#374df5",
+    "secondary": "#374df5",
+    "text": "#ffffff"
+   },
+   "createdByEditor": true,
+   "timeActive": []
+  },
+  "homeScore": {
+   "current": 81,
+   "display": 81,
+   "period2": 38,
+   "period4": 43,
+   "normaltime": 81
+  },
+  "awayScore": {
+   "current": 75,
+   "display": 75,
+   "period2": 33,
+   "period4": 42,
+   "normaltime": 75
+  },
+  "time": {},
+  "changes": {
+   "changes": [
+    "status.code",
+    "status.description",
+    "status.type",
+    "homeScore.current",
+    "homeScore.display",
+    "homeScore.period2",
+    "homeScore.period4",
+    "homeScore.normaltime",
+    "awayScore.current",
+    "awayScore.display",
+    "awayScore.period2",
+    "awayScore.period4",
+    "awayScore.normaltime"
+   ],
+   "changeTimestamp": 1790469703
+  },
+  "hasGlobalHighlights": false,
+  "crowdsourcingDataDisplayEnabled": false,
+  "id": 16694075,
+  "defaultPeriodCount": 4,
+  "defaultPeriodLength": 10,
+  "defaultOvertimeLength": 5,
+  "periods": {
+   "current": "Score",
+   "period1": "1st quarter",
+   "period2": "2nd quarter",
+   "period3": "3rd quarter",
+   "period4": "4th quarter",
+   "overtime": "Overtime"
+  },
+  "slug": "pontoise-ulr-basket-st-just-st-rambert-us-avignonle-pontet",
+  "startTimestamp": 1790445600,
+  "finalResultOnly": false,
+  "feedLocked": false,
+  "createdByNickname": "Mister Raf",
+  "eventEditorName": "Mister Raf",
+  "eventEditor": {
+   "id": "5c438f0974f43427af1ef793",
+   "name": "Mister Raf"
+  },
+  "showTotoPromo": true,
+  "isEditor": true,
+  "eventFilters": {
+   "category": [
+    "club"
+   ],
+   "gender": [
+    "M"
+   ]
+  }
+ }
+}
