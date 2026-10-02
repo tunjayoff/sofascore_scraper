@@ -1,0 +1,8 @@
+# src.store.MigrationIssue
+# kaynak: src/store/migrate.py
+@dataclass(frozen=True)
+class MigrationIssue:
+    kind: str
+    key: str
+    path: str = ''
+    detail: str = ''

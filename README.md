@@ -451,7 +451,8 @@ Typical structure:
 ```text
 data/
 ├── v3/
-│   └── events/        # Match details, one folder per match: manifest.json + compressed slices (*.json.gz)
+│   ├── events/        # Match details, one folder per match: manifest.json + compressed slices (*.json.gz)
+│   └── tournaments/   # Season lists and match schedules per league and season (compressed)
 ├── changes/           # Post-finish changes found by refresh, one file per month (see Refresh policy)
 ├── seasons/           # Season metadata per league
 ├── matches/           # Match list / summary CSVs by league & season
@@ -466,6 +467,26 @@ Exact paths may vary slightly by league naming and migrations.
 Match details are stored under `v3/events/<id / 1,000,000>/<(id / 1,000) mod 1,000>/<id>/`, compressed. Folders under `match_details/` written by older versions stay where they are and stay readable in the app; when such a match is written again (a refill, a refresh, a marker reset), its current state is first copied to `v3/` and the old folder is left untouched. Programs that read `match_details/` directly do not see matches downloaded by this version.
 
 In the terminal menu, **Backup** and **Restore** still copy only the old folders (`seasons/`, `matches/`, `match_details/`): to keep matches stored under `v3/`, copy the whole data folder. **Clear data** removes seasons, matches and match details from both the old folders and `v3/`, and is refused while another process is using the data folder. The disk sizes in **Statistics** count the old folders only. Each of these menus says so.
+
+### Moving old data to the new layout (`ssc migrate`)
+
+Data written by older versions is never moved on its own. `ssc migrate` converts it when you ask for it: match folders under `match_details/`, the round and page files under `matches/`, the season lists under `seasons/` and `score_changes.jsonl` (copied to `changes/0000-legacy.jsonl`, with the same sequence numbers). Every new copy is read back and compared with the old one before it is put in place. The old files are kept unless you also ask to delete them; that can be done in the same run or later.
+
+```bash
+ssc migrate --dry-run                   # what would be converted, the size before and after; changes nothing
+ssc migrate                             # convert and verify; the old files stay where they are
+ssc migrate --tournament 17 --limit 200 # one league, at most 200 matches; run it again to continue
+ssc migrate --delete-legacy --yes       # also delete every old copy whose new copy was verified again
+ssc migrate --purge-derived --yes       # delete season summaries of seasons that have schedules, and match_details/processed/
+```
+
+- Files in a match folder that are not match data (your own notes, for example) are copied unchanged into `_extra/` of the new folder.
+- A season that has only summary CSV files (no round or page file) cannot be converted: it stays where it is, stays readable and is listed. So are folders and files that are not recognised.
+- The command is refused while a download, `ssc watch` or a `--watch` runs on the same data folder (exit code **6**). If some items fail, the run finishes, those items keep their old copy, and the exit code is **3**. `--json` prints the full result.
+- Before it starts, the command mirrors `config/leagues.txt` into the follows (as the app does on every start): a season list named after the league only (`<name>_seasons.json`) is resolved that way.
+- On the owner's data (423 matches with details, 90 schedule pages, 6 season lists) the converted files take 7.2 MB instead of 71.7 MB; the run took about 3 seconds.
+
+`ssc catalog verify [--deep] [--repair]`, `ssc catalog reconcile [--deep]` and `ssc catalog rebuild` check, update or rebuild the index of the stored files (`.meta/catalog.db`). They replace `scripts/catalog_tool.py`; `scripts/migrate_match_details.py` (which renamed league folders in place) is gone as well, since the new layout no longer depends on folder names.
 
 The match list reads the per-season summaries under `matches/`; the export CSV in `match_details/processed/` is only a fallback when no summaries exist.
 

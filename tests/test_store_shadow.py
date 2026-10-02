@@ -19,7 +19,6 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import copy
-import importlib.util
 import json
 import logging
 import os
@@ -1324,71 +1323,6 @@ def test_sync_listings_looks_only_at_the_kinds_it_is_given(canonical: sf.LegacyF
     assert (lists.changes, lists.season_lists) == (None, 4)
     assert not store.catalog.sync_listings().changed and differences(store) == []
     assert isinstance(store.catalog.rebuild(), RebuildReport)
-
-
-# --- scripts/catalog_tool.py ----------------------------------------------------------------------------
-
-def _tool() -> Any:
-    spec = importlib.util.spec_from_file_location("catalog_tool_shadow", ROOT / "scripts" / "catalog_tool.py")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def test_catalog_tool_reconcile_on_a_directory_that_is_not_a_store(old_forms: sf.LegacyFixture,
-                                                                   capsys: pytest.CaptureFixture) -> None:
-    tool = _tool()
-    data = old_forms.data_dir
-    assert tool.main(["--data-dir", str(data), "reconcile"]) == tool.EXIT_STORAGE  # katalog yok
-    assert "önce yeniden kurulmalı" in capsys.readouterr().err
-    assert tool.main(["--data-dir", str(data), "rebuild", "--json"]) == 0
-    assert not (data / ".meta" / "state.db").exists()  # depo kurulmadı: yalnızca katalog
-    capsys.readouterr()
-
-    friendly = data / "match_details" / "16867839"
-    for path in sorted(friendly.iterdir()):
-        path.unlink()
-    friendly.rmdir()
-    bump(friendly.parent)
-    assert tool.main(["--data-dir", str(data), "reconcile", "--json"]) == 0
-    report = json.loads(capsys.readouterr().out)
-    assert (report["changed"], report["events_removed"], report["deep"]) == (True, 1, False)
-
-    assert tool.main(["--data-dir", str(data), "reconcile", "--deep"]) == 0
-    out = capsys.readouterr().out
-    assert "Katalog uzlaştırıldı (derin)" in out and "Katalog dosyalarla tutarlı." in out
-
-
-def test_catalog_tool_on_a_store_uses_the_follows_and_the_maintenance_lease(
-        tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
-    tool = _tool()
-    data = tmp_path / "data"
-    (data / "seasons").mkdir(parents=True)
-    (data / "seasons" / "Premier_League_seasons.json").write_bytes(sf.dump_json(
-        {"seasons": [{"id": sf.PL_2627.id, "name": sf.PL_2627.name, "year": sf.PL_2627.year}]}))
-    store = open_store(data)
-    store.follows.add(FollowSpec("tournament", PL, "Premier League"))
-    assert store.entities.seasons(PL) == []  # açılışta takip yoktu
-    store.close()
-
-    # Araç depoyu açar ama açılıştaki otomatik uzlaştırmayı çalıştırmaz: değişikliği komutun kendisi bulur
-    assert tool.main(["--data-dir", str(data), "reconcile", "--json"]) == 0
-    report = json.loads(capsys.readouterr().out)
-    assert (report["changed"], report["season_lists"], report["problems"]) == (True, 1, [])
-    assert tool.main(["--data-dir", str(data), "verify"]) == 0
-    capsys.readouterr()
-
-    holder = open_store(data)
-    writer = holder.lease("writer", purpose="job")
-    try:
-        assert tool.main(["--data-dir", str(data), "rebuild"]) == tool.EXIT_STORAGE  # çalışan iş varken reddedilir
-        assert "Depolama hatası" in capsys.readouterr().err
-        assert tool.main(["--data-dir", str(data), "reconcile"]) == 0  # hızlı uzlaştırma kilit istemez
-    finally:
-        writer.release()
-    assert tool.main(["--data-dir", str(data), "rebuild"]) == 0
-    assert "Katalog yeniden kuruldu (in_place" in capsys.readouterr().out
-    assert [s.id for s in open_store(data).entities.seasons(PL)] == [sf.PL_2627.id]
 
 
 def test_layout_names_used_by_the_check_are_the_legacy_roots() -> None:

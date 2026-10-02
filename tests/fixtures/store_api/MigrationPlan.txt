@@ -1,0 +1,25 @@
+# src.store.MigrationPlan
+# kaynak: src/store/migrate.py
+@dataclass
+class MigrationPlan:
+    tournaments: Tuple[int, ...] = ()
+    limit: Optional[int] = None
+    delete_legacy: bool = False
+    purge_derived: bool = False
+    exact: bool = False
+    events: int = 0
+    legacy_copies: int = 0
+    schedule_pages: int = 0
+    schedule_seasons: int = 0
+    season_lists: int = 0
+    change_log: str = changes_mod.COPY_NONE
+    change_log_lines: int = 0
+    extra_files: List[str] = field(default_factory=list)
+    derived_files: List[str] = field(default_factory=list)
+    unconvertible: List[MigrationIssue] = field(default_factory=list)
+    conflicts: List[MigrationIssue] = field(default_factory=list)
+    bytes_before: int = 0
+    bytes_after: int = 0
+    sampled: int = 0
+    stopped: bool = False
+    seconds: float = 0.0

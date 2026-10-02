@@ -1,0 +1,32 @@
+# src.store.MigrationReport
+# kaynak: src/store/migrate.py
+@dataclass
+class MigrationReport:
+    run_id: Optional[int] = None
+    tournaments: Tuple[int, ...] = ()
+    limit: Optional[int] = None
+    delete_legacy: bool = False
+    purge_derived: bool = False
+    events: int = 0
+    events_existing: int = 0
+    legacy_copies: int = 0
+    schedule_pages: int = 0
+    schedule_seasons: int = 0
+    season_lists: int = 0
+    change_log: str = changes_mod.COPY_NONE
+    change_log_lines: int = 0
+    schedule_files_deleted: int = 0
+    season_list_files_deleted: int = 0
+    change_log_deleted: bool = False
+    extra_files: List[str] = field(default_factory=list)
+    derived_removed: List[str] = field(default_factory=list)
+    unconvertible: List[MigrationIssue] = field(default_factory=list)
+    conflicts: List[MigrationIssue] = field(default_factory=list)
+    failed: List[MigrationIssue] = field(default_factory=list)
+    legacy_kept: List[MigrationIssue] = field(default_factory=list)
+    bytes_before: int = 0
+    bytes_after: int = 0
+    stopped: bool = False
+    seconds: float = 0.0
+    @property
+    def ok(self) -> bool

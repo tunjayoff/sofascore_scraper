@@ -14,6 +14,7 @@ class Store:
     self.history
     self.backup
     self.export
+    self.migrate
     self.catalog
     @property
     def closed(self) -> bool

@@ -85,6 +85,7 @@ from src.store.indexer import (
 from src.store.jobs import JobStore, import_legacy_jobs
 from src.store.lease import MAINTENANCE, Lease, LeaseInfo, LeaseManager
 from src.store.manifest import MANIFEST_FORMAT
+from src.store.migrate import Migrator
 from src.store.sqlite import to_store_error
 from src.store.state import RuntimeFacts, StateDb
 from src.store.streams import StreamLog
@@ -286,6 +287,7 @@ class Store:
             self.history = HistoryStore(self)
             self.backup = BackupManager(self)
             self.export = Exporter(self)
+            self.migrate = Migrator(self)
             self._names_used: Dict[int, str] = {}
             self._catalog_ready = False
             self._catalog_warned = False
