@@ -1,51 +1,38 @@
 """Arka plan veri çekme işi: /api/fetch isteğinin seçtiği ligleri, sezonları ve maçları indirir.
 
 Akışın kendisi (sezon listeleri → maç listeleri → maç detayları → CSV, devre kesici, detay planı)
-src/services/sync.py'dedir. Bu modül web yüzünün bağdaştırıcısıdır: isteği SyncSpec'e çevirir, servise
-iş deposuna yazan bir tutamaç verir ve sonucu işin bitiş durumuna ve kart metnine çevirir.
+src/services/sync.py'dedir; işi yürüten iş yöneticisidir (src/jobs/manager.py: tutamaç, iptal bayrağının
+satırdan okunması, kalp atışı, olay günlüğü, bitiş durumu). Bu modül web yüzünün bağdaştırıcısıdır: isteği
+SyncSpec'e çevirir, işi sürecin iş deposu üzerinde yürütür ve servisin sonucunu işin bitişine ve kart metnine
+çevirir.
 
 İlerleme `JobProgress` ile yapılandırılmış olarak yayınlanır; kart metinleri ön yüzde çevrilir.
-SofaScore engellediğinde servis kalan lig/sezon/maç için istek atmayı bırakır ve iş nedenini karta
-yazarak "Completed" biter. Kayıt diske yazılamıyorsa (disk dolu, izin yok) iş "Failed" olarak, nedeni
-söyleyerek biter.
+SofaScore engellediğinde servis kalan lig/sezon/maç için istek atmayı bırakır; iş `partial` olarak kaydedilir
+(eski API "Completed" gösterir) ve nedeni karta yazılır. Kayıt diske yazılamıyorsa (disk dolu, izin yok) iş
+"Failed" olarak, nedeni söyleyerek biter. Bitiş metinlerinin çeviri anahtarı işin `finished` olayındadır.
 """
 from __future__ import annotations
 
 import traceback
-from typing import TYPE_CHECKING, Any, Dict, Mapping
+from typing import TYPE_CHECKING, Any, Mapping
 
+from src.errors import to_platform_error
 from src.exceptions import StorageError
-from src.jobs.progress import JobProgress
+from src.jobs.manager import JobHandle, JobManager, JobNotActive, JobOutcome
+from src.jobs.model import ErrorInfo, JobState
 from src.redact import redact_text
 from src.services.context import build_context
 from src.services.sync import SyncSelection, SyncService, SyncSpec
 from src.web.routes.common import _job_store, _refresh_scraper_state, config_manager, logger
 
 if TYPE_CHECKING:
+    from src.jobs.progress import JobProgress
     from src.web.routes.scrape import FetchRequest
 
 
-def update_state(status: str, progress: int, task: str):
-    finished = status in ("Completed", "Failed", "Cancelled")
-    _job_store.update(
-        status=status,
-        progress=progress,
-        current_task=task,
-        append_log=f"[{status}] {task}",
-        finished=finished,
-    )
-    _refresh_scraper_state()
-
-
-def _note(task: str) -> None:
-    """Ham görev metni: iş günlüğü ve eski istemciler için; yüzdeye dokunmaz."""
-    _job_store.update(current_task=task, append_log=f"[Running] {task}")
-    _refresh_scraper_state()
-
-
-def _publish(fields: Dict[str, Any]) -> None:
-    _job_store.update(**fields)
-    _refresh_scraper_state()
+def job_manager() -> JobManager:
+    """Web sürecinin iş yöneticisi: yolların da koruma için kullandığı, süreç genelindeki iş deposunun üzerinde."""
+    return JobManager(_job_store)
 
 
 def _spec_from_payload(payload: "FetchRequest") -> SyncSpec:
@@ -71,67 +58,81 @@ def _summary(payload: "FetchRequest") -> str:
     return str(payload.league_id) if payload.league_id else "All Leagues"
 
 
-class _StoreJobHandle:
-    """Servisin gördüğü iş (src.services.sync.JobHandle): her çağrı iş deposuna yazılır."""
+class _ConsoleHandle:
+    """Servisin gördüğü iş (src.services.sync.JobHandle): iş yöneticisinin tutamacı ve sunucu konsolundaki satır."""
 
-    def __init__(self, job_id: str, progress: JobProgress) -> None:
-        self.id = job_id
-        self.progress = progress
+    def __init__(self, handle: JobHandle) -> None:
+        self._handle = handle
+        self.id = handle.id
+
+    @property
+    def progress(self) -> "JobProgress":
+        return self._handle.progress
 
     def cancelled(self) -> bool:
-        return _job_store.cancel_requested()
+        return self._handle.cancelled()
 
     def log(self, message: str) -> None:
-        _note(message)
+        self._handle.log(message)
         if self.progress.phase == "export":
             # Sunucu konsolundaki satır (CSV aşaması başlarken); servis yazdırmadığı için burada
             print("--> Exporting to CSV...")
 
     def publish(self, fields: Mapping[str, Any]) -> None:
-        _publish(dict(fields))
+        self._handle.publish(fields)
 
 
-def run_fetch_job(job_id: str, payload: "FetchRequest") -> None:
-    """/api/fetch işini çalıştırır (kendi thread'inde; bkz. routes/scrape.trigger_fetch)."""
-    spec = _spec_from_payload(payload)
-    tracker = JobProgress(list(spec.job_phases), _publish)
-    # Servis tutamacın iptal sorusunu istek bağlamına kurar: işin her isteği (ve yeniden denemeler arasındaki
-    # beklemeler) ona bakar, böylece "Durdur" geçerli sezonun ya da 2 dakikalık bir 403 geri çekilmesinin
-    # sonunda değil, saniyenin kesri içinde etkili olur. 429/403 geri çekilmeleri de kartta geri sayım olur.
-    handle = _StoreJobHandle(job_id, tracker)
+def _open_store(ctx: Any) -> None:
+    """
+    İşin veri dizinini tam bir depo yapar: bağlamın deposuna ilk erişim `.meta/` altında eksik olanları kurar
+    (iş deposunun state.db'sinin yanına schema.json ve catalog.db). Böylece yalnızca web arayüzüyle kullanılan
+    bir dizin de `open_store(create=False)` için bir depodur ve köprü sağlığı işin deposuna yazılır.
 
+    Depo açılamazsa iş yine çalışır (bugünkü gibi dosyalara doğrudan yazar); neden uyarı olarak loglanır.
+    """
+    try:
+        getattr(ctx, "store", None)
+    except Exception as e:  # depo açılamadı (daha yeni düzen, meşgul ya da bozuk dosya): iş bunsuz da çalışır
+        logger.warning("The store of the data directory could not be opened; the job runs without it: %s", e)
+
+
+def _error_info(exc: BaseException) -> ErrorInfo:
+    """İşi durduran hata, hata tablosundaki koduyla; metin log satırları gibi maskelenir."""
+    error = to_platform_error(exc)
+    return ErrorInfo(code=error.code, message=redact_text(error.message), details=error.details)
+
+
+def _fetch(handle: JobHandle, payload: "FetchRequest", spec: SyncSpec) -> JobOutcome:
+    """İşin gövdesi: servisi çalıştırır ve sonucunu işin bitişine çevirir. Hata fırlatmaz."""
+    from src.i18n import get_i18n
+
+    tracker = handle.progress
     summary = _summary(payload)
-    update_state("Running", 0, f"Starting fetch for {summary}")
-    logger.info("Background fetch started. job_id=%s Target: %s", job_id, summary)
+    handle.log(f"Starting fetch for {summary}")
+    logger.info("Background fetch started. job_id=%s Target: %s", handle.id, summary)
 
     try:
-        result = SyncService(build_context(config_manager)).run(spec, handle=handle)
-
-        if result.state == "cancelled":
-            update_state("Cancelled", tracker.percent(), "Cancelled")
-        else:
-            from src.i18n import get_i18n
-
-            empty_n = result.schedule_empty_seasons
-            _job_store.update(result={"schedule_empty_seasons": empty_n, **result.progress})
-            if result.breaker:
-                update_state("Completed", 100, get_i18n().t("fetch_stopped_by_breaker", reason=result.breaker))
-            elif empty_n > 0:
-                update_state("Completed", 100, get_i18n().t("fetch_completed_with_warning"))
-            else:
-                update_state("Completed", 100, "Background Task Completed Successfully.")
-            print("--> Background Task Completed Successfully.")
-            logger.info("Background update and export completed.")
-
+        # Servis tutamacın iptal sorusunu istek bağlamına kurar: işin her isteği (ve yeniden denemeler
+        # arasındaki beklemeler) ona bakar, böylece "Durdur" geçerli sezonun ya da 2 dakikalık bir 403 geri
+        # çekilmesinin sonunda değil, saniyenin kesri içinde etkili olur. 429/403 geri çekilmeleri de kartta
+        # geri sayım olur.
+        ctx = build_context(config_manager)
+        _open_store(ctx)
+        result = SyncService(ctx).run(spec, handle=_ConsoleHandle(handle))
     except StorageError as e:
         # Kalıcı depolama hatası (disk dolu, izin yok): kalan maçlar da yazılamaz, iş durur
-        from src.i18n import get_i18n
-
-        message = get_i18n().t("storage_error_abort", path=e.path or "?", reason=e.detail or str(e))
+        params = {"path": e.path or "?", "reason": e.detail or str(e)}
+        message = get_i18n().t("storage_error_abort", **params)
         logger.error(f"Background fetch aborted, data could not be written: {e}")
         print(f"--> Background Task FAILED: {message}")
-        _job_store.update(result={"error": "storage", "error_path": e.path, **tracker.result()})
-        update_state("Failed", tracker.percent(), message)
+        return JobOutcome(
+            state=JobState.FAILED,
+            result={"error": "storage", "error_path": e.path, **tracker.result()},
+            error=_error_info(e),
+            message=message,
+            code="storage_error_abort",
+            params=params,
+        )
     except Exception as e:
         # Hata metni iş kaydına yazılır ve API'den (durum, iş geçmişi, SSE) okunur: bir istek hatası
         # proxy adresini parolasıyla taşıyabilir, bu yüzden log satırları gibi maskelenir
@@ -139,13 +140,50 @@ def run_fetch_job(job_id: str, payload: "FetchRequest") -> None:
         logger.error(f"Background update failed: {e}")
         logger.error(traceback.format_exc())
         print(f"--> Background Task FAILED: {error_msg}")
-        update_state("Failed", tracker.percent(), f"Error: {error_msg}")
+        return JobOutcome(state=JobState.FAILED, error=_error_info(e), message=f"Error: {error_msg}")
+
+    if result.state == "cancelled":
+        return JobOutcome(state=JobState.CANCELLED, message="Cancelled")
+
+    empty_n = result.schedule_empty_seasons
+    code = None
+    params: Mapping[str, Any] = {}
+    if result.breaker:
+        code, params = "fetch_stopped_by_breaker", {"reason": result.breaker}
+        message = get_i18n().t(code, **params)
+    elif empty_n > 0:
+        code = "fetch_completed_with_warning"
+        message = get_i18n().t(code)
+    else:
+        message = "Background Task Completed Successfully."
+    print("--> Background Task Completed Successfully.")
+    logger.info("Background update and export completed.")
+    # Bitiş durumu servisin sonucudur: devre kesildiyse ya da bir maç indirilemediyse `partial`
+    return JobOutcome(
+        state=JobState(result.state),
+        result={"schedule_empty_seasons": empty_n, **result.progress},
+        message=message,
+        code=code,
+        params=params,
+    )
+
+
+def run_fetch_job(job_id: str, payload: "FetchRequest") -> None:
+    """
+    Başlatılmış /api/fetch işini çalıştırır (kendi thread'inde; bkz. routes/scrape.trigger_fetch).
+
+    İş yöneticisi işin bitişini her durumda yazar (gövde hata fırlatsa da) ve `writer` kilidini bırakır.
+    """
+    spec = _spec_from_payload(payload)
+    try:
+        job_manager().run(
+            job_id,
+            lambda handle: _fetch(handle, payload, spec),
+            phases=spec.job_phases,
+            on_change=_refresh_scraper_state,
+        )
+    except JobNotActive:
+        # İş, thread'i başlamadan bitirilmiş (ör. depo başka bir dizine taşınmış): yapılacak bir şey yok
+        logger.warning("Fetch job %s is no longer the running job of this process; nothing was fetched.", job_id)
     finally:
-        snap = _job_store.snapshot()
-        if snap.get("is_running"):
-            # Ensure job is closed if worker exited without terminal status
-            if _job_store.cancel_requested():
-                update_state("Cancelled", int(snap.get("progress") or 0), "Cancelled")
-            else:
-                update_state("Failed", int(snap.get("progress") or 0), "Interrupted")
         _refresh_scraper_state()

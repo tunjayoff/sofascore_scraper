@@ -3,16 +3,28 @@
 class JobStore:
     def __init__(self, db_path: str)
     self.db_path
+    @classmethod
+    def for_store(cls, store: 'Store') -> 'JobStore'
     def close(self) -> None
     def writer_busy(self) -> bool
     def mark_stale_running_interrupted(self) -> int
+    def reap_stale(self) -> int
     @contextlib.contextmanager
     def exclusive(self, operation: str) -> Iterator[None]
     def rebind(self, db_path: str) -> bool
-    def create_running(self, payload: Any) -> str
+    def create_running(self, payload: Any, *, job_id: Optional[str] = None, kind: str = DEFAULT_KIND, origin: Optional[Mapping[str, Any]] = None, spec: Optional[Mapping[str, Any]] = None, wait: float = 0.0, purpose: str = JOB_PURPOSE, replace_running: bool = True) -> str
     def request_cancel(self) -> bool
-    def cancel_requested(self) -> bool
-    def update(self, *, status: Optional[str] = None, progress: Optional[int] = None, current_task: Optional[str] = None, append_log: Optional[str] = None, matches_total: Optional[int] = None, matches_done: Optional[int] = None, matches_failed: Optional[int] = None, schedule_empty_seasons: Optional[int] = None, circuit_breaker_triggered: Optional[bool] = None, circuit_breaker_reason: Optional[str] = None, eta_seconds: Optional[float] = None, current_batch: Optional[str] = None, result: Optional[Dict[str, Any]] = None, detail: Optional[Dict[str, Any]] = None, finished: bool = False) -> None
+    def cancel(self, job_id: str) -> bool
+    def cancel_requested(self, job_id: Optional[str] = None) -> bool
+    def poll_cancel(self, job_id: Optional[str] = None) -> bool
+    def heartbeat(self, job_id: Optional[str] = None) -> bool
+    def update(self, *, status: Optional[str] = None, progress: Optional[int] = None, current_task: Optional[str] = None, append_log: Optional[str] = None, matches_total: Optional[int] = None, matches_done: Optional[int] = None, matches_failed: Optional[int] = None, schedule_empty_seasons: Optional[int] = None, circuit_breaker_triggered: Optional[bool] = None, circuit_breaker_reason: Optional[str] = None, eta_seconds: Optional[float] = None, current_batch: Optional[str] = None, result: Optional[Dict[str, Any]] = None, detail: Optional[Dict[str, Any]] = None, finished: bool = False, job_id: Optional[str] = None, state: Optional[str] = None, error: Optional[Mapping[str, Any]] = None) -> None
     def snapshot(self) -> Dict[str, Any]
+    def append_event(self, job_id: str, type: str, data: Optional[Mapping[str, Any]] = None) -> int
+    def read_events(self, job_id: str, *, after: int = 0, limit: int = 500) -> List[Dict[str, Any]]
+    def announce(self, type: str, data: Mapping[str, Any]) -> Optional[int]
     def list_jobs(self, limit: int = 20) -> List[Dict[str, Any]]
     def get_job(self, job_id: str) -> Optional[Dict[str, Any]]
+    def get_record(self, job_id: str) -> Optional[Dict[str, Any]]
+    def list_records(self, limit: int = JOB_HISTORY_LIMIT) -> List[Dict[str, Any]]
+    def active_record(self) -> Optional[Dict[str, Any]]

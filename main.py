@@ -4,6 +4,7 @@ SofaScore Scraper uygulaması ana giriş noktası.
 """
 
 import contextlib
+import dataclasses
 import json
 import logging
 import sys
@@ -12,7 +13,7 @@ import traceback
 import os
 import argparse
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Tuple
 
 from src.version import __version__
 
@@ -57,8 +58,9 @@ from src.i18n import get_i18n
 from src.sports import sport_slugs
 
 if TYPE_CHECKING:
+    from src.jobs.manager import JobHandle, JobOutcome
     from src.services.context import ServiceContext
-    from src.services.sync import SyncResult
+    from src.services.sync import SyncResult, SyncSpec
 
 # Lig yapılandırması her kipte başlangıçta kurulur: config/ dizini ve örnek lig dosyası ilk çalıştırmada burada
 # oluşur. Eskiden bunu terminal arayüzünün içe aktarılması yan etki olarak yapıyordu. Tekil nesne yolsuz
@@ -157,10 +159,12 @@ def parse_arguments() -> argparse.Namespace:
 @contextlib.contextmanager
 def _data_dir_lease(data_dir: str, name: str, purpose: str) -> Iterator[None]:
     """
-    Blok boyunca veri dizininin `name` kilidini tutar (docs/design/01-storage.md 6.1): aynı dizine yazan ikinci
-    bir süreç (başka bir komut satırı çalıştırması ya da web işi) reddedilir. Kilit başkasındaysa LeaseHeld
-    fırlar; main() onu sahibin bilgisiyle kullanıcıya söyler. Depo bu süreçte kilit için açılır ve blok
-    bitince kapatılır.
+    Blok boyunca veri dizininin `name` kilidini tutar (docs/design/01-storage.md 6.1): canlı izleyici (aynı
+    dizinde aynı sporu izleyen ikinci bir süreç reddedilir) ve yalnızca yeniden denetim (`--recheck-unavailable`)
+    için. Kilit başkasındaysa LeaseHeld fırlar; main() onu sahibin bilgisiyle kullanıcıya söyler. Depo bu süreçte
+    kilit için açılır ve blok bitince kapatılır.
+
+    İndirme ve yenileme bu işlevi kullanmaz: onların yazar kilidini iş yöneticisi alır (bkz. `_run_services`).
     """
     from src.store import open_store
 
@@ -241,6 +245,10 @@ def _report_sync(result: "SyncResult") -> int:
     bir çalışmada indirici, denenmeyen maçları başarısız diye bildirmez ve sayılar yanıltıcı olurdu.
     """
     t = get_i18n().t
+    if result.state == "cancelled":
+        # İş başka bir süreçten iptal edildi (ör. web arayüzündeki Durdur): Ctrl+C'deki gibi, özet yazılmaz
+        print(t("prog_terminated_by_user"))
+        return 0
     if result.schedule_empty_seasons:
         print(t("cli_sync_empty_schedules", count=result.schedule_empty_seasons), file=sys.stderr)
     if result.breaker:
@@ -262,36 +270,48 @@ def _report_sync(result: "SyncResult") -> int:
     return 0
 
 
-def _run_refresh_only(args: argparse.Namespace, ctx: "ServiceContext") -> int:
+def _run_refresh_only(spec: "SyncSpec", ctx: "ServiceContext", job: "JobHandle") -> Tuple[int, "SyncResult"]:
     """--refresh-only. 0: en az bir kayıt yenilendi ya da iş yok; 1: hepsi başarısız; 2: devre kesildi."""
-    from src.services.sync import RefreshCounts, SyncService, SyncSpec
+    from src.services.sync import RefreshCounts, SyncService
 
-    result = SyncService(ctx).run(SyncSpec(mode="refresh", league_id=args.league_id))
+    result = SyncService(ctx).run(spec, handle=job)
     counts = result.refresh or RefreshCounts()
     t = get_i18n().t
+    if result.state == "cancelled":
+        print(t("prog_terminated_by_user"))  # başka bir süreçten iptal edildi; Ctrl+C'deki gibi
+        return 0, result
     print(t("cli_refresh_summary", refreshed=counts.refreshed, changed=counts.changed, failed=counts.failed))
     if result.breaker:
         # Devre kesildi: kalan maçlar denenmedi; cron bunu sıfırdan farklı çıkış koduyla görsün
         print(t("refresh_stopped_by_breaker", reason=result.breaker, skipped=counts.skipped), file=sys.stderr)
-        return 2
-    return 1 if counts.failed and not counts.refreshed else 0
+        return 2, result
+    return (1 if counts.failed and not counts.refreshed else 0), result
 
 
-def _run_headless(args: argparse.Namespace, ctx: "ServiceContext") -> int:
-    """--headless: --update-all (indirme) ve/veya --csv-export. 2: eylem verilmedi ya da devre kesildi."""
+def _run_headless(
+    args: argparse.Namespace, ctx: "ServiceContext", spec: Optional["SyncSpec"] = None,
+    job: Optional["JobHandle"] = None,
+) -> Tuple[int, Optional["SyncResult"]]:
+    """
+    --headless: --update-all (indirme) ve/veya --csv-export. 2: eylem verilmedi ya da devre kesildi.
+
+    İndirme bir iştir: `spec` ve iş yöneticisinin tutamacı (`job`) onunla birlikte gelir. Yalnızca CSV dışa
+    aktarma iş değildir (kilit almaz, iş geçmişine girmez).
+    """
     from src.services.export import export_all_csv
-    from src.services.sync import SyncService, SyncSpec
+    from src.services.sync import SyncService
 
     t = get_i18n().t
     logger.info("Running in headless mode")
     exit_code = 0
     ran = False
+    result: Optional["SyncResult"] = None
 
-    if args.update_all:
+    if args.update_all and spec is not None:
         logger.info("Headless update: league_id=%s mode=%s", args.league_id, args.fetch_mode)
         # Web işiyle aynı akış (sezon listeleri → maç listeleri → detaylar), tek devre kesiciyle. CSV aşaması
         # istenmez: komut satırında o, --csv-export'un ayrı adımıdır.
-        result = SyncService(ctx).run(SyncSpec(mode=args.fetch_mode, league_id=args.league_id, export=False))
+        result = SyncService(ctx).run(spec, handle=job)
         exit_code = _report_sync(result)
         ran = True
 
@@ -304,50 +324,110 @@ def _run_headless(args: argparse.Namespace, ctx: "ServiceContext") -> int:
     if not ran:
         logger.error("Headless needs at least one of --update-all and --csv-export")
         print(t("cli_headless_usage"), file=sys.stderr)
-        return 2
-    return exit_code
+        return 2, result
+    return exit_code, result
+
+
+def _recheck_unavailable(args: argparse.Namespace, ctx: "ServiceContext") -> None:
+    """--recheck-unavailable: ağ isteği yok; yalnızca işaretler geri alınır, dilimler sonraki indirmede istenir."""
+    from src.services.maintenance import MaintenanceService
+
+    reset = MaintenanceService(ctx).recheck_unavailable(
+        args.league_id, include_confirmed=args.recheck_unavailable == "all"
+    )
+    print(get_i18n().t("recheck_unavailable_done", matches=reset.matches, slices=reset.slices, scanned=reset.scanned))
+
+
+def _job_outcome(result: Optional["SyncResult"]) -> "JobOutcome":
+    """Servisin sonucu → işin bitişi: durum, sonuç özeti ve devre kesildiyse nedeni söyleyen kart metni."""
+    from src.jobs.manager import JobOutcome
+    from src.jobs.model import JobState
+
+    if result is None:
+        return JobOutcome()
+    if result.state == "cancelled":
+        return JobOutcome(state=JobState.CANCELLED)
+    summary: Dict[str, Any] = {"schedule_empty_seasons": result.schedule_empty_seasons, **result.progress}
+    if result.refresh is not None:
+        summary["refresh"] = dataclasses.asdict(result.refresh)
+    if result.breaker:
+        # Kart metninin çeviri anahtarı işin `finished` olayına da yazılır: istemci metni koddan üretir
+        code, params = "fetch_stopped_by_breaker", {"reason": result.breaker}
+        if result.refresh is not None:
+            code, params = "refresh_stopped_by_breaker", {"reason": result.breaker, "skipped": result.refresh.skipped}
+        return JobOutcome(
+            state=JobState(result.state), result=summary, code=code, params=params,
+            message=get_i18n().t(code, **params),
+        )
+    return JobOutcome(state=JobState(result.state), result=summary)
 
 
 def _run_services(args: argparse.Namespace) -> int:
     """
     Terminal arayüzü olmadan çalışan kipler: --recheck-unavailable, --refresh-only, --headless.
 
-    Hepsi aynı servis bağlamını kurar (src/services/context.py). Veri dizinine yazanlar (yeniden denetim,
-    yenileme, indirme) çalışma boyunca dizinin yazar kilidini tutar; yalnızca CSV dışa aktarma kilit almaz.
+    Hepsi aynı servis bağlamını kurar (src/services/context.py). İndirme (`--headless --update-all`) ve yenileme
+    (`--refresh-only`) birer iştir: iş yöneticisi (src/jobs/manager.py) veri dizininin yazar kilidini alır, işi
+    geçmişe kaydeder (web arayüzünün iş geçmişinde görünür, oradan iptal edilebilir) ve bu süreçte çalıştırır.
+    Kilit başka bir süreçteyse iş başlamaz ve LeaseHeld main()'e çıkar (çıkış kodu 6). Yalnızca yeniden denetim
+    iş değildir ama yazar kilidini tutar; yalnızca CSV dışa aktarma kilit almaz.
     """
+    from src.jobs.manager import local_origin
+    from src.jobs.model import JobKind
     from src.services.context import build_context
+    from src.services.sync import SyncSpec
+    from src.store import JobStoreConflict
 
     # Tekil yapılandırma nesnesi (yukarıda kuruldu); --config bugünkü gibi okunmaz
     ctx = build_context(ConfigManager(), data_dir=args.data_dir)
 
     downloads = bool(args.headless and args.update_all)
+    if not (args.refresh_only or downloads):
+        if not args.recheck_unavailable:
+            return _run_headless(args, ctx)[0]
+        with _data_dir_lease(ctx.data_dir, "writer", "recheck-unavailable"):
+            _recheck_unavailable(args, ctx)
+            return _run_headless(args, ctx)[0] if args.headless else 0
+
     if args.refresh_only:
-        purpose = "refresh"
-    elif downloads:
-        purpose = "headless"
-    elif args.recheck_unavailable:
-        purpose = "recheck-unavailable"
+        kind, purpose, spec = JobKind.REFRESH, "refresh", SyncSpec(mode="refresh", league_id=args.league_id)
     else:
-        return _run_headless(args, ctx)
+        kind, purpose = JobKind.SYNC, "headless"
+        spec = SyncSpec(mode=args.fetch_mode, league_id=args.league_id, export=False)
+    exit_codes: List[int] = []
 
-    with _data_dir_lease(ctx.data_dir, "writer", purpose):
+    def body(job: "JobHandle") -> "JobOutcome":
         if args.recheck_unavailable:
-            from src.services.maintenance import MaintenanceService
-
-            # Ağ isteği yok: yalnızca işaretler geri alınır; dilimler sonraki indirmede yeniden istenir
-            reset = MaintenanceService(ctx).recheck_unavailable(
-                args.league_id, include_confirmed=args.recheck_unavailable == "all"
-            )
-            print(
-                get_i18n().t(
-                    "recheck_unavailable_done", matches=reset.matches, slices=reset.slices, scanned=reset.scanned
-                )
-            )
-            if not (args.headless or args.refresh_only):
-                return 0
+            _recheck_unavailable(args, ctx)
         if args.refresh_only:
-            return _run_refresh_only(args, ctx)
-        return _run_headless(args, ctx)
+            exit_code, result = _run_refresh_only(spec, ctx, job)
+        else:
+            exit_code, result = _run_headless(args, ctx, spec, job)
+        exit_codes.append(exit_code)
+        return _job_outcome(result)
+
+    # İş günlüğü satırları bugünkü gibi SyncService log satırları olarak da yazılır (konsol ve log dosyası)
+    service_log = get_logger("SyncService")
+    try:
+        ctx.jobs.submit(
+            kind,
+            dataclasses.asdict(spec),
+            body,
+            origin=local_origin("cli"),
+            background=False,
+            phases=spec.job_phases,
+            # Web arayüzünün iş kartı başlığı istek gövdesinden üretilir: aynı biçim
+            payload={"league_id": spec.league_id, "mode": spec.mode, "selections": None},
+            # Kilidin amacı: aynı dizini isteyen başka bir süreç kullanıcıya bunu söyler
+            lease_purpose=purpose,
+            on_log=lambda message: service_log.info("%s", message),
+        )
+    except JobStoreConflict as conflict:
+        # Yazar kilidi başka bir süreçte: sahibini söyleyen LeaseHeld main()'in bilinen dalına gider
+        if isinstance(conflict.__cause__, LeaseHeld):
+            raise conflict.__cause__ from None
+        raise
+    return exit_codes[0] if exit_codes else 1
 
 
 def main() -> int:

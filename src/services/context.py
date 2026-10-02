@@ -2,28 +2,38 @@
 Servis bağlamı: bir servisin çalışmak için ihtiyaç duyduğu nesneler (docs/design/02-services.md 2.3).
 
 `build_context`, terminal arayüzünün kurucusunda duran bağlama işini (src/SofaScoreUi.py: veri dizinleri ve üç
-indirici) arayüzden bağımsız yapar; web ve (P10 ile) CLI aynı bağlamı kurar.
+indirici) arayüzden bağımsız yapar; web ve CLI aynı bağlamı kurar.
 
-Bugünkü bağlam indiricileri taşır. Tasarımdaki alanlar (Settings, Store, Client, JobManager, Clock) onları
-getiren plan maddeleriyle eklenir (P11: istemci sağlığı ve işler).
+Bağlam indiricileri, SofaScore istemcisini ve veri dizininin deposuna giden yolu taşır:
+
+  * `client`  istek katmanının yüzü (src/client). Köprü sağlığındaki her geçiş, bağlamın veri dizinindeki
+              deponun çalışma zamanı bilgilerine yazılır (`store.runtime`, anahtar "bridge_health"); başka bir
+              süreç (ör. durum komutu) oradan okur.
+  * `store`   veri dizininin deposu. **İlk erişimde açılır**: bağlamı kurmak `.meta/` altında hiçbir şey
+              yaratmaz (yalnızca takip girdisi olan bir yapılandırma dosyası state.db'yi kurar, aşağıya bakın).
+  * `jobs`    o deponun iş yöneticisi (src/jobs/manager.py): komut satırı işlerini bununla yürütür.
+
+Tasarımdaki diğer alanlar (Settings, Clock) onları getiren plan maddeleriyle eklenir.
 
 Bağlam kurulurken takipler de `follows` tablosuna eşitlenir (plan maddesi ST-17): yapılandırma dosyasının
-`[[follow]]` girdileri "config" kaynağıyla, lig dosyaları "legacy" kaynağıyla (bkz. `_sync_follows`). Bağlam
-bir Store taşımaz: tablo kısa ömürlü bir bağlantıyla güncellenir, süreçte açık bir depo kalmaz.
+`[[follow]]` girdileri "config" kaynağıyla, lig dosyaları "legacy" kaynağıyla (bkz. `_sync_follows`). Bu eşitleme
+depoyu açmaz: tablo kısa ömürlü bir bağlantıyla güncellenir.
 """
 from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Optional, Set, Tuple
+from typing import Any, Mapping, Optional, Set, Tuple
 
+from src.client import Client
 from src.config_manager import ConfigManager
 from src.exceptions import StorageError
+from src.jobs.manager import JobManager
 from src.logger import get_logger
 from src.match_data_fetcher import MatchDataFetcher
 from src.match_fetcher import MatchFetcher
 from src.season_fetcher import SeasonFetcher
-from src.store import FollowSpec, apply_follows
+from src.store import FollowSpec, JobStore, Store, apply_follows, open_store
 
 logger = get_logger("Services")
 
@@ -41,6 +51,9 @@ class ServiceContext:
     season_fetcher      sezon listeleri
     match_fetcher       maç listeleri (program)
     match_data_fetcher  maç detayları, yenileme ve CSV düzleştirme
+    client              SofaScore istemcisi; köprü sağlığı değişimleri deponun çalışma zamanı bilgilerine yazılır
+    store               (özellik) veri dizininin deposu; ilk erişimde açılır
+    jobs                (özellik) deponun iş yöneticisi
     """
 
     config: ConfigManager
@@ -48,6 +61,20 @@ class ServiceContext:
     season_fetcher: SeasonFetcher
     match_fetcher: MatchFetcher
     match_data_fetcher: MatchDataFetcher
+    client: Optional[Client] = None
+
+    @property
+    def store(self) -> Store:
+        """
+        Veri dizininin deposu (`open_store`: süreçte dizin başına tek nesne). İlk erişim `.meta/` altında eksik
+        olanları kurar (schema.json, state.db, catalog.db); açılamazsa StoreError (bir StorageError) fırlar.
+        """
+        return open_store(self.data_dir)
+
+    @property
+    def jobs(self) -> JobManager:
+        """Deponun iş yöneticisi. Aynı depo için hep aynı iş deposunu kullanır (çalışan iş onda durur)."""
+        return JobManager(JobStore.for_store(self.store))
 
 
 def _ensure_directory(directory: str) -> None:
@@ -97,9 +124,42 @@ def _sync_follows(config_manager: ConfigManager, data_dir: str) -> None:
     config_manager.mirror_follows(data_dir)
 
 
+# Köprü sağlığının yazılacağı veri dizini: en son kurulan bağlamınki (süreçte tek köprü, tek sağlık durumu)
+RUNTIME_BRIDGE_HEALTH = "bridge_health"
+_health_data_dir: Optional[str] = None
+
+
+def _record_bridge_health(snapshot: Mapping[str, Any]) -> None:
+    """
+    İstemcinin `on_health_change` geri çağrısı: köprü sağlığının görüntüsünü deponun çalışma zamanı bilgilerine
+    yazar (ok → degraded → blocked ve geri dönüş; geçiş başına bir kez). Yazılamaması isteği bozmaz.
+    """
+    data_dir = _health_data_dir
+    if data_dir is None:
+        return
+    try:
+        open_store(data_dir).runtime.set(RUNTIME_BRIDGE_HEALTH, snapshot)
+    except Exception as e:  # depo meşgul, daha yeni ya da kapatılmış olabilir: sağlık bilgisi yalnızca bilgidir
+        logger.debug("Bridge health could not be stored in %s: %s", data_dir, e)
+
+
+def _client_for(data_dir: str) -> Optional[Client]:
+    """
+    Bağlamın istemcisi; köprü sağlığı değişimleri `data_dir`in deposuna yazılır. Geri çağrı modül düzeyinde tek
+    bir işlevdir: bağlam her işte ve istekte kurulsa da sağlık kaynağına bir kez eklenir.
+    """
+    global _health_data_dir
+    _health_data_dir = data_dir
+    try:
+        return Client(on_health_change=_record_bridge_health)
+    except ValueError as e:  # API_BASE_URL http(s) değil: istekler zaten başarısız olur, bağlam yine kurulur
+        logger.warning("SofaScore client could not be built: %s", e)
+        return None
+
+
 def build_context(config_manager: ConfigManager, *, data_dir: Optional[str] = None) -> ServiceContext:
     """
-    Veri dizinlerini var eder, takipleri `follows` tablosuna eşitler ve üç indiriciyi kurar.
+    Veri dizinlerini var eder, takipleri `follows` tablosuna eşitler; üç indiriciyi ve istemciyi kurar.
 
     data_dir verilmezse yapılandırmadaki DATA_DIR kullanılır (web ve CLI aynı dizine yazar). Her çağrı yeni
     indiriciler kurar; indiriciler durum taşıdığı için (iş önbelleği, son istek sayımları) bir bağlam tek bir
@@ -123,4 +183,5 @@ def build_context(config_manager: ConfigManager, *, data_dir: Optional[str] = No
         season_fetcher=season_fetcher,
         match_fetcher=MatchFetcher(config_manager, season_fetcher, data_dir),
         match_data_fetcher=MatchDataFetcher(config_manager, data_dir),
+        client=_client_for(data_dir),
     )

@@ -29,6 +29,8 @@ def test_job_lifecycle_and_interrupt(tmp_path=None):
     store2 = JobStore(db)  # marks interrupted — but no running left
     jid2 = store2.create_running({"mode": "details"})
     store2.update(progress=10, current_task="mid")
+    # The process dies: its OS lock on the writer lease goes with it, the row stays "running"
+    store2.close()
     # New process
     store3 = JobStore(db)
     assert store3.snapshot()["is_running"] is False

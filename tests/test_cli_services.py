@@ -105,7 +105,7 @@ class Recorder:
         def run(self: SyncService, spec: SyncSpec, *, handle: Any = None) -> SyncResult:
             recorder.specs.append(spec)
             recorder.holders.append(lease_holder(recorder.data_dir))
-            assert handle is None  # komut satırı iş kaydı olmadan çalışır (P11'e kadar)
+            assert handle is not None  # komut satırı işi iş yöneticisiyle çalışır: servise tutamaç verilir (P11)
             if recorder.error is not None:
                 raise recorder.error
             return recorder.result
@@ -385,7 +385,9 @@ def test_the_refusal_names_the_holder_in_the_app_language(
     monkeypatch.setattr(cli, "get_i18n", lambda: i18n)
     monkeypatch.setattr(cli, "_data_dir_lease", refuse)
 
-    assert run_cli("--refresh-only") == 6
+    # Yalnızca yeniden denetim hâlâ main.py'nin kendi kilidini alır; indirme ve yenilemenin kilidini iş yöneticisi
+    # alır (P11) ve reddedildiğinde aynı LeaseHeld aynı dala düşer (yukarıdaki test ve goldenlar).
+    assert run_cli("--recheck-unavailable") == 6
 
     assert capsys.readouterr().err.strip() == expected
 
