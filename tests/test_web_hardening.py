@@ -213,9 +213,22 @@ GETS_THAT_MAY_WRITE_A_CACHE = {
         "arayüz bu uca bağlıdır; bilerek GET bırakıldı. Aşağıdaki özet sınamasında bu dosya da değişmez: "
         "conftest'in tohumladığı ligin sporu kayıtlıdır, çıkarılacak bir şey yoktur."
     ),
+    **{
+        path: (
+            "Sayımlar katalogdan okunur (plan maddesi RD-4), bunun için veri dizininin deposu açılır: ilk açılışta "
+            "`.meta/schema.json` ve `.meta/catalog.db` kurulur, sonraki açılışlarda katalog dosyalarla uzlaştırılır. "
+            "Katalog, indirilmiş dosyalardan türetilen bir dizindir (silinirse yeniden kurulur); içeriğini çağıran "
+            "belirlemez ve işlem idempotenttir. Veri ve ayar dosyaları değişmez: aşağıdaki özet sınaması deponun "
+            "bu iki dosyasını dışarıda tutar, gerisini karşılaştırır."
+        )
+        for path in ("/api/dashboard", "/api/stats/system")
+    },
 }
 
 _STATE_DB = "state.db"  # iş deposu (src/store/jobs.py): DATA_DIR/.meta/state.db
+# Deponun türetilmiş dosyaları (DATA_DIR/.meta/): dizinin kimliği ve katalog. Depoyu açan bir GET bunları
+# kurabilir ve kataloğu güncelleyebilir (GETS_THAT_MAY_WRITE_A_CACHE); veri değildirler.
+_STORE_DERIVED = ("schema.json", "catalog.db", "catalog.db-wal", "catalog.db-shm")
 
 
 def _sqlite_content_digest(path: str) -> str:
@@ -230,7 +243,7 @@ def _sqlite_content_digest(path: str) -> str:
 
 def _tree_digest() -> dict:
     """
-    Veri ve yapılandırma dosyalarının içerik özeti (kilit dosyaları hariç).
+    Veri ve yapılandırma dosyalarının içerik özeti (kilit dosyaları ve deponun türetilmiş dosyaları hariç).
 
     İş deposu state.db WAL kipinde bir SQLite dosyasıdır (src/store/state.py). Baytları değil mantıksal
     içeriği özetlenir: WAL'da kayıt varken salt okunur bir bağlantı bile `state.db-shm` dizinine okuyucu
@@ -243,6 +256,8 @@ def _tree_digest() -> dict:
         for folder, _dirs, files in os.walk(root):
             for name in files:
                 if name in (_STATE_DB + "-wal", _STATE_DB + "-shm") or name.endswith(".lock"):
+                    continue
+                if name in _STORE_DERIVED and os.path.basename(folder) == ".meta":
                     continue
                 path = os.path.join(folder, name)
                 if name == _STATE_DB:

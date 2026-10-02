@@ -3,9 +3,9 @@
  "body": {
   "leagues": 2,
   "seasons": 0,
-  "matches": 0,
+  "matches": 2,
   "details": 2,
-  "league_breakdown": [{"id": 17, "name": "Premier League", "matches": 0, "details": 2, "coverage": 0}],
+  "league_breakdown": [{"id": 17, "name": "Premier League", "matches": 2, "details": 2, "coverage": 100.0}],
   "disk_usage": {"seasons": 0, "matches": 0, "details": 8208, "datasets": 0, "total": 8208, "formatted_total": "8.0 KB"}
  }
 }

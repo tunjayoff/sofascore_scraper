@@ -1,17 +1,9 @@
 # src/services/stats.py: Store sınırı ihlalleri (docs/design/01-storage.md bölüm 2.4). Bu liste yalnızca küçülebilir.
 # Bir ihlali gideren PR satırını da siler; açıklama: tests/test_store_boundary.py
 [static]
-_csv_rows:open
-_detail_basics:glob.glob
 _league_dirs:os.listdir
 _league_dirs:os.path.isdir x3
-_season_list_len:open
-_summary_files:os.walk
 dir_size:os.path.getsize
 dir_size:os.walk
 league_stats:glob.glob
-league_stats:os.path.getmtime
 league_stats:os.path.getsize
-system_stats:glob.glob
-system_stats:os.listdir
-system_stats:os.path.isdir x2

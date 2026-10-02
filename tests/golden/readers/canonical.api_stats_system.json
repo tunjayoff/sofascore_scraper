@@ -3,14 +3,14 @@
  "body": {
   "leagues": 6,
   "seasons": 11,
-  "matches": 32,
+  "matches": 29,
   "details": 23,
   "league_breakdown": [
    {"id": 17, "name": "Premier League", "matches": 12, "details": 10, "coverage": 83.3},
    {"id": 132, "name": "NBA", "matches": 6, "details": 5, "coverage": 83.3},
    {"id": 2361, "name": "Wimbledon, Men", "matches": 6, "details": 4, "coverage": 66.7},
-   {"id": 8, "name": "LaLiga", "matches": 5, "details": 2, "coverage": 40.0},
-   {"id": 19, "name": "FA Cup", "matches": 3, "details": 2, "coverage": 66.7}
+   {"id": 19, "name": "FA Cup", "matches": 3, "details": 2, "coverage": 66.7},
+   {"id": 8, "name": "LaLiga", "matches": 2, "details": 2, "coverage": 100.0}
   ],
   "disk_usage": {"seasons": 1326, "matches": 138633, "details": 106367, "datasets": 0, "total": 246326, "formatted_total": "240.6 KB"}
  }
