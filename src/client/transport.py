@@ -537,6 +537,8 @@ async def _request_async(
         try:
             from src.challenge_solver import fetch_api_via_browser
             async with semaphore:
+                # Semafor beklenirken iş durdurulmuş olabilir (aşağıdaki curl yoluyla aynı kural)
+                raise_if_cancelled()
                 browser_data = await fetch_api_via_browser(full_url)
         except Exception as e:
             logger.debug(f"BrowserBridge hatası: {e!r}")
@@ -562,6 +564,10 @@ async def _request_async(
                 kwargs["proxy"] = proxy_url
 
             async with semaphore:
+                # Semafor beklenirken iş durdurulmuş olabilir. Kontrol bütçeden sıra ayırmadan önce yapılır:
+                # zamanı gelmiş bir sıra beklenmez ve geri verilmez, yani ayrıldıktan sonra istek gider.
+                # Deneme başındaki kontrol bunu yakalamaz: o, semafor beklenmeden önce yapılır.
+                raise_if_cancelled()
                 # Sıra beklerken devre kesilmiş olabilir: istek gönderilmez, ortak bütçeden sıra ayrılmaz
                 breaker.check(url)
                 await _athrottle()
