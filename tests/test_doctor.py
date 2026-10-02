@@ -896,7 +896,7 @@ def test_main_py_lists_doctor_in_help():
 
 
 def test_bridge_errors_point_at_the_doctor_not_at_playwright():
-    solver = (REPO / "src" / "challenge_solver.py").read_text(encoding="utf-8")
+    solver = (REPO / "src" / "client" / "bridge.py").read_text(encoding="utf-8")  # köprü P24 ile taşındı
     health = (REPO / "src" / "bridge_health.py").read_text(encoding="utf-8")
     assert "playwright install" not in solver and "playwright install" not in health
     assert "--doctor" in solver and "--doctor" in health

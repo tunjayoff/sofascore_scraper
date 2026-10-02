@@ -1,7 +1,7 @@
 """
 Canlı servis (docs/design/02-services.md bölüm 8.1): `ssc watch`'ın çalıştırdığı, gözetimli tek süreç.
 
-    kapsam (takipler, live=true) ─→ spor başına kaynak (bugün yalnızca PollSource) ─→ gözlem
+    kapsam (takipler, live=true) ─→ spor başına kaynak: PageSource (`page`, varsayılan) + PollSource (hep) ─→ gözlem
         ─→ indirgeyici (reducer.reduce) ─→ store.streams.append("live") ─→ sink'ler, `ssc events`
         ─→ bitiş: tek /event isteği ─→ store.events.observe ─→ change.recorded
 
@@ -27,19 +27,62 @@ Canlı servis (docs/design/02-services.md bölüm 8.1): `ssc watch`'ın çalış
   * **Durum bilgisi.** Her turda `store.runtime`'a ("live") kaynağı, sporları, sayaçları ve kalp atışını yazar;
     `live_status(store)` bunu kilidin sahibiyle birlikte okur (`ssc status`, `/api/v1/status` için).
 
-Kaynak bugün yalnızca yoklamadır (`poll`); `page` ve `direct` sonraki işlerde gelir (P24, P31) ve yoklama her
-zaman yedek kalır. Saat ve bekleme dışarıdan verilir: testler sahte saatle gerçek zaman beklemeden sınar.
+  * **Kaynaklar ve hakem (P24).** `page` seçiliyse her spor için bir sayfa açılır (push_source.PageSource) ve
+    kareleri saniyede bir okunur; her kare o maçın son bilinen nesnesine (push_source.LastKnown, yoklamanın
+    gördükleriyle tohumlanır) yazılıp gözlem olarak indirgeyiciye verilir. Yoklama hep vardır: hakem
+    (arbiter.SportArbiter) push sağlıklıyken onu yavaş güvenlik aralığına çeker, push sessiz ya da kopuksa
+    `poll_interval`'a döndürür, her (yeniden) bağlanmadan sonra bir tur yaptırır ve her değişiklikte
+    `system.live_source_changed` yazılır. Sayfa açılamaz ya da çökerse servis yoklamayla sürer ve sayfa artan
+    aralıklarla yeniden açılır; `direct`'e asla düşülmez. Yoklamanın getirdiği, push'tan gelen son nesneden
+    eski bir nesne (CDN önbelleği) indirgeyiciye verilmez: eski gözlem yeniyi ezmez.
+    Push'un gösterdiği ama yoklamanın hiç listelemediği bir maç (ölçüm: biten maçların bir kısmı) kapsamdaysa
+    durumu karesinden ve tek bir /event isteğinden kurulur (dakikada en çok UNKNOWN_LOOKUPS_PER_MINUTE).
+
+`direct` sonraki işte gelir (P31) ve o zamana kadar yoklamaya düşer. Saat ve bekleme dışarıdan verilir: testler
+sahte saatle gerçek zaman beklemeden sınar.
 """
 from __future__ import annotations
 
+import collections
 import datetime as dt
 import logging
 import time
-from dataclasses import dataclass
-from typing import Any, Callable, Dict, FrozenSet, Iterable, List, Mapping, Optional, Sequence, Set, Tuple, TypeVar
+from dataclasses import dataclass, field
+from typing import (
+    Any,
+    Callable,
+    Deque,
+    Dict,
+    FrozenSet,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TypeVar,
+)
 
 from src.services.live import reducer
+from src.services.live.arbiter import SportArbiter
 from src.services.live.poll_source import LIST_INTERVAL_SECONDS, PollSource, active_ids
+from src.services.live.push_source import (
+    SIGNAL_CLOSE,
+    SIGNAL_ERROR,
+    SIGNAL_FRAME,
+    SIGNAL_GAP,
+    SIGNAL_GONE,
+    SIGNAL_OPEN,
+    SIGNAL_PING,
+    SOURCE_PAGE,
+    VIA_PUSH,
+    LastKnown,
+    PageOpener,
+    PageSource,
+    Signal,
+)
+from src.status import classify_status
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +94,8 @@ MIN_REQUEST_SPACING_SECONDS = 1.0
 DEFAULT_SPORT = "football"  # sporu belirtilmemiş takip (yapılandırmanın varsayılanı)
 
 SOURCE_POLL = "poll"
-SOURCES: Tuple[str, ...] = ("page", "direct", SOURCE_POLL)
-AVAILABLE_SOURCES: Tuple[str, ...] = (SOURCE_POLL,)  # page: P24, direct: P31
+SOURCES: Tuple[str, ...] = (SOURCE_PAGE, "direct", SOURCE_POLL)
+AVAILABLE_SOURCES: Tuple[str, ...] = (SOURCE_PAGE, SOURCE_POLL)  # direct: P31
 
 BUSY_RETRY_FIRST_SECONDS = 0.5
 BUSY_RETRY_MAX_SECONDS = 30.0
@@ -63,9 +106,15 @@ BLOCKED_FIRST_SECONDS = 60.0
 BLOCKED_MAX_SECONDS = 600.0
 SCOPE_RELOAD_SECONDS = 60.0
 PRUNE_INTERVAL_SECONDS = 3600.0
+PUSH_DRAIN_SECONDS = 1.0  # push kareleri bu aralıkla okunur (gecikmenin üst sınırına eklenir)
+HEARTBEAT_SECONDS = 30.0  # push varken kalp atışı en çok bu aralıkla yazılır (yoklama turunda her zaman)
+UNKNOWN_LOOKUPS_PER_MINUTE = 6  # yoklamanın hiç görmediği maç için /event isteği, spor başına
+CONFIRM_RETRY_SECONDS = 20.0  # push bitişinin onayı: maç sayfası henüz bitmiş göstermiyorsa yeniden
+CONFIRM_ATTEMPTS = 4
 
 SYSTEM_BLOCKED = "system.blocked"
 SYSTEM_RECOVERED = "system.recovered"
+SYSTEM_SOURCE_CHANGED = "system.live_source_changed"
 CHANGE_RECORDED = "change.recorded"
 
 T = TypeVar("T")
@@ -222,12 +271,19 @@ class _Tracker:
         self.state = state
         self.matched: Set[str] = set()  # bu çalışmada kapsama girdiği canlı listede görülen maçlar (takım takibi)
         self.saved: Dict[str, str] = reducer_snapshot(state)
+        # Push varken: maç başına son bilinen nesne (kapsam dışındakiler de: kareleri kapsama girebilir),
+        # kapsam dışı olduğu /event ile anlaşılan maçlar ve o isteklerin zamanları
+        self.known = LastKnown()
+        self.outside: Set[int] = set()
+        self.lookups: Deque[float] = collections.deque()
 
     @property
     def sport(self) -> str:
         return self.scope.sport
 
     def listed(self, event: Mapping[str, Any]) -> bool:
+        if self.service._push:
+            self.known.seed(event)  # canlı listenin her maçı: push karesi kapsamdaki bir maçı gösterebilir
         if self.scope.listed(event):
             self.matched.add(str(event.get("id")))
             return True
@@ -249,10 +305,12 @@ def reducer_snapshot(state: Mapping[str, Mapping[str, Any]]) -> Dict[str, str]:
 
 @dataclass
 class _Slot:
-    """Bir sporun kaynağı ve gözetim bilgisi."""
+    """Bir sporun kaynakları ve gözetim bilgisi. `source` yoklamadır; `page` push kaynağıdır (yalnızca `page`)."""
 
     tracker: _Tracker
     source: Any
+    arbiter: SportArbiter
+    page: Optional[PageSource] = None
     started: bool = False
     failures: int = 0
     retry_at: float = 0.0
@@ -273,13 +331,19 @@ class LiveReport:
     started_at: Optional[float] = None
     heartbeat_at: Optional[float] = None
     finished: bool = False  # izlenen maçların hepsi bitti
+    leaders: Dict[str, str] = field(default_factory=dict)  # spor → önde olan kaynak ("page" ya da "poll")
+    push_frames: int = 0  # indirgeyiciye verilen push kareleri
+    source_switches: int = 0
+    last_switch: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "source": self.source, "sports": list(self.sports), "rounds": self.rounds, "requests": self.requests,
             "events": self.events, "confirmed": self.confirmed, "source_restarts": self.source_restarts,
             "blocked": self.blocked, "started_at": self.started_at, "heartbeat_at": self.heartbeat_at,
-            "finished": self.finished,
+            "finished": self.finished, "leaders": dict(sorted(self.leaders.items())),
+            "push_frames": self.push_frames, "source_switches": self.source_switches,
+            "last_switch": self.last_switch,
         }
 
 
@@ -308,13 +372,16 @@ class LiveService:
     max_event_polls  turda en çok kaç maç sayfası ([live] max_event_polls)
     source_factory   (spor, get, saat) → kaynak; varsayılan PollSource
     confirm          bitişte maçın yükünü sakla (store.events.observe)
+    requested_source "page", "direct" ya da "poll"; `page` sayfaları açar, ötekiler bugün yalnızca yoklar
+    page_opener      sayfaları açan (push_source.PageOpener); None: gerçek tarayıcı (canlı profil), yalnızca
+                     `page` seçiliyse ve ilk spor eklenince kurulur
     """
 
     def __init__(self, store: Any, scope: Optional[LiveScope] = None, *, fetch: Optional[Fetch] = None,
                  clock: Callable[[], float] = time.time, sleep: Callable[[float], None] = time.sleep,
                  poll_interval: float = LIST_INTERVAL_SECONDS, max_event_polls: int = 20,
                  source_factory: Optional[SourceFactory] = None, confirm: bool = True,
-                 requested_source: str = SOURCE_POLL) -> None:
+                 requested_source: str = SOURCE_POLL, page_opener: Optional[PageOpener] = None) -> None:
         from src import throttle
 
         self._store = store
@@ -333,7 +400,12 @@ class LiveService:
         self._blocked_since: Optional[float] = None
         self._last_prune: Optional[float] = None
         self._last_scope_read = 0.0
+        self._blocked_retry_at = 0.0
+        self._last_heartbeat: Optional[float] = None
         self.report = LiveReport(requested_source_note(requested_source))
+        self._push = self.report.source == SOURCE_PAGE
+        self._pending_confirms: Dict[Tuple[str, int], Tuple[int, float]] = {}
+        self._page_opener = page_opener
 
     # --- istekler ---------------------------------------------------------------------------
 
@@ -364,13 +436,26 @@ class LiveService:
             self._store.watch.import_legacy(sport_scope.sport)
             state = self._store.watch.load(sport_scope.sport)
             tracker = _Tracker(self, sport_scope, state)
-            self._slots[sport_scope.sport] = _Slot(tracker, self._source_factory(sport_scope.sport, self._get,
-                                                                                 self._clock))
+            sport = sport_scope.sport
+            arbiter = SportArbiter(sport, poll_interval=self._poll_interval, push=self._push)
+            page = PageSource(sport, self._opener(), clock=self._clock) if self._push else None
+            self._slots[sport] = _Slot(tracker, self._source_factory(sport, self._get, self._clock), arbiter, page)
+            self.report.leaders[sport] = arbiter.leader
         for sport in [s for s in self._slots if scope.sport(s) is None]:
             self._save(self._slots[sport].tracker)
-            del self._slots[sport]  # takip kaldırıldı: o spor artık izlenmez
+            removed = self._slots.pop(sport)  # takip kaldırıldı: o spor artık izlenmez
+            if removed.page is not None:
+                removed.page.close()
+            self.report.leaders.pop(sport, None)
         self._scope = scope
         self.report.sports = tuple(sorted(self._slots))
+
+    def _opener(self) -> PageOpener:
+        if self._page_opener is None:
+            from src.services.live.push_source import BrowserPageOpener
+
+            self._page_opener = BrowserPageOpener()
+        return self._page_opener
 
     def _save(self, tracker: _Tracker) -> None:
         snapshot = reducer_snapshot(tracker.state)
@@ -403,8 +488,9 @@ class LiveService:
                             ", ".join(self.report.sports) or "none")
                 while not stop.is_set():
                     round_started = self._clock()
-                    self._round()
-                    self._heartbeat("running")
+                    polled = self._round()
+                    if polled or not self._push or self._heartbeat_due():
+                        self._heartbeat("running")
                     self._prune_if_due()
                     if self._all_done():
                         logger.info("All watched events have finished")
@@ -421,6 +507,7 @@ class LiveService:
                 except Exception as e:
                     logger.error("The watch state of %s could not be saved (%s)", slot.tracker.sport,
                                  type(e).__name__)
+            self._close_pages()
             try:
                 self._heartbeat("stopped")
             except Exception as e:
@@ -430,10 +517,57 @@ class LiveService:
                         self.report.rounds, self.report.requests, self.report.events)
         return self.report
 
-    def _round(self) -> None:
-        """Bir tur: her spor için kaynağın turu (ilk turda başlangıç okumaları), gözetim altında."""
+    def _close_pages(self) -> None:
+        if not self._push:
+            return
+        for slot in self._slots.values():
+            if slot.page is not None:
+                slot.page.close()
+        if self._page_opener is not None:
+            try:
+                self._page_opener.close()
+            except Exception as e:
+                logger.warning("The live browser could not be closed (%s)", type(e).__name__)
+
+    def _heartbeat_due(self) -> bool:
+        return self._last_heartbeat is None or self._clock() - self._last_heartbeat >= HEARTBEAT_SECONDS
+
+    def _round(self) -> bool:
+        """
+        Bir tur. Yalnızca yoklama: her spor için kaynağın turu (ilk turda başlangıç okumaları), gözetim altında.
+        Push varken: her sporun kareleri okunur, hakem güncellenir ve yoklama yalnızca zamanı gelen sporlarda
+        yapılır. Bir yoklama turu yapıldıysa True.
+        """
+        if not self._push:
+            self._poll_round(sorted(self._slots))
+            return True
         now = self._clock()
+        due: List[str] = []
         for sport in sorted(self._slots):
+            slot = self._slots.get(sport)
+            if slot is None:
+                continue
+            try:
+                self._drain_push(slot)
+            except Blocked as e:  # bilinmeyen maçın ya da bitişin isteği engellendi
+                self._save(slot.tracker)
+                self._on_blocked(str(e))
+            self._switch_if_needed(slot)
+            if slot.arbiter.poll_due(now) and slot.retry_at <= now:
+                due.append(sport)
+        if self._pending_confirms and (self._blocked_since is None or now >= self._blocked_retry_at):
+            try:
+                self._retry_confirms()
+            except Blocked as e:
+                self._on_blocked(str(e))
+        if not due or (self._blocked_since is not None and now < self._blocked_retry_at):
+            return False
+        return self._poll_round(due)
+
+    def _poll_round(self, sports: Sequence[str]) -> bool:
+        """Verilen sporların yoklama turu; engellenmede yarıda kalır (False)."""
+        now = self._clock()
+        for sport in sports:
             slot = self._slots.get(sport)
             if slot is None or slot.retry_at > now:
                 continue
@@ -446,7 +580,7 @@ class LiveService:
             except Blocked as e:
                 self._save(slot.tracker)
                 self._on_blocked(str(e))
-                return
+                return False
             except Exception as e:
                 slot.failures += 1
                 delay = min(SOURCE_RESTART_MAX_SECONDS, SOURCE_RESTART_FIRST_SECONDS * 2 ** (slot.failures - 1))
@@ -455,11 +589,118 @@ class LiveService:
                 slot.started = False
                 self.report.source_restarts += 1
                 logger.error("The %s source of %s failed (%s); restarting it in %.0f s",
-                             self.report.source, sport, type(e).__name__, delay, exc_info=True)
+                             SOURCE_POLL, sport, type(e).__name__, delay, exc_info=True)
+            slot.arbiter.polled(self._clock())
             self._save(slot.tracker)
         self.report.rounds += 1
         if self._blocked_since is not None:
             self._on_recovered()
+        return True
+
+    # --- push ----------------------------------------------------------------------------------
+
+    def _drain_push(self, slot: _Slot) -> None:
+        """Sayfanın işaretlerini okur: hakemi günceller, kareleri gözleme çevirir; sayfa yoksa açar."""
+        page = slot.page
+        if page is None:
+            return
+        page.ensure_open()
+        applied = False
+        for signal in page.drain():
+            applied = self._push_signal(slot, signal) or applied
+        if applied:
+            self._save(slot.tracker)
+
+    def _push_signal(self, slot: _Slot, signal: Signal) -> bool:
+        arbiter, sport = slot.arbiter, slot.tracker.sport
+        if signal.kind == SIGNAL_OPEN:
+            logger.info("The push connection of the %s page is open", sport)
+            arbiter.opened(signal.at)
+        elif signal.kind == SIGNAL_CLOSE:
+            logger.info("The push connection of the %s page closed; the page reconnects by itself", sport)
+            arbiter.closed(signal.at)
+        elif signal.kind == SIGNAL_PING:
+            arbiter.ping(signal.at)
+        elif signal.kind == SIGNAL_GONE:
+            arbiter.failed(signal.text or "closed")
+        elif signal.kind == SIGNAL_GAP:
+            logger.warning("Push frames of %s were dropped (the service fell behind); polling once", sport)
+            arbiter.gap()
+        elif signal.kind == SIGNAL_ERROR:
+            logger.info("The push server reported an error on the %s page (%s)", sport, signal.text)
+        elif signal.kind == SIGNAL_FRAME and signal.frame is not None:
+            arbiter.frame(signal.at)
+            return self._push_frame(slot.tracker, signal.frame)
+        return False
+
+    def _push_frame(self, tracker: _Tracker, frame: Mapping[str, Any]) -> bool:
+        """Bir kare → gözlem (son bilinen nesneye birleştirilerek). Kapsam dışı ya da bilinmeyen maç: hayır."""
+        eid = int(frame["id"])
+        key = str(eid)
+        s = tracker.state.get(key)
+        if s is not None:
+            if s.get("done") or not tracker.in_scope(key, s):
+                return False
+            merged = tracker.known.apply(eid, frame)
+            if merged is None:  # durum var ama nesne yok (yeniden başlatma): ilk yoklama turu tohumlar
+                return False
+            self.report.push_frames += 1
+            self._observe(tracker, merged, VIA_PUSH)
+            return True
+        base = tracker.known.get(eid)
+        if base is not None:
+            if not tracker.listed(base):
+                return False
+            # Yoklamanın gördüğü önceki hal: durum ondan kurulur, kare geçişi gösterir
+            tracker.state[key] = {"class": None, "done": False}
+            self._observe(tracker, base, reducer.VIA_LIST)
+            merged = tracker.known.apply(eid, frame)
+            if merged is not None and not tracker.state[key].get("done"):
+                self.report.push_frames += 1
+                self._observe(tracker, merged, VIA_PUSH)
+            return True
+        return self._lookup_unknown(tracker, eid, frame)
+
+    def _lookup_unknown(self, tracker: _Tracker, eid: int, frame: Mapping[str, Any]) -> bool:
+        """
+        Yoklamanın hiç görmediği maçın durum karesi: kapsam turnuva ya da takım içeriyorsa tek bir /event isteği
+        (spor başına dakikada en çok UNKNOWN_LOOKUPS_PER_MINUTE). Kapsamdaysa durumu o yükten kurulur (önceki
+        hali bilinmediği için geçiş olayı üretilmez, yoklamanın ilk görüşü gibi); değilse bir daha sorulmaz.
+        """
+        scope = tracker.scope
+        if not (scope.tournament_ids or scope.team_ids) or eid in tracker.outside:
+            return False
+        if "status.code" not in frame and "status.type" not in frame:
+            return False
+        now = self._clock()
+        while tracker.lookups and now - tracker.lookups[0] >= 60.0:
+            tracker.lookups.popleft()
+        if len(tracker.lookups) >= UNKNOWN_LOOKUPS_PER_MINUTE:
+            return False
+        tracker.lookups.append(now)
+        data = self._get(f"/event/{eid}")
+        event = (data or {}).get("event")
+        if not event:
+            tracker.outside.add(eid)
+            return False
+        tracker.known.seed(event)
+        if not tracker.listed(event):
+            tracker.outside.add(eid)
+            return False
+        tracker.state[str(eid)] = {"class": None, "done": False}
+        self._observe(tracker, event, reducer.VIA_EVENT)
+        return True
+
+    def _switch_if_needed(self, slot: _Slot) -> None:
+        switch = slot.arbiter.update(self._clock())
+        if switch is None:
+            return
+        self.report.leaders[switch.sport] = switch.to_source
+        self.report.source_switches += 1
+        self.report.last_switch = {**switch.to_data(), "at": switch.at}
+        logger.info("Live source of %s: %s -> %s (%s)", switch.sport, switch.from_source, switch.to_source,
+                    switch.reason)
+        self._system(SYSTEM_SOURCE_CHANGED, switch.to_data())
 
     def _all_done(self) -> bool:
         if not self._slots or self._scope is None or self._scope.from_follows:
@@ -468,6 +709,8 @@ class LiveService:
                    for slot in self._slots.values())
 
     def _next_wait(self, round_started: float) -> float:
+        if self._push:
+            return PUSH_DRAIN_SECONDS
         if self._blocked_since is not None:
             return min(BLOCKED_MAX_SECONDS, BLOCKED_FIRST_SECONDS * 2 ** max(0, self._blocked_rounds - 1))
         wait = max(0.0, self._poll_interval - (self._clock() - round_started))
@@ -490,21 +733,26 @@ class LiveService:
 
     def _observe(self, tracker: _Tracker, event: Mapping[str, Any], via: str) -> None:
         eid = str(event.get("id"))
+        if self._push and via != VIA_PUSH and not tracker.known.seed(event):
+            logger.debug("Skipping an older %s observation of event %s (push has a newer one)", via, eid)
+            return
         obs = reducer.Observation(event=event, via=via, at=self._clock())
         tracker.state[eid], emitted = reducer.reduce(tracker.state.get(eid), obs, tracker.sport)
         tournament_id = tracker.state[eid].get("tournament_id")
+        source = SOURCE_PAGE if via == VIA_PUSH else SOURCE_POLL
         for item in emitted:
             stream_event = reducer.stream_event(item, event, tracker.sport, tournament_id=tournament_id,
-                                                source=SOURCE_POLL)
+                                                source=source)
             seqs = append_retrying(self._store, reducer.LIVE_STREAM, [stream_event], stop=self._stop,
                                    sleep=self._sleep)
             if seqs and seqs[0] is not None:
                 self.report.events += 1
             if (self._confirm and item["type"] == reducer.STATUS_CHANGED
                     and item.get("to") in reducer.TERMINAL_CLASSES):
-                self._confirm_terminal(tracker, int(eid), event, via)
+                self._confirm_terminal(tracker, int(eid), event, via, source)
 
-    def _confirm_terminal(self, tracker: _Tracker, event_id: int, event: Mapping[str, Any], via: str) -> None:
+    def _confirm_terminal(self, tracker: _Tracker, event_id: int, event: Mapping[str, Any], via: str,
+                          source: str = SOURCE_POLL) -> None:
         """Sonuçlanan maçın yükünü saklar: maç sayfasından gelmediyse tek bir /event isteğiyle."""
         from src.store import StoreError, StreamEvent
 
@@ -515,6 +763,12 @@ class LiveService:
         if not payload:
             logger.info("Event %s finished but its page could not be read; a later sync stores it", event_id)
             return
+        if source == SOURCE_PAGE and classify_status(dict(payload)).value not in reducer.TERMINAL_CLASSES:
+            # Push bitişi bir saniye içinde gösterir; maç sayfası (CDN) bir süre eski hali verebilir. Eski yük
+            # saklanmaz: istek CONFIRM_RETRY_SECONDS sonra (en çok CONFIRM_ATTEMPTS kez) yinelenir.
+            self._defer_confirm(tracker.sport, event_id)
+            return
+        self._pending_confirms.pop((tracker.sport, event_id), None)
         observed_at = dt.datetime.fromtimestamp(self._clock(), dt.timezone.utc)
         on_change = _change_rule(tracker.sport)
         try:
@@ -528,8 +782,25 @@ class LiveService:
         if result.change_seq is not None:
             append_retrying(self._store, "change", [StreamEvent(
                 type=CHANGE_RECORDED, data={"change_seq": result.change_seq}, event_id=event_id,
-                sport=tracker.sport, source=SOURCE_POLL, dedup_key=f"change:{result.change_seq}",
+                sport=tracker.sport, source=source, dedup_key=f"change:{result.change_seq}",
             )], stop=self._stop, sleep=self._sleep)
+
+    def _defer_confirm(self, sport: str, event_id: int) -> None:
+        attempts, _ = self._pending_confirms.get((sport, event_id), (0, 0.0))
+        if attempts + 1 >= CONFIRM_ATTEMPTS:
+            self._pending_confirms.pop((sport, event_id), None)
+            logger.info("The page of event %s still shows it unfinished; a later sync stores it", event_id)
+            return
+        self._pending_confirms[(sport, event_id)] = (attempts + 1, self._clock() + CONFIRM_RETRY_SECONDS)
+
+    def _retry_confirms(self) -> None:
+        now = self._clock()
+        for (sport, event_id), (_, due) in sorted(self._pending_confirms.items()):
+            slot = self._slots.get(sport)
+            if slot is None:
+                self._pending_confirms.pop((sport, event_id), None)
+            elif due <= now:
+                self._confirm_terminal(slot.tracker, event_id, {}, VIA_PUSH, SOURCE_PAGE)
 
     # --- engellenme ---------------------------------------------------------------------------
 
@@ -542,6 +813,7 @@ class LiveService:
     def _on_blocked(self, reason: str) -> None:
         self._blocked_rounds += 1
         wait = min(BLOCKED_MAX_SECONDS, BLOCKED_FIRST_SECONDS * 2 ** (self._blocked_rounds - 1))
+        self._blocked_retry_at = self._clock() + wait
         if self._blocked_since is None:
             self._blocked_since = self._clock()
             self.report.blocked = True
@@ -577,7 +849,7 @@ class LiveService:
     def _heartbeat(self, state: str) -> None:
         from src.store import StoreError
 
-        self.report.heartbeat_at = self._clock()
+        self.report.heartbeat_at = self._last_heartbeat = self._clock()
         try:
             self._store.runtime.set(RUNTIME_KEY, {"state": state, **self.report.to_dict()})
         except StoreError as e:  # durum bilgisi yazılamadı: izleme sürer
@@ -606,7 +878,7 @@ def _change_rule(sport: str) -> Callable[[Optional[Mapping[str, Any]], Mapping[s
 
 
 def requested_source_note(requested: str) -> str:
-    """Kullanılan kaynak: bugün her seçimde `poll` (page ve direct sonraki işlerde gelir)."""
+    """Kullanılan kaynak: `page` ya da `poll`; `direct` bugün `poll`'a düşer (P31 ile gelir)."""
     return requested if requested in AVAILABLE_SOURCES else SOURCE_POLL
 
 
@@ -645,6 +917,8 @@ def live_status(store: Any) -> Dict[str, Any]:
         "sports": list(value.get("sports") or []) if running else [],
         "heartbeat_at": value.get("heartbeat_at"),
         "blocked": bool(value.get("blocked")) if running else False,
+        "leaders": dict(value.get("leaders") or {}) if running else {},
+        "last_switch": value.get("last_switch") if running else None,
         "last": dict(value) if value else None,
     }
 

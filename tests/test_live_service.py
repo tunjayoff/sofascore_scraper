@@ -556,11 +556,11 @@ def test_live_status_reports_the_holder_and_the_heartbeat(store: Store) -> None:
     assert after["running"] is False and after["source"] is None and after["last"]["state"] == "stopped"
 
 
-def test_every_requested_source_runs_as_polling_for_now(store: Store) -> None:
-    for requested in ("page", "direct", "poll"):
+def test_page_and_poll_run_as_requested_and_direct_falls_back_to_polling(store: Store) -> None:
+    for requested, used in (("page", "page"), ("direct", "poll"), ("poll", "poll")):  # direct: P31
         report = LiveService(store, explicit_scope(["football"], tournament_ids=[1]), fetch=FakeApi(),
                              requested_source=requested).report
-        assert report.source == "poll"
+        assert report.source == used
 
 
 # --- olay günlüğü: kalınan yerden sürme ve boşluk --------------------------------------------------------
@@ -607,13 +607,30 @@ def test_the_sink_envelope_is_the_schema_envelope(store: Store) -> None:
 # --- ssc watch -------------------------------------------------------------------------------------------
 
 
+class IdleOpener:
+    """Sayfa açıcının sahtesi (`page` kaynağı): tarayıcı açmaz, push bağlantısı hiç kurulmaz."""
+
+    def __init__(self) -> None:
+        self.opened: List[str] = []
+
+    def open(self, sport: str, feed: Any) -> Any:
+        from types import SimpleNamespace
+
+        self.opened.append(sport)
+        return SimpleNamespace(ready=False, failed=None, close=lambda: None)
+
+    def close(self) -> None:
+        pass
+
+
 @pytest.fixture
 def fake_service(monkeypatch: pytest.MonkeyPatch) -> FakeApi:
-    """`ssc watch`'ın servisine sahte API ve saat verir; servis ilk beklemede durur."""
+    """`ssc watch`'ın servisine sahte API, saat ve sayfa açıcı verir; servis ilk beklemede durur."""
     live, done = finish_scenario()
     api = FakeApi({"football": []}, {500: live})
     clock = Clock(fetched(FB_LIVE))
-    monkeypatch.setattr(watch_command, "SERVICE_OPTIONS", {"fetch": api, "clock": clock, "sleep": clock.sleep})
+    monkeypatch.setattr(watch_command, "SERVICE_OPTIONS", {"fetch": api, "clock": clock, "sleep": clock.sleep,
+                                                           "page_opener": IdleOpener()})
 
     real_run = LiveService.run
 
@@ -646,10 +663,10 @@ def test_watch_stdout_prints_the_new_events_as_json_lines(cli: CliRunner, data_d
     assert "Live watching stopped" in run.stderr
 
 
-def test_watch_warns_that_page_and_direct_fall_back_to_polling(cli: CliRunner, data_dir: Path,
-                                                               fake_service: FakeApi) -> None:
+def test_watch_uses_the_page_source_by_default_and_warns_that_direct_falls_back(cli: CliRunner, data_dir: Path,
+                                                                                 fake_service: FakeApi) -> None:
     run = cli("watch", "--data-dir", data_dir, "--sport", "football", "--event", 500, "--json")  # varsayılan: page
-    assert [w["code"] for w in run.json["warnings"]] == ["live_source_unavailable"]
+    assert run.json["warnings"] == [] and run.data["source"] == run.data["requested_source"] == "page"
     run = cli("watch", "--data-dir", data_dir, "--sport", "football", "--event", 500, "--source", "direct", "--json")
     codes = [w["code"] for w in run.json["warnings"]]
     assert codes == ["live_direct_source", "live_source_unavailable"]
@@ -692,6 +709,7 @@ def test_watch_and_the_watch_sources_are_described(cli: CliRunner) -> None:
     sources = {entry["name"]: entry for entry in described["live_sources"]}
     assert list(sources) == ["page", "direct", "poll"]
     assert sources["page"]["default"] is True and sources["poll"]["available"] is True
+    assert sources["page"]["available"] is True
     assert sources["direct"]["available"] is False and sources["direct"]["opt_in"] is True
     assert "terms-of-use grey area" in sources["direct"]["warning"]
     commands = {c["name"]: c for c in cli("describe", "commands").data["commands"]["commands"]}
