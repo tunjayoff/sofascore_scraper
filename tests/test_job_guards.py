@@ -240,8 +240,11 @@ def test_data_dir_change_moves_the_job_store(data_dir_sandbox):
     new_job = started.json()["job_id"]
     _finish_job()
     assert [j["id"] for j in client.get("/api/jobs").json()["jobs"]] == [new_job]
-    with sqlite3.connect(default_db_path(new_dir)) as conn:
+    conn = sqlite3.connect(default_db_path(new_dir))
+    try:
         assert [row[0] for row in conn.execute("SELECT id FROM jobs")] == [new_job]
+    finally:
+        conn.close()  # `with sqlite3.connect(...)` bağlantıyı kapatmaz, yalnızca işlemi bitirir
 
     # Eski klasöre dönünce eski geçmiş yerinde
     r = client.post("/api/settings", json={"data_dir": old_dir})
@@ -332,6 +335,7 @@ def test_rebind_marks_stale_running_rows_in_the_target(tmp_path):
     b = str(tmp_path / "b" / "jobs.db")
     crashed = JobStore(b)
     stale = crashed.create_running({})
+    crashed.close()  # süreç öldü: `writer` kilidi düştü, satır "running" kaldı
     s = JobStore(str(tmp_path / "a" / "jobs.db"))
     assert s.rebind(b) is True
     assert s.get_job(stale)["status"] == "interrupted"

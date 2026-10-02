@@ -37,6 +37,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 TABLES = {
     "meta", "follows", "jobs", "stream_events", "sink_cursors", "watch_state", "runtime", "leases", "migration_runs",
+    "job_events",  # geçiş 0002 (iş yöneticisi)
 }
 INDEXES = {
     "follows_tournament_name", "follows_position", "jobs_started", "stream_events_stream", "stream_events_event",
@@ -131,6 +132,19 @@ def _migrations_with(tmp_path: Path, extra: Dict[str, str]) -> str:
 
 
 @pytest.fixture
+def first_migration_only(tmp_path, monkeypatch):
+    """
+    Geçiş çalıştırıcısının testleri "kodun bildiği şema sürüm 1" dünyasında yazıldı: sürüm 1 bir dosya kurar,
+    sonra sahte bir 0002 betiğiyle yükseltirler. Gerçek 0002 (iş yöneticisi) eklendiğinden beri bu dünya, paketin
+    geçiş dizini yalnızca 0001_initial.sql içeren bir kopyaya çevrilerek kurulur; test gövdeleri değişmedi.
+    """
+    only_first = tmp_path / "migrations-first-only"
+    only_first.mkdir()
+    shutil.copy(os.path.join(state_mod.MIGRATIONS_DIR, "0001_initial.sql"), only_first)
+    monkeypatch.setattr(state_mod, "MIGRATIONS_DIR", str(only_first))
+
+
+@pytest.fixture
 def db(tmp_path):
     state = StateDb(tmp_path / "state.db")
     yield state
@@ -140,7 +154,7 @@ def db(tmp_path):
 # --- şema ve bağlantı ayarları -----------------------------------------------------------------
 
 def test_new_file_gets_the_schema_of_the_design(db, tmp_path):
-    assert db.schema_version == db.latest_version == 1
+    assert db.schema_version == db.latest_version == len(load_migrations()) == 2
     path = tmp_path / "state.db"
     assert _raw(path, "PRAGMA application_id")[0][0] == APPLICATION_ID == 0x53465331
     assert {r[0] for r in _raw(path, "SELECT name FROM sqlite_master WHERE type = 'table'")} - {"sqlite_sequence"} == TABLES
@@ -344,6 +358,7 @@ def test_meta_set_overwrites(db):
 
 # --- geçiş çalıştırıcısı -----------------------------------------------------------------------
 
+@pytest.mark.usefixtures("first_migration_only")
 def test_reopening_a_current_file_changes_nothing(tmp_path):
     path = tmp_path / "state.db"
     first = StateDb(path)
@@ -357,6 +372,7 @@ def test_reopening_a_current_file_changes_nothing(tmp_path):
     assert [n for n in os.listdir(tmp_path) if ".bak-v" in n] == []
 
 
+@pytest.mark.usefixtures("first_migration_only")
 def test_dummy_second_migration_upgrades_and_keeps_a_copy(tmp_path):
     path = tmp_path / "state.db"
     v1 = StateDb(path)
@@ -396,6 +412,7 @@ def test_dummy_second_migration_upgrades_and_keeps_a_copy(tmp_path):
         again.close()
 
 
+@pytest.mark.usefixtures("first_migration_only")
 def test_copy_taken_after_someone_else_migrated_is_discarded(db, tmp_path):
     """Kopya yalnızca gerçekten eski sürümdeyse yerine konur (iki süreç aynı anda yükseltirken)."""
     db._backup(db.connection(), 0)  # dosya sürüm 1: "sürüm 0'ın kopyası" olamaz
@@ -404,6 +421,7 @@ def test_copy_taken_after_someone_else_migrated_is_discarded(db, tmp_path):
     assert [n for n in os.listdir(tmp_path) if ".bak-v" in n] == ["state.db.bak-v1"]
 
 
+@pytest.mark.usefixtures("first_migration_only")
 def test_new_file_runs_every_migration_without_a_copy(tmp_path):
     migrations = _migrations_with(tmp_path, {"0002_dummy.sql": "CREATE TABLE dummy (id INTEGER PRIMARY KEY);"})
     state = StateDb(tmp_path / "state.db", migrations_dir=migrations)
@@ -414,6 +432,7 @@ def test_new_file_runs_every_migration_without_a_copy(tmp_path):
     assert [n for n in os.listdir(tmp_path) if ".bak-v" in n] == []
 
 
+@pytest.mark.usefixtures("first_migration_only")
 def test_failing_migration_rolls_back_and_names_the_script(tmp_path):
     path = tmp_path / "state.db"
     v1 = StateDb(path)
@@ -454,6 +473,7 @@ def test_failing_migration_rolls_back_and_names_the_script(tmp_path):
     assert _raw(f"{path}.bak-v1", "SELECT value FROM meta WHERE key = 'after_failure'") == [("1",)]
 
 
+@pytest.mark.usefixtures("first_migration_only")
 def test_failing_first_migration_leaves_an_empty_file(tmp_path):
     migrations = tmp_path / "migrations"
     migrations.mkdir()
@@ -472,6 +492,7 @@ def test_failing_first_migration_leaves_an_empty_file(tmp_path):
     assert _raw(path, "PRAGMA user_version")[0][0] == 1
 
 
+@pytest.mark.usefixtures("first_migration_only")
 def test_two_statements_without_separator_fail_as_one_migration_error(tmp_path):
     migrations = _migrations_with(tmp_path, {"0002_bad.sql": "CREATE TABLE a (x TEXT)\nCREATE TABLE b (y TEXT);\n"})
     with pytest.raises(StoreError, match="0002_bad"):
@@ -479,6 +500,7 @@ def test_two_statements_without_separator_fail_as_one_migration_error(tmp_path):
     assert _raw(tmp_path / "state.db", "PRAGMA user_version")[0][0] == 1  # 0001 kendi işleminde kaydedildi
 
 
+@pytest.mark.usefixtures("first_migration_only")
 def test_migration_is_safe_to_run_again_after_its_statements_were_applied(tmp_path):
     """Betik çalışmış ama sürüm yükselmemiş bir dosya (bölüm 7.3): ADD COLUMN ve CREATE yeniden hata vermez."""
     path = tmp_path / "state.db"
@@ -505,6 +527,7 @@ def test_migration_is_safe_to_run_again_after_its_statements_were_applied(tmp_pa
         state.close()
 
 
+@pytest.mark.usefixtures("first_migration_only")
 def test_newer_file_raises_schema_too_new_and_is_not_touched(tmp_path):
     path = tmp_path / "state.db"
     newer = _migrations_with(tmp_path, {"0002_future.sql": "CREATE TABLE future (id INTEGER PRIMARY KEY);"})
@@ -546,6 +569,7 @@ def test_garbage_file_raises_a_sqlite_error(tmp_path):
     assert path.read_bytes() == b"this is not sqlite" * 100
 
 
+@pytest.mark.usefixtures("first_migration_only")
 def test_concurrent_first_opens_all_succeed(tmp_path):
     path = tmp_path / "state.db"
     errors: List[BaseException] = []
@@ -686,7 +710,10 @@ def test_runtime_facts_are_visible_to_another_process(db, tmp_path):
 def test_jobs_table_keeps_todays_columns_and_adds_kind_and_owner(db):
     columns = [row[1] for row in db.connection().execute("PRAGMA table_info(jobs)")]
     assert tuple(columns[: len(JOB_COLUMNS)]) == JOB_COLUMNS
-    assert columns[len(JOB_COLUMNS):] == ["kind", "owner"]
+    assert columns[len(JOB_COLUMNS):] == [
+        "kind", "owner",  # geçiş 0001
+        "origin_json", "spec_json", "error_json", "heartbeat_at", "created_at",  # geçiş 0002 (iş yöneticisi)
+    ]
 
     legacy = sqlite3.connect(":memory:")
     legacy.execute(LEGACY_JOBS_DDL)
@@ -725,8 +752,9 @@ def test_rows_keep_todays_shape(tmp_path):
     ]
     assert store.list_jobs() == [row]
     assert row["status"] == "completed" and row["payload"] == {"mode": "full"} and row["log"] == ["[Running] x"]
-    stored = _raw(store.db_path, "SELECT kind, owner FROM jobs WHERE id = ?", job_id)
-    assert stored == [("fetch", None)]
+    (kind, owner), = _raw(store.db_path, "SELECT kind, owner FROM jobs WHERE id = ?", job_id)
+    # owner: işi çalıştıran sürecin `writer` kilidi sahibi kimliği (iş yöneticisiyle yazılmaya başlandı)
+    assert kind == "fetch" and isinstance(owner, str) and len(owner) == 32
     store.close()
 
 
@@ -915,7 +943,8 @@ def test_rebind_imports_the_history_of_the_new_directory_and_closes_the_old_file
 def test_rebind_to_a_newer_state_db_keeps_the_current_one(tmp_path):
     newer_dir = tmp_path / "newer" / ".meta"
     newer_dir.mkdir(parents=True)
-    migrations = _migrations_with(tmp_path, {"0002_future.sql": "CREATE TABLE future (id INTEGER PRIMARY KEY);"})
+    future = f"{len(load_migrations()) + 1:04d}_future.sql"  # gerçek geçişlerden sonraki numara
+    migrations = _migrations_with(tmp_path, {future: "CREATE TABLE future (id INTEGER PRIMARY KEY);"})
     StateDb(newer_dir / "state.db", migrations_dir=migrations).close()
 
     store = JobStore(default_db_path(str(tmp_path / "current")))

@@ -112,7 +112,7 @@ def test_schema_json_has_the_fields_of_the_design(data_dir):
         api_mod.LAYOUT_VERSION, api_mod.MIN_READER_LAYOUT)
     assert schema["manifest_format"] == MANIFEST_FORMAT
     assert (schema["state_schema"], schema["catalog_schema"], schema["derive_version"]) == (
-        1, CATALOG_SCHEMA, DERIVE_VERSION)
+        2, CATALOG_SCHEMA, DERIVE_VERSION)  # state şeması: geçiş 0002 (iş yöneticisi)
     assert schema["created_by"] == APP_VERSION and schema["created_at"].endswith("+00:00")
     assert schema["last_writer"] == {"app_version": APP_VERSION, "at": schema["created_at"]}
 
@@ -160,7 +160,7 @@ def test_create_false_refuses_a_directory_that_is_not_a_store(data_dir, tmp_path
 
     open_store(data_dir).close()
     again = open_store(data_dir, create=False)
-    assert again.info(sizes=False).state_schema == 1
+    assert again.info(sizes=False).state_schema == 2
 
 
 def test_unusable_directory_raises_a_store_error(tmp_path):
@@ -375,7 +375,7 @@ def test_info_reports_versions_rows_bytes_and_leases(data_dir):
     assert isinstance(info, StoreInfo)
     assert (info.data_dir, info.readonly, info.store_id) == (str(data_dir), False, store.store_id)
     assert (info.layout_version, info.min_reader_layout, info.manifest_format) == (3, 3, MANIFEST_FORMAT)
-    assert (info.state_schema, info.catalog_schema) == (1, CATALOG_SCHEMA)
+    assert (info.state_schema, info.catalog_schema) == (2, CATALOG_SCHEMA)
     assert info.journal_modes == {"state": "wal", "catalog": "wal"}
     assert set(info.rows) == {"state", "catalog"}
     assert {"jobs", "leases", "follows", "stream_events", "runtime", "meta"} <= set(info.rows["state"])

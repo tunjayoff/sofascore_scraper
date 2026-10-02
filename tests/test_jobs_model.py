@@ -195,7 +195,8 @@ def test_rows_written_by_todays_job_store_map_as_designed(tmp_path):
     assert job_state_from_status(store.snapshot()["status"]) is JobState.CANCELLED
 
     crashed = store.create_running({"mode": "details"})
-    reopened = JobStore(db)  # süreç yeniden başladı: çalışan satır interrupted olur
+    store.close()  # süreç öldü: `writer` kilidi düştü, satır "running" kaldı
+    reopened = JobStore(db)  # süreç yeniden başladı: kilidi boşta olan çalışan satır interrupted olur
     assert _row_state(reopened, crashed) is JobState.INTERRUPTED
     assert job_state_from_status(reopened.snapshot()["status"]) is None  # Idle: iş yok
 
