@@ -1617,7 +1617,14 @@ def test_modules_import_only_what_the_store_may_import() -> None:
     assert {"src.store.indexer", "src.store.verify", "src.store.legacy", "src.store.catalog"} <= loaded
 
 
-def test_store_package_root_is_unchanged() -> None:
+def test_store_package_root_exports_the_admin_and_its_reports() -> None:
+    """ST-11: yönetim sınıfı ve raporları kökten alınır (`Store.catalog` onları döndürür)."""
     import src.store
+    from src.store import verify as verify_mod
 
-    assert "CatalogAdmin" not in src.store.__all__  # cepheyi ST-10 dışa açar
+    exported = {"CatalogAdmin": indexer, "RebuildReport": indexer, "ReconcileReport": indexer,
+                "IndexProblem": indexer, "SupersededDir": indexer, "VerifyReport": verify_mod,
+                "VerifyIssue": verify_mod}
+    assert set(exported) <= set(src.store.__all__)
+    for name, module in exported.items():
+        assert getattr(src.store, name) is getattr(module, name)

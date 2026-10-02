@@ -707,11 +707,11 @@ def test_reconcile_on_the_shared_catalog_of_the_store_facade(canonical: sf.Legac
     data = canonical.data_dir
     store = open_store(data)
     try:
-        assert store.info(sizes=False).catalog_rebuild_reason == "derive_version"  # şema var, satırlar yok
+        assert store.info(sizes=False).catalog_rebuild_reason is None  # açılış kurdu (ST-11)
         admin = CatalogAdmin(data, store._catalog, clock=lambda: float(NOW), league_names=canonical.leagues)
         with store.lease("maintenance", purpose="op:rebuild"):
-            built = admin.ensure()
-        assert built is not None and built.mode == "in_place" and admin.ensure() is None
+            built = admin.rebuild()
+        assert built.mode == "in_place" and admin.ensure() is None
         info = store.info(sizes=False)
         assert (info.catalog_rebuild_reason, info.last_rebuild) == (None, str(NOW))
         assert info.events_by_layout == {"legacy": len(canonical.detail_ids), "listing": 12}

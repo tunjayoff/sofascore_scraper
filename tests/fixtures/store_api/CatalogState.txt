@@ -1,0 +1,14 @@
+# CatalogState: src.store.__all__ içinde değil; açık bir imzada geçtiği için izleniyor
+# kaynak: src/store/catalog.py
+@dataclass(frozen=True)
+class CatalogState:
+    exists: bool
+    application_id: Optional[int] = None
+    schema_version: Optional[int] = None
+    derive_version: Optional[int] = None
+    rebuild_reason: Optional[str] = None
+    detail: str = ''
+    @property
+    def usable(self) -> bool
+    @property
+    def schema_ok(self) -> bool

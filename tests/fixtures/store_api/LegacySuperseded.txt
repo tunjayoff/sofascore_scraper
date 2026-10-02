@@ -1,0 +1,8 @@
+# LegacySuperseded: src.store.__all__ içinde değil; açık bir imzada geçtiği için izleniyor
+# kaynak: src/store/legacy.py
+@dataclass(frozen=True)
+class LegacySuperseded:
+    kind: str
+    key: str
+    path: str
+    winner: str

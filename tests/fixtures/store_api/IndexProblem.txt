@@ -1,0 +1,8 @@
+# src.store.IndexProblem
+# kaynak: src/store/indexer.py
+@dataclass(frozen=True)
+class IndexProblem:
+    layout: str
+    path: str
+    kind: str
+    detail: str = ''

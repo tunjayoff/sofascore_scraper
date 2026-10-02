@@ -392,9 +392,10 @@ def test_info_reports_versions_rows_bytes_and_leases(data_dir):
 
 def test_info_follows_the_catalog(data_dir):
     store = open_store(data_dir)
-    # Yeni kurulan katalog boş bir şemadır: dizinleyici doldurana kadar "yeniden kurulmalı" görünür
+    # Açılış kataloğu dosyalardan kurar (ST-11): boş bir dizinde de kullanılabilir görünür
     info = store.info(sizes=False)
-    assert (info.catalog_rebuild_reason, info.derive_version, info.last_rebuild) == ("derive_version", None, None)
+    assert (info.catalog_rebuild_reason, info.derive_version) == (None, DERIVE_VERSION)
+    assert info.last_rebuild is not None and info.rows["catalog"]["events"] == 0
 
     catalog = store._catalog
     with catalog.write() as conn:
@@ -411,11 +412,16 @@ def test_info_follows_the_catalog(data_dir):
 
 
 def test_info_copes_with_a_catalog_of_another_schema(data_dir):
-    open_store(data_dir).close()
+    first = open_store(data_dir)
+    writer = first.lease("writer", purpose="job")  # dizin kullanımda: açılış kataloğu yeniden yaratamaz (ST-11)
+    first.close()
     conn = sqlite3.connect(data_dir / ".meta" / "catalog.db")
     conn.execute(f"PRAGMA user_version = {CATALOG_SCHEMA + 1}")
     conn.close()
-    info = open_store(data_dir).info(sizes=False)
+    try:
+        info = open_store(data_dir).info(sizes=False)
+    finally:
+        writer.release()
     assert info.catalog_rebuild_reason == "schema_version" and info.catalog_schema == CATALOG_SCHEMA + 1
     assert info.rows["catalog"] == {} and info.rows["state"]["jobs"] == 0
 

@@ -1,3 +1,3 @@
 # src.store.open_store
 # kaynak: src/store/api.py
-def open_store(data_dir: Optional[PathLike] = None, *, create: bool = True, readonly: bool = False) -> Store
+def open_store(data_dir: Optional[PathLike] = None, *, create: bool = True, readonly: bool = False, sync_catalog: bool = True) -> Store

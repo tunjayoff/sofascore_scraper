@@ -5,7 +5,8 @@ Paketin dışındaki kod yalnızca bu kökten içe aktarır (`from src.store imp
 değil. Dışa açık olanlar: hata sınıfları, cephe (`open_store`, `Store`, `StoreInfo`), takipler (`FollowStore`,
 `apply_follows`), kilitler (`Lease`, `LeaseInfo`), iş deposu, olay akışları ve kataloğun okuma API'leri
 (`EventStore`, `EntityStore`, `ChangeLog` ile sorgu ve sonuç türleri: `Ref`, `Scope`, `EventQuery`, `Page`,
-`EventRow`, `SliceInfo`, ...). Yazma API'leri sonraki adımlarda eklenir.
+`EventRow`, `SliceInfo`, ...), kataloğun yönetimi (`CatalogAdmin` ve raporları) ve eski düzen yazıcılarının
+gölge kip kancaları (`shadow_*`). Yazma API'leri sonraki adımlarda eklenir.
 
 Hata sınıfları dışındaki adlar ilk kullanımda yüklenir: kök, cepheyi (SQLite, katalog, türetme) içe
 aktarmadan da alınabilmelidir, çünkü `src.store.files` gibi alt modülleri uygulamanın en alt katmanları
@@ -58,6 +59,9 @@ if _TYPE_CHECKING:  # tür denetleyicileri ve API anlık görüntüsü adları b
     from src.store.lease import Lease, LeaseInfo
     from src.store.streams import StreamBatch, StreamEvent, StreamHead, StreamLog, StreamRecord
     from src.store.watch import WatchStateStore
+    from src.store.api import shadow_changes, shadow_cleared, shadow_event, shadow_schedules, shadow_season_lists
+    from src.store.indexer import CatalogAdmin, IndexProblem, RebuildReport, ReconcileReport, SupersededDir
+    from src.store.verify import VerifyIssue, VerifyReport
 
 _LAZY = {
     "open_store": "src.store.api",
@@ -100,6 +104,18 @@ _LAZY = {
     "StreamBatch": "src.store.streams",
     "StreamHead": "src.store.streams",
     "WatchStateStore": "src.store.watch",
+    "CatalogAdmin": "src.store.indexer",
+    "RebuildReport": "src.store.indexer",
+    "ReconcileReport": "src.store.indexer",
+    "IndexProblem": "src.store.indexer",
+    "SupersededDir": "src.store.indexer",
+    "VerifyReport": "src.store.verify",
+    "VerifyIssue": "src.store.verify",
+    "shadow_event": "src.store.api",
+    "shadow_schedules": "src.store.api",
+    "shadow_season_lists": "src.store.api",
+    "shadow_changes": "src.store.api",
+    "shadow_cleared": "src.store.api",
 }
 
 
@@ -157,6 +173,18 @@ __all__ = [
     "StreamBatch",
     "StreamHead",
     "WatchStateStore",
+    "CatalogAdmin",
+    "RebuildReport",
+    "ReconcileReport",
+    "IndexProblem",
+    "SupersededDir",
+    "VerifyReport",
+    "VerifyIssue",
+    "shadow_event",
+    "shadow_schedules",
+    "shadow_season_lists",
+    "shadow_changes",
+    "shadow_cleared",
     "StoreError",
     "LeaseHeld",
     "StoreBusy",

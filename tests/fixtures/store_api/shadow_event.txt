@@ -1,0 +1,3 @@
+# src.store.shadow_event
+# kaynak: src/store/api.py
+def shadow_event(data_dir: PathLike, event_id: Union[int, str], directory: Optional[PathLike] = None) -> None

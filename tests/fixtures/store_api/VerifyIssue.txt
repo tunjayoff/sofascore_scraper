@@ -1,0 +1,10 @@
+# src.store.VerifyIssue
+# kaynak: src/store/verify.py
+@dataclass(frozen=True)
+class VerifyIssue:
+    invariant: str
+    kind: str
+    detail: str = ''
+    event_id: Optional[int] = None
+    path: Optional[str] = None
+    repaired: bool = False

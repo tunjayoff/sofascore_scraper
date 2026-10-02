@@ -1,0 +1,4 @@
+# Connection: src.store.__all__ içinde değil; açık bir imzada geçtiği için izleniyor
+# kaynak: src/store/sqlite.py
+class Connection(sqlite3.Connection):
+    def __del__(self) -> None

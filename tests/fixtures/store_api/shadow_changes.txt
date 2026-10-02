@@ -1,0 +1,3 @@
+# src.store.shadow_changes
+# kaynak: src/store/api.py
+def shadow_changes(data_dir: PathLike) -> None

@@ -1,0 +1,3 @@
+# src.store.shadow_cleared
+# kaynak: src/store/api.py
+def shadow_cleared(data_dir: PathLike) -> None

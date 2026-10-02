@@ -1,0 +1,20 @@
+# src.store.RebuildReport
+# kaynak: src/store/indexer.py
+@dataclass
+class RebuildReport:
+    mode: str
+    reason: Optional[str]
+    completed: bool = False
+    events: int = 0
+    events_v3: int = 0
+    events_legacy: int = 0
+    slices: int = 0
+    counts: Dict[str, int] = field(default_factory=dict)
+    problems: List[IndexProblem] = field(default_factory=list)
+    superseded: List[SupersededDir] = field(default_factory=list)
+    seconds: float = 0.0
+    season_lists: int = 0
+    schedules: int = 0
+    listed: int = 0
+    changes: int = 0
+    superseded_files: List[LegacySuperseded] = field(default_factory=list)

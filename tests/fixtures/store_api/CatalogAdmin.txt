@@ -1,0 +1,19 @@
+# src.store.CatalogAdmin
+# kaynak: src/store/indexer.py
+class CatalogAdmin:
+    def __init__(self, data_dir: PathLike, catalog: Optional[Catalog] = None, *, clock: Callable[[], float] = time.time, league_names: Optional[LeagueNames] = None) -> None
+    self.data_dir
+    self.catalog
+    self.reader
+    def __enter__(self) -> 'CatalogAdmin'
+    def __exit__(self, *exc_info: Any) -> None
+    def close(self) -> None
+    def now(self) -> float
+    def ensure(self, *, progress: Optional[Progress] = None) -> Optional[RebuildReport]
+    def rebuild(self, *, progress: Optional[Progress] = None, should_stop: Optional[Callable[[], bool]] = None, mode: str = MODE_AUTO) -> RebuildReport
+    def index_event(self, event_id: int, *, paths: Sequence[str] = (), candidates: Optional[Sequence[LegacyEventDir]] = None, problems: Optional[List[IndexProblem]] = None) -> Optional[str]
+    def reconcile(self, *, deep: bool = False, v3: bool = False, quiet: bool = False) -> ReconcileReport
+    def sync_listings(self, kinds: Iterable[str] = LISTING_KINDS) -> ReconcileReport
+    def diff_from_rebuild(self) -> List[str]
+    def verify(self, *, deep: bool = False, repair: bool = False) -> 'VerifyReport'
+    def stats(self) -> Dict[str, Any]

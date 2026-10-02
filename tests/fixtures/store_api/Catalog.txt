@@ -1,0 +1,26 @@
+# Catalog: src.store.__all__ içinde değil; açık bir imzada geçtiği için izleniyor
+# kaynak: src/store/catalog.py
+class Catalog:
+    def __init__(self, path: PathLike, *, busy_timeout_ms: int = BUSY_TIMEOUT_MS, attach: Optional[Mapping[str, PathLike]] = None)
+    self.path
+    self.busy_timeout_ms
+    def __enter__(self) -> 'Catalog'
+    def __exit__(self, *exc_info: Any) -> None
+    def connection(self) -> sqlite3.Connection
+    @property
+    def journal_mode(self) -> str
+    def close(self) -> None
+    @contextlib.contextmanager
+    def write(self) -> Iterator[sqlite3.Connection]
+    @contextlib.contextmanager
+    def read(self) -> Iterator[sqlite3.Connection]
+    def inspect(self) -> CatalogState
+    def prepare(self, *, create: bool = True) -> CatalogState
+    def create_schema(self) -> bool
+    def stamp_derive_version(self) -> None
+    def get_meta(self, key: str) -> Optional[str]
+    def set_meta(self, key: str, value: str) -> None
+    def quick_check(self) -> List[str]
+    def tables(self) -> List[str]
+    def upsert(self, table: str, rows: Iterable[Mapping[str, Any]], *, on_conflict: str = 'update') -> int
+    def clear(self) -> None
