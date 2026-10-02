@@ -17,7 +17,7 @@ import pytest
 import src.challenge_solver as cs
 import src.utils as utils
 from src import throttle
-from src.client import request_context
+from src.client import request_context, transport
 from src.throttle import RequestThrottle, Reservation, advance, put_back, take
 from src.watcher import MatchWatcher
 
@@ -1028,6 +1028,128 @@ def test_stopped_bulk_job_leaves_no_queue_behind(shared_dir, monkeypatch):
     assert sum(isinstance(r, utils.FetchCancelled) for r in results) == 69
     assert _queued_seconds() <= 1.0 + 1e-3  # yalnızca giden isteğin aralığı
     assert throttle.reserve() <= 1.0
+
+
+# --- iptal: istek semaforunu durdurmadan sonra alan istek gönderilmez (FX-9) --------------------
+# _request_async iptale yalnızca semaforu beklemeden önce bakıyordu. Semaforu durdurmadan sonra alan
+# istek bütçeden sıra ayırıyordu; sıranın zamanı gelmişse (bütçe kapalı ya da yüksekken hep, bütçe
+# sınırken kuyruğun iptali bir aralıktan uzun sürdüğünde) istek gidiyordu. Yukarıdaki test bu yüzden
+# yavaş makinede 1 yerine 2 istek görüyordu. Aşağıdaki testler saate bağlı değildir: gönderilen istek
+# ve ayrılan sıra sayısı, durdurma anında semaforu tutan istek sayısıyla belirlenir.
+
+REQUEST_SLOTS = 10  # istek semaforunun genişliği (MAX_CONCURRENT)
+
+
+@pytest.fixture
+def request_slots(monkeypatch):
+    """İstek semaforu REQUEST_SLOTS genişliğinde: ortamın MAX_CONCURRENT değeri testi etkilemez."""
+    monkeypatch.setattr(transport._cm, "get_max_concurrent", lambda: REQUEST_SLOTS)
+    return REQUEST_SLOTS
+
+
+def _stopped_job(request, count=70):
+    """
+    `count` isteği birlikte başlatır ve hepsi yola çıkınca işi durdurur; isteklerin sonuçlarını döndürür.
+
+    Durdurma, görevlerin ilk adımlarıyla aynı döngü turunda çalışır: o anda semaforu almış istekler ilk
+    beklemelerindedir (bütçe sırası, uçuştaki istek, köprü), gerisi semaforu bekler. Hangi isteğin hangi
+    tarafta olduğu saate değil yalnızca semaforun genişliğine bağlıdır.
+    """
+    stopped = []
+
+    async def stop():
+        stopped.append(True)
+
+    async def job():
+        return await asyncio.gather(*[request(n) for n in range(count)], stop(), return_exceptions=True)
+
+    with request_context(cancel=lambda: bool(stopped)), \
+            patch.object(utils, "_get_runtime_request_config", return_value=CFG), \
+            patch.object(utils, "_get_proxy_config", return_value=(False, "")):
+        return asyncio.run(job())[:count]
+
+
+@pytest.mark.parametrize("seconds", [0.0, 0.02])
+def test_stopped_bulk_job_sends_nothing_however_slow_the_reservations_are(
+        shared_dir, monkeypatch, request_slots, seconds):
+    """
+    Yukarıdaki testin yavaş makinedeki hali: her sıra ayırma `seconds` sürer. Kontrol yokken semaforda
+    bekleyen 59 istek durdurmadan sonra birer sıra ayırıp geri veriyordu (70 ayırma); 20 ms'lik
+    ayırmalarla bu 1 sn'yi (bir aralığı) aşıyor, sırası gelmiş bulunan istek de gidiyordu. Kontrol
+    varken yalnızca durdurmadan önce semaforu almış olanlar sıra ayırır.
+    """
+    monkeypatch.setenv("REQUEST_RATE_LIMIT", "1")
+    session = MagicMock()
+    session.get = AsyncMock(return_value=Resp(200, {"ok": 1}))
+    real_reserve = throttle.api_throttle().reserve
+    reservations = []
+
+    def slow_reserve():
+        time.sleep(seconds)
+        reservations.append(1)
+        return real_reserve()
+
+    monkeypatch.setattr(throttle, "reserve", slow_reserve)
+    results = _stopped_job(lambda n: utils.make_api_request_async(session, f"/event/{n}"))
+
+    assert session.get.await_count == 1
+    # giden istek + durdurma anında semaforu tutup bütçedeki sırasını bekleyen REQUEST_SLOTS istek
+    assert len(reservations) == 1 + request_slots
+    assert sum(isinstance(r, utils.FetchCancelled) for r in results) == 69
+
+
+def test_stop_reaches_requests_waiting_for_a_request_slot(monkeypatch, request_slots):
+    """
+    Bütçe sınır değilken (kapalı ya da yüksek): durdurma anında uçuşta olan istekler tamamlanır, semaforda
+    bekleyenler gönderilmez ve bütçeden sıra ayırmaz. Eskiden 70 isteğin 70'i de giderdi.
+    """
+    reservations = _reserve_counter(monkeypatch)  # her sıra hemen gelir
+    sent = []
+
+    async def get(url, **kwargs):
+        sent.append(url)
+        await asyncio.sleep(0)  # istek uçuşta: döngü sıradaki isteğe geçer
+        return Resp(200, {"ok": 1})
+
+    session = MagicMock()
+    session.get = get
+    with patch.object(utils.breaker, "report_ok") as answered, \
+            patch.object(utils.breaker, "report_exception") as failed:
+        results = _stopped_job(lambda n: utils.make_api_request_async(session, f"/event/{n}"))
+
+    assert len(sent) == request_slots and len(reservations) == request_slots
+    assert results[:request_slots] == [{"ok": 1}] * request_slots  # yanıtı gelmiş istek atılmaz
+    assert all(isinstance(r, utils.FetchCancelled) for r in results[request_slots:])
+    # durdurulan istek bir sonuç değildir: ağ hatasına çevrilmez, devre kesiciye bildirilmez
+    assert answered.call_count == request_slots and failed.call_count == 0
+
+
+def test_stop_reaches_browser_first_requests_waiting_for_a_request_slot(monkeypatch, request_slots):
+    """
+    Önce-tarayıcı modunda istek curl'e uğramadan köprüden gider ve aynı semaforu bekler: semaforu
+    durdurmadan sonra alan istek köprüye verilmez. Eskiden bekleyenlerin hepsi köprüden giderdi.
+
+    Durdurma anında semaforu tutan istekler köprünün içindedir ve gider: köprü iptale yalnızca sıra
+    beklerken bakar (src/challenge_solver.py, _wait_for_slot), zamanı gelmiş sırada bakmaz. Aşağıdaki
+    REQUEST_SLOTS sayısı bunu olduğu gibi sabitler; köprüye böyle bir kontrol eklenirse 0 olur.
+    """
+    reservations = _reserve_counter(monkeypatch)
+    evaluated = []
+
+    async def evaluate(script, arg=None):
+        evaluated.append(arg)
+        return {"status": 200, "ok": True, "data": {"a": 1}, "text": None}
+
+    bridge = _bridge(evaluate)
+    monkeypatch.setattr(utils, "_browser_first_until", time.monotonic() + 60)
+    session = MagicMock()
+    session.get = AsyncMock()
+    with patch.object(cs.BrowserBridge, "get_instance", return_value=bridge):
+        results = _stopped_job(lambda n: utils.make_api_request_async(session, f"/event/{n}"), count=30)
+
+    assert len(evaluated) == request_slots and len(reservations) == request_slots
+    assert session.get.await_count == 0
+    assert all(isinstance(r, utils.FetchCancelled) for r in results[request_slots:])
 
 
 @pytest.mark.parametrize("sync", [True, False])
