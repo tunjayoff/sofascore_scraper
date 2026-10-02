@@ -79,12 +79,13 @@ and a brief that an implementer can work from without reading the other briefs.
 | (job finish) | #93 | merged | not a plan item (rule 9): a job gives up its writer lease only after its last store access |
 | RD-3 | — | in progress | eleventh batch |
 | ST-22 | — | in progress | eleventh batch |
-| P24 | — | in progress | eleventh batch |
+| P24 | #95 | open | eleventh batch; in review; its feedback is not in this revision |
 | (changelog) | #63, #66, #76 | merged | the changelog entries of batches four to seven, in three bookkeeping pull requests (rule 3) |
 | (changelog) | #94 | open | the entries of batches eight to ten and a release-notes pass; it changes only `CHANGELOG.md` |
 
 Every other item is not started. 48 of the 80 items are merged or done, three are in progress (RD-3,
-ST-22 and P24, the eleventh batch, without a pull request while this revision was written) and two are
+ST-22 and P24, the eleventh batch; P24 opened #95 while this revision was written, and RD-3 and ST-22 had no
+pull request yet) and two are
 partly done by #43 (P25 and EX-1). The three were written from the briefs on main before this revision
 plus the feedback of the items before them; what this revision adds to their briefs under "Notes from
 earlier items" was in that feedback. What this revision, the third of 2026-10-02, changed:
@@ -763,8 +764,8 @@ readers that move to the catalog (RD-1, RD-2, RD-4, RD-5), the skeleton of the n
 (SC-1), the foundation of API v1 (P20), the sinks (P22), the live service with polling (P23), eleven of the
 twelve fix items (FX-1 to FX-11), and X-01, X-02 and X-03, which were done outside their briefs.
 
-**In progress.** The eleventh batch: RD-3, ST-22 and P24, none with a pull request while this revision was
-written, and the bookkeeping pull request with the changelog entries of batches eight to ten (#94, open).
+**In progress.** The eleventh batch: RD-3 and ST-22, without a pull request while this revision was
+written, and P24, an open pull request in review (#95), and the bookkeeping pull request with the changelog entries of batches eight to ten (#94, open).
 
 **Can start now and in parallel.** One item. Every dependency of it is merged; of the files of the three
 items in progress it shares only `src/store/api.py`, in which ST-22 may add the v3 entity trees to the list
@@ -1167,7 +1168,7 @@ showed to be wrong is corrected here; the brief keeps the estimate in brackets.
 | 59 | SP-2 | sports: five set-based sports | `sports` | SP-1 | M | 5 | — | **yes** |
 | 60 | SP-3 | sports: five sports with their own status or score logic | `sports` | SP-2 | L | 5 | — | **yes** |
 | 61 | P28 | odds and non-match slices | `contract` | P27, ST-26, SC-2 | L | 5 | — | **yes** |
-| 62 | P24 | live: `page` push source (page listening) and source arbitration | `live` | P23 | L | 6 | in progress | **yes** |
+| 62 | P24 | live: `page` push source (page listening) and source arbitration | `live` | P23 | L | 6 | open #95 | **yes** |
 | 62a | P31 | live: `direct` push source (explicit opt-in) | `live` | P24 | M | 6 | — | **yes** |
 | 63 | P29 | optional in-app scheduler | `jobs` | P25, P15 | M | 6 | — | none |
 | 64 | FE-1 | web UI: screen design for approval | `frontend` | P21 | M | 6 | — | none |
@@ -2152,7 +2153,7 @@ Notes from earlier items. (FX-4) Subs are lower-case: a provider id as sub is it
 - Depends on: P23.
 - Owns: `src/services/live/push_source.py`, `src/services/live/arbiter.py`, `src/services/live/supervisor.py`, `src/client/bridge.py`, `tests/test_live_push_source.py`, `tests/test_live_arbiter.py`, `src/cli/commands/watch.py`, `tests/fixtures/push/*`, `CHANGELOG.md`, `src/challenge_solver.py` (the bridge moves out of it), `tests/test_client.py` (the allow-list of one test).
 - Behaviour change: `ssc watch` gets the option `--source page|poll`, with `page` as the default: live events arrive about a second after the change instead of up to a poll interval, and one browser page per watched sport stays open while the service runs (about 1.8 to 2.6 GB of memory per page). The legacy `--watch` alias keeps polling only.
-- State: in progress (eleventh batch).
+- State: open, PR #95; in review (eleventh batch).
 
 Add the `page` source of `docs/design/02-services.md` section 8.2: for every watched sport the service keeps a real browser page of that sport open and listens to the frames of the connection that SofaScore's own page opens. Only a sport page (or its live filter) subscribes to `sport.{sport}`, which carries the whole sport; a match page subscribes to `event.{id}` only. The source opens no connection of its own, sends no subscription and never reads or stores the connection's credentials. Frames carry only the changed fields of an event as dotted paths (`docs/all-sports/README.md`), so the source keeps the last known state per event, seeds it from the polling list at start and after every reconnect, and merges each frame into it before handing an observation to the reducer. Page requests are throttled or aborted and ads, analytics and images are blocked (measured: 1.8 to 2.6 GB RSS per sport page with blocking, 2 to 3 GB without). The page uses its own browser profile (decision D10). Add the arbiter: push health per sport (connection open, last frame, last ping; the site's client pings every 120 s), polling at the slow safety interval while push is healthy and at `poll_interval` when it is silent or disconnected, one poll round after every reconnect, `system.live_source_changed` at every switch, the confirmation fetch for terminal statuses. The connection is dropped about every 30 minutes and the site's code reconnects by itself; in the measured run 22 of the 36 transitions that fell into such windows were never repeated on push, which is why the polling fallback is mandatory and not an optimisation. The measurements are in `docs/push-channel/README.md` (PR #42); this PR needs no further run. The legacy `--watch` alias passes `--source poll` (decision D18). Tests: frame parser and merge from recorded, credential-free frames; a missed frame is healed by the next poll round; the arbiter state machine with a fake clock; de-duplication across sources; an offline browser test in the style of `tests/test_bridge_offline_browser.py`.
 

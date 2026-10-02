@@ -80,7 +80,7 @@ section at the top of `03`):
   shadow hooks of the terminal menu, a longer CI time limit, two fixes of the test suite and a fix of the
   end of a job.
 - In progress: RD-3 (missing details and the need computation from the catalog), ST-22 (the schedule and
-  season writers through the Store) and P24 (the `page` push source), and the changelog entries of batches
+  season writers through the Store) and P24 (the `page` push source; #95, open), and the changelog entries of batches
   eight to ten (#94, open).
 - Can start now: FX-12 (a write of the v3 writer keeps its change row when it is interrupted;
   `Store.close()` waits for a job that is finishing). Everything else waits for one of the items in
