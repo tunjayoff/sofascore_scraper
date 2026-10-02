@@ -13,6 +13,7 @@ class Store:
     self.changes
     self.history
     self.backup
+    self.export
     self.catalog
     @property
     def closed(self) -> bool

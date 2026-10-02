@@ -1,0 +1,10 @@
+# src.store.ExportReport
+# kaynak: src/store/export.py
+@dataclass(frozen=True)
+class ExportReport:
+    fmt: str
+    dest: str
+    events: int
+    items: int
+    bytes: int
+    skipped: Tuple[ExportSkip, ...] = ()

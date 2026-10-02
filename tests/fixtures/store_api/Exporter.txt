@@ -1,0 +1,6 @@
+# src.store.Exporter
+# kaynak: src/store/export.py
+class Exporter:
+    def __init__(self, store: 'Store') -> None
+    def raw(self, q: EventQuery, dest: PathLike, *, keys: Optional[Sequence[str]] = None, fmt: Literal['tree', 'jsonl'] = 'tree', pretty: bool = False, overwrite: bool = False) -> ExportReport
+    def rows(self, rows: Iterable[Mapping[str, Any]], columns: Sequence[str], dest: Union[PathLike, BinaryIO], fmt: Literal['jsonl', 'csv', 'parquet', 'sqlite'], *, table: str = 'rows', overwrite: bool = False) -> ExportReport

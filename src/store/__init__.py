@@ -68,6 +68,7 @@ if _TYPE_CHECKING:  # tür denetleyicileri ve API anlık görüntüsü adları b
     from src.store.api import ClearReport
     from src.store.backup import BackupInfo, BackupManager
     from src.store.entities import CategoryRow, SportRow
+    from src.store.export import Exporter, ExportReport, ExportSkip
 
 _LAZY = {
     "open_store": "src.store.api",
@@ -131,6 +132,9 @@ _LAZY = {
     "shadow_cleared": "src.store.api",
     "CategoryRow": "src.store.entities",
     "SportRow": "src.store.entities",
+    "Exporter": "src.store.export",
+    "ExportReport": "src.store.export",
+    "ExportSkip": "src.store.export",
 }
 
 
@@ -209,6 +213,9 @@ __all__ = [
     "shadow_cleared",
     "CategoryRow",
     "SportRow",
+    "Exporter",
+    "ExportReport",
+    "ExportSkip",
     "StoreError",
     "LeaseHeld",
     "StoreBusy",
