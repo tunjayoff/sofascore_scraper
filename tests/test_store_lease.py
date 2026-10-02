@@ -8,27 +8,33 @@ sürecin işini de görür. Tümü çevrimdışı; Linux, macOS ve Windows'ta ç
 """
 from __future__ import annotations
 
+import ast
 import contextlib
 import errno
 import gc
+import json
 import logging
 import os
+import shutil
 import stat
 import subprocess
 import sys
 import threading
 import time
 from pathlib import Path
-from typing import Iterator, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import pytest
 
-from src.store import LayoutError, LeaseHeld, StoreError, files, layout
+from src.store import LayoutError, LeaseHeld, StoreError, files, layout, open_store
 from src.store import jobs as jobs_mod
 from src.store import lease as lease_mod
+from src.store import sqlite as sqlite_mod
+from src.store import state as state_mod
+from src.store.catalog import catalog_path
 from src.store.jobs import DataOperationRunningError, JobRunningError, JobStore, default_db_path
 from src.store.lease import EXCLUSIVE, SHARED, Lease, LeaseInfo, LeaseManager, lock_plan
-from src.store.state import StateDb, load_migrations
+from src.store.state import MIGRATIONS_DIR, StateDb, load_migrations
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -233,7 +239,19 @@ def test_a_closed_state_db_does_not_break_the_lease(manager, caplog):
         assert lease.held
         with pytest.raises(LeaseHeld):
             manager.acquire("writer")
-    assert "Kilit sahibi bilgisi yazılamadı" in caplog.text
+    assert "Could not record the holder of the lease (writer): " in caplog.text
+
+
+def test_a_holder_row_that_cannot_be_removed_is_only_a_debug_line(manager, caplog):
+    lease = manager.acquire("sinks")
+    manager.state.close()
+    with caplog.at_level(logging.DEBUG, logger="Store"):
+        lease.release()
+
+    assert not lease.held and manager.holder("sinks") is None
+    logged = [(r.levelno, r.getMessage()) for r in caplog.records if r.name == "Store"]
+    assert len(logged) == 1 and logged[0][0] == logging.DEBUG
+    assert logged[0][1].startswith("Could not remove the holder record of the lease (sinks): ")
 
 
 def test_a_file_system_without_locks_degrades_to_single_process_mode(manager, monkeypatch, caplog):
@@ -246,7 +264,11 @@ def test_a_file_system_without_locks_degrades_to_single_process_mode(manager, mo
     with manager.acquire("writer") as first, manager.acquire("writer") as second:
         assert first.held and second.held  # dışlama yok: tek süreç kipi
     assert not first.held and not os.path.exists(manager.unclean_marker)
-    assert caplog.text.count("Dosya sistemi kilit desteklemiyor") == 1
+    logged = [r.getMessage() for r in caplog.records if r.name == "Store" and r.levelno == logging.WARNING]
+    assert logged == [
+        "The file system does not support file locks (No locks available); leases cannot keep other processes "
+        f"out. Only one process at a time may use this data directory: {manager.locks_dir}"
+    ]
 
 
 def test_an_unexpected_lock_error_is_a_store_error(manager, monkeypatch):
@@ -409,6 +431,234 @@ def test_a_lock_file_the_caller_cannot_open_for_writing_is_a_store_error_that_na
         pass
 
 
+# --- veritabanı dosyalarının izni ve paylaşılan veri dizini (karar S15; plan maddesi FX-11) ----------
+
+not_root = pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0, reason="root her dosyayı açabilir")
+SHARED_UMASK = 0o002  # iki hesabın paylaştığı dizinde beklenen umask: grup da yazar
+
+
+@contextlib.contextmanager
+def umask_of(value: int) -> Iterator[None]:
+    """Bloğu verilen umask ile çalıştırır (çocuk süreçler de onu devralır), sonra eskisini geri koyar."""
+    previous = os.umask(value)
+    try:
+        yield
+    finally:
+        os.umask(previous)
+
+
+def _tree(root) -> List[str]:
+    """Kökün kendisi ve altındaki her dizin ve dosya."""
+    found = [os.fspath(root)]
+    for directory, dirnames, filenames in os.walk(root):
+        found.extend(os.path.join(directory, name) for name in dirnames + filenames)
+    return sorted(found)
+
+
+def _database_files(data_dir) -> List[str]:
+    return [layout.resolve(data_dir, layout.STATE_DB), catalog_path(data_dir)]
+
+
+def _state_db_at_schema_version_1(tmp_path) -> Path:
+    """Yalnızca 0001_initial uygulanmış bir state.db: sonraki açılış onu kopyalar ve yükseltir."""
+    first_only = tmp_path / "migrations-first-only"
+    first_only.mkdir()
+    shutil.copy(os.path.join(MIGRATIONS_DIR, "0001_initial.sql"), first_only)
+    path = tmp_path / "state.db"
+    StateDb(path, migrations_dir=first_only).close()
+    return path
+
+
+@posix_modes
+def test_every_file_of_a_fresh_data_directory_follows_the_umask(tmp_path, umask):
+    """
+    state.db, catalog.db ve onların `-wal`/`-shm` dosyaları da: 002 altında her dosya 0664, her dizin 0775.
+    FX-8'e kadar kilit dosyaları, bu maddeye kadar iki veritabanı dosyası umask ne olursa olsun 0644'tü.
+    """
+    data = tmp_path / "data"
+    store = open_store(data)
+    try:
+        store.jobs.create_running({"mode": "full"})  # state.db'ye yazı, yazar kilidi ve işareti
+        paths = _tree(data)  # depo açıkken: `-wal` ve `-shm` dosyaları da duruyor
+        file_modes = {os.path.relpath(path, data): _mode(path) for path in paths if os.path.isfile(path)}
+        dir_modes = {os.path.relpath(path, data): _mode(path) for path in paths if os.path.isdir(path)}
+        store.jobs.update(status="Completed", finished=True)
+    finally:
+        store.close()
+
+    databases = [os.path.join(".meta", name + suffix) for name in ("state.db", "catalog.db") for suffix in ("", "-wal", "-shm")]
+    assert set(databases) <= set(file_modes)
+    assert os.path.join(".meta", "locks", "writer.lock") in file_modes and os.path.join(".meta", "schema.json") in file_modes
+    assert {name: mode for name, mode in file_modes.items() if mode != 0o666 & ~umask} == {}
+    assert {name: mode for name, mode in dir_modes.items() if mode != 0o777 & ~umask} == {}
+
+
+@posix_modes
+@pytest.mark.parametrize("old_mode", [0o644, 0o600])
+def test_existing_database_files_keep_their_mode_when_the_store_opens(tmp_path, umask, old_mode):
+    """Var olan dosyaya chmod yapılmaz; `-wal` ve `-shm` dosyaları da umask'i değil o dosyanın iznini alır."""
+    data = tmp_path / "data"
+    open_store(data).close()
+    for path in _database_files(data):
+        os.chmod(path, old_mode)
+
+    store = open_store(data)
+    try:
+        store.jobs.create_running({"mode": "full"})
+        assert store.catalog.rebuild(mode="in_place").completed  # catalog.db'ye yazı
+        with_sidecars = [path + suffix for path in _database_files(data) for suffix in ("", "-wal", "-shm")]
+        assert {os.path.basename(path): _mode(path) for path in with_sidecars} == {
+            os.path.basename(path): old_mode for path in with_sidecars}
+        store.jobs.update(status="Completed", finished=True)
+    finally:
+        store.close()
+
+    assert [_mode(path) for path in _database_files(data)] == [old_mode, old_mode]
+
+
+@posix_modes
+def test_the_copy_before_a_migration_follows_the_umask_not_the_mode_of_state_db(tmp_path, umask):
+    path = _state_db_at_schema_version_1(tmp_path)
+    os.chmod(path, 0o600)
+
+    StateDb(path).close()  # 0002 ve sonrası: önce state.db.bak-v1
+
+    assert _mode(f"{path}.bak-v1") == 0o666 & ~umask
+    assert _mode(path) == 0o600  # yükseltilen dosyanın kendisi iznini korur
+
+
+@posix_modes
+def test_a_recreated_catalog_is_a_new_file_and_follows_the_umask(tmp_path, umask):
+    """
+    catalog.db türetilmiştir: yeniden yaratılınca (`catalog.db.build`, sonra yerine konur) eski dosyanın
+    iznini taşımaz. Eski bir dizinde catalog.db'yi silmek de bu yüzden bir onarımdır; state.db silinemez.
+    """
+    data = tmp_path / "data"
+    store = open_store(data)
+    try:
+        os.chmod(catalog_path(data), 0o600)
+        assert store.catalog.rebuild(mode="recreate").completed
+        assert _mode(catalog_path(data)) == 0o666 & ~umask
+    finally:
+        store.close()
+
+    os.remove(catalog_path(data))
+    open_store(data).close()  # eksik katalog açılışta yeniden kurulur
+    assert _mode(catalog_path(data)) == 0o666 & ~umask
+
+
+# Aynı gruptan ikinci hesap, tek hesapla: dosyaya grubun gözüyle bakılır. Bir dosyanın grup bitleri sahip
+# bitlerinin yerine konur; böylece dosyanın sahibi olan test süreci tam o grup üyesinin yapabildiğini yapabilir
+# (0644 → sahibi için de salt okunur, 0664 → okunur ve yazılır). FX-8 kilit dosyalarını böyle denemişti.
+SECOND_ACCOUNT = """
+import json, logging, os, sys
+logging.basicConfig(level=logging.WARNING, stream=sys.stderr, format="%(name)s: %(message)s")
+from src.store import open_store
+seen = {}
+store = open_store(sys.argv[1])
+try:
+    with store.lease("writer", purpose="job"):
+        holder = store.lease_holder("writer")
+        seen["holder_row"] = holder is not None and holder.pid == os.getpid()
+    try:
+        store.jobs.create_running({"mode": "full"})
+        store.jobs.update(status="Completed", finished=True)
+        seen["job_row"] = "written"
+    except Exception as e:
+        seen["job_row"] = f"{type(e).__name__}: {e}"
+    try:
+        seen["catalog"] = "written" if store.catalog.rebuild(mode="in_place").completed else "stopped"
+    except Exception as e:
+        seen["catalog"] = f"{type(e).__name__}: {e}"
+finally:
+    store.close()
+print(json.dumps(seen))
+"""
+EVERYTHING_WRITTEN = {"holder_row": True, "job_row": "written", "catalog": "written"}
+
+
+def _as_the_group_sees_it(root) -> None:
+    for path in _tree(root):
+        mode = _mode(path)
+        os.chmod(path, ((mode & 0o070) << 3) | (mode & 0o077))
+
+
+def _second_account(data_dir) -> Tuple[Dict[str, Any], str]:
+    """Veri dizinini ayrı bir süreçte açar, kilit alır, bir iş satırı ve kataloğu yazar: (ne oldu, uyarılar)."""
+    done = subprocess.run([sys.executable, "-c", SECOND_ACCOUNT, str(data_dir)], cwd=ROOT, capture_output=True,
+                          text=True, timeout=120)
+    assert done.returncode == 0, done.stderr
+    return json.loads(done.stdout), done.stderr
+
+
+@posix_modes
+@not_root
+@pytest.mark.parametrize("first_still_open", [False, True], ids=["first-closed", "first-open"])
+def test_a_second_account_of_the_group_can_write_a_fresh_shared_directory(tmp_path, first_still_open):
+    """
+    Karar S15'in amacı: umask 002 ile kurulan dizini aynı gruptan ikinci hesap da yazar. İlk hesap dizini
+    kurar ve bir iş çalıştırır; ikinci hesap kilidi alır, sahip satırını, bir iş satırını ve kataloğu yazar.
+    İlk hesabın deposu açıkken de: `-wal` ve `-shm` dosyaları o sırada durur ve ikisini de açabilmelidir.
+    """
+    data = tmp_path / "data"
+    with umask_of(SHARED_UMASK):
+        first = open_store(data)
+        try:
+            first.jobs.create_running({"mode": "full"})
+            first.jobs.update(status="Completed", finished=True)
+            if not first_still_open:
+                first.close()
+            _as_the_group_sees_it(data)
+            seen, warnings = _second_account(data)
+        finally:
+            first.close()
+
+    assert seen == EVERYTHING_WRITTEN
+    assert "Store:" not in warnings, warnings
+
+
+@posix_modes
+@not_root
+def test_a_directory_created_before_needs_group_write_on_its_database_files(tmp_path):
+    """
+    Var olan dosya iznini korur: bu değişiklikten önce kurulmuş bir dizinde state.db ve catalog.db 0644'tür.
+    İkinci hesap orada kilidi alır ama hiçbir şey yazamaz (FX-8'in bulgusu). Onarım, kimse dizini
+    kullanmazken `chmod g+w .meta/state.db* .meta/catalog.db*` vermektir; ondan sonra her yazı yerine ulaşır.
+
+    Yıldız gereklidir: yazamayan bağlantı kapanırken `-wal` ve `-shm` dosyalarını silemez, onlar da veritabanı
+    dosyasının o günkü izniyle (grup yazamaz) kalır ve yalnızca iki dosyanın izni düzeltilirse yazmayı yine
+    engeller.
+    """
+    data = tmp_path / "data"
+    with umask_of(SHARED_UMASK):
+        first = open_store(data)
+        first.jobs.create_running({"mode": "full"})
+        first.jobs.update(status="Completed", finished=True)
+        first.close()
+        for path in _database_files(data):
+            os.chmod(path, 0o644)  # SQLite'ın kendi yarattığı dosya: 0644 eksi umask
+        real_modes = {path: _mode(path) for path in _tree(data)}
+
+        _as_the_group_sees_it(data)
+        seen, warnings = _second_account(data)
+
+        assert seen["holder_row"] is False
+        assert "readonly database" in seen["job_row"] and "readonly database" in seen["catalog"]
+        assert "Store: Could not record the holder of the lease (writer): attempt to write a readonly database" in warnings
+
+        for path, mode in real_modes.items():
+            os.chmod(path, mode)
+        meta_dir = layout.resolve(data, layout.META_DIR)
+        for name in os.listdir(meta_dir):
+            if name.startswith(("state.db", "catalog.db")):  # chmod g+w state.db* catalog.db*
+                os.chmod(os.path.join(meta_dir, name), _mode(os.path.join(meta_dir, name)) | stat.S_IWGRP)
+        _as_the_group_sees_it(data)
+        seen, warnings = _second_account(data)
+
+    assert seen == EVERYTHING_WRITTEN
+    assert "Store:" not in warnings, warnings
+
+
 # --- temiz kapanmama işareti ---------------------------------------------------------------------
 
 def test_unclean_marker_is_set_by_the_writer_and_removed_on_a_clean_release(manager):
@@ -419,6 +669,21 @@ def test_unclean_marker_is_set_by_the_writer_and_removed_on_a_clean_release(mana
     with manager.acquire("writer") as lease:
         assert marker.is_file() and lease.unclean is False
     assert not marker.exists()
+
+
+def test_a_marker_that_cannot_be_written_is_a_warning_and_the_lease_is_still_granted(manager, monkeypatch, caplog):
+    def read_only(path, *args, **kwargs):
+        raise OSError(errno.EROFS, "Read-only file system", path)
+
+    monkeypatch.setattr(lease_mod, "open", read_only, raising=False)  # yalnızca bu modülün `open` çağrısı
+    with manager.acquire("writer") as lease:
+        assert lease.held and lease.unclean is False
+        assert not os.path.exists(manager.unclean_marker)
+
+    logged = [r.getMessage() for r in caplog.records if r.name == "Store" and r.levelno == logging.WARNING]
+    assert len(logged) == 1
+    assert logged[0].startswith(f"Could not write the unclean-shutdown marker: {manager.unclean_marker}: ")
+    assert "Read-only file system" in logged[0]
 
 
 def test_an_abandoned_writer_leaves_the_marker_for_the_next_one(manager):
@@ -761,6 +1026,55 @@ def test_a_migration_is_logged_in_english_once_per_script(tmp_path, caplog):
     assert names[0] == "0001_initial"
     assert first_open == [f"state.db migration applied: {name}" for name in names]
     assert logged() == first_open
+
+
+def test_the_copy_before_a_migration_is_logged_in_english(tmp_path, caplog):
+    """Şema sürümü 1'de kalmış her veri dizini bu satırı bir kez yazar: 0002 geçişinden önceki kopya."""
+    path = _state_db_at_schema_version_1(tmp_path)
+    caplog.clear()
+
+    with caplog.at_level(logging.INFO, logger="Store"):
+        StateDb(path).close()
+        StateDb(path).close()  # güncel dosya: yeni kopya ve yeni satır yok
+
+    later = [migration.name for migration in load_migrations()][1:]
+    assert later, "paketin geçiş dizininde 0001'den sonrası olmalı"
+    assert [r.getMessage() for r in caplog.records if r.name == "Store" and r.levelno == logging.INFO] == [
+        f"state.db copied before migration (schema version 1): {path}.bak-v1",
+        *[f"state.db migration applied: {name}" for name in later],
+    ]
+    assert os.path.isfile(f"{path}.bak-v1")
+
+
+def _log_message_literals(module_file: str) -> List[str]:
+    """Modüldeki `logger.<düzey>(...)` ve `log.<düzey>(...)` çağrılarının ileti metinleri (sabit dize parçaları)."""
+    with open(module_file, encoding="utf-8") as f:
+        tree = ast.parse(f.read())
+    found: List[str] = []
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.args):
+            continue
+        target = node.func.value
+        if not (isinstance(target, ast.Name) and target.id in ("logger", "log")):
+            continue
+        if node.func.attr not in ("debug", "info", "warning", "error", "exception", "critical"):
+            continue
+        parts = [n.value for n in ast.walk(node.args[0]) if isinstance(n, ast.Constant) and isinstance(n.value, str)]
+        found.append("".join(parts))
+    return found
+
+
+@pytest.mark.parametrize("module", [lease_mod, state_mod, sqlite_mod], ids=lambda module: module.__name__)
+def test_log_messages_of_the_lease_state_and_connection_modules_are_english(module):
+    """
+    Plan kural 8: log iletileri İngilizcedir. Bu üç modülde Türkçe satır kalmadı; ileti metninde ASCII dışı
+    harf (ı, ş, ğ, ç, ö, ü) olması Türkçe bir satırın geri geldiğini gösterir. StoreError ve LeaseHeld
+    metinleri log satırı değildir, burada denetlenmez.
+    """
+    messages = _log_message_literals(module.__file__)
+
+    assert messages  # üç modülün de log çağrısı var: boş liste, taramanın çağrıları bulamadığını gösterir
+    assert [message for message in messages if not message.isascii()] == []
 
 
 def test_a_new_state_db_is_not_created_while_someone_writes_the_directory(tmp_path, monkeypatch):

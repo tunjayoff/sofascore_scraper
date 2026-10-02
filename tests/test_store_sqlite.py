@@ -11,11 +11,13 @@ Ağ yok. İki süreçli test çocukları `subprocess` ile başlatır.
 """
 from __future__ import annotations
 
+import contextlib
 import errno
 import gc
 import logging
 import os
 import sqlite3
+import stat
 import subprocess
 import sys
 import threading
@@ -23,15 +25,16 @@ import time
 import warnings
 import weakref
 from pathlib import Path
-from typing import List, Optional
+from typing import Iterator, List, Optional, Tuple
 
 import pytest
 
 from src.exceptions import StorageError
-from src.store import CatalogCorrupt, StoreBusy, StoreError, catalog
+from src.store import CatalogCorrupt, StoreBusy, StoreError, catalog, files
 from src.store import sqlite as sq
 from src.store import state as state_mod
 from src.store.catalog import Catalog
+from src.store.indexer import BUILD_SUFFIX, CatalogAdmin
 from src.store.state import StateDb
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -438,6 +441,270 @@ def test_new_file_configured_by_several_processes_at_once(tmp_path):
 
     assert [child.returncode for child in children] == [0] * 4, [err for _out, err in outputs]
     assert [out.strip() for out, _err in outputs] == ["wal"] * 4
+
+
+# --- yeni veritabanı dosyasının izni (karar S15; plan maddesi FX-11) ----------------------------------
+
+WINDOWS = os.name == "nt"
+posix_modes = pytest.mark.skipif(WINDOWS, reason="POSIX dosya izinleri Windows'ta yok")
+UMASKS = [0o022, 0o077, 0o002, 0o027]
+
+
+def _mode(path) -> int:
+    """rwx bitleri; setgid'li bir üst dizinden miras kalabilen özel bitler sayılmaz."""
+    return stat.S_IMODE(os.stat(path).st_mode) & 0o777
+
+
+@contextlib.contextmanager
+def _umask(value: int) -> Iterator[None]:
+    """Bloğu verilen umask ile çalıştırır, sonra eskisini geri koyar (umask süreç geneli bir ayardır)."""
+    previous = os.umask(value)
+    try:
+        yield
+    finally:
+        os.umask(previous)
+
+
+def _recording_creations(monkeypatch) -> List[Tuple[str, int, bool, bool]]:
+    """
+    `os.open` ile **oluşturulan** her dosyayı kaydeder: (ad, istenen izin, O_EXCL var mı, O_TRUNC var mı).
+    Var olan dosyayı açan ya da başarısız olan çağrılar listeye girmez.
+    """
+    created: List[Tuple[str, int, bool, bool]] = []
+    real_open = os.open
+
+    def recording_open(path, flags, mode=0o777, **kwargs):
+        existed = os.path.lexists(path)
+        fd = real_open(path, flags, mode, **kwargs)
+        if not existed and flags & os.O_CREAT:
+            created.append((os.path.basename(os.fspath(path)), mode, bool(flags & os.O_EXCL), bool(flags & os.O_TRUNC)))
+        return fd
+
+    monkeypatch.setattr(sq.os, "open", recording_open)
+    return created
+
+
+def test_create_database_file_makes_an_empty_file_once_and_never_truncates(tmp_path):
+    path = tmp_path / "new.db"
+
+    assert sq.create_database_file(path) is True
+    assert path.read_bytes() == b""  # boş dosya SQLite için boş bir veritabanıdır
+    assert sq.create_database_file(str(path)) is False  # zaten var
+
+    conn = sq.connect(path)
+    try:
+        conn.execute("CREATE TABLE t (n INTEGER)")
+        conn.execute("INSERT INTO t VALUES (7)")
+    finally:
+        conn.close()
+    size = path.stat().st_size
+    assert size > 0
+    assert sq.create_database_file(path) is False and path.stat().st_size == size  # dokunulmadı
+    again = sq.connect(path)  # connect de var olan dosyayı kesmez
+    try:
+        assert again.execute("SELECT n FROM t").fetchone()["n"] == 7
+    finally:
+        again.close()
+
+
+@pytest.mark.parametrize("name", [":memory:", "", "file:memdb1?mode=memory&cache=shared", "file:other.db"])
+def test_create_database_file_leaves_memory_temporary_and_uri_databases_alone(tmp_path, monkeypatch, name):
+    monkeypatch.chdir(tmp_path)
+
+    assert sq.create_database_file(name) is False
+    assert os.listdir(tmp_path) == []  # o adla bir dosya da oluşmadı
+
+
+def test_connect_to_an_in_memory_database_creates_no_file(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    conn = sq.connect(":memory:")
+    try:
+        assert conn.execute("SELECT 1").fetchone()[0] == 1
+    finally:
+        conn.close()
+    assert os.listdir(tmp_path) == []
+
+
+def test_create_database_file_reports_nothing_when_it_cannot_create(tmp_path):
+    """Hata SQLite'a bırakılır: aynı yolu açan `connect` eskisi gibi sqlite3.OperationalError verir."""
+    missing_dir = tmp_path / "no" / "such" / "dir" / "db.sqlite"
+    assert sq.create_database_file(missing_dir) is False
+
+    a_directory = tmp_path / "dir.db"
+    a_directory.mkdir()
+    assert sq.create_database_file(a_directory) is False and a_directory.is_dir()
+
+    with pytest.raises(sqlite3.OperationalError):
+        sq.connect(missing_dir)
+
+
+@pytest.mark.skipif(WINDOWS, reason="sembolik bağ oluşturmak Windows'ta yetki ister")
+def test_a_dangling_symlink_is_left_to_sqlite(tmp_path):
+    """O_EXCL sembolik bağı izlemez: bağ kesilmez, yerine dosya konmaz; hedefi eskisi gibi SQLite oluşturur."""
+    target = tmp_path / "elsewhere" / "real.db"
+    target.parent.mkdir()
+    link = tmp_path / "linked.db"
+    os.symlink(target, link)
+
+    assert sq.create_database_file(link) is False
+    assert link.is_symlink() and not target.exists()
+    conn = sq.connect(link)
+    try:
+        conn.execute("CREATE TABLE t (n INTEGER)")
+    finally:
+        conn.close()
+    assert link.is_symlink() and target.stat().st_size > 0
+
+
+def test_one_of_several_racing_creators_creates_the_file(tmp_path):
+    path = tmp_path / "raced.db"
+    count = 8
+    barrier = threading.Barrier(count)
+    results: list = []
+
+    def run() -> None:
+        barrier.wait(10)
+        results.append(sq.create_database_file(path))
+
+    threads = [threading.Thread(target=run) for _ in range(count)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(30)
+
+    assert sorted(results) == [False] * (count - 1) + [True]
+    assert path.read_bytes() == b""
+
+
+_WRITING_CHILD = """
+import sys, time
+from src.store import sqlite as sq
+path, start_at, number = sys.argv[1], float(sys.argv[2]), int(sys.argv[3])
+time.sleep(max(0.0, start_at - time.time()))
+conn = sq.connect(path)
+try:
+    sq.configure(conn)
+    sq.begin_immediate(conn, path)
+    conn.execute("CREATE TABLE IF NOT EXISTS seen (number INTEGER PRIMARY KEY)")
+    conn.execute("INSERT INTO seen VALUES (?)", (number,))
+    conn.execute("COMMIT")
+finally:
+    conn.close()
+"""
+
+
+def test_processes_that_create_the_file_at_once_do_not_truncate_each_others_file(tmp_path):
+    """Dosyayı önceden oluşturmak yarışa bir kesme eklemez: her sürecin yazdığı satır yerinde kalır."""
+    path = str(tmp_path / "new.db")
+    start_at = time.time() + 1.0
+    children = [
+        subprocess.Popen([sys.executable, "-c", _WRITING_CHILD, path, repr(start_at), str(n)], cwd=ROOT,
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        for n in range(4)
+    ]
+    outputs = [child.communicate(timeout=120) for child in children]
+
+    assert [child.returncode for child in children] == [0] * 4, [err for _out, err in outputs]
+    conn = sqlite3.connect(path)
+    try:
+        assert [row[0] for row in conn.execute("SELECT number FROM seen ORDER BY number")] == [0, 1, 2, 3]
+    finally:
+        conn.close()
+
+
+def test_every_new_database_file_is_created_with_the_store_file_mode(tmp_path, monkeypatch):
+    """
+    Bir veritabanı dosyasının oluştuğu her yer: `connect`, state.db'nin ilk açılışı (dosyayı kimlik
+    yoklaması yaratır, `connect` değil), geçiş öncesi kopya, catalog.db ve onun yeniden yaratma dosyası.
+    Hepsi dosyayı SQLite'tan önce, `files.STORE_FILE_MODE` ile, yalnızca yoksa (O_EXCL) ve kesmeden açar.
+    """
+    assert files.STORE_FILE_MODE == 0o666
+    created = _recording_creations(monkeypatch)
+    expected = (0o666, True, False)
+
+    sq.connect(tmp_path / "plain.db").close()
+    assert created == [("plain.db", *expected)]
+    sq.connect(tmp_path / "plain.db").close()  # var olan dosya: yeni kayıt yok
+    assert created == [("plain.db", *expected)]
+    del created[:]
+
+    state = StateDb(tmp_path / "state.db")
+    try:
+        assert created == [("state.db", *expected)]
+        del created[:]
+        version = state.schema_version
+        state._backup(state.connection(), version)
+        backup = os.path.basename(state.backup_path(version))
+        assert len(created) == 1 and created[0][1:] == expected
+        assert created[0][0].startswith(backup + ".") and created[0][0].endswith(".tmp")
+        assert os.path.isfile(state.backup_path(version))
+        del created[:]
+
+        with Catalog(catalog.catalog_path(tmp_path)) as cat:
+            cat.prepare()
+            assert created == [("catalog.db", *expected)]
+            del created[:]
+            assert CatalogAdmin(tmp_path, cat).rebuild(mode="recreate").completed
+            assert created == [("catalog.db" + BUILD_SUFFIX, *expected)]
+    finally:
+        state.close()
+
+
+@posix_modes
+@pytest.mark.parametrize("synchronous", ["NORMAL", "FULL"])
+def test_a_new_database_and_its_wal_files_follow_the_umask(tmp_path, synchronous):
+    """SQLite `-wal` ve `-shm` dosyalarına veritabanı dosyasının iznini verir: 002 → 0664, 077 → 0600."""
+    for mask in UMASKS:
+        path = tmp_path / f"new-{mask:03o}.db"
+        with _umask(mask):
+            conn = sq.connect(path)
+            try:
+                assert sq.configure(conn, synchronous=synchronous) == "wal"
+                conn.execute("CREATE TABLE t (n INTEGER)")
+                names = [str(path), f"{path}-wal", f"{path}-shm"]  # bağlantı açıkken üçü de var
+                assert [_mode(name) for name in names] == [0o666 & ~mask] * 3, f"umask {mask:03o}"
+            finally:
+                conn.close()
+
+
+@posix_modes
+def test_a_database_in_delete_mode_gives_its_journal_the_same_mode(tmp_path):
+    """WAL açılamayan dosya sistemindeki `-journal` dosyası da veritabanının iznini alır."""
+    path = tmp_path / "new.db"
+    with _umask(0o002):
+        conn = sq.connect(path)
+        try:
+            assert sq.configure(conn, request_wal=lambda _conn: "delete") == "delete"
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("CREATE TABLE t (n INTEGER)")
+            assert (_mode(path), _mode(f"{path}-journal")) == (0o664, 0o664)
+            conn.execute("COMMIT")
+        finally:
+            conn.close()
+
+
+@posix_modes
+@pytest.mark.parametrize("old_mode", [0o644, 0o600, 0o664])
+def test_an_existing_database_file_keeps_its_mode(tmp_path, old_mode):
+    """İzin yalnızca dosya oluşturulurken verilir: önceki sürümün 0644 ile yarattığı dosyaya chmod yapılmaz."""
+    path = tmp_path / "old.db"
+    with _umask(0o022):
+        sqlite3.connect(path).close()  # bu değişiklikten önceki gibi: dosyayı SQLite yaratır
+    assert _mode(path) == 0o644
+    os.chmod(path, old_mode)
+
+    for mask in UMASKS:
+        with _umask(mask):
+            conn = sq.connect(path)
+            try:
+                assert sq.configure(conn) == "wal"
+                conn.execute("CREATE TABLE IF NOT EXISTS t (n INTEGER)")
+                conn.execute("INSERT INTO t VALUES (1)")
+                # Yan dosyalar umask'i değil veritabanı dosyasını izler
+                assert [_mode(name) for name in (path, f"{path}-wal", f"{path}-shm")] == [old_mode] * 3
+            finally:
+                conn.close()
+    assert _mode(path) == old_mode
 
 
 # --- iş parçacığı başına bağlantı ---------------------------------------------------------------------
