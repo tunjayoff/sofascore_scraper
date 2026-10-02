@@ -1,0 +1,9 @@
+# src.store.ExportSkip
+# kaynak: src/store/export.py
+@dataclass(frozen=True)
+class ExportSkip:
+    event_id: int
+    key: str
+    sub: str
+    reason: str
+    detail: str = ''

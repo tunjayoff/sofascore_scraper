@@ -69,6 +69,7 @@ from src.store.derive import DERIVE_VERSION
 from src.store.entities import KEY_SCHEDULE, KEY_SEASONS, EntityStore, clear_v3_listings
 from src.store.errors import CatalogCorrupt, LeaseHeld, PayloadCorrupt, PayloadMissing, SchemaTooNew, StoreError
 from src.store.events import EventStore
+from src.store.export import Exporter
 from src.store.follows import FollowStore
 from src.store.history import HistoryStore
 from src.store.indexer import (
@@ -284,6 +285,7 @@ class Store:
             self.changes = ChangeLog(self)
             self.history = HistoryStore(self)
             self.backup = BackupManager(self)
+            self.export = Exporter(self)
             self._names_used: Dict[int, str] = {}
             self._catalog_ready = False
             self._catalog_warned = False
