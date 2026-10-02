@@ -8,3 +8,4 @@ class PutResult:
     written: Tuple[str, ...]
     change_seq: Optional[int]
     promoted: bool
+    history: Tuple[str, ...] = ()

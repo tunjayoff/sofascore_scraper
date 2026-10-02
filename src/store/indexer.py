@@ -35,6 +35,9 @@ Yeniden kurma (`CatalogAdmin.rebuild`) iki kiptedir (bölüm 3.4):
 Yeniden kurmanın tarama sırası (bölüm 3.4): v3 varlık dizinleri (turnuva, sezon, takım, oyuncu, spor; aşağıya
 bakın); sezon listeleri; tur / sayfa dosyası olan sezonların listeleri; v3 maçları; eski düzen maçları;
 yalnızca özet CSV'si olan sezonlar; değişiklik günlüğü (eski dosya, sonra `changes/` altındaki aylık parçalar).
+v3 maçlarının geçmiş dosyaları (`_history/`, bölüm 3.4 adım 7) maçın kendisiyle okunur (`read_v3_event`) ve
+`slice_history` satırları maçın öteki satırlarıyla birlikte yazılır (`RowWriter`): tek maçın yeniden
+dizinlenmesi de geçmiş satırlarını dosyalardan yeniden kurar.
 Listeler maçlardan önce yazılır, çünkü turnuva ve sezon satırlarının asıl kaynağı onlardır (olay yükü satırı
 yalnızca yoksa ekler). Özet CSV'sinden gelen sezonlar maçlardan sonra yazılır: o satırlar sporunu söylemez,
 spor turnuvanın katalogdaki satırından alınır.
@@ -93,6 +96,7 @@ from typing import (
 from src.store import catalog as catalog_mod
 from src.store import changes as changes_mod
 from src.store import codec, derive, entities, files, layout, legacy
+from src.store import history as history_mod
 from src.store import manifest as manifest_mod
 from src.store.catalog import Catalog
 from src.store.errors import (
@@ -246,6 +250,7 @@ class V3Event:
     manifest: Manifest
     event: Dict[str, Any]
     sig: str  # manifest dosyasının imzası: "<mtime_ns>:<boyut>" (bölüm 3.5)
+    history: Tuple[Row, ...] = ()  # geçmiş dosyalarından `slice_history` satırları (bölüm 3.4, adım 7)
 
 
 @dataclass(frozen=True)
@@ -260,6 +265,7 @@ class EventRecord:
     entities: derive.EntityRows
     digest: bytes = b""  # olay yükünün listelerle karşılaştırılan alanlarının özeti (entities.compare_digest)
     compared_at: Optional[int] = None  # olay yükünün zamanı: gözlem anı, yoksa olay diliminin fetched_at'i
+    history: Tuple[Row, ...] = ()  # `slice_history` satırları (yalnızca v3; eski düzende geçmiş yok)
 
 
 @dataclass
@@ -465,7 +471,9 @@ def read_v3_event(data_dir: PathLike, event_id: int) -> V3Event:
     """
     Bir v3 maç dizinini okur (manifest + olay yükü). Manifest yoksa PayloadMissing, okunamıyorsa
     PayloadCorrupt, biçimi yeniyse SchemaTooNew; manifest başka bir varlığınsa ya da olay yükündeki kimlik
-    tutmuyorsa LayoutError; `event` dilimi `ok` değilse ya da olay yükü yoksa PayloadMissing.
+    tutmuyorsa LayoutError; `event` dilimi `ok` değilse ya da olay yükü yoksa PayloadMissing. Geçmiş dosyaları
+    (`_history/`) da okunur: sağlam her üye bir `slice_history` satırıdır; okunamayan geçmiş dosyası maçı
+    geçersiz kılmaz, satırı olmaz.
     """
     rel = layout.event_dir(event_id)
     manifest_file = layout.resolve(data_dir, layout.manifest_path(rel))
@@ -487,7 +495,8 @@ def read_v3_event(data_dir: PathLike, event_id: int) -> V3Event:
         got = payload.get("id") if isinstance(payload, dict) else type(payload).__name__
         raise LayoutError(f"Olay yükündeki id ({got!r}) dizine ({event_id}) eşit değil: {payload_file}",
                           path=payload_file, detail=f"id {got!r}, dizin {event_id}")
-    return V3Event(event_id=event_id, path=rel, manifest=found, event=payload, sig=sig)
+    return V3Event(event_id=event_id, path=rel, manifest=found, event=payload, sig=sig,
+                   history=tuple(history_mod.history_rows(data_dir, KIND_EVENT, event_id, rel)))
 
 
 def _v3_payload_files(root: str, leftovers: List[str]) -> List[Tuple[str, str]]:
@@ -541,7 +550,8 @@ def heal_v3_event(data_dir: PathLike, event_id: int) -> bool:
     Yarım kalmış bir yazmadan sonra v3 maç dizinini kendi içinde tutarlı hale getirir (bölüm 4.4): yük
     dosyaları manifestten önce yazılır, arada süreç ölürse dosya manifestteki kaydından yeni kalır. Dosyaya
     güvenilir: kaydın özeti ve boyutları dosyadan, `fetched_at` dosyanın zamanından alınır; kaydı hiç olmayan
-    dosya da kaydedilir. Olay yükü değiştiyse gözlem de ona göre yenilenir. Yarım kalmış geçici dosyalar silinir.
+    dosya da kaydedilir. Olay yükü değiştiyse gözlem de ona göre yenilenir. Dilimin `history` alanı (sayı ve son
+    özet) geçmiş dosyasındaki sağlam üyelere göre düzeltilir. Yarım kalmış geçici dosyalar silinir.
 
     Katalogun yazma kilidi altında çağrılır (manifest o kilit altında okunup yazılır, bölüm 6.2). Manifest
     değiştiyse True döner. Manifesti olmayan ya da okunamayan dizine, okunamayan yük dosyasına ve manifestin
@@ -603,6 +613,25 @@ def heal_v3_event(data_dir: PathLike, event_id: int) -> bool:
                 extra=dict(previous.extra) if previous else {})
         newest = max(newest, written_at)
         changed = True
+    # Geçmiş dosyaları manifestten önce yazılır: manifestteki sayı ve son özet dosyadaki sağlam üyelere göre
+    # düzeltilir (yarım kuyruk sayılmaz; onu bir sonraki ekleme kısaltır)
+    try:
+        histories = history_mod.history_files(data_dir, rel)
+    except StoreError:
+        histories = []
+    for key, sub, path in histories:
+        entry = found.slices.get(layout.slice_name(key, sub))
+        if entry is None:
+            continue  # dilimin kaydı olmayan geçmiş dosyası: doğrulama bildirir
+        try:
+            mark = history_mod.mark_of(history_mod.scan_file(path), entry.history)
+        except StoreError:
+            continue
+        have = (entry.history.count, entry.history.last_sha256) if entry.history is not None else (0, None)
+        want = (mark.count, mark.last_sha256) if mark is not None else (0, None)
+        if have != want:
+            entry.history = mark
+            changed = True
     if changed:
         found.updated_at = newest
         manifest_mod.write_manifest(manifest_file, found)
@@ -670,7 +699,8 @@ def _legacy_slice_row(event_id: int, entry: LegacySlice) -> Row:
 
 
 def _record(event_id: int, layout_name: str, payload: Dict[str, Any], *, observed_at: derive.Timestamp,
-            storage: Row, slices: Iterable[Row], payload_at: Optional[int]) -> EventRecord:
+            storage: Row, slices: Iterable[Row], payload_at: Optional[int],
+            history: Sequence[Row] = ()) -> EventRecord:
     row = derive.event_row(payload, "event", observed_at)
     if row["id"] != event_id:
         raise LayoutError(f"Olay yükündeki id ({row['id']!r}) dizine ({event_id}) eşit değil",
@@ -692,6 +722,7 @@ def _record(event_id: int, layout_name: str, payload: Dict[str, Any], *, observe
         entities=entity_rows,
         digest=entities.compare_digest(payload),
         compared_at=row["observed_at"] if row["observed_at"] is not None else fetched,
+        history=tuple(history),
     )
 
 
@@ -719,6 +750,7 @@ def v3_event_record(event: V3Event, *, legacy_path: Optional[str] = None) -> Eve
         storage=storage,
         slices=[_v3_slice_row(event.event_id, name, entry) for name, entry in found.slices.items()],
         payload_at=payload_at if payload_at is not None else updated_at,
+        history=event.history,
     )
 
 
@@ -863,10 +895,12 @@ class RowWriter:
             ids = [(record.event_id,) for record in records]
             conn.executemany("DELETE FROM event_slices WHERE event_id = ?", ids)
             conn.executemany("DELETE FROM event_participants WHERE event_id = ?", ids)
+            conn.executemany(f"DELETE FROM slice_history WHERE kind = '{KIND_EVENT}' AND entity_id = ?", ids)
         cat.upsert("events", (r.event for r in records))
         cat.upsert("event_slices", (s for r in records for s in r.slices))
         cat.upsert("event_participants", (link for r in records for link in r.links))
         entities.write_entity_rows(cat, (r.entities for r in records))
+        cat.upsert("slice_history", (h for r in records for h in r.history))
 
 
 def delete_event(cat: Catalog, event_id: int) -> bool:
@@ -877,6 +911,7 @@ def delete_event(cat: Catalog, event_id: int) -> bool:
     """
     conn = cat.connection()
     conn.execute("DELETE FROM event_slices WHERE event_id = ?", (event_id,))
+    conn.execute(f"DELETE FROM slice_history WHERE kind = '{KIND_EVENT}' AND entity_id = ?", (event_id,))
     removed = conn.execute(
         "DELETE FROM events WHERE id = ? AND (has_event_payload = 1 OR layout IS NOT NULL)", (event_id,)).rowcount
     if removed:
