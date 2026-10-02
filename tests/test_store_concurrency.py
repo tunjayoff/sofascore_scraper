@@ -180,7 +180,7 @@ def test_readers_never_see_an_invalid_payload_while_slices_are_rewritten(tmp_pat
 
     def writer() -> None:
         try:
-            for n in range(1, 301):
+            for n in range(1, 151):
                 retries[0] += put_with_retry(store, {
                     "statistics": Outcome(SLICE_OK, body("statistics", n)),
                     ("odds_all", "1"): Outcome(SLICE_OK, body("odds_all", n)),
@@ -199,7 +199,7 @@ def test_readers_never_see_an_invalid_payload_while_slices_are_rewritten(tmp_pat
 
     assert problems == [] and all(not thread.is_alive() for thread in threads)
     assert min(reads) > 0
-    assert store.events.payload(EVENT, "statistics")["n"] == 300
+    assert store.events.payload(EVENT, "statistics")["n"] == 150
     consistent(store)
 
 

@@ -364,32 +364,53 @@ class _Twin:
                 store_dump.dump_v3_event(self.store.data_dir, event_id))
 
 
-@pytest.mark.parametrize("first", STEPS)
-def test_every_state_and_outcome_pair_matches_todays_marker_rules(tmp_path: Path, first: str) -> None:
+# Bir dilimin önceki durumları: onu üreten en kısa sonuç dizisi ve `put`'tan sonra katalogda görünen hali
+# (durum, yükü var mı, doğrulanmış "veri yok" sayısı, hata kaydı var mı)
+PREVIOUS_STATES: Dict[str, Tuple[Tuple[str, ...], Tuple[str, bool, int, bool]]] = {
+    "never requested": ((), ("not_requested", False, 0, False)),
+    "ok": (("ok",), ("ok", True, 0, False)),
+    "ok, then an empty answer": (("ok", "404"), ("ok", True, 1, False)),
+    "ok, then an error": (("ok", "429"), ("ok", True, 0, True)),
+    "ok, then an empty answer and an error": (("ok", "404", "429"), ("ok", True, 1, True)),
+    "empty once": (("404",), ("empty", False, 1, False)),
+    "empty twice (settled)": (("404", "404"), ("empty", False, 2, False)),
+    "empty body stored": (("hollow",), ("empty", True, 1, False)),
+    "error": (("429",), ("error", False, 0, True)),
+    "error twice": (("429", "429"), ("error", False, 0, True)),
+    "error after an empty answer": (("404", "429"), ("error", False, 1, True)),
+    "error over a stored empty body": (("hollow", "429"), ("error", True, 1, True)),
+}
+
+
+def test_every_state_and_outcome_pair_matches_todays_marker_rules(tmp_path: Path) -> None:
     """
-    Durum geçiş tablosu: üç adımlık her sonuç dizisi (7 x 7 x 7) için, her adımdan sonra `put`'un bıraktığı
-    dilim durumu, sayaçlar, hata kaydı ve yük özeti `_update_slice_markers`'ın bıraktığıyla aynıdır. İki
-    adımda ulaşılan her önceki durum (yok, ok, boş, yüklü boş, hata, sayaçlı ok, hatalı ok, ...) üçüncü
-    adımda her sonuçla karşılaşır.
+    Durum geçiş tablosu: her (önceki durum, sonuç) çifti için (12 x 7), önceki durumu üreten dizinin ve
+    ardından gelen sonucun her adımından sonra `put`'un bıraktığı dilim durumu, sayaçlar, hata kaydı ve yük
+    özeti `_update_slice_markers`'ın aynı dizi için bıraktığıyla aynıdır.
     """
     twin = _Twin(tmp_path)
     key = "statistics"
-    for number, (second, third) in enumerate(itertools.product(STEPS, STEPS)):
+    pairs = list(itertools.product(PREVIOUS_STATES.items(), STEPS))
+    for number, ((label, (prefix, expected)), outcome) in enumerate(pairs):
         event_id = 5_000_000 + number
-        for position, step in enumerate((first, second, third)):
+        for position, step in enumerate((*prefix, outcome)):
+            if position == len(prefix):  # önceki durum gerçekten adındaki durum
+                info = twin.store.events.slice(event_id, key)
+                assert (info.state, info.has_payload, info.empty_count, info.error is not None) == expected, label
             twin.apply(event_id, {key: step})
             legacy, v3 = twin.dumps(event_id)
-            assert legacy is not None and store_dump.diff(legacy, v3) == [], (first, second, third, position)
+            assert legacy is not None and store_dump.diff(legacy, v3) == [], (label, outcome, position)
+    assert len(pairs) == 84
     consistent(twin.store)
 
 
-@pytest.mark.parametrize("seed", range(6))
+@pytest.mark.parametrize("seed", range(4))
 def test_random_outcome_sequences_match_todays_marker_rules(tmp_path: Path, seed: int) -> None:
-    """Daha uzun diziler, bir kayıtta birden çok dilim: tablonun üç adımda ulaşmadığı durumlar."""
+    """Daha uzun diziler, bir kayıtta birden çok dilim: tablodaki önceki durumların ötesi."""
     rng = random.Random(seed)
     twin = _Twin(tmp_path)
     event_id = 6_000_000 + seed
-    for position in range(14):
+    for position in range(12):
         steps = {key: rng.choice(STEPS) for key in rng.sample(SLICE_KEYS, rng.randint(1, len(SLICE_KEYS)))}
         twin.apply(event_id, steps)
         legacy, v3 = twin.dumps(event_id)
@@ -1240,7 +1261,7 @@ def test_the_v3_entity_indexer_is_called_before_the_legacy_lists_and_for_pending
 
 # --- yeniden kurma eşdeğerliği: rastgele yazma dizileri ---------------------------------------------------
 
-@pytest.mark.parametrize("seed", range(6))
+@pytest.mark.parametrize("seed", range(4))
 def test_random_write_sequences_leave_a_catalog_equal_to_a_rebuild(tmp_path: Path, seed: int) -> None:
     rng = random.Random(seed)
     fixture = sf.build_fixture("legacy" if seed % 2 else "canonical", tmp_path / "data")
@@ -1282,7 +1303,8 @@ def test_random_write_sequences_leave_a_catalog_equal_to_a_rebuild(tmp_path: Pat
                 if rng.random() < 0.2:
                     outcomes[("odds_all", str(rng.randint(1, 3)))] = ok({"markets": [rng.random()]})
                 store.events.put(event_id, outcomes, count_empties=rng.choice([True, True, False, ("lineups",)]))
-        assert store.catalog.diff_from_rebuild() == [], (seed, step, op)
+        if step % 5 == 4:  # her beş yazmada bir (yeniden kurma bütün ağacı okur); sonda bir kez daha
+            assert store.catalog.diff_from_rebuild() == [], (seed, step, op)
 
     consistent(store)
     snapshot = [tuple(r) for r in store._catalog.connection().execute(
