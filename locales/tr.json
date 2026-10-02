@@ -485,7 +485,7 @@
     "ssc_help_watch_sport": "yalnızca bu spor (yinelenebilir); --event ya da --tournament ile: o kimliklerin sporu",
     "ssc_help_watch_event": "takip edilenler yerine bu maç kimliğini izle (yinelenebilir; --sport gerekir)",
     "ssc_help_watch_tournament": "takip edilenler yerine bu turnuvanın canlı maçlarını izle (yinelenebilir; --sport gerekir)",
-    "ssc_help_watch_source": "canlı kaynak: page (varsayılan), direct ya da poll. Bu sürümde yalnızca poll var; page ve direct ona düşer. direct hiçbir zaman sizin yerinize seçilmez: SofaScore'un kendi istemci kimlik bilgisini sitenin istemcisi dışında kullanır, kimlik bilgisi ya da sunucu değişince haber vermeden bozulabilir, IP adresinizin engellenmesine yol açabilir ve bilerek seçtiğiniz bir kullanım koşulları gri alanıdır",
+    "ssc_help_watch_source": "canlı kaynak: page (varsayılan), direct ya da poll. page izlenen her spor için bir tarayıcı sayfası açık tutar (her biri yaklaşık 1,8–2,6 GB bellek) ve sayfanın push bağlantısını dinler; olaylar değişiklikten yaklaşık bir saniye sonra gelir, yoklama yedekte kalır. poll yalnızca yoklar ve tarayıcı açmaz. direct bu sürümde poll'a düşer. direct hiçbir zaman sizin yerinize seçilmez: SofaScore'un kendi istemci kimlik bilgisini sitenin istemcisi dışında kullanır, kimlik bilgisi ya da sunucu değişince haber vermeden bozulabilir, IP adresinizin engellenmesine yol açabilir ve bilerek seçtiğiniz bir kullanım koşulları gri alanıdır",
     "ssc_help_watch_stdout": "her yeni olayı stdout'a da bir JSON satırı olarak yazdır",
     "ssc_help_watch_hours": "bu kadar saat sonra dur",
     "ssc_watch_summary": "Canlı izleme durdu: {rounds} tur, {requests} istek, {events} yeni olay, {confirmed} biten maç saklandı.",

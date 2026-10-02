@@ -485,7 +485,7 @@
     "ssc_help_watch_sport": "only this sport (may be repeated); with --event or --tournament: the sport of those ids",
     "ssc_help_watch_event": "watch this match id instead of the followed ones (may be repeated; needs --sport)",
     "ssc_help_watch_tournament": "watch the live matches of this tournament id instead of the followed ones (may be repeated; needs --sport)",
-    "ssc_help_watch_source": "live source: page (default), direct or poll. Only poll exists in this version; page and direct fall back to it. direct is never chosen for you: it uses SofaScore's own client credential outside the site's client, may break without notice when the credential or the server changes, may get your IP address blocked, and is a terms-of-use grey area that you choose knowingly",
+    "ssc_help_watch_source": "live source: page (default), direct or poll. page keeps one browser page per watched sport open (about 1.8 to 2.6 GB of memory each) and listens to its push connection, so events arrive about a second after the change; polling stays the fallback. poll only polls and starts no browser. direct falls back to poll in this version. direct is never chosen for you: it uses SofaScore's own client credential outside the site's client, may break without notice when the credential or the server changes, may get your IP address blocked, and is a terms-of-use grey area that you choose knowingly",
     "ssc_help_watch_stdout": "also print every new event to stdout as one JSON line",
     "ssc_help_watch_hours": "stop after this many hours",
     "ssc_watch_summary": "Live watching stopped: {rounds} round(s), {requests} request(s), {events} new event(s), {confirmed} finished match(es) stored.",

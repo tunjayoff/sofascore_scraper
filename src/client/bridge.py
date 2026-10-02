@@ -214,8 +214,13 @@ class BrowserBridge:
 
     _instance: Optional["BrowserBridge"] = None
 
-    def __init__(self, profile_dir: str = DEFAULT_PROFILE_DIR):
+    def __init__(self, profile_dir: str = DEFAULT_PROFILE_DIR, home_url: Optional[str] = None):
+        """
+        home_url  köprü sekmesinin açıldığı ve sayfa SofaScore dışına çıkınca döndüğü adres; None: HOME_URL.
+                  Canlı sayfaların ayrı köprüsü (src/services/live/push_source.py) API çağırmayan bir sayfa verir.
+        """
         self.profile_dir = profile_dir
+        self.home_url = home_url
         self.session: Any = None
         self.context: Any = None
         self.page: Any = None
@@ -234,6 +239,9 @@ class BrowserBridge:
         if cls._instance is None:
             cls._instance = cls(profile_dir=profile_dir)
         return cls._instance
+
+    def _home(self) -> str:
+        return getattr(self, "home_url", None) or HOME_URL
 
     async def ensure_ready(self) -> None:
         """Tarayıcı oturumunun hazır ve açık olduğundan emin olur."""
@@ -290,7 +298,7 @@ class BrowserBridge:
 
         self.page = await self.context.new_page()
         try:
-            await self.page.goto(HOME_URL, wait_until="domcontentloaded", timeout=30000)
+            await self.page.goto(self._home(), wait_until="domcontentloaded", timeout=30000)
         except Exception as e:
             logger.warning(f"Sofascore anasayfa açılış uyarısı: {e}")
         token = await self._token_from_context()
@@ -391,7 +399,7 @@ class BrowserBridge:
                 try:
                     await self.page.wait_for_load_state("domcontentloaded", timeout=15000)
                     if not self.page.url.startswith("https://www.sofascore.com"):
-                        await self.page.goto(HOME_URL, wait_until="domcontentloaded", timeout=30000)
+                        await self.page.goto(self._home(), wait_until="domcontentloaded", timeout=30000)
                 except Exception as le:
                     logger.warning(f"Köprü sayfası toparlanamadı: {le}")
 

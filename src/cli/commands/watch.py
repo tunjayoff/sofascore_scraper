@@ -10,8 +10,12 @@ için tek süreçtir; Ctrl+C ya da SIGTERM ile durur.
 
   * Aynı veri dizininde tek canlı servis çalışır: ikincisi ve eski `--watch` (`watcher:<spor>`) varken
     `instance_running` ile çıkar (çıkış kodu 6).
-  * Kaynak `--source` ya da `[live] source`'tur. Bu sürümde yalnızca yoklama (`poll`) vardır; `page` (varsayılan)
-    ve `direct` ona düşer ve bir uyarı yazılır. `direct` hiçbir zaman kendiliğinden seçilmez (8.3).
+  * Kaynak `--source` ya da `[live] source`'tur. `page` (varsayılan): izlenen her spor için gerçek bir tarayıcı
+    sayfası açık kalır (kendi profili, `<profil>-live`; sayfa başına yaklaşık 1,8–2,6 GB bellek) ve sayfanın
+    push bağlantısının kareleri dinlenir; olaylar değişiklikten yaklaşık bir saniye sonra gelir. Yoklama her
+    zaman yedektir: push sağlıklıyken yavaş aralıkla, kopuk ya da sessizken `poll_interval` ile. `poll`:
+    yalnızca yoklama, tarayıcı açılmaz (eski `--watch` takma adı bunu kullanır). `direct` bu sürümde yoklamaya
+    düşer ve bir uyarı yazılır; hiçbir zaman kendiliğinden seçilmez (8.3).
   * Yapılandırılmış sink'ler (`[[sink]]`, `SOFASCORE_SINKS`) bu süreçte, ayrı bir thread'de dağıtılır
     (`sinks` kilidi başka bir süreçteyse, örneğin `serve`, o dağıtır). `--stdout` kendi thread'inde, kilitsiz ve
     "şimdi"den yazar. İkisi ayrı thread'lerdir: stdout'u okuyan durursa yapılandırılmış sink'ler beklemez.
@@ -40,7 +44,7 @@ logger = logging.getLogger(__name__)
 SOURCES = ("page", "direct", "poll")
 SINK_JOIN_SECONDS = 15.0  # dağıtıcı dururken birikenleri en çok 10 sn teslim eder; üstüne pay
 STDOUT_JOIN_SECONDS = 5.0
-# Testlerin LiveService'e verdiği ek seçenekler (sahte istek işlevi, saat); uygulama boş bırakır
+# Testlerin LiveService'e verdiği ek seçenekler (sahte istek işlevi, saat, sahte sayfa açıcı); uygulama boş bırakır
 SERVICE_OPTIONS: Dict[str, Any] = {}
 
 
