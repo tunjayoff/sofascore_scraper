@@ -204,10 +204,26 @@ class DataOperationRunningError(JobStoreConflict):
         super().__init__(f"Another data operation ({operation}) is in progress; try again when it finishes.")
 
 
+class InstanceRunningConflict(DataOperationRunningError):
+    """
+    Veri işlemini bir canlı servis (`live`) ya da 2.x izleyicisi (`watcher:<spor>`) engelliyor (P23). Eski
+    çağıranlar DataOperationRunningError yakaladığı için onun alt sınıfıdır; kodu `instance_running`dir.
+    """
+
+    code = "instance_running"
+
+    def __init__(self, operation: str, lease: str = "") -> None:
+        super().__init__(operation)
+        self.lease = lease or operation
+        self.args = (f"A live watcher (lease {self.lease}) is running on this data directory; stop it first, "
+                     f"then try again.",)
+
+
 def conflict_from_lease(held: LeaseHeld) -> JobStoreConflict:
     """
     LeaseHeld → web katmanının 409'a çevirdiği hata. Kilidi bir veri işlemi tutuyorsa (amaç "op:<ad>")
-    DataOperationRunningError, `writer` başka bir amaçla tutuluyorsa (web işi, CLI indirmesi) JobRunningError.
+    DataOperationRunningError, `writer` başka bir amaçla tutuluyorsa (web işi, CLI indirmesi) JobRunningError,
+    canlı servis ya da izleyici tutuyorsa InstanceRunningConflict (`instance_running`).
     Asıl LeaseHeld (sahibin pid, makine, amaç ve başlangıç bilgisiyle) hatanın `__cause__` alanında kalır.
     """
     purpose = held.purpose or ""
@@ -215,6 +231,8 @@ def conflict_from_lease(held: LeaseHeld) -> JobStoreConflict:
         return DataOperationRunningError(purpose[len(OPERATION_PREFIX):])
     if held.name == WRITER:
         return JobRunningError()
+    if held.name == "live" or held.name.startswith("watcher:"):
+        return InstanceRunningConflict(purpose or held.name, held.name)
     return DataOperationRunningError(purpose or held.name or MAINTENANCE)
 
 

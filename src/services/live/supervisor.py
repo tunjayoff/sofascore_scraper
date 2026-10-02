@@ -516,8 +516,10 @@ class LiveService:
             logger.info("Event %s finished but its page could not be read; a later sync stores it", event_id)
             return
         observed_at = dt.datetime.fromtimestamp(self._clock(), dt.timezone.utc)
+        on_change = _change_rule(tracker.sport)
         try:
-            result = retrying(lambda: self._store.events.observe(event_id, payload, observed_at=observed_at),
+            result = retrying(lambda: self._store.events.observe(event_id, payload, observed_at=observed_at,
+                                                                 on_event_change=on_change),
                               what=f"the payload of event {event_id}", stop=self._stop, sleep=self._sleep)
         except StoreError as e:
             logger.warning("The payload of finished event %s could not be stored (%s)", event_id, type(e).__name__)
@@ -583,6 +585,24 @@ class LiveService:
 
     def status(self) -> Dict[str, Any]:
         return self.report.to_dict()
+
+
+def _change_rule(sport: str) -> Callable[[Optional[Mapping[str, Any]], Mapping[str, Any]], Optional[Dict[str, Any]]]:
+    """
+    Bitiş onayının değişiklik günlüğü kuralı: yenilemeninkiyle aynı (src/refresh.py). Saklanan yük zaten
+    sonuçlanmış bir maçınsa ve yeni yük ondan farklıysa bir satır; ilk saklanan yük ya da sonuçlanmamış bir
+    maçın eski yükü değişiklik değildir (günlük, sonuçlanmış maçların düzeltmelerini tutar).
+    """
+    from src.refresh import change_row, diff_basic
+    from src.status import classify_status
+
+    def on_change(old: Optional[Mapping[str, Any]], new: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
+        if not old or classify_status(dict(old)).value not in reducer.TERMINAL_CLASSES:
+            return None
+        changed = diff_basic(dict(old), dict(new))
+        return change_row(dict(old), dict(new), changed, sport) if changed else None
+
+    return on_change
 
 
 def requested_source_note(requested: str) -> str:
