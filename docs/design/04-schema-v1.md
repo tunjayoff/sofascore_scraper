@@ -1,13 +1,15 @@
 # 04 — Normalized schema v1 (field-level contract)
 
-Status: **proposal, waiting for the owner's approval** (decision P2 in `03-implementation-plan.md`, section
-13: the normalized schema is the public contract, and its field-level document is approved before the code
-merges). Plan item SC-1. Nothing serves these records yet: API v1 (P21), the exports (SC-2), `ssc events` and
-the sinks (P22, P23) will.
+Status: **approved on 2026-10-02** (decision P2 in `03-implementation-plan.md`, section 13: the normalized
+schema is the public contract, and its field-level document is approved before the code merges). The owner
+delegated the approval to the orchestrator, who approved version 1 as written. Plan item SC-1 (PR #72).
+API v1 (P21) and the exports (SC-2) will serve these records. `ssc events` and the sinks (P22, PR #73)
+already write the LiveEvent envelope, and the live service (P23) settles the content of its `data`.
 
 This document can be read on its own. It defines every record the platform gives out, field by field: type,
 unit, whether it can be null, where the value comes from in SofaScore's payload, and what it means. Section 9
-lists every choice that had to be made while writing it; each is an open question until the owner confirms it.
+lists every choice that had to be made while writing it, each with the alternative that was not chosen. All
+28 were approved as written on 2026-10-02 and are decisions now.
 
 The requirement is `00-platform.md`, section 3. Where this document is more specific than that section, this
 document is the contract. `schema_version` is **1**. The schema's id is `sofascore.data/1`; the envelope of
@@ -47,12 +49,12 @@ Not part of version 1:
   models. Until then their payloads are slices like any other and are available raw.
 - **Normalized content of slices.** A slice's payload (statistics, lineups, incidents, head-to-head, form,
   streaks, point-by-point) is SofaScore's response, unchanged. Version 1 normalizes the state of a slice, not
-  its content (open question 16).
+  its content (section 9, point 16).
 - **Score families of the sports that are not supported yet.** The 13 class A and 5 class B sports get their
   score mapping with plan items SP-1 to SP-3. An event of such a sport is already a valid record: it carries
   the headline score and `score.family` is null.
 - **Column names of tabular exports** (CSV, Parquet, SQLite). Plan item SC-2 defines how a record is
-  flattened (open question 23).
+  flattened (section 9, point 23).
 
 ## 2. Conventions
 
@@ -114,10 +116,10 @@ enumeration; treat an event whose `score.family` you do not know by its headline
 Where the version is stated: the JSON Schema document carries it (`x-schema-version`), and `ssc describe
 schemas` and `ssc version` will print it once they are wired to this package. A record does not carry
 `schema_version` itself; the container that delivers records does (the API's metadata, an export's manifest;
-open question 19). A stream event does not carry a version either: the id `sofascore.event/1` names the
+section 9, point 19). A stream event does not carry a version either: the id `sofascore.event/1` names the
 shape of its envelope, and a webhook body names its own shape (`sofascore.webhook/1`, `02-services.md` 5.3).
 
-When version 2 exists, version 1 keeps being served next to it for at least one release (open question
+When version 2 exists, version 1 keeps being served next to it for at least one release (section 9, point
 19).
 
 ## 4. Entities
@@ -136,7 +138,7 @@ Sport ──< Category ──< Tournament ──< Season
 
 An Event holds ids (`tournament_id`, `season_id`, `category_id`, the ids of its two sides) and, for the two
 sides, the name as well. The full Tournament, Season, Category and Participant records are fetched or exported
-separately and joined by id (open question 1).
+separately and joined by id (section 9, point 1).
 
 How to read the tables. "Source" is a path in SofaScore's event object, unless it says otherwise. The event
 object is what the `/event/{id}` response holds under `event`, and what a schedule page lists under `events`;
@@ -247,7 +249,7 @@ player and a doubles pair; `type` says which it is.
 | 2 | `pair` | tennis doubles; the payload names the two persons in `subTeams` |
 | any other number | `other` | not seen |
 
-The two persons of a pair are not part of version 1 (open question 13).
+The two persons of a pair are not part of version 1 (section 9, point 13).
 
 ```json example:Participant
 {"id": 54, "sport": "football", "type": "team", "name": "Peterborough United", "short_name": "Peterborough Utd",
@@ -385,7 +387,7 @@ match has `number`, `name` and `slug` (for example 27, `Quarterfinals`, `quarter
 <!-- /fields:Aggregate -->
 
 `home` and `away` are the sides of this event, not of the first leg. Today only events of the score family
-`football` carry an aggregate (open question 11).
+`football` carry an aggregate (section 9, point 11).
 
 #### Quality
 
@@ -528,7 +530,7 @@ and `period4`; the schema numbers them 1 and 2 and says `"format": "halves"`.
 ```
 
 The example is a retired match (`status.code` 92, class `decided_without_play`, `winner` `home`). Retirement
-and walkover are told by the status, not by the score (open question 10). The current point of a live game
+and walkover are told by the status, not by the score (section 9, point 10). The current point of a live game
 (SofaScore's `point`) is not mapped.
 
 #### SetScore
@@ -661,7 +663,7 @@ not what they were. The platform compares the stored payload with the new one an
 <!-- /fields:ChangedField -->
 
 `path`, `old` and `new` are in SofaScore's terms, not in the terms of the normalized score, because a change
-is evidence of what SofaScore changed (open question 17). The Event record of the same event shows the
+is evidence of what SofaScore changed (section 9, point 17). The Event record of the same event shows the
 normalized state after the change.
 
 ### LiveEvent
@@ -697,16 +699,26 @@ connection gap the events of one match may skip intermediate states.
 #### LiveEvent data
 
 Version 1 fixes the envelope. The content of `data` depends on `type` and is **not fixed yet**: it is settled
-by the live service (plan item P23), and this section is updated then (open question 18). Until then:
+by the live service (plan item P23), and this section is updated then (section 9, point 18). Until then:
 
-| `type` | `data` today (the 2.x watcher, since PR #59) | `data` proposed for the live service |
+| `type` | `data` today (`live.*`: the 2.x watcher, since PR #59) | `data` proposed for the live service |
 |---|---|---|
 | `live.status_changed` | `from`, `to` (status classes), `at_utc`, `change_ts`, `source` (`live` or `event`: which request showed it), `scores` (the 2.x score sheet, pairs as two-element arrays), `provisional` (only on the first `completed`) | `from`, `to` (status classes), `change_ts`, `provisional`, `score` (the [Score](#score) structure of this document) |
 | `live.score_changed` | `from`, `to` (each `[home, away]` of the headline score), `at_utc`, `change_ts`, `source` | `from`, `to` (each a [ScorePair](#scorepair)), `change_ts`, `score` |
 | `live.stuck` | `at_utc`, `start_ts`, `status_class` | `status_class`, `start_utc` |
 | `change.recorded` | not produced yet | `change_seq`: the `seq` of the [Change](#change) it announces |
-| `job.started`, `job.finished` | not produced yet (P22) | job id, kind, state, counts, error code |
-| `system.*` | not produced yet | see `02-services.md` 5.1 |
+| `job.started` | `job_id`, `kind`, `origin` (an object with `face`, `pid` and `host`); produced by the job manager since PR #69 | the same |
+| `job.finished` | `job_id`, `kind`, `state`, `counts` (`details_done`, `details_total`, `failed_count`, `refreshed`, `refresh_changed`), `error_code`; since PR #69 | the same |
+| `system.sink_dropped` | `sink`, `reason` (`max_age` or `pruned`), `first_seq`, `last_seq`, `count` (null for `pruned`), and `max_age_seconds` for `max_age`; produced by the sink dispatcher since PR #73 | the same |
+| other `system.*` | not produced yet | see `02-services.md` 5.1 |
+
+Job events carry the origin of the job. The `origin` of `job.started` says which interface started the job
+(`face`: `cli`, `api`, `scheduler` or `library`) and gives the process id (`pid`) and the host name (`host`)
+of the process that started it (`src/jobs/manager.py:319-329` at `e0bae0c`). A sink that is subscribed to
+`job.*` therefore delivers a host name and a pid, and API v1 shows the same `origin` on a job. This is kept
+on purpose (decision D20 in `03-implementation-plan.md`, section 13, settled on 2026-10-02): a sink and the
+API deliver to the operator's own systems. The diagnostics bundle, which is made to be handed to other
+people, carries the face and the pid and not the host name (PR #71).
 
 ## 5. What differs by sport
 
@@ -756,7 +768,7 @@ What a raw request returns:
   `schema_version`, no renamed field, no added field.
 - **For an event** (`/events/{id}/raw`): the payload of the slice `event`, that is SofaScore's event object.
   This is the object that SofaScore's `/event/{id}` response holds under its key `event`; the platform stores
-  the object, not the wrapper around it (open question 28).
+  the object, not the wrapper around it (section 9, point 28).
 - **Metadata travels beside the payload, not inside it.** Over HTTP: the `ETag` header (the payload's
   sha256) and `X-Sofascore-Fetched-At`. In a raw JSONL export: one line per slice,
   `{"event_id": …, "key": …, "sub": …, "fetched_at": …, "payload": …}`. In a Slice record: the field
@@ -792,8 +804,14 @@ What a raw request returns:
 
 ## 9. Open questions
 
-Each point is a choice this document makes. It stands until the owner decides otherwise. "Alternative" is what
-was not chosen.
+None are left. The 28 points of this section were the open questions of the proposal, and the approval of
+2026-10-02 settled every one of them as chosen (decision P2). The heading of the section is kept as it was,
+because `tests/test_schema_v1.py` asserts that line; what the section holds is the list of decisions.
+
+### Decisions taken (approved on 2026-10-02)
+
+Each point is a choice this document makes, and each stands. "Alternative" is what was not chosen. A change
+to one of them is a change of the contract and follows the versioning rule of section 3.
 
 1. **References in an Event.** An Event carries ids (`tournament_id`, `season_id`, `category_id`) and, for its
    two sides, id and name. Alternative: embed the full Tournament, Season and Participant objects. Reason for
@@ -839,10 +857,10 @@ was not chosen.
     contract; but it is the only place that says "Group A" or "Qualifying".
 16. **Slices.** A Slice names its owner as `owner_kind` and `owner_id` (not `event_id`), so the same record
     serves season and tournament slices. Its payload is raw: version 1 has no normalized model for
-    statistics, lineups, incidents and the other slices, although `01-storage.md` 2.3 gives that job to the
-    schema layer. The plan gives SC-1 the entities and the Event, and P28 the odds and non-match models; a
-    normalized model per slice would be a later, additive item. The counts of empty answers and the stored
-    sizes are not exposed.
+    statistics, lineups, incidents and the other slices (the first version of `01-storage.md` 2.3 gave that
+    job to the schema layer; it is corrected). The plan gives SC-1 the entities and the Event, and P28 the
+    odds and non-match models; a normalized model per slice is a later, additive item. The counts of empty
+    answers and the stored sizes are not exposed.
 17. **Change.** `fields[].path` and the old and new values are SofaScore's (`homeScore.normaltime`), not
     normalized names. `seconds_after_start` replaces the 2.x field `hours_after_start` (durations are in
     seconds). The tournament's name, which the 2.x line carries, is dropped (the id is there).
@@ -851,24 +869,24 @@ was not chosen.
     stream prefix (`live.status_changed`), where `00-platform.md` writes `status_changed`.
 19. **Where `schema_version` appears.** Not in every record; in `describe`, in the JSON Schema, and in the
     container that delivers records. How API v1 and the exports state it is for P21 and SC-2. The id is
-    `sofascore.data/1`. Proposed and not decided: a version 2 is served next to version 1 for at least one
-    release; whether it also needs a new API prefix is open.
+    `sofascore.data/1`. A version 2 is served next to version 1 for at least one release; whether it also
+    needs a new API prefix is decided by the item that introduces version 2.
 20. **Open and closed enumerations** as listed in section 2, rule 8.
 21. **No bookkeeping times on entities.** Tournament, Season, Category and Participant have no "updated at",
     and a Season does not say whether it is the current one or where it stands in SofaScore's list.
 22. **Null, never omitted.** Every field is always present (section 2, rule 2). Alternative: omit null
     fields to save bytes.
-23. **Tabular exports.** Not defined here. Proposed for SC-2: a column per leaf field, the path joined with
+23. **Tabular exports.** Not defined here. SC-2 starts from: a column per leaf field, the path joined with
     `_` (`status_class`, `score_home`, `quality_observed_at_utc`), lists as JSON text or as child tables in
     the SQLite export.
 24. **A Category has no read method in the Store.** The catalog has the table, and the mapper takes its row;
-    the Store's read API returns tournaments, seasons and participants but no categories. A later Store item
-    has to add it before `/tournaments` can show categories.
+    the Store's read API returns tournaments, seasons and participants but no categories. Plan item ST-22
+    adds the method, before P21 needs it for `/tournaments`.
 25. **Country codes as given.** `EN` for England and whatever SofaScore sends, not converted to ISO 3166.
 26. **`Sport.id` can be null.** The registry knows slugs, not SofaScore's numeric ids; the id is filled from
     stored payloads.
 27. **English only.** SofaScore's `fieldTranslations` are not exposed.
 28. **Raw.** The raw form of an event is the event object, not the `{"event": …}` wrapper: this is what 2.x
     stores in `basic.json`, and the design text does not say which of the two the v3 layout stores. A raw
-    request for a slice without a stored payload answers "not found". Both are for P21 and the Store's
-    writers to confirm.
+    request for a slice without a stored payload answers "not found". The Store's writers (ST-20) and P21
+    implement both.
