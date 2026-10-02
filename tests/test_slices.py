@@ -489,19 +489,32 @@ def test_rules_are_total(key: str):
             assert impl(key, {key: body}) is (state == BODY_DATA), (name, body)
 
 
-def test_fetcher_reports_an_unreadable_body_as_empty_for_now():
+def test_fetcher_maps_the_three_answers_to_outcomes():
     """
-    Çekici yüklemi çağırır (üç yanıtı değil): okunamayan gövde bugün içinde veri olmayan 200 gibi "boş"
-    sonuçtur (eskiden yüklem hata fırlatırdı). İşlem hattı slice_body_state'e geçtiğinde bu sonuç
-    başarısız / "parse" olur ve bu test onunla birlikte değişir.
+    Çekici, yanıt gelen dilimde üç yanıtı sonuca çevirir: veri var → "ok"; veri yok → "empty" / "empty"
+    (gövde sonuçta durur ve diske yazılır); okunamadı → "failed" / "parse" (gövde sonuca konmaz). Okunamayan
+    gövde kesin bir "yok" yanıtı değildir: sayılmaz ve yeniden istenir (uçtan uca:
+    tests/test_malformed_slice_body.py).
     """
     for key, body in MALFORMED_CASES:
         outcome = _FETCHER._answered_outcome(key, body)
-        assert (outcome.status, outcome.reason, outcome.data) == (SLICE_EMPTY, "empty", body), (key, body)
+        assert (outcome.status, outcome.reason, outcome.http_status, outcome.data) == (
+            SLICE_FAILED, "parse", None, None,
+        ), (key, body)
+        assert outcome.failed
+    for key, body, expected in BODY_CASES:
+        outcome = _FETCHER._answered_outcome(key, body)
+        if expected:
+            assert (outcome.status, outcome.reason, outcome.data) == (SLICE_OK, None, body), (key, body)
+        else:
+            assert (outcome.status, outcome.reason, outcome.data) == (SLICE_EMPTY, "empty", body), (key, body)
     empty_points = _FETCHER._answered_outcome("point_by_point", {"pointByPoint": []})
     assert (empty_points.status, empty_points.reason) == (SLICE_EMPTY, "empty")  # eskiden "ok"
     assert empty_points.data == {"pointByPoint": []}  # gövde yine sonuçta durur ve diske yazılır
     assert _FETCHER._answered_outcome("point_by_point", PRESENT["point_by_point"]).status == SLICE_OK
+    # Kuralı olmayan anahtar hiçbir zaman "okunamadı" değildir
+    assert _FETCHER._answered_outcome("graph", "abc").status == SLICE_OK
+    assert _FETCHER._answered_outcome("graph", 0).status == SLICE_EMPTY
 
 
 @pytest.mark.parametrize("name,impl", IMPLEMENTATIONS, ids=[name for name, _ in IMPLEMENTATIONS])
