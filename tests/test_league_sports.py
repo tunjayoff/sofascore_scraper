@@ -8,7 +8,7 @@ import tempfile
 import pandas as pd
 
 from src.web import league_sports
-from src.web.routes.api import _filter_matches_df_by_league, _parse_league_ids
+from src.web.routes.api import _get_matches_sync, _parse_league_ids
 
 
 def _cfg(root: str) -> str:
@@ -70,24 +70,35 @@ def test_parse_league_ids():
     assert _parse_league_ids("x") is None
 
 
+def _summary(root: str, folder: str, fname: str, ids, dates=None) -> None:
+    """A season summary as the match fetcher writes it (ten columns; `status` says the match is finished)."""
+    d = os.path.join(root, "matches", folder)
+    os.makedirs(d, exist_ok=True)
+    pd.DataFrame(
+        {"round": [1] * len(ids), "match_id": ids, "home_team": ["H"] * len(ids), "away_team": ["A"] * len(ids),
+         "match_date": dates or ["2025-08-22T20:00:00"] * len(ids), "status": ["Ended"] * len(ids)}
+    ).to_csv(os.path.join(d, fname), index=False)
+
+
+def _ids(root: str, league_id, season_id=None, details=None):
+    return sorted(i["match_id"] for i in _get_matches_sync(root, 50, 0, "asc", league_id, None, season_id, details).items)
+
+
 def test_filter_matches_by_several_leagues():
-    df = pd.DataFrame(
-        {
-            "league_folder": ["17_Premier_League", "8_LaLiga", "132_NBA", "242_MLS"],
-            "match_id": [1, 2, 3, 4],
-        }
-    )
-    assert list(_filter_matches_df_by_league(df, "17")["match_id"]) == [1]
-    assert list(_filter_matches_df_by_league(df, "17,132")["match_id"]) == [1, 3]
-    assert list(_filter_matches_df_by_league(df, None)["match_id"]) == [1, 2, 3, 4]
+    root = tempfile.mkdtemp()
+    _summary(root, "17_Premier_League", "61627_PL_24_25_summary.csv", [1])
+    _summary(root, "8_LaLiga", "77559_LaLiga_25_26_summary.csv", [2])
+    _summary(root, "132_NBA", "65360_NBA_24_25_summary.csv", [3])
+    _summary(root, "242_MLS", "70158_MLS_2025_summary.csv", [4])
+    assert _ids(root, "17") == [1]
+    assert _ids(root, "17,132") == [1, 3]
+    assert _ids(root, None) == [1, 2, 3, 4]
     # "1" must not match "17_..." or "132_..."
-    assert list(_filter_matches_df_by_league(df, "1")["match_id"]) == []
+    assert _ids(root, "1") == []
 
 
 def test_match_list_uses_summaries_even_when_export_csv_is_stale():
     """A stopped job never rewrites the export CSV; its league's matches must still be listed."""
-    from src.web.routes.api import _build_schedule_matches_dataframe
-
     root = tempfile.mkdtemp()
     # export CSV knows only one Premier League match (details)
     processed = os.path.join(root, "match_details", "processed")
@@ -96,50 +107,39 @@ def test_match_list_uses_summaries_even_when_export_csv_is_stale():
         os.path.join(processed, "all_matches_1.csv"), index=False
     )
     # summaries: PL has 2 matches, LaLiga (stopped job) has 2
-    for folder, fname, ids in (
-        ("17_Premier_League", "61627_PL_24_25_summary.csv", [1, 2]),
-        ("8_LaLiga", "77559_LaLiga_25_26_summary.csv", [3, 4]),
-    ):
-        d = os.path.join(root, "matches", folder)
-        os.makedirs(d)
-        pd.DataFrame(
-            {"round": [1, 1], "match_id": ids, "home_team": ["H", "H"], "away_team": ["A", "A"], "match_date": ["2025-08-22T20:00:00"] * 2}
-        ).to_csv(os.path.join(d, fname), index=False)
+    _summary(root, "17_Premier_League", "61627_PL_24_25_summary.csv", [1, 2])
+    _summary(root, "8_LaLiga", "77559_LaLiga_25_26_summary.csv", [3, 4])
 
-    assert sorted(_build_schedule_matches_dataframe(root, "8", None, None)["match_id"]) == [3, 4]
-    assert len(_build_schedule_matches_dataframe(root, None, None, None)) == 4
-    assert len(_build_schedule_matches_dataframe(root, "17", None, 61627)) == 2
-    assert len(_build_schedule_matches_dataframe(root, "17", None, 99)) == 0
+    assert _ids(root, "8") == [3, 4]
+    assert _ids(root, None) == [1, 2, 3, 4]
+    assert _ids(root, "17", 61627) == [1, 2]
+    assert _ids(root, "17", 99) == []
 
 
-def test_match_list_falls_back_to_export_csv_without_summaries():
-    from src.web.routes.api import _build_schedule_matches_dataframe
-
+def test_match_list_does_not_fall_back_to_the_export_csv():
+    """The list comes from the data folder's index, which does not index exports (design decision S14)."""
     root = tempfile.mkdtemp()
     processed = os.path.join(root, "match_details", "processed")
     os.makedirs(processed)
     pd.DataFrame({"match_id": [1, 2], "league_folder": ["17_Premier_League", "8_LaLiga"]}).to_csv(
         os.path.join(processed, "all_matches_1.csv"), index=False
     )
-    assert list(_build_schedule_matches_dataframe(root, "8", None, None)["match_id"]) == [2]
+    assert _ids(root, "8") == []
+    assert _ids(root, None) == []
 
 
 def test_match_rows_say_whether_details_exist():
-    from src.web.routes.api import _get_matches_sync
-
     root = tempfile.mkdtemp()
-    d = os.path.join(root, "matches", "8_LaLiga")
-    os.makedirs(d)
-    pd.DataFrame(
-        {"round": [1, 1, 2], "match_id": [11, 12, 13], "home_team": ["H"] * 3, "away_team": ["A"] * 3,
-         "match_date": ["2025-08-22T20:00:00", "2025-08-23T20:00:00", "2025-08-30T20:00:00"]}
-    ).to_csv(os.path.join(d, "77559_LaLiga_25_26_summary.csv"), index=False)
+    _summary(root, "8_LaLiga", "77559_LaLiga_25_26_summary.csv", [11, 12, 13],
+             ["2025-08-22T20:00:00", "2025-08-23T20:00:00", "2025-08-30T20:00:00"])
     detail = os.path.join(root, "match_details", "8_LaLiga", "season_LaLiga_25_26", "12")
     os.makedirs(detail)
-    open(os.path.join(detail, "basic.json"), "w").write("{}")
+    with open(os.path.join(detail, "basic.json"), "w", encoding="utf-8") as f:
+        json.dump({"id": 12, "tournament": {"uniqueTournament": {"id": 8}}, "season": {"id": 77559},
+                   "status": {"type": "finished", "description": "Ended"}}, f)
 
     r = _get_matches_sync(root, 50, 0, "asc", "8", None, None)
     assert {i["match_id"]: i["has_details"] for i in r.items} == {11: False, 12: True, 13: False}
-    assert [i["match_id"] for i in _get_matches_sync(root, 50, 0, "asc", "8", None, None, "present").items] == [12]
+    assert _ids(root, "8", None, "present") == [12]
     missing = _get_matches_sync(root, 50, 0, "asc", "8", None, None, "missing")
     assert missing.total == 2 and [i["match_id"] for i in missing.items] == [11, 13]

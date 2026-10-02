@@ -10,8 +10,6 @@ from src.web.routes import auth, data, diagnostics, leagues, matches, scrape, se
 from src.web.routes.common import _job_store, config_manager  # noqa: F401
 from src.web.routes.data import _backups_dir  # noqa: F401
 from src.web.routes.matches import (  # noqa: F401
-    _build_schedule_matches_dataframe,
-    _filter_matches_df_by_league,
     _get_matches_sync,
     _parse_league_ids,
 )
