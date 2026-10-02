@@ -9,8 +9,7 @@
    "added": {
     "data/datasets/": "<empty dir>",
     "data/match_details/processed/": "<empty dir>",
-    "data/matches/17_Premier_League/52186_Premier_League_23_24_summary.csv": "sha256:3faf0d3448a3",
-    "data/matches/17_Premier_League/61627_Premier_League_24_25_summary.csv": "sha256:275d72357445",
+    "data/matches/": "<empty dir>",
     "data/seasons/": "<empty dir>",
     "data/v3/tournaments/17/manifest.json": {
      "created_at": "<volatile>",
@@ -237,8 +236,7 @@
    "added": {
     "data/datasets/": "<empty dir>",
     "data/match_details/processed/": "<empty dir>",
-    "data/matches/17_Premier_League/52186_Premier_League_23_24_summary.csv": "sha256:3faf0d3448a3",
-    "data/matches/17_Premier_League/61627_Premier_League_24_25_summary.csv": "sha256:275d72357445",
+    "data/matches/": "<empty dir>",
     "data/seasons/": "<empty dir>",
     "data/v3/tournaments/17/manifest.json": {
      "created_at": "<volatile>",

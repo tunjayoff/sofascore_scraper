@@ -5,8 +5,6 @@ SofaScore API'sinden maç verilerini çeken modül.
 
 import os
 import re
-import csv
-import io
 import datetime
 import asyncio
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeRemainingColumn
@@ -21,8 +19,6 @@ from src.season_fetcher import SeasonFetcher
 from src.status import StatusClass, classify_status
 # İstek fonksiyonu ve FETCH_ONLY_FINISHED fonksiyon içinde import edilir: çağrı anındaki değer okunur (testler patch eder)
 from src.utils import ensure_directory
-from src.fsutil import atomic_write_text
-from src.paths import summary_paths
 # Program sayfaları Store'a yazılır (`EntityStore.put`, plan maddesi ST-22): v3/tournaments/<lig>/seasons/<sezon>/
 # schedule/<alt anahtar>.json.gz. Yazma kataloğu kendisi günceller. Paket kökü üzerinden: cephe ilk çağrıda yüklenir.
 from src import store as store_api
@@ -539,9 +535,10 @@ class MatchFetcher:
 
     def _report_season(self, league_id: int, season_id: int, results: List[Dict[str, Any]]) -> None:
         """
-        Çekilen sezonun özetini günlüğe yazar. Sezon özeti JSON'u (`<sezon>_summary.json`) artık yazılmaz (plan
-        maddesi ST-22): maç listeleri katalogdaki program sayfalarından okunur. Özet CSV'si geçici olarak hâlâ
-        yazılır (`_write_summary_csv`).
+        Çekilen sezonun özetini günlüğe yazar. Sezon özeti dosyaları (`<sezon>_summary.json` ve `_summary.csv`)
+        artık yazılmaz (plan maddesi ST-22, karar S4): maç listeleri, gösterge paneli ve dışa aktarma veri
+        klasörünün kataloğunu okur; tablo isteyen CSV dışa aktarmasını kullanır. Eski klasörlerdeki özet
+        dosyaları yerinde kalır ve sezonun tek kaynağı olduklarında katalog onları okumaya devam eder.
         """
         round_counts: Dict[Any, int] = {}
         for result in results:
@@ -552,72 +549,6 @@ class MatchFetcher:
                 round_counts[round_num] = round_counts.get(round_num, 0) + 1
         matches = sum(len(result.get("events") or []) for result in results)
         logger.info(f"League {league_id}, season {season_id}: {len(results)} schedule pages, {matches} matches listed")
-        self._write_summary_csv(league_id, season_id, results)
-
-    # GEÇİCİ KÖPRÜ (ST-22 → RD-3): detay işinin maç listesi (`MatchDataFetcher.collect_detail_match_ids`) ve web'in
-    # eksik detay listesi (`/api/leagues/{id}/missing-details`) RD-3 birleşene kadar sezon özeti CSV'lerinden
-    # okunur. CSV yazılmazsa yeni indirilen sezonların detayları hiç çekilmez. RD-3 bu okuyucuları kataloğa
-    # geçirince bu yöntem ve çağrısı silinir; dosya artık hiçbir okuyucunun kaynağı değildir (katalog, program
-    # sayfası olan sezonun özet CSV'sini okumaz).
-    def _write_summary_csv(self, league_id: int, season_id: int, results: List[Dict[str, Any]]) -> None:
-        """Sezon özeti CSV'si (`matches/<lig>/<sezon>_summary.csv`, on sütun), eski yazıcıyla aynı biçimde."""
-        if not results:
-            return
-        config_name = self.config_manager.get_league_by_id(league_id)
-        season_name = self.season_fetcher.get_season_name(league_id, season_id)
-        _json_file, csv_file = summary_paths(self.data_dir, league_id, config_name, season_id, season_name)
-        rows = []
-        fields = ["round", "match_id", "home_team", "away_team", "home_score", "away_score",
-                  "match_date", "status", "tournament", "season"]
-        for result in results:
-            round_number = result.get("round", "")
-            events = result.get("events", [])
-            if not isinstance(events, list):
-                logger.warning("Unexpected data format: events is not a list")
-                continue
-            for event in events:
-                try:
-                    if not round_number:
-                        round_number = self._get_nested_value(event, ["roundInfo", "round"], "")
-                    start = event.get("startTimestamp")
-                    rows.append({
-                        "round": round_number,
-                        "match_id": event.get("id", ""),
-                        "home_team": self._get_nested_value(event, ["homeTeam", "name"], ""),
-                        "away_team": self._get_nested_value(event, ["awayTeam", "name"], ""),
-                        "home_score": self._get_nested_value(event, ["homeScore", "current"], 0),
-                        "away_score": self._get_nested_value(event, ["awayScore", "current"], 0),
-                        "match_date": datetime.datetime.fromtimestamp(start).isoformat() if start else "",
-                        "status": self._get_nested_value(event, ["status", "description"], ""),
-                        "tournament": self._get_nested_value(event, ["tournament", "name"], ""),
-                        "season": self._get_nested_value(event, ["season", "name"], ""),
-                    })
-                except Exception as e:
-                    logger.error(f"Summary row of a match could not be built: {e}")
-        if not rows:
-            logger.warning(f"League {league_id}, season {season_id}: no rows for the summary CSV")
-            return
-        try:
-            ensure_directory(os.path.dirname(csv_file))
-            buf = io.StringIO()
-            writer = csv.DictWriter(buf, fieldnames=fields)
-            writer.writeheader()
-            writer.writerows(rows)
-            atomic_write_text(csv_file, buf.getvalue())
-        except Exception as e:
-            logger.error(f"Summary CSV of season {season_id} could not be written: {e}")
-        finally:
-            store_api.shadow_schedules(self.data_dir)  # eski düzen dosyası: gölge kancası kataloğu günceller
-
-    def _get_nested_value(self, data, keys, default=None):
-        """Nested dict/json yapılardan güvenli bir şekilde değer çekmek için yardımcı method"""
-        current = data
-        for key in keys:
-            if isinstance(current, dict) and key in current:
-                current = current[key]
-            else:
-                return default
-        return current
 
     def fetch_all_matches_for_season(
         self,

@@ -593,7 +593,7 @@ def _rounds_api(rounds: Dict[int, List[sf.Ev]]) -> Any:
     return api
 
 
-def test_fetching_a_season_schedule_indexes_rounds_and_summary(tmp_path: Path) -> None:
+def test_fetching_a_season_schedule_indexes_rounds(tmp_path: Path) -> None:
     data = tmp_path / "data"
     rounds = {1: [sf.PL_ARS, sf.PL_LIV], 2: [sf.PL_NO_DETAIL, sf.PL_NOT_STARTED]}
     fetcher = _schedule_fetcher(data)
@@ -606,13 +606,12 @@ def test_fetching_a_season_schedule_indexes_rounds_and_summary(tmp_path: Path) -
     # ST-22: turlar v3 sezon dizinine yazılır; eski düzen dizini ve sezon özeti dosyaları yazılmaz
     season_dir = data / "v3" / "tournaments" / str(PL) / "seasons" / str(PL_SEASON) / "schedule"
     assert sorted(p.name for p in season_dir.iterdir()) == ["round_1.json.gz", "round_2.json.gz"]
-    league_dir = data / "matches" / sf.league_dir(sf.PL)
-    assert [p.name for p in league_dir.iterdir()] == [f"{sf.season_dir(sf.PL_2627)}_summary.csv"]  # köprü (RD-3)
+    assert not (data / "matches" / sf.league_dir(sf.PL)).exists()  # özet CSV'si de yazılmaz (karar S4)
     listed = store.events.list(EventQuery(scope=Scope(season_ids=[PL_SEASON])), with_total=True)
     assert listed.total == 4 and {row.listed_in for row in listed.items} == {"round_1", "round_2"}
     assert [info.sub for info in store.entities.slices(Ref.season(PL, PL_SEASON))] == ["round_1", "round_2"]
     roots = {row[0] for row in store._catalog.connection().execute("SELECT path FROM legacy_roots")}
-    assert roots == {f"matches/{sf.league_dir(sf.PL)}"}  # özet dosyası lig dizininin imzasında; v3'ün imzası yok
+    assert roots == set()  # eski düzende dosya yok; v3'ün imzası yok
     assert differences(store) == []
 
 
