@@ -1040,7 +1040,7 @@ class CatalogAdmin:
                     if not automatic:
                         raise
                     # Başlık sağlam görünüyordu ama sayfalar bozuk: dosya baştan yaratılır
-                    logger.warning(f"Katalog yerinde kurulamadı ({_detail(exc)}); yeniden yaratılıyor: "
+                    logger.warning(f"The catalog could not be rebuilt in place ({_detail(exc)}); it is created anew: "
                                    f"{self.catalog.path}")
                     report = RebuildReport(mode=MODE_RECREATE, reason=catalog_mod.REBUILD_CORRUPT)
                     self._recreate(report, progress, should_stop)
@@ -1048,7 +1048,7 @@ class CatalogAdmin:
                 self._recreate(report, progress, should_stop)
         except _Stopped:
             report.completed = False
-            logger.info(f"Katalog kurulumu durduruldu; eski katalog olduğu gibi kaldı: {self.catalog.path}")
+            logger.info(f"Catalog rebuild stopped; the previous catalog is left as it was: {self.catalog.path}")
         else:
             report.completed = True
         report.seconds = time.monotonic() - started

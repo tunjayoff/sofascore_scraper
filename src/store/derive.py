@@ -199,7 +199,8 @@ def scores_json(payload: Mapping[str, Any], sport: Optional[str]) -> Optional[st
         sheet = extract_scores(_as_dict(payload), sport)
     except (AttributeError, TypeError, ValueError) as exc:
         # homeScore / awayScore / changes beklenmeyen tipte: satır yine yazılır, çizelge boş kalır
-        logger.warning(f"Skor çizelgesi çıkarılamadı (event {payload.get('id')}): {type(exc).__name__}: {exc}")
+        logger.warning(f"The score sheet of event {payload.get('id')} could not be extracted: "
+                       f"{type(exc).__name__}: {exc}")
         return None
     body = {k: v for k, v in dataclasses.asdict(sheet).items() if k not in _SHEET_COMMON}
     return json.dumps({"family": family, **body}, ensure_ascii=False, separators=(",", ":"), sort_keys=True)

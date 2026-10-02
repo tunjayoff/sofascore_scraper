@@ -544,7 +544,7 @@ def mark_corrupt(admin: CatalogAdmin, event_id: int, names: Sequence[str]) -> Li
         if marked:
             found.updated_at = max(found.updated_at, at)
             manifest_mod.write_manifest(manifest_file, found)
-            logger.warning(f"Maç {event_id}: okunamayan yükler manifestte bozuk olarak işaretlendi: "
+            logger.warning(f"Event {event_id}: unreadable payloads were marked as corrupt in the manifest: "
                            f"{', '.join(marked)}")
     return marked
 
@@ -584,8 +584,8 @@ def verify(admin: CatalogAdmin, *, deep: bool = False, repair: bool = False) -> 
 
     report.seconds = time.monotonic() - started
     if report.open_issues:
-        logger.warning(f"Katalog doğrulaması: {len(report.open_issues)} giderilmemiş tutarsızlık "
-                       f"({report.events} maç, {report.events_read} tanesi yeniden okundu)")
+        logger.warning(f"Catalog verification: {len(report.open_issues)} unresolved inconsistencies "
+                       f"({report.events} events, {report.events_read} of them read again)")
     return report
 
 

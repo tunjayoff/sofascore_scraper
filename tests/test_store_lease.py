@@ -1064,17 +1064,28 @@ def _log_message_literals(module_file: str) -> List[str]:
     return found
 
 
-@pytest.mark.parametrize("module", [lease_mod, state_mod, sqlite_mod], ids=lambda module: module.__name__)
-def test_log_messages_of_the_lease_state_and_connection_modules_are_english(module):
-    """
-    Plan kural 8: log iletileri İngilizcedir. Bu üç modülde Türkçe satır kalmadı; ileti metninde ASCII dışı
-    harf (ı, ş, ğ, ç, ö, ü) olması Türkçe bir satırın geri geldiğini gösterir. StoreError ve LeaseHeld
-    metinleri log satırı değildir, burada denetlenmez.
-    """
-    messages = _log_message_literals(module.__file__)
+def _store_modules() -> List[str]:
+    """src/store paketinin bütün modül dosyaları (alt paketler dahil), pakete göre göreli ve sıralı."""
+    root = Path(lease_mod.__file__).parent
+    return sorted(path.relative_to(root).as_posix() for path in root.rglob("*.py"))
 
-    assert messages  # üç modülün de log çağrısı var: boş liste, taramanın çağrıları bulamadığını gösterir
+
+@pytest.mark.parametrize("module", _store_modules())
+def test_log_messages_of_the_store_modules_are_english(module):
+    """
+    Plan kural 8: log iletileri İngilizcedir. src/store'un hiçbir modülünde Türkçe satır kalmadı; ileti
+    metninde ASCII dışı harf (ı, ş, ğ, ç, ö, ü) olması Türkçe bir satırın geri geldiğini gösterir. StoreError
+    ve LeaseHeld metinleri log satırı değildir, burada denetlenmez.
+    """
+    messages = _log_message_literals(str(Path(lease_mod.__file__).parent / module))
+
     assert [message for message in messages if not message.isascii()] == []
+
+
+@pytest.mark.parametrize("module", [lease_mod, state_mod, sqlite_mod, jobs_mod], ids=lambda module: module.__name__)
+def test_the_log_scan_finds_the_calls(module):
+    """Boş liste, taramanın log çağrılarını bulamadığını gösterirdi: bu modüllerin hepsinin log çağrısı var."""
+    assert _log_message_literals(module.__file__)
 
 
 def test_a_new_state_db_is_not_created_while_someone_writes_the_directory(tmp_path, monkeypatch):

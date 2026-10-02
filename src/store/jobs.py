@@ -279,7 +279,8 @@ def import_legacy_jobs(state: StateDb, legacy_path: str) -> Optional[int]:
         try:
             columns, rows = _read_legacy_rows(legacy_path)
         except sqlite3.Error as e:
-            logger.warning("Eski iş geçmişi okunamadı, sonraki açılışta yeniden denenecek: %s: %s", legacy_path, e)
+            logger.warning("The legacy job history could not be read; it is tried again at the next open: %s: %s",
+                           legacy_path, e)
             return None
     with state.write() as conn:
         # Kilit alındıktan sonra yeniden bak: aynı anda açılan başka bir süreç aktarmış olabilir
@@ -293,7 +294,7 @@ def import_legacy_jobs(state: StateDb, legacy_path: str) -> Optional[int]:
         record = {"file": _LEGACY_DB_NAME, "found": found, "rows": len(rows), "imported": imported, "at": _utc_now()}
         conn.execute("INSERT INTO meta (key, value) VALUES (?, ?)", (META_IMPORTED_JOBS_DB, json.dumps(record)))
     if found:
-        logger.info("Eski iş geçmişi içe aktarıldı: %s satır (%s)", imported, legacy_path)
+        logger.info("Legacy job history imported: %s rows (%s)", imported, legacy_path)
     return imported
 
 
