@@ -60,7 +60,7 @@ from src.config.settings import (
     SliceOverride,
 )
 from src.exceptions import ConfigError
-from src.redact import MASK, mask_url_userinfo
+from src.redact import MASK, mask_webhook_url
 from src.sports import sport_slugs
 
 logger = logging.getLogger("Config")
@@ -992,7 +992,8 @@ def _follow_row(spec: FollowSpec) -> Dict[str, Any]:
 def _sink_row(spec: SinkSpec, mask_secrets: bool) -> Dict[str, Any]:
     return {
         "name": spec.name, "type": spec.type, "events": list(spec.events),
-        "url": mask_url_userinfo(spec.url) if mask_secrets else spec.url, "secret_env": spec.secret_env,
+        # Webhook adresinin yolu ve sorgusu da belirteç taşıyabilir: yalnızca şema ve host gösterilir
+        "url": mask_webhook_url(spec.url) if mask_secrets else spec.url, "secret_env": spec.secret_env,
         "allow_unsigned": spec.allow_unsigned, "path": spec.path, "options": dict(spec.options),
     }
 

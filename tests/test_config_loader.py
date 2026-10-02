@@ -660,7 +660,8 @@ every = "90 M"
         model.ScheduleTask(run="refresh", every="90 M", every_seconds=5400.0),
     )
     rows = {row["key"]: row["value"] for row in loaded.describe()}
-    assert rows["sinks"][0]["url"] == "http://***@127.0.0.1:9000/in"    # adresteki kimlik bilgisi gösterilmez
+    # Adresin kullanıcı bilgisi de yolu da gösterilmez (webhook adresinde yol ya da sorgu belirteç olabilir)
+    assert rows["sinks"][0]["url"] == "http://***@127.0.0.1:9000/***"
     assert "pw" not in repr(s)
     assert loader.parse_duration("30s") == 30.0 and loader.parse_duration("1d") == 86400.0
 
