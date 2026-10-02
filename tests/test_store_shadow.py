@@ -603,13 +603,16 @@ def test_fetching_a_season_schedule_indexes_rounds_and_summary(tmp_path: Path) -
         assert fetcher.fetch_all_matches_for_season(PL, PL_SEASON) is True
 
     store = open_store(data)
-    season_dir = f"matches/{sf.league_dir(sf.PL)}/{sf.season_dir(sf.PL_2627)}"
-    assert sorted(p.name for p in data.joinpath(*season_dir.split("/")).iterdir()) == ["round_1.json", "round_2.json"]
+    # ST-22: turlar v3 sezon dizinine yazılır; eski düzen dizini ve sezon özeti dosyaları yazılmaz
+    season_dir = data / "v3" / "tournaments" / str(PL) / "seasons" / str(PL_SEASON) / "schedule"
+    assert sorted(p.name for p in season_dir.iterdir()) == ["round_1.json.gz", "round_2.json.gz"]
+    league_dir = data / "matches" / sf.league_dir(sf.PL)
+    assert [p.name for p in league_dir.iterdir()] == [f"{sf.season_dir(sf.PL_2627)}_summary.csv"]  # köprü (RD-3)
     listed = store.events.list(EventQuery(scope=Scope(season_ids=[PL_SEASON])), with_total=True)
     assert listed.total == 4 and {row.listed_in for row in listed.items} == {"round_1", "round_2"}
     assert [info.sub for info in store.entities.slices(Ref.season(PL, PL_SEASON))] == ["round_1", "round_2"]
     roots = {row[0] for row in store._catalog.connection().execute("SELECT path FROM legacy_roots")}
-    assert roots == {f"matches/{sf.league_dir(sf.PL)}", season_dir}  # özet dosyası lig dizininin imzasında
+    assert roots == {f"matches/{sf.league_dir(sf.PL)}"}  # özet dosyası lig dizininin imzasında; v3'ün imzası yok
     assert differences(store) == []
 
 

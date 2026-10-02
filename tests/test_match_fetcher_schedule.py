@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.exceptions import ResourceNotFoundError
 from src.match_fetcher import MatchFetcher
+from src.store import Ref, open_store
 
 
 def _finished_event(eid: int) -> Dict[str, Any]:
@@ -73,8 +74,6 @@ class TestFetchStrategyMocked(unittest.IsolatedAsyncioTestCase):
     async def test_paginated_fallback_when_rounds_missing(self):
         with tempfile.TemporaryDirectory() as tmp:
             fetcher = self._make_fetcher(tmp)
-            out = os.path.join(tmp, "matches_out")
-            os.makedirs(out, exist_ok=True)
 
             fetcher._fetch_rounds_metadata = AsyncMock(return_value=[])  # type: ignore
             fetcher._fetch_and_save_event_pages = AsyncMock(  # type: ignore
@@ -89,7 +88,7 @@ class TestFetchStrategyMocked(unittest.IsolatedAsyncioTestCase):
                     __aexit__=AsyncMock(return_value=False),
                 ),
             ):
-                results = await fetcher.fetch_all_rounds_async(242, 70158, out, max_round=50)
+                results = await fetcher.fetch_all_rounds_async(242, 70158, max_round=50)
 
             self.assertEqual(len(results), 1)
             fetcher._fetch_and_save_event_pages.assert_awaited()  # type: ignore
@@ -97,15 +96,13 @@ class TestFetchStrategyMocked(unittest.IsolatedAsyncioTestCase):
     async def test_week_based_uses_round_urls_not_event_list(self):
         with tempfile.TemporaryDirectory() as tmp:
             fetcher = self._make_fetcher(tmp)
-            out = os.path.join(tmp, "matches_out")
-            os.makedirs(out, exist_ok=True)
 
             fetcher._fetch_rounds_metadata = AsyncMock(  # type: ignore
                 return_value=[{"round": 1}, {"round": 2}]
             )
 
             async def save_round(*args, **kwargs):
-                rn = args[4]
+                rn = args[4]  # (semaphore, session, league_id, season_id, round_num)
                 return {"events": [_finished_event(100 + rn)], "round": rn}
 
             fetcher._fetch_and_save_round = AsyncMock(side_effect=save_round)  # type: ignore
@@ -118,7 +115,7 @@ class TestFetchStrategyMocked(unittest.IsolatedAsyncioTestCase):
                     __aexit__=AsyncMock(return_value=False),
                 ),
             ):
-                results = await fetcher.fetch_all_rounds_async(17, 96668, out, max_round=50)
+                results = await fetcher.fetch_all_rounds_async(17, 96668, max_round=50)
 
             self.assertEqual(len(results), 2)
             fetcher._fetch_and_save_event_pages.assert_not_awaited()  # type: ignore
@@ -129,8 +126,6 @@ class TestFetchStrategyMocked(unittest.IsolatedAsyncioTestCase):
     async def test_cup_slug_passed_for_week_entry(self):
         with tempfile.TemporaryDirectory() as tmp:
             fetcher = self._make_fetcher(tmp)
-            out = os.path.join(tmp, "out")
-            os.makedirs(out, exist_ok=True)
 
             fetcher._fetch_rounds_metadata = AsyncMock(  # type: ignore
                 return_value=[{"round": 1, "slug": "week-1"}]
@@ -151,7 +146,7 @@ class TestFetchStrategyMocked(unittest.IsolatedAsyncioTestCase):
                     __aexit__=AsyncMock(return_value=False),
                 ),
             ):
-                results = await fetcher.fetch_all_rounds_async(17, 1, out, max_round=50)
+                results = await fetcher.fetch_all_rounds_async(17, 1, max_round=50)
 
             self.assertEqual(len(results), 1)
             self.assertEqual(seen_slugs, ["week-1"])
@@ -159,8 +154,6 @@ class TestFetchStrategyMocked(unittest.IsolatedAsyncioTestCase):
     async def test_event_pages_dedupe_and_save(self):
         with tempfile.TemporaryDirectory() as tmp:
             fetcher = self._make_fetcher(tmp)
-            out = os.path.join(tmp, "out")
-            os.makedirs(out, exist_ok=True)
             session = MagicMock()
 
             pages = {
@@ -185,13 +178,23 @@ class TestFetchStrategyMocked(unittest.IsolatedAsyncioTestCase):
             with patch("src.utils.make_api_request_async", new=fake_api), patch(
                 "src.utils.FETCH_ONLY_FINISHED", True
             ):
-                results = await fetcher._fetch_and_save_event_pages(session, 242, 1, out)
+                results = await fetcher._fetch_and_save_event_pages(session, 242, 1)
 
             ids = []
             for chunk in results:
                 ids.extend(e["id"] for e in chunk["events"])
             self.assertEqual(sorted(ids), [1, 2, 3])
-            self.assertTrue(os.path.exists(os.path.join(out, "events_last_0.json")))
+            # Sayfalar Store'a yazılır (ST-22): sezonun schedule/last_0 ve last_1 dilimleri
+            store = open_store(tmp)
+            try:
+                ref = Ref.season(242, 1)
+                self.assertEqual([info.sub for info in store.entities.slices(ref)], ["last_0", "last_1"])
+                first = store.entities.payload(ref, "schedule", "last_0")
+                self.assertEqual([e["id"] for e in first["events"]], [1, 2])
+                self.assertEqual(store.entities.slice(ref, "schedule", "last_1").meta, {"filtered": True})
+                self.assertFalse(os.path.exists(os.path.join(tmp, "matches", "242_MLS")))
+            finally:
+                store.close()
 
 
 class TestFinishedAndSeasonYear(unittest.TestCase):
@@ -238,7 +241,7 @@ class TestFinishedAndSeasonYear(unittest.TestCase):
                 lambda y: float(str(y).split("/")[0]) if y else 0
             )
             fetcher = MatchFetcher(config, seasons, data_dir=tmp)
-            fetcher._save_season_summary = MagicMock()  # type: ignore
+            fetcher._report_season = MagicMock()  # type: ignore
 
             def rounds_for(league_id, season_id, max_round=50):
                 if season_id == 76986:

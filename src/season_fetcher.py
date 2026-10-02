@@ -3,8 +3,10 @@ SofaScore API'sinden lig sezonlarını çeken modül.
 
 Saklanan sezon listeleri ve "bu sezonun maç listesi indirilmiş mi" sorusu deponun kataloğundan okunur
 (src/services/tournaments.py; plan maddesi RD-5): bir ligin birden çok sezon listesi dosyası varsa adı ne
-olursa olsun en yenisi geçerlidir ve web uç noktaları da aynı listeyi görür. Listeyi yazan hâlâ bu modüldür
-(`_save_seasons_json`); yazdıktan sonra kataloğu güncelleyen kancayı çağırır.
+olursa olsun en yenisi geçerlidir ve web uç noktaları da aynı listeyi görür. Çekilen liste Store'a yazılır
+(`_save_seasons_json`, `EntityStore.put`; plan maddesi ST-22): `v3/tournaments/<lig>/seasons.json.gz`. Yazma
+kataloğu kendisi günceller; v3 listesi olan ligin eski `seasons/*_seasons.json` dosyası yerinde kalır ama
+okunmaz.
 """
 
 import os
@@ -17,14 +19,11 @@ from src.config_manager import ConfigManager
 from src.exceptions import DataParsingError, SofaScoreScraperError
 from src.utils import make_api_request, ensure_directory
 
-from src.fsutil import atomic_write_json
-# Gölge kip (docs/design/01-storage.md 3.5): her yazmadan sonra Store'un bir `shadow_*` kancası çağrılır ve
-# katalog yazılanı diskten yeniden dizinler. Okumalar da aynı depodan yapılır (`open_store`). Paket kökü
-# üzerinden: kancalar ve cephe ilk çağrıda yüklenir.
+# Okumalar ve yazmalar aynı depodan yapılır (`open_store`). Paket kökü üzerinden: cephe ilk çağrıda yüklenir.
 from src import store as store_hooks
 from src.logger import get_logger
-from src.paths import seasons_file
 from src.services import tournaments
+from src.slices import SLICE_EMPTY, SLICE_OK, Outcome
 
 if TYPE_CHECKING:
     from src.store import Store
@@ -379,19 +378,22 @@ class SeasonFetcher:
 
     def _save_seasons_json(self, league_id: int, data: Dict[str, Any]):
         """
-        Bir lig için çekilen sezon verilerini JSON dosyası olarak kaydeder.
+        Bir lig için çekilen sezon listesini Store'a yazar: turnuvanın `seasons` dilimi
+        (`v3/tournaments/<lig>/seasons.json.gz`), SofaScore'un yanıtı olduğu gibi. Boş liste de saklanır
+        (durumu `empty`). Kaydedilemezse hata günlüğe yazılır, çağırana çıkmaz (eski davranış).
 
         Args:
             league_id: Lig ID'si
             data: API'den alınan sezon verileri
         """
-        file_path = seasons_file(self.data_dir, league_id, self.config_manager.get_league_by_id(league_id))
+        seasons = data.get("seasons") if isinstance(data, dict) else None
+        outcome = Outcome(SLICE_OK if seasons else SLICE_EMPTY, data)
         try:
-            atomic_write_json(file_path, data)
-            store_hooks.shadow_season_lists(self.data_dir)
-            logger.info(f"Sezon verileri JSON olarak kaydedildi: {file_path}")
+            ref = store_hooks.Ref.tournament(int(league_id))
+            self._store().entities.put(ref, {"seasons": outcome}, count_empties=False)
+            logger.info(f"Season list of league {league_id} stored ({len(seasons or [])} seasons)")
         except Exception as e:
-            logger.error(f"JSON dosyası kaydedilirken hata: {str(e)}")
+            logger.error(f"Season list of league {league_id} could not be stored: {e}")
 
     def _get_sortable_year_value(self, year_str: str) -> float:
         """

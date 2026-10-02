@@ -62,14 +62,80 @@
   "match_details/17_Premier_League/season_Premier_League_24_25/9100003/statistics.json": "sha256:6fec673fa7f1",
   "match_details/17_Premier_League/season_Premier_League_24_25/9100003/team_streaks.json": "sha256:875eb2f1ef52",
   "match_details/processed/all_matches_<epoch>.csv": "sha256:bbb79fb45fde",
-  "matches/17_Premier_League/52186_Premier_League_23_24/events_last_0.json": "sha256:5f55caf4b15c",
   "matches/17_Premier_League/52186_Premier_League_23_24_summary.csv": "sha256:3faf0d3448a3",
-  "matches/17_Premier_League/52186_Premier_League_23_24_summary.json": "sha256:35551700e5b8",
-  "matches/17_Premier_League/61627_Premier_League_24_25/round_1.json": "sha256:3ee61c05e56c",
-  "matches/17_Premier_League/61627_Premier_League_24_25/round_2.json": "sha256:c4513ef32663",
   "matches/17_Premier_League/61627_Premier_League_24_25_summary.csv": "sha256:275d72357445",
-  "matches/17_Premier_League/61627_Premier_League_24_25_summary.json": "sha256:67fa6332404c",
-  "seasons/17_Premier_League_seasons.json": "sha256:0a0f8a9f191b"
+  "v3/tournaments/17/manifest.json": {
+   "created_at": "<volatile>",
+   "format": 1,
+   "id": 17,
+   "kind": "tournament",
+   "slices": {
+    "seasons": {
+     "bytes": "<volatile>",
+     "checked_at": "<volatile>",
+     "fetched_at": "<volatile>",
+     "raw_bytes": 129,
+     "sha256": "ee74fb0914ac8a2fe995d578a3ecc0e0e4d27d14fbfba7ed2f3de9300366ae5a",
+     "state": "ok"
+    }
+   },
+   "updated_at": "<volatile>"
+  },
+  "v3/tournaments/17/seasons.json.gz": "<binary>",
+  "v3/tournaments/17/seasons/52186/manifest.json": {
+   "created_at": "<volatile>",
+   "format": 1,
+   "id": 52186,
+   "kind": "season",
+   "slices": {
+    "schedule/last_0": {
+     "bytes": "<volatile>",
+     "checked_at": "<volatile>",
+     "fetched_at": "<volatile>",
+     "meta": {
+      "filtered": true
+     },
+     "raw_bytes": 832,
+     "sha256": "f682222c30aa64d24ec3eacf5eae722f91845db4617d649857377ee9f1ce3711",
+     "state": "ok"
+    }
+   },
+   "updated_at": "<volatile>"
+  },
+  "v3/tournaments/17/seasons/52186/schedule/last_0.json.gz": "<binary>",
+  "v3/tournaments/17/seasons/61627/manifest.json": {
+   "created_at": "<volatile>",
+   "format": 1,
+   "id": 61627,
+   "kind": "season",
+   "slices": {
+    "schedule/round_1": {
+     "bytes": "<volatile>",
+     "checked_at": "<volatile>",
+     "fetched_at": "<volatile>",
+     "meta": {
+      "complete": true
+     },
+     "raw_bytes": 1600,
+     "sha256": "8f1f2d8d8c86cc944d674b731fedcd62129191a5b2d68f72c80303e5f70d38f3",
+     "state": "ok"
+    },
+    "schedule/round_2": {
+     "bytes": "<volatile>",
+     "checked_at": "<volatile>",
+     "fetched_at": "<volatile>",
+     "meta": {
+      "complete": false
+     },
+     "raw_bytes": 1426,
+     "sha256": "b652a9b249a4c0f70f06c82c9da74809c9db53190c6d3bce909bbb6eaa039b51",
+     "state": "ok"
+    }
+   },
+   "updated_at": "<volatile>"
+  },
+  "v3/tournaments/17/seasons/61627/schedule/round_1.json.gz": "<binary>",
+  "v3/tournaments/17/seasons/61627/schedule/round_2.json.gz": "<binary>"
  },
  "jobs": {
   "all_leagues": {

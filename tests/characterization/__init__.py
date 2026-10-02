@@ -26,6 +26,11 @@ _VOLATILE_KEYS = frozenset({"observed_at_utc", "at", "ts_utc"})
 # İçeriği kodun ürettiği küçük dosyalar goldende açık yazılır; gerisi (SofaScore yanıtının kopyaları,
 # dışa aktarılan CSV'ler) özetle (sha256'nın ilk 12 hanesi) karşılaştırılır.
 _INLINE_NAMES = frozenset({"_unavailable.json", "_slice_status.json", "observation.json", "score_changes.jsonl"})
+# v3 varlık dizininin manifesti (ST-22) açık yazılır: dilimlerin durumu, meta'sı ve yük özetleri (sha256) goldende
+# görünür; zamanları çalıştırma anına, sıkıştırılmış boyutu (`bytes`) platformun zlib'ine bağlıdır. Yük dosyaları
+# (`.json.gz`) yalnızca varlıklarıyla karşılaştırılır: içerikleri manifestteki `sha256` ve `raw_bytes` ile sabittir.
+_MANIFEST_NAME = "manifest.json"
+_MANIFEST_VOLATILE_KEYS = frozenset({"created_at", "updated_at", "fetched_at", "checked_at", "at", "bytes"})
 # Yerel saatle yazılan tarihler (özet CSV'deki match_date) makinenin saat dilimine göre değişir
 _LOCAL_DATETIME = re.compile(r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?")
 # Dosya adındaki çalıştırma zamanı (processed/all_matches_<epoch>.csv)
@@ -47,11 +52,11 @@ def assert_golden(name: str, actual: Dict[str, Any]) -> None:
     assert json.loads(text) == expected, f"{path.name} differs; if the change is intended, regenerate with {UPDATE_ENV}=1"
 
 
-def _mask(value: Any) -> Any:
+def _mask(value: Any, keys: frozenset = _VOLATILE_KEYS) -> Any:
     if isinstance(value, dict):
-        return {k: "<volatile>" if k in _VOLATILE_KEYS else _mask(v) for k, v in value.items()}
+        return {k: "<volatile>" if k in keys else _mask(v, keys) for k, v in value.items()}
     if isinstance(value, list):
-        return [_mask(v) for v in value]
+        return [_mask(v, keys) for v in value]
     return value
 
 
@@ -67,6 +72,8 @@ def _file_summary(path: Path) -> Any:
         data = _mask(json.loads(text))
         if path.name in _INLINE_NAMES:
             return data
+        if path.name == _MANIFEST_NAME:
+            return _mask(data, _MANIFEST_VOLATILE_KEYS)
         if path.name.endswith("_summary.json") and isinstance(data, list):
             # Tur sonuçları eşzamanlı isteklerin bitiş sırasıyla yazılır: sıra sözleşme değil
             data = sorted(data, key=lambda item: json.dumps(item, sort_keys=True))

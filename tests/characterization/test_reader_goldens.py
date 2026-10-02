@@ -38,7 +38,6 @@ import re
 import time
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Sequence
-from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -583,55 +582,9 @@ def test_listed_matches_have_distinct_dates(name: str, tmp_path: Path) -> None:
 # --- fabrika sadakati: bugünkü yazıcılarla aynı dosyalar ------------------------------------------
 
 
-def _match_fetcher(data_dir: Path, league: sf.League, season: sf.Season) -> Any:
-    from src.match_fetcher import MatchFetcher
-
-    config = MagicMock()
-    config.get_leagues.return_value = {league.id: league.name}
-    config.get_league_by_id.return_value = league.name
-    seasons = MagicMock()
-    seasons.get_season_name.return_value = season.name
-    return MatchFetcher(config, seasons, data_dir=str(data_dir))
-
-
-@pytest.mark.parametrize("league, season, listings", [
-    (sf.PL, sf.PL_2627, sf.PL_ROUNDS),
-    (sf.FA_CUP, sf.FA_2627, sf.CUP_ROUNDS),
-    (sf.NBA, sf.NBA_2627, sf.NBA_PAGES),
-    (sf.WIMBLEDON, sf.WIM_2026, sf.WIM_PAGES),
-    (sf.LALIGA, sf.LALIGA_2627, sf.LIGA_PAGES),
-], ids=["rounds", "cup-rounds", "pages", "pages-tennis", "pages-unfiltered"])
-def test_fidelity_schedule_and_summary_files(league: sf.League, season: sf.Season, listings: Sequence[sf.Listing],
-                                             tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Tur dosyası, olay sayfası ve sezon özeti: MatchFetcher aynı yanıtlardan aynı baytları yazar."""
-    from src.fsutil import atomic_write_json
-    from src.paths import matches_season_dir
-
-    monkeypatch.setattr("src.utils.FETCH_ONLY_FINISHED", all(listing.filtered for listing in listings))
-    built = _tree(sf.build_fixture("canonical", tmp_path / "built").data_dir)
-    fetcher = _match_fetcher(tmp_path / "written", league, season)
-    out_dir = Path(matches_season_dir(str(tmp_path / "written"), league.id, league.name, season.id, season.name))
-    results = []
-    for listing in listings:
-        raw = {"events": [sf.event_payload(ev) for ev in listing.events], "hasNextPage": listing.has_next}
-        if listing.kind == "round":
-            suffix = f"_{listing.slug}" if listing.slug else ""
-            atomic_write_json(str(out_dir / f"round_{listing.label}{suffix}.json"),
-                              {**raw, "_complete": fetcher._round_is_complete(raw)})
-            result = fetcher._round_result(raw, listing.label)
-        else:  # MatchFetcher._fetch_and_save_event_pages'in sayfa başına yaptığı
-            kind, page = str(listing.label).split("/")
-            result = fetcher._apply_finished_filter({**raw, "source": listing.label})
-            atomic_write_json(str(out_dir / f"events_{kind}_{page}.json"), result)
-            result = {**result, "round": f"{kind}_{page}"}
-        if result:
-            results.append(result)
-    fetcher._save_season_summary(league.id, season.id, results)
-
-    written = _tree(tmp_path / "written")
-    assert written, "yazıcı hiçbir şey yazmadı"
-    prefix = f"matches/{sf.league_dir(league)}/{sf.season_dir(season)}"
-    assert written == {f: data for f, data in built.items() if f.startswith(prefix)}
+# Program sayfalarının ve sezon özetinin sadakati (eski test_fidelity_schedule_and_summary_files) ST-22 ile
+# tests/test_store_entities_put.py'ye taşındı: yazıcı artık v3'e yazar; aynı yanıtlardan v3'teki mantıksal döküm
+# fabrikanın eski düzen dosyalarınınkine eşittir.
 
 
 def test_fidelity_detail_directories(tmp_path: Path) -> None:

@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-import time
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -15,6 +15,8 @@ from src.match_data_fetcher import (SLICE_EMPTY, SLICE_FAILED, UNAVAILABLE_AFTER
                                     SliceOutcome)
 from src.match_fetcher import MatchFetcher
 from src.paths import league_dir_name, season_dir_name, seasons_file, summary_paths
+from src.slices import SLICE_OK, Outcome
+from src.store import Ref, open_store, shadow_schedules
 from src.web.app import app
 
 client = TestClient(app)
@@ -32,35 +34,53 @@ def _fetcher(tmp_path) -> MatchFetcher:
 
 
 # --- tur önbelleği ---------------------------------------------------------------
+# Tur sayfası Store'dadır (ST-22): önbellek kararı dilimin katalogdaki kaydından (meta.complete, fetched_at) gelir.
 
-def _round_file(tmp_path, data, age_seconds=0):
-    path = tmp_path / "round_1.json"
-    path.write_text(json.dumps(data))
-    if age_seconds:
-        t = time.time() - age_seconds
-        os.utime(path, (t, t))
-    return str(path)
+SEASON = 96668
+
+
+def _store_round(tmp_path, data, *, complete, age_seconds=0):
+    fetched = datetime.now(timezone.utc) - timedelta(seconds=age_seconds)
+    open_store(str(tmp_path)).entities.put(
+        Ref.season(17, SEASON), {("schedule", "round_1"): Outcome(SLICE_OK, data, fetched_at=fetched,
+                                                                  meta={"complete": complete})})
+
+
+def _legacy_round_file(tmp_path, data):
+    """Eski sürümün yazdığı tur dosyası (matches/<lig>/<sezon>/round_1.json)."""
+    season_dir = tmp_path / "matches" / "17_Premier_League" / f"{SEASON}_Premier_League_26_27"
+    season_dir.mkdir(parents=True, exist_ok=True)
+    (season_dir / "round_1.json").write_text(json.dumps(data))
+    shadow_schedules(str(tmp_path))  # testin kendi yazdığı eski dosya kataloğa girer
 
 
 def test_complete_round_is_reused(tmp_path):
     f = _fetcher(tmp_path)
-    path = _round_file(tmp_path, {"events": [_event(1)], "_complete": True}, age_seconds=10 * 86400)
-    assert f._load_cached_round(path) is not None
+    _store_round(tmp_path, {"events": [_event(1)]}, complete=True, age_seconds=10 * 86400)
+    assert f._load_cached_round(17, SEASON, "round_1") == {"events": [_event(1)]}
 
 
 def test_incomplete_round_is_refetched_after_ttl(tmp_path):
     f = _fetcher(tmp_path)
-    data = {"events": [_event(1), _event(2, "notstarted", "Not started", 0)], "_complete": False}
-    fresh = _round_file(tmp_path, data)
-    assert f._load_cached_round(fresh) is not None
-    old = _round_file(tmp_path, data, age_seconds=MatchFetcher.ROUND_CACHE_TTL_SECONDS + 60)
-    assert f._load_cached_round(old) is None
+    data = {"events": [_event(1), _event(2, "notstarted", "Not started", 0)]}
+    _store_round(tmp_path, data, complete=False)
+    assert f._load_cached_round(17, SEASON, "round_1") is not None
+    _store_round(tmp_path, data, complete=False, age_seconds=MatchFetcher.ROUND_CACHE_TTL_SECONDS + 60)
+    assert f._load_cached_round(17, SEASON, "round_1") is None
 
 
 def test_legacy_round_file_is_refetched_once(tmp_path):
     """Eski sürüm yalnız bitmiş maçları süzüp yazıyordu; _complete yok → yeniden çek."""
     f = _fetcher(tmp_path)
-    assert f._load_cached_round(_round_file(tmp_path, {"events": [_event(1)]})) is None
+    _legacy_round_file(tmp_path, {"events": [_event(1)]})
+    assert f._load_cached_round(17, SEASON, "round_1") is None
+
+
+def test_complete_legacy_round_file_is_reused(tmp_path):
+    """`_complete` taşıyan eski tur dosyası da önbellektir (yükü `_complete` anahtarı olmadan gelir)."""
+    f = _fetcher(tmp_path)
+    _legacy_round_file(tmp_path, {"events": [_event(1)], "_complete": True})
+    assert f._load_cached_round(17, SEASON, "round_1") == {"events": [_event(1)]}
 
 
 def test_round_saves_raw_payload_and_returns_only_finished(tmp_path):
@@ -69,11 +89,13 @@ def test_round_saves_raw_payload_and_returns_only_finished(tmp_path):
     with patch("src.utils.make_api_request_async", new=AsyncMock(return_value=payload)), \
             patch("src.utils.FETCH_ONLY_FINISHED", True):
         result = asyncio.run(
-            f._fetch_and_save_round(asyncio.Semaphore(2), None, 17, 1, 1, str(tmp_path))
+            f._fetch_and_save_round(asyncio.Semaphore(2), None, 17, SEASON, 1)
         )
-    saved = json.loads((tmp_path / "round_1.json").read_text())
-    assert [e["id"] for e in saved["events"]] == [1, 2]
-    assert saved["_complete"] is False
+    store = open_store(str(tmp_path))
+    saved = store.entities.payload(Ref.season(17, SEASON), "schedule", "round_1")
+    assert [e["id"] for e in saved["events"]] == [1, 2] and "_complete" not in saved
+    assert store.entities.slice(Ref.season(17, SEASON), "schedule", "round_1").meta == {"complete": False}
+    assert not (tmp_path / "matches" / "17_Premier_League").exists()
     assert [e["id"] for e in result["events"]] == [1]
     assert result["round"] == 1
 

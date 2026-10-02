@@ -13,16 +13,22 @@ Tümü çevrimdışıdır: ağ istekleri yamalanır.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Sequence
+from unittest.mock import MagicMock, patch
 
 import pytest
 
+import store_dump
 import store_fixtures as sf
+from src.match_fetcher import MatchFetcher
+from src.season_fetcher import SeasonFetcher
+from src.services.query import QueryService
 from src.slices import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, SLICE_SKIPPED, Outcome
 from src.store import (
     CategoryRow,
@@ -35,6 +41,7 @@ from src.store import (
     StoreError,
     open_store,
 )
+from src.store.legacy import schedule_sub as legacy_schedule_sub
 
 PL = sf.PL.id
 PL_SEASON = sf.PL_2627.id
@@ -340,3 +347,149 @@ def test_categories_and_sports_are_read_from_the_catalog(tmp_path: Path) -> None
         store.entities.categories(limit=0)
     with pytest.raises(ValueError):
         store.entities.sport(1)  # type: ignore[arg-type]
+
+
+# --- yazıcılar: MatchFetcher ve SeasonFetcher ------------------------------------------------------------
+
+@contextlib.asynccontextmanager
+async def _no_session() -> Any:
+    yield None
+
+
+def _match_fetcher(data_dir: Path, league: sf.League, season: sf.Season) -> MatchFetcher:
+    config = MagicMock()
+    config.get_leagues.return_value = {league.id: league.name}
+    config.get_league_by_id.return_value = league.name
+    config.get_max_concurrent.return_value = 2
+    seasons = MagicMock()
+    seasons.get_season_name.return_value = season.name
+    return MatchFetcher(config, seasons, data_dir=str(data_dir))
+
+
+def _api(league: sf.League, season: sf.Season, listings: Sequence[sf.Listing]) -> Any:
+    """Listelerden sahte SofaScore: turlar `/rounds` ve tur uç noktalarından, sayfalar `events/last|next`'ten."""
+    base = f"/unique-tournament/{league.id}/season/{season.id}"
+    rounds = [listing for listing in listings if listing.kind == "round"]
+    pages = {f"{base}/events/{listing.label}": listing for listing in listings if listing.kind == "page"}
+
+    async def api(session: Any, url: str, max_retries: Optional[int] = None) -> Dict[str, Any]:
+        if url == f"{base}/rounds":
+            return {"rounds": [{"round": r.label, **({"slug": r.slug} if r.slug else {})} for r in rounds]}
+        for listing in rounds:
+            if url == MatchFetcher.build_round_events_url(league.id, season.id, int(listing.label), listing.slug):
+                return {"events": [sf.event_payload(ev) for ev in listing.events], "hasNextPage": listing.has_next}
+        found = pages.get(url)
+        if found is None:
+            from src.exceptions import ResourceNotFoundError
+            raise ResourceNotFoundError(url)
+        return {"events": [sf.event_payload(ev) for ev in found.events], "hasNextPage": found.has_next}
+
+    return api
+
+
+SEASONS = [
+    (sf.PL, sf.PL_2627, sf.PL_ROUNDS),
+    (sf.FA_CUP, sf.FA_2627, sf.CUP_ROUNDS),
+    (sf.NBA, sf.NBA_2627, sf.NBA_PAGES),
+    (sf.WIMBLEDON, sf.WIM_2026, sf.WIM_PAGES),
+    (sf.LALIGA, sf.LALIGA_2627, sf.LIGA_PAGES),
+]
+
+
+@pytest.mark.parametrize("league, season, listings", SEASONS,
+                         ids=["rounds", "cup-rounds", "pages", "pages-tennis", "pages-unfiltered"])
+def test_the_schedule_writer_stores_what_the_legacy_writer_wrote(league: sf.League, season: sf.Season,
+                                                                  listings: Sequence[sf.Listing], tmp_path: Path,
+                                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Aynı yanıtlardan: v3'teki program sayfalarının mantıksal dökümü (yük özeti ve meta) eski yazıcının dosyalarınınkine
+    eşittir; sezonun liste satırları eski sezon özeti CSV'sinin satırlarına eşittir. Özet dosyası yazılmaz.
+    """
+    filtered = all(listing.filtered for listing in listings)
+    monkeypatch.setattr("src.utils.FETCH_ONLY_FINISHED", filtered)
+    built = sf.build_fixture("canonical", tmp_path / "built")
+    key = f"{league.id}/{season.id}"
+    expected = store_dump.dump_legacy(built.data_dir)["schedules"][key]
+    data = tmp_path / "written"
+    fetcher = _match_fetcher(data, league, season)
+    with patch("src.utils.make_api_request_async", new=_api(league, season, listings)), \
+            patch("src.utils.create_session_async", new=_no_session):
+        assert fetcher.fetch_all_matches_for_season(league.id, season.id) is True
+
+    written = store_dump.dump(data)
+    assert written["schedules"] == {key: expected}
+    # Eski düzende yalnızca sezon özeti CSV'si kalır (geçici köprü, RD-3'e kadar), eski yazıcınınkiyle aynı baytlar;
+    # tur / sayfa dosyaları ve özet JSON'u yazılmaz
+    legacy_files = {name: blob for name, blob in tree(data).items() if name.startswith("matches/")}
+    csv_name = f"matches/{sf.league_dir(league)}/{sf.season_dir(season)}_summary.csv"
+    assert legacy_files == {csv_name: tree(built.data_dir)[csv_name]}
+
+    store = open_store(data)
+    rows = QueryService(store).season_matches_legacy(season.id, league.id, only_finished=False)
+    _results, summary = sf.summary_of(listings)
+    have = {row["match_id"]: {k: str(v) for k, v in row.items()} for row in rows}
+    want = {row["match_id"]: {k: str(v) for k, v in row.items()} for row in summary}
+    assert {mid: have[mid] for mid in want} == want  # özetin her satırı listede, aynı değerlerle
+    assert differences(store) == []
+
+
+def test_a_complete_round_is_not_fetched_again(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("src.utils.FETCH_ONLY_FINISHED", True)
+    data = tmp_path / "data"
+    fetcher = _match_fetcher(data, sf.PL, sf.PL_2627)
+    calls: List[str] = []
+    api = _api(sf.PL, sf.PL_2627, sf.PL_ROUNDS)
+
+    async def counting(session: Any, url: str, max_retries: Optional[int] = None) -> Dict[str, Any]:
+        calls.append(url)
+        return await api(session, url, max_retries)
+
+    with patch("src.utils.make_api_request_async", new=counting), \
+            patch("src.utils.create_session_async", new=_no_session):
+        fetcher.fetch_all_matches_for_season(PL, PL_SEASON)
+        first = len(calls)
+        calls.clear()
+        fetcher.fetch_all_matches_for_season(PL, PL_SEASON)
+    assert first == 4  # /rounds ve üç tur
+    assert [url.rsplit("/", 1)[1] for url in calls] == ["rounds"]  # bitmemiş turlar TTL içinde, bitmiş tur hep
+    assert differences(open_store(data)) == []
+
+
+def test_the_season_list_writer_stores_the_response_in_the_store(canonical: sf.LegacyFixture) -> None:
+    data = canonical.data_dir
+    before = legacy_tree(data)
+    config = MagicMock()
+    config.get_league_by_id.return_value = sf.BUNDESLIGA.name
+    fetcher = SeasonFetcher(config, data_dir=str(data))
+    payload = {"seasons": [{"id": 77001, "name": "Bundesliga 26/27", "year": "26/27"}]}
+
+    fetcher._save_seasons_json(sf.BUNDESLIGA.id, payload)
+
+    assert legacy_tree(data) == before  # seasons/<id>_<ad>_seasons.json yazılmaz
+    assert (data / "v3" / "tournaments" / str(sf.BUNDESLIGA.id) / "seasons.json.gz").is_file()
+    assert fetcher.get_seasons_for_league(sf.BUNDESLIGA.id) == payload["seasons"]
+    store = open_store(data)
+    assert store_dump.dump(data)["season_lists"][str(sf.BUNDESLIGA.id)] == {
+        "sha256": store_dump.payload_hash(payload), "seasons": 1}
+    assert differences(store) == []
+
+
+def test_a_season_list_that_cannot_be_stored_is_logged(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    config = MagicMock()
+    fetcher = SeasonFetcher(config, data_dir=str(tmp_path / "data"))
+    with patch.object(fetcher, "_store", side_effect=StoreError("disk full")):
+        fetcher._save_seasons_json(PL, season_list(sf.PL_2627))
+    assert any("could not be stored" in record.getMessage() for record in caplog.records)
+
+
+def test_schedule_subs_follow_the_legacy_file_names() -> None:
+    assert MatchFetcher.schedule_sub("round", 12) == "round_12"
+    assert MatchFetcher.schedule_sub("round", 1, "Final") == "round_1_final"
+    assert MatchFetcher.schedule_sub("round", 3, "quarter finals") == "round_3_quarter-finals"
+    assert MatchFetcher.schedule_sub("last", 0) == "last_0" and MatchFetcher.schedule_sub("next", 2) == "next_2"
+    with pytest.raises(ValueError):
+        MatchFetcher.schedule_sub("week", 1)
+    # Eski sürümün dosya adından okuyucunun çıkardığı alt anahtarla aynı: eski tur dosyası önbellek olarak bulunur
+    for name, args in (("round_12.json", ("round", 12)), ("round_1_Final.json", ("round", 1, "Final")),
+                       ("events_last_0.json", ("last", 0))):
+        assert legacy_schedule_sub(name)[1] == MatchFetcher.schedule_sub(*args)

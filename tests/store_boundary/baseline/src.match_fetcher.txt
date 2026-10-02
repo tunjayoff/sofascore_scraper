@@ -1,7 +1,0 @@
-# src/match_fetcher.py: Store sınırı ihlalleri (docs/design/01-storage.md bölüm 2.4). Bu liste yalnızca küçülebilir.
-# Bir ihlali gideren PR satırını da siler; açıklama: tests/test_store_boundary.py
-[static]
-MatchFetcher._load_cached_round:open
-MatchFetcher._load_cached_round:os.path.exists
-MatchFetcher._load_cached_round:os.path.getmtime
-MatchFetcher.fetch_all_rounds_async:os.makedirs
