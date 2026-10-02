@@ -24,9 +24,11 @@ Webhook sink'i ve sözleşmesi (docs/design/02-services.md bölüm 5.3).
   * Adres kullanıcı adı ve parola taşıyorsa (`https://kullanıcı:parola@host/...`) bunlar adresten çıkarılır ve
     `Authorization: Basic` başlığı olarak gönderilir.
 
-Gizli değerler: imza anahtarı ve adres (yolu ya da sorgusu belirteç taşıyabilir) hiçbir log satırına, hata
-metnine ya da akış olayına girmez. Hata metinleri yalnızca durum kodunu ve hata sınıfını taşır; yine de
-üretilen her metinden adres ve anahtar ayıklanır.
+Gizli değerler: imza anahtarı ve adres (kullanıcı adı, parola, yol ve sorgu belirteç taşıyabilir) hiçbir log
+satırına, hata metnine ya da akış olayına girmez. Hata metinleri yalnızca durum kodunu, hata sınıfını ve
+işletim sisteminin iletisini taşır; yine de üretilen her metinden adres, parçaları ve anahtar ayıklanır.
+Taşımanın beklenmeyen bir hatasında (ağ hatası olmayan) istisnanın metni hiç kullanılmaz: yalnızca sınıfı.
+Loglarda sink adıyla ve host'uyla anılır.
 """
 from __future__ import annotations
 
@@ -122,7 +124,8 @@ def verify_signature(secret: Union[str, bytes], header: Optional[str], body: byt
         current = time.time() if now is None else float(now)
         if abs(current - timestamp) > tolerance:
             return False
-    return hmac.compare_digest(sign(secret, timestamp, body), given)
+    # Bayt olarak karşılaştırılır: ASCII olmayan bir karakter taşıyan sahte başlık hata değil, False'tur
+    return hmac.compare_digest(sign(secret, timestamp, body).encode("ascii"), given.encode("utf-8", "replace"))
 
 
 # --- taşıma --------------------------------------------------------------------------------------
@@ -214,14 +217,17 @@ class WebhookSink(BaseSink):
         self._clock: Clock = clock if clock is not None else SystemClock()
         self._transport: Transport = transport if transport is not None else urllib_transport
         self._attempt: Optional[Tuple[int, int, str]] = None  # (ilk, son, teslim kimliği): yeniden denemeler için
-        # Hata metinlerinden ayıklanacak parçalar: adresin tamamı, yolu ve sorgusu, imza anahtarı
+        # Hata metinlerinden ayıklanacak parçalar: adresin tamamı, yolu ve sorgusu (bütün olarak ve parça
+        # parça: yol bölümleri, sorgu değerleri), kullanıcı adı ve parola (yazıldığı ve yüzde-çözülmüş haliyle),
+        # imza anahtarı
         pieces: List[str] = [url, self._url, parts.query, parts.path if len(parts.path) > 1 else ""]
+        pieces.extend(parts.path.split("/"))
+        for pair in parts.query.split("&"):
+            pieces.extend(pair.split("=", 1))
         if self._authorization is not None:
             pieces.append(self._authorization.split(" ", 1)[1])
-        if parts.username:
-            pieces.append(parts.username)
-        if parts.password:
-            pieces.append(parts.password)
+        pieces.extend(piece for piece in (parts.username, parts.password) if piece)
+        pieces.extend([urllib.parse.unquote(piece) for piece in pieces])
         if self._secret is not None:
             pieces.append(self._secret.decode("utf-8", "replace"))
         # Çok kısa parçalar aranmaz: iki harflik bir yol her hata metnindeki aynı iki harfi maskelerdi
@@ -269,6 +275,10 @@ class WebhookSink(BaseSink):
             response = self._transport(self._url, body, headers, self.timeout_seconds)
         except (OSError, http.client.HTTPException) as e:
             raise RetryableSinkError(self._safe(f"network error ({_describe(e)})")) from None
+        except Exception as e:
+            # Beklenmeyen hata: metni adresi ya da başlıkları taşıyabilir; yalnızca sınıfı yazılır ve asıl
+            # istisna zincire eklenmez (dağıtıcı sink'lerin beklenmeyen hatalarını metniyle kaydeder)
+            raise RetryableSinkError(self._safe(f"internal error ({type(e).__name__})")) from None
         status = int(response.status)
         if 200 <= status < 300:
             self._attempt = None

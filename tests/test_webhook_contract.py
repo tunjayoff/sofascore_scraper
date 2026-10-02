@@ -259,6 +259,18 @@ def test_a_receiver_can_verify_the_signature_and_reject_old_or_forged_requests(r
         assert not verify_signature(SECRET, malformed, request.body, now=T0)
 
 
+def test_a_forged_signature_with_other_characters_is_rejected_not_an_error(receiver: Receiver, clock: FakeClock):
+    """Alıcı tarafı: ASCII olmayan ya da bozuk bir başlık doğrulamayı çökertmez (yanıt 401 olur, 500 değil)."""
+    hook(receiver, clock).deliver([envelope()])
+    request = receiver.requests[0]
+    good = request.headers["X-Sofascore-Signature"]
+    stamp = good.split(",")[0]
+    for forged in (f"{stamp},v1=\u00e9\u00e9", f"{stamp},v1=" + "\u0131" * 64, f"{stamp},v1=\udcff", "t=\u0661,v1=ab",
+                   f"{stamp},v1=" + good.split("v1=")[1].upper()):
+        assert verify_signature(SECRET, forged, request.body, tolerance=None) is False, forged
+    assert verify_signature(SECRET, good, request.body, tolerance=None)
+
+
 def test_an_unsigned_webhook_sends_no_signature(receiver: Receiver, clock: FakeClock):
     sink = hook(receiver, clock, secret=None)
     sink.deliver([envelope()])

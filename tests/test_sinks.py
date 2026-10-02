@@ -1398,6 +1398,48 @@ def test_webhook_failures_never_put_the_secret_or_the_address_anywhere(store: St
     assert len(system_events(store)) == 1 and "ops" in caplog.text  # sink adıyla anılır
 
 
+def test_an_unexpected_webhook_error_is_recorded_by_its_class_only(store: Store, clock: FakeClock,
+                                                                  caplog: pytest.LogCaptureFixture):
+    """Ağ hatası olmayan bir istisnanın metni adresi taşıyabilir: hiçbir yere yazılmaz."""
+    def broken(url: str, body: bytes, headers: Any, timeout: float) -> Any:
+        raise ValueError(f"cannot send to {url} with {headers} and {SECRET}")
+
+    sink = WebhookSink("ops", HOOK_URL, secret=SECRET, linger_seconds=0, clock=clock, transport=broken)
+    dispatcher = make(store, sink, clock=clock)
+    with caplog.at_level(logging.DEBUG):
+        dispatcher.register()
+        emit(store, ts=clock.time())
+        assert dispatcher.step() == 1.0
+    assert cursor_row(store, "ops")["last_error"] == "internal error (ValueError)"
+    everything = json.dumps({"logs": caplog.text, "cursor": cursor_row(store, "ops"),
+                             "status": [status.to_dict() for status in dispatcher.status()]})
+    for private in PRIVATE_PARTS + ("Basic ", "hooks.example.org/"):
+        assert private not in everything, private
+    with pytest.raises(RetryableSinkError) as caught:
+        sink.deliver([env_of(seq=9)])
+    assert caught.value.__cause__ is None and caught.value.__suppress_context__  # asıl istisna zincire eklenmez
+
+
+def test_every_part_of_a_webhook_address_is_scrubbed_from_error_texts(clock: FakeClock):
+    """İşletim sisteminin iletisi adresin tek bir parçasını taşısa da (yol bölümü, sorgu değeri, parola) yazılmaz."""
+    user, word = "us@er", "p:ss w0rd"  # yüzde kodlaması gereken karakterlerle, sahte değerler
+    quoted = [urllib.parse.quote(part, safe="") for part in (user, word)]
+    url = HOOK_URL.replace(HOOK_USER, quoted[0]).replace(HOOK_PASS, quoted[1])
+    seen: List[str] = []
+
+    def refuse(target: str, body: bytes, headers: Any, timeout: float) -> Any:
+        seen.append(target)
+        raise ConnectionRefusedError(111, " | ".join(leaks))
+
+    sink = WebhookSink("ops", url, secret=SECRET, clock=clock, transport=refuse)
+    leaks = [HOOK_PATH_PART, HOOK_QUERY_PART, *quoted, user, word, "T000", SECRET, url]
+    with pytest.raises(RetryableSinkError) as caught:
+        sink.deliver([env_of(seq=1)])
+    assert str(caught.value) == "network error (ConnectionRefusedError: " + " | ".join(["***"] * len(leaks)) + ")"
+    assert seen == [HOOK_URL.replace(f"{HOOK_USER}:{HOOK_PASS}@", "")]  # istek kullanıcı bilgisi olmadan gider
+    assert all(part not in repr(sink) for part in leaks)
+
+
 # === yapılandırmadan kurulum =====================================================================
 
 
