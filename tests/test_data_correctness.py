@@ -167,13 +167,67 @@ def test_sync_fetch_accepts_aet(tmp_path):
         assert f.fetch_match_data(42) is not None
 
 
-def test_summary_files_sorted_numerically_and_limited(tmp_path):
-    for sid in (9999, 10000, 500):
-        (tmp_path / f"{sid}_S_summary.csv").write_text("match_id\n")
-    files = MatchDataFetcher._season_summary_files(str(tmp_path), None, 2)
-    assert [os.path.basename(p).split("_")[0] for p in files] == ["10000", "9999"]
-    only = MatchDataFetcher._season_summary_files(str(tmp_path), [500], 0)
-    assert [os.path.basename(p) for p in only] == ["500_S_summary.csv"]
+# --- kapsam raporu (P15: katalogdan, dosya yazılmaz) -------------------------------------------------
+
+def _files(root) -> set:
+    return {os.path.relpath(os.path.join(d, n), root) for d, dirs, names in os.walk(root)
+            for n in names if ".meta" not in d.split(os.sep)}
+
+
+def test_file_report_comes_from_the_catalog_and_writes_nothing(tmp_path, capsys):
+    f = _detail_fetcher(tmp_path)
+    f._save_match_data("42", _partial_match(), {key: SliceOutcome(SLICE_EMPTY, reason="404", http_status=404)
+                                                 for key in _EMPTY_SLICES})
+    for _ in range(UNAVAILABLE_AFTER_ATTEMPTS):  # istatistik yeterince kez kesin "yok": artık eksik sayılmaz
+        f._save_match_data("43", {**_partial_match(), "basic": _basic(43), "statistics": None},
+                           {"statistics": SliceOutcome(SLICE_EMPTY, reason="404", http_status=404)})
+    capsys.readouterr()
+    before = _files(tmp_path)
+
+    report = f.generate_file_report()
+    assert capsys.readouterr().out == ""
+    assert _files(tmp_path) == before
+    assert not os.path.exists(os.path.join(f.processed_dir, "match_files_stats.json"))
+    assert set(report) == {"league_stats", "overall_stats"}
+    # 42: tek kesin "yok" yetmez, beş dilim eksik; 43: istatistik beklenmez, beş dilim eksik
+    missing = {f"{key}.json": 2 for key in ("team_streaks", "pregame_form", "h2h", "lineups", "incidents")}
+    assert report["overall_stats"] == {"total_matches": 2, "matches_with_all_files": 0, "completion_rate": 0.0,
+                                       "missing_files": missing}
+    (league, stats), = report["league_stats"].items()
+    assert league == "2361_Wimbledon,_Men"
+    assert stats["total_matches"] == 2 and stats["complete_matches"] == 0
+    assert set(stats["seasons"]) == {"season_1"}
+    assert stats["seasons"]["season_1"]["missing_files"] == stats["missing_files"]
+
+
+def test_file_report_of_another_folder(tmp_path):
+    here, other = tmp_path / "here", tmp_path / "other"
+    _detail_fetcher(other)._save_match_data("42", _partial_match())
+    f = _detail_fetcher(here)
+    assert f.generate_file_report()["overall_stats"]["total_matches"] == 0
+    for path in (other, other / "match_details", str(other) + os.sep):
+        assert f.generate_file_report(str(path))["overall_stats"]["total_matches"] == 1
+    assert f.generate_file_report(str(here / "match_details"))["overall_stats"]["total_matches"] == 0
+    stray = tmp_path / "stray"
+    stray.mkdir()
+    assert f.generate_file_report(str(stray)) == {}
+    assert os.listdir(stray) == []  # rastgele dizinde depo kurulmaz
+
+
+def test_menu_shows_the_file_report(tmp_path, capsys, monkeypatch):
+    from src.ui.match_ui import MatchDataMenuHandler
+
+    f = _detail_fetcher(tmp_path)
+    f._save_match_data("42", _partial_match())
+    menu = MatchDataMenuHandler(MagicMock(), f, {})
+    monkeypatch.setattr("builtins.input", lambda _prompt="": "")
+    capsys.readouterr()
+    menu.generate_file_report()
+    out = capsys.readouterr().out
+    assert "2361_Wimbledon,_Men" in out and "0/1" in out
+    for key in _EMPTY_SLICES:
+        assert f"{key}:" in out
+    assert "JSON:" not in out and "CSV:" not in out
 
 
 # --- yol düzeni -----------------------------------------------------------------

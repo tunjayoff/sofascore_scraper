@@ -1,23 +1,21 @@
-from src.i18n import get_i18n
 """
 SofaScore API'sinden detaylı maç verilerini çeken modül.
 
 P13'ten beri maç detaylarını indiren tek yol src/services/pipeline.py'deki FetchPipeline'dır; buradaki eski adlı
-giriş noktaları (toplu indirme, seçilen maçlar, tek maç, refill, yenileme) yalnızca iş birimlerini kurar. Kayıtların
-okunması, yazıcı (`_save_match_data`), ihtiyaç hesabının önbelleği ve CSV / rapor yardımcıları P15'e kadar burada durur.
+giriş noktaları (toplu indirme, seçilen maçlar, tek maç, refill, yenileme) yalnızca iş birimlerini kurar.
+
+Plan maddesi P15'ten beri sınıf yalnızca eski adlı yüzdür: eşitleme servisi (src/services/sync.py), dışa aktarma ve
+bakım servisleri ile terminal menüsü onu bu adlarla çağırır. İş başka modüllerdedir: boru hattı ve planlama
+(src/services/pipeline.py, planning.py), okumalar (src/services/query.py), CSV (src/services/export.py), kapsam
+raporu (src/services/status.py `StatusService.coverage`). Modül yazdırmaz; ilerleme ve sonuç günlüğe yazılır.
+Eski düzenin yazıcısı `_save_match_data` testlerin kayıt kurma aracı olarak durur (ürün kodu çağırmaz).
 """
 
 import os
-import json
-import csv
 import time  # noqa: F401  testler `src.match_data_fetcher.time.sleep` yolunu yamalar (time modülünün kendisi)
 import datetime as dt
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Mapping, Optional, Union, Tuple
-from pathlib import Path
-from collections import Counter
-import pandas as pd
-from tqdm import tqdm
 
 from src import breaker as request_breaker
 from src.client import base_url
@@ -37,7 +35,7 @@ from src.services.export import ExportService, ExportSpec
 from src.services import pipeline, planning
 from src.services.planning import WorkItem
 from src.services.query import QueryService, RefreshPolicy
-from src.services.status import only_finished_setting
+from src.services.status import CoverageReport, StatusService, only_finished_setting
 # Sonuç tipi ve "veri var mı" yüklemleri src/slices.py'de durur. `X as X` biçimindekiler buradan taşınan
 # adlardır: eski import'lar (from src.match_data_fetcher import SliceOutcome, SLICE_*) çalışmaya devam eder.
 from src.slices import (
@@ -45,13 +43,7 @@ from src.slices import (
     SLICE_FAILED as SLICE_FAILED,
     SLICE_OK as SLICE_OK,
     SliceOutcome as SliceOutcome,
-    has_h2h_data_dict,
-    has_incidents_data_dict,
-    has_lineups_data_dict,
-    has_pregame_form_data_dict,
-    has_team_streaks_data_dict,
     match_detail_slice_present,
-    statistics_has_data,
 )
 
 from src.logger import get_logger
@@ -255,10 +247,6 @@ class MatchDataFetcher:
     def end_job_cache(self) -> None:
         self._need_cache = {}
 
-    def _answered_outcome(self, key: str, data: Any) -> SliceOutcome:
-        """Yanıt gelen dilim gövdesinin sonucu: boru hattının kuralı (src/services/pipeline.py `answered_outcome`)."""
-        return pipeline.answered_outcome(key, SliceOutcome(SLICE_OK, data=data))
-
     # --- boru hattı (src/services/pipeline.py) ---------------------------------------------------------
     #
     # Maç detaylarını indiren tek yol FetchPipeline'dır; aşağıdaki eski giriş noktaları (toplu indirme, seçilen
@@ -435,13 +423,10 @@ class MatchDataFetcher:
         self.processed_dir = os.path.join(self.match_details_dir, "processed")
         self.base_url = base_url()
         self.rate_limit_breaker_triggered = False
-        self.last_rate_limit_headers: List[Dict[str, str]] = []
         self.last_status_counts: Dict[str, int] = {}
         # refresh_match her yenilemede (match_id, değişti_mi) ile çağırır (web iş kartı sayacı)
         self.refresh_listener: Optional[Callable[[str, bool], None]] = None
         self.last_refresh_changed = False
-        # Toplu indirmeyi durduran kalıcı depolama hatası (disk dolu, izin yok); yoksa None
-        self.last_storage_error: Optional[StorageError] = None
 
         # Veri dizinlerinin var olduğundan emin ol
         ensure_directory(self.data_dir)
@@ -475,30 +460,6 @@ class MatchDataFetcher:
         except Exception as e:
             logger.warning(f"Match {mid} could not be loaded from the store ({match_dir}): {e}")
             return {}
-
-    # "Bu yanıtta veri var mı" yüklemleri src/slices.py'dedir; metot adları eski çağrılar için durur.
-
-    def _statistics_has_data(self, d: Dict[str, Any]) -> bool:
-        return statistics_has_data(d)
-
-    def _has_lineups_data_dict(self, d: Dict[str, Any]) -> bool:
-        return has_lineups_data_dict(d)
-
-    def _has_h2h_data_dict(self, d: Dict[str, Any]) -> bool:
-        return has_h2h_data_dict(d)
-
-    def _has_pregame_form_data_dict(self, d: Dict[str, Any]) -> bool:
-        return has_pregame_form_data_dict(d)
-
-    def _has_team_streaks_data_dict(self, d: Dict[str, Any]) -> bool:
-        return has_team_streaks_data_dict(d)
-
-    def _has_incidents_data_dict(self, d: Dict[str, Any]) -> bool:
-        return has_incidents_data_dict(d)
-
-    def match_detail_slice_present(self, key: str, d: Dict[str, Any]) -> bool:
-        """Dilimin verisi var mı (src.slices.match_detail_slice_present)."""
-        return match_detail_slice_present(key, d)
 
     # --- Store'a yazma ---------------------------------------------------------------------------------
     #
@@ -886,38 +847,6 @@ class MatchDataFetcher:
         result = service.write_legacy_csv(self.processed_dir, spec)
         return result.path if result is not None and result.path else ""
 
-    @staticmethod
-    def _season_summary_files(
-        league_path: str, only_season_ids: Optional[List[int]], max_seasons: int
-    ) -> List[str]:
-        """
-        Bir lig dizinindeki sezon özet CSV'leri (`{sid}_..._summary.csv`, eski `_matches.csv`
-        dahil), sezon ID'si sayısal olarak büyükten küçüğe. only_season_ids verilirse yalnızca
-        onlar; max_seasons > 0 ise en yeni N sezon.
-        """
-        by_season: Dict[int, List[str]] = {}
-
-        def add(path: str, sid_text: str) -> None:
-            if sid_text.isdigit():
-                by_season.setdefault(int(sid_text), []).append(path)
-
-        for name in os.listdir(league_path):
-            path = os.path.join(league_path, name)
-            if os.path.isfile(path) and name.endswith(("_summary.csv", "_matches.csv")):
-                add(path, name.split("_", 1)[0])
-            elif os.path.isdir(path):
-                for inner in os.listdir(path):
-                    if inner.endswith(("_summary.csv", "_matches.csv")):
-                        add(os.path.join(path, inner), name.split("_", 1)[0])
-
-        season_ids = sorted(by_season, reverse=True)
-        if only_season_ids is not None:
-            allowed = {int(s) for s in only_season_ids}
-            season_ids = [sid for sid in season_ids if sid in allowed]
-        if max_seasons > 0:
-            season_ids = season_ids[:max_seasons]
-        return [path for sid in season_ids for path in by_season[sid]]
-
     def fetch_all_match_details(
         self,
         league_id: Optional[str] = None,
@@ -959,19 +888,19 @@ class MatchDataFetcher:
             match_ids = self.collect_detail_match_ids(league_id, max_seasons, only_season_ids)
             if match_ids is None:
                 return False
-            print(get_i18n().t("details_unique_ids_found", count=len(match_ids)))
+            logger.info("Found %d unique match ids", len(match_ids))
 
             if not match_ids:
-                print(get_i18n().t("details_no_ids"))
+                logger.warning("No match ids found")
                 return False
 
             match_ids_to_process = self.pending_detail_ids(match_ids)
             complete_count = len(match_ids) - len(match_ids_to_process)
             if complete_count:
-                print(get_i18n().t("details_some_complete", count=complete_count))
+                logger.info("%d matches already have every detail slice", complete_count)
 
             if not match_ids_to_process:
-                print(get_i18n().t("details_all_complete"))
+                logger.info("Every match already has every detail slice")
                 return True
 
             total_success = self.fetch_detail_ids(match_ids_to_process, progress_callback, should_cancel)
@@ -1009,21 +938,17 @@ class MatchDataFetcher:
             only_season_ids=only_season_ids) if tournament is not None or not league_id else {}
 
         if league_id:
-            print(get_i18n().t("details_fetching_league", league_id=league_id))
+            logger.info("Fetching match details for league %s", league_id)
             if tournament not in candidates:
-                print(get_i18n().t("details_league_dir_missing", league_id=league_id))
+                logger.warning("League %s has no listed matches", league_id)
                 return None
         else:
-            print(get_i18n().t("details_fetching_all"))
-
-        print(get_i18n().t("details_league_count", count=len(candidates)))
+            logger.info("Fetching match details for all leagues")
 
         match_ids: List[str] = []
         for tid, event_ids in candidates.items():
-            print("\n" + get_i18n().t("details_league_dir", name=league_dir_name(tid, self._league_name(tid))))
-            if event_ids:
-                print(get_i18n().t("details_league_ids_found", count=len(event_ids)))
-                match_ids.extend(str(event_id) for event_id in event_ids)
+            logger.info("League %s: %d match ids", league_dir_name(tid, self._league_name(tid)), len(event_ids))
+            match_ids.extend(str(event_id) for event_id in event_ids)
 
         # Tekrarlanan ID'leri temizle (sırayı koru)
         return list(dict.fromkeys(match_ids))
@@ -1055,9 +980,8 @@ class MatchDataFetcher:
         Devre kesilirse (rate limit) kalan maçlar denenmez ve rate_limit_breaker_triggered True kalır. Kesici,
         çağıran kurduysa işin kesicisidir. Kalıcı depolama hatasında (disk dolu, izin yok) StorageError fırlatılır.
         """
-        self.last_storage_error = None
         total_attempts = len(match_ids_to_process)
-        print("\n" + get_i18n().t("details_total_to_fetch", count=total_attempts))
+        logger.info("Details will be fetched for %d matches", total_attempts)
         if progress_callback:
             progress_callback(0, total_attempts, f"Match details 0/{total_attempts}")
 
@@ -1066,20 +990,15 @@ class MatchDataFetcher:
                 progress_callback(min(done, total_attempts), total_attempts,
                                   f"Match details {min(done, total_attempts)}/{total_attempts}")
 
-        try:
-            results = self._run_batch(match_ids_to_process, progress, should_cancel, failed_callback)
-        except StorageError as e:
-            # Çağıran hatayı yutsa bile (etkileşimli menüler) neden okunabilsin: main.py çıkışta bildirir
-            self.last_storage_error = e
-            raise
+        results = self._run_batch(match_ids_to_process, progress, should_cancel, failed_callback)
         total_success = len(results)
         if self.rate_limit_breaker_triggered:
-            print(get_i18n().t("error_rate_limit_detected", count=total_success))
+            logger.warning("Too many failed requests (rate limit or IP block); %d matches were stored. Wait 30 "
+                           "minutes to 2 hours, keep REQUEST_RATE_LIMIT at its default or use another IP, then "
+                           "run again", total_success)
         success_rate = (total_success / total_attempts) * 100 if total_attempts > 0 else 0
-        print(
-            "\n"
-            + get_i18n().t("details_finished", ok=total_success, total=total_attempts, rate=f"{success_rate:.1f}")
-        )
+        logger.info("Done: %d/%d matches (%.1f%%) processed successfully", total_success, total_attempts,
+                    success_rate)
         return total_success
 
     def fetch_match_details(self, match_id: Union[int, str]) -> bool:
@@ -1108,161 +1027,88 @@ class MatchDataFetcher:
 
     def generate_file_report(self, base_path: Optional[str] = None) -> Dict[str, Any]:
         """
-        Maç dosyalarının durumunu analiz eden ve rapor üreten fonksiyon.
+        Kapsam raporu (terminal menüsünün "dosya analizi"): katalogdan hesaplanır (StatusService.coverage, plan
+        maddesi P15) ve eski sözlük biçimiyle döner (`legacy_file_report`). Hiçbir dosya yazılmaz; eskiden
+        `match_details/processed/` altına `match_files_stats.json` ve `match_files_report.csv` yazılıyordu.
 
         Args:
-            base_path: İncelenecek dizin yolu. Eğer None ise, varsayılan match_details dizini kullanılır.
+            base_path: Başka bir veri klasörü (ya da onun `match_details` dizini). None: bu nesnenin klasörü.
+                Deposu olmayan bir dizin (bu sürümün hiç açmadığı, `.meta/` yok) için boş sözlük: rastgele bir
+                dizinde depo kurulmaz.
 
         Returns:
-            Dict[str, Any]: Rapor sonuçlarını içeren sözlük
+            {"league_stats": ..., "overall_stats": ...}; lig anahtarı eski dizin adıdır (`<id>_<ad>`, turnuvasız
+            maçlar `_no_tournament`), sezon anahtarı `season_<id>`. Depolama hatası çağırana çıkar.
         """
-        # Varsayılan dizini kullan
+        store = self._report_store(base_path)
+        if store is None:
+            return {}
+        return legacy_file_report(StatusService(store).coverage(), self._league_name_in(store))
+
+    def _report_store(self, base_path: Optional[str]) -> Optional["Store"]:
+        """Raporun deposu: bu klasörünki ya da `base_path`'in gösterdiği veri klasörününki (yoksa None)."""
         if base_path is None:
-            base_path = self.match_details_dir
+            return self._store()
+        target = os.path.abspath(base_path).rstrip(os.sep) or os.sep
+        if os.path.basename(target) == os.path.basename(self.match_details_dir):
+            target = os.path.dirname(target)
+        if target == os.path.abspath(self.data_dir):
+            return self._store()
+        try:
+            return store_hooks.open_store(target, create=False)
+        except store_hooks.StoreError as e:
+            logger.warning("No coverage report for %s: not a data folder of this version (%s)", base_path, e)
+            return None
 
-        base_path = Path(base_path)
-        print(f"Maç dosyaları analiz ediliyor: {base_path}")
+    def _league_name_in(self, store: "Store") -> Callable[[int], Optional[str]]:
+        """Lig adı (dizin adındaki): yapılandırmadaki ad, yoksa raporun deposundaki turnuva adı."""
 
-        # Sonuçları başlat
-        missing_files_counter = Counter()
-        total_matches = 0
-        matches_with_all_files = 0
-        league_stats = {}
+        def name_of(league_id: int) -> Optional[str]:
+            try:
+                name = self.config_manager.get_league_by_id(league_id)
+            except Exception:
+                name = None
+            if isinstance(name, str) and name:
+                return name
+            found = store.entities.tournament(league_id)
+            return found.name if found is not None and found.name else None
 
-        # Tüm ligleri döngüyle incele
-        for league_dir in tqdm(list(base_path.iterdir()), desc="Ligler işleniyor"):
-            if not league_dir.is_dir():
-                continue
+        return name_of
 
-            league_name = league_dir.name
-            league_stats[league_name] = {
-                "total_matches": 0,
-                "complete_matches": 0,
-                "missing_files": Counter(),
-                "seasons": {}
-            }
 
-            # Tüm sezonları döngüyle incele
-            for season_dir in league_dir.glob("season_*"):
-                if not season_dir.is_dir():
-                    continue
+def _legacy_counts(matches: int, complete: int, missing: Mapping[str, int], rate: float) -> Dict[str, Any]:
+    return {
+        "total_matches": matches,
+        "complete_matches": complete,
+        "missing_files": {f"{key}.json": count for key, count in missing.items()},
+        "completion_rate": rate,
+    }
 
-                season_name = season_dir.name
-                league_stats[league_name]["seasons"][season_name] = {
-                    "total_matches": 0,
-                    "complete_matches": 0,
-                    "missing_files": Counter()
-                }
 
-                # Tüm maçları döngüyle incele
-                for match_dir in season_dir.iterdir():
-                    if not match_dir.is_dir():
-                        continue
-
-                    total_matches += 1
-                    league_stats[league_name]["total_matches"] += 1
-                    league_stats[league_name]["seasons"][season_name]["total_matches"] += 1
-
-                    # Gerekli dosyaları kontrol et
-                    missing_files = []
-                    for req_file in REQUIRED_FILES:
-                        file_path = match_dir / req_file
-                        if not file_path.exists():
-                            missing_files.append(req_file)
-
-                    # İstatistikleri güncelle
-                    if not missing_files:
-                        matches_with_all_files += 1
-                        league_stats[league_name]["complete_matches"] += 1
-                        league_stats[league_name]["seasons"][season_name]["complete_matches"] += 1
-                    else:
-                        for missing_file in missing_files:
-                            missing_files_counter[missing_file] += 1
-                            league_stats[league_name]["missing_files"][missing_file] += 1
-                            league_stats[league_name]["seasons"][season_name]["missing_files"][missing_file] += 1
-
-        # Genel istatistikleri hesapla
-        overall_stats = {
-            "total_matches": total_matches,
-            "matches_with_all_files": matches_with_all_files,
-            "completion_rate": round(matches_with_all_files / total_matches * 100, 2) if total_matches > 0 else 0,
-            "missing_files": dict(missing_files_counter),
+def legacy_file_report(report: CoverageReport, league_name: Callable[[int], Optional[str]]) -> Dict[str, Any]:
+    """
+    Kapsam raporu → eski `generate_file_report` sözlüğü: `league_stats` (lig dizini adı → sayılar ve sezonları)
+    ve `overall_stats`. Eksik dilimler eski dosya adlarıyla (`lineups.json`) sayılır; `basic.json` hiç eksik
+    olmaz (yalnızca olay yükü saklanan maçlar sayılır). Sezonu bilinmeyen maçlar `season_unknown` altındadır.
+    """
+    leagues: Dict[str, Dict[str, Any]] = {}
+    for tournament in report.tournaments:
+        tid = tournament.tournament_id
+        key = NO_TOURNAMENT_DIR if tid is None else league_dir_name(tid, league_name(tid))
+        entry = _legacy_counts(tournament.matches, tournament.complete, tournament.missing,
+                               tournament.completion_rate)
+        entry["seasons"] = {
+            f"season_{season.season_id if season.season_id is not None else 'unknown'}": _legacy_counts(
+                season.matches, season.complete, season.missing, season.completion_rate)
+            for season in tournament.seasons
         }
-
-        # Her lig için tamamlanma oranını hesapla
-        for league in league_stats:
-            total = league_stats[league]["total_matches"]
-            complete = league_stats[league]["complete_matches"]
-            league_stats[league]["completion_rate"] = round(complete / total * 100, 2) if total > 0 else 0
-
-            # Her sezon için tamamlanma oranını hesapla
-            for season in league_stats[league]["seasons"]:
-                season_total = league_stats[league]["seasons"][season]["total_matches"]
-                season_complete = league_stats[league]["seasons"][season]["complete_matches"]
-                league_stats[league]["seasons"][season]["completion_rate"] = round(season_complete / season_total * 100, 2) if season_total > 0 else 0
-
-        # Raporu ekrana yazdır
-        print("=" * 80)
-        print("MAÇ DOSYALARI ANALİZ RAPORU")
-        print("=" * 80)
-
-        print(f"\nToplam analiz edilen maç: {overall_stats['total_matches']}")
-        print(f"Tüm gerekli dosyaları olan maçlar: {overall_stats['matches_with_all_files']} ({overall_stats['completion_rate']}%)")
-
-        # En sık eksik olan dosyalar
-        print("\nEksik dosya dağılımı:")
-        for file, count in sorted(overall_stats['missing_files'].items(), key=lambda x: x[1], reverse=True):
-            percentage = round(count / overall_stats['total_matches'] * 100, 2)
-            print(f"  - {file}: {count} maçta eksik ({percentage}%)")
-
-        # Lig istatistikleri
-        print("\nLig istatistikleri:")
-        league_data = []
-        for league, stats in league_stats.items():
-            league_data.append({
-                'Lig': league,
-                'Toplam Maç': stats['total_matches'],
-                'Tam Maç': stats['complete_matches'],
-                'Tamamlanma Oranı': f"{stats['completion_rate']}%"
-            })
-
-        if league_data:
-            league_df = pd.DataFrame(league_data)
-            print(league_df.sort_values('Tamamlanma Oranı', ascending=False).to_string(index=False))
-
-        # Detaylı istatistikleri JSON olarak dışa aktar
-        json_file_path = os.path.join(self.processed_dir, 'match_files_stats.json')
-        with open(json_file_path, 'w', encoding='utf-8') as f:
-            json.dump({
-                'league_stats': league_stats,
-                'overall_stats': overall_stats
-            }, f, ensure_ascii=False, indent=2)
-
-        print(f"\nDetaylı istatistikler '{json_file_path}' dosyasına kaydedildi")
-
-        # CSV raporu oluştur
-        csv_file_path = os.path.join(self.processed_dir, 'match_files_report.csv')
-        with open(csv_file_path, 'w', encoding='utf-8', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerow(['Lig', 'Sezon', 'Toplam Maç', 'Tam Maç', 'Tamamlanma Oranı', 'Eksik Dosyalar'])
-
-            for league, league_data in league_stats.items():
-                for season, season_data in league_data['seasons'].items():
-                    missing_str = "; ".join([f"{file}: {count}" for file, count in season_data['missing_files'].items()])
-                    writer.writerow([
-                        league,
-                        season,
-                        season_data['total_matches'],
-                        season_data['complete_matches'],
-                        f"{season_data['completion_rate']}%",
-                        missing_str
-                    ])
-
-        print(f"CSV raporu '{csv_file_path}' dosyasına kaydedildi")
-
-        return {
-            'league_stats': league_stats,
-            'overall_stats': overall_stats,
-            'json_report_path': json_file_path,
-            'csv_report_path': csv_file_path
-        }
+        leagues[key] = entry
+    return {
+        "league_stats": leagues,
+        "overall_stats": {
+            "total_matches": report.matches,
+            "matches_with_all_files": report.complete,
+            "completion_rate": report.completion_rate,
+            "missing_files": {f"{key}.json": count for key, count in report.missing.items()},
+        },
+    }

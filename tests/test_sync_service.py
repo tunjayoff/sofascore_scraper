@@ -190,17 +190,20 @@ def test_build_context_is_frozen(tmp_path: Path, config: ConfigManager) -> None:
         ctx.data_dir = "elsewhere"  # type: ignore[misc]
 
 
-@pytest.mark.parametrize("use_color, expected", [("false", "1"), ("true", "untouched")])
-def test_build_context_carries_the_colour_switch_of_the_terminal_ui(
-    tmp_path: Path, config: ConfigManager, monkeypatch: pytest.MonkeyPatch, use_color: str, expected: str
+@pytest.mark.parametrize("use_color", ["false", "true"])
+def test_build_context_leaves_the_colour_switch_to_the_logger(
+    tmp_path: Path, config: ConfigManager, monkeypatch: pytest.MonkeyPatch, use_color: str
 ) -> None:
-    """USE_COLOR kapalıysa NO_COLOR kurulur (rich ilerleme çubuğu sunucu konsoluna renksiz yazar); açıksa dokunulmaz."""
+    """
+    P15: bağlam NO_COLOR'a dokunmaz. Süreç başlarken günlükçü kurar (src/logger.py); eskiden bağlam da her işte
+    kuruyordu, ilerleme çubuğu (P14'te kalktı) renksiz yazsın diye.
+    """
     monkeypatch.setenv("USE_COLOR", use_color)
     monkeypatch.setenv("NO_COLOR", "untouched")
 
     build_context(config, data_dir=str(tmp_path))
 
-    assert os.environ["NO_COLOR"] == expected
+    assert os.environ["NO_COLOR"] == "untouched"
 
 
 # --- sahte indiriciler ve tutamaç --------------------------------------------------------------------

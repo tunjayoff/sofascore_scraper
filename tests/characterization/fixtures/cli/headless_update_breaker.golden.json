@@ -143,12 +143,12 @@
    "LOG INFO Services: Created directory: <SANDBOX>/data/matches",
    "LOG INFO Services: Created directory: <SANDBOX>/data/match_details",
    "LOG INFO Services: Created directory: <SANDBOX>/data/datasets",
-   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO Store: state.db migration applied: 0001_initial",
    "LOG INFO Store: state.db migration applied: 0002_job_manager",
    "LOG INFO Main: Running in headless mode",
    "LOG INFO Main: Headless update: league_id=None mode=full",
    "LOG INFO SyncService: Refreshing season list for league 17...",
+   "LOG INFO SeasonFetcher: SeasonFetcher started",
    {
     "concurrent": [
      "LOG INFO Listing: Season list of league 17 stored (2 seasons)"
@@ -171,14 +171,10 @@
    },
    "LOG INFO MatchFetcher: League 17, season 52186: 1 schedule pages, 1 matches listed",
    "LOG INFO SyncService: Checking which matches need details...",
-   "Fetching match details for all leagues...",
-   "1 leagues to process...",
-   "",
-   "League folder: 17_Premier_League",
-   "Found 4 match IDs for the league.",
+   "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
+   "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league all (4 matches)…",
-   "",
-   "Details will be fetched for 4 matches...",
+   "LOG INFO MatchDataFetcher: Details will be fetched for 4 matches",
    {
     "concurrent": [
      "LOG WARNING Breaker: Devre kesici açıldı (art arda 4 başarısız istek): 11 istekten 4 başarısız (4x 403, 1x 404). Bu iş SofaScore'a yeni istek göndermeyecek.",
@@ -200,17 +196,8 @@
      "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100010"
     ]
    },
-   "⚠  Rate limit / IP ban detected.",
-   "",
-   "Recommended actions:",
-   "  1. Wait 30 minutes - 2 hours and retry",
-   "  2. Lower REQUEST_RATE_LIMIT in .env (default 5; if you raised it or turned it off, set it back)",
-   "  3. Increase WAIT_TIME_MIN and WAIT_TIME_MAX values",
-   "  4. Use a different IP (mobile data, VPN, proxy)",
-   "",
-   "Successfully saved matches so far: 0",
-   "",
-   "Done: 0/4 matches (0.0%) processed successfully.",
+   "LOG WARNING MatchDataFetcher: Too many failed requests (rate limit or IP block); 0 matches were stored. Wait 30 minutes to 2 hours, keep REQUEST_RATE_LIMIT at its default or use another IP, then run again",
+   "LOG INFO MatchDataFetcher: Done: 0/4 matches (0.0%) processed successfully",
    "LOG INFO SyncService: Too many failed requests (403); stopped fetching match details."
   ]
  },
@@ -360,12 +347,12 @@
    "LOG INFO Services: Created directory: <SANDBOX>/data/matches",
    "LOG INFO Services: Created directory: <SANDBOX>/data/match_details",
    "LOG INFO Services: Created directory: <SANDBOX>/data/datasets",
-   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO Store: state.db migration applied: 0001_initial",
    "LOG INFO Store: state.db migration applied: 0002_job_manager",
    "LOG INFO Main: Running in headless mode",
    "LOG INFO Main: Headless update: league_id=17 mode=full",
    "LOG INFO SyncService: Refreshing season list for league 17...",
+   "LOG INFO SeasonFetcher: SeasonFetcher started",
    {
     "concurrent": [
      "LOG INFO Listing: Season list of league 17 stored (2 seasons)"
@@ -388,14 +375,10 @@
    },
    "LOG INFO MatchFetcher: League 17, season 52186: 1 schedule pages, 1 matches listed",
    "LOG INFO SyncService: Checking which matches need details...",
-   "Fetching match details for league ID 17...",
-   "1 leagues to process...",
-   "",
-   "League folder: 17_Premier_League",
-   "Found 4 match IDs for the league.",
+   "LOG INFO MatchDataFetcher: Fetching match details for league 17",
+   "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league 17 (4 matches)…",
-   "",
-   "Details will be fetched for 4 matches...",
+   "LOG INFO MatchDataFetcher: Details will be fetched for 4 matches",
    {
     "concurrent": [
      "LOG WARNING Breaker: Devre kesici açıldı (art arda 4 başarısız istek): 11 istekten 4 başarısız (4x 403, 1x 404). Bu iş SofaScore'a yeni istek göndermeyecek.",
@@ -417,17 +400,8 @@
      "LOG WARNING Utils: 403 Forbidden (deneme 3/3): https://www.sofascore.com/api/v1/event/9100010"
     ]
    },
-   "⚠  Rate limit / IP ban detected.",
-   "",
-   "Recommended actions:",
-   "  1. Wait 30 minutes - 2 hours and retry",
-   "  2. Lower REQUEST_RATE_LIMIT in .env (default 5; if you raised it or turned it off, set it back)",
-   "  3. Increase WAIT_TIME_MIN and WAIT_TIME_MAX values",
-   "  4. Use a different IP (mobile data, VPN, proxy)",
-   "",
-   "Successfully saved matches so far: 0",
-   "",
-   "Done: 0/4 matches (0.0%) processed successfully.",
+   "LOG WARNING MatchDataFetcher: Too many failed requests (rate limit or IP block); 0 matches were stored. Wait 30 minutes to 2 hours, keep REQUEST_RATE_LIMIT at its default or use another IP, then run again",
+   "LOG INFO MatchDataFetcher: Done: 0/4 matches (0.0%) processed successfully",
    "LOG INFO SyncService: Too many failed requests (403); stopped fetching match details."
   ]
  }

@@ -26,7 +26,6 @@
    "LOG INFO Services: Created directory: <SANDBOX>/data/matches",
    "LOG INFO Services: Created directory: <SANDBOX>/data/match_details",
    "LOG INFO Services: Created directory: <SANDBOX>/data/datasets",
-   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO Main: Running in headless mode",
    "LOG INFO Main: Starting CSV export",
    "LOG INFO Store: state.db migration applied: 0001_initial",
@@ -54,7 +53,6 @@
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO Main: Running in headless mode",
    "LOG INFO Main: Starting CSV export",
    "LOG INFO ExportService: CSV export of 4 matches written: <SANDBOX>/data/match_details/processed/all_matches_<epoch>.csv",

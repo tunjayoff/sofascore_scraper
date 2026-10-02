@@ -134,7 +134,6 @@
  "stdout": [
   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-  "LOG INFO SeasonFetcher: SeasonFetcher started",
   "LOG INFO SyncService: Refreshing 3 provisional records...",
   "LOG INFO MatchDataFetcher: Refreshing 3 matches",
   {

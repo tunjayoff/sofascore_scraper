@@ -37,18 +37,13 @@
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO Main: Running in headless mode",
    "LOG INFO Main: Headless update: league_id=None mode=details",
    "LOG INFO SyncService: Checking which matches need details...",
-   "Fetching match details for all leagues...",
-   "1 leagues to process...",
-   "",
-   "League folder: 17_Premier_League",
-   "Found 4 match IDs for the league.",
+   "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
+   "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league all (1 matches)…",
-   "",
-   "Details will be fetched for 1 matches...",
+   "LOG INFO MatchDataFetcher: Details will be fetched for 1 matches",
    {
     "concurrent": [
      "LOG ERROR FetchPipeline: Match 9100003 could not be stored: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/v3/events/9/100/9100003"
@@ -97,18 +92,13 @@
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO Main: Running in headless mode",
    "LOG INFO Main: Headless update: league_id=17 mode=details",
    "LOG INFO SyncService: Checking which matches need details...",
-   "Fetching match details for league ID 17...",
-   "1 leagues to process...",
-   "",
-   "League folder: 17_Premier_League",
-   "Found 4 match IDs for the league.",
+   "LOG INFO MatchDataFetcher: Fetching match details for league 17",
+   "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league 17 (1 matches)…",
-   "",
-   "Details will be fetched for 1 matches...",
+   "LOG INFO MatchDataFetcher: Details will be fetched for 1 matches",
    {
     "concurrent": [
      "LOG ERROR FetchPipeline: Match 9100003 could not be stored: Veri diske yazılamadı (Permission denied): <SANDBOX>/data/v3/events/9/100/9100003"

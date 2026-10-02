@@ -1,10 +1,10 @@
 """
 Servis bağlamı: bir servisin çalışmak için ihtiyaç duyduğu nesneler (docs/design/02-services.md 2.3).
 
-`build_context`, terminal arayüzünün kurucusunda duran bağlama işini (src/SofaScoreUi.py: veri dizinleri ve üç
-indirici) arayüzden bağımsız yapar; web ve CLI aynı bağlamı kurar.
+`build_context`, terminal arayüzünün kurucusunda duran bağlama işini (src/SofaScoreUi.py: veri dizinleri)
+arayüzden bağımsız yapar; web ve CLI aynı bağlamı kurar.
 
-Bağlam indiricileri, SofaScore istemcisini ve veri dizininin deposuna giden yolu taşır:
+Bağlam SofaScore istemcisini ve veri dizininin deposuna giden yolu taşır:
 
   * `client`  istek katmanının yüzü (src/client). Köprü sağlığındaki her geçiş, bağlamın veri dizinindeki
               deponun çalışma zamanı bilgilerine yazılır (`store.runtime`, anahtar "bridge_health"); başka bir
@@ -15,6 +15,11 @@ Bağlam indiricileri, SofaScore istemcisini ve veri dizininin deposuna giden yol
 
 Tasarımdaki diğer alanlar (Settings, Clock) onları getiren plan maddeleriyle eklenir.
 
+Eski indiriciler (`season_fetcher`, `match_fetcher`, `match_data_fetcher`; plan maddesi P15) bağlam kurulurken
+kurulmaz: ilk erişimde kurulur ve bağlamın ömrü boyunca aynı nesne kalır. Yalnızca eski adlı yüzlerdir (iş
+src/services/ altındadır); eşitleme, dışa aktarma ve bakım servisleri ile bir web ucu onları hâlâ bu adlarla
+çağırır. Modül onları içe aktarmaz: bağlamı içe aktarmak üç indiriciyi yüklemez.
+
 Bağlam kurulurken takipler de `follows` tablosuna eşitlenir (plan maddesi ST-17): yapılandırma dosyasının
 `[[follow]]` girdileri "config" kaynağıyla, lig dosyaları "legacy" kaynağıyla (bkz. `_sync_follows`). Bu eşitleme
 depoyu açmaz: tablo kısa ömürlü bir bağlantıyla güncellenir.
@@ -23,17 +28,20 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Any, Mapping, Optional, Set, Tuple
+from functools import cached_property
+from typing import TYPE_CHECKING, Any, Mapping, Optional, Set, Tuple
 
 from src.client import Client
 from src.config_manager import ConfigManager
 from src.exceptions import StorageError
 from src.jobs.manager import JobManager
 from src.logger import get_logger
-from src.match_data_fetcher import MatchDataFetcher
-from src.match_fetcher import MatchFetcher
-from src.season_fetcher import SeasonFetcher
 from src.store import FollowSpec, JobStore, Store, apply_follows, open_store
+
+if TYPE_CHECKING:
+    from src.match_data_fetcher import MatchDataFetcher
+    from src.match_fetcher import MatchFetcher
+    from src.season_fetcher import SeasonFetcher
 
 logger = get_logger("Services")
 
@@ -48,20 +56,36 @@ class ServiceContext:
 
     config              yapılandırma (ligler, eşikler, veri dizini)
     data_dir            verinin yazıldığı kök dizin
-    season_fetcher      sezon listeleri
-    match_fetcher       maç listeleri (program)
-    match_data_fetcher  maç detayları, yenileme ve CSV düzleştirme
     client              SofaScore istemcisi; köprü sağlığı değişimleri deponun çalışma zamanı bilgilerine yazılır
     store               (özellik) veri dizininin deposu; ilk erişimde açılır
     jobs                (özellik) deponun iş yöneticisi
+    season_fetcher      (özellik) sezon listelerinin eski yüzü; ilk erişimde kurulur
+    match_fetcher       (özellik) maç listelerinin (program) eski yüzü; ilk erişimde kurulur
+    match_data_fetcher  (özellik) maç detayları, yenileme ve CSV'nin eski yüzü; ilk erişimde kurulur
     """
 
     config: ConfigManager
     data_dir: str
-    season_fetcher: SeasonFetcher
-    match_fetcher: MatchFetcher
-    match_data_fetcher: MatchDataFetcher
     client: Optional[Client] = None
+
+    # Dondurulmuş sınıfta da çalışır: cached_property değeri örneğin __dict__'ine doğrudan yazar
+    @cached_property
+    def season_fetcher(self) -> "SeasonFetcher":
+        from src.season_fetcher import SeasonFetcher
+
+        return SeasonFetcher(self.config, self.data_dir)
+
+    @cached_property
+    def match_fetcher(self) -> "MatchFetcher":
+        from src.match_fetcher import MatchFetcher
+
+        return MatchFetcher(self.config, self.season_fetcher, self.data_dir)
+
+    @cached_property
+    def match_data_fetcher(self) -> "MatchDataFetcher":
+        from src.match_data_fetcher import MatchDataFetcher
+
+        return MatchDataFetcher(self.config, self.data_dir)
 
     @property
     def store(self) -> Store:
@@ -159,29 +183,18 @@ def _client_for(data_dir: str) -> Optional[Client]:
 
 def build_context(config_manager: ConfigManager, *, data_dir: Optional[str] = None) -> ServiceContext:
     """
-    Veri dizinlerini var eder, takipleri `follows` tablosuna eşitler; üç indiriciyi ve istemciyi kurar.
+    Veri dizinlerini var eder, takipleri `follows` tablosuna eşitler ve istemciyi kurar. İndiriciler kurulmaz
+    (ilk erişimde; sınıf belgesi).
 
-    data_dir verilmezse yapılandırmadaki DATA_DIR kullanılır (web ve CLI aynı dizine yazar). Her çağrı yeni
-    indiriciler kurar; indiriciler durum taşıdığı için (iş önbelleği, son istek sayımları) bir bağlam tek bir
-    işe ya da tek bir isteğe aittir.
+    data_dir verilmezse yapılandırmadaki DATA_DIR kullanılır (web ve CLI aynı dizine yazar). Her çağrı yeni bir
+    bağlamdır; indiriciler durum taşıdığı için (iş önbelleği, son istek sayımları) bir bağlam tek bir işe ya da
+    tek bir isteğe aittir.
+
+    USE_COLOR kapalıyken NO_COLOR'ı süreç başlarken günlükçü kurar (src/logger.py); bağlam ortama dokunmaz.
     """
     data_dir = data_dir or config_manager.get_data_dir()
     _ensure_directory(data_dir)
     for name in DATA_SUBDIRECTORIES:
         _ensure_directory(os.path.join(data_dir, name))
     _sync_follows(config_manager, data_dir)
-
-    # Terminal arayüzünün kurucusundan taşındı: USE_COLOR kapalıysa rich gibi kitaplıklar da renksiz yazsın
-    # (maç listesi aşamasının ilerleme çubuğu sunucu konsoluna yazar). Süreç genelidir ve geri alınmaz.
-    if not config_manager.get_use_color():
-        os.environ["NO_COLOR"] = "1"
-
-    season_fetcher = SeasonFetcher(config_manager, data_dir)
-    return ServiceContext(
-        config=config_manager,
-        data_dir=data_dir,
-        season_fetcher=season_fetcher,
-        match_fetcher=MatchFetcher(config_manager, season_fetcher, data_dir),
-        match_data_fetcher=MatchDataFetcher(config_manager, data_dir),
-        client=_client_for(data_dir),
-    )
+    return ServiceContext(config=config_manager, data_dir=data_dir, client=_client_for(data_dir))

@@ -40,6 +40,7 @@ import store_fixtures as sf
 import test_store_query_plans as plans
 from src import refresh
 from src.match_data_fetcher import UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher
+from src.slices import match_detail_slice_present
 from src.sports import event_sport_slug, slices_for
 from src.store import (
     ChangeLog,
@@ -1006,7 +1007,7 @@ def _file_missing_keys(fetcher: MatchDataFetcher, event_id: int) -> Tuple[str, .
     data = fetcher._load_match_data_from_dir(directory, str(event_id))
     sport = event_sport_slug(data["basic"]) or ""
     return tuple(key for key in legacy_writer.expected_slices(directory, sport, UNAVAILABLE_AFTER_ATTEMPTS)
-                 if not fetcher.match_detail_slice_present(key, data))
+                 if not match_detail_slice_present(key, data))
 
 
 @pytest.mark.parametrize("name", sf.FIXTURE_NAMES)
