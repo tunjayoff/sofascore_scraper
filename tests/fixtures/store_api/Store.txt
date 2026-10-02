@@ -8,6 +8,9 @@ class Store:
     self.runtime
     self.streams
     self.watch
+    self.events
+    self.entities
+    self.changes
     @property
     def closed(self) -> bool
     @property

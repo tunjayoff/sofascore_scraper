@@ -1,0 +1,13 @@
+# src.store.ChangeRow
+# kaynak: src/store/changes.py
+@dataclass(frozen=True)
+class ChangeRow:
+    seq: int
+    ts: int
+    event_id: int
+    sport: Optional[str]
+    tournament_id: Optional[int]
+    status_regressed: bool
+    fields: Tuple[str, ...]
+    row: Mapping[str, Any]
+    segment: str

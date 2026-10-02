@@ -1,9 +1,12 @@
 """
-Maç dışı varlıkların dizinlenmesi: sezon listeleri, program sayfaları ve onlardan gelen liste satırları
-(docs/design/01-storage.md, bölüm 3.4 adım 2, 5.2 ve 8.2).
+Maç dışı varlıklar: sezon listelerinin, program sayfalarının ve onlardan gelen liste satırlarının
+dizinlenmesi (docs/design/01-storage.md, bölüm 3.4 adım 2, 5.2 ve 8.2) ve okuma API'si `EntityStore`
+(bölüm 2.3).
 
-Bu adımda kaynak yalnızca eski düzendir (`seasons/`, `matches/`); v3 ağacındaki turnuva ve sezon
-dizinlerini yazan `EntityStore.put` ile birlikte eklenir. Okuma API'si (`EntityStore`) de sonraki adımdadır.
+Dizinlemede kaynak bu adımda yalnızca eski düzendir (`seasons/`, `matches/`); v3 ağacındaki turnuva ve
+sezon dizinleri, onları yazan `EntityStore.put` ile birlikte eklenir. `EntityStore` şimdilik yalnızca okur:
+turnuva, sezon ve yarışmacı satırları, varlık dilimlerinin durumu ve yükleri (dosyanın yerini
+`entity_slices` satırı söyler; okuma kuralı src/store/events.py'deki ile aynıdır).
 
 Katalogda neyin nereden geldiği:
 
@@ -38,20 +41,34 @@ kimliği, durum kodu ve skor ayrıntısı yoktur; `match_date` yazıldığı gib
 """
 from __future__ import annotations
 
+import contextlib
 import csv
 import dataclasses
 import hashlib
 import json
 import math
 import re
+import sqlite3
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Tuple
 
 from src.sports import event_sport_slug
 from src.store import codec, derive, layout, legacy
 from src.store.catalog import Catalog
-from src.store.errors import StoreError
+from src.store.errors import PayloadMissing, StoreError
+from src.store.events import (
+    ABSENT,
+    SLICE_COLUMNS,
+    Ref,
+    SliceInfo,
+    check_int,
+    int_list,
+    like_pattern,
+    not_requested,
+    read_with_retry,
+    slice_info,
+)
 from src.store.legacy import (
     LegacyProblem,
     LegacyReader,
@@ -59,6 +76,9 @@ from src.store.legacy import (
     LegacySeasonList,
     LegacySummaryFile,
 )
+
+if TYPE_CHECKING:
+    from src.store.api import Store
 
 Row = Dict[str, Any]
 SeasonKey = Tuple[int, int]  # (turnuva kimliği, sezon kimliği)
@@ -716,6 +736,260 @@ def seasons_missing_sport(cat: Catalog) -> List[SeasonKey]:
     return sorted((int(row[0]), int(row[1])) for row in found)
 
 
+# --- okuma API'si -------------------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class TournamentRow:
+    """`tournaments` tablosunun bir satırı (benzersiz turnuva). `sport` kısa addır; bilinmiyorsa None."""
+
+    id: int
+    sport: Optional[str]
+    category_id: Optional[int]
+    name: Optional[str]
+    slug: Optional[str]
+    updated_at: int
+
+
+@dataclass(frozen=True)
+class SeasonRow:
+    """
+    `seasons` tablosunun bir satırı. listed: sezon, turnuvanın sezon listesi yükünde geçiyor; position: o
+    listedeki sırası (0 = ilk). Listede olmayan sezon bir program sayfasından ya da olay yükünden bilinir.
+    """
+
+    id: int
+    tournament_id: int
+    name: Optional[str]
+    year: Optional[str]
+    sort_key: float
+    listed: bool
+    position: Optional[int]
+    updated_at: int
+
+
+@dataclass(frozen=True)
+class ParticipantRow:
+    """`participants` tablosunun bir satırı: takım, tek oyuncu ya da çift (yarışmacı kimlik uzayı)."""
+
+    id: int
+    sport: Optional[str]
+    name: Optional[str]
+    short_name: Optional[str]
+    slug: Optional[str]
+    name_code: Optional[str]
+    country: Optional[str]
+    gender: Optional[str]
+    type: Optional[int]
+    national: Optional[bool]
+    updated_at: int
+
+
+KIND_EVENT = "event"
+_TOURNAMENT_SELECT = "SELECT id, sport, category_id, name, slug, updated_at FROM tournaments"
+_SEASON_SELECT = "SELECT id, tournament_id, name, year, sort_key, listed, position, updated_at FROM seasons"
+_PARTICIPANT_SELECT = ("SELECT id, sport, name, short_name, slug, name_code, country, gender, type, national, "
+                       "updated_at FROM participants")
+_NAME_LIKE = "name_folded LIKE ? ESCAPE '\\'"
+
+
+def _tournament_row(row: Sequence[Any]) -> TournamentRow:
+    return TournamentRow(row[0], row[1] or None, row[2], row[3], row[4], row[5])
+
+
+def _season_row(row: Sequence[Any]) -> SeasonRow:
+    return SeasonRow(row[0], row[1], row[2], row[3], float(row[4] or 0.0), bool(row[5]), row[6], row[7])
+
+
+def _participant_row(row: Sequence[Any]) -> ParticipantRow:
+    return ParticipantRow(row[0], row[1] or None, row[2], row[3], row[4], row[5], row[6], row[7], row[8],
+                          None if row[9] is None else bool(row[9]), row[10])
+
+
+def _name_filter(sport: Optional[str], text: Optional[str]) -> Tuple[List[str], List[Any]]:
+    """Turnuva ve yarışmacı listelerinin ortak süzgeçleri: spor ve adda geçen metin."""
+    conditions: List[str] = []
+    params: List[Any] = []
+    if sport is not None:
+        conditions.append("sport = ?")
+        params.append(sport)
+    pattern = like_pattern(text) if text is not None else None
+    if pattern is not None:
+        conditions.append(_NAME_LIKE)
+        params.append(pattern)
+    return conditions, params
+
+
+@dataclass(frozen=True)
+class _EntityFile:
+    """Bir varlık diliminin yükünün durduğu yer (`entity_slices` satırından)."""
+
+    layout: str
+    path: str  # eski düzende yük dosyası; v3'te varlık dizini (ikisi de DATA_DIR'e göre)
+
+
+class EntityStore:
+    """
+    Maç dışı varlıkların okuma API'si (`Store.entities`): turnuvalar, sezonlar, yarışmacılar ve bunların
+    dilimleri (sezon listesi, program sayfaları, ...). Yazma yöntemi (`put`) sonraki adımlarda eklenir.
+
+    Dilimlerin sahibi `Ref` ile verilir; `Ref.event(...)` verilirse çağrı `Store.events`'e gider.
+    """
+
+    def __init__(self, store: "Store") -> None:
+        self._store = store
+        self._catalog = store._catalog
+        self._data_dir = str(store.data_dir)
+        self._reader = LegacyReader(self._data_dir)
+
+    @contextlib.contextmanager
+    def _read(self) -> Iterator[sqlite3.Connection]:
+        self._store._require_open()
+        assert self._catalog is not None
+        with self._catalog.read() as conn:
+            yield conn
+
+    # -- dilimler ve yükleri ---------------------------------------------------------------------------
+
+    def payload(self, ref: Ref, key: str, sub: str = "", *, raw: bool = False) -> Any:
+        """
+        Varlığın bir diliminin yükü; katalogda o dilimin yükü yoksa None.
+
+        Eski düzende sezon listesi `seasons/` altındaki dosyadır (yalnızca `league_seasons.csv`'de duran
+        liste `{"seasons": [...]}` olarak kurulur); program sayfasının yükünde bizim eklediğimiz `_complete`
+        anahtarı yoktur, o bilgi `SliceInfo.meta["complete"]`tedir. raw=True ayrıştırmadan bayt döndürür:
+        dosyadaki baytlar; yük dosyadakinden farklıysa (CSV'den kurulan liste, `_complete`'i çıkarılmış
+        sayfa) kurallı JSON baytları. Katalog yük var derken dosya yoksa PayloadMissing (bir kez yeniden
+        denendikten sonra), dosya bozuksa PayloadCorrupt.
+        """
+        if ref.kind == KIND_EVENT:
+            return self._store.events.payload(ref.id, key, sub, raw=raw)
+        layout.validate_key(key)
+        layout.validate_sub(sub)
+        value = read_with_retry(lambda: self._locate(ref, key, sub),
+                                lambda where: self._read_file(where, ref, key, sub, raw), ABSENT)
+        return None if value is ABSENT else value
+
+    def _locate(self, ref: Ref, key: str, sub: str) -> Optional[_EntityFile]:
+        with self._read() as conn:
+            row = conn.execute(
+                "SELECT layout, path FROM entity_slices WHERE kind = ? AND entity_id = ? AND key = ? AND sub = ? "
+                "AND has_payload = 1", (ref.kind, ref.id, key, sub)).fetchone()
+        return _EntityFile(str(row[0]), str(row[1])) if row is not None else None
+
+    def _read_file(self, where: _EntityFile, ref: Ref, key: str, sub: str, raw: bool) -> Any:
+        if where.layout == LAYOUT_V3:
+            path = layout.resolve(self._data_dir, layout.slice_path(where.path, key, sub))
+            return codec.read_raw(path) if raw else codec.read_payload(path)
+        derived: Any = ABSENT  # dosyadaki baytlardan farklı bir yük
+        if where.path.endswith(".csv"):
+            derived = self._csv_season_list(ref.id, where.path)
+        elif key == KEY_SCHEDULE:
+            kind = "round" if sub.startswith("round_") else "page"
+            schedule = self._reader.read_schedule(
+                LegacySchedulePage(ref.tournament_id or 0, ref.id, sub, kind, where.path, 0, 0))
+            if not raw or "complete" in schedule.meta:  # `_complete` yükten çıkarıldı
+                derived = schedule.payload
+        if derived is not ABSENT:
+            return codec.canonical_bytes(derived) if raw else derived
+        full = self._reader.resolve(where.path)
+        return codec.read_raw(full) if raw else codec.read_payload(full)
+
+    def _csv_season_list(self, tournament_id: int, path: str) -> Mapping[str, Any]:
+        for item in self._reader.season_lists():
+            if item.kind == "csv" and item.path == path and item.tournament_id == tournament_id:
+                return item.payload
+        full = self._reader.resolve(path)
+        raise PayloadMissing(f"Sezon listesi bulunamadı (turnuva {tournament_id}): {full}", path=full)
+
+    def slices(self, ref: Ref) -> List[SliceInfo]:
+        """Varlığın katalogdaki bütün dilim satırları, (anahtar, alt anahtar) sırasıyla (metin sırası)."""
+        if ref.kind == KIND_EVENT:
+            return self._store.events.slices(ref.id)
+        with self._read() as conn:
+            found = conn.execute(
+                f"SELECT {SLICE_COLUMNS} FROM entity_slices WHERE kind = ? AND entity_id = ? ORDER BY key, sub",
+                (ref.kind, ref.id)).fetchall()
+        return [slice_info(ref, row) for row in found]
+
+    def slice(self, ref: Ref, key: str, sub: str = "") -> SliceInfo:
+        """Bir dilimin durumu; katalogda satırı yoksa durumu `not_requested` olan bir kayıt."""
+        if ref.kind == KIND_EVENT:
+            return self._store.events.slice(ref.id, key, sub)
+        layout.validate_key(key)
+        layout.validate_sub(sub)
+        with self._read() as conn:
+            row = conn.execute(
+                f"SELECT {SLICE_COLUMNS} FROM entity_slices WHERE kind = ? AND entity_id = ? AND key = ? AND sub = ?",
+                (ref.kind, ref.id, key, sub)).fetchone()
+        return slice_info(ref, row) if row is not None else not_requested(ref, key, sub)
+
+    # -- turnuvalar, sezonlar, yarışmacılar ------------------------------------------------------------
+
+    def tournament(self, tournament_id: int) -> Optional[TournamentRow]:
+        """Turnuvanın katalog satırı; bilinmiyorsa None."""
+        check_int(tournament_id, "tournament_id")
+        with self._read() as conn:
+            row = conn.execute(f"{_TOURNAMENT_SELECT} WHERE id = ?", (tournament_id,)).fetchone()
+        return _tournament_row(row) if row is not None else None
+
+    def tournaments(self, *, sport: Optional[str] = None, text: Optional[str] = None,
+                    limit: int = 100) -> List[TournamentRow]:
+        """Turnuvalar, ada göre sıralı. text: adda geçen metin (büyük-küçük harf ve aksan ayrımı yok)."""
+        conditions, params = _name_filter(sport, text)
+        where = (" WHERE " + " AND ".join(conditions)) if conditions else ""
+        params.append(check_int(limit, "limit", minimum=1))
+        with self._read() as conn:
+            found = conn.execute(f"{_TOURNAMENT_SELECT}{where} ORDER BY name_folded, id LIMIT ?", params).fetchall()
+        return [_tournament_row(row) for row in found]
+
+    def seasons(self, tournament_id: int) -> List[SeasonRow]:
+        """
+        Turnuvanın katalogdaki bütün sezonları, en yeni önce (`sort_key`, eşitlikte kimlik). Sezon listesinde
+        geçenler `listed` ile işaretlidir; listenin kendi sırası `position`dadır.
+        """
+        check_int(tournament_id, "tournament_id")
+        with self._read() as conn:
+            found = conn.execute(
+                f"{_SEASON_SELECT} WHERE tournament_id = ? ORDER BY sort_key DESC, id DESC",
+                (tournament_id,)).fetchall()
+        return [_season_row(row) for row in found]
+
+    def season(self, season_id: int) -> Optional[SeasonRow]:
+        """Sezonun katalog satırı; bilinmiyorsa None."""
+        check_int(season_id, "season_id")
+        with self._read() as conn:
+            row = conn.execute(f"{_SEASON_SELECT} WHERE id = ?", (season_id,)).fetchone()
+        return _season_row(row) if row is not None else None
+
+    def participants(self, *, text: Optional[str] = None, sport: Optional[str] = None, ids: Sequence[int] = (),
+                     limit: int = 50) -> List[ParticipantRow]:
+        """Yarışmacılar, ada göre sıralı. Süzgeçler birlikte uygulanır; text adda geçen metindir."""
+        conditions, params = _name_filter(sport, text)
+        listed = int_list(ids, "ids")
+        if listed:
+            conditions.append(f"id IN ({listed})")
+        where = (" WHERE " + " AND ".join(conditions)) if conditions else ""
+        params.append(check_int(limit, "limit", minimum=1))
+        with self._read() as conn:
+            found = conn.execute(f"{_PARTICIPANT_SELECT}{where} ORDER BY name_folded, id LIMIT ?", params).fetchall()
+        return [_participant_row(row) for row in found]
+
+    def sport_of_tournament(self, tournament_id: int) -> Optional[str]:
+        """
+        Turnuvanın sporu (kısa ad, katalogda yazıldığı gibi): turnuva satırındaki; orada yoksa turnuvanın
+        maçlarında en çok geçen spor. Hiçbiri bilinmiyorsa None.
+        """
+        check_int(tournament_id, "tournament_id")
+        with self._read() as conn:
+            row = conn.execute("SELECT sport FROM tournaments WHERE id = ?", (tournament_id,)).fetchone()
+            if row is not None and row[0]:
+                return str(row[0])
+            row = conn.execute(
+                "SELECT sport FROM events WHERE tournament_id = ? AND sport != '' "
+                "GROUP BY sport ORDER BY count(*) DESC, sport LIMIT 1", (tournament_id,)).fetchone()
+        return str(row[0]) if row is not None else None
+
+
 __all__ = [
     "KIND_TOURNAMENT",
     "KIND_SEASON",
@@ -748,4 +1022,8 @@ __all__ = [
     "apply_season",
     "attached_seasons",
     "seasons_missing_sport",
+    "TournamentRow",
+    "SeasonRow",
+    "ParticipantRow",
+    "EntityStore",
 ]

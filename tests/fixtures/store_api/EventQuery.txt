@@ -1,0 +1,16 @@
+# src.store.EventQuery
+# kaynak: src/store/events.py
+@dataclass(frozen=True)
+class EventQuery:
+    scope: Scope = Scope()
+    status_classes: Sequence[str] = ()
+    start_from: Optional[float] = None
+    start_to: Optional[float] = None
+    round: Optional[int] = None
+    text: Optional[str] = None
+    has_details: Optional[bool] = None
+    updated_after: Optional[float] = None
+    sort: str = SORT_START_DESC
+    limit: int = 50
+    cursor: Optional[str] = None
+    offset: Optional[int] = None

@@ -1,0 +1,20 @@
+# src.store.Ref
+# kaynak: src/store/events.py
+@dataclass(frozen=True)
+class Ref:
+    kind: str
+    id: int
+    tournament_id: Optional[int] = None
+    def __post_init__(self) -> None
+    @classmethod
+    def event(cls, event_id: int) -> 'Ref'
+    @classmethod
+    def tournament(cls, tournament_id: int) -> 'Ref'
+    @classmethod
+    def season(cls, tournament_id: int, season_id: int) -> 'Ref'
+    @classmethod
+    def team(cls, team_id: int) -> 'Ref'
+    @classmethod
+    def player(cls, player_id: int) -> 'Ref'
+    @classmethod
+    def sport(cls, sport_id: int) -> 'Ref'

@@ -1,0 +1,12 @@
+# src.store.SeasonRow
+# kaynak: src/store/entities.py
+@dataclass(frozen=True)
+class SeasonRow:
+    id: int
+    tournament_id: int
+    name: Optional[str]
+    year: Optional[str]
+    sort_key: float
+    listed: bool
+    position: Optional[int]
+    updated_at: int

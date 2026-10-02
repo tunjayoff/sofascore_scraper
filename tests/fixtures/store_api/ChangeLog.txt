@@ -1,0 +1,6 @@
+# src.store.ChangeLog
+# kaynak: src/store/changes.py
+class ChangeLog:
+    def __init__(self, store: 'Store') -> None
+    def list(self, *, after_seq: int = 0, event_id: Optional[int] = None, since: Optional[float] = None, limit: int = 1000) -> List[ChangeRow]
+    def last_seq(self) -> int

@@ -1,0 +1,15 @@
+# src.store.ParticipantRow
+# kaynak: src/store/entities.py
+@dataclass(frozen=True)
+class ParticipantRow:
+    id: int
+    sport: Optional[str]
+    name: Optional[str]
+    short_name: Optional[str]
+    slug: Optional[str]
+    name_code: Optional[str]
+    country: Optional[str]
+    gender: Optional[str]
+    type: Optional[int]
+    national: Optional[bool]
+    updated_at: int

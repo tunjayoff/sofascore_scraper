@@ -1,0 +1,10 @@
+# src.store.TournamentRow
+# kaynak: src/store/entities.py
+@dataclass(frozen=True)
+class TournamentRow:
+    id: int
+    sport: Optional[str]
+    category_id: Optional[int]
+    name: Optional[str]
+    slug: Optional[str]
+    updated_at: int
