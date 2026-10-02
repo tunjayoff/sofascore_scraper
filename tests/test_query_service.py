@@ -729,3 +729,27 @@ def test_season_rows_follow_the_only_finished_rule(canonical: sf.LegacyFixture) 
                                                                     only_finished=False)}
     finished = {r["match_id"] for r in queries.season_matches_legacy(sf.LALIGA_2627.id, sf.LALIGA.id)}
     assert finished == every - LIGA_UNFINISHED and LIGA_NEXT in finished
+
+
+def test_list_routes_answer_from_the_service(old_forms: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Uç noktalar dosya ağacını okumaz: özet CSV'si okuyan bir çağrı testi düşürür."""
+    import pandas as pd
+
+    monkeypatch.setattr(pd, "read_csv", MagicMock(side_effect=AssertionError("not used")))
+    queries = service(old_forms)
+    body = client.get("/api/matches?league_id=17,8&sort=asc&limit=5&offset=2").json()
+    page = queries.matches_legacy(tournament_ids=[8, 17], sort="asc", offset=2, limit=5)
+    assert body == {"items": list(page.items), "total": page.total, "limit": 5, "offset": 2, "sort": "asc"}
+    body = client.get("/api/matches?details=missing&date=2026-05").json()
+    assert body["items"] == list(queries.matches_legacy(details=False, date="2026-05").items)
+    response = client.get(f"/api/seasons/{sf.PL_2627.id}/matches?league_id={sf.PL.id}")
+    assert response.json() == {"matches": queries.season_matches_legacy(sf.PL_2627.id, sf.PL.id)}
+
+
+def test_list_route_reads_the_only_finished_setting(canonical: sf.LegacyFixture,
+                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+    on = {i["match_id"] for i in client.get("/api/matches?limit=200").json()["items"]}
+    monkeypatch.setenv("FETCH_ONLY_FINISHED", "false")
+    off = {i["match_id"] for i in client.get("/api/matches?limit=200").json()["items"]}
+    assert off - on == LIGA_UNFINISHED | {sf.event_id(ev) for ev in (sf.PL_NOT_STARTED, sf.PL_POSTPONED,
+                                                                      sf.PL_FUTURE)}

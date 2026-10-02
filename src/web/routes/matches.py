@@ -4,8 +4,6 @@ from __future__ import annotations
 import asyncio
 import glob
 import os
-import re
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
 import pandas as pd
@@ -15,6 +13,7 @@ from pydantic import BaseModel
 from src import breaker as request_breaker
 from src import bridge_health
 from src.services.query import QueryService
+from src.services.status import only_finished_setting
 from src.store import open_store
 from src.web import upstream
 from src.web.jobs import JobRunningError
@@ -31,14 +30,6 @@ if TYPE_CHECKING:
 router = APIRouter(prefix="/api", tags=["api"])
 
 
-def _is_empty_schedule_val(v: Any) -> bool:
-    if v is None or v == "":
-        return True
-    if isinstance(v, float) and pd.isna(v):
-        return True
-    return False
-
-
 def _parse_league_ids(league_id: Optional[str]) -> Optional[Set[int]]:
     """`league_id` is one id ("17") or several, comma-separated ("17,8,132"). None = no filter."""
     if not league_id:
@@ -52,61 +43,6 @@ def _parse_league_ids(league_id: Optional[str]) -> Optional[Set[int]]:
     return ids or None
 
 
-def _filter_matches_df_by_league(df: pd.DataFrame, league_id: Optional[str]) -> pd.DataFrame:
-    ids = _parse_league_ids(league_id)
-    if df.empty or ids is None:
-        return df
-    if "league_id" in df.columns:
-        return df[pd.to_numeric(df["league_id"], errors="coerce").isin(ids)]
-    if "league_folder" in df.columns:
-        prefix = df["league_folder"].astype(str).str.split("_").str[0]
-        return df[pd.to_numeric(prefix, errors="coerce").isin(ids)]
-    if "tournament_id" in df.columns:
-        return df[pd.to_numeric(df["tournament_id"], errors="coerce").isin(ids)]
-    return df
-
-
-def _normalize_schedule_match_row(rec: Dict[str, Any]) -> Dict[str, Any]:
-    """Schedule UI expects summary CSV fields; processed all_matches uses *_name/*_ft and Unix seconds for match_date."""
-    r: Dict[str, Any] = {}
-    for k, v in rec.items():
-        r[k] = "" if (isinstance(v, float) and pd.isna(v)) else v
-    if not r.get("home_team") and not _is_empty_schedule_val(r.get("home_team_name")):
-        r["home_team"] = r.get("home_team_name", "")
-    if not r.get("away_team") and not _is_empty_schedule_val(r.get("away_team_name")):
-        r["away_team"] = r.get("away_team_name", "")
-    if _is_empty_schedule_val(r.get("home_score")) and not _is_empty_schedule_val(r.get("home_score_ft")):
-        r["home_score"] = r.get("home_score_ft")
-    if _is_empty_schedule_val(r.get("away_score")) and not _is_empty_schedule_val(r.get("away_score_ft")):
-        r["away_score"] = r.get("away_score_ft")
-    if not r.get("tournament") and not _is_empty_schedule_val(r.get("tournament_name")):
-        r["tournament"] = r.get("tournament_name", "")
-    md = r.get("match_date")
-    if not _is_empty_schedule_val(md):
-        ts: Optional[float] = None
-        if isinstance(md, (int, float)):
-            ts = float(md)
-        elif isinstance(md, str):
-            s = md.strip()
-            if s.isdigit():
-                ts = float(s)
-            else:
-                try:
-                    f = float(s)
-                    if f == int(f) and all(c.isdigit() or c == "." for c in s):
-                        ts = f
-                except ValueError:
-                    ts = None
-        if ts is not None and ts > 0:
-            if ts > 1e12:
-                ts = ts / 1000.0
-            try:
-                r["match_date"] = datetime.fromtimestamp(ts).isoformat(sep=" ", timespec="seconds")
-            except (OSError, ValueError, OverflowError):
-                pass
-    return r
-
-
 class MatchListResponse(BaseModel):
     items: List[Dict[str, Any]]
     total: int
@@ -115,117 +51,14 @@ class MatchListResponse(BaseModel):
     sort: str
 
 
-def _schedule_match_date_sort_key(val: Any) -> float:
-    """Tarih sıralaması için ms cinsinden anahtar (büyük = daha yeni)."""
-    if val is None or (isinstance(val, float) and pd.isna(val)):
-        return 0.0
-    if isinstance(val, (int, float)):
-        v = float(val)
-        if pd.isna(v):
-            return 0.0
-        if 0 < v < 1e12:
-            return v * 1000.0
-        return v
-    s = str(val).strip()
-    if s.isdigit():
-        v = float(s)
-        return v * 1000.0 if v < 1e12 else v
-    try:
-        dt = pd.to_datetime(s, errors="coerce")
-        if pd.notna(dt):
-            return float(dt.value) / 1e6
-    except Exception:
-        pass
-    return 0.0
-
-
-def _read_processed_matches(
-    data_dir: str,
-    league_id: Optional[str],
-    date: Optional[str],
-    season_id: Optional[int],
-) -> pd.DataFrame:
-    """The export CSV (match_details/processed/all_matches_*.csv), filtered like the summaries."""
-    csv_dir = os.path.join(data_dir, "match_details", "processed")
-    all_files = glob.glob(os.path.join(csv_dir, "all_matches_*.csv"))
-    if not all_files:
-        return pd.DataFrame()
-    latest_file = max(all_files, key=os.path.getctime)
-    try:
-        df = pd.read_csv(latest_file)
-    except Exception as e:
-        logger.error(f"Error reading export CSV: {e}")
-        return pd.DataFrame()
-    df = _filter_matches_df_by_league(df, league_id)
-    if date and "match_date" in df.columns:
-        df = df[df["match_date"].astype(str).str.contains(date, na=False)]
-    if season_id is not None:
-        sid = int(season_id)
-        if "season_id" in df.columns:
-            df = df[pd.to_numeric(df["season_id"], errors="coerce") == sid]
-        elif "season_folder" in df.columns:
-            df = df[df["season_folder"].astype(str).str.startswith(f"{sid}_")]
-        else:
-            return pd.DataFrame()
-    return df
-
-
-def _build_schedule_matches_dataframe(
-    data_dir: str,
-    league_id: Optional[str],
-    date: Optional[str],
-    season_id: Optional[int],
-) -> pd.DataFrame:
-    """
-    Every downloaded match: the per-season summaries under data/matches are the source.
-
-    The export CSV used to win whenever it existed, but it is only rewritten when a job
-    finishes (a stopped job skips it) and only holds matches that have details, so a league
-    could show "380 matches" on the Leagues page and none in the list. It is now only the
-    fallback for data folders that have no summaries at all.
-    """
-    summary_pattern = os.path.join(data_dir, "matches", "**", "*_summary.csv")
-    summary_files = glob.glob(summary_pattern, recursive=True)
-    if not summary_files:
-        return _read_processed_matches(data_dir, league_id, date, season_id)
-
-    league_ids = _parse_league_ids(league_id)
-    league_prefixes = {str(i) for i in league_ids} if league_ids is not None else None
-    all_summary_data: List[pd.DataFrame] = []
-    for file in summary_files:
-        try:
-            parent_dir = os.path.basename(os.path.dirname(file))
-            league_prefix = parent_dir.split("_")[0]
-            if league_prefixes is not None and league_prefix not in league_prefixes:
-                continue
-            fname = os.path.basename(file)
-            m = re.match(r"^(\d+)_", fname)
-            file_sid = int(m.group(1)) if m else None
-            if season_id is not None and file_sid is not None and file_sid != int(season_id):
-                continue
-            df_part = pd.read_csv(file)
-            if df_part.empty:
-                continue
-            df_part["_file_season_id"] = file_sid
-            df_part["league_folder"] = parent_dir
-            all_summary_data.append(df_part)
-        except Exception as e:
-            logger.error(f"Error reading summary CSV {file}: {e}")
-
-    if not all_summary_data:
-        return pd.DataFrame()
-    df_total = pd.concat(all_summary_data, ignore_index=True)
-    if "match_id" in df_total.columns:
-        df_total = df_total.drop_duplicates(subset=["match_id"], keep="last")
-    if date and "match_date" in df_total.columns:
-        df_total = df_total[df_total["match_date"].astype(str).str.contains(date, na=False)]
-    if season_id is not None and "_file_season_id" in df_total.columns:
-        df_total = df_total[df_total["_file_season_id"] == int(season_id)]
-    return df_total
-
-
 def _detail_match_ids(data_dir: str, league_id: Optional[str]) -> Set[str]:
-    """Ids of matches whose details are on disk: match_details/<league>/<season>/<id>/basic.json."""
+    """
+    Ids of matches whose details are on disk: match_details/<league>/<season>/<id>/basic.json.
+
+    Ürün kodunda çağıranı kalmadı (liste `has_details`'i katalogdan okur, plan maddesi RD-2); eski dizin
+    gezicilerini katalogla karşılaştıran testler (tests/test_store_legacy.py, tests/test_storage_errors.py)
+    için duruyor ve onlarla birlikte kalkar.
+    """
     base = os.path.join(data_dir, "match_details")
     if not os.path.isdir(base):
         return set()
@@ -260,54 +93,29 @@ def _get_matches_sync(
     season_id: Optional[int],
     details: Optional[str] = None,
 ) -> MatchListResponse:
-    df = _build_schedule_matches_dataframe(data_dir, league_id, date, season_id)
-    if df.empty:
-        return MatchListResponse(items=[], total=0, limit=limit, offset=offset, sort=sort)
-
-    df = df.copy()
-    if "match_id" in df.columns:
-        have = _detail_match_ids(data_dir, league_id)
-        mid = pd.to_numeric(df["match_id"], errors="coerce").astype("Int64").astype(str)
-        df["has_details"] = mid.isin(have)
-        if details == "present":
-            df = df[df["has_details"]]
-        elif details == "missing":
-            df = df[~df["has_details"]]
-    if "match_date" in df.columns:
-        df["_sort_ts"] = df["match_date"].map(_schedule_match_date_sort_key)
-    else:
-        df["_sort_ts"] = 0.0
-    ascending = sort == "asc"
-    df = df.sort_values(by="_sort_ts", ascending=ascending, kind="mergesort")
-    total = int(len(df))
-    df_page = df.iloc[offset : offset + limit]
-    drop_cols = [c for c in ("_sort_ts", "_file_season_id") if c in df_page.columns]
-    if drop_cols:
-        df_page = df_page.drop(columns=drop_cols)
-    raw = df_page.to_dict(orient="records")
-    items = [_normalize_schedule_match_row(row) for row in raw]
-    return MatchListResponse(items=items, total=total, limit=limit, offset=offset, sort=sort)
+    """
+    Maç listesi, depodan okunur (QueryService.matches_legacy). "Yalnızca bitmiş maçlar" ayarı okurken
+    uygulanır (panodaki sayımla aynı kural); dışa aktarma CSV'sine geri düşülmez (tasarım kararı S14).
+    """
+    ids = _parse_league_ids(league_id)
+    page = QueryService(open_store(data_dir)).matches_legacy(
+        tournament_ids=sorted(ids) if ids is not None else (),
+        season_id=season_id,
+        date=date,
+        details={"present": True, "missing": False}.get(details or ""),
+        only_finished=only_finished_setting(),
+        sort=sort if sort in ("asc", "desc") else "desc",
+        offset=offset,
+        limit=limit,
+        league_names=config_manager.get_leagues(),
+    )
+    return MatchListResponse(items=list(page.items), total=page.total, limit=limit, offset=offset, sort=sort)
 
 
 def _get_season_matches_sync(season_id: int, league_id: int, data_dir: str) -> dict:
-    matches_dir = os.path.join(data_dir, "matches")
-    matches = []
-    if not os.path.exists(matches_dir):
-        return {"matches": []}
-
-    pattern = os.path.join(matches_dir, f"{league_id}_*", f"{season_id}_*_summary.csv")
-    summary_files = glob.glob(pattern)
-    if not summary_files:
-        pattern = os.path.join(matches_dir, f"{league_id}_*", f"*{season_id}*.csv")
-        summary_files = glob.glob(pattern)
-
-    for f in summary_files:
-        try:
-            df = pd.read_csv(f)
-            matches.extend(df.fillna("").to_dict(orient="records"))
-        except Exception as e:
-            logger.error(f"Error reading match file {f}: {e}")
-
+    """Bir turnuvanın bir sezondaki maçları, depodan (QueryService.season_matches_legacy)."""
+    matches = QueryService(open_store(data_dir)).season_matches_legacy(
+        season_id, league_id, only_finished=only_finished_setting())
     return {"matches": matches}
 
 

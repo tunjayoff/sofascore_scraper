@@ -9,17 +9,14 @@
   "17081861": {"round": "last_0", "match_id": 17081861, "home_team": "Alexander Zverev", "away_team": "Ben Shelton", "home_score": 1, "away_score": 1, "match_date": "2026-09-15T07:30:00", "status": "Retired", "tournament": "Wimbledon, London, Great Britain", "season": "Wimbledon Men Singles 2026", "league_folder": "2361_Wimbledon,_Men"},
   "16837335": {"round": 1, "match_id": 16837335, "home_team": "Arsenal", "away_team": "Chelsea", "home_score": 3, "away_score": 1, "match_date": "2026-09-15T18:00:00", "status": "Ended", "tournament": "Premier League", "season": "Premier League 26/27", "league_folder": "17_Premier_League"},
   "16950622": {"round": 28, "match_id": 16950622, "home_team": "Manchester City", "away_team": "Manchester United", "home_score": 10, "away_score": 9, "match_date": "2026-09-15T18:30:00", "status": "AP", "tournament": "FA Cup", "season": "FA Cup 26/27", "league_folder": "19_FA_Cup"},
-  "17060394": {"round": "last_1", "match_id": 17060394, "home_team": "Toronto Raptors", "away_team": "Brooklyn Nets", "home_score": 78, "away_score": 70, "match_date": "2026-09-15T20:30:00", "status": "Ended", "tournament": "NBA", "season": "NBA 26/27", "league_folder": "132_NBA"},
   "16872361": {"round": 2, "match_id": 16872361, "home_team": "Brighton & Hove Albion", "away_team": "Bournemouth", "home_score": 1, "away_score": 1, "match_date": "2026-09-16T00:30:00", "status": "Ended", "tournament": "Premier League", "season": "Premier League 26/27", "league_folder": "17_Premier_League"},
   "16346148": {"round": "last_0", "match_id": 16346148, "home_team": "Phoenix Suns", "away_team": "Utah Jazz", "home_score": 100, "away_score": 101, "match_date": "2026-09-16T02:15:00", "status": "AET", "tournament": "NBA", "season": "NBA 26/27", "league_folder": "132_NBA"},
   "17058663": {"round": "last_0", "match_id": 17058663, "home_team": "Daniil Medvedev", "away_team": "Holger Rune", "home_score": 0, "away_score": 0, "match_date": "2026-09-16T12:30:00", "status": "Walkover", "tournament": "Wimbledon, London, Great Britain", "season": "Wimbledon Men Singles 2026", "league_folder": "2361_Wimbledon,_Men"},
   "17090707": {"round": 28, "match_id": 17090707, "home_team": "Arsenal", "away_team": "Tottenham Hotspur", "home_score": 6, "away_score": 5, "match_date": "2026-09-16T13:00:00", "status": "AP", "tournament": "FA Cup", "season": "FA Cup 26/27", "league_folder": "19_FA_Cup"},
+  "17060394": {"round": "last_1", "match_id": 17060394, "home_team": "Toronto Raptors", "away_team": "Brooklyn Nets", "home_score": 59, "away_score": 57, "match_date": "2026-09-16T23:00:00", "status": "Abandoned", "tournament": "NBA", "season": "NBA 26/27", "league_folder": "132_NBA"},
   "16951514": {"round": 2, "match_id": 16951514, "home_team": "Crystal Palace", "away_team": "Nottingham Forest", "home_score": 0, "away_score": 0, "match_date": "2026-09-17T03:15:00", "status": "Ended", "tournament": "Premier League", "season": "Premier League 26/27", "league_folder": "17_Premier_League"},
   "16990001": {"round": "last_0", "match_id": 16990001, "home_team": "Real Madrid", "away_team": "Barcelona", "home_score": 2, "away_score": 1, "match_date": "2026-09-18T04:00:00", "status": "Ended", "tournament": "LaLiga", "season": "LaLiga 26/27", "league_folder": "8_LaLiga"},
   "17102381": {"round": "last_1", "match_id": 17102381, "home_team": "Dallas Mavericks", "away_team": "Orlando Magic", "home_score": 0, "away_score": 0, "match_date": "2026-09-18T12:25:00", "status": "Walkover", "tournament": "NBA", "season": "NBA 26/27", "league_folder": "132_NBA"},
-  "16599919": {"round": "last_0", "match_id": 16599919, "home_team": "Villarreal", "away_team": "Osasuna", "home_score": 0, "away_score": 0, "match_date": "2026-09-20T15:00:00", "status": "Postponed", "tournament": "LaLiga", "season": "LaLiga 26/27", "league_folder": "8_LaLiga"},
-  "16425949": {"round": "next_0", "match_id": 16425949, "home_team": "Celta Vigo", "away_team": "Mallorca", "home_score": 0, "away_score": 0, "match_date": "2026-09-20T16:00:00", "status": "Canceled", "tournament": "LaLiga", "season": "LaLiga 26/27", "league_folder": "8_LaLiga"},
-  "17148292": {"round": "last_0", "match_id": 17148292, "home_team": "Girona", "away_team": "Getafe", "home_score": 0, "away_score": 0, "match_date": "2026-09-21T08:00:00", "status": "Interrupted", "tournament": "LaLiga", "season": "LaLiga 26/27", "league_folder": "8_LaLiga"},
   "16837399": {"round": 2, "match_id": 16837399, "home_team": "Manchester City", "away_team": "Hull City", "home_score": 3, "away_score": 1, "match_date": "2026-09-22T18:00:00", "status": "Ended", "tournament": "Premier League", "season": "Premier League 26/27", "league_folder": "17_Premier_League"},
   "17148332": {"round": 29, "match_id": 17148332, "home_team": "Manchester City", "away_team": "Arsenal", "home_score": 2, "away_score": 1, "match_date": "2026-09-22T18:45:00", "status": "AET", "tournament": "FA Cup", "season": "FA Cup 26/27", "league_folder": "19_FA_Cup"},
   "17204710": {"round": "last_0", "match_id": 17204710, "home_team": "Carlos Alcaraz", "away_team": "Jannik Sinner", "home_score": 2, "away_score": 0, "match_date": "2026-09-29T02:00:00", "status": "Ended", "tournament": "Wimbledon, London, Great Britain", "season": "Wimbledon Men Singles 2026", "league_folder": "2361_Wimbledon,_Men"},
@@ -35,56 +32,55 @@
  },
  "queries": {
   "": {
-   "response": {"status": 200, "total": 32, "limit": 25, "offset": 0, "sort": "desc"},
+   "response": {"status": 200, "total": 29, "limit": 25, "offset": 0, "sort": "desc"},
    "items": [
     [17211681, true], [16867839, true], [17207542, false], [17185003, true], [17018554, true], [17184988, true],
     [17018572, true], [17203939, true], [17206241, true], [17204710, true], [17148332, true], [16837399, false],
-    [17148292, false], [16425949, false], [16599919, false], [17102381, true], [16990001, true], [16951514, true],
-    [17090707, false], [17058663, false], [16346148, false], [16872361, true], [17060394, true], [16950622, true],
-    [16837335, true]
+    [17102381, true], [16990001, true], [16951514, true], [17060394, true], [17090707, false], [17058663, false],
+    [16346148, false], [16872361, true], [16950622, true], [16837335, true], [17081861, true], [17092269, true],
+    [17099711, true]
    ]
   },
   "sort=asc": {
-   "response": {"status": 200, "total": 32, "limit": 25, "offset": 0, "sort": "asc"},
+   "response": {"status": 200, "total": 29, "limit": 25, "offset": 0, "sort": "asc"},
    "items": [
     [14025001, true], [14025002, false], [16484334, true], [17078471, true], [17099711, true], [17092269, true],
-    [17081861, true], [16837335, true], [16950622, true], [17060394, true], [16872361, true], [16346148, false],
-    [17058663, false], [17090707, false], [16951514, true], [16990001, true], [17102381, true], [16599919, false],
-    [16425949, false], [17148292, false], [16837399, false], [17148332, true], [17204710, true], [17206241, true],
-    [17203939, true]
+    [17081861, true], [16837335, true], [16950622, true], [16872361, true], [16346148, false], [17058663, false],
+    [17090707, false], [17060394, true], [16951514, true], [16990001, true], [17102381, true], [16837399, false],
+    [17148332, true], [17204710, true], [17206241, true], [17203939, true], [17018572, true], [17184988, true],
+    [17018554, true]
    ]
   },
   "sort=bogus": {
-   "response": {"status": 200, "total": 32, "limit": 25, "offset": 0, "sort": "desc"},
+   "response": {"status": 200, "total": 29, "limit": 25, "offset": 0, "sort": "desc"},
    "items": [
     [17211681, true], [16867839, true], [17207542, false], [17185003, true], [17018554, true], [17184988, true],
     [17018572, true], [17203939, true], [17206241, true], [17204710, true], [17148332, true], [16837399, false],
-    [17148292, false], [16425949, false], [16599919, false], [17102381, true], [16990001, true], [16951514, true],
-    [17090707, false], [17058663, false], [16346148, false], [16872361, true], [17060394, true], [16950622, true],
-    [16837335, true]
+    [17102381, true], [16990001, true], [16951514, true], [17060394, true], [17090707, false], [17058663, false],
+    [16346148, false], [16872361, true], [16950622, true], [16837335, true], [17081861, true], [17092269, true],
+    [17099711, true]
    ]
   },
   "limit=200&sort=asc": {
-   "response": {"status": 200, "total": 32, "limit": 200, "offset": 0, "sort": "asc"},
+   "response": {"status": 200, "total": 29, "limit": 200, "offset": 0, "sort": "asc"},
    "items": [
     [14025001, true], [14025002, false], [16484334, true], [17078471, true], [17099711, true], [17092269, true],
-    [17081861, true], [16837335, true], [16950622, true], [17060394, true], [16872361, true], [16346148, false],
-    [17058663, false], [17090707, false], [16951514, true], [16990001, true], [17102381, true], [16599919, false],
-    [16425949, false], [17148292, false], [16837399, false], [17148332, true], [17204710, true], [17206241, true],
-    [17203939, true], [17018572, true], [17184988, true], [17018554, true], [17185003, true], [17207542, false],
-    [16867839, true], [17211681, true]
+    [17081861, true], [16837335, true], [16950622, true], [16872361, true], [16346148, false], [17058663, false],
+    [17090707, false], [17060394, true], [16951514, true], [16990001, true], [17102381, true], [16837399, false],
+    [17148332, true], [17204710, true], [17206241, true], [17203939, true], [17018572, true], [17184988, true],
+    [17018554, true], [17185003, true], [17207542, false], [16867839, true], [17211681, true]
    ]
   },
   "limit=3": {
-   "response": {"status": 200, "total": 32, "limit": 3, "offset": 0, "sort": "desc"},
+   "response": {"status": 200, "total": 29, "limit": 3, "offset": 0, "sort": "desc"},
    "items": [[17211681, true], [16867839, true], [17207542, false]]
   },
   "limit=3&offset=3": {
-   "response": {"status": 200, "total": 32, "limit": 3, "offset": 3, "sort": "desc"},
+   "response": {"status": 200, "total": 29, "limit": 3, "offset": 3, "sort": "desc"},
    "items": [[17185003, true], [17018554, true], [17184988, true]]
   },
   "limit=3&offset=5000": {
-   "response": {"status": 200, "total": 32, "limit": 3, "offset": 5000, "sort": "desc"},
+   "response": {"status": 200, "total": 29, "limit": 3, "offset": 5000, "sort": "desc"},
    "items": []
   },
   "limit=0": {"status": 422},
@@ -93,27 +89,24 @@
    "items": [
     [17211681, true], [16867839, true], [17185003, true], [17018554, true], [17184988, true], [17018572, true],
     [17203939, true], [17206241, true], [17204710, true], [17148332, true], [17102381, true], [16990001, true],
-    [16951514, true], [16872361, true], [17060394, true], [16950622, true], [16837335, true], [17081861, true],
+    [16951514, true], [17060394, true], [16872361, true], [16950622, true], [16837335, true], [17081861, true],
     [17092269, true], [17099711, true], [17078471, true], [16484334, true], [14025001, true]
    ]
   },
   "details=missing": {
-   "response": {"status": 200, "total": 9, "limit": 25, "offset": 0, "sort": "desc"},
+   "response": {"status": 200, "total": 6, "limit": 25, "offset": 0, "sort": "desc"},
    "items": [
-    [17207542, false], [16837399, false], [17148292, false], [16425949, false], [16599919, false], [17090707, false],
-    [17058663, false], [16346148, false], [14025002, false]
+    [17207542, false], [16837399, false], [17090707, false], [17058663, false], [16346148, false], [14025002, false]
    ]
   },
   "details=other": {"status": 422},
   "details=missing&sort=asc&limit=2": {
-   "response": {"status": 200, "total": 9, "limit": 2, "offset": 0, "sort": "asc"},
+   "response": {"status": 200, "total": 6, "limit": 2, "offset": 0, "sort": "asc"},
    "items": [[14025002, false], [16346148, false]]
   },
   "date=2026-09-15": {
-   "response": {"status": 200, "total": 6, "limit": 25, "offset": 0, "sort": "desc"},
-   "items": [
-    [17060394, true], [16950622, true], [16837335, true], [17081861, true], [17092269, true], [17099711, true]
-   ]
+   "response": {"status": 200, "total": 5, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": [[16950622, true], [16837335, true], [17081861, true], [17092269, true], [17099711, true]]
   },
   "date=2026-09-29T13": {
    "response": {"status": 200, "total": 4, "limit": 25, "offset": 0, "sort": "desc"},
@@ -127,13 +120,13 @@
   "date=17894": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
   "league_id=999": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
   "league_id=abc": {
-   "response": {"status": 200, "total": 32, "limit": 25, "offset": 0, "sort": "desc"},
+   "response": {"status": 200, "total": 29, "limit": 25, "offset": 0, "sort": "desc"},
    "items": [
     [17211681, true], [16867839, true], [17207542, false], [17185003, true], [17018554, true], [17184988, true],
     [17018572, true], [17203939, true], [17206241, true], [17204710, true], [17148332, true], [16837399, false],
-    [17148292, false], [16425949, false], [16599919, false], [17102381, true], [16990001, true], [16951514, true],
-    [17090707, false], [17058663, false], [16346148, false], [16872361, true], [17060394, true], [16950622, true],
-    [16837335, true]
+    [17102381, true], [16990001, true], [16951514, true], [17060394, true], [17090707, false], [17058663, false],
+    [16346148, false], [16872361, true], [16950622, true], [16837335, true], [17081861, true], [17092269, true],
+    [17099711, true]
    ]
   },
   "season_id=1": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
@@ -170,7 +163,7 @@
   "league_id=132": {
    "response": {"status": 200, "total": 6, "limit": 25, "offset": 0, "sort": "desc"},
    "items": [
-    [17203939, true], [17102381, true], [16346148, false], [17060394, true], [17092269, true], [16484334, true]
+    [17203939, true], [17102381, true], [17060394, true], [16346148, false], [17092269, true], [16484334, true]
    ]
   },
   "league_id=132&details=present": {
@@ -196,16 +189,16 @@
    "items": [[17207542, false], [17058663, false]]
   },
   "league_id=8": {
-   "response": {"status": 200, "total": 5, "limit": 25, "offset": 0, "sort": "desc"},
-   "items": [[17211681, true], [17148292, false], [16425949, false], [16599919, false], [16990001, true]]
+   "response": {"status": 200, "total": 2, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": [[17211681, true], [16990001, true]]
   },
   "league_id=8&details=present": {
    "response": {"status": 200, "total": 2, "limit": 25, "offset": 0, "sort": "desc"},
    "items": [[17211681, true], [16990001, true]]
   },
   "league_id=8&details=missing": {
-   "response": {"status": 200, "total": 3, "limit": 25, "offset": 0, "sort": "desc"},
-   "items": [[17148292, false], [16425949, false], [16599919, false]]
+   "response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": []
   },
   "league_id=35": {"response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"}, "items": []},
   "league_id=35&details=present": {
@@ -273,13 +266,13 @@
   "season_id=80229": {
    "response": {"status": 200, "total": 6, "limit": 25, "offset": 0, "sort": "desc"},
    "items": [
-    [17203939, true], [17102381, true], [16346148, false], [17060394, true], [17092269, true], [16484334, true]
+    [17203939, true], [17102381, true], [17060394, true], [16346148, false], [17092269, true], [16484334, true]
    ]
   },
   "league_id=132&season_id=80229": {
    "response": {"status": 200, "total": 6, "limit": 25, "offset": 0, "sort": "desc"},
    "items": [
-    [17203939, true], [17102381, true], [16346148, false], [17060394, true], [17092269, true], [16484334, true]
+    [17203939, true], [17102381, true], [17060394, true], [16346148, false], [17092269, true], [16484334, true]
    ]
   },
   "league_id=999&season_id=80229": {
@@ -303,12 +296,12 @@
    "items": []
   },
   "season_id=97532": {
-   "response": {"status": 200, "total": 5, "limit": 25, "offset": 0, "sort": "desc"},
-   "items": [[17211681, true], [17148292, false], [16425949, false], [16599919, false], [16990001, true]]
+   "response": {"status": 200, "total": 2, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": [[17211681, true], [16990001, true]]
   },
   "league_id=8&season_id=97532": {
-   "response": {"status": 200, "total": 5, "limit": 25, "offset": 0, "sort": "desc"},
-   "items": [[17211681, true], [17148292, false], [16425949, false], [16599919, false], [16990001, true]]
+   "response": {"status": 200, "total": 2, "limit": 25, "offset": 0, "sort": "desc"},
+   "items": [[17211681, true], [16990001, true]]
   },
   "league_id=999&season_id=97532": {
    "response": {"status": 200, "total": 0, "limit": 25, "offset": 0, "sort": "desc"},
