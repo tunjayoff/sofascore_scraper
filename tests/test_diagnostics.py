@@ -5,6 +5,7 @@ import io
 import json
 import logging
 import os
+import socket
 import sqlite3
 import subprocess
 import sys
@@ -15,6 +16,7 @@ from fastapi.testclient import TestClient
 
 from src import bridge_health, diagnostics, redact
 from src import logger as app_logger
+from src.store.jobs import JOB_COLUMNS
 from src.version import __version__
 from src.web.app import app
 from src.web.jobs import JobStore, default_db_path
@@ -346,6 +348,176 @@ def test_missing_job_db_is_not_created(log_dir, monkeypatch, tmp_path):
     jobs = diagnostics.collect()["jobs"]
     assert jobs["exists"] is False and jobs["recent"] == []
     assert not (tmp_path / "nowhere").exists()
+
+
+# --- son iş: seçilen sütunlar ve makine adı ----------------------------------------------
+
+HOST = "build-box-17"
+
+
+def _strings(value):
+    """JSON'a benzer bir yapıdaki bütün metinler (sözlük anahtarları dahil)."""
+    if isinstance(value, dict):
+        for key, item in value.items():
+            yield str(key)
+            yield from _strings(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from _strings(item)
+    elif isinstance(value, str):
+        yield value
+
+
+def test_job_history_leaves_out_the_host_name_secrets_and_home_paths(log_dir, monkeypatch, tmp_path):
+    # Geçiş 0002'nin sütunlarıyla yazılmış bir iş: işi başlatan makinenin adı, belirtimde ve hata metninde
+    # parolalı bir proxy adresi, ev dizininin altında yollar, hata ayrıntısında başka bir makinenin adı
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    monkeypatch.setattr(socket, "gethostname", lambda: HOST)
+    data_dir = tmp_path / "data"
+    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    store = JobStore(default_db_path(str(data_dir)))
+    store.create_running(
+        {"mode": "full"},
+        kind="fetch",
+        origin={"face": "cli", "pid": 4242, "host": HOST},
+        spec={"mode": "full", "proxy": PROXY, "target": str(tmp_path / "exports" / "out.csv")},
+    )
+    store.update(
+        status="Failed",
+        state="failed",
+        current_task=f"Error: lock held (pid 77, makine {HOST})",
+        append_log=f"[failed] the writer lease is held on {HOST}",
+        error={
+            "code": "job_running",
+            "message": f"CONNECT tunnel failed via {PROXY} (pid 77, makine {HOST})",
+            "details": {
+                "path": str(data_dir / "x.json"),
+                "holder": {"lease": "writer", "pid": 77, "host": "nas-01.lan"},
+            },
+        },
+        finished=True,
+    )
+
+    job = diagnostics.collect(source="cli")["jobs"]["recent"][0]
+    # Tanıya yarayanlar duruyor: tür, durum, zamanlar, işi başlatan yüz, hata kodu ve maskelenmiş iletisi
+    assert (job["kind"], job["status"]) == ("fetch", "failed")
+    assert job["created_at"] and job["started_at"] and job["finished_at"]
+    assert isinstance(job["heartbeat_at"], int)
+    assert job["origin"] == {"face": "cli", "pid": 4242, "same_host": True}
+    assert job["spec"]["mode"] == "full"
+    assert job["spec"]["proxy"] == "http://***@proxy.example.com:8080"
+    assert job["spec"]["target"].startswith("~")
+    assert job["error"]["code"] == "job_running"
+    assert "proxy.example.com:8080" in job["error"]["message"] and "makine ***" in job["error"]["message"]
+    assert job["error"]["details"]["holder"] == {"lease": "writer", "pid": 77, "host": "***"}
+    assert job["error"]["details"]["path"].startswith("~")
+    assert job["current_task"] == "Error: lock held (pid 77, makine ***)"
+    assert job["log"] == ["[failed] the writer lease is held on ***"]
+    # Sütunlar adıyla seçilir: ham JSON sütunları ve kilit sahibinin kimliği pakette yok
+    assert not {"owner", "origin_json", "spec_json", "error_json"} & set(job)
+
+    files = _unzip(diagnostics.build_bundle(source="cli"))
+    texts = list(_strings(json.loads(files["diagnostics.json"]))) + [files["log_tail.txt"]]
+    for leaked in (HOST, "nas-01", "Pr0xy-P4ss!word", "scraper:", str(tmp_path)):
+        assert not [text for text in texts if leaked in text], leaked
+
+
+@pytest.mark.parametrize("origin, expected", [
+    ({"face": "api", "pid": 7, "host": "nas-01"}, {"face": "api", "pid": 7, "same_host": False}),
+    ({"face": "scheduler", "pid": None, "host": None}, {"face": "scheduler", "pid": None, "same_host": None}),
+    # Kayda sonradan eklenen bir alan pakete kendiliğinden girmez
+    ({"face": "cli", "pid": 9, "host": HOST, "user": "someone"}, {"face": "cli", "pid": 9, "same_host": True}),
+    (None, None),
+])
+def test_job_origin_keeps_the_face_and_the_pid_only(log_dir, monkeypatch, tmp_path, origin, expected):
+    monkeypatch.setattr(socket, "gethostname", lambda: HOST)
+    data_dir = tmp_path / "data"
+    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    store = JobStore(default_db_path(str(data_dir)))
+    store.create_running({"mode": "details"}, origin=origin)
+    store.update(finished=True)
+    doc = diagnostics.collect()
+    assert doc["jobs"]["recent"][0]["origin"] == expected
+    assert not [text for text in _strings(doc["jobs"]) if "nas-01" in text or "someone" in text]
+
+
+def test_host_names_are_masked_only_where_they_stand_alone():
+    hosts = diagnostics._host_names(["pc.lan", None, "", "10.0.0.5"])
+    assert hosts == ["10.0.0.5", "pc.lan", "pc"]  # noktalı adın ilk parçası da; IP'nin ilk parçası değil
+    masked = diagnostics._mask_hosts({"pc": ["3 upcoming on pc, PC-4242 and pc.lan; 10 left", 10]}, hosts)
+    assert masked == {"pc": ["3 upcoming on ***, ***-4242 and ***; 10 left", 10]}
+    assert diagnostics._mask_hosts("pc", []) == "pc"
+
+
+@pytest.mark.parametrize("db_name, extra", [("jobs.db", ()), ("state.db", ("kind", "owner"))])
+def test_job_history_without_the_job_manager_columns_is_still_read(log_dir, monkeypatch, tmp_path, db_name, extra):
+    # 2.x'in jobs.db'si (18 sütun) ve geçiş 0002'den önce yazılmış bir state.db (+ kind, owner):
+    # origin_json, spec_json, error_json, heartbeat_at ve created_at sütunları yok
+    data_dir = tmp_path / "data"
+    (data_dir / ".meta").mkdir(parents=True)
+    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    conn = sqlite3.connect(str(data_dir / ".meta" / db_name))
+    try:
+        conn.execute("CREATE TABLE jobs ({})".format(", ".join(JOB_COLUMNS + extra)))
+        conn.execute(
+            "INSERT INTO jobs (id, status, payload_json, log_json, started_at, matches_total) VALUES (?, ?, ?, ?, ?, ?)",
+            ("old-1", "completed", '{"mode": "full"}', '["bitti"]', "2026-09-01T10:00:00+00:00", 12),
+        )
+        if extra:
+            conn.execute("UPDATE jobs SET kind = 'fetch', owner = 'a1b2c3d4e5f6a7b8'")
+        conn.commit()
+    finally:
+        conn.close()
+
+    jobs = diagnostics.collect()["jobs"]
+    assert jobs["exists"] is True and jobs["db"].endswith(db_name)
+    job = jobs["recent"][0]
+    assert (job["id"], job["status"], job["matches_total"]) == ("old-1", "completed", 12)
+    assert job["payload"] == {"mode": "full"} and job["log"] == ["bitti"] and job["result"] is None
+    assert job.get("kind") == ("fetch" if extra else None)
+    # Dosyada olmayan sütunun anahtarı da yok; `owner` hiç seçilmez
+    assert not {"owner", "origin", "spec", "error", "created_at", "heartbeat_at"} & set(job)
+    doc = json.loads(_unzip(diagnostics.build_bundle())["diagnostics.json"])
+    assert doc["jobs"]["recent"][0]["id"] == "old-1"
+
+
+def test_a_column_added_to_the_jobs_table_later_does_not_reach_the_bundle(log_dir, monkeypatch, tmp_path):
+    data_dir = tmp_path / "data"
+    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    db = default_db_path(str(data_dir))
+    store = JobStore(db)
+    store.create_running({"mode": "details"})
+    store.update(finished=True)
+    conn = sqlite3.connect(db)
+    try:
+        conn.execute("ALTER TABLE jobs ADD COLUMN operator_note TEXT")
+        conn.execute("UPDATE jobs SET operator_note = 'a-future-column-value'")
+        conn.commit()
+    finally:
+        conn.close()
+    doc = diagnostics.collect()
+    job = doc["jobs"]["recent"][0]
+    assert job["status"] == "completed" and "operator_note" not in job
+    assert "a-future-column-value" not in json.dumps(doc)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="sembolik bağ")
+@pytest.mark.parametrize("other_host", [True, False])
+def test_setup_check_does_not_carry_the_host_name_of_a_profile_lock(log_dir, monkeypatch, tmp_path, other_host):
+    # Chromium'un profil kilidi "<makine adı>-<pid>" bağıdır; doctor bunu ayrıntıya (ve başka makineyse özete) yazar
+    profile = tmp_path / "profile"
+    profile.mkdir()
+    monkeypatch.setenv("SOFASCORE_BROWSER_PROFILE", str(profile))
+    host = "old-container" if other_host else socket.gethostname()
+    os.symlink(f"{host}-4242", profile / "SingletonLock")
+    check = next(c for c in diagnostics.collect()["doctor"]["checks"] if c["id"] == "profile")
+    assert check["detail"]["lock"] == "***-4242" and check["detail"]["lock_host"] == "***"
+    if other_host:
+        assert check["code"] == "profile_locked_other_host" and "***-4242" in check["summary"]
+        assert not [text for text in _strings(check) if "old-container" in text]
+    else:
+        assert check["code"] in ("profile_stale_lock", "profile_in_use") and check["detail"]["lock_pid"] == 4242
 
 
 def test_a_failing_section_does_not_break_the_bundle(log_dir, monkeypatch):

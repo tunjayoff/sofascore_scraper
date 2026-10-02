@@ -9,7 +9,9 @@ Paket (zip) üç dosya içerir:
   README.txt        içinde ne olduğu
 
 Her şey src.redact'ten geçer (token, cookie, proxy parolası `***` olur) ve ev dizini `~` ile
-değiştirilir. Okunan dosyalar sabittir: log dosyası yalnızca src.logger'ın yazdığı dosyadır,
+değiştirilir. İş geçmişinin sütunları adıyla seçilir (_JOB_COLUMNS) ve işi başlatan sürecin makine adı
+pakete girmez; iş metinlerinde ve tarayıcı profili kilidinde geçen makine adı `***` olur.
+Okunan dosyalar sabittir: log dosyası yalnızca src.logger'ın yazdığı dosyadır,
 dışarıdan yol alınmaz. Paket üretmek hiçbir şeyi değiştirmez (iş geçmişi salt okunur açılır).
 
 Web: GET /api/logs, GET /api/diagnostics, GET /api/diagnostics/bundle (src/web/routes/diagnostics.py).
@@ -23,14 +25,16 @@ import json
 import logging
 import os
 import platform
+import re
 import shutil
+import socket
 import sqlite3
 import sys
 import time
 import zipfile
 from importlib import metadata
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import dotenv
 
@@ -49,6 +53,23 @@ MAX_TAIL_LINES = 5000
 DEFAULT_TAIL_LINES = 1000
 _JOB_LIMIT = 3
 _JOB_LIST_CAP = 50  # bir işin sonucundaki listelerden (başarısız maçlar) pakete giren en fazla öğe
+# İş geçmişinden pakete giren sütunlar. Sütunlar adıyla seçilir (`SELECT *` değil): `jobs` tablosuna sonradan
+# eklenen bir sütun buraya yazılmadıkça pakete girmez. Dosyada olmayan sütun atlanır: 2.x'in jobs.db'sinde
+# `kind`, geçiş 0002'den önce yazılmış bir state.db'de `created_at`, `heartbeat_at` ve son üç JSON sütunu yoktur.
+#   origin_json            yalnızca işi başlatan yüz ve pid girer, makine adı girmez (bkz. _job_origin)
+#   spec_json, error_json  çözülür; içlerindeki metinler diğer bölümler gibi maskelenir (collect)
+# Bilerek dışarıda: `owner` (kilit sahibinin rastgele kimliği; `leases` tablosu pakette olmadığı için
+# tanıya bir şey katmaz).
+_JOB_COLUMNS: Tuple[str, ...] = (
+    "id", "status", "kind", "progress", "current_task",
+    "created_at", "started_at", "finished_at", "heartbeat_at", "cancel_requested",
+    "matches_total", "matches_done", "matches_failed", "schedule_empty_seasons",
+    "circuit_breaker_triggered", "circuit_breaker_reason", "eta_seconds", "current_batch",
+    "payload_json", "log_json", "result_json", "spec_json", "error_json", "origin_json",
+)
+_JOB_JSON_COLUMNS: Tuple[str, ...] = (
+    "payload_json", "log_json", "result_json", "spec_json", "error_json", "origin_json",
+)
 # Pakete girmeyen kurulum denetimleri: "browser" ayrı bir süreçte Chromium başlatır (saniyeler sürer,
 # uç nokta her çağrıda bunu yapmamalı); köprünün gerçek durumu zaten "bridge" bölümündedir.
 _DOCTOR_SKIP: Tuple[str, ...] = ("browser",)
@@ -82,12 +103,15 @@ log_tail.txt      the last lines of the application log
 Secrets are masked before anything is written here: tokens, cookies, proxy credentials and any
 .env value whose key looks like a secret appear as ***; your home directory appears as ~.
 Values of .env keys the app does not know are never included, only their names.
+The job history and the setup check do not carry the host name of this machine (where a
+message names it, it appears as ***).
 Have a quick look before attaching this file to a bug report.
 
 ---
 Bu paket hata bildirimine eklenmek içindir. Gizli değerler (token, cookie, proxy parolası,
 .env'deki gizli görünen değerler) yazılmadan önce *** ile maskelenir; ev dizininiz ~ olarak
-görünür. Göndermeden önce içeriğe göz atın.
+görünür. İş geçmişinde ve kurulum denetiminde makinenizin adı yer almaz (bir iletide geçiyorsa
+*** olur). Göndermeden önce içeriğe göz atın.
 """
 
 
@@ -109,6 +133,44 @@ def _scrub_obj(obj: Any) -> Any:
     if isinstance(obj, str):
         return _home_scrub(obj)
     return obj
+
+
+def _host_names(names: Iterable[Any]) -> List[str]:
+    """Maskelenecek makine adları: verilen adlar ve noktalı bir adın ilk parçası ("pc.lan" → "pc"); uzun olan önce."""
+    found = set()
+    for name in names:
+        if not isinstance(name, str) or not name.strip():
+            continue
+        name = name.strip()
+        found.add(name)
+        label = name.split(".", 1)[0]
+        if label and not label.isdigit():  # IP adresi biçimindeki bir adın ilk parçası her sayıyı maskelerdi
+            found.add(label)
+    return sorted(found, key=len, reverse=True)
+
+
+def _mask_hosts(obj: Any, hosts: Sequence[str]) -> Any:
+    """
+    Metinlerde geçen makine adlarını `***` yapar; sözlük anahtarlarına dokunmaz. Ad yalnızca tek başına
+    geçtiği yerde maskelenir (bir harfe ya da rakama bitişik değilse): "pc" adlı makine "upcoming" sözcüğünü
+    bozmaz, "pc-4242" ise "***-4242" olur.
+    """
+    if not hosts:
+        return obj
+    pattern = re.compile(
+        "(?<![A-Za-z0-9])(?:" + "|".join(re.escape(host) for host in hosts) + ")(?![A-Za-z0-9])", re.IGNORECASE
+    )
+
+    def walk(value: Any) -> Any:
+        if isinstance(value, dict):
+            return {k: walk(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [walk(v) for v in value]
+        if isinstance(value, str):
+            return pattern.sub(MASK, value)
+        return value
+
+    return walk(obj)
 
 
 def _section(fn: Callable[[], Any]) -> Any:
@@ -382,12 +444,45 @@ def _cap_lists(value: Any) -> Any:
     return value
 
 
+def _job_origin(raw: Any, this_host: str) -> Optional[Dict[str, Any]]:
+    """
+    `origin_json`'dan pakete girenler: işi başlatan yüz (cli, api, ...) ve pid (log satırlarındaki pid ile
+    eşleştirmek için). Makine adı girmez; yerine yalnızca işin, paketi üreten makinede başlatılıp
+    başlatılmadığı yazılır (`same_host`; ad kayıtlı değilse None). Alanlar adıyla alınır: kayda sonradan
+    eklenen bir alan pakete kendiliğinden girmez.
+    """
+    if not isinstance(raw, dict):
+        return None
+    face, pid, host = raw.get("face"), raw.get("pid"), raw.get("host")
+    return {
+        "face": face if isinstance(face, str) else None,
+        "pid": pid if isinstance(pid, int) and not isinstance(pid, bool) else None,
+        "same_host": host == this_host if isinstance(host, str) and host else None,
+    }
+
+
+def _job_hosts(origin: Any, error: Any) -> List[Any]:
+    """Bir iş satırında kayıtlı makine adları: işi başlatan süreç ve hatada adı geçen kilit sahibi."""
+    hosts: List[Any] = []
+    if isinstance(origin, dict):
+        hosts.append(origin.get("host"))
+    details = error.get("details") if isinstance(error, dict) else None
+    holder = details.get("holder") if isinstance(details, dict) else None
+    if isinstance(holder, dict):
+        hosts.append(holder.get("host"))
+    return hosts
+
+
 def _jobs() -> Dict[str, Any]:
     """
     Son işler, iş geçmişinden SALT OKUNUR okunur. JobStore kullanılmaz: kurulurken "running" işleri
     "interrupted" yapar; CLI'dan paket üretmek çalışan web sunucusunun işini bozmamalı.
     İş geçmişi state.db'dedir (src/store/jobs.py); 3.x'in henüz açmadığı bir dizinde yalnızca 2.x'in
     jobs.db'si vardır.
+
+    Yalnızca _JOB_COLUMNS'taki sütunlar okunur. Makine adı pakete girmez: işi başlatan sürecin adı atılır
+    (_job_origin); satırlarda kayıtlı adlar ve bu makinenin adı, işin metinlerinde de (ör. kilidin sahibini
+    söyleyen hata iletisi) `***` olur.
     """
     meta = os.path.join(os.path.abspath(os.getenv("DATA_DIR", "data")), ".meta")
     db = os.path.join(meta, "state.db")
@@ -398,22 +493,34 @@ def _jobs() -> Dict[str, Any]:
     conn = sqlite3.connect(f"{Path(db).as_uri()}?mode=ro", uri=True, timeout=2.0)
     try:
         conn.row_factory = sqlite3.Row
+        present = {str(row["name"]) for row in conn.execute("PRAGMA table_info(jobs)")}
+        columns = [column for column in _JOB_COLUMNS if column in present]
+        if not columns:
+            raise LookupError("the job history has no jobs table with known columns")
+        order = "COALESCE(started_at, '') DESC" if "started_at" in present else "rowid DESC"
         rows = conn.execute(
-            "SELECT * FROM jobs ORDER BY COALESCE(started_at, '') DESC LIMIT ?", (_JOB_LIMIT,)
+            f"SELECT {', '.join(columns)} FROM jobs ORDER BY {order} LIMIT ?", (_JOB_LIMIT,)
         ).fetchall()
     finally:
         conn.close()
+    this_host = socket.gethostname()
+    hosts: List[Any] = [this_host]
     recent = []
     for row in rows:
         job = dict(row)
-        for column in ("payload_json", "log_json", "result_json"):
-            raw = job.pop(column, None)
+        for column in _JOB_JSON_COLUMNS:
+            if column not in job:
+                continue
+            raw = job.pop(column)
             try:
                 job[column[: -len("_json")]] = json.loads(raw) if raw else None
             except (TypeError, ValueError):
                 job[column[: -len("_json")]] = raw
+        hosts.extend(_job_hosts(job.get("origin"), job.get("error")))
+        if "origin" in job:
+            job["origin"] = _job_origin(job["origin"], this_host)
         recent.append(_cap_lists(job))
-    return {"db": db, "exists": True, "recent": recent}
+    return {"db": db, "exists": True, "recent": _mask_hosts(recent, _host_names(hosts))}
 
 
 def _bridge() -> Dict[str, Any]:
@@ -446,6 +553,12 @@ def _doctor() -> Dict[str, Any]:
         # sayılır (API_KEY gibi) ve `***` olurdu
         for problem in check["detail"].get("problems") or []:
             problem["setting"] = problem.pop("key", None)
+        # Tarayıcı profilinin kilidi "<makine adı>-<pid>" biçimindedir (Chromium'un SingletonLock bağı):
+        # denetimin sonucu ve pid kalır; ad (bu makinenin ya da kilidi bırakan kapsayıcının) `***` olur
+        if check["detail"].get("lock_host"):
+            hosts = _host_names([ctx.hostname, check["detail"]["lock_host"]])
+            for field in ("summary", "fix", "detail"):
+                check[field] = _mask_hosts(check[field], hosts)
     return out
 
 
