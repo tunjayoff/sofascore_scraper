@@ -16,6 +16,11 @@ Sink dağıtıcısı (docs/design/02-services.md bölüm 5.2): olay günlüğün
   * Okunmadan budanmış olaylar (`StreamBatch.gap`) kayıp sayılır: `system.sink_dropped` (reason "pruned").
   * Dağıtıcı `sinks` kilidini tutarken günlüğü saatte bir budar (01-storage.md 9.3: 7 gün, 1.000.000 satır).
   * Konum tutmayan sink'ler (stdout) kilitsiz de izlenebilir (`follow`): `watch --stdout` böyle çalışır.
+  * Durdurma ve süre sınırı her teslimden sonra sorulur: durdurulan `run` ya da süresi dolan `drain` en çok
+    süren tek bir teslimi (webhook: isteğin zaman aşımı) bekler, sıradaki toplu gönderimlere başlamaz.
+    Teslimler bu thread'de sırayla yapılır: `deliver`'ı hiç dönmeyen bir sink (okuyanı duran bir boru, yanıt
+    vermeyen bir ağ dosya sistemi) diğer sink'leri ve kapanışı da bekletir; webhook kendi zaman aşımıyla döner.
+  * state.db okunamaz ya da yazılamazsa (meşgul, G/Ç hatası) dağıtıcı ölmez: bekler ve yeniden dener.
 
 Zaman, verilen saatten okunur (`Clock`); testler yeniden deneme aralıklarını gerçekte beklemeden sınar.
 Gizli değerler: buradan loglanan ve günlüğe yazılan her metin sink'in adını ve hata sınıfını taşır; adres ve
@@ -28,6 +33,7 @@ from __future__ import annotations
 import logging
 import math
 import random
+import sqlite3
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
@@ -52,6 +58,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("Sinks")
 
+# state.db'nin okunamadığı ya da yazılamadığı durumlar: Store kilit zaman aşımını StoreBusy'ye çevirir, diğer
+# SQLite hataları (WAL'siz kipte okurken kilit, G/Ç hatası) `sqlite3.Error` olarak çıkar (src/store/state.py)
+STORE_ERRORS: Tuple[type, ...] = (StoreError, sqlite3.Error)
+
 LEASE_NAME = "sinks"
 RUNTIME_PREFIX = "sink:"  # store.runtime anahtarı: "sink:<ad>" -> {"since_seq": N}; sink'in bilindiğini söyler
 
@@ -62,6 +72,7 @@ BACKOFF_FIRST_SECONDS = 1.0
 BACKOFF_MAX_SECONDS = 300.0
 IDLE_WAIT_SECONDS = 0.5  # `run` durdurma isteğine en geç bu kadar sonra bakar
 LEASE_RETRY_SECONDS = 5.0
+ERROR_RETRY_SECONDS = 5.0  # `run`: beklenmeyen bir hatadan sonra döngü bu kadar bekler ve sürer
 DRAIN_TIMEOUT_SECONDS = 10.0
 
 # Günlüğün saklama süresi (01-storage.md 9.3); ST-24 bunları `StreamLog.prune`'un varsayılanı yapana kadar burada
@@ -142,6 +153,14 @@ class _State:
     known: bool = field(default=False)
 
 
+class _LogReplaced(Exception):
+    """Okuma başka bir günlükten geldi (`stream_id` değişti): tur bırakılır, konumlar yeniden okunur."""
+
+    def __init__(self, stream_id: str) -> None:
+        super().__init__(stream_id)
+        self.stream_id = stream_id
+
+
 def _equal_jitter() -> float:
     """Yeniden deneme aralığının çarpanı: [0.5, 1.0]. Aynı anda düşen alıcılara aynı anda yüklenilmez."""
     return 0.5 + random.random() / 2
@@ -177,6 +196,7 @@ class Dispatcher:
             for sink in sinks
         ]
         self._started = False
+        self._stream_id: Optional[str] = None  # konumların ait olduğu günlük
         self._last_prune: Optional[float] = None
 
     # --- başlangıç: konumlar ------------------------------------------------------------------
@@ -211,7 +231,30 @@ class Dispatcher:
             st.head = None  # kilidi bu arada başka bir süreç tutmuş olabilir: toplu gönderim konumdan yeniden kurulur
             st.dirty = False
             self._recover(st)
+        self._stream_id = head.stream_id
         self._started = True
+
+    def _restart(self, stream_id: str) -> None:
+        """
+        Günlük değişti (state.db yeniden yaratılmış): eldeki sıra numaraları başka bir günlüğündür ve yeni
+        günlüğünkilerle karşılaştırılamaz. Bellekteki konumlar ve bekleyen toplu gönderimler bırakılır; bir sonraki
+        tur baştan başlar: yeni state.db'de kayıtlı olmayan sink yeni günlüğün o anki ucundan, kayıtlı olan
+        (yedekten geri yüklenmiş state.db) orada saklı konumundan sürer.
+        """
+        logger.warning("The event log was replaced (stream id %s, was %s); every sink starts again in the new log",
+                       stream_id, self._stream_id)
+        for st in self._states:
+            st.known = False
+            st.head = None
+            st.dirty = False
+            st.attempts = 0
+            st.retry_at = 0.0
+            st.linger_since = None
+            st.gap_reported = False
+            st.caught_up = False
+            st.stored_error = None
+        self._started = False
+        self._stream_id = None
 
     def _recover(self, st: _State) -> None:
         """
@@ -237,15 +280,18 @@ class Dispatcher:
             return
         logger.info("Sink %s: position recovered from its output (sequence %d, stored %d)", st.name, seq, st.cursor)
         st.cursor = seq
-        self._persist(st, force=True)
+        st.dirty = True
+        self._persist(st)
 
     # --- bir tur ------------------------------------------------------------------------------
 
-    def step(self, *, flush: bool = False) -> float:
+    def step(self, *, flush: bool = False, until: Optional[Callable[[], bool]] = None) -> float:
         """
         Her sink için teslim edilebilecek her şeyi teslim eder ve bir sonraki işe kadar geçecek süreyi
         (saniye) döndürür: yeniden deneme ya da toplu gönderim beklemesi; bekleyen iş yoksa `math.inf`.
         flush=True: toplu gönderimin dolması beklenmez (kapanış, `drain`).
+        until: durdurma isteği ya da süre sınırı. Her sink'ten önce ve her teslimden sonra sorulur; True
+        dönerse tur yarıda kesilir ve 0 döner (kalan iş bir sonraki tura kalır).
         """
         if not self._started:
             self._start()
@@ -253,17 +299,25 @@ class Dispatcher:
         for st in self._states:
             if st.disabled:
                 continue
+            if until is not None and until():
+                return 0.0
             try:
-                delay = min(delay, self._advance(st, flush))
-            except StoreError as e:
+                delay = min(delay, self._advance(st, flush, until))
+            except _LogReplaced as e:
+                self._restart(e.stream_id)
+                return 0.0
+            except STORE_ERRORS as e:
                 # state.db meşgul ya da okunamıyor: sink bu turda bekler, dağıtıcı ölmez
                 logger.warning("Sink %s: the event log could not be read or written (%s); trying again",
                                st.name, type(e).__name__)
                 delay = min(delay, BACKOFF_FIRST_SECONDS)
         return delay
 
-    def _advance(self, st: _State, flush: bool) -> float:
+    def _advance(self, st: _State, flush: bool, until: Optional[Callable[[], bool]] = None) -> float:
         for _round in range(MAX_BATCHES_PER_STEP):
+            if _round and until is not None and until():
+                self._persist(st)
+                return 0.0
             now = self._clock.monotonic()
             if now < st.retry_at:
                 self._persist(st)
@@ -291,7 +345,8 @@ class Dispatcher:
             if st.error is not None:
                 logger.info("Sink %s: delivery works again", st.name)
             st.error = None
-            self._persist(st, force=True)
+            st.dirty = True  # yazılamazsa bir sonraki turda yeniden denenir
+            self._persist(st)
         return 0.0  # daha teslim edilecek olay var: sıra diğer sink'lere geçer, sonraki tur hemen sürer
 
     def _next_batch(self, st: _State, flush: bool, now: float) -> Tuple[List[Envelope], int, float]:
@@ -302,6 +357,8 @@ class Dispatcher:
         """
         for _read in range(MAX_READS_PER_BATCH):
             read = self._store.streams.read(after=st.cursor, limit=self._read_limit)
+            if self._stream_id is not None and read.stream_id != self._stream_id:
+                raise _LogReplaced(read.stream_id)
             self._note_gap(st, read.gap, read.events[0].seq - 1 if read.events else read.last_seq)
             exhausted = len(read.events) < self._read_limit
             accepted = [env for env in (Envelope.from_record(record, read.stream_id) for record in read.events)
@@ -418,7 +475,7 @@ class Dispatcher:
             self._store.streams.append(SYSTEM_STREAM, [
                 StreamEvent(type=SINK_DROPPED, data=data, source=SYSTEM_SOURCE, ts=self._clock.time()),
             ])
-        except StoreError as e:
+        except STORE_ERRORS as e:
             logger.warning("Sink %s: the dropped range could not be recorded (%s)", st.name, type(e).__name__)
 
     def _disable(self, st: _State, text: str) -> None:
@@ -428,17 +485,20 @@ class Dispatcher:
         logger.error("Sink %s is disabled until restart: %s", st.name, text)
         self._persist(st)
 
-    def _persist(self, st: _State, *, force: bool = False) -> None:
-        """Konumu ve son hatayı state.db'ye yazar; değişmediyse yazmaz. Yazılamazsa teslim sürer."""
+    def _persist(self, st: _State) -> None:
+        """
+        Konumu ve son hatayı state.db'ye yazar; değişmediyse yazmaz. Yazılamazsa teslim sürer ve yazma bir
+        sonraki turda yeniden denenir (`dirty` kalır); süreç ondan önce ölürse aynı olaylar yeniden başlamada
+        bir kez daha teslim edilir (en az bir kez).
+        """
         if not st.uses_cursor:
             st.dirty = False
             return
-        if not (force or st.dirty or st.error != st.stored_error):
+        if not (st.dirty or st.error != st.stored_error):
             return
         try:
             self._store.streams.set_cursor(st.name, st.cursor, error=st.error)
-        except StoreError as e:
-            # Konum bellekte ilerledi; yazılamadıysa yeniden başlamada aynı olaylar bir kez daha teslim edilir
+        except STORE_ERRORS as e:
             logger.warning("Sink %s: its position could not be stored (%s)", st.name, type(e).__name__)
             return
         st.dirty = False
@@ -468,7 +528,7 @@ class Dispatcher:
                         continue
                     try:
                         self._start()
-                    except StoreError as e:  # state.db meşgul: kilit bırakılır ve biraz sonra yeniden denenir
+                    except STORE_ERRORS as e:  # state.db meşgul: kilit bırakılır ve biraz sonra yeniden denenir
                         logger.warning("The sink positions could not be read (%s); trying again",
                                        type(e).__name__)
                         lease.release()
@@ -476,16 +536,29 @@ class Dispatcher:
                         stop.wait(LEASE_RETRY_SECONDS)
                         continue
                     logger.info("Dispatching to %s", ", ".join(st.name for st in self._states) or "no sink")
-                # Günlüğün ucu turdan önce okunur: tur sırasında eklenen olay beklemeyi hemen bitirir, yeniden
-                # deneme bekleyen (okumayan) bir sink ise döngüyü boşa döndürmez
-                seen = self._store.streams.head().last_seq
-                delay = self.step()
-                self._prune_if_due()
-                if stop.is_set():
-                    break
-                self._store.streams.wait(after=seen, timeout=max(0.0, min(delay, IDLE_WAIT_SECONDS)))
+                try:
+                    # Günlüğün ucu turdan önce okunur: tur sırasında eklenen olay beklemeyi hemen bitirir, yeniden
+                    # deneme bekleyen (okumayan) bir sink ise döngüyü boşa döndürmez
+                    seen = self._store.streams.head().last_seq
+                    delay = self.step(until=stop.is_set)
+                    self._prune_if_due()
+                    if stop.is_set():
+                        break
+                    self._store.streams.wait(after=seen, timeout=max(0.0, min(delay, IDLE_WAIT_SECONDS)))
+                except STORE_ERRORS as e:
+                    logger.warning("The event log could not be read (%s); trying again", type(e).__name__)
+                    stop.wait(BACKOFF_FIRST_SECONDS)
+                except Exception as e:
+                    # Uzun çalışan servis beklenmeyen bir hatayla sessizce durmaz: yazar, bekler, sürer. İletide
+                    # yalnızca hatanın sınıfı vardır (sink'lerin teslim hataları buraya gelmez: `_advance` tutar)
+                    logger.error("The dispatcher failed unexpectedly (%s); trying again in %.0f s",
+                                 type(e).__name__, ERROR_RETRY_SECONDS, exc_info=True)
+                    stop.wait(ERROR_RETRY_SECONDS)
             if lease is not None and flush_timeout > 0:
-                self._drain(flush_timeout)
+                try:
+                    self._drain(flush_timeout)
+                except STORE_ERRORS as e:
+                    logger.warning("The backlog could not be delivered while stopping (%s)", type(e).__name__)
         finally:
             if lease is not None:
                 lease.release()
@@ -499,11 +572,15 @@ class Dispatcher:
         if any(st.uses_cursor for st in self._states):
             raise ValueError("follow() is for sinks without a cursor; sinks with a cursor need run()")
         while not stop.is_set():
-            seen = self._store.streams.head().last_seq
-            delay = self.step()
-            if stop.is_set():
-                break
-            self._store.streams.wait(after=seen, timeout=max(0.0, min(delay, IDLE_WAIT_SECONDS)))
+            try:
+                seen = self._store.streams.head().last_seq
+                delay = self.step(until=stop.is_set)
+                if stop.is_set():
+                    break
+                self._store.streams.wait(after=seen, timeout=max(0.0, min(delay, IDLE_WAIT_SECONDS)))
+            except STORE_ERRORS as e:
+                logger.warning("The event log could not be read (%s); trying again", type(e).__name__)
+                stop.wait(BACKOFF_FIRST_SECONDS)
         self.step(flush=True)
 
     def _prune_if_due(self) -> None:
@@ -513,7 +590,7 @@ class Dispatcher:
         self._last_prune = now
         try:
             removed = self._store.streams.prune(max_age_s=PRUNE_MAX_AGE_SECONDS, max_rows=PRUNE_MAX_ROWS)
-        except StoreError as e:
+        except STORE_ERRORS as e:
             logger.warning("The event log could not be pruned (%s)", type(e).__name__)
             return
         if removed:
@@ -525,7 +602,9 @@ class Dispatcher:
         """
         Tek seferlik komutlar için, çıkıştan önce: `sinks` kilidini dener, birikmiş olayları en çok `timeout`
         saniye boyunca teslim eder ve kilidi bırakır. Kilit başka bir süreçteyse hiçbir şey yapmaz: birikenler
-        o sürece kalır. Süre bir istek sürerken dolarsa o isteğin zaman aşımı kadar aşılabilir.
+        o sürece kalır. Süre her teslimden sonra denetlenir: süren tek bir teslim (webhook: isteğin zaman aşımı,
+        varsayılan 10 sn) kadar aşılabilir, ondan sonra yeni bir teslime başlanmaz. `timeout` 0 ise hiçbir şey
+        teslim edilmez.
         """
         try:
             lease = self._store.lease(LEASE_NAME, purpose="drain")
@@ -541,8 +620,12 @@ class Dispatcher:
     def _drain(self, timeout: float) -> bool:
         """Her sink günlüğün sonuna ulaşana ya da süre dolana kadar teslim eder; hepsi ulaştıysa True."""
         deadline = self._clock.monotonic() + max(0.0, float(timeout))
+
+        def expired() -> bool:
+            return self._clock.monotonic() >= deadline
+
         while True:
-            delay = self.step(flush=True)
+            delay = self.step(flush=True, until=expired)
             if math.isinf(delay):
                 return all(st.caught_up for st in self._states)
             remaining = deadline - self._clock.monotonic()
@@ -583,6 +666,7 @@ __all__ = [
     "REASON_MAX_AGE",
     "REASON_PRUNED",
     "RUNTIME_PREFIX",
+    "STORE_ERRORS",
     "DrainReport",
     "Dispatcher",
     "SinkStatus",

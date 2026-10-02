@@ -76,6 +76,7 @@ class FileSink(BaseSink):
         self._day: Optional[dt.date] = None  # açık dosyaya en son yazılan gün
         self._last_write: Optional[float] = None
         self._written_seq = 0  # bu süreçte yazılan son sıra numarası: yeniden denenen gönderim satırı yinelemez
+        self._written_log = ""  # o numaranın ait olduğu günlük (`stream_id`)
         directory, filename = os.path.split(self.path)
         self._directory = directory
         self._stem, self._ext = os.path.splitext(filename)
@@ -85,6 +86,9 @@ class FileSink(BaseSink):
     # --- yazma --------------------------------------------------------------------------------
 
     def deliver(self, batch: Sequence[Envelope]) -> None:
+        if batch and batch[0].stream_id != self._written_log:
+            # Başka bir günlük (state.db yeniden yaratılmış): sıra numaraları baştan başlar, eski numara geçersiz
+            self._written_seq, self._written_log = 0, batch[0].stream_id
         pending = [env for env in batch if env.seq > self._written_seq]
         if not pending:
             return

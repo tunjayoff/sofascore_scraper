@@ -15,6 +15,7 @@ import math
 import os
 import select
 import signal
+import sqlite3
 import subprocess
 import sys
 import threading
@@ -307,6 +308,17 @@ def test_file_sink_does_not_repeat_lines_when_a_batch_is_retried(tmp_path: Path)
     sink.deliver(envs(1, 2, 3))  # dağıtıcı konumu yazamadı ve aynı olayları yeniden verdi
     sink.close()
     assert [doc["seq"] for doc in lines_of(path)] == [1, 2, 3]
+
+
+def test_file_sink_writes_low_sequence_numbers_of_another_log(tmp_path: Path):
+    """Yazılan son numara bir günlüğe aittir: state.db yeniden yaratılırsa numaralar baştan başlar."""
+    path = tmp_path / "live.ndjson"
+    sink = FileSink("feed", str(path))
+    sink.deliver([env_of(seq=7, stream_id="first-log")])
+    sink.deliver([env_of(seq=7, stream_id="first-log")])  # aynı günlük, aynı numara: yinelenmez
+    sink.deliver([env_of(seq=1, stream_id="second-log"), env_of(seq=2, stream_id="second-log")])
+    sink.close()
+    assert [doc["seq"] for doc in lines_of(path)] == [7, 1, 2]
 
 
 def test_file_sink_rotates_by_size(tmp_path: Path):
@@ -753,6 +765,87 @@ def test_a_busy_event_log_delays_a_sink_instead_of_ending_the_dispatcher(store: 
     assert probe.seqs == [seq]
 
 
+def test_a_cursor_that_could_not_be_stored_is_written_at_the_next_step(store: Store, monkeypatch: pytest.MonkeyPatch):
+    """Konum yazılamadıysa bir sonraki turda yeniden denenir; yeni bir olay beklenmez."""
+    probe = RecordingSink()
+    dispatcher = make(store, probe)
+    dispatcher.register()
+    seqs = [emit(store), emit(store)]
+    with monkeypatch.context() as patch:
+        patch.setattr(store.streams, "set_cursor", lambda *a, **k: (_ for _ in ()).throw(StoreBusy("busy")))
+        dispatcher.step()
+        assert dispatcher.step() == math.inf  # yazılamadıkça her turda yeniden denenir, teslim yinelenmez
+    assert probe.seqs == seqs and cursor_row(store, "probe")["seq"] == 0
+    assert dispatcher.step() == math.inf
+    assert cursor_row(store, "probe") == {"seq": seqs[-1], "last_error": None}
+    replay = RecordingSink()
+    make(store, replay).step()
+    assert probe.seqs == seqs and replay.seqs == []  # yeniden başlama artık hiçbir şeyi yinelemez
+
+
+@pytest.mark.parametrize("error", [
+    sqlite3.OperationalError("database is locked"), sqlite3.DatabaseError("disk I/O error"),
+])
+def test_a_sqlite_error_of_the_event_log_delays_a_sink_like_a_busy_one(store: Store, monkeypatch: pytest.MonkeyPatch,
+                                                                      caplog: pytest.LogCaptureFixture,
+                                                                      error: Exception):
+    """Store yalnızca kilit zaman aşımını StoreBusy'ye çevirir; diğer SQLite hataları olduğu gibi çıkar."""
+    probe, other = RecordingSink(), RecordingSink("other")
+    dispatcher = make(store, probe, other)
+    dispatcher.register()
+    seq = emit(store)
+    real_read = store.streams.read
+    calls: List[int] = []
+
+    def flaky(**kwargs: Any) -> Any:
+        calls.append(kwargs["after"])
+        if len(calls) == 1:
+            raise error
+        return real_read(**kwargs)
+
+    monkeypatch.setattr(store.streams, "read", flaky)
+    with caplog.at_level(logging.WARNING, logger="Sinks"):
+        assert dispatcher.step() == 1.0
+    assert probe.seqs == [] and other.seqs == [seq]  # hata alan sink bekler, diğeri sürer
+    assert f"could not be read or written ({type(error).__name__})" in caplog.text
+    dispatcher.step()
+    assert probe.seqs == [seq]
+
+
+def test_a_step_that_is_told_to_stop_starts_no_further_batch(store: Store):
+    first, second = RecordingSink("first", batch_size=1), RecordingSink("second", batch_size=1)
+    dispatcher = make(store, first, second)
+    dispatcher.register()
+    seqs = [emit(store) for _ in range(3)]
+    assert dispatcher.step(until=lambda: bool(first.batches)) == 0.0
+    # İlk sink'in ilk teslimi bitti; ne onun sıradaki toplu gönderimine ne de ikinci sink'e başlandı
+    assert first.seqs == seqs[:1] and second.seqs == []
+    assert cursor_row(store, "first")["seq"] == seqs[0]
+    assert dispatcher.step(until=lambda: False) == math.inf
+    assert first.seqs == seqs and second.seqs == seqs
+
+
+def test_a_replaced_event_log_restarts_the_positions(store: Store, clock: FakeClock, caplog: pytest.LogCaptureFixture):
+    """`stream_id` değiştiyse eldeki numaralar başka bir günlüğündür: bekleyen gönderim bırakılır, konumlar yeniden okunur."""
+    stuck, other = RecordingSink("stuck"), RecordingSink("other")
+    stuck.failures = [RetryableSinkError("down")]
+    dispatcher = make(store, stuck, other, clock=clock)
+    dispatcher.register()
+    first = emit(store)
+    assert dispatcher.step() == 1.0 and dispatcher._states[0].head is not None and other.seqs == [first]
+    store.streams._stream_id = "another-log"  # state.db yeniden yaratılmış gibi: okumalar başka bir kimlik bildirir
+    later = emit(store)
+    with caplog.at_level(logging.WARNING, logger="Sinks"):
+        assert dispatcher.step() == 0.0  # `other` okudu ve başka bir günlük gördü: tur bırakıldı
+    assert "The event log was replaced" in caplog.text and not dispatcher._started
+    assert dispatcher._states[0].head is None  # eski günlükten kalan toplu gönderim yeniden denenmez
+    assert dispatcher.step() == math.inf
+    assert dispatcher._stream_id == "another-log"
+    assert stuck.seqs == [first, later] and other.seqs == [first, later]  # konumlar state.db'den yeniden okundu
+    assert {env.stream_id for env in stuck.batches[-1]} == {"another-log"}
+    assert caplog.text.count("The event log was replaced") == 1
+
+
 # === dağıtıcı: bekletme, yaş sınırı, budama ======================================================
 
 
@@ -958,6 +1051,41 @@ def test_drain_retries_within_its_time_and_then_gives_up(store: Store, clock: Fa
     assert make(store, probe, clock=clock).drain(10.0).complete and probe.seqs == [seq]  # bir sonraki çalıştırma
 
 
+class SlowSink(RecordingSink):
+    """Her teslimi `seconds` süren bir alıcı (sahte saat o kadar ilerler)."""
+
+    def __init__(self, clock: FakeClock, seconds: float, **settings: Any) -> None:
+        super().__init__(**settings)
+        self._slow_clock, self._seconds = clock, seconds
+
+    def deliver(self, batch: Sequence[Envelope]) -> None:
+        self._slow_clock.advance(self._seconds)
+        super().deliver(batch)
+
+
+def test_drain_starts_no_delivery_after_its_time_is_up(store: Store, clock: FakeClock):
+    """Yavaş ama çalışan bir alıcı süreyi en çok bir teslim kadar aşar: sıradaki toplu gönderimlere başlanmaz."""
+    probe = SlowSink(clock, 6.0, batch_size=1)
+    dispatcher = make(store, probe, clock=clock)
+    dispatcher.register()
+    seqs = [emit(store) for _ in range(5)]
+    started = clock.monotonic()
+    report = dispatcher.drain(10.0)
+    assert probe.seqs == seqs[:2] and clock.monotonic() - started == 12.0  # 6 sn + 6 sn; üçüncüye başlanmadı
+    assert (report.complete, report.timed_out, report.delivered) == (False, True, 2)
+    assert cursor_row(store, "probe")["seq"] == seqs[1] and store.lease_holder("sinks") is None
+    assert make(store, SlowSink(clock, 0.0), clock=clock).drain(10.0).complete  # kalanlar bir sonraki çalıştırmaya
+
+
+def test_drain_without_time_delivers_nothing(store: Store, clock: FakeClock):
+    probe = RecordingSink()
+    dispatcher = make(store, probe, clock=clock)
+    dispatcher.register()
+    emit(store)
+    report = dispatcher.drain(0)
+    assert probe.attempts == [] and (report.complete, report.timed_out) == (False, True)
+
+
 def test_drain_leaves_the_backlog_to_the_holder_of_the_lease(store: Store):
     probe = RecordingSink()
     dispatcher = make(store, probe)
@@ -1131,6 +1259,62 @@ def test_run_does_not_spin_while_a_sink_waits_for_its_retry(store: Store, runnin
     emit(store)
     time.sleep(0.6)
     assert len(steps) < 15, len(steps)  # en çok IDLE_WAIT_SECONDS aralıklarla ve yeni olayda
+
+
+def test_run_stops_after_the_delivery_in_progress(store: Store):
+    """Durdurma her teslimden sonra sorulur: bekleyen toplu gönderimler kapanıştaki süreye kalır."""
+    stop = threading.Event()
+
+    class StopsWhileDelivering(RecordingSink):
+        def deliver(self, batch: Sequence[Envelope]) -> None:
+            super().deliver(batch)
+            stop.set()  # servis bu teslim sürerken durduruldu
+
+    probe = StopsWhileDelivering(batch_size=1)
+    dispatcher = Dispatcher(store, [probe])
+    dispatcher.register()
+    seqs = [emit(store) for _ in range(4)]
+    dispatcher.run(stop, flush_timeout=0)
+    assert probe.seqs == seqs[:1] and cursor_row(store, "probe")["seq"] == seqs[0]
+    assert store.lease_holder("sinks") is None
+    stop_now = threading.Event()
+
+    class StopsAtOnce(RecordingSink):
+        def deliver(self, batch: Sequence[Envelope]) -> None:
+            super().deliver(batch)
+            stop_now.set()
+
+    again = StopsAtOnce(batch_size=1)
+    Dispatcher(store, [again]).run(stop_now)  # varsayılan kapanış süresi: kalanlar durdurulduktan sonra teslim edilir
+    assert again.seqs == seqs[1:]
+
+
+def test_run_survives_errors_of_the_event_log_and_unexpected_errors(store: Store, running: List[Any],
+                                                                    monkeypatch: pytest.MonkeyPatch,
+                                                                    caplog: pytest.LogCaptureFixture):
+    monkeypatch.setattr(dispatcher_mod, "BACKOFF_FIRST_SECONDS", 0.02)
+    monkeypatch.setattr(dispatcher_mod, "ERROR_RETRY_SECONDS", 0.02)
+    probe = RecordingSink()
+    dispatcher = Dispatcher(store, [probe])
+    failures: List[Exception] = [sqlite3.OperationalError("database is locked"), StoreBusy("busy"),
+                                 RuntimeError("unexpected")]
+    real_step = dispatcher.step
+
+    def step(**kwargs: Any) -> float:
+        if failures:
+            raise failures.pop(0)
+        return real_step(**kwargs)
+
+    dispatcher.step = step  # type: ignore[method-assign]
+    with caplog.at_level(logging.WARNING, logger="Sinks"):
+        start(dispatcher, running)
+        wait_until(lambda: not failures and cursor_row(store, "probe") is not None)
+        seq = emit(store)
+        wait_until(lambda: probe.seqs == [seq])  # üç hatadan sonra döngü hâlâ dağıtıyor
+    assert store.lease_holder("sinks") is not None and running[0][1].is_alive()
+    assert "The event log could not be read (OperationalError)" in caplog.text
+    assert "The event log could not be read (StoreBusy)" in caplog.text
+    assert "The dispatcher failed unexpectedly (RuntimeError); trying again" in caplog.text
 
 
 def test_follow_prints_new_events_without_the_lease_and_without_writing(store: Store):
