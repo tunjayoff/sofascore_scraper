@@ -186,7 +186,6 @@
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=None include_confirmed=True matches=1 slices=2 scanned=1",
    "Re-check: 2 \"slice not available\" markers reopened in 1 matches (1 matches with markers scanned). They will be requested again on the next download.",
    "LOG INFO Main: Running in headless mode",
@@ -287,7 +286,6 @@
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=None include_confirmed=False matches=1 slices=1 scanned=2",
    "Re-check: 1 \"slice not available\" markers reopened in 1 matches (2 matches with markers scanned). They will be requested again on the next download."
   ]
@@ -307,7 +305,6 @@
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=17 include_confirmed=False matches=0 slices=0 scanned=1",
    "Re-check: 0 \"slice not available\" markers reopened in 0 matches (1 matches with markers scanned). They will be requested again on the next download."
   ]
@@ -424,7 +421,6 @@
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO Main: Running in headless mode",
    "LOG INFO Main: Headless update: league_id=None mode=details",
    "LOG INFO SyncService: Checking which matches need details...",
@@ -457,7 +453,6 @@
   "stdout": [
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO MaintenanceService: Unavailable markers rechecked: league_id=8 include_confirmed=True matches=0 slices=0 scanned=0",
    "Re-check: 0 \"slice not available\" markers reopened in 0 matches (0 matches with markers scanned). They will be requested again on the next download."
   ]

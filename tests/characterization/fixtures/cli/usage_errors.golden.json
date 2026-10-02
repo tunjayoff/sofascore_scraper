@@ -23,7 +23,7 @@
   "files": {
    "added": {
     "data/datasets/": "<empty dir>",
-    "data/match_details/processed/": "<empty dir>",
+    "data/match_details/": "<empty dir>",
     "data/matches/": "<empty dir>",
     "data/seasons/": "<empty dir>",
     "logs/sofascore_scraper.log": "<binary>"
@@ -46,7 +46,6 @@
    "LOG INFO Services: Created directory: <SANDBOX>/data/matches",
    "LOG INFO Services: Created directory: <SANDBOX>/data/match_details",
    "LOG INFO Services: Created directory: <SANDBOX>/data/datasets",
-   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO Main: Running in headless mode",
    "LOG ERROR Main: Headless needs at least one of --update-all and --csv-export"
   ]
@@ -59,7 +58,7 @@
   "files": {
    "added": {
     "data/datasets/": "<empty dir>",
-    "data/match_details/processed/": "<empty dir>",
+    "data/match_details/": "<empty dir>",
     "data/matches/": "<empty dir>",
     "data/seasons/": "<empty dir>",
     "logs/sofascore_scraper.log": "<binary>"
@@ -82,7 +81,6 @@
    "LOG INFO Services: Created directory: <SANDBOX>/data/matches",
    "LOG INFO Services: Created directory: <SANDBOX>/data/match_details",
    "LOG INFO Services: Created directory: <SANDBOX>/data/datasets",
-   "LOG INFO SeasonFetcher: SeasonFetcher started",
    "LOG INFO Main: Running in headless mode",
    "LOG ERROR Main: Headless needs at least one of --update-all and --csv-export"
   ]
