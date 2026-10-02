@@ -16,18 +16,22 @@ Denetlenen kurallar (maçlar ve dilimleri için):
       numaraları ardışık mı, her parçanın tamamı dizinlenmiş mi. `deep=True` parçaları okur ve her satırı
       dizindeki satırıyla karşılaştırır. Eski dosyanın (`score_changes.jsonl`) numaraları satır numarasıdır
       ve boş ya da bozuk satırlar numara harcadığı için meşru boşlukları olur: ona bu kural uygulanmaz.
+  I8  Her `slice_history` satırı okunabilen bir gzip üyesini gösterir ve üyenin özeti satırınkine eşittir.
+      Hızlı kip dosya okumaz: her dilimin satırları 1'den ardışık mı, geçmiş dosyası var mı ve son satırın
+      bittiği yere kadar uzanıyor mu (`stat`). `deep=True` her üyeyi kendi bayt aralığından açar, satırını
+      ayrıştırır ve özeti karşılaştırır. Yeniden okunan maçta (hızlı kipte imzası tutmayan, derin kipte her maç)
+      katalogdaki satırlar geçmiş dosyalarından türetilenlerle de karşılaştırılır.
   I9  v3 maç dizininde manifestin adını vermediği dosya yok; yarım kalmış geçici dosyalar ayrıca
       bildirilir.                                                                        (yalnızca deep)
 
-ve iki veritabanında `PRAGMA quick_check`. I8 (geçmiş dosyaları) o tabloyu dolduran adımla birlikte eklenir;
-şimdilik denetlenmez (`VerifyReport.checked`).
+ve iki veritabanında `PRAGMA quick_check`.
 
 Hızlı kip (`deep=False`) imzaya bakar: katalogdaki `sig`, v3'te manifest dosyasının, eski düzende maç
 dizininin imzasına eşitse ve geçerli dizin değişmediyse maç değişmemiş sayılır ve dosyaları okunmaz. İmzası
 tutmayan maçın satırları dosyalardan yeniden türetilip katalogdakilerle karşılaştırılır. `deep=True` her
 maçı yeniden türetir ve v3 yüklerinin hepsini okur.
 
-`repair=True`: tutmayan maçları dosyalardan yeniden dizinler, v3 dizinlerindeki yarım geçici dosyaları
+`repair=True`: tutmayan maçları (geçmiş satırları dahil, I8) dosyalardan yeniden dizinler, v3 dizinlerindeki yarım geçici dosyaları
 siler, okunamayan v3 yüklerini manifestte `error` / `corrupt` olarak işaretler (deep) ve değişiklik günlüğünü
 dosyalarından baştan dizinler (I7; dosyaların kendisindeki bir boşluk onarılamaz). Hiçbir yük dosyasını
 silmez; eski düzen dosyalarına dokunmaz. Bozuk veritabanı onarılmaz: katalog yeniden kurulur.
@@ -51,6 +55,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from src.store import changes as changes_mod
 from src.store import codec, files, indexer, layout
+from src.store import history as history_mod
 from src.store import manifest as manifest_mod
 from src.store.errors import PayloadCorrupt, PayloadMissing, StoreError
 from src.store.indexer import CatalogAdmin, EventRecord, IndexProblem, SupersededDir
@@ -59,7 +64,7 @@ from src.store.manifest import ErrorMark, SliceEntry
 
 logger = logging.getLogger(__name__)
 
-QUICK_CHECKS: Tuple[str, ...] = ("quick_check", "I1", "I3", "I5", "I6", "I7")
+QUICK_CHECKS: Tuple[str, ...] = ("quick_check", "I1", "I3", "I5", "I6", "I7", "I8")
 DEEP_CHECKS: Tuple[str, ...] = QUICK_CHECKS + ("I2", "I4", "I9")
 
 INVARIANT_CATALOG = "catalog"  # katalog dosyasının kendisi: kullanılamıyor ya da quick_check geçmiyor
@@ -77,6 +82,9 @@ KIND_PENDING = "pending_write"  # I6
 KIND_SEQ_GAP = "seq_gap"  # I7: v3 satırlarının numaraları ardışık değil
 KIND_SEQ_UNINDEXED = "seq_unindexed"  # I7: parçanın tamamı dizinlenmemiş (ya da parça dizinlendikten sonra değişmiş)
 KIND_SEQ_MISMATCH = "seq_mismatch"  # I7 (deep): dosyadaki satır ile dizindeki satır farklı
+KIND_HISTORY_ROWS = "history_rows"  # I8: katalogdaki satırlar geçmiş dosyalarından türetilenlerden farklı
+KIND_HISTORY_FILE = "history_file"  # I8: satırların gösterdiği geçmiş dosyası yok ya da kısa; numaralar ardışık değil
+KIND_HISTORY_MEMBER = "history_member"  # I8 (deep): satırın aralığında okunabilen, aynı özetli bir üye yok
 KIND_UNKNOWN_FILE = "unknown_file"  # I9
 
 REASON_CORRUPT = "corrupt"
@@ -245,6 +253,59 @@ class _Run:
         for kind, detail, path in self.change_log_faults(conn):
             self.issue("I7", kind, detail, path=path)
             self.changes.append(len(report.issues) - 1)
+        for kind, detail, owner, entity_id, path in self.history_faults(conn):
+            self.issue("I8", kind, detail, event_id=entity_id if owner == indexer.KIND_EVENT else None, path=path,
+                       fix=True)
+
+    def history_faults(self, conn: sqlite3.Connection) -> List[Tuple[str, str, str, int, Optional[str]]]:
+        """I8: `slice_history` satırları ile geçmiş dosyaları arasındaki tutarsızlıklar: (tür, açıklama, varlık türü,
+        kimlik, yol)."""
+        found: List[Tuple[str, str, str, int, Optional[str]]] = []
+        groups: Dict[Tuple[str, int, str, str], List[Tuple[int, str, int, int]]] = {}
+        for row in conn.execute("SELECT kind, entity_id, key, sub, n, sha256, offset, length FROM slice_history "
+                                "ORDER BY kind, entity_id, key, sub, n"):
+            groups.setdefault((str(row[0]), int(row[1]), str(row[2]), str(row[3])), []).append(
+                (int(row[4]), str(row[5]), int(row[6]), int(row[7])))
+        for (kind, entity_id, key, sub), rows in groups.items():
+            directory = history_mod.entity_directory(conn, kind, entity_id)
+            label = f"{kind} {entity_id} {layout.slice_name(key, sub)}"
+            if directory is None:
+                found.append((KIND_HISTORY_FILE, f"{label}: varlığın dizini bilinmiyor", kind, entity_id, None))
+                continue
+            rel = layout.history_path(directory, key, sub)
+            if [n for n, *_ in rows] != list(range(1, len(rows) + 1)):
+                found.append((KIND_HISTORY_FILE, f"{label}: numaralar 1'den ardışık değil", kind, entity_id, rel))
+                continue
+            path = layout.resolve(self.data_dir, rel)
+            end = max(offset + length for _n, _sha, offset, length in rows)
+            try:
+                size: Optional[int] = os.stat(path).st_size
+            except OSError:
+                size = None
+            if size is None or size < end:
+                detail = "dosya yok" if size is None else f"dosya {size} bayt, satırlar {end} bayta kadar"
+                found.append((KIND_HISTORY_FILE, f"{label}: {detail}", kind, entity_id, rel))
+                continue
+            if not self.deep:
+                continue
+            try:
+                data = files.read_bytes(path)
+            except StoreError as exc:
+                found.append((KIND_HISTORY_FILE, f"{label}: okunamıyor ({exc.detail or exc})", kind, entity_id, rel))
+                continue
+            bad: List[int] = []
+            for n, digest, offset, length in rows:
+                try:
+                    _at, member_digest, _raw = history_mod.decode_member(data[offset:offset + length], path)
+                except StoreError:
+                    bad.append(n)
+                    continue
+                if member_digest != digest:
+                    bad.append(n)
+            if bad:
+                found.append((KIND_HISTORY_MEMBER, f"{label}: okunamayan ya da özeti farklı üyeler: "
+                              f"{', '.join(map(str, bad[:10]))}", kind, entity_id, rel))
+        return found
 
     def change_log_faults(self, conn: sqlite3.Connection) -> List[Tuple[str, str, Optional[str]]]:
         """I7: değişiklik günlüğünün v3 parçaları ile dizinleri arasındaki tutarsızlıklar: (tür, açıklama, yol)."""
@@ -354,6 +415,13 @@ class _Run:
         if links != sorted(record.links, key=lambda link: link["side"]):
             clean = False
             self.issue("I4", KIND_PARTICIPANTS, "event_participants satırları olay yüküne uymuyor",
+                       event_id=event_id, path=where, fix=True)
+        history = [dict(r) for r in conn.execute(
+            "SELECT * FROM slice_history WHERE kind = ? AND entity_id = ? ORDER BY key, sub, n",
+            (indexer.KIND_EVENT, event_id))]
+        if history != sorted(record.history, key=lambda h: (h["key"], h["sub"], h["n"])):
+            clean = False
+            self.issue("I8", KIND_HISTORY_ROWS, "slice_history satırları geçmiş dosyalarına uymuyor",
                        event_id=event_id, path=where, fix=True)
         if clean and row["sig"] != record.event["sig"]:
             self.resign.append(event_id)  # içerik aynı, yalnızca imza eskimiş: tutarsızlık değil
