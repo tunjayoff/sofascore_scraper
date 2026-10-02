@@ -67,6 +67,9 @@ JOB_HISTORY_LIMIT = 500
 JOB_EVENTS_LIMIT = 2000
 _EVENT_PRUNE_EVERY = 100  # olay budaması her olayda değil, bu kadar olayda bir çalışır
 _LEASE_WAIT_POLL = 0.1  # saniye: `create_running(wait=...)` kilidi bu aralıkla yeniden dener
+# saniye: bitmekte olan işin son depo erişimleri (akış olayı, geri okuma) için `close` ve `create_running` en çok
+# bu kadar bekler. Erişimler milisaniyelerdir; state.db meşgulse her biri 5 saniyeye kadar sürebilir
+_FINISH_WAIT_SECONDS = 30.0
 
 DEFAULT_KIND = "fetch"
 
@@ -325,6 +328,11 @@ class JobStore:
         self._mirror: Dict[str, Any] = self._idle_mirror()
         # Çalışan işin `writer` kilidi: create_running alır, iş bitince bırakılır
         self._writer: Optional[Lease] = None
+        # Bitmekte olan iş (`_job_finishing`): satırı bitmiştir ama thread'i depoyu hâlâ kullanır. Bu sürede
+        # `writer` kilidi tutulur, `rebind` / `exclusive` JobRunningError verir, `close` ve `create_running` bekler
+        self._finishing: Optional[threading.Thread] = None
+        self._release_deferred = False
+        self._finish_done = threading.Condition(self._lock)
         self._state, self._leases = state, leases
         # False: bağlantı bir Store'undur (`for_store`); depo onu kapatmaz
         self._owns_state = owns_state
@@ -393,11 +401,58 @@ class JobStore:
         return state, leases
 
     def close(self) -> None:
-        """Kilidi bırakır ve veritabanı bağlantılarını kapatır (testler ve DATA_DIR değişimi için)."""
+        """
+        Kilidi bırakır ve veritabanı bağlantılarını kapatır (testler ve DATA_DIR değişimi için). Bitmekte olan bir
+        iş varsa önce onun son depo erişimlerinin bitmesini bekler (en çok _FINISH_WAIT_SECONDS): bağlantı, onu
+        kullanan iş thread'inin altından kapatılmaz.
+        """
         with self._lock:
+            if not self._wait_for_finish():
+                logger.warning("Closing the job store while a finishing job still uses it (waited %.0f s)",
+                               _FINISH_WAIT_SECONDS)
             self._release_writer()
             if self._owns_state:
                 self._state.close()
+
+    @contextlib.contextmanager
+    def _job_finishing(self) -> Iterator[None]:
+        """
+        İşin bitişi (iş yöneticisi kullanır, src/jobs/manager.py): blok içinde `update(finished=True)` satırı ve
+        yansıyı bitirir, ama `writer` kilidi blok bitince bırakılır. İş satırı bitirdikten sonra da depoyu
+        kullanır (`job.finished` akış olayı, bitmiş işin geri okunması); blok sürdükçe iş bitmiş sayılmaz:
+        `rebind` ve `exclusive` JobRunningError verir, `close` ve aynı depoda yeni iş açan `create_running`
+        bloğun bitmesini bekler. Böylece veri klasörü değişimi ya da kapatma, state.db bağlantısını onu kullanan
+        iş thread'inin altından kapatamaz.
+        """
+        with self._lock:
+            self._finishing = threading.current_thread()
+            self._release_deferred = False
+        try:
+            yield
+        finally:
+            with self._lock:
+                self._finishing = None
+                if self._release_deferred:
+                    self._release_deferred = False
+                    self._release_writer()
+                self._finish_done.notify_all()
+
+    def _wait_for_finish(self) -> bool:
+        """
+        Bitmekte olan işin bloğu bitene kadar bekler (kilit tutularak çağrılır; beklerken kilit bırakılır).
+        Bekleyecek iş yoksa ya da çağıran o işin kendi thread'iyse (kendini bekleyemez) hemen True döner. Süre
+        dolduysa False.
+        """
+        if self._finishing is None or self._finishing is threading.current_thread():
+            return True
+        return self._finish_done.wait_for(lambda: self._finishing is None, timeout=_FINISH_WAIT_SECONDS)
+
+    def _release_finished_writer(self) -> None:
+        """`update(finished=True)`ın kilit bırakması: iş bitiş bloğundaysa (`_job_finishing`) blok sonuna kalır."""
+        if self._finishing is not None:
+            self._release_deferred = True
+        else:
+            self._release_writer()
 
     def _take_writer(self, purpose: str = JOB_PURPOSE) -> bool:
         """
@@ -500,7 +555,8 @@ class JobStore:
         (yedekte `writer`) tutulur; kilit başka bir süreçteyse aynı iki hata fırlatılır.
         """
         with self._lock:
-            if self._mirror.get("is_running"):
+            # Satırı bitmiş ama son depo erişimleri süren iş de (`_job_finishing`) çalışıyor sayılır
+            if self._mirror.get("is_running") or self._finishing is not None:
                 raise JobRunningError()
             if self._exclusive is not None:
                 raise DataOperationRunningError(self._exclusive)
@@ -520,10 +576,12 @@ class JobStore:
     def rebind(self, db_path: str) -> bool:
         """
         Depoyu başka bir veritabanı dosyasına taşır (DATA_DIR değişince iş geçmişi yeni dizini izler).
-        Çalışan iş varken yapılamaz. Yol aynıysa hiçbir şey yapmaz ve False döner.
+        Çalışan iş varken yapılamaz; satırı bitmiş ama son depo erişimleri (akış olayı, geri okuma) süren iş de
+        çalışıyor sayılır (JobRunningError): eski bağlantı onu kullanan iş thread'inin altından kapatılmaz. Yol
+        aynıysa hiçbir şey yapmaz ve False döner.
         """
         with self._lock:
-            if self._mirror.get("is_running"):
+            if self._mirror.get("is_running") or self._finishing is not None:
                 raise JobRunningError()
             if os.path.abspath(db_path) == os.path.abspath(self.db_path):
                 return False
@@ -587,6 +645,11 @@ class JobStore:
         now = _utc_now()
         payload_json = json.dumps(payload, default=str)
         with self._lock:
+            # Önceki iş satırını bitirdi ama kilidi hâlâ tutuyor (`_job_finishing`): yeni iş kilidi onunla
+            # paylaşmaz, bitişin sonunu bekler. Bekleme dolarsa ya da çağıran o işin kendi thread'iyse reddedilir.
+            # Beklerken kilit bırakıldığından aşağıdaki kontroller beklemeden sonra yapılır
+            if not self._wait_for_finish() or self._finishing is not None:
+                raise JobRunningError()
             if self._exclusive is not None:
                 # Silme/yedek sürerken başlayan iş, silinen dizine yazar ya da yarım yedeğe girer
                 raise DataOperationRunningError(self._exclusive)
@@ -803,10 +866,11 @@ class JobStore:
                 m["finished_at"] = _utc_now()
 
             # İş bittiyse `writer` kilidi satır yazıldıktan sonra bırakılır; yazma hata verse de bırakılır,
-            # çünkü yansı artık "çalışmıyor" diyor
+            # çünkü yansı artık "çalışmıyor" diyor. İş yöneticisinin bitiş bloğunda (`_job_finishing`) bırakma
+            # blok sonuna kalır
             done = contextlib.ExitStack()
             if finished:
-                done.callback(self._release_writer)
+                done.callback(self._release_finished_writer)
             with done, self._state.write() as conn:
                 conn.execute(
                     """
