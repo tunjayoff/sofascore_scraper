@@ -630,6 +630,7 @@ STEP_LOCKED = "locked"  # yazma kilidi alındı
 STEP_STAGED = "staged"  # v3 dizini hazırlık alanında kuruldu (yükseltme ya da yeni maç)
 STEP_PUBLISHED = "published"  # hazırlık dizini yerine kondu
 STEP_PAYLOAD = "payload"  # bir yük dosyası yerine yazıldı ("payload:<dilim adı>")
+STEP_HISTORY = "history"  # geçmiş dosyasına bir üye eklendi ("history:<dilim adı>")
 STEP_MANIFEST = "manifest"  # manifest yazıldı
 STEP_CHANGE_LOG = "change_log"  # değişiklik günlüğü satırı dosyaya eklendi
 STEP_INDEXED = "indexed"  # katalog satırları yazıldı
@@ -647,6 +648,7 @@ class PutResult:
     written: Tuple[str, ...]  # yük dosyası değişen dilimlerin adları ("statistics", "odds_all/1")
     change_seq: Optional[int]  # değişiklik günlüğüne satır yazıldıysa sıra numarası
     promoted: bool  # maç bu çağrıda eski düzenden v3'e yükseltildi
+    history: Tuple[str, ...] = ()  # geçmiş dosyasına anlık görüntü eklenen dilimlerin adları (`keep_history`)
 
 
 _NOTHING_WRITTEN = PutResult(created=False, event_written=False, superseded=False, written=(), change_seq=None,
@@ -708,6 +710,13 @@ def _counts_for(count_empties: Union[bool, Collection[str]]) -> Callable[[str], 
         raise ValueError(f"count_empties: expected a bool or a collection of slice keys, got {count_empties!r}")
     wanted = {layout.validate_key(key) for key in count_empties}
     return wanted.__contains__
+
+
+def _history_keys(keep_history: Collection[str]) -> frozenset:
+    """`keep_history`: geçmişi tutulacak dilim anahtarları (alt anahtarsız; anahtarın bütün alt anahtarlarını kapsar)."""
+    if isinstance(keep_history, (str, bytes)) or not isinstance(keep_history, Collection):
+        raise ValueError(f"keep_history: expected a collection of slice keys, got {keep_history!r}")
+    return frozenset(layout.validate_key(key) for key in keep_history)
 
 
 def _items(event_id: int, outcomes: Mapping[SliceKey, Outcome],
@@ -1207,6 +1216,7 @@ class EventStore:
 
     def put(self, event_id: int, outcomes: Mapping[SliceKey, Outcome], *,
             count_empties: Union[bool, Collection[str]] = True,
+            keep_history: Collection[str] = (),
             on_event_change: Optional[EventChange] = None,
             status_regressed: Optional[bool] = None) -> PutResult:
         """
@@ -1226,6 +1236,13 @@ class EventStore:
             dilimin durumu düşmez. Sayaç değişmez.
           * `skipped`: yok sayılır. Bugünkü çağıranların açık devre kesici için ürettiği `failed` / `breaker`
             da böyledir: istek gönderilmemiştir.
+
+        keep_history: geçmişi tutulan dilim anahtarları (ör. `odds_all`; anahtarın bütün alt anahtarları).
+        Bu anahtarlardan verisi olan bir sonucun yükü, özeti dilimin geçmişindeki son anlık görüntüden farklıysa
+        geçmiş dosyasına (`_history/<key>/<sub ya da "_">.jsonl.gz`) bir gzip üyesi olarak da eklenir
+        (`PutResult.history`); manifestteki `history` alanı ve katalogdaki `slice_history` satırları güncellenir.
+        Geçmişi olmayan dilimin ilk yükü, dosyası değişmese bile ilk anlık görüntü olur. Okuma ve budama:
+        `Store.history` (src/store/history.py).
 
         `"event"` sonucunun zamanı (`fetched_at`) saklanan gözlemden eskiyse sonuç yok sayılır
         (`PutResult.superseded`); öteki sonuçlar yine uygulanır. Uygulanan her `"event"` sonucu gözlemi
@@ -1248,11 +1265,12 @@ class EventStore:
         if on_event_change is not None and not callable(on_event_change):
             raise ValueError("on_event_change: expected a callable")
         items = _items(event_id, outcomes, count_empties)
+        keep = _history_keys(keep_history)
         self._writable()
         if not items and status_regressed is not True:
             return _NOTHING_WRITTEN
         return self._entity_write(
-            event_id, lambda write: self._apply(write, event_id, items, on_event_change, status_regressed))
+            event_id, lambda write: self._apply(write, event_id, items, on_event_change, status_regressed, keep))
 
     def observe(self, event_id: int, payload: Mapping[str, Any], *, observed_at: Optional[datetime] = None,
                 on_event_change: Optional[EventChange] = None,
@@ -1440,9 +1458,10 @@ class EventStore:
         return payload if isinstance(payload, Mapping) else None
 
     def _apply(self, write: _Write, event_id: int, items: Sequence[_Item], on_event_change: Optional[EventChange],
-               status_regressed: Optional[bool]) -> PutResult:
+               status_regressed: Optional[bool], keep: Collection[str] = frozenset()) -> PutResult:
         """`put`'un gövdesi; yazma kilidi altında çalışır. Önce her şey bellekte hesaplanır, sonra diske yazılır."""
         from src.store import changes as changes_mod  # döngüsel içe aktarma: iki modül de bu modülü kullanır
+        from src.store import history as history_mod
         from src.store import indexer
 
         now = self._clock()
@@ -1456,6 +1475,7 @@ class EventStore:
         directory = layout.resolve(self._data_dir, rel)
 
         payloads: List[Tuple[_Item, codec.Encoded]] = []  # yazılacak yük dosyaları
+        snapshots: List[Tuple[_Item, codec.Encoded, datetime]] = []  # geçmiş dosyalarına eklenecek anlık görüntüler
         dirty = superseded = False
         change: Optional[Mapping[str, Any]] = None
         for item in items:
@@ -1494,6 +1514,10 @@ class EventStore:
                     payloads.append((item, encoded))
                 if item.name == EVENT_KEY and previous != encoded.sha256 and on_event_change is not None:
                     change = on_event_change(self._stored_event(opened, event_id), outcome.data)
+                if item.key in keep:
+                    mark = entry.history if entry is not None else None
+                    if mark is None or mark.last_sha256 != encoded.sha256:
+                        snapshots.append((item, encoded, at))
                 entry = entry if entry is not None else SliceEntry(state="ok")
                 entry.state = "ok" if outcome.status == SLICE_OK else "empty"
                 entry.sha256, entry.raw_bytes, entry.stored_bytes = (
@@ -1537,8 +1561,26 @@ class EventStore:
         if dirty:
             found.updated_at = max(found.updated_at, now)
 
-        # --- disk: yükseltme ya da yeni dizin, sonra yük dosyaları, en son manifest (bölüm 4.4) ---
+        # --- disk: yükseltme ya da yeni dizin, sonra yük dosyaları ve geçmiş üyeleri, en son manifest (bölüm 4.4) ---
         written: List[str] = []
+        kept: List[str] = []
+
+        def add_snapshots(root: str, *, live: bool) -> None:
+            """Geçmiş üyelerini ekler ve manifestteki `history` alanını dosyanın gerçek haline göre kurar.
+            live=False: hazırlık dizinine yazılıyor (yayımlanmadan biten deneme diske dokunmuş sayılmaz)."""
+            for item, encoded, moment in snapshots:
+                write.touched = write.touched or live
+                rel_file = layout.history_path("", item.key, item.sub).lstrip("/")
+                path = os.path.join(root, *rel_file.split("/"))
+                entry = found.slices[item.name]
+                n, _offset, _length = history_mod.append(
+                    path, history_mod.encode_member(encoded.raw, encoded.sha256, moment),
+                    known=self._history_end(event_id, item, entry.history, opened.created))
+                entry.history = manifest_mod.HistoryMark(
+                    count=n, last_sha256=encoded.sha256,
+                    extra=dict(entry.history.extra) if entry.history is not None else {})
+                kept.append(item.name)
+                self._checkpoint(f"{STEP_HISTORY}:{item.name}")
         if opened.legacy is not None and opened.encoded is not None:
             self._promote(write, opened.legacy, (base, opened.encoded))
         if opened.created:
@@ -1547,6 +1589,7 @@ class EventStore:
                 for item, encoded in payloads:
                     files.write_bytes(_slice_file(staged, item.key, item.sub), encoded.stored)
                     written.append(item.name)
+                add_snapshots(staged, live=False)
                 manifest_mod.write_manifest(os.path.join(staged, layout.MANIFEST_NAME), found)
                 self._checkpoint(STEP_STAGED)
                 try:
@@ -1564,6 +1607,7 @@ class EventStore:
                 files.write_bytes(_slice_file(directory, item.key, item.sub), encoded.stored)
                 written.append(item.name)
                 self._checkpoint(f"{STEP_PAYLOAD}:{item.name}")
+            add_snapshots(directory, live=True)
             if dirty or opened.adopt:
                 write.touched = True
                 manifest_mod.write_manifest(layout.resolve(self._data_dir, layout.manifest_path(rel)), found)
@@ -1580,7 +1624,26 @@ class EventStore:
             self._checkpoint(STEP_CHANGE_LOG)
         self._index(event_id)
         return PutResult(created=opened.created, event_written=EVENT_KEY in written, superseded=superseded,
-                         written=tuple(written), change_seq=seq, promoted=opened.legacy is not None)
+                         written=tuple(written), change_seq=seq, promoted=opened.legacy is not None,
+                         history=tuple(kept))
+
+    def _history_end(self, event_id: int, item: _Item, mark: Optional[manifest_mod.HistoryMark],
+                     created: bool) -> Optional[Tuple[int, int]]:
+        """
+        Geçmiş dosyasının katalogdaki son hali: (üye sayısı, bittiği bayt). Manifestin sayısıyla uyuşuyorsa
+        ekleme dosyayı taramadan yapılır (`history.append`); uyuşmuyorsa ya da bilinmiyorsa None (dosya taranır).
+        """
+        if created:
+            return (0, 0)
+        if mark is None:
+            return None
+        assert self._catalog is not None
+        row = self._catalog.connection().execute(
+            "SELECT n, offset + length FROM slice_history WHERE kind = 'event' AND entity_id = ? AND key = ? "
+            "AND sub = ? ORDER BY n DESC LIMIT 1", (event_id, item.key, item.sub)).fetchone()
+        if row is None or int(row[0]) != mark.count:
+            return None
+        return int(row[0]), int(row[1])
 
     def _promote(self, write: _Write, event: LegacyEvent,
                  prepared: Tuple[Manifest, Mapping[str, codec.Encoded]]) -> None:

@@ -65,6 +65,7 @@ from src.store.entities import EntityStore
 from src.store.errors import CatalogCorrupt, LeaseHeld, PayloadCorrupt, PayloadMissing, SchemaTooNew, StoreError
 from src.store.events import EventStore
 from src.store.follows import FollowStore
+from src.store.history import HistoryStore
 from src.store.indexer import (
     LISTING_CHANGES,
     LISTING_SCHEDULES,
@@ -230,6 +231,7 @@ class Store:
             self.events = EventStore(self)
             self.entities = EntityStore(self)
             self.changes = ChangeLog(self)
+            self.history = HistoryStore(self)
             self._names_used: Dict[int, str] = {}
             self._catalog_ready = False
             self._catalog_warned = False

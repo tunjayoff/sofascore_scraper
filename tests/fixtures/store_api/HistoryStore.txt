@@ -1,0 +1,8 @@
+# src.store.HistoryStore
+# kaynak: src/store/history.py
+class HistoryStore:
+    def __init__(self, store: 'Store') -> None
+    def index(self, ref: Ref, key: str, sub: str = '') -> List[SnapshotInfo]
+    def snapshots(self, ref: Ref, key: str, sub: str = '', *, since: Optional[float] = None, raw: bool = False) -> Iterator[Snapshot]
+    def snapshot(self, ref: Ref, key: str, sub: str, n: int, *, raw: bool = False) -> Optional[Snapshot]
+    def prune(self, ref: Optional[Ref] = None, *, older_than: float) -> int
