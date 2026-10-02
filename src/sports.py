@@ -3,7 +3,7 @@ Spor kayıt defteri: desteklenen sporlar ve maç detay dilimleri tek yerde.
 
 Okuyanlar: src/status.py (skor ailesi), src/watcher.py (izleyici parametreleri), src/match_data_fetcher.py
 (istenecek detay uç noktaları), src/web/league_sports.py (liglerin sporu), src/web/routes/sports.py (GET /api/sports),
-main.py (--sport seçenekleri).
+main.py (--sport seçenekleri), src/services/planning.py (bir maçın ihtiyacı: beklenen dilimler).
 
 Yeni spor eklemek:
   1. SPORTS'a bir SportSpec.
@@ -18,7 +18,8 @@ Bu modül başka hiçbir src modülünü içe aktarmaz (döngüsel bağımlılı
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, FrozenSet, Literal, Optional, Tuple
+from datetime import timedelta
+from typing import Any, Dict, FrozenSet, Iterable, Literal, Optional, Tuple, Union
 
 # Skorun biçimi (src/status.py'deki ScoreSheet alt sınıfı):
 #   football: devre / 90 dk / uzatma / penaltı ayrımı (FootballScores)
@@ -164,55 +165,189 @@ def watcher_params(slug: object) -> WatcherParams:
     return spec.watcher if spec else DEFAULT_WATCHER_PARAMS
 
 
-# --- Maç detay dilimleri -----------------------------------------------------------------
+# --- Dilim kayıt defteri --------------------------------------------------------------------
+
+# Dilimin sahibi: yükü hangi varlığa aittir (docs/design/02-services.md 3.1). Bugün kayıtlı her dilim maçındır.
+SliceOwner = Literal["event", "season", "tournament", "team", "player", "sport"]
+# Maçın evresi: dilim hangi evrede var olabilir (yalnızca maç sahipli dilimlerde anlamlı)
+Phase = Literal["pre", "live", "post"]
+
+OWNERS: Tuple[str, ...] = ("event", "season", "tournament", "team", "player", "sport")
+PHASES: Tuple[str, ...] = ("pre", "live", "post")
+ALL_PHASES: FrozenSet[str] = frozenset(PHASES)
+# Dilim grupları: seçimde bir dilim anahtarı yerine grup adı da yazılabilir ([defaults] slices = ["core"])
+GROUPS: Tuple[str, ...] = ("core", "odds", "standings", "statistics", "squads", "rankings", "live")
+PROVIDER_SUBS = "provider"  # subs="provider": alt anahtar yapılandırılan bahis sağlayıcısının kimliğidir
 
 
 @dataclass(frozen=True)
-class DetailSlice:
-    """Bir maçın /event/{id} dışındaki detay uç noktası; yanıt match_details/.../{id}/{key}.json'a yazılır."""
+class SliceSpec:
+    """
+    Bir dilimin tanımı (docs/design/02-services.md 3.1). Bugünkü bütün dilimler bir maçın /event/{id} dışındaki
+    detay uç noktalarıdır; yanıt maçın kaydına `key` adıyla yazılır.
+
+    Varsayılanlar bugünkü davranışı verir: sahibi maç, alt anahtarı yok, her evrede istenebilir (bugün hiçbir
+    yol evreye bakmaz), geçmişi tutulmaz, bir kez alınır, grubu `core`.
+    """
 
     key: str  # match_data anahtarı ve dosya adı
     path: str  # API kök adresine eklenir; {event_id} yer tutucusu
     # Hangi sporlarda istenir. None: hepsinde (kayıt defterinde olmayan ya da sporu bilinmeyen maç dahil)
     sports: Optional[FrozenSet[str]] = None
-    # Kullanıcı ayarı yokken istenir mi. Dilimi spor başına açıp kapatan ayar eklendiğinde slices_for'da okunacak
+    # Kullanıcı seçimi yokken istenir mi (`select_slices`, seçim None)
     default_enabled: bool = True
     # True: tamlık hesabına girer (eksikse yeniden istenir, bitmiş maçta boş gelirse "yok" sayılır), tek maç
     # indirmede de istenir ve {key}.json diskten okunur. False: yalnızca toplu indirmede, en iyi çabayla.
+    # Tasarımdaki adı `counts_for_completeness` (aşağıdaki özellik); alan adı okuyucular için `required` kalır.
     required: bool = True
+    owner: SliceOwner = "event"
+    # Alt anahtarlar: None = yok (""), bir demet (ör. ("total", "home", "away")) ya da "provider"
+    subs: Union[Tuple[str, ...], Literal["provider"], None] = None
+    phases: FrozenSet[str] = ALL_PHASES
+    group: str = "core"
+    keep_history: bool = False  # değişen yük dilimin geçmişine eklenir (ör. oranlar)
+    max_age: Optional[timedelta] = None  # sahibi maç olmayan dilimde: bundan eskiyse yeniden alınır (None = bir kez)
+
+    def __post_init__(self) -> None:
+        if self.owner not in OWNERS:
+            raise ValueError(f"slice {self.key!r}: owner must be one of {', '.join(OWNERS)}, got {self.owner!r}")
+        if not self.phases or not set(self.phases) <= ALL_PHASES:
+            raise ValueError(f"slice {self.key!r}: phases must be a non-empty subset of {', '.join(PHASES)}")
+        if self.group not in GROUPS:
+            raise ValueError(f"slice {self.key!r}: group must be one of {', '.join(GROUPS)}, got {self.group!r}")
+        if not (self.subs is None or self.subs == PROVIDER_SUBS
+                or (isinstance(self.subs, tuple) and self.subs and all(isinstance(s, str) and s for s in self.subs))):
+            raise ValueError(f"slice {self.key!r}: subs must be None, 'provider' or a tuple of names")
+
+    @property
+    def counts_for_completeness(self) -> bool:
+        """Tasarımdaki ad: `required`."""
+        return self.required
 
     def applies_to(self, sport: Optional[str]) -> bool:
         return self.sports is None or sport in self.sports
+
+    def valid_in(self, phase: Optional[str]) -> bool:
+        """Dilim bu evrede var olabilir mi; evre bilinmiyorsa (None) evet."""
+        return phase is None or phase in self.phases
 
     def url(self, base_url: str, event_id: object) -> str:
         return base_url + self.path.format(event_id=event_id)
 
 
+# Eski ad: bugünkü bütün dilimler maç detayıdır
+DetailSlice = SliceSpec
+
+
 # Sıra önemli: istek sırası ve DETAIL_SLICE_KEYS / REQUIRED_FILES sırası buradan türer
-DETAIL_SLICES: Tuple[DetailSlice, ...] = (
-    DetailSlice("statistics", "/event/{event_id}/statistics"),
-    DetailSlice("team_streaks", "/event/{event_id}/team-streaks"),
-    DetailSlice("pregame_form", "/event/{event_id}/pregame-form"),
-    DetailSlice("h2h", "/event/{event_id}/h2h"),
-    DetailSlice("lineups", "/event/{event_id}/lineups"),
-    DetailSlice("incidents", "/event/{event_id}/incidents"),
-    DetailSlice("point_by_point", "/event/{event_id}/point-by-point", sports=frozenset({"tennis"}), required=False),
+DETAIL_SLICES: Tuple[SliceSpec, ...] = (
+    SliceSpec("statistics", "/event/{event_id}/statistics"),
+    SliceSpec("team_streaks", "/event/{event_id}/team-streaks"),
+    SliceSpec("pregame_form", "/event/{event_id}/pregame-form"),
+    SliceSpec("h2h", "/event/{event_id}/h2h"),
+    SliceSpec("lineups", "/event/{event_id}/lineups"),
+    SliceSpec("incidents", "/event/{event_id}/incidents"),
+    SliceSpec("point_by_point", "/event/{event_id}/point-by-point", sports=frozenset({"tennis"}), required=False),
 )
 
-def get_slice(key: str) -> Optional[DetailSlice]:
+
+def get_slice(key: str) -> Optional[SliceSpec]:
     return next((s for s in DETAIL_SLICES if s.key == key), None)
 
 
-def slices_for(sport: Optional[str], required_only: bool = False) -> Tuple[DetailSlice, ...]:
-    """
-    Bu spordaki bir maç için istenecek dilimler, tablo sırasıyla. `sport` olayın küçük harfli slug'ıdır
-    (event_sport_slug); kayıt defterinde olmayan ya da bilinmeyen (None / "") spor yalnızca her sporda
-    geçerli dilimleri alır.
+class UnknownSliceName(ValueError):
+    """Seçimde kayıt defterinde olmayan bir ad (ne dilim anahtarı ne grup adı)."""
 
-    Dilim seçiminin tek geçtiği yer burasıdır: kullanıcının spor başına dilim açıp kapatması eklendiğinde
-    `default_enabled` yerine o ayar burada okunur.
+    def __init__(self, name: str, known: Tuple[str, ...]) -> None:
+        super().__init__(f"unknown slice or slice group {name!r}; expected one of {', '.join(known)}")
+        self.name = name
+        self.known = known
+
+
+@dataclass(frozen=True)
+class SliceSelection:
     """
+    Kullanıcının dilim seçimi, katmanları çözülmüş halde (02-services.md 3.1: takibin `slices`'ı →
+    `[slices.<spor>]` → `[defaults] slices` → kayıt defterinin `default_enabled`'ı). Adlar dilim anahtarı ya da
+    grup adıdır; grup adı o gruptaki bütün dilimleri seçer. Bir ad hem anahtar hem grup olabilir (tasarımda
+    `statistics` ikisi de): o zaman ikisini de seçer.
+
+    base: None = kayıt defterinin `default_enabled` dilimleri; bir demet = yalnızca bu adlar.
+    enable / disable: tabana eklenen ve tabandan çıkarılan adlar (disable sonra uygulanır).
+    """
+
+    base: Optional[Tuple[str, ...]] = None
+    enable: Tuple[str, ...] = ()
+    disable: Tuple[str, ...] = ()
+
+
+def known_slice_names() -> Tuple[str, ...]:
+    """Seçimde geçerli adlar: kayıtlı dilim anahtarları (tablo sırasıyla), sonra öteki grup adları."""
+    keys = tuple(s.key for s in DETAIL_SLICES)
+    return keys + tuple(group for group in GROUPS if group not in keys)
+
+
+def check_slice_names(names: Iterable[str]) -> None:
+    """Her ad bir dilim anahtarı ya da grup adı olmalı; değilse UnknownSliceName (ilk bilinmeyen ad)."""
+    known = known_slice_names()
+    for name in names:
+        if name not in known:
+            raise UnknownSliceName(str(name), known)
+
+
+def _named(spec: SliceSpec, names: Iterable[str]) -> bool:
+    return any(name == spec.key or name == spec.group for name in names)
+
+
+def select_slices(
+    owner: str,
+    sport: Optional[str],
+    selection: Union[SliceSelection, Iterable[str], None] = None,
+    *,
+    phase: Optional[str] = None,
+) -> Tuple[SliceSpec, ...]:
+    """
+    Bir sahibin (bugün yalnızca "event") bu sporda istenecek dilimleri, tablo sırasıyla.
+
+    sport: olayın küçük harfli slug'ı (event_sport_slug); kayıt defterinde olmayan ya da bilinmeyen (None / "")
+    spor yalnızca her sporda geçerli dilimleri alır. selection: None = kayıt defterinin varsayılanları; bir ad
+    listesi = `SliceSelection(base=...)`. Bilinmeyen ad UnknownSliceName'dir (yapılandırmadaki adlar burada
+    denetlenir). phase: verilirse yalnızca o evrede var olabilen dilimler.
+
+    Dilim seçiminin tek geçtiği yer burasıdır; `slices_for` buna devreder.
+    """
+    if owner not in OWNERS:
+        raise ValueError(f"owner must be one of {', '.join(OWNERS)}, got {owner!r}")
+    if phase is not None and phase not in PHASES:
+        raise ValueError(f"phase must be one of {', '.join(PHASES)} or None, got {phase!r}")
+    if selection is not None and not isinstance(selection, SliceSelection):
+        if isinstance(selection, str):
+            raise ValueError("selection: expected a list of slice names, got a single string")
+        selection = SliceSelection(base=tuple(selection))
+    if selection is not None:
+        check_slice_names((*(selection.base or ()), *selection.enable, *selection.disable))
+
+    def selected(spec: SliceSpec) -> bool:
+        if selection is None:
+            return spec.default_enabled
+        chosen = spec.default_enabled if selection.base is None else _named(spec, selection.base)
+        if _named(spec, selection.enable):
+            chosen = True
+        if _named(spec, selection.disable):
+            chosen = False
+        return chosen
+
     return tuple(
         s for s in DETAIL_SLICES
-        if s.default_enabled and s.applies_to(sport) and (s.required or not required_only)
+        if s.owner == owner and s.applies_to(sport) and s.valid_in(phase) and selected(s)
     )
+
+
+def slices_for(sport: Optional[str], required_only: bool = False) -> Tuple[SliceSpec, ...]:
+    """
+    Bu spordaki bir maç için istenecek dilimler, tablo sırasıyla (kayıt defterinin varsayılan seçimi;
+    `select_slices("event", sport)`). `sport` olayın küçük harfli slug'ıdır (event_sport_slug); kayıt
+    defterinde olmayan ya da bilinmeyen (None / "") spor yalnızca her sporda geçerli dilimleri alır.
+    required_only: yalnızca tamlık hesabına girenler.
+    """
+    return tuple(s for s in select_slices("event", sport) if s.required or not required_only)

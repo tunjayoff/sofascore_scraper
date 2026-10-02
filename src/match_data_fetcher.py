@@ -32,6 +32,7 @@ from src.status import OBSERVATION_KEY, observation_record
 from src.refresh import SCORE_CHANGES_FILE as SCORE_CHANGES_FILE, change_row, diff_basic
 from src.paths import league_dir_name
 from src.services.export import ExportService, ExportSpec
+from src.services import planning
 from src.services.query import QueryService, RefreshPolicy
 from src.services.status import only_finished_setting
 # Sonuç tipi ve "veri var mı" yüklemleri src/slices.py'de durur. `X as X` biçimindekiler buradan taşınan
@@ -757,12 +758,13 @@ class MatchDataFetcher:
 
     def _expected_slice_keys(self, event_id: int, sport: Optional[str]) -> List[str]:
         """
-        Beklenen dilimler: o sporun `required` dilimleri, yeterince denenip hep boş gelenler hariç (kesin ve
-        doğrulanmamış "yok" sayısının toplamı UNAVAILABLE_AFTER_ATTEMPTS'e ulaşmış olanlar). Store'dan okunur.
+        Beklenen dilimler: o sporun `required` dilimleri (src/services/planning.py `expected_slice_keys`),
+        yeterince denenip hep boş gelenler hariç (kesin ve doğrulanmamış "yok" sayısının toplamı
+        UNAVAILABLE_AFTER_ATTEMPTS'e ulaşmış olanlar). Store'dan okunur.
         """
         settled = {info.key for info in self._store().events.slices(event_id)
                    if not info.sub and info.settled_empty(UNAVAILABLE_AFTER_ATTEMPTS)}
-        return [detail.key for detail in slices_for(sport, required_only=True) if detail.key not in settled]
+        return [key for key in planning.expected_slice_keys(sport) if key not in settled]
 
     def reset_unavailable_markers(
         self,
@@ -822,28 +824,22 @@ class MatchDataFetcher:
 
     def _compute_detail_needs(self, match_ids: List[str]) -> Dict[str, str]:
         """
-        Maçların ihtiyacı, kataloğa birkaç sorguyla sorulur (QueryService.detail_needs); hiçbir dosya okunmaz.
-        Kayıt, olay yükü herhangi bir düzende saklanan maçtır (`_stored_event`); kurallı bir kimlik olmayan metin
-        ("007", "abc") kayıt değildir. Katalog dosyalarla eşit değilse CatalogNotCurrent (plan yapılmaz).
+        Maçların ihtiyacı: kural src/services/planning.py'dedir (`compute_need`); maçların katalogdaki durumları
+        birkaç sorguyla okunur (`planning.event_needs`), hiçbir dosya okunmaz. Kayıt, olay yükü herhangi bir
+        düzende saklanan maçtır (`_stored_event`); kurallı bir kimlik olmayan metin ("007", "abc") kayıt
+        değildir. Katalog dosyalarla eşit değilse CatalogNotCurrent (plan yapılmaz).
         """
         ids = {mid: _canonical_id(mid) for mid in match_ids}
-        service = QueryService(self._store())
-        service.require_current()
-        needs = service.detail_needs([event_id for event_id in ids.values() if event_id is not None],
+        store = self._store()
+        QueryService(store).require_current()
+        needs = planning.event_needs(store, [event_id for event_id in ids.values() if event_id is not None],
                                      RefreshPolicy.current(), threshold=UNAVAILABLE_AFTER_ATTEMPTS)
         return {mid: needs.get(event_id, "full") if event_id is not None else "full" for mid, event_id in ids.items()}
 
     def _order_by_need(self, match_ids: List[Any]) -> Tuple[List[Any], int]:
-        """İşlenecek maçlar: önce full/refill, sonra refresh. İkinci değer yenilenecek maç sayısı."""
+        """İşlenecek maçlar: önce full/refill, sonra refresh (`planning.order_by_need`). İkinci değer yenilenecek maç sayısı."""
         self._prepare_needs([str(mid) for mid in match_ids])
-        first, refresh = [], []
-        for mid in match_ids:
-            need = self._needs_detail_fetch(str(mid))
-            if need == "refresh":
-                refresh.append(mid)
-            elif need != "none":
-                first.append(mid)
-        return first + refresh, len(refresh)
+        return planning.order_by_need(match_ids, {str(mid): self._needs_detail_fetch(str(mid)) for mid in match_ids})
 
     def _prepare_needs(self, match_ids: List[str]) -> None:
         """
@@ -920,7 +916,7 @@ class MatchDataFetcher:
         """
         Kayıtlı maçlardan yenilenmesi gerekenler (--refresh-only). Eksik dilimli maçlar dahil değil.
 
-        Katalogdan (QueryService.refresh_due): her düzendeki kayıtlar, eski düzenin düz ve `_no_tournament/`
+        Katalogdan (`planning.refresh_due_events`; karar `compute_need`'in): her düzendeki kayıtlar, eski düzenin düz ve `_no_tournament/`
         dizinlerindekiler de. league_id: maçın turnuvası (dizin adına bakılmaz). Sıra, eski düzen yazıcısının
         dizinlerinin yol sırasıdır (eski ağaç gezintisinin sırası: lig dizini, sezon dizini, maç kimliği metin
         olarak): eski düzendeki kayıtta kendi yolu, v3'e yükseltilmiş kayıtta eski yolu, yalnızca v3'te duran
@@ -932,10 +928,10 @@ class MatchDataFetcher:
             if tournament is None:
                 return []
             tournament_ids = (tournament,)
-        service = QueryService(self._store())
-        service.require_current()
-        rows = service.refresh_due(RefreshPolicy.current(), tournament_ids=tournament_ids,
-                                   threshold=UNAVAILABLE_AFTER_ATTEMPTS)
+        store = self._store()
+        QueryService(store).require_current()
+        rows = planning.refresh_due_events(store, RefreshPolicy.current(), tournament_ids=tournament_ids,
+                                           threshold=UNAVAILABLE_AFTER_ATTEMPTS)
         ids = [str(row.id) for row in sorted(rows, key=self._legacy_order)]
         cache = getattr(self, "_need_cache", None)
         if cache is not None:

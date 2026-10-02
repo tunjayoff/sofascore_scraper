@@ -199,3 +199,98 @@ def test_frontend_locales_have_every_sport_label(locale):
     for spec in sports.SPORTS:
         section, _, key = spec.i18n_key.partition(".")
         assert section == "sport" and key in keys
+
+
+# --- SliceSpec ve seçim (plan maddesi P12; docs/design/02-services.md 3.1) -------------------------------
+
+def test_detail_slice_is_the_slice_spec_with_todays_defaults():
+    assert sports.DetailSlice is sports.SliceSpec
+    for s in sports.DETAIL_SLICES:
+        assert (s.owner, s.subs, s.phases, s.group, s.keep_history, s.max_age) == (
+            "event", None, sports.ALL_PHASES, "core", False, None)
+        assert s.counts_for_completeness is s.required
+    extra = sports.DetailSlice("innings", "/event/{event_id}/innings", sports=frozenset({"basketball"}))
+    assert extra.required and extra.default_enabled and extra.owner == "event"
+
+
+@pytest.mark.parametrize("bad", [
+    {"owner": "league"}, {"phases": frozenset()}, {"phases": frozenset({"later"})}, {"group": "misc"},
+    {"subs": ()}, {"subs": ("",)}, {"subs": "home"},
+])
+def test_slice_spec_rejects_invalid_fields(bad):
+    with pytest.raises(ValueError):
+        sports.SliceSpec("x", "/event/{event_id}/x", **bad)
+
+
+def test_slice_spec_accepts_the_design_fields():
+    import datetime as dt
+
+    spec = sports.SliceSpec("standings", "/unique-tournament/{tournament_id}/season/{season_id}/standings/{sub}",
+                            owner="season", subs=("total", "home", "away"), group="standings",
+                            max_age=dt.timedelta(hours=6))
+    odds = sports.SliceSpec("odds_all", "/event/{event_id}/odds/{sub}/all", subs="provider", group="odds",
+                            keep_history=True)
+    assert spec.owner == "season" and odds.subs == sports.PROVIDER_SUBS and odds.valid_in("pre")
+    post_only = sports.SliceSpec("x", "/x", phases=frozenset({"post"}))
+    assert not post_only.valid_in("live") and post_only.valid_in("post") and post_only.valid_in(None)
+
+
+@pytest.mark.parametrize("sport", ["football", "basketball", "tennis", "handball", "", None])
+def test_select_slices_without_a_selection_is_slices_for(sport):
+    assert sports.select_slices("event", sport) == sports.slices_for(sport)
+    assert sports.select_slices("event", sport, ["core"]) == sports.slices_for(sport)
+    for phase in sports.PHASES:
+        assert sports.select_slices("event", sport, phase=phase) == sports.slices_for(sport)
+    assert sports.select_slices("season", sport) == ()
+
+
+def _keys(found):
+    return tuple(s.key for s in found)
+
+
+def test_select_slices_with_a_selection():
+    assert _keys(sports.select_slices("event", "football", ["h2h", "lineups"])) == ("h2h", "lineups")
+    assert _keys(sports.select_slices("event", "football", ["point_by_point"])) == ()  # tenis dışında yok
+    no_h2h = sports.SliceSelection(disable=("point_by_point", "h2h"))
+    assert _keys(sports.select_slices("event", "tennis", no_h2h)) == tuple(k for k in COMMON_KEYS if k != "h2h")
+    narrow = sports.SliceSelection(base=("h2h",), enable=("incidents",))
+    assert _keys(sports.select_slices("event", "tennis", narrow)) == ("h2h", "incidents")
+    # "statistics" hem dilim anahtarı hem (tasarımda) grup adı
+    assert _keys(sports.select_slices("event", "football", ["statistics"])) == ("statistics",)
+    assert _keys(sports.select_slices("event", "football", ["odds"])) == ()
+
+
+def test_select_slices_turns_on_a_slice_that_is_off_by_default(monkeypatch):
+    import dataclasses
+
+    table = tuple(dataclasses.replace(s, default_enabled=s.key != "lineups") for s in sports.DETAIL_SLICES)
+    monkeypatch.setattr(sports, "DETAIL_SLICES", table)
+    assert "lineups" not in _keys(sports.select_slices("event", "football"))
+    assert "lineups" in _keys(sports.select_slices("event", "football", ["core"]))
+    assert "lineups" in _keys(sports.select_slices("event", "football", sports.SliceSelection(enable=("lineups",))))
+
+
+@pytest.mark.parametrize("selection", [["nope"], sports.SliceSelection(enable=("Lineups",)),
+                                       sports.SliceSelection(disable=("odds_all",))])
+def test_select_slices_rejects_unknown_names(selection):
+    with pytest.raises(sports.UnknownSliceName) as info:
+        sports.select_slices("event", "football", selection)
+    assert "lineups" in info.value.known and "core" in info.value.known
+    assert isinstance(info.value, ValueError)
+
+
+def test_select_slices_rejects_bad_arguments():
+    with pytest.raises(ValueError):
+        sports.select_slices("league", "football")
+    with pytest.raises(ValueError):
+        sports.select_slices("event", "football", phase="halftime")
+    with pytest.raises(ValueError):
+        sports.select_slices("event", "football", "lineups")
+
+
+def test_known_slice_names_list_each_name_once():
+    names = sports.known_slice_names()
+    assert len(names) == len(set(names))
+    assert names[:len(sports.DETAIL_SLICES)] == tuple(s.key for s in sports.DETAIL_SLICES)
+    assert set(sports.GROUPS) <= set(names)
+    sports.check_slice_names(names)
