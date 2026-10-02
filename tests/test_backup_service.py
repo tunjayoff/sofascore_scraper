@@ -48,13 +48,16 @@ def _members(path: str) -> List[List[Any]]:
 
 @pytest.fixture
 def configured(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Web yollarının gördüğü ayarlar: lig dosyası, spor eşlemesi ve .env bu testin dizininde."""
+    """
+    Web yollarının gördüğü ayarlar: lig dosyası, spor eşlemesi ve .env bu testin dizininde. Satır sonu her
+    platformda "\\n": altın dosya üyelerin boyutunu ve CRC'sini tutar (Windows'ta "\\r\\n" olurdu).
+    """
     config = tmp_path / "config"
     config.mkdir()
-    (config / "leagues.txt").write_text("17: Premier League\n", encoding="utf-8")
-    (config / "league_sports.json").write_text('{"17": "football"}\n', encoding="utf-8")
+    (config / "leagues.txt").write_text("17: Premier League\n", encoding="utf-8", newline="\n")
+    (config / "league_sports.json").write_text('{"17": "football"}\n', encoding="utf-8", newline="\n")
     env = tmp_path / "secret.env"
-    env.write_text(ENV_TEXT, encoding="utf-8")
+    env.write_text(ENV_TEXT, encoding="utf-8", newline="\n")
     monkeypatch.setenv("SOFASCORE_ENV_FILE", str(env))
     monkeypatch.setattr(data_routes.config_manager, "league_config_path", str(config / "leagues.txt"))
     return tmp_path
@@ -85,7 +88,7 @@ def test_the_backup_members_equal_the_golden(configured: Path, monkeypatch: pyte
     found = _all_members(configured / "fixtures", monkeypatch)
     if REGEN:
         GOLDEN.parent.mkdir(parents=True, exist_ok=True)
-        GOLDEN.write_text(json.dumps(found, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+        GOLDEN.write_text(json.dumps(found, indent=1, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
     assert found == json.loads(GOLDEN.read_text(encoding="utf-8"))
 
 
