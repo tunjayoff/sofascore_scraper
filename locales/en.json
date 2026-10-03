@@ -285,6 +285,7 @@
     "ssc_help_cmd_sync": "bring every configured league up to date: season lists, schedules, then the matches that need details",
     "ssc_help_sync_tournament": "only this tournament (SofaScore unique-tournament id); it need not be configured",
     "ssc_help_sync_only": "events: fetch only the match details of the schedules already stored (no season lists, no schedules)",
+    "ssc_help_sync_only_any": "events: fetch only the match details of the schedules already stored (no season lists, no schedules); seasons: read only the season lists again now (no schedules, no details)",
     "ssc_help_sync_recheck": "first reopen the \"slice not available\" markers (legacy: only unconfirmed ones; all: every marker), then download",
     "ssc_help_refresh_include_legacy": "also refresh, once, old records that have no observation (by default they count as final)",
     "ssc_help_dry_run": "send no request and change nothing: show what would be fetched and how many requests that takes at least",

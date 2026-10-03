@@ -285,6 +285,7 @@
     "ssc_help_cmd_sync": "yapılandırılmış her ligi güncelle: sezon listeleri, programlar, sonra detayı gereken maçlar",
     "ssc_help_sync_tournament": "yalnızca bu turnuva (SofaScore unique-tournament kimliği); yapılandırılmış olması gerekmez",
     "ssc_help_sync_only": "events: yalnızca saklanan programlardaki maçların detayları (sezon listesi ve program istenmez)",
+    "ssc_help_sync_only_any": "events: yalnızca saklanan programlardaki maçların detayları (sezon listesi ve program istenmez); seasons: yalnızca sezon listeleri, şimdi yeniden okunur (program ve detay istenmez)",
     "ssc_help_sync_recheck": "önce \"dilim yok\" işaretlerini aç (legacy: yalnızca doğrulanmamışlar; all: hepsi), sonra indir",
     "ssc_help_refresh_include_legacy": "gözlemi olmayan eski kayıtları da bir kez yenile (varsayılan: kesin sayılırlar)",
     "ssc_help_dry_run": "istek atma, hiçbir şeyi değiştirme: neyin indirileceğini ve en az kaç istek gerektiğini göster",
