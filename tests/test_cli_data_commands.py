@@ -379,7 +379,8 @@ def test_export_with_nothing_to_export_is_not_found_and_writes_nothing(cli: CliR
     assert filtered.exit_code == 1 and not (tmp_path / "none.csv").exists()
 
 
-def test_raw_export_and_its_usage_rules(cli: CliRunner, seeded: Path, tmp_path: Path) -> None:
+def test_raw_export_and_its_usage_rules(cli: CliRunner, seeded: Path, tmp_path: Path,
+                                        monkeypatch: pytest.MonkeyPatch) -> None:
     raw = run_in(cli, seeded, "export", "--schema", "raw", "--out", str(tmp_path / "raw.jsonl"), "--json")
     assert raw.exit_code == 0, raw.stderr
     lines = [json.loads(line) for line in (tmp_path / "raw.jsonl").read_text(encoding="utf-8").splitlines()]
@@ -390,8 +391,12 @@ def test_raw_export_and_its_usage_rules(cli: CliRunner, seeded: Path, tmp_path: 
     forced = run_in(cli, seeded, "export", "--schema", "raw", "--out", str(tmp_path / "raw.jsonl"), "--force")
     assert forced.exit_code == 0
 
+    # SC-2: normalleştirilmiş veri kümeleri yazılır (tests/test_export_datasets.py); `pyarrow` olmadan Parquet
+    # yazılamaz
+    monkeypatch.setattr("src.services.export.parquet_available", lambda: False)
     for argv, code in ((["--schema", "raw"], "invalid_request"), (["--schema", "raw", "--out", "-"], "invalid_request"),
-                       (["--schema", "normalized"], "not_supported"), (["--format", "jsonl"], "invalid_request"),
+                       (["--schema", "normalized", "--format", "parquet"], "not_supported"),
+                       (["--format", "jsonl"], "invalid_request"),
                        (["--out", "-", "--json"], "invalid_request")):
         run = run_in(cli, seeded, "export", *argv, "--json")
         assert (run.exit_code, run.error["code"]) == (2, code), argv

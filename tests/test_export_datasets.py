@@ -34,7 +34,10 @@ from src.store import JobStore, Store, StoreError, default_db_path, open_store
 from src.store import export as store_export
 from src.web import deps
 from src.web.app import app
+import test_cli_skeleton as skeleton
+from test_cli_skeleton import CliRunner
 
+cli = skeleton.cli
 client = TestClient(app)
 
 DATASETS = ("events", "slices", "changes")
@@ -427,6 +430,94 @@ def test_moments_are_read_as_the_api_reads_them(text: str, end: bool, expected: 
 def test_a_bad_moment_is_a_value_error() -> None:
     with pytest.raises(ValueError):
         parse_moment("yesterday", end=False)
+
+
+# --- ssc export -----------------------------------------------------------------------------------------
+
+
+def run_in(cli: CliRunner, data_dir: Path, *argv: str, cwd: Optional[Path] = None) -> Any:
+    return cli("--data-dir", str(data_dir), *argv, cwd=cwd)
+
+
+@pytest.fixture
+def seeded(tmp_path: Path) -> Path:
+    return sf.build_fixture("canonical", tmp_path / "data").data_dir
+
+
+def test_ssc_export_writes_a_dataset(cli: CliRunner, seeded: Path, tmp_path: Path) -> None:
+    run = run_in(cli, seeded, "export", "--dataset", "events", "--format", "csv", "--tournament", str(sf.NBA.id),
+                 "--out", str(tmp_path / "nba.csv"), "--json")
+    assert run.exit_code == 0, run.stderr
+    assert {k: run.data[k] for k in ("dataset", "schema", "schema_version", "format", "path")} == {
+        "dataset": "events", "schema": "normalized", "schema_version": SCHEMA_VERSION, "format": "csv",
+        "path": str(tmp_path / "nba.csv")}
+    rows = read_back(tmp_path / "nba.csv", "csv", "events")
+    assert len(rows) == run.data["rows"] > 0 and {row["tournament_id"] for row in rows} == {str(sf.NBA.id)}
+    assert run.data["columns"] == len(dataset_columns("events", "csv"))
+
+    again = run_in(cli, seeded, "export", "--dataset", "events", "--format", "csv", "--out", str(tmp_path / "nba.csv"),
+                   "--json")
+    assert (again.exit_code, again.error["code"]) == (5, "storage_error")  # hedef var; --force yok
+    forced = run_in(cli, seeded, "export", "--dataset", "events", "--format", "csv", "--out",
+                    str(tmp_path / "nba.csv"), "--force")
+    assert forced.exit_code == 0 and "records of events" in forced.stdout
+
+
+def test_ssc_export_normalized_defaults_to_events_as_jsonl_in_the_data_folder(cli: CliRunner, seeded: Path) -> None:
+    run = run_in(cli, seeded, "export", "--schema", "normalized", "--json")
+    assert run.exit_code == 0, run.stderr
+    path = Path(run.data["path"])
+    assert path.parent == seeded / "exports" and path.name.startswith("events_") and path.suffix == ".jsonl"
+    assert len(path.read_text(encoding="utf-8").splitlines()) == run.data["rows"] > 0
+
+
+def test_ssc_export_streams_jsonl_and_csv_to_stdout(cli: CliRunner, seeded: Path) -> None:
+    run = run_in(cli, seeded, "export", "--dataset", "changes", "--out", "-")
+    assert run.exit_code == 0, run.stderr
+    lines = [json.loads(line) for line in run.stdout.splitlines()]
+    assert [line["seq"] for line in lines] == sorted(line["seq"] for line in lines) and len(lines) == 2
+    assert "records of changes" in run.stderr
+    table = run_in(cli, seeded, "export", "--dataset", "slices", "--format", "csv", "--out", "-")
+    assert table.stdout.splitlines()[0] == ",".join(dataset_columns("slices", "csv"))
+
+
+def test_ssc_export_filters_and_their_rules(cli: CliRunner, seeded: Path, tmp_path: Path,
+                                            monkeypatch: pytest.MonkeyPatch) -> None:
+    run = run_in(cli, seeded, "export", "--dataset", "events", "--sport", "football", "--status", "completed",
+                 "--from", "2026-01-01", "--to", "2026-12-31", "--out", str(tmp_path / "f.jsonl"), "--json")
+    assert run.exit_code == 0, run.stderr
+    found = read_back(tmp_path / "f.jsonl", "jsonl", "events")
+    assert found and all(e["sport"] == "football" and e["status"]["class"] == "completed" for e in found)
+
+    nothing = run_in(cli, seeded, "export", "--dataset", "events", "--tournament", "999",
+                     "--out", str(tmp_path / "none.jsonl"), "--json")
+    assert (nothing.exit_code, nothing.error["code"]) == (1, "not_found") and not (tmp_path / "none.jsonl").exists()
+
+    monkeypatch.setattr(export_service, "parquet_available", lambda: False)
+    for argv, code in ((["--dataset", "events", "--from", "soon"], "invalid_request"),
+                       (["--dataset", "changes", "--season", "1"], "invalid_request"),
+                       (["--dataset", "events", "--format", "tree"], "invalid_request"),
+                       (["--dataset", "events", "--profile", "legacy-wide-csv"], "invalid_request"),
+                       (["--dataset", "events", "--format", "parquet"], "not_supported"),
+                       (["--sport", "football"], "invalid_request"),  # geniş CSV yalnızca turnuva ve maç süzer
+                       (["--schema", "raw", "--dataset", "changes", "--out", str(tmp_path / "r.jsonl")],
+                        "invalid_request")):
+        refused = run_in(cli, seeded, "export", *argv, "--json")
+        assert (refused.exit_code, refused.error["code"]) == (2, code), argv
+    binary = run_in(cli, seeded, "export", "--dataset", "events", "--format", "sqlite", "--out", "-")
+    assert binary.exit_code == 2
+
+
+def test_ssc_export_raw_takes_a_dataset_and_the_filters(cli: CliRunner, seeded: Path, tmp_path: Path) -> None:
+    every = run_in(cli, seeded, "export", "--schema", "raw", "--out", str(tmp_path / "all.jsonl"), "--json")
+    events = run_in(cli, seeded, "export", "--schema", "raw", "--dataset", "events", "--sport", "basketball",
+                    "--out", str(tmp_path / "nba.jsonl"), "--json")
+    assert every.exit_code == events.exit_code == 0, (every.stderr, events.stderr)
+    assert every.data["dataset"] == "slices" and every.data["items"] > events.data["items"] > 0
+    lines = [json.loads(line) for line in (tmp_path / "nba.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert {line["key"] for line in lines} == {"event"}
+    assert all(line["payload"]["tournament"]["uniqueTournament"]["category"]["sport"]["slug"] == "basketball"
+               for line in lines)
 
 
 # --- API v1: dışa aktarma işi ---------------------------------------------------------------------------
