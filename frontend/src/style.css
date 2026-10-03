@@ -1,6 +1,55 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind 4. source(none): only the files listed in tailwind.config.js (`content`) are scanned, as in v3. */
+@import 'tailwindcss' source(none);
+@config '../tailwind.config.js';
+
+/* Tailwind 3 behaviour that v4 changed; kept so the screens look as before. */
+/* v3 font sizes carried a fixed line height (rem); v4 uses a ratio, which grows when a later class or rule
+   changes only the size (`text-4xl md:text-[44px]`) and is inherited as a ratio by smaller text inside. */
+@theme {
+  --text-xs--line-height: 1rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl--line-height: 2rem;
+  --text-3xl--line-height: 2.25rem;
+  --text-4xl--line-height: 2.5rem;
+}
+/* Preflight defaults; in the base layer, so every class still overrides them. */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: #e5e7eb;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: #9ca3af;
+  }
+  button,
+  [role='button'] {
+    cursor: pointer;
+  }
+  :disabled {
+    cursor: default;
+  }
+  /* v4 sets opacity: 1 on form controls, which drops the browser's faded look of a disabled select */
+  button,
+  input,
+  select,
+  optgroup,
+  textarea,
+  ::file-selector-button {
+    opacity: revert;
+  }
+  /* v4 resets every element's padding; v3 left the browser's 1px on table cells */
+  th,
+  td {
+    padding: 1px;
+  }
+}
 
 /* Calm data desk: toned neutral ground, one pitch-green accent, mono for numbers. */
 :root {

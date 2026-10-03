@@ -295,8 +295,8 @@ onUnmounted(scrape.onFinished(() => notFetched.value && void load()))
             <span class="mono" :class="{ 'font-bold': bar(it).lead === 'away' }">{{ it.away }}</span>
           </div>
           <div class="flex gap-1 h-1.5">
-            <div class="rounded" :style="{ flexGrow: bar(it).h, background: bar(it).lead === 'home' ? 'var(--ink)' : 'var(--border-2)' }"></div>
-            <div class="rounded" :style="{ flexGrow: bar(it).a, background: bar(it).lead === 'away' ? 'var(--accent)' : 'var(--border-2)' }"></div>
+            <div class="rounded-sm" :style="{ flexGrow: bar(it).h, background: bar(it).lead === 'home' ? 'var(--ink)' : 'var(--border-2)' }"></div>
+            <div class="rounded-sm" :style="{ flexGrow: bar(it).a, background: bar(it).lead === 'away' ? 'var(--accent)' : 'var(--border-2)' }"></div>
           </div>
         </div>
       </div>
