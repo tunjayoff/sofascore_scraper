@@ -21,8 +21,8 @@ thread'de çalışır. Belirtim (`spec`) bugünkü eşitleme servisinin belirtim
 
 Üçü de CSV yazmaz: dışa aktarma kendi iş türüdür (`export`). Veri işleri (P21):
 
-    export   `exports/<iş>.<uzantı>`: 2.x'in geniş CSV'si ya da ham yükler (src/services/data_jobs.py);
-             normalleştirilmiş veri kümeleri SC-2 ile (`not_supported`)
+    export   `exports/<iş>.<uzantı>`: normalleştirilmiş veri kümeleri (events, slices, changes; JSONL, CSV,
+             Parquet, SQLite), 2.x'in geniş CSV'si ya da ham yükler (src/services/data_jobs.py)
     backup   `backups/` altına yedek (BackupService)
     clear    saklanan verinin bir kısmını siler (MaintenanceService.clear); `confirm: true` ister
     rebuild  kataloğu dosyalardan yeniden kurar (MaintenanceService.rebuild_catalog)
@@ -165,26 +165,41 @@ class StartRefreshJob(BaseModel):
 
 
 class ExportFilter(BaseModel):
-    """Which events to export; the fields are combined with AND, an empty field filters nothing."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    sport: Optional[str] = Field(default=None, max_length=40)
-    tournament_ids: List[int] = Field(default_factory=list)
-    season_ids: List[int] = Field(default_factory=list, description="Not for the legacy-wide-csv profile.")
-    event_ids: List[int] = Field(default_factory=list)
-
-
-class ExportJobSpec(BaseModel):
     """
-    What to export. Today: the profile `legacy-wide-csv` (2.x's wide CSV, dataset `events`, format `csv`) and the
-    raw schema (stored payloads as JSONL; dataset `events`: the event payload only, `slices`: every slice).
-    Normalized datasets answer 501 `not_supported`.
+    Which records to export; the fields are combined with AND, an empty field filters nothing. The meaning is that
+    of the filters of `GET /events` (and of `GET /changes` for the changes dataset).
     """
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
-    dataset: Literal["events", "slices"] = "events"
+    sport: Optional[str] = Field(default=None, max_length=40)
+    tournament_ids: List[int] = Field(default_factory=list)
+    season_ids: List[int] = Field(default_factory=list,
+                                  description="Not for the legacy-wide-csv profile or the changes dataset.")
+    event_ids: List[int] = Field(default_factory=list)
+    status_classes: List[Literal["not_started", "live", "completed", "decided_without_play", "void", "unknown"]] = Field(
+        default_factory=list, description="Only events in these status classes. Not for the legacy-wide-csv profile "
+                                          "or the changes dataset.")
+    from_: Optional[str] = Field(
+        default=None, alias="from", max_length=40,
+        description="At or after; ISO 8601 date or date-time (UTC without an offset). The start of the event; for "
+                    "the changes dataset the time the change was recorded. Not for the legacy-wide-csv profile.")
+    to: Optional[str] = Field(default=None, max_length=40,
+                              description="At or before, as `from`; a date includes the whole day.")
+
+
+class ExportJobSpec(BaseModel):
+    """
+    What to export. Schema `normalized`: the records of data schema v1 (`events`, `slices` or `changes`) as JSONL
+    (one record per line), CSV, Parquet or SQLite (one column per leaf field, named by its path joined with `_`;
+    lists as JSON text). Parquet needs the optional package pyarrow on the server (501 `not_supported` without
+    it). Schema `raw`: the stored payloads as JSONL (dataset `events`: the event payload only, `slices`: every
+    slice). The profile `legacy-wide-csv` is 2.x's wide CSV (dataset `events`, format `csv`).
+    """
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    dataset: Literal["events", "slices", "changes"] = "events"
     format: Literal["csv", "jsonl", "parquet", "sqlite"] = "csv"
     schema_: Literal["normalized", "raw"] = Field(default="normalized", alias="schema")
     profile: Optional[Literal["legacy-wide-csv"]] = None
@@ -452,7 +467,8 @@ def start_job(response: Response, body: Annotated[StartJob, Body(discriminator="
     refused with 409 and the holder in `details`. `clear` and `rebuild` take the data directory for themselves
     (no download, live service or other data operation may run). A `clear` needs `confirm: true` (400
     `confirmation_required`). `restore` only checks (`dry_run: true`); restoring replaces the job history the
-    job is recorded in and is done with `ssc backup restore` (501 `not_supported`). Normalized exports are 501.
+    job is recorded in and is done with `ssc backup restore` (501 `not_supported`). A Parquet export without
+    pyarrow on the server is 501.
     """
     from src.jobs.manager import local_origin
 
@@ -489,7 +505,8 @@ def export_request(spec: Mapping[str, Any]) -> "ExportRequest":
         dataset=str(spec.get("dataset") or "events"), format=str(spec.get("format") or "csv"),
         schema=str(spec.get("schema") or "normalized"), profile=spec.get("profile"), sport=flt.get("sport"),
         tournament_ids=tuple(flt.get("tournament_ids") or ()), season_ids=tuple(flt.get("season_ids") or ()),
-        event_ids=tuple(flt.get("event_ids") or ()),
+        event_ids=tuple(flt.get("event_ids") or ()), status_classes=tuple(flt.get("status_classes") or ()),
+        start_from=flt.get("from"), start_to=flt.get("to"),
     )
 
 

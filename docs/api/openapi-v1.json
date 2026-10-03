@@ -2921,7 +2921,7 @@
           "jobs"
         ],
         "summary": "Start a job",
-        "description": "Start a job in the background and return it at once (202). Only one job writes to a data directory at a\ntime: while another job or a data operation runs, in this server or in another process, the request is\nrefused with 409 and the holder in `details`. `clear` and `rebuild` take the data directory for themselves\n(no download, live service or other data operation may run). A `clear` needs `confirm: true` (400\n`confirmation_required`). `restore` only checks (`dry_run: true`); restoring replaces the job history the\njob is recorded in and is done with `ssc backup restore` (501 `not_supported`). Normalized exports are 501.",
+        "description": "Start a job in the background and return it at once (202). Only one job writes to a data directory at a\ntime: while another job or a data operation runs, in this server or in another process, the request is\nrefused with 409 and the holder in `details`. `clear` and `rebuild` take the data directory for themselves\n(no download, live service or other data operation may run). A `clear` needs `confirm: true` (400\n`confirmation_required`). `restore` only checks (`dry_run: true`); restoring replaces the job history the\njob is recorded in and is done with `ssc backup restore` (501 `not_supported`). A Parquet export without\npyarrow on the server is 501.",
         "operationId": "startJob",
         "requestBody": {
           "required": true,
@@ -3469,7 +3469,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The export file (CSV or JSONL).",
+            "description": "The export file (CSV, JSONL, Parquet or SQLite).",
             "content": {
               "application/octet-stream": {
                 "schema": {
@@ -5615,7 +5615,7 @@
             },
             "type": "array",
             "title": "Season Ids",
-            "description": "Not for the legacy-wide-csv profile."
+            "description": "Not for the legacy-wide-csv profile or the changes dataset."
           },
           "event_ids": {
             "items": {
@@ -5623,12 +5623,54 @@
             },
             "type": "array",
             "title": "Event Ids"
+          },
+          "status_classes": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "not_started",
+                "live",
+                "completed",
+                "decided_without_play",
+                "void",
+                "unknown"
+              ]
+            },
+            "type": "array",
+            "title": "Status Classes",
+            "description": "Only events in these status classes. Not for the legacy-wide-csv profile or the changes dataset."
+          },
+          "from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From",
+            "description": "At or after; ISO 8601 date or date-time (UTC without an offset). The start of the event; for the changes dataset the time the change was recorded. Not for the legacy-wide-csv profile."
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To",
+            "description": "At or before, as `from`; a date includes the whole day."
           }
         },
         "additionalProperties": false,
         "type": "object",
         "title": "ExportFilter",
-        "description": "Which events to export; the fields are combined with AND, an empty field filters nothing."
+        "description": "Which records to export; the fields are combined with AND, an empty field filters nothing. The meaning is that\nof the filters of `GET /events` (and of `GET /changes` for the changes dataset)."
       },
       "ExportJobSpec": {
         "properties": {
@@ -5636,7 +5678,8 @@
             "type": "string",
             "enum": [
               "events",
-              "slices"
+              "slices",
+              "changes"
             ],
             "title": "Dataset",
             "default": "events"
@@ -5680,7 +5723,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "ExportJobSpec",
-        "description": "What to export. Today: the profile `legacy-wide-csv` (2.x's wide CSV, dataset `events`, format `csv`) and the\nraw schema (stored payloads as JSONL; dataset `events`: the event payload only, `slices`: every slice).\nNormalized datasets answer 501 `not_supported`."
+        "description": "What to export. Schema `normalized`: the records of data schema v1 (`events`, `slices` or `changes`) as JSONL\n(one record per line), CSV, Parquet or SQLite (one column per leaf field, named by its path joined with `_`;\nlists as JSON text). Parquet needs the optional package pyarrow on the server (501 `not_supported` without\nit). Schema `raw`: the stored payloads as JSONL (dataset `events`: the event payload only, `slices`: every\nslice). The profile `legacy-wide-csv` is 2.x's wide CSV (dataset `events`, format `csv`)."
       },
       "ExportListResponse": {
         "properties": {
@@ -5777,7 +5820,7 @@
               }
             ],
             "title": "Rows",
-            "description": "Rows (CSV) or lines (JSONL) written."
+            "description": "Records (rows or lines) written; for a raw export the payloads written."
           },
           "events": {
             "anyOf": [
@@ -5836,6 +5879,18 @@
               }
             ],
             "title": "Media Type"
+          },
+          "schema_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schema Version",
+            "description": "Version of the data schema of the records; null for a raw export and for the legacy-wide-csv profile."
           },
           "available": {
             "type": "boolean",

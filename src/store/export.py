@@ -571,7 +571,7 @@ class Exporter:
 
     def rows(self, rows: Iterable[Mapping[str, Any]], columns: Sequence[str], dest: Union[PathLike, BinaryIO],
              fmt: Literal["jsonl", "csv", "parquet", "sqlite"], *, table: str = "rows",
-             overwrite: bool = False) -> ExportReport:
+             overwrite: bool = False, types: Optional[Mapping[str, str]] = None) -> ExportReport:
         """
         Satırları `columns` sırasıyla yazar. Satırda olmayan sütun boş (None) değerdir, `columns`'ta olmayan
         anahtar yazılmaz. Satırlar bir kez, akış halinde okunur.
@@ -581,7 +581,9 @@ class Exporter:
                    sözlük ve liste kurallı JSON
           sqlite   yeni bir dosyada `table` tablosu; bool 0/1, sözlük ve liste JSON metni
           parquet  `pyarrow` gerekir; sütun türleri ilk 10 000 satırın değerlerinden çıkarılır (bool, int64,
-                   float64, metin; sözlük ve liste JSON metni) ve sonraki satırlar o türe uymalıdır
+                   float64, metin; sözlük ve liste JSON metni) ve sonraki satırlar o türe uymalıdır. `types`
+                   bir sütunun türünü verir (`bool`, `int64`, `float64`, `string`): o sütunda çıkarım yapılmaz,
+                   ilk satır grubunda hep boş olan sütun da o türdedir. Öteki biçimler `types`'ı okumaz.
 
         Tarih ve saat değerleri ISO metni olarak yazılır. `dest` bir yol ya da ikili akış olabilir.
         """
@@ -591,6 +593,7 @@ class Exporter:
         if fmt == "sqlite" and (not isinstance(table, str) or not table or "\x00" in table
                                 or table.lower().startswith("sqlite_")):
             raise ValueError(f"table: invalid table name {table!r}")
+        kinds = _check_types(types, names)
         writer = _ROW_WRITERS[fmt]
         if fmt == "parquet":
             _pyarrow()  # paket yoksa hiçbir şey yazılmadan StoreError
@@ -603,7 +606,7 @@ class Exporter:
             staging = files.new_staging_dir(self._data_dir, STAGING_LABEL)
             try:
                 staged = os.path.join(staging, f"rows.{fmt}")
-                count = self._to_file(writer, rows, names, staged, table)
+                count = self._to_file(writer, rows, names, staged, table, kinds)
                 try:
                     with open(staged, "rb") as f:
                         shutil.copyfileobj(f, stream)  # type: ignore[misc]
@@ -617,7 +620,7 @@ class Exporter:
         _prepare(path, overwrite)
         staged = _sibling(path, "export")
         try:
-            count = self._to_file(writer, rows, names, staged, table)
+            count = self._to_file(writer, rows, names, staged, table, kinds)
             size = os.path.getsize(staged)
             _publish(staged, path)
         except BaseException:
@@ -628,8 +631,10 @@ class Exporter:
 
     @staticmethod
     def _to_file(writer: "_RowWriter", rows: Iterable[Mapping[str, Any]], names: Sequence[str], path: str,
-                 table: str) -> int:
-        if writer in (_write_sqlite, _write_parquet):
+                 table: str, kinds: Optional[Mapping[str, str]] = None) -> int:
+        if writer is _write_parquet:
+            return writer(rows, names, path, table, kinds)
+        if writer is _write_sqlite:
             return writer(rows, names, path, table)
         try:
             with open(path, "wb") as f:
@@ -731,6 +736,7 @@ def _pyarrow() -> Any:
 
 # Parquet sütun türleri (ilk satır grubundan çıkarılır)
 _BOOL, _INT, _FLOAT, _STR = "bool", "int64", "float64", "string"
+_KINDS: Tuple[str, ...] = (_BOOL, _INT, _FLOAT, _STR)
 
 
 def _infer(values: Iterable[Any]) -> str:
@@ -781,7 +787,25 @@ def _batches(rows: Iterable[Mapping[str, Any]], names: Sequence[str], size: int)
         yield batch
 
 
-def _write_parquet(rows: Iterable[Mapping[str, Any]], names: Sequence[str], path: str, table: str) -> int:
+def _check_types(types: Optional[Mapping[str, str]], names: Sequence[str]) -> Dict[str, str]:
+    """`rows`'un `types`'ı: bilinen sütunlar ve bilinen türler; yoksa boş."""
+    if types is None:
+        return {}
+    if not isinstance(types, Mapping):
+        raise ValueError(f"types: expected a mapping of column to type, got {types!r}")
+    out: Dict[str, str] = {}
+    for name, kind in types.items():
+        if name not in names:
+            raise ValueError(f"types: {name!r} is not one of the columns")
+        if kind not in _KINDS:
+            raise ValueError(f"types: expected one of {', '.join(_KINDS)} for {name!r}, got {kind!r}")
+        out[name] = kind
+    return out
+
+
+def _write_parquet(rows: Iterable[Mapping[str, Any]], names: Sequence[str], path: str, table: str,
+                   given: Optional[Mapping[str, str]] = None) -> int:
+    given = given or {}
     pa = _pyarrow()
     pq = pa.parquet
     types = {_BOOL: pa.bool_(), _INT: pa.int64(), _FLOAT: pa.float64(), _STR: pa.string()}
@@ -792,15 +816,15 @@ def _write_parquet(rows: Iterable[Mapping[str, Any]], names: Sequence[str], path
     try:
         for batch in _batches(rows, names, PARQUET_BATCH):
             if kinds is None:
-                kinds = [_infer(row[i] for row in batch) for i in range(len(names))]
+                kinds = [given.get(names[i]) or _infer(row[i] for row in batch) for i in range(len(names))]
                 schema = pa.schema([(name, types[kind]) for name, kind in zip(names, kinds, strict=True)])
                 writer = pq.ParquetWriter(path, schema)
             arrays = [pa.array([_convert(row[i], kinds[i], names[i]) for row in batch], type=types[kinds[i]])
                       for i in range(len(names))]
             writer.write_table(pa.Table.from_arrays(arrays, schema=schema))
             count += len(batch)
-        if writer is None:  # satır yok: yalnızca şema (bütün sütunlar metin)
-            schema = pa.schema([(name, pa.string()) for name in names])
+        if writer is None:  # satır yok: yalnızca şema (türü verilmeyen sütunlar metin)
+            schema = pa.schema([(name, types[given.get(name, _STR)]) for name in names])
             writer = pq.ParquetWriter(path, schema)
         writer.close()
     except StoreError:

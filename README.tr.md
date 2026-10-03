@@ -17,7 +17,7 @@ Bu proje SofaScore ile bağlantılı değildir. İstek hızına dikkat edin ve i
 - **Web uygulaması** — Ligler, Maç indir, Maçlar, Etkinlik ve Ayarlar sayfaları; canlı ilerleme (SSE) ve anında etki eden Durdur; İngilizce ve Türkçe, ilk ziyarette tarayıcınızın diline göre; açık, koyu veya sisteme uyan tema.
 - **Terminal arayüzü** — Tarayıcı olmadan etkileşimli menü.
 - **Otomasyon** — CI/script için headless bayrakları (`--update-all`, `--fetch-mode`, `--league-id`, `--csv-export`, yollar).
-- **Dışa aktarım** — İşlenmiş “tüm maçlar” CSV’si ve API üzerinden export.
+- **Dışa aktarım** — Maçlar, dilimler ve düzeltmeler sabit, belgelenmiş bir şemada JSONL, CSV, Parquet ya da SQLite olarak; saklanan yükler olduğu gibi; 2.x'in “tüm maçlar” CSV’si. `ssc export` ya da HTTP API'den (v1 dışa aktarma işleri).
 
 ## Ekran görüntüleri
 
@@ -416,6 +416,7 @@ ssc sync --dry-run                         # istek atmaz: neyin indirileceği ve
 ssc fetch event 12345678 12345679          # bu maçlar, yapılandırılmış olsun olmasın
 ssc fetch tournament 17 --season 61627     # tek turnuva (ya da bütün sezonları)
 ssc refresh [--tournament 17] [--include-legacy]   # yalnızca geçici kayıtları yeniden oku (günlük cron)
+ssc export --dataset events --format csv --out maclar.csv   # veri şemasının bir veri kümesi (events, slices, changes)
 ssc export --out maclar.csv                # geniş CSV (legacy-wide-csv); --out yoksa: match_details/processed/
 ssc export --schema raw --format jsonl --out ham.jsonl   # saklanan yükler olduğu gibi
 ssc data recheck-unavailable [--all]       # "dilim yok" işaretlerini aç (istek atmaz)
@@ -434,6 +435,7 @@ ssc doctor | describe | config | version | diagnostics | migrate | catalog | bac
 - **İşi durdurmak.** Ctrl+C ya da SIGTERM çalışan `sync`, `fetch` ya da `refresh` işini iptal eder: istekler bir sonraki denetimde durur, yazılmakta olan maç ya bütün olarak yazılır ya da hiç yazılmaz, iş `cancelled` olarak saklanır, kilit bırakılır ve sonuç yine yazılır. İkinci Ctrl+C hemen çıkar. `ssc jobs cancel ID` bir işi başka herhangi bir süreçten (web uygulamasının işleri dahil) iptal eder.
 - **Veri klasörü başına tek yazar.** İndirmeler ve `data recheck-unavailable` klasörün yazar kilidini tutar; kilit başkasındaysa **6** ile çıkar ve sahibini (süreç, makine, amaç, başlangıç) yazar. Okuma komutları (`status`, `events`, `export`, `jobs list`) kilit almaz.
 - **Sink'ler.** `sofascore.toml`'un `[[sink]]` çıktıları (stdout, dosya, webhook) tek seferlik işlerin olaylarını da (`job.started`, `job.finished`) alır: iş başlamadan kaydedilirler, iş bitince en çok 10 sn boşaltılırlar. `ssc config validate` onları da denetler.
+- **Veri kümelerini dışa aktarmak.** `ssc export --dataset events|slices|changes` veri şemasının kayıtlarını yazar (sürüm 1; alan alan `docs/design/04-schema-v1.md`'de, JSON Schema olarak `ssc describe schemas`'ta): `events` maçlardır (durum, skor, kazanan ve kaydın ne kadar güvenilir olduğu), `slices` bir maç hakkında saklanan her yanıtın durumu (istatistik, kadro, …; yüklerin kendisi ham dışa aktarmadadır), `changes` saklanan maçlarda bulunan düzeltmeler. `--format jsonl` (varsayılan) her satıra bir kaydı API'nin verdiği haliyle yazar; `csv`, `parquet` ve `sqlite` her alana bir sütun yazar, adı alanın yoludur (`status_class`, `score_home`, `quality_observed_at_utc`); listeler JSON metni, eksik değer boş hücredir. Parquet için isteğe bağlı `pyarrow` paketi gerekir (`pip install -e ".[parquet]"`). Süzgeçler: `--sport`, `--tournament`, `--season`, `--event`, `--status` (durum sınıfı), `--from` / `--to` (ISO tarih, UTC; `changes` için düzeltmenin kaydedildiği zaman). `--out` verilmezse dosya veri klasörünün `exports/` dizinine yazılır; `--out -` JSONL ya da CSV'yi stdout'a yazar; var olan dosyanın üzerine yalnızca `--force` ile yazılır. `--schema raw` saklanan SofaScore yüklerini yazar (`--dataset events`: yalnızca maç yükü; `--dataset` yoksa: her yük). `--json` sonucu kayıtların `schema_version`'ını verir. `--dataset` ve `--schema` olmadan `ssc export` yine 2.x'in geniş CSV'sini yazar. HTTP API'de aynı veri kümeleri API v1'in dışa aktarma işidir (`POST /api/v1/jobs`, `kind: "export"`; dosya `GET /api/v1/exports/{id}/download`).
 
 ### Headless / otomasyon (kullanımdan kalkan bayraklar)
 

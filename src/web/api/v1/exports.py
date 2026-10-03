@@ -1,14 +1,15 @@
 """
-API v1: dışa aktarmalar (docs/design/02-services.md bölüm 6; docs/design/05-web-ui.md 6.10 ve 7.3 G13; plan maddesi
-P21).
+API v1: dışa aktarmalar (docs/design/02-services.md bölüm 6; docs/design/05-web-ui.md 6.10 ve 7.3 G13; plan maddeleri
+P21 ve SC-2).
 
     GET /api/v1/exports                    dışa aktarma işleri, en yeni önce (imleçle sayfalama)
     GET /api/v1/exports/{export_id}/download   dosyanın kendisi
 
 Dışa aktarma bir iştir (`POST /jobs {"kind": "export", "spec": {...}}`); kaydı iş kaydıdır. Kaynağın kimliği işin
 kimliğidir, alanları işin belirtiminden ve sonucundan gelir: veri kümesi, biçim, şema, profil, süzgeç, satır ve
-bayt sayısı, dosya adı. Dosya `DATA_DIR/exports/<iş kimliği>.<uzantı>`dadır; yalnızca başarıyla bitmiş işin
-dosyası indirilir.
+bayt sayısı, dosya adı; normalleştirilmiş bir veri kümesinde kayıtların şema sürümü (`schema_version`: kayıt
+sürümü taşımaz, onu taşıyan kap taşır; docs/design/04-schema-v1.md karar 19). Dosya
+`DATA_DIR/exports/<iş kimliği>.<uzantı>`dadır; yalnızca başarıyla bitmiş işin dosyası indirilir.
 """
 from __future__ import annotations
 
@@ -46,12 +47,16 @@ class ExportRecord(BaseModel):
     filter: ExportFilter
     created_at: Optional[str] = Field(default=None, description="ISO-8601, UTC.")
     finished_at: Optional[str] = Field(default=None, description="ISO-8601, UTC.")
-    rows: Optional[int] = Field(default=None, description="Rows (CSV) or lines (JSONL) written.")
+    rows: Optional[int] = Field(default=None, description="Records (rows or lines) written; for a raw export the "
+                                                          "payloads written.")
     events: Optional[int] = Field(default=None, description="Events with at least one exported payload.")
     bytes: Optional[int] = None
     skipped: Optional[int] = Field(default=None, description="Payloads that could not be read and were left out.")
     file: Optional[str] = Field(default=None, description="File name in the data directory's `exports/`.")
     media_type: Optional[str] = None
+    schema_version: Optional[int] = Field(
+        default=None, description="Version of the data schema of the records; null for a raw export and for the "
+                                  "legacy-wide-csv profile.")
     available: bool = Field(description="The file can be downloaded.")
 
     model_config = {"populate_by_name": True}
@@ -71,10 +76,13 @@ def _record(job: JobSnapshot) -> ExportRecord:
         format=str(spec.get("format") or "csv"), schema=str(spec.get("schema") or "normalized"),
         profile=spec.get("profile"),
         filter=ExportFilter(sport=flt.get("sport"), tournament_ids=list(flt.get("tournament_ids") or ()),
-                            season_ids=list(flt.get("season_ids") or ()), event_ids=list(flt.get("event_ids") or ())),
+                            season_ids=list(flt.get("season_ids") or ()), event_ids=list(flt.get("event_ids") or ()),
+                            status_classes=list(flt.get("status_classes") or ()), from_=flt.get("from"),
+                            to=flt.get("to")),
         created_at=job.created_at, finished_at=job.finished_at, rows=result.get("rows"), events=result.get("events"),
         bytes=result.get("bytes"), skipped=result.get("skipped"), file=result.get("file"),
-        media_type=result.get("media_type"), available=job.state == JobState.SUCCEEDED and bool(result),
+        media_type=result.get("media_type"), schema_version=result.get("schema_version"),
+        available=job.state == JobState.SUCCEEDED and bool(result),
     )
 
 
@@ -104,7 +112,8 @@ def list_exports(
     summary="Download an export",
     response_class=Download,
     status_code=200,
-    responses={**download_responses("application/octet-stream", "The export file (CSV or JSONL)."),
+    responses={**download_responses("application/octet-stream",
+                                         "The export file (CSV, JSONL, Parquet or SQLite)."),
                **error_responses("not_found")},
 )
 def download_export(export_id: str = Path(max_length=64)) -> Download:

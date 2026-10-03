@@ -344,22 +344,33 @@ export interface EventStatus {
   class: "not_started" | "live" | "completed" | "decided_without_play" | "void" | "unknown"
 }
 
-/** Which events to export; the fields are combined with AND, an empty field filters nothing. */
+/**
+ * Which records to export; the fields are combined with AND, an empty field filters nothing. The meaning is that
+ * of the filters of `GET /events` (and of `GET /changes` for the changes dataset).
+ */
 export interface ExportFilter {
   sport?: string | null
   tournament_ids?: number[]
-  /** Not for the legacy-wide-csv profile. */
+  /** Not for the legacy-wide-csv profile or the changes dataset. */
   season_ids?: number[]
   event_ids?: number[]
+  /** Only events in these status classes. Not for the legacy-wide-csv profile or the changes dataset. */
+  status_classes?: ("not_started" | "live" | "completed" | "decided_without_play" | "void" | "unknown")[]
+  /** At or after; ISO 8601 date or date-time (UTC without an offset). The start of the event; for the changes dataset the time the change was recorded. Not for the legacy-wide-csv profile. */
+  from?: string | null
+  /** At or before, as `from`; a date includes the whole day. */
+  to?: string | null
 }
 
 /**
- * What to export. Today: the profile `legacy-wide-csv` (2.x's wide CSV, dataset `events`, format `csv`) and the
- * raw schema (stored payloads as JSONL; dataset `events`: the event payload only, `slices`: every slice).
- * Normalized datasets answer 501 `not_supported`.
+ * What to export. Schema `normalized`: the records of data schema v1 (`events`, `slices` or `changes`) as JSONL
+ * (one record per line), CSV, Parquet or SQLite (one column per leaf field, named by its path joined with `_`;
+ * lists as JSON text). Parquet needs the optional package pyarrow on the server (501 `not_supported` without
+ * it). Schema `raw`: the stored payloads as JSONL (dataset `events`: the event payload only, `slices`: every
+ * slice). The profile `legacy-wide-csv` is 2.x's wide CSV (dataset `events`, format `csv`).
  */
 export interface ExportJobSpec {
-  dataset?: "events" | "slices"
+  dataset?: "events" | "slices" | "changes"
   format?: "csv" | "jsonl" | "parquet" | "sqlite"
   schema?: "normalized" | "raw"
   profile?: "legacy-wide-csv" | null
@@ -387,7 +398,7 @@ export interface ExportRecord {
   created_at?: string | null
   /** ISO-8601, UTC. */
   finished_at?: string | null
-  /** Rows (CSV) or lines (JSONL) written. */
+  /** Records (rows or lines) written; for a raw export the payloads written. */
   rows?: number | null
   /** Events with at least one exported payload. */
   events?: number | null
@@ -397,6 +408,8 @@ export interface ExportRecord {
   /** File name in the data directory's `exports/`. */
   file?: string | null
   media_type?: string | null
+  /** Version of the data schema of the records; null for a raw export and for the legacy-wide-csv profile. */
+  schema_version?: number | null
   /** The file can be downloaded. */
   available: boolean
 }
