@@ -182,21 +182,22 @@
   "exit_code": 2,
   "files": {
    "added": {
-    "logs/sofascore_scraper.log": "<binary>"
+    "logs/": "<empty dir>"
    }
   },
   "request_layer_loaded": false,
   "requests": [],
   "sleeps": {},
   "stderr": [
+   "main.py flags are deprecated and will be removed; this run is: ssc serve --host 0.0.0.0 --port 0",
    "The web server was asked to listen on every network interface (0.0.0.0), but it was not told which host names it may answer to.",
-   "List the names or IP addresses you open the app with in SOFASCORE_ALLOWED_HOSTS (in .env or the environment), for example:",
-   "  SOFASCORE_ALLOWED_HOSTS=localhost,127.0.0.1,my-server.lan",
-   "Or pass --allow-any-host to answer to any name. That is insecure: it turns off the protection against DNS rebinding."
+   "List the names or IP addresses you open the app with, for example:",
+   "  python main.py serve --host 0.0.0.0 --allowed-hosts localhost,127.0.0.1,my-server.lan",
+   "or set [server] allowed_hosts in the config file, or SOFASCORE_ALLOWED_HOSTS in .env or the environment.",
+   "Or pass --allow-any-host to answer to any name. That is insecure: it turns off the protection against DNS rebinding.",
+   "Usage error: --host 0.0.0.0 listens on every network interface, but no allowed host names are set: give --allowed-hosts, [server] allowed_hosts or SOFASCORE_ALLOWED_HOSTS, or --allow-any-host (insecure: it turns off the protection against DNS rebinding)",
+   "Run 'python main.py --help' for the commands and options."
   ],
-  "stdout": [
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)"
-  ]
+  "stdout": []
  }
 }

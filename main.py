@@ -6,7 +6,7 @@ maddesi P19).
     python main.py <komut> [seçenekler]     yeni CLI'nin kendisi (`ssc <komut>` ile aynı): sync, status, ...
     python main.py <eski bayraklar>         yeni komutlara çevrilir (src/cli/legacy_flags.py); stderr'e tek bir
                                             kullanımdan kalkma satırı yazılır
-    python main.py --web ...                web sunucusu (eskisi gibi; `ssc serve` P25 ile gelir)
+    python main.py --web ...                `ssc serve` olarak çalışır (P25; kullanımdan kalkma satırıyla)
     python main.py                          terminal menüsü (eskisi gibi; P26 kaldırır)
     python main.py --version                sürüm (yan etkisiz, yalnızca standart kütüphane)
 
@@ -42,10 +42,10 @@ if __name__ == "__main__" and "--version" in sys.argv[1:]:
     print(VERSION_TEXT)
     sys.exit(0)
 
-# Proje kökü: terminal menüsü ve web sunucusu buraya geçer (yeni CLI kendisi geçer)
+# Proje kökü: terminal menüsü buraya geçer (yeni CLI kendisi geçer)
 script_dir = Path(__file__).resolve().parent
 
-# Web sunucusu ve terminal menüsü dallarının logger'ı (src/logger.py ilk kullanımda kurar)
+# Terminal menüsü dalının logger'ı (src/logger.py ilk kullanımda kurar)
 logger = logging.getLogger("Main")
 
 # Değeri olan bayraklar: alt komut aranırken değerleri atlanır (eski bayraklar ve yeni CLI'nin genel bayrakları)
@@ -243,8 +243,6 @@ def run_legacy(argv: Sequence[str]) -> int:
         key = {legacy_flags.WATCH_USAGE: "cli_watch_usage", legacy_flags.NEEDS_ACTION: "cli_headless_usage"}
         print(get_i18n().t(key[translation.error]), file=sys.stderr)
         return exit_codes.USAGE_ERROR
-    if translation.web:
-        return _run_web(args)
     if translation.interactive:
         return _run_interactive(args)
 
@@ -261,7 +259,7 @@ def run_legacy(argv: Sequence[str]) -> int:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     """
     Giriş noktası. Bir alt komut yeni CLI'ye gider; eski bayraklar çevrilir. Çıkış kodu yeni CLI'nin tablosudur
-    (src/cli/exit_codes.py); terminal menüsü ve web sunucusu eski kodlarını korur.
+    (src/cli/exit_codes.py); terminal menüsü eski kodlarını korur.
     """
     arguments = list(sys.argv[1:] if argv is None else argv)
     if arguments and is_subcommand(arguments):
@@ -273,7 +271,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
 
 def _prepare_legacy_process(args: argparse.Namespace) -> None:
-    """Web sunucusu ve terminal menüsünün eski başlangıcı: `.env`, yapılandırma, gizli dosyaların izinleri."""
+    """Terminal menüsünün eski başlangıcı: `.env`, yapılandırma, gizli dosyaların izinleri."""
     import dotenv
 
     from src.paths import env_file_path
@@ -294,59 +292,6 @@ def _prepare_legacy_process(args: argparse.Namespace) -> None:
     if args.ignore_rate_limit:
         os.environ["IGNORE_RATE_LIMIT"] = "true"
         logger.warning("Rate-limit circuit breaker disabled with --ignore-rate-limit.")
-
-
-def _run_web(args: argparse.Namespace) -> int:
-    """`--web`: HTTP API ve web arayüzü (P25'te `ssc serve` olur)."""
-    try:
-        _prepare_legacy_process(args)
-        try:
-            import uvicorn
-            from src.web import security
-
-            i18n = get_i18n()
-            # Host izin listesi açıktır: kullanıcının SOFASCORE_ALLOWED_HOSTS değeri her zaman
-            # geçerlidir; yerel olmayan bir --host onu hiçbir zaman sessizce "*" yapmaz.
-            try:
-                hosts = security.allowed_hosts_for_bind(
-                    args.host, os.environ.get(security.ALLOWED_HOSTS_ENV), allow_any=args.allow_any_host
-                )
-            except security.AllowedHostsRequired:
-                print(i18n.t("web_allowed_hosts_required", host=args.host), file=sys.stderr)
-                return 2
-            if hosts is not None:
-                os.environ[security.ALLOWED_HOSTS_ENV] = hosts
-            if not security.is_loopback_bind(args.host) and not security.api_token():
-                # Tek ve açık uyarı: konsola ve log dosyasına (log seviyesi kapatmışsa yine de konsola)
-                exposed = i18n.t("web_exposed_without_token", host=args.host, port=args.port)
-                logger.warning(exposed)
-                if not logger.isEnabledFor(logging.WARNING):
-                    print(exposed, file=sys.stderr)
-            logger.info("Starting the web interface: http://localhost:%s", args.port)
-            print(i18n.t('web_server_starting'))
-            print(i18n.t('go_to_address'))
-            print(i18n.t('press_ctrl_c'))
-
-            reload_opts = {}
-            if args.dev:
-                # Only watch app code — data/ match writes must not restart the server mid-scrape
-                reload_opts = {
-                    "reload": True,
-                    "reload_dirs": [str(script_dir / "src"), str(script_dir / "locales")],
-                }
-            uvicorn.run("src.web.app:app", host=args.host, port=args.port, **reload_opts)
-            # ponytail: SPA assets live in frontend/dist — rebuild with `cd frontend && npm run build` after UI changes
-        except ImportError:
-            i18n = get_i18n()
-            print(i18n.t('err_web_packages_not_installed'))
-            print(i18n.t('run_pip_install'))
-            return 1
-        return 0
-    except KeyboardInterrupt:
-        print(get_i18n().t('prog_terminated_by_user'))
-        return 0
-    except Exception as e:
-        return _unexpected(e)
 
 
 def _run_interactive(args: argparse.Namespace) -> int:

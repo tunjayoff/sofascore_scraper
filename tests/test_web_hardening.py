@@ -37,7 +37,6 @@ import conftest
 import src.challenge_solver as cs
 import src.utils as utils
 from src import bridge_health, diagnostics, private_files, redact
-from src.i18n import I18nManager
 from src.paths import env_file_path
 from src.store import open_store
 from src.web import fetch_job, security
@@ -426,25 +425,34 @@ def test_the_app_rejects_unknown_hosts_before_anything_else(token):
     assert r.status_code == 400
 
 
+# Sunucunun başladığı anda gördüğü izin listesi (main.py --web, P25'ten beri `ssc serve`; süreç durumu sonra geri alınır)
+_server_hosts = []
+
+
 def _run_web(monkeypatch, argv, lang="en"):
-    """main.py --web'i sunucuyu başlatmadan çalıştırır: (çıkış kodu, uvicorn.run çağrıları)."""
+    """main.py --web'i (`ssc serve`) sunucuyu başlatmadan çalıştırır: (çıkış kodu, uvicorn.run çağrıları)."""
     import main as cli
 
     calls = []
-    i18n = I18nManager()
-    i18n.set_language(lang)
-    monkeypatch.setattr(cli, "get_i18n", lambda: i18n)
-    monkeypatch.setattr("uvicorn.run", lambda *a, **k: calls.append((a, k)))
+
+    def run(*a, **k):
+        k.pop("log_config", None)  # erişim satırları stderr'e (serve'ün ayarı)
+        calls.append((a, k))
+        _server_hosts.append(os.environ.get(security.ALLOWED_HOSTS_ENV))
+
+    monkeypatch.setenv("APP_LANGUAGE", lang)
+    monkeypatch.setattr("uvicorn.run", run)
     monkeypatch.setattr("sys.argv", ["main.py", "--web", *argv])
     return cli.main(), calls
 
 
 @pytest.fixture
 def hosts_env(monkeypatch):
-    """SOFASCORE_ALLOWED_HOSTS ayarsız başlar; main.py'nin yazdığı değer test sonunda geri alınır."""
+    """SOFASCORE_ALLOWED_HOSTS ayarsız başlar; sunucunun başladığı anda gördüğü değer (başlamadıysa ortamdaki)."""
     monkeypatch.delenv(security.ALLOWED_HOSTS_ENV, raising=False)
     _start_with_token(monkeypatch, "")
-    return lambda: os.environ.get(security.ALLOWED_HOSTS_ENV)
+    _server_hosts.clear()
+    return lambda: _server_hosts[-1] if _server_hosts else os.environ.get(security.ALLOWED_HOSTS_ENV)
 
 
 def test_web_on_loopback_keeps_the_default_allow_list(monkeypatch, hosts_env, caplog):
@@ -490,11 +498,13 @@ def test_web_on_one_address_allows_that_address_only(monkeypatch, hosts_env):
 
 # --- 4. Başlangıç uyarısı -------------------------------------------------------------------
 
+# Log satırları İngilizcedir (kural 8): uyarı her dilde aynı satırdır; kişiye yönelik metin log seviyesi
+# uyarıyı gizlediğinde stderr'e, uygulamanın dilinde yazılır (tests/test_cli_serve.py)
 @pytest.mark.parametrize(
     "lang,expected",
     [
-        ("en", "Anyone who can reach this port can read and delete your data and change the settings"),
-        ("tr", "Bu porta ulaşabilen herkes verilerinizi okuyabilir ve silebilir, ayarları değiştirebilir"),
+        ("en", "anyone who can reach this port can read and delete the data and change the settings"),
+        ("tr", "anyone who can reach this port can read and delete the data and change the settings"),
     ],
 )
 def test_one_warning_when_exposed_without_a_token(monkeypatch, hosts_env, caplog, lang, expected):
@@ -507,9 +517,9 @@ def test_one_warning_when_exposed_without_a_token(monkeypatch, hosts_env, caplog
 
 
 def test_the_warning_is_printed_even_when_the_log_level_hides_it(monkeypatch, hosts_env, capsys):
-    import main as cli
+    from src.cli.commands import serve
 
-    monkeypatch.setattr(cli.logger, "isEnabledFor", lambda level: False)
+    monkeypatch.setattr(serve.logger, "isEnabledFor", lambda level: False)
     code, _ = _run_web(monkeypatch, ["--host", "192.168.1.5"])
     assert code == 0
     assert "without an access token" in capsys.readouterr().err

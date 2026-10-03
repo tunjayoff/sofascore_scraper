@@ -15,13 +15,18 @@ D5): loglar stderr'de, sonuç stdout'ta.
                                                                      --tournament A --tournament B --event X --hours H
     --doctor [seçenekler]                                            doctor [seçenekler]
     --diagnostics [YOL]                                              diagnostics [--out YOL]
+    --web [--host H] [--port P] [--dev] [--allow-any-host]           serve --host H --port P [--dev] [--allow-any-host]
     --ignore-rate-limit                                              --ignore-breaker
     --data-dir YOL                                                   --data-dir YOL
     --config YOL                                                     --config YOL (yapılandırma dosyası; eski lig
                                                                      dosyası `.txt` uyarıyla yok sayılır)
 
-Karşılığı henüz olmayanlar eskisi gibi `main.py`de kalır: `--web` (P25: `ssc serve`) ve bayraksız terminal menüsü
-(P26 kaldırır). `--version` her zaman eskisi gibi yanıtlanır.
+Karşılığı henüz olmayan tek kip eskisi gibi `main.py`de kalır: bayraksız terminal menüsü (P26 kaldırır). `--version`
+her zaman eskisi gibi yanıtlanır.
+
+`--web` (P25) `serve`e çevrilir. Eski ayrıştırıcının varsayılanları (127.0.0.1, 8000) her zaman açıkça geçirilir:
+`python main.py --web` bugün olduğu gibi yapılandırma dosyasının `[server] host` / `port` değerine bakmadan
+127.0.0.1:8000'de açılır. Host izin listesi ve belirteç uyarısı kuralları `serve`inkidir (PR #43'ünkilerle aynı).
 
 Eski `--watch` takma adı her zaman yoklama kaynağıyla çalışır (`--source poll`, karar D18): mevcut cron ve
 systemd kurulumları, `page` varsayılan kaynak olduğu halde tarayıcı başlatmaz.
@@ -52,14 +57,12 @@ class Translation:
 
     commands     sırayla çalıştırılacak yeni komutlar (her biri tam bir argv: genel bayraklar dahil)
     error        çevrilemeyen bir birleşim (NEEDS_ACTION, WATCH_USAGE): hiçbir komut çalışmaz, çıkış kodu 2
-    web          `--web`: eski sunucu yolu (main.py)
     interactive  eylem bayrağı yok: terminal menüsü (main.py)
     warnings     İngilizce uyarılar (kullanımdan kalkma satırının yanında stderr'e yazılır)
     """
 
     commands: Tuple[Tuple[str, ...], ...] = ()
     error: Optional[str] = None
-    web: bool = False
     interactive: bool = False
     warnings: Tuple[str, ...] = field(default_factory=tuple)
 
@@ -127,7 +130,12 @@ def translate(args: argparse.Namespace, cwd: str) -> Translation:
         return Translation(commands=(_with(flags, *command),), warnings=notes)
 
     if args.web:
-        return Translation(web=True, warnings=notes)
+        command = ["serve", "--host", str(args.host), "--port", str(args.port)]
+        if args.allow_any_host:
+            command.append("--allow-any-host")
+        if args.dev:
+            command.append("--dev")
+        return Translation(commands=(_with(flags, *command),), warnings=notes)
 
     if args.watch:
         if not args.sport or not (args.league_ids or args.event_ids):
