@@ -347,7 +347,11 @@ def _request_sync(
         data = fetch_api_via_browser_sync(full_url)
         if data is not None:
             trace.bridge()
-            _sleep(wait_time_min + random.uniform(0, wait_time_max))
+            try:
+                _sleep(wait_time_min + random.uniform(0, wait_time_max))
+            except FetchCancelled:
+                # Yanıt elimizde: curl yolundaki gibi döndür, iptal bir sonraki istekte işlensin (FX-18)
+                pass
             return _browser_result(data, url)
         # Köprü başarısız: aşağıda curl ile normal yoldan dene
 
@@ -547,7 +551,12 @@ async def _request_async(
         if isinstance(browser_data, dict) and browser_data.get("__404__"):
             raise ResourceNotFoundError(f"Kaynak bulunamadı: {url}")
         if browser_data is not None:
-            await _asleep(wait_time_min + random.uniform(0, wait_time_max))
+            try:
+                await _asleep(wait_time_min + random.uniform(0, wait_time_max))
+            except FetchCancelled:
+                # Yanıt elimizde: curl yolundaki gibi döndür, iptal bir sonraki istekte işlensin
+                # (FX-18, plan bölüm 15 satır 91)
+                pass
             return cast(JsonResponse, browser_data)
         # Köprü başarısız: aşağıda curl ile normal yoldan dene
 
