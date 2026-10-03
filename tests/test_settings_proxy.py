@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 
 from src.paths import env_file_path
 from src.web.app import app
-from src.web.routes.settings import PROXY_PASSWORD_MASK, mask_proxy_url
+from src.web.api.proxy import PROXY_PASSWORD_MASK, mask_proxy_url
 
 client = TestClient(app)
 

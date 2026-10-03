@@ -252,7 +252,7 @@ def test_cli_locale_files_have_the_same_keys_and_placeholders():
 def test_keys_used_by_the_cli_and_the_launcher_exist():
     en = _locale("en")
     used = set()
-    for name in ("main.py", "src/match_data_fetcher.py", "src/bridge_health.py", "src/match_fetcher.py", "src/web/fetch_job.py"):
+    for name in ("main.py", "src/match_data_fetcher.py", "src/bridge_health.py", "src/match_fetcher.py", "src/web/api/legacy.py"):
         used |= set(re.findall(r"""\bt\(\s*['"]([a-z0-9_]+)['"]""", (REPO / name).read_text(encoding="utf-8")))
     launcher = (REPO / "scripts" / "start_web.py").read_text(encoding="utf-8")
     used |= {"launcher_" + key for key in re.findall(r'_t\(\s*"([a-z_]+)"', launcher)}

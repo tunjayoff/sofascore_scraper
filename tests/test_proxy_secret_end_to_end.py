@@ -27,7 +27,8 @@ from src import diagnostics, redact
 from src import logger as app_logger
 from src.paths import env_file_path
 from src.web.app import app
-from src.web.routes.common import config_manager
+from src.web.deps import config_manager as _web_config
+config_manager = _web_config()
 
 client = TestClient(app)
 

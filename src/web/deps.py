@@ -1,11 +1,12 @@
 """
-v1 rotalarının ve uygulamanın ara katmanının paylaştığı nesneler (docs/design/02-services.md bölüm 6).
+Web yüzünün (v1 rotaları, eski `/api` bağdaştırıcıları ve uygulamanın ara katmanı) paylaştığı nesneler
+(docs/design/02-services.md bölüm 6).
 
-  * servis bağlamı: web sürecinin iş yöneticisi (süreç genelindeki iş deposunun üzerinde), yapılandırma
-    yöneticisi ve geçerli ayarlar. Bugün bunların sahibi eski rotaların ortak modülüdür
-    (src/web/routes/common.py); v1 aynı nesneleri kullanır, böylece v1'den başlatılan bir iş eski
-    arayüzde de görünür ve iki yüz aynı "tek iş" kuralına uyar. Nesneler çağrı anında okunur (içe aktarma
-    anında değil): testler ve DATA_DIR değişimi onları değiştirebilir.
+  * servis bağlamı: web sürecinin yapılandırma yöneticisi, iş deposu ve onun üzerindeki iş yöneticisi, geçerli
+    ayarlar ve veri dizininin deposu. İki yüz aynı nesneleri kullanır: v1'den başlatılan bir iş eski arayüzde de
+    görünür ve iki yüz aynı "tek iş" kuralına uyar. Nesneler ilk kullanımda kurulur (içe aktarma anında değil:
+    uygulamayı içe aktarmak artık lig dosyasını ve iş deposunu oluşturmaz) ve çağrı anında okunur: testler
+    `job_store` / `config_manager` işlevlerini değiştirebilir, veri dizini değişimi iş deposunu taşır (`rebind`).
   * erişim belirteci: Settings'ten (`[server] token_env`, varsayılan ad SOFASCORE_API_TOKEN) okunur.
   * başarısız giriş sınırı: aynı istemciden art arda gelen yanlış belirteçler bir süre reddedilir.
 
@@ -29,11 +30,40 @@ if TYPE_CHECKING:
 # --- servis bağlamı ------------------------------------------------------------------------------
 
 
-def job_store() -> "JobStore":
-    """Web sürecinin iş deposu (çalışan işin yansısı ve `writer` kilidi ondadır)."""
-    from src.web.routes import common
+_state_lock = threading.Lock()
+_config_manager: Optional["ConfigManager"] = None
+_job_store: Optional["JobStore"] = None
+# Eski arayüzün okuduğu canlı iş görüntüsü (eski `SCRAPER_STATE`): `refresh_job_mirror` yerinde günceller
+_job_mirror: Dict[str, Any] = {}
 
-    return common._job_store
+
+def config_manager() -> "ConfigManager":
+    """Web sürecinin yapılandırma yöneticisi (süreçte tek: ConfigManager bir singleton'dır); ilk çağrıda kurulur."""
+    global _config_manager
+    with _state_lock:
+        if _config_manager is None:
+            from src.config_manager import ConfigManager
+
+            _config_manager = ConfigManager()
+        return _config_manager
+
+
+def job_store() -> "JobStore":
+    """
+    Web sürecinin iş deposu (çalışan işin yansısı ve `writer` kilidi ondadır); ilk çağrıda yapılandırılmış veri
+    dizininde açılır. Veri dizini değişince taşınır (`JobStore.rebind`), yeniden kurulmaz.
+    """
+    global _job_store
+    found = _job_store
+    if found is not None:
+        return found
+    data_dir = config_manager().get_data_dir()
+    with _state_lock:
+        if _job_store is None:
+            from src.store import get_job_store
+
+            _job_store = get_job_store(data_dir)
+        return _job_store
 
 
 def job_manager() -> "JobManager":
@@ -43,17 +73,15 @@ def job_manager() -> "JobManager":
     return JobManager(job_store())
 
 
-def refresh_job_mirror() -> None:
-    """Eski arayüzün okuduğu canlı iş görüntüsünü (SCRAPER_STATE) iş deposuyla eşitler."""
-    from src.web.routes import common
-
-    common._refresh_scraper_state()
-
-
-def config_manager() -> "ConfigManager":
-    from src.web.routes import common
-
-    return common.config_manager
+def refresh_job_mirror() -> Dict[str, Any]:
+    """
+    Eski arayüzün okuduğu canlı iş görüntüsünü iş deposuyla eşitler ve döndürür (eski `SCRAPER_STATE`: hep aynı
+    sözlük, yerinde güncellenir).
+    """
+    snap = job_store().snapshot()
+    _job_mirror.clear()
+    _job_mirror.update(snap)
+    return _job_mirror
 
 
 def store() -> "Store":

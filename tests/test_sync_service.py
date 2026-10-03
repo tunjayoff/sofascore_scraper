@@ -30,6 +30,7 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Tupl
 import pytest
 
 import src.utils as utils
+from src.web import deps
 from src import breaker as request_breaker
 from src.client import context as request_ctx
 from src.client import transport
@@ -116,7 +117,7 @@ def test_loading_the_web_job_does_not_load_the_terminal_ui(tmp_path: Path) -> No
     """Ayrı süreçte: rotalar, iş modülü ve servisler yüklendiğinde menü modülleri yüklenmiş olmamalı."""
     code = (
         "import json, sys\n"
-        "import src.web.routes, src.web.fetch_job, src.services.sync, src.services.export\n"
+        "import src.web.api.legacy, src.services.sync, src.services.export\n"
         "print(json.dumps(sorted(m for m in sys.modules"
         " if m == 'src.SofaScoreUi' or m == 'src.ui' or m.startswith('src.ui.'))))\n"
     )
@@ -910,16 +911,16 @@ def test_export_of_a_real_data_dir_prints_no_menu_text(
 @pytest.fixture
 def web_job(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     """Web işini kendi thread'i olmadan, geçici bir iş deposu ve sahte bir servis bağlamıyla çalıştırır."""
-    import src.web.fetch_job as fj
+    import src.web.api.legacy as fj
     from src.web.jobs import JobStore
-    from src.web.routes.scrape import FetchRequest
+    from src.web.api.legacy import FetchRequest
 
     store = JobStore(str(tmp_path / "jobs.db"))
-    monkeypatch.setattr(fj, "_job_store", store)
-    monkeypatch.setattr(fj, "_refresh_scraper_state", lambda: store.snapshot())
+    monkeypatch.setattr(deps, "job_store", lambda: store)
+    monkeypatch.setattr(deps, "refresh_job_mirror", lambda: store.snapshot())
 
     def run(details: FakeDetails, **payload: Any) -> Dict[str, Any]:
-        ctx = make_ctx(fj.config_manager, monkeypatch, details=details)
+        ctx = make_ctx(deps.config_manager(), monkeypatch, details=details)
         monkeypatch.setattr(fj, "build_context", lambda config_manager: ctx)
         request = FetchRequest(**payload)
         fj.run_fetch_job(store.create_running(request.model_dump()), request)
@@ -929,8 +930,8 @@ def web_job(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
 
 
 def test_payload_becomes_a_spec() -> None:
-    import src.web.fetch_job as fj
-    from src.web.routes.scrape import FetchRequest
+    import src.web.api.legacy as fj
+    from src.web.api.legacy import FetchRequest
 
     assert fj._spec_from_payload(FetchRequest()) == SyncSpec(mode="full", league_id=None, selections=())
     assert fj._spec_from_payload(FetchRequest(mode="details", league_id=17, selections=[])) == SyncSpec(
@@ -951,8 +952,8 @@ def test_payload_becomes_a_spec() -> None:
 
 
 def test_the_first_job_log_line_names_the_target() -> None:
-    import src.web.fetch_job as fj
-    from src.web.routes.scrape import FetchRequest
+    import src.web.api.legacy as fj
+    from src.web.api.legacy import FetchRequest
 
     assert fj._summary(FetchRequest()) == "All Leagues"
     assert fj._summary(FetchRequest(league_id=17)) == "17"
@@ -1059,7 +1060,7 @@ def test_league_search_uses_the_api_base_of_the_client(
     sent_urls: List[str], monkeypatch: pytest.MonkeyPatch, base: str
 ) -> None:
     """Eskiden arama, API_BASE_URL ne olursa olsun varsayılan adrese gidiyordu (PR #48'in bıraktığı tek istek)."""
-    from src.web.routes import leagues
+    from src.web.api import legacy as leagues
 
     monkeypatch.setattr(utils, "API_BASE_URL", base)
 
@@ -1073,5 +1074,8 @@ def test_league_search_uses_the_api_base_of_the_client(
 
 
 def test_the_league_route_module_no_longer_hard_codes_the_api_base() -> None:
-    source = (SRC / "web" / "routes" / "leagues.py").read_text(encoding="utf-8")
-    assert "sofascore.com" not in source
+    # Eski lig rotaları src/web/api/legacy.py'dedir (P21); oradaki SofaScore adları yalnızca ayar doğrulamasının
+    # izin verdiği sunuculardır (`_ALLOWED_API_HOSTS`), bir istek adresi değil
+    source = (SRC / "web" / "api" / "legacy.py").read_text(encoding="utf-8")
+    assert "sofascore.com/api" not in source and "https://www.sofascore.com" not in source
+    assert source.count("sofascore.com") == 2 and '_ALLOWED_API_HOSTS = {"www.sofascore.com", "api.sofascore.com"}' in source

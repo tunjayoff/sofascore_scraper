@@ -17,6 +17,7 @@ from src.match_fetcher import MatchFetcher
 from src.paths import league_dir_name, season_dir_name, seasons_file, summary_paths
 from src.slices import SLICE_OK, Outcome
 from src.store import Ref, open_store, shadow_schedules
+from src.web import deps
 from src.web.app import app
 
 client = TestClient(app)
@@ -283,10 +284,9 @@ def test_csv_export_filters_by_league():
 
 
 def test_single_fetch_conflicts_with_running_job():
-    from src.web.routes import api as api_mod
 
-    api_mod._job_store.create_running({"mode": "full"})
+    deps.job_store().create_running({"mode": "full"})
     try:
         assert client.post(f"/api/matches/{conftest.MATCH_IDS[1]}/fetch").status_code == 409
     finally:
-        api_mod._job_store.update(status="Cancelled", progress=0, current_task="cleanup", finished=True)
+        deps.job_store().update(status="Cancelled", progress=0, current_task="cleanup", finished=True)

@@ -225,7 +225,7 @@
           "api"
         ],
         "summary": "Search Remote Leagues",
-        "description": "SofaScore'dan lig ara. Kullanıcının yeni eklemek istediği ligleri bulması için.\nBaşarısızlıkta {\"detail\": {\"reason\", \"message\"}}: blocked / browser / rate_limited / network / upstream.\n\nPOST: her çağrı SofaScore'a canlı istek atar (istek bütçesini harcar, tarayıcıyı başlatabilir).\nGET olsaydı başka bir sitedeki <img> bunu kullanıcının adına, kaynak denetimine takılmadan\ntetikleyebilirdi.",
+        "description": "Search SofaScore for leagues the user wants to add. On failure: {\"detail\": {\"reason\", \"message\"}} with reason\nblocked, browser, rate_limited, network or upstream.\n\nPOST: every call sends a live request to SofaScore (it uses the request budget and may start the browser);\nas a GET another site could trigger it on the user's behalf.",
         "operationId": "search_remote_leagues_api_leagues_search_remote_post",
         "deprecated": true,
         "parameters": [
@@ -274,7 +274,7 @@
           "api"
         ],
         "summary": "Get League Seasons",
-        "description": "Bir ligin yerel olarak kayıtlı sezon listesini döndürür.",
+        "description": "The season list of a league as stored locally.",
         "operationId": "get_league_seasons_api_leagues__league_id__seasons_get",
         "deprecated": true,
         "parameters": [
@@ -316,7 +316,7 @@
           "api"
         ],
         "summary": "Refresh League Seasons",
-        "description": "Bir ligin sezon listesini SofaScore'dan yeniler.\nBaşarısızlıkta {\"detail\": {\"reason\", \"message\"}}: blocked / browser / rate_limited / network /\nnot_found (SofaScore'da bu ID'de lig yok) / upstream.",
+        "description": "Refresh the season list of a league from SofaScore. On failure: {\"detail\": {\"reason\", \"message\"}} with\nreason blocked, browser, rate_limited, network, not_found (SofaScore has no league with this id) or upstream.",
         "operationId": "refresh_league_seasons_api_leagues__league_id__seasons_refresh_post",
         "deprecated": true,
         "parameters": [
@@ -358,7 +358,7 @@
           "api"
         ],
         "summary": "Get Season Matches",
-        "description": "Yerel kayıtlı maç listesini sezon bazında döndürür.",
+        "description": "The stored matches of one season of a league.",
         "operationId": "get_season_matches_api_seasons__season_id__matches_get",
         "deprecated": true,
         "parameters": [
@@ -409,7 +409,7 @@
           "api"
         ],
         "summary": "Get Missing Details",
-        "description": "Bir lig için detayı çekilmemiş maçları döndürür.",
+        "description": "The listed matches of a league whose details are not downloaded.",
         "operationId": "get_missing_details_api_leagues__league_id__missing_details_get",
         "deprecated": true,
         "parameters": [
@@ -643,7 +643,7 @@
           "api"
         ],
         "summary": "Fetch Single Match",
-        "description": "Tek bir maç için detayları senkron olarak çeker.",
+        "description": "Fetch the details of one match now and wait for the result.",
         "operationId": "fetch_single_match_api_matches__match_id__fetch_post",
         "deprecated": true,
         "parameters": [
@@ -813,7 +813,7 @@
           "api"
         ],
         "summary": "Cancel Scrape",
-        "description": "Çalışan background fetch işlemini iptal eder.",
+        "description": "Cancel the running background fetch (in this server, or a job of another process on the data folder).",
         "operationId": "cancel_scrape_api_scrape_cancel_post",
         "responses": {
           "200": {
@@ -917,7 +917,7 @@
           "api"
         ],
         "summary": "Bypass Test",
-        "description": "Test live connectivity and challenge solving through BrowserBridge.\n\nSofaScore'a TEK bir canlı istek atar; yalnızca kullanıcı istediğinde çağrılır (Ayarlar →\nBağlantı testi), hiçbir şey bunu kendiliğinden ya da zamanlayıcıyla çağırmaz. Sonuç her\nzaman 200 ile döner: `success`, başarısızsa `reason` (src/web/upstream.py: blocked / browser /\nnetwork / upstream), tarayıcı ve challenge durumu ve köprü sağlık görüntüsü.",
+        "description": "Test live connectivity and challenge solving through BrowserBridge.\n\nSends ONE live request to SofaScore, only when the user asks (Settings → connection test). The answer is\nalways 200: `success`, on failure `reason` (blocked, browser, network or upstream), the browser and\nchallenge state and the bridge health snapshot.",
         "operationId": "bypass_test_api_bypass_test_post",
         "responses": {
           "200": {
@@ -957,7 +957,7 @@
           "api"
         ],
         "summary": "Update Settings",
-        "description": "Update application settings.\n\nDATA_DIR değişimi çalışan iş varken reddedilir (409 job_running; hiçbir ayar yazılmaz): iş eski\ndizine yazmayı sürdürürken yeni istekler yeni dizini okur ve veri iki dizine bölünür. İş yokken\ndeğişim hemen geçerlidir ve iş deposu (state.db) yeni dizine taşınır; yeniden başlatma gerekmez.",
+        "description": "Update application settings (written to `.env`).\n\nA value written through `PATCH /api/v1/settings` for the same key is removed from the overrides file, so the\nsaved value takes effect. Changing the data folder is refused while a job runs (409 `job_running`; nothing\nis written); without a job the change takes effect at once and the job store moves to the new folder. A\nfolder that cannot be used is 400 `data_dir_unusable`.",
         "operationId": "update_settings_api_settings_post",
         "requestBody": {
           "content": {
@@ -1019,7 +1019,7 @@
           "api"
         ],
         "summary": "Get System Stats",
-        "description": "Get detailed system statistics (ported from StatsMenuHandler).",
+        "description": "Get detailed system statistics (counts per league, disk use).",
         "operationId": "get_system_stats_api_stats_system_get",
         "responses": {
           "200": {
@@ -1040,7 +1040,7 @@
           "api"
         ],
         "summary": "Create Backup",
-        "description": "Veri yedeği oluşturur ve indirilebilir zip dosyası döndürür.\n\nİş çalışırken veri içeren yedek reddedilir (409 job_running): iş dosya yazmayı sürdürdüğü için\nzip yarım bir indirmenin tutarsız kopyası olurdu, işin bitmesini beklemek ise isteği saatlerce\naçık tutardı. `scope=config` yalnızca işin yazmadığı ayar dosyalarını okur; her zaman alınabilir.",
+        "description": "Create a backup and return where to download the zip.\n\nWhile a job runs a backup with data is refused (409 job_running): the zip would be an inconsistent copy of\na download in progress. `scope=config` reads only the settings files, which a job does not write.",
         "operationId": "create_backup_api_data_backup_post",
         "deprecated": true,
         "parameters": [
@@ -1141,7 +1141,7 @@
           "api"
         ],
         "summary": "Clear Data",
-        "description": "Veriyi temizler. İş çalışırken reddedilir (409 job_running): rmtree yazan işle yarışır ve iş,\nbellekteki dizinine göre silinen maçları \"var\" sayıp atlar.",
+        "description": "Delete stored data. Refused while a job runs (409 job_running): deleting would race the job's writes.",
         "operationId": "clear_data_api_data_clear_post",
         "requestBody": {
           "content": {
@@ -1182,7 +1182,7 @@
           "api"
         ],
         "summary": "Export Csv",
-        "description": "İndirilmiş maçların CSV dışa aktarımı, istekte üretilir; salt okunur, diske hiçbir şey yazmaz.\nleague_id: yalnızca o ligin lig dizinindeki maçlar. İndirilmiş maç yoksa 404.",
+        "description": "CSV export of the downloaded matches, made on request; read-only, nothing is written to disk. `league_id`:\nonly the matches of that league's folder. 404 without downloaded matches.",
         "operationId": "export_csv_api_export_csv_get",
         "deprecated": true,
         "parameters": [
@@ -1229,7 +1229,7 @@
           "api"
         ],
         "summary": "Create Csv Export",
-        "description": "GET /api/export/csv ile aynı yanıt (bir sürüm boyunca takma ad); diske hiçbir şey yazmaz.",
+        "description": "The same answer as GET /api/export/csv (an alias for one release); nothing is written to disk.",
         "operationId": "create_csv_export_api_export_csv_post",
         "deprecated": true,
         "parameters": [
@@ -1278,7 +1278,7 @@
           "api"
         ],
         "summary": "Get Sports",
-        "description": "Kayıtlı sporlar, kayıt sırasıyla. `slices`, o sporda geçerli her dilimdir (kapalı olanlar dahil;\n`default_enabled` hangisinin istendiğini söyler).",
+        "description": "The registered sports, in registry order. `slices` is every slice that applies to the sport, disabled ones\nincluded (`default_enabled` says which are asked for).",
         "operationId": "get_sports_api_sports_get",
         "responses": {
           "200": {
@@ -1305,7 +1305,7 @@
           "api"
         ],
         "summary": "Recent Logs",
-        "description": "Log dosyasının son kayıtları, eskiden yeniye. Dosya logu kapalıysa `enabled: false` ve boş liste.",
+        "description": "The newest entries of the log file, oldest first. With file logging off: `enabled: false`, an empty list.",
         "operationId": "recent_logs_api_logs_get",
         "deprecated": true,
         "parameters": [
@@ -1317,11 +1317,11 @@
               "type": "integer",
               "maximum": 2000,
               "minimum": 1,
-              "description": "En fazla kaç kayıt (en yeniler)",
+              "description": "Newest entries to return",
               "default": 200,
               "title": "Limit"
             },
-            "description": "En fazla kaç kayıt (en yeniler)"
+            "description": "Newest entries to return"
           },
           {
             "name": "level",
@@ -1343,10 +1343,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Yalnızca bu seviye ve üstü",
+              "description": "Only this level and above",
               "title": "Level"
             },
-            "description": "Yalnızca bu seviye ve üstü"
+            "description": "Only this level and above"
           }
         ],
         "responses": {
@@ -1377,7 +1377,7 @@
           "api"
         ],
         "summary": "Diagnostics Summary",
-        "description": "Tanılama özeti (paketteki diagnostics.json ile aynı içerik).",
+        "description": "The diagnostics summary (the same content as diagnostics.json of the bundle).",
         "operationId": "diagnostics_summary_api_diagnostics_get",
         "responses": {
           "200": {
@@ -1398,7 +1398,7 @@
           "api"
         ],
         "summary": "Diagnostics Bundle",
-        "description": "Hata bildirimine eklenecek zip: diagnostics.json + log_tail.txt + README.txt.",
+        "description": "A zip to attach to a bug report: diagnostics.json, log_tail.txt and README.txt.",
         "operationId": "diagnostics_bundle_api_diagnostics_bundle_get",
         "deprecated": true,
         "parameters": [
@@ -1410,11 +1410,11 @@
               "type": "integer",
               "maximum": 5000,
               "minimum": 0,
-              "description": "Pakete giren log satırı",
+              "description": "Log lines in the bundle",
               "default": 1000,
               "title": "Log Lines"
             },
-            "description": "Pakete giren log satırı"
+            "description": "Log lines in the bundle"
           }
         ],
         "responses": {
@@ -1445,7 +1445,7 @@
           "api"
         ],
         "summary": "Auth Status",
-        "description": "Belirteç gerekiyor mu ve bu çağıran onu taşıyor mu? (Arayüz giriş kutusunu buna göre gösterir.)",
+        "description": "Whether an access token is required and whether this caller presents it (the UI shows the sign-in box).",
         "operationId": "auth_status_api_auth_get",
         "responses": {
           "200": {
@@ -1466,7 +1466,7 @@
           "api"
         ],
         "summary": "Login",
-        "description": "Belirteç doğruysa oturum cookie'sini kurar. Belirtecin kendisi cookie'ye ya da log'a yazılmaz.",
+        "description": "Set the session cookie when the token is right. The token itself is never written to the cookie or the log.",
         "operationId": "login_api_auth_login_post",
         "requestBody": {
           "content": {
@@ -1507,7 +1507,7 @@
           "api"
         ],
         "summary": "Logout",
-        "description": "Oturum cookie'sini siler (bu tarayıcı için).",
+        "description": "Delete the session cookie (for this browser).",
         "operationId": "logout_api_auth_logout_post",
         "responses": {
           "200": {

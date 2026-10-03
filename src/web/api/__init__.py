@@ -3,13 +3,15 @@ HTTP API'nin sürümleri (docs/design/02-services.md bölüm 6).
 
   /api/v1/...   sürümlü API: zarf (`{"data": ...}`), hata modeli (`{"error": ...}`), kodla çevrilen iletiler.
                 Rotaları `src/web/api/v1/` altındadır.
-  /api/...      eski yollar (`src/web/routes/`): bir sürüm daha aynı yanıt biçimleriyle durur, OpenAPI
+  /api/...      eski yollar (`src/web/api/legacy.py`): bir sürüm daha aynı yanıt biçimleriyle durur, OpenAPI
                 belgesinde `deprecated` işaretlidir ve her yanıtı `Deprecation: true` ile `Link:
                 <halef>; rel="successor-version"` başlıklarını taşır (bölüm 6.1).
 
 Bu modül yalnızca yol adlarını bilir: önekler ve eski her yolun v1'deki halefi. Halef tablosu bölüm 6.1'deki
-tablonun aynısıdır; haleflerin bir bölümü henüz yoktur (kaynak rotaları P21 ile gelir), başlık yine de nereye
-gidileceğini söyler.
+tablonun aynısıdır ve her halef vardır (P21).
+
+`Deprecation` başlığı taslağın biçimindedir (`true`), RFC 9745'in tarihi (`@<unix zamanı>`) değil: kullanımdan
+kaldırma bir tarihe değil 3.0.0 sürümüne bağlıdır ve o tarih henüz belli değil (karar P21; plan bölüm 14).
 """
 from __future__ import annotations
 

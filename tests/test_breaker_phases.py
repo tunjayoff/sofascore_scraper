@@ -21,6 +21,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import src.utils as utils
+from src.web import deps
 from src import breaker as request_breaker
 from src.match_data_fetcher import (DETAIL_SLICE_KEYS, SLICE_EMPTY, UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher,
                                     SliceOutcome)
@@ -231,12 +232,12 @@ class FakeDetails:
 
 @pytest.fixture
 def job_env(tmp_path, monkeypatch):
-    import src.web.fetch_job as fj
+    import src.web.api.legacy as fj
     from src.web.jobs import JobStore
 
     store = JobStore(str(tmp_path / "jobs.db"))
-    monkeypatch.setattr(fj, "_job_store", store)
-    monkeypatch.setattr(fj, "_refresh_scraper_state", lambda: store.snapshot())
+    monkeypatch.setattr(deps, "job_store", lambda: store)
+    monkeypatch.setattr(deps, "refresh_job_mirror", lambda: store.snapshot())
     monkeypatch.setenv("RATE_LIMIT_THRESHOLD_CONSECUTIVE", "3")
     monkeypatch.setenv("RATE_LIMIT_THRESHOLD_RATIO", "2")
     return fj, store
@@ -259,10 +260,10 @@ def _listing_faces(ui: Any) -> None:
 
 
 def _run_job(fj, store, monkeypatch, ui, payload: Dict[str, Any]) -> Dict[str, Any]:
-    from src.web.routes.scrape import FetchRequest
+    from src.web.api.legacy import FetchRequest
 
     # `ui` servis bağlamının (ServiceContext) yerini tutar; işin CSV aşaması yok (EX-1), dışa aktarma çağrılırsa ona gider
-    ui.config = fj.config_manager
+    ui.config = deps.config_manager()
     _listing_faces(ui)
     monkeypatch.setattr(fj, "build_context", lambda config_manager: ui)
     monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: ctx.export_all_to_csv())
@@ -278,7 +279,7 @@ def _run_job(fj, store, monkeypatch, ui, payload: Dict[str, Any]) -> Dict[str, A
 def test_breaker_trips_on_a_blocked_schedule_phase(job_env, monkeypatch):
     """Maç programı aşaması eskiden engelliyken de her sezon için istek atmaya devam ediyordu."""
     fj, store = job_env
-    monkeypatch.setattr(fj.config_manager, "get_leagues", lambda: {17: "Premier League"})
+    monkeypatch.setattr(deps.config_manager(), "get_leagues", lambda: {17: "Premier League"})
     seasons = [{"id": sid, "name": f"PL {sid}"} for sid in range(1, 13)]
     schedule_calls: List[int] = []
 
@@ -313,7 +314,7 @@ def test_breaker_trips_on_a_blocked_schedule_phase(job_env, monkeypatch):
 def test_breaker_trips_on_a_blocked_seasons_phase(job_env, monkeypatch):
     fj, store = job_env
     leagues = {lid: f"League {lid}" for lid in range(1, 11)}
-    monkeypatch.setattr(fj.config_manager, "get_leagues", lambda: leagues)
+    monkeypatch.setattr(deps.config_manager(), "get_leagues", lambda: leagues)
     season_calls: List[int] = []
     schedule_calls: List[int] = []
 
@@ -343,7 +344,7 @@ def test_breaker_trips_on_a_blocked_seasons_phase(job_env, monkeypatch):
 
 def test_job_with_working_requests_is_not_stopped(job_env, monkeypatch):
     fj, store = job_env
-    monkeypatch.setattr(fj.config_manager, "get_leagues", lambda: {17: "Premier League"})
+    monkeypatch.setattr(deps.config_manager(), "get_leagues", lambda: {17: "Premier League"})
     seasons = [{"id": sid, "name": f"PL {sid}"} for sid in range(1, 6)]
     md = FakeDetails()
     ui = SimpleNamespace(
@@ -364,8 +365,8 @@ def test_job_with_working_requests_is_not_stopped(job_env, monkeypatch):
 def test_explicit_match_selection_reports_the_breaker(job_env, monkeypatch, tmp_path):
     """Seçili maçların indirme yolu (P13'ten beri lig planlarıyla aynı boru hattı) da kesiciye bakar ve karta bildirir."""
     fj, store = job_env
-    monkeypatch.setattr(fj.config_manager, "get_leagues", lambda: {17: "Premier League"})
-    md = MatchDataFetcher(fj.config_manager, data_dir=str(tmp_path / "data"))
+    monkeypatch.setattr(deps.config_manager(), "get_leagues", lambda: {17: "Premier League"})
+    md = MatchDataFetcher(deps.config_manager(), data_dir=str(tmp_path / "data"))
     ui = SimpleNamespace(match_data_fetcher=md, export_all_to_csv=lambda: None)
     payload = {"mode": "details", "selections": [{"league_id": 17, "match_ids": list(range(1, 11))}]}
     monkeypatch.setenv("MAX_CONCURRENT", "1")  # maçlar sırayla: devreyi kesen üçüncü maçtan sonra istek yok

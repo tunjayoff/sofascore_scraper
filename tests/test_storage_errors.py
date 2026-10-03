@@ -27,6 +27,7 @@ import pytest
 
 import src.match_data_fetcher as mdf
 import src.utils as utils
+from src.web import deps
 from src.exceptions import StorageError
 from src.match_data_fetcher import MatchDataFetcher
 from src.store import files as store_files
@@ -236,14 +237,14 @@ def test_headless_cli_reports_a_storage_error_and_exits_5(tmp_path, monkeypatch,
 def test_web_job_fails_with_a_clear_message_on_enospc(tmp_path, monkeypatch):
     from types import SimpleNamespace
 
-    import src.web.fetch_job as fj
+    import src.web.api.legacy as fj
     from src.web.jobs import JobStore
-    from src.web.routes.scrape import FetchRequest
+    from src.web.api.legacy import FetchRequest
 
     store = JobStore(str(tmp_path / "jobs.db"))
-    monkeypatch.setattr(fj, "_job_store", store)
-    monkeypatch.setattr(fj, "_refresh_scraper_state", lambda: store.snapshot())
-    monkeypatch.setattr(fj.config_manager, "get_leagues", lambda: {17: "Premier League"})
+    monkeypatch.setattr(deps, "job_store", lambda: store)
+    monkeypatch.setattr(deps, "refresh_job_mirror", lambda: store.snapshot())
+    monkeypatch.setattr(deps.config_manager(), "get_leagues", lambda: {17: "Premier League"})
     exported: List[bool] = []
 
     class FullDisk:
@@ -270,7 +271,7 @@ def test_web_job_fails_with_a_clear_message_on_enospc(tmp_path, monkeypatch):
             )
 
     # Servis bağlamının (ServiceContext) yerini tutar; CSV adımı çağrılırsa `exported`a yazılır
-    ctx = SimpleNamespace(config=fj.config_manager, match_data_fetcher=FullDisk())
+    ctx = SimpleNamespace(config=deps.config_manager(), match_data_fetcher=FullDisk())
     monkeypatch.setattr(fj, "build_context", lambda config_manager: ctx)
     monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: exported.append(True))
     req = FetchRequest(mode="details", league_id=17)

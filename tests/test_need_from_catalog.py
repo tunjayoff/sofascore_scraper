@@ -42,7 +42,7 @@ from src.services.query import (
 from src.slices import match_detail_slice_present
 from src.sports import event_sport_slug, slices_for
 from src.store import open_store
-from src.web.routes import matches as matches_routes
+from src.web.api import legacy as matches_routes
 from test_store_read_api import HOUR, NOW, _random_details
 
 UNKNOWN_ID = 1

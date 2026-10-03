@@ -12,6 +12,7 @@ import pytest
 from fastapi.testclient import TestClient
 from rich.console import Console
 
+from src.web import deps
 from src import logger as app_logger
 from src import redact
 from src.paths import env_file_path
@@ -569,13 +570,12 @@ def test_apply_log_level_changes_the_running_level(reconfigure, tmp_path):
 
 
 def test_config_manager_applies_log_level_without_restart(reconfigure, tmp_path):
-    from src.web.routes import api as api_mod
 
     reconfigure(LOG_DIR=str(tmp_path / "cm"), LOG_LEVEL="INFO", DEBUG="false")
     assert logging.getLogger().level == logging.INFO
-    assert api_mod.config_manager.update_env_variable("LOG_LEVEL", "DEBUG") is True
+    assert deps.config_manager().update_env_variable("LOG_LEVEL", "DEBUG") is True
     assert logging.getLogger().level == logging.DEBUG
-    assert api_mod.config_manager.update_env_variable("LOG_LEVEL", "WARNING") is True
+    assert deps.config_manager().update_env_variable("LOG_LEVEL", "WARNING") is True
     assert logging.getLogger().level == logging.WARNING
 
 
@@ -605,12 +605,11 @@ def test_settings_endpoint_applies_log_level_at_runtime(reconfigure, tmp_path):
 
 
 def test_secret_setting_is_masked_in_the_change_log_line(reconfigure, tmp_path):
-    from src.web.routes import api as api_mod
 
     reconfigure(LOG_DIR=str(tmp_path / "mask"), LOG_LEVEL="INFO", DEBUG="false")
     saved = os.environ.get("PROXY_URL")
     try:
-        assert api_mod.config_manager.update_env_variable("PROXY_URL", PROXY) is True
+        assert deps.config_manager().update_env_variable("PROXY_URL", PROXY) is True
         logging.getLogger("Utils").error(f"Proxy/Bağlantı hatası: {PROXY}")
         text = _read(app_logger.log_file_path())
     finally:

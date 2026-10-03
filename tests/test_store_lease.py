@@ -26,6 +26,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import pytest
 
+from src.web import deps
 from src.store import LayoutError, LeaseHeld, StoreError, files, layout, open_store
 from src.store import jobs as jobs_mod
 from src.store import lease as lease_mod
@@ -1128,11 +1129,10 @@ def test_concurrent_first_opens_wait_for_the_migrating_process(tmp_path):
 def test_web_api_answers_409_job_running_while_another_process_holds_the_writer_lease(tmp_path, monkeypatch):
     from fastapi.testclient import TestClient
 
-    from src.web import fetch_job
+    from src.web.api import legacy as fetch_job
     from src.web.app import app
-    from src.web.routes import api as api_mod
 
-    jobs = api_mod._job_store
+    jobs = deps.job_store()
     monkeypatch.setattr(fetch_job, "run_fetch_job", lambda job_id, payload: None)
     # Silme reddedilmezse ortak test verisine değil bu boş dizine dokunsun
     monkeypatch.setenv("DATA_DIR", str(tmp_path / "scratch"))

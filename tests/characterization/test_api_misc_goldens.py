@@ -44,7 +44,7 @@ from src.jobs.progress import JobProgress
 from src.version import __version__
 from src.web.app import app
 from src.web.jobs import default_db_path
-from src.web.routes import common
+from src.web import deps
 
 SNAPSHOT_DIR = Path(__file__).resolve().parent.parent / "snapshots" / "api"
 REGENERATE = os.getenv("REGEN_API_GOLDENS") == "1"
@@ -563,7 +563,7 @@ def job_records(tmp_path_factory: pytest.TempPathFactory) -> Tuple[Dict[str, Any
     İş deposunu boş, geçici bir veritabanına bağlar, işleri oynatır, yanıtları kaydeder ve depoyu testlerin
     ortak dizinine geri bağlar. Zaman damgaları için deponun `_utc_now` işlevi elle ilerleyen saate çevrilir.
     """
-    store = common._job_store
+    store = deps.job_store()
     if store.snapshot().get("is_running"):  # başka bir testten kalan iş
         store.update(status="Cancelled", progress=0, current_task="cleanup", finished=True)
     clock = _Clock(JOBS_START)
@@ -577,7 +577,7 @@ def job_records(tmp_path_factory: pytest.TempPathFactory) -> Tuple[Dict[str, Any
             if store.snapshot().get("is_running"):
                 store.update(status="Cancelled", progress=0, current_task="cleanup", finished=True)
             store.rebind(default_db_path(conftest.DATA_DIR))
-            common._refresh_scraper_state()
+            deps.refresh_job_mirror()
 
 
 def test_api_jobs(job_records: Tuple[Dict[str, Any], Dict[str, Any]]) -> None:

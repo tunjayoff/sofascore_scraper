@@ -79,12 +79,13 @@ def join_jobs():
 _SETTINGS_ROUTE = r'''
 from pathlib import Path
 from fastapi.testclient import TestClient
+from src.web import deps
 from src.web.app import app
-from src.web.routes import api as api_mod
-from src.web.routes import settings as settings_mod
+from src.web.api import legacy as api_mod
+from src.web.api import legacy as settings_mod
 
 settings_mod._REPO_ROOT = Path(tmp)  # doğrulayıcı tmp altındaki klasörü kabul eder
-store = api_mod._job_store
+store = deps.job_store()
 old_db = store.db_path
 manager = JobManager(store, cancel_poll=0.02, heartbeat=0.05)
 job = manager.submit(JobKind.FETCH, {"mode": "full"}, lambda handle: None, origin=local_origin("api"),

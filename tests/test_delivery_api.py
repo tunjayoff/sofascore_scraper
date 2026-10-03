@@ -7,8 +7,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.paths import env_file_path
+from src.web import deps
 from src.web.app import app
-from src.web.routes import api as api_mod
 
 
 client = TestClient(app)
@@ -74,12 +74,12 @@ def test_export_csv_available():
 
 
 def test_cancel_idle_and_conflict_fetch():
-    snap = api_mod._job_store.snapshot()
+    snap = deps.job_store().snapshot()
     if snap.get("is_running"):
-        api_mod._job_store.request_cancel()
-        api_mod._job_store.update(status="Cancelled", progress=0, current_task="cleanup", finished=True)
+        deps.job_store().request_cancel()
+        deps.job_store().update(status="Cancelled", progress=0, current_task="cleanup", finished=True)
     assert client.post("/api/scrape/cancel").status_code == 400
-    api_mod._job_store.create_running({"mode": "full"})
+    deps.job_store().create_running({"mode": "full"})
     try:
         assert client.post(
             "/api/fetch",
@@ -87,7 +87,7 @@ def test_cancel_idle_and_conflict_fetch():
         ).status_code == 409
         assert client.post("/api/scrape/cancel").status_code == 200
     finally:
-        api_mod._job_store.update(status="Cancelled", progress=0, current_task="cleanup", finished=True)
+        deps.job_store().update(status="Cancelled", progress=0, current_task="cleanup", finished=True)
 
 
 def test_settings_roundtrip_safe():
@@ -107,7 +107,7 @@ def test_settings_roundtrip_safe():
         for key in set(os.environ) - set(env_before):
             del os.environ[key]
         os.environ.update(env_before)
-        api_mod.config_manager.reload_config()
+        deps.config_manager().reload_config()
 
 
 def test_backup_endpoint():

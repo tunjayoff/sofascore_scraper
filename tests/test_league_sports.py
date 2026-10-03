@@ -8,7 +8,7 @@ import tempfile
 import pandas as pd
 
 from src.web import league_sports
-from src.web.routes.api import _get_matches_sync, _parse_league_ids
+from src.web.api.legacy import _get_matches_sync, _parse_league_ids
 
 
 def _cfg(root: str) -> str:

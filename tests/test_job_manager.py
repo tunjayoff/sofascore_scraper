@@ -27,6 +27,7 @@ from typing import Any, Dict, Iterator, List, Optional
 import conftest
 import pytest
 
+from src.web import deps
 from src import bridge_health
 from src.exceptions import StorageError
 from src.jobs import manager as manager_mod
@@ -1058,12 +1059,12 @@ def test_a_health_change_that_cannot_be_stored_does_not_break_the_request(
 @pytest.fixture
 def web(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     """Web işini kendi thread'i olmadan, geçici bir iş deposu ve sahte bir servis bağlamıyla çalıştırır."""
-    import src.web.fetch_job as fj
-    from src.web.routes.scrape import FetchRequest
+    import src.web.api.legacy as fj
+    from src.web.api.legacy import FetchRequest
 
     jobs = JobStore(str(tmp_path / "web" / ".meta" / "state.db"))
-    monkeypatch.setattr(fj, "_job_store", jobs)
-    monkeypatch.setattr(fj, "_refresh_scraper_state", lambda: jobs.snapshot())
+    monkeypatch.setattr(deps, "job_store", lambda: jobs)
+    monkeypatch.setattr(deps, "refresh_job_mirror", lambda: jobs.snapshot())
 
     class Details:
         rate_limit_breaker_triggered = False
@@ -1093,7 +1094,7 @@ def web(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
             return len(ids)
 
     details = Details()
-    ctx = SimpleNamespace(config=fj.config_manager, match_data_fetcher=details)
+    ctx = SimpleNamespace(config=deps.config_manager(), match_data_fetcher=details)
     monkeypatch.setattr(fj, "build_context", lambda config_manager: ctx)
     monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: None)
 
@@ -1164,14 +1165,14 @@ def test_a_web_job_makes_its_data_directory_a_full_store(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
     """Gerçek bağlamla: iş, deposunu açar; `.meta/` altında schema.json ve catalog.db de oluşur."""
-    import src.web.fetch_job as fj
-    from src.web.routes.scrape import FetchRequest
+    import src.web.api.legacy as fj
+    from src.web.api.legacy import FetchRequest
 
     data_dir = tmp_path / "data"
     monkeypatch.setenv("DATA_DIR", str(data_dir))
     jobs = JobStore(default_db_path(str(data_dir)))  # web sunucusunun iş deposu: yalnızca state.db kurar
-    monkeypatch.setattr(fj, "_job_store", jobs)
-    monkeypatch.setattr(fj, "_refresh_scraper_state", lambda: jobs.snapshot())
+    monkeypatch.setattr(deps, "job_store", lambda: jobs)
+    monkeypatch.setattr(deps, "refresh_job_mirror", lambda: jobs.snapshot())
     monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: None)
     try:
         with pytest.raises(StoreError):
@@ -1202,7 +1203,7 @@ def test_a_web_job_makes_its_data_directory_a_full_store(
 
 
 def test_a_job_finished_before_its_thread_started_is_left_alone(web: Any, caplog: pytest.LogCaptureFixture) -> None:
-    from src.web.routes.scrape import FetchRequest
+    from src.web.api.legacy import FetchRequest
 
     job_id = web.jobs.create_running({})
     web.jobs.update(status="Cancelled", finished=True)
@@ -1216,11 +1217,10 @@ def test_api_fetch_starts_a_job_through_the_manager_and_cancel_reaches_another_s
 ) -> None:
     from fastapi.testclient import TestClient
 
-    from src.web import fetch_job
+    from src.web.api import legacy as fetch_job
     from src.web.app import app
-    from src.web.routes import api as api_mod
 
-    jobs = api_mod._job_store
+    jobs = deps.job_store()
     monkeypatch.setattr(fetch_job, "run_fetch_job", lambda job_id, payload: None)
     if jobs.snapshot().get("is_running"):
         jobs.update(status="Cancelled", finished=True)

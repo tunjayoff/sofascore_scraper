@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 
 import pytest
 
+from src.web import deps
 from src.web.jobs import JobStore
 from src.jobs.progress import MAX_FAILED_LISTED, JobProgress
 
@@ -171,13 +172,13 @@ def fake_ui(md: FakeMatchData, seasons: Dict[int, List[Dict[str, Any]]]):
 
 @pytest.fixture
 def job_env(tmp_path, monkeypatch):
-    import src.web.fetch_job as fj
+    import src.web.api.legacy as fj
 
     store = JobStore(str(tmp_path / "jobs.db"))
     snaps: List[Dict[str, Any]] = []
-    monkeypatch.setattr(fj, "_job_store", store)
-    monkeypatch.setattr(fj, "_refresh_scraper_state", lambda: snaps.append(store.snapshot()) or snaps[-1])
-    monkeypatch.setattr(fj.config_manager, "get_leagues", lambda: {17: "Premier League", 8: "LaLiga"})
+    monkeypatch.setattr(deps, "job_store", lambda: store)
+    monkeypatch.setattr(deps, "refresh_job_mirror", lambda: snaps.append(store.snapshot()) or snaps[-1])
+    monkeypatch.setattr(deps.config_manager(), "get_leagues", lambda: {17: "Premier League", 8: "LaLiga"})
     return fj, store, snaps
 
 
@@ -198,10 +199,10 @@ def _listing_faces(ui: Any) -> None:
 
 
 def run(fj, store, monkeypatch, ui, payload):
-    from src.web.routes.scrape import FetchRequest
+    from src.web.api.legacy import FetchRequest
 
     # `ui` servis bağlamının (ServiceContext) yerini tutar; işin CSV aşaması yok (EX-1), dışa aktarma çağrılırsa ona gider
-    ui.config = fj.config_manager
+    ui.config = deps.config_manager()
     _listing_faces(ui)
     monkeypatch.setattr(fj, "build_context", lambda config_manager: ui)
     monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: ctx.export_all_to_csv())

@@ -107,7 +107,8 @@ def breaker() -> Iterator[request_breaker.CircuitBreaker]:
 
 
 def _fetcher(data_dir: Path) -> MatchDataFetcher:
-    from src.web.routes.common import config_manager
+    from src.web.deps import config_manager as _web_config
+    config_manager = _web_config()
 
     return MatchDataFetcher(config_manager, data_dir=str(data_dir))
 
@@ -375,7 +376,7 @@ def test_single_match_route_with_a_malformed_slice(fake: FakeSofaScore, data_dir
     kaydedilmiyordu). Yeniden çekim yalnızca o dilimi ister; istenen dilimlerin hiçbiri yanıt almadığı için
     sonuç tipli `upstream` hatasıdır (502), dilim yine "yok" sayılmaz.
     """
-    import src.web.routes.matches as matches_routes
+    import src.web.api.legacy as matches_routes
 
     path = _slice_path(FINISHED, "h2h")
     fake.add(path, {"teamDuel": "abc"})

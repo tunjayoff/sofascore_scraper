@@ -315,24 +315,22 @@ def test_legacy_error_bodies_are_unchanged(monkeypatch: pytest.MonkeyPatch) -> N
     validation = client.get("/api/jobs", params={"limit": 0})
     assert validation.status_code == 422 and isinstance(validation.json()["detail"], list)
 
-    from src.web.routes import scrape
 
     def conflict(job_id: str) -> Any:
         raise JobRunningError()
 
-    monkeypatch.setattr(scrape._job_store, "get_job", conflict)
+    monkeypatch.setattr(deps.job_store(), "get_job", conflict)
     r = client.get("/api/jobs/x")
     assert r.status_code == 409
     assert r.json() == {"detail": {"code": "job_running", "message": str(JobRunningError())}}
 
 
 def test_an_unexpected_error_of_a_legacy_route_is_not_caught(monkeypatch: pytest.MonkeyPatch) -> None:
-    from src.web.routes import scrape
 
     def boom(job_id: str) -> Any:
         raise RuntimeError("legacy boom")
 
-    monkeypatch.setattr(scrape._job_store, "get_job", boom)
+    monkeypatch.setattr(deps.job_store(), "get_job", boom)
     with pytest.raises(RuntimeError, match="legacy boom"):
         client.get("/api/jobs/x")
     r = TestClient(app, raise_server_exceptions=False).get("/api/jobs/x")
@@ -340,12 +338,11 @@ def test_an_unexpected_error_of_a_legacy_route_is_not_caught(monkeypatch: pytest
 
 
 def test_a_platform_error_of_a_legacy_route_is_not_given_the_v1_shape(monkeypatch: pytest.MonkeyPatch) -> None:
-    from src.web.routes import scrape
 
     def boom(job_id: str) -> Any:
         raise NotFoundError("gone")
 
-    monkeypatch.setattr(scrape._job_store, "get_job", boom)
+    monkeypatch.setattr(deps.job_store(), "get_job", boom)
     r = TestClient(app, raise_server_exceptions=False).get("/api/jobs/x")
     assert r.status_code == 500 and "error" not in r.text
 

@@ -13,7 +13,11 @@ Kural mandalsızdır: bugün ihlal yok, bundan sonra da olamaz. Üç denetim:
     katmanı dolaylı olarak getirmemelidir (ör. `src.status` bir gün `src.utils`'i içe aktarırsa);
   * ağ: Store ne bir HTTP istemcisini ne de web çatısını içe aktarır.
 
-Yüzlerin (web, CLI) yalnızca servisleri içe aktarması kuralı bu dosyaya P21 ile eklenir.
+Yüzler (docs/design/02-services.md 2.1, kural 1; plan maddesi P21): web yüzü (`src/web`) yalnızca servisleri, iş
+modelini, ayarları ve hata tablosunu içe aktarır (`src.services`, `src.jobs`, `src.config`, `src.errors`) ve
+kendi paketini. Bugün servisi olmayan şeyler için başka modüller de içe aktarılır; her biri `WEB_ALSO_IMPORTS`
+listesindedir, nedeniyle. Liste bir mandaldır: listede olmayan bir modül testi düşürür, artık içe aktarılmayan
+bir girdi de (liste yalnızca küçülür; P30 eski rotalarla birlikte çoğunu siler). CLI yüzü (`src/cli`) P19'undur.
 """
 from __future__ import annotations
 
@@ -165,6 +169,94 @@ def test_loading_the_store_loads_no_other_layer():
     assert foreign == [], f"Store yüklenince başka katmanlar da yüklendi: {foreign}"
     network = [m for m in report["modules"] if _is_or_under(m, NETWORK_MODULES - {"urllib.request", "http.client"})]
     assert network == [], f"Store yüklenince ağ kitaplıkları da yüklendi: {network}"
+
+
+# --- yüzler: web --------------------------------------------------------------------------------------
+
+WEB_DIR = ROOT / "src" / "web"
+FACE_MAY_IMPORT = frozenset({"src.services", "src.jobs", "src.config", "src.errors"})
+
+# Web yüzünün bugün içe aktardığı başka modüller ve nedeni. Bir girdi, servisi geldiğinde ya da eski rotalarla
+# (src/web/api/legacy.py, P30) silinir.
+WEB_ALSO_IMPORTS: Dict[str, str] = {
+    "src.store": "hata sınıfları (StoreError, LeaseHeld, JobStoreConflict ...), iş deposu (src/web/jobs.py) ve "
+                 "`open_store`: rotalar depoyu açıp servise verir (deps.store)",
+    "src.schema": "şema v1 kayıtlarının yanıt modelleri (src/web/api/v1/records.py)",
+    "src.sports": "spor kayıt defteri (`/sports`, eski lig sporları)",
+    "src.version": "sürüm (`/health`, `/status`)",
+    "src.logger": "web sunucusunun log ayarı ve log satırları",
+    "src.redact": "hata ve log metinlerinin maskelenmesi",
+    "src.exceptions": "istek katmanının tipli hataları (src/web/upstream.py) ve StorageError",
+    "src.bridge_health": "SofaScore'a erişimin durumu (`/health`, `/status`, eski bağlantı testi)",
+    "src.throttle": "ortak istek bütçesinin durumu (`/health`, `/status`)",
+    "src.client": "bağlantı denetimi ve eski lig araması tek istek atar (API kökü istemcinindir)",
+    "src.utils": "bağlantı denetiminin ve eski lig aramasının istek işlevi (testler onu değiştirir)",
+    "src.diagnostics": "log ve tanılama rotaları (servisi yok: src/diagnostics.py)",
+    "src.config_manager": "web sürecinin yapılandırma yöneticisi (deps.config_manager; P30 Settings'e geçer)",
+    "src.paths": ".env yolu (uygulamanın başlangıcı)",
+    "src.private_files": ".env ve tarayıcı profilinin izinleri (uygulamanın başlangıcı)",
+    "src.fsutil": "lig spor dosyasının yazımı (src/web/league_sports.py)",
+    "src.breaker": "eski tek maç rotasının devre kesicisi (src/web/api/legacy.py)",
+    "src.challenge_solver": "eski bağlantı testi ve köprü durumu (src/web/api/legacy.py)",
+    "src.i18n": "eski indirme işinin kart metinleri (src/web/api/legacy.py)",
+    "src.language": "eski ayarların `language_explicit` alanı (src/web/api/legacy.py)",
+    "src.refresh": "eski ayarların yenileme penceresi (src/web/api/legacy.py)",
+    "src.slices": "eski tek maç rotasının sonuç türü (src/web/api/legacy.py)",
+}
+
+
+def face_imports(face_dir: Path, root: Path) -> Dict[str, List[str]]:
+    """Yüzün kendi paketi ve izin verilen katmanlar dışındaki `src.*` içe aktarmaları: katman → `dosya:satır` listesi."""
+    package = ".".join(face_dir.relative_to(root).parts)  # "src.web"
+    top = package.split(".")[0]
+    found: Dict[str, List[str]] = {}
+    for path in sorted(face_dir.rglob("*.py")):
+        _name, module_package = module_name(path, root)
+        for line, module in imported_modules(path.read_text(encoding="utf-8"), module_package):
+            if not module.startswith(top + "."):
+                continue
+            layer = ".".join(module.split(".")[:2])
+            if layer == package or layer in FACE_MAY_IMPORT:
+                continue
+            found.setdefault(layer, []).append(f"{path.relative_to(root).as_posix()}:{line}")
+    return found
+
+
+def test_the_web_face_imports_only_services_and_the_listed_modules():
+    found = face_imports(WEB_DIR, ROOT)
+    unlisted = {layer: sorted(set(places)) for layer, places in found.items() if layer not in WEB_ALSO_IMPORTS}
+    assert not unlisted, (
+        "src/web yalnızca src.services, src.jobs, src.config ve src.errors'u içe aktarır (02-services.md 2.1, kural 1); "
+        "başka bir modül gerekiyorsa servisinden alın ya da WEB_ALSO_IMPORTS'a nedeniyle yazın:\n  "
+        + "\n  ".join(f"{layer}: {', '.join(places)}" for layer, places in sorted(unlisted.items()))
+    )
+    stale = sorted(set(WEB_ALSO_IMPORTS) - set(found))
+    assert not stale, f"WEB_ALSO_IMPORTS'ta artık içe aktarılmayan girdiler (listeden silin): {stale}"
+
+
+def test_the_web_face_has_no_terminal_ui_and_no_writer():
+    """Web yüzü terminal menüsünü ve indiricileri doğrudan içe aktarmaz: servisler üzerinden çalışır."""
+    found = face_imports(WEB_DIR, ROOT)
+    for layer in ("src.SofaScoreUi", "src.ui", "src.match_data_fetcher", "src.match_fetcher", "src.season_fetcher"):
+        assert layer not in found, (layer, found.get(layer))
+
+
+def test_the_web_routes_package_is_gone():
+    """Eski rotalar src/web/api/legacy.py'dedir (P21); src/web/routes ve src/web/fetch_job.py yoktur."""
+    assert not (WEB_DIR / "routes").exists() and not (WEB_DIR / "fetch_job.py").exists()
+
+
+def test_face_imports_reports_layers_with_their_places(tmp_path: Path):
+    web = tmp_path / "src" / "web"
+    for rel, text in {
+        "src/web/__init__.py": "",
+        "src/web/app.py": "from src.services.query import QueryService\nfrom src.web import deps\nimport src.utils\n",
+        "src/web/api/x.py": "def f():\n    from src.store import open_store\n    from src.jobs.model import JobKind\n",
+    }.items():
+        path = tmp_path / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    assert face_imports(web, tmp_path) == {"src.utils": ["src/web/app.py:3"], "src.store": ["src/web/api/x.py:2", "src/web/api/x.py:2"]}
 
 
 # --- denetleyicinin kendi testleri -------------------------------------------------------------------

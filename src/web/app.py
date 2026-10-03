@@ -187,12 +187,11 @@ async def security_boundary(request: Request, call_next: RequestResponseEndpoint
 # Eklenen son middleware en dışta çalışır: Host kontrolü diğer her şeyden önce
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
 
-from src.web.api import v1  # noqa: E402
+from src.web.api import legacy, v1  # noqa: E402
 from src.web.jobs import JobStoreConflict  # noqa: E402
-from src.web.routes import api  # noqa: E402
 
 # Eski yollar bir sürüm daha durur: belgede `deprecated`, yanıtlarında Deprecation ve Link başlıkları
-app.include_router(api.router, deprecated=True)
+app.include_router(legacy.router, deprecated=True)
 app.include_router(v1.router)
 errors.install(app)
 

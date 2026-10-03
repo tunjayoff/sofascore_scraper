@@ -30,7 +30,8 @@ from src.services import stats as stats_service
 from src.services import status as status_module
 from src.services.status import DataSummary, DiskUsage, StatusService, TournamentCounts
 from src.store import Store, open_store
-from src.web.routes import data as data_routes
+from src.web import deps
+from src.web.api import legacy as data_routes
 
 NOT_STARTED_CASE = "football/A_notstarted-0-not-started__17184998"
 
@@ -368,7 +369,7 @@ def test_the_dashboard_follows_a_clear_at_once(canonical: sf.LegacyFixture, monk
     dolmadan değişir. Detaylar silinince maçlar programdaki halleriyle kalır.
     """
     data_dir, leagues = str(canonical.data_dir), canonical.leagues
-    monkeypatch.setattr(data_routes.config_manager, "get_data_dir", lambda: data_dir)
+    monkeypatch.setattr(deps.config_manager(), "get_data_dir", lambda: data_dir)
     before = data_routes._build_dashboard_sync(data_dir, leagues)
     assert before["totals"] == {"leagues": 6, "matches": 29, "details": 23}
     assert before["disk_usage"]["details"] > 0

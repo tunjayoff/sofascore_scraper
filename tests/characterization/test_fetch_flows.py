@@ -33,6 +33,7 @@ import legacy_writer
 import src.utils as utils
 from characterization import WORLD, assert_golden, pin_default_settings, snapshot_tree
 from fakes.sofascore import REQUEST_LAYER, SITE_ROOT, FakeSofaScore
+from src.web import deps
 from src import breaker as request_breaker
 from src.exceptions import APIError, NetworkError, RateLimitError, ResourceNotFoundError
 from src.match_data_fetcher import MatchDataFetcher
@@ -70,13 +71,13 @@ def fake() -> Iterator[FakeSofaScore]:
 @pytest.fixture
 def run_job(data_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> RunJob:
     """Web işini kendi thread'i olmadan, geçici bir iş deposuyla çalıştırır; son iş durumunu döndürür."""
-    import src.web.fetch_job as fj
+    import src.web.api.legacy as fj
     from src.web.jobs import JobStore
-    from src.web.routes.scrape import FetchRequest
+    from src.web.api.legacy import FetchRequest
 
     store = JobStore(str(tmp_path / "jobs.db"))
-    monkeypatch.setattr(fj, "_job_store", store)
-    monkeypatch.setattr(fj, "_refresh_scraper_state", lambda: store.snapshot())
+    monkeypatch.setattr(deps, "job_store", lambda: store)
+    monkeypatch.setattr(deps, "refresh_job_mirror", lambda: store.snapshot())
 
     def run(**payload: Any) -> Dict[str, Any]:
         request = FetchRequest(**payload)
@@ -88,7 +89,8 @@ def run_job(data_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
 
 
 def _fetcher(data_dir: Path) -> MatchDataFetcher:
-    from src.web.routes.common import config_manager
+    from src.web.deps import config_manager as _web_config
+    config_manager = _web_config()
 
     return MatchDataFetcher(config_manager, data_dir=str(data_dir))
 
@@ -389,11 +391,10 @@ def test_web_job_with_a_refused_season_list_is_partial(fake: FakeSofaScore, run_
     P14: çekilemeyen sezon listesi "sezon yok" değildir: başarısız bir iş birimidir, iş günlüğüne yazılır ve iş
     `partial` biter. Bir programın başarısız turu da öyle.
     """
-    import src.web.fetch_job as fj
 
     def state(final: Dict[str, Any]) -> Any:
         """İşin bitiş durumu (`finished` olayı; eski durum metni `partial` için de "Completed"dır)."""
-        events = fj._job_store.read_events(final["job_id"])
+        events = deps.job_store().read_events(final["job_id"])
         return next(e["data"]["state"] for e in events if e["type"] == "finished")
 
     fake.fail(f"/unique-tournament/{LEAGUE}/seasons", 403)
@@ -477,11 +478,11 @@ def test_web_job_runs_are_idempotent(fake: FakeSofaScore, run_job: RunJob, data_
 def test_single_match_route(fake: FakeSofaScore, data_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from fastapi.testclient import TestClient
 
-    import src.web.routes.matches as matches_routes
     from src.web.app import app
     from src.web.jobs import JobStore
 
-    monkeypatch.setattr(matches_routes, "_job_store", JobStore(str(tmp_path / "jobs.db")))  # çalışan iş yok
+    idle = JobStore(str(tmp_path / "jobs.db"))  # çalışan iş yok
+    monkeypatch.setattr(deps, "job_store", lambda: idle)
     client = TestClient(app)
     steps: Dict[str, Any] = {}
 
