@@ -14,7 +14,7 @@ class JobStore:
     @contextlib.contextmanager
     def exclusive(self, operation: str) -> Iterator[None]
     def rebind(self, db_path: str) -> bool
-    def create_running(self, payload: Any, *, job_id: Optional[str] = None, kind: str = DEFAULT_KIND, origin: Optional[Mapping[str, Any]] = None, spec: Optional[Mapping[str, Any]] = None, wait: float = 0.0, purpose: str = JOB_PURPOSE, replace_running: bool = True) -> str
+    def create_running(self, payload: Any, *, job_id: Optional[str] = None, kind: str = DEFAULT_KIND, origin: Optional[Mapping[str, Any]] = None, spec: Optional[Mapping[str, Any]] = None, wait: float = 0.0, purpose: str = JOB_PURPOSE, replace_running: bool = True, lease: str = WRITER) -> str
     def request_cancel(self) -> bool
     def cancel(self, job_id: str) -> bool
     def cancel_requested(self, job_id: Optional[str] = None) -> bool

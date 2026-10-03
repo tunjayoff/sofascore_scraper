@@ -2,7 +2,8 @@
 API v1: işler (docs/design/02-services.md bölüm 6 ve 2.8).
 
     GET  /api/v1/jobs                  iş geçmişi (en yeni önce), `state` ve `kind` süzgeçleri, imleçle sayfalama
-    POST /api/v1/jobs                  iş başlatır: {"kind": "sync" | "fetch" | "refresh", "spec": {...}}
+    POST /api/v1/jobs                  iş başlatır: {"kind": "sync" | "fetch" | "refresh" | "export" | "backup" |
+                                       "clear" | "rebuild" | "restore", "spec": {...}}
     GET  /api/v1/jobs/{id}             tek iş
     POST /api/v1/jobs/{id}/cancel      iptal ister (iş hangi süreçte çalışırsa çalışsın)
     GET  /api/v1/jobs/{id}/events      işin olayları, SSE (src/web/sse.py)
@@ -18,15 +19,25 @@ thread'de çalışır. Belirtim (`spec`) bugünkü eşitleme servisinin belirtim
     fetch    yalnızca maç detayları                                     (SyncSpec mode="details")
     refresh  kayıtlı geçici maçların yeniden okunması                   (SyncSpec mode="refresh")
 
-Üçü de CSV yazmaz: dışa aktarma kendi iş türüdür (`export`) ve servisi gelene kadar `not_supported` döner;
-`backup`, `clear` ve `rebuild` için de öyle. Belirtim, alma hattı (P13) hedeflere ve aşamalara geçtiğinde
-değişecektir; değişiklik OpenAPI kaydında görünür.
+Üçü de CSV yazmaz: dışa aktarma kendi iş türüdür (`export`). Veri işleri (P21):
+
+    export   `exports/<iş>.<uzantı>`: 2.x'in geniş CSV'si ya da ham yükler (src/services/data_jobs.py);
+             normalleştirilmiş veri kümeleri SC-2 ile (`not_supported`)
+    backup   `backups/` altına yedek (BackupService)
+    clear    saklanan verinin bir kısmını siler (MaintenanceService.clear); `confirm: true` ister
+    rebuild  kataloğu dosyalardan yeniden kurar (MaintenanceService.rebuild_catalog)
+    restore  yalnızca deneme (`dry_run`): geri yükleme state.db'yi, yani işin kaydedildiği iş geçmişini
+             değiştirir; `ssc backup restore` yapar
+
+İndirmeler, dışa aktarma, yedek ve deneme `writer` kilidiyle, temizleme ve katalog `maintenance` kilidiyle çalışır
+(docs/design/02-services.md 2.8). Belirtim, alma hattı hedeflere ve aşamalara geçtiğinde değişecektir;
+değişiklik OpenAPI kaydında görünür.
 """
 from __future__ import annotations
 
 import dataclasses
 import logging
-from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Literal, Optional, Union
+from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Literal, Mapping, Optional, Tuple, Union
 
 from fastapi import APIRouter, Body, Header, Query, Response
 from pydantic import BaseModel, ConfigDict, Field
@@ -41,6 +52,7 @@ from src.web.errors import ValidationFailed, error_responses
 
 if TYPE_CHECKING:
     from src.jobs.manager import JobHandle, JobOutcome
+    from src.services.data_jobs import ExportRequest
     from src.services.sync import SyncSpec
 
 logger = logging.getLogger("WebAPI")
@@ -152,16 +164,114 @@ class StartRefreshJob(BaseModel):
     spec: RefreshJobSpec = Field(default_factory=RefreshJobSpec)
 
 
-class StartOtherJob(BaseModel):
-    """Job kinds of the contract that cannot be started through the API yet; answered with 501 `not_supported`."""
+class ExportFilter(BaseModel):
+    """Which events to export; the fields are combined with AND, an empty field filters nothing."""
 
     model_config = ConfigDict(extra="forbid")
 
-    kind: Literal["export", "backup", "clear", "rebuild"]
-    spec: Dict[str, Any] = Field(default_factory=dict)
+    sport: Optional[str] = Field(default=None, max_length=40)
+    tournament_ids: List[int] = Field(default_factory=list)
+    season_ids: List[int] = Field(default_factory=list, description="Not for the legacy-wide-csv profile.")
+    event_ids: List[int] = Field(default_factory=list)
 
 
-StartJob = Union[StartSyncJob, StartFetchJob, StartRefreshJob, StartOtherJob]
+class ExportJobSpec(BaseModel):
+    """
+    What to export. Today: the profile `legacy-wide-csv` (2.x's wide CSV, dataset `events`, format `csv`) and the
+    raw schema (stored payloads as JSONL; dataset `events`: the event payload only, `slices`: every slice).
+    Normalized datasets answer 501 `not_supported`.
+    """
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    dataset: Literal["events", "slices"] = "events"
+    format: Literal["csv", "jsonl", "parquet", "sqlite"] = "csv"
+    schema_: Literal["normalized", "raw"] = Field(default="normalized", alias="schema")
+    profile: Optional[Literal["legacy-wide-csv"]] = None
+    filter: ExportFilter = Field(default_factory=ExportFilter)
+
+
+class StartExportJob(BaseModel):
+    """Write an export file into the data directory's `exports/`; download it through `/exports/{id}/download`."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["export"]
+    spec: ExportJobSpec = Field(default_factory=ExportJobSpec)
+
+
+class BackupJobSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    scope: Literal["all", "state", "data", "config", "seasons", "matches", "match_details"] = "all"
+    include_env: bool = Field(default=False, description="Also `.env` (it can hold secrets); the file name says so.")
+
+
+class StartBackupJob(BaseModel):
+    """Write a backup zip into the data directory's `backups/`; download it through `/backups/{name}`."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["backup"]
+    spec: BackupJobSpec = Field(default_factory=BackupJobSpec)
+
+
+class ClearJobSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    scope: Literal["all", "events", "schedules", "seasons", "match_details", "matches"] = "all"
+    confirm: bool = Field(default=False, description="Must be true: the stored data of the scope is deleted.")
+
+
+class StartClearJob(BaseModel):
+    """Delete stored data (follows, job history, change log, backups and exports stay)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["clear"]
+    spec: ClearJobSpec = Field(default_factory=ClearJobSpec)
+
+
+class RebuildJobSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mode: Literal["auto", "in_place", "recreate"] = "auto"
+
+
+class StartRebuildJob(BaseModel):
+    """Rebuild the catalog (`.meta/catalog.db`) from the stored files."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["rebuild"]
+    spec: RebuildJobSpec = Field(default_factory=RebuildJobSpec)
+
+
+class RestoreJobSpec(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=200, description="A backup of `/backups`.")
+    force: bool = Field(default=False, description="Report what a restore with force would move to the trash.")
+    dry_run: bool = Field(
+        default=True, description="Must be true: the API checks a restore; restoring is `ssc backup restore`.",
+    )
+
+
+class StartRestoreJob(BaseModel):
+    """Check what restoring a backup would do (the Check step of the UI); nothing is written."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["restore"]
+    spec: RestoreJobSpec
+
+
+StartJob = Union[
+    StartSyncJob, StartFetchJob, StartRefreshJob, StartExportJob, StartBackupJob, StartClearJob, StartRebuildJob,
+    StartRestoreJob,
+]
+# Bakım işleri `maintenance` kilidiyle çalışır (docs/design/02-services.md 2.8): başka her işi ve veri işlemini dışlar
+MAINTENANCE_LEASE = "maintenance"
 
 
 def job_model(job: JobSnapshot) -> Job:
@@ -332,21 +442,25 @@ def _run_sync(handle: "JobHandle", spec: "SyncSpec") -> "JobOutcome":
     summary="Start a job",
     responses=error_responses(
         "forbidden_origin", "job_running", "data_operation_running", "instance_running", "storage_error",
-        "not_supported",
+        "not_supported", "not_found", "invalid_request", "confirmation_required",
     ),
 )
 def start_job(response: Response, body: Annotated[StartJob, Body(discriminator="kind")]) -> JobResponse:
     """
     Start a job in the background and return it at once (202). Only one job writes to a data directory at a
     time: while another job or a data operation runs, in this server or in another process, the request is
-    refused with 409 and the holder in `details`.
+    refused with 409 and the holder in `details`. `clear` and `rebuild` take the data directory for themselves
+    (no download, live service or other data operation may run). A `clear` needs `confirm: true` (400
+    `confirmation_required`). `restore` only checks (`dry_run: true`); restoring replaces the job history the
+    job is recorded in and is done with `ssc backup restore` (501 `not_supported`). Normalized exports are 501.
     """
     from src.jobs.manager import local_origin
 
-    if isinstance(body, StartOtherJob):
-        raise NotSupportedError(
-            f"Jobs of kind '{body.kind}' cannot be started through the API yet.", {"kind": body.kind},
-        )
+    if not isinstance(body, (StartSyncJob, StartFetchJob, StartRefreshJob)):
+        job = _start_data_job(body)
+        deps.refresh_job_mirror()
+        response.headers["Location"] = f"{V1_PREFIX}/jobs/{job.id}"
+        return JobResponse(data=job_model(job))
     spec = _sync_spec(body)
     job = deps.job_manager().submit(
         JobKind(body.kind),
@@ -361,6 +475,142 @@ def start_job(response: Response, body: Annotated[StartJob, Body(discriminator="
     deps.refresh_job_mirror()
     response.headers["Location"] = f"{V1_PREFIX}/jobs/{job.id}"
     return JobResponse(data=job_model(job))
+
+
+# --- veri işleri: dışa aktarma, yedek, temizleme, katalog, geri yükleme denemesi -------------------
+
+
+def export_request(spec: Mapping[str, Any]) -> "ExportRequest":
+    """İşin belirtimi (iş kaydındaki sözlük) → servis isteği."""
+    from src.services.data_jobs import ExportRequest
+
+    flt = spec.get("filter") or {}
+    return ExportRequest(
+        dataset=str(spec.get("dataset") or "events"), format=str(spec.get("format") or "csv"),
+        schema=str(spec.get("schema") or "normalized"), profile=spec.get("profile"), sport=flt.get("sport"),
+        tournament_ids=tuple(flt.get("tournament_ids") or ()), season_ids=tuple(flt.get("season_ids") or ()),
+        event_ids=tuple(flt.get("event_ids") or ()),
+    )
+
+
+def _config_files() -> Tuple[str, ...]:
+    """Yedeğe giren ayar dosyaları: lig dosyası ve spor eşlemesi (yoksa atlanır)."""
+    from src.web import league_sports
+
+    path = deps.config_manager().league_config_path
+    return (path, league_sports.sidecar_path(path))
+
+
+def _export_body(spec: Mapping[str, Any]) -> Any:
+    def body(handle: "JobHandle") -> "JobOutcome":
+        from src.jobs.manager import JobOutcome
+        from src.services.data_jobs import export_path, run_export
+
+        store = deps.store()
+        request = export_request(spec)
+        result = run_export(store, request, export_path(str(store.data_dir), handle.id, request))
+        result.pop("path", None)  # yol iş kaydına yazılmaz: indirme onu iş kimliğinden kurar
+        return JobOutcome(result={"export": result})
+
+    return body
+
+
+def _backup_body(spec: Mapping[str, Any]) -> Any:
+    def body(handle: "JobHandle") -> "JobOutcome":
+        from src.jobs.manager import JobOutcome
+        from src.services.backup import BackupService
+
+        info = BackupService(deps.store()).create(
+            spec["scope"], config_files=_config_files(), include_secrets=bool(spec.get("include_env")))
+        return JobOutcome(result={"backup": {"name": info.name, "scope": info.scope, "with_env": info.with_env,
+                                             "bytes": info.size, "format": info.format}})
+
+    return body
+
+
+def _clear_body(spec: Mapping[str, Any]) -> Any:
+    def body(handle: "JobHandle") -> "JobOutcome":
+        from src.jobs.manager import JobOutcome
+        from src.services.maintenance import MaintenanceService
+
+        report = MaintenanceService(store=deps.store()).clear(spec["scope"], confirm=True)
+        return JobOutcome(result={"clear": {"scopes": list(report.scopes), "cleared": list(report.cleared),
+                                            "v3_events": report.v3_events,
+                                            "catalog_rebuilt": report.catalog_rebuilt}})
+
+    return body
+
+
+def _rebuild_body(spec: Mapping[str, Any]) -> Any:
+    def body(handle: "JobHandle") -> "JobOutcome":
+        from src.jobs.manager import JobOutcome
+        from src.services.maintenance import MaintenanceService
+
+        report = MaintenanceService(store=deps.store()).rebuild_catalog(mode=spec["mode"])
+        return JobOutcome(result={"rebuild": {
+            "mode": report.mode, "reason": report.reason, "completed": report.completed, "events": report.events,
+            "events_v3": report.events_v3, "events_legacy": report.events_legacy, "slices": report.slices,
+            "problems": len(report.problems), "seconds": round(report.seconds, 3),
+        }})
+
+    return body
+
+
+def _restore_body(spec: Mapping[str, Any]) -> Any:
+    def body(handle: "JobHandle") -> "JobOutcome":
+        from src.jobs.manager import JobOutcome
+        from src.services.backup import BackupService
+
+        report = BackupService(deps.store()).restore(spec["name"], force=bool(spec.get("force")), dry_run=True)
+        return JobOutcome(result={"restore": {
+            "name": report.name, "format": report.format, "scope": report.scope, "dry_run": True,
+            "force": report.force, "restored": list(report.restored), "replaced": list(report.replaced),
+            "skipped": list(report.skipped), "occupied": list(report.occupied), "counts": dict(report.counts),
+        }})
+
+    return body
+
+
+def _start_data_job(body: Any) -> JobSnapshot:
+    """Bir veri işini denetler ve başlatır. Denetim iş başlamadan yapılır: reddedilen istek iş kaydı bırakmaz."""
+    from src.jobs.manager import local_origin
+
+    kind = JobKind(body.kind)
+    lease: Optional[str] = None
+    if isinstance(body, StartExportJob):
+        from src.services.data_jobs import check_export
+
+        spec: Dict[str, Any] = body.spec.model_dump(by_alias=True)
+        check_export(export_request(spec))
+        run = _export_body(spec)
+    elif isinstance(body, StartBackupJob):
+        spec = body.spec.model_dump()
+        run = _backup_body(spec)
+    elif isinstance(body, StartClearJob):
+        spec = body.spec.model_dump()
+        if not body.spec.confirm:
+            raise UsageError("Clearing deletes stored data; send confirm: true.", {"scope": body.spec.scope},
+                             code="confirmation_required")
+        run, lease = _clear_body(spec), MAINTENANCE_LEASE
+    elif isinstance(body, StartRebuildJob):
+        spec = body.spec.model_dump()
+        run, lease = _rebuild_body(spec), MAINTENANCE_LEASE
+    else:
+        spec = body.spec.model_dump()
+        if not body.spec.dry_run:
+            raise NotSupportedError(
+                "A restore replaces the job history this job would be recorded in; restore with "
+                "`ssc backup restore`. The API checks a restore (dry_run: true).", {"kind": "restore"},
+            )
+        from src.services.backup import BackupService
+
+        if body.spec.name not in {info.name for info in BackupService(deps.store()).list()}:
+            raise NotFoundError("No backup has this name.", {"name": body.spec.name})
+        run = _restore_body(spec)
+    return deps.job_manager().submit(
+        kind, spec, run, origin=local_origin("api"), background=True, lease=lease,
+        lease_purpose=kind.value if lease is not None else None, on_change=deps.refresh_job_mirror,
+    )
 
 
 # --- olaylar (SSE) -------------------------------------------------------------------------------

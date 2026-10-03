@@ -12,8 +12,8 @@ Kurallar (her rota için):
   * durum değiştiren istek GET olamaz.
 
 Bu paketteki rotalar: sağlık, durum, sporlar ve sink'ler (meta.py), oturum (auth.py), takipler (follows.py),
-turnuvalar, sezonlar ve turnuva araması (tournaments.py), maçlar, dilimleri, ham yükler ve değişiklikler (events.py), işler (jobs.py), ayarlar
-(settings.py). Şema v1 kayıtlarının yanıt modelleri records.py'dedir. Canlı veri için rota yoktur.
+turnuvalar, sezonlar ve turnuva araması (tournaments.py), maçlar, dilimleri, ham yükler ve değişiklikler (events.py), işler (jobs.py), dışa aktarmalar
+(exports.py), yedekler (backups.py), log ve tanılama (diagnostics.py), ayarlar (settings.py). Şema v1 kayıtlarının yanıt modelleri records.py'dedir. Canlı veri için rota yoktur.
 """
 from __future__ import annotations
 
@@ -36,7 +36,9 @@ class PageInfo(BaseModel):
 
 
 # Rota modülleri PageInfo'yu buradan alır: içe aktarma, model tanımlandıktan sonra yapılır
-from src.web.api.v1 import auth, events, follows, jobs, meta, settings, tournaments  # noqa: E402
+from src.web.api.v1 import (  # noqa: E402
+    auth, backups, diagnostics, events, exports, follows, jobs, meta, settings, tournaments,
+)
 
 # Her rotanın verebildiği hatalar: belirteç (401), doğrulama (422; FastAPI'nin kendi 422 modelinin yerine) ve
 # beklenmeyen hata (500). Rotalar kendi kodlarını ekler.
@@ -44,7 +46,7 @@ router = APIRouter(
     prefix=V1_PREFIX,
     responses={**error_responses("unauthorized", "internal"), **validation_response()},
 )
-for _module in (meta, auth, follows, tournaments, events, jobs, settings):
+for _module in (meta, auth, follows, tournaments, events, jobs, exports, backups, diagnostics, settings):
     router.include_router(_module.router)
 
 __all__ = ["PageInfo", "router"]

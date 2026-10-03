@@ -131,6 +131,13 @@ def test_the_document_is_the_v1_view(document: Dict[str, Any], full_document: Di
         "GET /api/v1/jobs/{job_id}",
         "POST /api/v1/jobs/{job_id}/cancel",
         "GET /api/v1/jobs/{job_id}/events",
+        "GET /api/v1/exports",
+        "GET /api/v1/exports/{export_id}/download",
+        "GET /api/v1/backups",
+        "GET /api/v1/backups/{name}",
+        "GET /api/v1/logs",
+        "GET /api/v1/diagnostics",
+        "GET /api/v1/diagnostics/bundle",
         "GET /api/v1/settings",
         "PATCH /api/v1/settings",
     ]
@@ -166,8 +173,9 @@ def test_every_v1_operation_has_a_stable_id_and_a_summary(document: Dict[str, An
         "logout", "listFollows", "addFollow", "getFollow", "updateFollow", "removeFollow", "listTournaments",
         "searchTournaments", "getTournament", "listTournamentSeasons", "getSeason", "getSeasonSlice", "listEvents",
         "getEvent", "listEventSlices", "getEventSlice", "getEventRaw", "getEventSliceRaw", "listEventOdds",
-        "listChanges", "listJobs", "startJob", "getJob", "cancelJob", "streamJobEvents", "getSettings",
-        "updateSettings",
+        "listChanges", "listJobs", "startJob", "getJob", "cancelJob", "streamJobEvents", "listExports",
+        "downloadExport", "listBackups", "downloadBackup", "listLogs", "getDiagnostics", "downloadDiagnosticsBundle",
+        "getSettings", "updateSettings",
     ]
     assert len(set(ids)) == len(ids)
     for method, path, op in operations(document):
@@ -178,6 +186,12 @@ def test_every_v1_operation_has_a_stable_id_and_a_summary(document: Dict[str, An
 # Gövdesi zarf olmayan işlemler: işin olay akışı (SSE) ve saklanan SofaScore yükünün kendisi (ham yük, P21)
 STREAM_OPERATIONS = {"/api/v1/jobs/{job_id}/events"}
 RAW_OPERATIONS = {"/api/v1/events/{event_id}/raw", "/api/v1/events/{event_id}/slices/{key}/raw"}
+# Dosya indirmeleri (P21): dışa aktarma, yedek ve tanılama paketi
+DOWNLOAD_OPERATIONS = {
+    "/api/v1/exports/{export_id}/download": "application/octet-stream",
+    "/api/v1/backups/{name}": "application/zip",
+    "/api/v1/diagnostics/bundle": "application/zip",
+}
 
 
 def test_every_v1_operation_declares_its_response_model(document: Dict[str, Any]) -> None:
@@ -191,6 +205,10 @@ def test_every_v1_operation_declares_its_response_model(document: Dict[str, Any]
         if path in RAW_OPERATIONS:
             assert list(content) == ["application/json"] and "$ref" not in content["application/json"]["schema"]
             assert {"ETag", "X-Sofascore-Fetched-At"} <= set(op["responses"][success[0]]["headers"])
+            continue
+        if path in DOWNLOAD_OPERATIONS:
+            assert list(content) == [DOWNLOAD_OPERATIONS[path]]
+            assert content[DOWNLOAD_OPERATIONS[path]]["schema"] == {"type": "string", "format": "binary"}
             continue
         schema = content["application/json"]["schema"]
         assert schema["$ref"].endswith("Response"), (method, path, schema)
@@ -210,7 +228,7 @@ def test_every_v1_operation_documents_its_errors_with_the_error_model(document: 
             assert "403" in errors, (method, path)  # durum değiştiren istek: kaynak denetimi
     start = document["paths"]["/api/v1/jobs"]["post"]["responses"]
     assert start["409"]["description"] == "job_running, data_operation_running, instance_running"
-    assert set(start) == {"202", "401", "403", "409", "422", "500", "501", "507"}
+    assert set(start) == {"202", "400", "401", "403", "404", "409", "422", "500", "501", "507"}
 
 
 def test_state_changing_requests_are_never_get(document: Dict[str, Any]) -> None:
