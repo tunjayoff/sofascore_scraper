@@ -65,7 +65,8 @@ import re
 import time
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Tuple
+from typing import (TYPE_CHECKING, Any, Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, Set,
+                    Tuple)
 
 from src import refresh
 from src.logger import get_logger
@@ -75,6 +76,7 @@ from src.status import StatusClass
 from src.store import EventQuery, PayloadCorrupt, PayloadMissing, Scope, StoreError
 
 if TYPE_CHECKING:
+    from src import schema
     from src.store import EventRow, Store
 
 logger = get_logger("QueryService")
@@ -201,8 +203,104 @@ class LegacyMatchPage:
     total: int
 
 
+# -- API v1: şema v1 kayıtlarının türleri (plan maddesi P21) --------------------------------------------------------
+
+V1_SORTS: Tuple[str, ...] = ("start_desc", "start_asc")
+CHANGE_ORDERS: Tuple[str, ...] = ("asc", "desc")
+_CHANGE_SCAN = 500  # süzgeçli değişiklik sayfasında bir okumanın en çok satırı
+
+
+@dataclass(frozen=True)
+class EventFilter:
+    """
+    `GET /api/v1/events` süzgeçleri; boş alan süzmez, dolu alanlar birlikte (VE) uygulanır.
+
+    start_from / start_to: başlangıç zamanı aralığı (epoch saniye), iki uç dahil. has_details: True = olay yükü
+    saklananlar, False = yalnızca bir listeden bilinenler. text: yarışmacı adında geçen metin. followed: yalnızca
+    etkin turnuva takiplerinin maçları (`Scope.followed`).
+    """
+
+    sport: Optional[str] = None
+    tournament_ids: Tuple[int, ...] = ()
+    season_ids: Tuple[int, ...] = ()
+    participant_ids: Tuple[int, ...] = ()
+    status_classes: Tuple[str, ...] = ()
+    start_from: Optional[float] = None
+    start_to: Optional[float] = None
+    has_details: Optional[bool] = None
+    text: Optional[str] = None
+    followed: bool = False
+
+
+@dataclass(frozen=True)
+class SliceSummary:
+    """
+    Bir maçın dilim özeti: seçilen dilimler (sporun ve evresinin kayıt defteri varsayılanı) ve onlardan kaçının
+    durumu `ok`, `empty`, `error`. İstenmemiş dilim (`not_requested`) üç sayıya da girmez.
+    """
+
+    selected: int
+    ok: int
+    empty: int
+    error: int
+
+
+@dataclass(frozen=True)
+class EventPage:
+    """Bir maç sayfası: kayıtlar, sonraki sayfanın konumu ve istendiyse maç başına dilim özeti."""
+
+    items: Tuple["schema.Event", ...]
+    next_cursor: Optional[str]
+    slices: Optional[Mapping[int, SliceSummary]] = None
+
+
+@dataclass(frozen=True)
+class RawPayload:
+    """
+    Saklanan bir SofaScore yükü, olduğu gibi (sıkıştırması açılmış JSON baytları). sha256: baytların özeti
+    (HTTP `ETag`); fetched_at: yükün alındığı an (UTC, ISO 8601), bilinmiyorsa None.
+    """
+
+    data: bytes
+    sha256: str
+    fetched_at: Optional[str]
+
+
+@dataclass(frozen=True)
+class TournamentEntry:
+    """Bir turnuva kaydı, kategorisi (katalogda yoksa None) ve takip edilip edilmediği (her kaynaktan bir takip)."""
+
+    tournament: "schema.Tournament"
+    category: Optional["schema.Category"]
+    followed: bool = False
+
+
+@dataclass(frozen=True)
+class ChangePage:
+    """Değişiklik günlüğünün bir sayfası; next_cursor: devam için verilecek sıra numarası (metin), yoksa None."""
+
+    items: Tuple["schema.Change", ...]
+    next_cursor: Optional[str]
+
+
+def refresh_window_seconds() -> float:
+    """Yenileme penceresi, saniye (ayar `REFRESH_WINDOW_HOURS`): kayıtların `quality.settlement` hesabı için."""
+    return refresh.refresh_window_hours() * 3600
+
+
+def _valid_id(value: Any) -> bool:
+    return not isinstance(value, bool) and isinstance(value, int) and _ID_RANGE[0] <= value <= _ID_RANGE[1]
+
+
+
 class QueryService:
-    """Deponun okuma API'si üzerinde, yüzlerin kullandığı sorgular. Durum tutmaz; kilit almaz."""
+    """
+    Deponun okuma API'si üzerinde, yüzlerin kullandığı sorgular. Durum tutmaz; kilit almaz.
+
+    API v1'in okumaları (`events`, `event`, `event_slices`, `event_slice`, `raw`, `tournaments`, `tournament`,
+    `seasons`, `season`, `season_slice`, `changes`) şema v1 kayıtları döndürür (src/schema). Bilinmeyen kimlik
+    için None dönerler (yüz onu `not_found`a çevirir); depolama hatası StoreError olarak çıkar.
+    """
 
     def __init__(self, store: "Store") -> None:
         self._store = store
@@ -418,6 +516,276 @@ class QueryService:
             "truncated": len(missing) > len(shown),
         }
 
+    # -- API v1 ------------------------------------------------------------------------------------------
+
+    # -- maçlar (v1) ---------------------------------------------------------------------------------------
+
+    def events(self, flt: Optional[EventFilter] = None, *, sort: str = "start_desc", limit: int = 50,
+               cursor: Optional[str] = None, slices_summary: bool = False) -> EventPage:
+        """
+        Süzgece uyan maçlar, başlangıç zamanı sırasıyla (eşitlikte kimlik). Konumlu sayfalama: `next_cursor`
+        bir sonraki çağrıya `cursor` olarak verilir; konum sıralamaya bağlıdır (başka sıralamayla ValueError).
+        slices_summary: maç başına dilim özeti de (sayfa başına iki sorgu daha).
+        """
+        from src import schema
+
+        if sort not in V1_SORTS:
+            raise ValueError(f"sort: expected one of {', '.join(V1_SORTS)}, got {sort!r}")
+        flt = flt or EventFilter()
+        query = EventQuery(
+            scope=Scope(sport=flt.sport, tournament_ids=tuple(flt.tournament_ids), season_ids=tuple(flt.season_ids),
+                        participant_ids=tuple(flt.participant_ids), followed=flt.followed),
+            status_classes=tuple(flt.status_classes),
+            start_from=flt.start_from,
+            start_to=flt.start_to,
+            text=flt.text,
+            has_details=flt.has_details,
+            sort=sort,
+            limit=limit,
+            cursor=cursor,
+        )
+        page = self._store.events.list(query)
+        window = refresh_window_seconds()
+        items = tuple(schema.event_from_row(row, refresh_window_s=window) for row in page.items)
+        summaries = self._slice_summaries([row.id for row in page.items]) if slices_summary else None
+        return EventPage(items, page.next_cursor, summaries)
+
+    def _slice_summaries(self, event_ids: Sequence[int]) -> Dict[int, SliceSummary]:
+        from src.services import planning
+        from src.sports import select_slices
+
+        out: Dict[int, SliceSummary] = {}
+        if not event_ids:
+            return out
+        for state in self._store.events.states(Scope(event_ids=tuple(event_ids))):
+            row = state.event
+            specs = select_slices("event", row.sport or None, None, phase=planning.phase_of(row.status_class))
+            states = [state.slice(spec.key).state for spec in specs]
+            out[row.id] = SliceSummary(selected=len(specs), ok=states.count("ok"), empty=states.count("empty"),
+                                       error=states.count("error"))
+        return out
+
+    def event(self, event_id: int) -> Optional["schema.Event"]:
+        """Maçın kaydı; bilinmiyorsa None."""
+        from src import schema
+
+        if not _valid_id(event_id):
+            return None
+        row = self._store.events.get(event_id)
+        return None if row is None else schema.event_from_row(row, refresh_window_s=refresh_window_seconds())
+
+    def event_slices(self, event_id: int) -> Optional[List["schema.Slice"]]:
+        """
+        Maçın dilimleri (yük olmadan): katalogdaki her dilim satırı ve sporunun varsayılan seçiminde olup satırı
+        olmayan dilimler (`not_requested`), (anahtar, alt anahtar) sırasıyla. Maç bilinmiyorsa None.
+        """
+        from src import schema
+        from src.sports import select_slices
+        from src.store import Ref
+
+        if not _valid_id(event_id):
+            return None
+        row = self._store.events.get(event_id)
+        if row is None:
+            return None
+        infos = {(info.key, info.sub): info for info in self._store.events.slices(event_id)}
+        for spec in select_slices("event", row.sport or None, None):
+            if (spec.key, "") not in infos:
+                infos[(spec.key, "")] = _not_requested(Ref.event(event_id), spec.key)
+        return [schema.slice_from_info(infos[key]) for key in sorted(infos)]
+
+    def event_slice(self, event_id: int, key: str, sub: str = "") -> Optional["schema.Slice"]:
+        """
+        Maçın bir dilimi, saklanan yüküyle (`payload`; yük yoksa null). Maç bilinmiyorsa ya da dilimin ne satırı
+        var ne de sporunun seçiminde geçiyorsa None. Depo düzenine uymayan dilim adı ValueError.
+        """
+        from src import schema
+        from src.sports import select_slices
+
+        if not _valid_id(event_id):
+            return None
+        row = self._store.events.get(event_id)
+        if row is None:
+            return None
+        info = _slice_info(lambda: self._store.events.slice(event_id, key, sub))
+        if info.state == "not_requested" and (sub or key not in {
+                spec.key for spec in select_slices("event", row.sport or None, None)}):
+            return None
+        payload = self._payload(event_id, key, sub) if info.has_payload else None
+        return schema.slice_from_info(info, payload=payload)
+
+    def _payload(self, event_id: int, key: str, sub: str) -> Any:
+        try:
+            return self._store.events.payload(event_id, key, sub)
+        except (PayloadMissing, PayloadCorrupt) as e:
+            logger.warning("Event %s: the stored %s payload is unreadable: %s", event_id, key, e)
+            return None
+
+    def raw(self, event_id: int, key: str = EVENT_KEY, sub: str = "") -> Optional[RawPayload]:
+        """
+        Maçın bir diliminin saklanan yükü, olduğu gibi (docs/design/04-schema-v1.md bölüm 7). Yük saklanmıyorsa
+        (dilim boş, istenmemiş ya da hatalı ve önceki yükü yok) ya da okunamıyorsa None: ham istek "yok" der, boş
+        bir yük uydurmaz. Geçersiz anahtar ValueError.
+        """
+        import hashlib
+
+        if not _valid_id(event_id):
+            return None
+        info = _slice_info(lambda: self._store.events.slice(event_id, key, sub))
+        if not info.has_payload:
+            return None
+        try:
+            data = self._store.events.payload(event_id, key, sub, raw=True)
+        except (PayloadMissing, PayloadCorrupt) as e:
+            logger.warning("Event %s: the stored %s payload is unreadable: %s", event_id, key, e)
+            return None
+        if data is None:
+            return None
+        body = bytes(data)
+        from src import schema
+
+        return RawPayload(body, hashlib.sha256(body).hexdigest(), schema.utc_text(info.fetched_at))
+
+    # -- turnuvalar ve sezonlar --------------------------------------------------------------------------
+
+    def tournaments(self, *, sport: Optional[str] = None, text: Optional[str] = None,
+                    followed: Optional[bool] = None, limit: int = 50, offset: int = 0
+                    ) -> Tuple[List[TournamentEntry], bool]:
+        """
+        Katalogdaki turnuvalar, ada göre sıralı (eşitlikte kimlik): sayfanın kayıtları ve ardından başka sayfa var
+        mı. followed: True yalnızca takip edilenler, False yalnızca ötekiler (takip: her kaynaktan bir satır).
+        """
+        if isinstance(offset, bool) or offset < 0 or isinstance(limit, bool) or limit < 1:
+            raise ValueError("limit must be positive and offset not negative")
+        following = self._followed_tournaments()
+        if followed is True:
+            rows = [r for r in (self._store.entities.tournament(tid) for tid in sorted(following)) if r is not None]
+            if sport is not None:
+                rows = [r for r in rows if r.sport == sport]
+            if text:
+                folded = _fold(text)
+                rows = [r for r in rows if folded in _fold(r.name or "")]
+            rows.sort(key=lambda r: (_fold(r.name or ""), r.id))
+        else:
+            extra = len(following) if followed is False else 0
+            rows = self._store.entities.tournaments(sport=sport, text=text, limit=offset + limit + 1 + extra)
+            if followed is False:
+                rows = [r for r in rows if r.id not in following]
+        page = rows[offset:offset + limit]
+        return [self._entry(r, following) for r in page], len(rows) > offset + limit
+
+    def tournament(self, tournament_id: int) -> Optional[TournamentEntry]:
+        """Turnuvanın kaydı ve kategorisi; katalogda yoksa None."""
+        if not _valid_id(tournament_id):
+            return None
+        row = self._store.entities.tournament(tournament_id)
+        return None if row is None else self._entry(row, self._followed_tournaments())
+
+    def _followed_tournaments(self) -> Set[int]:
+        return {follow.entity_id for follow in self._store.follows.list(kind="tournament")}
+
+    def _entry(self, row: Any, followed: Set[int]) -> TournamentEntry:
+        from src import schema
+
+        tournament = schema.tournament_from_row(row)
+        assert tournament is not None
+        category = None
+        if row.category_id is not None:
+            found = self._store.entities.category(row.category_id)
+            category = schema.category_from_row(found) if found is not None else None
+        return TournamentEntry(tournament, category, row.id in followed)
+
+    def seasons(self, tournament_id: int) -> Optional[List["schema.Season"]]:
+        """
+        Turnuvanın katalogdaki sezonları, en yeni önce. Turnuva da sezonu da bilinmiyorsa None (boş liste: turnuva
+        bilinir, sezonu yok).
+        """
+        from src import schema
+
+        if not _valid_id(tournament_id):
+            return None
+        rows = self._store.entities.seasons(tournament_id)
+        if not rows and self._store.entities.tournament(tournament_id) is None:
+            return None
+        return [s for s in (schema.season_from_row(r) for r in rows) if s is not None]
+
+    def season(self, season_id: int) -> Optional["schema.Season"]:
+        from src import schema
+
+        if not _valid_id(season_id):
+            return None
+        row = self._store.entities.season(season_id)
+        return None if row is None else schema.season_from_row(row)
+
+    def season_slice(self, season_id: int, key: str, sub: str = "") -> Optional["schema.Slice"]:
+        """Sezonun bir dilimi (ör. puan durumu), saklanan yüküyle; sezon ya da dilim bilinmiyorsa None."""
+        from src import schema
+        from src.store import Ref
+
+        if not _valid_id(season_id):
+            return None
+        row = self._store.entities.season(season_id)
+        if row is None:
+            return None
+        ref = Ref.season(row.tournament_id, season_id)
+        info = _slice_info(lambda: self._store.entities.slice(ref, key, sub))
+        if info.state == "not_requested":
+            return None
+        payload = None
+        if info.has_payload:
+            try:
+                payload = self._store.entities.payload(ref, key, sub)
+            except (PayloadMissing, PayloadCorrupt) as e:
+                logger.warning("Season %s: the stored %s payload is unreadable: %s", season_id, key, e)
+        return schema.slice_from_info(info, payload=payload)
+
+    # -- değişiklikler ----------------------------------------------------------------------------------
+
+    def changes(self, *, after: int = 0, before: Optional[int] = None, event_id: Optional[int] = None,
+                tournament_ids: Sequence[int] = (), since: Optional[float] = None, until: Optional[float] = None,
+                order: str = "asc", limit: int = 50) -> ChangePage:
+        """
+        Değişiklik günlüğü (`Store.changes`), kendi sıra numarasıyla: her iki sırada da `after`dan büyük numaralar.
+        asc: artan; desc: `before`dan küçük numaralar (verilmezse en yeniden), azalan. since / until: kaydın zamanı (epoch
+        saniye) aralığı, iki uç dahil. Sayfa dolduysa `next_cursor` son satırın numarasıdır: asc'de `after`,
+        desc'te `before` olarak verilir.
+        """
+        from src import schema
+
+        if order not in CHANGE_ORDERS:
+            raise ValueError(f"order: expected one of {', '.join(CHANGE_ORDERS)}, got {order!r}")
+        if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
+            raise ValueError(f"limit: expected a positive integer, got {limit!r}")
+        wanted = set(tournament_ids)
+
+        def keep(row: Any) -> bool:
+            if wanted and row.tournament_id not in wanted:
+                return False
+            return until is None or row.ts <= until
+
+        found: List[Any] = []
+        if order == "asc":
+            position = after
+            while len(found) <= limit:
+                batch = self._store.changes.list(after_seq=position, event_id=event_id, since=since,
+                                                 limit=_CHANGE_SCAN)
+                found.extend(row for row in batch if keep(row))
+                if len(batch) < _CHANGE_SCAN:
+                    break
+                position = batch[-1].seq
+        else:
+            top = self._store.changes.last_seq() + 1 if before is None else before
+            while len(found) <= limit and top > after + 1:
+                low = max(after, top - 1 - _CHANGE_SCAN)
+                batch = [row for row in self._store.changes.list(after_seq=low, event_id=event_id, since=since,
+                                                                   limit=_CHANGE_SCAN) if row.seq < top]
+                found.extend(row for row in reversed(batch) if keep(row))
+                top = low + 1
+        page = found[:limit]
+        more = len(found) > limit
+        return ChangePage(tuple(schema.change_from_row(row) for row in page),
+                          str(page[-1].seq) if more and page else None)
+
     def _payloads(self, event_id: int, keys: Iterable[str]) -> Dict[str, Any]:
         """
         Maçın istenen dilimlerinden yükü olanlar (anahtar → yük). Katalog "yük var" derken dosya okunamıyorsa
@@ -436,6 +804,32 @@ class QueryService:
             except (PayloadMissing, PayloadCorrupt) as e:
                 logger.warning("Event %s: the stored %s payload is unreadable and is left out: %s", event_id, key, e)
         return found
+
+
+def _fold(text: str) -> str:
+    """Ad karşılaştırması: büyük-küçük harf ve aksan ayrımı yok (kataloğun `name_folded` kuralına yakın)."""
+    import unicodedata
+
+    decomposed = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in decomposed if not unicodedata.combining(c)).casefold()
+
+
+def _slice_info(read: Callable[[], Any]) -> Any:
+    """Bir dilimin durumu; adı depo düzeninin kurallarına uymuyorsa (LayoutError) ValueError."""
+    from src.store import LayoutError
+
+    try:
+        return read()
+    except LayoutError as e:
+        raise ValueError(f"not a valid slice name: {e}") from None
+
+
+def _not_requested(ref: Any, key: str) -> Any:
+    from src.store import SliceInfo
+
+    return SliceInfo(ref=ref, key=key, sub="", state="not_requested", has_payload=False, fetched_at=None,
+                     checked_at=None, empty_count=0, unverified_empty_count=0, error=None, stored_bytes=None,
+                     raw_bytes=None, history_count=0)
 
 
 # -- maç listelerinin yardımcıları ---------------------------------------------------------------------
@@ -585,6 +979,7 @@ def _legacy_row(row: "EventRow", names: _Names) -> Dict[str, Any]:
     }
 
 
-__all__ = ["CatalogNotCurrent", "DEFAULT_EMPTY_THRESHOLD", "EVENT_KEY", "LEGACY_EVENT_KEY", "LEGACY_LIST_COLUMNS",
-           "LegacyMatchPage", "NEED_FULL", "NEED_NONE", "NEED_REFILL", "NEED_REFRESH", "QueryService", "RefreshPolicy",
-           "legacy_detail_keys", "required_detail_keys"]
+__all__ = ["CHANGE_ORDERS", "CatalogNotCurrent", "ChangePage", "DEFAULT_EMPTY_THRESHOLD", "EVENT_KEY", "EventFilter",
+           "EventPage", "LEGACY_EVENT_KEY", "LEGACY_LIST_COLUMNS", "LegacyMatchPage", "NEED_FULL", "NEED_NONE",
+           "NEED_REFILL", "NEED_REFRESH", "QueryService", "RawPayload", "RefreshPolicy", "SliceSummary",
+           "TournamentEntry", "V1_SORTS", "legacy_detail_keys", "refresh_window_seconds", "required_detail_keys"]

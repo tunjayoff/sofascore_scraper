@@ -5,6 +5,16 @@
 /** API version of the document: 1 */
 export const API_DOCUMENT_VERSION = "1"
 
+/** The aggregate score of a two-legged tie, as shown with this leg. */
+export interface Aggregate {
+  /** Aggregate score of this event's home side. */
+  home: number | null
+  /** Aggregate score of this event's away side. */
+  away: number | null
+  /** Who won the tie. */
+  winner: "home" | "away" | "draw" | null
+}
+
 /** The error object of every `/api/v1` error response. */
 export interface ApiError {
   /** Machine-readable error code; clients translate by this code. */
@@ -68,6 +78,93 @@ export interface Capabilities {
   scheduler: boolean
 }
 
+/** A country or region, or a tour such as ATP, that groups tournaments. */
+export interface Category {
+  /** SofaScore's category id. */
+  id: number
+  /** Slug of the sport the category belongs to. */
+  sport: string | null
+  /** Name of the category, in English. */
+  name: string | null
+  /** SofaScore's slug of the category. */
+  slug: string | null
+  /** SofaScore's two-letter code of the category's country, as given (mostly ISO 3166-1 alpha-2; SofaScore uses `EN` for England). Null for a category that is not a country, such as ATP. */
+  country_code: string | null
+}
+
+/** A change of an already stored event that a later read found. */
+export interface Change {
+  /** Sequence number of the change log. Increases by one per change; pass the last one seen to read the next changes. */
+  seq: number
+  /** When the platform found the change. */
+  recorded_at_utc: string
+  /** Id of the Event. */
+  event_id: number
+  /** Slug of the sport. */
+  sport: string | null
+  /** Id of the Tournament. */
+  tournament_id: number | null
+  /** Scheduled start of the event after the change. */
+  start_utc: string | null
+  /** How long after the scheduled start SofaScore made the change: its change time, or the time the platform found the change when SofaScore gave none, minus the start. */
+  seconds_after_start: number | null
+  /** Status class before. */
+  old_status_class: "not_started" | "live" | "completed" | "decided_without_play" | "void" | "unknown" | null
+  /** Status class after. */
+  new_status_class: "not_started" | "live" | "completed" | "decided_without_play" | "void" | "unknown" | null
+  /** SofaScore's change time before. */
+  old_change_ts: number | null
+  /** SofaScore's change time after. */
+  new_change_ts: number | null
+  /** True when the event went from completed to void. */
+  status_regressed: boolean
+  /** As `Event.quality.tier_hint`, at the time of the change. */
+  tier_hint: boolean | null
+  /** The fields that changed, ordered by path. Compared are the status triple, the winner code, the start time and every score field. */
+  fields: ChangedField[]
+}
+
+export interface ChangeListResponse {
+  data: Change[]
+  page: PageInfo
+}
+
+/** One field that changed between two reads of an event. */
+export interface ChangedField {
+  /** Path of the field in SofaScore's event object: `status.type`, `status.code`, `status.description`, `winnerCode`, `startTimestamp`, `homeScore.<key>`, `awayScore.<key>`. */
+  path: string
+  /** Value before, as SofaScore gave it. Null when the field did not exist. */
+  old: unknown
+  /** Value after, as SofaScore gave it. Null when the field no longer exists. */
+  new: unknown
+}
+
+/** One innings of one side in cricket. */
+export interface CricketInnings {
+  /** The side that batted. */
+  side: "home" | "away"
+  /** Number of the innings of this side, starting at 1. */
+  number: number
+  /** Runs scored. */
+  runs: number | null
+  /** Wickets lost. */
+  wickets: number | null
+  /** Overs bowled, in SofaScore's notation: the digit after the point counts balls, so 68.1 is 68 overs and one ball. */
+  overs: number | null
+}
+
+/** Score family `cricket`: the innings of both sides with runs, wickets and overs. */
+export interface CricketScore {
+  /** Always `cricket`. */
+  family: "cricket"
+  /** Headline score of the home side: runs of all its innings. */
+  home: number | null
+  /** Headline score of the away side: runs of all its innings. */
+  away: number | null
+  /** The innings of both sides, the home side's first, each side's in its own order. SofaScore numbers each side's innings separately and does not say which side batted first. */
+  innings: CricketInnings[]
+}
+
 /** What the data directory holds, counted from its catalog. */
 export interface DataSummary {
   /** Matches count only finished events or events with details. */
@@ -96,6 +193,153 @@ export interface DiskSummary {
   measured_at_utc?: string | null
 }
 
+/** A match. */
+export interface Event {
+  /** SofaScore's event id. */
+  id: number
+  /** Slug of the sport. Null when no stored payload says it. */
+  sport: string | null
+  /** Id of the Category. */
+  category_id: number | null
+  /** Id of the Tournament. Null for an event without a unique tournament. */
+  tournament_id: number | null
+  /** Id of the Season. */
+  season_id: number | null
+  /** The part of the tournament. Null when neither id nor name is known. */
+  stage: Stage | null
+  /** The round. Null when the event has no round information. */
+  round: Round | null
+  /** Scheduled start. For tennis this is the planned time, not the first point. */
+  start_utc: string | null
+  /** Status: SofaScore's triple and the platform's class. */
+  status: EventStatus
+  /** The two sides. */
+  participants: EventParticipants
+  /** The score, in the structure of the sport's score family. */
+  score: FootballScore | PeriodsScore | SetsScore | InningsScore | CricketScore | FightScore | PlainScore
+  /** Who won. Null while undecided and when SofaScore names no winner. */
+  winner: "home" | "away" | "draw" | null
+  /** Aggregate of a two-legged tie. Null for every other event. */
+  aggregate: Aggregate | null
+  /** SofaScore's slug of the event. */
+  slug: string | null
+  /** SofaScore's short id of the pairing, used in its page addresses. */
+  custom_id: string | null
+  /** Provenance and reliability of the record. */
+  quality: Quality
+}
+
+/** An event (schema v1 Event); with `include=slices_summary` also the summary of its slices. */
+export interface EventListItem {
+  /** SofaScore's event id. */
+  id: number
+  /** Slug of the sport. Null when no stored payload says it. */
+  sport: string | null
+  /** Id of the Category. */
+  category_id: number | null
+  /** Id of the Tournament. Null for an event without a unique tournament. */
+  tournament_id: number | null
+  /** Id of the Season. */
+  season_id: number | null
+  /** The part of the tournament. Null when neither id nor name is known. */
+  stage: Stage | null
+  /** The round. Null when the event has no round information. */
+  round: Round | null
+  /** Scheduled start. For tennis this is the planned time, not the first point. */
+  start_utc: string | null
+  /** Status: SofaScore's triple and the platform's class. */
+  status: EventStatus
+  /** The two sides. */
+  participants: EventParticipants
+  /** The score, in the structure of the sport's score family. */
+  score: FootballScore | PeriodsScore | SetsScore | InningsScore | CricketScore | FightScore | PlainScore
+  /** Who won. Null while undecided and when SofaScore names no winner. */
+  winner: "home" | "away" | "draw" | null
+  /** Aggregate of a two-legged tie. Null for every other event. */
+  aggregate: Aggregate | null
+  /** SofaScore's slug of the event. */
+  slug: string | null
+  /** SofaScore's short id of the pairing, used in its page addresses. */
+  custom_id: string | null
+  /** Provenance and reliability of the record. */
+  quality: Quality
+  /** Present when the list was asked with `include=slices_summary`; null otherwise. */
+  slices_summary?: SliceSummary | null
+}
+
+export interface EventListResponse {
+  data: EventListItem[]
+  page: PageInfo
+}
+
+/** A side of an event. */
+export interface EventParticipant {
+  /** Id of the Participant. */
+  id: number | null
+  /** Name of the participant at the time the event was read. */
+  name: string | null
+}
+
+/** Both sides of an event. */
+export interface EventParticipants {
+  /** The home side (the first-named side). Null when neither its id nor its name is known. */
+  home: EventParticipant | null
+  /** The away side (the second-named side). Null when neither its id nor its name is known. */
+  away: EventParticipant | null
+}
+
+export interface EventResponse {
+  data: Event
+}
+
+export interface EventSliceResponse {
+  data: Slice
+}
+
+/** The status of an event: SofaScore's triple and the platform's class. */
+export interface EventStatus {
+  /** SofaScore's status type. */
+  type: string | null
+  /** SofaScore's status code, for example 100 (ended), 110 (after extra time), 120 (after penalties), 91 (walkover), 92 (retired). */
+  code: number | null
+  /** SofaScore's status text, in English, for example `Ended`, `2nd half`. */
+  description: string | null
+  /** The platform's class of the status. `not_started`: not begun. `live`: in progress, breaks included (half time, the night between two days of a cricket match: type `willcontinue`). `completed`: played and finished. `decided_without_play`: finished by walkover or retirement. `void`: postponed, cancelled, interrupted, suspended or abandoned. `unknown`: none of these; never silently treated as completed. */
+  class: "not_started" | "live" | "completed" | "decided_without_play" | "void" | "unknown"
+}
+
+/** Score family `fight`: no score; how the fight was decided and in which round (MMA). The winner is the event's `winner`. */
+export interface FightScore {
+  /** Always `fight`. */
+  family: "fight"
+  /** Headline score of the home side; SofaScore gives none for a fight, so null. */
+  home: number | null
+  /** Headline score of the away side; SofaScore gives none for a fight, so null. */
+  away: number | null
+  /** How the fight was decided, as SofaScore abbreviates it, for example `UD` (unanimous decision), `SD` (split decision), `TKO`, `SUB` (submission); text, not an enumeration of the platform. Null while undecided. */
+  method: string | null
+  /** The round in which the fight ended. Null while undecided. */
+  final_round: number | null
+}
+
+/** Score family `football`: goals by stage of the match. */
+export interface FootballScore {
+  /** Always `football`. */
+  family: "football"
+  /** Headline score of the home side: goals including extra time, without the penalty shoot-out. */
+  home: number | null
+  /** Headline score of the away side: goals including extra time, without the penalty shoot-out. */
+  away: number | null
+  /** Goals in the first half. */
+  half_time: ScorePair | null
+  /** Goals after 90 minutes. */
+  regulation: ScorePair | null
+  /** Goals after extra time (cumulative, without the shoot-out). Null unless the match went to extra time. */
+  after_extra_time: ScorePair | null
+  /** Goals of the penalty shoot-out alone. */
+  penalties: ScorePair | null
+}
+
 export interface Health {
   status: "ok"
   version: string
@@ -106,6 +350,36 @@ export interface Health {
 
 export interface HealthResponse {
   data: Health
+}
+
+/** Runs of one inning. */
+export interface InningScore {
+  /** Number of the inning, starting at 1; extra innings go on after 9. */
+  number: number
+  /** Runs of the home side in the inning. */
+  home: number | null
+  /** Runs of the away side in the inning. */
+  away: number | null
+}
+
+/** Score family `innings`: runs by inning, with hits and errors (baseball). */
+export interface InningsScore {
+  /** Always `innings`. */
+  family: "innings"
+  /** Headline score of the home side: runs, extra innings included. */
+  home: number | null
+  /** Headline score of the away side: runs, extra innings included. */
+  away: number | null
+  /** Runs of each inning that has a score, in order. SofaScore gives the innings in `innings`; some leagues also give them as `period1` to `period9`, with the same values. An inning missing from `innings` is read from `periodN`. */
+  innings: InningScore[]
+  /** Runs after the scheduled innings. Null when SofaScore does not give it. */
+  regulation: ScorePair | null
+  /** Runs scored in extra innings alone. Null without extra innings. */
+  extra_innings: ScorePair | null
+  /** Hits of each side in the whole game. */
+  hits: ScorePair | null
+  /** Errors of each side in the whole game. */
+  errors: ScorePair | null
 }
 
 /** A job: a download, a refresh or a data operation, started by any face in any process. */
@@ -208,8 +482,139 @@ export interface PageInfo {
   next_cursor?: string | null
 }
 
+/** Points of one period. */
+export interface PeriodScore {
+  /** Position of the period within the format, starting at 1: quarter 1 to 4, half 1 to 2, or period 1 to 3. */
+  number: number
+  /** Points of the home side in the period (goals in the goal sports). */
+  home: number | null
+  /** Points of the away side in the period (goals in the goal sports). */
+  away: number | null
+}
+
+/** Score family `periods`: points by period (basketball, American football, Aussie rules, ice hockey, handball, rugby, futsal, minifootball, floorball). */
+export interface PeriodsScore {
+  /** Always `periods`. */
+  family: "periods"
+  /** Headline score of the home side: points including overtime. */
+  home: number | null
+  /** Headline score of the away side: points including overtime. */
+  away: number | null
+  /** How regulation time is divided. Null while no period score exists. */
+  format: "quarters" | "halves" | "thirds" | null
+  /** Points of each period of regulation time that has a score, in order. */
+  periods: PeriodScore[]
+  /** Points at the end of regulation time. */
+  regulation: ScorePair | null
+  /** Points scored in overtime alone. Null without overtime. */
+  overtime: ScorePair | null
+  /** Final points including overtime. */
+  final: ScorePair | null
+  /** Goals of the penalty shoot-out alone. Null without a shoot-out, and always null for basketball. In the one recorded handball shoot-out, `final` and the headline score include these goals. */
+  penalties: ScorePair | null
+}
+
+/** The score of an event whose sport has no score family: only the headline score. */
+export interface PlainScore {
+  /** Always null: the sport has no score mapping. */
+  family: null
+  /** Headline score of the home side, as SofaScore displays it. */
+  home: number | null
+  /** Headline score of the away side, as SofaScore displays it. */
+  away: number | null
+}
+
+/** How much the record can be trusted, and where it comes from. */
+export interface Quality {
+  /** `event`: the record derives from the stored `/event/{id}` payload. `listing`: the event is known only from a schedule page (a fixture, or a match whose details were never fetched); slices do not exist. */
+  source: "event" | "listing"
+  /** When the platform read the `/event/{id}` payload the record derives from. Null for a `listing` record and for a record stored by a version that did not note the time. */
+  observed_at_utc: string | null
+  /** SofaScore's own time of its last change to the event. Carried as given; compare it for equality or order to detect a change. */
+  change_ts: number | null
+  /** `open`: the event has not reached a terminal status, or has no `/event/{id}` payload. `provisional`: terminal status, but it was last read before start time plus the refresh window, so the result may still be corrected. `final`: it was read after the window closed (or the time of the read or the start time is unknown, or the refresh policy is off); the platform will not read it again by itself. */
+  settlement: "open" | "provisional" | "final"
+  /** True exactly when `settlement` is `provisional`. */
+  provisional: boolean
+  /** True when SofaScore offers player statistics for the event or its tournament, which marks the better covered competitions (their results are corrected sooner). False when both flags are false, null when neither is given. */
+  tier_hint: boolean | null
+  /** True when a schedule page read later than the event payload disagrees with it in status, winner, start time or a score field. The next refresh reads the event again. */
+  stale: boolean
+  /** True when the event was stored as completed and a later read showed it as void. */
+  status_regressed: boolean
+}
+
 export interface RefreshJobSpec {
   league_id?: number | null
+}
+
+/** The round of an event. */
+export interface Round {
+  /** Number of the round. */
+  number: number | null
+  /** Name of the round, for example `Quarterfinals`. League rounds have none. */
+  name: string | null
+  /** SofaScore's slug of the round. */
+  slug: string | null
+}
+
+/** A score of both sides. */
+export interface ScorePair {
+  /** Value of the home side. */
+  home: number | null
+  /** Value of the away side. */
+  away: number | null
+}
+
+/** One edition of a tournament. */
+export interface Season {
+  /** SofaScore's season id. */
+  id: number
+  /** Id of the Tournament the season belongs to. */
+  tournament_id: number
+  /** Name of the season, for example `Premier League 26/27`. */
+  name: string | null
+  /** The season's year text as SofaScore writes it: `26/27`, `2025`. */
+  year: string | null
+}
+
+export interface SeasonListResponse {
+  data: Season[]
+  page: PageInfo
+}
+
+export interface SeasonResponse {
+  data: Season
+}
+
+/** One set. */
+export interface SetScore {
+  /** Number of the set, starting at 1. */
+  number: number
+  /** Games the home side won in the set; points when the set is a match tie-break. */
+  home: number | null
+  /** Games the away side won in the set; points when the set is a match tie-break. */
+  away: number | null
+  /** Points of the set's tie-break. Null when the set had none. */
+  tiebreak: ScorePair | null
+}
+
+/** Score family `sets`: sets won and the score of each set. Tennis and padel count games per set; volleyball, badminton and table tennis count points; darts played in sets counts legs per set; snooker, darts played in legs only and e-sports give only the frames, legs or games won and no sets. */
+export interface SetsScore {
+  /** Always `sets`. */
+  family: "sets"
+  /** Headline score of the home side: sets won. */
+  home: number | null
+  /** Headline score of the away side: sets won. */
+  away: number | null
+  /** What the score counts. `games`, `points`, `legs`: sets won, and each set counts games (tennis, padel), points (volleyball, badminton, table tennis) or legs (darts played in sets). `frames`, `legs_won`, `games_won`: no sets; `sets_won` and the headline score are the frames (snooker), legs (darts played in legs only) or games (e-sports) won. Null when the record has no score sheet. */
+  format: "games" | "points" | "frames" | "legs" | "legs_won" | "games_won" | null
+  /** Sets won by each side. */
+  sets_won: ScorePair | null
+  /** The sets that have a score, in order. */
+  sets: SetScore[]
+  /** True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more. */
+  match_tiebreak: boolean
 }
 
 export interface Setting {
@@ -277,6 +682,63 @@ export interface SinkStatus {
   dropped: number
 }
 
+/** One stored response of SofaScore about an event or another entity, and its state. */
+export interface Slice {
+  /** What the slice belongs to. */
+  owner_kind: string
+  /** Id of the owner; for `event` the event id. */
+  owner_id: number
+  /** Name of the slice, for example `event`, `statistics`, `lineups`, `incidents`. */
+  key: string
+  /** Sub-key for a slice that has several payloads per owner, for example the round of a schedule page. Null when the slice has one payload. */
+  sub: string | null
+  /** `ok`: a payload with data is stored. `empty`: SofaScore answered that it has no such data (404, or a response without content). `error`: the last attempt failed and it is unknown whether data exists. `not_requested`: the platform has not asked for it. */
+  state: "ok" | "empty" | "error" | "not_requested"
+  /** True when a payload is stored. A slice in state `error` can still hold the payload of an earlier successful read. */
+  has_payload: boolean
+  /** When the stored payload was read. */
+  fetched_at_utc: string | null
+  /** When the slice was last asked for, whatever the outcome. */
+  checked_at_utc: string | null
+  /** The last failure. Null unless the state is `error`. */
+  error: SliceError | null
+  /** The stored SofaScore response, unchanged (see Raw on request). Present only when asked for; null otherwise. */
+  payload: unknown
+}
+
+/** The last failed attempt to fetch a slice. */
+export interface SliceError {
+  /** Why it failed. */
+  reason: string
+  /** HTTP status of the failed response, when there was one. */
+  http_status: number | null
+  /** When the attempt failed. */
+  at_utc: string | null
+  /** How many attempts in a row have failed. */
+  count: number
+}
+
+export interface SliceListResponse {
+  data: Slice[]
+  page: PageInfo
+}
+
+export interface SliceResponse {
+  data: Slice
+}
+
+/** How much of an event's selected data is stored. */
+export interface SliceSummary {
+  /** Slices selected for the event's sport and phase. */
+  selected: number
+  /** Selected slices with data. */
+  ok: number
+  /** Selected slices SofaScore answered without data. */
+  empty: number
+  /** Selected slices whose last request failed. */
+  error: number
+}
+
 export interface Sport {
   slug: string
   /** SofaScore's English name. */
@@ -303,6 +765,14 @@ export interface SportSlice {
   path: string
   required: boolean
   default_enabled: boolean
+}
+
+/** The part of a tournament an event belongs to: SofaScore's (non-unique) tournament object. */
+export interface Stage {
+  /** SofaScore's id of the stage. */
+  id: number | null
+  /** Name of the stage, for example `UEFA Champions League, Group A` or `Wimbledon, London, GB, Qualifying, 1st - 2nd Round`. */
+  name: string | null
 }
 
 /** Event details only, for the schedules that are already stored. */
@@ -391,6 +861,33 @@ export interface ThrottleStatus {
   requests_per_second: number
   shared: boolean
   error?: string | null
+}
+
+export interface TournamentListResponse {
+  data: TournamentRecord[]
+  page: PageInfo
+}
+
+/** A tournament (schema v1 Tournament) with its category and whether it is followed. */
+export interface TournamentRecord {
+  /** SofaScore's unique-tournament id. */
+  id: number
+  /** Slug of the sport. */
+  sport: string | null
+  /** Id of the tournament's Category. */
+  category_id: number | null
+  /** Name of the tournament, in English. */
+  name: string | null
+  /** SofaScore's slug of the tournament. */
+  slug: string | null
+  /** The tournament's Category; null when the catalog does not know it. */
+  category?: Category | null
+  /** A follow of any origin names the tournament. */
+  followed?: boolean
+}
+
+export interface TournamentResponse {
+  data: TournamentRecord
 }
 
 /** Counts of one tournament. `tournament_id` null: the events without a unique tournament. */
@@ -498,6 +995,123 @@ export interface Operations {
     query: {}
     body: never
     response: AuthResponse
+  }
+  /** List tournaments */
+  "listTournaments": {
+    method: "GET"
+    path: "/api/v1/tournaments"
+    params: {}
+    query: { sport?: string | null; q?: string | null; followed?: boolean | null; limit?: number; cursor?: string | null }
+    body: never
+    response: TournamentListResponse
+  }
+  /** Get a tournament */
+  "getTournament": {
+    method: "GET"
+    path: "/api/v1/tournaments/{tournament_id}"
+    params: { tournament_id: number }
+    query: {}
+    body: never
+    response: TournamentResponse
+  }
+  /** List the seasons of a tournament */
+  "listTournamentSeasons": {
+    method: "GET"
+    path: "/api/v1/tournaments/{tournament_id}/seasons"
+    params: { tournament_id: number }
+    query: {}
+    body: never
+    response: SeasonListResponse
+  }
+  /** Get a season */
+  "getSeason": {
+    method: "GET"
+    path: "/api/v1/seasons/{season_id}"
+    params: { season_id: number }
+    query: {}
+    body: never
+    response: SeasonResponse
+  }
+  /** Get a slice of a season */
+  "getSeasonSlice": {
+    method: "GET"
+    path: "/api/v1/seasons/{season_id}/slices/{key}"
+    params: { season_id: number; key: string }
+    query: { sub?: string }
+    body: never
+    response: SliceResponse
+  }
+  /** List events */
+  "listEvents": {
+    method: "GET"
+    path: "/api/v1/events"
+    params: {}
+    query: { sport?: string | null; tournament?: number[] | null; season?: number[] | null; participant?: number[] | null; status?: ("not_started" | "live" | "completed" | "decided_without_play" | "void" | "unknown")[] | null; from?: string | null; to?: string | null; has?: "details" | "missing" | null; q?: string | null; followed?: boolean; sort?: "start_utc" | "-start_utc"; include?: "slices_summary"[] | null; limit?: number; cursor?: string | null }
+    body: never
+    response: EventListResponse
+  }
+  /** Get an event */
+  "getEvent": {
+    method: "GET"
+    path: "/api/v1/events/{event_id}"
+    params: { event_id: number }
+    query: {}
+    body: never
+    response: EventResponse
+  }
+  /** List the slices of an event */
+  "listEventSlices": {
+    method: "GET"
+    path: "/api/v1/events/{event_id}/slices"
+    params: { event_id: number }
+    query: {}
+    body: never
+    response: SliceListResponse
+  }
+  /** Get a slice of an event */
+  "getEventSlice": {
+    method: "GET"
+    path: "/api/v1/events/{event_id}/slices/{key}"
+    params: { event_id: number; key: string }
+    query: { sub?: string }
+    body: never
+    response: EventSliceResponse
+  }
+  /** Get the stored event payload */
+  "getEventRaw": {
+    method: "GET"
+    path: "/api/v1/events/{event_id}/raw"
+    params: { event_id: number }
+    query: {}
+    body: never
+    response: unknown
+  }
+  /** Get the stored payload of a slice */
+  "getEventSliceRaw": {
+    method: "GET"
+    path: "/api/v1/events/{event_id}/slices/{key}/raw"
+    params: { event_id: number; key: string }
+    query: { sub?: string }
+    body: never
+    response: unknown
+  }
+  /** List the odds of an event */
+  "listEventOdds": {
+    method: "GET"
+    path: "/api/v1/events/{event_id}/odds"
+    params: { event_id: number }
+    query: {}
+    body: never
+    response: SliceListResponse
+  }
+  /** List recorded changes */
+  "listChanges": {
+    method: "GET"
+    path: "/api/v1/changes"
+    params: {}
+    query: { since?: number; event_id?: number | null; tournament?: number[] | null; from?: string | null; to?: string | null; order?: "asc" | "desc"; limit?: number; cursor?: string | null }
+    body: never
+    response: ChangeListResponse
   }
   /** List jobs */
   "listJobs": {

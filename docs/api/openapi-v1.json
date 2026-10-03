@@ -544,6 +544,1618 @@
         }
       }
     },
+    "/api/v1/tournaments": {
+      "get": {
+        "tags": [
+          "tournaments"
+        ],
+        "summary": "List tournaments",
+        "description": "The tournaments the data directory knows (from stored season lists, schedules and events), by name. They\nare not looked up on SofaScore; `POST /tournaments/search` does that.",
+        "operationId": "listTournaments",
+        "parameters": [
+          {
+            "name": "sport",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only tournaments of this sport (slug).",
+              "title": "Sport"
+            },
+            "description": "Only tournaments of this sport (slug)."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Text in the name; case and accents ignored.",
+              "title": "Q"
+            },
+            "description": "Text in the name; case and accents ignored."
+          },
+          {
+            "name": "followed",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "true: only followed tournaments; false: only the others.",
+              "title": "Followed"
+            },
+            "description": "true: only followed tournaments; false: only the others."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 20
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "`page.next_cursor` of the previous page.",
+              "title": "Cursor"
+            },
+            "description": "`page.next_cursor` of the previous page."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tournaments/{tournament_id}": {
+      "get": {
+        "tags": [
+          "tournaments"
+        ],
+        "summary": "Get a tournament",
+        "operationId": "getTournament",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Tournament Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tournaments/{tournament_id}/seasons": {
+      "get": {
+        "tags": [
+          "tournaments"
+        ],
+        "summary": "List the seasons of a tournament",
+        "description": "The tournament's seasons the data directory knows, newest first. An empty list: the tournament is known\nbut no season is stored (its season list was not downloaded yet).",
+        "operationId": "listTournamentSeasons",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Tournament Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeasonListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/seasons/{season_id}": {
+      "get": {
+        "tags": [
+          "tournaments"
+        ],
+        "summary": "Get a season",
+        "operationId": "getSeason",
+        "parameters": [
+          {
+            "name": "season_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Season Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeasonResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/seasons/{season_id}/slices/{key}": {
+      "get": {
+        "tags": [
+          "tournaments"
+        ],
+        "summary": "Get a slice of a season",
+        "description": "A stored slice of the season (standings and other season data) with its payload; 404 when none is stored.",
+        "operationId": "getSeasonSlice",
+        "parameters": [
+          {
+            "name": "season_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Season Id"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,39}$",
+              "description": "Name of the slice, for example `standings`.",
+              "title": "Key"
+            },
+            "description": "Name of the slice, for example `standings`."
+          },
+          {
+            "name": "sub",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9_.-]{0,80}$",
+              "description": "Sub-key of a slice with several payloads; empty for none.",
+              "default": "",
+              "title": "Sub"
+            },
+            "description": "Sub-key of a slice with several payloads; empty for none."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SliceResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "List events",
+        "description": "Stored events, by start time (ties by id; events without a start time come last when newest first). The\nfilters are combined with AND. Every status class the catalog holds is returned unless `status` narrows it.",
+        "operationId": "listEvents",
+        "parameters": [
+          {
+            "name": "sport",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only events of this sport (slug).",
+              "title": "Sport"
+            },
+            "description": "Only events of this sport (slug)."
+          },
+          {
+            "name": "tournament",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only events of these tournaments.",
+              "title": "Tournament"
+            },
+            "description": "Only events of these tournaments."
+          },
+          {
+            "name": "season",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only events of these seasons.",
+              "title": "Season"
+            },
+            "description": "Only events of these seasons."
+          },
+          {
+            "name": "participant",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only events of these participants.",
+              "title": "Participant"
+            },
+            "description": "Only events of these participants."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "not_started",
+                      "live",
+                      "completed",
+                      "decided_without_play",
+                      "void",
+                      "unknown"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only events in these status classes.",
+              "title": "Status"
+            },
+            "description": "Only events in these status classes."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start at or after; ISO 8601 date or date-time (UTC without an offset).",
+              "title": "From"
+            },
+            "description": "Start at or after; ISO 8601 date or date-time (UTC without an offset)."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start at or before; a date includes the whole day.",
+              "title": "To"
+            },
+            "description": "Start at or before; a date includes the whole day."
+          },
+          {
+            "name": "has",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "details",
+                    "missing"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "`details`: the event payload is stored; `missing`: known from a listing only.",
+              "title": "Has"
+            },
+            "description": "`details`: the event payload is stored; `missing`: known from a listing only."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Text in a participant's name.",
+              "title": "Q"
+            },
+            "description": "Text in a participant's name."
+          },
+          {
+            "name": "followed",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Only events of followed tournaments.",
+              "default": false,
+              "title": "Followed"
+            },
+            "description": "Only events of followed tournaments."
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "start_utc",
+                "-start_utc"
+              ],
+              "type": "string",
+              "description": "`-start_utc`: newest first; `start_utc`: oldest first.",
+              "default": "-start_utc",
+              "title": "Sort"
+            },
+            "description": "`-start_utc`: newest first; `start_utc`: oldest first."
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "const": "slices_summary",
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Extra fields per event.",
+              "title": "Include"
+            },
+            "description": "Extra fields per event."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "`page.next_cursor` of the previous page.",
+              "title": "Cursor"
+            },
+            "description": "`page.next_cursor` of the previous page."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events/{event_id}": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Get an event",
+        "operationId": "getEvent",
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Event Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events/{event_id}/slices": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "List the slices of an event",
+        "description": "Every slice of the event the catalog has a row for, and the slices selected for its sport that were never\nrequested (`not_requested`), ordered by key. Payloads are not included: get one slice for its payload.",
+        "operationId": "listEventSlices",
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Event Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SliceListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events/{event_id}/slices/{key}": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Get a slice of an event",
+        "description": "One slice of the event with its stored payload (`payload` null when none is stored). 404 for an unknown\nevent and for a slice that neither has a row nor is selected for the event's sport.",
+        "operationId": "getEventSlice",
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Event Id"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,39}$",
+              "description": "Name of the slice, for example `statistics`.",
+              "title": "Key"
+            },
+            "description": "Name of the slice, for example `statistics`."
+          },
+          {
+            "name": "sub",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9_.-]{0,80}$",
+              "description": "Sub-key of a slice with several payloads; empty for none.",
+              "default": "",
+              "title": "Sub"
+            },
+            "description": "Sub-key of a slice with several payloads; empty for none."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventSliceResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events/{event_id}/raw": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Get the stored event payload",
+        "description": "SofaScore's event object as stored (the object, not the `{\"event\": ...}` wrapper of the response).",
+        "operationId": "getEventRaw",
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Event Id"
+            }
+          },
+          {
+            "name": "if-none-match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "An earlier `ETag`; 304 when it is still current.",
+              "title": "If-None-Match"
+            },
+            "description": "An earlier `ETag`; 304 when it is still current."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored SofaScore payload, unchanged and without an envelope. `ETag` is the payload's sha256, `X-Sofascore-Fetched-At` when it was read (ISO 8601, UTC).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "SofaScore's payload as stored."
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "description": "sha256 of the payload, quoted.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Sofascore-Fetched-At": {
+                "description": "When the payload was read.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "`If-None-Match` names the stored payload."
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events/{event_id}/slices/{key}/raw": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Get the stored payload of a slice",
+        "description": "The stored payload of exactly this slice, unchanged. 404 when no payload is stored for it.",
+        "operationId": "getEventSliceRaw",
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Event Id"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,39}$",
+              "description": "Name of the slice, for example `statistics`.",
+              "title": "Key"
+            },
+            "description": "Name of the slice, for example `statistics`."
+          },
+          {
+            "name": "sub",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9_.-]{0,80}$",
+              "description": "Sub-key of a slice with several payloads; empty for none.",
+              "default": "",
+              "title": "Sub"
+            },
+            "description": "Sub-key of a slice with several payloads; empty for none."
+          },
+          {
+            "name": "if-none-match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "An earlier `ETag`; 304 when it is still current.",
+              "title": "If-None-Match"
+            },
+            "description": "An earlier `ETag`; 304 when it is still current."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored SofaScore payload, unchanged and without an envelope. `ETag` is the payload's sha256, `X-Sofascore-Fetched-At` when it was read (ISO 8601, UTC).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "SofaScore's payload as stored."
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "description": "sha256 of the payload, quoted.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Sofascore-Fetched-At": {
+                "description": "When the payload was read.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "`If-None-Match` names the stored payload."
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events/{event_id}/odds": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "List the odds of an event",
+        "description": "The event's stored odds slices (keys starting with `odds`), without payloads. Empty until odds are\ndownloaded (they are not in the slice registry yet).",
+        "operationId": "listEventOdds",
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Event Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SliceListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/changes": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "List recorded changes",
+        "description": "Changes found in stored events (score corrections, status changes), by their own sequence number. A\nconsumer that syncs passes the last `seq` it has seen as `since`; the sequence only grows.",
+        "operationId": "listChanges",
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Only changes with a sequence number above this one.",
+              "default": 0,
+              "title": "Since"
+            },
+            "description": "Only changes with a sequence number above this one."
+          },
+          {
+            "name": "event_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only the changes of this event.",
+              "title": "Event Id"
+            },
+            "description": "Only the changes of this event."
+          },
+          {
+            "name": "tournament",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only changes of these tournaments.",
+              "title": "Tournament"
+            },
+            "description": "Only changes of these tournaments."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Recorded at or after (ISO 8601).",
+              "title": "From"
+            },
+            "description": "Recorded at or after (ISO 8601)."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Recorded at or before; a date includes the whole day.",
+              "title": "To"
+            },
+            "description": "Recorded at or before; a date includes the whole day."
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string",
+              "description": "`asc`: oldest first (for syncing); `desc`: newest first.",
+              "default": "asc",
+              "title": "Order"
+            },
+            "description": "`asc`: oldest first (for syncing); `desc`: newest first."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 20
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "`page.next_cursor` of the previous page.",
+              "title": "Cursor"
+            },
+            "description": "`page.next_cursor` of the previous page."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/jobs": {
       "get": {
         "tags": [
@@ -1238,6 +2850,59 @@
   },
   "components": {
     "schemas": {
+      "Aggregate": {
+        "properties": {
+          "home": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home",
+            "description": "Aggregate score of this event's home side."
+          },
+          "away": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Away",
+            "description": "Aggregate score of this event's away side."
+          },
+          "winner": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "home",
+                  "away",
+                  "draw"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Winner",
+            "description": "Who won the tie."
+          }
+        },
+        "type": "object",
+        "required": [
+          "home",
+          "away",
+          "winner"
+        ],
+        "title": "Aggregate",
+        "description": "The aggregate score of a two-legged tie, as shown with this leg."
+      },
       "ApiError": {
         "properties": {
           "code": {
@@ -1488,6 +3153,408 @@
         "title": "Capabilities",
         "description": "Optional features this server can offer."
       },
+      "Category": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "SofaScore's category id."
+          },
+          "sport": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sport",
+            "description": "Slug of the sport the category belongs to."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name of the category, in English."
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug",
+            "description": "SofaScore's slug of the category."
+          },
+          "country_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country Code",
+            "description": "SofaScore's two-letter code of the category's country, as given (mostly ISO 3166-1 alpha-2; SofaScore uses `EN` for England). Null for a category that is not a country, such as ATP."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sport",
+          "name",
+          "slug",
+          "country_code"
+        ],
+        "title": "Category",
+        "description": "A country or region, or a tour such as ATP, that groups tournaments."
+      },
+      "Change": {
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "title": "Seq",
+            "description": "Sequence number of the change log. Increases by one per change; pass the last one seen to read the next changes."
+          },
+          "recorded_at_utc": {
+            "type": "string",
+            "title": "Recorded At Utc",
+            "description": "When the platform found the change."
+          },
+          "event_id": {
+            "type": "integer",
+            "title": "Event Id",
+            "description": "Id of the Event."
+          },
+          "sport": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sport",
+            "description": "Slug of the sport."
+          },
+          "tournament_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tournament Id",
+            "description": "Id of the Tournament."
+          },
+          "start_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Utc",
+            "description": "Scheduled start of the event after the change."
+          },
+          "seconds_after_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seconds After Start",
+            "description": "How long after the scheduled start SofaScore made the change: its change time, or the time the platform found the change when SofaScore gave none, minus the start."
+          },
+          "old_status_class": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "not_started",
+                  "live",
+                  "completed",
+                  "decided_without_play",
+                  "void",
+                  "unknown"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old Status Class",
+            "description": "Status class before."
+          },
+          "new_status_class": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "not_started",
+                  "live",
+                  "completed",
+                  "decided_without_play",
+                  "void",
+                  "unknown"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Status Class",
+            "description": "Status class after."
+          },
+          "old_change_ts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old Change Ts",
+            "description": "SofaScore's change time before."
+          },
+          "new_change_ts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Change Ts",
+            "description": "SofaScore's change time after."
+          },
+          "status_regressed": {
+            "type": "boolean",
+            "title": "Status Regressed",
+            "description": "True when the event went from completed to void."
+          },
+          "tier_hint": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier Hint",
+            "description": "As `Event.quality.tier_hint`, at the time of the change."
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/ChangedField"
+            },
+            "type": "array",
+            "title": "Fields",
+            "description": "The fields that changed, ordered by path. Compared are the status triple, the winner code, the start time and every score field."
+          }
+        },
+        "type": "object",
+        "required": [
+          "seq",
+          "recorded_at_utc",
+          "event_id",
+          "sport",
+          "tournament_id",
+          "start_utc",
+          "seconds_after_start",
+          "old_status_class",
+          "new_status_class",
+          "old_change_ts",
+          "new_change_ts",
+          "status_regressed",
+          "tier_hint",
+          "fields"
+        ],
+        "title": "Change",
+        "description": "A change of an already stored event that a later read found."
+      },
+      "ChangeListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Change"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "page"
+        ],
+        "title": "ChangeListResponse"
+      },
+      "ChangedField": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "description": "Path of the field in SofaScore's event object: `status.type`, `status.code`, `status.description`, `winnerCode`, `startTimestamp`, `homeScore.<key>`, `awayScore.<key>`."
+          },
+          "old": {
+            "title": "Old",
+            "description": "Value before, as SofaScore gave it. Null when the field did not exist."
+          },
+          "new": {
+            "title": "New",
+            "description": "Value after, as SofaScore gave it. Null when the field no longer exists."
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "old",
+          "new"
+        ],
+        "title": "ChangedField",
+        "description": "One field that changed between two reads of an event."
+      },
+      "CricketInnings": {
+        "properties": {
+          "side": {
+            "type": "string",
+            "enum": [
+              "home",
+              "away"
+            ],
+            "title": "Side",
+            "description": "The side that batted."
+          },
+          "number": {
+            "type": "integer",
+            "title": "Number",
+            "description": "Number of the innings of this side, starting at 1."
+          },
+          "runs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runs",
+            "description": "Runs scored."
+          },
+          "wickets": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wickets",
+            "description": "Wickets lost."
+          },
+          "overs": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overs",
+            "description": "Overs bowled, in SofaScore's notation: the digit after the point counts balls, so 68.1 is 68 overs and one ball."
+          }
+        },
+        "type": "object",
+        "required": [
+          "side",
+          "number",
+          "runs",
+          "wickets",
+          "overs"
+        ],
+        "title": "CricketInnings",
+        "description": "One innings of one side in cricket."
+      },
+      "CricketScore": {
+        "properties": {
+          "family": {
+            "type": "string",
+            "const": "cricket",
+            "title": "Family",
+            "description": "Always `cricket`."
+          },
+          "home": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home",
+            "description": "Headline score of the home side: runs of all its innings."
+          },
+          "away": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Away",
+            "description": "Headline score of the away side: runs of all its innings."
+          },
+          "innings": {
+            "items": {
+              "$ref": "#/components/schemas/CricketInnings"
+            },
+            "type": "array",
+            "title": "Innings",
+            "description": "The innings of both sides, the home side's first, each side's in its own order. SofaScore numbers each side's innings separately and does not say which side batted first."
+          }
+        },
+        "type": "object",
+        "required": [
+          "family",
+          "home",
+          "away",
+          "innings"
+        ],
+        "title": "CricketScore",
+        "description": "Score family `cricket`: the innings of both sides with runs, wickets and overs."
+      },
       "DataSummary": {
         "properties": {
           "only_finished": {
@@ -1609,6 +3676,755 @@
         "title": "DiskSummary",
         "description": "Disk use of the data directory in bytes; a measurement may be up to a minute old."
       },
+      "Event": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "SofaScore's event id."
+          },
+          "sport": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sport",
+            "description": "Slug of the sport. Null when no stored payload says it."
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id",
+            "description": "Id of the Category."
+          },
+          "tournament_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tournament Id",
+            "description": "Id of the Tournament. Null for an event without a unique tournament."
+          },
+          "season_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Season Id",
+            "description": "Id of the Season."
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Stage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The part of the tournament. Null when neither id nor name is known."
+          },
+          "round": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Round"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The round. Null when the event has no round information."
+          },
+          "start_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Utc",
+            "description": "Scheduled start. For tennis this is the planned time, not the first point."
+          },
+          "status": {
+            "$ref": "#/components/schemas/EventStatus",
+            "description": "Status: SofaScore's triple and the platform's class."
+          },
+          "participants": {
+            "$ref": "#/components/schemas/EventParticipants",
+            "description": "The two sides."
+          },
+          "score": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FootballScore"
+              },
+              {
+                "$ref": "#/components/schemas/PeriodsScore"
+              },
+              {
+                "$ref": "#/components/schemas/SetsScore"
+              },
+              {
+                "$ref": "#/components/schemas/InningsScore"
+              },
+              {
+                "$ref": "#/components/schemas/CricketScore"
+              },
+              {
+                "$ref": "#/components/schemas/FightScore"
+              },
+              {
+                "$ref": "#/components/schemas/PlainScore"
+              }
+            ],
+            "title": "Score",
+            "description": "The score, in the structure of the sport's score family."
+          },
+          "winner": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "home",
+                  "away",
+                  "draw"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Winner",
+            "description": "Who won. Null while undecided and when SofaScore names no winner."
+          },
+          "aggregate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Aggregate"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Aggregate of a two-legged tie. Null for every other event."
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug",
+            "description": "SofaScore's slug of the event."
+          },
+          "custom_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Id",
+            "description": "SofaScore's short id of the pairing, used in its page addresses."
+          },
+          "quality": {
+            "$ref": "#/components/schemas/Quality",
+            "description": "Provenance and reliability of the record."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sport",
+          "category_id",
+          "tournament_id",
+          "season_id",
+          "stage",
+          "round",
+          "start_utc",
+          "status",
+          "participants",
+          "score",
+          "winner",
+          "aggregate",
+          "slug",
+          "custom_id",
+          "quality"
+        ],
+        "title": "Event",
+        "description": "A match."
+      },
+      "EventListItem": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "SofaScore's event id."
+          },
+          "sport": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sport",
+            "description": "Slug of the sport. Null when no stored payload says it."
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id",
+            "description": "Id of the Category."
+          },
+          "tournament_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tournament Id",
+            "description": "Id of the Tournament. Null for an event without a unique tournament."
+          },
+          "season_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Season Id",
+            "description": "Id of the Season."
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Stage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The part of the tournament. Null when neither id nor name is known."
+          },
+          "round": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Round"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The round. Null when the event has no round information."
+          },
+          "start_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Utc",
+            "description": "Scheduled start. For tennis this is the planned time, not the first point."
+          },
+          "status": {
+            "$ref": "#/components/schemas/EventStatus",
+            "description": "Status: SofaScore's triple and the platform's class."
+          },
+          "participants": {
+            "$ref": "#/components/schemas/EventParticipants",
+            "description": "The two sides."
+          },
+          "score": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FootballScore"
+              },
+              {
+                "$ref": "#/components/schemas/PeriodsScore"
+              },
+              {
+                "$ref": "#/components/schemas/SetsScore"
+              },
+              {
+                "$ref": "#/components/schemas/InningsScore"
+              },
+              {
+                "$ref": "#/components/schemas/CricketScore"
+              },
+              {
+                "$ref": "#/components/schemas/FightScore"
+              },
+              {
+                "$ref": "#/components/schemas/PlainScore"
+              }
+            ],
+            "title": "Score",
+            "description": "The score, in the structure of the sport's score family."
+          },
+          "winner": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "home",
+                  "away",
+                  "draw"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Winner",
+            "description": "Who won. Null while undecided and when SofaScore names no winner."
+          },
+          "aggregate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Aggregate"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Aggregate of a two-legged tie. Null for every other event."
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug",
+            "description": "SofaScore's slug of the event."
+          },
+          "custom_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Id",
+            "description": "SofaScore's short id of the pairing, used in its page addresses."
+          },
+          "quality": {
+            "$ref": "#/components/schemas/Quality",
+            "description": "Provenance and reliability of the record."
+          },
+          "slices_summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SliceSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Present when the list was asked with `include=slices_summary`; null otherwise."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sport",
+          "category_id",
+          "tournament_id",
+          "season_id",
+          "stage",
+          "round",
+          "start_utc",
+          "status",
+          "participants",
+          "score",
+          "winner",
+          "aggregate",
+          "slug",
+          "custom_id",
+          "quality"
+        ],
+        "title": "EventListItem",
+        "description": "An event (schema v1 Event); with `include=slices_summary` also the summary of its slices."
+      },
+      "EventListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/EventListItem"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "page"
+        ],
+        "title": "EventListResponse"
+      },
+      "EventParticipant": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id",
+            "description": "Id of the Participant."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name of the participant at the time the event was read."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "EventParticipant",
+        "description": "A side of an event."
+      },
+      "EventParticipants": {
+        "properties": {
+          "home": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EventParticipant"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The home side (the first-named side). Null when neither its id nor its name is known."
+          },
+          "away": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EventParticipant"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The away side (the second-named side). Null when neither its id nor its name is known."
+          }
+        },
+        "type": "object",
+        "required": [
+          "home",
+          "away"
+        ],
+        "title": "EventParticipants",
+        "description": "Both sides of an event."
+      },
+      "EventResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Event"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "EventResponse"
+      },
+      "EventSliceResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Slice"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "EventSliceResponse"
+      },
+      "EventStatus": {
+        "properties": {
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type",
+            "description": "SofaScore's status type."
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code",
+            "description": "SofaScore's status code, for example 100 (ended), 110 (after extra time), 120 (after penalties), 91 (walkover), 92 (retired)."
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "SofaScore's status text, in English, for example `Ended`, `2nd half`."
+          },
+          "class": {
+            "type": "string",
+            "enum": [
+              "not_started",
+              "live",
+              "completed",
+              "decided_without_play",
+              "void",
+              "unknown"
+            ],
+            "title": "Class",
+            "description": "The platform's class of the status. `not_started`: not begun. `live`: in progress, breaks included (half time, the night between two days of a cricket match: type `willcontinue`). `completed`: played and finished. `decided_without_play`: finished by walkover or retirement. `void`: postponed, cancelled, interrupted, suspended or abandoned. `unknown`: none of these; never silently treated as completed."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "code",
+          "description",
+          "class"
+        ],
+        "title": "EventStatus",
+        "description": "The status of an event: SofaScore's triple and the platform's class."
+      },
+      "FightScore": {
+        "properties": {
+          "family": {
+            "type": "string",
+            "const": "fight",
+            "title": "Family",
+            "description": "Always `fight`."
+          },
+          "home": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home",
+            "description": "Headline score of the home side; SofaScore gives none for a fight, so null."
+          },
+          "away": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Away",
+            "description": "Headline score of the away side; SofaScore gives none for a fight, so null."
+          },
+          "method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method",
+            "description": "How the fight was decided, as SofaScore abbreviates it, for example `UD` (unanimous decision), `SD` (split decision), `TKO`, `SUB` (submission); text, not an enumeration of the platform. Null while undecided."
+          },
+          "final_round": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Round",
+            "description": "The round in which the fight ended. Null while undecided."
+          }
+        },
+        "type": "object",
+        "required": [
+          "family",
+          "home",
+          "away",
+          "method",
+          "final_round"
+        ],
+        "title": "FightScore",
+        "description": "Score family `fight`: no score; how the fight was decided and in which round (MMA). The winner is the event's `winner`."
+      },
+      "FootballScore": {
+        "properties": {
+          "family": {
+            "type": "string",
+            "const": "football",
+            "title": "Family",
+            "description": "Always `football`."
+          },
+          "home": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home",
+            "description": "Headline score of the home side: goals including extra time, without the penalty shoot-out."
+          },
+          "away": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Away",
+            "description": "Headline score of the away side: goals including extra time, without the penalty shoot-out."
+          },
+          "half_time": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScorePair"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Goals in the first half."
+          },
+          "regulation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScorePair"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Goals after 90 minutes."
+          },
+          "after_extra_time": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScorePair"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Goals after extra time (cumulative, without the shoot-out). Null unless the match went to extra time."
+          },
+          "penalties": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScorePair"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Goals of the penalty shoot-out alone."
+          }
+        },
+        "type": "object",
+        "required": [
+          "family",
+          "home",
+          "away",
+          "half_time",
+          "regulation",
+          "after_extra_time",
+          "penalties"
+        ],
+        "title": "FootballScore",
+        "description": "Score family `football`: goals by stage of the match."
+      },
       "Health": {
         "properties": {
           "status": {
@@ -1653,6 +4469,146 @@
           "data"
         ],
         "title": "HealthResponse"
+      },
+      "InningScore": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "title": "Number",
+            "description": "Number of the inning, starting at 1; extra innings go on after 9."
+          },
+          "home": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home",
+            "description": "Runs of the home side in the inning."
+          },
+          "away": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Away",
+            "description": "Runs of the away side in the inning."
+          }
+        },
+        "type": "object",
+        "required": [
+          "number",
+          "home",
+          "away"
+        ],
+        "title": "InningScore",
+        "description": "Runs of one inning."
+      },
+      "InningsScore": {
+        "properties": {
+          "family": {
+            "type": "string",
+            "const": "innings",
+            "title": "Family",
+            "description": "Always `innings`."
+          },
+          "home": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home",
+            "description": "Headline score of the home side: runs, extra innings included."
+          },
+          "away": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Away",
+            "description": "Headline score of the away side: runs, extra innings included."
+          },
+          "innings": {
+            "items": {
+              "$ref": "#/components/schemas/InningScore"
+            },
+            "type": "array",
+            "title": "Innings",
+            "description": "Runs of each inning that has a score, in order. SofaScore gives the innings in `innings`; some leagues also give them as `period1` to `period9`, with the same values. An inning missing from `innings` is read from `periodN`."
+          },
+          "regulation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScorePair"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Runs after the scheduled innings. Null when SofaScore does not give it."
+          },
+          "extra_innings": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScorePair"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Runs scored in extra innings alone. Null without extra innings."
+          },
+          "hits": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScorePair"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Hits of each side in the whole game."
+          },
+          "errors": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScorePair"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Errors of each side in the whole game."
+          }
+        },
+        "type": "object",
+        "required": [
+          "family",
+          "home",
+          "away",
+          "innings",
+          "regulation",
+          "extra_innings",
+          "hits",
+          "errors"
+        ],
+        "title": "InningsScore",
+        "description": "Score family `innings`: runs by inning, with hits and errors (baseball)."
       },
       "Job": {
         "properties": {
@@ -2119,6 +5075,292 @@
         "title": "PageInfo",
         "description": "Cursor pagination of a collection response."
       },
+      "PeriodScore": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "title": "Number",
+            "description": "Position of the period within the format, starting at 1: quarter 1 to 4, half 1 to 2, or period 1 to 3."
+          },
+          "home": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home",
+            "description": "Points of the home side in the period (goals in the goal sports)."
+          },
+          "away": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Away",
+            "description": "Points of the away side in the period (goals in the goal sports)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "number",
+          "home",
+          "away"
+        ],
+        "title": "PeriodScore",
+        "description": "Points of one period."
+      },
+      "PeriodsScore": {
+        "properties": {
+          "family": {
+            "type": "string",
+            "const": "periods",
+            "title": "Family",
+            "description": "Always `periods`."
+          },
+          "home": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home",
+            "description": "Headline score of the home side: points including overtime."
+          },
+          "away": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Away",
+            "description": "Headline score of the away side: points including overtime."
+          },
+          "format": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "quarters",
+                  "halves",
+                  "thirds"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Format",
+            "description": "How regulation time is divided. Null while no period score exists."
+          },
+          "periods": {
+            "items": {
+              "$ref": "#/components/schemas/PeriodScore"
+            },
+            "type": "array",
+            "title": "Periods",
+            "description": "Points of each period of regulation time that has a score, in order."
+          },
+          "regulation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScorePair"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Points at the end of regulation time."
+          },
+          "overtime": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScorePair"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Points scored in overtime alone. Null without overtime."
+          },
+          "final": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScorePair"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Final points including overtime."
+          },
+          "penalties": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScorePair"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Goals of the penalty shoot-out alone. Null without a shoot-out, and always null for basketball. In the one recorded handball shoot-out, `final` and the headline score include these goals."
+          }
+        },
+        "type": "object",
+        "required": [
+          "family",
+          "home",
+          "away",
+          "format",
+          "periods",
+          "regulation",
+          "overtime",
+          "final",
+          "penalties"
+        ],
+        "title": "PeriodsScore",
+        "description": "Score family `periods`: points by period (basketball, American football, Aussie rules, ice hockey, handball, rugby, futsal, minifootball, floorball)."
+      },
+      "PlainScore": {
+        "properties": {
+          "family": {
+            "type": "null",
+            "title": "Family",
+            "description": "Always null: the sport has no score mapping."
+          },
+          "home": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home",
+            "description": "Headline score of the home side, as SofaScore displays it."
+          },
+          "away": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Away",
+            "description": "Headline score of the away side, as SofaScore displays it."
+          }
+        },
+        "type": "object",
+        "required": [
+          "family",
+          "home",
+          "away"
+        ],
+        "title": "PlainScore",
+        "description": "The score of an event whose sport has no score family: only the headline score."
+      },
+      "Quality": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "event",
+              "listing"
+            ],
+            "title": "Source",
+            "description": "`event`: the record derives from the stored `/event/{id}` payload. `listing`: the event is known only from a schedule page (a fixture, or a match whose details were never fetched); slices do not exist."
+          },
+          "observed_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed At Utc",
+            "description": "When the platform read the `/event/{id}` payload the record derives from. Null for a `listing` record and for a record stored by a version that did not note the time."
+          },
+          "change_ts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Ts",
+            "description": "SofaScore's own time of its last change to the event. Carried as given; compare it for equality or order to detect a change."
+          },
+          "settlement": {
+            "type": "string",
+            "enum": [
+              "open",
+              "provisional",
+              "final"
+            ],
+            "title": "Settlement",
+            "description": "`open`: the event has not reached a terminal status, or has no `/event/{id}` payload. `provisional`: terminal status, but it was last read before start time plus the refresh window, so the result may still be corrected. `final`: it was read after the window closed (or the time of the read or the start time is unknown, or the refresh policy is off); the platform will not read it again by itself."
+          },
+          "provisional": {
+            "type": "boolean",
+            "title": "Provisional",
+            "description": "True exactly when `settlement` is `provisional`."
+          },
+          "tier_hint": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier Hint",
+            "description": "True when SofaScore offers player statistics for the event or its tournament, which marks the better covered competitions (their results are corrected sooner). False when both flags are false, null when neither is given."
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale",
+            "description": "True when a schedule page read later than the event payload disagrees with it in status, winner, start time or a score field. The next refresh reads the event again."
+          },
+          "status_regressed": {
+            "type": "boolean",
+            "title": "Status Regressed",
+            "description": "True when the event was stored as completed and a later read showed it as void."
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "observed_at_utc",
+          "change_ts",
+          "settlement",
+          "provisional",
+          "tier_hint",
+          "stale",
+          "status_regressed"
+        ],
+        "title": "Quality",
+        "description": "How much the record can be trusted, and where it comes from."
+      },
       "RefreshJobSpec": {
         "properties": {
           "league_id": {
@@ -2137,6 +5379,311 @@
         "additionalProperties": false,
         "type": "object",
         "title": "RefreshJobSpec"
+      },
+      "Round": {
+        "properties": {
+          "number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Number",
+            "description": "Number of the round."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name of the round, for example `Quarterfinals`. League rounds have none."
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug",
+            "description": "SofaScore's slug of the round."
+          }
+        },
+        "type": "object",
+        "required": [
+          "number",
+          "name",
+          "slug"
+        ],
+        "title": "Round",
+        "description": "The round of an event."
+      },
+      "ScorePair": {
+        "properties": {
+          "home": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home",
+            "description": "Value of the home side."
+          },
+          "away": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Away",
+            "description": "Value of the away side."
+          }
+        },
+        "type": "object",
+        "required": [
+          "home",
+          "away"
+        ],
+        "title": "ScorePair",
+        "description": "A score of both sides."
+      },
+      "Season": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "SofaScore's season id."
+          },
+          "tournament_id": {
+            "type": "integer",
+            "title": "Tournament Id",
+            "description": "Id of the Tournament the season belongs to."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name of the season, for example `Premier League 26/27`."
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year",
+            "description": "The season's year text as SofaScore writes it: `26/27`, `2025`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "tournament_id",
+          "name",
+          "year"
+        ],
+        "title": "Season",
+        "description": "One edition of a tournament."
+      },
+      "SeasonListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Season"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "page"
+        ],
+        "title": "SeasonListResponse"
+      },
+      "SeasonResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Season"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SeasonResponse"
+      },
+      "SetScore": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "title": "Number",
+            "description": "Number of the set, starting at 1."
+          },
+          "home": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home",
+            "description": "Games the home side won in the set; points when the set is a match tie-break."
+          },
+          "away": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Away",
+            "description": "Games the away side won in the set; points when the set is a match tie-break."
+          },
+          "tiebreak": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScorePair"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Points of the set's tie-break. Null when the set had none."
+          }
+        },
+        "type": "object",
+        "required": [
+          "number",
+          "home",
+          "away",
+          "tiebreak"
+        ],
+        "title": "SetScore",
+        "description": "One set."
+      },
+      "SetsScore": {
+        "properties": {
+          "family": {
+            "type": "string",
+            "const": "sets",
+            "title": "Family",
+            "description": "Always `sets`."
+          },
+          "home": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home",
+            "description": "Headline score of the home side: sets won."
+          },
+          "away": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Away",
+            "description": "Headline score of the away side: sets won."
+          },
+          "format": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "games",
+                  "points",
+                  "frames",
+                  "legs",
+                  "legs_won",
+                  "games_won"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Format",
+            "description": "What the score counts. `games`, `points`, `legs`: sets won, and each set counts games (tennis, padel), points (volleyball, badminton, table tennis) or legs (darts played in sets). `frames`, `legs_won`, `games_won`: no sets; `sets_won` and the headline score are the frames (snooker), legs (darts played in legs only) or games (e-sports) won. Null when the record has no score sheet."
+          },
+          "sets_won": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScorePair"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Sets won by each side."
+          },
+          "sets": {
+            "items": {
+              "$ref": "#/components/schemas/SetScore"
+            },
+            "type": "array",
+            "title": "Sets",
+            "description": "The sets that have a score, in order."
+          },
+          "match_tiebreak": {
+            "type": "boolean",
+            "title": "Match Tiebreak",
+            "description": "True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more."
+          }
+        },
+        "type": "object",
+        "required": [
+          "family",
+          "home",
+          "away",
+          "format",
+          "sets_won",
+          "sets",
+          "match_tiebreak"
+        ],
+        "title": "SetsScore",
+        "description": "Score family `sets`: sets won and the score of each set. Tennis and padel count games per set; volleyball, badminton and table tennis count points; darts played in sets counts legs per set; snooker, darts played in legs only and e-sports give only the frames, legs or games won and no sets."
       },
       "Setting": {
         "properties": {
@@ -2398,6 +5945,219 @@
         "title": "SinkStatus",
         "description": "A configured output sink and how far it has delivered the event log."
       },
+      "Slice": {
+        "properties": {
+          "owner_kind": {
+            "type": "string",
+            "title": "Owner Kind",
+            "description": "What the slice belongs to."
+          },
+          "owner_id": {
+            "type": "integer",
+            "title": "Owner Id",
+            "description": "Id of the owner; for `event` the event id."
+          },
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "Name of the slice, for example `event`, `statistics`, `lineups`, `incidents`."
+          },
+          "sub": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sub",
+            "description": "Sub-key for a slice that has several payloads per owner, for example the round of a schedule page. Null when the slice has one payload."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "empty",
+              "error",
+              "not_requested"
+            ],
+            "title": "State",
+            "description": "`ok`: a payload with data is stored. `empty`: SofaScore answered that it has no such data (404, or a response without content). `error`: the last attempt failed and it is unknown whether data exists. `not_requested`: the platform has not asked for it."
+          },
+          "has_payload": {
+            "type": "boolean",
+            "title": "Has Payload",
+            "description": "True when a payload is stored. A slice in state `error` can still hold the payload of an earlier successful read."
+          },
+          "fetched_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At Utc",
+            "description": "When the stored payload was read."
+          },
+          "checked_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked At Utc",
+            "description": "When the slice was last asked for, whatever the outcome."
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SliceError"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The last failure. Null unless the state is `error`."
+          },
+          "payload": {
+            "title": "Payload",
+            "description": "The stored SofaScore response, unchanged (see Raw on request). Present only when asked for; null otherwise."
+          }
+        },
+        "type": "object",
+        "required": [
+          "owner_kind",
+          "owner_id",
+          "key",
+          "sub",
+          "state",
+          "has_payload",
+          "fetched_at_utc",
+          "checked_at_utc",
+          "error",
+          "payload"
+        ],
+        "title": "Slice",
+        "description": "One stored response of SofaScore about an event or another entity, and its state."
+      },
+      "SliceError": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "description": "Why it failed."
+          },
+          "http_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Http Status",
+            "description": "HTTP status of the failed response, when there was one."
+          },
+          "at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At Utc",
+            "description": "When the attempt failed."
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "How many attempts in a row have failed."
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason",
+          "http_status",
+          "at_utc",
+          "count"
+        ],
+        "title": "SliceError",
+        "description": "The last failed attempt to fetch a slice."
+      },
+      "SliceListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Slice"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "page"
+        ],
+        "title": "SliceListResponse"
+      },
+      "SliceResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Slice"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SliceResponse"
+      },
+      "SliceSummary": {
+        "properties": {
+          "selected": {
+            "type": "integer",
+            "title": "Selected",
+            "description": "Slices selected for the event's sport and phase."
+          },
+          "ok": {
+            "type": "integer",
+            "title": "Ok",
+            "description": "Selected slices with data."
+          },
+          "empty": {
+            "type": "integer",
+            "title": "Empty",
+            "description": "Selected slices SofaScore answered without data."
+          },
+          "error": {
+            "type": "integer",
+            "title": "Error",
+            "description": "Selected slices whose last request failed."
+          }
+        },
+        "type": "object",
+        "required": [
+          "selected",
+          "ok",
+          "empty",
+          "error"
+        ],
+        "title": "SliceSummary",
+        "description": "How much of an event's selected data is stored."
+      },
       "Sport": {
         "properties": {
           "slug": {
@@ -2497,6 +6257,41 @@
           "default_enabled"
         ],
         "title": "SportSlice"
+      },
+      "Stage": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id",
+            "description": "SofaScore's id of the stage."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name of the stage, for example `UEFA Champions League, Group A` or `Wimbledon, London, GB, Qualifying, 1st - 2nd Round`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "Stage",
+        "description": "The part of a tournament an event belongs to: SofaScore's (non-unique) tournament object."
       },
       "StartFetchJob": {
         "properties": {
@@ -2840,6 +6635,122 @@
         ],
         "title": "ThrottleStatus",
         "description": "The request budget shared by all processes of this machine."
+      },
+      "TournamentListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/TournamentRecord"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "page"
+        ],
+        "title": "TournamentListResponse"
+      },
+      "TournamentRecord": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "SofaScore's unique-tournament id."
+          },
+          "sport": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sport",
+            "description": "Slug of the sport."
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id",
+            "description": "Id of the tournament's Category."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name of the tournament, in English."
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug",
+            "description": "SofaScore's slug of the tournament."
+          },
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Category"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tournament's Category; null when the catalog does not know it."
+          },
+          "followed": {
+            "type": "boolean",
+            "title": "Followed",
+            "description": "A follow of any origin names the tournament.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sport",
+          "category_id",
+          "name",
+          "slug"
+        ],
+        "title": "TournamentRecord",
+        "description": "A tournament (schema v1 Tournament) with its category and whether it is followed."
+      },
+      "TournamentResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TournamentRecord"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "TournamentResponse"
       },
       "TournamentSummary": {
         "properties": {

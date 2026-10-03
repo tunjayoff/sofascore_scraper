@@ -69,6 +69,7 @@ def _api_routes():
         if not template.startswith("/api"):
             continue
         path = re.sub(r"\{name\}", "backup_all_20260101_000000.zip", template)
+        path = re.sub(r"\{key\}", "statistics", path)  # dilim adı (v1): biçimi denetlenir
         path = re.sub(r"\{[a-z_]+\}", "1", path)
         out += [(method.upper(), path) for method in operations]
     assert len(out) > 30
@@ -194,15 +195,28 @@ READ_ONLY_GETS = {
     "/api/status",
     # API v1 (src/web/api/v1): sağlık, durum, sporlar, iş geçmişi ve olay akışı, ayarların okunması
     "/api/v1/auth",
+    "/api/v1/changes",
+    "/api/v1/events",
+    "/api/v1/events/1",
+    "/api/v1/events/1/odds",
+    "/api/v1/events/1/raw",
+    "/api/v1/events/1/slices",
+    "/api/v1/events/1/slices/statistics",
+    "/api/v1/events/1/slices/statistics/raw",
     "/api/v1/health",
     "/api/v1/jobs",
     "/api/v1/jobs/1",
     "/api/v1/jobs/1/events",
+    "/api/v1/seasons/1",
+    "/api/v1/seasons/1/slices/statistics",
     "/api/v1/settings",
     "/api/v1/sinks",
     "/api/v1/sports",
     "/api/v1/sports/1",
     "/api/v1/status",
+    "/api/v1/tournaments",
+    "/api/v1/tournaments/1",
+    "/api/v1/tournaments/1/seasons",
 }
 
 
@@ -228,6 +242,17 @@ GETS_THAT_MAY_WRITE_A_CACHE = {
             "açıldıktan sonrasını ölçer, ondan sonra bu iki dosyanın içeriği de değişmez."
         )
         for path in ("/api/dashboard", "/api/stats/system", "/api/v1/status")
+    },
+    # API v1'in okuma kaynakları (P21): maçlar, dilimler, ham yükler, turnuvalar, sezonlar ve değişiklikler
+    # katalogdan okunur; ilk okuma veri dizininin deposunu açar
+    **{
+        path: _CATALOG_ON_FIRST_READ
+        for path in (
+            "/api/v1/changes", "/api/v1/events", "/api/v1/events/1", "/api/v1/events/1/odds", "/api/v1/events/1/raw",
+            "/api/v1/events/1/slices", "/api/v1/events/1/slices/statistics",
+            "/api/v1/events/1/slices/statistics/raw", "/api/v1/seasons/1", "/api/v1/seasons/1/slices/statistics",
+            "/api/v1/tournaments", "/api/v1/tournaments/1", "/api/v1/tournaments/1/seasons",
+        )
     },
 }
 

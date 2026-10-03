@@ -107,6 +107,19 @@ def test_the_document_is_the_v1_view(document: Dict[str, Any], full_document: Di
         "GET /api/v1/auth",
         "POST /api/v1/auth/login",
         "POST /api/v1/auth/logout",
+        "GET /api/v1/tournaments",
+        "GET /api/v1/tournaments/{tournament_id}",
+        "GET /api/v1/tournaments/{tournament_id}/seasons",
+        "GET /api/v1/seasons/{season_id}",
+        "GET /api/v1/seasons/{season_id}/slices/{key}",
+        "GET /api/v1/events",
+        "GET /api/v1/events/{event_id}",
+        "GET /api/v1/events/{event_id}/slices",
+        "GET /api/v1/events/{event_id}/slices/{key}",
+        "GET /api/v1/events/{event_id}/raw",
+        "GET /api/v1/events/{event_id}/slices/{key}/raw",
+        "GET /api/v1/events/{event_id}/odds",
+        "GET /api/v1/changes",
         "GET /api/v1/jobs",
         "POST /api/v1/jobs",
         "GET /api/v1/jobs/{job_id}",
@@ -144,7 +157,10 @@ def test_every_v1_operation_has_a_stable_id_and_a_summary(document: Dict[str, An
     ids = [op["operationId"] for _m, _p, op in operations(document)]
     assert ids == [
         "getHealth", "getStatus", "checkConnection", "listSports", "getSport", "listSinks", "getAuth", "login",
-        "logout", "listJobs", "startJob", "getJob", "cancelJob", "streamJobEvents", "getSettings", "updateSettings",
+        "logout", "listTournaments", "getTournament", "listTournamentSeasons", "getSeason", "getSeasonSlice",
+        "listEvents", "getEvent", "listEventSlices", "getEventSlice", "getEventRaw", "getEventSliceRaw",
+        "listEventOdds", "listChanges", "listJobs", "startJob", "getJob", "cancelJob", "streamJobEvents",
+        "getSettings", "updateSettings",
     ]
     assert len(set(ids)) == len(ids)
     for method, path, op in operations(document):
@@ -152,13 +168,22 @@ def test_every_v1_operation_has_a_stable_id_and_a_summary(document: Dict[str, An
         assert not op.get("deprecated"), (method, path)
 
 
+# Gövdesi zarf olmayan işlemler: işin olay akışı (SSE) ve saklanan SofaScore yükünün kendisi (ham yük, P21)
+STREAM_OPERATIONS = {"/api/v1/jobs/{job_id}/events"}
+RAW_OPERATIONS = {"/api/v1/events/{event_id}/raw", "/api/v1/events/{event_id}/slices/{key}/raw"}
+
+
 def test_every_v1_operation_declares_its_response_model(document: Dict[str, Any]) -> None:
     for method, path, op in operations(document):
         success = [status for status in op["responses"] if status.startswith("2")]
         assert len(success) == 1, (method, path)
         content = op["responses"][success[0]]["content"]
-        if path.endswith("/events"):
+        if path in STREAM_OPERATIONS:
             assert list(content) == ["text/event-stream"]
+            continue
+        if path in RAW_OPERATIONS:
+            assert list(content) == ["application/json"] and "$ref" not in content["application/json"]["schema"]
+            assert {"ETag", "X-Sofascore-Fetched-At"} <= set(op["responses"][success[0]]["headers"])
             continue
         schema = content["application/json"]["schema"]
         assert schema["$ref"].endswith("Response"), (method, path, schema)
@@ -169,7 +194,8 @@ def test_every_v1_operation_declares_its_response_model(document: Dict[str, Any]
 
 def test_every_v1_operation_documents_its_errors_with_the_error_model(document: Dict[str, Any]) -> None:
     for method, path, op in operations(document):
-        errors = {status: body for status, body in op["responses"].items() if not status.startswith("2")}
+        # 304: ham yük rotalarının `If-None-Match` yanıtı, gövdesiz
+        errors = {status: body for status, body in op["responses"].items() if status[0] not in "23"}
         assert {"401", "422", "500"} <= set(errors), (method, path)
         for status, body in errors.items():
             assert body["content"]["application/json"]["schema"] == ERROR_REF, (method, path, status)
