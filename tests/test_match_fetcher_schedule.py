@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import tempfile
 import unittest
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.exceptions import APIError, ResourceNotFoundError
@@ -62,6 +63,24 @@ class TestScheduleHelpers(unittest.TestCase):
         self.assertFalse(MatchFetcher.is_week_based_rounds([], max_round=50))
 
 
+@contextlib.contextmanager
+def _data_dir() -> Iterator[str]:
+    """
+    Geçici veri dizini; silinmeden önce sarmalayıcının bu dizin için açtığı depo kapatılır. Depo kayıt defterinde
+    açık kalır ve catalog.db açıkken Windows dizini silemez (WinError 32).
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        try:
+            yield tmp
+        finally:
+            from src.store import api as store_api
+
+            root = os.path.abspath(tmp)
+            for store in list(store_api._registry.values()):
+                if os.fspath(store.data_dir) == root:
+                    store.close()
+
+
 def _no_session() -> Any:
     return AsyncMock(__aenter__=AsyncMock(return_value=MagicMock()), __aexit__=AsyncMock(return_value=False))
 
@@ -97,7 +116,7 @@ class TestFetchStrategyMocked(unittest.IsolatedAsyncioTestCase):
             return await fetcher.fetch_all_rounds_async(league, season, max_round=50)
 
     async def test_paginated_fallback_when_rounds_missing(self):
-        with tempfile.TemporaryDirectory() as tmp:
+        with _data_dir() as tmp:
             fetcher = self._make_fetcher(tmp)
             base = "/unique-tournament/242/season/70158"
             calls: List[str] = []
@@ -110,7 +129,7 @@ class TestFetchStrategyMocked(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(calls, [f"{base}/rounds", f"{base}/events/last/0", f"{base}/events/next/0"])
 
     async def test_week_based_uses_round_urls_not_event_list(self):
-        with tempfile.TemporaryDirectory() as tmp:
+        with _data_dir() as tmp:
             fetcher = self._make_fetcher(tmp)
             base = "/unique-tournament/17/season/96668"
             calls: List[str] = []
@@ -124,7 +143,7 @@ class TestFetchStrategyMocked(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(sorted(calls), [f"{base}/events/round/1", f"{base}/events/round/2", f"{base}/rounds"])
 
     async def test_cup_slug_passed_for_week_entry(self):
-        with tempfile.TemporaryDirectory() as tmp:
+        with _data_dir() as tmp:
             fetcher = self._make_fetcher(tmp)
             base = "/unique-tournament/17/season/1"
             calls: List[str] = []
@@ -137,7 +156,7 @@ class TestFetchStrategyMocked(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(calls, [f"{base}/rounds", f"{base}/events/round/1/slug/week-1"])
 
     async def test_event_pages_dedupe_and_save(self):
-        with tempfile.TemporaryDirectory() as tmp:
+        with _data_dir() as tmp:
             fetcher = self._make_fetcher(tmp)
             base = "/unique-tournament/242/season/1"
             calls: List[str] = []
@@ -166,7 +185,7 @@ class TestFetchStrategyMocked(unittest.IsolatedAsyncioTestCase):
 
     async def test_a_failed_round_does_not_stop_the_other_rounds(self):
         """Eski yüz başarısızlığı sonuçta göstermez (sayfa listesi); tipli sonuç list_schedule'dadır."""
-        with tempfile.TemporaryDirectory() as tmp:
+        with _data_dir() as tmp:
             fetcher = self._make_fetcher(tmp)
             base = "/unique-tournament/17/season/5"
             calls: List[str] = []
