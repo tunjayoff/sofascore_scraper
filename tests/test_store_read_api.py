@@ -108,6 +108,7 @@ PL_DETAILS = "match_details/17_Premier_League/season_Premier_League_26_27"
 PL_MATCHES = "matches/17_Premier_League/96668_Premier_League_26_27"
 REQUIRED = {"": [detail.key for detail in slices_for(None, required_only=True)]}
 FINISHED = ("completed", "decided_without_play")
+SETTLED = FINISHED + ("void",)  # ST-27: yenileme politikasının baktığı durumlar (planning.SETTLED_CLASSES)
 
 # Kanonik dizinin maçları, başlangıç zamanı (eşitlikte kimlik) sırasıyla: fixture tanımlarından
 CANONICAL_ORDER = [
@@ -984,17 +985,31 @@ def _deferred(store: Store, needs: Dict[int, str]) -> Set[int]:
     servisin işi) ve daha yeni bir listenin bayatlamış saydığı kayıt (`refresh`). Store'un `missing()` ve
     `refresh_candidates()` sorguları evreye ve `stale`e bakmaz; eşitlik öteki kayıtlarda aranır, bunların kararı
     burada sabitlenir.
+
+    ST-27: yalnızca listeden bilinen bitmemiş maç (başlamamış, oynanıyor, void) indirilmez (`none`); açık kayıt
+    (başlamamış, oynanıyor, bilinmiyor) `none`; void kayıt dilim beklemez, yalnızca yenilenir.
     """
+    from src.services.planning import SETTLED_CLASSES, refresh_due
+    from src.services.query import RefreshPolicy
+
     found: Set[int] = set()
     for event_id, need in needs.items():
         row = store.events.get(event_id)
-        if row is None or not row.has_event_payload:
+        if row is None:
+            continue
+        if not row.has_event_payload:
+            if row.status_class in ("not_started", "live", "void"):
+                assert need == "none", event_id
+                found.add(event_id)
             continue
         if row.stale:
             assert need == "refresh", event_id
             found.add(event_id)
-        elif row.status_class == "live":
+        elif row.status_class not in SETTLED_CLASSES:
             assert need == "none", event_id
+            found.add(event_id)
+        elif row.status_class == "void":
+            assert need == ("refresh" if refresh_due(row, RefreshPolicy.current()) else "none"), event_id
             found.add(event_id)
     return found
 
@@ -1027,9 +1042,10 @@ def test_missing_equals_the_file_based_refill_set(built: Dict[str, sf.LegacyFixt
         assert rows[event_id].missing_keys == _file_missing_keys(fetcher, event_id)
     # `full`: olay yükü yok (RD-1'den beri `_needs_detail_fetch` de depodan okur: birleşik dosyalı dizin dahil eşit)
     full = {event_id for event_id, need in needs.items() if need == "full"}
-    assert {event_id for event_id, row in rows.items() if not row.has_event_payload} == full
+    assert {event_id for event_id, row in rows.items() if not row.has_event_payload} - deferred == full
     if name == "canonical":
-        assert len(refill) == 8 and len(full) == 12
+        # ST-27: 6 maç yalnızca listeden biliniyor ve bitmemiş (başlamamış ya da void): indirilmez
+        assert len(refill) == 8 and len(full) == 6
     if name == "legacy":
         assert refill == {15500003, AVL} and store.events.get(BRE).has_event_payload  # type: ignore[union-attr]
         # yarıda kesilmiş dilim dosyası yalnızca o dilimi düşürür (RD-1 öncesinin okuyucusu maçın bütün dosyalarını bırakırdı)
@@ -1085,10 +1101,14 @@ def test_refresh_candidates_equal_refresh_due_ids(built: Dict[str, sf.LegacyFixt
     fx = built[name]
     store = open_store(fx.data_dir)
     fetcher = fetcher_of(fx.data_dir)
-    refill = {row.event_id for row in store.events.missing(None, REQUIRED, status_classes=()) if row.has_event_payload}
+    refill = {row.event_id for row in store.events.missing(None, REQUIRED, status_classes=FINISHED)
+              if row.has_event_payload}
 
     def catalog(**kwargs: Any) -> List[str]:
-        return [str(event_id) for event_id in _candidates(store, **kwargs) if event_id not in refill]
+        # ST-27: kapanmış durumdaki adaylar ve bayat kayıtlar (01-storage.md 8.2 kural 3, 8.3)
+        stale = set(store.events.stale(kwargs.get("scope")))
+        due = set(_candidates(store, status_classes=SETTLED, **kwargs)) - refill
+        return [str(event_id) for event_id in sorted(due | stale)]
 
     def differences(found: List[str], expected: List[str]) -> Set[str]:
         return set(found) ^ set(expected)
@@ -1107,12 +1127,14 @@ def test_refresh_candidates_equal_refresh_due_ids(built: Dict[str, sf.LegacyFixt
         assert legacy_only == set()
     with monkeypatch.context() as patch:
         patch.setenv("REFRESH_WINDOW_HOURS", "0")
-        assert fetcher.refresh_due_ids() == [] == store.events.refresh_candidates(
-            now=NOW, window_s=0, min_interval_s=MIN_INTERVAL_S)
+        assert [] == store.events.refresh_candidates(now=NOW, window_s=0, min_interval_s=MIN_INTERVAL_S)
+        # ST-27: politika kapalıyken de bayat kayıt yenilenir (listeden gelen düzeltme, pencereye bağlı değil)
+        assert fetcher.refresh_due_ids() == [str(event_id) for event_id in store.events.stale()]
     with monkeypatch.context() as patch:
         patch.setenv("REFRESH_MIN_INTERVAL_HOURS", "0")
-        found = [str(i) for i in store.events.refresh_candidates(now=NOW, window_s=WINDOW_S, min_interval_s=0)
-                 if i not in refill]
+        found = [str(i) for i in store.events.refresh_candidates(now=NOW, window_s=WINDOW_S, min_interval_s=0,
+                                                                 status_classes=SETTLED)
+                 if i not in refill] + [str(i) for i in store.events.stale()]
         assert differences(found, fetcher.refresh_due_ids()) == known
 
 
@@ -1195,8 +1217,10 @@ def test_needs_from_the_catalog_equal_the_file_based_ones_for_random_states(
         if refresh.refresh_due(basic, observation, now=float(NOW)):
             due.append(record.event_id)
     assert candidates == sorted(due)
-    assert [str(event_id) for event_id in candidates if event_id not in refill | deferred] == sorted(
-        fetcher.refresh_due_ids(), key=int)
+    # ST-27: bayat kayıtlar da yenilenir (deferred içindeki `refresh` kararları)
+    assert sorted([event_id for event_id in candidates if event_id not in refill | deferred]
+                  + [event_id for event_id in deferred if needs[event_id] == "refresh"]) == sorted(
+        int(mid) for mid in fetcher.refresh_due_ids())
     assert sorted(event_id for event_id, need in needs.items() if need == "refresh" and event_id not in deferred) \
         == [event_id for event_id in candidates if event_id not in refill | deferred]
 

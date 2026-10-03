@@ -664,6 +664,10 @@ def test_missing_slices_equal_today_s_refill_need(fx: sf.LegacyFixture, monkeypa
         if row is not None and row.status_class == "live":
             assert need == "none", (event.path, need)
             continue
+        if row is not None and row.status_class not in ("completed", "decided_without_play"):
+            # ST-27: açık kayıt (başlamamış, bilinmiyor) bir şey beklemez; void kayıt dilim beklemez
+            assert need in ("none", "refresh") and (need == "none" or row.status_class == "void"), (event.path, need)
+            continue
         assert (need == "refill") is bool(missing), (event.path, need, missing)
         if eid in COMBINED_ONLY.get(fx.name, set()):
             assert need == "none" and not missing  # RD-1'den önce bulunamıyordu ("full"); kayıt tam

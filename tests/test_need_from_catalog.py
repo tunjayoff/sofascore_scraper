@@ -106,13 +106,19 @@ def test_needs_from_the_catalog_equal_the_file_based_ones(tmp_path: Path, monkey
     # servisin işi; daha yeni bir listenin bayatlamış saydığı kayıt `refresh`)
     from src.store import open_store
 
+    # ST-27: açık kayıt (başlamamış, oynanıyor, bilinmiyor) `none`; void kayıt dilim beklemez, yalnızca yenilenir
+    from src.services.planning import SETTLED_CLASSES, refresh_due
+    from src.services.query import RefreshPolicy
+
     store = open_store(fx.data_dir)
     for mid in ids:
         row = store.events.get(int(mid))
         if row is not None and row.has_event_payload and row.stale:
             expected[mid] = NEED_REFRESH
-        elif row is not None and row.has_event_payload and row.status_class == "live":
+        elif row is not None and row.has_event_payload and row.status_class not in SETTLED_CLASSES:
             expected[mid] = NEED_NONE
+        elif row is not None and row.has_event_payload and row.status_class == "void":
+            expected[mid] = NEED_REFRESH if refresh_due(row, RefreshPolicy.current()) else NEED_NONE
 
     plain = fetcher_of(fx.data_dir)
     assert {mid: plain._needs_detail_fetch(mid) for mid in ids} == expected

@@ -251,10 +251,13 @@ def test_a_definitive_empty_answer_is_an_answer(fake: FakeSofaScore, client: Tes
 
 # --- değişmeyenler ---------------------------------------------------------------------------
 
-def test_unknown_and_unfinished_matches_still_answer_404(fake: FakeSofaScore, client: TestClient) -> None:
-    for event_id in (UNKNOWN, NOT_STARTED):
-        response = _fetch(client, event_id)
-        assert (response.status_code, response.json()) == (404, {"detail": NOT_FETCHED})
+def test_unknown_matches_still_answer_404_and_unfinished_ones_are_stored(fake: FakeSofaScore,
+                                                                        client: TestClient) -> None:
+    response = _fetch(client, UNKNOWN)
+    assert (response.status_code, response.json()) == (404, {"detail": NOT_FETCHED})
+    # ST-27: bitmemiş maç da olduğu haliyle saklanır
+    response = _fetch(client, NOT_STARTED)
+    assert (response.status_code, response.json()) == (200, {"status": "success", "match_id": str(NOT_STARTED)})
 
     fake.add(f"/event/{COMPLETE}", {"error": "no event in this answer"})  # 200, ama içinde olay yok
     response = _fetch(client, COMPLETE)
@@ -358,11 +361,15 @@ def test_fetcher_records_event_and_slice_outcomes(fake: FakeSofaScore, data_dir:
     assert report.event is not None and report.event.status == SLICE_OK
     assert list(report.slices) == ["statistics", "pregame_form", "lineups"]  # yalnızca eksikler istendi
 
-    for event_id, status, reason in ((UNKNOWN, SLICE_EMPTY, "404"), (NOT_STARTED, SLICE_OK, None)):
-        report = SingleFetchReport()
-        assert fetcher.fetch_match_data(event_id, report=report) is None
-        assert report.event is not None and (report.event.status, report.event.reason) == (status, reason)
-        assert report.slices == {} and report.upstream_failure() is None
+    report = SingleFetchReport()
+    assert fetcher.fetch_match_data(UNKNOWN, report=report) is None
+    assert report.event is not None and (report.event.status, report.event.reason) == (SLICE_EMPTY, "404")
+    assert report.slices == {} and report.upstream_failure() is None
+    # ST-27: bitmemiş maç saklanır; ön maç evresinde olmayan dilimler 404 döner ve sayılmaz
+    report = SingleFetchReport()
+    assert fetcher.fetch_match_data(NOT_STARTED, report=report) is not None
+    assert report.event is not None and (report.event.status, report.event.reason) == (SLICE_OK, None)
+    assert report.upstream_failure() is None
 
 
 def test_without_a_report_the_same_pipeline_runs(fake: FakeSofaScore, data_dir: Path) -> None:

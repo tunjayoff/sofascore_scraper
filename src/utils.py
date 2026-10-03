@@ -30,9 +30,12 @@ logger = get_logger("Utils")
 
 from src.config_manager import ConfigManager
 
-# Filtreleme ayarları
+# "Yalnızca bitmiş maçlar" (plan maddesi ST-27): her durumdaki maç saklanır; ayar yalnızca okurken uygulanır
+# (src/services/query.py, src/services/status.py `only_finished_setting`, çağrı anında okunur). Bu değer içe
+# aktarma anındadır ve eski çağıranlar (liste sonucunun `chunks`'ı) için durur.
 FETCH_ONLY_FINISHED: bool = os.getenv("FETCH_ONLY_FINISHED", "true").lower() == "true"
-SAVE_EMPTY_ROUNDS: bool = os.getenv("SAVE_EMPTY_ROUNDS", "false").lower() == "true"
+# Emekli (ST-27): maçı olmayan tur saklanmaz; ayar okunmaz. Ad eski içe aktarmalar için durur.
+SAVE_EMPTY_ROUNDS: bool = False
 
 # Proxy ayarları
 _cm = ConfigManager()

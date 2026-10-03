@@ -182,26 +182,20 @@ def test_row02_slices_requested(fake: FakeSofaScore, tmp_path: Path) -> None:
 
 def test_row03_unfinished_events(fake: FakeSofaScore, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    FETCH_ONLY_FINISHED iki giriş noktasında da okunur. Açıkken oynanan maç atlanır: yalnızca /event istenir,
-    hiçbir şey yazılmaz ve maç başarısız sayılmaz. Kapalıyken iki yol da maçı bütün dilimleriyle kaydeder.
+    ST-27: her durumdaki maç saklanır; FETCH_ONLY_FINISHED yalnızca okurken uygulanır. Ayar açık da olsa kapalı
+    da olsa iki yol da oynanan maçı gövdesi gelen dilimleriyle kaydeder (P13'te açıkken atlanıyordu).
     """
-    in_plan, in_picked = _fetcher(tmp_path / "plan"), _fetcher(tmp_path / "picked")
-
-    assert _run_plan(in_plan, [LIVE]) == []
-    assert _api_paths(fake) == [f"/event/{LIVE}"]
-    fake.reset_log()
-    assert _run_picked(in_picked, [LIVE]) == []
-    assert _api_paths(fake) == [f"/event/{LIVE}"]
-    assert _stored(in_plan, LIVE) == {} and _stored(in_picked, LIVE) == {}
-
-    monkeypatch.setattr(utils, "FETCH_ONLY_FINISHED", False)
-    for md in (in_plan, in_picked):
-        fake.reset_log()
-        assert (_run_plan if md is in_plan else _run_picked)(md, [LIVE]) == []
-        assert sorted(_api_paths(fake)) == sorted(_event_paths(LIVE))
-        assert sorted(_stored(md, LIVE)) == [
-            "basic.json", "incidents.json", "lineups.json", "observation.json", "statistics.json",
-        ]
+    for only_finished in (True, False):
+        monkeypatch.setattr(utils, "FETCH_ONLY_FINISHED", only_finished)
+        in_plan = _fetcher(tmp_path / f"plan_{only_finished}")
+        in_picked = _fetcher(tmp_path / f"picked_{only_finished}")
+        for md in (in_plan, in_picked):
+            fake.reset_log()
+            assert (_run_plan if md is in_plan else _run_picked)(md, [LIVE]) == []
+            assert sorted(_api_paths(fake)) == sorted(_event_paths(LIVE))
+            assert sorted(_stored(md, LIVE)) == [
+                "basic.json", "incidents.json", "lineups.json", "observation.json", "statistics.json",
+            ]
 
 
 def test_row04_event_failure(fake: FakeSofaScore, tmp_path: Path) -> None:
@@ -305,26 +299,29 @@ def test_row08_http_session(fake: FakeSofaScore, tmp_path: Path) -> None:
         assert {r.impersonate for r in fake.requests} == {None}  # profil oturumdan gelir
 
 
-def test_row09_refill_that_cannot_proceed(fake: FakeSofaScore, tmp_path: Path) -> None:
+def test_row09_refill_of_a_match_that_is_no_longer_finished(fake: FakeSofaScore, tmp_path: Path) -> None:
     """
-    Refill vazgeçince (maç artık bitmiş görünmüyor) /event ikinci kez istenmez: tek istek, kayıt olduğu gibi
-    kalır ve maç başarısız değil atlanmış sayılır.
+    ST-27: refill sırasında maç artık bitmiş görünmüyorsa da yeni hali saklanır ve eksik dilim bir kez istenir
+    (P13'te refill vazgeçiyor, kayıt olduğu gibi kalıyordu). Yeni kayıt açıktır: planlayıcı ona bir şey
+    planlamaz; liste maçı yeniden bitmiş gösterince bayatlar ve yenilenir.
     """
     in_plan, in_picked = _fetcher(tmp_path / "plan"), _fetcher(tmp_path / "picked")
     finished = fake.event(FINISHED)
+    expected = [f"async /event/{FINISHED} 200", f"async /event/{FINISHED}/h2h 200"]
 
     _store_then_make_partial(fake, in_picked)
     assert _run_picked(in_picked, [FINISHED]) == []
-    assert [r.label for r in fake.requests if r.path != SITE_ROOT] == [f"async /event/{FINISHED} 200"]
+    assert [r.label for r in fake.requests if r.path != SITE_ROOT] == expected
 
     fake.add_event(finished)  # ikinci yol için baştan: SofaScore'da yeniden "bitti"
     _store_then_make_partial(fake, in_plan)
     assert _run_plan(in_plan, [FINISHED]) == []
-    assert [r.label for r in fake.requests if r.path != SITE_ROOT] == [f"async /event/{FINISHED} 200"]
+    assert [r.label for r in fake.requests if r.path != SITE_ROOT] == expected
 
-    for md in (in_plan, in_picked):  # kayıt olduğu gibi kalır
+    for md in (in_plan, in_picked):  # yeni hali saklanır; maç açık kayıttır
         stored = _stored(md, FINISHED)
-        assert stored["basic.json"]["status"]["type"] == "finished" and "h2h.json" not in stored
+        assert stored["basic.json"]["status"]["type"] == "inprogress" and "h2h.json" in stored
+        assert md._needs_detail_fetch(str(FINISHED)) == "none"
 
 
 def test_row10_breaker_scope(fake: FakeSofaScore, data_dir: Path) -> None:
@@ -347,15 +344,22 @@ def test_row10_breaker_scope(fake: FakeSofaScore, data_dir: Path) -> None:
 
 
 def test_row11_not_finished_outcome(fake: FakeSofaScore, tmp_path: Path) -> None:
-    """Bitmemiş maç iki yolda da atlanır: başarısız sayılmaz ve hata sayımlarına girmez."""
+    """
+    ST-27: bitmemiş maç iki yolda da olduğu haliyle saklanır (P13'te atlanıyordu): başarısız sayılmaz, "yok"
+    işaretleri tutulmaz.
+    """
     in_plan, in_picked = _fetcher(tmp_path / "plan"), _fetcher(tmp_path / "picked")
 
     assert _run_plan(in_plan, [NOT_STARTED]) == []
     assert _run_picked(in_picked, [NOT_STARTED]) == []
 
-    assert _api_paths(fake) == [f"/event/{NOT_STARTED}"] * 2
-    assert _stored(in_plan, NOT_STARTED) == {} and _stored(in_picked, NOT_STARTED) == {}
-    assert in_plan.last_status_counts == {} and in_picked.last_status_counts == {}
+    assert sorted(_api_paths(fake)) == sorted(_event_paths(NOT_STARTED) * 2)
+    for md in (in_plan, in_picked):
+        stored = _stored(md, NOT_STARTED)
+        assert stored["basic.json"]["status"]["type"] == "notstarted"
+        assert "_unavailable.json" not in stored and "_slice_status.json" not in stored
+    # Sayımlar yapılan istekleri anlatır: ön maç evresinde olmayan dilimlerin 404'leri (iki yolda aynı)
+    assert in_plan.last_status_counts == in_picked.last_status_counts == {"404": 6}
 
 
 def test_row12_slice_markers(fake: FakeSofaScore, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

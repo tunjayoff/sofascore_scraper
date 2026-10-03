@@ -182,6 +182,22 @@
        }
       }
      },
+     "9100004": {
+      "observation": {
+       "change_ts": null,
+       "observed_at_utc": "<volatile>",
+       "status_regressed": false
+      },
+      "slices": {
+       "event": {
+        "empty_count": 0,
+        "error": null,
+        "sha256": "b8933078d8f17c900b6b1f314d986f25eeadf224ce42417c1cda98d479961b4c",
+        "state": "ok",
+        "unverified_empty_count": 0
+       }
+      }
+     },
      "9100010": {
       "observation": {
        "change_ts": 1716138000,
@@ -398,6 +414,12 @@
       "async /event/9100003/statistics 500",
       "async /event/9100003/team-streaks 200",
       "async /event/9100004 200",
+      "async /event/9100004/h2h 404",
+      "async /event/9100004/incidents 404",
+      "async /event/9100004/lineups 404",
+      "async /event/9100004/pregame-form 404",
+      "async /event/9100004/statistics 404",
+      "async /event/9100004/team-streaks 404",
       "async /event/9100010 200",
       "async /event/9100010/h2h 200",
       "async /event/9100010/incidents 200",
@@ -427,7 +449,7 @@
     }
    ],
    "result": {
-    "success": 6
+    "success": 7
    }
   },
   "async_unfinished": {
@@ -607,6 +629,22 @@
         "empty_count": 0,
         "error": null,
         "sha256": "ed50a3695300f698cdffa9982e31cf2acdcc04d5b6b753de44a382765edc0feb",
+        "state": "ok",
+        "unverified_empty_count": 0
+       }
+      }
+     },
+     "9100004": {
+      "observation": {
+       "change_ts": null,
+       "observed_at_utc": "<volatile>",
+       "status_regressed": false
+      },
+      "slices": {
+       "event": {
+        "empty_count": 0,
+        "error": null,
+        "sha256": "b8933078d8f17c900b6b1f314d986f25eeadf224ce42417c1cda98d479961b4c",
         "state": "ok",
         "unverified_empty_count": 0
        }
@@ -1034,6 +1072,22 @@
        }
       }
      },
+     "9100004": {
+      "observation": {
+       "change_ts": null,
+       "observed_at_utc": "<volatile>",
+       "status_regressed": false
+      },
+      "slices": {
+       "event": {
+        "empty_count": 0,
+        "error": null,
+        "sha256": "b8933078d8f17c900b6b1f314d986f25eeadf224ce42417c1cda98d479961b4c",
+        "state": "ok",
+        "unverified_empty_count": 0
+       }
+      }
+     },
      "9100010": {
       "observation": {
        "change_ts": 1716138000,
@@ -1434,6 +1488,22 @@
         "empty_count": 0,
         "error": null,
         "sha256": "ed50a3695300f698cdffa9982e31cf2acdcc04d5b6b753de44a382765edc0feb",
+        "state": "ok",
+        "unverified_empty_count": 0
+       }
+      }
+     },
+     "9100004": {
+      "observation": {
+       "change_ts": null,
+       "observed_at_utc": "<volatile>",
+       "status_regressed": false
+      },
+      "slices": {
+       "event": {
+        "empty_count": 0,
+        "error": null,
+        "sha256": "b8933078d8f17c900b6b1f314d986f25eeadf224ce42417c1cda98d479961b4c",
         "state": "ok",
         "unverified_empty_count": 0
        }
@@ -1931,6 +2001,22 @@
        }
       }
      },
+     "9100004": {
+      "observation": {
+       "change_ts": null,
+       "observed_at_utc": "<volatile>",
+       "status_regressed": false
+      },
+      "slices": {
+       "event": {
+        "empty_count": 0,
+        "error": null,
+        "sha256": "b8933078d8f17c900b6b1f314d986f25eeadf224ce42417c1cda98d479961b4c",
+        "state": "ok",
+        "unverified_empty_count": 0
+       }
+      }
+     },
      "9100010": {
       "observation": {
        "change_ts": 1716141600,
@@ -2420,6 +2506,22 @@
        }
       }
      },
+     "9100004": {
+      "observation": {
+       "change_ts": null,
+       "observed_at_utc": "<volatile>",
+       "status_regressed": false
+      },
+      "slices": {
+       "event": {
+        "empty_count": 0,
+        "error": null,
+        "sha256": "b8933078d8f17c900b6b1f314d986f25eeadf224ce42417c1cda98d479961b4c",
+        "state": "ok",
+        "unverified_empty_count": 0
+       }
+      }
+     },
      "9100010": {
       "observation": {
        "change_ts": 1716141600,
@@ -2899,6 +3001,22 @@
        }
       }
      },
+     "9100004": {
+      "observation": {
+       "change_ts": null,
+       "observed_at_utc": "<volatile>",
+       "status_regressed": false
+      },
+      "slices": {
+       "event": {
+        "empty_count": 0,
+        "error": null,
+        "sha256": "b8933078d8f17c900b6b1f314d986f25eeadf224ce42417c1cda98d479961b4c",
+        "state": "ok",
+        "unverified_empty_count": 0
+       }
+      }
+     },
      "9100010": {
       "observation": {
        "change_ts": 1716141600,
@@ -3310,6 +3428,22 @@
        }
       }
      },
+     "9100004": {
+      "observation": {
+       "change_ts": null,
+       "observed_at_utc": "<volatile>",
+       "status_regressed": false
+      },
+      "slices": {
+       "event": {
+        "empty_count": 0,
+        "error": null,
+        "sha256": "b8933078d8f17c900b6b1f314d986f25eeadf224ce42417c1cda98d479961b4c",
+        "state": "ok",
+        "unverified_empty_count": 0
+       }
+      }
+     },
      "9100010": {
       "observation": {
        "change_ts": 1716138000,
@@ -3552,13 +3686,19 @@
     {
      "concurrent": [
       "async /event/9300001 200",
+      "async /event/9300001/h2h 404",
+      "async /event/9300001/incidents 200",
+      "async /event/9300001/lineups 200",
+      "async /event/9300001/pregame-form 404",
+      "async /event/9300001/statistics 200",
+      "async /event/9300001/team-streaks 404",
       "async https://www.sofascore.com/ 200"
      ]
     }
    ],
    "result": {
     "9100001": true,
-    "9300001": false
+    "9300001": true
    }
   }
  }

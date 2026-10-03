@@ -178,12 +178,44 @@ def test_phase_of_status_class(status_class: Optional[str], phase: Optional[str]
     assert phase_of(status_class) == phase
 
 
-@pytest.mark.parametrize("status_class", ["not_started", "void", "unknown", "completed"])
-def test_statuses_outside_the_live_phase_follow_the_refill_and_refresh_rules(status_class: str) -> None:
-    """Başlamamış ve ertelenmiş maç da: kayıt defterinin bugünkü dilimleri ön maç evresinde de istenebilir (P13)."""
+@pytest.mark.parametrize("status_class", ["completed", "decided_without_play"])
+def test_finished_records_follow_the_refill_and_refresh_rules(status_class: str) -> None:
     state = complete(status_class=status_class)
     assert compute_need(state, None, POLICY) == NEED_NONE
     assert compute_need(without_slice(state, "incidents"), None, POLICY) == NEED_REFILL
+
+
+@pytest.mark.parametrize("status_class", ["not_started", "unknown"])
+def test_an_open_record_needs_nothing(status_class: str) -> None:
+    """
+    ST-27: başlamamış ya da durumu bilinmeyen kayıt açıktır (01-storage.md 8.3): ne dilimi beklenir ne de
+    yenilenir; liste maçı bitmiş gösterince kayıt bayatlar ve yenilenir (P13'te bu kayıtlar refill alıyordu).
+    """
+    due = complete(status_class=status_class, observed_at=START + 2 * HOUR, observed_gap=2 * HOUR)
+    assert compute_need(without_slice(due, "incidents"), None, POLICY) == NEED_NONE
+    assert compute_need(due, None, POLICY) == NEED_NONE
+    assert not refresh_due(due.event, POLICY)
+
+
+def test_a_void_record_awaits_no_slice_and_is_refreshed_when_due() -> None:
+    """ST-27: ertelenen ya da iptal edilen maç kapanmış bir durumdur: yenileme politikası ona bakar, dilim beklenmez."""
+    due = complete(status_class="void", observed_at=START + 2 * HOUR, observed_gap=2 * HOUR)
+    assert compute_need(without_slice(due, "incidents"), None, POLICY) == NEED_REFRESH
+    settled = complete(status_class="void")
+    assert compute_need(without_slice(settled, "incidents"), None, POLICY) == NEED_NONE
+
+
+@pytest.mark.parametrize("status_class,need", [
+    ("not_started", NEED_NONE), ("live", NEED_NONE), ("void", NEED_NONE), ("completed", NEED_FULL),
+    ("decided_without_play", NEED_FULL), ("unknown", NEED_FULL), (None, NEED_FULL),
+])
+def test_a_listing_row_is_downloaded_once_it_has_finished(status_class: Optional[str], need: str) -> None:
+    """
+    ST-27: her durumdaki maç listeden saklanır; detayı maç bitince indirilir. Durumu bilinmeyen satır (durum
+    sütunu olmayan özet CSV'si) bugünkü gibi indirilir.
+    """
+    listed = EventState(row(has_event_payload=False, status_class=status_class, layout=None, path=None), ())
+    assert compute_need(listed, None, POLICY) == need
 
 
 def test_a_live_record_needs_nothing_it_belongs_to_the_live_service() -> None:
@@ -287,8 +319,9 @@ def test_needs_of_the_g01_world(world: Tuple[Any, Path]) -> None:
         9200001: NEED_REFILL,  # tenis: yalnızca h2h, statistics ve point-by-point var; dört dilim bir kez 404
         9300001: after_one_run[9300001],  # oynanıyor: aşağıda
     }
-    # Başlamamış ve oynanan maç: "yalnızca bitmiş maçlar" açıkken detayı indirilmez; kayıtları yoktur
-    assert after_one_run[9100004] == NEED_FULL and after_one_run[9300001] == NEED_FULL
+    # Başlamamış ve oynanan maç (ST-27): olduğu haliyle saklanır; açık kayıt bir şey beklemez (liste ve canlı
+    # servis güncel tutar)
+    assert after_one_run[9100004] == NEED_NONE and after_one_run[9300001] == NEED_NONE
 
     md.fetch_matches_batch([9100002, 9200001])  # ikinci "veri yok": o dilimler artık beklenmez
     detail_records.drop_slices(data_dir, 9100001, "statistics")
@@ -298,14 +331,14 @@ def test_needs_of_the_g01_world(world: Tuple[Any, Path]) -> None:
         9100001: NEED_REFILL,
         9100002: NEED_NONE,
         9100003: NEED_NONE,
-        9100004: NEED_FULL,
+        9100004: NEED_NONE,
         9100010: NEED_REFRESH,
         9200001: NEED_NONE,
-        9300001: NEED_FULL,
+        9300001: NEED_NONE,
     }
     assert [row.id for row in planning.refresh_due_events(open_store(data_dir), RefreshPolicy.current())] == [9100010]
     assert md.refresh_due_ids() == ["9100010"]
-    assert md.pending_detail_ids([str(i) for i in WORLD_IDS]) == ["9100001", "9100004", "9300001", "9100010"]
+    assert md.pending_detail_ids([str(i) for i in WORLD_IDS]) == ["9100001", "9100010"]
 
 
 # --- eşitlik: RD-3'ün katalog sorguları -----------------------------------------------------------------
