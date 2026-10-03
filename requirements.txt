@@ -8,9 +8,7 @@ scrapling[fetchers]==0.4.15
 # Veri işleme
 pandas>=2.1.0,<4
 
-# Terminal UI
-colorama>=0.4.6,<1
-tqdm>=4.66.1,<5
+# Log satırları (src/logger.py: renkli konsol çıktısı ve okunur iz dökümleri)
 rich>=13.0.0,<16
 
 # Konfigürasyon

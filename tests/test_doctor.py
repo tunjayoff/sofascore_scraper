@@ -125,6 +125,10 @@ def test_required_modules_cover_requirements_txt():
         wanted.add(re.split(r"[\[<>=!~ ;]", line, maxsplit=1)[0].lower().replace("_", "-"))
     known = {dist.lower().replace("_", "-") for _, dist in doctor.REQUIRED_MODULES}
     assert wanted and wanted <= known, wanted - known
+    # Ters yön de: kaldırılan bir paket (3.0'da terminal menüsüyle colorama ve tqdm, P26) listede kalmamalı.
+    # patchright ve playwright scrapling[fetchers] ile gelir: requirements.txt'te ayrı satırları yoktur.
+    assert known - wanted == {"patchright", "playwright"}, known - wanted
+    assert not {"colorama", "tqdm"} & known
 
 
 # --- tarayıcı ---------------------------------------------------------------------------------

@@ -4,7 +4,7 @@
 
 **Türkçe:** [README.tr.md](README.tr.md)
 
-Python tool to download football, basketball and tennis match data from [SofaScore](https://www.sofascore.com/) public HTTP APIs, store it locally (JSON and CSV), and browse it through a web app or a terminal UI.
+Python tool to download football, basketball and tennis match data from [SofaScore](https://www.sofascore.com/) public HTTP APIs, store it locally (JSON and CSV), and browse it through a web app; a command line (`ssc`) runs it on servers and in scripts.
 
 This project is not affiliated with SofaScore. Use reasonable request rates and comply with applicable terms and laws.
 
@@ -15,7 +15,7 @@ This project is not affiliated with SofaScore. Use reasonable request rates and 
 - **Seasons & matches** — Pick seasons from one or several leagues and download them in one go; browse matches by league, season, date and whether details are downloaded.
 - **Match details** — Statistics (per period), incidents, lineups, H2H and form; score lines per half, quarter or set depending on the sport.
 - **Web app** — Leagues, Download, Matches, Activity and Settings pages; live progress (SSE) with a Stop that takes effect immediately; English and Turkish, following your browser's language on the first visit; light, dark or system theme.
-- **Terminal UI** — Interactive menu for the same operations without the browser.
+- **Command line** — `ssc` for servers and automation (sync, fetch, export, backup, watch, serve); the terminal menu of 2.x was removed in 3.0 ([what replaces it](#from-the-terminal-menu-removed-in-30)).
 - **Automation** — Headless flags for CI/scripts (`--update-all`, `--fetch-mode`, `--league-id`, `--csv-export`, paths).
 - **Export** — Datasets of events, slices and corrections in a stable, documented schema as JSONL, CSV, Parquet or SQLite; the stored payloads as they are; the 2.x “all matches” CSV. From `ssc export` or the HTTP API (v1 export jobs).
 
@@ -75,7 +75,7 @@ Pick one:
 
 | Way | You need | Best for |
 |-----|----------|----------|
-| [Install script](#quick-install-script) | Git, Python 3.10+, Node.js | A desktop: double-click launcher, terminal UI, easy updates with `git pull` |
+| [Install script](#quick-install-script) | Git, Python 3.10+, Node.js | A desktop: double-click launcher, easy updates with `git pull` |
 | [Docker](#docker) | Docker | A server or NAS, or keeping Python and the browser off the host |
 | [Release archive](#release-archive) | Python 3.10+ | A fixed version without Git or Node.js |
 | [Manual install](#manual-install) | Git, Python 3.10+, Node.js | Development |
@@ -286,7 +286,7 @@ Every code path limits itself (`MAX_CONCURRENT`, the waits, the watcher's 1 s sp
 
 ### Leagues (`config/leagues.txt`)
 
-One line per league, `Name: ID`, where ID is the numeric SofaScore **unique tournament ID** (it appears in tournament URLs, e.g. `.../premier-league/17` → `17`). The file is yours and is not tracked by git: on first run it is created from `config/leagues.example.txt`, which contains no league. A new install starts empty: add leagues in the web app (**Leagues → Add league**, which also records each league's sport) or in the terminal menu. The app adds and removes lines itself when you manage leagues in the web app or the CLI.
+One line per league, `Name: ID`, where ID is the numeric SofaScore **unique tournament ID** (it appears in tournament URLs, e.g. `.../premier-league/17` → `17`). The file is yours and is not tracked by git: on first run it is created from `config/leagues.example.txt`, which contains no league. A new install starts empty: add leagues in the web app (**Leagues → Add league**, which also records each league's sport) or with `ssc follows add`. The app adds and removes lines itself when you manage leagues in the web app or the CLI.
 
 CLI override:
 
@@ -294,7 +294,7 @@ CLI override:
 python main.py --config /path/to/leagues.txt --data-dir /path/to/data
 ```
 
-`--config` / `--data-dir` apply to **interactive** and **headless** modes. The web server loads the singleton `ConfigManager` from the project `.env` (`DATA_DIR`, etc.); align paths so the web UI and CLI see the same data if you use both.
+`--config` / `--data-dir` apply to the **headless** flags. The web server loads the singleton `ConfigManager` from the project `.env` (`DATA_DIR`, etc.); align paths so the web UI and CLI see the same data if you use both.
 
 ## Usage
 
@@ -316,9 +316,9 @@ python main.py --config /path/to/leagues.txt --data-dir /path/to/data
 
 > **While a download is running**, **Back up**, **Delete all data**, removing a league and changing the data folder are refused with a message: stop the download or wait for it to finish. A download cannot start while a backup or delete is still in progress either. Changing the data folder takes effect immediately (no restart): downloads and the **Activity** history then use the new folder (each data folder keeps its own history in `.meta/jobs.db`); files in the old folder are not moved.
 
-**Terminal menu**
+**Command line**
 
-Run `python main.py` and work through the numbered menus: manage leagues, refresh seasons, fetch match lists, fetch details, run stats, or export CSV. There is no counterpart of the web Download page; use the prompts to choose leagues and options.
+The terminal menu was removed in 3.0: `python main.py` without arguments prints a short help and exits with code 2. Use the web app, or the [command line](#command-line-ssc) for scripts and servers; [this table](#from-the-terminal-menu-removed-in-30) says where each menu entry went.
 
 **Tips**
 
@@ -352,7 +352,7 @@ Run `python main.py --doctor`. It names what is missing (most often the browser:
 
 Everything the app logs goes to the console **and** to a log file, so the output is still there after the launcher window is closed or an overnight download has failed.
 
-- **Where:** `logs/sofascore_scraper.log` in the project folder. Change the folder with `LOG_DIR` (a relative path is resolved against the project folder, not the current directory). The web app, the terminal UI, `--headless`, `--watch` and `--refresh-only` all write to the same file; each line carries the process id.
+- **Where:** `logs/sofascore_scraper.log` in the project folder. Change the folder with `LOG_DIR` (a relative path is resolved against the project folder, not the current directory). The web app, the command line (`ssc`, and the deprecated `--headless`, `--watch` and `--refresh-only` flags) all write to the same file; each line carries the process id.
 - **Size:** the file is rotated at `LOG_MAX_MB` (default 5 MB) and `LOG_BACKUP_COUNT` (default 5) older files are kept as `.1` … `.5`, so logs never take more than about 30 MB. On Windows a file that is open cannot be renamed: while more than one process is writing to the log (for example the web app and a `--watch`), it is not rotated and can grow past the limit; it is rotated again once a single process is left.
 - **Level:** `LOG_LEVEL` (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`; `DEBUG=true` forces `DEBUG`). Changing it under **Settings** takes effect immediately in the running web app, no restart. Other processes that are already running pick it up on their next start.
 - **Secrets are masked** before a line is written (file and console): the captcha token, cookies, `Authorization` headers, proxy credentials (`http://user:password@host` becomes `http://***@host`) and the value of any `.env` key that looks like a secret (`*TOKEN*`, `*SECRET*`, `*PASSWORD*`, `*_KEY`, …).
@@ -366,12 +366,6 @@ python main.py --diagnostics ./report.zip # or a path / folder of your choice
 ```
 
 With the web app running (Docker included), the same bundle downloads from `http://127.0.0.1:8000/api/diagnostics/bundle`, and it is the better one for "SofaScore is blocking us" reports: bridge health is per process, so only the web app's bundle carries the web app's state. `GET /api/logs?limit=200&level=WARNING` returns the most recent log entries as JSON.
-
-### Interactive terminal
-
-```bash
-python main.py
-```
 
 ### Web application
 
@@ -439,13 +433,30 @@ ssc doctor | describe | config | version | diagnostics | migrate | catalog | bac
 - **Sinks.** The `[[sink]]` outputs of `sofascore.toml` (stdout, file, webhook) also receive the events of one-shot jobs (`job.started`, `job.finished`): they are registered before the job and drained for up to 10 s after it. `ssc config validate` checks them.
 - **Exporting datasets.** `ssc export --dataset events|slices|changes` writes the records of the data schema (version 1; field by field in `docs/design/04-schema-v1.md`, as JSON Schema in `ssc describe schemas`): `events` are the matches with status, score, winner and how reliable the record is, `slices` the state of each stored response about a match (statistics, lineups, …; the payloads themselves are in the raw export), `changes` the corrections found in stored matches. `--format jsonl` (the default) writes one record per line exactly as the API returns it; `csv`, `parquet` and `sqlite` write one column per field, named by its path (`status_class`, `score_home`, `quality_observed_at_utc`), with lists as JSON text and an empty cell for a missing value. Parquet needs the optional package `pyarrow` (`pip install -e ".[parquet]"`). Filters: `--sport`, `--tournament`, `--season`, `--event`, `--status` (status class), `--from` / `--to` (ISO dates, UTC; for `changes` the time the correction was recorded). Without `--out` the file goes to the data folder's `exports/`; `--out -` writes JSONL or CSV to stdout; an existing file is replaced only with `--force`. `--schema raw` writes the stored SofaScore payloads (`--dataset events`: the match payload only; without `--dataset`: every payload). The `--json` result names the `schema_version` of the records. Without `--dataset` or `--schema`, `ssc export` still writes the 2.x wide CSV.
 
+### From the terminal menu (removed in 3.0)
+
+`python main.py` no longer opens a menu: people use the web app, and the command line is for servers and automation. Without arguments it prints a short help (the web app is `ssc serve`, the commands are in `ssc --help`) and exits with code **2**. Every menu entry has a home:
+
+| Menu entry | Now |
+|------------|-----|
+| Leagues: list, add, reload, search | Web app **Leagues** (search SofaScore, add, remove); `ssc follows list`, `ssc follows add tournament ID --name NAME --sport SPORT`, `ssc follows remove`; `config/leagues.txt`. Every command reads the configuration when it starts, so there is nothing to reload. |
+| Seasons: update all, update one league, list | `ssc sync` (season lists, schedules, then match details), `ssc fetch tournament ID`; web app **Download** (fetches and refreshes a league's season list); `GET /api/v1/tournaments/{id}/seasons` |
+| Matches: fetch one league, all leagues, list | `ssc fetch tournament ID --season ID`, `ssc sync --tournament ID`, `ssc sync`; web app **Download** and **Matches**; `GET /api/v1/events` |
+| Match details: fetch by id, fetch all | `ssc fetch event ID…`, `ssc sync --only events`; web app **Matches → Download missing** |
+| Match details: CSV of one match, one league, all | `ssc export --event ID`, `ssc export --tournament ID`, `ssc export` (`--out PATH` picks the file); `GET /api/export/csv` |
+| Statistics: system, leagues, report file | `ssc status` (`--coverage` adds matches and details per tournament; `--json > report.json` writes a report file); web app **Overview** |
+| Settings: API, data folder, display, language | Web app **Settings**; `.env` or `sofascore.toml` (`ssc config show` lists every value and where it comes from); `--lang` |
+| Settings: move the data folder | Stop the app, move the folder, then point `DATA_DIR` (web app **Settings**, `.env` or `--data-dir`) at the new place. |
+| Settings: backup, restore, clear | `ssc backup create`, `ssc backup restore NAME --yes`, `ssc data clear --all --yes`; web app **Settings** (back up, delete all data) |
+| Settings: about | `ssc version` |
+
 ### Headless / automation (deprecated flags)
 
-The flags of `python main.py` keep working for one release. Each run is translated into a command of the [command line](#command-line-ssc) and prints one line on stderr that names it (`--headless --update-all` is `ssc sync`, `--refresh-only` is `ssc refresh`, `--headless --csv-export` is `ssc export`, `--recheck-unavailable` is `ssc data recheck-unavailable`, `--watch` is `ssc watch --source poll --stdout`, `--doctor` is `ssc doctor`, `--diagnostics` is `ssc diagnostics`, `--web` is `ssc serve --host 127.0.0.1 --port 8000` with the `--host`, `--port`, `--dev` and `--allow-any-host` it was given); it uses that command's output rules and exit codes. The menu (`python main.py` without flags) is unchanged. At least one of `--update-all` or `--csv-export` is required with `--headless`. Otherwise the process exits with code **2** before anything runs.
+The flags of `python main.py` keep working for one release. Each run is translated into a command of the [command line](#command-line-ssc) and prints one line on stderr that names it (`--headless --update-all` is `ssc sync`, `--refresh-only` is `ssc refresh`, `--headless --csv-export` is `ssc export`, `--recheck-unavailable` is `ssc data recheck-unavailable`, `--watch` is `ssc watch --source poll --stdout`, `--doctor` is `ssc doctor`, `--diagnostics` is `ssc diagnostics`, `--web` is `ssc serve --host 127.0.0.1 --port 8000` with the `--host`, `--port`, `--dev` and `--allow-any-host` it was given); it uses that command's output rules and exit codes. The terminal menu is gone: `python main.py` without flags prints a short help and exits with code **2** ([what replaces the menu](#from-the-terminal-menu-removed-in-30)). At least one of `--update-all` or `--csv-export` is required with `--headless`. Otherwise the process exits with code **2** before anything runs.
 
 | Flag | Meaning |
 |------|---------|
-| `--headless` | No terminal menu |
+| `--headless` | Run an action (the 2.x flag that skipped the terminal menu) |
 | `--update-all` | Run a fetch pipeline |
 | `--fetch-mode full` | Seasons + match lists + details (default) |
 | `--fetch-mode details` | Match details only (uses existing schedule/summary CSVs) |
@@ -499,8 +510,6 @@ data/
 Exact paths may vary slightly by league naming and migrations.
 
 Match details are stored under `v3/events/<id / 1,000,000>/<(id / 1,000) mod 1,000>/<id>/`, compressed. Folders under `match_details/` written by older versions stay where they are and stay readable in the app; when such a match is written again (a refill, a refresh, a marker reset), its current state is first copied to `v3/` and the old folder is left untouched. Programs that read `match_details/` directly do not see matches downloaded by this version.
-
-In the terminal menu, **Backup** and **Restore** still copy only the old folders (`seasons/`, `matches/`, `match_details/`): to keep matches stored under `v3/`, copy the whole data folder. **Clear data** removes seasons, matches and match details from both the old folders and `v3/`, and is refused while another process is using the data folder. The disk sizes in **Statistics** count the old folders only. Each of these menus says so.
 
 ### Moving old data to the new layout (`ssc migrate`)
 
@@ -683,7 +692,7 @@ Everything depends on the browser solving the challenge. When that stops working
   - Web app: a banner at the top of every page while the state is not `ok`. Dismissing hides it for that streak; it returns if the state gets worse or a new streak starts.
   - Web app, **Settings → Connection**: the same state, and **Test connection** to try one request yourself (browser running or not, anti-bot check passed or not, and the reason if it failed).
   - Log: one warning per state change, not per request.
-  - Terminal modes (interactive, `--headless`, `--watch`, `--refresh-only`): one line on stderr per state change, in the app language.
+  - Command line (`ssc` and the deprecated `--headless`, `--watch`, `--refresh-only` flags): one line on stderr per state change, in the app language.
 - The state is per process: the web app reports its own bridge, each CLI process its own.
 
 ### Server setup (Linux / Docker)
@@ -761,7 +770,7 @@ Contributions are welcome. You can help in several ways:
 
 - **Bug reports** — Open an issue with steps to reproduce, expected vs actual behaviour, OS/Python version, and relevant `.env` flags (redact secrets).
 - **Feature ideas** — Suggest use cases and constraints; maintainers may triage and discuss scope in the issue.
-- **Pull requests** — Fork the repo, use a focused branch, keep changes small and on-topic, and describe *what* and *why* in the PR. Match existing code style; avoid drive-by refactors. If you touch user-visible text, update both languages: `frontend/src/locales/tr.ts` and `en.ts` for the web app, `locales/en.json` and `locales/tr.json` for the terminal UI.
+- **Pull requests** — Fork the repo, use a focused branch, keep changes small and on-topic, and describe *what* and *why* in the PR. Match existing code style; avoid drive-by refactors. If you touch user-visible text, update both languages: `frontend/src/locales/tr.ts` and `en.ts` for the web app, `locales/en.json` and `locales/tr.json` for the command line.
 - **Docs & translations** — Improvements to these READMEs or locale strings are appreciated.
 
 By submitting a contribution, you agree that it is licensed under the project's license and that the maintainer may also offer it under other terms (for example, a commercial license). Be respectful in issues and reviews. If you are unsure whether an idea fits, open an issue first.

@@ -4,7 +4,7 @@
 
 **English:** [README.md](README.md)
 
-SofaScore’un herkese açık HTTP API’lerinden futbol, basketbol ve tenis maç verisi indiren, yerelde (JSON ve CSV) saklayan ve **web** veya **terminal** arayüzüyle sunan Python uygulaması.
+SofaScore’un herkese açık HTTP API’lerinden futbol, basketbol ve tenis maç verisi indiren, yerelde (JSON ve CSV) saklayan ve **web** arayüzüyle sunan, sunucularda ve betiklerde komut satırıyla (`ssc`) çalışan Python uygulaması.
 
 Bu proje SofaScore ile bağlantılı değildir. İstek hızına dikkat edin ve ilgili kullanım koşullarına uyun.
 
@@ -15,7 +15,7 @@ Bu proje SofaScore ile bağlantılı değildir. İstek hızına dikkat edin ve i
 - **Sezonlar ve maçlar** — Bir veya birden fazla ligden sezon seçip tek seferde indirme; maçlara lig, sezon, tarih ve detayın inip inmediğine göre göz atma.
 - **Maç detayları** — İstatistikler (periyot bazında), olaylar, kadrolar, aralarındaki maçlar ve form; spora göre yarı, çeyrek veya set bazında skor.
 - **Web uygulaması** — Ligler, Maç indir, Maçlar, Etkinlik ve Ayarlar sayfaları; canlı ilerleme (SSE) ve anında etki eden Durdur; İngilizce ve Türkçe, ilk ziyarette tarayıcınızın diline göre; açık, koyu veya sisteme uyan tema.
-- **Terminal arayüzü** — Tarayıcı olmadan etkileşimli menü.
+- **Komut satırı** — Sunucular ve otomasyon için `ssc` (sync, fetch, export, backup, watch, serve); 2.x'in terminal menüsü 3.0'da kaldırıldı ([yerine ne geldi](#terminal-menüsünden-30da-kaldırıldı)).
 - **Otomasyon** — CI/script için headless bayrakları (`--update-all`, `--fetch-mode`, `--league-id`, `--csv-export`, yollar).
 - **Dışa aktarım** — Maçlar, dilimler ve düzeltmeler sabit, belgelenmiş bir şemada JSONL, CSV, Parquet ya da SQLite olarak; saklanan yükler olduğu gibi; 2.x'in “tüm maçlar” CSV’si. `ssc export` ya da HTTP API'den (v1 dışa aktarma işleri).
 
@@ -75,7 +75,7 @@ Birini seçin:
 
 | Yol | Gerekenler | Kime uygun |
 |-----|------------|------------|
-| [Kurulum betiği](#hızlı-kurulum-betik) | Git, Python 3.10+, Node.js | Masaüstü: çift tıkla başlatıcı, terminal arayüzü, `git pull` ile kolay güncelleme |
+| [Kurulum betiği](#hızlı-kurulum-betik) | Git, Python 3.10+, Node.js | Masaüstü: çift tıkla başlatıcı, `git pull` ile kolay güncelleme |
 | [Docker](#docker) | Docker | Sunucu ya da NAS; Python ve tarayıcıyı ana sisteme kurmak istemeyenler |
 | [Sürüm arşivi](#sürüm-arşivi) | Python 3.10+ | Git ve Node.js olmadan sabit bir sürüm |
 | [Elle kurulum](#elle-kurulum) | Git, Python 3.10+, Node.js | Geliştirme |
@@ -284,7 +284,7 @@ Her kod yolu kendi isteklerini sınırlar (`MAX_CONCURRENT`, beklemeler, izleyic
 
 ### Lig listesi (`config/leagues.txt`)
 
-Her satır `Ad: ID` biçimindedir; ID, SofaScore **unique tournament** sayısal ID’sidir (turnuva URL’sinde yer alır, ör. `.../premier-league/17` → `17`). Dosya size aittir ve git’te takip edilmez: ilk çalıştırmada `config/leagues.example.txt`’den oluşturulur; o dosyada lig yoktur. Yeni kurulum boş başlar: ligleri web uygulamasından (**Ligler → Lig ekle**; ligin sporunu da kaydeder) ya da terminal menüsünden ekleyin. Web uygulamasında veya CLI’da lig ekleyip kaldırdığınızda satırları uygulama kendisi günceller.
+Her satır `Ad: ID` biçimindedir; ID, SofaScore **unique tournament** sayısal ID’sidir (turnuva URL’sinde yer alır, ör. `.../premier-league/17` → `17`). Dosya size aittir ve git’te takip edilmez: ilk çalıştırmada `config/leagues.example.txt`’den oluşturulur; o dosyada lig yoktur. Yeni kurulum boş başlar: ligleri web uygulamasından (**Ligler → Lig ekle**; ligin sporunu da kaydeder) ya da `ssc follows add` ile ekleyin. Web uygulamasında veya CLI’da lig ekleyip kaldırdığınızda satırları uygulama kendisi günceller.
 
 CLI ile özel yol:
 
@@ -292,7 +292,7 @@ CLI ile özel yol:
 python main.py --config /yol/leagues.txt --data-dir /yol/veri
 ```
 
-`--config` ve `--data-dir` yalnızca **etkileşimli** ve **headless** modda geçerlidir. Web sunucusu projedeki `.env` ile tekil `ConfigManager` kullanır; hem CLI hem web kullanacaksanız `DATA_DIR` vb. ile aynı veri dizinine hizalayın.
+`--config` ve `--data-dir` **headless** bayraklarında geçerlidir. Web sunucusu projedeki `.env` ile tekil `ConfigManager` kullanır; hem CLI hem web kullanacaksanız `DATA_DIR` vb. ile aynı veri dizinine hizalayın.
 
 ## Kullanım
 
@@ -314,9 +314,9 @@ python main.py --config /yol/leagues.txt --data-dir /yol/veri
 
 > **İndirme sürerken** **Yedek al**, **Tüm veriyi sil**, lig kaldırma ve veri klasörünü değiştirme bir mesajla reddedilir: indirmeyi durdurun ya da bitmesini bekleyin. Yedekleme ya da silme sürerken de indirme başlatılamaz. Veri klasörü değişikliği hemen geçerli olur (yeniden başlatma gerekmez): indirmeler ve **Etkinlik** geçmişi artık yeni klasörü kullanır (her veri klasörü kendi geçmişini `.meta/jobs.db` içinde tutar); eski klasördeki dosyalar taşınmaz.
 
-**Terminal menüsü**
+**Komut satırı**
 
-`python main.py` ile numaralı menülerden ilerleyin: lig, sezon, maç listesi, detay, istatistik, CSV. Web’deki Maç indir sayfasının karşılığı yok; istemlerle lig ve seçenek belirlersiniz.
+Terminal menüsü 3.0'da kaldırıldı: argümansız `python main.py` kısa bir yardım yazar ve 2 koduyla çıkar. Web uygulamasını, betikler ve sunucular için de [komut satırını](#komut-satırı-ssc) kullanın; menünün her öğesinin nereye gittiğini [bu tablo](#terminal-menüsünden-30da-kaldırıldı) söyler.
 
 **İpuçları**
 
@@ -350,7 +350,7 @@ python main.py --config /yol/leagues.txt --data-dir /yol/veri
 
 Uygulamanın logladığı her şey konsola **ve** bir log dosyasına yazılır; başlatıcı penceresi kapandıktan ya da gece süren bir indirme başarısız olduktan sonra da çıktı elinizde kalır.
 
-- **Nerede:** proje klasöründeki `logs/sofascore_scraper.log`. Klasörü `LOG_DIR` ile değiştirin (göreli yol çalışma dizinine değil, proje klasörüne göre çözülür). Web uygulaması, terminal arayüzü, `--headless`, `--watch` ve `--refresh-only` aynı dosyaya yazar; her satırda süreç numarası bulunur.
+- **Nerede:** proje klasöründeki `logs/sofascore_scraper.log`. Klasörü `LOG_DIR` ile değiştirin (göreli yol çalışma dizinine değil, proje klasörüne göre çözülür). Web uygulaması ve komut satırı (`ssc` ile kullanımdan kalkan `--headless`, `--watch` ve `--refresh-only` bayrakları) aynı dosyaya yazar; her satırda süreç numarası bulunur.
 - **Boyut:** dosya `LOG_MAX_MB`'a (varsayılan 5 MB) ulaşınca çevrilir ve `LOG_BACKUP_COUNT` (varsayılan 5) eski dosya `.1` … `.5` olarak tutulur; loglar yaklaşık 30 MB'ı geçmez. Windows'ta açık bir dosya yeniden adlandırılamaz: log dosyasına birden çok süreç yazarken (örneğin web uygulaması ve bir `--watch`) dosya çevrilmez ve sınırı aşabilir; tek süreç kaldığında yeniden çevrilir.
 - **Seviye:** `LOG_LEVEL` (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`; `DEBUG=true` seviyeyi `DEBUG` yapar). **Ayarlar**'dan değiştirince çalışan web uygulamasında hemen geçerli olur, yeniden başlatmak gerekmez. O sırada çalışan diğer süreçler bir sonraki başlatılışlarında alır.
 - **Gizli değerler maskelenir** (dosyada ve konsolda), satır yazılmadan önce: captcha token'ı, cookie'ler, `Authorization` başlıkları, proxy kimlik bilgisi (`http://kullanıcı:parola@host`, `http://***@host` olur) ve `.env`'de adı gizli bir şeye benzeyen anahtarların değerleri (`*TOKEN*`, `*SECRET*`, `*PASSWORD*`, `*_KEY`, …).
@@ -364,12 +364,6 @@ python main.py --diagnostics ./rapor.zip  # ya da istediğiniz yol / klasör
 ```
 
 Web uygulaması çalışırken (Docker dahil) aynı paket `http://127.0.0.1:8000/api/diagnostics/bundle` adresinden iner; "SofaScore bizi engelliyor" bildirimleri için doğrusu budur: köprü sağlığı süreç başınadır, web uygulamasının durumunu yalnızca onun paketi taşır. `GET /api/logs?limit=200&level=WARNING` son log kayıtlarını JSON olarak döndürür.
-
-### Etkileşimli terminal
-
-```bash
-python main.py
-```
 
 ### Web uygulaması
 
@@ -437,13 +431,30 @@ ssc doctor | describe | config | version | diagnostics | migrate | catalog | bac
 - **Sink'ler.** `sofascore.toml`'un `[[sink]]` çıktıları (stdout, dosya, webhook) tek seferlik işlerin olaylarını da (`job.started`, `job.finished`) alır: iş başlamadan kaydedilirler, iş bitince en çok 10 sn boşaltılırlar. `ssc config validate` onları da denetler.
 - **Veri kümelerini dışa aktarmak.** `ssc export --dataset events|slices|changes` veri şemasının kayıtlarını yazar (sürüm 1; alan alan `docs/design/04-schema-v1.md`'de, JSON Schema olarak `ssc describe schemas`'ta): `events` maçlardır (durum, skor, kazanan ve kaydın ne kadar güvenilir olduğu), `slices` bir maç hakkında saklanan her yanıtın durumu (istatistik, kadro, …; yüklerin kendisi ham dışa aktarmadadır), `changes` saklanan maçlarda bulunan düzeltmeler. `--format jsonl` (varsayılan) her satıra bir kaydı API'nin verdiği haliyle yazar; `csv`, `parquet` ve `sqlite` her alana bir sütun yazar, adı alanın yoludur (`status_class`, `score_home`, `quality_observed_at_utc`); listeler JSON metni, eksik değer boş hücredir. Parquet için isteğe bağlı `pyarrow` paketi gerekir (`pip install -e ".[parquet]"`). Süzgeçler: `--sport`, `--tournament`, `--season`, `--event`, `--status` (durum sınıfı), `--from` / `--to` (ISO tarih, UTC; `changes` için düzeltmenin kaydedildiği zaman). `--out` verilmezse dosya veri klasörünün `exports/` dizinine yazılır; `--out -` JSONL ya da CSV'yi stdout'a yazar; var olan dosyanın üzerine yalnızca `--force` ile yazılır. `--schema raw` saklanan SofaScore yüklerini yazar (`--dataset events`: yalnızca maç yükü; `--dataset` yoksa: her yük). `--json` sonucu kayıtların `schema_version`'ını verir. `--dataset` ve `--schema` olmadan `ssc export` yine 2.x'in geniş CSV'sini yazar. HTTP API'de aynı veri kümeleri API v1'in dışa aktarma işidir (`POST /api/v1/jobs`, `kind: "export"`; dosya `GET /api/v1/exports/{id}/download`).
 
+### Terminal menüsünden (3.0'da kaldırıldı)
+
+`python main.py` artık bir menü açmaz: insanlar web uygulamasını kullanır, komut satırı sunucular ve otomasyon içindir. Argümansız çalıştırıldığında kısa bir yardım yazar (web uygulaması `ssc serve`, komutlar `ssc --help`) ve **2** koduyla çıkar. Menünün her öğesinin bir karşılığı var:
+
+| Menü öğesi | Şimdi |
+|------------|-------|
+| Ligler: listele, ekle, yeniden yükle, ara | Web uygulamasında **Ligler** (SofaScore'da ara, ekle, kaldır); `ssc follows list`, `ssc follows add tournament ID --name AD --sport SPOR`, `ssc follows remove`; `config/leagues.txt`. Her komut yapılandırmayı başlarken okur; yeniden yüklenecek bir şey yoktur. |
+| Sezonlar: hepsini güncelle, bir ligi güncelle, listele | `ssc sync` (sezon listeleri, maç programları, ardından maç detayları), `ssc fetch tournament ID`; web uygulamasında **Maç indir** (bir ligin sezon listesini çeker ve yeniler); `GET /api/v1/tournaments/{id}/seasons` |
+| Maçlar: bir lig, tüm ligler, listele | `ssc fetch tournament ID --season ID`, `ssc sync --tournament ID`, `ssc sync`; web uygulamasında **Maç indir** ve **Maçlar**; `GET /api/v1/events` |
+| Maç detayları: ID ile, hepsi | `ssc fetch event ID…`, `ssc sync --only events`; web uygulamasında **Maçlar → Eksikleri indir** |
+| Maç detayları: bir maçın, bir ligin, hepsinin CSV'si | `ssc export --event ID`, `ssc export --tournament ID`, `ssc export` (`--out YOL` dosyayı seçer); `GET /api/export/csv` |
+| İstatistikler: sistem, ligler, rapor dosyası | `ssc status` (`--coverage` turnuva başına maç ve detay sayılarını ekler; `--json > rapor.json` bir rapor dosyası yazar); web uygulamasında **Genel bakış** |
+| Ayarlar: API, veri klasörü, görünüm, dil | Web uygulamasında **Ayarlar**; `.env` ya da `sofascore.toml` (`ssc config show` her değeri ve nereden geldiğini listeler); `--lang` |
+| Ayarlar: veri klasörünü taşı | Uygulamayı durdurun, klasörü taşıyın, sonra `DATA_DIR`'i (web uygulamasında **Ayarlar**, `.env` ya da `--data-dir`) yeni yere çevirin. |
+| Ayarlar: yedekle, geri yükle, temizle | `ssc backup create`, `ssc backup restore AD --yes`, `ssc data clear --all --yes`; web uygulamasında **Ayarlar** (yedekle, tüm verileri sil) |
+| Ayarlar: hakkında | `ssc version` |
+
 ### Headless / otomasyon (kullanımdan kalkan bayraklar)
 
-`python main.py`nin bayrakları bir sürüm daha çalışır. Her çalıştırma [komut satırının](#komut-satırı-ssc) bir komutuna çevrilir ve stderr'e onu adıyla söyleyen tek bir satır yazar (`--headless --update-all` → `ssc sync`, `--refresh-only` → `ssc refresh`, `--headless --csv-export` → `ssc export`, `--recheck-unavailable` → `ssc data recheck-unavailable`, `--watch` → `ssc watch --source poll --stdout`, `--doctor` → `ssc doctor`, `--diagnostics` → `ssc diagnostics`, `--web` → verilen `--host`, `--port`, `--dev` ve `--allow-any-host` ile `ssc serve --host 127.0.0.1 --port 8000`); o komutun çıktı kurallarını ve çıkış kodlarını kullanır. Menü (bayraksız `python main.py`) değişmedi. `--headless` ile birlikte **`--update-all` ve/veya `--csv-export`** zorunludur; aksi halde hiçbir şey çalışmadan çıkış kodu **2** olur.
+`python main.py`nin bayrakları bir sürüm daha çalışır. Her çalıştırma [komut satırının](#komut-satırı-ssc) bir komutuna çevrilir ve stderr'e onu adıyla söyleyen tek bir satır yazar (`--headless --update-all` → `ssc sync`, `--refresh-only` → `ssc refresh`, `--headless --csv-export` → `ssc export`, `--recheck-unavailable` → `ssc data recheck-unavailable`, `--watch` → `ssc watch --source poll --stdout`, `--doctor` → `ssc doctor`, `--diagnostics` → `ssc diagnostics`, `--web` → verilen `--host`, `--port`, `--dev` ve `--allow-any-host` ile `ssc serve --host 127.0.0.1 --port 8000`); o komutun çıktı kurallarını ve çıkış kodlarını kullanır. Terminal menüsü yok: bayraksız `python main.py` kısa bir yardım yazar ve **2** koduyla çıkar ([menünün yerine ne geldi](#terminal-menüsünden-30da-kaldırıldı)). `--headless` ile birlikte **`--update-all` ve/veya `--csv-export`** zorunludur; aksi halde hiçbir şey çalışmadan çıkış kodu **2** olur.
 
 | Bayrak | Anlamı |
 |--------|--------|
-| `--headless` | Menüsüz çalışma |
+| `--headless` | Bir eylem çalıştırır (2.x'te terminal menüsünü atlayan bayrak) |
 | `--update-all` | Çekim akışını çalıştır |
 | `--fetch-mode full` | Sezon + maç listeleri + detay (varsayılan) |
 | `--fetch-mode details` | Yalnız maç detayları (mevcut özet/fikstür CSV’lerine dayanır) |
@@ -497,8 +508,6 @@ data/
 Lig adlandırma ve migrasyonlara göre alt yollar biraz farklı olabilir.
 
 Maç detayları sıkıştırılmış olarak `v3/events/<id / 1.000.000>/<(id / 1.000) mod 1.000>/<id>/` altında saklanır. Önceki sürümlerin `match_details/` altına yazdığı dizinler yerinde kalır ve uygulamada okunmaya devam eder; böyle bir maç yeniden yazıldığında (eksik dilim tamamlama, yenileme, işaretlerin yeniden denetimi) önce bugünkü hali `v3/`'e kopyalanır, eski dizine dokunulmaz. `match_details/`'i doğrudan okuyan programlar bu sürümün indirdiği maçları görmez.
-
-Terminal menüsünde **Yedekleme** ve **Geri yükleme** hâlâ yalnızca eski klasörleri kopyalar (`seasons/`, `matches/`, `match_details/`): `v3/` altında saklanan maçları korumak için veri klasörünün tamamını kopyalayın. **Veri temizleme** sezonları, maçları ve maç detaylarını hem eski klasörlerden hem de `v3/`'ten siler; veri klasörünü başka bir süreç kullanırken reddedilir. **İstatistikler**'deki disk boyutları yalnızca eski klasörleri sayar. Bu menülerin her biri bunu belirtir.
 
 ### Eski verinin yeni düzene taşınması (`ssc migrate`)
 
@@ -672,7 +681,7 @@ Her şey tarayıcının challenge'ı çözmesine bağlı. Bu bozulduğunda işle
   - Web uygulaması: durum `ok` değilken her sayfanın üstünde bir afiş. Kapatınca o seri için gizlenir; durum kötüleşirse ya da yeni bir seri başlarsa yeniden görünür.
   - Web uygulaması, **Ayarlar → Bağlantı**: aynı durum ve tek bir isteği kendiniz denemek için **Bağlantıyı sına** (tarayıcı çalışıyor mu, bot koruması geçildi mi, başarısızsa nedeni).
   - Log: istek başına değil, durum değişimi başına bir uyarı.
-  - Terminal modları (etkileşimli, `--headless`, `--watch`, `--refresh-only`): durum değişimi başına stderr'de, uygulama dilinde tek satır.
+  - Komut satırı (`ssc` ve kullanımdan kalkan `--headless`, `--watch`, `--refresh-only` bayrakları): durum değişimi başına stderr'de, uygulama dilinde tek satır.
 - Durum süreç başınadır: web uygulaması kendi köprüsünü, her CLI süreci kendininkini bildirir.
 
 ### Sunucu kurulumu (Linux / Docker)
@@ -750,7 +759,7 @@ Katkılarınızı memnuniyetle karşılıyoruz. Şu şekillerde destek olabilirs
 
 - **Hata bildirimi** — Sorunu yeniden üreten adımlar, beklenen / gerçek davranış, işletim sistemi ve Python sürümü ile ilgili `.env` anahtarlarını (gizli bilgi paylaşmadan) bir issue’da paylaşın.
 - **Özellik önerisi** — Kullanım senaryosu ve kısıtları yazın; bakıcılar kapsamı issue üzerinde değerlendirebilir.
-- **Pull request** — Repo’yu fork’layın, odaklı bir dal kullanın, değişiklikleri küçük ve tek konuda tutun; PR’da *ne* ve *neden* olduğunu açıklayın. Mevcut kod stiline uyun; gereksiz geniş refaktörden kaçının. Kullanıcıya dönük metin değiştiriyorsanız iki dili de güncelleyin: web uygulaması için `frontend/src/locales/tr.ts` ve `en.ts`, terminal arayüzü için `locales/tr.json` ve `locales/en.json`.
+- **Pull request** — Repo’yu fork’layın, odaklı bir dal kullanın, değişiklikleri küçük ve tek konuda tutun; PR’da *ne* ve *neden* olduğunu açıklayın. Mevcut kod stiline uyun; gereksiz geniş refaktörden kaçının. Kullanıcıya dönük metin değiştiriyorsanız iki dili de güncelleyin: web uygulaması için `frontend/src/locales/tr.ts` ve `en.ts`, komut satırı için `locales/tr.json` ve `locales/en.json`.
 - **Dokümantasyon ve çeviri** — Bu README’ler veya yerelleştirme metinleri için iyileştirmeler değerlidir.
 
 Katkı göndererek, katkınızın projenin lisansı altında sunulmasını ve proje sahibinin onu başka koşullarla da (örneğin ticari bir lisansla) sunabilmesini kabul etmiş olursunuz. Issue ve inceleme süreçlerinde saygılı iletişim rica edilir. Fikrin uyarlılığından emin değilseniz önce issue açmak iyi bir başlangıçtır.

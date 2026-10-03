@@ -905,9 +905,6 @@ class MatchDataFetcher:
                 return True
 
             total_success = self.fetch_detail_ids(match_ids_to_process, progress_callback, should_cancel)
-            if self.rate_limit_breaker_triggered:
-                # Terminal menüsünün çıkış kodu (main.py'nin etkileşimli dalı okur); web ve servis yolları bunu yazmaz
-                os.environ["APP_EXIT_CODE"] = "2"
             return total_success > 0
 
         except StorageError:

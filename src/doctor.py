@@ -59,8 +59,6 @@ REQUIRED_MODULES: Tuple[Tuple[str, str], ...] = (
     ("patchright", "patchright"),
     ("playwright", "playwright"),
     ("pandas", "pandas"),
-    ("colorama", "colorama"),
-    ("tqdm", "tqdm"),
     ("rich", "rich"),
     ("dotenv", "python-dotenv"),
     # sofascore.toml okuyucusu: Python 3.11+ standart kütüphanedeki tomllib, 3.10'da tomli paketi

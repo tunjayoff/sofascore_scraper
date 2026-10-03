@@ -120,12 +120,13 @@ def test_main_imports_only_the_standard_library_and_its_version_at_module_level(
             top_level.append(node.module)
 
     assert [name for name in top_level if name.startswith("src")] == ["src.version"]
-    # Terminal arayüzü yalnızca menü dalında içe aktarılır
+    # Terminal arayüzü 3.0'da kaldırıldı (P26): main.py onu hiçbir dalda içe aktarmaz
     importers = [
         fn.name for fn in ast.walk(tree) if isinstance(fn, ast.FunctionDef)
-        for node in ast.walk(fn) if isinstance(node, ast.ImportFrom) and node.module == "src.SofaScoreUi"
+        for node in ast.walk(fn) if isinstance(node, ast.ImportFrom)
+        and (node.module or "").split(".")[:2] in (["src", "SofaScoreUi"], ["src", "ui"])
     ]
-    assert importers == ["_run_interactive"]
+    assert importers == []
 
 
 # --- çeviri ------------------------------------------------------------------------------------------

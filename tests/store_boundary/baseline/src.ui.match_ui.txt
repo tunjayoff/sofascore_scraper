@@ -1,6 +1,0 @@
-# src/ui/match_ui.py: Store sınırı ihlalleri (docs/design/01-storage.md bölüm 2.4). Bu liste yalnızca küçülebilir.
-# Bir ihlali gideren PR satırını da siler; açıklama: tests/test_store_boundary.py
-[static]
-MatchDataMenuHandler.generate_file_report:os.path.isdir
-MatchMenuHandler.list_matches:os.listdir x2
-MatchMenuHandler.list_matches:os.path.exists x3

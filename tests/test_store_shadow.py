@@ -32,6 +32,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+import conftest
 import legacy_writer
 import src.store
 import store_fixtures as sf
@@ -1149,56 +1150,54 @@ def test_an_id_that_is_not_a_match_id_is_ignored() -> None:
 
 # --- denetim: test paketinin her testin sonunda çalıştırdığı karşılaştırma -------------------------------
 
-def _menu(data_dir: Path, monkeypatch: pytest.MonkeyPatch, *replies: str) -> Any:
-    """Terminal menüsünün ayarlar işleyicisi; soruları sırayla yanıtlanır."""
-    from src.ui import settings_ui
+# Store'un dışında ağaç kopyalayan ürün kodu (terminal menüsünün geri yüklemesi böyleydi; plan maddesi P26 menüyü
+# kaldırdı). Kaynak, proje dışında (diskte olmayan) bir dosya adıyla derlenir ve paketin denetim kancası
+# (tests/conftest.py, ShadowEdits) o dosya adını ürün kodu sayacak biçimde kaydedilir. src/ altında bir ad
+# kullanılmaz: kapsam ölçümü (coverage, kaynak src/) olmayan dosyayı raporlayamaz. Veri dizinleri DATA_DIR'in
+# dışındadır; sınır kaydedicisi proje dışı çerçeveyi atlar.
+_PRODUCT_WRITER = """
+import shutil
 
-    pending = list(replies)
-    monkeypatch.setattr(settings_ui, "input", lambda prompt="": pending.pop(0), raising=False)
-    colors = {name: "" for name in ("SUBTITLE", "WARNING", "INFO", "SUCCESS")}
-    return settings_ui.SettingsMenuHandler(MagicMock(), str(data_dir), colors)
+import src.store
+
+
+def restore_tree(backup, data_dir, name):
+    try:
+        shutil.copytree(backup / name, data_dir / name, dirs_exist_ok=True)
+    finally:
+        src.store.shadow_cleared(data_dir)
+"""
+
+
+def _restore_tree(backup: Path, data_dir: Path, name: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ürün kodu `backup/<name>`'i `data_dir/<name>`'e kopyalar, ardından `shadow_cleared`'ı çağırır."""
+    filename = str(backup.parent / "product_writer.py")  # yok; yalnızca çerçevenin adı
+    recorders = [r for r in conftest.BOUNDARY_RECORDERS if isinstance(r, conftest.ShadowEdits)]
+    assert len(recorders) == 1
+    monkeypatch.setitem(recorders[0]._owners, filename, conftest._BY_PRODUCT)
+    namespace: Dict[str, Any] = {"__name__": "product_writer"}
+    exec(compile(_PRODUCT_WRITER, filename, "exec"), namespace)
+    namespace["restore_tree"](backup, data_dir, name)
 
 
 def test_the_check_reports_a_write_that_no_hook_follows(canonical: sf.LegacyFixture, tmp_path: Path,
                                                        monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Store'un dışında ağaçlara yazan ürün kodu kancasını çağırmalıdır. ST-21'den beri böyle yazan bir indirici
-    yok; terminal menüsünün geri yüklemesi `match_details/`'i kopyalar ve ardından `shadow_cleared`'ı çağırır.
+    Store'un dışında ağaçlara yazan ürün kodu kancasını çağırmalıdır. ST-21'den beri böyle yazan bir indirici,
+    P26'dan beri terminal menüsü yok: yazıcı, `match_details/`'i kopyalayıp `shadow_cleared`'ı çağıran ürün kodu
+    taklididir (`_restore_tree`).
     """
     data = tmp_path / "restored"
     shutil.copytree(canonical.data_dir / "match_details", tmp_path / "backup" / "data" / "match_details")
     open_store(data)
     monkeypatch.setattr(src.store, "shadow_cleared", lambda *args, **kwargs: None)  # kancası unutulmuş yazıcı
 
-    _menu(data, monkeypatch, str(tmp_path / "backup"), "4").restore_data()
+    _restore_tree(tmp_path / "backup" / "data", data, "match_details", monkeypatch)
 
     found = [line for line in api_mod.shadow_check() if line.startswith(str(data))]
     assert len(found) == 1 and "written without a shadow hook afterwards" in found[0]
     assert "match_details" in found[0]
     assert api_mod.shadow_check() == []  # notlar silindi
-
-
-def test_the_menus_clear_goes_through_the_store_and_needs_no_hook(canonical: sf.LegacyFixture,
-                                                                   monkeypatch: pytest.MonkeyPatch) -> None:
-    """
-    Silme de bir yazmadır: ağaçları silen ürün kodunun ardından kanca çağrılmazsa denetim bunu bildirir. Terminal
-    menüsünün temizlemesi ST-21'den beri ağaçları kendisi silmez, `MaintenanceService.clear` (`Store.clear`)
-    siler ve kataloğu kendisi yeniden kurar: kanca (`shadow_cleared`) devre dışıyken de denetim temizdir.
-    """
-    from src.ui import settings_ui
-
-    data = canonical.data_dir
-    store = open_store(data)
-    replies = ["3", "y"]  # maç detayları, onay
-    monkeypatch.setattr(settings_ui, "input", lambda prompt="": replies.pop(0), raising=False)
-    monkeypatch.setattr(src.store, "shadow_cleared", lambda *args, **kwargs: None)
-
-    colors = {name: "" for name in ("SUBTITLE", "WARNING", "INFO", "SUCCESS")}
-    settings_ui.SettingsMenuHandler(MagicMock(), str(data), colors)._clear_selected_data()
-    assert replies == [] and not any((data / "match_details").iterdir())
-
-    assert api_mod.shadow_check() == []
-    assert store.catalog.diff_from_rebuild() == []
 
 
 def test_a_clear_through_the_store_needs_no_hook(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1221,7 +1220,7 @@ def test_the_check_reports_a_catalog_that_differs_from_a_rebuild(canonical: sf.L
     open_store(data)
     monkeypatch.setattr(CatalogAdmin, "rebuild", lambda self, **kwargs: None)  # kanca yanlış dizinliyor
 
-    _menu(data, monkeypatch, str(tmp_path / "backup"), "4").restore_data()
+    _restore_tree(tmp_path / "backup" / "data", data, "match_details", monkeypatch)
     monkeypatch.undo()  # denetimin karşılaştırması gerçek yeniden kurmayla yapılır
 
     found = [line for line in api_mod.shadow_check() if line.startswith(str(data))]
@@ -1244,7 +1243,7 @@ def test_what_the_test_writes_itself_is_reconciled_before_the_next_product_write
     os.utime(basic_file, ns=(stamp, stamp))
     assert store.events.get(ARS).home_score_current != 9 and api_mod.shadow_unsynced()
 
-    # Ürün kodu dizine dokunur (Store'un dışında: istatistik menüsünün disk boyutları dosya ağacını gezer)
+    # Ürün kodu dizine dokunur (Store'un dışında: lig istatistiklerinin disk boyutları dosya ağacını gezer)
     stats_service.league_stats(str(data), PL)
 
     assert not api_mod.shadow_unsynced() and store.events.get(ARS).home_score_current == 9
