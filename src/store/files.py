@@ -1,18 +1,14 @@
 """
 Store'un dosya ilkelleri (docs/design/01-storage.md, bölüm 4.4): atomik yazma, yerine koyma, silme,
-hazırlık (.meta/tmp) ve çöp (.meta/trash) dizinleri. src/fsutil.py'nin içeriği buraya taşındı.
+hazırlık (.meta/tmp) ve çöp (.meta/trash) dizinleri.
 
 Atomik yazma: içerik önce aynı dizinde `.<ad>.<rastgele>.tmp` adlı geçici dosyaya yazılır, sonra
 os.replace ile yerine konur. Okuyan taraf ya eski ya yeni dosyayı görür, yarım dosyayı görmez; aynı
 dosyaya aynı anda yazan iki süreç birbirinin geçici dosyasını ezmez.
 
-İki katman var:
-  * `atomic_write_*` ve `file_lock`: 2.x kodunun kullandığı yardımcılar (src/fsutil.py bunları yeniden
-    dışa açar). Hata olduğu gibi (OSError) çıkar; hiçbir şey fsync edilmez. Dosya izni 0600'dür
-    (tempfile.mkstemp öyle açar); 2.x dosyaları bugünkü gibi kalır.
-  * `write_bytes`, `read_bytes`, `replace`, `remove`, hazırlık/çöp işlevleri: Store'un kendi kullandığı
-    katman. Her OSError bir StoreError'a çevrilir (`fatal` errno'dan hesaplanır) ve STORE_DURABILITY=full
-    ise dosya ve dizini fsync edilir.
+Her OSError bir StoreError'a çevrilir (`fatal` errno'dan hesaplanır) ve STORE_DURABILITY=full ise dosya ve
+dizini fsync edilir. Veri dizini dışındaki yapılandırma dosyaları (leagues.txt, league_sports.json,
+overrides.json) bu modülle değil src/config_files.py ile yazılır.
 
 Dosya izinleri (karar S12): Store katmanının yazdığı dosyalar (yükler, manifestler, .meta/schema.json)
 sürecin umask'ine uyar: umask 022 ile 0644, 077 ile 0600. Böylece Docker bağlama noktasını başka bir
@@ -28,21 +24,14 @@ from __future__ import annotations
 
 import contextlib
 import errno
-import json
 import os
 import shutil
-import tempfile
 import time
 import uuid
-from typing import Any, Callable, Collection, Iterator, Optional, Tuple, Union
+from typing import Callable, Collection, Optional, Tuple, Union
 
 from src.store import layout
 from src.store.errors import PayloadMissing, StoreError
-
-try:
-    import fcntl
-except ImportError:  # Windows
-    fcntl = None
 
 PathLike = Union[str, "os.PathLike[str]"]
 
@@ -101,14 +90,6 @@ def fsync_dir(directory: PathLike) -> None:
 # mkstemp'in bayrakları, okuma dışında: yalnızca yeni dosya (O_EXCL), bağ izlenmez, Windows'ta ikili kip
 _TMP_OPEN_FLAGS = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0)
 
-TmpOpener = Callable[[str, str], Tuple[int, str]]
-
-
-def _open_private_tmp(directory: str, name: str) -> Tuple[int, str]:
-    """2.x yardımcılarının geçici dosyası: tempfile.mkstemp, yani umask ne olursa olsun 0600."""
-    return tempfile.mkstemp(dir=directory, prefix=f".{name}.", suffix=".tmp")
-
-
 def _open_store_tmp(directory: str, name: str) -> Tuple[int, str]:
     """
     Store katmanının geçici dosyası: mkstemp ile aynı ad biçimi (`.<ad>.<rastgele>.tmp`), ama
@@ -126,11 +107,11 @@ def _open_store_tmp(directory: str, name: str) -> Tuple[int, str]:
     raise FileExistsError(errno.EEXIST, "Kullanılmayan geçici dosya adı bulunamadı", directory)
 
 
-def _atomic_write(path: PathLike, data: bytes, *, durable: bool, open_tmp: TmpOpener) -> None:
+def _atomic_write(path: PathLike, data: bytes, *, durable: bool) -> None:
     target = os.fspath(path)
     directory = os.path.dirname(os.path.abspath(target))
     os.makedirs(directory, exist_ok=True)
-    fd, tmp = open_tmp(directory, os.path.basename(target))
+    fd, tmp = _open_store_tmp(directory, os.path.basename(target))
     try:
         with os.fdopen(fd, "wb") as f:
             f.write(data)
@@ -144,47 +125,6 @@ def _atomic_write(path: PathLike, data: bytes, *, durable: bool, open_tmp: TmpOp
         raise
     if durable:
         fsync_dir(directory)
-
-
-# --- 2.x yardımcıları (src/fsutil.py bunları yeniden dışa açar) -----------------------------------
-
-def atomic_write_bytes(path: PathLike, data: bytes, *, durable: bool = False) -> None:
-    """
-    Baytları atomik yazar; üst dizinleri oluşturur. Hata olduğu gibi çıkar, hedef eski haliyle kalır.
-    Dosya izni 0600'dür (2.x davranışı); Store katmanı `write_bytes` kullanır.
-    """
-    _atomic_write(path, data, durable=durable, open_tmp=_open_private_tmp)
-
-
-def atomic_write_text(path: str, text: str, encoding: str = "utf-8") -> None:
-    """Metni bayt bayt aynen yazar (satır sonu çevirisi yok)."""
-    atomic_write_bytes(path, text.encode(encoding))
-
-
-def atomic_write_json(path: str, data: Any, **dump_kwargs: Any) -> None:
-    dump_kwargs.setdefault("ensure_ascii", False)
-    dump_kwargs.setdefault("indent", 2)
-    atomic_write_text(path, json.dumps(data, **dump_kwargs))
-
-
-@contextlib.contextmanager
-def file_lock(path: str) -> Iterator[None]:
-    """
-    Süreçler arası danışma kilidi (CLI ve web aynı config dosyasını düzenlerken).
-    Kilit, hedefin yanındaki `<path>.lock` dosyasında tutulur; Windows'ta kilitlenmez.
-    Store'un kendi kilitleri (lease) bu değildir: onlar src/store/lease.py'dedir.
-    """
-    if fcntl is None:
-        yield
-        return
-    lock_path = f"{path}.lock"
-    os.makedirs(os.path.dirname(os.path.abspath(lock_path)), exist_ok=True)
-    with open(lock_path, "a") as lock_file:
-        fcntl.flock(lock_file, fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(lock_file, fcntl.LOCK_UN)
 
 
 # --- Store katmanı: OSError → StoreError ---------------------------------------------------------
@@ -218,8 +158,7 @@ def write_bytes(path: PathLike, data: bytes, *, durable: Optional[bool] = None) 
     yerine konan dosya yeni dosyadır.
     """
     try:
-        _atomic_write(path, data, durable=durability_full() if durable is None else durable,
-                      open_tmp=_open_store_tmp)
+        _atomic_write(path, data, durable=durability_full() if durable is None else durable)
     except OSError as e:
         raise _store_error(e, path) from e
 

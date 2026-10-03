@@ -452,7 +452,7 @@ def test_facade_is_exported_from_the_package_root():
 
 
 def test_importing_a_submodule_does_not_load_the_facade():
-    """`src.fsutil` yalnızca `src.store.files`'ı ister: kök, SQLite'lı cepheyi kendiliğinden yüklememeli."""
+    """Bir alt modülü (`src.store.files`) içe aktarmak kökü çalıştırır: kök, SQLite'lı cepheyi kendiliğinden yüklememeli."""
     code = (
         "import sys, json; import src.store.files; "
         "print(json.dumps(sorted(m for m in sys.modules if m == 'src' or m.startswith('src.'))))"

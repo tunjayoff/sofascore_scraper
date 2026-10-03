@@ -1,6 +1,5 @@
 """
-Veri dizini istatistikleri — web (dashboard, /stats/system) ve terminal arayüzü (istatistik menüsü, raporlar)
-aynı sayımları buradan alır.
+Veri dizini istatistikleri — eski web rotaları (dashboard, /stats/system) sayımları buradan alır.
 
 Bu modül ince bir aktarıcıdır (plan maddesi RD-4): sayımlar ve disk kullanımı `StatusService.summary()`'den
 (src/services/status.py), yani katalogdan gelir; buradaki işlevler onu bugünkü yanıt anahtarlarına çevirir.
@@ -8,19 +7,12 @@ Sayım kuralları o modülün belgesindedir. Dosya ağacını gezen eski sayıml
 listesi bir kez sayılır (iki özet dosyasında geçen maç, iki dosyası olan sezon listesi), `_no_tournament/`
 altındaki ve düz dizinlerdeki maçlar da detay sayılır, maç sayısı özet CSV'sinin satırlarından değil
 katalogdaki maçlardan gelir.
-
-Tek istisna lig başına disk boyutlarıdır (`league_stats(...)["disk"]`, yalnızca terminal arayüzü kullanır):
-`Store.info` veri dizininin üst düzey girdilerini verir, lig başına döküm vermez. O sayılar bugünkü gibi lig
-dizinleri gezilerek bulunur (`{lig_id}_` önekli dizinler; detaylar için eski ID'siz ad da kabul edilir).
 """
 from __future__ import annotations
 
 import datetime as _dt
-import glob
-import os
-from typing import Any, Dict, Iterable, List, Mapping, Optional
+from typing import Any, Dict, Iterable, Mapping, Optional
 
-from src.paths import safe_name
 from src.services.status import DataSummary, StatusService
 from src.store import open_store
 
@@ -87,62 +79,3 @@ def system_counts(summary: DataSummary, leagues: Mapping[int, str]) -> Dict[str,
         "league_breakdown": [league_counts(summary, lid, name) for lid, name in leagues.items()],
         "disk_usage": disk_usage(summary),
     }
-
-
-# --- lig başına disk boyutları: dosya ağacından (terminal arayüzü) ------------------------------------
-
-
-def dir_size(path: str) -> int:
-    total = 0
-    for root, _, files in os.walk(path):
-        for name in files:
-            try:
-                total += os.path.getsize(os.path.join(root, name))
-            except OSError:
-                pass
-    return total
-
-
-def _league_dirs(parent: str, league_id: int, league_name: Optional[str] = None) -> List[str]:
-    """`parent` altında bu lige ait dizinler: `{id}_*`, yoksa eski ID'siz ad."""
-    if not os.path.isdir(parent):
-        return []
-    found = [os.path.join(parent, d) for d in os.listdir(parent) if d.startswith(f"{league_id}_")]
-    if not found and league_name:
-        legacy = os.path.join(parent, safe_name(league_name))
-        if os.path.isdir(legacy):
-            found.append(legacy)
-    return [d for d in found if os.path.isdir(d)]
-
-
-# --- bugünkü çağrı biçimleri --------------------------------------------------------------------------
-
-
-def league_stats(data_dir: str, league_id: int, league_name: Optional[str] = None, *,
-                 summary: Optional[DataSummary] = None) -> Dict[str, Any]:
-    """
-    Bir lig için `league_counts` ve ligin disk boyutları (`disk`: seasons, matches, details, total; lig
-    dizinleri gezilerek). summary: hazır bir özet varsa o kullanılır, yoksa burada alınır.
-    """
-    if summary is None:
-        summary = data_summary(data_dir, (league_id,))
-    stats = league_counts(summary, league_id, league_name)
-    seasons_files = glob.glob(os.path.join(data_dir, "seasons", f"{league_id}_*_seasons.json"))
-    match_dirs = _league_dirs(os.path.join(data_dir, "matches"), league_id)
-    detail_dirs = _league_dirs(os.path.join(data_dir, "match_details"), league_id, league_name)
-    sizes = {
-        "seasons": sum(os.path.getsize(f) for f in seasons_files),
-        "matches": sum(dir_size(d) for d in match_dirs),
-        "details": sum(dir_size(d) for d in detail_dirs),
-    }
-    sizes["total"] = sum(sizes.values())
-    stats["disk"] = sizes
-    return stats
-
-
-def system_stats(data_dir: str, leagues: Mapping[int, str]) -> Dict[str, Any]:
-    """`system_counts`; dökümdeki her lig ayrıca disk boyutlarını taşır (`league_stats`)."""
-    summary = data_summary(data_dir, leagues)
-    stats = system_counts(summary, leagues)
-    stats["league_breakdown"] = [league_stats(data_dir, lid, name, summary=summary) for lid, name in leagues.items()]
-    return stats

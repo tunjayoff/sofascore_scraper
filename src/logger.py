@@ -42,7 +42,7 @@ import dotenv
 from rich.console import Console
 from rich.logging import RichHandler
 
-from src.fsutil import file_lock
+from src.config_files import file_lock
 from src.paths import env_file_path
 from src.redact import redact_text
 

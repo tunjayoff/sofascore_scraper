@@ -10,8 +10,8 @@ gölge kip kancaları (`shadow_*`). Maçların yazma API'si `EventStore.put` / `
 `delete` (sonucu `PutResult`) ve `ChangeLog.append`'tir; maç dışı varlıklarınki `EntityStore.put`.
 
 Hata sınıfları dışındaki adlar ilk kullanımda yüklenir: kök, cepheyi (SQLite, katalog, türetme) içe
-aktarmadan da alınabilmelidir, çünkü `src.store.files` gibi alt modülleri uygulamanın en alt katmanları
-kullanır (src/fsutil.py) ve bir alt modülü içe aktarmak önce bu dosyayı çalıştırır.
+aktarmadan da alınabilmelidir: hata sınıflarını uygulamanın en alt katmanları kullanır ve bir alt modülü
+(`src.store.files`) içe aktarmak önce bu dosyayı çalıştırır.
 """
 import importlib as _importlib
 from typing import TYPE_CHECKING as _TYPE_CHECKING
@@ -75,6 +75,7 @@ if _TYPE_CHECKING:  # tür denetleyicileri ve API anlık görüntüsü adları b
     from src.store.api import LAYOUT_VERSION
     from src.store.catalog import CATALOG_SCHEMA
     from src.store.state import load_migrations
+    from src.store.legacy import league_dir_name
 
 _LAZY = {
     "open_store": "src.store.api",
@@ -157,6 +158,7 @@ _LAZY = {
     "LAYOUT_VERSION": "src.store.api",
     "CATALOG_SCHEMA": "src.store.catalog",
     "load_migrations": "src.store.state",
+    "league_dir_name": "src.store.legacy",
 }
 
 
@@ -254,6 +256,7 @@ __all__ = [
     "LAYOUT_VERSION",
     "CATALOG_SCHEMA",
     "load_migrations",
+    "league_dir_name",
     "StoreError",
     "LeaseHeld",
     "StoreBusy",

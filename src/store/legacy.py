@@ -336,9 +336,18 @@ def _league_form(league_dir: str) -> str:
     return FORM_L1 if _PREFIX_RE.match(league_dir) else FORM_L2
 
 
-def _safe_name(name: str) -> str:
-    """Yazıcıların dizin / dosya adı kuralı (src/paths.safe_name)."""
+def safe_name(name: str) -> str:
+    """2.x yazıcılarının dizin / dosya adı kuralı: boşluk ve yol ayırıcıları '_' olur."""
     return str(name).replace(" ", "_").replace("/", "_").replace("\\", "_")
+
+
+def league_dir_name(league_id: int, league_name: Optional[str]) -> str:
+    """
+    2.x düzeninde bir ligin dizin adı (`17_Premier_League`): kimlik ve yapılandırmadaki lig adı; ad yoksa
+    sabit bir yer tutucu (`League_17`). Eski yanıtlar (dosya raporu, maç listelerinin lig sütunu) ligleri bu
+    adla anar; 3.0 bu adla dizin açmaz.
+    """
+    return f"{league_id}_{safe_name(league_name or f'League_{league_id}')}"
 
 
 def _parse_ts(value: Any) -> Optional[datetime]:
@@ -976,7 +985,7 @@ class LegacyReader:
         by_label: Dict[str, int] = {}
         for league_id, league_name in (league_names or {}).items():
             by_label.setdefault(str(league_name), int(league_id))
-            by_label.setdefault(_safe_name(league_name), int(league_id))
+            by_label.setdefault(safe_name(league_name), int(league_id))
 
         found: List[LegacySeasonList] = []
         for entry in self._entries(SEASONS_DIR, problems):
@@ -1037,7 +1046,7 @@ class LegacyReader:
                 problems.append(LegacyProblem(SEASONS_CSV, PROBLEM_MALFORMED, f"satır {number}"))
                 continue
             seasons.setdefault(league_id, []).append(season)
-            labels.setdefault(league_id, _safe_name(row.get("Liga Adı") or ""))
+            labels.setdefault(league_id, safe_name(row.get("Liga Adı") or ""))
         return [
             LegacySeasonList(league_id, labels[league_id], "csv", SEASONS_CSV, st.st_mtime_ns, {"seasons": listed})
             for league_id, listed in sorted(seasons.items())
@@ -1120,4 +1129,6 @@ __all__ = [
     "LegacyLine",
     "LegacyWatchState",
     "schedule_sub",
+    "safe_name",
+    "league_dir_name",
 ]

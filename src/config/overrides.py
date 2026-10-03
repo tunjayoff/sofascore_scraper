@@ -28,7 +28,7 @@ from typing import Any, Dict, Mapping, Optional, Tuple
 from src.config import loader
 from src.config import settings as model
 from src.exceptions import ConfigError
-from src.fsutil import atomic_write_text, file_lock
+from src.config_files import atomic_write_text, file_lock
 from src.private_files import PRIVATE_FILE_MODE, restrict_permissions
 
 

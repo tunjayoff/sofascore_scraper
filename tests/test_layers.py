@@ -195,7 +195,7 @@ WEB_ALSO_IMPORTS: Dict[str, str] = {
     "src.config_manager": "web sürecinin yapılandırma yöneticisi (deps.config_manager; P30 Settings'e geçer)",
     "src.paths": ".env yolu (uygulamanın başlangıcı)",
     "src.private_files": ".env ve tarayıcı profilinin izinleri (uygulamanın başlangıcı)",
-    "src.fsutil": "lig spor dosyasının yazımı (src/web/league_sports.py)",
+    "src.config_files": "lig spor dosyasının yazımı (src/web/league_sports.py)",
     "src.breaker": "eski tek maç rotasının devre kesicisi (src/web/api/legacy.py)",
     "src.challenge_solver": "eski bağlantı testi ve köprü durumu (src/web/api/legacy.py)",
     "src.i18n": "eski indirme işinin kart metinleri (src/web/api/legacy.py)",

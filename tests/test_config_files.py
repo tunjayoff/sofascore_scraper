@@ -1,8 +1,9 @@
 """
-src/fsutil.py: atomik yazma ve config dosyalarını koruyan süreçler arası kilit.
+src/config_files.py: config dosyalarının atomik yazımı ve onları koruyan süreçler arası kilit.
 
-Config (leagues.txt, league_sports.json), sezon/maç JSON'ları ve watcher durumu bu iki
-yardımcıdan geçer. Buradaki testler platformdan bağımsız yazılmıştır; Windows'ta bilinen
+Config dosyaları (leagues.txt, league_sports.json, overrides.json) bu iki yardımcıdan geçer; log dosyasının
+çevrilmesi yalnızca kilidi kullanır. 2.x'te aynı işlevler src/fsutil.py'deydi (ST-28 taşıdı).
+Buradaki testler platformdan bağımsız yazılmıştır; Windows'ta bilinen
 eksikler `xfail` ile işaretlidir (gerekçe işaretin içinde).
 """
 from __future__ import annotations
@@ -16,19 +17,19 @@ import time
 
 import pytest
 
-from src import fsutil
-from src.fsutil import atomic_write_json, atomic_write_text, file_lock
+from src import config_files
+from src.config_files import atomic_write_json, atomic_write_text, file_lock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 WINDOWS = sys.platform == "win32"
-needs_fcntl = pytest.mark.skipif(fsutil.fcntl is None, reason="fcntl yok: kilit dosyası bu platformda hiç açılmıyor")
+needs_fcntl = pytest.mark.skipif(config_files.fcntl is None, reason="fcntl yok: kilit dosyası bu platformda hiç açılmıyor")
 no_lock_on_windows = pytest.mark.xfail(
     WINDOWS,
     strict=True,
     reason=(
         "Bilinen eksik: fcntl olmayan platformda (Windows) file_lock hiçbir şey kilitlemez "
-        "(src/fsutil.py) — CLI ve web aynı anda leagues.txt / league_sports.json düzenlerse "
+        "(src/config_files.py) — CLI ve web aynı anda leagues.txt / league_sports.json düzenlerse "
         "bir tarafın değişikliği kaybolabilir. src/throttle.py'deki kilit msvcrt ile Windows'u destekliyor."
     ),
 )
@@ -38,7 +39,7 @@ replace_fails_on_windows = pytest.mark.xfail(
     reason=(
         "Bilinen hata (Windows): hedef dosya başka bir iş parçacığı/süreç tarafından açıkken ya da aynı "
         "anda değiştirilirken os.replace PermissionError (WinError 5, 'Access is denied') verir. "
-        "atomic_write_text yerine koymayı 20 ms arayla 10 kez yeniden dener (src/store/files.py, PR #37); "
+        "atomic_write_text yerine koymayı 20 ms arayla 10 kez yeniden dener (src/config_files.py; PR #37'den beri); "
         "denemeler tükenirse yazma kaybolur ve hata çağırana çıkar. CI windows-latest: aynı dosyaya yazan "
         "6 iş parçacığı artık geçiyor (XPASS); dosyayı sıkı döngüde açık tutan okuyucu varken tek yazıcı "
         "hâlâ başarısız, çünkü okuyucu yeniden denemelerden uzun sürüyor."
@@ -114,7 +115,7 @@ def test_failed_replace_keeps_old_file_and_removes_temp_file(tmp_path, monkeypat
     def boom(src, dst):
         raise OSError("disk full")
 
-    monkeypatch.setattr(fsutil.os, "replace", boom)
+    monkeypatch.setattr(config_files.os, "replace", boom)
     with pytest.raises(OSError, match="disk full"):
         atomic_write_text(str(target), "half written")
     monkeypatch.undo()
@@ -142,7 +143,7 @@ def test_interrupt_during_write_removes_temp_file(tmp_path, monkeypatch):
     def interrupted(src, dst):
         raise KeyboardInterrupt
 
-    monkeypatch.setattr(fsutil.os, "replace", interrupted)
+    monkeypatch.setattr(config_files.os, "replace", interrupted)
     with pytest.raises(KeyboardInterrupt):
         atomic_write_text(str(target), "{}")
     monkeypatch.undo()
@@ -265,7 +266,7 @@ def test_reader_never_sees_a_partial_file_while_it_is_rewritten(tmp_path):
 
 _HOLD_LOCK = """
 import sys
-from src.fsutil import file_lock
+from src.config_files import file_lock
 
 with file_lock(sys.argv[1]):
     print("locked", flush=True)
@@ -387,7 +388,7 @@ def test_file_lock_without_fcntl_runs_the_body_and_locks_nothing(tmp_path, monke
     ama kilit dosyası açılmaz ve ikinci bir sahip beklemeden içeri girer. Bu, mevcut davranışın
     kaydıdır — yukarıdaki `no_lock_on_windows` testleri eksik korumanın kendisini gösterir.
     """
-    monkeypatch.setattr(fsutil, "fcntl", None)
+    monkeypatch.setattr(config_files, "fcntl", None)
     target = tmp_path / "missing-dir" / "leagues.txt"
     ran = []
 
@@ -402,3 +403,73 @@ def test_file_lock_without_fcntl_runs_the_body_and_locks_nothing(tmp_path, monke
     with pytest.raises(ValueError, match="inside"):
         with file_lock(str(target)):
             raise ValueError("inside")
+
+
+# --- Windows'ta yerine koymayı yeniden deneme, fsync ve dosya izni (src/store/files.py testlerinden taşındı) --
+
+class _BusyReplace:
+    """Her çağrıda PermissionError verir: hedef başka bir süreçte açık (Windows)."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def __call__(self, src, dst):
+        self.calls += 1
+        raise PermissionError(13, "Access is denied", dst)
+
+
+def test_exhausted_retries_reach_the_caller_as_permission_error(tmp_path, monkeypatch):
+    """Windows'ta 10 yeniden deneme, 20 ms aralık; sonra PermissionError çağırana çıkar, geçici dosya kalmaz."""
+    target = tmp_path / "leagues.txt"
+    busy, pauses = _BusyReplace(), []
+    monkeypatch.setattr(config_files, "_WINDOWS", True)
+    monkeypatch.setattr(config_files.os, "replace", busy)
+    monkeypatch.setattr(config_files.time, "sleep", pauses.append)
+
+    with pytest.raises(PermissionError) as caught:
+        atomic_write_text(str(target), "x")
+
+    assert (config_files.REPLACE_RETRIES, config_files.REPLACE_RETRY_PAUSE) == (10, 0.02)
+    assert busy.calls == 11 and pauses == [0.02] * 10
+    assert caught.value.errno == 13 and caught.value.filename == str(target)
+    assert os.listdir(tmp_path) == []
+
+
+def test_permission_error_is_not_retried_outside_windows(tmp_path, monkeypatch):
+    busy, pauses = _BusyReplace(), []
+    monkeypatch.setattr(config_files, "_WINDOWS", False)
+    monkeypatch.setattr(config_files.os, "replace", busy)
+    monkeypatch.setattr(config_files.time, "sleep", pauses.append)
+
+    with pytest.raises(PermissionError):
+        atomic_write_text(str(tmp_path / "leagues.txt"), "x")
+
+    assert busy.calls == 1 and pauses == []
+
+
+def test_config_writes_never_fsync(tmp_path, monkeypatch):
+    """STORE_DURABILITY yalnızca Store'un kendi yazmalarını etkiler; config dosyaları bugünkü gibi yazılır."""
+    fsyncs: list[int] = []
+    monkeypatch.setattr(config_files.os, "fsync", fsyncs.append)
+    monkeypatch.setenv("STORE_DURABILITY", "full")
+
+    atomic_write_text(str(tmp_path / "leagues.txt"), "x")
+    atomic_write_json(str(tmp_path / "league_sports.json"), {"x": 1})
+
+    assert fsyncs == []
+
+
+@pytest.mark.skipif(WINDOWS, reason="POSIX dosya izinleri Windows'ta yok")
+@pytest.mark.parametrize("umask", [0o022, 0o077, 0o002, 0o027], ids=lambda m: f"umask-{m:03o}")
+def test_config_files_keep_mode_0600_under_every_umask(tmp_path, umask):
+    """Config dosyaları gizli değer taşıyabilir: tempfile.mkstemp onları umask ne olursa olsun 0600 açar."""
+    previous = os.umask(umask)
+    try:
+        atomic_write_text(str(tmp_path / "leagues.txt"), "x")
+        atomic_write_json(str(tmp_path / "league_sports.json"), {"x": 1})
+    finally:
+        os.umask(previous)
+
+    assert {name: os.stat(tmp_path / name).st_mode & 0o777 for name in os.listdir(tmp_path)} == {
+        "leagues.txt": 0o600, "league_sports.json": 0o600,
+    }

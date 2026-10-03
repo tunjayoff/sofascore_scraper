@@ -23,7 +23,7 @@ hepsi yalnızca eski biçimli kayıtlarda görünür, bugünkü kodun yazdığı
   * Aynı maç iki dizinde duruyorsa olay yükü en yeni olan kopya okunur.
 
 Maç listelerinin satırları eskiden sezon özeti CSV'lerinden (`matches/<lig>/<sezon>_summary.csv`; on sütun,
-src/match_fetcher.py `_save_season_summary`) okunuyordu; şimdi kataloğun maç satırlarından aynı sütunlarla
+2.x'te src/match_fetcher.py `_save_season_summary` yazardı) okunuyordu; şimdi kataloğun maç satırlarından aynı sütunlarla
 kurulur (`LEGACY_LIST_COLUMNS`). Farklar:
 
   * Liste, kataloğun bildiği her maçtır: yalnızca `_matches.csv`'si olan sezonun maçları ve hiçbir programda
@@ -70,10 +70,9 @@ from typing import (TYPE_CHECKING, Any, Callable, Dict, Iterable, Iterator, List
 
 from src import refresh
 from src.logger import get_logger
-from src.paths import league_dir_name
 from src.sports import DETAIL_SLICES, slices_for, sport_slugs
 from src.status import StatusClass
-from src.store import EventQuery, PayloadCorrupt, PayloadMissing, Scope, StoreError
+from src.store import EventQuery, PayloadCorrupt, PayloadMissing, Scope, StoreError, league_dir_name
 
 if TYPE_CHECKING:
     from src import schema
@@ -86,7 +85,7 @@ LEGACY_EVENT_KEY = "basic"  # aynı yükün eski yanıtlardaki (ve basic.json'da
 # SQLite'ın saklayabildiği kimlik aralığı: dışındaki bir sayı hiçbir maçın kimliği olamaz
 _ID_RANGE = (-(2 ** 63), 2 ** 63 - 1)
 
-# Sezon özeti CSV'sinin on sütunu, sırasıyla (src/match_fetcher.py `_save_season_summary`)
+# Sezon özeti CSV'sinin on sütunu, sırasıyla (2.x: src/match_fetcher.py `_save_season_summary`)
 LEGACY_LIST_COLUMNS: Tuple[str, ...] = ("round", "match_id", "home_team", "away_team", "home_score", "away_score",
                                         "match_date", "status", "tournament", "season")
 SORT_ASC = "asc"
@@ -912,7 +911,7 @@ class _Names:
         """
         Maçın lig dizininin adı (`17_Premier_League`); eskiden özet CSV'sinin bulunduğu `matches/` alt dizininin
         adıydı. Turnuvası bilinen maçta: detay dizini o turnuvanın kimliğiyle başlayan bir lig dizinindeyse onun
-        adı, değilse yazıcıların kullandığı ad (`src/paths.league_dir_name`: yapılandırmadaki lig adı, yoksa
+        adı, değilse 2.x yazıcılarının kullandığı ad (`src.store.league_dir_name`: yapılandırmadaki lig adı, yoksa
         katalogdaki turnuva adı). Turnuvası olmayan maçta detay dizininin lig dizini (`_no_tournament`); o da
         yoksa boş.
         """

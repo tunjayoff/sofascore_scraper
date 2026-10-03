@@ -35,7 +35,6 @@ from src import match_data_fetcher as mdf
 from src import refresh, slices, sports, status, watcher
 from src.config_manager import ConfigManager
 from src.match_data_fetcher import MatchDataFetcher
-from src.paths import safe_name
 from src.services import stats as stats_service
 from src.store import Ref, Store, catalog, codec, derive, layout, legacy, open_store
 from src.store.errors import LayoutError, PayloadCorrupt, PayloadMissing, StoreError
@@ -123,7 +122,7 @@ def test_names_equal_the_writers_constants() -> None:
         "table-tennis"
     assert LegacyReader("x").known_slices == tuple(s.key for s in sports.DETAIL_SLICES)
     for name in ("a b/c\\d", "Premier League", "Wimbledon, Men"):
-        assert legacy._safe_name(name) == safe_name(name) == sf.safe_name(name)
+        assert legacy.safe_name(name) == sf.safe_name(name)
 
 
 # --- keşif: her biçim ---------------------------------------------------------------------------
@@ -1271,7 +1270,7 @@ def test_counting_walkers(fx: sf.LegacyFixture, capsys: pytest.CaptureFixture[st
     dizinlerine bakıyor ve olay yükü olmayan dizini de sayıyordu.
     """
     events, _ = scan(fx.data_dir)
-    system = stats_service.system_stats(str(fx.data_dir), fx.leagues)
+    system = stats_service.system_counts(stats_service.data_summary(str(fx.data_dir), fx.leagues), fx.leagues)
     assert system["details"] == len(events)
     report = fetcher_for(fx.data_dir).generate_file_report()
     assert capsys.readouterr().out == ""
