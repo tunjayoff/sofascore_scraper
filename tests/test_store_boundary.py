@@ -1,41 +1,27 @@
 """
-Store sınırı: DATA_DIR'e yalnızca src/store/ dokunur (docs/design/01-storage.md bölüm 2.1 ve 2.4; plan maddesi ST-04).
+Store sınırı: DATA_DIR'e yalnızca src/store/ dokunur (docs/design/01-storage.md bölüm 2.1 ve 2.4; plan maddeleri
+ST-04 ve ST-28).
 
-İki denetim, tek bir mandal (ratchet):
+İki denetim:
 
   statik           src/ altındaki (src/store/ dışı) her modül `ast` ile taranır. Dosya sistemi ve sqlite3
                    çağrıları ile `src.store.<altmodül>` içe aktarmaları ihlaldir.
   çalışma zamanı   tests/conftest.py'deki denetim kancası, testler koşarken test veri dizinine src/store/
                    dışından yapılan erişimleri kaydeder; buradaki testler onları oturumun sonunda değerlendirir.
 
-Bugünkü ihlaller `tests/store_boundary/baseline/<modül>.txt` dosyalarında durur (kaynak modül başına bir dosya),
-`işlev:çağrı` satırları olarak:
+İkisi de katıdır (ST-28): her ihlal testi düşürür. Ratchet (tests/store_boundary/baseline/) geçiş boyunca
+bugünkü ihlalleri tutuyordu; son satırları giderildi ya da aşağıdaki iki listeden birine gerekçesiyle girdi:
 
-    [static]
-    MatchFetcher._load_round:open x2
-    MatchFetcher._save_round:os.makedirs
-    [runtime]
-    _dir_state:tempfile.mkstemp
+  FS_ALLOWLIST       DATA_DIR dışındaki dosyalara meşru olarak dokunan modüller (yapılandırma, .env, loglar,
+                     statik dosyalar). Muafiyet yalnızca statik dosya sistemi kuralını kapsar; içe aktarma kuralı
+                     ve çalışma zamanı denetimi bu modüller için de geçerlidir.
+  NAMED_EXCEPTIONS   DATA_DIR'e Store'un dışından dokunmasına bugün izin verilen tek tek işlevler, gerekçesi ve
+                     onu kaldıracak maddeyle. İstisna işlevin bütün erişimlerini (statik ve çalışma zamanı)
+                     kapsar; içe aktarma kuralını kapsamaz. Artık görülmeyen bir istisna da testi düşürür
+                     (statik: kaynakta; çalışma zamanı: yalnızca bütün test paketi koşarken).
 
-  [static]   Kaynakta görülen çağrılar. Aynı işlevdeki aynı çağrının sayısı da tutulur (`x2`); sayı artarsa
-             bu da yeni ihlaldir.
-  [runtime]  Testler koşarken görülen, ama statik denetimin o işlevde hiçbir şey izlemediği erişimler: yolu
-             çalışırken kurulan çağrılar ve statik kuraldan muaf modüllerin DATA_DIR'e dokunduğu yerler.
-             [static] altında zaten duran bir işlev için ayrıca satır tutulmaz: aynı ihlal iki kez yazılmaz ve
-             eski kodu koşturan yeni bir test listeyi büyütmez.
-
-  * Listede olmayan bir ihlal testi düşürür: yeni kod DATA_DIR'e Store üzerinden erişir.
-  * Listede olup artık görülmeyen bir satır da testi düşürür: ihlali gideren PR satırı da siler. Böylece
-    listeler yalnızca küçülür; geçişin son PR'ı (ST-28) dizini siler.
-
-Satırları elle düzenlemek yerine:
-
-    STORE_BOUNDARY_UPDATE=prune   python -m pytest   # yalnızca artık görülmeyen satırları siler, sayıları düşürür
-    STORE_BOUNDARY_UPDATE=rewrite python -m pytest   # listeleri bugünkü durumdan yeniden yazar: satır EKLEYEBİLİR
-
-`rewrite`, kod bir modülden ötekine taşındığında (ihlal de onunla taşınır) ya da bir işlev yeniden adlandırıldığında
-kullanılır; eklenen her satır PR açıklamasında anılmalıdır. Çalışma zamanı bölümü yalnızca bütün testler koşarken
-güncellenir (dosya ya da `-k` ile daraltılmış bir çalıştırma görmediği ihlal hakkında bir şey söyleyemez).
+Yeni bir ihlal için doğru yol erişimi Store üzerinden yapmaktır; listeye satır eklemek PR açıklamasında
+gerekçelendirilir.
 
 Statik denetimin göremedikleri (takma adla ya da `getattr` ile yapılan çağrılar, türü çıkarılamayan `Path`
 nesneleri, üçüncü taraf kitaplıkların açtığı dosyalar) çalışma zamanı denetimine kalır; onun göremedikleri
@@ -46,7 +32,6 @@ from __future__ import annotations
 
 import ast
 import os
-from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
@@ -58,21 +43,24 @@ import conftest
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC_DIR = ROOT / "src"
+# ST-28'e kadar ratchet'in dizini; artık var olmamalı (test_the_ratchet_baseline_is_gone)
 BASELINE_DIR = Path(__file__).resolve().parent / "store_boundary" / "baseline"
-UPDATE = os.getenv("STORE_BOUNDARY_UPDATE", "").strip().lower()
 MODULE_SCOPE = "<module>"
 IMPORT_PREFIX = "import "
 DESIGN = "docs/design/01-storage.md bölüm 2.4"
 
-# Statik dosya sistemi kuralından muaf modüller (01-storage.md 2.4'teki liste): DATA_DIR dışındaki dosyalara
-# meşru olarak dokunurlar. Muafiyet yalnızca dosya sistemi çağrılarını kapsar; `src.store.<altmodül>` içe
-# aktarma kuralı ve çalışma zamanı denetimi bu modüller için de geçerlidir.
+# Statik dosya sistemi kuralından muaf modüller (01-storage.md 2.4'teki liste ve ST-28'in ekledikleri): DATA_DIR
+# dışındaki dosyalara meşru olarak dokunurlar. Muafiyet yalnızca dosya sistemi çağrılarını kapsar;
+# `src.store.<altmodül>` içe aktarma kuralı ve çalışma zamanı denetimi bu modüller için de geçerlidir.
 FS_ALLOWLIST: Dict[str, str] = {
     "src/config_manager.py": "yapılandırma dosyaları ve .env",
     "src/config/": "yapılandırma dosyaları ve .env",
     "src/config_files.py": "yapılandırma dosyalarının atomik yazımı ve kilidi (leagues.txt, league_sports.json, "
                            "overrides.json; ST-28)",
     "src/paths.py": "yapılandırma ve tarayıcı profili yolları",
+    "src/private_files.py": ".env ve tarayıcı profilinin izinleri (ST-28)",
+    "src/redact.py": ".env dosyasının değiştiği an (maskelenecek değerlerin önbelleği; ST-28)",
+    "src/version.py": "pyproject.toml'daki sürüm (Store bu modülü içe aktarabilir; ST-28)",
     "src/i18n.py": "çeviri dosyaları (locales/)",
     "src/doctor.py": "ortam yoklamaları",
     "src/throttle.py": "istek bütçesi dosyaları",
@@ -82,9 +70,30 @@ FS_ALLOWLIST: Dict[str, str] = {
     "src/sinks/file.py": "dosya sink'inin kendi çıktı yolu",
     "src/web/app.py": "statik dosyalar (frontend/dist)",
     "src/web/missing_ui.py": "statik dosyalar (yardım sayfası)",
+    "src/web/security.py": "statik dosyalar: arayüzün index.html'i (CSP kararı; ST-28)",
+    "src/web/league_sports.py": "league_sports.json, lig listesinin yanındaki yapılandırma dosyası (ST-28)",
+    "src/web/openapi.py": "API v1 OpenAPI anlık görüntüsü (docs/api/openapi-v1.json; geliştirici aracı, ST-28)",
 }
-# Tasarımın saydığı ama henüz var olmayan modüller (P09 ve P22 ile gelir).
-ALLOWLIST_PLANNED = frozenset({"src/config/", "src/sinks/file.py"})
+
+# Store'un dışından DATA_DIR'e dokunmasına izin verilen işlevler: (modül, işlev) -> gerekçe ve kaldıracak madde.
+# Muaf bir modüldeki işlev yalnızca çalışma zamanında görülür (statik denetim o modülün dosya çağrılarına bakmaz).
+NAMED_EXCEPTIONS: Dict[Tuple[str, str], str] = {
+    ("src/doctor.py", "_dir_state"):
+        "veri dizininin yazılabilirliği bir yoklama dosyası açılıp silinerek sınanır (ortam yoklaması; Store "
+        "açılmadan çalışmalı). Bir Store yöntemine taşınabilir.",
+    ("src/diagnostics.py", "_jobs"):
+        "tanılama paketi iş veritabanını (state.db ya da 2.x jobs.db) salt okunur açar; depo kilidi ve "
+        "uzlaştırma istemez. Bir Store yöntemine taşınabilir.",
+    ("src/services/context.py", "_ensure_directory"):
+        "bağlam kurulurken veri dizini ve 2.x alt dizinleri var edilir (bugünkü davranış). P30'la gider.",
+    ("src/utils.py", "ensure_directory"):
+        "2.x indiricilerinin ve CSV dışa aktarmasının dizinleri var etmesi (src/season_fetcher.py, "
+        "src/match_fetcher.py, src/match_data_fetcher.py, src/cli/commands/export.py). P30'la gider.",
+    ("src/services/export.py", "_write_file"):
+        "dışa aktarmanın kullanıcının seçtiği yoldaki çıktı dosyası (dosya sink'i gibi; yol veri dizininde "
+        "de olabilir).",
+}
+
 
 # Diske dokunan işlevler. Çağrı olmasa da adın anılması (ör. `map(os.remove, paths)`) ihlal sayılır.
 FS_FUNCTIONS = frozenset({
@@ -160,6 +169,9 @@ class Scopes:
                 self._collect(child, name + ".")
             else:
                 self._collect(child, prefix)
+
+    def names(self) -> Set[str]:
+        return {name for _start, _end, name in self._spans}
 
     def qualname(self, line: int) -> str:
         best: Optional[Tuple[int, str]] = None
@@ -455,6 +467,25 @@ def is_allowlisted(module_path: str) -> bool:
                for entry in FS_ALLOWLIST)
 
 
+def is_excepted(module_path: str, function: str) -> bool:
+    return (module_path, function) in NAMED_EXCEPTIONS
+
+
+def violations(findings: Dict[str, List[Finding]]) -> Dict[str, List[Finding]]:
+    """`scan_tree` sonucundan adlı istisnaların dosya çağrıları çıkar; içe aktarma ihlalleri hep kalır."""
+    result: Dict[str, List[Finding]] = {}
+    for module, items in findings.items():
+        kept = [f for f in items if f.is_import or not is_excepted(module, f.function)]
+        if kept:
+            result[module] = kept
+    return result
+
+
+def defined_names(source: str) -> Set[str]:
+    """Kaynaktaki her işlevin ve sınıfın nitelikli adı (`Sınıf.yöntem`)."""
+    return Scopes(ast.parse(source)).names()
+
+
 def iter_modules(src_dir: Path) -> Iterator[Tuple[str, Path]]:
     """src/ altındaki, src/store/ dışındaki her modül: (depo köküne göre yol, dosya)."""
     base = src_dir.parent
@@ -475,163 +506,6 @@ def scan_tree(src_dir: Path) -> Dict[str, List[Finding]]:
         if findings:
             result[rel] = findings
     return result
-
-
-# --- baseline dosyaları ------------------------------------------------------------------------------
-
-StaticEntries = Dict[Tuple[str, str], int]
-RuntimeEntries = Set[Tuple[str, str]]
-
-
-@dataclass
-class Baseline:
-    static: StaticEntries
-    runtime: RuntimeEntries
-
-    def __bool__(self) -> bool:
-        return bool(self.static or self.runtime)
-
-
-def baseline_name(module_path: str) -> str:
-    """'src/web/routes/data.py' -> 'src.web.routes.data.txt'"""
-    return module_path[: -len(".py")].replace("/", ".") + ".txt"
-
-
-def module_of_baseline(name: str) -> str:
-    return name[: -len(".txt")].replace(".", "/") + ".py"
-
-
-def _split_entry(text: str, where: str) -> Tuple[str, str]:
-    function, sep, call = text.partition(":")
-    if not sep or not function or not call or function != function.strip() or call != call.strip():
-        raise ValueError(f"{where}: `işlev:çağrı` bekleniyordu: {text!r}")
-    return function, call
-
-
-def parse_baseline(text: str, where: str = "baseline") -> Baseline:
-    baseline = Baseline({}, set())
-    section = ""
-    for number, raw in enumerate(text.splitlines(), 1):
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
-        at = f"{where}:{number}"
-        if line in ("[static]", "[runtime]"):
-            section = line[1:-1]
-        elif section == "static":
-            entry, count = line, 1
-            head, sep, tail = line.rpartition(" x")
-            if sep and tail.isdigit():
-                entry, count = head, int(tail)
-            key = _split_entry(entry, at)
-            if key in baseline.static or count < 1:
-                raise ValueError(f"{at}: yinelenen ya da geçersiz satır: {line!r}")
-            baseline.static[key] = count
-        elif section == "runtime":
-            key = _split_entry(line, at)
-            if key in baseline.runtime:
-                raise ValueError(f"{at}: yinelenen satır: {line!r}")
-            baseline.runtime.add(key)
-        else:
-            raise ValueError(f"{at}: satır bir [static] ya da [runtime] bölümünde olmalı: {line!r}")
-    return baseline
-
-
-def format_baseline(module_path: str, baseline: Baseline) -> str:
-    lines = [
-        f"# {module_path}: Store sınırı ihlalleri ({DESIGN}). Bu liste yalnızca küçülebilir.",
-        "# Bir ihlali gideren PR satırını da siler; açıklama: tests/test_store_boundary.py",
-    ]
-    if baseline.static:
-        lines.append("[static]")
-        for (function, call), count in sorted(baseline.static.items()):
-            lines.append(f"{function}:{call}" + (f" x{count}" if count > 1 else ""))
-    if baseline.runtime:
-        lines.append("[runtime]")
-        lines.extend(f"{function}:{call}" for function, call in sorted(baseline.runtime))
-    return "\n".join(lines) + "\n"
-
-
-def read_baselines(directory: Path) -> Dict[str, Baseline]:
-    """Modül yolu -> baseline. Dizin yoksa boş (geçiş bittiğinde dizin silinir)."""
-    result: Dict[str, Baseline] = {}
-    if directory.is_dir():
-        for path in sorted(directory.glob("*.txt")):
-            result[module_of_baseline(path.name)] = parse_baseline(path.read_text(encoding="utf-8"), path.name)
-    return result
-
-
-def write_baselines(directory: Path, baselines: Dict[str, Baseline]) -> None:
-    """Verilen durumu diske yazar; boş kalan modülün dosyasını siler."""
-    directory.mkdir(parents=True, exist_ok=True)
-    keep = set()
-    for module_path, baseline in baselines.items():
-        if baseline:
-            path = directory / baseline_name(module_path)
-            path.write_text(format_baseline(module_path, baseline), encoding="utf-8", newline="\n")
-            keep.add(path.name)
-    for path in directory.glob("*.txt"):
-        if path.name not in keep:
-            path.unlink()
-
-
-# --- karşılaştırma -----------------------------------------------------------------------------------
-
-
-def count_findings(findings: Dict[str, List[Finding]]) -> Dict[str, StaticEntries]:
-    return {module: dict(Counter(f.key for f in items)) for module, items in findings.items()}
-
-
-@dataclass(frozen=True)
-class Drift:
-    """Baseline ile bugünkü durum arasındaki tek bir fark."""
-
-    module: str
-    function: str
-    call: str
-    expected: int  # baseline'daki sayı (çalışma zamanı için 0 ya da 1)
-    actual: int
-
-    @property
-    def entry(self) -> str:
-        return f"{self.function}:{self.call}"
-
-
-def compare_static(found: Dict[str, StaticEntries], baselines: Dict[str, Baseline]) -> Tuple[List[Drift], List[Drift]]:
-    """(yeni ihlaller, artık görülmeyen baseline satırları)"""
-    new: List[Drift] = []
-    stale: List[Drift] = []
-    for module in sorted(set(found) | set(baselines)):
-        actual = found.get(module, {})
-        expected = baselines[module].static if module in baselines else {}
-        for key in sorted(set(actual) | set(expected)):
-            drift = Drift(module, key[0], key[1], expected.get(key, 0), actual.get(key, 0))
-            if drift.actual > drift.expected:
-                new.append(drift)
-            elif drift.actual < drift.expected:
-                stale.append(drift)
-    return new, stale
-
-
-def compare_runtime(observed: Dict[str, RuntimeEntries], baselines: Dict[str, Baseline]) -> Tuple[List[Drift], List[Drift]]:
-    new: List[Drift] = []
-    stale: List[Drift] = []
-    for module in sorted(set(observed) | set(baselines)):
-        actual = observed.get(module, set())
-        expected = baselines[module].runtime if module in baselines else set()
-        new.extend(Drift(module, f, c, 0, 1) for f, c in sorted(actual - expected))
-        stale.extend(Drift(module, f, c, 1, 0) for f, c in sorted(expected - actual))
-    return new, stale
-
-
-def _describe_stale(stale: Sequence[Drift], section: str) -> str:
-    lines = [f"Baseline'da olup artık görülmeyen {len(stale)} satır ([{section}]). İhlal giderildiyse satırı da silin"
-             " (ya da: STORE_BOUNDARY_UPDATE=prune python -m pytest):"]
-    for d in stale:
-        change = "satırı silin" if d.actual == 0 else f"sayıyı x{d.actual} yapın" if d.actual > 1 else "` xN` ekini silin"
-        lines.append(f"  tests/store_boundary/baseline/{baseline_name(d.module)}: `{d.entry}`"
-                     f" (baseline {d.expected}, şimdi {d.actual}) -> {change}")
-    return "\n".join(lines)
 
 
 # --- çalışma zamanı kayıtları ------------------------------------------------------------------------
@@ -667,48 +541,26 @@ def uncovered_runtime(observed: Dict[str, Dict[Tuple[str, str], Tuple[int, str, 
 # === gerçek ağaç: statik denetim =====================================================================
 
 
-def _update_static(found: Dict[str, StaticEntries], baselines: Dict[str, Baseline]) -> None:
-    for module in set(found) | set(baselines):
-        baseline = baselines.setdefault(module, Baseline({}, set()))
-        actual = found.get(module, {})
-        if UPDATE == "rewrite":
-            baseline.static = dict(actual)
-        else:  # prune: yalnızca küçült
-            baseline.static = {k: min(n, actual[k]) for k, n in baseline.static.items() if k in actual}
-    write_baselines(BASELINE_DIR, baselines)
-
-
-def test_update_mode_is_known():
-    assert UPDATE in ("", "prune", "rewrite"), "STORE_BOUNDARY_UPDATE yalnızca `prune` ya da `rewrite` olabilir"
-
-
-def test_static_no_new_violations():
-    findings = scan_tree(SRC_DIR)
-    found = count_findings(findings)
-    baselines = read_baselines(BASELINE_DIR)
-    if UPDATE in ("prune", "rewrite"):
-        _update_static(found, baselines)
-        baselines = read_baselines(BASELINE_DIR)
-    new, _stale = compare_static(found, baselines)
-    if new:
-        lines_of = {(m, f.key): f.line for m, items in findings.items() for f in reversed(items)}
-        shown = "\n".join(
-            f"  {d.module}:{lines_of[(d.module, (d.function, d.call))]}  {d.entry}  (baseline {d.expected}, şimdi {d.actual})"
-            for d in new
-        )
+def test_static_no_violations():
+    found = violations(scan_tree(SRC_DIR))
+    if found:
+        shown = "\n".join(f"  {module}:{f.line}  {f.function}:{f.call}" for module, items in found.items() for f in items)
         pytest.fail(
-            f"Store sınırı: {len(new)} yeni ihlal ({DESIGN}).\n{shown}\n"
+            f"Store sınırı: {sum(map(len, found.values()))} ihlal ({DESIGN}).\n{shown}\n"
             "src/store/ dışındaki kod DATA_DIR'e dokunmaz ve yalnızca `from src.store import ...` kullanır: erişimi\n"
-            "Store üzerinden yapın. Kod başka bir modülden taşındıysa ihlal de taşınır: baseline dosyalarını\n"
-            "STORE_BOUNDARY_UPDATE=rewrite ile yeniden yazın ve eklenen satırları PR açıklamasında anın.",
+            "Store üzerinden yapın. DATA_DIR dışındaki bir dosyaysa modülü FS_ALLOWLIST'e, kaçınılmaz bir veri\n"
+            "dizini erişimiyse işlevi NAMED_EXCEPTIONS'a gerekçesiyle ekleyin (tests/test_store_boundary.py) ve\n"
+            "PR açıklamasında anın.",
             pytrace=False,
         )
 
 
-def test_static_no_stale_baseline_entries():
-    _new, stale = compare_static(count_findings(scan_tree(SRC_DIR)), read_baselines(BASELINE_DIR))
-    if stale:
-        pytest.fail(_describe_stale(stale, "static"), pytrace=False)
+def test_static_named_exceptions_are_still_needed():
+    """Muaf olmayan modüldeki bir istisnanın işlevi hâlâ dosyaya dokunur; dokunmuyorsa satır silinir."""
+    findings = scan_tree(SRC_DIR)
+    used = {(module, f.function) for module, items in findings.items() for f in items if not f.is_import}
+    unused = [key for key in NAMED_EXCEPTIONS if not is_allowlisted(key[0]) and key not in used]
+    assert not unused, f"artık dosyaya dokunmayan istisnalar (NAMED_EXCEPTIONS'tan silin): {unused}"
 
 
 def test_allowlist_names_real_modules_with_a_reason():
@@ -717,8 +569,21 @@ def test_allowlist_names_real_modules_with_a_reason():
         assert entry.startswith("src/") and not entry.startswith("src/store/"), entry
         target = ROOT / entry
         exists = target.is_dir() if entry.endswith("/") else target.is_file()
-        assert exists or entry in ALLOWLIST_PLANNED, f"{entry}: böyle bir modül yok (muafiyet listesinden çıkarın)"
-    assert ALLOWLIST_PLANNED <= set(FS_ALLOWLIST)
+        assert exists, f"{entry}: böyle bir modül yok (muafiyet listesinden çıkarın)"
+
+
+def test_named_exceptions_name_real_functions_with_a_reason():
+    for (module, function), reason in NAMED_EXCEPTIONS.items():
+        assert reason.strip(), f"{module}:{function}: gerekçe yok"
+        assert module.startswith("src/") and not module.startswith("src/store/"), module
+        path = ROOT / module
+        assert path.is_file(), f"{module}: böyle bir modül yok (istisnayı silin)"
+        assert function in defined_names(path.read_text(encoding="utf-8")), f"{module}: `{function}` yok"
+
+
+def test_the_ratchet_baseline_is_gone():
+    """ST-28: denetimler katı. Ratchet dizini geri gelirse hiçbir şey onu okumaz; yanlış bir güvence verirdi."""
+    assert not BASELINE_DIR.parent.exists(), f"{BASELINE_DIR.parent}: ratchet ST-28'de kaldırıldı"
 
 
 def test_store_itself_is_not_scanned():
@@ -735,9 +600,9 @@ def _observed_runtime() -> Dict[str, Dict[Tuple[str, str], Tuple[int, str, str]]
 
 
 def _stale_runtime_is_meaningful() -> Optional[str]:
-    """Görülmeyen bir satırın "giderildi" anlamına gelmesi için koşullar; sağlanmıyorsa nedeni döner."""
+    """Görülmeyen bir istisnanın "gereksiz" anlamına gelmesi için koşullar; sağlanmıyorsa nedeni döner."""
     if not conftest.STORE_BOUNDARY.full_run:
-        return "testlerin yalnızca bir bölümü koştu: görülmeyen ihlal bir şey kanıtlamaz"
+        return "testlerin yalnızca bir bölümü koştu: görülmeyen erişim bir şey kanıtlamaz"
     if os.name == "nt":
         return "Windows'ta bazı testler atlanır (UTC olmayan makinede okuyucu altın dosyaları, POSIX'e özgü testler)"
     return None
@@ -749,76 +614,32 @@ def test_runtime_hook_raised_no_errors():
 
 
 @pytest.mark.store_boundary_last
-def test_runtime_no_new_violations():
+def test_runtime_no_violations():
     observed = _observed_runtime()
-    baselines = read_baselines(BASELINE_DIR)
-    entries = {module: set(items) for module, items in observed.items()}
-    if UPDATE in ("prune", "rewrite"):
-        reason = _stale_runtime_is_meaningful()
-        if reason is not None:
-            pytest.skip(f"[runtime] bölümleri güncellenmedi: {reason}")
-        for module in set(entries) | set(baselines):
-            baseline = baselines.setdefault(module, Baseline({}, set()))
-            seen = entries.get(module, set())
-            baseline.runtime = set(seen) if UPDATE == "rewrite" else baseline.runtime & seen
-        write_baselines(BASELINE_DIR, baselines)
-        baselines = read_baselines(BASELINE_DIR)
-    new, _stale = compare_runtime(entries, baselines)
-    if new:
-        shown = []
-        for d in new:
-            line, test, path = observed[d.module][(d.function, d.call)]
-            shown.append(f"  {d.module}:{line}  {d.entry}\n      yol: {path}\n"
-                         f"      ilk görüldüğü test: {test or '(test dışı: import/toplama)'}")
+    shown = []
+    for module, items in sorted(observed.items()):
+        for (function, call), (line, test, path) in sorted(items.items()):
+            if not is_excepted(module, function):
+                shown.append(f"  {module}:{line}  {function}:{call}\n      yol: {path}\n"
+                             f"      ilk görüldüğü test: {test or '(test dışı: import/toplama)'}")
+    if shown:
         pytest.fail(
-            f"Store sınırı: testler koşarken {len(new)} yeni ihlal görüldü ({DESIGN}).\n" + "\n".join(shown) + "\n"
-            "Test veri dizinine src/store/ dışındaki koddan erişildi: erişimi Store üzerinden yapın. Kod başka bir\n"
-            "modülden taşındıysa: STORE_BOUNDARY_UPDATE=rewrite python -m pytest (eklenen satırları PR'da anın).",
+            f"Store sınırı: testler koşarken {len(shown)} ihlal görüldü ({DESIGN}).\n" + "\n".join(shown) + "\n"
+            "Test veri dizinine src/store/ dışındaki koddan erişildi: erişimi Store üzerinden yapın (kaçınılmazsa\n"
+            "işlevi gerekçesiyle NAMED_EXCEPTIONS'a ekleyin ve PR açıklamasında anın).",
             pytrace=False,
         )
 
 
 @pytest.mark.store_boundary_last
-def test_runtime_no_stale_baseline_entries():
+def test_runtime_named_exceptions_are_still_needed():
+    """Muaf modüldeki bir istisna (yalnızca çalışırken görülür) bütün paket koşarken en az bir kez görülür."""
     reason = _stale_runtime_is_meaningful()
     if reason is not None:
         pytest.skip(reason)
-    entries = {module: set(items) for module, items in _observed_runtime().items()}
-    _new, stale = compare_runtime(entries, read_baselines(BASELINE_DIR))
-    if stale:
-        pytest.fail(_describe_stale(stale, "runtime"), pytrace=False)
-
-
-@pytest.mark.store_boundary_last
-def test_baseline_files_are_canonical_and_name_existing_modules():
-    """
-    Her dosya var olan bir modüle aittir, boş değildir ve `format_baseline`'ın yazacağı biçimdedir (sıralı).
-    Güncelleme kipinde dosyalar oturumun sonunda yazıldığı için bu test de sonda çalışır.
-    """
-    problems = []
-    for path in sorted(BASELINE_DIR.glob("*")) if BASELINE_DIR.is_dir() else []:
-        if path.suffix != ".txt":
-            problems.append(f"{path.name}: baseline dizininde yalnızca <modül>.txt dosyaları durur")
-            continue
-        module = module_of_baseline(path.name)
-        text = path.read_text(encoding="utf-8")
-        baseline = parse_baseline(text, path.name)
-        if not (ROOT / module).is_file():
-            problems.append(f"{path.name}: {module} yok (modül silindiyse dosyayı da silin)")
-        elif module.startswith("src/store/"):
-            problems.append(f"{path.name}: src/store/ için baseline tutulmaz")
-        elif not baseline:
-            problems.append(f"{path.name}: boş (dosyayı silin)")
-        elif text != format_baseline(module, baseline):
-            problems.append(f"{path.name}: biçim bozuk ya da sırasız (STORE_BOUNDARY_UPDATE=prune yeniden yazar)")
-        elif is_allowlisted(module) and any(not call.startswith(IMPORT_PREFIX) for _f, call in baseline.static):
-            problems.append(f"{path.name}: {module} dosya sistemi kuralından muaf; [static] altında yalnızca import durur")
-        else:
-            tracked = {function for function, call in baseline.static if not call.startswith(IMPORT_PREFIX)}
-            for function, call in sorted(baseline.runtime):
-                if function in tracked:
-                    problems.append(f"{path.name}: `{function}:{call}` gereksiz; işlev [static] altında zaten izleniyor")
-    assert not problems, "\n".join(problems)
+    seen = {(module, function) for module, items in _observed_runtime().items() for function, _call in items}
+    unused = [key for key in NAMED_EXCEPTIONS if is_allowlisted(key[0]) and key not in seen]
+    assert not unused, f"testler koşarken hiç görülmeyen istisnalar (NAMED_EXCEPTIONS'tan silin): {unused}"
 
 
 # === denetleyicinin kendi testleri: statik tarama ====================================================
@@ -946,11 +767,10 @@ def test_scanner_resolves_relative_imports_of_store_submodules():
     assert calls("from .store import files\n", "src/services/__init__.py") == []  # src.services.store: başka paket
 
 
-def test_scanner_counts_every_occurrence_and_reports_lines():
+def test_scanner_reports_every_occurrence_with_its_line():
     findings = scan_source("import os\n\ndef f(p):\n    os.listdir(p)\n    return os.listdir(p), open(p)\n", "src/x.py")
     assert [(f.function, f.call, f.line) for f in findings] == [
         ("f", "os.listdir", 4), ("f", "os.listdir", 5), ("f", "open", 5)]
-    assert count_findings({"src/x.py": findings}) == {"src/x.py": {("f", "os.listdir"): 2, ("f", "open"): 1}}
 
 
 def test_scopes_map_lines_to_the_innermost_definition():
@@ -998,95 +818,22 @@ def test_scan_tree_skips_the_store_and_applies_the_allowlist(tmp_path: Path):
     }
 
 
-def test_ratchet_passes_only_when_baseline_equals_the_code(tmp_path: Path):
-    src = make_tree(tmp_path, {
-        "src/store/__init__.py": "",
-        "src/reader.py": "import os\ndef load(p):\n    return os.listdir(p), os.listdir(p), open(p)\n",
-    })
-    directory = tmp_path / "baseline"
-    found = count_findings(scan_tree(src))
-
-    # baseline yok: her ihlal yeni
-    new, stale = compare_static(found, read_baselines(directory))
-    assert [(d.module, d.entry, d.expected, d.actual) for d in new] == [
-        ("src/reader.py", "load:open", 0, 1), ("src/reader.py", "load:os.listdir", 0, 2)]
-    assert stale == []
-
-    # baseline bugünkü durum: temiz
-    write_baselines(directory, {"src/reader.py": Baseline(dict(found["src/reader.py"]), set())})
-    assert (directory / "src.reader.txt").read_text(encoding="utf-8").splitlines()[2:] == [
-        "[static]", "load:open", "load:os.listdir x2"]
-    assert compare_static(found, read_baselines(directory)) == ([], [])
-
-    # aynı işleve üçüncü bir çağrı eklendi: yeni ihlal
-    (src / "reader.py").write_text(
-        "import os\ndef load(p):\n    return os.listdir(p), os.listdir(p), os.listdir(p), open(p)\n", encoding="utf-8")
-    new, stale = compare_static(count_findings(scan_tree(src)), read_baselines(directory))
-    assert [(d.entry, d.expected, d.actual) for d in new] == [("load:os.listdir", 2, 3)] and stale == []
-
-    # bir çağrı giderildi, baseline'a dokunulmadı: bayat satır
-    (src / "reader.py").write_text("import os\ndef load(p):\n    return os.listdir(p)\n", encoding="utf-8")
-    new, stale = compare_static(count_findings(scan_tree(src)), read_baselines(directory))
-    assert new == []
-    assert [(d.entry, d.expected, d.actual) for d in stale] == [("load:open", 1, 0), ("load:os.listdir", 2, 1)]
-    message = _describe_stale(stale, "static")
-    assert "src.reader.txt: `load:open` (baseline 1, şimdi 0) -> satırı silin" in message
-    assert "`load:os.listdir` (baseline 2, şimdi 1) -> ` xN` ekini silin" in message
-
-    # modül silindi: dosyası bütünüyle bayat
-    (src / "reader.py").unlink()
-    new, stale = compare_static(count_findings(scan_tree(src)), read_baselines(directory))
-    assert new == [] and len(stale) == 2
+def test_named_exceptions_cover_file_calls_of_one_function_but_never_an_import(monkeypatch):
+    src_path = "src/reader.py"
+    findings = {src_path: [Finding("<module>", "import src.store.files", 1), Finding("probe", "os.remove", 4),
+                           Finding("probe", "tempfile.mkstemp", 3), Finding("load", "open", 7)]}
+    assert violations(findings) == findings
+    monkeypatch.setitem(NAMED_EXCEPTIONS, (src_path, "probe"), "test")
+    monkeypatch.setitem(NAMED_EXCEPTIONS, (src_path, "<module>"), "test")  # içe aktarma kuralını kapsamaz
+    assert violations(findings) == {src_path: [Finding("<module>", "import src.store.files", 1),
+                                               Finding("load", "open", 7)]}
+    monkeypatch.setitem(NAMED_EXCEPTIONS, (src_path, "load"), "test")
+    assert violations({src_path: findings[src_path][1:]}) == {}
 
 
-def test_ratchet_for_runtime_entries():
-    baselines = {"src/a.py": Baseline({}, {("f", "open"), ("g", "os.listdir")})}
-    assert compare_runtime({"src/a.py": {("f", "open"), ("g", "os.listdir")}}, baselines) == ([], [])
-    new, stale = compare_runtime({"src/a.py": {("f", "open")}, "src/b.py": {("h", "pandas")}}, baselines)
-    assert [(d.module, d.entry) for d in new] == [("src/b.py", "h:pandas")]
-    assert [(d.module, d.entry) for d in stale] == [("src/a.py", "g:os.listdir")]
-
-
-def test_baseline_text_round_trip_and_canonical_form():
-    baseline = Baseline({("B.m", "open"): 1, ("<module>", "import src.store.files"): 1, ("a", "os.walk"): 3},
-                        {("B.m", "pandas"), ("a", "shutil.rmtree")})
-    text = format_baseline("src/web/x.py", baseline)
-    assert text.splitlines() == [
-        f"# src/web/x.py: Store sınırı ihlalleri ({DESIGN}). Bu liste yalnızca küçülebilir.",
-        "# Bir ihlali gideren PR satırını da siler; açıklama: tests/test_store_boundary.py",
-        "[static]",
-        "<module>:import src.store.files",
-        "B.m:open",
-        "a:os.walk x3",
-        "[runtime]",
-        "B.m:pandas",
-        "a:shutil.rmtree",
-    ]
-    parsed = parse_baseline(text)
-    assert (parsed.static, parsed.runtime) == (baseline.static, baseline.runtime)
-    assert format_baseline("src/web/x.py", parsed) == text
-    assert baseline_name("src/web/x.py") == "src.web.x.txt" and module_of_baseline("src.web.x.txt") == "src/web/x.py"
-    assert parse_baseline("# yalnızca açıklama\n\n").static == {} and not parse_baseline("")
-
-
-@pytest.mark.parametrize("text", [
-    "f:open\n",                       # bölüm başlığı yok
-    "[static]\nf:open\nf:open\n",     # yinelenen satır
-    "[runtime]\nf:open\nf:open\n",
-    "[static]\nno-colon\n",
-    "[static]\nf:\n",
-    "[static]\nf:open x0\n",
-])
-def test_malformed_baseline_is_rejected(text: str):
-    with pytest.raises(ValueError):
-        parse_baseline(text)
-
-
-def test_write_baselines_removes_files_that_became_empty(tmp_path: Path):
-    write_baselines(tmp_path, {"src/a.py": Baseline({("f", "open"): 1}, set()), "src/b.py": Baseline({}, {("g", "open")})})
-    assert sorted(p.name for p in tmp_path.iterdir()) == ["src.a.txt", "src.b.txt"]
-    write_baselines(tmp_path, {"src/a.py": Baseline({}, set()), "src/b.py": Baseline({}, {("g", "open")})})
-    assert sorted(p.name for p in tmp_path.iterdir()) == ["src.b.txt"]
+def test_defined_names_are_qualified():
+    source = "def a():\n    def inner():\n        pass\nclass B:\n    def m(self):\n        pass\n"
+    assert defined_names(source) == {"a", "a.inner", "B", "B.m"}
 
 
 # === denetleyicinin kendi testleri: çalışma zamanı kancası ===========================================
@@ -1214,7 +961,7 @@ def test_hook_names_third_party_packages_by_their_top_level_name(sandbox: Sandbo
 
 
 def test_hook_keeps_the_case_of_the_module_path(sandbox: Sandbox):
-    """Baseline dosyaları modül yolunu olduğu gibi taşır (src/SofaScoreUi.py); Windows'ta da küçültülmemeli."""
+    """Kayıtlar modül yolunu olduğu gibi taşır (ör. `src/ui/MatchUi.py`): hata iletisi diskteki adı göstermeli; Windows'ta da küçültülmemeli."""
     module = sandbox.module("src/ui/MatchUi.py", "import os\ndef names(path):\n    return os.listdir(path)\n")
     module["names"](str(sandbox.data))
     assert sandbox.seen() == [("src/ui/MatchUi.py", 3, "os.listdir")]
@@ -1363,7 +1110,7 @@ def _fake_config(args: Sequence[str] = ("tests",), source: str = "TESTPATHS", **
     )
 
 
-def test_stale_entries_are_judged_only_when_the_whole_suite_runs():
+def test_unused_runtime_exceptions_are_judged_only_when_the_whole_suite_runs():
     full = conftest._is_full_run
     assert full(_fake_config())  # `python -m pytest`
     assert full(_fake_config(["tests"], "ARGS")) and full(_fake_config([str(ROOT)], "ARGS"))
