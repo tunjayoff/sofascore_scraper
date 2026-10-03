@@ -316,7 +316,8 @@ class ExportService:
         rows = _first_or_raise(rows, spec, allow_empty)
         try:
             report = self._store.export.rows(rows, columns, dest, spec.format,  # type: ignore[arg-type]
-                                             table=spec.dataset, overwrite=overwrite)
+                                             table=spec.dataset, overwrite=overwrite,
+                                             types=column_types(spec.dataset) if spec.format == "parquet" else None)
         except StoreError as e:
             if e.detail == PARQUET_PACKAGE:
                 raise _parquet_missing(spec) from e
@@ -417,7 +418,8 @@ def _check(spec: ExportSpec) -> None:
 #            veriden değil: her kayıt bütün sütunlara sahiptir ve değeri olmayan sütun boştur (null; karar 22).
 #            Skor bir birleşimdir (spor ailesine göre yapı): bütün ailelerin alanları sütundur, kaydın ailesinde
 #            olmayanlar boştur. Listeler (`score_periods`, `score_sets`, `fields`) JSON metnidir; SQLite'ta da
-#            (alt tablo yok: bir dışa aktarma tek bir tablodur, adı veri kümesinin adıdır).
+#            (alt tablo yok: bir dışa aktarma tek bir tablodur, adı veri kümesinin adıdır). Parquet sütunlarının
+#            türü de modellerden gelir (`column_types`): tamsayı alan, değeri olmasa da int64'tür.
 #
 # Şema sürümü kayıtta değil, kaydı taşıyan kaptadır (karar 19): dışa aktarmanın sonucunda (`ExportResult`,
 # iş kaydı, `ssc export --json`) `schema_version` olarak.
@@ -435,6 +437,7 @@ RAW_DATASETS: Tuple[str, ...] = (DATASET_EVENTS, DATASET_SLICES)
 RAW_FORMATS: Tuple[str, ...] = ("jsonl", "tree")
 PARQUET_PACKAGE = "pyarrow"  # src/store/export.py PARQUET_PACKAGE
 COLUMN_SEPARATOR = "_"
+_STRING = "string"
 _DATASET_SORT = "start_asc"
 _PAGE = 500  # bir okumadaki maç ya da değişiklik satırı
 _DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -556,27 +559,58 @@ def _model_types(hint: Any) -> Tuple[type, ...]:
     return tuple(arg for arg in args if isinstance(arg, type) and issubclass(arg, Model))
 
 
-def leaf_paths(model: type) -> Tuple[Tuple[str, ...], ...]:
+def _leaf_kind(hint: Any) -> str:
     """
-    Modelin yaprak alanlarının yolları (JSON adlarıyla), alan sırasıyla. İç içe model (ya da modellerin
-    birleşimi, ör. skor) açılır: birleşimin her üyesinin alanları sırayla, daha önce görülmemiş olanlar eklenir.
-    Liste ve demet alanları açılmaz (tek bir yaprak).
+    Yaprak alanın tablo türü (Parquet sütunu): `bool`, `int64`, `float64`; öteki her şey (metin, sayım, liste,
+    serbest değer) `string`. Optional açılır.
+    """
+    if typing.get_origin(hint) in (Union, types.UnionType):
+        args = [arg for arg in typing.get_args(hint) if arg is not type(None)]
+        kinds = {_leaf_kind(arg) for arg in args}
+        return kinds.pop() if len(kinds) == 1 else _STRING
+    if hint is bool:
+        return "bool"
+    if hint is int:
+        return "int64"
+    if hint is float:
+        return "float64"
+    return _STRING
+
+
+def _leaves(model: type) -> List[Tuple[Tuple[str, ...], str]]:
+    """
+    Modelin yaprak alanları (JSON adlarıyla yol, tablo türü), alan sırasıyla. İç içe model (ya da modellerin
+    birleşimi, ör. skor) açılır: birleşimin her üyesinin alanları sırayla, daha önce görülmemiş olanlar eklenir;
+    aynı yolun üyelere göre türü değişirse tür `string`tir. Liste ve demet alanları açılmaz (tek bir yaprak).
     """
     from src.schema.models import json_name
 
     hints = typing.get_type_hints(model)
-    out: List[Tuple[str, ...]] = []
+    out: Dict[Tuple[str, ...], str] = {}
     for item in dataclasses.fields(model):
         name = json_name(item)
         nested = _model_types(hints[item.name])
         if not nested:
-            out.append((name,))
+            out[(name,)] = _leaf_kind(hints[item.name])
             continue
         for member in nested:
-            for path in leaf_paths(member):
-                if (name, *path) not in out:
-                    out.append((name, *path))
-    return tuple(out)
+            for path, kind in _leaves(member):
+                key = (name, *path)
+                out[key] = kind if out.get(key, kind) == kind else _STRING
+    return list(out.items())
+
+
+def leaf_paths(model: type) -> Tuple[Tuple[str, ...], ...]:
+    """Modelin yaprak alanlarının yolları (JSON adlarıyla), alan sırasıyla (`_leaves`)."""
+    return tuple(path for path, _kind in _leaves(model))
+
+
+def column_types(dataset: str) -> Dict[str, str]:
+    """
+    Düzleştirilmiş veri kümesinin sütun türleri, modellerden (`bool`, `int64`, `float64`, `string`): Parquet
+    sütunlarının türü veriye bakılmadan bunlardır, hep boş bir sütun da türünü korur.
+    """
+    return {COLUMN_SEPARATOR.join(path): kind for path, kind in _leaves(record_model(dataset))}
 
 
 def _column_paths(dataset: str) -> Tuple[Tuple[str, Tuple[str, ...]], ...]:
@@ -859,6 +893,6 @@ def export_all_csv(ctx: "ServiceContext") -> Optional[str]:
 __all__ = ["COLUMN_SEPARATOR", "DATASETS", "DATASET_CHANGES", "DATASET_EVENTS", "DATASET_FORMATS", "DATASET_SLICES",
            "DatasetFilter", "DatasetSpec", "ExportResult", "ExportService", "ExportSpec", "LEGACY_WIDE_CSV",
            "LegacyTable", "NORMALIZED", "PreparedExport", "RAW", "RAW_DATASETS", "RAW_FORMATS", "SCHEMAS",
-           "TEXT_FORMATS", "check_dataset", "dataset_columns", "export_all_csv", "flatten_record", "leaf_paths",
+           "TEXT_FORMATS", "check_dataset", "column_types", "dataset_columns", "export_all_csv", "flatten_record", "leaf_paths",
            "legacy_columns", "legacy_folders", "legacy_wide_row", "parquet_available", "parse_moment",
            "record_model"]

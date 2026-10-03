@@ -28,8 +28,8 @@ import store_fixtures as sf
 from src.errors import NotFoundError, NotSupportedError, UsageError
 from src.schema import SCHEMA_VERSION
 from src.services import export as export_service
-from src.services.export import (DatasetFilter, DatasetSpec, ExportService, check_dataset, dataset_columns,
-                                 flatten_record, leaf_paths, parse_moment, record_model)
+from src.services.export import (DatasetFilter, DatasetSpec, ExportService, check_dataset, column_types,
+                                 dataset_columns, flatten_record, leaf_paths, parse_moment, record_model)
 from src.store import JobStore, Store, StoreError, default_db_path, open_store
 from src.store import export as store_export
 from src.web import deps
@@ -203,6 +203,38 @@ def test_the_sqlite_export_is_a_table_named_after_the_dataset(canonical: Store, 
         finally:
             conn.close()
         assert tables == [dataset] and tuple(columns) == dataset_columns(dataset, "sqlite")
+
+
+def test_column_types_come_from_the_models() -> None:
+    for dataset in DATASETS:
+        assert tuple(column_types(dataset)) == dataset_columns(dataset, "csv")
+    events = column_types("events")
+    assert (events["id"], events["score_home"], events["aggregate_home"], events["quality_provisional"],
+            events["score_match_tiebreak"]) == ("int64", "int64", "int64", "bool", "bool")
+    assert {events[name] for name in ("status_class", "start_utc", "score_sets", "score_family")} == {"string"}
+    assert column_types("slices")["error_http_status"] == "int64" and column_types("changes")["fields"] == "string"
+
+
+@pytest.mark.parametrize("dataset", DATASETS)
+def test_parquet_columns_have_the_types_of_the_models_even_when_empty(canonical: Store, tmp_path: Path,
+                                                                      dataset: str) -> None:
+    pytest.importorskip("pyarrow")
+    import pyarrow.parquet as pq
+
+    arrow = {"bool": "bool", "int64": "int64", "float64": "double", "string": "string"}
+    expected = {name: arrow[kind] for name, kind in column_types(dataset).items()}
+    for label, flt in (("all", DatasetFilter()), ("none", DatasetFilter(tournament_ids=(999999,)))):
+        target = tmp_path / f"{label}.parquet"
+        ExportService(canonical).export(DatasetSpec(dataset=dataset, format="parquet", filter=flt), target)
+        assert {field.name: str(field.type) for field in pq.read_schema(target)} == expected, label
+
+
+def test_the_row_writer_checks_the_column_types(canonical: Store, tmp_path: Path) -> None:
+    with pytest.raises(ValueError):
+        canonical.export.rows([], ["a"], tmp_path / "x.csv", "csv", types={"b": "int64"})
+    with pytest.raises(ValueError):
+        canonical.export.rows([], ["a"], tmp_path / "x.csv", "csv", types={"a": "decimal"})
+    assert not (tmp_path / "x.csv").exists()
 
 
 @pytest.mark.parametrize("fmt", FORMATS)
