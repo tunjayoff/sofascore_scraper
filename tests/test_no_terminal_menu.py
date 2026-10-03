@@ -8,8 +8,10 @@ sunucular ve otomasyon komut satırını (`ssc`) kullanır.
 from __future__ import annotations
 
 import ast
+import json
+import re
 from pathlib import Path
-from typing import Iterator, List
+from typing import Dict, Iterator, List
 
 import pytest
 
@@ -97,3 +99,51 @@ def test_a_legacy_warning_is_printed_before_the_short_help(capsys: pytest.Captur
 
     err = capsys.readouterr().err
     assert "leagues.txt" in err.split("The terminal menu was removed", 1)[0]
+
+
+# --- çeviri anahtarları -----------------------------------------------------------------------------
+#
+# locales/*.json'daki her anahtarı ürün kodu kullanır. Menüyle birlikte yalnızca onun kullandığı anahtarlar
+# kaldırıldı (P26). Kod bazı anahtarları önek + değişken ile kurar; o önekler aşağıda.
+
+DYNAMIC_PREFIXES = {
+    "bridge_reason_": "src/bridge_health.py",  # t(f"bridge_reason_{kind}")
+    "doctor_label_": "src/doctor.py",  # ctx.t("doctor_label_" + check_id)
+    "launcher_": "scripts/start_web.py",  # _messages.t("launcher_" + key)
+    "ssc_error_": "src/cli/output.py",  # "ssc_error_" + error.code
+}
+# Kodun artık kullanmadığı ama başka testlerin varlığını denetlediği anahtarlar (o testlerle birlikte gidebilir):
+# tests/test_diagnostics.py::test_cli_messages_exist_in_both_languages, tests/test_language.py.
+KEPT_FOR_OTHER_TESTS = frozenset({
+    "check_log_for_details", "check_console_for_details", "diagnostics_failed", "details_finished",
+})
+
+
+def _product_text() -> str:
+    paths = [ROOT / "main.py", *sorted((ROOT / "src").rglob("*.py")), *sorted((ROOT / "scripts").glob("*.py"))]
+    return "\n".join(path.read_text(encoding="utf-8") for path in paths)
+
+
+def _locale(lang: str) -> Dict[str, str]:
+    return json.loads((ROOT / "locales" / f"{lang}.json").read_text(encoding="utf-8"))
+
+
+def test_every_locale_key_is_referenced() -> None:
+    text = _product_text()
+    for prefix, module in DYNAMIC_PREFIXES.items():
+        assert prefix in (ROOT / module).read_text(encoding="utf-8"), (prefix, module)
+    for lang in ("en", "tr"):
+        unused = sorted(
+            key for key in _locale(lang)
+            if key not in KEPT_FOR_OTHER_TESTS
+            and not key.startswith(tuple(DYNAMIC_PREFIXES))
+            and re.search(r"(?<![A-Za-z0-9_])" + re.escape(key) + r"(?![A-Za-z0-9_])", text) is None
+        )
+        assert unused == [], (lang, unused)
+
+
+def test_the_menu_keys_are_gone() -> None:
+    keys = _locale("en")
+    for key in ("main_menu_title", "submenu_settings_backup", "headless_updating_all", "notice_menu_backup_old_layout",
+                "dependency_colorama", "web_server_starting"):
+        assert key not in keys
