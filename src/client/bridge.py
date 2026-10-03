@@ -14,9 +14,11 @@ Modül P24 ile src/challenge_solver.py'den buraya taşındı. Eski ad (`src.chal
 nesnesinin takma adıdır: eski import'lar ve testlerin `monkeypatch.setattr(cs, ...)` atamaları bu modüle
 ulaşır. API kökü src/client/transport.py'deki ayardan (`api_url`) gelir; köprü kendi kökünü tutmaz.
 
-İptal (docs/design/02-services.md 2.4; plan bölüm 15, satır 61): sync yolda köprünün sonucunu bekleyen çağıran
-kendi iptal kontrolüne de bakar (_run_sync). Ortak challenge çözümünü ya da sayfanın fetch()'ini bekleyen bir
-çağıran iş durdurulunca beklemeyi bırakır; ortak çözüm (asyncio.shield) diğer bekleyenler için sürer.
+İptal (docs/design/02-services.md 2.4; plan bölüm 15, satır 61 ve 92): köprünün sonucunu bekleyen çağıran kendi
+iptal kontrolüne de bakar, sync yolda (_run_sync, P24) ve her indirmenin geçtiği async yolda
+(_run_on_background_loop, FX-18). Ortak challenge çözümünü ya da sayfanın fetch()'ini bekleyen bir çağıran iş
+durdurulunca beklemeyi bırakır; ortak çözüm (asyncio.shield) diğer bekleyenler için sürer. Köprüden çıkan bir
+istek, bütçeden sıra ayırmadan önce de iptale bakar (_wait_for_slot): durdurmadan sonra hiçbir istek gönderilmez.
 """
 
 from __future__ import annotations
@@ -187,19 +189,27 @@ async def _wait_for_slot() -> None:
     """
     Ortak bütçeden sıra alır ve bekler; beklenen süre çağrının zaman aşımına eklenir.
 
+    İş iptal edildiyse sıra hiç ayrılmaz (FX-18, plan bölüm 15 satır 92): istek semaforunu durdurmadan önce
+    almış, köprünün içinde (ensure_ready, ortak çözüm) bekleyen bir istek durdurmadan sonra gönderilmez.
+    Ayrılmış ve zamanı gelmiş bir sıra ise geri verilmez, istek gider (FX-6'nın kuralı; kontrol bu yüzden
+    ayırmadan önce yapılır).
+
     Bekleme, çağıranın işi iptal edilince en geç _CANCEL_CHECK_SECONDS içinde kesilir (sync yolda
     çağıran thread köprünün sonucunu beklerken kendi iptaline bakamaz). Bekleme nasıl kesilirse
     kesilsin (iş iptali, zaman aşımının görevi iptal etmesi) istek gönderilmemiştir: sıra bütçeye
     geri verilir. Ortak challenge çözümünün doğrulama isteği iptale bakmaz: çözümü başlatan işin
     iptali, aynı çözümü bekleyen başka çağıranları düşürmesin.
     """
+    wait = _slot_wait.get()
+    shared = wait is not None and wait.shared
+    if not shared:
+        raise_if_cancelled()
     delay = throttle.reserve()
     if delay > 0:
-        wait = _slot_wait.get()
         if wait is not None:
             wait.own += delay
         with throttle.give_back_if_interrupted(delay):
-            if wait is not None and wait.shared:
+            if shared:
                 await asyncio.sleep(delay)
             else:
                 await _cancellable_sleep(delay)
@@ -606,12 +616,18 @@ def _run_sync(coro, timeout: float, *, cancellable: bool = False) -> Any:
         raise
 
 
-async def _run_on_background_loop(coro, timeout: float = REQUEST_TIMEOUT) -> Any:
+async def _run_on_background_loop(coro, timeout: float = REQUEST_TIMEOUT, *, cancellable: bool = False) -> Any:
     """
     Coroutine'i BrowserBridge'in arka plan döngüsünde çalıştırır ve sonucu bekler.
     Playwright nesneleri oluşturuldukları döngüye bağlıdır; çağıranın döngüsü
     (örn. asyncio.run ile açılıp kapanan geçici döngü) kullanılırsa sonraki çağrılar askıda kalır.
     `timeout`: ortak bütçede sıra beklenen süre HARİÇ en uzun çalışma süresi.
+
+    `cancellable`: _run_sync'teki gibi (FX-18, plan bölüm 15 satır 61). Çağıran beklerken kendi iptal kontrolüne
+    _CANCEL_CHECK_SECONDS'ta bir bakar; iptalde coroutine'e kısa bir süre tanınır (sıra beklemesindeyse kendisi
+    biter ve sırayı geri verir; o arada gelen yanıt döndürülür), bitmezse çağıran FetchCancelled fırlatır ve
+    coroutine iptal edilir. Ortak challenge çözümü (asyncio.shield) öteki bekleyenler için sürer. Tarayıcının
+    açılışı bu yolla kesilmez: ensure_ready çağrıları `cancellable` vermez.
     """
     fut, wait = _submit(coro)
     wrapped = asyncio.wrap_future(fut)
@@ -621,9 +637,16 @@ async def _run_on_background_loop(coro, timeout: float = REQUEST_TIMEOUT) -> Any
             left = started + timeout + wait.seconds - time.monotonic()
             if left <= 0:
                 raise asyncio.TimeoutError()
-            done, _ = await asyncio.wait({wrapped}, timeout=left)
+            step = min(left, _CANCEL_CHECK_SECONDS) if cancellable else left
+            done, _ = await asyncio.wait({wrapped}, timeout=step)
             if done:
                 return wrapped.result()
+            if cancellable and _caller_cancelled():
+                done, _ = await asyncio.wait({wrapped}, timeout=2 * _CANCEL_CHECK_SECONDS)
+                if done:
+                    return wrapped.result()
+                raise FetchCancelled()
+            # bu arada sıra beklenmiş olabilir: son tarih uzadı
     except BaseException:
         wrapped.cancel()  # asyncio.wait_for'un yaptığı gibi: iptal arka plandaki göreve de ulaşır
         fut.cancel()
@@ -648,14 +671,14 @@ async def fetch_api_via_browser(path_or_url: str) -> Optional[Any]:
     """Asenkron API istek köprüsü."""
     bridge = BrowserBridge.get_instance()
     await _run_on_background_loop(bridge.ensure_ready(), STARTUP_TIMEOUT)
-    return await _run_on_background_loop(bridge.fetch_json(path_or_url), REQUEST_TIMEOUT)
+    return await _run_on_background_loop(bridge.fetch_json(path_or_url), REQUEST_TIMEOUT, cancellable=True)
 
 
 async def solve_turnstile_challenge(timeout_ms: int = 35000, headless: Optional[bool] = None) -> Optional[str]:
     """Turnstile challenge çözücü."""
     bridge = BrowserBridge.get_instance()
     await _run_on_background_loop(bridge.ensure_ready(), STARTUP_TIMEOUT)
-    return await _run_on_background_loop(bridge.solve_challenge(), timeout_ms / 1000 + 10)
+    return await _run_on_background_loop(bridge.solve_challenge(), timeout_ms / 1000 + 10, cancellable=True)
 
 
 def solve_turnstile_challenge_sync(timeout_ms: int = 30000) -> Optional[str]:
