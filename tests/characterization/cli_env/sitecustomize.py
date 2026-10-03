@@ -38,7 +38,7 @@ REQUEST_LAYER_ENV = "SOFASCORE_CLI_GOLDEN_REQUEST_LAYER"
 TRANSPORT_LOG = "transport.json"
 PROCESS_LOG = "process.json"
 
-# stdout'a yazılan işaretler (bkz. _mark_concurrent_output); test bunları çıktıdan ayıklar
+# stdout'a ve stderr'e yazılan işaretler (bkz. _mark_concurrent_output); test bunları çıktıdan ayıklar
 CONCURRENT_BEGIN = "<<cli-golden:concurrent-begin>>"
 CONCURRENT_END = "<<cli-golden:concurrent-end>>"
 
@@ -136,7 +136,7 @@ def _request_layer_imported(module: Any) -> None:
 
 def _mark_concurrent_output(fake: Any) -> None:
     """
-    İlk async oturum açılırken ve sonuncusu kapanırken stdout'a bir işaret yazar. Sahtenin istek kaydındaki
+    İlk async oturum açılırken ve sonuncusu kapanırken stdout'a ve stderr'e bir işaret yazar. Sahtenin istek kaydındaki
     kural (FakeSofaScore.canonical_log) çıktıya da uygulanabilsin diye: bir oturum açıkken yapılan işlerin
     (eşzamanlı görevler, to_thread ile çalışan sync istekler) sırası sözleşme değildir; test, iki işaret
     arasındaki satırları sıralayarak karşılaştırır. İşaretler satır sonu içermez: çıktının satırlarını bozmaz.
@@ -150,7 +150,9 @@ def _mark_concurrent_output(fake: Any) -> None:
     def opened(impersonate: Optional[str]) -> int:
         nonlocal depth
         if depth == 0:
+            # İki akışa da: P19'dan beri log satırları stderr'dedir ve eşzamanlı görevlerin satırları orada da sıralanır
             sys.stdout.write(CONCURRENT_BEGIN)
+            sys.stderr.write(CONCURRENT_BEGIN)
         depth += 1
         return int(open_session(impersonate))
 
@@ -161,6 +163,7 @@ def _mark_concurrent_output(fake: Any) -> None:
             depth -= 1
             if depth == 0:
                 sys.stdout.write(CONCURRENT_END)
+                sys.stderr.write(CONCURRENT_END)
 
     fake._open_session, fake._close_session = opened, closed
 

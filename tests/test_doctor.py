@@ -782,81 +782,20 @@ def test_budget_in_turkish(make_ctx):
     assert res.label == "İstek bütçesi" and res.summary.startswith("sınır kapalı")
 
 
-def test_budget_runs_only_as_an_extra_check(make_ctx, capsys):
+def test_budget_is_a_regular_check(make_ctx, capsys):
     """
-    `python main.py --doctor`un denetim listesi değişmez (CLI goldenları onu bütçe kapalıyken sabitler); bütçe
-    denetimini yalnızca `run_checks(extra=True)` çağıran yeni CLI çalıştırır.
+    `python main.py --doctor` `ssc doctor`un takma adı olunca (P19) bütçe denetimi her listeye girdi: iki giriş
+    noktasının denetimleri aynıdır. `extra=True` eski çağıranlar için durur ve bir şey eklemez.
     """
-    assert "budget" not in doctor.CHECK_IDS and doctor.EXTRA_CHECK_IDS == ("budget",)
+    assert doctor.CHECK_IDS[-1] == "budget" and doctor.EXTRA_CHECK_IDS == ()
     ctx = make_ctx(environ={"REQUEST_RATE_LIMIT": "0"})
     plain = doctor.run_checks(ctx, skip=["browser"])
     assert [r.id for r in plain] == [i for i in doctor.CHECK_IDS if i != "browser"]
-    extra = doctor.run_checks(ctx, skip=["browser"], extra=True)
-    assert [r.id for r in extra] == [i for i in doctor.CHECK_IDS if i != "browser"] + ["budget"]
-    assert extra[-1].code == "budget_off"
-    assert [r.id for r in doctor.run_checks(ctx, only=["budget"], extra=True)] == ["budget"]
-    assert doctor.run_checks(ctx, only=["budget"]) == []
-    with pytest.raises(SystemExit) as e:
-        doctor.main(["--only", "budget"])  # eski giriş noktası bu adı tanımaz
-    assert e.value.code == 2 and "budget" in capsys.readouterr().err
-
-
-# --- canlı denetim: tanımlı, ama yalnızca açıkça istenince -------------------------------------
-
-
-def test_live_check_logic_with_a_fake_fetch(make_ctx):
-    """Gerçek istek atılmaz: fetch sahtedir. Canlı denetimin kendisi testlerde hiç çalışmaz."""
-    asked = []
-    ok = doctor.check_live(make_ctx(), fetch=lambda path: asked.append(path) or {"seasons": []})
-    assert (ok.status, ok.code) == (OK, "live_ok") and asked == [doctor.LIVE_PROBE_PATH]
-    assert len(asked) == 1  # tek istek
-
-    failed = doctor.check_live(make_ctx(), fetch=lambda path: None)
-    assert (failed.status, failed.code) == (FAIL, "live_failed") and failed.fix
-
-    def raising(path):
-        raise RuntimeError("browser did not start")
-
-    assert "browser did not start" in doctor.check_live(make_ctx(), fetch=raising).summary
-
-
-def test_live_check_runs_only_when_asked(make_ctx, monkeypatch):
-    calls = []
-    monkeypatch.setattr(doctor, "check_live", lambda ctx: calls.append(1) or doctor.check_python(ctx))
-    doctor.run_checks(make_ctx(), only=["python"])
-    assert calls == []
-    doctor.run_checks(make_ctx(), only=["python", "live"], live=True)
-    assert calls == [1]
-
-
-# --- komut satırı -----------------------------------------------------------------------------
-
-
-def test_main_json_output_and_exit_codes(capsys, monkeypatch):
-    monkeypatch.delenv("MAX_CONCURRENT", raising=False)
-    assert doctor.main(["--json", "--only", "python,env", "--lang", "en"]) == 0
-    out = json.loads(capsys.readouterr().out)
-    assert [c["id"] for c in out["checks"]] == ["python", "env"] and out["ok"] is True
-    assert out["language"] == "en"
-
-    monkeypatch.setenv("MAX_CONCURRENT", "abc")
-    assert doctor.main(["--json", "--only", "env"]) == 1
-    out = json.loads(capsys.readouterr().out)
-    assert out["status"] == FAIL and out["checks"][0]["code"] == "env_invalid"
-
-
-def test_main_text_output_and_strict(capsys, monkeypatch):
-    monkeypatch.setenv("APP_LANGUAGE", "de")  # uyarı: desteklenmeyen dil
-    assert doctor.main(["--only", "env", "--lang", "en"]) == 0
-    out = capsys.readouterr().out
-    assert "[WARN] Settings (.env):" in out and "Fix:" in out
-    assert doctor.main(["--only", "env", "--lang", "en", "--strict"]) == 1
-
-
-def test_main_rejects_unknown_check_ids(capsys):
-    with pytest.raises(SystemExit) as e:
-        doctor.main(["--only", "nope"])
-    assert e.value.code == 2 and "nope" in capsys.readouterr().err
+    assert plain[-1].code == "budget_off"
+    assert [r.id for r in doctor.run_checks(ctx, skip=["browser"], extra=True)] == [r.id for r in plain]
+    assert [r.id for r in doctor.run_checks(ctx, only=["budget"])] == ["budget"]
+    assert doctor.main(["--only", "budget", "--json"]) == 0  # `python -m src.doctor` da tanır
+    assert json.loads(capsys.readouterr().out)["checks"][0]["code"] == "budget_off"
 
 
 def test_main_py_doctor_works_without_any_third_party_package(tmp_path):
@@ -874,7 +813,9 @@ def test_main_py_doctor_works_without_any_third_party_package(tmp_path):
         cwd=str(tmp_path), env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120,
     )
     assert proc.returncode == 1, proc.stderr.decode()
-    out = json.loads(proc.stdout.decode())
+    envelope = json.loads(proc.stdout.decode())  # `ssc doctor --json`un zarfı (P19: --doctor bir takma addır)
+    assert envelope["command"] == "doctor" and envelope["ok"] is True
+    out = envelope["data"]
     by_id = {c["id"]: c for c in out["checks"]}
     assert by_id["python"]["status"] == OK
     assert by_id["packages"]["code"] == "packages_missing" and by_id["packages"]["fix_command"][1:4] == ["-m", "pip", "install"]

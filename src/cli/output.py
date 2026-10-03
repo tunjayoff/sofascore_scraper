@@ -13,6 +13,12 @@ CLI çıktı kuralları (docs/design/02-services.md bölüm 4.4).
     başarı) çıkış kodunda ve `data` içindedir. Hata zarfı da stdout'a yazılır: çağıran program tek bir akışı okur.
   * `--output ndjson`: akış üreten komutlar satır başına bir nesne yazar; tek seferlik komutlarda zarf tek
     satırdır.
+  * Akış komutları (`events`, `jobs tail`; plan maddesi P19): komut `Output.begin_stream()` çağırır ve
+    satırlarını `Output.line()` ile yazar; her satır `type` alanı olan bir nesnedir. Akış başladıktan sonra
+    sonuç zarfı yazılmaz (uyarılar ve notlar yine stderr'e gider). Akışın ortasındaki bir hata stdout'a tek bir
+    satır olarak yazılır, `{"type":"error","error":{code,message,details},"exit_code":N}`; okunur metni metin
+    kipinde stderr'e de gider. Akışı okuyan süreç kapanırsa (`ssc events | head -1`) komut 0 ile biter:
+    okuyan yeterince satır aldı. Tek seferlik bir komutun sonucu yazılamadıysa çıkış kodu 1'dir.
 
 Alan kuralları: zaman damgaları ISO-8601 UTC ve `Z`; süreler saniye; enum'lar küçük harf ve alt çizgi;
 olmayan değer `null`dır, boş dizge değil.
@@ -28,6 +34,10 @@ from src.errors import PlatformError
 from src.version import __version__
 
 SCHEMA = "sofascore.cli/1"
+
+# Akış satırlarının ortak türleri: akış kendiliğinden bittiğinde son satır `end`, ortasında hata `error`
+STREAM_END = "end"
+STREAM_ERROR = "error"
 
 TEXT = "text"
 JSON = "json"
@@ -191,10 +201,34 @@ class Output:
     prog: str = "ssc"
     stdout: Optional[TextIO] = None
     stderr: Optional[TextIO] = None
+    streaming: bool = False
 
     @property
     def machine(self) -> bool:
         return self.mode in (JSON, NDJSON)
+
+    # --- akış ----------------------------------------------------------------------------------
+
+    def begin_stream(self) -> None:
+        """
+        Komut stdout'a satır satır yazacak (NDJSON): bundan sonra sonuç zarfı yazılmaz, hata bir akış satırı
+        olur. `--json` (tek belge) bir akışla birlikte kullanılamaz; bunu komut denetler.
+        """
+        self.streaming = True
+
+    def raw_stream(self) -> TextIO:
+        """
+        stdout'un kendisi: komut biçimi kendisi olan veriyi (ör. `export --out -` ile CSV) olduğu gibi yazar.
+        Önce `begin_stream()` çağrılmalıdır: sonuç zarfı stdout'a karışmasın.
+        """
+        stream = self._out()
+        _tolerant(stream)
+        return stream
+
+    def line(self, document: Mapping[str, Any]) -> None:
+        """Akışa bir satır (tek satırlık JSON). Akış başlamamışsa başlatır."""
+        self.streaming = True
+        self.write(dumps(document, NDJSON))
 
     def _out(self) -> TextIO:
         return self.stdout if self.stdout is not None else sys.stdout
@@ -219,6 +253,15 @@ class Output:
     # --- sonuç ---------------------------------------------------------------------------------
 
     def result(self, command: Optional[str], result: CommandResult, *, always_json: bool = False) -> None:
+        if self.streaming:
+            # Satırlar yazıldı: zarf yok. Uyarılar ve notlar akışı bozmadan stderr'e gider
+            for warning in result.warnings:
+                if not warning.logged:
+                    self.info(self.t("ssc_warning", message=warning.message))
+            if not self.quiet:
+                for note in result.notes:
+                    self.info(note)
+            return
         if self.machine or always_json:
             self.write(dumps(success_envelope(command, result.data, result.warnings), self.mode if self.machine else JSON))
             return
@@ -234,6 +277,13 @@ class Output:
     # --- hata ----------------------------------------------------------------------------------
 
     def error(self, command: Optional[str], error: PlatformError, exit_code: int) -> None:
+        if self.streaming:
+            # Akışın ortasında: okuyan program satır türünden anlar; insan için metin stderr'e
+            self.write(dumps({"type": STREAM_ERROR, "error": error.to_dict(), "exit_code": exit_code}, NDJSON))
+            if not self.machine:
+                for text in self.error_lines(error):
+                    self.info(text)
+            return
         if self.machine:
             self.write(dumps(error_envelope(command, error, exit_code), self.mode))
             return
@@ -273,6 +323,8 @@ __all__ = [
     "NDJSON",
     "OUTPUT_MODES",
     "SCHEMA",
+    "STREAM_END",
+    "STREAM_ERROR",
     "TEXT",
     "CliWarning",
     "CommandResult",

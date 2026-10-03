@@ -1,32 +1,38 @@
 """
-`main.py`nin servisleri nasıl çağırdığı (plan maddesi P10 ve ST-10'un komut satırı yarısı):
+`main.py`nin eski bayraklarının servisleri nasıl çağırdığı (plan maddeleri P10 ve P19).
 
-  * --headless --update-all, --refresh-only ve --recheck-unavailable terminal arayüzünü kurmaz; servis bağlamını
-    kurar ve SyncService / MaintenanceService'i çağırır;
-  * çıkış kodu ortam değişkeninden (APP_EXIT_CODE) değil, servisin türü belli sonucundan okunur;
-  * veri dizinine yazan kipler çalışma boyunca dizinin yazar kilidini, --watch `watcher:<spor>` kilidini tutar;
-    kilit başka bir sahipteyse sahibi söylenir ve çıkış kodu 6'dır.
+P19'dan beri `main.py` bir geçiş kabuğudur: eski bayraklar yeni CLI'nin komutlarına çevrilir
+(src/cli/legacy_flags.py) ve o komutlar servisleri çağırır:
 
-`main.main()` bu süreçte çağrılır; servisler sahtedir (ağ yok, indirme yok). Aynı kiplerin gerçek alt süreçteki
-davranışı (çıktı, istekler, dosyalar, iki süreç arasında reddedilen kilit) tests/characterization/test_cli_goldens.py'dedir.
+  * --headless --update-all, --refresh-only ve --recheck-unavailable terminal arayüzünü kurmaz; `sync`,
+    `refresh` ve `data recheck-unavailable` komutları SyncService / MaintenanceService'i çağırır;
+  * çıkış kodu ortam değişkeninden (APP_EXIT_CODE) değil, servisin türü belli sonucundan okunur ve yeni
+    tablonundur (src/cli/exit_codes.py): 3 kısmi, 4 devre kesici, 5 depolama, 6 kilit;
+  * veri dizinine yazan komutlar çalışma boyunca dizinin yazar kilidini tutar; kilit başka bir sahipteyse
+    sahibi söylenir ve çıkış kodu 6'dır;
+  * stderr'e tek bir kullanımdan kalkma satırı yazılır.
+
+`main.main(argv)` bu süreçte çağrılır; servisler sahtedir (ağ yok, indirme yok). Aynı kiplerin gerçek alt süreçteki
+davranışı (çıktı, istekler, dosyalar, iki süreç arasında reddedilen kilit) tests/characterization/test_cli_goldens.py'de,
+yeni komutların kendileri tests/test_cli_data_commands.py'dedir.
 """
 from __future__ import annotations
 
+import argparse
 import ast
-import contextlib
 import errno
 import os
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import pytest
 
 import main as cli
+from src.cli import legacy_flags
 from src.exceptions import StorageError
-from src.i18n import I18nManager
 from src.services.maintenance import MaintenanceService, ResetCounts
 from src.services.sync import RefreshCounts, SyncResult, SyncService, SyncSpec
-from src.store import LeaseHeld, open_store
+from src.store import open_store
 from src.store.lease import LeaseManager
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -42,39 +48,22 @@ def data_dir(tmp_path: Path) -> Path:
 @pytest.fixture
 def run_cli(data_dir: Path, monkeypatch: pytest.MonkeyPatch) -> RunCli:
     """`main.py <argv> --data-dir <geçici dizin>` çalıştırır ve çıkış kodunu döndürür."""
-    monkeypatch.setenv("DATA_DIR", os.environ["DATA_DIR"])  # main --data-dir ortamı değiştirir: test sonunda geri al
     monkeypatch.delenv("APP_EXIT_CODE", raising=False)
 
     def run(*argv: str) -> int:
-        monkeypatch.setattr("sys.argv", ["main.py", *argv, "--data-dir", str(data_dir)])
-        return cli.main()
+        return cli.main([*argv, "--data-dir", str(data_dir)])
 
     return run
 
 
 def lease_holder(data_dir: Path, name: str = "writer") -> Optional[Any]:
-    """Kilidin o anki sahibi (LeaseInfo) ya da None. Depo, main.py açmışsa onunkidir; değilse burada kapatılır."""
-    was_open = (data_dir / ".meta").exists() and _registered(data_dir)
-    store = open_store(data_dir)
-    try:
-        return store.lease_holder(name)
-    finally:
-        if not was_open:
-            store.close()
+    """Kilidin o anki sahibi (LeaseInfo) ya da None."""
+    return open_store(data_dir).lease_holder(name)
 
 
 def initialise_store(data_dir: Path) -> None:
-    """
-    Dizini bir kez depo olarak açıp kapatır (state.db geçişi çalışır). Gerçek bir kilit sahibi bunu zaten yapmıştır;
-    yapılmamış bir dizinde ilk açılış geçiş için `maintenance` kilidini 5 sn bekler ve test boşuna yavaşlar.
-    """
-    open_store(data_dir).close()
-
-
-def _registered(data_dir: Path) -> bool:
-    from src.store import api
-
-    return any(not store.closed and Path(store.data_dir) == data_dir for store in api._registry.values())
+    """Dizini bir kez depo olarak açar (state.db geçişi çalışır); gerçek bir kilit sahibi bunu zaten yapmıştır."""
+    open_store(data_dir)
 
 
 def sync_result(
@@ -85,7 +74,8 @@ def sync_result(
         "refreshed": 0, "refresh_changed": 0,
     }
     fields.update(progress)
-    state: Any = "partial" if breaker or fields["failed_count"] else "succeeded"
+    failed = fields["failed_count"] or (refresh is not None and refresh.failed)
+    state: Any = "partial" if breaker or failed else "succeeded"
     return SyncResult(state=state, schedule_empty_seasons=empty, breaker=breaker, progress=fields, refresh=refresh)
 
 
@@ -114,10 +104,13 @@ class Recorder:
         return self
 
 
+DEPRECATED = "main.py flags are deprecated and will be removed; this run is: "
+
+
 # --- içe aktarma: terminal arayüzü yalnızca etkileşimli dalda -----------------------------------------
 
 
-def test_main_imports_the_terminal_ui_and_the_services_only_inside_their_branches() -> None:
+def test_main_imports_only_the_standard_library_and_its_version_at_module_level() -> None:
     tree = ast.parse((ROOT / "main.py").read_text(encoding="utf-8"))
     top_level: List[str] = []
     for node in tree.body:
@@ -125,19 +118,89 @@ def test_main_imports_the_terminal_ui_and_the_services_only_inside_their_branche
             top_level.extend(alias.name for alias in node.names)
         elif isinstance(node, ast.ImportFrom) and node.module:
             top_level.append(node.module)
-    lazy = [m for m in top_level if m.startswith(("src.SofaScoreUi", "src.ui", "src.services", "src.watcher", "src.web"))]
 
-    assert lazy == []
-    assert "src.config_manager" in top_level  # yapılandırma her kipte başlangıçta yüklenir
-    # Etkileşimli dal dışında hiçbir işlev arayüzü içe aktarmaz
+    assert [name for name in top_level if name.startswith("src")] == ["src.version"]
+    # Terminal arayüzü yalnızca menü dalında içe aktarılır
     importers = [
         fn.name for fn in ast.walk(tree) if isinstance(fn, ast.FunctionDef)
         for node in ast.walk(fn) if isinstance(node, ast.ImportFrom) and node.module == "src.SofaScoreUi"
     ]
-    assert importers == ["main"]
+    assert importers == ["_run_interactive"]
 
 
-# --- --headless --update-all -------------------------------------------------------------------------
+# --- çeviri ------------------------------------------------------------------------------------------
+
+
+def _translate(*argv: str, cwd: str = "/work") -> legacy_flags.Translation:
+    return legacy_flags.translate(cli.parse_arguments(list(argv)), cwd)
+
+
+@pytest.mark.parametrize("argv, commands", [
+    (["--headless", "--update-all"], [["sync"]]),
+    (["--headless", "--update-all", "--league-id", "17", "--fetch-mode", "details"],
+     [["sync", "--tournament", "17", "--only", "events"]]),
+    (["--headless", "--update-all", "--csv-export"], [["sync"], ["export"]]),
+    (["--headless", "--csv-export"], [["export"]]),
+    (["--headless", "--csv-export", "--recheck-unavailable"], [["data", "recheck-unavailable"], ["export"]]),
+    (["--recheck-unavailable", "all", "--headless", "--update-all"], [["sync", "--recheck-unavailable", "all"]]),
+    (["--recheck-unavailable", "--league-id", "8"], [["data", "recheck-unavailable", "--tournament", "8"]]),
+    (["--refresh-only", "--refresh-legacy", "--league-id", "17"], [["refresh", "--tournament", "17", "--include-legacy"]]),
+    (["--refresh-only", "--recheck-unavailable", "all"], [["data", "recheck-unavailable", "--all"], ["refresh"]]),
+    (["--refresh-only", "--headless", "--update-all"], [["refresh"]]),  # bugünkü öncelik
+    (["--watch", "--sport", "tennis", "--league-ids", "17,8", "--event-ids", "5", "--watch-hours", "2"],
+     [["watch", "--source", "poll", "--stdout", "--sport", "tennis", "--tournament", "17", "--tournament", "8",
+       "--event", "5", "--hours", "2.0"]]),
+    (["--diagnostics", "out/b.zip"], [["diagnostics", "--out", os.path.abspath("/work/out/b.zip")]]),
+    (["--diagnostics"], [["diagnostics"]]),
+])
+def test_legacy_flags_become_commands_of_the_new_cli(argv: List[str], commands: List[List[str]]) -> None:
+    translation = _translate(*argv)
+    assert translation.error is None and not translation.web and not translation.interactive
+    assert [list(command) for command in translation.commands] == commands
+
+
+def test_global_flags_are_carried_to_every_command_with_absolute_paths() -> None:
+    translation = _translate("--headless", "--update-all", "--csv-export", "--data-dir", "d", "--config", "s.toml",
+                             "--ignore-rate-limit", cwd=os.path.abspath(os.sep + "work"))
+    flags = ["--config", os.path.abspath("/work/s.toml"), "--data-dir", os.path.abspath("/work/d"), "--ignore-breaker"]
+    assert [list(command) for command in translation.commands] == [[*flags, "sync"], [*flags, "export"]]
+
+
+def test_a_leagues_file_given_as_config_is_ignored_with_a_warning() -> None:
+    translation = _translate("--refresh-only", "--config", "config/leagues.txt")
+    assert [list(command) for command in translation.commands] == [["refresh"]]
+    assert len(translation.warnings) == 1 and "looks like a leagues file" in translation.warnings[0]
+
+
+@pytest.mark.parametrize("argv, error", [
+    (["--headless"], legacy_flags.NEEDS_ACTION),
+    (["--headless", "--recheck-unavailable"], legacy_flags.NEEDS_ACTION),
+    (["--watch"], legacy_flags.WATCH_USAGE),
+    (["--watch", "--sport", "football"], legacy_flags.WATCH_USAGE),
+    (["--watch", "--event-ids", "1"], legacy_flags.WATCH_USAGE),
+])
+def test_incomplete_flags_are_usage_errors_before_anything_runs(argv: List[str], error: str) -> None:
+    translation = _translate(*argv)
+    assert (translation.error, translation.commands) == (error, ())
+
+
+@pytest.mark.parametrize("argv, attribute", [([], "interactive"), (["--data-dir", "x"], "interactive"),
+                                             (["--web", "--port", "9"], "web")])
+def test_the_menu_and_the_web_server_keep_their_own_paths(argv: List[str], attribute: str) -> None:
+    translation = _translate(*argv)
+    assert getattr(translation, attribute) is True and translation.commands == ()
+
+
+@pytest.mark.parametrize("argv, expected", [
+    (["sync"], True), (["--json", "status"], True), (["--data-dir", "status", "sync"], True),
+    (["jobs", "list"], True), (["--headless", "--update-all"], False), (["--diagnostics", "status"], False),
+    (["--recheck-unavailable", "all"], False), (["nonsense"], False), ([], False),
+])
+def test_a_subcommand_goes_to_the_new_cli(argv: List[str], expected: bool) -> None:
+    assert cli.is_subcommand(argv) is expected
+
+
+# --- --headless --update-all ------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("argv, expected", [
@@ -153,16 +216,16 @@ def test_headless_update_calls_the_sync_service_under_the_writer_lease(
     recorder = Recorder(data_dir, sync_result(details_done=5, details_total=5, failed_count=1, refreshed=2,
                                               refresh_changed=1)).install(monkeypatch)
 
-    assert run_cli("--headless", "--update-all", *argv) == 0
+    assert run_cli("--headless", "--update-all", *argv) == 3  # bir maç alınamadı: kısmi (P19'dan önce 0)
 
     assert recorder.specs == [expected]
     held = recorder.holders[0]
-    assert (held.name, held.pid, held.purpose) == ("writer", os.getpid(), "headless")
+    assert (held.name, held.pid, held.purpose) == ("writer", os.getpid(), "sync")
     assert lease_holder(data_dir) is None  # çalışma bitince kilit bırakılır
     out, err = capsys.readouterr()
     assert "Matches that needed details: 5 (4 fetched, 1 failed)" in out
     assert "Provisional records refreshed: 2 (1 changed)" in out
-    assert err == ""
+    assert err.splitlines()[0].startswith(f"{DEPRECATED}ssc --data-dir {data_dir} sync")
 
 
 def test_headless_update_reports_seasons_without_a_match_list_on_stderr(
@@ -177,20 +240,24 @@ def test_headless_update_reports_seasons_without_a_match_list_on_stderr(
     assert "Download finished." in out
 
 
-def test_a_breaker_stop_exits_with_2_from_the_typed_result(
+def test_a_breaker_stop_exits_with_4_from_the_typed_result(
     run_cli: RunCli, data_dir: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """Çıkış kodu SyncResult.breaker'dan gelir; yarıda kalan çalışmanın sayıları yazılmaz, CSV adımı yine çalışır."""
+    from src.services.export import ExportResult, ExportService
+
     Recorder(data_dir, sync_result(breaker="403", details_done=4, details_total=4)).install(monkeypatch)
     exported: List[Any] = []
-    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: exported.append(ctx) or "/x/all.csv")
+    monkeypatch.setattr(ExportService, "prepare", lambda self, spec=None: argparse.Namespace(rows=4))
+    monkeypatch.setattr(ExportService, "write_legacy_csv", lambda self, directory, spec=None: exported.append(
+        directory) or ExportResult(rows=4, columns=("match_id",), bytes=10, path="/x/all.csv"))
 
-    assert run_cli("--headless", "--update-all", "--csv-export") == 2
+    assert run_cli("--headless", "--update-all", "--csv-export") == 4
 
     out, err = capsys.readouterr()
     assert "too many requests to SofaScore failed (403)" in err
     assert "Download finished" not in out
-    assert len(exported) == 1 and "CSV file successfully created: /x/all.csv" in out
+    assert len(exported) == 1 and "Export written: /x/all.csv (4 matches)" in out
     assert "APP_EXIT_CODE" not in os.environ  # main.py çıkış kodunu ortam üzerinden taşımaz
 
 
@@ -203,7 +270,7 @@ def test_the_exit_code_variable_in_the_environment_does_not_reach_headless_runs(
     assert run_cli("--headless", "--update-all") == 0
 
 
-def test_a_storage_error_from_the_service_exits_with_1_and_releases_the_lease(
+def test_a_storage_error_from_the_service_exits_with_5_and_releases_the_lease(
     run_cli: RunCli, data_dir: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     recorder = Recorder(data_dir, sync_result()).install(monkeypatch)
@@ -211,7 +278,7 @@ def test_a_storage_error_from_the_service_exits_with_1_and_releases_the_lease(
         OSError(errno.ENOSPC, os.strerror(errno.ENOSPC)), str(data_dir / "match_details" / "17_PL")
     )
 
-    assert run_cli("--headless", "--update-all") == 1
+    assert run_cli("--headless", "--update-all") == 5  # P19'dan önce 1
 
     err = capsys.readouterr().err
     assert "17_PL" in err and os.strerror(errno.ENOSPC) in err and "Traceback" not in err
@@ -221,21 +288,36 @@ def test_a_storage_error_from_the_service_exits_with_1_and_releases_the_lease(
 # --- --headless --csv-export ve eylemsiz --headless: kilit yok ---------------------------------------
 
 
-@pytest.mark.parametrize("path, text", [
-    ("/x/all_matches_1.csv", "CSV file successfully created: /x/all_matches_1.csv"),
-    (None, "Error occurred while creating CSV file."),
-])
-def test_csv_export_alone_takes_no_lease_and_does_not_open_the_store(
+def test_csv_export_alone_takes_no_lease(
     run_cli: RunCli, data_dir: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
-    path: Optional[str], text: str,
 ) -> None:
+    from src.services.export import ExportResult, ExportService
+
     Recorder(data_dir, sync_result()).install(monkeypatch).error = AssertionError("no download was asked for")
-    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: path)
+    holders: List[Any] = []
 
-    assert run_cli("--headless", "--csv-export") == 0  # dosya üretilemese de 0 (bugünkü davranış)
+    def write(self: ExportService, directory: str, spec: Any = None) -> ExportResult:
+        holders.append(lease_holder(data_dir))
+        return ExportResult(rows=1, columns=("match_id",), bytes=10, path="/x/all_matches_1.csv")
 
-    assert text in capsys.readouterr().out
-    assert (data_dir / "match_details").is_dir() and not (data_dir / ".meta").exists()
+    monkeypatch.setattr(ExportService, "prepare", lambda self, spec=None: argparse.Namespace(rows=1))
+    monkeypatch.setattr(ExportService, "write_legacy_csv", write)
+
+    assert run_cli("--headless", "--csv-export") == 0
+
+    assert holders == [None]
+    assert "Export written: /x/all_matches_1.csv (1 matches)" in capsys.readouterr().out
+
+
+def test_csv_export_with_nothing_to_export_exits_with_1(
+    run_cli: RunCli, data_dir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """P19'dan önce hata satırıyla 0 dönüyordu (bölüm 15); şimdi `not_found`, dosya yazılmaz."""
+    assert run_cli("--headless", "--csv-export") == 1
+
+    assert "Not found: there is no downloaded match to export" in capsys.readouterr().err
+    assert not (data_dir / "match_details" / "processed").exists() or not any(
+        (data_dir / "match_details" / "processed").iterdir())
 
 
 def test_headless_without_an_action_is_a_usage_error_without_a_lease(
@@ -244,7 +326,7 @@ def test_headless_without_an_action_is_a_usage_error_without_a_lease(
     assert run_cli("--headless") == 2
 
     assert "--headless needs --update-all and/or --csv-export" in capsys.readouterr().err
-    assert not (data_dir / ".meta").exists()
+    assert not data_dir.exists()
 
 
 # --- --refresh-only ----------------------------------------------------------------------------------
@@ -252,12 +334,13 @@ def test_headless_without_an_action_is_a_usage_error_without_a_lease(
 
 @pytest.mark.parametrize("counts, breaker, exit_code", [
     (RefreshCounts(), None, 0),  # yenilenecek kayıt yok
-    (RefreshCounts(due=3, refreshed=2, changed=1, failed=1), None, 0),  # en az biri yenilendi
-    (RefreshCounts(due=2, failed=2), None, 1),  # hepsi başarısız
-    (RefreshCounts(due=9, failed=2, skipped=7), "403", 2),  # devre kesildi
-    (RefreshCounts(due=9, refreshed=1, failed=1, skipped=7), "5xx", 2),
+    (RefreshCounts(due=2, refreshed=2, changed=1), None, 0),  # hepsi yenilendi
+    (RefreshCounts(due=3, refreshed=2, changed=1, failed=1), None, 3),  # biri alınamadı: kısmi (önce 0)
+    (RefreshCounts(due=2, failed=2), None, 3),  # hepsi başarısız: kısmi (önce 1)
+    (RefreshCounts(due=9, failed=2, skipped=7), "403", 4),  # devre kesildi (önce 2)
+    (RefreshCounts(due=9, refreshed=1, failed=1, skipped=7), "5xx", 4),
 ])
-def test_refresh_only_maps_the_result_to_todays_exit_codes(
+def test_refresh_only_maps_the_result_to_the_exit_codes(
     run_cli: RunCli, data_dir: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
     counts: RefreshCounts, breaker: Optional[str], exit_code: int,
 ) -> None:
@@ -272,7 +355,8 @@ def test_refresh_only_maps_the_result_to_todays_exit_codes(
     if breaker:
         assert f"({breaker}); {counts.skipped} matches were not attempted" in err
     else:
-        assert err == ""
+        assert "stopped" not in err
+    assert err.splitlines()[0] == f"{DEPRECATED}ssc --data-dir {data_dir} refresh --tournament 17"
 
 
 def test_refresh_only_wins_over_headless_flags(
@@ -297,7 +381,8 @@ def recheck(data_dir: Path, monkeypatch: pytest.MonkeyPatch) -> List[Any]:
     def recheck_unavailable(
         self: MaintenanceService, league_id: Optional[int] = None, *, include_confirmed: bool = False
     ) -> ResetCounts:
-        calls.append((league_id, include_confirmed, lease_holder(data_dir).purpose))
+        holder = lease_holder(data_dir)
+        calls.append((league_id, include_confirmed, holder.purpose if holder is not None else None))
         return ResetCounts(matches=2, slices=3, scanned=5)
 
     monkeypatch.setattr(MaintenanceService, "recheck_unavailable", recheck_unavailable)
@@ -321,21 +406,25 @@ def test_recheck_alone_runs_under_the_writer_lease_and_exits(
     assert lease_holder(data_dir) is None
 
 
-def test_recheck_then_download_keeps_one_lease_for_both_steps(
+def test_recheck_then_download_runs_inside_the_download_job(
     run_cli: RunCli, data_dir: Path, monkeypatch: pytest.MonkeyPatch, recheck: List[Any]
 ) -> None:
+    """İşaretler indirme işinin içinde, aynı kilit altında açılır (P19'dan önce de tek kilit vardı)."""
     recorder = Recorder(data_dir, sync_result()).install(monkeypatch)
 
     assert run_cli("--recheck-unavailable", "--headless", "--update-all", "--fetch-mode", "details") == 0
 
-    assert recheck == [(None, False, "headless")]
+    assert recheck == [(None, False, "sync")]
     assert recorder.specs == [SyncSpec(mode="details", export=False)]
-    assert recorder.holders[0].purpose == "headless"
+    assert recorder.holders[0].purpose == "sync"
 
 
-def test_recheck_with_headless_but_no_action_is_still_a_usage_error(run_cli: RunCli, recheck: List[Any]) -> None:
+def test_recheck_with_headless_but_no_action_is_a_usage_error_before_anything_runs(
+    run_cli: RunCli, recheck: List[Any]
+) -> None:
+    """P19'dan önce işaretler açılıyor, eksik eylem sonra fark ediliyordu (bölüm 15); şimdi hiçbir şey yapılmaz."""
     assert run_cli("--recheck-unavailable", "--headless") == 2
-    assert len(recheck) == 1  # bugünkü sıra: önce işaretler açılır, sonra eksik eylem fark edilir
+    assert recheck == []
 
 
 # --- reddedilen kilit --------------------------------------------------------------------------------
@@ -352,91 +441,87 @@ def test_a_held_writer_lease_stops_the_run_with_exit_code_6(
     initialise_store(data_dir)
 
     with LeaseManager.for_data_dir(data_dir).acquire("writer", purpose="job"):
-        assert run_cli("--headless", "--update-all") == cli.EXIT_LEASE_HELD == 6
+        assert run_cli("--headless", "--update-all") == 6
         assert run_cli("--refresh-only") == 6
         assert run_cli("--recheck-unavailable") == 6
     assert run_cli("--headless", "--update-all") == 0  # kilit bırakıldı
 
     assert len(recorder.specs) == 1
     err = capsys.readouterr().err
-    assert err.count("this data folder is in use by another process (lock writer: pid ?, host ?, purpose ?, since ?)") == 3
-    assert "Traceback" not in err and "could not be written" not in err
+    assert err.count("Held by process ? on ? (?) since ?") == 3
+    assert "Traceback" not in err
 
 
-@pytest.mark.parametrize("lang, expected", [
-    ("en", "Stopped: this data folder is in use by another process (lock writer: pid 4242, host box-1, "
-           "purpose job, since 2026-10-02 12:00:00 UTC). Wait for it to finish or stop it, then run this again."),
-    ("tr", "Durduruldu: bu veri klasörünü başka bir süreç kullanıyor (kilit writer: pid 4242, makine box-1, "
-           "amaç job, başlangıç 2026-10-02 12:00:00 UTC). Bitmesini bekleyin ya da onu durdurun, sonra yeniden "
-           "çalıştırın."),
+@pytest.mark.parametrize("lang, label, holder", [
+    ("en", "A job is already running: A job is already running on this data directory.",
+     "Held by process 4242 on box-1 (job) since 2026-10-02T12:00:00Z"),
+    ("tr", "Bir iş zaten çalışıyor: A job is already running on this data directory.",
+     "Tutan süreç: 4242, makine: box-1 (job); başlangıç: 2026-10-02T12:00:00Z"),
 ])
 def test_the_refusal_names_the_holder_in_the_app_language(
-    run_cli: RunCli, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], lang: str, expected: str
+    run_cli: RunCli, data_dir: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+    lang: str, label: str, holder: str,
 ) -> None:
+    from src.store import JobStoreConflict, LeaseHeld
+
     held = LeaseHeld("held", name="writer", pid=4242, host="box-1", purpose="job", started_at=1790942400.0)
 
-    @contextlib.contextmanager
-    def refuse(data_dir: str, name: str, purpose: str) -> Iterator[None]:
-        raise held
-        yield  # pragma: no cover
+    def refuse(self: Any, *args: Any, **kwargs: Any) -> Any:
+        raise JobStoreConflict("busy") from held
 
-    i18n = I18nManager()
-    i18n.set_language(lang)
-    monkeypatch.setattr(cli, "get_i18n", lambda: i18n)
-    monkeypatch.setattr(cli, "_data_dir_lease", refuse)
+    monkeypatch.setenv("APP_LANGUAGE", lang)
+    monkeypatch.setattr("src.jobs.manager.JobManager.start", refuse)
 
-    # Yalnızca yeniden denetim hâlâ main.py'nin kendi kilidini alır; indirme ve yenilemenin kilidini iş yöneticisi
-    # alır (P11) ve reddedildiğinde aynı LeaseHeld aynı dala düşer (yukarıdaki test ve goldenlar).
-    assert run_cli("--recheck-unavailable") == 6
+    assert run_cli("--refresh-only") == 6
 
-    assert capsys.readouterr().err.strip() == expected
+    err = capsys.readouterr().err.splitlines()
+    assert err[-2:] == [label, holder]
 
 
 # --- --watch -----------------------------------------------------------------------------------------
 
 
-class FakeWatcher:
-    """MatchWatcher'ın yerine geçer: run() sırasında izleyici kilidinin sahibini kaydeder."""
+class FakeLiveService:
+    """LiveService'in yerine geçer: kapsamı, kaynağı ve süreyi kaydeder; hiçbir istek atmaz."""
 
-    seen: List[Any] = []
+    seen: List[Dict[str, Any]] = []
 
-    def __init__(self, sport: str, *, event_ids: Any, league_ids: Any, on_event: Any, data_dir: str) -> None:
-        self.sport = sport
-        self.data_dir = data_dir
-        self.requests = 0
-        self.events_path = os.path.join(data_dir, "watch_events.jsonl")
+    def __init__(self, store: Any, scope: Any, **options: Any) -> None:
+        self.scope = scope
+        self.options = options
+        self.report = argparse.Namespace(rounds=0, requests=0, events=0, confirmed=0, to_dict=lambda: {})
 
-    def run(self, until_seconds: Optional[float] = None) -> None:
-        FakeWatcher.seen.append(lease_holder(Path(self.data_dir), f"watcher:{self.sport}"))
+    def run(self, stop: Any, until_seconds: Optional[float] = None) -> None:
+        FakeLiveService.seen.append({
+            "sports": [sport.sport for sport in self.scope.sports],
+            "source": self.options.get("requested_source"),
+            "until": until_seconds,
+        })
 
 
-def test_watch_holds_the_watcher_lease_of_its_sport(
+def test_the_watch_alias_runs_the_live_service_with_polling(
     run_cli: RunCli, data_dir: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    FakeWatcher.seen = []
-    monkeypatch.setattr("src.watcher.MatchWatcher", FakeWatcher)
+    """Karar D18: eski `--watch` `ssc watch --source poll --stdout`tur; tarayıcı başlatmaz."""
+    FakeLiveService.seen = []
+    monkeypatch.setattr("src.services.live.supervisor.LiveService", FakeLiveService)
 
-    assert run_cli("--watch", "--sport", "tennis", "--event-ids", "1") == 0
+    assert run_cli("--watch", "--sport", "tennis", "--event-ids", "1", "--watch-hours", "2") == 0
 
-    held = FakeWatcher.seen[0]
-    assert (held.name, held.pid, held.purpose) == ("watcher:tennis", os.getpid(), "watch")
-    assert lease_holder(data_dir, "watcher:tennis") is None
-    assert "Watcher stopped: 0 requests" in capsys.readouterr().err
+    assert FakeLiveService.seen == [{"sports": ["tennis"], "source": "poll", "until": 7200.0}]
+    assert capsys.readouterr().err.splitlines()[0] == (
+        f"{DEPRECATED}ssc --data-dir {data_dir} watch --source poll --stdout --sport tennis --event 1 --hours 2.0")
 
 
-def test_a_second_watcher_of_the_same_sport_is_refused_but_another_sport_is_not(
+def test_a_running_watcher_of_the_same_sport_refuses_the_alias(
     run_cli: RunCli, data_dir: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    FakeWatcher.seen = []
-    monkeypatch.setattr("src.watcher.MatchWatcher", FakeWatcher)
     initialise_store(data_dir)
 
     with LeaseManager.for_data_dir(data_dir).acquire("watcher:tennis", purpose="watch"):
-        assert run_cli("--watch", "--sport", "tennis", "--event-ids", "1") == 6
-        assert run_cli("--watch", "--sport", "football", "--event-ids", "1") == 0
+        assert run_cli("--watch", "--sport", "tennis", "--event-ids", "1", "--watch-hours", "0.0000001") == 6
 
-    assert len(FakeWatcher.seen) == 1 and FakeWatcher.seen[0].name == "watcher:football"
-    assert "lock watcher:tennis" in capsys.readouterr().err
+    assert "Another instance is running" in capsys.readouterr().err
 
 
 def test_watch_usage_error_comes_before_the_lease(run_cli: RunCli, data_dir: Path) -> None:

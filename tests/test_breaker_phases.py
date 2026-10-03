@@ -182,7 +182,7 @@ def test_detail_batch_stops_when_the_breaker_trips(tmp_path, blocked):
     assert failed == ["1", "2"]  # devreyi kesen maç ve hiç denenmeyenler "başarısız" sayılmaz
 
 
-def test_cli_refresh_only_exits_with_2_when_the_breaker_trips(tmp_path, monkeypatch, capsys, blocked):
+def test_cli_refresh_only_exits_with_4_when_the_breaker_trips(tmp_path, monkeypatch, capsys, blocked):
     import os
 
     import main as cli
@@ -194,7 +194,7 @@ def test_cli_refresh_only_exits_with_2_when_the_breaker_trips(tmp_path, monkeypa
     monkeypatch.setenv("MAX_CONCURRENT", "1")  # maçlar sırayla: devreyi kesen üçüncü maçtan sonra istek yok
     monkeypatch.setattr("sys.argv", ["main.py", "--refresh-only", "--data-dir", str(tmp_path)])
     with _request_layer():
-        assert cli.main() == 2
+        assert cli.main() == 4  # P19: devre kesici 4 (önce 2)
     assert _event_requests(blocked) == 3 * CFG["max_retries"]
     assert "27" in capsys.readouterr().err  # denenmeyen maç sayısı kullanıcıya söylenir
 

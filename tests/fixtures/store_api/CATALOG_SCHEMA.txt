@@ -1,0 +1,3 @@
+# src.store.CATALOG_SCHEMA
+# kaynak: src/store/catalog.py
+CATALOG_SCHEMA = 1

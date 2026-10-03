@@ -370,18 +370,19 @@
    "request-layer": 12,
    "src.client.transport": 1
   },
-  "stderr": [],
-  "stdout": [
+  "stderr": [
+   "main.py flags are deprecated and will be removed; this run is: ssc sync --only events",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO Main: Running in headless mode",
-   "LOG INFO Main: Headless update: league_id=None mode=details",
    "LOG INFO SyncService: Checking which matches need details...",
    "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
    "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league all (4 matches)…",
    "LOG INFO MatchDataFetcher: Details will be fetched for 4 matches",
    "LOG INFO MatchDataFetcher: Refreshing 1 provisional records",
+   {
+    "concurrent": []
+   },
    {
     "concurrent": [
      "LOG INFO FetchPipeline: Match 9100001 stored (1 files written)",
@@ -390,7 +391,9 @@
      "LOG INFO FetchPipeline: Match 9100010 refreshed: 3 fields changed (homeScore.current, homeScore.display, homeScore.normaltime)"
     ]
    },
-   "LOG INFO MatchDataFetcher: Done: 4/4 matches (100.0%) processed successfully",
+   "LOG INFO MatchDataFetcher: Done: 4/4 matches (100.0%) processed successfully"
+  ],
+  "stdout": [
    "Download finished. Matches that needed details: 4 (4 fetched, 0 failed). Provisional records refreshed: 1 (1 changed)."
   ]
  },
@@ -411,18 +414,19 @@
    "request-layer": 12,
    "src.client.transport": 1
   },
-  "stderr": [],
-  "stdout": [
+  "stderr": [
+   "main.py flags are deprecated and will be removed; this run is: ssc sync --tournament 17 --only events",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO Main: Running in headless mode",
-   "LOG INFO Main: Headless update: league_id=17 mode=details",
    "LOG INFO SyncService: Checking which matches need details...",
    "LOG INFO MatchDataFetcher: Fetching match details for league 17",
    "LOG INFO MatchDataFetcher: League 17_Premier_League: 4 match ids",
    "LOG INFO SyncService: Fetching match details: league 17 (4 matches)…",
    "LOG INFO MatchDataFetcher: Details will be fetched for 4 matches",
    "LOG INFO MatchDataFetcher: Refreshing 1 provisional records",
+   {
+    "concurrent": []
+   },
    {
     "concurrent": [
      "LOG INFO FetchPipeline: Match 9100001 stored (1 files written)",
@@ -431,7 +435,9 @@
      "LOG INFO FetchPipeline: Match 9100010 refreshed: 3 fields changed (homeScore.current, homeScore.display, homeScore.normaltime)"
     ]
    },
-   "LOG INFO MatchDataFetcher: Done: 4/4 matches (100.0%) processed successfully",
+   "LOG INFO MatchDataFetcher: Done: 4/4 matches (100.0%) processed successfully"
+  ],
+  "stdout": [
    "Download finished. Matches that needed details: 4 (4 fetched, 0 failed). Provisional records refreshed: 1 (1 changed)."
   ]
  }

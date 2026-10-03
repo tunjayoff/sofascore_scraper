@@ -932,15 +932,14 @@ CHECKS: Tuple[Tuple[str, Callable[[Context], CheckResult]], ...] = (
     ("config_dir", check_config_dir),
     ("frontend", check_frontend),
     ("env", check_env),
+    ("budget", check_budget),
 )
 CHECK_IDS = tuple(check_id for check_id, _ in CHECKS)
 
-# Yalnızca `run_checks(extra=True)` ile çalışan denetimler: yeni CLI (`ssc doctor`, src/cli) bunları da
-# çalıştırır. `python main.py --doctor`un denetim listesi ve çıktısı CLI goldenlarıyla sabittir (o testler
-# bütçe kapalıyken koşar); main.py yeni CLI'ye bağlandığında (plan: P19) bu liste CHECKS'e katılır.
-EXTRA_CHECKS: Tuple[Tuple[str, Callable[[Context], CheckResult]], ...] = (
-    ("budget", check_budget),
-)
+# Eskiden yalnızca yeni CLI'nin (`run_checks(extra=True)`) çalıştırdığı denetimler. `python main.py --doctor`
+# `ssc doctor`un takma adı olunca (plan maddesi P19) istek bütçesi denetimi CHECKS'e katıldı; liste boş kalır,
+# `extra` parametresi eski çağıranlar için durur.
+EXTRA_CHECKS: Tuple[Tuple[str, Callable[[Context], CheckResult]], ...] = ()
 EXTRA_CHECK_IDS = tuple(check_id for check_id, _ in EXTRA_CHECKS)
 
 
@@ -954,7 +953,7 @@ def run_checks(
 ) -> List[CheckResult]:
     """
     Denetimleri sırayla çalıştırır. Bir denetimin çökmesi diğerlerini durdurmaz. `extra=True`: EXTRA_CHECKS
-    de çalışır (yeni CLI).
+    de çalışır (bugün boştur; istek bütçesi denetimi CHECKS'tedir).
     """
     ctx = ctx or Context()
     wanted = set(only) if only else None

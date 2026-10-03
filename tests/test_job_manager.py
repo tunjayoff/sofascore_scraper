@@ -1332,16 +1332,16 @@ def test_cli_runs_appear_in_the_job_history(cli: Any, data_dir: Path, argv: List
         web_store.close()
 
 
-def test_cli_job_stopped_by_the_breaker_is_partial_and_exits_with_2(cli: Any) -> None:
+def test_cli_job_stopped_by_the_breaker_is_partial_and_exits_with_4(cli: Any) -> None:
     cli.state["breaker"] = "403"
-    assert cli.call("--headless", "--update-all") == 2
+    assert cli.call("--headless", "--update-all") == 4  # P19: devre kesici 4 (önce 2)
     (job,) = cli.jobs()
     assert job.state is JobState.PARTIAL and job.error.code == "blocked"
 
 
-def test_cli_job_with_a_storage_error_is_failed_and_exits_with_1(cli: Any, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_job_with_a_storage_error_is_failed_and_exits_with_5(cli: Any, capsys: pytest.CaptureFixture[str]) -> None:
     cli.state["error"] = StorageError.from_exception(OSError(errno.ENOSPC, os.strerror(errno.ENOSPC)), "/data/x")
-    assert cli.call("--headless", "--update-all") == 1
+    assert cli.call("--headless", "--update-all") == 5  # P19: depolama hatası 5 (önce 1)
     (job,) = cli.jobs()
     assert job.state is JobState.FAILED and job.error.code == "storage_error"
     assert "/data/x" in capsys.readouterr().err
@@ -1356,7 +1356,7 @@ def test_cli_job_is_refused_with_exit_code_6_while_another_job_runs(
         assert cli.call("--headless", "--update-all") == 6
         assert cli.call("--refresh-only") == 6
         err = capsys.readouterr().err
-        assert err.count(f"lock writer: pid {os.getpid()}") == 2 and "purpose job" in err
+        assert err.count(f"Held by process {os.getpid()} on ") == 2 and "(job)" in err
         assert cli.state["seen"] == [] and len(cli.jobs()) == 1  # yalnızca web işi kayıtlı
         web_store.update(finished=True)
         assert cli.call("--refresh-only") == 0
@@ -1369,8 +1369,9 @@ def test_cli_job_cancelled_from_another_store_ends_like_ctrl_c(
     cli: Any, capsys: pytest.CaptureFixture[str], argv: List[str]
 ) -> None:
     cli.state["cancel"] = True
-    assert cli.call(*argv) == 0
+    assert cli.call(*argv) == 130  # P19: iptal edilen iş 130 (önce 0)
     (job,) = cli.jobs()
     assert job.state is JobState.CANCELLED and job.cancel_requested is True
-    out = capsys.readouterr().out
-    assert "Program terminated by user." in out and "Download finished" not in out and "Refresh:" not in out
+    captured = capsys.readouterr()
+    assert f"Cancelled: job {job.id} stopped" in captured.err
+    assert "Download finished" not in captured.out and "Refresh:" not in captured.out

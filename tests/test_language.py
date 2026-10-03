@@ -319,7 +319,7 @@ def test_cli_messages_are_translated(lang, usage, stopped):
     i18n = I18nManager()
     i18n.set_language(lang)
     assert usage in i18n.t("cli_watch_usage")
-    assert stopped in i18n.t("cli_refresh_summary", refreshed=2, changed=1, failed=0)
+    assert stopped in i18n.t("ssc_refresh_summary", refreshed=2, changed=1, failed=0)
     assert "--update-all" in i18n.t("cli_headless_usage")
     assert "12.5" in i18n.t("details_finished", ok=1, total=8, rate="12.5")
 

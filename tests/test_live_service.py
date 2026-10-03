@@ -342,25 +342,29 @@ def test_a_data_operation_blocked_by_a_live_watcher_is_instance_running(store: S
 
 def test_the_legacy_alias_still_takes_league_ids(data_dir: Path, monkeypatch: pytest.MonkeyPatch,
                                                  capsys: pytest.CaptureFixture[str]) -> None:
+    """
+    P19: `main.py --watch` `ssc watch --source poll --stdout`tur (karar D18); --league-ids turnuva kapsamı,
+    --watch-hours süre olur. Servis sahtedir: kapsamı, kaynağı ve süreyi kaydeder.
+    """
+    from types import SimpleNamespace
+
     import main
 
     seen: List[Dict[str, Any]] = []
 
     class Recorder:
-        def __init__(self, sport: str, *, event_ids: Any, league_ids: Any, on_event: Any, data_dir: str) -> None:
-            seen.append({"sport": sport, "event_ids": event_ids, "league_ids": league_ids, "data_dir": data_dir})
-            self.requests = 0
-            self.events_path = os.path.join(data_dir, "watch_events.jsonl")
+        def __init__(self, store: Any, scope: Any, **options: Any) -> None:
+            seen.append({"sports": [(s.sport, sorted(s.tournament_ids), sorted(s.event_ids)) for s in scope.sports],
+                         "source": options.get("requested_source"), "data_dir": str(store.data_dir)})
+            self.report = SimpleNamespace(rounds=0, requests=0, events=0, confirmed=0, to_dict=lambda: {})
 
-        def run(self, until_seconds: Optional[float] = None) -> None:
+        def run(self, stop: Any, until_seconds: Optional[float] = None) -> None:
             seen[-1]["until"] = until_seconds
 
-    monkeypatch.setattr("src.watcher.MatchWatcher", Recorder)
-    monkeypatch.setenv("DATA_DIR", str(data_dir))
-    monkeypatch.setattr("sys.argv", ["main.py", "--watch", "--sport", "football", "--league-ids", "17,8",
-                                     "--watch-hours", "2", "--data-dir", str(data_dir)])
-    assert main.main() == 0
-    assert seen == [{"sport": "football", "event_ids": [], "league_ids": [17, 8], "data_dir": str(data_dir),
+    monkeypatch.setattr("src.services.live.supervisor.LiveService", Recorder)
+    assert main.main(["--watch", "--sport", "football", "--league-ids", "17,8", "--watch-hours", "2",
+                      "--data-dir", str(data_dir)]) == 0
+    assert seen == [{"sports": [("football", [8, 17], [])], "source": "poll", "data_dir": str(data_dir),
                      "until": 7200.0}]
 
 

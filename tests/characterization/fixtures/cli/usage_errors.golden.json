@@ -11,9 +11,24 @@
   "requests": [],
   "sleeps": {},
   "stderr": [
-   "python main.py --doctor: error: unrecognized arguments: --headless"
+   "main.py flags are deprecated and will be removed; this run is: ssc doctor --headless --json"
   ],
-  "stdout": []
+  "stdout": [
+   "{",
+   "  \"ok\": false,",
+   "  \"command\": \"doctor\",",
+   "  \"schema\": \"sofascore.cli/1\",",
+   "  \"version\": \"2.0.0\",",
+   "  \"error\": {",
+   "    \"code\": \"invalid_request\",",
+   "    \"message\": \"unrecognized arguments: --headless\",",
+   "    \"details\": {",
+   "      \"usage\": \"usage: python main.py doctor [global options] [--strict] [--live] [--only IDS] [--skip IDS]\"",
+   "    }",
+   "  },",
+   "  \"exit_code\": 2",
+   "}"
+  ]
  },
  "headless_without_an_action": {
   "argv": [
@@ -22,14 +37,10 @@
   "exit_code": 2,
   "files": {
    "added": {
-    "data/datasets/": "<empty dir>",
-    "data/match_details/": "<empty dir>",
-    "data/matches/": "<empty dir>",
-    "data/seasons/": "<empty dir>",
-    "logs/sofascore_scraper.log": "<binary>"
+    "logs/": "<empty dir>"
    }
   },
-  "request_layer_loaded": true,
+  "request_layer_loaded": false,
   "requests": [],
   "sleeps": {},
   "stderr": [
@@ -38,17 +49,7 @@
    "  python main.py --headless --update-all --fetch-mode details --league-id 52",
    "  python main.py --headless --csv-export --data-dir ./data"
   ],
-  "stdout": [
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO Services: Created directory: <SANDBOX>/data",
-   "LOG INFO Services: Created directory: <SANDBOX>/data/seasons",
-   "LOG INFO Services: Created directory: <SANDBOX>/data/matches",
-   "LOG INFO Services: Created directory: <SANDBOX>/data/match_details",
-   "LOG INFO Services: Created directory: <SANDBOX>/data/datasets",
-   "LOG INFO Main: Running in headless mode",
-   "LOG ERROR Main: Headless needs at least one of --update-all and --csv-export"
-  ]
+  "stdout": []
  },
  "headless_without_an_action_tr": {
   "argv": [
@@ -57,14 +58,10 @@
   "exit_code": 2,
   "files": {
    "added": {
-    "data/datasets/": "<empty dir>",
-    "data/match_details/": "<empty dir>",
-    "data/matches/": "<empty dir>",
-    "data/seasons/": "<empty dir>",
-    "logs/sofascore_scraper.log": "<binary>"
+    "logs/": "<empty dir>"
    }
   },
-  "request_layer_loaded": true,
+  "request_layer_loaded": false,
   "requests": [],
   "sleeps": {},
   "stderr": [
@@ -73,17 +70,7 @@
    "  python main.py --headless --update-all --fetch-mode details --league-id 52",
    "  python main.py --headless --csv-export --data-dir ./data"
   ],
-  "stdout": [
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
-   "LOG INFO Services: Created directory: <SANDBOX>/data",
-   "LOG INFO Services: Created directory: <SANDBOX>/data/seasons",
-   "LOG INFO Services: Created directory: <SANDBOX>/data/matches",
-   "LOG INFO Services: Created directory: <SANDBOX>/data/match_details",
-   "LOG INFO Services: Created directory: <SANDBOX>/data/datasets",
-   "LOG INFO Main: Running in headless mode",
-   "LOG ERROR Main: Headless needs at least one of --update-all and --csv-export"
-  ]
+  "stdout": []
  },
  "invalid_choice": {
   "argv": [
@@ -94,7 +81,7 @@
   "exit_code": 2,
   "files": {
    "added": {
-    "logs/sofascore_scraper.log": "<binary>"
+    "logs/": "<empty dir>"
    }
   },
   "request_layer_loaded": false,
@@ -103,10 +90,7 @@
   "stderr": [
    "main.py: error: argument --fetch-mode: invalid choice: 'everything'"
   ],
-  "stdout": [
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)"
-  ]
+  "stdout": []
  },
  "invalid_recheck_mode": {
   "argv": [
@@ -116,7 +100,7 @@
   "exit_code": 2,
   "files": {
    "added": {
-    "logs/sofascore_scraper.log": "<binary>"
+    "logs/": "<empty dir>"
    }
   },
   "request_layer_loaded": false,
@@ -125,10 +109,7 @@
   "stderr": [
    "main.py: error: argument --recheck-unavailable: invalid choice: 'some'"
   ],
-  "stdout": [
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)"
-  ]
+  "stdout": []
  },
  "unknown_flag": {
   "argv": [
@@ -139,7 +120,7 @@
   "exit_code": 2,
   "files": {
    "added": {
-    "logs/sofascore_scraper.log": "<binary>"
+    "logs/": "<empty dir>"
    }
   },
   "request_layer_loaded": false,
@@ -148,10 +129,7 @@
   "stderr": [
    "main.py: error: unrecognized arguments: --no-such-flag"
   ],
-  "stdout": [
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)"
-  ]
+  "stdout": []
  },
  "watch_without_scope": {
   "argv": [
@@ -162,7 +140,7 @@
   "exit_code": 2,
   "files": {
    "added": {
-    "logs/sofascore_scraper.log": "<binary>"
+    "logs/": "<empty dir>"
    }
   },
   "request_layer_loaded": false,
@@ -171,10 +149,7 @@
   "stderr": [
    "--watch needs --sport and --league-ids or --event-ids. Example: python main.py --watch --sport football --league-ids 17,8"
   ],
-  "stdout": [
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)"
-  ]
+  "stdout": []
  },
  "watch_without_sport": {
   "argv": [
@@ -185,7 +160,7 @@
   "exit_code": 2,
   "files": {
    "added": {
-    "logs/sofascore_scraper.log": "<binary>"
+    "logs/": "<empty dir>"
    }
   },
   "request_layer_loaded": false,
@@ -194,10 +169,7 @@
   "stderr": [
    "--watch needs --sport and --league-ids or --event-ids. Example: python main.py --watch --sport football --league-ids 17,8"
   ],
-  "stdout": [
-   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
-   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)"
-  ]
+  "stdout": []
  },
  "web_public_host_without_allow_list": {
   "argv": [

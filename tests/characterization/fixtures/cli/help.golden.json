@@ -2,7 +2,7 @@
  "exit_code": 0,
  "files": {
   "added": {
-   "logs/sofascore_scraper.log": "<binary>"
+   "logs/": "<empty dir>"
   }
  },
  "options": [

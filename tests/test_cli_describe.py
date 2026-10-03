@@ -18,6 +18,7 @@ ikisi ayrışamaz.
 from __future__ import annotations
 
 import argparse
+import json
 from typing import Any, Dict, List
 
 import pytest
@@ -128,15 +129,18 @@ def test_commands_are_generated_from_the_argparse_tree(described: Dict[str, Any]
 def test_global_options_are_the_ones_of_the_design(described: Dict[str, Any]):
     options = described["commands"]["global_options"]
     flags = [flag for option in options for flag in option["flags"]]
-    # docs/design/02-services.md bölüm 4.2; --log-format, --wait ve --progress onları kullanan işlerle gelir
+    # docs/design/02-services.md bölüm 4.2 (--log-format, --wait ve --progress P19 ile geldi)
     assert flags == [
-        "--config", "--data-dir", "--json", "--output", "--quiet", "--verbose", "--log-level", "--no-color",
-        "--lang", "--rate", "--ignore-breaker", "--version",
+        "--config", "--data-dir", "--json", "--output", "--quiet", "--verbose", "--log-level", "--log-format",
+        "--no-color", "--lang", "--rate", "--ignore-breaker", "--wait", "--progress", "--version",
     ]
     by_flag = {option["flags"][0]: option for option in options}
     assert by_flag["--output"]["choices"] == ["text", "json", "ndjson"]
     assert by_flag["--lang"]["choices"] == ["en", "tr"]
     assert by_flag["--log-level"]["choices"] == ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+    assert by_flag["--log-format"]["choices"] == ["text", "json"]
+    assert by_flag["--progress"]["choices"] == ["none", "text", "ndjson"]
+    assert by_flag["--wait"]["takes_value"] is True and by_flag["--wait"]["metavar"] == "SECONDS"
     assert by_flag["--json"]["takes_value"] is False and by_flag["--config"]["takes_value"] is True
     # --json ve --output aynı değeri yazar
     assert {option["name"] for option in options} - {"version"} == set(cli_main.GLOBAL_DESTS)
@@ -238,6 +242,11 @@ def test_schemas_describe_the_envelope(cli: CliRunner, described: Dict[str, Any]
     doc = described["schemas"]
     assert doc["cli"] == {"id": "sofascore.cli/1", "envelope": output.ENVELOPE_SCHEMA}
     assert doc["config"] == {"id": "sofascore.config/1", "version": model.SCHEMA_VERSION, "describe": "config"}
+    # Normalleştirilmiş kayıtların şeması (SC-1; P19 bağladı)
+    from src import schema
+
+    assert sorted(doc) == ["cli", "config", "data"]
+    assert doc["data"] == json.loads(json.dumps(schema.describe())) and doc["data"]["version"] == schema.SCHEMA_VERSION
     # Şema gerçek çıktıları kabul eder: başarılı ve hatalı zarf
     envelope = doc["cli"]["envelope"]
     assert validate(cli("version", "--json").json, envelope) == []

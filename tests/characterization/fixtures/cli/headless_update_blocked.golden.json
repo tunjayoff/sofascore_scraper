@@ -4,7 +4,7 @@
    "--headless",
    "--update-all"
   ],
-  "exit_code": 0,
+  "exit_code": 3,
   "files": {
    "added": {
     "data/datasets/": "<empty dir>",
@@ -29,8 +29,8 @@
    "request-layer": 2,
    "src.client.transport": 1
   },
-  "stderr": [],
-  "stdout": [
+  "stderr": [
+   "main.py flags are deprecated and will be removed; this run is: ssc sync",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
    "LOG INFO Services: Created directory: <SANDBOX>/data",
@@ -40,10 +40,11 @@
    "LOG INFO Services: Created directory: <SANDBOX>/data/datasets",
    "LOG INFO Store: state.db migration applied: 0001_initial",
    "LOG INFO Store: state.db migration applied: 0002_job_manager",
-   "LOG INFO Main: Running in headless mode",
-   "LOG INFO Main: Headless update: league_id=None mode=full",
    "LOG INFO SyncService: Refreshing season list for league 17...",
    "LOG INFO SeasonFetcher: SeasonFetcher started",
+   {
+    "concurrent": []
+   },
    {
     "concurrent": [
      "LOG ERROR Listing: Season list of league 17 could not be fetched (403)",
@@ -56,6 +57,9 @@
    "LOG WARNING SeasonFetcher: No stored season list for league 17",
    "LOG INFO SyncService: Checking which matches need details...",
    "LOG INFO MatchDataFetcher: Fetching match details for all leagues",
+   "1 season list(s) or schedule(s) could not be fetched; the job is partial (details in --json)."
+  ],
+  "stdout": [
    "Download finished. Matches that needed details: 0 (0 fetched, 0 failed). Provisional records refreshed: 0 (0 changed)."
   ]
  },
@@ -66,7 +70,7 @@
    "--league-id",
    "17"
   ],
-  "exit_code": 0,
+  "exit_code": 3,
   "files": {
    "added": {
     "data/datasets/": "<empty dir>",
@@ -91,8 +95,8 @@
    "request-layer": 2,
    "src.client.transport": 1
   },
-  "stderr": [],
-  "stdout": [
+  "stderr": [
+   "main.py flags are deprecated and will be removed; this run is: ssc sync --tournament 17",
    "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
    "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
    "LOG INFO Services: Created directory: <SANDBOX>/data",
@@ -102,10 +106,11 @@
    "LOG INFO Services: Created directory: <SANDBOX>/data/datasets",
    "LOG INFO Store: state.db migration applied: 0001_initial",
    "LOG INFO Store: state.db migration applied: 0002_job_manager",
-   "LOG INFO Main: Running in headless mode",
-   "LOG INFO Main: Headless update: league_id=17 mode=full",
    "LOG INFO SyncService: Refreshing season list for league 17...",
    "LOG INFO SeasonFetcher: SeasonFetcher started",
+   {
+    "concurrent": []
+   },
    {
     "concurrent": [
      "LOG ERROR Listing: Season list of league 17 could not be fetched (403)",
@@ -119,6 +124,9 @@
    "LOG INFO SyncService: Checking which matches need details...",
    "LOG INFO MatchDataFetcher: Fetching match details for league 17",
    "LOG WARNING MatchDataFetcher: League 17 has no listed matches",
+   "1 season list(s) or schedule(s) could not be fetched; the job is partial (details in --json)."
+  ],
+  "stdout": [
    "Download finished. Matches that needed details: 0 (0 fetched, 0 failed). Provisional records refreshed: 0 (0 changed)."
   ]
  }

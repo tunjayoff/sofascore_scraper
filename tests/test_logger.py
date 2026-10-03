@@ -565,7 +565,7 @@ def test_apply_log_level_changes_the_running_level(reconfigure, tmp_path):
     text = _read(app_logger.log_file_path())
     assert "debug-1" not in text and "warning-3" not in text
     assert "debug-2 görünür" in text and "error-4 görünür" in text
-    assert "Log seviyesi değişti: INFO -> DEBUG" in text
+    assert "Log level changed: INFO -> DEBUG" in text
 
 
 def test_config_manager_applies_log_level_without_restart(reconfigure, tmp_path):
