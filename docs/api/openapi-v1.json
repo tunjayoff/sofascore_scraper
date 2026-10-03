@@ -7484,6 +7484,127 @@
         "title": "Round",
         "description": "The round of an event."
       },
+      "ScheduleStatus": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "The scheduler runs inside this server."
+          },
+          "next_runs": {
+            "items": {
+              "$ref": "#/components/schemas/ScheduledRun"
+            },
+            "type": "array",
+            "title": "Next Runs",
+            "description": "Empty when the scheduler is off."
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled"
+        ],
+        "title": "ScheduleStatus",
+        "description": "The in-app scheduler of this server (`ssc serve --scheduler`); off by default."
+      },
+      "ScheduledRun": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index",
+            "description": "Position of the task in the config file, from 1."
+          },
+          "run": {
+            "type": "string",
+            "title": "Run",
+            "description": "sync, fetch, refresh or backup."
+          },
+          "every": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Every",
+            "description": "The interval as written (`6h`); null for a cron task."
+          },
+          "cron": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cron",
+            "description": "The cron expression (local time); null for an interval."
+          },
+          "options": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Options",
+            "description": "The task's options (`league_id`, `scope`)."
+          },
+          "next_run_at_utc": {
+            "type": "string",
+            "title": "Next Run At Utc"
+          },
+          "last_run_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run At Utc",
+            "description": "When the task was last due; null before."
+          },
+          "last_job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Job Id",
+            "description": "The last job the task started."
+          },
+          "last_result": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "started",
+                  "skipped_running",
+                  "skipped_busy",
+                  "failed_to_start"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Result",
+            "description": "`skipped_running`: its previous run still ran; `skipped_busy`: another job or data operation held the data directory."
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "run",
+          "next_run_at_utc"
+        ],
+        "title": "ScheduledRun",
+        "description": "One task of the in-app scheduler (config file `[[schedule.task]]`) and its next run."
+      },
       "ScorePair": {
         "properties": {
           "home": {
@@ -8570,6 +8691,10 @@
             "title": "Leases",
             "description": "Leases held right now, in any process."
           },
+          "schedule": {
+            "$ref": "#/components/schemas/ScheduleStatus",
+            "description": "The in-app scheduler and the next runs of its tasks."
+          },
           "capabilities": {
             "$ref": "#/components/schemas/Capabilities"
           },
@@ -8594,6 +8719,7 @@
           "auth_required",
           "bridge",
           "throttle",
+          "schedule",
           "capabilities"
         ],
         "title": "Status"

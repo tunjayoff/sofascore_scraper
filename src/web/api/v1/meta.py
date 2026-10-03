@@ -3,7 +3,8 @@ API v1: sağlık, durum, sporlar ve sink'ler (docs/design/02-services.md bölüm
 
     GET  /api/v1/health          sunucu ayakta mı, sürümü, SofaScore'a erişimin durumu, istek bütçesi
     GET  /api/v1/status          yukarıdakiler + çalışan iş + belirteç gerekiyor mu + canlı servisin durumu +
-                                 veri özeti + tutulan kilitler + isteğe bağlı yetenekler
+                                 veri özeti + tutulan kilitler + zamanlayıcının sonraki çalışmaları (P29) +
+                                 isteğe bağlı yetenekler
     POST /api/v1/status/check    SofaScore'a tek bir istekle bağlantı denemesi (yalnızca kullanıcı istediğinde)
     GET  /api/v1/sports          kayıtlı sporlar ve maç detay dilimleri (src/sports.py)
     GET  /api/v1/sports/{slug}   tek spor
@@ -167,6 +168,31 @@ class Capabilities(BaseModel):
     scheduler: bool = Field(description="The in-app scheduler runs inside this server.")
 
 
+class ScheduledRun(BaseModel):
+    """One task of the in-app scheduler (config file `[[schedule.task]]`) and its next run."""
+
+    index: int = Field(description="Position of the task in the config file, from 1.")
+    run: str = Field(description="sync, fetch, refresh or backup.")
+    every: Optional[str] = Field(default=None, description="The interval as written (`6h`); null for a cron task.")
+    cron: Optional[str] = Field(default=None, description="The cron expression (local time); null for an interval.")
+    options: Dict[str, Any] = Field(default_factory=dict, description="The task's options (`league_id`, `scope`).")
+    next_run_at_utc: str
+    last_run_at_utc: Optional[str] = Field(default=None, description="When the task was last due; null before.")
+    last_job_id: Optional[str] = Field(default=None, description="The last job the task started.")
+    last_result: Optional[Literal["started", "skipped_running", "skipped_busy", "failed_to_start"]] = Field(
+        default=None,
+        description="`skipped_running`: its previous run still ran; `skipped_busy`: another job or data operation "
+                    "held the data directory.",
+    )
+
+
+class ScheduleStatus(BaseModel):
+    """The in-app scheduler of this server (`ssc serve --scheduler`); off by default."""
+
+    enabled: bool = Field(description="The scheduler runs inside this server.")
+    next_runs: List[ScheduledRun] = Field(default_factory=list, description="Empty when the scheduler is off.")
+
+
 class Status(BaseModel):
     version: str
     api_version: Literal["v1"]
@@ -182,6 +208,7 @@ class Status(BaseModel):
     live: Optional[LiveStatus] = Field(default=None, description="The live service; null when the store cannot be read.")
     summary: Optional[DataSummary] = Field(default=None, description="Null when the store cannot be read.")
     leases: List[LeaseHolder] = Field(default_factory=list, description="Leases held right now, in any process.")
+    schedule: ScheduleStatus = Field(description="The in-app scheduler and the next runs of its tasks.")
     capabilities: Capabilities
     storage_error: Optional[str] = Field(
         default=None,
@@ -310,8 +337,27 @@ def _installed(module: str) -> bool:
 
 
 def capabilities() -> Capabilities:
-    """İsteğe bağlı paketler; zamanlayıcı P29'a kadar yoktur."""
-    return Capabilities(parquet=_installed("pyarrow"), sse=_installed("sse_starlette"), scheduler=False)
+    """İsteğe bağlı paketler ve zamanlayıcının bu sunucuda çalışıp çalışmadığı (P29)."""
+    from src.jobs import scheduler
+
+    return Capabilities(parquet=_installed("pyarrow"), sse=_installed("sse_starlette"),
+                        scheduler=scheduler.current() is not None)
+
+
+def schedule() -> ScheduleStatus:
+    """Zamanlayıcının durumu (src/services/status.schedule_status) v1 modeliyle."""
+    from src.services.status import schedule_status
+
+    found = schedule_status()
+    return ScheduleStatus(enabled=found.enabled, next_runs=[
+        ScheduledRun(
+            index=s.index, run=s.run, every=s.every, cron=s.cron, options=dict(s.options),
+            next_run_at_utc=utc_text(s.next_run_at) or "",
+            last_run_at_utc=utc_text(s.last_run_at) if s.last_run_at is not None else None,
+            last_job_id=s.last_job_id, last_result=s.last_result,
+        )
+        for s in found.next_runs
+    ])
 
 
 def _live(store: "Store") -> LiveStatus:
@@ -439,6 +485,7 @@ def status() -> StatusResponse:
         live=live,
         summary=summary,
         leases=leases,
+        schedule=schedule(),
         capabilities=capabilities(),
         storage_error=storage_error,
     ))

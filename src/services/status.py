@@ -44,6 +44,11 @@ Kapsam (coverage) kuralları:
 Rapor hiçbir yere yazılmaz: istendiğinde hesaplanır (eskiden `match_details/processed/` altına JSON ve CSV
 yazılıyordu).
 
+Zamanlayıcı (`schedule_status`, plan maddesi P29): bu süreçte çalışan uygulama içi zamanlayıcının
+(src/jobs/scheduler.py, `ssc serve --scheduler`) görevleri ve sonraki çalışmaları. Zamanlayıcı yalnızca onu
+barındıran süreçte görünür: başka bir süreçten (ör. `ssc status`) ya da `serve --dev`in alt sürecinden
+sorulduğunda `enabled` yanlıştır ve liste boştur.
+
 Servis yazdırmaz, kilit almaz ve dosya sistemine dokunmaz.
 """
 from __future__ import annotations
@@ -286,6 +291,32 @@ def forget_sizes(store: Optional[Store] = None) -> None:
             _sizes.pop(store, None)
 
 
+# --- zamanlayıcı ------------------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class ScheduleStatus:
+    """
+    Uygulama içi zamanlayıcının durumu.
+
+    enabled     zamanlayıcı bu süreçte çalışıyor
+    next_runs   görevlerin durumu, yapılandırma sırasıyla (src/jobs/scheduler.TaskState); çalışmıyorsa boş
+    """
+
+    enabled: bool = False
+    next_runs: Tuple[Any, ...] = ()
+
+
+def schedule_status() -> ScheduleStatus:
+    """Bu süreçteki zamanlayıcının görevleri ve sonraki çalışmaları (yoksa kapalı ve boş)."""
+    from src.jobs import scheduler
+
+    running = scheduler.current()
+    if running is None:
+        return ScheduleStatus()
+    return ScheduleStatus(enabled=True, next_runs=running.states())
+
+
 class StatusService:
     """Veri dizininin durumu; yalnızca okur."""
 
@@ -470,8 +501,10 @@ __all__ = [
     "SIZES_MAX_AGE",
     "DataSummary",
     "DiskUsage",
+    "ScheduleStatus",
     "StatusService",
     "TournamentCounts",
     "forget_sizes",
     "only_finished_setting",
+    "schedule_status",
 ]
