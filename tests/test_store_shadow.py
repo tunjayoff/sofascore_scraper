@@ -32,6 +32,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+import conftest
 import legacy_writer
 import src.store
 import store_fixtures as sf
@@ -1150,8 +1151,10 @@ def test_an_id_that_is_not_a_match_id_is_ignored() -> None:
 # --- denetim: test paketinin her testin sonunda çalıştırdığı karşılaştırma -------------------------------
 
 # Store'un dışında ağaç kopyalayan ürün kodu (terminal menüsünün geri yüklemesi böyleydi; plan maddesi P26 menüyü
-# kaldırdı). Kaynak, src/ altında bir dosya adıyla derlenir: paketin denetim kancası (tests/conftest.py) çerçeveyi
-# ürün kodu sayar. Dosya diskte yoktur; veri dizinleri DATA_DIR'in dışındadır (sınır kaydedicisi görmez).
+# kaldırdı). Kaynak, proje dışında (diskte olmayan) bir dosya adıyla derlenir ve paketin denetim kancası
+# (tests/conftest.py, ShadowEdits) o dosya adını ürün kodu sayacak biçimde kaydedilir. src/ altında bir ad
+# kullanılmaz: kapsam ölçümü (coverage, kaynak src/) olmayan dosyayı raporlayamaz. Veri dizinleri DATA_DIR'in
+# dışındadır; sınır kaydedicisi proje dışı çerçeveyi atlar.
 _PRODUCT_WRITER = """
 import shutil
 
@@ -1166,11 +1169,14 @@ def restore_tree(backup, data_dir, name):
 """
 
 
-def _restore_tree(backup: Path, data_dir: Path, name: str) -> None:
+def _restore_tree(backup: Path, data_dir: Path, name: str, monkeypatch: pytest.MonkeyPatch) -> None:
     """Ürün kodu `backup/<name>`'i `data_dir/<name>`'e kopyalar, ardından `shadow_cleared`'ı çağırır."""
+    filename = str(backup.parent / "product_writer.py")  # yok; yalnızca çerçevenin adı
+    recorders = [r for r in conftest.BOUNDARY_RECORDERS if isinstance(r, conftest.ShadowEdits)]
+    assert len(recorders) == 1
+    monkeypatch.setitem(recorders[0]._owners, filename, conftest._BY_PRODUCT)
     namespace: Dict[str, Any] = {"__name__": "product_writer"}
-    exec(compile(_PRODUCT_WRITER, str(Path(__file__).resolve().parents[1] / "src" / "_product_writer.py"), "exec"),
-         namespace)
+    exec(compile(_PRODUCT_WRITER, filename, "exec"), namespace)
     namespace["restore_tree"](backup, data_dir, name)
 
 
@@ -1186,7 +1192,7 @@ def test_the_check_reports_a_write_that_no_hook_follows(canonical: sf.LegacyFixt
     open_store(data)
     monkeypatch.setattr(src.store, "shadow_cleared", lambda *args, **kwargs: None)  # kancası unutulmuş yazıcı
 
-    _restore_tree(tmp_path / "backup" / "data", data, "match_details")
+    _restore_tree(tmp_path / "backup" / "data", data, "match_details", monkeypatch)
 
     found = [line for line in api_mod.shadow_check() if line.startswith(str(data))]
     assert len(found) == 1 and "written without a shadow hook afterwards" in found[0]
@@ -1214,7 +1220,7 @@ def test_the_check_reports_a_catalog_that_differs_from_a_rebuild(canonical: sf.L
     open_store(data)
     monkeypatch.setattr(CatalogAdmin, "rebuild", lambda self, **kwargs: None)  # kanca yanlış dizinliyor
 
-    _restore_tree(tmp_path / "backup" / "data", data, "match_details")
+    _restore_tree(tmp_path / "backup" / "data", data, "match_details", monkeypatch)
     monkeypatch.undo()  # denetimin karşılaştırması gerçek yeniden kurmayla yapılır
 
     found = [line for line in api_mod.shadow_check() if line.startswith(str(data))]
