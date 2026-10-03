@@ -21,6 +21,23 @@ export interface ApiErrorResponse {
   error: ApiError
 }
 
+/** The access token, sent once by the web UI in exchange for a session cookie. */
+export interface AuthLogin {
+  token: string
+}
+
+export interface AuthResponse {
+  data: AuthState
+}
+
+/** Whether the server asks for an access token, and whether this caller presents a valid one. */
+export interface AuthState {
+  /** An access token is configured. */
+  required: boolean
+  /** This request carries the token or a valid session cookie. */
+  authenticated: boolean
+}
+
 /** Whether SofaScore answers the requests of this process. */
 export interface BridgeHealth {
   state: "ok" | "degraded" | "blocked"
@@ -39,6 +56,44 @@ export interface BridgeLastError {
   detail?: string | null
   /** ISO-8601, UTC. */
   at?: string | null
+}
+
+/** Optional features this server can offer. */
+export interface Capabilities {
+  /** Parquet exports (the optional package pyarrow is installed). */
+  parquet: boolean
+  /** Server-sent event streams of jobs (the package sse-starlette is installed). */
+  sse: boolean
+  /** The in-app scheduler runs inside this server. */
+  scheduler: boolean
+}
+
+/** What the data directory holds, counted from its catalog. */
+export interface DataSummary {
+  /** Matches count only finished events or events with details. */
+  only_finished: boolean
+  matches: number
+  details: number
+  seasons: number
+  /** Events stored in the old layout; `ssc migrate` moves them. */
+  legacy_events: number
+  /** Set when the catalog does not describe the files; the counts are then partial. */
+  catalog_rebuild_reason?: string | null
+  tournaments: TournamentSummary[]
+  disk?: DiskSummary | null
+}
+
+/** Disk use of the data directory in bytes; a measurement may be up to a minute old. */
+export interface DiskSummary {
+  /** Every top-level entry of the data directory. */
+  entries: Record<string, number>
+  seasons: number
+  matches: number
+  details: number
+  datasets: number
+  /** seasons + matches + details + datasets. */
+  total: number
+  measured_at_utc?: string | null
 }
 
 export interface Health {
@@ -115,6 +170,36 @@ export interface JobSelection {
 /** İşin durumu. `QUEUED` ve `RUNNING` dışındakiler son durumdur. */
 export type JobState = "queued" | "running" | "succeeded" | "partial" | "failed" | "cancelled" | "interrupted"
 
+/** A lease of the data directory that is held right now. */
+export interface LeaseHolder {
+  /** writer, live, sinks, maintenance or watcher:<sport>. */
+  name: string
+  purpose?: string
+  pid?: number | null
+  host?: string | null
+  since_utc?: string | null
+}
+
+/** The live service of the data directory (`ssc watch`): its state only, never live data. */
+export interface LiveStatus {
+  /** A live service holds the `live` lease right now, in any process. */
+  running: boolean
+  pid?: number | null
+  host?: string | null
+  /** page, direct or poll; null when not running. */
+  source?: string | null
+  /** The sports it watches; empty when not running. */
+  sports?: string[]
+  /** Epoch seconds of the last heartbeat, also of a run that has ended. */
+  heartbeat_at?: number | null
+  /** SofaScore refuses the service right now. */
+  blocked?: boolean
+  /** Sport to the source that leads it now (page, direct or poll). */
+  leaders?: Record<string, string>
+  /** The last change of a leading source. */
+  last_switch?: Record<string, unknown> | null
+}
+
 /** Cursor pagination of a collection response. */
 export interface PageInfo {
   /** Maximum number of items in this page. */
@@ -158,6 +243,38 @@ export interface SettingsPatch {
 
 export interface SettingsResponse {
   data: SettingsDocument
+}
+
+export interface SinkListResponse {
+  data: SinkStatus[]
+  page: PageInfo
+}
+
+/** A configured output sink and how far it has delivered the event log. */
+export interface SinkStatus {
+  name: string
+  /** stdout, file or webhook. */
+  type: string
+  /** The file path, or the webhook address with its credentials masked. */
+  target?: string | null
+  /** Event type patterns the sink takes. */
+  events: string[]
+  /** `pending`: the sink has delivered nothing yet; `error`: the last delivery failed. */
+  state: "ok" | "error" | "pending"
+  /** A process holds the `sinks` lease and delivers right now. */
+  served: boolean
+  /** Sequence number of the last event delivered to the sink. */
+  cursor: number
+  /** Sequence number of the newest event of the log. */
+  head_seq: number
+  /** Events of the log after the cursor (all types, before the sink's filter). */
+  lag_events: number
+  /** Age of the oldest undelivered event; null when none. */
+  lag_seconds?: number | null
+  last_delivered_at_utc?: string | null
+  last_error?: string | null
+  /** Undelivered events given up as too old, as far as the retained log tells. */
+  dropped: number
 }
 
 export interface Sport {
@@ -215,12 +332,46 @@ export interface StartSyncJob {
 export interface Status {
   version: string
   api_version: "v1"
+  /** Version of the normalized schema of the records this API returns (`sofascore.data/<n>`). */
+  schema_version: number
   /** Whether an access token is configured. */
   auth_required: boolean
   bridge: BridgeHealth
   throttle: ThrottleStatus
   /** The job that runs on the data directory right now, in any process. */
   active_job?: Job | null
+  /** The live service; null when the store cannot be read. */
+  live?: LiveStatus | null
+  /** Null when the store cannot be read. */
+  summary?: DataSummary | null
+  /** Leases held right now, in any process. */
+  leases?: LeaseHolder[]
+  capabilities: Capabilities
+  /** Error code when the data directory could not be read; the fields that need it are empty. */
+  storage_error?: string | null
+}
+
+/** The outcome of one connection check; a failed check is a result, not an error. */
+export interface StatusCheck {
+  ok: boolean
+  /** Why the check failed; null when it succeeded. */
+  reason?: "blocked" | "browser" | "rate_limited" | "network" | "upstream" | null
+  /** English text; clients translate by `reason`. */
+  message: string
+  /** Live events in the answer; null on failure. */
+  events_count?: number | null
+  checked_at_utc: string
+  bridge: BridgeHealth
+}
+
+/** What to check. */
+export interface StatusCheckRequest {
+  /** `sofascore`: one request for the live list of football. */
+  target: "sofascore"
+}
+
+export interface StatusCheckResponse {
+  data: StatusCheck
 }
 
 export interface StatusResponse {
@@ -240,6 +391,29 @@ export interface ThrottleStatus {
   requests_per_second: number
   shared: boolean
   error?: string | null
+}
+
+/** Counts of one tournament. `tournament_id` null: the events without a unique tournament. */
+export interface TournamentSummary {
+  tournament_id: number | null
+  /** Name of the follow, else the stored tournament name. */
+  name?: string | null
+  /** A tournament of the configured leagues. */
+  followed: boolean
+  /** Events counted as matches (the `only_finished` rule of the summary). */
+  matches: number
+  /** Events with a stored event payload. */
+  details: number
+  /** Every stored event, unfinished schedule rows included. */
+  events: number
+  finished: number
+  /** Seasons in the tournament's stored season list. */
+  seasons: number
+  seasons_with_events: number
+  /** details / matches in percent, one decimal; 0 without matches. */
+  coverage: number
+  /** Newest change of a stored payload. */
+  last_update_utc?: string | null
 }
 
 /** Every operation of the document by its operationId. */
@@ -262,6 +436,15 @@ export interface Operations {
     body: never
     response: StatusResponse
   }
+  /** Check the connection to SofaScore */
+  "checkConnection": {
+    method: "POST"
+    path: "/api/v1/status/check"
+    params: {}
+    query: {}
+    body: StatusCheckRequest
+    response: StatusCheckResponse
+  }
   /** List sports */
   "listSports": {
     method: "GET"
@@ -279,6 +462,42 @@ export interface Operations {
     query: {}
     body: never
     response: SportResponse
+  }
+  /** List the output sinks */
+  "listSinks": {
+    method: "GET"
+    path: "/api/v1/sinks"
+    params: {}
+    query: {}
+    body: never
+    response: SinkListResponse
+  }
+  /** Session state */
+  "getAuth": {
+    method: "GET"
+    path: "/api/v1/auth"
+    params: {}
+    query: {}
+    body: never
+    response: AuthResponse
+  }
+  /** Sign in with the access token */
+  "login": {
+    method: "POST"
+    path: "/api/v1/auth/login"
+    params: {}
+    query: {}
+    body: AuthLogin
+    response: AuthResponse
+  }
+  /** Sign out */
+  "logout": {
+    method: "POST"
+    path: "/api/v1/auth/logout"
+    params: {}
+    query: {}
+    body: never
+    response: AuthResponse
   }
   /** List jobs */
   "listJobs": {

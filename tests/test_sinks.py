@@ -1636,15 +1636,22 @@ def test_the_diagnostics_bundle_never_contains_a_webhook_address_beyond_its_host
     assert redact.mask_webhook_url("http://127.0.0.1:9000/hook") == "http://127.0.0.1:9000/***"
 
 
+# API v1'in tek sink rotası salt okunurdur: yapılandırmadaki sink'lerin konumu ve gecikmesi (docs/design/05-web-ui.md
+# 7.3, G1; plan maddesi P21). Sink kaydeden, değiştiren ya da silen bir rota yoktur.
+READ_ONLY_SINK_ROUTE = "/api/v1/sinks"
+READ_ONLY_SINK_SCHEMAS = ("SinkListResponse", "SinkStatus")
+
+
 def test_no_http_route_and_no_web_module_knows_sinks():
     """Karar D11: sink'ler yalnızca yapılandırma dosyasından ve ortamdan gelir; HTTP API'si dışarıya adres kaydetmez."""
     from src.web.app import app
 
     document = app.openapi()
     words = ("sink", "webhook")
-    assert [path for path in document["paths"] if any(word in path.lower() for word in words)] == []
+    assert [path for path in document["paths"] if any(word in path.lower() for word in words)] == [READ_ONLY_SINK_ROUTE]
+    assert list(document["paths"][READ_ONLY_SINK_ROUTE]) == ["get"]
     schemas = document.get("components", {}).get("schemas", {})
-    assert [name for name in schemas if any(word in name.lower() for word in words)] == []
+    assert sorted(name for name in schemas if any(word in name.lower() for word in words)) == list(READ_ONLY_SINK_SCHEMAS)
     web = Path(ROOT) / "src" / "web"
     importing = [str(path.relative_to(ROOT)) for path in sorted(web.rglob("*.py"))
                  if "src.sinks" in path.read_text(encoding="utf-8") or "from src import sinks" in path.read_text(encoding="utf-8")]

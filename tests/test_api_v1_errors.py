@@ -435,6 +435,8 @@ SECURITY_HEADERS = (
 WRITE_BODIES: Dict[str, Dict[str, Any]] = {
     "/api/v1/jobs": {"kind": "sync"},
     "/api/v1/settings": {"values": {"client.retries": 9}},
+    "/api/v1/status/check": {"target": "sofascore"},
+    "/api/v1/auth/login": {"token": "not-the-token"},
 }
 
 
@@ -455,6 +457,9 @@ V1_OPERATIONS = _v1_operations()
 V1_WRITES = [(method, path) for method, path in V1_OPERATIONS if method in security.UNSAFE_METHODS]
 _IDS = [f"{method} {path}" for method, path in V1_OPERATIONS]
 _WRITE_IDS = [f"{method} {path}" for method, path in V1_WRITES]
+# Oturum yolları belirteç olmadan da yanıt verir (security.AUTH_OPEN_PATHS); geri kalan her v1 işlemi onu ister
+V1_PROTECTED = [(method, path) for method, path in V1_OPERATIONS if path not in security.AUTH_OPEN_PATHS]
+_PROTECTED_IDS = [f"{method} {path}" for method, path in V1_PROTECTED]
 
 
 @pytest.fixture
@@ -474,7 +479,13 @@ def reached(monkeypatch: pytest.MonkeyPatch) -> List[str]:
 
 def test_the_v1_operation_list_has_reads_and_writes() -> None:
     assert ("GET", "/api/v1/health") in V1_OPERATIONS and ("GET", "/api/v1/jobs/x/events") in V1_OPERATIONS
-    assert V1_WRITES == [("PATCH", "/api/v1/settings"), ("POST", "/api/v1/jobs"), ("POST", "/api/v1/jobs/x/cancel")]
+    assert V1_WRITES == [
+        ("PATCH", "/api/v1/settings"), ("POST", "/api/v1/auth/login"), ("POST", "/api/v1/auth/logout"),
+        ("POST", "/api/v1/jobs"), ("POST", "/api/v1/jobs/x/cancel"), ("POST", "/api/v1/status/check"),
+    ]
+    assert [path for _method, path in V1_OPERATIONS if path in security.AUTH_OPEN_PATHS] == [
+        "/api/v1/auth", "/api/v1/auth/login", "/api/v1/auth/logout",
+    ]
 
 
 def test_a_state_changing_route_that_runs_is_seen_by_the_probe(reached: List[str]) -> None:
@@ -488,7 +499,7 @@ def test_a_state_changing_route_that_runs_is_seen_by_the_probe(reached: List[str
     assert "loaded_settings" in reached
 
 
-@pytest.mark.parametrize("method,path", V1_OPERATIONS, ids=_IDS)
+@pytest.mark.parametrize("method,path", V1_PROTECTED, ids=_PROTECTED_IDS)
 def test_with_a_token_every_v1_route_needs_it(token: str, reached: List[str], method: str, path: str) -> None:
     """Okuma, yazma ve olay akışı: belirteç ayarlıysa hiçbiri onsuz yanıt vermez ve rotaya girilmez."""
     credentials: Tuple[Dict[str, str], ...] = (
@@ -576,9 +587,13 @@ def test_every_state_changing_v1_route_is_behind_the_origin_check(
 
 @pytest.mark.parametrize("method,path", V1_WRITES, ids=_WRITE_IDS)
 def test_the_origin_check_lets_the_app_and_programs_write_to_v1(method: str, path: str) -> None:
-    """Aynı kaynaktan gelen tarayıcı isteği ve Origin göndermeyen program reddedilmez (gövdesiz: 404 ya da 422)."""
+    """
+    Aynı kaynaktan gelen tarayıcı isteği ve Origin göndermeyen program reddedilmez (gövdesiz: 404 ya da 422;
+    gövdesi olmayan çıkış 200).
+    """
+    expected = (200,) if path == "/api/v1/auth/logout" else (404, 422)
     for headers in ({}, {"sec-fetch-site": "same-origin", "origin": "http://testserver"}, {"sec-fetch-site": "none"}):
-        assert client.request(method, path, headers=headers).status_code in (404, 422), headers
+        assert client.request(method, path, headers=headers).status_code in expected, headers
 
 
 def test_v1_responses_carry_the_response_headers_of_the_legacy_routes() -> None:

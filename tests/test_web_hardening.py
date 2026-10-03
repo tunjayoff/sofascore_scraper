@@ -194,11 +194,13 @@ READ_ONLY_GETS = {
     "/api/stats/system",
     "/api/status",
     # API v1 (src/web/api/v1): sağlık, durum, sporlar, iş geçmişi ve olay akışı, ayarların okunması
+    "/api/v1/auth",
     "/api/v1/health",
     "/api/v1/jobs",
     "/api/v1/jobs/1",
     "/api/v1/jobs/1/events",
     "/api/v1/settings",
+    "/api/v1/sinks",
     "/api/v1/sports",
     "/api/v1/sports/1",
     "/api/v1/status",
@@ -226,7 +228,7 @@ GETS_THAT_MAY_WRITE_A_CACHE = {
             "belirlemez ve işlem idempotenttir. Veri ve ayar dosyaları değişmez: aşağıdaki özet sınaması depo "
             "açıldıktan sonrasını ölçer, ondan sonra bu iki dosyanın içeriği de değişmez."
         )
-        for path in ("/api/dashboard", "/api/stats/system")
+        for path in ("/api/dashboard", "/api/stats/system", "/api/v1/status")
     },
 }
 
