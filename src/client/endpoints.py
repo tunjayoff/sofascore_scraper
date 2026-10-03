@@ -9,10 +9,11 @@ onu kullanır, böylece dilim yolları iki yerde tutulmaz.
 """
 from __future__ import annotations
 
+import re
 from typing import Optional, Union
 from urllib.parse import quote
 
-from src.sports import get_slice
+from src.sports import SliceSpec, get_slice
 
 # Ayar verilmediğinde (ya da boş verildiğinde) kullanılan API kökü
 DEFAULT_BASE_URL = "https://www.sofascore.com/api/v1"
@@ -30,6 +31,9 @@ ROUND_EVENTS_SLUG = ROUND_EVENTS + "/slug/{slug}"
 SEASON_EVENTS_PAGE = "/unique-tournament/{tournament_id}/season/{season_id}/events/{kind}/{page}"
 SEARCH_UNIQUE_TOURNAMENTS = "/search/unique-tournaments/{query}"
 
+# Alt anahtar yolun bir parçasıdır: Store'un alt anahtar biçimi (küçük harf, rakam, _ . -)
+_SUB = re.compile(r"^[a-z0-9_.-]{1,80}$")
+
 # events/{kind}/{page}: oynanmış maçlar sondan başa, gelecek maçlar baştan sona sayfalanır
 SEASON_EVENT_KINDS = ("last", "next")
 
@@ -41,12 +45,35 @@ def event(event_id: Id) -> str:
     return EVENT.format(event_id=event_id)
 
 
-def event_slice(key: str, event_id: Id) -> str:
-    """Maçın bir detay dilimi; `key` src/sports.py'deki dilim anahtarıdır ("statistics", "lineups", ...)."""
+def event_slice(key: str, event_id: Id, sub: str = "") -> str:
+    """
+    Maçın bir detay dilimi; `key` src/sports.py'deki dilim anahtarıdır ("statistics", "lineups", "odds_all", ...).
+    sub: alt anahtarı olan dilimde (bahis oranları: sağlayıcı kimliği) zorunludur, olmayanda boş kalır.
+    """
     spec = get_slice(key)
-    if spec is None:
+    if spec is None or spec.owner != "event":
         raise KeyError(f"unknown event slice: {key!r}")
-    return spec.path.format(event_id=event_id)
+    return _slice_path(spec, sub, event_id=event_id)
+
+
+def owner_slice(key: str, sub: str = "", **ids: Id) -> str:
+    """
+    Maç dışı bir varlığın dilimi (plan maddesi P28): sezon (`tournament_id`, `season_id`), takım (`team_id`),
+    oyuncu (`player_id`) ya da spor. `key` src/sports.py'deki dilim anahtarıdır ("standings", "team_rankings", ...).
+    Bilinmeyen anahtar ya da eksik kimlik KeyError.
+    """
+    spec = get_slice(key)
+    if spec is None or spec.owner == "event":
+        raise KeyError(f"unknown owner slice: {key!r}")
+    return _slice_path(spec, sub, **ids)
+
+
+def _slice_path(spec: SliceSpec, sub: str, **ids: Id) -> str:
+    if (spec.subs is None) != (sub == ""):
+        raise ValueError(f"slice {spec.key!r}: " + ("expects no sub-key" if spec.subs is None else "needs a sub-key"))
+    if sub and not _SUB.match(sub):
+        raise ValueError(f"slice {spec.key!r}: invalid sub-key {sub!r}")
+    return spec.format_path(sub, **ids)
 
 
 def live_events(sport: str) -> str:

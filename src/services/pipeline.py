@@ -66,6 +66,7 @@ from src.services.planning import CONFIGURED, SelectionPolicy, WorkItem, phase_o
 from src.slices import (
     BODY_DATA,
     BODY_MALFORMED,
+    BODY_NO_DATA,
     SLICE_EMPTY,
     SLICE_FAILED,
     SLICE_OK,
@@ -73,7 +74,7 @@ from src.slices import (
     Outcome,
     slice_body_state,
 )
-from src.sports import event_sport_slug, select_slices
+from src.sports import DEFAULT_ODDS_PROVIDER, PROVIDER_SUBS, SliceSpec, event_sport_slug, get_slice, select_slices
 from src.status import StatusClass, classify_status
 
 if TYPE_CHECKING:
@@ -361,6 +362,8 @@ class FetchPipeline:
                        slots: asyncio.Semaphore) -> ItemResult:
         if item.need == "listing":
             return await self._list(client, item, writer, slots)
+        if item.need == "owner" and item.owner.kind != "event":
+            return await self._owner(client, item, writer, slots)
         if item.owner.kind != "event":
             raise ValueError(f"the pipeline fetches events only, got a {item.owner.kind} work item")
         if item.need == "refresh":
@@ -424,29 +427,36 @@ class FetchPipeline:
         if isinstance(chosen, SelectionPolicy):
             chosen = chosen.for_payload(event_id, sport or None, payload)
         selected = select_slices("event", sport, chosen, phase=phase)
+        provider = self._active.provider if isinstance(self._active, SelectionPolicy) else DEFAULT_ODDS_PROVIDER
+        pairs = [(spec, sub) for spec in selected for sub in spec.sub_keys(provider)]
         if item.need == "refill":
-            wanted = {key for key, _sub in item.slices}
-            selected = tuple(spec for spec in selected if spec.key in wanted)
-        keys = [spec.key for spec in selected]
-        answers = await asyncio.gather(*(self._get_slice(client, event_id, key) for key in keys))
-        slices = dict(zip(keys, answers, strict=True))
+            wanted = set(item.slices)
+            pairs = [(spec, sub) for spec, sub in pairs if (spec.key, sub) in wanted]
+        keys = [spec.key for spec, _sub in pairs]
+        answers = await asyncio.gather(*(self._get_slice(client, event_id, spec.key, sub) for spec, sub in pairs))
+        # Alt anahtarsız dilim adıyla, alt anahtarlı dilim (bahis oranları) "anahtar/alt anahtar" adıyla
+        slices = {slice_label(spec.key, sub): answer for (spec, sub), answer in zip(pairs, answers, strict=True)}
+        targets = {slice_label(spec.key, sub): (spec.key, sub) if sub else spec.key for spec, sub in pairs}
 
-        outcomes: Dict[str, Outcome] = {EVENT_KEY: Outcome(SLICE_OK, data=payload,
+        outcomes: Dict[Any, Outcome] = {EVENT_KEY: Outcome(SLICE_OK, data=payload,
                                                             fetched_at=event_outcome.fetched_at)}
         counted: Tuple[str, ...] = ()
         if finished:
             # Bitmiş maç: her sonuç uygulanır; "veri yok" yanıtları istenen her dilimde sayılır
-            outcomes.update(slices)
-            counted = tuple(keys)
+            outcomes.update((targets[name], o) for name, o in slices.items())
+            counted = tuple(dict.fromkeys(keys))
         else:
             # Bitmemiş maçta sayaç ve hata kaydı tutulmaz: yalnızca gövdesi olan yanıtlar saklanır
-            outcomes.update({key: o for key, o in slices.items() if o.status in (SLICE_OK, SLICE_EMPTY)
-                             and o.data is not None})
+            outcomes.update((targets[name], o) for name, o in slices.items()
+                            if o.status in (SLICE_OK, SLICE_EMPTY) and o.data is not None)
+        kept = tuple(dict.fromkeys(spec.key for spec, _sub in pairs if spec.keep_history))
+        # Geçmişi tutulan dilim yoksa çağrı bugünküyle aynıdır (keep_history verilmez)
+        history: Dict[str, Any] = {"keep_history": kept} if kept else {}
         result = ItemResult(item, ITEM_OK, event=event_outcome, slices=slices, payload=payload)
         found: Dict[str, Any] = {}
         await self._write(writer, slots, result, lambda: self._store.events.put(
             event_id, outcomes, count_empties=counted if counted else False,
-            on_event_change=self._change_fn(found)), "the match details")
+            on_event_change=self._change_fn(found), **history), "the match details")
         result.changed = found.get("changed") or {}
         if result.put is not None:
             how = "promoted from the old layout and stored" if result.put.promoted else "stored"
@@ -480,15 +490,56 @@ class FetchPipeline:
             logger.info("Match %s refreshed: %d fields changed (%s)", event_id, len(changed), ", ".join(changed[:5]))
         return result
 
-    async def _get_slice(self, client: Client, event_id: int, key: str) -> Outcome:
+    async def _get_slice(self, client: Client, event_id: int, key: str, sub: str = "") -> Outcome:
         """Bir dilim isteği; yanıt gelen gövde dilimin kuralıyla okunur (`answered_outcome`)."""
-        outcome = await client.get(endpoints.event_slice(key, event_id))
+        outcome = await client.get(endpoints.event_slice(key, event_id, sub) if sub
+                                   else endpoints.event_slice(key, event_id))
         if outcome.status == SLICE_OK or (outcome.status == SLICE_EMPTY and outcome.data is not None):
-            return answered_outcome(key, outcome)
+            return with_provenance(key, sub, answered_outcome(key, outcome))
         if outcome.failed:
             logger.warning("Slice %s of match %s could not be fetched (%s); it is requested again on the next run",
-                           key, event_id, outcome.reason)
-        return outcome
+                           slice_label(key, sub), event_id, outcome.reason)
+        return with_provenance(key, sub, outcome)
+
+    async def _owner(self, client: Client, item: WorkItem, writer: concurrent.futures.Executor,
+                     slots: asyncio.Semaphore) -> ItemResult:
+        """
+        `owner` (plan maddesi P28): maç dışı bir sahibin (sezon, takım, oyuncu, spor) planlanan dilimleri
+        eşzamanlı istenir ve tek bir `store.entities.put` ile yazılır. "Veri yok" yanıtları sayılır; geçmişi
+        tutulan dilimin (sezonun oranları) değişen yükü geçmişine eklenir.
+        """
+        ref = item.owner
+        ids = owner_path_ids(ref)
+        pairs = [(key, sub) for key, sub in item.slices]
+        answers = await asyncio.gather(*(self._get_owner_slice(client, ref, key, sub, ids) for key, sub in pairs))
+        slices = {slice_label(key, sub): answer for (key, sub), answer in zip(pairs, answers, strict=True)}
+        outcomes = {(key, sub) if sub else key: answer for (key, sub), answer in zip(pairs, answers, strict=True)}
+        kept = tuple(dict.fromkeys(key for key, _sub in pairs if (get_slice(key) or _NO_SPEC).keep_history))
+        history: Dict[str, Any] = {"keep_history": kept} if kept else {}
+        result = ItemResult(item, ITEM_OK, slices=slices)
+        if all(o.status == SLICE_SKIPPED or (o.failed and o.reason == SKIP_BREAKER) for o in outcomes.values()):
+            # Hiçbir istek gönderilmedi (devre kesici): yazılacak bir şey yok
+            result.status, result.reason = ITEM_SKIPPED, SKIP_BREAKER
+            return result
+        await self._write(writer, slots, result, lambda: self._store.entities.put(ref, outcomes, **history),
+                          f"the {ref.kind} data")
+        if result.status == ITEM_OK:
+            failure = upstream_failure(None, slices)
+            if failure is not None:
+                # Hata kayıtları yazıldı; birim SofaScore'un reddettiği istek yüzünden başarısız sayılır
+                result.status, result.reason = ITEM_FAILED, failure.reason
+            elif result.put is not None:
+                logger.info("%s %s: %d files written", ref.kind.capitalize(), ref.id, len(result.put.written))
+        return result
+
+    async def _get_owner_slice(self, client: Client, ref: Any, key: str, sub: str, ids: Mapping[str, int]) -> Outcome:
+        outcome = await client.get(endpoints.owner_slice(key, sub, **ids))
+        if outcome.status == SLICE_OK or (outcome.status == SLICE_EMPTY and outcome.data is not None):
+            return with_provenance(key, sub, answered_outcome(key, outcome))
+        if outcome.failed:
+            logger.warning("Slice %s of %s %s could not be fetched (%s); it is requested again on the next run",
+                           slice_label(key, sub), ref.kind, ref.id, outcome.reason)
+        return with_provenance(key, sub, outcome)
 
     @staticmethod
     def _change_fn(found: Dict[str, Any]) -> Callable[[Optional[Mapping[str, Any]], Mapping[str, Any]],
@@ -552,6 +603,51 @@ class FetchPipeline:
             logger.warning("change.recorded for match %s (change %s) could not be appended: %s", event_id, seq, e)
 
 
+_NO_SPEC = SliceSpec("_", "/_")
+
+
+def slice_label(key: str, sub: str = "") -> str:
+    """Bir dilimin adı (Store'un adıyla aynı): alt anahtarsız dilimde anahtar, alt anahtarlıda `anahtar/alt`."""
+    return f"{key}/{sub}" if sub else key
+
+
+def owner_path_ids(ref: Any) -> Dict[str, int]:
+    """Maç dışı sahibin yol kimlikleri (src/sports.py dilim yollarının yer tutucuları)."""
+    if ref.kind == "season":
+        return {"tournament_id": ref.tournament_id, "season_id": ref.id}
+    if ref.kind in ("team", "player", "tournament"):
+        return {f"{ref.kind}_id": ref.id}
+    return {}
+
+
+def with_provenance(key: str, sub: str, outcome: Outcome) -> Outcome:
+    """
+    Sağlayıcı alt anahtarlı dilimin (bahis oranları) sonucuna yükün kaynağı yazılır: sağlayıcı kimliği
+    (`meta.provider_id`). Hangi sağlayıcının döndüğü SofaScore'da ülkeye bağlıdır; istemcinin IP'si ya da konumu
+    saklanmaz. Öteki dilimlerin sonucu değişmez.
+    """
+    spec = get_slice(key)
+    if spec is None or spec.subs != PROVIDER_SUBS or not sub or outcome.status == SLICE_SKIPPED:
+        return outcome
+    return dataclasses.replace(outcome, meta={**(outcome.meta or {}), "provider_id": int(sub)})
+
+
+def body_state(key: str, body: Any) -> str:
+    """
+    Yanıt gövdesinin üç yanıtından biri: kayıt defterinde `body_key`'i olan dilimde (P28) gövde bir nesne ve o
+    anahtarın değeri doluysa veri var, None ya da boş gövde "veri yok", nesne olmayan gövde okunamaz; öteki
+    dilimlerde src.slices.slice_body_state.
+    """
+    spec = get_slice(key)
+    if spec is None or spec.body_key is None:
+        return slice_body_state(key, body)
+    if body is None or (isinstance(body, (dict, list)) and not body):
+        return BODY_NO_DATA
+    if not isinstance(body, dict):
+        return BODY_MALFORMED
+    return BODY_DATA if body.get(spec.body_key) else BODY_NO_DATA
+
+
 def answered_outcome(key: str, outcome: Outcome) -> Outcome:
     """
     Yanıt gelen (hata olmayan) dilim isteği, gövdenin üç yanıtına göre (src.slices.slice_body_state):
@@ -563,7 +659,7 @@ def answered_outcome(key: str, outcome: Outcome) -> Outcome:
         almış olarak saymıştır ve engellenme belirtisi değildir.
     """
     data = outcome.data
-    state = slice_body_state(key, data)
+    state = body_state(key, data)
     common = {"http_status": outcome.http_status, "fetched_at": outcome.fetched_at, "via": outcome.via}
     if state == BODY_DATA:
         return Outcome(SLICE_OK, data=data, **common)
@@ -573,6 +669,36 @@ def answered_outcome(key: str, outcome: Outcome) -> Outcome:
         # FX-5'in eşlemesi: okunamayan gövdenin hata kaydında HTTP kodu yoktur (istek katmanının "parse"ı gibi)
         return Outcome(SLICE_FAILED, reason=request_breaker.PARSE, fetched_at=outcome.fetched_at, via=outcome.via)
     return Outcome(SLICE_EMPTY, data=data, reason="empty", **common)
+
+
+def run_extras(store: "Store", *, seasons: Iterable[Tuple[int, int]] = (), tournament_ids: Iterable[int] = (),
+               cancelled: Optional[CancelCheck] = None, concurrency: int = 5, config_manager: Any = None,
+               selection: Any = CONFIGURED, now: Optional[float] = None,
+               on_result: Optional[ResultCallback] = None) -> Optional[PipelineSummary]:
+    """
+    Eşitlemenin P28 aşaması: başlamamış maçların bahis oranları (`planning.prematch_items`) ve maç dışı sahiplerin
+    dilimleri (`planning.owner_items`), tek bir çalıştırmada. Seçim ne zamanlı bir maç dilimini ne de maç dışı
+    bir dilimi seçiyorsa hiçbir şey okunmaz, istenmez ve None döner (varsayılan yapılandırma). config_manager
+    verilirse işin devre kesicisi onunla kurulur (bağlamda biri yoksa).
+    """
+    import contextlib
+
+    from src.services import planning
+    from src.services.query import RefreshPolicy
+
+    chosen = resolve_policy(selection, store)
+    if not planning.extras_selected(chosen):
+        return None
+    policy = RefreshPolicy.current(now)
+    items = (planning.prematch_items(store, policy, tournament_ids=tuple(tournament_ids), selection=chosen)
+             + planning.owner_items(store, policy, seasons=tuple(seasons), selection=chosen))
+    if not items:
+        return PipelineSummary()
+    logger.info("Odds and non-match data: %d work items", len(items))
+    breaker = request_breaker.scope(config_manager) if config_manager is not None else contextlib.nullcontext()
+    with breaker:
+        return FetchPipeline(store, concurrency=concurrency, selection=chosen).run_sync(
+            items, cancelled=cancelled, on_result=on_result)
 
 
 def put_retrying(store: "Store", event_id: int, what: str, write: Callable[[], Any], *,
@@ -611,4 +737,5 @@ __all__ = [
     "ListingWrite", "PipelineSummary", "SKIP_BREAKER",
     "SKIP_CANCELLED", "SKIP_NOT_DUE", "STORE_BUSY_ATTEMPTS", "STORE_BUSY_FIRST_WAIT", "UNAVAILABLE_AFTER_ATTEMPTS",
     "answered_outcome", "is_finished", "put_retrying", "upstream_failure",
+    "body_state", "owner_path_ids", "run_extras", "slice_label", "with_provenance",
 ]
