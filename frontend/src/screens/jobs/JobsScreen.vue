@@ -149,7 +149,7 @@ onUnmounted(() => {
   <div>
     <PageHeader :title="t('ui.nav.jobs')" :description="t('ui.jobs.description')">
       <template #actions>
-        <UiMenu :label="t('ui.jobs.startMenu')" icon="jobs" align="right" button-class="u-btn u-btn-primary" :items="startItems" @select="(k) => (starting = { kind: k as 'sync' | 'fetch' | 'refresh', spec: {} })" />
+        <UiMenu :label="t('ui.jobs.startMenu')" icon="jobs" align="right" button-class="u-btn u-btn-primary" :items="startItems" @select="(k) => (starting = k === 'rebuild' ? { kind: 'rebuild', spec: { mode: 'auto' } } : { kind: k as 'sync' | 'fetch' | 'refresh', spec: {} })" />
       </template>
     </PageHeader>
 

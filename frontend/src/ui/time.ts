@@ -100,6 +100,20 @@ export function num(n: number | null | undefined): string {
   return Number(n ?? 0).toLocaleString(loc())
 }
 
+/** "14.2 KB", "1.9 GB": a size in bytes, with one decimal from KB on (1 KB = 1024 bytes). */
+export function bytesText(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(Number(n))) return '—'
+  let v = Math.max(0, Number(n))
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let i = 0
+  while (v >= 1024 && i < units.length - 1) {
+    v /= 1024
+    i++
+  }
+  const text = i === 0 ? String(Math.round(v)) : v.toLocaleString(loc(), { maximumFractionDigits: 1, minimumFractionDigits: 1 })
+  return `${text} ${units[i]}`
+}
+
 /** Turkish writes the percent sign first ("%72"), English after ("72%"). */
 export function pct(n: number | null | undefined): string {
   const v = Math.round(Number(n) || 0)

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BAD_ANSWER, NETWORK, newRequestId, queryString, request, session, v1, V1Error } from '@/api/v1/client'
 import { describeError, errorText, fieldErrors, holderText, KNOWN_CODES, toastError } from '@/api/v1/errors'
 import { authNeeded } from '@/lib/auth'
-import { authLockedUntil, lockSecondsLeft, noteAuthLock } from '@/app/session'
+import { authLockedUntil, lockSecondsLeft } from '@/app/session'
 import { clearToasts, uiToasts } from '@/ui/toast'
 import { i18n, setLocale } from '@/i18n'
 import en from '@/locales/en'
@@ -146,14 +146,25 @@ describe('401: the token prompt and the lock after too many attempts', () => {
     expect(lockSecondsLeft(before + 28000)).toBe(0)
   })
 
-  it('reads the legacy session routes too (429 too_many_attempts, 401 invalid_token)', async () => {
+  it('signs in on the v1 session routes and reads their lock (401 with details.reason)', async () => {
+    const f = mockFetch({
+      'POST /api/v1/auth/login': () => v1Error(401, 'unauthorized', { reason: 'too_many_attempts', retry_after: 30 }, { 'Retry-After': '30' }),
+      'POST /api/v1/auth/logout': { data: { required: true, authenticated: false } },
+    })
+    const before = Date.now()
+    const e = await session.login('some-value').catch((x) => x)
+    expect([e.code, e.reason, e.retryAfter]).toEqual(['unauthorized', 'too_many_attempts', 30])
+    expect(lockSecondsLeft(before)).toBeGreaterThanOrEqual(30)
+    expect(await session.logout()).toEqual({ required: true, authenticated: false })
+    expect(callsTo(f, 'POST /api/v1/auth/logout')).toHaveLength(1)
+  })
+
+  it('still reads the legacy error shape (429 too_many_attempts in `detail`)', async () => {
     mockFetch({
       'POST /api/auth/login': () =>
         new Response(JSON.stringify({ detail: { code: 'too_many_attempts', message: 'x', retry_after: 30 } }), { status: 429, headers: { 'Retry-After': '30' } }),
     })
-    const e = await session.login('some-value').catch((x) => x)
+    const e = await request('POST', '/api/auth/login', { body: { token: 'some-value' } }).catch((x) => x)
     expect([e.code, e.retryAfter]).toEqual(['too_many_attempts', 30])
-    noteAuthLock(e.retryAfter, 1000)
-    expect(lockSecondsLeft(1000)).toBe(30)
   })
 })

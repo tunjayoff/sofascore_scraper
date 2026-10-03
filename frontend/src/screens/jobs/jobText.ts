@@ -1,5 +1,5 @@
 import { i18n } from '@/i18n'
-import type { Job, JobKind, JobState } from '@/api/v1/schema'
+import type { BackupJobSpec, ExportJobSpec, Job, JobKind, JobState } from '@/api/v1/schema'
 import type { StartJobBody } from '@/api/v1/client'
 
 /**
@@ -12,8 +12,11 @@ const t = (key: string, args?: Record<string, unknown>) => i18n.global.t(key, ar
 export const TERMINAL: readonly JobState[] = ['succeeded', 'partial', 'failed', 'cancelled', 'interrupted']
 export const isTerminal = (s: JobState) => TERMINAL.includes(s)
 
-/** The kinds `POST /api/v1/jobs` starts today; the others answer 501 until P21 (05-web-ui.md 7.1). */
-export const STARTABLE: readonly JobKind[] = ['sync', 'fetch', 'refresh']
+/** The kinds that need no form, offered by "Start a job" (6.8); each asks first in a ConfirmDialog. */
+export const STARTABLE: readonly JobKind[] = ['sync', 'fetch', 'refresh', 'rebuild']
+
+/** The kinds that send requests to SofaScore; the others work on the data folder only (4.1, principle 3). */
+export const CALLS_SOFASCORE: readonly JobKind[] = ['sync', 'fetch', 'refresh']
 
 export function jobKindText(kind: string): string {
   const key = `ui.job.kind.${kind}`
@@ -26,7 +29,18 @@ export function faceText(face: string): string {
 }
 
 type Selection = { league_id?: number | null; season_ids?: number[] | null; match_ids?: number[] | null }
-type Spec = { mode?: string; league_id?: number | null; selections?: Selection[] | null }
+type Spec = {
+  mode?: string
+  league_id?: number | null
+  selections?: Selection[] | null
+  // the data jobs
+  dataset?: string
+  format?: string
+  schema?: string
+  profile?: string | null
+  scope?: string
+  name?: string
+}
 
 function asSpec(spec: unknown): Spec {
   return spec && typeof spec === 'object' ? (spec as Spec) : {}
@@ -43,8 +57,32 @@ export function jobTarget(job: Pick<Job, 'kind' | 'spec'>): string {
     return t('ui.job.target.tournaments', { n: selections.length })
   }
   if (spec.league_id) return t('ui.job.target.tournament', { id: spec.league_id })
-  if (STARTABLE.includes(job.kind)) return t('ui.job.target.all')
+  if (CALLS_SOFASCORE.includes(job.kind)) return t('ui.job.target.all')
+  if (job.kind === 'export') return exportText(spec)
+  if ((job.kind === 'backup' || job.kind === 'clear') && spec.scope) return scopeText(spec.scope)
+  if (job.kind === 'restore' && spec.name) return spec.name
+  if (job.kind === 'rebuild') return t('ui.job.target.index')
   return '—'
+}
+
+function textOr(key: string, fallback: string): string {
+  return i18n.global.te(key, 'en') ? t(key) : fallback
+}
+
+/** "Wide CSV (2.x columns)", "Raw · Slices · JSONL". */
+export function exportText(spec: { dataset?: string; format?: string; schema?: string; profile?: string | null }): string {
+  if (spec.profile === 'legacy-wide-csv') return t('ui.exports.kind.legacy')
+  const parts = [
+    spec.schema ? textOr(`ui.exports.schema.${spec.schema}`, spec.schema) : null,
+    spec.dataset ? textOr(`ui.exports.dataset.${spec.dataset}`, spec.dataset) : null,
+    spec.format ? spec.format.toUpperCase() : null,
+  ]
+  return parts.filter(Boolean).join(' · ') || '—'
+}
+
+/** A backup or clear scope in words. */
+export function scopeText(scope: string): string {
+  return textOr(`ui.scope.${scope}`, scope)
 }
 
 /** The progress object of a job (JobProgress.detail() + percent), read defensively. */
@@ -111,11 +149,17 @@ export function breakerText(reason: string | null | undefined): string {
   return reason && i18n.global.te(key, 'en') ? t(key) : t('ui.job.breaker.other')
 }
 
-/** The body that starts the same job again, or null for a kind the API cannot start yet. */
+/**
+ * The body that starts the same job again, or null: never for a clear (Maintenance asks for a typed word)
+ * or a restore check (Backups), nor for a kind the API cannot start.
+ */
 export function rerunBody(job: Pick<Job, 'kind' | 'spec'>): StartJobBody | null {
   const spec = asSpec(job.spec)
   const leagueId = typeof spec.league_id === 'number' && spec.league_id > 0 ? spec.league_id : null
   if (job.kind === 'refresh') return { kind: 'refresh', spec: { league_id: leagueId } }
+  if (job.kind === 'rebuild') return { kind: 'rebuild', spec: { mode: 'auto' } }
+  if (job.kind === 'export') return { kind: 'export', spec: job.spec as ExportJobSpec }
+  if (job.kind === 'backup') return { kind: 'backup', spec: job.spec as BackupJobSpec }
   if (job.kind !== 'sync' && job.kind !== 'fetch') return null
   const selections = (Array.isArray(spec.selections) ? spec.selections : [])
     .filter((sel) => typeof sel.league_id === 'number' && sel.league_id > 0)
@@ -133,4 +177,9 @@ export function jobErrorText(job: Pick<Job, 'error'>): string | null {
   if (!code) return null
   const key = `ui.error.${code}`
   return i18n.global.te(key, 'en') ? t(key) : code
+}
+
+/** A count of a backup (`backup.json`: follows, jobs, v3_events …) in words, else its key. */
+export function countLabel(key: string): string {
+  return textOr(`ui.restore.count.${key}`, key)
 }

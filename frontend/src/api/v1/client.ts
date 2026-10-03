@@ -145,14 +145,102 @@ type Data<K extends keyof Operations> = Op<K>['response'] extends { data: infer 
 
 export type ListJobsQuery = Op<'listJobs'>['query']
 export type StartJobBody = Op<'startJob'>['body']
+export type ListEventsQuery = Op<'listEvents'>['query']
+export type ListChangesQuery = Op<'listChanges'>['query']
+export type ListFollowsQuery = Op<'listFollows'>['query']
+export type ListTournamentsQuery = Op<'listTournaments'>['query']
+export type LogLevel = NonNullable<Op<'listLogs'>['query']['level']>
 
 const enc = encodeURIComponent
 
-/** The routes of `/api/v1` that exist today (05-web-ui.md 7.1). Each resolves with the `data` member. */
+/** A stored payload exactly as the server keeps it, with what its headers say about it (6.6, raw view). */
+export type RawPayload = {
+  /** The body as text, unchanged: copy and download give exactly what the server sent. */
+  text: string
+  bytes: number
+  etag: string | null
+  /** `X-Sofascore-Fetched-At`: when the payload was read from SofaScore. */
+  fetchedAt: string | null
+}
+
+/** GET of a raw payload; the body is kept as text, so a large payload is parsed once, by the viewer. */
+export async function requestRaw(path: string, query?: Query, signal?: AbortSignal): Promise<RawPayload> {
+  const id = newRequestId()
+  let res: Response
+  try {
+    res = await fetch(path + queryString(query), {
+      headers: { Accept: 'application/json', 'X-Request-Id': id },
+      credentials: 'same-origin',
+      signal,
+    })
+  } catch (e) {
+    if ((e as Error)?.name === 'AbortError') throw e
+    throw new V1Error(0, NETWORK, String((e as Error)?.message || e), null, id)
+  }
+  if (!res.ok) {
+    const e = await errorFrom(res, id)
+    noteRefusal(e)
+    throw e
+  }
+  const text = await res.text()
+  return { text, bytes: new Blob([text]).size, etag: res.headers.get('ETag'), fetchedAt: res.headers.get('X-Sofascore-Fetched-At') }
+}
+
+const rawPath = (id: number, key?: string | null) => (!key || key === 'event' ? `/api/v1/events/${id}/raw` : `/api/v1/events/${id}/slices/${enc(key)}/raw`)
+
+/** The routes of `/api/v1` (02-services.md section 6). Single resources resolve with `data`, lists with the page. */
 export const v1 = {
   health: (signal?: AbortSignal) => request<Op<'getHealth'>['response']>('GET', '/api/v1/health', { signal }).then((r) => r.data),
   status: (signal?: AbortSignal) => request<Op<'getStatus'>['response']>('GET', '/api/v1/status', { signal }).then((r) => r.data),
+  /** One request to SofaScore through the bridge, on click only (6.12). */
+  checkConnection: (): Promise<Data<'checkConnection'>> =>
+    request<Op<'checkConnection'>['response']>('POST', '/api/v1/status/check', { body: { target: 'sofascore' } }).then((r) => r.data),
   sports: () => request<Op<'listSports'>['response']>('GET', '/api/v1/sports').then((r) => r.data),
+  sport: (slug: string, signal?: AbortSignal): Promise<Data<'getSport'>> =>
+    request<Op<'getSport'>['response']>('GET', `/api/v1/sports/${enc(slug)}`, { signal }).then((r) => r.data),
+  sinks: (signal?: AbortSignal) => request<Op<'listSinks'>['response']>('GET', '/api/v1/sinks', { signal }).then((r) => r.data),
+
+  // ---- follows and the catalog ----
+  follows: (query: ListFollowsQuery = {}, signal?: AbortSignal) =>
+    request<Op<'listFollows'>['response']>('GET', '/api/v1/follows', { query, signal }),
+  follow: (id: string, signal?: AbortSignal): Promise<Data<'getFollow'>> =>
+    request<Op<'getFollow'>['response']>('GET', `/api/v1/follows/${enc(id)}`, { signal }).then((r) => r.data),
+  addFollow: (body: Op<'addFollow'>['body']): Promise<Data<'addFollow'>> =>
+    request<Op<'addFollow'>['response']>('POST', '/api/v1/follows', { body }).then((r) => r.data),
+  updateFollow: (id: string, body: Op<'updateFollow'>['body']): Promise<Data<'updateFollow'>> =>
+    request<Op<'updateFollow'>['response']>('PATCH', `/api/v1/follows/${enc(id)}`, { body }).then((r) => r.data),
+  removeFollow: (id: string): Promise<Data<'removeFollow'>> =>
+    request<Op<'removeFollow'>['response']>('DELETE', `/api/v1/follows/${enc(id)}`).then((r) => r.data),
+  tournaments: (query: ListTournamentsQuery = {}, signal?: AbortSignal) =>
+    request<Op<'listTournaments'>['response']>('GET', '/api/v1/tournaments', { query, signal }),
+  tournament: (id: number, signal?: AbortSignal): Promise<Data<'getTournament'>> =>
+    request<Op<'getTournament'>['response']>('GET', `/api/v1/tournaments/${id}`, { signal }).then((r) => r.data),
+  /** Sends one request to SofaScore; the button that starts it says so (5.1). */
+  searchTournaments: (body: Op<'searchTournaments'>['body']): Promise<Data<'searchTournaments'>> =>
+    request<Op<'searchTournaments'>['response']>('POST', '/api/v1/tournaments/search', { body }).then((r) => r.data),
+  tournamentSeasons: (id: number, signal?: AbortSignal): Promise<Data<'listTournamentSeasons'>> =>
+    request<Op<'listTournamentSeasons'>['response']>('GET', `/api/v1/tournaments/${id}/seasons`, { signal }).then((r) => r.data),
+
+  // ---- events ----
+  events: (query: ListEventsQuery = {}, signal?: AbortSignal) =>
+    request<Op<'listEvents'>['response']>('GET', '/api/v1/events', { query, signal }),
+  event: (id: number, signal?: AbortSignal): Promise<Data<'getEvent'>> =>
+    request<Op<'getEvent'>['response']>('GET', `/api/v1/events/${id}`, { signal }).then((r) => r.data),
+  eventSlices: (id: number, signal?: AbortSignal): Promise<Data<'listEventSlices'>> =>
+    request<Op<'listEventSlices'>['response']>('GET', `/api/v1/events/${id}/slices`, { signal }).then((r) => r.data),
+  /** One slice with its stored payload. */
+  eventSlice: (id: number, key: string, sub?: string | null, signal?: AbortSignal): Promise<Data<'getEventSlice'>> =>
+    request<Op<'getEventSlice'>['response']>('GET', `/api/v1/events/${id}/slices/${enc(key)}`, { query: { sub: sub || null }, signal }).then((r) => r.data),
+  eventOdds: (id: number, signal?: AbortSignal): Promise<Data<'listEventOdds'>> =>
+    request<Op<'listEventOdds'>['response']>('GET', `/api/v1/events/${id}/odds`, { signal }).then((r) => r.data),
+  /** Address of a stored payload: the event's own (`key` empty or `event`) or a slice's; a full-size download. */
+  rawUrl: (id: number, key?: string | null, sub?: string | null) => rawPath(id, key) + queryString({ sub: key && key !== 'event' ? sub || null : null }),
+  raw: (id: number, key?: string | null, sub?: string | null, signal?: AbortSignal) =>
+    requestRaw(rawPath(id, key), { sub: key && key !== 'event' ? sub || null : null }, signal),
+  changes: (query: ListChangesQuery = {}, signal?: AbortSignal) =>
+    request<Op<'listChanges'>['response']>('GET', '/api/v1/changes', { query, signal }),
+
+  // ---- jobs ----
   jobs: (query: ListJobsQuery = {}, signal?: AbortSignal) =>
     request<Op<'listJobs'>['response']>('GET', '/api/v1/jobs', { query, signal }),
   job: (id: string, signal?: AbortSignal): Promise<Data<'getJob'>> =>
@@ -163,21 +251,31 @@ export const v1 = {
     request<Op<'cancelJob'>['response']>('POST', `/api/v1/jobs/${enc(id)}/cancel`).then((r) => r.data),
   /** Address of the job's event stream (SSE); `after` resumes behind that sequence number. */
   jobEventsUrl: (id: string, after = 0) => `/api/v1/jobs/${enc(id)}/events${after > 0 ? `?after=${after}` : ''}`,
+
+  // ---- files: exports, backups, the log, diagnostics ----
+  exports: (query: Op<'listExports'>['query'] = {}, signal?: AbortSignal) =>
+    request<Op<'listExports'>['response']>('GET', '/api/v1/exports', { query, signal }),
+  exportUrl: (id: string) => `/api/v1/exports/${enc(id)}/download`,
+  backups: (signal?: AbortSignal) => request<Op<'listBackups'>['response']>('GET', '/api/v1/backups', { signal }).then((r) => r.data),
+  backupUrl: (name: string) => `/api/v1/backups/${enc(name)}`,
+  logs: (query: Op<'listLogs'>['query'] = {}, signal?: AbortSignal): Promise<Data<'listLogs'>> =>
+    request<Op<'listLogs'>['response']>('GET', '/api/v1/logs', { query, signal }).then((r) => r.data),
+  diagnostics: (signal?: AbortSignal): Promise<Data<'getDiagnostics'>> =>
+    request<Op<'getDiagnostics'>['response']>('GET', '/api/v1/diagnostics', { signal }).then((r) => r.data),
+  diagnosticsBundleUrl: '/api/v1/diagnostics/bundle',
+
   settings: (): Promise<Data<'getSettings'>> =>
     request<Op<'getSettings'>['response']>('GET', '/api/v1/settings').then((r) => r.data),
   updateSettings: (values: Record<string, unknown>): Promise<Data<'updateSettings'>> =>
     request<Op<'updateSettings'>['response']>('PATCH', '/api/v1/settings', { body: { values } }).then((r) => r.data),
 }
 
-/**
- * The session routes. `/api/v1/auth*` come with P21 (05-web-ui.md 7.2); until then the UI uses the
- * routes #43 added, which answer in the legacy shape (errorFrom reads both).
- */
-export type AuthState = { required: boolean; authenticated: boolean }
+/** The session routes of v1 (6.15). */
+export type AuthState = Data<'getAuth'>
 
 export const session = {
-  state: () => request<AuthState>('GET', '/api/auth'),
+  state: () => request<Op<'getAuth'>['response']>('GET', '/api/v1/auth').then((r) => r.data),
   /** Sends the token once; the server answers with an HttpOnly cookie, so the page never keeps it. */
-  login: (token: string) => request<AuthState>('POST', '/api/auth/login', { body: { token } }),
-  logout: () => request<AuthState>('POST', '/api/auth/logout'),
+  login: (token: string) => request<Op<'login'>['response']>('POST', '/api/v1/auth/login', { body: { token } }).then((r) => r.data),
+  logout: () => request<Op<'logout'>['response']>('POST', '/api/v1/auth/logout').then((r) => r.data),
 }

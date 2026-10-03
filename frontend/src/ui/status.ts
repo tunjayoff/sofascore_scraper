@@ -28,14 +28,46 @@ export const CONNECTION: Record<ConnectionState, StatusLook> = {
   blocked: { tone: 'danger', icon: 'error', key: 'ui.status.connection.blocked' },
 }
 
-/** The live service (`ssc watch`); `/status` has no live fields before P21, so the UI shows "unknown". */
+/** The live service (`ssc watch`) from `/status.live`; "unknown" when the server could not read it. */
 export type LiveState = 'running' | 'paused' | 'stopped' | 'unknown'
+
+export function liveState(live: { running: boolean; blocked?: boolean } | null | undefined): LiveState {
+  if (!live) return 'unknown'
+  if (!live.running) return 'stopped'
+  return live.blocked ? 'paused' : 'running'
+}
 
 export const LIVE: Record<LiveState, StatusLook> = {
   running: { tone: 'ok', icon: 'okCircle', key: 'ui.status.live.running' },
   paused: { tone: 'warn', icon: 'pause', key: 'ui.status.live.paused' },
   stopped: { tone: 'neutral', icon: 'circle', key: 'ui.status.live.stopped' },
   unknown: { tone: 'neutral', icon: 'planned', key: 'ui.status.live.unknown' },
+}
+
+/**
+ * A sink (6.13, 4.6): `delivering` (ok), `retrying` (the last delivery failed), `behind` (the oldest
+ * undelivered event is older than a minute), `pending` (nothing delivered yet), `unserved` (no process holds
+ * the `sinks` lease, so nothing is delivered right now). The API has no `disabled` state yet.
+ */
+export type SinkState = 'delivering' | 'retrying' | 'behind' | 'pending' | 'unserved'
+
+export const SINK: Record<SinkState, StatusLook> = {
+  delivering: { tone: 'ok', icon: 'okCircle', key: 'ui.status.sink.delivering' },
+  retrying: { tone: 'warn', icon: 'refresh', key: 'ui.status.sink.retrying' },
+  behind: { tone: 'warn', icon: 'clock', key: 'ui.status.sink.behind' },
+  pending: { tone: 'neutral', icon: 'circle', key: 'ui.status.sink.pending' },
+  unserved: { tone: 'neutral', icon: 'pause', key: 'ui.status.sink.unserved' },
+}
+
+/** "Behind" starts when the oldest undelivered event is older than this (6.13). */
+export const SINK_BEHIND_S = 60
+
+export function sinkState(s: { state: string; served: boolean; lag_seconds?: number | null }): SinkState {
+  if (s.state === 'error') return 'retrying'
+  if (!s.served) return 'unserved'
+  if ((s.lag_seconds ?? 0) > SINK_BEHIND_S) return 'behind'
+  if (s.state === 'pending') return 'pending'
+  return 'delivering'
 }
 
 /** The health pill: one word and a tone for the whole server (3.3). */
@@ -48,7 +80,7 @@ export const HEALTH: Record<HealthLevel, StatusLook> = {
   unknown: { tone: 'neutral', icon: 'circle', key: 'ui.status.health.unknown' },
 }
 
-export const STATUS_KINDS = { job: JOB_STATES, connection: CONNECTION, live: LIVE, health: HEALTH } as const
+export const STATUS_KINDS = { job: JOB_STATES, connection: CONNECTION, live: LIVE, health: HEALTH, sink: SINK } as const
 export type StatusKind = keyof typeof STATUS_KINDS
 
 export function lookOf(kind: StatusKind, value: string): StatusLook {
