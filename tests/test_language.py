@@ -256,7 +256,7 @@ def test_keys_used_by_the_cli_and_the_launcher_exist():
         used |= set(re.findall(r"""\bt\(\s*['"]([a-z0-9_]+)['"]""", (REPO / name).read_text(encoding="utf-8")))
     launcher = (REPO / "scripts" / "start_web.py").read_text(encoding="utf-8")
     used |= {"launcher_" + key for key in re.findall(r'_t\(\s*"([a-z_]+)"', launcher)}
-    assert len(used) > 60
+    assert len(used) > 50  # P25: main.py'nin web sunucusu dalı `ssc serve` oldu, onun metinleri gitti
     assert used <= set(en), sorted(used - set(en))
     # Kullanılmayan çeviri kalmasın (bu değişiklikle eklenen ön ekler için)
     main_text = (REPO / "main.py").read_text(encoding="utf-8")

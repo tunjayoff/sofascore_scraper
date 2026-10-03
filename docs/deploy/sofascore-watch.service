@@ -1,0 +1,43 @@
+# systemd unit for `ssc watch`: the live service, plus the configured sinks.
+# Read docs/deploy/watch.md first: the memory a source needs, and the warnings of the `direct` source.
+# Install:
+#   sudo cp docs/deploy/sofascore-watch.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now sofascore-watch
+#
+# Adjust User, Group, WorkingDirectory, the paths in ExecStart and MemoryMax to your install.
+
+[Unit]
+Description=SofaScore Scraper live service (ssc watch)
+Documentation=https://github.com/tunjayoff/sofascore_scraper/tree/main/docs/deploy/watch.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sofascore
+Group=sofascore
+WorkingDirectory=/opt/sofascore_scraper
+EnvironmentFile=-/etc/sofascore/sofascore.env
+# Watches the follows marked `live = true` (ssc follows add ... --live), every sport.
+# The source is [live] source in the config file, or --source here:
+#   page   (default) one browser page per watched sport; about 1.8 to 2.6 GB of memory per sport
+#   poll   polling only, no browser
+#   direct an explicit opt-in with four warnings (watch.md); about 0.2 GB
+ExecStart=/opt/sofascore_scraper/.venv/bin/python -m src.cli.main watch
+# SIGTERM: the service finishes its round, saves its state, drains the sinks for up to 10 s, exit code 0
+KillSignal=SIGTERM
+TimeoutStopSec=60
+Restart=on-failure
+RestartSec=30
+# 2: a configuration or usage error (also "nothing to watch": no follow with live = true)
+# 6: another live service already runs on this data folder
+RestartPreventExitStatus=2 6
+# Plan for the peak, not the average: the page source needs about 2.6 GB per watched sport (watch.md).
+# Below that limit the kernel stops the browser at the worst moment. Two sports with `page`:
+MemoryMax=6G
+UMask=0007
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

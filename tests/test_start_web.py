@@ -178,6 +178,56 @@ def test_venv_is_not_created_with_an_old_python(launcher, monkeypatch, tmp_path,
     assert "Python 99.0 or newer is required" in capsys.readouterr().err
 
 
+def test_the_launcher_starts_ssc_serve_on_this_computer_only(launcher):
+    """P25: doğrudan uvicorn yerine `serve` komutu; adres yapılandırma dosyasından bağımsız olarak 127.0.0.1."""
+    command = launcher.server_command(PY)
+    assert command == [str(PY), "-m", "src.cli.main", "serve", "--host", "127.0.0.1", "--port", str(launcher.PORT)]
+    assert "--dev" not in command  # çift tıklama oturumu tek süreç kalır
+    assert "uvicorn" not in (REPO / "scripts" / "start_web.py").read_text(encoding="utf-8")
+
+
+def test_launcher_main_runs_the_server_command_and_stops_it_on_ctrl_c(launcher, monkeypatch, capsys):
+    started = []
+
+    class Proc:
+        returncode = None
+
+        def poll(self):
+            return None
+
+        def wait(self):
+            raise KeyboardInterrupt
+
+        def terminate(self):
+            started.append("terminated")
+
+    ports = iter([False, True])
+    monkeypatch.setattr(launcher, "_ensure_venv", lambda: PY)
+    monkeypatch.setattr(launcher, "_ensure_frontend", lambda: None)
+    monkeypatch.setattr(launcher, "_preflight", lambda py: True)
+    monkeypatch.setattr(launcher, "_port_open", lambda: next(ports))
+    monkeypatch.setattr(launcher, "_open_browser", lambda url: started.append(("browser", url)))
+    monkeypatch.setattr(launcher.os, "chdir", lambda path: None)
+    monkeypatch.setattr(launcher.subprocess, "Popen", lambda cmd, **kw: started.append(cmd) or Proc())
+    monkeypatch.delenv("SOFASCORE_NO_BROWSER", raising=False)
+    assert launcher.main() == 0
+    assert started[0] == launcher.server_command(PY)
+    assert started[1] == ("browser", launcher.URL) and started[-1] == "terminated"
+
+
+def test_every_launcher_goes_through_start_web_py():
+    """Kısayollar sunucuyu kendileri başlatmaz: hepsi scripts/start_web.py'yi (o da `ssc serve`i) çalıştırır."""
+    for name in ("start-sofascore.sh", "Start SofaScore.command"):
+        assert "python3 scripts/start_web.py" in (REPO / name).read_text(encoding="utf-8")
+    bat = (REPO / "Start SofaScore.bat").read_text(encoding="utf-8")
+    assert "py -3 scripts\\start_web.py" in bat and "python scripts\\start_web.py" in bat
+    desktop = (REPO / "SofaScore Scraper.desktop").read_text(encoding="utf-8")
+    assert "exec ./start-sofascore.sh" in desktop
+    for name in ("start-sofascore.sh", "Start SofaScore.command", "Start SofaScore.bat", "SofaScore Scraper.desktop"):
+        text = (REPO / name).read_text(encoding="utf-8")
+        assert "uvicorn" not in text and "--web" not in text and "main.py" not in text, name
+
+
 def test_shell_launchers_keep_the_window_open_on_failure():
     """`exec` ile çalıştırılınca hata iletisi, çift tıklamayla açılan pencereyle birlikte kayboluyordu."""
     for name in ("start-sofascore.sh", "Start SofaScore.command"):

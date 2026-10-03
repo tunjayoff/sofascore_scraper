@@ -138,7 +138,7 @@ From CMD: `scripts\install.bat`. Environment overrides: `SOFASCORE_SCRAPER_REPO`
 
 ### Docker
 
-The image contains the app, the built web app and the headless Chromium that [BrowserBridge](#anti-bot-protection-browserbridge) needs. It runs as a non-root user (uid 1000) and starts the web app by default.
+The image contains the app, the built web app and the headless Chromium that [BrowserBridge](#anti-bot-protection-browserbridge) needs. It runs as a non-root user (uid 1000) and starts `ssc serve` (the web app and the HTTP API) by default. [docs/deploy/docker.md](docs/deploy/docker.md) has the details, including the live service in a container.
 
 ```bash
 docker run -d --name sofascore-scraper --shm-size=1g \
@@ -167,11 +167,11 @@ Images are published to `ghcr.io/tunjayoff/sofascore_scraper` with each tagged r
 
 Things to know:
 
-- **There are no user accounts.** The examples publish the port on `127.0.0.1` only. If you publish it to your network (`-p 8000:8000`), set an access token (`-e SOFASCORE_API_TOKEN=<long random value>`): without it anyone who can reach the port can read and delete data and change settings, and the container cannot warn you about it (inside the container the app always listens on every interface). You must also list the name or IP you open it with: `-e SOFASCORE_ALLOWED_HOSTS=localhost,127.0.0.1,my-server.lan` (requests with any other `Host` header are rejected). See [Security model](#security-model).
+- **There are no user accounts.** The examples publish the port on `127.0.0.1` only. If you publish it to your network (`-p 8000:8000`), set an access token (`-e SOFASCORE_API_TOKEN=<long random value>`): without it anyone who can reach the port can read and delete data and change settings. Inside the container the app listens on every interface and cannot see how the port is published, so without a token it logs a warning at every start; with the port on `127.0.0.1` only you can ignore it. You must also list the name or IP you open it with: `-e SOFASCORE_ALLOWED_HOSTS=localhost,127.0.0.1,my-server.lan` (requests with any other `Host` header are rejected; keep `127.0.0.1`, the health check uses it). When no allow-list is set anywhere, the entrypoint uses the loopback names. See [Security model](#security-model).
 - **Settings:** every variable in `.env.example` can be passed with `-e` / `environment:`. On every start a variable set that way wins over the value saved on the Settings page, so only set the ones you want fixed (for example `APP_LANGUAGE=en`, `USE_PROXY` / `PROXY_URL`). `PORT` changes the port inside the container.
 - **Shared memory:** Chromium needs more than Docker's 64 MB default, hence `--shm-size=1g` (`shm_size` in Compose).
 - **Bind mounts** (`-v ./data:/app/data`) work when the folder is writable by uid 1000: `mkdir -p data config && sudo chown -R 1000:1000 data config`. To use another uid, build with `--build-arg APP_UID=$(id -u) --build-arg APP_GID=$(id -g)`.
-- **Other commands:** arguments after the image name go to `main.py`, for example `docker run --rm ghcr.io/tunjayoff/sofascore_scraper:latest --version`, or a scheduled download with the same volumes: `docker compose run --rm sofascore-scraper --headless --update-all`. The browser profile can be used by one container at a time, so stop the web container (`docker compose stop`) before running a download this way; a second container on a busy profile logs a warning and cannot open its browser.
+- **Other commands:** `serve [options]` goes to `ssc serve`; any other arguments after the image name go to `main.py`, which runs a command of the [command line](#command-line-ssc) or, for one more release, the old flags. For example `docker run --rm ghcr.io/tunjayoff/sofascore_scraper:latest --version`, or a scheduled download with the same volumes: `docker compose run --rm sofascore-scraper sync`. The browser profile can be used by one container at a time, so stop the web container (`docker compose stop`) before running a download this way; a second container on a busy profile logs a warning and cannot open its browser.
 - **Updating:** `docker compose pull && docker compose up -d`. Data, configuration, the browser profile and the log files stay in their volumes.
 
 ### Release archive
@@ -303,7 +303,7 @@ python main.py --config /path/to/leagues.txt --data-dir /path/to/data
 **Web (recommended for most users)**
 
 1. Finish **Installation** and **Configuration** (`pip install`, `cp .env.example .env`). Optionally set `DATA_DIR` if you want data somewhere other than `./data`.
-2. Start the app: `./start-sofascore.sh` (or `python scripts/start_web.py`; on Windows double-click `Start SofaScore.bat`, on macOS `Start SofaScore.command`). The launcher creates `.venv` if it is missing, runs the [setup check](#check-your-setup-doctor), installs what is missing (Python packages, the browser), builds the web app when `frontend/dist/` is missing and Node.js is installed, then opens `http://127.0.0.1:8000`. `python main.py --web` starts the server alone and installs nothing.
+2. Start the app: `./start-sofascore.sh` (or `python scripts/start_web.py`; on Windows double-click `Start SofaScore.bat`, on macOS `Start SofaScore.command`). The launcher creates `.venv` if it is missing, runs the [setup check](#check-your-setup-doctor), installs what is missing (Python packages, the browser), builds the web app when `frontend/dist/` is missing and Node.js is installed, then opens `http://127.0.0.1:8000`. `ssc serve` (or `python -m src.cli.main serve`) starts the server alone and installs nothing.
    After updating the code (`git pull`), rebuild the web app yourself: `cd frontend && npm install && npm run build`. The start script only builds when `frontend/dist/` is missing, so otherwise you keep seeing the old interface.
 3. **Sport** — The switch at the top of the sidebar (All / Football / Basketball / Tennis) filters every page. Pick the sport you are working on.
 4. **Leagues** — A new install has no leagues; the page opens with an **Add league** button. **Add league** searches SofaScore; filter the results by sport and press **Add**. A league whose sport is unknown (for example one added to `config/leagues.txt` by hand) shows a **Pick sport** box; choose once and it is saved.
@@ -376,10 +376,10 @@ python main.py
 ### Web application
 
 ```bash
-python main.py --web
+ssc serve                   # or: python -m src.cli.main serve
 ```
 
-Default URL: `http://127.0.0.1:8000`. The server only listens on this machine. `--host` opens it to your network; read [Security model](#security-model) first. One address (`--host 192.168.1.5`) works as it is. `--host 0.0.0.0` (every interface) also needs `SOFASCORE_ALLOWED_HOSTS`, and without `SOFASCORE_API_TOKEN` the app warns at startup that anyone who can reach the port can read and delete data and change settings. `--port` changes the port and `--dev` reloads on code changes. Health: `GET /health` (also reports the version).
+Default URL: `http://127.0.0.1:8000` (`[server] host` and `port` in the config file change the defaults). The server only listens on this machine. `--host` opens it to your network; read [Security model](#security-model) first. One address (`--host 192.168.1.5`) works as it is. `--host 0.0.0.0` (every interface) also needs the allowed host names (`--allowed-hosts`, `[server] allowed_hosts` or `SOFASCORE_ALLOWED_HOSTS`) and exits with code 2 without them, and without `SOFASCORE_API_TOKEN` the app warns at startup that anyone who can reach the port can read and delete data and change settings. `--port` changes the port and `--dev` reloads on code changes. Ctrl+C or SIGTERM stops it with exit code 0; configured sinks are delivered while it runs. Health: `GET /health` (also reports the version). `python main.py --web` still works for one release and runs `ssc serve`. Running it as a systemd service, behind a reverse proxy, with backups: [docs/deploy/](docs/deploy/README.md).
 
 Background jobs report status via `GET /api/scrape/status` and `GET /api/scrape/stream` (SSE). Heavy API work runs off the asyncio event loop so the UI stays responsive during long fetches.
 
@@ -399,9 +399,9 @@ The web app has **no user accounts**. By default it listens on this computer onl
 **What you must do before opening it to a network**
 
 - Set `SOFASCORE_API_TOKEN`. Without it, anyone who can reach the port can read and delete your data and change the settings.
-- Limit who can reach the port (firewall, VPN). The app does not limit login attempts, so the token must be long and random.
+- Limit who can reach the port (firewall, VPN). Wrong tokens are limited per client address and only in memory (behind a reverse proxy see [docs/deploy](docs/deploy/README.md#behind-a-reverse-proxy)), so the token must still be long and random.
 - Put TLS in front of it. The app speaks plain HTTP: without a reverse proxy that terminates TLS, the token and the session cookie cross the network unencrypted. The proxy must pass the original `Host` header on, or the name it sends must be in `SOFASCORE_ALLOWED_HOSTS`.
-- With Docker, the container always listens on every interface inside its own network and `-p` decides who can reach it, so the startup warning does not exist there: if you publish the port beyond `127.0.0.1`, set the token and `SOFASCORE_ALLOWED_HOSTS` yourself.
+- With Docker, the container always listens on every interface inside its own network and `-p` decides who can reach it, so the startup warning appears even when the port is published on `127.0.0.1` only (then it can be ignored): if you publish the port beyond `127.0.0.1`, set the token and `SOFASCORE_ALLOWED_HOSTS` yourself.
 
 ```bash
 curl -H "Authorization: Bearer $SOFASCORE_API_TOKEN" http://127.0.0.1:8000/api/leagues
@@ -425,6 +425,7 @@ ssc data clear --scope events --yes        # delete match details, old and new l
 ssc follows list | add | remove | export   # what the live service watches; export prints [[follow]] tables
 ssc status [--coverage] [--check]          # data summary, store, locks, running and last job, live service
 ssc jobs list | show ID | cancel ID | tail ID [--follow]   # job history and control, across processes
+ssc serve [--host H] [--port P]            # the web app and the HTTP API (see Web application)
 ssc watch / ssc events                     # live service and the event log (see Watch mode)
 ssc doctor | describe | config | version | diagnostics | migrate | catalog | backup
 ```
@@ -438,7 +439,7 @@ ssc doctor | describe | config | version | diagnostics | migrate | catalog | bac
 
 ### Headless / automation (deprecated flags)
 
-The flags of `python main.py` keep working for one release. Each run is translated into a command of the [command line](#command-line-ssc) and prints one line on stderr that names it (`--headless --update-all` is `ssc sync`, `--refresh-only` is `ssc refresh`, `--headless --csv-export` is `ssc export`, `--recheck-unavailable` is `ssc data recheck-unavailable`, `--watch` is `ssc watch --source poll --stdout`, `--doctor` is `ssc doctor`, `--diagnostics` is `ssc diagnostics`); it uses that command's output rules and exit codes. `--web` and the menu (`python main.py` without flags) are unchanged. At least one of `--update-all` or `--csv-export` is required with `--headless`. Otherwise the process exits with code **2** before anything runs.
+The flags of `python main.py` keep working for one release. Each run is translated into a command of the [command line](#command-line-ssc) and prints one line on stderr that names it (`--headless --update-all` is `ssc sync`, `--refresh-only` is `ssc refresh`, `--headless --csv-export` is `ssc export`, `--recheck-unavailable` is `ssc data recheck-unavailable`, `--watch` is `ssc watch --source poll --stdout`, `--doctor` is `ssc doctor`, `--diagnostics` is `ssc diagnostics`, `--web` is `ssc serve --host 127.0.0.1 --port 8000` with the `--host`, `--port`, `--dev` and `--allow-any-host` it was given); it uses that command's output rules and exit codes. The menu (`python main.py` without flags) is unchanged. At least one of `--update-all` or `--csv-export` is required with `--headless`. Otherwise the process exits with code **2** before anything runs.
 
 | Flag | Meaning |
 |------|---------|
@@ -631,6 +632,8 @@ How `direct` behaves:
 
 What was measured and what was not (`docs/push-channel/README.md`, section 7): one evening, one region, one connection, the single subject `sport.football`, about 38 minutes and one reconnect; the client used 216 to 226 MB and a plain client was accepted. Not measured: several subjects on one connection, runs of hours, several sports, and how often the credential changes.
 
+Running `ssc watch` as a systemd service or in a container, with the memory each source needs: [docs/deploy/watch.md](docs/deploy/watch.md).
+
 ## REST API (overview)
 
 All routes are prefixed with `/api` unless noted.
@@ -699,7 +702,7 @@ python main.py --doctor --skip frontend
 Run the web app with auto-reload:
 
 ```bash
-python main.py --web --dev
+ssc serve --dev             # or: python -m src.cli.main serve --dev
 ```
 
 The web app is a Vue 3 + TypeScript + Vite project in `frontend/` (Pinia, vue-router, vue-i18n, Tailwind). The server serves the built files from `frontend/dist/`.

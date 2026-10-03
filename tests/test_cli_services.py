@@ -155,7 +155,7 @@ def _translate(*argv: str, cwd: str = "/work") -> legacy_flags.Translation:
 ])
 def test_legacy_flags_become_commands_of_the_new_cli(argv: List[str], commands: List[List[str]]) -> None:
     translation = _translate(*argv)
-    assert translation.error is None and not translation.web and not translation.interactive
+    assert translation.error is None and not translation.interactive
     assert [list(command) for command in translation.commands] == commands
 
 
@@ -184,9 +184,9 @@ def test_incomplete_flags_are_usage_errors_before_anything_runs(argv: List[str],
     assert (translation.error, translation.commands) == (error, ())
 
 
-@pytest.mark.parametrize("argv, attribute", [([], "interactive"), (["--data-dir", "x"], "interactive"),
-                                             (["--web", "--port", "9"], "web")])
-def test_the_menu_and_the_web_server_keep_their_own_paths(argv: List[str], attribute: str) -> None:
+@pytest.mark.parametrize("argv, attribute", [([], "interactive"), (["--data-dir", "x"], "interactive")])
+def test_the_menu_keeps_its_own_path(argv: List[str], attribute: str) -> None:
+    # `--web` P25'ten beri `ssc serve`e çevrilir (tests/test_cli_serve.py)
     translation = _translate(*argv)
     assert getattr(translation, attribute) is True and translation.commands == ()
 

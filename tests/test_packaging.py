@@ -3,18 +3,24 @@ Paketleme dosyalarının statik kontrolleri (Docker çalıştırılmaz, ağ yok)
 
 İmajın kendisi yayın iş akışında derlenip duman testinden geçer; buradaki testler güvenlikle
 ilgili varsayılanların (root olmayan kullanıcı, yalnızca 127.0.0.1'de yayımlanan port, imaja
-kullanıcı verisi girmemesi) bir düzenlemede sessizce kaybolmasını önler.
+kullanıcı verisi girmemesi) bir düzenlemede sessizce kaybolmasını önler. Giriş noktası (docker/entrypoint.sh)
+sahte bir `python` ile gerçekten çalıştırılır: hangi komutu hangi izin listesiyle başlattığı sınanır (P25).
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
 import subprocess
+import sys
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 import pytest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO = Path(ROOT)
 
 
 def _read(*parts: str) -> str:
@@ -76,10 +82,10 @@ def test_entrypoint_is_a_valid_lf_shell_script():
     assert raw.startswith(b"#!/bin/sh\n")
     assert b"\r" not in raw, "CRLF breaks the shebang inside the container"
     text = raw.decode("utf-8")
-    # Web sunucusu main.py --host 0.0.0.0 ile başlatılmaz (o yol 0.0.0.0'ı ağa açılmış sayar:
-    # SOFASCORE_ALLOWED_HOSTS ister ve belirteç yoksa uyarır; bkz. docker/entrypoint.sh)
-    assert "uvicorn src.web.app:app" in text
-    assert "--web" not in [w for ln in text.splitlines() if not ln.lstrip().startswith("#") for w in ln.split()]
+    code = [w for ln in text.splitlines() if not ln.lstrip().startswith("#") for w in ln.split()]
+    # Web sunucusu `ssc serve` ile başlar (karar D17); doğrudan uvicorn ve eski `--web` yolu yoktur
+    assert "src.cli.main serve" in " ".join(code)
+    assert "uvicorn" not in code and "--web" not in code
     sh = shutil.which("sh")
     if sh is None:
         pytest.skip("sh yok")
@@ -87,22 +93,142 @@ def test_entrypoint_is_a_valid_lf_shell_script():
     assert r.returncode == 0, r.stderr
 
 
+def _compose() -> str:
+    return "\n".join(ln for ln in _read("docker-compose.yml").splitlines() if not ln.lstrip().startswith("#"))
+
+
+def _services(compose: str) -> dict:
+    """Servis adı → o servisin metni (yorumsuz). Basit YAML: servisler iki boşlukla girintili."""
+    body = compose.split("\nservices:\n", 1)[1].split("\nvolumes:\n", 1)[0]
+    parts = re.split(r"^  ([a-z][a-z0-9-]*):\s*$", body, flags=re.M)
+    return dict(zip(parts[1::2], parts[2::2], strict=True))
+
+
 def test_compose_publishes_on_localhost_only():
-    text = "\n".join(ln for ln in _read("docker-compose.yml").splitlines() if not ln.lstrip().startswith("#"))
+    text = _compose()
     ports = re.findall(r'^\s*-\s*"?([0-9.:\[\]a-fA-F]*\d+:\d+)"?\s*(?:#.*)?$', text, flags=re.M)
     assert ports == ["127.0.0.1:8000:8000"], "the web app has no login; the example must not expose it to the network"
     assert "shm_size" in text
 
 
+def test_compose_runs_serve_with_an_explicit_allow_list_and_watch_only_on_request():
+    """Karar D17: Compose örneği izin listesini açıkça verir. Canlı servis ayrı bir konteynerdir (`--profile live`)."""
+    services = _services(_compose())
+    assert set(services) == {"sofascore-scraper", "sofascore-watch"}
+    web, watch = services["sofascore-scraper"], services["sofascore-watch"]
+    assert 'command: ["serve"]' in web
+    assert re.search(r'^\s+SOFASCORE_ALLOWED_HOSTS: "localhost,127\.0\.0\.1,\[::1\]"$', web, flags=re.M)
+    assert "SOFASCORE_API_TOKEN:" not in web  # yalnızca yorumda: örnek belirteç yayımlanmaz
+    assert 'command: ["watch"]' in watch and 'profiles: ["live"]' in watch
+    assert "ports:" not in watch and "disable: true" in watch
+
+
 def test_compose_keeps_every_image_volume_in_a_named_volume():
-    """İmajın VOLUME dizinleri (log dosyası dahil) Compose'da adlandırılmış volume'da durur, anonim volume'da değil."""
-    compose = "\n".join(ln for ln in _read("docker-compose.yml").splitlines() if not ln.lstrip().startswith("#"))
-    mounts = dict(re.findall(r"^\s*-\s*([a-z][a-z0-9-]*):(/app/[a-z-]+)\b", compose, flags=re.M))
+    """
+    İmajın VOLUME dizinleri (log dosyası dahil) her serviste adlandırılmış volume'da durur, anonim volume'da
+    değil. Canlı servis tarayıcı profilini ve log klasörünü sunucuyla paylaşmaz (Chromium profil başına tek süreç
+    açar; iki süreç tek log dosyasını döndürmemeli).
+    """
+    compose = _compose()
     declared = set(re.findall(r"^  ([a-z][a-z0-9-]*):\s*$", compose.split("\nvolumes:\n", 1)[1], flags=re.M))
     image_volumes = re.findall(r'"(/app/[a-z-]+)"', next(
         ln for ln in _instructions(_read("Dockerfile")) if ln.startswith("VOLUME ")
     ))
     assert sorted(image_volumes) == ["/app/browser-profile", "/app/config", "/app/data", "/app/logs"]
-    assert sorted(mounts.values()) == sorted(image_volumes)
-    assert set(mounts) == declared
+    used = set()
+    per_service = {}
+    for name, text in _services(compose).items():
+        mounts = {path: volume for volume, path in
+                  re.findall(r"^\s*-\s*([a-z][a-z0-9-]*):(/app/[a-z-]+)\b", text, flags=re.M)}
+        assert sorted(mounts) == sorted(image_volumes), name
+        per_service[name] = mounts
+        used |= set(mounts.values())
+    assert used == declared
+    web, watch = per_service["sofascore-scraper"], per_service["sofascore-watch"]
+    assert web["/app/data"] == watch["/app/data"] and web["/app/config"] == watch["/app/config"]
+    assert web["/app/browser-profile"] != watch["/app/browser-profile"]
+    assert web["/app/logs"] != watch["/app/logs"]
+
+
+def test_image_uses_the_new_setting_name_for_the_browser_profile_and_serve_by_default():
+    final_stage = _instructions(_read("Dockerfile"))
+    env = " ".join(ln for ln in final_stage if ln.startswith("ENV "))
+    # P09: yeni ad ayardır (yapılandırma dosyası varken eski ad tek başına "legacy name" uyarısı verirdi); eski ad
+    # ayarları yüklemeden ortamı okuyanlar (doctor) için aynı değerle durur
+    assert "SOFASCORE_CLIENT__BROWSER_PROFILE=/app/browser-profile" in env
+    assert "SOFASCORE_BROWSER_PROFILE=/app/browser-profile" in env
+    assert final_stage[-1] == 'CMD ["serve"]'
+    # `ssc watch`un kendi profili (<profil>-live) uygulama kullanıcısına ait bir dizindedir
+    assert any("/app/browser-profile-live" in ln and "chown app:app" in ln for ln in final_stage)
+
+
+
+# --- Docker giriş noktası ------------------------------------------------------------------------------
+
+
+def _entrypoint(tmp_path: Path, *args: str, env: Optional[Dict[str, str]] = None,
+                files: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+    """docker/entrypoint.sh'i sahte bir `python` ile çalıştırır: hangi komutun hangi ortamla başlatıldığı."""
+    sh = shutil.which("sh")
+    if sh is None or os.name == "nt":
+        pytest.skip("needs a POSIX sh")
+    app = tmp_path / "app"
+    bin_dir = tmp_path / "bin"
+    for directory in (app, bin_dir):
+        directory.mkdir(exist_ok=True)
+    for name, text in (files or {}).items():
+        (app / name).parent.mkdir(parents=True, exist_ok=True)
+        (app / name).write_text(text, encoding="utf-8")
+    record = tmp_path / "record.json"
+    fake = bin_dir / "python"
+    fake.write_text(
+        f"#!{sys.executable}\n"
+        "import json, os, sys\n"
+        "with open(os.environ['ENTRYPOINT_RECORD'], 'w') as f:\n"
+        "    json.dump({'argv': sys.argv[1:], 'hosts': os.environ.get('SOFASCORE_SERVER__ALLOWED_HOSTS')}, f)\n",
+        encoding="utf-8",
+    )
+    fake.chmod(0o755)
+    base = {"PATH": f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}", "APP_HOME": str(app),
+            "SOFASCORE_ENV_FILE": str(app / "config" / ".env"), "ENTRYPOINT_RECORD": str(record)}
+    proc = subprocess.run([sh, str(REPO / "docker" / "entrypoint.sh"), *args], env={**base, **(env or {})},
+                          capture_output=True, text=True, timeout=30)
+    assert proc.returncode == 0, proc.stderr
+    return json.loads(record.read_text(encoding="utf-8"))
+
+
+def test_entrypoint_starts_serve_on_every_interface_with_the_loopback_names(tmp_path: Path) -> None:
+    started = _entrypoint(tmp_path)
+    assert started["argv"] == ["-m", "src.cli.main", "serve", "--host", "0.0.0.0", "--port", "8000"]
+    assert started["hosts"] == "localhost,127.0.0.1,[::1]"
+    # `serve` ve eski `web` aynıdır; sonraki seçenekler serve'e geçer; HOST ve PORT ortamdan
+    started = _entrypoint(tmp_path, "serve", "--dev", env={"PORT": "9000", "HOST": "::"})
+    assert started["argv"] == ["-m", "src.cli.main", "serve", "--host", "::", "--port", "9000", "--dev"]
+    assert _entrypoint(tmp_path, "web")["argv"][:3] == ["-m", "src.cli.main", "serve"]
+
+
+@pytest.mark.parametrize("env,files", [
+    ({"SOFASCORE_ALLOWED_HOSTS": "box.lan"}, {}),
+    ({"SOFASCORE_SERVER__ALLOWED_HOSTS": "box.lan"}, {}),
+    ({}, {"config/.env": "SOFASCORE_ALLOWED_HOSTS=box.lan\n"}),
+    ({}, {"sofascore.toml": "schema = 1\n"}),
+    ({}, {"config/sofascore.toml": "schema = 1\n"}),
+    ({"SOFASCORE_CONFIG": "/somewhere/sofascore.toml"}, {}),
+])
+def test_entrypoint_leaves_an_allow_list_given_anywhere_alone(tmp_path: Path, env: Dict[str, str],
+                                                              files: Dict[str, str]) -> None:
+    started = _entrypoint(tmp_path, env=env, files=files)
+    assert started["hosts"] == env.get("SOFASCORE_SERVER__ALLOWED_HOSTS")
+
+
+def test_entrypoint_gives_the_loopback_names_when_the_config_search_is_off(tmp_path: Path) -> None:
+    started = _entrypoint(tmp_path, env={"SOFASCORE_CONFIG": "none"}, files={"sofascore.toml": "schema = 1\n"})
+    assert started["hosts"] == "localhost,127.0.0.1,[::1]"
+
+
+def test_entrypoint_passes_everything_else_to_main_py(tmp_path: Path) -> None:
+    assert _entrypoint(tmp_path, "--version")["argv"] == ["main.py", "--version"]
+    started = _entrypoint(tmp_path, "watch", "--source", "poll")
+    assert started["argv"] == ["main.py", "watch", "--source", "poll"] and started["hosts"] is None
+
 

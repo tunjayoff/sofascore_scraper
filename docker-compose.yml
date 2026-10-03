@@ -1,8 +1,10 @@
-# SofaScore Scraper — example Compose file.
+# SofaScore Scraper — example Compose file. More in docs/deploy/docker.md.
 #
-#   docker compose up -d          # web app at http://127.0.0.1:8000
-#   docker compose logs -f        # the app logs to stdout
+#   docker compose up -d                   # web app and API at http://127.0.0.1:8000 (ssc serve)
+#   docker compose logs -f                 # the app logs to the container output
 #   docker compose run --rm --no-deps sofascore-scraper --version
+#   docker compose run --rm --no-deps sofascore-scraper sync     # any command of the CLI
+#   docker compose --profile live up -d    # also the live service (ssc watch), see below
 #
 # Without a published image, `docker compose up -d --build` builds it from this checkout.
 
@@ -11,25 +13,29 @@ services:
     image: ghcr.io/tunjayoff/sofascore_scraper:latest
     build: .
     restart: unless-stopped
+    command: ["serve"]
 
     # The web app has no user accounts. Published on this machine only; change the left side to
     # "8000:8000" to open it to your network, and then also set SOFASCORE_API_TOKEN (without it
-    # anyone who can reach the port can read and delete data and change settings) and list the
-    # name or IP you use to reach it in SOFASCORE_ALLOWED_HOSTS below (other Host headers are
-    # rejected). See "Security model" in the README.
+    # anyone who can reach the port can read and delete data and change settings) and add the
+    # name or IP you use to reach it to SOFASCORE_ALLOWED_HOSTS below (other Host headers are
+    # rejected). Keep 127.0.0.1 in that list: the health check uses it.
+    #
+    # Inside the container the server listens on 0.0.0.0, so it cannot tell how the port is
+    # published: without a token it prints a warning at every start. With the port published on
+    # 127.0.0.1 only, as here, that warning can be ignored. See "Security model" in the README.
     ports:
       - "127.0.0.1:8000:8000"
 
-    # Optional settings: uncomment `environment:` together with the lines you need.
-    # APP_LANGUAGE pins the language (en or tr) and, set here, wins over the choice made on the
-    # Settings page at every start. Left out, each browser's language decides (Turkish for a
-    # Turkish browser, English otherwise).
-    # environment:
-    #   APP_LANGUAGE: tr
-    #   SOFASCORE_ALLOWED_HOSTS: "localhost,127.0.0.1,my-server.lan"
-    #   SOFASCORE_API_TOKEN: "a-long-random-value"
-    #   USE_PROXY: "true"
-    #   PROXY_URL: "http://user:pass@host:port"
+    environment:
+      # The host names the server answers to (DNS rebinding protection), used as written.
+      SOFASCORE_ALLOWED_HOSTS: "localhost,127.0.0.1,[::1]"
+      # Optional: APP_LANGUAGE pins the language (en or tr) and, set here, wins over the choice made
+      # on the Settings page at every start. Left out, each browser's language decides.
+      # APP_LANGUAGE: tr
+      # SOFASCORE_API_TOKEN: "a-long-random-value"
+      # USE_PROXY: "true"
+      # PROXY_URL: "http://user:pass@host:port"
 
     # Chromium needs more shared memory than Docker's 64 MB default
     shm_size: "1gb"
@@ -38,15 +44,43 @@ services:
       - data:/app/data # downloaded seasons, matches, details, backups, job history
       - config:/app/config # leagues.txt, league_sports.json and .env (settings saved in the UI)
       - browser-profile:/app/browser-profile # solved challenge; makes restarts fast
-      - logs:/app/logs # rotating log file (the same lines also go to stdout: docker compose logs)
+      - logs:/app/logs # rotating log file (the same lines also go to the container output)
       # To keep the files in folders next to this file instead, replace the two lines above
       # with bind mounts. The container runs as uid 1000, so the folders must be writable
       # by it: mkdir -p data config && sudo chown -R 1000:1000 data config
       # - ./data:/app/data
       # - ./config:/app/config
 
+  # The live service: `ssc watch` in its own container, started only with `--profile live`.
+  # It watches the follows marked `live = true` and writes the changes to the event log
+  # (`ssc events`) and to the configured sinks. It shares the data and config volumes with the
+  # server but needs a browser profile of its own (one Chromium process per profile) and a log
+  # folder of its own.
+  #
+  # Memory: the default source, `page`, keeps one browser page per watched sport open: plan for
+  # about 2.6 GB per sport (1.8 to 2.6 GB measured) and set mem_limit above that peak.
+  # `--source poll` needs no browser. `--source direct` (about 0.2 GB) is an explicit opt-in with
+  # risks: read docs/deploy/watch.md before you choose it.
+  sofascore-watch:
+    image: ghcr.io/tunjayoff/sofascore_scraper:latest
+    build: .
+    profiles: ["live"]
+    restart: unless-stopped
+    command: ["watch"]
+    healthcheck:
+      disable: true # the health check asks the web server, which this container does not run
+    shm_size: "2gb"
+    # mem_limit: "6g" # two sports with the page source
+    volumes:
+      - data:/app/data
+      - config:/app/config
+      - watch-browser-profile:/app/browser-profile
+      - watch-logs:/app/logs # a log file of its own: two processes must not rotate one file
+
 volumes:
   data:
   config:
   browser-profile:
+  watch-browser-profile:
   logs:
+  watch-logs:

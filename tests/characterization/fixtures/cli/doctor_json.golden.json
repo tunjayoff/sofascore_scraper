@@ -23,6 +23,7 @@
   "src.cli.commands.jobs",
   "src.cli.commands.meta",
   "src.cli.commands.migrate",
+  "src.cli.commands.serve",
   "src.cli.commands.status",
   "src.cli.commands.sync",
   "src.cli.commands.watch",

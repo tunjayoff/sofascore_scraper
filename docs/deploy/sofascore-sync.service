@@ -1,0 +1,25 @@
+# One scheduled download (`ssc sync`), started by sofascore-sync.timer. Page: docs/deploy/README.md.
+#   sudo cp docs/deploy/sofascore-sync.service docs/deploy/sofascore-sync.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now sofascore-sync.timer
+#
+# Adjust User, Group, WorkingDirectory and the paths in ExecStart to your install.
+
+[Unit]
+Description=SofaScore Scraper download (ssc sync)
+Documentation=https://github.com/tunjayoff/sofascore_scraper/tree/main/docs/deploy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=sofascore
+Group=sofascore
+WorkingDirectory=/opt/sofascore_scraper
+EnvironmentFile=-/etc/sofascore/sofascore.env
+# --wait 900: when the web app or another process is downloading, wait up to 15 minutes instead of exiting with 6
+ExecStart=/opt/sofascore_scraper/.venv/bin/python -m src.cli.main --wait 900 sync
+# 3 = finished, some matches or lists could not be fetched; they are retried next time. Count it as done.
+SuccessExitStatus=3
+UMask=0007
+NoNewPrivileges=yes
+PrivateTmp=yes

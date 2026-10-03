@@ -174,6 +174,16 @@ def _preflight(
     return True
 
 
+def server_command(py: Path) -> List[str]:
+    """
+    The server the launcher starts: the `serve` command of the CLI (src/cli/commands/serve.py), from the
+    project folder and without an install. The address is always this computer only, whatever the config
+    file says: a double-clicked launcher never opens the app to the network. No `--dev`: a double-click
+    session stays one process.
+    """
+    return [str(py), "-m", "src.cli.main", "serve", "--host", "127.0.0.1", "--port", str(PORT)]
+
+
 def _port_open() -> bool:
     try:
         with urllib.request.urlopen(f"{URL}/health", timeout=1.2) as r:
@@ -240,15 +250,7 @@ def main() -> int:
         return 1
 
     env = os.environ.copy()
-    # Avoid reload in launcher: double-click sessions should stay one process
-    cmd = [
-        str(py),
-        "-c",
-        (
-            "import uvicorn; "
-            f"uvicorn.run('src.web.app:app', host='127.0.0.1', port={PORT}, reload=False)"
-        ),
-    ]
+    cmd = server_command(py)
     print(_t("starting", url=URL))
     print(_t("leave_open"))
     proc = subprocess.Popen(cmd, cwd=ROOT, env=env)
