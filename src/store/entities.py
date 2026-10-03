@@ -1501,6 +1501,22 @@ class EntityStore:
             found = conn.execute(f"{_TOURNAMENT_SELECT}{where} ORDER BY name_folded, id LIMIT ?", params).fetchall()
         return [_tournament_row(row) for row in found]
 
+    def tournaments_with_slice(self, key: str, *, layout_name: Optional[str] = None) -> List[int]:
+        """
+        Katalogda `key` diliminin yükü saklanan turnuvaların kimlikleri, artan sırayla (ör. `seasons`: sezon
+        listesi olan turnuvalar; turnuvanın maçı, takibi ya da satırı olmasa da). layout_name: yalnızca bu
+        düzende duran yükler ("v3" ya da "legacy"); None ise ikisi de.
+        """
+        layout.validate_key(key)
+        sql = "SELECT DISTINCT entity_id FROM entity_slices WHERE kind = ? AND key = ? AND has_payload = 1"
+        params: List[Any] = [KIND_TOURNAMENT, key]
+        if layout_name is not None:
+            sql += " AND layout = ?"
+            params.append(str(layout_name))
+        with self._read() as conn:
+            found = conn.execute(sql + " ORDER BY entity_id", params).fetchall()
+        return [int(row[0]) for row in found]
+
     def seasons(self, tournament_id: int) -> List[SeasonRow]:
         """
         Turnuvanın katalogdaki bütün sezonları, en yeni önce (`sort_key`, eşitlikte kimlik). Sezon listesinde

@@ -385,6 +385,25 @@ class Migrator:
         self._reader = LegacyReader(self._data_dir)
         self._candidates: Optional[Dict[str, List[LegacyEventDir]]] = None
 
+    # -- son çalıştırma ------------------------------------------------------------------------------------
+
+    def last_run(self) -> Optional[Dict[str, Any]]:
+        """
+        `migration_runs` tablosunun en son satırı (durum ekranları için), hiç taşıma çalışmadıysa None: {"id",
+        "started_at", "finished_at" (epoch saniye; yarıda kalan çalışmada None), "delete_legacy", "events_done",
+        "events_failed", "bytes_before", "bytes_after"}. Raporun kendisi (`report_json`) verilmez.
+        """
+        self._store._require_open()
+        row = self._store._state.connection().execute(
+            "SELECT id, started_at, finished_at, delete_legacy, events_done, events_failed, bytes_before, "
+            "bytes_after FROM migration_runs WHERE dry_run = 0 ORDER BY id DESC LIMIT 1").fetchone()
+        if row is None:
+            return None
+        return {"id": int(row[0]), "started_at": int(row[1]),
+                "finished_at": int(row[2]) if row[2] is not None else None, "delete_legacy": bool(row[3]),
+                "events_done": int(row[4]), "events_failed": int(row[5]), "bytes_before": int(row[6]),
+                "bytes_after": int(row[7])}
+
     # -- kuru çalıştırma -----------------------------------------------------------------------------------
 
     def plan(self, *, tournaments: Iterable[int] = (), limit: Optional[int] = None, exact: bool = False,

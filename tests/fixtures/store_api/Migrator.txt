@@ -2,5 +2,6 @@
 # kaynak: src/store/migrate.py
 class Migrator:
     def __init__(self, store: 'Store') -> None
+    def last_run(self) -> Optional[Dict[str, Any]]
     def plan(self, *, tournaments: Iterable[int] = (), limit: Optional[int] = None, exact: bool = False, delete_legacy: bool = False, purge_derived: bool = False) -> MigrationPlan
     def run(self, *, tournaments: Iterable[int] = (), limit: Optional[int] = None, delete_legacy: bool = False, purge_derived: bool = False, should_stop: Optional[Callable[[], bool]] = None, progress: Optional[Progress] = None) -> MigrationReport
