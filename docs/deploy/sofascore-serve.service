@@ -1,0 +1,39 @@
+# systemd unit for `ssc serve`: the web app and the HTTP API, plus the configured sinks.
+# Page: docs/deploy/README.md. Install:
+#   sudo cp docs/deploy/sofascore-serve.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now sofascore-serve
+#
+# Adjust User, Group, WorkingDirectory and the paths in ExecStart to your install.
+
+[Unit]
+Description=SofaScore Scraper web app and API (ssc serve)
+Documentation=https://github.com/tunjayoff/sofascore_scraper/tree/main/docs/deploy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sofascore
+Group=sofascore
+# The project folder: .env, config/, sofascore.toml and (by default) data/ and logs/ are found from here
+WorkingDirectory=/opt/sofascore_scraper
+# Secrets such as SOFASCORE_API_TOKEN (mode 0600, owned by root). Optional: the leading "-" allows it to be missing.
+EnvironmentFile=-/etc/sofascore/sofascore.env
+# Listen on this computer only and let a reverse proxy be the way in (README.md, "Behind a reverse proxy").
+# To listen on the network instead: --host 0.0.0.0 --allowed-hosts <names>, and set the access token.
+ExecStart=/opt/sofascore_scraper/.venv/bin/python -m src.cli.main serve --host 127.0.0.1 --port 8000
+# SIGTERM: graceful stop, sinks drained for up to 10 s, exit code 0
+KillSignal=SIGTERM
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=5
+# Exit code 2 is a configuration error (broken config file, bad sink option, missing allowed hosts):
+# restarting does not fix it; the journal says what to change
+RestartPreventExitStatus=2
+# New files group-writable, for a data folder shared with the watch unit under another user (README.md)
+UMask=0007
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

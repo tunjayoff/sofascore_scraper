@@ -1,0 +1,14 @@
+# Runs sofascore-sync.service every six hours. Page: docs/deploy/README.md.
+
+[Unit]
+Description=SofaScore Scraper download every six hours
+
+[Timer]
+OnCalendar=*-*-* 00/6:15:00
+# A start missed while the machine was off runs at the next boot
+Persistent=true
+# Spread the start a little, so that several machines do not ask SofaScore at the same second
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target

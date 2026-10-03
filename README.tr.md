@@ -136,7 +136,7 @@ CMD: `scripts\install.bat`. Ortam: `SOFASCORE_SCRAPER_REPO`, `SOFASCORE_SCRAPER_
 
 ### Docker
 
-İmaj uygulamayı, derlenmiş web uygulamasını ve [BrowserBridge](#anti-bot-koruması-browserbridge)’in ihtiyaç duyduğu headless Chromium’u içerir. Root olmayan bir kullanıcıyla (uid 1000) çalışır ve varsayılan olarak web uygulamasını başlatır.
+İmaj uygulamayı, derlenmiş web uygulamasını ve [BrowserBridge](#anti-bot-koruması-browserbridge)’in ihtiyaç duyduğu headless Chromium’u içerir. Root olmayan bir kullanıcıyla (uid 1000) çalışır ve varsayılan olarak `ssc serve`i (web uygulaması ve HTTP API) başlatır. Ayrıntılar, canlı servisin bir konteynerde çalıştırılması dahil, [docs/deploy/docker.md](docs/deploy/docker.md)'de (İngilizce).
 
 ```bash
 docker run -d --name sofascore-scraper --shm-size=1g \
@@ -165,11 +165,11 @@ docker compose logs -f      # uygulama stdout'a log yazar
 
 Bilinmesi gerekenler:
 
-- **Kullanıcı hesabı yoktur.** Örnekler portu yalnızca `127.0.0.1` üzerinde açar. Portu ağa açarsanız (`-p 8000:8000`) bir erişim belirteci ayarlayın (`-e SOFASCORE_API_TOKEN=<uzun rastgele değer>`): o olmadan porta ulaşabilen herkes veriyi okuyup silebilir ve ayarları değiştirebilir; konteyner de sizi bu konuda uyaramaz (uygulama konteynerin içinde her zaman tüm arayüzleri dinler). Ayrıca arayüzü açtığınız adı ya da IP’yi de bildirmeniz gerekir: `-e SOFASCORE_ALLOWED_HOSTS=localhost,127.0.0.1,sunucum.lan` (başka `Host` başlığıyla gelen istekler reddedilir). Bkz. [Güvenlik modeli](#güvenlik-modeli).
+- **Kullanıcı hesabı yoktur.** Örnekler portu yalnızca `127.0.0.1` üzerinde açar. Portu ağa açarsanız (`-p 8000:8000`) bir erişim belirteci ayarlayın (`-e SOFASCORE_API_TOKEN=<uzun rastgele değer>`): o olmadan porta ulaşabilen herkes veriyi okuyup silebilir ve ayarları değiştirebilir. Uygulama konteynerin içinde tüm arayüzleri dinler ve portun nasıl yayımlandığını göremez; bu yüzden belirteç yoksa her başlangıçta uyarır. Port yalnızca `127.0.0.1` üzerindeyse bu uyarıyı yok sayabilirsiniz. Ayrıca arayüzü açtığınız adı ya da IP’yi de bildirmeniz gerekir: `-e SOFASCORE_ALLOWED_HOSTS=localhost,127.0.0.1,sunucum.lan` (başka `Host` başlığıyla gelen istekler reddedilir; sağlık kontrolü kullandığı için `127.0.0.1` listede kalmalı). İzin listesi hiçbir yerde verilmemişse giriş noktası yerel adları kullanır. Bkz. [Güvenlik modeli](#güvenlik-modeli).
 - **Ayarlar:** `.env.example` içindeki her değişken `-e` / `environment:` ile verilebilir. Bu şekilde verilen değişken her başlangıçta Ayarlar sayfasında kaydedilen değerin önüne geçer; bu yüzden yalnızca sabit kalmasını istediklerinizi verin (ör. `APP_LANGUAGE=tr`, `USE_PROXY` / `PROXY_URL`). `PORT` konteyner içindeki portu değiştirir.
 - **Paylaşımlı bellek:** Chromium, Docker’ın 64 MB’lık varsayılanından fazlasına ihtiyaç duyar; `--shm-size=1g` (Compose’da `shm_size`) bunun içindir.
 - **Klasör bağlama** (`-v ./data:/app/data`), klasör uid 1000 tarafından yazılabiliyorsa çalışır: `mkdir -p data config && sudo chown -R 1000:1000 data config`. Başka bir uid için imajı `--build-arg APP_UID=$(id -u) --build-arg APP_GID=$(id -g)` ile derleyin.
-- **Diğer komutlar:** imaj adından sonraki argümanlar `main.py`’ye gider; ör. `docker run --rm ghcr.io/tunjayoff/sofascore_scraper:latest --version` ya da aynı volume’larla zamanlanmış bir indirme: `docker compose run --rm sofascore-scraper --headless --update-all`. Tarayıcı profilini aynı anda tek konteyner kullanabilir; bu şekilde indirme başlatmadan önce web konteynerini durdurun (`docker compose stop`). Profil meşgulken başlatılan ikinci konteyner uyarı yazar ve tarayıcısını açamaz.
+- **Diğer komutlar:** `serve [seçenekler]` `ssc serve`e gider; imaj adından sonraki öteki argümanlar `main.py`’ye gider: [komut satırının](#komut-satırı-ssc) bir komutu ya da bir sürüm daha eski bayraklar. Ör. `docker run --rm ghcr.io/tunjayoff/sofascore_scraper:latest --version` ya da aynı volume’larla zamanlanmış bir indirme: `docker compose run --rm sofascore-scraper sync`. Tarayıcı profilini aynı anda tek konteyner kullanabilir; bu şekilde indirme başlatmadan önce web konteynerini durdurun (`docker compose stop`). Profil meşgulken başlatılan ikinci konteyner uyarı yazar ve tarayıcısını açamaz.
 - **Güncelleme:** `docker compose pull && docker compose up -d`. Veri, yapılandırma, tarayıcı profili ve log dosyaları volume’larda kalır.
 
 ### Sürüm arşivi
@@ -301,7 +301,7 @@ python main.py --config /yol/leagues.txt --data-dir /yol/veri
 **Web (çoğu kullanıcı için uygun)**
 
 1. **Kurulum** ve **Yapılandırma** adımlarını tamamlayın (`pip install`, `cp .env.example .env`). Veriyi `./data` dışında tutmak isterseniz `DATA_DIR` ayarlayın.
-2. Uygulamayı başlatın: `./start-sofascore.sh` (veya `python scripts/start_web.py`; Windows'ta `Start SofaScore.bat`, macOS'ta `Start SofaScore.command` dosyasına çift tıklayın). Başlatıcı `.venv` yoksa oluşturur, [kurulumu denetler](#kurulumu-denetleme-doctor), eksikleri kurar (Python paketleri, tarayıcı), `frontend/dist/` yoksa ve Node.js kuruluysa web uygulamasını derler, sonra `http://127.0.0.1:8000` adresini açar. `python main.py --web` yalnızca sunucuyu başlatır, hiçbir şey kurmaz.
+2. Uygulamayı başlatın: `./start-sofascore.sh` (veya `python scripts/start_web.py`; Windows'ta `Start SofaScore.bat`, macOS'ta `Start SofaScore.command` dosyasına çift tıklayın). Başlatıcı `.venv` yoksa oluşturur, [kurulumu denetler](#kurulumu-denetleme-doctor), eksikleri kurar (Python paketleri, tarayıcı), `frontend/dist/` yoksa ve Node.js kuruluysa web uygulamasını derler, sonra `http://127.0.0.1:8000` adresini açar. `ssc serve` (ya da `python -m src.cli.main serve`) yalnızca sunucuyu başlatır, hiçbir şey kurmaz.
    Kodu güncelledikten sonra (`git pull`) web uygulamasını kendiniz yeniden derleyin: `cd frontend && npm install && npm run build`. Başlatma betiği sadece `frontend/dist/` yoksa derler; aksi halde eski arayüzü görmeye devam edersiniz.
 3. **Spor** — Kenar menünün üstündeki seçici (Tümü / Futbol / Basketbol / Tenis) bütün sayfaları süzer. Üzerinde çalıştığınız sporu seçin.
 4. **Ligler** — Yeni kurulumda lig yoktur; sayfa bir **Lig ekle** düğmesiyle açılır. **Lig ekle** SofaScore’da arar; sonuçları spora göre süzüp **Ekle**’ye basın. Sporu bilinmeyen bir ligde (örneğin `config/leagues.txt`’ye elle eklenmiş) **Spor seç** kutusu çıkar; bir kez seçmeniz yeterli, kaydedilir.
@@ -374,10 +374,10 @@ python main.py
 ### Web uygulaması
 
 ```bash
-python main.py --web
+ssc serve                   # ya da: python -m src.cli.main serve
 ```
 
-Varsayılan adres: `http://127.0.0.1:8000`. Sunucu yalnızca bu bilgisayarı dinler. `--host` onu ağa açar; önce [Güvenlik modeli](#güvenlik-modeli) bölümünü okuyun. Tek bir adres (`--host 192.168.1.5`) olduğu gibi çalışır. `--host 0.0.0.0` (tüm arayüzler) ayrıca `SOFASCORE_ALLOWED_HOSTS` ister; `SOFASCORE_API_TOKEN` yoksa uygulama başlangıçta, porta ulaşabilen herkesin veriyi okuyup silebileceği ve ayarları değiştirebileceği konusunda uyarır. `--port` portu değiştirir, `--dev` kod değişince yeniden başlatır. Sağlık kontrolü: `GET /health` (sürümü de bildirir).
+Varsayılan adres: `http://127.0.0.1:8000` (yapılandırma dosyasındaki `[server] host` ve `port` varsayılanı değiştirir). Sunucu yalnızca bu bilgisayarı dinler. `--host` onu ağa açar; önce [Güvenlik modeli](#güvenlik-modeli) bölümünü okuyun. Tek bir adres (`--host 192.168.1.5`) olduğu gibi çalışır. `--host 0.0.0.0` (tüm arayüzler) ayrıca izin verilen ana makine adlarını ister (`--allowed-hosts`, `[server] allowed_hosts` ya da `SOFASCORE_ALLOWED_HOSTS`), onlar olmadan çıkış kodu 2 ile başlamaz; `SOFASCORE_API_TOKEN` yoksa uygulama başlangıçta, porta ulaşabilen herkesin veriyi okuyup silebileceği ve ayarları değiştirebileceği konusunda uyarır. `--port` portu değiştirir, `--dev` kod değişince yeniden başlatır. Ctrl+C ya da SIGTERM onu 0 çıkış koduyla durdurur; yapılandırılmış sink'ler o çalışırken teslim edilir. Sağlık kontrolü: `GET /health` (sürümü de bildirir). `python main.py --web` bir sürüm daha çalışır ve `ssc serve`i çalıştırır. systemd servisi, ters vekil, yedekler: [docs/deploy/](docs/deploy/README.md) (İngilizce).
 
 Arka plan işlemleri `GET /api/scrape/status` ve `GET /api/scrape/stream` (SSE) ile izlenir. Ağır dosya/pandas işleri event loop dışına alındığından uzun çekimler sırasında arayüz genelde yanıt vermeye devam eder.
 
@@ -397,9 +397,9 @@ Web uygulamasında **kullanıcı hesabı yoktur**. Varsayılan olarak yalnızca 
 **Ağa açmadan önce sizin yapmanız gerekenler**
 
 - `SOFASCORE_API_TOKEN` ayarlayın. O olmadan porta ulaşabilen herkes verinizi okuyup silebilir ve ayarları değiştirebilir.
-- Porta kimlerin ulaşabileceğini sınırlayın (güvenlik duvarı, VPN). Uygulama giriş denemelerini sınırlamaz; bu yüzden belirteç uzun ve rastgele olmalıdır.
+- Porta kimlerin ulaşabileceğini sınırlayın (güvenlik duvarı, VPN). Yanlış belirteçler istemci adresi başına ve yalnızca bellekte sınırlanır (ters vekil arkasında bkz. [docs/deploy](docs/deploy/README.md#behind-a-reverse-proxy)); bu yüzden belirteç yine de uzun ve rastgele olmalıdır.
 - Önüne TLS koyun. Uygulama düz HTTP konuşur: TLS’i sonlandıran bir ters vekil olmadan belirteç ve oturum cookie’si ağdan şifresiz geçer. Vekil özgün `Host` başlığını iletmelidir; iletmiyorsa gönderdiği ad `SOFASCORE_ALLOWED_HOSTS` içinde olmalıdır.
-- Docker’da konteyner kendi ağı içinde her zaman tüm arayüzleri dinler ve kimin ulaşabileceğine `-p` karar verir; bu yüzden başlangıç uyarısı orada çıkmaz: portu `127.0.0.1` dışına açıyorsanız belirteci ve `SOFASCORE_ALLOWED_HOSTS`’u kendiniz ayarlayın.
+- Docker’da konteyner kendi ağı içinde her zaman tüm arayüzleri dinler ve kimin ulaşabileceğine `-p` karar verir; bu yüzden başlangıç uyarısı port yalnızca `127.0.0.1` üzerinde yayımlandığında da çıkar (o zaman yok sayılabilir): portu `127.0.0.1` dışına açıyorsanız belirteci ve `SOFASCORE_ALLOWED_HOSTS`’u kendiniz ayarlayın.
 
 ```bash
 curl -H "Authorization: Bearer $SOFASCORE_API_TOKEN" http://127.0.0.1:8000/api/leagues
@@ -423,6 +423,7 @@ ssc data clear --scope events --yes        # maç detaylarını sil; eski ve yen
 ssc follows list | add | remove | export   # canlı servisin izledikleri; export [[follow]] tablolarını yazar
 ssc status [--coverage] [--check]          # veri özeti, depo, kilitler, çalışan ve son iş, canlı servis
 ssc jobs list | show ID | cancel ID | tail ID [--follow]   # iş geçmişi ve denetimi, süreçler arasında
+ssc serve [--host H] [--port P]            # web uygulaması ve HTTP API (bkz. Web uygulaması)
 ssc watch / ssc events                     # canlı servis ve olay günlüğü (bkz. İzleme modu)
 ssc doctor | describe | config | version | diagnostics | migrate | catalog | backup
 ```
@@ -436,7 +437,7 @@ ssc doctor | describe | config | version | diagnostics | migrate | catalog | bac
 
 ### Headless / otomasyon (kullanımdan kalkan bayraklar)
 
-`python main.py`nin bayrakları bir sürüm daha çalışır. Her çalıştırma [komut satırının](#komut-satırı-ssc) bir komutuna çevrilir ve stderr'e onu adıyla söyleyen tek bir satır yazar (`--headless --update-all` → `ssc sync`, `--refresh-only` → `ssc refresh`, `--headless --csv-export` → `ssc export`, `--recheck-unavailable` → `ssc data recheck-unavailable`, `--watch` → `ssc watch --source poll --stdout`, `--doctor` → `ssc doctor`, `--diagnostics` → `ssc diagnostics`); o komutun çıktı kurallarını ve çıkış kodlarını kullanır. `--web` ve menü (bayraksız `python main.py`) değişmedi. `--headless` ile birlikte **`--update-all` ve/veya `--csv-export`** zorunludur; aksi halde hiçbir şey çalışmadan çıkış kodu **2** olur.
+`python main.py`nin bayrakları bir sürüm daha çalışır. Her çalıştırma [komut satırının](#komut-satırı-ssc) bir komutuna çevrilir ve stderr'e onu adıyla söyleyen tek bir satır yazar (`--headless --update-all` → `ssc sync`, `--refresh-only` → `ssc refresh`, `--headless --csv-export` → `ssc export`, `--recheck-unavailable` → `ssc data recheck-unavailable`, `--watch` → `ssc watch --source poll --stdout`, `--doctor` → `ssc doctor`, `--diagnostics` → `ssc diagnostics`, `--web` → verilen `--host`, `--port`, `--dev` ve `--allow-any-host` ile `ssc serve --host 127.0.0.1 --port 8000`); o komutun çıktı kurallarını ve çıkış kodlarını kullanır. Menü (bayraksız `python main.py`) değişmedi. `--headless` ile birlikte **`--update-all` ve/veya `--csv-export`** zorunludur; aksi halde hiçbir şey çalışmadan çıkış kodu **2** olur.
 
 | Bayrak | Anlamı |
 |--------|--------|
@@ -620,6 +621,8 @@ Aynı dört madde `ssc watch --help`, `ssc describe config`, `ssc config validat
 
 Ölçülen ve ölçülmeyen (`docs/push-channel/README.md`, bölüm 7): tek akşam, tek bölge, tek bağlantı, yalnızca `sport.football` konusu, yaklaşık 38 dakika ve bir yeniden bağlanma; istemci 216–226 MB kullandı ve düz bir istemci kabul edildi. Ölçülmeyen: tek bağlantıda birden çok konu, saatlerce süren çalışma, birden çok spor ve kimlik bilgisinin ne sıklıkla değiştiği.
 
+`ssc watch`u bir systemd servisi ya da konteyner olarak çalıştırmak ve her kaynağın istediği bellek: [docs/deploy/watch.md](docs/deploy/watch.md) (İngilizce).
+
 ## REST API (özet)
 
 Web uygulaması kök yollarda; JSON API öneki **`/api`**.
@@ -688,7 +691,7 @@ python main.py --doctor --skip frontend
 Web’i otomatik yeniden yükleme ile:
 
 ```bash
-python main.py --web --dev
+ssc serve --dev             # ya da: python -m src.cli.main serve --dev
 ```
 
 Web uygulaması `frontend/` altında bir Vue 3 + TypeScript + Vite projesidir (Pinia, vue-router, vue-i18n, Tailwind). Sunucu derlenmiş dosyaları `frontend/dist/`’ten sunar.
