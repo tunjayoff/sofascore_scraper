@@ -451,7 +451,7 @@
     "doctor_cli_lang": "output language (default: APP_LANGUAGE, otherwise the system language, otherwise English)",
     "doctor_cli_unknown_ids": "unknown check id: {ids} (valid: {valid})",
     "ssc_description": "Command line of the SofaScore data platform, for servers and automation: fetches, stores and exports match data ({sports}). It never asks questions; the result goes to stdout, logs and errors go to stderr, and the exit code tells what happened.",
-    "ssc_epilog": "Examples:\n  %(prog)s sync\n  %(prog)s sync --tournament 17 --dry-run\n  %(prog)s export --out matches.csv\n  %(prog)s status --json\n  %(prog)s doctor --json\n\nExit codes: 0 success, 1 general error, 2 usage or configuration error, 3 partial success, 4 SofaScore is blocking, 5 storage error, 6 another instance is running, 130/143 cancelled by Ctrl+C / SIGTERM.\nThe web app is still started with python main.py --web.",
+    "ssc_epilog": "Examples:\n  %(prog)s sync\n  %(prog)s sync --tournament 17 --dry-run\n  %(prog)s export --out matches.csv\n  %(prog)s status --json\n  %(prog)s doctor --json\n\nExit codes: 0 success, 1 general error, 2 usage or configuration error, 3 partial success, 4 SofaScore is blocking, 5 storage error, 6 another instance is running, 130/143 cancelled by Ctrl+C / SIGTERM.\nThe web app: %(prog)s serve.",
     "ssc_commands_title": "commands",
     "ssc_global_options_title": "global options (before or after the command)",
     "ssc_usage_global": "global options",
@@ -784,5 +784,6 @@
     "launcher_not_ready": "Server started but /health not ready yet — open manually: {url}",
     "notice_menu_backup_old_layout": "Note: backup and restore here copy only the old folders (seasons/, matches/, match_details/). Matches stored in the new layout (v3/) are not included; copy the whole data folder to keep them.",
     "notice_menu_clear_both_layouts": "Note: clearing seasons, matches or match details removes them from both the old folders and the new layout (v3/).",
-    "notice_menu_disk_old_layout": "Note: disk sizes cover the old folders only; matches stored in the new layout (v3/) are in the counts but not in the sizes."
+    "notice_menu_disk_old_layout": "Note: disk sizes cover the old folders only; matches stored in the new layout (v3/) are in the counts but not in the sizes.",
+    "cli_no_menu": "The terminal menu was removed in version 3.0: people use the web app, and the command line is for servers and automation.\n\n  Web app:       {prog} serve\n  All commands:  {prog} --help\n\nCommands: {commands}\nIf the {prog} command is not installed, run {legacy} <command> instead (for example: {legacy} serve); {legacy} <command> --help explains a command."
 }

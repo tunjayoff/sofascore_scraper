@@ -451,7 +451,7 @@
     "doctor_cli_lang": "çıktı dili (varsayılan: APP_LANGUAGE, yoksa sistem dili, o da desteklenmiyorsa İngilizce)",
     "doctor_cli_unknown_ids": "bilinmeyen denetim adı: {ids} (geçerli olanlar: {valid})",
     "ssc_description": "SofaScore veri platformunun komut satırı; sunucular ve otomasyon için: maç verisini ({sports}) indirir, saklar ve dışa aktarır. Soru sormaz; sonuç stdout'a, loglar ve hatalar stderr'e yazılır, ne olduğunu çıkış kodu söyler.",
-    "ssc_epilog": "Örnekler:\n  %(prog)s sync\n  %(prog)s sync --tournament 17 --dry-run\n  %(prog)s export --out maclar.csv\n  %(prog)s status --json\n  %(prog)s doctor --json\n\nÇıkış kodları: 0 başarı, 1 genel hata, 2 kullanım ya da yapılandırma hatası, 3 kısmi başarı, 4 SofaScore engelliyor, 5 depolama hatası, 6 başka bir kopya çalışıyor, 130/143 Ctrl+C / SIGTERM ile iptal.\nWeb uygulaması hâlâ python main.py --web ile başlatılır.",
+    "ssc_epilog": "Örnekler:\n  %(prog)s sync\n  %(prog)s sync --tournament 17 --dry-run\n  %(prog)s export --out maclar.csv\n  %(prog)s status --json\n  %(prog)s doctor --json\n\nÇıkış kodları: 0 başarı, 1 genel hata, 2 kullanım ya da yapılandırma hatası, 3 kısmi başarı, 4 SofaScore engelliyor, 5 depolama hatası, 6 başka bir kopya çalışıyor, 130/143 Ctrl+C / SIGTERM ile iptal.\nWeb uygulaması: %(prog)s serve.",
     "ssc_commands_title": "komutlar",
     "ssc_global_options_title": "genel seçenekler (komuttan önce ya da sonra)",
     "ssc_usage_global": "genel seçenekler",
@@ -784,5 +784,6 @@
     "launcher_not_ready": "Sunucu başladı ama /health henüz hazır değil — elle açın: {url}",
     "notice_menu_backup_old_layout": "Not: Buradaki yedekleme ve geri yükleme yalnızca eski klasörleri kopyalar (seasons/, matches/, match_details/). Yeni düzende (v3/) saklanan maçlar dahil değildir; onları korumak için veri klasörünün tamamını kopyalayın.",
     "notice_menu_clear_both_layouts": "Not: Sezon, maç ya da maç detayı temizliği bunları hem eski klasörlerden hem de yeni düzenden (v3/) siler.",
-    "notice_menu_disk_old_layout": "Not: Disk boyutları yalnızca eski klasörleri kapsar; yeni düzende (v3/) saklanan maçlar sayılara dahildir, boyutlara dahil değildir."
+    "notice_menu_disk_old_layout": "Not: Disk boyutları yalnızca eski klasörleri kapsar; yeni düzende (v3/) saklanan maçlar sayılara dahildir, boyutlara dahil değildir.",
+    "cli_no_menu": "Terminal menüsü 3.0 sürümünde kaldırıldı: insanlar web uygulamasını kullanır, komut satırı sunucular ve otomasyon içindir.\n\n  Web uygulaması:  {prog} serve\n  Tüm komutlar:    {prog} --help\n\nKomutlar: {commands}\n{prog} komutu kurulu değilse yerine {legacy} <komut> çalıştırın (örneğin: {legacy} serve); {legacy} <komut> --help bir komutu açıklar."
 }

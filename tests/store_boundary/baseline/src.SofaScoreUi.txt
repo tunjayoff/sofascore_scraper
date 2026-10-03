@@ -1,7 +1,0 @@
-# src/SofaScoreUi.py: Store sınırı ihlalleri (docs/design/01-storage.md bölüm 2.4). Bu liste yalnızca küçülebilir.
-# Bir ihlali gideren PR satırını da siler; açıklama: tests/test_store_boundary.py
-[static]
-SimpleSofaScoreUI._ensure_directory:os.makedirs
-SimpleSofaScoreUI._ensure_directory:os.path.exists
-SimpleSofaScoreUI._season_json_count:os.listdir
-SimpleSofaScoreUI._season_json_count:os.path.exists

@@ -361,23 +361,6 @@ def test_the_fetcher_entry_points_forward_to_the_service(tmp_path: Path, monkeyp
     assert fetcher.create_csv_dataset(match_ids=["x"]) == "" and fetcher.create_csv_dataset([1], True) == []
 
 
-def test_the_terminal_menu_calls_the_service(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
-                                             capsys: pytest.CaptureFixture[str]) -> None:
-    from src.ui.match_ui import MatchDataMenuHandler
-
-    fixture = _fixture("canonical", tmp_path, monkeypatch)
-    fetcher = MatchDataFetcher(config_manager=ConfigManager(), data_dir=str(fixture.data_dir))
-    menu = MatchDataMenuHandler.__new__(MatchDataMenuHandler)
-    menu.match_data_fetcher = fetcher
-
-    single = menu._export_csv(match_id=str(ARS))
-    league = menu._export_csv(league_id=17)
-
-    assert isinstance(single, str) and len(_table(Path(single).read_text(encoding="utf-8"))) == 2
-    assert [os.path.basename(p).split("_1")[0] for p in league] == ["17_Premier_League"]
-    assert menu._export_csv(match_id="abc") is None and menu._export_csv(match_id="1") is None
-
-
 def test_export_all_csv_writes_the_combined_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     fixture = _fixture("canonical", tmp_path, monkeypatch)
     fetcher = MatchDataFetcher(config_manager=ConfigManager(), data_dir=str(fixture.data_dir))

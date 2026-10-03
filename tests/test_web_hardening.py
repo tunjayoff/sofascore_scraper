@@ -1162,7 +1162,8 @@ def test_browser_profile_directory_is_created_private(tmp_path):
 
 @posix_only
 def test_the_app_and_the_cli_tighten_permissions_at_startup():
-    for name in ("src/web/app.py", "main.py"):
+    # main.py bunu terminal menüsü dalında yapardı (P26 kaldırdı); CLI, komutların bağlamını kurarken yapar
+    for name in ("src/web/app.py", "src/cli/commands/sync.py"):
         text = (REPO / name).read_text(encoding="utf-8")
         assert re.search(r"^\s*harden_secret_paths\(\)$", text, flags=re.M), name
     install = (REPO / "scripts" / "install.sh").read_text(encoding="utf-8")

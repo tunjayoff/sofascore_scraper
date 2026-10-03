@@ -215,22 +215,6 @@ def test_file_report_of_another_folder(tmp_path):
     assert os.listdir(stray) == []  # rastgele dizinde depo kurulmaz
 
 
-def test_menu_shows_the_file_report(tmp_path, capsys, monkeypatch):
-    from src.ui.match_ui import MatchDataMenuHandler
-
-    f = _detail_fetcher(tmp_path)
-    f._save_match_data("42", _partial_match())
-    menu = MatchDataMenuHandler(MagicMock(), f, {})
-    monkeypatch.setattr("builtins.input", lambda _prompt="": "")
-    capsys.readouterr()
-    menu.generate_file_report()
-    out = capsys.readouterr().out
-    assert "2361_Wimbledon,_Men" in out and "0/1" in out
-    for key in _EMPTY_SLICES:
-        assert f"{key}:" in out
-    assert "JSON:" not in out and "CSV:" not in out
-
-
 # --- yol düzeni -----------------------------------------------------------------
 
 def test_path_helpers_match_existing_layout():

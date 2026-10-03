@@ -660,15 +660,21 @@ def test_help_lists_todays_flags(box: Sandbox) -> None:
     assert_cli_golden("help", {"exit_code": run.exit_code, "options": options, "files": run.files})
 
 
-def test_interactive_menu_is_the_default_mode(box: Sandbox) -> None:
-    """Bayraksız çalıştırma terminal menüsünü açar; "0" çıkar. Menünün metni goldena girmez (3.0'da kalkıyor)."""
+def test_without_arguments_a_short_help_replaces_the_menu(box: Sandbox) -> None:
+    """
+    Terminal menüsü 3.0'da kaldırıldı (P26): bayraksız çalıştırma web arayüzünü (`ssc serve`) ve komutları
+    (`ssc --help`) gösteren kısa bir yardımı stderr'e yazar ve 2 ile çıkar. Hiçbir şey çalışmaz: istek yok,
+    veri dizini oluşmaz, stdin okunmaz. Yardımın metni çeviridir (locales: cli_no_menu) ve goldena girmez.
+    """
     run = run_cli(box, stdin="0\n")
 
-    assert run.exit_code == 0
-    assert "LOG INFO Main: İnteraktif mod başlatılıyor" in run.stdout  # menünün logu stdout'ta kalır (P26 kaldırır)
+    assert run.exit_code == 2
+    assert run.stdout == []
+    text = "\n".join(line for line in run.stderr if isinstance(line, str))
+    assert "ssc serve" in text and "ssc --help" in text and "sync" in text
     assert run.requests == []
-    # Terminal arayüzü yalnızca bu dalda yüklenir
-    assert "src.SofaScoreUi" in terminal_ui_modules(run)
+    assert not any(path.startswith("data/") for kind in run.files.values() for path in kind)
+    assert terminal_ui_modules(run) == []
 
 
 # --- --headless --update-all ----------------------------------------------------------------

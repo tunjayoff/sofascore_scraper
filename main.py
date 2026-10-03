@@ -7,7 +7,8 @@ maddesi P19).
     python main.py <eski bayraklar>         yeni komutlara çevrilir (src/cli/legacy_flags.py); stderr'e tek bir
                                             kullanımdan kalkma satırı yazılır
     python main.py --web ...                `ssc serve` olarak çalışır (P25; kullanımdan kalkma satırıyla)
-    python main.py                          terminal menüsü (eskisi gibi; P26 kaldırır)
+    python main.py                          kısa yardım: terminal menüsü 3.0'da kaldırıldı (P26); web arayüzü
+                                            `ssc serve`, komutlar `ssc --help`; çıkış kodu 2
     python main.py --version                sürüm (yan etkisiz, yalnızca standart kütüphane)
 
 Eski bayrakların çalıştırdığı komutlar yeni CLI'nin çıktı kurallarına ve çıkış kodlarına uyar (karar D5):
@@ -16,7 +17,7 @@ engelledi (devre kesici), 5 depolama hatası, 6 veri dizini başka bir sürecin 
 SIGTERM ile iptal.
 
 Bu modül yüklenirken yalnızca standart kütüphaneyi ve src/version.py'yi içe aktarır: ağır modüller (ayarlar,
-log, istek katmanı, terminal arayüzü) yalnızca onları kullanan dalda yüklenir.
+log, istek katmanı) yalnızca onları kullanan dalda yüklenir.
 """
 
 import argparse
@@ -24,8 +25,6 @@ import contextlib
 import logging
 import os
 import sys
-import traceback
-from pathlib import Path
 from typing import Any, Iterator, List, Optional, Sequence
 
 from src.version import __version__
@@ -41,12 +40,6 @@ NEW_PROG = "ssc"
 if __name__ == "__main__" and "--version" in sys.argv[1:]:
     print(VERSION_TEXT)
     sys.exit(0)
-
-# Proje kökü: terminal menüsü buraya geçer (yeni CLI kendisi geçer)
-script_dir = Path(__file__).resolve().parent
-
-# Terminal menüsü dalının logger'ı (src/logger.py ilk kullanımda kurar)
-logger = logging.getLogger("Main")
 
 # Değeri olan bayraklar: alt komut aranırken değerleri atlanır (eski bayraklar ve yeni CLI'nin genel bayrakları)
 _VALUE_OPTIONS = frozenset({
@@ -244,7 +237,8 @@ def run_legacy(argv: Sequence[str]) -> int:
         print(get_i18n().t(key[translation.error]), file=sys.stderr)
         return exit_codes.USAGE_ERROR
     if translation.interactive:
-        return _run_interactive(args)
+        # Eylem bayrağı yok: eskiden terminal menüsü açılırdı (3.0'da kaldırıldı, P26)
+        return print_no_menu_help(translation.warnings)
 
     _say_deprecated(translation.commands, translation.warnings)
     codes: List[int] = []
@@ -259,7 +253,7 @@ def run_legacy(argv: Sequence[str]) -> int:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     """
     Giriş noktası. Bir alt komut yeni CLI'ye gider; eski bayraklar çevrilir. Çıkış kodu yeni CLI'nin tablosudur
-    (src/cli/exit_codes.py); terminal menüsü eski kodlarını korur.
+    (src/cli/exit_codes.py). Argümansız çalıştırma kısa bir yardım yazar ve 2 ile çıkar (terminal menüsü yok).
     """
     arguments = list(sys.argv[1:] if argv is None else argv)
     if arguments and is_subcommand(arguments):
@@ -267,86 +261,24 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     return run_legacy(arguments)
 
 
-# --- karşılığı henüz olmayan eski kipler ------------------------------------------------------------
+# --- terminal menüsünün yerine ---------------------------------------------------------------------
 
 
-def _prepare_legacy_process(args: argparse.Namespace) -> None:
-    """Terminal menüsünün eski başlangıcı: `.env`, yapılandırma, gizli dosyaların izinleri."""
-    import dotenv
+def print_no_menu_help(warnings: Sequence[str] = ()) -> int:
+    """
+    Bayraksız (ya da yalnızca eylemsiz eski bayraklarla) çalıştırma: terminal menüsü 3.0'da kaldırıldı (plan
+    maddesi P26). Web arayüzünü (`ssc serve`) ve komut listesini (`ssc --help`) gösteren kısa bir yardım stderr'e
+    yazılır; çıkış kodu kullanım hatasıdır (2). Hiçbir dosya ya da dizin oluşturulmaz, istek atılmaz.
+    """
+    from src.cli import exit_codes
+    from src.cli.main import translator
 
-    from src.paths import env_file_path
-
-    os.chdir(script_dir)
-    dotenv.load_dotenv(env_file_path())
-    # Yapılandırma her kipte burada, diğer modüllerden (ve Main logger'ından) önce yüklenir: sofascore.toml bu içe
-    # aktarmada okunur ve bozuksa uygulama burada durur. Lig yapılandırması da kurulur (config/ dizini ve örnek lig
-    # dosyası ilk çalıştırmada burada oluşur). Tekil nesne yolsuz kurulduğu için --config bu kiplerde etkisizdir.
-    from src.config_manager import ConfigManager
-    from src.logger import get_logger
-    from src.private_files import harden_secret_paths
-
-    ConfigManager()
-    get_logger("Main")
-    # .env ve tarayıcı profili yalnızca sahibince okunur (POSIX)
-    harden_secret_paths()
-    if args.ignore_rate_limit:
-        os.environ["IGNORE_RATE_LIMIT"] = "true"
-        logger.warning("Rate-limit circuit breaker disabled with --ignore-rate-limit.")
-
-
-def _run_interactive(args: argparse.Namespace) -> int:
-    """Bayraksız çalıştırma: terminal menüsü (P26 kaldırır). Terminal arayüzü yalnızca burada yüklenir."""
-    from src.exceptions import StorageError
-
-    try:
-        _prepare_legacy_process(args)
-        # Köprü durumu değişince ("SofaScore bizi engelliyor") kullanıcıya tek satır
-        from src import bridge_health
-
-        bridge_health.add_listener(bridge_health.print_cli_line)
-        if args.data_dir:
-            # Açıkça verilen --data-dir bu çalıştırma için DATA_DIR'i ezer (tüm modüller aynısını görsün)
-            os.environ["DATA_DIR"] = args.data_dir
-        if args.refresh_legacy:
-            os.environ["REFRESH_LEGACY"] = "true"
-
-        from src.SofaScoreUi import SimpleSofaScoreUI
-
-        ui = SimpleSofaScoreUI(config_path=args.config, data_dir=args.data_dir)
-        logger.info("İnteraktif mod başlatılıyor")
-        ui.run()
-
-        # Menüden başlatılan bir indirmede devre kesildiyse indirici bunu ortam değişkeniyle bildirir; menünün
-        # türü belli bir sonucu yoktur.
-        forced_exit_code = os.getenv("APP_EXIT_CODE")
-        if forced_exit_code and forced_exit_code.isdigit():
-            return int(forced_exit_code)
-        return 0
-    except KeyboardInterrupt:
-        print(get_i18n().t('prog_terminated_by_user'))
-        return 0
-    except StorageError as e:
-        # Kayıt diske yazılamadı (disk dolu, izin yok): iz dökümü yerine nedeni söyle
-        logger.error("Storage error, stopped: %s", e)
-        print(get_i18n().t("storage_error_abort", path=e.path or "?", reason=e.detail or str(e)), file=sys.stderr)
-        return 1
-    except Exception as e:
-        return _unexpected(e)
-
-
-def _unexpected(e: BaseException) -> int:
-    from src.logger import log_file_path
-
-    i18n = get_i18n()
-    logger.exception("Unexpected error: %s", e)
-    print(i18n.t('unexpected_error_occurred', error=str(e)))
-    traceback.print_exc()
-    log_path = log_file_path()
-    if log_path:
-        print(i18n.t('check_log_for_details', path=log_path))
-    else:
-        print(i18n.t('check_console_for_details'))
-    return 1
+    t, _lang = translator(None)
+    for warning in warnings:
+        print(t("ssc_warning", message=warning), file=sys.stderr)
+    commands = ", ".join(sorted(_command_names()))
+    print(t("cli_no_menu", prog=NEW_PROG, legacy=PROG, commands=commands), file=sys.stderr)
+    return exit_codes.USAGE_ERROR
 
 
 if __name__ == "__main__":
