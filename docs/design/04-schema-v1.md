@@ -317,7 +317,8 @@ without both by `description`.
 | `status.type` | `status.code` | `class` |
 |---|---|---|
 | `notstarted` | 0 | `not_started` |
-| `inprogress` | any (6, 7, 8, 9, 10, 13–16, 20, 30, 31 seen) | `live` |
+| `inprogress` | any (6–16, 20, 21, 28–31, 1001, 1002 seen) | `live` |
+| `willcontinue` | 141 (end of a day of a multi-day cricket match) | `live` |
 | `finished` | 100 (ended), 110 (after extra time or overtime), 120 (after penalties) | `completed` |
 | `finished` | 91 (walkover), 92 (retired) | `decided_without_play` |
 | `finished` | any other code | `unknown` |
@@ -332,6 +333,18 @@ Codes of in-progress matches differ by sport: football 6 (first half), 7 (second
 basketball 13 to 16 (quarters), 30 (pause); tennis 8 to 10 (sets); 20 (started) in football and tennis when
 SofaScore has no period information. They are given as they are in `code` and `description`; the class is
 `live` for all of them.
+
+The sports added by SP-1 to SP-3 (PRs #112, #115, #118) add, as recorded: 11 and 12 (4th and 5th set, table
+tennis), 21 (1st inning, cricket), 28 and 29 (8th and 9th inning, baseball), 1001 and 1002 (first and second
+game, e-sports), 20 (started) also in darts and snooker, and 30 (pause) also in badminton and e-sports.
+These codes are `live` also without a type. Only codes that were seen were added: the inning codes 22 to 27,
+other cricket breaks (stumps, lunch, tea, an innings break), the live codes of MMA and of the eight period
+sports of SP-1, and e-sports codes beyond 1002 were never recorded, and a code that is not known is
+`unknown` without a type. Cricket's `willcontinue` (code 141, "End of day 1") is `live`, like half time:
+the match goes on the next day. `status.class` is a closed set (section 2, rule 8), so SP-3 chose an existing
+class over a new one such as `paused`, which would need version 2; `void` would have been wrong, because a
+result is still to come. Such a match stays `settlement: open`, and the watcher keeps it until cricket's
+stuck threshold of 6 days.
 
 #### EventParticipants
 
@@ -387,8 +400,10 @@ match has `number`, `name` and `slug` (for example 27, `Quarterfinals`, `quarter
 | `winner` | string, one of `home`, `away`, `draw` | yes |  | `aggregatedWinnerCode`: 1 is `home`, 2 is `away`, 3 is `draw` | Who won the tie. |
 <!-- /fields:Aggregate -->
 
-`home` and `away` are the sides of this event, not of the first leg. Today only events of the score family
-`football` carry an aggregate (section 9, point 11).
+`home` and `away` are the sides of this event, not of the first leg. Football and, since SP-1 (PR #112),
+handball fill the aggregate; no other sport's sheet reads `aggregated` (section 9, point 11). In the one
+recorded handball second leg (15986085) the compact research record has no `aggregatedWinnerCode`, so its
+`winner` is null.
 
 #### Quality
 
@@ -420,12 +435,12 @@ means the platform's refresh policy will not read it again by itself.
 
 ### Score
 
-The field `Event.score` has one of four structures, chosen by the score family of the event's sport. The
+The field `Event.score` has one of seven structures, chosen by the score family of the event's sport. The
 member `family` says which. Every structure begins with the same three fields:
 
 | Field | Meaning in every family |
 |---|---|
-| `family` | `football`, `periods`, `sets`, or null for a sport without a score mapping |
+| `family` | `football`, `periods`, `sets`, `innings`, `cricket`, `fight`, or null for a sport without a score mapping |
 | `home`, `away` | the headline score: what SofaScore displays as the result (`homeScore.display`, else `homeScore.current`) |
 
 All score values are read from the two objects `homeScore` and `awayScore` of SofaScore's event; a source
@@ -437,7 +452,18 @@ away value. A pair is null when SofaScore gave neither value.
 | football | `football` | goals including extra time, without the shoot-out | `period1` first half, `normaltime` 90 minutes, `display` the result shown, `current` includes shoot-out goals (not used), `penalties` the shoot-out, `aggregated` the tie |
 | basketball | `periods` | points including overtime | `period1`–`period4` quarters, or `period2` and `period4` for a game of two halves; `normaltime` regulation; `overtime` overtime alone; `current` final |
 | tennis | `sets` | sets won | `period1`–`period5` games per set (points in a match tie-break), `periodNTieBreak` tie-break points, `current` sets won |
-| any other | none (null) | SofaScore's displayed score | not mapped yet (SP-1 to SP-3) |
+| American football, Aussie rules | `periods` | points including overtime | `period1`–`period4` quarters, `normaltime`, `overtime`, `current` |
+| ice hockey, floorball | `periods` | goals including overtime | `period1`–`period3` thirds, `normaltime`, `overtime`, `current` |
+| handball, rugby, futsal, minifootball | `periods` | goals or points including overtime; in handball also the shoot-out goals | `period1`, `period2` halves, `normaltime`, `overtime`, `current`; handball also `penalties` and, in a second leg, `aggregated` |
+| volleyball, badminton, table tennis | `sets` | sets won | `period1`–`period7` points per set, `current` sets won |
+| padel | `sets` | sets won | as tennis: games per set, `periodNTieBreak`, a possible match tie-break |
+| snooker | `sets` | frames won | `current` frames won; `period1` repeats `current` and is not a set |
+| darts | `sets` | sets won, or legs won when the match has no sets | `periodN` legs won in set N when the event has a positive `bestOfSets`; otherwise `current` legs won |
+| e-sports | `sets` | games won | `current` games won; `periodN` only marks the winner of game N (1 or 0, 0-0 for an unplayed game) |
+| baseball | `innings` | runs including extra innings | `innings.inningN.run`, else `periodN`; `normaltime`, `overtime`; `inningsBaseball.hits`, `.errors` |
+| cricket | `cricket` | runs of all innings | `innings.inningN` with `score`, `wickets`, `overs` per side |
+| MMA | `fight` | none (SofaScore gives no score) | `winType`, `finalRound`; the winner in `winnerCode` |
+| any other | none (null) | SofaScore's displayed score | not mapped |
 
 #### ScorePair
 
@@ -500,6 +526,21 @@ Not mapped in version 1: the goals of each half of extra time (`extra1`, `extra2
 A game of two halves (seen in the French lower leagues) has its two scores in SofaScore's `period2`
 and `period4`; the schema numbers them 1 and 2 and says `"format": "halves"`.
 
+`PeriodsScore` is the structure of nine sports since SP-1 (PR #112): basketball, American football, Aussie
+rules, ice hockey, handball, rugby, futsal, minifootball and floorball. The field texts above still speak of
+basketball and of points; the unit stays `points` because changing a unit would need a new schema version,
+and in the goal sports (ice hockey, handball, futsal, minifootball, floorball) the values are goals.
+`format` comes from the sport registry (`SportSpec.period_format`): `quarters` for American football and
+Aussie rules, `thirds` for ice hockey and floorball (a value SP-1 added; the set is open, so no version
+change), `halves` for handball, rugby, futsal and minifootball. Only basketball still detects its format
+from the period keys, as before. `periods[].number` is N of SofaScore's `periodN`, except for basketball
+halves. `penalties` (added by SP-1) is filled only in handball: in the one recorded handball shoot-out
+(15251094) `current` and `display` include the shoot-out goals (31 = 22 + 5 + 4), unlike football, where
+the displayed score leaves them out; an ice hockey shoot-out was never seen, so whether it would arrive as
+`penalties` is open. Futsal and floorball tournaments often send only `current` and `display` (floorball
+sometimes only `normaltime`); such a score has `format` null and an empty `periods` list. No live payload of
+these eight sports was recorded, so `format` and the periods during a live game are not verified.
+
 #### PeriodScore
 
 <!-- fields:PeriodScore -->
@@ -535,6 +576,31 @@ and `period4`; the schema numbers them 1 and 2 and says `"format": "halves"`.
 The example is a retired match (`status.code` 92, class `decided_without_play`, `winner` `home`). Retirement
 and walkover are told by the status, not by the score (section 9, point 10). The current point of a live game
 (SofaScore's `point`) is not mapped.
+
+`SetsScore` is the structure of eight sports: tennis, and since SP-2 (PR #115) and SP-3 (PR #118)
+volleyball, badminton, table tennis, padel, snooker, darts and e-sports. `format` (added by SP-3; an open
+set) says what the numbers count, because darts changes its unit from one event to the next and a consumer
+cannot know it from the sport alone:
+
+| `format` | Sports | `home`, `away`, `sets_won` | `sets` |
+|---|---|---|---|
+| `games` | tennis, padel | sets won | games per set, with `tiebreak`; `match_tiebreak` can be true |
+| `points` | volleyball, badminton, table tennis | sets won | points per set; no `tiebreak`, `match_tiebreak` always false |
+| `legs` | darts played in sets (a positive `bestOfSets`) | sets won | legs per set |
+| `frames` | snooker | frames won | empty: `period1` only repeats `current` (all 8 recorded samples) |
+| `legs_won` | darts without sets | legs won | empty |
+| `games_won` | e-sports | games won | empty: `periodN` only marks who won game N; the games are in the slice `esports_games` |
+
+The field texts of `home`, `away` and `sets_won` above still say "sets won" with the unit `sets`, and those
+of `SetScore` say games; for the formats `frames`, `legs_won` and `games_won` the values are frames, legs or
+games won, and for `points` a set's values are points. The units stay as they are, because changing a unit
+would need a new schema version; `format` is the field to read. For the sports of SP-2 and SP-3 up to
+`period7` is read (a table tennis match can have seven sets; tennis keeps its 2.x sheet and `period5`), and
+a set keeps its number: a live table tennis payload that carries only the
+current set (`period4` alone) gives one set numbered 4. Only `bestOfSets` tells the two darts formats apart
+(`bestOfLegs` is present in both); the legs-only rule is not verified on a real legs-only `/event` payload,
+because the recorded compact records lost `bestOf*` (the not-started fixture 17099320 therefore maps to
+`legs_won`).
 
 #### SetScore
 
@@ -607,6 +673,15 @@ and walkover are told by the status, not by the score (section 9, point 10). The
 | `final_round` | integer | yes |  | `finalRound` | The round in which the fight ended. Null while undecided. |
 <!-- /fields:FightScore -->
 
+The three families `innings` (baseball), `cricket` and `fight` (MMA) came with SP-3 (PR #118), each from
+one full `/event` payload and the research records of its sport. Not mapped, and so only in the raw payload:
+cricket's `runRate` (derived) and `targetRunRate` (a target, not a score); the round durations of an MMA
+fight (`time.period1` to `period5`), which are durations, and its `totalPeriodCount` disagreed with the
+rounds fought in one sample (15962231: 3 scheduled, 5 fought). An MMA event has no score, so it never gives a
+`live.score_changed`. Cricket's scorecard is the event slice `innings` (`/event/{id}/innings`, PR #121); a
+baseball game's `/at-bats` is not a slice (one recorded answer only). `overs` is in SofaScore's
+overs.balls notation and must not be summed as a decimal.
+
 #### PlainScore
 
 <!-- fields:PlainScore -->
@@ -646,9 +721,17 @@ Keys of an event today (the slice registry, `ssc describe slices`):
 | `team_streaks` | `/event/{id}/team-streaks` | all |
 | `pregame_form` | `/event/{id}/pregame-form` | all |
 | `h2h` | `/event/{id}/h2h` | all |
-| `lineups` | `/event/{id}/lineups` | all |
-| `incidents` | `/event/{id}/incidents` | all |
-| `point_by_point` | `/event/{id}/point-by-point` | tennis |
+| `lineups` | `/event/{id}/lineups` | all but darts, MMA, padel and snooker |
+| `incidents` | `/event/{id}/incidents` | all but darts, e-sports, MMA, padel and snooker |
+| `point_by_point` | `/event/{id}/point-by-point` | tennis, darts |
+| `esports_games` | `/event/{id}/esports-games` | e-sports (live and finished matches) |
+| `innings` | `/event/{id}/innings` | cricket (live and finished matches) |
+
+"All" includes a sport that is not registered. The sports a slice is not requested in, and those where it is
+requested but does not count for completeness, come from PR #121 (`not_in` and `optional_in` of the slice
+registry; `docs/all-sports/README.md`, "Maç detay dilimleri, spor başına"), on the evidence of one match page
+per sport. The known values of `Slice.key` in the field table above do not list `innings` yet: the field is an
+open set, and the list follows `src/schema/models.py`, which PR #121 did not change.
 
 Slices of other owners today: `seasons` of a tournament (the season list), and `schedule` of a season, one
 payload per round or page with `sub` such as `round_12` or `last_0`. More keys come with P28 (odds, standings,
@@ -772,11 +855,11 @@ this table is the contract for `data`:
 | `live.status_changed` | `from`, `to`: status classes. `change_ts`: SofaScore's `changes.changeTimestamp` of the event, an epoch integer, or null. `provisional`: true or false on the first `completed` of the event (true while the start plus `REFRESH_WINDOW_HOURS` has not passed), null on every other transition. `score`: the [Score](#score) structure of this document for the observed event, null when it cannot be built |
 | `live.score_changed` | `from`, `to`: each a [ScorePair](#scorepair)-like object `{home, away}` of the headline score. `change_ts` as above. `score`: the [Score](#score) structure |
 | `live.stuck` | `status_class`: the class at the time (`live` or `not_started`). `start_utc`: ISO 8601 UTC of the start from which the sport's threshold is counted (the real play start for tennis), or null |
-| `change.recorded` | `change_seq`: the `seq` of the [Change](#change) it announces. Produced since P23 by the live service when its confirmation of a finished match wrote a change row; the pipeline's after a refresh comes with P13 |
+| `change.recorded` | `change_seq`: the `seq` of the [Change](#change) it announces. Produced since P23 by the live service when its confirmation of a finished match wrote a change row, and since P13 (PR #113) by downloads and refreshes (source `job`) |
 | `job.started`, `job.finished`, `system.sink_dropped` | as in the table below (unchanged) |
 | `system.blocked` | `source` (`poll`), `retry_in_s` (the pause before the next try), `reason` (a short text that names the refusal, such as `RateLimitError` or `APIError 403`); produced by the live service since P23 |
 | `system.recovered` | `source` (`poll`), `blocked_for_s`; produced by the live service since P23 |
-| `system.live_source_changed` | not produced yet (P24); see `02-services.md` 5.1 |
+| `system.live_source_changed` | `sport`; `from`, `to`: the leading source before and after, `page`, `direct` or `poll`; `reason`: `push_connected`, `push_disconnected`, `push_silent` or `push_unavailable`. Produced by the live service since P24 (PR #95) at every switch (`02-services.md` 8.1) |
 
 A `live.status_changed` is emitted only when a previous class is known, so `from` is never null. A
 `live.score_changed` is emitted only while the event was live in the previous observation and stays live.
@@ -788,7 +871,13 @@ identical score is therefore not stored again. The `dedup_key` stays internal to
 of the envelope. The example of the LiveEvent section above shows a `live.status_changed` without its `score`
 field; as produced the field is always present. The legacy `main.py --watch` alias appends the same `data`
 to the log, and keeps its 2.x fields only in its own stdout lines and in `watch_events.jsonl` for one more
-release.
+release. Since P19 (PR #119) the alias runs `ssc watch --source poll --stdout`, so it writes the events of
+this table and no `watch_events.jsonl`.
+
+`source` of a live event names the source that showed the change: `poll`, or, since P24 and P31 (PRs #95,
+#101), `page` or `direct` for an observation that came from push. The value `push` of the field table is
+not produced; the field is an open set, so the new values need no new version. `system.*` events carry the
+source `system`.
 
 What was stored before P23, and what was proposed when version 1 was approved:
 
@@ -820,7 +909,7 @@ Everything that is not listed here is the same for every sport.
 | `score.family` | `football` | `periods` | `sets` |
 | headline score | goals incl. extra time | points incl. overtime | sets won |
 | `winner: "draw"` | possible | not seen | not possible |
-| `aggregate` | two-legged cup ties | not mapped (question 11) | never |
+| `aggregate` | two-legged cup ties | not mapped (section 9, point 11) | never |
 | `Participant.type` | `team` | `team` | `player`, or `pair` in doubles |
 | `Category.country_code` | set for countries, null for international categories | as football | null (categories are tours) |
 | `round` | league: number only; cup: number, name, slug | as football | number, name, slug |
@@ -829,6 +918,33 @@ Everything that is not listed here is the same for every sport.
 | in-progress codes | 6, 7, 31 | 13–16, 30 | 8, 9, 10 |
 | extra slice | | | `point_by_point` |
 | `quality.tier_hint` | true for 12 of 48 samples | true for 25 of 54 samples | false for all 52 samples |
+
+The eighteen sports added by SP-1 (PR #112), SP-2 (PR #115) and SP-3 (PR #118) rest on the research
+recordings of `docs/all-sports/README.md`: status examples, compact event records and one match page per
+sport, and no live payload for most of them. What differs, in short (the score columns are section 4,
+"Score"):
+
+| Sport | `score.family`, format | Headline score | `Participant.type` | Extra or missing slices (PR #121) |
+|---|---|---|---|---|
+| American football, Aussie rules | `periods`, `quarters` | points incl. overtime | `team` | |
+| ice hockey, floorball | `periods`, `thirds` | goals incl. overtime | `team` | ice hockey: `pregame_form` optional |
+| handball | `periods`, `halves` | goals incl. overtime and the shoot-out | `team` | |
+| rugby | `periods`, `halves` | points incl. overtime | `team` | |
+| futsal, minifootball | `periods`, `halves` | goals incl. overtime | `team` | futsal: `statistics`, `lineups`, `pregame_form` optional; minifootball: `lineups` optional |
+| volleyball, badminton, table tennis | `sets`, `points` | sets won | volleyball `team`; badminton `player` or `pair`; table tennis `player` | |
+| padel | `sets`, `games` | sets won | `pair` | no `lineups`, `incidents`; `statistics`, `pregame_form` optional |
+| snooker | `sets`, `frames` | frames won | `player` | no `lineups`, `incidents`; `statistics`, `pregame_form` optional |
+| darts | `sets`, `legs` or `legs_won` | sets or legs won | `player` | `point_by_point`; no `lineups`, `incidents`; `pregame_form` optional |
+| e-sports | `sets`, `games_won` | games won | `team` | `esports_games` (optional); no `incidents`; `statistics`, `pregame_form` optional |
+| baseball | `innings` | runs incl. extra innings | `team` | |
+| cricket | `cricket` | runs of all innings | `team` | `innings`; `statistics`, `pregame_form` optional |
+| MMA | `fight` | none | `player` | no `lineups`, `incidents` |
+
+Codes 91 and 92 give `decided_without_play` in every sport (which of these sports use them was not
+checked), and only football and handball fill `aggregate`. The `Participant.type` of darts and MMA (`player`) and of
+baseball, cricket and e-sports (`team`) is verified on one full payload each (SP-3, point 13 of section 9);
+for the other sports the column gives the types seen in the research samples (`research/all_sports/samples`),
+which no test checks.
 
 ## 6. JSON Schema
 
@@ -883,11 +999,13 @@ What a raw request returns:
 - `src/schema/jsonschema.py`: the JSON Schema, generated from the models.
 - The package imports only the pure domain modules (`src.sports`, `src.status`, `src.refresh`).
 - `tests/test_schema_v1.py`, with goldens under `tests/golden/schema/`:
-  - each of the 154 real status payloads of three sports maps to a golden Event record;
+  - each of the real status payloads maps to a golden Event record (154 of three sports at SC-1; 231 of the
+    21 registered sports since SP-3);
   - each field of those records is read a second time, independently, from the SofaScore path this document
     names, and must agree;
-  - seven complete SofaScore event payloads (with teams, tournament, category, season, round) map to golden
-    Event, Sport, Category, Tournament, Season and Participant records;
+  - complete SofaScore event payloads (with teams, tournament, category, season, round; seven at SC-1, twelve
+    since SP-3, one for each of the five sports of SP-3) map to golden Event, Sport, Category, Tournament,
+    Season and Participant records;
   - records mapped from a real Store (catalog rows, slices, change log, stream log) match a golden;
   - every record validates against the JSON Schema; the schema rejects a missing field, a wrong type and an
     unknown value of a closed enumeration;
@@ -897,7 +1015,9 @@ What a raw request returns:
 
 None are left. The 28 points of this section were the open questions of the proposal, and the approval of
 2026-10-02 settled every one of them as chosen (decision P2). The heading of the section is kept as it was,
-because `tests/test_schema_v1.py` asserts that line; what the section holds is the list of decisions.
+because `tests/test_schema_v1.py` asserts that line; what the section holds is the list of decisions. The
+heading and its assertion are renamed together by an item that owns the test (P28). Points 11 and 13 say below
+what SP-1 to SP-3 changed.
 
 ### Decisions taken (approved on 2026-10-02)
 
@@ -938,10 +1058,15 @@ to one of them is a change of the contract and follows the versioning rule of se
 11. **`aggregate` is a field of the Event, filled for football only.** `00-platform.md` lists the aggregate
     with the Event. The code reads `aggregated` only in the football family; SofaScore also sends it for
     handball and for two-legged basketball ties. Those get it when their family reads it (SP-1 for handball).
+    As built since SP-1 (PR #112): handball fills `aggregate` too. Its sheet reads `aggregated` and
+    `aggregatedWinnerCode`, and the mapper already took the aggregate from any sheet. Basketball still does
+    not, and the field stays where it is.
 12. **`winner` is `home`, `away` or `draw`,** not SofaScore's codes 1, 2, 3. Any other code is null.
 13. **Participant types.** 0, 1, 2 map to `team`, `player`, `pair`, verified on the stored samples only for
     football, basketball and tennis; darts and MMA (persons as well) come with SP-3. The two persons of a pair
-    (`subTeams`) and squad players (a different id space) are not in version 1.
+    (`subTeams`) and squad players (a different id space) are not in version 1. Since SP-3 (PR #118) the
+    mapping is verified on one full payload each for five more sports: darts and MMA type 1 (`player`),
+    baseball, cricket and e-sports type 0 (`team`).
 14. **The key `status.class`.** `class` is a reserved word in several languages; generated client code may
     need an alias. Alternative: `status_class` on the Event.
 15. **The name `stage`** for SofaScore's non-unique tournament object. Alternative: leave it out of the

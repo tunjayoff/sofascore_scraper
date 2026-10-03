@@ -354,6 +354,100 @@ Etiket yararlılık yargısıdır; gerekçesi `reason` sütununda, dayanağı ya
 | Motor sporları / bisiklet | `/stage/{id}/extended`, `/stage/{id}/substages`, `/stage/{id}/standings/competitor`, `/calendar/{month}/{offset}/{sport}/stages`, `/unique-stage/{id}/seasons` | Stage hiyerarşisi, sonuç sıralaması, takvim |
 | Tenis, dart (point-by-point olanlar) | `/event/{id}`, `/event/{id}/point-by-point`, `/event/{id}/statistics`, `/team/{id}/rankings`, `/rankings/{id}` | Sayı sayı akış; sıralama |
 
+## Maç detay dilimleri, spor başına
+
+PR #121'den beri her spor, SofaScore'un kendi maç sayfasının o sporda istediği detay dilimlerini ister. Önceden
+her spor aynı altı ortak dilimi zorunlu olarak alıyordu. İki spora özgü dilim eklendi: kriket `innings` ve dart
+`point_by_point`. Futbol, basketbol ve tenis değişmedi.
+
+- **Kaynak:** bu keşfin kaydı (`research/all_sports/`), yeni istek atılmadı. `tests/sport_evidence.py`
+  tabloyu `requests.jsonl` ve `events/*.jsonl`'dan türetir: yalnızca maç sayfalarının istekleri, bahis hariç,
+  maçın durumu HTTP koduyla birlikte. Sonuç `tests/fixtures/sport_slices/evidence.json`; bir test dosyanın
+  araştırma verisinden yeniden türetilebildiğini denetler.
+- **Kayıt defteri:** `src/sports.py`, `DETAIL_SLICES` ve üstündeki not. Bir dilim `not_in` sporlarında hiç
+  istenmez; `optional_in` sporlarında istenir ama tamlık hesabına girmez (`SliceSpec.counts_in(spor)`).
+  Kayıtlı olmayan ya da bilinmeyen bir spor eskisi gibi altı ortak dilimi alır.
+
+**Kanıt zayıf.** Çoğu sporda tek bir maç sayfası var, yaklaşık 20 sn açık kaldı; bazı sporlarda hiç yok.
+Keşif script'i adım bittikten sonra gelen istekleri atıyor; bunlar sayfanın açılıştaki ilk istekleri değil,
+geç gelenler (polling, tembel yükleme). Bir sayfa `/event/{id}` ve `/event/{id}/pregame-form` istemiş ve
+yanıt almışsa (200 ya da 404) **tam** sayılır; kayıttaki her tam sayfa pregame-form istemiş. Bitmiş maçta H2H
+ve team-streaks bir sekmenin arkasında; sekmelere yalnızca futbol, basketbol, tenis ve kriket'te tıklandı. Bu
+yüzden bir sayfanın bunları hiç istememesi dilimin olmadığına kanıt sayılmaz.
+
+**Kurallar** (`verdict()`, spor ve dilim çifti başına):
+
+| Kanıt | Sonuç |
+|---|---|
+| bitmiş maçta 200, bitmiş maçta 404 yok | istenir, tamlığa girer (**R**) |
+| başlamış (canlı ya da bitmiş) maçta 404, temiz bitmiş veri yok | istenir, tamlığa girmez (*o*) |
+| statistics, lineups ya da incidents tam bir canlı ya da bitmiş sayfada hiç istenmemiş | istenmez (✗) |
+| yalnızca başlamamış maç kanıtı, sayfa yok, 403 ya da yarım sayfa | değişmez |
+
+**Tablo.** Hücrede F, L ve N bitmiş, canlı ve başlamamış maçtır, ardından HTTP kodu gelir; `—` sayfanın uç
+noktayı hiç istemediğini gösterir. Her hücrenin sonunda kayıt defterinin şimdi ne yaptığı yazar. "(yarım)":
+sayfa `/event/{id}`'yi hiç istememiş.
+
+| Spor | Maç sayfaları (olay, durum) | statistics | team-streaks | pregame-form | h2h | lineups | incidents | spora özgü |
+|---|---|---|---|---|---|---|---|---|
+| football | 17118211 F, 17167343 F, 17212341 L | F200 L200 **R** | F200 L200 **R** | F404 L404 **R**¹ | F200 L200 **R** | F200 L404 **R** | F200 L200 **R** | — |
+| basketball | 17186711 F | F200 **R** | F200 **R** | F404 **R**¹ | F200 **R** | F200 **R** | F200 **R** | — |
+| tennis | 17204708 F, 17206248 L | F200 L200 **R** | F200 **R** | F404 L404 **R**¹ | F200 **R** | — **R**¹ | — **R**¹ | point-by-point F200 L200 *o*¹ |
+| american-football | 16183693 F, her istek 403 | F403 **R** | — **R** | F403 **R** | — **R** | F403 **R** | F403 **R** | — |
+| aussie-rules | yok | — **R** | — **R** | — **R** | — **R** | — **R** | — **R** | — |
+| ice-hockey | 16532341 F | F200 **R** | — **R** | F404 *o* | — **R** | F200 **R** | F200 **R** | — |
+| handball | 17217388 N | — **R** | — **R** | N404 **R** | — **R** | N200 **R** | N404 **R** | — |
+| rugby | 16237238 F (yarım) | — **R** | — **R** | — **R** | — **R** | F200 **R** | — **R** | — |
+| futsal | 17226246 F | F404 *o* | — **R** | F404 *o* | — **R** | F404 *o* | F200 **R** | — |
+| minifootball | 17218801 F (yarım) | F200 **R** | — **R** | — **R** | — **R** | F404 *o* | — **R** | — |
+| floorball | 16956586 N | — **R** | — **R** | N404 **R** | — **R** | — **R** | N404 **R** | — |
+| volleyball | 16450376 N | — **R** | — **R** | N404 **R** | — **R** | N404 **R** | N404 **R** | — |
+| badminton | yok | — **R** | — **R** | — **R** | — **R** | — **R** | — **R** | — |
+| table-tennis | 17220134 F (yarım) | — **R** | — **R** | — **R** | — **R** | — **R** | — **R** | — |
+| padel | 17213167 F | F404 *o* | — **R** | F404 *o* | — **R** | — ✗ | — ✗ | — |
+| snooker | 17220573 L | L404 *o* | — **R** | L404 *o* | — **R** | — ✗ | — ✗ | — |
+| baseball | 17206542 N | — **R** | N200 **R** | N404 **R** | N200 **R** | N404 **R** | — **R** | at-bats N200 (öneri) |
+| cricket | 16526539 F | F404 *o* | — **R** | F404 *o* | — **R** | F200 **R** | F200 **R** | innings F200 **R** (yeni) |
+| esports | 17223320 L | L404 *o* | — **R** | L404 *o* | L200 **R** | L200 **R** | — ✗ | esports-games L200 *o* (SP-3) |
+| darts | 17099318 F | F200 **R** | — **R** | F404 *o* | — **R** | — ✗ | — ✗ | point-by-point F200 **R** (yeni) |
+| mma | 16822910 F | F200 **R** | F200 **R** | F200 **R** | — **R** | — ✗ | — ✗ | — |
+
+¹ Kanıt öteki yönü gösteriyor; davranış golden'lar sabitlediği için korundu (aşağıda, öneriler).
+
+**Bitmiş maç başına istek, önce → sonra.** İlk çekim 1 `/event` artı dilim başına bir istek. Önceden 404 veren
+zorunlu bir dilim bir tamamlama turu daha açıyordu (1 + hâlâ `ok` olmayan her dilim). Sayım tablodaki yanıtları
+varsayar: sitenin hiç istemediği dilim 404, kanıtı olmayan dilim veri döner sayılır.
+
+| Spor | Önce → sonra | Değişiklik |
+|---|---|---|
+| cricket | 10 → 8 | statistics ve pregame_form isteğe bağlı; `innings` eklendi (zorunlu, yalnızca canlı ve bitmiş maçta) |
+| darts | 11 → 6 | lineups ve incidents istenmiyor; pregame_form isteğe bağlı; `point_by_point` eklendi (zorunlu) |
+| mma | 10 → 5 | lineups ve incidents istenmiyor |
+| padel | 12 → 5 | lineups ve incidents istenmiyor; statistics ve pregame_form isteğe bağlı |
+| snooker | 12 → 5 | lineups ve incidents istenmiyor; statistics ve pregame_form isteğe bağlı |
+| esports | 12 → 7 | incidents istenmiyor; statistics ve pregame_form isteğe bağlı |
+| futsal | 11 → 7 | statistics, lineups ve pregame_form isteğe bağlı |
+| ice-hockey | 9 → 7 | pregame_form isteğe bağlı |
+| minifootball | 9 → 7 | lineups isteğe bağlı |
+| diğer 12 kayıtlı spor | değişmedi | — |
+
+**Öneriler, canlı doğrulamayı bekliyor.** Futbol, basketbol ve tenis golden'larla sabit; bunlar ayrı bir karar
+ister ve projenin sonundaki canlı doğrulama koşusundan (Talimat 07) sonra karara bağlanır:
+- `pregame_form` üçünde de isteğe bağlı olsun: kayıttaki her bitmiş futbol, basketbol ve tenis maçında, canlı
+  futbol ve tenis maçında da 404 verdi.
+- Tenis `lineups` ve `incidents` istenmesin: iki tam tenis sayfası da (bir bitmiş, bir canlı) bunları istemedi.
+- Tenis `point_by_point` zorunlu olsun: bitmiş maçta da canlı maçta da veriyle döndü.
+
+`tests/test_sport_slices.py` içindeki `PROPOSALS` bu yargıları sabitler; kanıt değişirse test kırılır.
+
+**Kanıtı yetmeyen spora özgü uç noktalar:** beyzbol `/at-bats` (yalnızca bir başlamamış maçta 200), beyzbol
+`/umpires`, `/weather`, `/comments` (yalnızca 404), tenis `/tennis-power` (canlı sayfada istendi ama script
+isteği attı, yanıt yok). **Hiç kanıt yok:** american-football (her istek 403), aussie-rules, badminton,
+table-tennis, rugby ve minifootball (yarım sayfalar) ve yalnızca başlamamış maçı olan sporlar. Canlı doğrulama
+koşusu spor başına bir bitmiş ve bir canlı maç sayfası açıp hangi detay uç noktalarının istendiğini ve
+durumlarını kaydedecek, `tests/fixtures/sport_slices/evidence.json`'u yeniden üretecek; kayıt defteri o zaman
+spor başına tek sayfadan fazlasına dayanır.
+
 ---
 
 ## Sürprizler
