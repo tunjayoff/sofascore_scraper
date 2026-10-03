@@ -187,6 +187,12 @@ def test_slices_are_the_registry(described: Dict[str, Any]):
             "default_enabled": item.default_enabled,
             "counts_for_completeness": item.required,
             "optional_in": sorted(item.optional_in),
+            # P27: kayıt defterinin seçim alanları ve varsayılan seçimin seçtiği sporlar
+            "group": item.group,
+            "phases": [phase for phase in sports.PHASES if phase in item.phases],
+            "keep_history": item.keep_history,
+            "max_age_seconds": None,
+            "selected_in": [sport for sport in sports.sport_slugs() if item.applies_to(sport)],
         }
     by_key = {entry["key"]: entry for entry in described["slices"]}
     assert by_key["point_by_point"]["sports"] == ["darts", "tennis"]

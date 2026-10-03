@@ -62,7 +62,7 @@ from src.client import Client, endpoints
 from src.exceptions import StorageError
 from src.logger import get_logger
 from src.refresh import change_row, diff_basic
-from src.services.planning import WorkItem, phase_of
+from src.services.planning import CONFIGURED, SelectionPolicy, WorkItem, phase_of, resolve_policy
 from src.slices import (
     BODY_DATA,
     BODY_MALFORMED,
@@ -77,7 +77,6 @@ from src.sports import event_sport_slug, select_slices
 from src.status import StatusClass, classify_status
 
 if TYPE_CHECKING:
-    from src.sports import SliceSelection
     from src.store import PutResult, Store
 
 logger = get_logger("FetchPipeline")
@@ -248,7 +247,10 @@ class FetchPipeline:
     client         istemci; verilmezse ortamın ayarlarıyla yenisi. Oturum çalıştırma başına açılır ve kapanır.
     concurrency    aynı anda işlenen birim sayısı (uçuşan istekleri istek katmanının semaforu sınırlar)
     only_finished  emekli (ST-27): eski çağıranlar için kabul edilir, etkisi yoktur; her durumdaki maç yazılır
-    selection      dilim seçimi (None: kayıt defterinin varsayılanları; `select_slices`)
+    selection      dilim seçimi: CONFIGURED (varsayılan) = etkin ayarların ve takip tablosunun seçimi, maç maç
+                   (`planning.SelectionPolicy.for_payload`: maçın sporu, turnuvası, takımları); None = kayıt
+                   defterinin varsayılanları; bir SliceSelection ya da ad listesi her maça aynen. Seçilmeyen dilim
+                   hiç istenmez
     threshold      "veri yok" eşiği (bilgi için; sayaçları Store tutar)
     writer_queue   bekleyebilecek yazma sayısı
     source         `change.recorded` olaylarının kaynağı
@@ -256,13 +258,14 @@ class FetchPipeline:
     """
 
     def __init__(self, store: "Store", *, client: Optional[Client] = None, concurrency: int = 5,
-                 only_finished: Optional[bool] = None, selection: "Optional[SliceSelection]" = None,
+                 only_finished: Optional[bool] = None, selection: Any = CONFIGURED,
                  threshold: int = UNAVAILABLE_AFTER_ATTEMPTS, writer_queue: int = DEFAULT_WRITER_QUEUE,
                  source: str = "job", listing: Optional[ListingHandler] = None) -> None:
         self._store = store
         self._client = client
         self._concurrency = max(1, int(concurrency))
         self._selection = selection
+        self._active: Any = None if selection is CONFIGURED else selection
         self._threshold = threshold
         self._writer_queue = max(1, int(writer_queue))
         self._source = source
@@ -327,6 +330,10 @@ class FetchPipeline:
                     return
 
         try:
+            if self._selection is CONFIGURED and any(item.need != "refresh" for item in queue):
+                # Seçim çalıştırma başına bir kez, yazıcı thread'inde çözülür (takip tablosu okunur); maç maç
+                # `_fetch`'te. Liste birimleri sonradan `full` birimleri getirebilir
+                self._active = await self._in_writer(writer, lambda: resolve_policy(self._selection, self._store))
             async with client:
                 tasks = [asyncio.create_task(worker()) for _ in range(min(self._concurrency, len(queue)))]
                 try:
@@ -413,7 +420,10 @@ class FetchPipeline:
 
         sport = event_sport_slug(payload) or ""
         phase = phase_of(classify_status(payload).value)
-        selected = select_slices("event", sport, self._selection, phase=phase)
+        chosen = self._active
+        if isinstance(chosen, SelectionPolicy):
+            chosen = chosen.for_payload(event_id, sport or None, payload)
+        selected = select_slices("event", sport, chosen, phase=phase)
         if item.need == "refill":
             wanted = {key for key, _sub in item.slices}
             selected = tuple(spec for spec in selected if spec.key in wanted)

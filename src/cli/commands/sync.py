@@ -453,27 +453,38 @@ def _include_legacy(enabled: bool) -> None:
 # --- kuru çalıştırma ------------------------------------------------------------------------------
 
 
-def _event_requests(item: Any) -> int:
-    """Bir maç iş biriminin en az kaç istek tuttuğu: yenileme 1, eksik dilimler dilim başına 1, tam çekim 1 + dilimler."""
+def _event_requests(item: Any, selection: Any = None, row: Any = None) -> int:
+    """
+    Bir maç iş biriminin en az kaç istek tuttuğu: yenileme 1, eksik dilimler dilim başına 1, tam çekim 1 + seçilmiş
+    ve tamlık hesabına giren dilimler (selection: yapılandırmanın seçimi, maçın satırına ya da sporuna göre).
+    """
     from src.services import planning
 
     if item.need == "refresh":
         return 1
     if item.need == "refill":
         return max(1, len(item.slices))
-    return 1 + len(planning.expected_slice_keys(item.sport))
+    chosen = planning.CONFIGURED if selection is None else selection
+    return 1 + len(planning.expected_slice_keys(item.sport, chosen, row=row))
 
 
 def _plan_events(ctx: "ServiceContext", ids: Sequence[Any]) -> Tuple[Dict[str, int], int]:
     from src.services import planning
     from src.services.query import RefreshPolicy
+    from src.store import Scope
 
-    items = planning.plan_items(ctx.store, list(ids), RefreshPolicy.current())
+    policy = planning.configured_policy(ctx.store)
+    items = planning.plan_items(ctx.store, list(ids), RefreshPolicy.current(), selection=policy)
+    full = [item.owner.id for item in items if item.need == "full"]
+    rows: Dict[int, Any] = {}
+    for start in range(0, len(full), 500):  # maç satırları (turnuva, takımlar: takibin seçimi için) parça parça
+        chunk = tuple(full[start:start + 500])
+        rows.update((state.event.id, state.event) for state in ctx.store.events.states(Scope(event_ids=chunk)))
     needs: Dict[str, int] = {"full": 0, "refill": 0, "refresh": 0}
     requests = 0
     for item in items:
         needs[item.need] = needs.get(item.need, 0) + 1
-        requests += _event_requests(item)
+        requests += _event_requests(item, policy, rows.get(item.owner.id))
     return needs, requests
 
 
