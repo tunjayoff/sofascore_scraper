@@ -11,8 +11,9 @@ Kurallar (her rota için):
   * metinler İngilizcedir ve yerelleştirilmez: istemci `code` ile çevirir;
   * durum değiştiren istek GET olamaz.
 
-Bu paketteki rotalar: sağlık, durum, sporlar ve sink'ler (meta.py), oturum (auth.py), işler (jobs.py), ayarlar
-(settings.py). Canlı veri için rota yoktur.
+Bu paketteki rotalar: sağlık, durum, sporlar ve sink'ler (meta.py), oturum (auth.py), turnuvalar ve sezonlar
+(tournaments.py), maçlar, dilimleri, ham yükler ve değişiklikler (events.py), işler (jobs.py), ayarlar
+(settings.py). Şema v1 kayıtlarının yanıt modelleri records.py'dedir. Canlı veri için rota yoktur.
 """
 from __future__ import annotations
 
@@ -35,7 +36,7 @@ class PageInfo(BaseModel):
 
 
 # Rota modülleri PageInfo'yu buradan alır: içe aktarma, model tanımlandıktan sonra yapılır
-from src.web.api.v1 import auth, jobs, meta, settings  # noqa: E402
+from src.web.api.v1 import auth, events, jobs, meta, settings, tournaments  # noqa: E402
 
 # Her rotanın verebildiği hatalar: belirteç (401), doğrulama (422; FastAPI'nin kendi 422 modelinin yerine) ve
 # beklenmeyen hata (500). Rotalar kendi kodlarını ekler.
@@ -43,7 +44,7 @@ router = APIRouter(
     prefix=V1_PREFIX,
     responses={**error_responses("unauthorized", "internal"), **validation_response()},
 )
-for _module in (meta, auth, jobs, settings):
+for _module in (meta, auth, tournaments, events, jobs, settings):
     router.include_router(_module.router)
 
 __all__ = ["PageInfo", "router"]
