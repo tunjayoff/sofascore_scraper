@@ -14,9 +14,8 @@ import conftest
 from src.match_data_fetcher import (SLICE_EMPTY, SLICE_FAILED, UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher,
                                     SliceOutcome)
 from src.match_fetcher import MatchFetcher
-from src.paths import league_dir_name, season_dir_name, seasons_file, summary_paths
 from src.slices import SLICE_OK, Outcome
-from src.store import Ref, open_store, shadow_schedules
+from src.store import Ref, league_dir_name, open_store, shadow_schedules
 from src.web import deps
 from src.web.app import app
 
@@ -218,14 +217,11 @@ def test_file_report_of_another_folder(tmp_path):
 # --- yol düzeni -----------------------------------------------------------------
 
 def test_path_helpers_match_existing_layout():
+    """2.x düzeninin lig dizini adı (Store'un ad kuralı; eskiden src/paths.py)."""
     assert league_dir_name(17, "Premier League") == "17_Premier_League"
     assert league_dir_name(2361, "Wimbledon, Men") == "2361_Wimbledon,_Men"
-    assert season_dir_name(96668, "Premier League 26/27") == "96668_Premier_League_26_27"
-    j, c = summary_paths("d", 17, "Premier League", 96668, "Premier League 26/27")
-    assert j == os.path.join("d", "matches", "17_Premier_League", "96668_Premier_League_26_27_summary.json")
-    assert c.endswith("_summary.csv")
     # Config'de olmayan lig: kaydeden ve okuyan aynı adı kullanır
-    assert seasons_file("d", 5, None) == os.path.join("d", "seasons", "5_League_5_seasons.json")
+    assert league_dir_name(5, None) == "5_League_5"
 
 
 # --- web özetleri ---------------------------------------------------------------

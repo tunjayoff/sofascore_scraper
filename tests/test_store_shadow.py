@@ -41,8 +41,8 @@ from src.exceptions import StorageError
 from src.match_data_fetcher import SCORE_CHANGES_FILE, UNAVAILABLE_FILE, MatchDataFetcher
 from src.match_fetcher import MatchFetcher
 from src.season_fetcher import SeasonFetcher
-from src.services import stats as stats_service
 from src.slices import SLICE_EMPTY, SLICE_OK, SliceOutcome
+from src.utils import ensure_directory
 from src.store import (
     CatalogAdmin,
     EventQuery,
@@ -1243,8 +1243,8 @@ def test_what_the_test_writes_itself_is_reconciled_before_the_next_product_write
     os.utime(basic_file, ns=(stamp, stamp))
     assert store.events.get(ARS).home_score_current != 9 and api_mod.shadow_unsynced()
 
-    # Ürün kodu dizine dokunur (Store'un dışında: lig istatistiklerinin disk boyutları dosya ağacını gezer)
-    stats_service.league_stats(str(data), PL)
+    # Ürün kodu dizine dokunur (Store'un dışında: bağlam kurulurken veri dizini var edilir, src/utils.py)
+    ensure_directory(str(data))
 
     assert not api_mod.shadow_unsynced() and store.events.get(ARS).home_score_current == 9
     assert differences(store) == [] and api_mod.shadow_check() == []

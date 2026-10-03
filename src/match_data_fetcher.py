@@ -30,7 +30,7 @@ from src.sports import DETAIL_SLICES, event_sport_slug, slices_for
 from src.status import OBSERVATION_KEY, observation_record
 # SCORE_CHANGES_FILE: eski düzenin değişiklik günlüğü (yalnızca okunur); eski import'lar için burada da durur
 from src.refresh import SCORE_CHANGES_FILE as SCORE_CHANGES_FILE
-from src.paths import league_dir_name
+from src.store import league_dir_name
 from src.services.export import ExportService, ExportSpec
 from src.services import pipeline, planning
 from src.services.planning import WorkItem

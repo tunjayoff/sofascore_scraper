@@ -640,11 +640,11 @@ def test_fidelity_marker_files(tmp_path: Path) -> None:
 
 def test_fidelity_slices_and_names() -> None:
     """Dilim listesi, "veri var mı" denetimleri, dizin adları ve gözlem kaydı kodla aynı."""
-    from src import paths
     from src.match_data_fetcher import DETAIL_SLICE_KEYS, NO_TOURNAMENT_DIR
     from src.slices import match_detail_slice_present
     from src.sports import slices_for
     from src.status import observation_record
+    from src.store import legacy
 
     assert sf.REQUIRED_SLICES == DETAIL_SLICE_KEYS
     assert tuple(s.key for s in slices_for("tennis") if not s.counts_in("tennis")) == sf.OPTIONAL_SLICES
@@ -659,11 +659,11 @@ def test_fidelity_slices_and_names() -> None:
         when = dt.datetime(2026, 9, 19, 6, tzinfo=dt.timezone.utc)
         assert observation_record(basic, when) == sf.observation_payload(basic, "2026-09-19T06:00:00+00:00")
     for name in ("Premier League", "Wimbledon, Men", "LaLiga 25/26", "a\\b"):
-        assert sf.safe_name(name) == paths.safe_name(name)
-    assert sf.league_dir(sf.WIMBLEDON) == paths.league_dir_name(sf.WIMBLEDON.id, sf.WIMBLEDON.name)
-    assert sf.season_dir(sf.PL_2627) == paths.season_dir_name(sf.PL_2627.id, sf.PL_2627.name)
-    seasons_file = paths.seasons_file("d", sf.WIMBLEDON.id, sf.WIMBLEDON.name)
-    assert os.path.basename(seasons_file) == "2361_Wimbledon,_Men_seasons.json"  # canonical dizinindeki ad
+        assert sf.safe_name(name) == legacy.safe_name(name)
+    assert sf.league_dir(sf.WIMBLEDON) == legacy.league_dir_name(sf.WIMBLEDON.id, sf.WIMBLEDON.name)
+    assert sf.season_dir(sf.PL_2627) == f"{sf.PL_2627.id}_{legacy.safe_name(sf.PL_2627.name)}"
+    seasons_file = f"{legacy.league_dir_name(sf.WIMBLEDON.id, sf.WIMBLEDON.name)}_seasons.json"
+    assert seasons_file == "2361_Wimbledon,_Men_seasons.json"  # canonical dizinindeki ad
 
 
 def _score_change_inputs() -> List[Any]:

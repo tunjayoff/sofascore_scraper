@@ -75,6 +75,7 @@ if _TYPE_CHECKING:  # tür denetleyicileri ve API anlık görüntüsü adları b
     from src.store.api import LAYOUT_VERSION
     from src.store.catalog import CATALOG_SCHEMA
     from src.store.state import load_migrations
+    from src.store.legacy import league_dir_name
 
 _LAZY = {
     "open_store": "src.store.api",
@@ -157,6 +158,7 @@ _LAZY = {
     "LAYOUT_VERSION": "src.store.api",
     "CATALOG_SCHEMA": "src.store.catalog",
     "load_migrations": "src.store.state",
+    "league_dir_name": "src.store.legacy",
 }
 
 
@@ -254,6 +256,7 @@ __all__ = [
     "LAYOUT_VERSION",
     "CATALOG_SCHEMA",
     "load_migrations",
+    "league_dir_name",
     "StoreError",
     "LeaseHeld",
     "StoreBusy",

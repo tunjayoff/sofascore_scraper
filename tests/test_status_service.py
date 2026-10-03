@@ -139,7 +139,7 @@ def old_stats(data_dir: Path, leagues: Dict[int, str]) -> Dict[str, Any]:
 
 
 def new_stats(data_dir: Path, leagues: Dict[int, str]) -> Dict[str, Any]:
-    system = stats_service.system_stats(str(data_dir), leagues)
+    system = stats_service.system_counts(stats_service.data_summary(str(data_dir), leagues), leagues)
     out: Dict[str, Any] = {key: system[key] for key in ("seasons", "matches", "details")}
     for entry in system["league_breakdown"]:
         for key in ("seasons", "seasons_fetched", "matches", "details", "coverage"):
@@ -517,47 +517,29 @@ def test_disk_usage_of_an_unmeasured_summary() -> None:
 # --- aktarıcı: bugünkü anahtarlar --------------------------------------------------------------------
 
 
-def test_league_stats_keeps_its_keys(canonical: sf.LegacyFixture) -> None:
-    stats = stats_service.league_stats(str(canonical.data_dir), 17, "Premier League")
-    assert list(stats) == ["id", "name", "seasons", "seasons_fetched", "matches", "details", "coverage",
-                           "last_update", "disk"]
-    assert stats == {
+def test_league_counts_keeps_its_keys(canonical: sf.LegacyFixture) -> None:
+    summary = stats_service.data_summary(str(canonical.data_dir), (17, 35))
+    assert stats_service.league_counts(summary, 17, "Premier League") == {
         "id": 17, "name": "Premier League", "seasons": 3, "seasons_fetched": 2, "matches": 12, "details": 10,
         "coverage": 83.3, "last_update": dt.datetime.fromtimestamp(sf.BASE_MTIME).isoformat(),
-        "disk": stats["disk"],
     }
-    # lig başına disk boyutları lig dizinlerinden ölçülür (Store bu dökümü vermez)
-    data_dir = canonical.data_dir
-    assert stats["disk"] == {
-        "seasons": (data_dir / "seasons" / "17_Premier_League_seasons.json").stat().st_size,
-        "matches": tree_bytes(data_dir / "matches" / "17_Premier_League"),
-        "details": tree_bytes(data_dir / "match_details" / "17_Premier_League"),
-        "total": stats["disk"]["seasons"] + stats["disk"]["matches"] + stats["disk"]["details"],
-    }
-    assert stats["disk"]["details"] > 0
+    empty = stats_service.league_counts(summary, 35, "Bundesliga")
+    assert empty == {"id": 35, "name": "Bundesliga", "seasons": 0, "seasons_fetched": 0, "matches": 0,
+                     "details": 0, "coverage": 0, "last_update": None}
+    assert type(empty["coverage"]) is int  # JSON'da `0`, `0.0` değil (altın dosyalar türü de karşılaştırır)
 
 
-def test_league_stats_of_a_league_without_data(canonical: sf.LegacyFixture) -> None:
-    stats = stats_service.league_stats(str(canonical.data_dir), 35, "Bundesliga")
-    assert stats == {"id": 35, "name": "Bundesliga", "seasons": 0, "seasons_fetched": 0, "matches": 0, "details": 0,
-                     "coverage": 0, "last_update": None, "disk": {"seasons": 0, "matches": 0, "details": 0, "total": 0}}
-    assert type(stats["coverage"]) is int  # JSON'da `0`, `0.0` değil (altın dosyalar türü de karşılaştırır)
-
-
-def test_league_disk_finds_the_directory_without_an_id(old_forms: sf.LegacyFixture) -> None:
-    stats = stats_service.league_stats(str(old_forms.data_dir), 8, "LaLiga")
-    assert stats["disk"]["details"] == tree_bytes(old_forms.data_dir / "match_details" / "LaLiga") > 0
-    assert stats["disk"]["seasons"] == 0  # `LaLiga_seasons.json`: adında kimlik yok, lig boyutuna girmez
-
-
-def test_system_stats_keeps_its_keys(canonical: sf.LegacyFixture) -> None:
+def test_system_counts_keeps_its_keys(canonical: sf.LegacyFixture) -> None:
     leagues = canonical.leagues
-    system = stats_service.system_stats(str(canonical.data_dir), leagues)
+    summary = stats_service.data_summary(str(canonical.data_dir), leagues)
+    system = stats_service.system_counts(summary, leagues)
     assert list(system) == ["leagues", "seasons", "matches", "details", "league_breakdown", "disk_usage"]
     assert (system["leagues"], system["seasons"], system["matches"], system["details"]) == (6, 11, 29, 23)
     assert [entry["id"] for entry in system["league_breakdown"]] == list(leagues)
     for entry in system["league_breakdown"]:
-        assert entry == stats_service.league_stats(str(canonical.data_dir), entry["id"], entry["name"])
+        assert entry == stats_service.league_counts(summary, entry["id"], entry["name"])
+    assert list(system["league_breakdown"][0]) == ["id", "name", "seasons", "seasons_fetched", "matches", "details",
+                                                   "coverage", "last_update"]
     assert system["disk_usage"] == stats_service.disk_usage(stats_service.data_summary(str(canonical.data_dir)))
     assert list(system["disk_usage"]) == ["seasons", "matches", "details", "datasets", "total", "formatted_total"]
     assert system["disk_usage"]["total"] == sum(
@@ -565,13 +547,9 @@ def test_system_stats_keeps_its_keys(canonical: sf.LegacyFixture) -> None:
 
 
 def test_the_routes_do_not_walk_the_tree(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Web yanıtları yalnızca özetten kurulur: lig dizinlerini gezen işlevler çağrılmaz."""
-
-    def forbidden(*args: Any, **kwargs: Any) -> Any:
-        raise AssertionError("the web routes must not walk the league directories")
-
+    """Web yanıtları yalnızca özetten kurulur: lig dizinlerini gezen işlevler yok (ST-28 sildi)."""
     for name in ("dir_size", "_league_dirs", "league_stats", "system_stats"):
-        monkeypatch.setattr(stats_service, name, forbidden)
+        assert not hasattr(stats_service, name)
     data_dir, leagues = str(canonical.data_dir), canonical.leagues
     dashboard = data_routes._build_dashboard_sync(data_dir, leagues)
     assert dashboard["totals"] == {"leagues": 6, "matches": 29, "details": 23}

@@ -1,0 +1,3 @@
+# src.store.league_dir_name
+# kaynak: src/store/legacy.py
+def league_dir_name(league_id: int, league_name: Optional[str]) -> str

@@ -207,7 +207,7 @@ class _Writer:
 
 
 def safe_name(name: str) -> str:
-    """`src/paths.safe_name` ile aynı kural."""
+    """`src/store/legacy.safe_name` ile aynı kural (2.x yazıcılarının kuralı)."""
     return str(name).replace(" ", "_").replace("/", "_").replace("\\", "_")
 
 
