@@ -544,6 +544,528 @@
         }
       }
     },
+    "/api/v1/follows": {
+      "get": {
+        "tags": [
+          "follows"
+        ],
+        "summary": "List follows",
+        "description": "Every follow of every origin, in their order. The successor of `GET /api/leagues` and its search.",
+        "operationId": "listFollows",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "tournament",
+                    "team",
+                    "player",
+                    "event"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only follows of this kind.",
+              "title": "Kind"
+            },
+            "description": "Only follows of this kind."
+          },
+          {
+            "name": "origin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "legacy",
+                    "config",
+                    "api"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only follows of this origin.",
+              "title": "Origin"
+            },
+            "description": "Only follows of this origin."
+          },
+          {
+            "name": "enabled",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only enabled (true) or disabled (false) follows.",
+              "title": "Enabled"
+            },
+            "description": "Only enabled (true) or disabled (false) follows."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Text in the name; case ignored.",
+              "title": "Q"
+            },
+            "description": "Text in the name; case ignored."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "follows"
+        ],
+        "summary": "Follow something",
+        "description": "Add a follow and return it (201, with `Location`). A tournament follow is written to config/leagues.txt when\nno config file is in use (then only `name` and `sport` can be set), else to the follows table. A follow of a\nteam, a player or an event is always kept in the follows table. 409 `follow_exists` for an entity or a\ntournament name that is followed already.",
+        "operationId": "addFollow",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FollowCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden_origin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "follow_exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "507": {
+            "description": "storage_error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/follows/{follow_id}": {
+      "get": {
+        "tags": [
+          "follows"
+        ],
+        "summary": "Get a follow",
+        "operationId": "getFollow",
+        "parameters": [
+          {
+            "name": "follow_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(tournament|team|player|event):[1-9][0-9]{0,18}$",
+              "description": "`<kind>:<id>`, for example `tournament:17`.",
+              "title": "Follow Id"
+            },
+            "description": "`<kind>:<id>`, for example `tournament:17`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "follows"
+        ],
+        "summary": "Change a follow",
+        "description": "Change the given fields and return the follow. A follow of the config file cannot be changed here (409\n`follow_managed`); one of config/leagues.txt only its sport (`writable` says which fields can change).",
+        "operationId": "updateFollow",
+        "parameters": [
+          {
+            "name": "follow_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(tournament|team|player|event):[1-9][0-9]{0,18}$",
+              "description": "`<kind>:<id>`, for example `tournament:17`.",
+              "title": "Follow Id"
+            },
+            "description": "`<kind>:<id>`, for example `tournament:17`."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FollowPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden_origin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "follow_managed, follow_exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "follows"
+        ],
+        "summary": "Stop following",
+        "description": "Remove the follow and return it as it was. Stored data stays. Refused while a job runs (409), because a job\nreads the names and sports of the follows; a follow of the config file is removed there (409 `follow_managed`).",
+        "operationId": "removeFollow",
+        "parameters": [
+          {
+            "name": "follow_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(tournament|team|player|event):[1-9][0-9]{0,18}$",
+              "description": "`<kind>:<id>`, for example `tournament:17`.",
+              "title": "Follow Id"
+            },
+            "description": "`<kind>:<id>`, for example `tournament:17`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden_origin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "follow_managed, job_running, data_operation_running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tournaments": {
       "get": {
         "tags": [
@@ -685,6 +1207,108 @@
           },
           "400": {
             "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tournaments/search": {
+      "post": {
+        "tags": [
+          "tournaments"
+        ],
+        "summary": "Search tournaments on SofaScore",
+        "description": "Look the text up on SofaScore (one request, the shared request budget), at most 20 tournaments. An empty\nlist: SofaScore answered and found nothing. 503 `blocked` / `rate_limited` and 502 `upstream_error` when it\ndid not answer; `details.reason` is blocked, browser, rate_limited, network or upstream. POST, because every\ncall sends a request to SofaScore (a GET could be triggered by another site).",
+        "operationId": "searchTournaments",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TournamentSearch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentHitListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden_origin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "upstream_error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "blocked",
             "content": {
               "application/json": {
                 "schema": {
@@ -4335,6 +4959,318 @@
         "title": "FightScore",
         "description": "Score family `fight`: no score; how the fight was decided and in which round (MMA). The winner is the event's `winner`."
       },
+      "FollowCreate": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "tournament",
+              "team",
+              "player",
+              "event"
+            ],
+            "title": "Kind",
+            "default": "tournament"
+          },
+          "entity_id": {
+            "type": "integer",
+            "exclusiveMaximum": 9.223372036854776e+18,
+            "exclusiveMinimum": 0.0,
+            "title": "Entity Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "sport": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sport"
+          },
+          "seasons": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Seasons",
+            "default": "all"
+          },
+          "live": {
+            "type": "boolean",
+            "title": "Live",
+            "default": false
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "entity_id",
+          "name"
+        ],
+        "title": "FollowCreate",
+        "description": "A new follow. Without a config file a tournament follow is written to config/leagues.txt (name and sport)."
+      },
+      "FollowListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/FollowRecord"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "page"
+        ],
+        "title": "FollowListResponse"
+      },
+      "FollowPatch": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "sport": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sport"
+          },
+          "seasons": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seasons"
+          },
+          "live": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Live"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "FollowPatch",
+        "description": "Fields to change; a field left out stays. `sport: null` clears the stored sport."
+      },
+      "FollowRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "`<kind>:<entity_id>`."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "tournament",
+              "team",
+              "player",
+              "event"
+            ],
+            "title": "Kind"
+          },
+          "entity_id": {
+            "type": "integer",
+            "title": "Entity Id",
+            "description": "SofaScore's id of the followed entity."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "sport": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sport",
+            "description": "Stored sport, else (tournaments) the one its events show."
+          },
+          "seasons": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Seasons",
+            "description": "`all`, `current`, `last:N` or a list of season ids."
+          },
+          "slices": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slices",
+            "description": "Data selection; null: the defaults."
+          },
+          "live": {
+            "type": "boolean",
+            "title": "Live",
+            "description": "The live service watches it (`ssc watch`)."
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "legacy",
+              "config",
+              "api"
+            ],
+            "title": "Origin",
+            "description": "legacy: config/leagues.txt; config: the config file (read-only here); api: added here."
+          },
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          },
+          "writable": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Writable",
+            "description": "Fields PATCH can change on this follow."
+          },
+          "created_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At Utc"
+          },
+          "updated_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At Utc"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "entity_id",
+          "name",
+          "seasons",
+          "live",
+          "enabled",
+          "origin",
+          "position",
+          "writable"
+        ],
+        "title": "FollowRecord",
+        "description": "Something the platform downloads and watches: a tournament, a team, a player or one event."
+      },
+      "FollowResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/FollowRecord"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "FollowResponse"
+      },
       "FootballScore": {
         "properties": {
           "family": {
@@ -6636,6 +7572,129 @@
         "title": "ThrottleStatus",
         "description": "The request budget shared by all processes of this machine."
       },
+      "TournamentHit": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "sport": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sport",
+            "description": "Slug of a registered sport; null for others."
+          },
+          "category": {
+            "$ref": "#/components/schemas/TournamentHitCategory"
+          },
+          "followed": {
+            "type": "boolean",
+            "title": "Followed",
+            "description": "A follow of any origin names the tournament already."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "category",
+          "followed"
+        ],
+        "title": "TournamentHit",
+        "description": "A tournament SofaScore found."
+      },
+      "TournamentHitCategory": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "slug": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slug"
+          },
+          "country_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country Code",
+            "description": "SofaScore's country code, as given."
+          }
+        },
+        "type": "object",
+        "title": "TournamentHitCategory"
+      },
+      "TournamentHitListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/TournamentHit"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "page"
+        ],
+        "title": "TournamentHitListResponse"
+      },
       "TournamentListResponse": {
         "properties": {
           "data": {
@@ -6751,6 +7810,37 @@
           "data"
         ],
         "title": "TournamentResponse"
+      },
+      "TournamentSearch": {
+        "properties": {
+          "q": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Q",
+            "description": "Text of the tournament name."
+          },
+          "sport": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sport",
+            "description": "Only tournaments of this sport (slug)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "q"
+        ],
+        "title": "TournamentSearch",
+        "description": "What to look for on SofaScore."
       },
       "TournamentSummary": {
         "properties": {

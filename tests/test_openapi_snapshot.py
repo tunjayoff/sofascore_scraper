@@ -107,7 +107,13 @@ def test_the_document_is_the_v1_view(document: Dict[str, Any], full_document: Di
         "GET /api/v1/auth",
         "POST /api/v1/auth/login",
         "POST /api/v1/auth/logout",
+        "GET /api/v1/follows",
+        "POST /api/v1/follows",
+        "GET /api/v1/follows/{follow_id}",
+        "PATCH /api/v1/follows/{follow_id}",
+        "DELETE /api/v1/follows/{follow_id}",
         "GET /api/v1/tournaments",
+        "POST /api/v1/tournaments/search",
         "GET /api/v1/tournaments/{tournament_id}",
         "GET /api/v1/tournaments/{tournament_id}/seasons",
         "GET /api/v1/seasons/{season_id}",
@@ -157,10 +163,11 @@ def test_every_v1_operation_has_a_stable_id_and_a_summary(document: Dict[str, An
     ids = [op["operationId"] for _m, _p, op in operations(document)]
     assert ids == [
         "getHealth", "getStatus", "checkConnection", "listSports", "getSport", "listSinks", "getAuth", "login",
-        "logout", "listTournaments", "getTournament", "listTournamentSeasons", "getSeason", "getSeasonSlice",
-        "listEvents", "getEvent", "listEventSlices", "getEventSlice", "getEventRaw", "getEventSliceRaw",
-        "listEventOdds", "listChanges", "listJobs", "startJob", "getJob", "cancelJob", "streamJobEvents",
-        "getSettings", "updateSettings",
+        "logout", "listFollows", "addFollow", "getFollow", "updateFollow", "removeFollow", "listTournaments",
+        "searchTournaments", "getTournament", "listTournamentSeasons", "getSeason", "getSeasonSlice", "listEvents",
+        "getEvent", "listEventSlices", "getEventSlice", "getEventRaw", "getEventSliceRaw", "listEventOdds",
+        "listChanges", "listJobs", "startJob", "getJob", "cancelJob", "streamJobEvents", "getSettings",
+        "updateSettings",
     ]
     assert len(set(ids)) == len(ids)
     for method, path, op in operations(document):
@@ -210,7 +217,8 @@ def test_state_changing_requests_are_never_get(document: Dict[str, Any]) -> None
     writes = {f"{method} {path}" for method, path, _op in operations(document) if method != "GET"}
     assert writes == {
         "POST /api/v1/jobs", "POST /api/v1/jobs/{job_id}/cancel", "PATCH /api/v1/settings", "POST /api/v1/status/check",
-        "POST /api/v1/auth/login", "POST /api/v1/auth/logout",
+        "POST /api/v1/auth/login", "POST /api/v1/auth/logout", "POST /api/v1/follows", "PATCH /api/v1/follows/{follow_id}",
+        "DELETE /api/v1/follows/{follow_id}", "POST /api/v1/tournaments/search",
     }
 
 
