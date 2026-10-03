@@ -1,20 +1,27 @@
 #!/bin/sh
 # Konteyner giriş noktası.
 #
-#   (argümansız) | web   → web arayüzü, 0.0.0.0:${PORT:-8000}
-#   başka her şey        → python main.py "$@"   (örn. --version, --help, --headless --update-all)
+#   (argümansız) | serve [seçenekler] | web   → ssc serve --host ${HOST:-0.0.0.0} --port ${PORT:-8000} [seçenekler]
+#   başka her şey                              → python main.py "$@": yeni CLI'nin bir komutu (sync, watch,
+#                                                status, ...) ya da bir sürüm daha çalışan eski bayraklar
+#                                                (--version, --help, --headless --update-all, ...)
 #
-# Web sunucusu `main.py --web --host 0.0.0.0` ile DEĞİL, doğrudan uvicorn ile başlatılır.
-# Konteynerde 0.0.0.0 yalnızca konteynerin kendi ağ arayüzüdür; dışarıya ne açılacağına `-p`
-# karar verir. main.py ise 0.0.0.0'ı "ağa açıldı" sayar: SOFASCORE_ALLOWED_HOSTS verilmeden
-# başlamaz ve erişim belirteci yoksa her başlangıçta uyarır; yalnızca 127.0.0.1'de yayımlanan
-# bir konteyner için ikisi de yanlış olurdu. Doğrudan uvicorn ile DNS rebinding koruması
-# varsayılan haliyle (localhost, 127.0.0.1) açık kalır. Arayüze başka bir adla ya da IP ile
-# erişilecekse SOFASCORE_ALLOWED_HOSTS ortam değişkeniyle o ad eklenir; port ağa açılıyorsa
-# SOFASCORE_API_TOKEN da ayarlanmalıdır (uygulama konteynerde bunu kendisi uyaramaz).
+# Web sunucusu `ssc serve` ile başlar (karar D17; docs/deploy/docker.md). Konteynerde 0.0.0.0 yalnızca
+# konteynerin kendi ağ arayüzüdür; dışarıya ne açılacağına `-p` karar verir. `serve` 0.0.0.0'ı "her arayüz"
+# sayar ve izin verilen Host adları olmadan başlamaz. İzin listesi hiçbir yerde verilmemişse (ortam, config
+# volume'undaki .env, yapılandırma dosyası) giriş noktası yalnızca yerel adları verir
+# (SOFASCORE_SERVER__ALLOWED_HOSTS=localhost,127.0.0.1,[::1]): DNS rebinding koruması, doğrudan uvicorn ile
+# başlatılan eski imajdaki gibi açık kalır. Arayüze başka bir adla ya da IP ile erişilecekse o adlar
+# SOFASCORE_ALLOWED_HOSTS ya da SOFASCORE_SERVER__ALLOWED_HOSTS ile verilir (Compose örneği bunu açıkça yapar).
+#
+# Erişim belirteci yoksa `serve` her başlangıçta uyarır: uygulama `-p 127.0.0.1:8000:8000` ile yalnızca bu
+# makineye yayımlandığını göremez. O durumda uyarı yok sayılabilir; port ağa açıksa SOFASCORE_API_TOKEN
+# ayarlanmalıdır.
 set -eu
 
-cd /app
+cd "${APP_HOME:-/app}"
+
+LOOPBACK_HOSTS="localhost,127.0.0.1,[::1]"
 
 # --- Tarayıcı profilindeki bayat Chromium kilidi ------------------------------------------
 # Chromium profil dizinine SingletonLock ("<hostname>-<pid>") bırakır. Konteyner durdurulunca
@@ -27,7 +34,7 @@ cd /app
 #   - alınamadıysa profil kullanımdadır → dokunulmaz, tarayıcı açılmayacağı için uyarı yazılır.
 # fd 9 exec ile Python sürecine geçer; kilit konteyner yaşadığı sürece tutulur.
 unlock_stale_profile() {
-    profile="${SOFASCORE_BROWSER_PROFILE:-}"
+    profile="${SOFASCORE_CLIENT__BROWSER_PROFILE:-${SOFASCORE_BROWSER_PROFILE:-}}"
     [ -n "$profile" ] || return 0
     mkdir -p "$profile" 2>/dev/null || return 0
     [ -w "$profile" ] || return 0
@@ -35,19 +42,46 @@ unlock_stale_profile() {
     if flock -n 9; then
         rm -f "$profile/SingletonLock" "$profile/SingletonCookie" "$profile/SingletonSocket"
     else
-        echo "sofascore-entrypoint: UYARI: $profile başka bir konteyner tarafından kullanılıyor;" \
-            "tarayıcı bu konteynerde açılamaz (önce diğerini durdurun)." >&2
+        echo "sofascore-entrypoint: WARNING: $profile is in use by another container;" \
+            "the browser cannot start in this one (stop the other container first)." >&2
     fi
 }
 
-case "${1:-web}" in
+# --- Host izin listesi -------------------------------------------------------------------
+# Kullanıcı bir yerde verdiyse (ortamda iki addan biriyle, config volume'undaki .env'de ya da bir
+# yapılandırma dosyası varsa onda) hiçbir şey yapılmaz: `serve` onu yazıldığı gibi kullanır, dosyada da
+# yoksa açıkça söyleyip başlamaz. Hiçbir yerde verilmemişse yalnızca yerel adlar.
+allowed_hosts_given() {
+    [ -n "${SOFASCORE_ALLOWED_HOSTS:-}" ] && return 0
+    [ -n "${SOFASCORE_SERVER__ALLOWED_HOSTS:-}" ] && return 0
+    env_file="${SOFASCORE_ENV_FILE:-.env}"
+    if [ -f "$env_file" ] &&
+        grep -Eq '^[[:space:]]*(export[[:space:]]+)?SOFASCORE_(SERVER__)?ALLOWED_HOSTS[[:space:]]*=[[:space:]]*[^[:space:]#]' "$env_file"; then
+        return 0
+    fi
+    # Yapılandırma dosyası (src/config/loader.find_config_file ile aynı yerler): varsa karar onundur
+    case "${SOFASCORE_CONFIG:-}" in
+        "" | none | NONE | None) ;;
+        *) return 0 ;;
+    esac
+    [ "${SOFASCORE_CONFIG:-}" = "" ] || return 1
+    [ -f sofascore.toml ] && return 0
+    [ -f "${SOFASCORE_CONFIG_DIR:-config}/sofascore.toml" ] && return 0
+    return 1
+}
+
+case "${1:-serve}" in
     # Tarayıcıya ihtiyaç duymayan sorgular profile dokunmaz
-    --version | --help | -h) ;;
+    --version | --help | -h | version) ;;
     *) unlock_stale_profile ;;
 esac
 
-if [ "$#" -eq 0 ] || [ "$1" = "web" ]; then
-    exec python -m uvicorn src.web.app:app --host "${HOST:-0.0.0.0}" --port "${PORT:-8000}"
+if [ "$#" -eq 0 ] || [ "$1" = "serve" ] || [ "$1" = "web" ]; then
+    [ "$#" -eq 0 ] || shift
+    if ! allowed_hosts_given; then
+        export SOFASCORE_SERVER__ALLOWED_HOSTS="$LOOPBACK_HOSTS"
+    fi
+    exec python -m src.cli.main serve --host "${HOST:-0.0.0.0}" --port "${PORT:-8000}" "$@"
 fi
 
 exec python main.py "$@"

@@ -24,12 +24,20 @@ out="$(docker run --rm --network none "${IMAGE}" --version)"
 echo "${out}"
 test "${out}" = "SofaScore Scraper ${VERSION}"
 
-step "--help"
+step "--help (eski bayraklar bir sürüm daha) ve serve --help"
 out="$(docker run --rm --network none "${IMAGE}" --help)"
 grep -q -- "--headless" <<<"${out}"
+out="$(docker run --rm --network none "${IMAGE}" serve --help)"
+grep -q -- "--allowed-hosts" <<<"${out}"
+grep -q -- "--allow-any-host" <<<"${out}"
 echo "ok"
 
-step "web arayüzü (varsayılan komut) ve HEALTHCHECK"
+step "yeni CLI'nin bir komutu: version --json"
+out="$(docker run --rm --network none "${IMAGE}" --json version)"
+grep -q "\"version\": \"${VERSION}\"" <<<"${out}"
+echo "ok"
+
+step "web arayüzü (varsayılan komut: ssc serve) ve HEALTHCHECK"
 docker run -d --name "${NAME}" --network none --shm-size=1g "${IMAGE}" >/dev/null
 status="starting"
 for _ in $(seq 1 60); do
@@ -45,6 +53,12 @@ if [ "${status}" != "healthy" ]; then
 fi
 test "$(docker exec "${NAME}" id -u)" != "0"
 echo "healthy; uid=$(docker exec "${NAME}" id -u)"
+# Konteyner 0.0.0.0'da dinler ve belirteç yoktur: uyarı her başlangıçta yazılır (karar D17); izin listesi
+# verilmediği için giriş noktası yalnızca yerel adları verdi
+logs="$(docker logs "${NAME}" 2>&1)"
+grep -q "without an access token" <<<"${logs}"
+grep -q "allowed hosts: localhost,127.0.0.1,\[::1\]" <<<"${logs}"
+echo "ok: warning without a token, loopback allow-list"
 
 step "/health, SPA index, Host kontrolü"
 docker exec -i -e EXPECTED_VERSION="${VERSION}" "${NAME}" python - <<'PY'
@@ -84,7 +98,7 @@ async def main() -> None:
     session = AsyncStealthySession(
         headless=True,
         solve_cloudflare=True,
-        user_data_dir=os.environ["SOFASCORE_BROWSER_PROFILE"],
+        user_data_dir=os.environ["SOFASCORE_CLIENT__BROWSER_PROFILE"],
         proxy=None,
         block_webrtc=True,
         timeout=60000,

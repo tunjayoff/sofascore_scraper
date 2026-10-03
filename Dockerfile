@@ -5,8 +5,11 @@
 #     -v sofascore-data:/app/data -v sofascore-config:/app/config \
 #     -v sofascore-browser:/app/browser-profile sofascore-scraper
 #
-# Varsayılan komut web arayüzüdür (http://127.0.0.1:8000). Başka argüman verilirse
-# main.py'ye geçer:  docker run --rm sofascore-scraper --version
+# Varsayılan komut `ssc serve`dir: HTTP API ve web arayüzü (http://127.0.0.1:8000). `serve` sonrası
+# seçenekler ona geçer; başka argümanlar main.py'ye (yeni CLI'nin komutları ve bir sürüm daha eski bayraklar):
+#   docker run --rm sofascore-scraper --version
+#   docker run --rm -v sofascore-data:/app/data sofascore-scraper status
+# Kurulum, Host izin listesi, erişim belirteci ve canlı izleme: docs/deploy/docker.md
 
 # ---- 1) Web arayüzünü derle (Node yalnızca bu aşamada var) --------------------
 FROM node:22-bookworm-slim AS frontend
@@ -29,7 +32,11 @@ ENV PYTHONUNBUFFERED=1 \
     PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright \
     # Ayarlar sayfası .env'e yazar: config volume'unda dursun ki konteyner yenilenince kaybolmasın
     SOFASCORE_ENV_FILE=/app/config/.env \
-    # Çözülmüş challenge (cookie'ler) kendi volume'unda: yeniden başlatmada ilk istek hızlı olur
+    # Çözülmüş challenge (cookie'ler) kendi volume'unda: yeniden başlatmada ilk istek hızlı olur. Yeni ad
+    # (SOFASCORE_CLIENT__BROWSER_PROFILE) ayardır: bir yapılandırma dosyası varken eski ad tek başına her
+    # başlangıçta "legacy name" uyarısı verirdi. Eski ad, ayarları yüklemeden ortamı okuyanlar (doctor) için
+    # aynı değerle durur; profili taşımak için ikisi birlikte değiştirilir.
+    SOFASCORE_CLIENT__BROWSER_PROFILE=/app/browser-profile \
     SOFASCORE_BROWSER_PROFILE=/app/browser-profile \
     PORT=8000
 
@@ -52,12 +59,14 @@ RUN pip install -r requirements.txt -c constraints.txt \
 # root olmayan kullanıcı; yalnızca volume dizinleri ona aittir (kod salt okunur kalır).
 # --non-unique: APP_UID/APP_GID imajda zaten varsa (ör. gid 100 = users) derleme düşmesin.
 # ARG'lar ağır katmandan sonra: başka bir uid ile derlemek tarayıcıyı yeniden indirmez.
+# browser-profile-live: `ssc watch`un kendi tarayıcı profili (<profil>-live, karar D10); volume değildir
+# (çözülmüş challenge konteyner yenilenince yeniden çözülür), docs/deploy/docker.md onu bağlamayı anlatır.
 ARG APP_UID=1000
 ARG APP_GID=1000
 RUN groupadd --non-unique --gid "${APP_GID}" app \
     && useradd --non-unique --uid "${APP_UID}" --gid app --create-home --shell /usr/sbin/nologin app \
-    && mkdir -p /app/data /app/config /app/logs /app/browser-profile \
-    && chown app:app /app/data /app/config /app/logs /app/browser-profile
+    && mkdir -p /app/data /app/config /app/logs /app/browser-profile /app/browser-profile-live \
+    && chown app:app /app/data /app/config /app/logs /app/browser-profile /app/browser-profile-live
 
 # pyproject.toml sürümün tek kaynağıdır (src/version.py çalışma anında okur)
 COPY pyproject.toml main.py LICENSE README.md README.tr.md CHANGELOG.md ./
@@ -82,9 +91,10 @@ VOLUME ["/app/data", "/app/config", "/app/logs", "/app/browser-profile"]
 
 EXPOSE 8000
 
-# Yalnızca web sunucusu çalışırken anlamlıdır; tek seferlik komutlarda (--headless …) --no-healthcheck verin
+# Yalnızca web sunucusu (serve) çalışırken anlamlıdır; tek seferlik komutlarda (sync, watch …) --no-healthcheck
+# verin. Host başlığı 127.0.0.1'dir: izin listesi onu içermelidir (varsayılan liste içerir).
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD python -c "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ.get('PORT', '8000') + '/health', timeout=4)" || exit 1
 
 ENTRYPOINT ["tini", "--", "sofascore-entrypoint"]
-CMD ["web"]
+CMD ["serve"]
