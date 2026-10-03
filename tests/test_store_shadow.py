@@ -35,6 +35,7 @@ import pytest
 import legacy_writer
 import src.store
 import store_fixtures as sf
+from src.web import deps
 from src.exceptions import StorageError
 from src.match_data_fetcher import SCORE_CHANGES_FILE, UNAVAILABLE_FILE, MatchDataFetcher
 from src.match_fetcher import MatchFetcher
@@ -727,11 +728,11 @@ def test_saving_a_season_list_indexes_it(canonical: sf.LegacyFixture) -> None:
 def test_clear_rebuilds_the_catalog(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch, scope: str,
                                     left: Dict[str, int]) -> None:
     """Temizlemeden sonra katalog kalan dosyalardan yeniden kurulur: silinen turnuvaların satırları da gider."""
-    from src.web.routes import data as data_routes
+    from src.web.api import legacy as data_routes
 
     data = canonical.data_dir
     store = open_store(data)
-    monkeypatch.setattr(data_routes.config_manager, "get_data_dir", lambda: str(data))
+    monkeypatch.setattr(deps.config_manager(), "get_data_dir", lambda: str(data))
 
     assert data_routes._clear_data_sync(scope)["status"] == "success"
 

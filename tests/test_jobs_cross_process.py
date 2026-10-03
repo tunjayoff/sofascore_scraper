@@ -23,6 +23,7 @@ from typing import Any, Iterator, List, Optional, Tuple
 
 import pytest
 
+from src.web import deps
 from src.jobs.manager import JobManager, local_origin
 from src.jobs.model import JobKind, JobState
 from src.store import JobRunningError, JobStore, LeaseHeld
@@ -286,11 +287,10 @@ def test_the_running_process_moves_the_heartbeat(manager: JobManager, data_dir: 
 def test_the_web_api_sees_and_cancels_a_job_of_another_process(monkeypatch: pytest.MonkeyPatch) -> None:
     from fastapi.testclient import TestClient
 
-    from src.web import fetch_job
+    from src.web.api import legacy as fetch_job
     from src.web.app import app
-    from src.web.routes import api as api_mod
 
-    jobs = api_mod._job_store
+    jobs = deps.job_store()
     monkeypatch.setattr(fetch_job, "run_fetch_job", lambda job_id, payload: None)
     if jobs.snapshot().get("is_running"):
         jobs.update(status="Cancelled", finished=True)

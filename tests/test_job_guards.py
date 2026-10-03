@@ -13,7 +13,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 import conftest
-from src.web import fetch_job
+from src.web import deps
+from src.web.api import legacy as fetch_job
 from src.web.app import app
 from src.web.jobs import (
     DataOperationRunningError,
@@ -21,12 +22,11 @@ from src.web.jobs import (
     JobStore,
     default_db_path,
 )
-from src.web.routes import api as api_mod
-from src.web.routes import data as data_mod
-from src.web.routes import settings as settings_mod
+from src.web.api import legacy as data_mod
+from src.web.api import legacy as settings_mod
 
 client = TestClient(app)
-store = api_mod._job_store
+store = deps.job_store()
 
 
 def _finish_job() -> None:
@@ -179,7 +179,7 @@ def test_league_delete_works_when_no_job_runs():
         assert client.delete("/api/leagues/99901").status_code == 404
         assert client.post("/api/fetch", json={"mode": "full", "league_id": 17}).status_code == 200
     finally:
-        api_mod.config_manager.remove_league(99901)
+        deps.config_manager().remove_league(99901)
 
 
 # --- POST /api/settings (DATA_DIR) ---
@@ -270,7 +270,7 @@ def test_unusable_data_dir_is_rejected_without_changing_anything(data_dir_sandbo
 def test_job_store_returns_when_the_env_write_fails(data_dir_sandbox, monkeypatch):
     """.env yazılamazsa DATA_DIR eskisi gibi kalır; depo da eski dizinde kalmalı."""
     db_before = store.db_path
-    monkeypatch.setattr(api_mod.config_manager, "update_env_variable", lambda key, value: False)
+    monkeypatch.setattr(deps.config_manager(), "update_env_variable", lambda key, value: False)
     r = client.post("/api/settings", json={"data_dir": str(data_dir_sandbox / "other")})
     assert r.status_code == 200, r.text
     assert r.json()["status"] == "no_change"

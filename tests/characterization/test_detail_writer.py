@@ -55,7 +55,8 @@ def fake() -> Iterator[FakeSofaScore]:
 
 
 def _fetcher(data_dir: Path) -> MatchDataFetcher:
-    from src.web.routes.common import config_manager
+    from src.web.deps import config_manager as _web_config
+    config_manager = _web_config()
 
     return MatchDataFetcher(config_manager, data_dir=str(data_dir))
 

@@ -27,8 +27,9 @@ import store_fixtures as sf
 from src.services.backup import BackupService
 from src.services.maintenance import MaintenanceService
 from src.store import StoreError, open_store
-from src.web.routes import data as data_routes
-from src.web.routes.common import _SyncHttpError
+from src.web import deps
+from src.web.api import legacy as data_routes
+from src.web.api.legacy import _SyncHttpError
 
 GOLDEN = Path(__file__).resolve().parent / "golden" / "backup" / "members.json"
 REGEN = os.getenv("REGEN_BACKUP_GOLDEN") == "1"
@@ -65,12 +66,12 @@ def configured(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     env = tmp_path / "secret.env"
     env.write_text(ENV_TEXT, encoding="utf-8", newline="\n")
     monkeypatch.setenv("SOFASCORE_ENV_FILE", str(env))
-    monkeypatch.setattr(data_routes.config_manager, "league_config_path", str(config / "leagues.txt"))
+    monkeypatch.setattr(deps.config_manager(), "league_config_path", str(config / "leagues.txt"))
     return tmp_path
 
 
 def _use_data_dir(monkeypatch: pytest.MonkeyPatch, data_dir: Path) -> None:
-    monkeypatch.setattr(data_routes.config_manager, "get_data_dir", lambda: str(data_dir))
+    monkeypatch.setattr(deps.config_manager(), "get_data_dir", lambda: str(data_dir))
 
 
 def _all_members(root: Path, monkeypatch: pytest.MonkeyPatch) -> Dict[str, List[List[Any]]]:

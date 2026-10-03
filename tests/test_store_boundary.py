@@ -721,7 +721,7 @@ def test_allowlist_names_real_modules_with_a_reason():
 
 def test_store_itself_is_not_scanned():
     assert all(not rel.startswith("src/store/") for rel, _path in iter_modules(SRC_DIR))
-    assert {"src/match_data_fetcher.py", "src/web/routes/data.py"} <= {rel for rel, _path in iter_modules(SRC_DIR)}
+    assert {"src/match_data_fetcher.py", "src/web/api/legacy.py"} <= {rel for rel, _path in iter_modules(SRC_DIR)}
     assert {"errors", "codec", "files", "layout", "manifest"} <= store_submodules(SRC_DIR)
 
 

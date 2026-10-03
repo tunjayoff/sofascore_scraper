@@ -303,7 +303,7 @@ def test_route_answers_from_the_service(old_forms: sf.LegacyFixture) -> None:
 def test_route_reads_through_the_store_only(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
     """Uç nokta indirici kurmaz, dizin ağacını gezmez: yanıt servisten gelir."""
     import src.match_data_fetcher as fetcher_module
-    import src.web.routes.matches as routes
+    import src.web.api.legacy as routes
 
     monkeypatch.setattr(fetcher_module, "MatchDataFetcher", MagicMock(side_effect=AssertionError("not used")))
     seen = []

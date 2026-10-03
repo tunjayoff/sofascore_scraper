@@ -29,8 +29,8 @@ from src.exceptions import (
     ResourceNotFoundError,
 )
 from src.season_fetcher import SeasonFetcher
+from src.web import deps
 from src.web import upstream
-from src.web.routes import api as api_mod
 
 CFG = {"max_retries": 3, "request_timeout": 5, "wait_time_min": 0, "wait_time_max": 0}
 CHALLENGE = '{"error":{"code":403,"reason":"challenge"}}'
@@ -299,7 +299,7 @@ def test_refresh_blocked_end_to_end_through_the_request_layer(client):
 
 def test_legacy_season_fetch_still_returns_an_empty_list_on_failure():
     """CLI ve arka plan işi fetch_seasons_for_league'den liste bekler; hata fırlatmamalı."""
-    fetcher = SeasonFetcher(api_mod.config_manager, DATA_DIR)
+    fetcher = SeasonFetcher(deps.config_manager(), DATA_DIR)
     with patch.object(season_fetcher_mod, "make_api_request", side_effect=APIError("HTTP 403", status_code=403)):
         assert fetcher.fetch_seasons_for_league(LEAGUE_ID) == []
         with pytest.raises(APIError):

@@ -270,7 +270,9 @@ def _world_needs(data_dir: Path, policy: RefreshPolicy) -> Dict[int, str]:
 
 def test_needs_of_the_g01_world(world: Tuple[Any, Path]) -> None:
     import detail_records
-    from src.web.routes.common import config_manager
+    from src.web.deps import config_manager as _web_config
+    config_manager = _web_config()
+
     from src.match_data_fetcher import MatchDataFetcher
 
     fake, data_dir = world

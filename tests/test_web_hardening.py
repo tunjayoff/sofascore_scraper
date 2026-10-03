@@ -39,12 +39,13 @@ import src.utils as utils
 from src import bridge_health, diagnostics, private_files, redact
 from src.paths import env_file_path
 from src.store import open_store
-from src.web import fetch_job, security
+from src.web import deps
+from src.web import security
+from src.web.api import legacy as fetch_job
 from src.web.app import FRONTEND_DIST, app
 from src.web.missing_ui import MISSING_UI_HTML
-from src.web.routes import api as api_mod
-from src.web.routes import data as data_mod
-from src.web.routes.scrape import FetchRequest
+from src.web.api import legacy as data_mod
+from src.web.api.legacy import FetchRequest
 
 REPO = Path(__file__).resolve().parents[1]
 client = TestClient(app)
@@ -263,6 +264,8 @@ GETS_THAT_MAY_WRITE_A_CACHE = {
             "/api/v1/events/1/slices/statistics/raw", "/api/v1/seasons/1", "/api/v1/seasons/1/slices/statistics",
             "/api/v1/tournaments", "/api/v1/tournaments/1", "/api/v1/tournaments/1/seasons", "/api/v1/follows",
             "/api/v1/follows/tournament:1", "/api/v1/backups", "/api/v1/backups/backup_all_20260101_000000.zip",
+            # Eski yedek indirmesi dosyanın yolunu Store'dan alır (P21: web katmanı dosya sistemine dokunmaz)
+            "/api/data/backups/backup_all_20260101_000000.zip",
         )
     },
 }
@@ -798,7 +801,7 @@ def test_token_is_never_returned_logged_or_bundled(token, env_backup, tmp_path, 
         # Bir hata metni belirteci taşısa bile (ör. yanlışlıkla loglanan başlık) log'a maskeli düşer
         log.error(f"request failed: Authorization: Bearer {TOKEN} / token {TOKEN}")
     messages = [r.getMessage() for r in caplog.records]
-    assert any("Erişim belirteci reddedildi" in m for m in messages)
+    assert any("Access token refused" in m for m in messages)
     assert not any(attempt in m for m in messages), "a rejected attempt must not be logged"
     assert all(TOKEN not in m for m in messages if "request failed" not in m)
 
@@ -843,7 +846,7 @@ def test_token_is_a_masked_setting(monkeypatch):
         redact.refresh()
     # Ayarlar API'si belirteci ne okur ne yazar
     assert "token" not in json.dumps(client.get("/api/settings").json()).lower()
-    from src.web.routes.settings import SettingsUpdate
+    from src.web.api.legacy import SettingsUpdate
 
     assert not [name for name in SettingsUpdate.model_fields if "token" in name]
 
@@ -1072,7 +1075,7 @@ def test_env_file_is_created_private(tmp_path, monkeypatch):
     monkeypatch.setenv("DATE_FORMAT", os.environ.get("DATE_FORMAT", ""))  # update_env_variable ortamı da yazar
     old_umask = os.umask(0o022)
     try:
-        assert api_mod.config_manager.update_env_variable("DATE_FORMAT", "%Y-%m-%d")
+        assert deps.config_manager().update_env_variable("DATE_FORMAT", "%Y-%m-%d")
     finally:
         os.umask(old_umask)
         redact.refresh()
@@ -1088,7 +1091,7 @@ def test_writing_a_setting_tightens_an_existing_env_file(tmp_path, monkeypatch):
     monkeypatch.setenv("SOFASCORE_ENV_FILE", str(env))
     monkeypatch.setenv("DATE_FORMAT", os.environ.get("DATE_FORMAT", ""))
     try:
-        assert api_mod.config_manager.update_env_variable("DATE_FORMAT", "%d.%m.%Y")
+        assert deps.config_manager().update_env_variable("DATE_FORMAT", "%d.%m.%Y")
     finally:
         redact.refresh()
     assert "MAX_RETRIES=3" in env.read_text(encoding="utf-8")
@@ -1212,7 +1215,7 @@ def test_failed_job_does_not_store_or_return_the_proxy_password(proxy, monkeypat
         raise RuntimeError(f"curl: (56) CONNECT tunnel failed, response 407 via {PROXY_URL}")
 
     monkeypatch.setattr(fetch_job, "build_context", boom)
-    store = api_mod._job_store
+    store = deps.job_store()
     job_id = store.create_running({"mode": "details", "league_id": conftest.LEAGUE_ID})
     fetch_job.run_fetch_job(job_id, FetchRequest(mode="details", league_id=conftest.LEAGUE_ID))
 

@@ -29,13 +29,13 @@ from src.config import loader, overrides
 from src.config import settings as model
 from src.exceptions import ConfigError
 from src.store import LeaseHeld, SchemaTooNew
+from src.web import deps
 from src.web.api.v1 import settings as settings_v1
 from src.web.app import app
 from src.web.jobs import default_db_path
-from src.web.routes import api as api_mod
 
 client = TestClient(app)
-store = api_mod._job_store
+store = deps.job_store()
 URL = "/api/v1/settings"
 PROXY_SECRET = "s3cr3t-Pa55"
 PROXY_URL = f"http://scraper:{PROXY_SECRET}@proxy.example:8080"
@@ -169,7 +169,7 @@ def test_patch_writes_the_overrides_file_and_the_value_is_in_force_at_once(sandb
     assert json.loads(sandbox.read_text(encoding="utf-8")) == {"client": {"retries": 7}, "display": {"language": "tr"}}
     assert sandbox.read_text(encoding="utf-8").endswith("}\n")
     # Uygulamanın geri kalanı da yeni değeri görür: yapılandırma yöneticisi, eski uç, ortamı okuyan modüller
-    assert api_mod.config_manager.get_max_retries() == 7
+    assert deps.config_manager().get_max_retries() == 7
     legacy = client.get("/api/settings").json()
     assert (legacy["max_retries"], legacy["language"]) == (7, "tr")
     assert os.environ["MAX_RETRIES"] == "7"
@@ -186,7 +186,7 @@ def test_a_value_written_here_beats_the_env_file_and_null_gives_it_back(sandbox:
     assert rows()["client.max_concurrent"]["source"] == "dotenv"
 
     assert patch({"client.max_concurrent": 9}).status_code == 200
-    assert rows()["client.max_concurrent"]["value"] == 9 and api_mod.config_manager.get_max_concurrent() == 9
+    assert rows()["client.max_concurrent"]["value"] == 9 and deps.config_manager().get_max_concurrent() == 9
 
     assert patch({"client.max_concurrent": None}).status_code == 200
     row = rows()["client.max_concurrent"]
@@ -206,10 +206,10 @@ def test_a_value_written_here_shadows_a_later_save_of_the_legacy_route(sandbox: 
     legacy = client.post("/api/settings", json={"max_retries": 2})
 
     assert legacy.status_code == 200 and legacy.json()["status"] == "success"
-    assert api_mod.config_manager.get_max_retries() == 7 and rows()["client.retries"]["source"] == "overrides"
+    assert deps.config_manager().get_max_retries() == 7 and rows()["client.retries"]["source"] == "overrides"
     assert patch({"client.retries": None}).status_code == 200
     row = rows()["client.retries"]
-    assert (row["value"], row["source"]) == (2, "dotenv") and api_mod.config_manager.get_max_retries() == 2
+    assert (row["value"], row["source"]) == (2, "dotenv") and deps.config_manager().get_max_retries() == 2
 
 
 def test_an_empty_patch_changes_nothing(sandbox: Path) -> None:
@@ -254,12 +254,12 @@ def test_a_key_pinned_by_the_config_file_is_refused(sandbox: Path, tmp_path: Pat
     assert client.get(URL).json()["data"]["config_file"] == str(config)
     refused = error(patch({"client.retries": 2}), 400)
     assert refused["details"]["locked"] == [{"key": "client.retries", "source": "file", "source_name": str(config)}]
-    assert not sandbox.exists() and api_mod.config_manager.get_max_retries() == 9
+    assert not sandbox.exists() and deps.config_manager().get_max_retries() == 9
 
     # Eski rota aynı değer için hâlâ başarı bildirir; değer `.env`'e gider ve etkisi olmaz
     legacy = client.post("/api/settings", json={"max_retries": 2})
     assert legacy.status_code == 200 and legacy.json()["status"] == "success"
-    assert api_mod.config_manager.get_max_retries() == 9
+    assert deps.config_manager().get_max_retries() == 9
 
     # Dosyanın sabitlemediği anahtarlar yazılabilir
     assert patch({"client.timeout_seconds": 30}).status_code == 200
@@ -352,7 +352,7 @@ def test_the_proxy_password_is_stored_but_never_returned(sandbox: Path) -> None:
     assert json.loads(sandbox.read_text(encoding="utf-8")) == {"client": {"proxy": PROXY_URL}}
     row = rows()["client.proxy"]
     assert (row["value"], row["source"], row["secret"]) == ("http://scraper:***@proxy.example:8080", "overrides", True)
-    assert api_mod.config_manager.get_proxy_url() == PROXY_URL
+    assert deps.config_manager().get_proxy_url() == PROXY_URL
     # Yeni bir kaynaktan verilen proxy kullanılır (yükleyicinin kuralı): use_proxy açılır
     assert rows()["client.use_proxy"]["value"] is True
     assert PROXY_SECRET in redact.secret_values()  # loglarda da maskelenir
@@ -363,7 +363,7 @@ def test_the_masked_proxy_keeps_the_stored_password_only_for_the_same_endpoint(s
 
     # Arayüz maskeli adresi olduğu gibi geri gönderir: saklanan parola korunur
     assert patch({"client.proxy": "http://scraper:***@proxy.example:8080", "client.retries": 4}).status_code == 200
-    assert api_mod.config_manager.get_proxy_url() == PROXY_URL
+    assert deps.config_manager().get_proxy_url() == PROXY_URL
 
     # Sunucu değişti: saklanan parola yeni adrese gönderilmez
     rejected = patch({"client.proxy": "http://scraper:***@other.example:8080"})
@@ -373,10 +373,10 @@ def test_the_masked_proxy_keeps_the_stored_password_only_for_the_same_endpoint(s
         "message": "Re-enter the proxy password: the proxy address or user changed.",
         "type": "proxy_password_required",
     }]
-    assert api_mod.config_manager.get_proxy_url() == PROXY_URL and PROXY_SECRET not in rejected.text
+    assert deps.config_manager().get_proxy_url() == PROXY_URL and PROXY_SECRET not in rejected.text
 
     assert patch({"client.proxy": None, "client.use_proxy": None}).status_code == 200
-    assert rows()["client.proxy"]["value"] == "" and api_mod.config_manager.get_proxy_url() == ""
+    assert rows()["client.proxy"]["value"] == "" and deps.config_manager().get_proxy_url() == ""
 
 
 # --- veri dizini -------------------------------------------------------------------------------------
@@ -412,7 +412,7 @@ def test_a_data_dir_change_moves_the_job_store(data_dir_sandbox: Path) -> None:
     row = rows()["storage.data_dir"]
     assert (row["value"], row["source"]) == (new_dir, "overrides")
     assert store.db_path == default_db_path(new_dir) and os.path.isfile(store.db_path)
-    assert api_mod.config_manager.get_data_dir() == new_dir
+    assert deps.config_manager().get_data_dir() == new_dir
     assert client.get("/api/settings").json()["data_dir"] == new_dir
     assert client.get("/api/v1/jobs").json()["data"] == []
     # Aynı dizini yeniden yazmak bir taşıma değildir

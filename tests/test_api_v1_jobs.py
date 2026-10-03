@@ -9,7 +9,7 @@ API v1: işler (plan maddesi P20; docs/design/02-services.md bölüm 6 ve 2.8). 
     `stream.gap`, canlı tutma satırı, iş bitince akışın kapanması;
   * meta rotaları: sağlık, durum, sporlar.
 
-Testler geçici bir iş deposuyla çalışır (`common._job_store` yerine konur); eski arayüzle birlikte çalışmayı
+Testler geçici bir iş deposuyla çalışır (`deps.job_store()` yerine konur); eski arayüzle birlikte çalışmayı
 sınayanlar sürecin gerçek deposunu kullanır ve onu boşta bırakır.
 """
 from __future__ import annotations
@@ -37,9 +37,6 @@ from src.version import __version__
 from src.web import deps, sse
 from src.web.api.v1 import jobs as jobs_v1
 from src.web.app import app
-from src.web.routes import api as api_mod
-from src.web.routes import common
-
 client = TestClient(app)
 
 
@@ -58,14 +55,14 @@ def store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[JobStore]
     """v1 rotalarının gördüğü iş deposu: geçici bir dizinde, boş."""
     before = conftest.job_threads()
     jobs = JobStore(str(tmp_path / "data" / ".meta" / "state.db"))
-    monkeypatch.setattr(common, "_job_store", jobs)
+    monkeypatch.setattr(deps, "job_store", lambda: jobs)
     yield jobs
     # `POST /api/v1/jobs` işi arka planda yürütür; iş, satırı bittikten sonra da depoya yazar
     conftest.join_job_threads(before)
     if jobs.snapshot().get("is_running"):
         jobs.update(status="Cancelled", finished=True)
     monkeypatch.undo()
-    common._refresh_scraper_state()
+    deps.refresh_job_mirror()
     jobs.close()
 
 
@@ -442,7 +439,7 @@ class _Details:
 def service(store: JobStore, monkeypatch: pytest.MonkeyPatch) -> _Details:
     """Gerçek iş gövdesi (`_run_sync`), sahte bir servis bağlamıyla: istek atılmaz, dosya yazılmaz."""
     details = _Details()
-    ctx = SimpleNamespace(config=common.config_manager, match_data_fetcher=details)
+    ctx = SimpleNamespace(config=deps.config_manager(), match_data_fetcher=details)
     monkeypatch.setattr("src.services.context.build_context", lambda config_manager: ctx)
     exported: List[Any] = []
     monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: exported.append(ctx))
@@ -483,7 +480,7 @@ def test_a_failed_item_ends_the_job_partial(store: JobStore, service: _Details) 
 
 def test_a_job_started_through_v1_is_the_job_of_the_legacy_ui(body: Any) -> None:
     """Aynı iş deposu: eski durum ucu işi gösterir, eski başlatma ucu ikinci bir işi reddeder."""
-    real = api_mod._job_store
+    real = deps.job_store()
     if real.snapshot().get("is_running"):
         real.update(status="Cancelled", finished=True)
     try:

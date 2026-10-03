@@ -52,7 +52,7 @@ router = APIRouter(tags=["settings"])
 REPO_ROOT = Path(__file__).resolve().parents[4]
 DATA_DIR_KEY = "storage.data_dir"
 PROXY_KEY = "client.proxy"
-# Eski rota ile aynı kural (src/web/routes/settings.py: _ALLOWED_API_HOSTS)
+# Eski rota ile aynı kural (src/web/api/legacy.py: _ALLOWED_API_HOSTS)
 ALLOWED_API_HOSTS = frozenset({"www.sofascore.com", "api.sofascore.com"})
 PROXY_SCHEMES = ("http", "https", "socks5", "socks5h")
 _CONTROL_CHARACTERS = "\r\n\x00"
@@ -169,7 +169,7 @@ class SettingsPatch(BaseModel):
 def _shown(key: str, value: Any, secret: bool) -> Any:
     if key == PROXY_KEY:
         # Kullanıcı adı ve sunucu görünür kalır; parola asla dönmez
-        from src.web.routes.settings import mask_proxy_url
+        from src.web.api.proxy import mask_proxy_url
 
         return mask_proxy_url(str(value or ""))
     if secret:
@@ -246,7 +246,7 @@ def _restored_proxy(submitted: str) -> str:
     """
     from fastapi import HTTPException
 
-    from src.web.routes.settings import _restore_proxy_password
+    from src.web.api.proxy import restore_proxy_password as _restore_proxy_password
 
     try:
         return _restore_proxy_password(submitted.strip(), deps.config_manager().get_proxy_url())

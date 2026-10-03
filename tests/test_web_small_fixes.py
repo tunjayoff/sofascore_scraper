@@ -21,15 +21,15 @@ from fastapi.testclient import TestClient
 import conftest
 from src.store import LeaseHeld, SchemaTooNew, StoreBusy, StoreError
 from src.version import __version__, read_version
-from src.web import fetch_job
+from src.web import deps
+from src.web.api import legacy as fetch_job
 from src.web.app import app
 from src.web.jobs import JobStore, default_db_path
-from src.web.routes import api as api_mod
-from src.web.routes import scrape as scrape_mod
-from src.web.routes import settings as settings_mod
+from src.web.api import legacy as scrape_mod
+from src.web.api import legacy as settings_mod
 
 client = TestClient(app)
-store = api_mod._job_store
+store = deps.job_store()
 
 
 # --- GET /api/status ---------------------------------------------------------------------------

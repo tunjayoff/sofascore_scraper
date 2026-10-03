@@ -83,7 +83,8 @@ def request_budget(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[
 
 
 def _fetcher(data_dir: Path) -> MatchDataFetcher:
-    from src.web.routes.common import config_manager
+    from src.web.deps import config_manager as _web_config
+    config_manager = _web_config()
 
     return MatchDataFetcher(config_manager, data_dir=str(data_dir))
 
@@ -132,7 +133,7 @@ def _store_then_make_partial(fake: FakeSofaScore, md: MatchDataFetcher) -> None:
 
 def test_row01_reached_from(fake: FakeSofaScore, data_dir: Path) -> None:
     """Her giriş noktası aynı boru hattına gider: ısıtılmış bir oturumla, eşzamanlı istekler (`async`)."""
-    import src.web.routes.matches as matches_routes
+    import src.web.api.legacy as matches_routes
 
     md = _fetcher(data_dir)
 
@@ -329,7 +330,7 @@ def test_row09_refill_that_cannot_proceed(fake: FakeSofaScore, tmp_path: Path) -
 
 def test_row10_breaker_scope(fake: FakeSofaScore, data_dir: Path) -> None:
     """Her yolun istekleri bir devre kesicinin altındadır, tek maç uç noktası dahil (kendi kesicisi)."""
-    import src.web.routes.matches as matches_routes
+    import src.web.api.legacy as matches_routes
 
     md = _fetcher(data_dir)
     fake.probe = lambda: request_breaker.current() is not None

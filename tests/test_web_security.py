@@ -9,8 +9,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.paths import env_file_path
+from src.web import deps
 from src.web.app import FRONTEND_DIST, app
-from src.web.routes import api as api_mod
+from src.web.api import legacy as api_mod
 
 client = TestClient(app)
 
@@ -110,14 +111,14 @@ def test_settings_rejects_bad_values(payload):
 
 
 def test_env_writer_rejects_newlines():
-    assert api_mod.config_manager.update_env_variable("PROXY_URL", "a\nB=c") is False
+    assert deps.config_manager().update_env_variable("PROXY_URL", "a\nB=c") is False
 
 
 @pytest.mark.parametrize("name", ["Evil\nInjected", "Serie A: Italy", "../../escape", "..", "a/b"])
 def test_add_league_rejects_unsafe_names(name):
     r = client.post("/api/leagues", json={"id": 424242, "name": name})
     assert r.status_code == 422
-    assert 424242 not in api_mod.config_manager.get_leagues()
+    assert 424242 not in deps.config_manager().get_leagues()
 
 
 def test_match_id_must_be_numeric():

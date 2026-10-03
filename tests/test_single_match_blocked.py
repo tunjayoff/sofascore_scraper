@@ -43,7 +43,7 @@ from src.exceptions import (
     StorageError,
 )
 from src.match_data_fetcher import SLICE_EMPTY, SLICE_FAILED, SLICE_OK, MatchDataFetcher, SingleFetchReport, SliceOutcome
-from src.web import upstream
+from src.web import deps, upstream
 from src.web.jobs import JobStore, default_db_path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -88,10 +88,9 @@ def client(data_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> I
 
 
 def _client(store: JobStore, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
-    import src.web.routes.matches as matches_routes
     from src.web.app import app
 
-    monkeypatch.setattr(matches_routes, "_job_store", store)
+    monkeypatch.setattr(deps, "job_store", lambda: store)
     try:
         yield TestClient(app)
     finally:
@@ -295,7 +294,7 @@ def test_a_storage_error_is_not_reported_as_an_upstream_block(
     ids=lambda error: f"{type(error).__name__}-{getattr(error, 'status_code', None)}",
 )
 def test_reason_of_an_outcome_matches_the_reason_of_its_error(error: SofaScoreScraperError) -> None:
-    from src.web.routes.matches import _single_fetch_reason
+    from src.web.api.legacy import _single_fetch_reason
 
     outcome = SliceOutcome.from_error(error)
 
@@ -328,7 +327,8 @@ def test_report_failure_rules() -> None:
 # --- çekici: rapor yalnızca istenirse tutulur ----------------------------------------------------
 
 def _fetcher(data_dir: Path) -> MatchDataFetcher:
-    from src.web.routes.common import config_manager
+    from src.web.deps import config_manager as _web_config
+    config_manager = _web_config()
 
     return MatchDataFetcher(config_manager, data_dir=str(data_dir))
 
