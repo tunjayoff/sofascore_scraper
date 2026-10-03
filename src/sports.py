@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Any, Dict, FrozenSet, Iterable, Literal, Optional, Tuple, Union
+from typing import Any, Dict, FrozenSet, Iterable, Literal, Mapping, Optional, Tuple, Union
 
 # Skorun biçimi (src/status.py'deki ScoreSheet alt sınıfı):
 #   football: devre / 90 dk / uzatma / penaltı ayrımı (FootballScores)
@@ -528,11 +528,21 @@ class SliceSelection:
 
     base: None = kayıt defterinin `default_enabled` dilimleri; bir demet = yalnızca bu adlar.
     enable / disable: tabana eklenen ve tabandan çıkarılan adlar (disable sonra uygulanır).
+    layers: enable / disable'dan sonra sırayla uygulanan (ekle, çıkar) çiftleri; sonraki katman öncekini ezer
+    (`resolve_selection`: önce sporun, sonra takibin farkı). Bir katmanın içinde de çıkarma sonra uygulanır.
     """
 
     base: Optional[Tuple[str, ...]] = None
     enable: Tuple[str, ...] = ()
     disable: Tuple[str, ...] = ()
+    layers: Tuple[Tuple[Tuple[str, ...], Tuple[str, ...]], ...] = ()
+
+    def names(self) -> Tuple[str, ...]:
+        """Seçimde geçen bütün adlar (denetim için)."""
+        out: Tuple[str, ...] = (*(self.base or ()), *self.enable, *self.disable)
+        for enable, disable in self.layers:
+            out += (*enable, *disable)
+        return out
 
 
 def known_slice_names() -> Tuple[str, ...]:
@@ -547,6 +557,70 @@ def check_slice_names(names: Iterable[str]) -> None:
     for name in names:
         if name not in known:
             raise UnknownSliceName(str(name), known)
+
+
+# Takibin `slices` alanının biçimleri (src/config/settings.py FollowSpec, follows.slices_json):
+#   {"include": [...]}                  yalnızca bu adlar
+#   {"enable": [...], "disable": [...]} varsayılan seçime (sporun farkı dahil) göre fark
+FOLLOW_SLICE_KEYS: Tuple[str, ...] = ("include", "enable", "disable")
+
+
+def follow_slices(value: Any) -> Optional[Dict[str, Tuple[str, ...]]]:
+    """
+    Takibin `slices` değerini denetler ve olağan biçimine çevirir: None, {"include": (...)} ya da
+    {"enable": (...), "disable": (...)}. Bir ad listesi {"include": ...} sayılır. Biçim bozuksa ValueError,
+    bilinmeyen ad UnknownSliceName (o da bir ValueError).
+    """
+    if value is None:
+        return None
+    if isinstance(value, (list, tuple)):
+        value = {"include": list(value)}
+    if not isinstance(value, Mapping):
+        raise ValueError('slices: expected null, a list of slice names, {"include": [...]} or '
+                         '{"enable": [...], "disable": [...]}')
+    unknown = sorted(str(key) for key in value if key not in FOLLOW_SLICE_KEYS)
+    if unknown:
+        raise ValueError(f"slices: unknown key {unknown[0]!r}; expected include, or enable and disable")
+    if "include" in value and ("enable" in value or "disable" in value):
+        raise ValueError("slices: give include, or enable and disable, not both")
+    out: Dict[str, Tuple[str, ...]] = {}
+    for key in FOLLOW_SLICE_KEYS:
+        if key not in value:
+            continue
+        names = value[key] if value[key] is not None else []
+        if isinstance(names, str) or not isinstance(names, (list, tuple)) \
+                or not all(isinstance(name, str) and name.strip() for name in names):
+            raise ValueError(f"slices.{key}: expected a list of slice names")
+        out[key] = tuple(dict.fromkeys(name.strip() for name in names))
+    if "include" not in out:
+        out = {"enable": out.get("enable", ()), "disable": out.get("disable", ())}
+    check_slice_names(name for names in out.values() for name in names)
+    return out
+
+
+def resolve_selection(defaults: Optional[Iterable[str]] = None, *, sport_enable: Iterable[str] = (),
+                      sport_disable: Iterable[str] = (), follow: Any = None) -> SliceSelection:
+    """
+    Katmanları tek bir seçime çevirir (02-services.md 3.1; P12'nin eşlemesi):
+
+      takibin {"include": [...]}       → base; sporun farkı ve varsayılanlar uygulanmaz (yalnızca bu adlar)
+      [defaults] slices                → base (None: kayıt defterinin `default_enabled`'ı)
+      [slices.<spor>] enable / disable → ilk katman
+      takibin enable / disable         → ikinci katman (sporun farkını ezer)
+
+    Adlar denetlenir: bilinmeyen ad UnknownSliceName; takibin biçimi bozuksa ValueError.
+    """
+    resolved = follow_slices(follow)
+    if resolved is not None and "include" in resolved:
+        selection = SliceSelection(base=resolved["include"])
+    else:
+        layers = [(tuple(sport_enable), tuple(sport_disable))]
+        if resolved is not None:
+            layers.append((resolved["enable"], resolved["disable"]))
+        selection = SliceSelection(base=tuple(defaults) if defaults is not None else None,
+                                   layers=tuple(layer for layer in layers if layer[0] or layer[1]))
+    check_slice_names(selection.names())
+    return selection
 
 
 def _named(spec: SliceSpec, names: Iterable[str]) -> bool:
@@ -579,7 +653,7 @@ def select_slices(
             raise ValueError("selection: expected a list of slice names, got a single string")
         selection = SliceSelection(base=tuple(selection))
     if selection is not None:
-        check_slice_names((*(selection.base or ()), *selection.enable, *selection.disable))
+        check_slice_names(selection.names())
 
     def selected(spec: SliceSpec) -> bool:
         if selection is None:
@@ -589,6 +663,11 @@ def select_slices(
             chosen = True
         if _named(spec, selection.disable):
             chosen = False
+        for enable, disable in selection.layers:
+            if _named(spec, enable):
+                chosen = True
+            if _named(spec, disable):
+                chosen = False
         return chosen
 
     return tuple(

@@ -5,7 +5,8 @@ bölüm 4.3, karar D4).
 Yükleyici (src/config/loader.py) `CONFIG_DIR/overrides.json`'ı `overrides` katmanı olarak okur: `.env`'in
 üstünde, yapılandırma dosyasının, süreç ortamının ve bayrakların altında. Bu modül o dosyanın tek yazarıdır.
 Belge yapılandırma dosyasının biçimindedir (`{"client": {"rate": 3}}`); listeler ([[follow]], [[sink]],
-[[schedule.task]]) burada verilemez (karar D11).
+[[schedule.task]]) burada verilemez (karar D11). Bir sporun dilim seçimi farkı `slices.<spor>` anahtarıyla
+yazılır: `{"slices.football": {"enable": [...], "disable": [...]}}` → `[slices.football]` (plan maddesi P27).
 
     write_overrides({"client.rate": 3, "display.language": None})
 
@@ -75,12 +76,38 @@ def read_document(path: Optional[Path] = None) -> Dict[str, Any]:
     return doc
 
 
+# [slices.<spor>]: bir sporun dilim seçimi farkı ({"enable": [...], "disable": [...]}); anahtarı `slices.<spor>`
+SLICES_PREFIX = "slices."
+
+
+def checked_slice_override(key: str, value: Any) -> Dict[str, Any]:
+    """`slices.<spor>` değerini yükleyicinin kuralıyla denetler: {"enable": [...], "disable": [...]}; ConfigError."""
+    sport = key[len(SLICES_PREFIX):]
+    parsed = loader._parse_slices({sport: value}, "slices")[sport]
+    return {"enable": list(parsed.enable), "disable": list(parsed.disable)}
+
+
+def _merge_slice_override(document: Dict[str, Any], key: str, value: Any) -> None:
+    sport = key[len(SLICES_PREFIX):]
+    body = document.get("slices")
+    body = document["slices"] = dict(body) if isinstance(body, dict) else {}
+    if value is None:
+        body.pop(sport, None)
+    else:
+        body[sport] = checked_slice_override(key, value)
+    if not body:
+        del document["slices"]
+
+
 def merged(document: Mapping[str, Any], changes: Mapping[str, Any]) -> Dict[str, Any]:
     """Belgenin, değişiklikler uygulanmış kopyası (dosyaya dokunmaz). Boşalan bölüm belgeden çıkar."""
     out: Dict[str, Any] = {
         section: dict(body) if isinstance(body, dict) else body for section, body in document.items()
     }
     for key, value in changes.items():
+        if key.startswith(SLICES_PREFIX):
+            _merge_slice_override(out, key, value)
+            continue
         section, name = split_key(key)
         body = out.get(section)
         if not isinstance(body, dict):
@@ -133,4 +160,5 @@ def write_overrides(changes: Mapping[str, Any]) -> loader.LoadedSettings:
             raise
 
 
-__all__ = ["checked_value", "merged", "overrides_path", "read_document", "split_key", "write_overrides"]
+__all__ = ["SLICES_PREFIX", "checked_slice_override", "checked_value", "merged", "overrides_path", "read_document",
+           "split_key", "write_overrides"]

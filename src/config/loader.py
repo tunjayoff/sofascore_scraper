@@ -61,7 +61,7 @@ from src.config.settings import (
 )
 from src.exceptions import ConfigError
 from src.redact import MASK, mask_webhook_url
-from src.sports import sport_slugs
+from src.sports import UnknownSliceName, check_slice_names, sport_slugs
 
 logger = logging.getLogger("Config")
 
@@ -636,7 +636,8 @@ def _parse_slices(value: Any, where: str) -> Dict[str, SliceOverride]:
                 enable=_string_list(table.get("enable", []), text=False),
                 disable=_string_list(table.get("disable", []), text=False),
             )
-        except _Reject as e:
+            check_slice_names((*out[sport].enable, *out[sport].disable))
+        except (_Reject, UnknownSliceName) as e:
             raise ConfigError(f"{at}: {e}") from None
     return out
 
@@ -722,11 +723,16 @@ def _follow_slices(value: Any, where: str) -> Optional[Mapping[str, Any]]:
             unknown = sorted(set(value) - {"enable", "disable"})
             if unknown:
                 raise ConfigError(f"{where} slices: unknown key {unknown[0]!r}; expected enable, disable")
-            return MappingProxyType({
+            parsed = {
                 "enable": list(_string_list(value.get("enable", []), text=False)),
                 "disable": list(_string_list(value.get("disable", []), text=False)),
-            })
-        return MappingProxyType({"include": list(_string_list(value, text=False))})
+            }
+        else:
+            parsed = {"include": list(_string_list(value, text=False))}
+        check_slice_names(name for names in parsed.values() for name in names)
+        return MappingProxyType(parsed)
+    except UnknownSliceName as e:
+        raise ConfigError(f"{where} slices: {e}") from None
     except _Reject:
         raise ConfigError(
             f"{where} slices: expected a list of slice names or a table with enable / disable, got {value!r}"
@@ -1163,6 +1169,9 @@ def _build(
         sources.update(layer.list_sources)
         # Dilim seçimi spor spor birleşir; diğer listeler bütün olarak yer değiştirir (en güçlü katman kazanır)
         slices.update(layer.slices or {})
+        for sport in layer.slices or {}:
+            # Spor spor kaynak: ayarlar API'si hangi sporun seçiminin kilitli olduğunu buradan okur
+            sources[f"slices.{sport}"] = layer.list_sources["slices"]
         follows = layer.follows if layer.follows is not None else follows
         sinks = layer.sinks if layer.sinks is not None else sinks
         tasks = layer.tasks if layer.tasks is not None else tasks
@@ -1220,6 +1229,11 @@ def _build(
 
     def origin(label: str) -> str:
         return sources[label].name if label in sources else file_name
+
+    try:
+        check_slice_names(values["defaults.slices"])
+    except UnknownSliceName as e:
+        raise ConfigError(f"{origin('defaults.slices') or 'config'}: [defaults] slices: {e}") from None
 
     settings = Settings(
         schema=model.SCHEMA_VERSION,
