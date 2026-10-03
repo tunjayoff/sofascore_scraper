@@ -204,8 +204,8 @@ if ($LASTEXITCODE -eq 0) {
         Pop-Location
     }
     if (-not $uiBuilt) {
-        Write-Host (L "Warning: the web UI could not be built (output above). The terminal modes still work; the web app shows a help page instead of the UI." `
-                "Uyarı: web arayüzü derlenemedi (çıktı yukarıda). Terminal modları yine çalışır; web uygulaması arayüz yerine bir yardım sayfası gösterir.") -ForegroundColor Yellow
+        Write-Host (L "Warning: the web UI could not be built (output above). The command line still works; the web app shows a help page instead of the UI." `
+                "Uyarı: web arayüzü derlenemedi (çıktı yukarıda). Komut satırı yine çalışır; web uygulaması arayüz yerine bir yardım sayfası gösterir.") -ForegroundColor Yellow
         Write-Host (L "  To try again: cd `"$root\frontend`" ; npm install ; npm run build" `
                 "  Yeniden denemek için: cd `"$root\frontend`" ; npm install ; npm run build") -ForegroundColor Yellow
     }
@@ -217,8 +217,8 @@ else {
             "Uyarı: web arayüzü derlenmedi: Node.js 20.19+ veya 22.12+ ve npm gerekli (bulunan Node.js: $nodeFound).") -ForegroundColor Yellow
     Write-Host (L "  Install Node.js from https://nodejs.org, then run this script again or start with 'Start SofaScore.bat' (it builds the UI too when Node.js is there)." `
             "  Node.js'i https://nodejs.org adresinden kurun, sonra bu betiği yeniden çalıştırın ya da 'Start SofaScore.bat' ile başlatın (Node.js varsa arayüzü o da derler).") -ForegroundColor Yellow
-    Write-Host (L "  The terminal UI (python main.py) and headless mode work without Node.js." `
-            "  Terminal arayüzü (python main.py) ve headless mod Node.js olmadan çalışır.") -ForegroundColor Yellow
+    Write-Host (L "  The command line (python main.py <command>, for example python main.py sync) works without Node.js." `
+            "  Komut satırı (python main.py <komut>, örneğin python main.py sync) Node.js olmadan çalışır.") -ForegroundColor Yellow
 }
 
 Write-Host ""
@@ -236,6 +236,6 @@ if ($doctorStatus -ne 0) {
 }
 Write-Host (L "Installation complete." "Kurulum tamam.") -ForegroundColor Green
 Write-Host "  Web:      cd `"$root`" ; .\.venv\Scripts\python.exe scripts\start_web.py  → http://127.0.0.1:8000"
-Write-Host "  TUI:      cd `"$root`" ; .\.venv\Scripts\python.exe main.py"
+Write-Host "  $(L 'CLI:    ' 'Komutlar:')  cd `"$root`" ; .\.venv\Scripts\python.exe -m src.cli.main --help"
 Write-Host "  $(L 'Check:  ' 'Denetim:')  cd `"$root`" ; .\.venv\Scripts\python.exe main.py --doctor"
 Write-Host ""

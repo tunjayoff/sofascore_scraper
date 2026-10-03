@@ -176,8 +176,8 @@ if python -c "import sys; from src import doctor; sys.exit(0 if doctor.node_is_s
     "→ Web arayüzü derleniyor (npm install && npm run build; birkaç dakika sürebilir)…"
   # </dev/null: `curl | bash` ile çalışırken betiğin kendisi stdin'dedir; npm onu tüketmesin
   if ! (cd frontend && npm install </dev/null && npm run build </dev/null); then
-    msg "Warning: the web UI could not be built (output above). The terminal modes still work; the web app shows a help page instead of the UI." \
-      "Uyarı: web arayüzü derlenemedi (çıktı yukarıda). Terminal modları yine çalışır; web uygulaması arayüz yerine bir yardım sayfası gösterir." >&2
+    msg "Warning: the web UI could not be built (output above). The command line still works; the web app shows a help page instead of the UI." \
+      "Uyarı: web arayüzü derlenemedi (çıktı yukarıda). Komut satırı yine çalışır; web uygulaması arayüz yerine bir yardım sayfası gösterir." >&2
     msg "  To try again: cd \"$ROOT/frontend\" && npm install && npm run build" \
       "  Yeniden denemek için: cd \"$ROOT/frontend\" && npm install && npm run build" >&2
   fi
@@ -187,8 +187,8 @@ else
     "Uyarı: web arayüzü derlenmedi: Node.js 20.19+ veya 22.12+ ve npm gerekli (bulunan Node.js: $NODE_FOUND)." >&2
   msg "  Install Node.js from https://nodejs.org, then run this script again or start with ./start-sofascore.sh (it builds the UI too when Node.js is there)." \
     "  Node.js'i https://nodejs.org adresinden kurun, sonra bu betiği yeniden çalıştırın ya da ./start-sofascore.sh ile başlatın (Node.js varsa arayüzü o da derler)." >&2
-  msg "  The terminal UI (python main.py) and headless mode work without Node.js." \
-    "  Terminal arayüzü (python main.py) ve headless mod Node.js olmadan çalışır." >&2
+  msg "  The command line (python main.py <command>, for example python main.py sync) works without Node.js." \
+    "  Komut satırı (python main.py <komut>, örneğin python main.py sync) Node.js olmadan çalışır." >&2
 fi
 
 echo ""
@@ -207,8 +207,8 @@ fi
 msg "Installation complete." "Kurulum tamam."
 msg "  Web UI:  cd \"$ROOT\" && ./start-sofascore.sh  → http://127.0.0.1:8000" \
   "  Web arayüzü:  cd \"$ROOT\" && ./start-sofascore.sh  → http://127.0.0.1:8000"
-msg "  TUI:     cd \"$ROOT\" && source .venv/bin/activate && python main.py" \
-  "  TUI:          cd \"$ROOT\" && source .venv/bin/activate && python main.py"
+msg "  CLI:     cd \"$ROOT\" && .venv/bin/python -m src.cli.main --help" \
+  "  Komutlar:     cd \"$ROOT\" && .venv/bin/python -m src.cli.main --help"
 msg "  Check:   cd \"$ROOT\" && .venv/bin/python main.py --doctor" \
   "  Denetim:      cd \"$ROOT\" && .venv/bin/python main.py --doctor"
 echo ""
