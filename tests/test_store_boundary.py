@@ -70,6 +70,8 @@ DESIGN = "docs/design/01-storage.md bölüm 2.4"
 FS_ALLOWLIST: Dict[str, str] = {
     "src/config_manager.py": "yapılandırma dosyaları ve .env",
     "src/config/": "yapılandırma dosyaları ve .env",
+    "src/config_files.py": "yapılandırma dosyalarının atomik yazımı ve kilidi (leagues.txt, league_sports.json, "
+                           "overrides.json; ST-28)",
     "src/paths.py": "yapılandırma ve tarayıcı profili yolları",
     "src/i18n.py": "çeviri dosyaları (locales/)",
     "src/doctor.py": "ortam yoklamaları",

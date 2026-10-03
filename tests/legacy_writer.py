@@ -21,7 +21,6 @@ import re
 from typing import Any, Dict, Mapping, Optional, Tuple
 
 from src import breaker as request_breaker
-from src.fsutil import atomic_write_json
 from src.match_fetcher import MatchFetcher
 from src.slices import SliceOutcome, match_detail_slice_present
 from src.sports import event_sport_slug, slices_for
@@ -42,8 +41,15 @@ def _path_part(value: Any) -> str:
 
 
 def _write_json(path: str, data: Any) -> None:
-    """Eski yazıcının yazdığı gibi (src.fsutil.atomic_write_json)."""
-    atomic_write_json(path, data)
+    """
+    Eski yazıcının yazdığı gibi (2.x: src.fsutil.atomic_write_json): okunur UTF-8, girinti 2, geçici dosya ve
+    os.replace. Ürün kodundan geçmez: veri dizinine Store dışından yazan tek kod bu test yardımcısıdır.
+    """
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    tmp = f"{path}.tmp"
+    with open(tmp, "wb") as f:
+        f.write(json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"))
+    os.replace(tmp, path)
 
 
 def load_unavailable(match_dir: str) -> Dict[str, int]:

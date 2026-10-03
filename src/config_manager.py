@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from src.config import Settings
 from src.config import loader as settings_loader
 from src.exceptions import ConfigError, StorageError
-from src.fsutil import atomic_write_text, file_lock
+from src.config_files import atomic_write_text, file_lock
 from src import redact
 from src.logger import apply_log_level, get_logger
 from src.paths import default_league_config_path, env_file_path

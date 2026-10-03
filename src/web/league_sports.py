@@ -26,7 +26,7 @@ from typing import Dict, Iterable, Optional
 from src import sports
 from src import store as store_api
 from src.exceptions import StorageError
-from src.fsutil import atomic_write_json, file_lock
+from src.config_files import atomic_write_json, file_lock
 from src.logger import get_logger
 from src.services import tournaments
 

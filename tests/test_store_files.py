@@ -2,8 +2,8 @@
 src/store/errors.py ve src/store/files.py: Store hata sınıfları ve dosya ilkelleri
 (docs/design/01-storage.md, bölüm 2.3 ve 4.4).
 
-src/fsutil.py artık files.py'yi yeniden dışa açar; 2.x davranışının testleri tests/test_fsutil.py'de
-değişmeden durur. Buradaki testler yeni katmanı dener: StoreError çevirisi, Windows'taki yeniden
+Config dosyalarının yazımı (2.x'in src/fsutil.py'si) src/config_files.py'dedir; testleri
+tests/test_config_files.py'de. Buradaki testler Store katmanını dener: StoreError çevirisi, Windows'taki yeniden
 deneme (her platformda, sahte os.replace ile), isteğe bağlı fsync, dosya izinleri (karar S12),
 hazırlık ve çöp dizinleri.
 """
@@ -19,7 +19,6 @@ from typing import Iterator
 import pytest
 
 import src.store as store_package
-from src import fsutil
 from src.exceptions import StorageError
 from src.store import (
     CatalogCorrupt,
@@ -169,29 +168,6 @@ def test_failed_write_becomes_a_store_error_and_keeps_the_old_file(tmp_path, mon
     assert os.listdir(tmp_path) == ["event.json.gz"]
 
 
-def test_legacy_helpers_still_raise_the_plain_os_error(tmp_path, monkeypatch):
-    """2.x çağıranları OSError yakalayıp kendileri StorageError'a çevirir (src/match_data_fetcher.py)."""
-    def boom(src, dst):
-        raise OSError(errno.EIO, "Input/output error")
-
-    monkeypatch.setattr(files.os, "replace", boom)
-    for write in (lambda: files.atomic_write_bytes(tmp_path / "a.bin", b"x"),
-                  lambda: files.atomic_write_text(str(tmp_path / "a.txt"), "x"),
-                  lambda: files.atomic_write_json(str(tmp_path / "a.json"), {"x": 1})):
-        with pytest.raises(OSError) as caught:
-            write()
-        assert not isinstance(caught.value, StorageError)
-    monkeypatch.undo()
-
-    assert os.listdir(tmp_path) == []
-
-
-def test_fsutil_re_exports_the_same_functions():
-    assert fsutil.atomic_write_text is files.atomic_write_text
-    assert fsutil.atomic_write_json is files.atomic_write_json
-    assert fsutil.fcntl is files.fcntl
-
-
 # --- Windows: yerine koymayı yeniden deneme (her platformda sahte os.replace ile) -------------------
 
 class _BusyReplace:
@@ -252,20 +228,6 @@ def test_exhausted_retries_raise_a_non_fatal_store_error(tmp_path, monkeypatch, 
     assert _leftovers(tmp_path) == []
 
 
-def test_exhausted_retries_reach_legacy_callers_as_permission_error(tmp_path, monkeypatch, pauses):
-    target = tmp_path / "leagues.txt"
-    busy = _BusyReplace(failures=10**6)
-    monkeypatch.setattr(files, "_WINDOWS", True)
-    monkeypatch.setattr(files.os, "replace", busy)
-
-    with pytest.raises(PermissionError) as caught:
-        fsutil.atomic_write_text(str(target), "x")
-
-    assert busy.calls == 11
-    assert caught.value.errno == errno.EACCES and caught.value.filename == str(target)
-    assert os.listdir(tmp_path) == []
-
-
 def test_other_errors_are_not_retried_on_windows(tmp_path, monkeypatch, pauses):
     calls = []
 
@@ -310,7 +272,6 @@ def test_nothing_is_fsynced_by_default(tmp_path, monkeypatch, fsyncs):
     monkeypatch.delenv(files.DURABILITY_ENV, raising=False)
 
     files.write_bytes(tmp_path / "a.json.gz", b"x")
-    files.atomic_write_bytes(tmp_path / "b.bin", b"x")
 
     assert files.durability_full() is False
     assert fsyncs == []
@@ -335,16 +296,6 @@ def test_durable_argument_overrides_the_environment(tmp_path, monkeypatch, fsync
     monkeypatch.setenv(files.DURABILITY_ENV, "none")
     files.write_bytes(tmp_path / "b.json.gz", b"x", durable=True)
     assert len(fsyncs) == (1 if WINDOWS else 2)
-
-
-def test_legacy_helpers_never_fsync(tmp_path, monkeypatch, fsyncs):
-    """2.x yazıcıları bugünkü gibi kalır: STORE_DURABILITY yalnızca Store'un kendi yazmalarını etkiler."""
-    monkeypatch.setenv(files.DURABILITY_ENV, "full")
-
-    fsutil.atomic_write_text(str(tmp_path / "leagues.txt"), "x")
-    fsutil.atomic_write_json(str(tmp_path / "seasons.json"), {"x": 1})
-
-    assert fsyncs == []
 
 
 # --- dosya izinleri (karar S12) ----------------------------------------------------------------------
@@ -456,7 +407,7 @@ def test_a_published_directory_follows_the_umask_at_every_level(tmp_path, umask)
 def test_publish_dir_keeps_the_modes_the_directory_was_staged_with(tmp_path):
     """Yeniden adlandırma izinlere dokunmaz: Store dışı yoldan hazırlanan dizin kendi izniyle yayımlanır."""
     staged = files.new_staging_dir(tmp_path)
-    files.atomic_write_bytes(os.path.join(staged, "private.bin"), b"x")
+    os.close(os.open(os.path.join(staged, "private.bin"), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600))
     os.chmod(staged, 0o700)
     final = tmp_path / "v3" / "events" / "1"
 
@@ -477,18 +428,6 @@ def test_trash_and_replace_keep_the_modes_of_what_they_move(tmp_path, umask):
 
     assert _mode(moved) == 0o640
     assert _mode(tmp_path / ".meta" / "trash") == 0o777 & ~umask
-
-
-@posix_modes
-def test_legacy_helpers_keep_mode_0600_under_every_umask(tmp_path, umask):
-    """2.x dosyaları bugünkü gibi kalır (karar S12 yalnızca Store katmanını değiştirir)."""
-    files.atomic_write_bytes(tmp_path / "a.bin", b"x")
-    fsutil.atomic_write_text(str(tmp_path / "leagues.txt"), "x")
-    fsutil.atomic_write_json(str(tmp_path / "seasons.json"), {"x": 1})
-
-    assert {name: _mode(tmp_path / name) for name in os.listdir(tmp_path)} == {
-        "a.bin": 0o600, "leagues.txt": 0o600, "seasons.json": 0o600,
-    }
 
 
 def test_write_bytes_never_touches_the_process_umask(tmp_path, monkeypatch):
@@ -750,27 +689,3 @@ def test_purge_empties_staging_and_trash_but_keeps_the_directories(tmp_path):
     assert os.listdir(tmp_path / ".meta" / "tmp") == []
     assert os.listdir(tmp_path / ".meta" / "trash") == []
     assert files.purge_staging(tmp_path) == 0
-
-
-# --- config dosyası kilidi (2.x'ten taşındı) ---------------------------------------------------------
-
-def test_file_lock_without_fcntl_locks_nothing(tmp_path, monkeypatch):
-    """Windows dalı, her platformda: gövde çalışır, kilit dosyası açılmaz (tests/test_fsutil.py aynısını fsutil için dener)."""
-    monkeypatch.setattr(files, "fcntl", None)
-    target = tmp_path / "missing-dir" / "leagues.txt"
-
-    with files.file_lock(str(target)):
-        with files.file_lock(str(target)):
-            pass
-
-    assert not (tmp_path / "missing-dir").exists()
-
-
-@pytest.mark.skipif(files.fcntl is None, reason="fcntl yok: kilit dosyası bu platformda hiç açılmıyor")
-def test_file_lock_keeps_its_lock_file_next_to_the_target(tmp_path):
-    target = tmp_path / "cfg" / "leagues.txt"
-
-    with files.file_lock(str(target)):
-        assert (tmp_path / "cfg" / "leagues.txt.lock").is_file()
-
-    assert os.listdir(tmp_path / "cfg") == ["leagues.txt.lock"]

@@ -26,7 +26,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _ENV_KEYS = ("LOG_DIR", "LOG_TO_FILE", "LOG_MAX_MB", "LOG_BACKUP_COUNT", "LOG_LEVEL", "DEBUG")
 
 # Windows'ta bilinen sınırlar (CI'da görüldü; Windows "elden geldiğince" desteklenen platformdur).
-# Açık bir dosya Windows'ta yeniden adlandırılamaz ve silinemez; src/fsutil.file_lock da orada
+# Açık bir dosya Windows'ta yeniden adlandırılamaz ve silinemez; src/config_files.file_lock da orada
 # hiçbir şey kilitlemez. Sonuç: dosyayı birden çok yazıcı açık tutarken çevirme yapılamaz (dosya
 # LOG_MAX_MB'ı aşar, yalnız tek yazıcı kaldığında çevrilir) ve başka bir süreç çevirmeyi denerken
 # yazılan kayıt düşebilir. Düzeltilince işaretler kaldırılır (strict olan kendini belli eder).
@@ -38,7 +38,7 @@ no_shared_rotation_on_windows = pytest.mark.xfail(
 )
 shared_rotation_races_on_windows = pytest.mark.xfail(
     sys.platform == "win32",
-    reason="Bilinen sınır (Windows): süreçler arası kilit yok (src/fsutil.file_lock) ve açık dosya yeniden "
+    reason="Bilinen sınır (Windows): süreçler arası kilit yok (src/config_files.file_lock) ve açık dosya yeniden "
     "adlandırılamaz; birden çok süreç yazarken dosya çevrilmez, çevirme denemesi sırasında kayıt düşebilir",
     strict=False,
 )
