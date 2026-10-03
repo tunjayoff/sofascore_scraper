@@ -757,6 +757,35 @@ export interface Round {
   slug: string | null
 }
 
+/** The in-app scheduler of this server (`ssc serve --scheduler`); off by default. */
+export interface ScheduleStatus {
+  /** The scheduler runs inside this server. */
+  enabled: boolean
+  /** Empty when the scheduler is off. */
+  next_runs?: ScheduledRun[]
+}
+
+/** One task of the in-app scheduler (config file `[[schedule.task]]`) and its next run. */
+export interface ScheduledRun {
+  /** Position of the task in the config file, from 1. */
+  index: number
+  /** sync, fetch, refresh or backup. */
+  run: string
+  /** The interval as written (`6h`); null for a cron task. */
+  every?: string | null
+  /** The cron expression (local time); null for an interval. */
+  cron?: string | null
+  /** The task's options (`league_id`, `scope`). */
+  options?: Record<string, unknown>
+  next_run_at_utc: string
+  /** When the task was last due; null before. */
+  last_run_at_utc?: string | null
+  /** The last job the task started. */
+  last_job_id?: string | null
+  /** `skipped_running`: its previous run still ran; `skipped_busy`: another job or data operation held the data directory. */
+  last_result?: "started" | "skipped_running" | "skipped_busy" | "failed_to_start" | null
+}
+
 /** A score of both sides. */
 export interface ScorePair {
   /** Value of the home side. */
@@ -1039,6 +1068,8 @@ export interface Status {
   summary?: DataSummary | null
   /** Leases held right now, in any process. */
   leases?: LeaseHolder[]
+  /** The in-app scheduler and the next runs of its tasks. */
+  schedule: ScheduleStatus
   capabilities: Capabilities
   /** Error code when the data directory could not be read; the fields that need it are empty. */
   storage_error?: string | null

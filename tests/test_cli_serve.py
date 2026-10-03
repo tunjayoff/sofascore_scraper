@@ -348,7 +348,7 @@ def test_without_sinks_no_store_is_opened(cli: CliRunner, server: FakeServer) ->
 def test_serve_is_described_with_its_options(cli: CliRunner) -> None:
     commands = {c["name"]: c for c in cli("describe", "commands").data["commands"]["commands"]}
     flags = [option["flags"][0] for option in commands["serve"]["options"]]
-    assert flags == ["--host", "--port", "--allowed-hosts", "--allow-any-host", "--dev"]
+    assert flags == ["--host", "--port", "--allowed-hosts", "--allow-any-host", "--dev", "--scheduler", "--no-scheduler"]
     assert commands["serve"]["loads_settings"] is True
 
 

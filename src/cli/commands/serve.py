@@ -26,8 +26,17 @@ Canlı izleme bu komutta yoktur (sahip kararı, 2026-10-01): `ssc watch` ayrı b
 sink'ler (`[[sink]]`, `SOFASCORE_SINKS`) ise bu süreçte, ayrı bir thread'de dağıtılır (`watch` gibi; ikisi aynı
 veri dizininde çalışırsa `sinks` kilidini hangisi alırsa o dağıtır).
 
+Uygulama içi zamanlayıcı (plan maddesi P29; src/jobs/scheduler.py) isteğe bağlıdır ve varsayılan olarak
+kapalıdır: `--scheduler` ya da `[schedule] enabled = true` açar, `--no-scheduler` ayarı bu çalıştırma için
+kapatır. Görevler `[[schedule.task]]`tandır; bilinmeyen bir görev ya da seçenek sunucu başlamadan reddedilir
+(config_invalid, çıkış kodu 2). Görev yoksa zamanlayıcı başlamaz (uyarı). Zamanlanmış çalışmalar web
+sürecinin iş yöneticisiyle başlatılan sıradan işlerdir (`origin=scheduler`); sonraki çalışmalar
+`/api/v1/status`'ta görünür. `--dev` ile zamanlayıcı çalışmaz: yeniden yükleyen sunucu uygulamayı bir alt
+süreçte çalıştırır ve zamanlayıcıyı göremezdi (`--scheduler --dev` kullanım hatasıdır; ayardan açıksa uyarı).
+
 Durdurma: Ctrl+C ya da SIGTERM sunucuyu düzgünce kapatır (uvicorn), sink'lerin birikenleri en çok 10 sn teslim
-edilir; çıkış kodu 0 (uzun çalışan servis, bölüm 4.5). Sunucu başlayamazsa (port kullanımda) çıkış kodu 1.
+edilir, zamanlayıcının başlattığı ve süren iş iptal edilir (en çok 30 sn beklenir); çıkış kodu 0 (uzun çalışan
+servis, bölüm 4.5). Sunucu başlayamazsa (port kullanımda) çıkış kodu 1.
 
 Ağır içe aktarmalar (uvicorn, ayarlar, Store, sink'ler) işlevin içindedir (src/cli/commands/__init__.py).
 """
@@ -53,6 +62,8 @@ RELOAD_DIRS = ("src", "locales")
 SINK_JOIN_SECONDS = 15.0  # dağıtıcı dururken birikenleri en çok 10 sn teslim eder; üstüne pay
 EXPOSED_WITHOUT_TOKEN = "exposed_without_token"
 SERVER_FAILED = "server_failed"
+SCHEDULER_NO_TASKS = "scheduler_no_tasks"
+SCHEDULER_NOT_IN_DEV = "scheduler_not_in_dev"
 # Her arayüz adresleri (src/web/security.py ile aynı)
 WILDCARD_BINDS = ("", "0.0.0.0", "::", "[::]")
 
@@ -81,6 +92,11 @@ def _arguments(parser: argparse.ArgumentParser, t: Translator) -> None:
     parser.add_argument("--allow-any-host", dest="allow_any_host", action="store_true",
                         help=t("ssc_help_serve_allow_any_host"))
     parser.add_argument("--dev", action="store_true", help=t("ssc_help_serve_dev"))
+    scheduler = parser.add_mutually_exclusive_group()
+    scheduler.add_argument("--scheduler", dest="scheduler", action="store_true",
+                           help=t("ssc_help_serve_scheduler"))
+    scheduler.add_argument("--no-scheduler", dest="no_scheduler", action="store_true",
+                           help=t("ssc_help_serve_no_scheduler"))
 
 
 @dataclass(frozen=True)
@@ -247,6 +263,48 @@ def _stop_sinks(dispatcher: Any, thread: Optional[threading.Thread], stop: threa
     sinks.drain_at_exit(dispatcher)
 
 
+def build_scheduler(tasks: Any) -> Any:
+    """
+    Web sürecinin iş yöneticisiyle çalışan zamanlayıcı (src/web/deps): web'den başlatılan işlerle aynı iş deposu
+    ve aynı `writer` kilidi; eski arayüzün iş yansısı da tazelenir. Görevler geçersizse ConfigError.
+    """
+    from src.jobs.scheduler import Scheduler
+    from src.services.context import build_context
+    from src.web import deps
+
+    return Scheduler(tasks, jobs=deps.job_manager, context=lambda: build_context(deps.config_manager()),
+                     on_change=deps.refresh_job_mirror)
+
+
+def _scheduler_host(inv: Invocation, settings: Any) -> Tuple[Optional[Any], List[CliWarning]]:
+    """
+    Zamanlayıcı açık mı (bayrak, yoksa `[schedule] enabled`) ve kurulabilir mi. (zamanlayıcı ya da None,
+    uyarılar). `--scheduler --dev`: UsageError; geçersiz görev: ConfigError (sunucu başlamadan, çıkış 2).
+    """
+    # Bayrak yoksa None: ayar karar verir
+    flag: Optional[bool] = None
+    if getattr(inv.args, "scheduler", False):
+        flag = True
+    elif getattr(inv.args, "no_scheduler", False):
+        flag = False
+    enabled = bool(settings.schedule.enabled) if flag is None else bool(flag)
+    if not enabled:
+        return None, []
+    if getattr(inv.args, "dev", False):
+        if flag:
+            raise UsageError("--scheduler cannot be combined with --dev: the reloading server runs the app in a "
+                             "child process, where the scheduler would not be seen", {"option": "--scheduler"})
+        message = "[schedule] enabled is set, but the scheduler does not run with --dev"
+        logger.warning(message)
+        return None, [CliWarning(SCHEDULER_NOT_IN_DEV, message, logged=True)]
+    tasks = tuple(settings.schedule.tasks)
+    if not tasks:
+        message = "the scheduler is on, but no [[schedule.task]] is configured; it does not start"
+        logger.warning(message)
+        return None, [CliWarning(SCHEDULER_NO_TASKS, message, logged=True)]
+    return build_scheduler(tasks), []
+
+
 @command("serve", help="ssc_help_cmd_serve", configure=_arguments, settings=True)
 def serve(inv: Invocation) -> CommandResult:
     args = inv.args
@@ -268,6 +326,9 @@ def serve(inv: Invocation) -> CommandResult:
     warnings = _token_warning(inv, bind, settings.server.token)
 
     data_dir = os.path.abspath(settings.storage.data_dir)
+    # Geçersiz görev: sunucu başlamadan config_invalid (çıkış 2)
+    scheduler, scheduler_warnings = _scheduler_host(inv, settings)
+    warnings = [*warnings, *scheduler_warnings]
     dispatcher = _sink_host(settings, data_dir)  # bozuk sink ayarı: sunucu başlamadan config_invalid (çıkış 2)
     stop = threading.Event()
     thread: Optional[threading.Thread] = None
@@ -276,6 +337,10 @@ def serve(inv: Invocation) -> CommandResult:
         thread = _start_thread(lambda: dispatcher.run(stop), "serve-sinks")
         if not inv.out.quiet:
             inv.out.info(inv.t("ssc_serve_sinks", count=len(settings.sinks)))
+    if scheduler is not None:
+        scheduler.start()
+        if not inv.out.quiet:
+            inv.out.info(inv.t("ssc_serve_scheduler", count=len(scheduler.states())))
 
     if not inv.out.quiet:
         inv.out.info(inv.t("ssc_serve_starting", url=bind.url))
@@ -293,6 +358,8 @@ def serve(inv: Invocation) -> CommandResult:
         code = exit_request.code
         server_exit = code if isinstance(code, int) else (0 if code is None else 1)
     finally:
+        if scheduler is not None:
+            scheduler.stop()
         if dispatcher is not None:
             _stop_sinks(dispatcher, thread, stop)
 
@@ -307,6 +374,8 @@ def serve(inv: Invocation) -> CommandResult:
         "sinks": len(settings.sinks) if dispatcher is not None else 0,
         "data_dir": data_dir,
     }
+    if scheduler is not None:
+        data["scheduler_tasks"] = len(scheduler.states())
     if server_exit:
         # Hata satırı stderr'e (metin kipinde) ve zarfın uyarılarına; sonuç stdout'a yazılmaz
         data["server_exit_code"] = server_exit
