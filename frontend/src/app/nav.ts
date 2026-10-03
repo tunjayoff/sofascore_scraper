@@ -29,12 +29,12 @@ export const NAV: readonly NavItem[] = [
   { key: 'events', to: '/events', icon: 'events', group: 'data', planned: 'P21', bottom: true, hotkey: 'e', classic: { to: '/classic/matches', label: 'matches' } },
   { key: 'corrections', to: '/corrections', icon: 'corrections', group: 'data', planned: 'P21' },
   { key: 'jobs', to: '/jobs', icon: 'jobs', group: 'operations', bottom: true, hotkey: 'j' },
-  { key: 'exports', to: '/exports', icon: 'exports', group: 'operations', planned: 'P21' },
-  { key: 'backups', to: '/backups', icon: 'backups', group: 'operations', planned: 'P21', classic: { to: '/classic/settings', label: 'settings' } },
-  { key: 'maintenance', to: '/maintenance', icon: 'maintenance', group: 'operations', planned: 'P21', classic: { to: '/classic/settings', label: 'settings' } },
+  { key: 'exports', to: '/exports', icon: 'exports', group: 'operations' },
+  { key: 'backups', to: '/backups', icon: 'backups', group: 'operations' },
+  { key: 'maintenance', to: '/maintenance', icon: 'maintenance', group: 'operations' },
   { key: 'health', to: '/system/health', icon: 'health', group: 'system' },
-  { key: 'sinks', to: '/system/sinks', icon: 'sinks', group: 'system', planned: 'P21', hidden: true },
-  { key: 'logs', to: '/system/logs', icon: 'logs', group: 'system', planned: 'P21' },
+  { key: 'sinks', to: '/system/sinks', icon: 'sinks', group: 'system' },
+  { key: 'logs', to: '/system/logs', icon: 'logs', group: 'system' },
   { key: 'settings', to: '/settings', icon: 'settings', group: 'system', hotkey: 's' },
 ]
 

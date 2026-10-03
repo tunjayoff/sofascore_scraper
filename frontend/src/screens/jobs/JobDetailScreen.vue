@@ -18,6 +18,7 @@ import type { Job } from '@/api/v1/schema'
 import { toast } from '@/ui/toast'
 import { duration, formatTime, num, secondsBetween, now as clockNow, useClock } from '@/ui/time'
 import StartJobDialog from './StartJobDialog.vue'
+import JobOutput from './JobOutput.vue'
 import { JobStream, type JobEventMessage } from './jobStream'
 import { logLine, codeText, type LogLine } from './eventText'
 import { breakerText, faceText, isTerminal, jobErrorText, jobKindText, jobTarget, phaseText, readProgress, rerunBody, waitText, type ProgressView } from './jobText'
@@ -310,6 +311,7 @@ onUnmounted(() => {
           </template>
         </dl>
         <p v-else-if="!job.error" class="m-0 u-muted">{{ t('ui.job.noResult') }}</p>
+        <JobOutput :job="job" />
         <div v-if="failedList.length" class="flex flex-col gap-1">
           <p class="m-0 u-small u-muted">{{ t('ui.job.failedList') }}</p>
           <ul class="m-0 p-0 list-none flex flex-wrap gap-2">

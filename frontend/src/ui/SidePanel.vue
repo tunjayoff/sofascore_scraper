@@ -41,13 +41,13 @@ onUnmounted(() => {
 <template>
   <div class="u-overlay u-panel-overlay" @mousedown.self="emit('close')">
     <aside ref="root" role="dialog" aria-modal="true" :aria-labelledby="titleId" tabindex="-1" class="u-panel" @keydown="onKeydown">
-      <header class="u-panel-head">
+      <div class="u-panel-head">
         <h2 :id="titleId" class="u-h2 flex-1">{{ title }}</h2>
         <slot name="actions" />
         <button type="button" class="u-btn u-btn-ghost u-btn-sm u-btn-icon" :aria-label="t('ui.common.close')" @click="emit('close')">
           <UiIcon name="x" :size="16" />
         </button>
-      </header>
+      </div>
       <div class="u-panel-body"><slot /></div>
     </aside>
   </div>

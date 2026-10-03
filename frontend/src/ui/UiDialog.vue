@@ -56,12 +56,12 @@ onUnmounted(() => {
       :class="{ 'u-dialog-wide': wide }"
       @keydown="onKeydown"
     >
-      <header class="flex items-start gap-3">
+      <div class="flex items-start gap-3">
         <h2 :id="titleId" class="u-h2 flex-1">{{ title }}</h2>
         <button type="button" class="u-btn u-btn-ghost u-btn-sm u-btn-icon" data-dialog-close="1" :disabled="busy" :aria-label="t('ui.common.close')" @click="close">
           <UiIcon name="x" :size="16" />
         </button>
-      </header>
+      </div>
       <div :id="bodyId" class="u-dialog-body"><slot /></div>
       <footer v-if="$slots.actions" class="u-dialog-actions"><slot name="actions" /></footer>
     </div>

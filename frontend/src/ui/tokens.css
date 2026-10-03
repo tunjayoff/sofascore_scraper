@@ -192,6 +192,50 @@ html.dark {
   margin: 0;
 }
 
+/* ---- a one-line notice above a list or in a card: information, attention ---- */
+.u-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  border-radius: var(--r-card);
+  background: var(--info-bg);
+  color: var(--info-fg);
+}
+.u-notice-warn {
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+}
+.u-notice > svg {
+  margin-top: 2px;
+}
+.u-notice a {
+  color: inherit;
+  font-weight: 600;
+}
+
+/* ---- a choice among options shown as cards (radio) ---- */
+.u-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--r-control);
+  cursor: pointer;
+}
+.u-option:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.u-option:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.u-option input {
+  margin-top: 3px;
+}
+
 /* ---- buttons: the primary action is the only filled button of a page ---- */
 .u-btn {
   display: inline-flex;

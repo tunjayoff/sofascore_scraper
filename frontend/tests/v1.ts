@@ -5,17 +5,35 @@ import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-rout
 import type { Component } from 'vue'
 import axe from 'axe-core'
 import { i18n } from '@/i18n'
-import type { Job, Setting, SettingsDocument, Status } from '@/api/v1/schema'
+import type { DataSummary, Job, Setting, SettingsDocument, Status } from '@/api/v1/schema'
 
 /**
  * Fakes of the `/api/v1` answers for the tests of the new UI. No test reaches a server or SofaScore:
  * fetch and EventSource are stubbed, and an unexpected request fails the test (helpers.ts: mockFetch).
  */
 
+export const summary = (over: Partial<DataSummary> = {}): DataSummary => ({
+  only_finished: true,
+  matches: 48210,
+  details: 46903,
+  seasons: 12,
+  legacy_events: 0,
+  catalog_rebuild_reason: null,
+  tournaments: [],
+  disk: { entries: {}, seasons: 1, matches: 2, details: 3, datasets: 0, total: 2254857830, measured_at_utc: '2026-10-02T10:00:00Z' },
+  ...over,
+})
+
 export const status = (over: Partial<Status> = {}): Status => ({
   version: '3.0.0',
   api_version: 'v1',
+  schema_version: 1,
   auth_required: false,
+  live: { running: false, pid: null, host: null, source: null, sports: [], heartbeat_at: null, blocked: false, leaders: {}, last_switch: null },
+  summary: summary(),
+  leases: [],
+  capabilities: { parquet: false, sse: true, scheduler: false },
+  storage_error: null,
   bridge: {
     state: 'ok',
     consecutive_failures: 0,

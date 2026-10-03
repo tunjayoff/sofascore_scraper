@@ -9,6 +9,17 @@ import { poll } from '@/app/poll'
 export const STATUS_EVERY_MS = 15000
 
 /**
+ * Size of the data folder: the sum of its top-level entries. `disk.total` counts only the 2.x trees
+ * (seasons, matches, details, datasets) and leaves out `v3/` and `.meta/`, so it reads 0 for a new layout.
+ */
+export function diskBytes(summary: Status['summary'] | null | undefined): number | null {
+  const disk = summary?.disk
+  if (!disk) return null
+  const entries = Object.values(disk.entries ?? {}).filter((n) => typeof n === 'number')
+  return entries.length ? entries.reduce((a, b) => a + b, 0) : disk.total
+}
+
+/**
  * `/api/v1/status`, read every 15 s while the tab is visible (5.1): the health pill, the job pill, the
  * rail's badges, Overview and Health read it from here. When the server cannot be reached the last answer
  * is kept (greyed by the shell) and the request is retried with back-off (5.2, network failure).
@@ -25,12 +36,16 @@ export const useStatusStore = defineStore('v1-status', () => {
   const offline = computed(() => error.value instanceof V1Error && error.value.code === NETWORK)
   const activeJob = computed(() => status.value?.active_job ?? null)
 
-  /** The health pill (3.3): green, amber (connection degraded, shared budget unreadable), red (blocked). */
+  /**
+   * The health pill (3.3): green; amber when the connection is degraded, the shared budget is unreadable,
+   * the live service is paused by a block or the data folder cannot be read; red when SofaScore blocks us.
+   * Sinks are not in `/status`, so a lagging sink shows on Overview and Sinks, not in the pill.
+   */
   const level = computed<HealthLevel>(() => {
     const s = status.value
     if (!s) return 'unknown'
     if (s.bridge.state === 'blocked') return 'blocked'
-    if (s.bridge.state === 'degraded' || s.throttle.error) return 'attention'
+    if (s.bridge.state === 'degraded' || s.throttle.error || s.live?.blocked || s.storage_error) return 'attention'
     return 'ok'
   })
 

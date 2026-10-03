@@ -130,11 +130,22 @@ describe('Jobs', () => {
     expect(alert.text()).toContain('pid 77')
   })
 
-  it('offers only the kinds the API starts today', async () => {
-    mockFetch({ 'GET /api/v1/jobs': page([]) })
+  it('offers the kinds that need no form; rebuild says it sends nothing to SofaScore', async () => {
+    const f = mockFetch({
+      'GET /api/v1/jobs': page([]),
+      'GET /api/v1/status': { data: status() },
+      'POST /api/v1/jobs': { data: job({ id: 'RB1', kind: 'rebuild', state: 'running', spec: { mode: 'auto' } }) },
+    })
     ;({ w } = await mountScreen(JobsScreen, '/jobs'))
     await flush()
     await w.find('button[aria-haspopup="menu"]').trigger('click')
-    expect(w.findAll('[role="menuitem"]').map((x) => x.attributes('data-key'))).toEqual(['sync', 'fetch', 'refresh'])
+    expect(w.findAll('[role="menuitem"]').map((x) => x.attributes('data-key'))).toEqual(['sync', 'fetch', 'refresh', 'rebuild'])
+    await w.find('[data-key="rebuild"]').trigger('click')
+    const dialog = w.find('[role="alertdialog"]')
+    expect(dialog.text()).toContain(t('ui.jobs.start.local'))
+    expect(dialog.text()).not.toContain(t('ui.jobs.start.sendsRequests'))
+    await w.find('[data-testid="confirm"]').trigger('click')
+    await flush()
+    expect(JSON.parse(String(callsTo(f, 'POST /api/v1/jobs')[0][1]!.body))).toEqual({ kind: 'rebuild', spec: { mode: 'auto' } })
   })
 })

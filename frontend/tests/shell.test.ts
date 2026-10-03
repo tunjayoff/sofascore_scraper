@@ -50,6 +50,8 @@ async function app(path: string, extra: Record<string, unknown> = {}, statusOver
     'GET /api/v1/status': { data: status(statusOver) },
     'GET /api/v1/jobs': { data: [job()], page: { limit: 20, next_cursor: null } },
     'GET /api/v1/settings': { data: { config_file: null, overrides_file: null, settings: [] } },
+    'GET /api/v1/follows': { data: [], page: { limit: 0, next_cursor: null } },
+    'GET /api/v1/sinks': { data: [], page: { limit: 0, next_cursor: null } },
     ...extra,
   })
   setActivePinia(createPinia())
@@ -72,7 +74,7 @@ describe('the application shell', () => {
     expect(rail.find('[aria-current="page"]').attributes('data-nav')).toBe('jobs')
     // screens that wait for P21 are marked, not hidden
     expect(rail.find('[data-nav="follows"]').text()).toContain(t('ui.nav.soon'))
-    expect(rail.find('[data-nav="sinks"]').exists()).toBe(false)
+    expect(rail.find('[data-nav="sinks"]').exists()).toBe(true)
     expect(await axeViolations(w.element)).toEqual([])
   })
 
@@ -142,11 +144,11 @@ describe('the application shell', () => {
   })
 
   it('offers Sign out when a token is in use', async () => {
-    const f = await app('/', { 'POST /api/auth/logout': { required: true, authenticated: false } }, { auth_required: true })
+    const f = await app('/', { 'POST /api/v1/auth/logout': { data: { required: true, authenticated: false } } }, { auth_required: true })
     await w.find(`button[aria-label="${t('ui.menu.label')}"]`).trigger('click')
     await w.find('[data-key="signout"]').trigger('click')
     await flush()
-    expect(callsTo(f, 'POST /api/auth/logout')).toHaveLength(1)
+    expect(callsTo(f, 'POST /api/v1/auth/logout')).toHaveLength(1)
     expect(reloadApp).toHaveBeenCalled()
   })
 })
@@ -234,17 +236,17 @@ describe('the token prompt', () => {
   }
 
   it('sends the token once and starts the app over', async () => {
-    const f = mockFetch({ 'POST /api/auth/login': { required: true, authenticated: true } })
+    const f = mockFetch({ 'POST /api/v1/auth/login': { data: { required: true, authenticated: true } } })
     await prompt()
     await w.find('#token-field').setValue('test-value-1')
     await w.find('form').trigger('submit')
     await flush()
-    expect(JSON.parse(String(callsTo(f, 'POST /api/auth/login')[0][1]!.body))).toEqual({ token: 'test-value-1' })
+    expect(JSON.parse(String(callsTo(f, 'POST /api/v1/auth/login')[0][1]!.body))).toEqual({ token: 'test-value-1' })
     expect(reloadApp).toHaveBeenCalled()
   })
 
   it('says "Wrong token." and lets the user try again', async () => {
-    mockFetch({ 'POST /api/auth/login': () => new Response(JSON.stringify({ detail: { code: 'invalid_token', message: 'x' } }), { status: 401 }) })
+    mockFetch({ 'POST /api/v1/auth/login': () => v1Error(401, 'unauthorized', { reason: 'invalid_token' }) })
     await prompt()
     await w.find('#token-field').setValue('test-value-2')
     await w.find('form').trigger('submit')
@@ -256,8 +258,7 @@ describe('the token prompt', () => {
   it('after too many wrong tokens it counts down from Retry-After and the button waits', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     mockFetch({
-      'POST /api/auth/login': () =>
-        new Response(JSON.stringify({ detail: { code: 'too_many_attempts', message: 'x', retry_after: 27 } }), { status: 429, headers: { 'Retry-After': '27' } }),
+      'POST /api/v1/auth/login': () => v1Error(401, 'unauthorized', { reason: 'too_many_attempts', retry_after: 27 }, { 'Retry-After': '27' }),
     })
     await prompt()
     await w.find('#token-field').setValue('test-value-3')

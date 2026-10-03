@@ -27,12 +27,12 @@ const shell: RouteRecordRaw[] = [
   planned('corrections', 'corrections'),
   { path: 'jobs', name: 'jobs', component: () => import('@/screens/jobs/JobsScreen.vue') },
   { path: 'jobs/:id', name: 'job', component: () => import('@/screens/jobs/JobDetailScreen.vue') },
-  planned('exports', 'exports'),
-  planned('backups', 'backups'),
-  planned('maintenance', 'maintenance'),
+  { path: 'exports', name: 'exports', component: () => import('@/screens/exports/ExportsScreen.vue') },
+  { path: 'backups', name: 'backups', component: () => import('@/screens/backups/BackupsScreen.vue') },
+  { path: 'maintenance', name: 'maintenance', component: () => import('@/screens/MaintenanceScreen.vue') },
   { path: 'system/health', name: 'health', component: () => import('@/screens/HealthScreen.vue') },
-  planned('sinks', 'system/sinks'),
-  planned('logs', 'system/logs'),
+  { path: 'system/sinks', name: 'sinks', component: () => import('@/screens/SinksScreen.vue') },
+  { path: 'system/logs', name: 'logs', component: () => import('@/screens/LogsScreen.vue') },
   { path: 'settings', name: 'settings', component: () => import('@/screens/settings/SettingsScreen.vue') },
 ]
 
