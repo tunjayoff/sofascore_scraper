@@ -322,6 +322,61 @@ export interface FightScore {
   final_round: number | null
 }
 
+/** A new follow. Without a config file a tournament follow is written to config/leagues.txt (name and sport). */
+export interface FollowCreate {
+  kind?: "tournament" | "team" | "player" | "event"
+  entity_id: number
+  name: string
+  sport?: string | null
+  seasons?: string | number[]
+  live?: boolean
+  enabled?: boolean
+}
+
+export interface FollowListResponse {
+  data: FollowRecord[]
+  page: PageInfo
+}
+
+/** Fields to change; a field left out stays. `sport: null` clears the stored sport. */
+export interface FollowPatch {
+  name?: string | null
+  sport?: string | null
+  seasons?: string | number[] | null
+  live?: boolean | null
+  enabled?: boolean | null
+}
+
+/** Something the platform downloads and watches: a tournament, a team, a player or one event. */
+export interface FollowRecord {
+  /** `<kind>:<entity_id>`. */
+  id: string
+  kind: "tournament" | "team" | "player" | "event"
+  /** SofaScore's id of the followed entity. */
+  entity_id: number
+  name: string
+  /** Stored sport, else (tournaments) the one its events show. */
+  sport?: string | null
+  /** `all`, `current`, `last:N` or a list of season ids. */
+  seasons: string | number[]
+  /** Data selection; null: the defaults. */
+  slices?: Record<string, unknown> | null
+  /** The live service watches it (`ssc watch`). */
+  live: boolean
+  enabled: boolean
+  /** legacy: config/leagues.txt; config: the config file (read-only here); api: added here. */
+  origin: "legacy" | "config" | "api"
+  position: number
+  /** Fields PATCH can change on this follow. */
+  writable: string[]
+  created_at_utc?: string | null
+  updated_at_utc?: string | null
+}
+
+export interface FollowResponse {
+  data: FollowRecord
+}
+
 /** Score family `football`: goals by stage of the match. */
 export interface FootballScore {
   /** Always `football`. */
@@ -863,6 +918,31 @@ export interface ThrottleStatus {
   error?: string | null
 }
 
+/** A tournament SofaScore found. */
+export interface TournamentHit {
+  id: number
+  name: string
+  slug?: string | null
+  /** Slug of a registered sport; null for others. */
+  sport?: string | null
+  category: TournamentHitCategory
+  /** A follow of any origin names the tournament already. */
+  followed: boolean
+}
+
+export interface TournamentHitCategory {
+  id?: number | null
+  name?: string | null
+  slug?: string | null
+  /** SofaScore's country code, as given. */
+  country_code?: string | null
+}
+
+export interface TournamentHitListResponse {
+  data: TournamentHit[]
+  page: PageInfo
+}
+
 export interface TournamentListResponse {
   data: TournamentRecord[]
   page: PageInfo
@@ -888,6 +968,14 @@ export interface TournamentRecord {
 
 export interface TournamentResponse {
   data: TournamentRecord
+}
+
+/** What to look for on SofaScore. */
+export interface TournamentSearch {
+  /** Text of the tournament name. */
+  q: string
+  /** Only tournaments of this sport (slug). */
+  sport?: string | null
 }
 
 /** Counts of one tournament. `tournament_id` null: the events without a unique tournament. */
@@ -996,6 +1084,51 @@ export interface Operations {
     body: never
     response: AuthResponse
   }
+  /** List follows */
+  "listFollows": {
+    method: "GET"
+    path: "/api/v1/follows"
+    params: {}
+    query: { kind?: "tournament" | "team" | "player" | "event" | null; origin?: "legacy" | "config" | "api" | null; enabled?: boolean | null; q?: string | null }
+    body: never
+    response: FollowListResponse
+  }
+  /** Follow something */
+  "addFollow": {
+    method: "POST"
+    path: "/api/v1/follows"
+    params: {}
+    query: {}
+    body: FollowCreate
+    response: FollowResponse
+  }
+  /** Get a follow */
+  "getFollow": {
+    method: "GET"
+    path: "/api/v1/follows/{follow_id}"
+    params: { follow_id: string }
+    query: {}
+    body: never
+    response: FollowResponse
+  }
+  /** Change a follow */
+  "updateFollow": {
+    method: "PATCH"
+    path: "/api/v1/follows/{follow_id}"
+    params: { follow_id: string }
+    query: {}
+    body: FollowPatch
+    response: FollowResponse
+  }
+  /** Stop following */
+  "removeFollow": {
+    method: "DELETE"
+    path: "/api/v1/follows/{follow_id}"
+    params: { follow_id: string }
+    query: {}
+    body: never
+    response: FollowResponse
+  }
   /** List tournaments */
   "listTournaments": {
     method: "GET"
@@ -1004,6 +1137,15 @@ export interface Operations {
     query: { sport?: string | null; q?: string | null; followed?: boolean | null; limit?: number; cursor?: string | null }
     body: never
     response: TournamentListResponse
+  }
+  /** Search tournaments on SofaScore */
+  "searchTournaments": {
+    method: "POST"
+    path: "/api/v1/tournaments/search"
+    params: {}
+    query: {}
+    body: TournamentSearch
+    response: TournamentHitListResponse
   }
   /** Get a tournament */
   "getTournament": {

@@ -2,6 +2,7 @@
 API v1: turnuvalar ve sezonlar (docs/design/02-services.md bölüm 6; docs/design/05-web-ui.md 7.2; plan maddesi P21).
 
     GET /api/v1/tournaments                         katalogdaki turnuvalar (spor, ad, takip süzgeçleri)
+    POST /api/v1/tournaments/search                 SofaScore'da turnuva araması (tek istek)
     GET /api/v1/tournaments/{tournament_id}         tek turnuva, kategorisiyle
     GET /api/v1/tournaments/{tournament_id}/seasons turnuvanın sezonları, en yeni önce
     GET /api/v1/seasons/{season_id}                 tek sezon
@@ -9,14 +10,15 @@ API v1: turnuvalar ve sezonlar (docs/design/02-services.md bölüm 6; docs/desig
 
 Kayıtlar şema v1'indir (src/schema; docs/design/04-schema-v1.md): Tournament, Category, Season, Slice. Bir turnuva
 kaydı iki alan ekler (ek alan eklemek sürüm artırmaz): `category` (katalogdaki kategori kaydı, yoksa null) ve
-`followed` (turnuva takip ediliyor). Okumalar katalogdandır (QueryService); hiçbiri SofaScore'a istek atmaz.
+`followed` (turnuva takip ediliyor). Okumalar katalogdandır (QueryService) ve SofaScore'a istek atmaz; arama
+SofaScore'a sorar ve bu yüzden POST'tur (GET olsaydı başka bir site onu kullanıcının adına tetikleyebilirdi).
 """
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Optional
 
 from fastapi import APIRouter, Path, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.errors import NotFoundError, UsageError
 from src.web import deps
@@ -61,6 +63,38 @@ class SeasonListResponse(BaseModel):
 
 class SliceResponse(BaseModel):
     data: records.Slice  # type: ignore[valid-type]
+
+
+class TournamentSearch(BaseModel):
+    """What to look for on SofaScore."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    q: str = Field(min_length=2, max_length=100, description="Text of the tournament name.")
+    sport: Optional[str] = Field(default=None, max_length=40, description="Only tournaments of this sport (slug).")
+
+
+class TournamentHitCategory(BaseModel):
+    id: Optional[int] = None
+    name: Optional[str] = None
+    slug: Optional[str] = None
+    country_code: Optional[str] = Field(default=None, description="SofaScore's country code, as given.")
+
+
+class TournamentHit(BaseModel):
+    """A tournament SofaScore found."""
+
+    id: int
+    name: str
+    slug: Optional[str] = None
+    sport: Optional[str] = Field(default=None, description="Slug of a registered sport; null for others.")
+    category: TournamentHitCategory
+    followed: bool = Field(description="A follow of any origin names the tournament already.")
+
+
+class TournamentHitListResponse(BaseModel):
+    data: List[TournamentHit]
+    page: PageInfo
 
 
 def _record(entry: "TournamentEntry") -> Dict[str, Any]:
@@ -109,6 +143,32 @@ def list_tournaments(
     return TournamentListResponse(
         data=[_record(e) for e in entries],  # type: ignore[misc]
         page=PageInfo(limit=limit, next_cursor=str(offset + limit) if more else None),
+    )
+
+
+@router.post(
+    "/tournaments/search",
+    response_model=TournamentHitListResponse,
+    operation_id="searchTournaments",
+    summary="Search tournaments on SofaScore",
+    responses=error_responses("invalid_request", "forbidden_origin", "blocked", "upstream_error"),
+)
+def search_tournaments(body: TournamentSearch) -> TournamentHitListResponse:
+    """
+    Look the text up on SofaScore (one request, the shared request budget), at most 20 tournaments. An empty
+    list: SofaScore answered and found nothing. 503 `blocked` / `rate_limited` and 502 `upstream_error` when it
+    did not answer; `details.reason` is blocked, browser, rate_limited, network or upstream. POST, because every
+    call sends a request to SofaScore (a GET could be triggered by another site).
+    """
+    hits = deps.follows_service().search_tournaments(body.q, sport=body.sport)
+    return TournamentHitListResponse(
+        data=[
+            TournamentHit(id=h.id, name=h.name, slug=h.slug, sport=h.sport, followed=h.followed,
+                          category=TournamentHitCategory(id=h.category_id, name=h.category_name,
+                                                         slug=h.category_slug, country_code=h.country_code))
+            for h in hits
+        ],
+        page=PageInfo(limit=len(hits), next_cursor=None),
     )
 
 

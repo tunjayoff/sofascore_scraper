@@ -70,6 +70,7 @@ def _api_routes():
             continue
         path = re.sub(r"\{name\}", "backup_all_20260101_000000.zip", template)
         path = re.sub(r"\{key\}", "statistics", path)  # dilim adı (v1): biçimi denetlenir
+        path = re.sub(r"\{follow_id\}", "tournament:1", path)  # takip kimliği (v1): `<kind>:<id>`
         path = re.sub(r"\{[a-z_]+\}", "1", path)
         out += [(method.upper(), path) for method in operations]
     assert len(out) > 30
@@ -203,6 +204,8 @@ READ_ONLY_GETS = {
     "/api/v1/events/1/slices",
     "/api/v1/events/1/slices/statistics",
     "/api/v1/events/1/slices/statistics/raw",
+    "/api/v1/follows",
+    "/api/v1/follows/tournament:1",
     "/api/v1/health",
     "/api/v1/jobs",
     "/api/v1/jobs/1",
@@ -251,7 +254,8 @@ GETS_THAT_MAY_WRITE_A_CACHE = {
             "/api/v1/changes", "/api/v1/events", "/api/v1/events/1", "/api/v1/events/1/odds", "/api/v1/events/1/raw",
             "/api/v1/events/1/slices", "/api/v1/events/1/slices/statistics",
             "/api/v1/events/1/slices/statistics/raw", "/api/v1/seasons/1", "/api/v1/seasons/1/slices/statistics",
-            "/api/v1/tournaments", "/api/v1/tournaments/1", "/api/v1/tournaments/1/seasons",
+            "/api/v1/tournaments", "/api/v1/tournaments/1", "/api/v1/tournaments/1/seasons", "/api/v1/follows",
+            "/api/v1/follows/tournament:1",
         )
     },
 }

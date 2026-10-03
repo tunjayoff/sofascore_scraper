@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from src.config import LoadedSettings
     from src.config_manager import ConfigManager
     from src.jobs.manager import JobManager
+    from src.services.follows import FollowsService
     from src.store import JobStore, Store
 
 
@@ -63,6 +64,38 @@ def store() -> "Store":
     from src.store import open_store
 
     return open_store(config_manager().get_data_dir())
+
+
+class _LegacyLeagues:
+    """`FollowsService`in leagues.txt yazıcısı: ConfigManager (ligler) ve src/web/league_sports.py (sporlar)."""
+
+    def __init__(self, manager: "ConfigManager") -> None:
+        self._manager = manager
+
+    def leagues(self) -> Mapping[int, str]:
+        return self._manager.get_leagues()
+
+    def add(self, name: str, tournament_id: int) -> bool:
+        return self._manager.add_league(name, tournament_id)
+
+    def remove(self, tournament_id: int) -> bool:
+        return self._manager.remove_league(tournament_id)
+
+    def set_sport(self, tournament_id: int, sport: Optional[str]) -> None:
+        from src.web import league_sports
+
+        league_sports.set_sport(self._manager.league_config_path, tournament_id, sport)
+
+
+def follows_service() -> "FollowsService":
+    """
+    Takipler servisi: veri dizininin deposu, leagues.txt yazıcısı ve bir yapılandırma dosyasının etkin olup
+    olmadığı (yeni turnuva takibinin nereye yazılacağı).
+    """
+    from src.services.follows import FollowsService
+
+    return FollowsService(store(), _LegacyLeagues(config_manager()),
+                          config_file=loaded_settings().config_file is not None)
 
 
 def loaded_settings() -> "LoadedSettings":
@@ -202,6 +235,7 @@ __all__ = [
     "attempt_limiter",
     "client_key",
     "config_manager",
+    "follows_service",
     "job_manager",
     "job_store",
     "loaded_settings",
