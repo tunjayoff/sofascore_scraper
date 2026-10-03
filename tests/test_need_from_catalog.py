@@ -141,8 +141,9 @@ def test_identifiers_that_are_not_event_ids_need_a_full_fetch(tmp_path: Path) ->
 def test_required_detail_keys_follow_the_slice_table() -> None:
     required = required_detail_keys()
     assert required[""] == tuple(detail.key for detail in slices_for(None, required_only=True))
+    # Store.events.missing(exclusive=True): kayıtlı sporun girdisi ""nin yerine geçer
     for sport, keys in required.items():
-        assert set(keys) | set(required[""]) == {d.key for d in slices_for(sport or None, required_only=True)}
+        assert keys == tuple(d.key for d in slices_for(sport or None, required_only=True))
 
 
 # --- eski biçimler ------------------------------------------------------------------------------------

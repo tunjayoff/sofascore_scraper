@@ -56,8 +56,9 @@ logger = get_logger("MatchDataFetcher")
 # Detay dilimleri src/sports.py'deki DETAIL_SLICES tablosundan türer; hangi maçta hangisinin isteneceğini
 # slices_for(spor) söyler. Aşağıdaki iki ad spordan bağımsız özetlerdir ve eski import'lar için durur.
 
-# UI / dosya tamlığı ile uyumlu alt dilimler (basic hariç): tablodaki `required` dilimler
-DETAIL_SLICE_KEYS = tuple(s.key for s in DETAIL_SLICES if s.required)
+# UI / dosya tamlığı ile uyumlu alt dilimler (basic hariç): tablodaki spora bağlı olmayan `required` dilimler
+# (spora özel dilimler, ör. kriketin `innings`'i, eski düzenin dosya listesine girmez)
+DETAIL_SLICE_KEYS = tuple(s.key for s in DETAIL_SLICES if s.required and s.sports is None)
 
 # Bir maç dizininden okunan dosyalar
 REQUIRED_FILES = ['basic.json'] + [f"{key}.json" for key in DETAIL_SLICE_KEYS]

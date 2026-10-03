@@ -9,7 +9,9 @@ Yeni spor eklemek:
   1. SPORTS'a bir SportSpec (periyot ailesindeyse `period_format`, set ailesindeyse `set_format` ile).
   2. Skor biçimi mevcut ailelerden (docs/all-sports/README.md, "Sınıf gerekçeleri") biri değilse
      src/status.py'de yeni bir extract_scores dalı ve src/schema'da yeni bir skor modeli.
-  3. Spora özel detay uç noktası varsa DETAIL_SLICES'a bir satır (ya da var olan satırın `sports` kümesine ekleme).
+  3. Spora özel detay uç noktası varsa DETAIL_SLICES'a bir satır (ya da var olan satırın `sports` kümesine ekleme);
+     ortak bir dilim o sporda yoksa `not_in`, veri hep gelmiyorsa `optional_in` kümesine (DETAIL_SLICES'ın
+     üstündeki kurallar; kanıt tests/fixtures/sport_slices/evidence.json'a girer).
   4. Web arayüzü listeyi henüz buradan almıyor: frontend/src/lib/sport.ts ve locales/{tr,en}.ts
      (tests/test_sports_registry.py ikisinin eşit kaldığını denetler).
 
@@ -384,7 +386,10 @@ class SliceSpec:
     detay uç noktalarıdır; yanıt maçın kaydına `key` adıyla yazılır.
 
     Varsayılanlar bugünkü davranışı verir: sahibi maç, alt anahtarı yok, her evrede istenebilir (bugün hiçbir
-    yol evreye bakmaz), geçmişi tutulmaz, bir kez alınır, grubu `core`.
+    yol evreye bakmaz), geçmişi tutulmaz, bir kez alınır, grubu `core`, her sporda aynı tamlık kuralı.
+
+    `not_in` ve `optional_in` tasarımdaki alanlara eklidir: aynı uç nokta bir sporda hiç yok, ötekinde her
+    maçta yok olabilir; dilim anahtarı ise her sporda aynı kalır (Store'un adresi spordan bağımsızdır).
     """
 
     key: str  # match_data anahtarı ve dosya adı
@@ -404,6 +409,11 @@ class SliceSpec:
     group: str = "core"
     keep_history: bool = False  # değişen yük dilimin geçmişine eklenir (ör. oranlar)
     max_age: Optional[timedelta] = None  # sahibi maç olmayan dilimde: bundan eskiyse yeniden alınır (None = bir kez)
+    # SofaScore'un bu dilimi sunmadığı sporlar: orada hiç istenmez (`sports` None iken de). Kanıt:
+    # DETAIL_SLICES'ın üstündeki not
+    not_in: FrozenSet[str] = frozenset()
+    # Dilimin istendiği ama tamlık hesabına girmediği sporlar (`required` True iken): orada veri hep gelmiyor
+    optional_in: FrozenSet[str] = frozenset()
 
     def __post_init__(self) -> None:
         if self.owner not in OWNERS:
@@ -415,14 +425,27 @@ class SliceSpec:
         if not (self.subs is None or self.subs == PROVIDER_SUBS
                 or (isinstance(self.subs, tuple) and self.subs and all(isinstance(s, str) and s for s in self.subs))):
             raise ValueError(f"slice {self.key!r}: subs must be None, 'provider' or a tuple of names")
+        if self.not_in & self.optional_in:
+            raise ValueError(f"slice {self.key!r}: a sport cannot be in both not_in and optional_in")
+        if self.optional_in and not self.required:
+            raise ValueError(f"slice {self.key!r}: optional_in needs a required slice")
+        if self.sports is not None and not (self.not_in | self.optional_in) <= self.sports:
+            raise ValueError(f"slice {self.key!r}: not_in and optional_in must be subsets of sports")
 
     @property
     def counts_for_completeness(self) -> bool:
-        """Tasarımdaki ad: `required`."""
+        """
+        Tasarımdaki ad: `required`. Spordan bağımsız varsayılandır (sporu bilinmeyen maç ve `optional_in`'de
+        olmayan her spor); bir sporun maçı için `counts_in(spor)`.
+        """
         return self.required
 
     def applies_to(self, sport: Optional[str]) -> bool:
-        return self.sports is None or sport in self.sports
+        return (self.sports is None or sport in self.sports) and sport not in self.not_in
+
+    def counts_in(self, sport: Optional[str]) -> bool:
+        """Bu spordaki bir maçta tamlık hesabına girer mi (dilim o sporda istenmiyorsa hayır)."""
+        return self.required and self.applies_to(sport) and sport not in self.optional_in
 
     def valid_in(self, phase: Optional[str]) -> bool:
         """Dilim bu evrede var olabilir mi; evre bilinmiyorsa (None) evet."""
@@ -436,18 +459,48 @@ class SliceSpec:
 DetailSlice = SliceSpec
 
 
+# Her sporun dilimleri, sitenin maç sayfasının istediklerinden (research/all_sports, PR #17):
+#   * bitmiş maçta veriyle yanıtlanan ve bitmiş maçta hiç 404 almayan dilim tamlık hesabına girer (`required`);
+#   * başlamış (canlı ya da bitmiş) bir maçta 404 alan, bitmiş maçta verisi görülmeyen dilim istenir ama tamlık
+#     hesabına girmez (`optional_in`): eksik kalınca maç yeniden doldurulmaz;
+#   * sayfa açılınca istenen bir dilim (istatistik, kadro, olaylar) o sporun eksiksiz yüklenmiş canlı ya da
+#     bitmiş maç sayfasında hiç istenmediyse o sporda istenmez (`not_in`). Eksiksiz: sayfa /event/{id}'yi ve
+#     /event/{id}/pregame-form'u istedi. H2H ve seriler bitmiş maçta ayrı sekmededir: sekmesi açılmayan sporda
+#     yokluk kanıt sayılmaz;
+#   * kanıt yoksa ya da yetersizse (sayfası açılmamış, 403 almış ya da yarım yüklenmiş sporlar) bugünkü
+#     davranış kalır. Futbol, basketbol ve tenis değişmez (goldenları bugünkü davranışı sabitler); kanıtın
+#     onlar için önerdikleri tests/test_sport_slices.py'de PROPOSALS'tadır.
+# Kanıt tablosu: tests/fixtures/sport_slices/evidence.json (research/all_sports'tan türer; testler denetler).
+#
 # Sıra önemli: istek sırası ve DETAIL_SLICE_KEYS / REQUIRED_FILES sırası buradan türer
 DETAIL_SLICES: Tuple[SliceSpec, ...] = (
-    SliceSpec("statistics", "/event/{event_id}/statistics"),
+    # Kriket, futsal, padel: bitmiş maçta 404. E-spor, snooker: canlı maçta 404
+    SliceSpec("statistics", "/event/{event_id}/statistics",
+              optional_in=frozenset({"cricket", "futsal", "padel", "esports", "snooker"})),
     SliceSpec("team_streaks", "/event/{event_id}/team-streaks"),
-    SliceSpec("pregame_form", "/event/{event_id}/pregame-form"),
+    # Bitmiş maçta 404: kriket, dart, futsal, buz hokeyi, padel. Canlı maçta 404: e-spor, snooker. Veriyle
+    # yalnızca MMA'da (bitmiş) ve su topunda (başlamamış) görüldü
+    SliceSpec("pregame_form", "/event/{event_id}/pregame-form",
+              optional_in=frozenset({"cricket", "darts", "futsal", "ice-hockey", "padel", "esports", "snooker"})),
     SliceSpec("h2h", "/event/{event_id}/h2h"),
-    SliceSpec("lineups", "/event/{event_id}/lineups"),
-    SliceSpec("incidents", "/event/{event_id}/incidents"),
-    SliceSpec("point_by_point", "/event/{event_id}/point-by-point", sports=frozenset({"tennis"}), required=False),
+    # Bireysel sporların sayfası kadro istemiyor (dart, MMA, padel, snooker); futsal ve mini futbolda bitmiş
+    # maçta 404
+    SliceSpec("lineups", "/event/{event_id}/lineups",
+              not_in=frozenset({"darts", "mma", "padel", "snooker"}),
+              optional_in=frozenset({"futsal", "minifootball"})),
+    SliceSpec("incidents", "/event/{event_id}/incidents",
+              not_in=frozenset({"darts", "esports", "mma", "padel", "snooker"})),
+    # Dartta da var: set ve leg başına kalan sayılar (bitmiş maçta veriyle; research/all_sports/samples/darts).
+    # Teniste bugünkü gibi isteğe bağlı kalır
+    SliceSpec("point_by_point", "/event/{event_id}/point-by-point", sports=frozenset({"tennis", "darts"}),
+              optional_in=frozenset({"tennis"})),
     # E-sporda her oyunun (haritanın) durumu, kazananı ve yarı skorları (SP-3). Oyun nesneleri maç olarak
     # dizinlenmez: yanıt maçın bir dilimidir. Oyunlar maç başlayınca vardır.
     SliceSpec("esports_games", "/event/{event_id}/esports-games", sports=frozenset({"esports"}), required=False,
+              phases=frozenset({"live", "post"})),
+    # Kriketin skor kartı: her innings'in vuran ve atan takımı, sayı, düşen kale, over ve ekstralar. Maç
+    # başlayınca vardır; bitmiş maçta veriyle yanıtlandı (research/all_sports/samples/cricket)
+    SliceSpec("innings", "/event/{event_id}/innings", sports=frozenset({"cricket"}),
               phases=frozenset({"live", "post"})),
 )
 
@@ -549,6 +602,6 @@ def slices_for(sport: Optional[str], required_only: bool = False) -> Tuple[Slice
     Bu spordaki bir maç için istenecek dilimler, tablo sırasıyla (kayıt defterinin varsayılan seçimi;
     `select_slices("event", sport)`). `sport` olayın küçük harfli slug'ıdır (event_sport_slug); kayıt
     defterinde olmayan ya da bilinmeyen (None / "") spor yalnızca her sporda geçerli dilimleri alır.
-    required_only: yalnızca tamlık hesabına girenler.
+    required_only: yalnızca bu sporda tamlık hesabına girenler (`counts_in`).
     """
-    return tuple(s for s in select_slices("event", sport) if s.required or not required_only)
+    return tuple(s for s in select_slices("event", sport) if s.counts_in(sport) or not required_only)

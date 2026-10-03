@@ -1,0 +1,138 @@
+"""
+Her sporun maç sayfasının istediği detay uç noktaları ve aldığı yanıtlar: research/all_sports'tan (PR #17) türeyen
+kanıt tablosu ve dilim kayıt defterinin (src/sports.py, DETAIL_SLICES) ondan çıkan kuralları.
+
+Ağ yok: yalnızca research/all_sports/requests.jsonl ve events/*.jsonl okunur. Tablo
+tests/fixtures/sport_slices/evidence.json'a yazılıdır; tests/test_sport_slices.py yazılı tablonun araştırma
+verisinden yeniden türediğini ve kayıt defterinin tabloya uyduğunu denetler.
+
+Yeniden üretmek (araştırma verisi değişirse):
+    python tests/sport_evidence.py > tests/fixtures/sport_slices/evidence.json
+"""
+from __future__ import annotations
+
+import collections
+import glob
+import json
+import os
+import re
+import sys
+from pathlib import Path
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+
+REPO = Path(__file__).resolve().parent.parent
+RESEARCH = REPO / "research" / "all_sports"
+EVIDENCE_FILE = Path(__file__).resolve().parent / "fixtures" / "sport_slices" / "evidence.json"
+
+# Maçın durumu, olayın status.type'ından: bitmiş, başlamış (canlı) ya da başlamamış
+FINISHED, LIVE, NOT_STARTED = "finished", "live", "notstarted"
+_STATES = {"finished": FINISHED, "inprogress": LIVE, "willcontinue": LIVE, "notstarted": NOT_STARTED}
+
+# Bahis ve oran uç noktaları P28'in işidir; tabloya girmez
+_ODDS = re.compile(r"/odds/|winning-odds|betting-odds")
+
+# Sayfa açılınca istenen dilimler: eksiksiz yüklenmiş canlı ya da bitmiş maç sayfasında hiç istenmezse o sporda
+# yoktur. H2H ve seriler (team-streaks) bitmiş maçta ayrı sekmededir; onlarda yokluk kanıt sayılmaz.
+PAGE_LOAD_ENDPOINTS = frozenset({"/statistics", "/lineups", "/incidents"})
+
+# Kanıta göre dilimin bir spordaki yeri
+REQUIRED = "required"  # bitmiş maçta veriyle yanıtlandı, bitmiş maçta hiç 404 almadı
+OPTIONAL = "optional"  # başlamış maçta 404 aldı ve bitmiş maçta hep veriyle gelmedi
+OPEN_DATA = "open_data"  # yalnızca bitmemiş maçta veriyle yanıtlandı
+ABSENT = "absent"  # sayfa açılınca istenen dilim, eksiksiz yüklenmiş canlı ya da bitmiş sayfada hiç istenmedi
+UNKNOWN = "unknown"  # kanıt yok ya da yetersiz (sayfası açılmadı, 403, yarım yüklendi, yalnızca başlamamış maç)
+
+
+def _endpoint(url: str) -> Optional[Tuple[int, str]]:
+    """API adresi → (olay kimliği, uç nokta kalıbı: "/" ya da "/statistics", "/heatmap/{id}", ...)."""
+    path = url.split("/api/v1/", 1)[-1].split("?", 1)[0]
+    m = re.match(r"event/(\d+)(/.*)?$", path)
+    if not m:
+        return None
+    suffix = m.group(2) or "/"
+    suffix = re.sub(r"/country/[A-Z]{2}", "/country/{cc}", suffix)
+    suffix = re.sub(r"/ai-insights(-postmatch)?/[a-z]{2}$", r"/ai-insights\1/{lang}", suffix)
+    suffix = re.sub(r"/\d+", "/{id}", suffix)
+    return int(m.group(1)), suffix
+
+
+def _events(research: Path) -> Dict[int, Tuple[str, str]]:
+    """Olay kimliği → (spor, durum)."""
+    out: Dict[int, Tuple[str, str]] = {}
+    for path in sorted(glob.glob(os.fspath(research / "events" / "*.jsonl"))):
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                row = json.loads(line)
+                if "id" in row and row.get("sport"):
+                    kind = (row.get("status") or {}).get("type") or ""
+                    out[int(row["id"])] = (str(row["sport"]), _STATES.get(kind, kind))
+    return out
+
+
+def derive(research: Path = RESEARCH) -> Dict[str, Any]:
+    """
+    Kanıt tablosu:
+      answers: spor → uç nokta → ["<durum>:<HTTP kodu>", ...] (maçın durumu ve yanıtın kodu; sıralı, tekil)
+      pages:   spor → [{"event_id", "state", "complete"}]: maç sayfasında açılan maçlar. complete: sayfa
+               /event/{id}'yi ve /event/{id}/pregame-form'u istedi ve yanıt (200 ya da 404) aldı (sayfanın
+               açılış istekleri gitti; 403 alan sayfa sayılmaz)
+    Yalnızca maç sayfalarındaki (sayfa tipi event…) istekler sayılır; oranlar hariç. Yanıtı kaydedilmemiş istek
+    (kod yok) sayılmaz.
+    """
+    events = _events(research)
+    answers: Dict[str, Dict[str, Set[str]]] = collections.defaultdict(lambda: collections.defaultdict(set))
+    seen: Dict[Tuple[str, int], Set[str]] = collections.defaultdict(set)
+    with open(research / "requests.jsonl", encoding="utf-8") as f:
+        for line in f:
+            row = json.loads(line)
+            if not str(row.get("page_type") or "").startswith("event") or row.get("status") is None:
+                continue
+            found = _endpoint(row["url"])
+            if found is None or _ODDS.search(found[1]):
+                continue
+            event_id, suffix = found
+            sport, state = events.get(event_id, (row["sport"], "unknown"))
+            answers[sport][suffix].add(f"{state}:{row['status']}")
+            if row["status"] in (200, 404):  # 403: istek engellendi, sayfanın ne istediği bilinmez
+                seen[(sport, event_id)].add(suffix)
+    pages: Dict[str, List[Dict[str, Any]]] = collections.defaultdict(list)
+    for (sport, event_id), suffixes in sorted(seen.items()):
+        if len(suffixes - {"/", "/votes"}) < 2:
+            continue  # başka bir maçın sayfasında geçen maç (ör. H2H listesi): kendi sayfası açılmadı
+        pages[sport].append({"event_id": event_id, "state": events.get(event_id, (sport, "unknown"))[1],
+                             "complete": "/" in suffixes and "/pregame-form" in suffixes})
+    return {
+        "source": "research/all_sports (PR #17): requests.jsonl, events/*.jsonl",
+        "pages": {sport: pages[sport] for sport in sorted(pages)},
+        "answers": {sport: {suffix: sorted(codes) for suffix, codes in sorted(by_suffix.items())}
+                    for sport, by_suffix in sorted(answers.items())},
+    }
+
+
+def load() -> Dict[str, Any]:
+    with open(EVIDENCE_FILE, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def verdict(evidence: Dict[str, Any], sport: str, endpoint: str) -> str:
+    """Kanıta göre `endpoint`'in (ör. "/statistics") `sport`taki yeri: REQUIRED, OPTIONAL, OPEN_DATA, ABSENT, UNKNOWN."""
+    codes: Iterable[str] = evidence["answers"].get(sport, {}).get(endpoint, ())
+    pairs = {tuple(code.split(":", 1)) for code in codes}
+    finished_data = (FINISHED, "200") in pairs
+    finished_404 = (FINISHED, "404") in pairs
+    started_404 = finished_404 or (LIVE, "404") in pairs
+    if finished_data and not finished_404:
+        return REQUIRED
+    if started_404 or finished_data:
+        return OPTIONAL
+    if any(state == "200" for _s, state in pairs):
+        return OPEN_DATA
+    if not pairs and endpoint in PAGE_LOAD_ENDPOINTS and any(
+            page["complete"] and page["state"] in (FINISHED, LIVE) for page in evidence["pages"].get(sport, ())):
+        return ABSENT
+    return UNKNOWN
+
+
+if __name__ == "__main__":
+    json.dump(derive(), sys.stdout, ensure_ascii=False, indent=1)
+    sys.stdout.write("\n")

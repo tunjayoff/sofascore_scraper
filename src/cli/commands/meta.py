@@ -204,15 +204,20 @@ def describe_sports() -> List[Dict[str, Any]]:
 
 
 def describe_slices() -> List[Dict[str, Any]]:
-    """Dilim kayıt defteri (src/sports.py). Bugün yalnızca maç (event) dilimleri vardır."""
+    """
+    Dilim kayıt defteri (src/sports.py). Bugün yalnızca maç (event) dilimleri vardır. `not_in`: dilimin
+    istenmediği sporlar; `optional_in`: istendiği ama tamlık hesabına girmediği sporlar.
+    """
     return [
         {
             "key": item.key,
             "owner": "event",
             "path": item.path,
             "sports": sorted(item.sports) if item.sports is not None else None,
+            "not_in": sorted(item.not_in),
             "default_enabled": item.default_enabled,
             "counts_for_completeness": item.required,
+            "optional_in": sorted(item.optional_in),
         }
         for item in sports.DETAIL_SLICES
     ]

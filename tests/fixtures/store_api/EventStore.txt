@@ -11,7 +11,7 @@ class EventStore:
     def slices(self, event_id: int) -> List[SliceInfo]
     def slice(self, event_id: int, key: str, sub: str = '') -> SliceInfo
     def states(self, scope: Optional[Scope] = None, *, status_classes: Sequence[str] = (), batch: int = DEFAULT_BATCH) -> Iterator[EventState]
-    def missing(self, scope: Optional[Scope], required: Mapping[str, Sequence[str]], *, status_classes: Sequence[str] = FINISHED_CLASSES, threshold: int = DEFAULT_EMPTY_THRESHOLD, limit: Optional[int] = None) -> Iterator[MissingRow]
+    def missing(self, scope: Optional[Scope], required: Mapping[str, Sequence[str]], *, status_classes: Sequence[str] = FINISHED_CLASSES, threshold: int = DEFAULT_EMPTY_THRESHOLD, limit: Optional[int] = None, exclusive: bool = False) -> Iterator[MissingRow]
     def refresh_candidates(self, *, now: float, window_s: float, min_interval_s: float, scope: Optional[Scope] = None, status_classes: Sequence[str] = (), include_unobserved: bool = False) -> List[int]
     def stale(self, scope: Optional[Scope] = None) -> List[int]
     def open_events(self, *, started_before: float, scope: Optional[Scope] = None) -> List[int]

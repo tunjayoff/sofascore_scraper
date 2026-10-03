@@ -80,7 +80,7 @@
    "slices": [
     {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
     {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
-    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": false, "default_enabled": true},
     {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
     {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
     {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
@@ -120,11 +120,11 @@
    "i18n_key": "sport.futsal",
    "score_family": "periods",
    "slices": [
-    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": false, "default_enabled": true},
     {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
-    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": false, "default_enabled": true},
     {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
-    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": false, "default_enabled": true},
     {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
    ]
   },
@@ -138,7 +138,7 @@
     {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
     {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
     {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
-    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
+    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": false, "default_enabled": true},
     {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
    ]
   },
@@ -204,12 +204,10 @@
    "i18n_key": "sport.padel",
    "score_family": "sets",
    "slices": [
-    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": false, "default_enabled": true},
     {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
-    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
-    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
-    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
-    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": false, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true}
    ]
   },
   {
@@ -218,12 +216,10 @@
    "i18n_key": "sport.snooker",
    "score_family": "sets",
    "slices": [
-    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": false, "default_enabled": true},
     {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
-    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
-    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
-    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
-    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": false, "default_enabled": true},
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true}
    ]
   },
   {
@@ -246,12 +242,13 @@
    "i18n_key": "sport.cricket",
    "score_family": "cricket",
    "slices": [
-    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": false, "default_enabled": true},
     {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
-    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": false, "default_enabled": true},
     {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
     {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
-    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true},
+    {"key": "innings", "path": "/event/{event_id}/innings", "required": true, "default_enabled": true}
    ]
   },
   {
@@ -260,12 +257,11 @@
    "i18n_key": "sport.esports",
    "score_family": "sets",
    "slices": [
-    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
+    {"key": "statistics", "path": "/event/{event_id}/statistics", "required": false, "default_enabled": true},
     {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
-    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": false, "default_enabled": true},
     {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
     {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
-    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true},
     {"key": "esports_games", "path": "/event/{event_id}/esports-games", "required": false, "default_enabled": true}
    ]
   },
@@ -277,10 +273,9 @@
    "slices": [
     {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
     {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
-    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
+    {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": false, "default_enabled": true},
     {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
-    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
-    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+    {"key": "point_by_point", "path": "/event/{event_id}/point-by-point", "required": true, "default_enabled": true}
    ]
   },
   {
@@ -292,9 +287,7 @@
     {"key": "statistics", "path": "/event/{event_id}/statistics", "required": true, "default_enabled": true},
     {"key": "team_streaks", "path": "/event/{event_id}/team-streaks", "required": true, "default_enabled": true},
     {"key": "pregame_form", "path": "/event/{event_id}/pregame-form", "required": true, "default_enabled": true},
-    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true},
-    {"key": "lineups", "path": "/event/{event_id}/lineups", "required": true, "default_enabled": true},
-    {"key": "incidents", "path": "/event/{event_id}/incidents", "required": true, "default_enabled": true}
+    {"key": "h2h", "path": "/event/{event_id}/h2h", "required": true, "default_enabled": true}
    ]
   }
  ]

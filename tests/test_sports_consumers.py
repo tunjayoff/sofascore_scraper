@@ -103,7 +103,10 @@ def test_stuck_threshold_comes_from_the_registry(tmp_path, sport, hours, expecte
 # --- indirici: dilimler tablodan --------------------------------------------------------
 
 def test_fetcher_constants_derive_from_the_slice_table():
-    assert DETAIL_SLICE_KEYS == tuple(s.key for s in sports.DETAIL_SLICES if s.required) == COMMON_KEYS
+    # spora bağlı olmayan `required` dilimler: spora özel dilimler (dartın point_by_point'i, kriketin innings'i)
+    # eski düzenin dosya listesine girmez
+    assert DETAIL_SLICE_KEYS == tuple(s.key for s in sports.DETAIL_SLICES
+                                      if s.required and s.sports is None) == COMMON_KEYS
     assert REQUIRED_FILES == ["basic.json"] + [f"{k}.json" for k in COMMON_KEYS]
 
 

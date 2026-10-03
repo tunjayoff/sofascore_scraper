@@ -229,13 +229,18 @@ def test_detail_slice_table():
         ("incidents", "/event/{event_id}/incidents"),
         ("point_by_point", "/event/{event_id}/point-by-point"),
         ("esports_games", "/event/{event_id}/esports-games"),
+        ("innings", "/event/{event_id}/innings"),
     ]
     assert all(s.default_enabled for s in sports.DETAIL_SLICES)
-    assert [s.key for s in sports.DETAIL_SLICES if not s.required] == ["point_by_point", "esports_games"]
-    assert sports.get_slice("point_by_point").sports == frozenset({"tennis"})
+    assert [s.key for s in sports.DETAIL_SLICES if not s.required] == ["esports_games"]
+    # spora göre: tenisin point_by_point'i isteğe bağlı, dartınki tamlığa girer (tests/test_sport_slices.py)
+    assert sports.get_slice("point_by_point").sports == frozenset({"tennis", "darts"})
+    assert sports.get_slice("point_by_point").optional_in == frozenset({"tennis"})
     assert sports.get_slice("esports_games").sports == frozenset({"esports"})
     assert sports.get_slice("esports_games").phases == frozenset({"live", "post"})  # oyunlar maç başlayınca var
-    assert all(s.sports is None for s in sports.DETAIL_SLICES if s.key not in ("point_by_point", "esports_games"))
+    assert sports.get_slice("innings").sports == frozenset({"cricket"})
+    assert sports.get_slice("innings").phases == frozenset({"live", "post"})  # innings maç başlayınca var
+    assert all(s.sports is None for s in sports.DETAIL_SLICES if s.key in COMMON_KEYS)
 
 
 def test_slice_table_is_consistent():
@@ -243,6 +248,7 @@ def test_slice_table_is_consistent():
     assert len(set(keys)) == len(keys)
     for s in sports.DETAIL_SLICES:
         assert s.sports is None or s.sports <= set(sports.sport_slugs())
+        assert (s.not_in | s.optional_in) <= set(sports.sport_slugs())
         assert s.path.startswith("/event/{event_id}/")
         assert sports.get_slice(s.key) is s
     assert sports.get_slice("nope") is None
@@ -253,15 +259,14 @@ def test_slice_url():
     assert s.url("https://www.sofascore.com/api/v1", 42) == "https://www.sofascore.com/api/v1/event/42/team-streaks"
 
 
+# Spor başına bütün dilimler ve tamlık: tests/test_sport_slices.py (kanıt tablosuna karşı)
 @pytest.mark.parametrize("sport,expected", [
     ("football", COMMON_KEYS),
     ("basketball", COMMON_KEYS),
     ("tennis", COMMON_KEYS + ("point_by_point",)),
     ("handball", COMMON_KEYS),
     ("volleyball", COMMON_KEYS),
-    ("table-tennis", COMMON_KEYS),  # point_by_point yalnızca tenisin
-    ("esports", COMMON_KEYS + ("esports_games",)),
-    ("darts", COMMON_KEYS),
+    ("table-tennis", COMMON_KEYS),  # point_by_point teniste ve dartta
     ("waterpolo", COMMON_KEYS),
     ("", COMMON_KEYS),
     (None, COMMON_KEYS),
@@ -274,7 +279,9 @@ def test_slices_for_sport(sport, expected):
 def test_sport_spec_lists_its_slices():
     assert sports.get_sport("football").detail_slices == COMMON_KEYS
     assert sports.get_sport("tennis").detail_slices == COMMON_KEYS + ("point_by_point",)
-    assert sports.get_sport("esports").detail_slices == COMMON_KEYS + ("esports_games",)
+    assert sports.get_sport("esports").detail_slices == (
+        "statistics", "team_streaks", "pregame_form", "h2h", "lineups", "esports_games")
+    assert sports.get_sport("cricket").detail_slices == COMMON_KEYS + ("innings",)
 
 
 # --- web arayüzü listesi kayıt defteriyle aynı kalmalı (henüz /api/sports'tan okumuyor) ------
@@ -305,10 +312,12 @@ def test_detail_slice_is_the_slice_spec_with_todays_defaults():
     assert sports.DetailSlice is sports.SliceSpec
     for s in sports.DETAIL_SLICES:
         # e-sporun oyunları (SP-3) maç başlamadan yoktur: yalnızca canlı ve bitmiş evrede
-        phases = frozenset({"live", "post"}) if s.key == "esports_games" else sports.ALL_PHASES
+        phases = frozenset({"live", "post"}) if s.key in ("esports_games", "innings") else sports.ALL_PHASES
         assert (s.owner, s.subs, s.phases, s.group, s.keep_history, s.max_age) == (
             "event", None, phases, "core", False, None)
         assert s.counts_for_completeness is s.required
+        assert all(s.counts_in(sport) is (s.required and sport not in s.optional_in)
+                   for sport in sports.sport_slugs() if s.applies_to(sport))
     extra = sports.DetailSlice("innings", "/event/{event_id}/innings", sports=frozenset({"basketball"}))
     assert extra.required and extra.default_enabled and extra.owner == "event"
 
