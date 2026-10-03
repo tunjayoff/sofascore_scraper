@@ -72,8 +72,6 @@ describe('the application shell', () => {
     const items = rail.findAll('[data-nav]').map((x) => x.attributes('data-nav'))
     expect(items).toEqual(NAV.filter((n) => !n.hidden).map((n) => n.key))
     expect(rail.find('[aria-current="page"]').attributes('data-nav')).toBe('jobs')
-    // screens that wait for P21 are marked, not hidden
-    expect(rail.find('[data-nav="follows"]').text()).toContain(t('ui.nav.soon'))
     expect(rail.find('[data-nav="sinks"]').exists()).toBe(true)
     expect(await axeViolations(w.element)).toEqual([])
   })
@@ -187,6 +185,30 @@ describe('keyboard', () => {
     expect(w.text()).toContain(t('ui.palette.note'))
   })
 
+  it('the quick search finds follows by name and stored tournaments of the catalog, never SofaScore', async () => {
+    const f = await app('/', {
+      'GET /api/v1/follows': { data: [{ id: 'tournament:17', kind: 'tournament', entity_id: 17, name: 'Premier League', sport: 'football', seasons: 'current', live: false, enabled: true, origin: 'api', position: 0, writable: [] }], page: { limit: 0 } },
+      'GET /api/v1/tournaments': { data: [{ id: 17, name: 'Premier League', sport: 'football', category_id: 1, slug: 'pl' }, { id: 8, name: 'LaLiga', sport: 'football', category_id: 2, slug: 'laliga' }], page: { limit: 6 } },
+    })
+    key('k', { ctrlKey: true })
+    await flush()
+    await w.find('input[role="combobox"]').setValue('lig')
+    await new Promise((r) => setTimeout(r, 260))
+    await flush()
+    expect(new URL(String(callsTo(f, 'GET /api/v1/tournaments')[0][0]), 'http://x').searchParams.get('q')).toBe('lig')
+    const options = w.findAll('[role="option"]').map((o) => o.text())
+    expect(options).toEqual(expect.arrayContaining([expect.stringContaining('LaLiga')]))
+    await w.find('input[role="combobox"]').setValue('premier')
+    await new Promise((r) => setTimeout(r, 260))
+    await flush()
+    // the followed tournament is offered once, as the follow
+    expect(w.findAll('[role="option"]').filter((o) => o.text().includes('Premier League'))).toHaveLength(1)
+    await w.find('input[role="combobox"]').trigger('keydown', { key: 'Enter' })
+    await flush()
+    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/follows/tournament/17'), { timeout: 4000 })
+    expect(f.mock.calls.every(([u]) => String(u).startsWith('/api/'))).toBe(true)
+  })
+
   it('/ focuses the filter of the table', async () => {
     await app('/jobs', { 'GET /api/v1/jobs': { data: [job()], page: { limit: 25, next_cursor: null } } })
     key('/')
@@ -195,24 +217,31 @@ describe('keyboard', () => {
 })
 
 describe('routing', () => {
-  it('screens that need P21 are clear placeholders, also their sub-paths', async () => {
-    await app('/events/16950622')
-    const planned = w.find('[data-testid="planned"]')
-    expect(planned.text()).toContain(t('ui.planned.title'))
-    expect(planned.text()).toContain(t('ui.planned.events.p2'))
-    expect(planned.find('a[href="/classic/matches"]').exists()).toBe(true)
-    expect(w.find('h1').text()).toBe(t('ui.nav.events'))
-    expect(await axeViolations(w.element)).toEqual([])
+  it('every path of the URL map has its screen; a path that names no screen goes to Overview', async () => {
+    const resolve = (p: string) => router.resolve(p).name
+    await app('/')
+    expect(['/follows', '/follows/new', '/follows/tournament/17', '/follows/team/2672/edit', '/events', '/events/16950622', '/events/16950622/raw/statistics', '/corrections'].map(resolve)).toEqual([
+      'follows', 'follow-new', 'follow', 'follow-edit', 'events', 'event', 'event-raw', 'corrections',
+    ])
+    expect(['/exports', '/backups', '/maintenance', '/system/sinks', '/system/logs'].map(resolve)).toEqual(['exports', 'backups', 'maintenance', 'sinks', 'logs'])
+    // a follow of an unknown kind is not a follow
+    expect(resolve('/follows/league/17')).toBeUndefined()
   })
 
-  it('the classic views stay reachable under /classic; old addresses lead there or to the new screen', async () => {
+  it('old addresses lead to the new screens; the classic views stay reachable under /classic', async () => {
     const legacy = LEGACY
-    await app('/matches?league_id=17', legacy)
-    expect(router.currentRoute.value.fullPath).toBe('/classic/matches?league_id=17')
+    await app('/matches?league_id=17&season_id=52186&details=missing', { ...legacy, 'GET /api/v1/events': { data: [], page: { limit: 25, next_cursor: null } } })
+    expect(router.currentRoute.value.fullPath).toBe('/events?tournament=17&season=52186&has=missing')
+    w.unmount()
+    await app('/classic/matches?league_id=17', legacy)
     expect(w.find('[data-testid="new-ui-link"]').attributes('href')).toBe('/')
     w.unmount()
     await app('/activity', legacy)
     expect(router.currentRoute.value.path).toBe('/jobs')
+    for (const [from, to] of [['/match/16950622', '/events/16950622'], ['/leagues', '/follows'], ['/stats', '/']]) {
+      await router.push(from).catch(() => {})
+      expect(router.currentRoute.value.fullPath).toBe(to)
+    }
     w.unmount()
     await app('/nowhere/at/all', legacy)
     expect(router.currentRoute.value.path).toBe('/')

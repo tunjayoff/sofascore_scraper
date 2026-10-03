@@ -5,7 +5,7 @@ import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-rout
 import type { Component } from 'vue'
 import axe from 'axe-core'
 import { i18n } from '@/i18n'
-import type { DataSummary, Job, Setting, SettingsDocument, Status } from '@/api/v1/schema'
+import type { Change, DataSummary, EventListItem, FollowRecord, Job, Setting, SettingsDocument, Slice, Status } from '@/api/v1/schema'
 
 /**
  * Fakes of the `/api/v1` answers for the tests of the new UI. No test reaches a server or SofaScore:
@@ -65,6 +65,90 @@ export const job = (over: Partial<Job> = {}): Job => ({
   cancel_requested: false,
   ...over,
 })
+
+export const event = (over: Partial<EventListItem> = {}): EventListItem => ({
+  id: 9100003,
+  sport: 'football',
+  category_id: 1,
+  tournament_id: 17,
+  season_id: 61627,
+  stage: { id: null, name: 'Premier League' },
+  round: { number: 2, name: null, slug: null },
+  start_utc: '2024-08-31T11:46:40Z',
+  status: { type: 'finished', code: 100, description: 'Ended', class: 'completed' },
+  participants: { home: { id: 38, name: 'Chelsea' }, away: { id: 44, name: 'Liverpool' } },
+  score: { family: 'football', home: 1, away: 3, half_time: { home: 0, away: 0 }, regulation: { home: 1, away: 3 }, after_extra_time: null, penalties: null },
+  winner: 'away',
+  aggregate: null,
+  slug: 'chelsea-liverpool',
+  custom_id: 'abc',
+  quality: { source: 'event', observed_at_utc: '2026-10-03T02:01:10Z', change_ts: 1725112000, settlement: 'final', provisional: false, tier_hint: null, stale: false, status_regressed: false },
+  slices_summary: { selected: 6, ok: 6, empty: 0, error: 0 },
+  ...over,
+})
+
+export const slice = (key: string, over: Partial<Slice> = {}): Slice => ({
+  owner_kind: 'event',
+  owner_id: 9100003,
+  key,
+  sub: null,
+  state: 'ok',
+  has_payload: true,
+  fetched_at_utc: '2026-10-03T02:01:10Z',
+  checked_at_utc: '2026-10-03T02:01:10Z',
+  error: null,
+  payload: null,
+  ...over,
+})
+
+export const follow = (over: Partial<FollowRecord> = {}): FollowRecord => ({
+  id: 'tournament:17',
+  kind: 'tournament',
+  entity_id: 17,
+  name: 'Premier League',
+  sport: 'football',
+  seasons: 'current',
+  slices: null,
+  live: false,
+  enabled: true,
+  origin: 'api',
+  position: 0,
+  writable: ['name', 'sport', 'seasons', 'live', 'enabled'],
+  created_at_utc: '2026-10-01T10:00:00Z',
+  updated_at_utc: '2026-10-01T10:00:00Z',
+  ...over,
+})
+
+export const change = (over: Partial<Change> = {}): Change => ({
+  seq: 1,
+  recorded_at_utc: '2026-10-02T10:00:00Z',
+  event_id: 9100003,
+  sport: 'football',
+  tournament_id: 17,
+  start_utc: '2024-08-31T11:46:40Z',
+  seconds_after_start: 7200,
+  old_status_class: 'completed',
+  new_status_class: 'completed',
+  old_change_ts: 1,
+  new_change_ts: 2,
+  status_regressed: false,
+  tier_hint: null,
+  fields: [
+    { path: 'awayScore.current', old: 1, new: 2 },
+    { path: 'homeScore.current', old: 2, new: 2 },
+  ],
+  ...over,
+})
+
+export const sport = (slug = 'football') => ({
+  slug,
+  name: slug[0].toUpperCase() + slug.slice(1),
+  i18n_key: `sport.${slug}`,
+  score_family: 'football',
+  slices: ['statistics', 'team_streaks', 'pregame_form', 'h2h', 'lineups', 'incidents'].map((key) => ({ key, path: `/event/{event_id}/${key}`, required: true, default_enabled: true })),
+})
+
+export const page = <T>(data: T[], next: string | null = null) => ({ data, page: { limit: 25, next_cursor: next } })
 
 export const setting = (key: string, value: unknown, over: Partial<Setting> = {}): Setting => ({
   key,

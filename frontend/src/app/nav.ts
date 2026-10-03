@@ -1,11 +1,6 @@
 import type { UiIconName } from '@/ui/UiIcon.vue'
 
-/**
- * The screens of the new app and their place in the menu (05-web-ui.md 3.1, 3.2). `planned` names the
- * plan item whose API routes the screen needs: until it is merged the screen is a clear placeholder that
- * says what is coming, never a broken page (7.1, 7.2). `classic` points to today's view that covers the
- * same need meanwhile.
- */
+/** The screens of the new app and their place in the menu (05-web-ui.md 3.1, 3.2). */
 export type NavGroup = 'start' | 'data' | 'operations' | 'system'
 
 export type NavItem = {
@@ -13,21 +8,19 @@ export type NavItem = {
   to: string
   icon: UiIconName
   group: NavGroup
-  planned?: 'P21'
-  /** Hidden from the menu while its route is missing (Sinks, 6.13); the address still answers. */
+  /** Hidden from the menu (a screen whose route is missing); the address still answers. */
   hidden?: boolean
   /** In the phone's bottom bar (3.3); the others are under "More". */
   bottom?: boolean
   /** g + this key opens the screen (4.9). */
   hotkey?: string
-  classic?: { to: string; label: string }
 }
 
 export const NAV: readonly NavItem[] = [
   { key: 'overview', to: '/', icon: 'home', group: 'start', bottom: true, hotkey: 'o' },
-  { key: 'follows', to: '/follows', icon: 'follows', group: 'data', planned: 'P21', bottom: true, hotkey: 'f', classic: { to: '/classic', label: 'leagues' } },
-  { key: 'events', to: '/events', icon: 'events', group: 'data', planned: 'P21', bottom: true, hotkey: 'e', classic: { to: '/classic/matches', label: 'matches' } },
-  { key: 'corrections', to: '/corrections', icon: 'corrections', group: 'data', planned: 'P21' },
+  { key: 'follows', to: '/follows', icon: 'follows', group: 'data', bottom: true, hotkey: 'f' },
+  { key: 'events', to: '/events', icon: 'events', group: 'data', bottom: true, hotkey: 'e' },
+  { key: 'corrections', to: '/corrections', icon: 'corrections', group: 'data' },
   { key: 'jobs', to: '/jobs', icon: 'jobs', group: 'operations', bottom: true, hotkey: 'j' },
   { key: 'exports', to: '/exports', icon: 'exports', group: 'operations' },
   { key: 'backups', to: '/backups', icon: 'backups', group: 'operations' },

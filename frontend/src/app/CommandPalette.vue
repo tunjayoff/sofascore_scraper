@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, useId } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, useId, watch } from 'vue'
 import { useRouter, type RouteLocationRaw } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import UiIcon, { type UiIconName } from '@/ui/UiIcon.vue'
 import { trapTab } from '@/ui/focus'
 import { v1 } from '@/api/v1/client'
-import type { Job } from '@/api/v1/schema'
+import type { FollowRecord, Job, TournamentRecord } from '@/api/v1/schema'
 import { NAV } from '@/app/nav'
 import { jobKindText, jobTarget } from '@/screens/jobs/jobText'
 
 /**
  * Quick search, `Ctrl K` / `⌘ K` (3.3, decision 20). It searches stored data only and never sends a request
- * to SofaScore: today the screens, the recent jobs and an event or job id; follows and tournaments by name
- * join when P21 has their routes (the list says so).
+ * to SofaScore: the screens, the follows and the stored tournaments by name, an event or job id, and the
+ * recent jobs.
  */
 const emit = defineEmits<{ close: [] }>()
 const { t } = useI18n()
@@ -24,7 +24,28 @@ const root = ref<HTMLElement | null>(null)
 const listId = useId()
 const active = ref(0)
 const jobs = ref<Job[]>([])
+const follows = ref<FollowRecord[]>([])
+const tournaments = ref<TournamentRecord[]>([])
 let returnTo: HTMLElement | null = null
+
+// Tournaments of the stored catalog by name, asked for while typing (debounced); never SofaScore
+let timer: ReturnType<typeof setTimeout> | null = null
+let controller: AbortController | null = null
+watch(query, (value) => {
+  if (timer) clearTimeout(timer)
+  const q = value.trim()
+  if (q.length < 2 || /^\d+$/.test(q)) {
+    tournaments.value = []
+    return
+  }
+  timer = setTimeout(() => {
+    controller?.abort()
+    controller = new AbortController()
+    v1.tournaments({ q, limit: 6 }, controller.signal)
+      .then((r) => (tournaments.value = r.data))
+      .catch(() => {})
+  }, 200)
+})
 
 type Hit = { id: string; label: string; hint?: string; icon: UiIconName; to: RouteLocationRaw }
 
@@ -38,6 +59,14 @@ const hits = computed<Hit[]>(() => {
   }
   if (/^\d{1,12}$/.test(q)) out.unshift({ id: `event-${q}`, label: t('ui.palette.openEvent', { id: q }), hint: t('ui.nav.events'), icon: 'events', to: `/events/${q}` })
   if (/^[0-9a-hjkmnp-tv-z]{26}$/i.test(q)) out.unshift({ id: `job-${q}`, label: t('ui.palette.openJob', { id: q.toUpperCase() }), hint: t('ui.nav.jobs'), icon: 'jobs', to: `/jobs/${q.toUpperCase()}` })
+  if (q) {
+    for (const f of follows.value)
+      if (f.name.toLowerCase().includes(q)) out.push({ id: `follow-${f.id}`, label: f.name, hint: t('ui.palette.follow'), icon: 'follows', to: `/follows/${f.kind}/${f.entity_id}` })
+    const followed = new Set(follows.value.filter((f) => f.kind === 'tournament').map((f) => f.entity_id))
+    for (const tour of tournaments.value)
+      if (!followed.has(tour.id) && (tour.name ?? '').toLowerCase().includes(q))
+        out.push({ id: `tournament-${tour.id}`, label: tour.name ?? `#${tour.id}`, hint: t('ui.palette.tournament'), icon: 'events', to: { path: '/events', query: { tournament: String(tour.id) } } })
+  }
   for (const j of jobs.value) {
     const label = `${jobKindText(j.kind)} · ${jobTarget(j)}`
     if (q && (label.toLowerCase().includes(q) || j.id.toLowerCase().startsWith(q))) out.push({ id: `recent-${j.id}`, label, hint: j.id, icon: 'jobs', to: `/jobs/${j.id}` })
@@ -74,8 +103,13 @@ onMounted(() => {
   v1.jobs({ limit: 20 })
     .then((r) => (jobs.value = r.data))
     .catch(() => {})
+  v1.follows()
+    .then((r) => (follows.value = r.data))
+    .catch(() => {})
 })
 onUnmounted(() => {
+  if (timer) clearTimeout(timer)
+  controller?.abort()
   if (returnTo && document.contains(returnTo)) returnTo.focus()
 })
 </script>

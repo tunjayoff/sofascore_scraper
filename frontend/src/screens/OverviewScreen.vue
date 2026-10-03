@@ -13,7 +13,7 @@ import ErrorState from '@/ui/ErrorState.vue'
 import SkeletonBlock from '@/ui/SkeletonBlock.vue'
 import ConfirmDialog from '@/ui/ConfirmDialog.vue'
 import { v1 } from '@/api/v1/client'
-import type { FollowRecord, Job, SinkStatus } from '@/api/v1/schema'
+import type { Change, FollowRecord, Job, SinkStatus } from '@/api/v1/schema'
 import { diskBytes, useStatusStore } from '@/app/statusStore'
 import { poll } from '@/app/poll'
 import { sportName } from '@/app/sports'
@@ -22,6 +22,8 @@ import { toast } from '@/ui/toast'
 import { bytesText, duration, num, pct, secondsBetween } from '@/ui/time'
 import StartJobDialog from './jobs/StartJobDialog.vue'
 import { faceText, jobKindText, jobPercent, jobTarget, readProgress } from './jobs/jobText'
+import ChangeFields from './events/ChangeFields.vue'
+import { eventTitle } from './events/eventText'
 
 /**
  * Overview, the start page (6.1, decision 1): is everything working, what runs, what needs me. The tiles
@@ -37,6 +39,8 @@ const jobsError = ref<unknown>(null)
 const jobsLoading = ref(true)
 const follows = ref<FollowRecord[] | null>(null)
 const sinks = ref<SinkStatus[] | null>(null)
+const changes = ref<Change[] | null>(null)
+const changeNames = ref<Map<number, string>>(new Map())
 const syncing = ref(false)
 const stopping = ref(false)
 const confirmStop = ref(false)
@@ -67,6 +71,15 @@ function loadOnce() {
   v1.sinks()
     .then((r) => (sinks.value = r))
     .catch(() => (sinks.value = null))
+  v1.changes({ order: 'desc', limit: 5 })
+    .then((r) => {
+      changes.value = r.data
+      for (const id of new Set(r.data.map((c) => c.event_id)))
+        v1.event(id)
+          .then((e) => (changeNames.value = new Map(changeNames.value).set(id, eventTitle(e))))
+          .catch(() => {})
+    })
+    .catch(() => (changes.value = null))
 }
 
 /** Nothing followed and nothing stored: the page is one empty state (6.1, first run). */
@@ -227,6 +240,23 @@ onUnmounted(() => stopPoll?.())
             <dd :class="{ 'u-muted': !s.capabilities.scheduler }">{{ s.capabilities.scheduler ? t('ui.common.on') : t('ui.common.off') }}</dd>
           </dl>
           <RouterLink to="/system/health" class="self-end u-btn u-btn-sm">{{ t('ui.nav.health') }}<UiIcon name="chevronRight" :size="14" /></RouterLink>
+        </section>
+
+        <section v-if="changes" class="u-card p-5 flex flex-col gap-3 lg:order-last" data-testid="recent-corrections">
+          <header class="flex items-center">
+            <h2 class="u-h3 flex-1">{{ t('ui.overview.corrections') }}</h2>
+            <RouterLink to="/corrections" class="u-small font-semibold">{{ t('ui.overview.allCorrections') }}</RouterLink>
+          </header>
+          <p v-if="!changes.length" class="m-0 u-muted">{{ t('ui.corrections.empty') }}</p>
+          <ul v-else class="m-0 p-0 list-none">
+            <li v-for="c in changes" :key="c.seq" class="flex flex-col gap-1 py-2" style="border-top: 1px solid var(--line)">
+              <span class="flex flex-wrap items-baseline gap-2">
+                <RouterLink :to="{ path: `/events/${c.event_id}`, query: { tab: 'corrections' } }" class="font-semibold">{{ changeNames.get(c.event_id) ?? `#${c.event_id}` }}</RouterLink>
+                <span class="u-small u-muted"><TimeText :value="c.recorded_at_utc" relative /></span>
+              </span>
+              <ChangeFields :change="c" compact />
+            </li>
+          </ul>
         </section>
 
         <div class="flex flex-col gap-6">

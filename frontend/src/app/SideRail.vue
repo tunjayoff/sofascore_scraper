@@ -51,7 +51,7 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigat
             <RouterLink
               :to="n.to"
               class="u-rail-item"
-              :class="{ 'is-active': current === n.key, 'is-planned': n.planned }"
+              :class="{ 'is-active': current === n.key }"
               :aria-current="current === n.key ? 'page' : undefined"
               :title="collapsed ? t(`ui.nav.${n.key}`) : undefined"
               :data-nav="n.key"
@@ -60,8 +60,6 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigat
               <span :class="collapsed ? 'u-sr' : 'flex-1'">{{ t(`ui.nav.${n.key}`) }}</span>
               <span v-if="n.key === 'jobs' && running" class="u-rail-count" :aria-label="t('ui.shell.runningJobs', { n: running })">{{ running }}</span>
               <span v-if="n.key === 'health' && healthDot" class="u-rail-dot" role="img" :aria-label="t('ui.shell.healthWarning')"></span>
-              <span v-if="n.planned && !collapsed" class="u-rail-soon">{{ t('ui.nav.soon') }}</span>
-              <span v-else-if="n.planned" class="u-sr">{{ t('ui.nav.soon') }}</span>
             </RouterLink>
           </li>
         </ul>
@@ -160,9 +158,6 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigat
   color: var(--text);
   font-weight: 600;
 }
-.u-app a.u-rail-item.is-planned {
-  color: var(--muted);
-}
 .u-rail-count {
   min-width: 20px;
   height: 20px;
@@ -186,13 +181,6 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigat
   position: absolute;
   top: 4px;
   right: 4px;
-}
-.u-rail-soon {
-  font-size: 0.6875rem;
-  color: var(--muted);
-  border: 1px solid var(--border);
-  border-radius: var(--r-pill);
-  padding: 0 6px;
 }
 .u-rail-foot {
   display: flex;

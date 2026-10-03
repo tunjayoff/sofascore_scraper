@@ -40,7 +40,7 @@ onUnmounted(() => {
 
 <template>
   <div class="u-overlay u-panel-overlay" @mousedown.self="emit('close')">
-    <aside ref="root" role="dialog" aria-modal="true" :aria-labelledby="titleId" tabindex="-1" class="u-panel" @keydown="onKeydown">
+    <div ref="root" role="dialog" aria-modal="true" :aria-labelledby="titleId" tabindex="-1" class="u-panel" @keydown="onKeydown">
       <div class="u-panel-head">
         <h2 :id="titleId" class="u-h2 flex-1">{{ title }}</h2>
         <slot name="actions" />
@@ -49,7 +49,7 @@ onUnmounted(() => {
         </button>
       </div>
       <div class="u-panel-body"><slot /></div>
-    </aside>
+    </div>
   </div>
 </template>
 

@@ -152,6 +152,8 @@ export type ListTournamentsQuery = Op<'listTournaments'>['query']
 export type LogLevel = NonNullable<Op<'listLogs'>['query']['level']>
 
 const enc = encodeURIComponent
+/** A follow id `<kind>:<id>` as a path segment; the colon is allowed in a segment and kept readable. */
+const encFollow = (id: string) => enc(id).replace(/%3A/gi, ':')
 
 /** A stored payload exactly as the server keeps it, with what its headers say about it (6.6, raw view). */
 export type RawPayload = {
@@ -204,13 +206,13 @@ export const v1 = {
   follows: (query: ListFollowsQuery = {}, signal?: AbortSignal) =>
     request<Op<'listFollows'>['response']>('GET', '/api/v1/follows', { query, signal }),
   follow: (id: string, signal?: AbortSignal): Promise<Data<'getFollow'>> =>
-    request<Op<'getFollow'>['response']>('GET', `/api/v1/follows/${enc(id)}`, { signal }).then((r) => r.data),
+    request<Op<'getFollow'>['response']>('GET', `/api/v1/follows/${encFollow(id)}`, { signal }).then((r) => r.data),
   addFollow: (body: Op<'addFollow'>['body']): Promise<Data<'addFollow'>> =>
     request<Op<'addFollow'>['response']>('POST', '/api/v1/follows', { body }).then((r) => r.data),
   updateFollow: (id: string, body: Op<'updateFollow'>['body']): Promise<Data<'updateFollow'>> =>
-    request<Op<'updateFollow'>['response']>('PATCH', `/api/v1/follows/${enc(id)}`, { body }).then((r) => r.data),
+    request<Op<'updateFollow'>['response']>('PATCH', `/api/v1/follows/${encFollow(id)}`, { body }).then((r) => r.data),
   removeFollow: (id: string): Promise<Data<'removeFollow'>> =>
-    request<Op<'removeFollow'>['response']>('DELETE', `/api/v1/follows/${enc(id)}`).then((r) => r.data),
+    request<Op<'removeFollow'>['response']>('DELETE', `/api/v1/follows/${encFollow(id)}`).then((r) => r.data),
   tournaments: (query: ListTournamentsQuery = {}, signal?: AbortSignal) =>
     request<Op<'listTournaments'>['response']>('GET', '/api/v1/tournaments', { query, signal }),
   tournament: (id: number, signal?: AbortSignal): Promise<Data<'getTournament'>> =>
