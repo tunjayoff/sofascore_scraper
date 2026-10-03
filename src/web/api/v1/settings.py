@@ -22,6 +22,14 @@ okunur; yapılandırma dosyasından ya da ortamdan verilir. Tablodaki kurallar y
 güvenlik sınırlarıdır: API adresi yalnızca SofaScore'un https adresleri olabilir, veri dizini proje ya da ev
 dizininin içinde kalır.
 
+Dilim seçimi (plan maddesi P27). `defaults.slices` ([defaults] slices) yazılabilir bir ayardır. Sporların
+farkı ([slices.<spor>]) belgenin `slices` listesindedir ve PATCH'e `slices.<spor>` anahtarıyla verilir:
+`{"values": {"slices.football": {"enable": ["odds"], "disable": []}}}`; `null` farkı siler. Adlar kayıt
+defterinin dilim anahtarları ya da grup adlarıdır (src/sports.py `check_slice_names`); bilinmeyen ad 400.
+
+Her ayarın üst verisi (05-web-ui.md G4): türü, alt / üst sınırı, seçenekleri, bölümü ve değişikliğin yeniden
+başlatma isteyip istemediği (`restart_needed`).
+
 Veri dizini değişimi çalışan iş varken reddedilir (409 `job_running`). Yeni dizin önce iş deposuyla açılır;
 açılamıyorsa hiçbir şey yazılmaz ve neden hata kodundan okunur: başka bir sürecin kilidi 409 (sahibi
 `details.holder`da), deponun açamadığı bir dizin 507 `storage_error` (`details.class`: SchemaTooNew,
@@ -39,6 +47,7 @@ from urllib.parse import urlparse
 from fastapi import APIRouter
 from pydantic import BaseModel, ConfigDict, Field
 
+from src import sports
 from src.config import settings as model
 from src.errors import PlatformError, UsageError
 from src.exceptions import ConfigError
@@ -55,6 +64,15 @@ PROXY_KEY = "client.proxy"
 # Eski rota ile aynı kural (src/web/api/legacy.py: _ALLOWED_API_HOSTS)
 ALLOWED_API_HOSTS = frozenset({"www.sofascore.com", "api.sofascore.com"})
 PROXY_SCHEMES = ("http", "https", "socks5", "socks5h")
+DEFAULTS_SLICES_KEY = "defaults.slices"
+SLICES_PREFIX = "slices."
+# Değişikliği ancak süreç yeniden başlayınca etkili olan ayarlar: sunucunun bağlandığı adres ve Host listesi,
+# log dosyasının yeri ve biçimi, canlı servisin ve zamanlayıcının ayarları (`ssc serve` / `ssc watch` başlarken
+# okunur), depolama dayanıklılığı. Bölümün tamamı: bölüm adı; tek anahtar: `bölüm.ad`.
+RESTART_NEEDED = frozenset({
+    "server", "live", "schedule", "storage.durability", "log.dir", "log.to_file", "log.format", "log.max_mb",
+    "log.backup_count",
+})
 _CONTROL_CHARACTERS = "\r\n\x00"
 
 
@@ -65,6 +83,15 @@ def _base_url(value: Any) -> Any:
     url = urlparse(str(value))
     if url.scheme != "https" or url.hostname not in ALLOWED_API_HOSTS:
         raise ValueError(f"must be an https address on {', '.join(sorted(ALLOWED_API_HOSTS))}")
+    return value
+
+
+def _slice_names(value: Any) -> Any:
+    """Her ad bir dilim anahtarı ya da grup adı olmalı (src/sports.py); değilse ValueError."""
+    try:
+        sports.check_slice_names(value)
+    except sports.UnknownSliceName as e:
+        raise ValueError(str(e)) from None
     return value
 
 
@@ -124,6 +151,8 @@ WRITABLE: Mapping[str, Rule] = {
     "breaker.rate_limit_ratio": Rule(),
     "breaker.server_error_consecutive": Rule(maximum=1000),
     "fetch.only_finished": Rule(),
+    # Seçilecek dilimler: anahtarlar ya da grup adları (boş liste: yalnızca maç sayfası)
+    DEFAULTS_SLICES_KEY: Rule(check=_slice_names),
     "fetch.save_empty_rounds": Rule(),
     "refresh.window_hours": Rule(maximum=720),
     "log.level": Rule(),
@@ -134,6 +163,35 @@ WRITABLE: Mapping[str, Rule] = {
 
 
 # --- modeller ------------------------------------------------------------------------------------
+
+
+SettingType = Literal["string", "path", "url", "integer", "number", "boolean", "choice", "string_list", "rate",
+                      "seasons"]
+_TYPES: Mapping[str, str] = {
+    model.KIND_STR: "string", model.KIND_PATH: "path", model.KIND_URL: "url", model.KIND_INT: "integer",
+    model.KIND_FLOAT: "number", model.KIND_BOOL: "boolean", model.KIND_ENUM: "choice",
+    model.KIND_STR_LIST: "string_list", model.KIND_RATE: "rate", model.KIND_SEASONS: "seasons",
+}
+
+
+class SettingMetadata(BaseModel):
+    """How a setting can be changed (05-web-ui.md G4). One row per setting, in the order of `settings`."""
+
+    key: str = Field(description="`section.key`, as in the config file.")
+    section: str = Field(description="The config file section (`[client]`, `[defaults]` ...).")
+    type: SettingType = Field(
+        description="`rate`: requests per second, 0 or \"off\" for no limit; `seasons`: current, all, last:N or a "
+                    "list of season ids; `string_list`: a list of strings.",
+    )
+    description: str = Field(description="What the setting does, in English.")
+    minimum: Optional[float] = Field(default=None, description="Lowest accepted value, when there is one.")
+    exclusive_minimum: bool = Field(default=False, description="The value must be above `minimum`, not equal to it.")
+    maximum: Optional[float] = Field(default=None, description="Highest accepted value, when there is one.")
+    choices: Optional[List[str]] = Field(default=None, description="Accepted values of a `choice` setting.")
+    max_length: Optional[int] = Field(default=None, description="Longest accepted text when changed through the API.")
+    restart_needed: bool = Field(
+        description="A change takes effect only after `ssc serve` or `ssc watch` is started again.",
+    )
 
 
 class Setting(BaseModel):
@@ -148,10 +206,30 @@ class Setting(BaseModel):
     secret: bool
 
 
+class SportSliceSelection(BaseModel):
+    sport: str = Field(description="Registered sport slug.")
+    enable: List[str] = Field(description="Slice keys or groups added to `defaults.slices` for this sport.")
+    disable: List[str] = Field(description="Slice keys or groups removed for this sport (applied after `enable`).")
+    source: Literal["default", "dotenv", "overrides", "file", "env", "flag"] = Field(
+        description="The layer the sport's selection comes from; `default` when none is set.",
+    )
+    source_name: str
+    locked: bool = Field(description="Pinned by the config file or the environment ([slices.<sport>]).")
+    writable: bool = Field(description="Whether PATCH accepts `slices.<sport>` right now.")
+
+
 class SettingsDocument(BaseModel):
     config_file: Optional[str] = Field(default=None, description="Path of the config file in use, if any.")
     overrides_file: Optional[str] = Field(default=None, description="Path of the file PATCH has written, if any.")
     settings: List[Setting]
+    metadata: List[SettingMetadata] = Field(
+        description="Type, limits, choices, section and restart need of each setting, in the order of `settings`.",
+    )
+    slices: List[SportSliceSelection] = Field(
+        description="Per-sport changes to the default slice selection ([slices.<sport>]), one row per registered "
+                    "sport in registry order. Change one with PATCH `{\"values\": {\"slices.<sport>\": {\"enable\": "
+                    "[...], \"disable\": [...]}}}`; null removes it.",
+    )
 
 
 class SettingsResponse(BaseModel):
@@ -162,7 +240,8 @@ class SettingsPatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     values: Dict[str, Any] = Field(
-        description="`section.key` to the new value; null removes the value written here earlier.",
+        description="`section.key` to the new value; null removes the value written here earlier. "
+                    "`slices.<sport>` takes `{\"enable\": [...], \"disable\": [...]}`.",
     )
 
 
@@ -180,9 +259,25 @@ def _shown(key: str, value: Any, secret: bool) -> Any:
 def _document() -> SettingsDocument:
     loaded = deps.loaded_settings()
     rows: List[Setting] = []
+    metadata: List[SettingMetadata] = []
     for key, f in model.iter_settings():
         source = loaded.source(key)
         secret = bool(f.metadata["secret"])
+        meta = f.metadata
+        section, _, _name = key.partition(".")
+        rule = WRITABLE.get(key)
+        metadata.append(SettingMetadata(
+            key=key,
+            section=section,
+            type=_TYPES[meta["kind"]],  # type: ignore[arg-type]
+            description=meta["doc"],
+            minimum=meta["minimum"],
+            exclusive_minimum=bool(meta["exclusive_minimum"]),
+            maximum=_maximum(meta["maximum"], rule),
+            choices=list(meta["choices"]) if meta["choices"] is not None else None,
+            max_length=rule.max_length if rule is not None else None,
+            restart_needed=section in RESTART_NEEDED or key in RESTART_NEEDED,
+        ))
         rows.append(Setting(
             key=key,
             value=_shown(key, loaded.settings.get(key), secret),
@@ -192,7 +287,32 @@ def _document() -> SettingsDocument:
             writable=key in WRITABLE and not source.locked,
             secret=secret,
         ))
-    return SettingsDocument(config_file=loaded.config_file, overrides_file=loaded.overrides_file, settings=rows)
+    return SettingsDocument(config_file=loaded.config_file, overrides_file=loaded.overrides_file, settings=rows,
+                            metadata=metadata, slices=_sport_selections(loaded))
+
+
+def _maximum(model_maximum: Optional[float], rule: Optional[Rule]) -> Optional[float]:
+    """Modelin ve (yazılabilirse) API kuralının üst sınırlarından küçüğü."""
+    limits = [value for value in (model_maximum, rule.maximum if rule is not None else None) if value is not None]
+    return min(limits) if limits else None
+
+
+def _sport_selections(loaded: Any) -> List[SportSliceSelection]:
+    """Her kayıtlı spor için [slices.<spor>] farkı ve kaynağı."""
+    rows: List[SportSliceSelection] = []
+    for sport in sports.sport_slugs():
+        override = loaded.settings.slices.get(sport)
+        source = loaded.source(SLICES_PREFIX + sport)
+        rows.append(SportSliceSelection(
+            sport=sport,
+            enable=list(override.enable) if override is not None else [],
+            disable=list(override.disable) if override is not None else [],
+            source=source.layer,  # type: ignore[arg-type]
+            source_name=source.name,
+            locked=source.locked,
+            writable=not source.locked,
+        ))
+    return rows
 
 
 # --- okuma ---------------------------------------------------------------------------------------
@@ -239,6 +359,21 @@ def _checked(key: str, value: Any) -> Any:
     return rule.check(value) if rule.check is not None else value
 
 
+def _checked_slices(key: str, value: Any) -> Any:
+    """`slices.<spor>`: None ya da {"enable": [...], "disable": [...]}; yükleyicinin kuralıyla (ValueError)."""
+    from src.config import overrides
+
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise ValueError('expected {"enable": [...], "disable": [...]} or null')
+    try:
+        return overrides.checked_slice_override(key, value)
+    except ConfigError as e:
+        # "slices.<spor>: neden" → neden
+        raise ValueError(str(e).partition(": ")[2] or str(e)) from None
+
+
 def _restored_proxy(submitted: str) -> str:
     """
     Maskeli adres geri gönderildiyse (parola = `***`) saklanan parolayı yerine koyar; adres ya da kullanıcı
@@ -262,12 +397,14 @@ def _restored_proxy(submitted: str) -> str:
 def _validated(values: Mapping[str, Any]) -> Dict[str, Any]:
     """İstenen değişiklikleri denetler; yazılacak değerleri döndürür. Hiçbir şey yazmaz."""
     known = dict(model.iter_settings())
-    unknown = sorted(key for key in values if key not in known)
+    known_sports = sports.sport_slugs()
+    unknown = sorted(key for key in values if key not in known
+                     and not (key.startswith(SLICES_PREFIX) and key[len(SLICES_PREFIX):] in known_sports))
     if unknown:
         raise ValidationFailed(
             "The request is not valid.", {"errors": [_issue(key, "unknown setting", "unknown_key") for key in unknown]},
         )
-    read_only = sorted(key for key in values if key not in WRITABLE)
+    read_only = sorted(key for key in values if key not in WRITABLE and not key.startswith(SLICES_PREFIX))
     if read_only:
         raise UsageError(
             "These settings cannot be changed through the API; set them in the config file or the environment.",
@@ -288,7 +425,7 @@ def _validated(values: Mapping[str, Any]) -> Dict[str, Any]:
     issues: List[Dict[str, Any]] = []
     for key, value in values.items():
         try:
-            changes[key] = _checked(key, value)
+            changes[key] = _checked_slices(key, value) if key.startswith(SLICES_PREFIX) else _checked(key, value)
         except ValueError as e:
             issues.append(_issue(key, str(e)))
     if issues:
@@ -373,4 +510,4 @@ def update_settings(body: SettingsPatch) -> SettingsResponse:
     return SettingsResponse(data=_document())
 
 
-__all__ = ["WRITABLE", "Rule", "router"]
+__all__ = ["RESTART_NEEDED", "WRITABLE", "Rule", "router"]

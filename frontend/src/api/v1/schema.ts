@@ -435,6 +435,8 @@ export interface FollowCreate {
   name: string
   sport?: string | null
   seasons?: string | number[]
+  /** Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and `slices.<sport>` of GET /settings); `{"include": [...]}` = only these; `{"enable": [...], "disable": [...]}` = changes to the defaults. What is not selected is never fetched. Not available for a follow kept in config/leagues.txt (no config file). */
+  slices?: Record<string, string[]> | null
   live?: boolean
   enabled?: boolean
 }
@@ -444,11 +446,16 @@ export interface FollowListResponse {
   page: PageInfo
 }
 
-/** Fields to change; a field left out stays. `sport: null` clears the stored sport. */
+/**
+ * Fields to change; a field left out stays. `sport: null` clears the stored sport, `slices: null` returns to
+ * the defaults.
+ */
 export interface FollowPatch {
   name?: string | null
   sport?: string | null
   seasons?: string | number[] | null
+  /** Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and `slices.<sport>` of GET /settings); `{"include": [...]}` = only these; `{"enable": [...], "disable": [...]}` = changes to the defaults. What is not selected is never fetched. */
+  slices?: Record<string, string[]> | null
   live?: boolean | null
   enabled?: boolean | null
 }
@@ -465,8 +472,8 @@ export interface FollowRecord {
   sport?: string | null
   /** `all`, `current`, `last:N` or a list of season ids. */
   seasons: string | number[]
-  /** Data selection; null: the defaults. */
-  slices?: Record<string, unknown> | null
+  /** Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and `slices.<sport>` of GET /settings); `{"include": [...]}` = only these; `{"enable": [...], "disable": [...]}` = changes to the defaults. What is not selected is never fetched. */
+  slices?: Record<string, string[]> | null
   /** The live service watches it (`ssc watch`). */
   live: boolean
   enabled: boolean
@@ -861,16 +868,44 @@ export interface Setting {
   secret: boolean
 }
 
+/** How a setting can be changed (05-web-ui.md G4). One row per setting, in the order of `settings`. */
+export interface SettingMetadata {
+  /** `section.key`, as in the config file. */
+  key: string
+  /** The config file section (`[client]`, `[defaults]` ...). */
+  section: string
+  /** `rate`: requests per second, 0 or "off" for no limit; `seasons`: current, all, last:N or a list of season ids; `string_list`: a list of strings. */
+  type: "string" | "path" | "url" | "integer" | "number" | "boolean" | "choice" | "string_list" | "rate" | "seasons"
+  /** What the setting does, in English. */
+  description: string
+  /** Lowest accepted value, when there is one. */
+  minimum?: number | null
+  /** The value must be above `minimum`, not equal to it. */
+  exclusive_minimum?: boolean
+  /** Highest accepted value, when there is one. */
+  maximum?: number | null
+  /** Accepted values of a `choice` setting. */
+  choices?: string[] | null
+  /** Longest accepted text when changed through the API. */
+  max_length?: number | null
+  /** A change takes effect only after `ssc serve` or `ssc watch` is started again. */
+  restart_needed: boolean
+}
+
 export interface SettingsDocument {
   /** Path of the config file in use, if any. */
   config_file?: string | null
   /** Path of the file PATCH has written, if any. */
   overrides_file?: string | null
   settings: Setting[]
+  /** Type, limits, choices, section and restart need of each setting, in the order of `settings`. */
+  metadata: SettingMetadata[]
+  /** Per-sport changes to the default slice selection ([slices.<sport>]), one row per registered sport in registry order. Change one with PATCH `{"values": {"slices.<sport>": {"enable": [...], "disable": [...]}}}`; null removes it. */
+  slices: SportSliceSelection[]
 }
 
 export interface SettingsPatch {
-  /** `section.key` to the new value; null removes the value written here earlier. */
+  /** `section.key` to the new value; null removes the value written here earlier. `slices.<sport>` takes `{"enable": [...], "disable": [...]}`. */
   values: Record<string, unknown>
 }
 
@@ -991,8 +1026,38 @@ export interface SportSlice {
   key: string
   /** Path of the slice in SofaScore's API, with `{event_id}`. */
   path: string
+  /** Counts for completeness in this sport: a match missing it is fetched again. False: requested when selected, but SofaScore does not always have it for this sport. */
   required: boolean
+  /** Selected when no selection names it (the registry's default). */
   default_enabled: boolean
+  /** Selected by the configured defaults for this sport (`defaults.slices` and `slices.<sport>` of GET /settings); a follow can choose otherwise. */
+  selected: boolean
+  /** Slice group; a selection can name the group instead of the key. */
+  group: string
+  /** What the payload belongs to; one request per owner. */
+  owner: "event" | "season" | "tournament" | "team" | "player" | "sport"
+  /** Match phases in which the slice can exist (before, during, after the match). */
+  phases: ("pre" | "live" | "post")[]
+  /** Changed payloads are kept as a history (odds). */
+  keep_history: boolean
+  /** Owner slices: fetched again when older than this; null = once. */
+  max_age_seconds?: number | null
+}
+
+export interface SportSliceSelection {
+  /** Registered sport slug. */
+  sport: string
+  /** Slice keys or groups added to `defaults.slices` for this sport. */
+  enable: string[]
+  /** Slice keys or groups removed for this sport (applied after `enable`). */
+  disable: string[]
+  /** The layer the sport's selection comes from; `default` when none is set. */
+  source: "default" | "dotenv" | "overrides" | "file" | "env" | "flag"
+  source_name: string
+  /** Pinned by the config file or the environment ([slices.<sport>]). */
+  locked: boolean
+  /** Whether PATCH accepts `slices.<sport>` right now. */
+  writable: boolean
 }
 
 /** The part of a tournament an event belongs to: SofaScore's (non-unique) tournament object. */

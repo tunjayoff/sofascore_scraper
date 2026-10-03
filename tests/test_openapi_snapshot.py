@@ -438,7 +438,11 @@ def test_legacy_responses_carry_the_deprecation_headers() -> None:
 
 
 def test_legacy_bodies_are_unchanged_by_the_headers() -> None:
-    assert client.get("/api/sports").json() == client.get("/api/v1/sports").json()["data"]
+    # v1'in dilimleri P27'nin seçim alanlarını da taşır; eski uç yalnızca ilk dördünü
+    legacy_fields = ("key", "path", "required", "default_enabled")
+    assert client.get("/api/sports").json() == [
+        {**sport, "slices": [{k: s[k] for k in legacy_fields} for s in sport["slices"]]}
+        for sport in client.get("/api/v1/sports").json()["data"]]
     assert list(client.get("/api/status").json()) == ["version", "leagues_count", "language"]
 
 

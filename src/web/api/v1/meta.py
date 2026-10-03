@@ -248,8 +248,26 @@ class StatusCheckResponse(BaseModel):
 class SportSlice(BaseModel):
     key: str
     path: str = Field(description="Path of the slice in SofaScore's API, with `{event_id}`.")
-    required: bool
-    default_enabled: bool
+    required: bool = Field(
+        description="Counts for completeness in this sport: a match missing it is fetched again. False: requested "
+                    "when selected, but SofaScore does not always have it for this sport.",
+    )
+    default_enabled: bool = Field(description="Selected when no selection names it (the registry's default).")
+    selected: bool = Field(
+        description="Selected by the configured defaults for this sport (`defaults.slices` and `slices.<sport>` of "
+                    "GET /settings); a follow can choose otherwise.",
+    )
+    group: str = Field(description="Slice group; a selection can name the group instead of the key.")
+    owner: Literal["event", "season", "tournament", "team", "player", "sport"] = Field(
+        description="What the payload belongs to; one request per owner.",
+    )
+    phases: List[Literal["pre", "live", "post"]] = Field(
+        description="Match phases in which the slice can exist (before, during, after the match).",
+    )
+    keep_history: bool = Field(description="Changed payloads are kept as a history (odds).")
+    max_age_seconds: Optional[int] = Field(
+        default=None, description="Owner slices: fetched again when older than this; null = once.",
+    )
 
 
 class Sport(BaseModel):
@@ -309,13 +327,22 @@ def _throttle() -> ThrottleStatus:
 
 
 def _sport(spec: sports.SportSpec) -> Sport:
+    from src.services import planning
+
+    chosen = {s.key for s in sports.select_slices("event", spec.slug, planning.configured_policy().for_sport(spec.slug))}
     return Sport(
         slug=spec.slug,
         name=spec.name,
         i18n_key=spec.i18n_key,
         score_family=spec.score_family,
         slices=[
-            SportSlice(key=s.key, path=s.path, required=s.counts_in(spec.slug), default_enabled=s.default_enabled)
+            SportSlice(
+                key=s.key, path=s.path, required=s.counts_in(spec.slug), default_enabled=s.default_enabled,
+                selected=s.key in chosen, group=s.group, owner=s.owner,
+                phases=[phase for phase in sports.PHASES if phase in s.phases],  # type: ignore[misc]
+                keep_history=s.keep_history,
+                max_age_seconds=int(s.max_age.total_seconds()) if s.max_age is not None else None,
+            )
             for s in sports.DETAIL_SLICES
             if s.applies_to(spec.slug)
         ],

@@ -93,7 +93,7 @@ def issues(response: Any) -> Dict[str, str]:
 def test_get_lists_every_setting_of_the_model_with_its_source(sandbox: Path) -> None:
     body = client.get(URL).json()["data"]
 
-    assert list(body) == ["config_file", "overrides_file", "settings"]
+    assert list(body) == ["config_file", "overrides_file", "settings", "metadata", "slices"]
     assert (body["config_file"], body["overrides_file"]) == (None, None)
     listed = body["settings"]
     assert [row["key"] for row in listed] == [key for key, _f in model.iter_settings()]
