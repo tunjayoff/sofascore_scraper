@@ -174,7 +174,7 @@ def test_teams_players_and_events_are_kept_in_the_follows_table(leagues: Path) -
     team = data(client.post("/api/v1/follows", json={"kind": "team", "entity_id": 42, "name": "Arsenal",
                                                      "sport": "football", "live": True, "seasons": "last:2"}), 201)
     assert (team["origin"], team["live"], team["seasons"]) == ("api", True, "last:2")
-    assert team["writable"] == ["name", "sport", "seasons", "live", "enabled"]
+    assert team["writable"] == ["name", "sport", "seasons", "slices", "live", "enabled"]
     event = data(client.post("/api/v1/follows", json={"kind": "event", "entity_id": 900, "name": "A v B",
                                                       "seasons": [3, 2, 3]}), 201)
     assert event["seasons"] == [3, 2]

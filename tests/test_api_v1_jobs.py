@@ -789,9 +789,12 @@ def test_sports_are_the_registry() -> None:
     assert football == body["data"][0]
     assert list(football) == ["slug", "name", "i18n_key", "score_family", "slices"]
     assert [s["key"] for s in football["slices"]] == [s.key for s in sports.DETAIL_SLICES if s.applies_to("football")]
-    assert list(football["slices"][0]) == ["key", "path", "required", "default_enabled"]
-    # Eski uç ile aynı veri (zarf dışında)
-    assert body["data"] == client.get("/api/sports").json()
+    assert list(football["slices"][0]) == ["key", "path", "required", "default_enabled", "selected", "group", "owner",
+                                           "phases", "keep_history", "max_age_seconds"]
+    # Eski uç ile aynı veri (zarf ve P27'nin seçim alanları dışında)
+    legacy_fields = ("key", "path", "required", "default_enabled")
+    assert [{**sport, "slices": [{k: s[k] for k in legacy_fields} for s in sport["slices"]]}
+            for sport in body["data"]] == client.get("/api/sports").json()
 
     missing = error(client.get("/api/v1/sports/quidditch"), 404, "not_found")
     assert missing["details"] == {"slug": "quidditch"}

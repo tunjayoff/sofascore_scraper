@@ -206,8 +206,17 @@ def describe_sports() -> List[Dict[str, Any]]:
 def describe_slices() -> List[Dict[str, Any]]:
     """
     Dilim kayıt defteri (src/sports.py). Bugün yalnızca maç (event) dilimleri vardır. `not_in`: dilimin
-    istenmediği sporlar; `optional_in`: istendiği ama tamlık hesabına girmediği sporlar.
+    istenmediği sporlar; `optional_in`: istendiği ama tamlık hesabına girmediği sporlar. `selected_in`: etkin
+    yapılandırmanın varsayılan seçiminin ([defaults] slices ve [slices.<spor>]; plan maddesi P27) dilimi seçtiği
+    ve dilimin istendiği sporlar; bir takip kendi seçimini verebilir.
     """
+    from src.services import planning
+
+    policy = planning.configured_policy()
+    chosen = {sport: {spec.key for spec in sports.select_slices("event", sport, policy.for_sport(sport))}
+              for sport in sports.sport_slugs()}
+    selected_in = {item.key: [sport for sport, keys in chosen.items() if item.key in keys]
+                   for item in sports.DETAIL_SLICES}
     return [
         {
             "key": item.key,
@@ -218,6 +227,11 @@ def describe_slices() -> List[Dict[str, Any]]:
             "default_enabled": item.default_enabled,
             "counts_for_completeness": item.required,
             "optional_in": sorted(item.optional_in),
+            "group": item.group,
+            "phases": [phase for phase in sports.PHASES if phase in item.phases],
+            "keep_history": item.keep_history,
+            "max_age_seconds": int(item.max_age.total_seconds()) if item.max_age is not None else None,
+            "selected_in": selected_in[item.key],
         }
         for item in sports.DETAIL_SLICES
     ]

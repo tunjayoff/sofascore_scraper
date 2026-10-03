@@ -6032,6 +6032,24 @@
             "title": "Seasons",
             "default": "all"
           },
+          "slices": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slices",
+            "description": "Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and `slices.<sport>` of GET /settings); `{\"include\": [...]}` = only these; `{\"enable\": [...], \"disable\": [...]}` = changes to the defaults. What is not selected is never fetched. Not available for a follow kept in config/leagues.txt (no config file)."
+          },
           "live": {
             "type": "boolean",
             "title": "Live",
@@ -6116,6 +6134,24 @@
             ],
             "title": "Seasons"
           },
+          "slices": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slices",
+            "description": "Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and `slices.<sport>` of GET /settings); `{\"include\": [...]}` = only these; `{\"enable\": [...], \"disable\": [...]}` = changes to the defaults. What is not selected is never fetched."
+          },
           "live": {
             "anyOf": [
               {
@@ -6142,7 +6178,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "FollowPatch",
-        "description": "Fields to change; a field left out stays. `sport: null` clears the stored sport."
+        "description": "Fields to change; a field left out stays. `sport: null` clears the stored sport, `slices: null` returns to\nthe defaults."
       },
       "FollowRecord": {
         "properties": {
@@ -6200,7 +6236,12 @@
           "slices": {
             "anyOf": [
               {
-                "additionalProperties": true,
+                "additionalProperties": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
                 "type": "object"
               },
               {
@@ -6208,7 +6249,7 @@
               }
             ],
             "title": "Slices",
-            "description": "Data selection; null: the defaults."
+            "description": "Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and `slices.<sport>` of GET /settings); `{\"include\": [...]}` = only these; `{\"enable\": [...], \"disable\": [...]}` = changes to the defaults. What is not selected is never fetched."
           },
           "live": {
             "type": "boolean",
@@ -7973,6 +8014,114 @@
         ],
         "title": "Setting"
       },
+      "SettingMetadata": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "`section.key`, as in the config file."
+          },
+          "section": {
+            "type": "string",
+            "title": "Section",
+            "description": "The config file section (`[client]`, `[defaults]` ...)."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "string",
+              "path",
+              "url",
+              "integer",
+              "number",
+              "boolean",
+              "choice",
+              "string_list",
+              "rate",
+              "seasons"
+            ],
+            "title": "Type",
+            "description": "`rate`: requests per second, 0 or \"off\" for no limit; `seasons`: current, all, last:N or a list of season ids; `string_list`: a list of strings."
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "What the setting does, in English."
+          },
+          "minimum": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minimum",
+            "description": "Lowest accepted value, when there is one."
+          },
+          "exclusive_minimum": {
+            "type": "boolean",
+            "title": "Exclusive Minimum",
+            "description": "The value must be above `minimum`, not equal to it.",
+            "default": false
+          },
+          "maximum": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maximum",
+            "description": "Highest accepted value, when there is one."
+          },
+          "choices": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Choices",
+            "description": "Accepted values of a `choice` setting."
+          },
+          "max_length": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Length",
+            "description": "Longest accepted text when changed through the API."
+          },
+          "restart_needed": {
+            "type": "boolean",
+            "title": "Restart Needed",
+            "description": "A change takes effect only after `ssc serve` or `ssc watch` is started again."
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "section",
+          "type",
+          "description",
+          "restart_needed"
+        ],
+        "title": "SettingMetadata",
+        "description": "How a setting can be changed (05-web-ui.md G4). One row per setting, in the order of `settings`."
+      },
       "SettingsDocument": {
         "properties": {
           "config_file": {
@@ -8005,11 +8154,29 @@
             },
             "type": "array",
             "title": "Settings"
+          },
+          "metadata": {
+            "items": {
+              "$ref": "#/components/schemas/SettingMetadata"
+            },
+            "type": "array",
+            "title": "Metadata",
+            "description": "Type, limits, choices, section and restart need of each setting, in the order of `settings`."
+          },
+          "slices": {
+            "items": {
+              "$ref": "#/components/schemas/SportSliceSelection"
+            },
+            "type": "array",
+            "title": "Slices",
+            "description": "Per-sport changes to the default slice selection ([slices.<sport>]), one row per registered sport in registry order. Change one with PATCH `{\"values\": {\"slices.<sport>\": {\"enable\": [...], \"disable\": [...]}}}`; null removes it."
           }
         },
         "type": "object",
         "required": [
-          "settings"
+          "settings",
+          "metadata",
+          "slices"
         ],
         "title": "SettingsDocument"
       },
@@ -8019,7 +8186,7 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Values",
-            "description": "`section.key` to the new value; null removes the value written here earlier."
+            "description": "`section.key` to the new value; null removes the value written here earlier. `slices.<sport>` takes `{\"enable\": [...], \"disable\": [...]}`."
           }
         },
         "additionalProperties": false,
@@ -8474,11 +8641,66 @@
           },
           "required": {
             "type": "boolean",
-            "title": "Required"
+            "title": "Required",
+            "description": "Counts for completeness in this sport: a match missing it is fetched again. False: requested when selected, but SofaScore does not always have it for this sport."
           },
           "default_enabled": {
             "type": "boolean",
-            "title": "Default Enabled"
+            "title": "Default Enabled",
+            "description": "Selected when no selection names it (the registry's default)."
+          },
+          "selected": {
+            "type": "boolean",
+            "title": "Selected",
+            "description": "Selected by the configured defaults for this sport (`defaults.slices` and `slices.<sport>` of GET /settings); a follow can choose otherwise."
+          },
+          "group": {
+            "type": "string",
+            "title": "Group",
+            "description": "Slice group; a selection can name the group instead of the key."
+          },
+          "owner": {
+            "type": "string",
+            "enum": [
+              "event",
+              "season",
+              "tournament",
+              "team",
+              "player",
+              "sport"
+            ],
+            "title": "Owner",
+            "description": "What the payload belongs to; one request per owner."
+          },
+          "phases": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "pre",
+                "live",
+                "post"
+              ]
+            },
+            "type": "array",
+            "title": "Phases",
+            "description": "Match phases in which the slice can exist (before, during, after the match)."
+          },
+          "keep_history": {
+            "type": "boolean",
+            "title": "Keep History",
+            "description": "Changed payloads are kept as a history (odds)."
+          },
+          "max_age_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Age Seconds",
+            "description": "Owner slices: fetched again when older than this; null = once."
           }
         },
         "type": "object",
@@ -8486,9 +8708,77 @@
           "key",
           "path",
           "required",
-          "default_enabled"
+          "default_enabled",
+          "selected",
+          "group",
+          "owner",
+          "phases",
+          "keep_history"
         ],
         "title": "SportSlice"
+      },
+      "SportSliceSelection": {
+        "properties": {
+          "sport": {
+            "type": "string",
+            "title": "Sport",
+            "description": "Registered sport slug."
+          },
+          "enable": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Enable",
+            "description": "Slice keys or groups added to `defaults.slices` for this sport."
+          },
+          "disable": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Disable",
+            "description": "Slice keys or groups removed for this sport (applied after `enable`)."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "default",
+              "dotenv",
+              "overrides",
+              "file",
+              "env",
+              "flag"
+            ],
+            "title": "Source",
+            "description": "The layer the sport's selection comes from; `default` when none is set."
+          },
+          "source_name": {
+            "type": "string",
+            "title": "Source Name"
+          },
+          "locked": {
+            "type": "boolean",
+            "title": "Locked",
+            "description": "Pinned by the config file or the environment ([slices.<sport>])."
+          },
+          "writable": {
+            "type": "boolean",
+            "title": "Writable",
+            "description": "Whether PATCH accepts `slices.<sport>` right now."
+          }
+        },
+        "type": "object",
+        "required": [
+          "sport",
+          "enable",
+          "disable",
+          "source",
+          "source_name",
+          "locked",
+          "writable"
+        ],
+        "title": "SportSliceSelection"
       },
       "Stage": {
         "properties": {

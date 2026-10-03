@@ -38,6 +38,12 @@ FollowKind = Literal["tournament", "team", "player", "event"]
 FollowId = Annotated[str, Path(pattern=r"^(tournament|team|player|event):[1-9][0-9]{0,18}$",
                                description="`<kind>:<id>`, for example `tournament:17`.")]
 SeasonChoice = Union[str, List[int]]
+SliceChoice = Dict[str, List[str]]
+_SLICES_TEXT = (
+    "Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and "
+    "`slices.<sport>` of GET /settings); `{\"include\": [...]}` = only these; `{\"enable\": [...], \"disable\": "
+    "[...]}` = changes to the defaults. What is not selected is never fetched."
+)
 
 
 class FollowRecord(BaseModel):
@@ -49,7 +55,7 @@ class FollowRecord(BaseModel):
     name: str
     sport: Optional[str] = Field(default=None, description="Stored sport, else (tournaments) the one its events show.")
     seasons: SeasonChoice = Field(description="`all`, `current`, `last:N` or a list of season ids.")
-    slices: Optional[Dict[str, Any]] = Field(default=None, description="Data selection; null: the defaults.")
+    slices: Optional[SliceChoice] = Field(default=None, description=_SLICES_TEXT)
     live: bool = Field(description="The live service watches it (`ssc watch`).")
     enabled: bool
     origin: Literal["legacy", "config", "api"] = Field(
@@ -80,18 +86,24 @@ class FollowCreate(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     sport: Optional[str] = Field(default=None, max_length=40)
     seasons: SeasonChoice = "all"
+    slices: Optional[SliceChoice] = Field(
+        default=None,
+        description=_SLICES_TEXT + " Not available for a follow kept in config/leagues.txt (no config file).",
+    )
     live: bool = False
     enabled: bool = True
 
 
 class FollowPatch(BaseModel):
-    """Fields to change; a field left out stays. `sport: null` clears the stored sport."""
+    """Fields to change; a field left out stays. `sport: null` clears the stored sport, `slices: null` returns to
+    the defaults."""
 
     model_config = ConfigDict(extra="forbid")
 
     name: Optional[str] = Field(default=None, min_length=1, max_length=80)
     sport: Optional[str] = Field(default=None, max_length=40)
     seasons: Optional[SeasonChoice] = None
+    slices: Optional[SliceChoice] = Field(default=None, description=_SLICES_TEXT)
     live: Optional[bool] = None
     enabled: Optional[bool] = None
 
@@ -103,7 +115,8 @@ def record(service: "FollowsService", follow: "Follow") -> FollowRecord:
     return FollowRecord(
         id=follow_id(follow.kind, follow.entity_id), kind=follow.kind,  # type: ignore[arg-type]
         entity_id=follow.entity_id, name=follow.name, sport=service.sport_of(follow), seasons=seasons,
-        slices=dict(follow.slices) if follow.slices is not None else None, live=follow.live, enabled=follow.enabled,
+        slices={key: list(names) for key, names in follow.slices.items()} if follow.slices is not None else None,
+        live=follow.live, enabled=follow.enabled,
         origin=follow.origin,  # type: ignore[arg-type]
         position=follow.position, writable=list(writable_fields(follow.origin)),
         created_at_utc=utc_text(follow.created_at), updated_at_utc=utc_text(follow.updated_at),
@@ -169,7 +182,7 @@ def add_follow(response: Response, body: FollowCreate) -> FollowResponse:
     service = deps.follows_service()
     seasons: Any = body.seasons if isinstance(body.seasons, str) else tuple(body.seasons)
     created = service.add(NewFollow(kind=body.kind, entity_id=body.entity_id, name=body.name, sport=body.sport,
-                                    seasons=seasons, live=body.live, enabled=body.enabled))
+                                    seasons=seasons, live=body.live, enabled=body.enabled, slices=body.slices))
     response.headers["Location"] = f"{V1_PREFIX}/follows/{follow_id(created.kind, created.entity_id)}"
     return FollowResponse(data=record(service, created))
 
@@ -192,7 +205,7 @@ def update_follow(follow_id: FollowId, body: FollowPatch) -> FollowResponse:
         changes["seasons"] = tuple(changes["seasons"])
     for field in ("name", "seasons", "live", "enabled"):
         if field in changes and changes[field] is None:
-            del changes[field]  # yalnızca spor null ile silinir
+            del changes[field]  # yalnızca spor ve veri seçimi null ile silinir
     service = deps.follows_service()
     return FollowResponse(data=record(service, service.update(kind, entity_id, changes)))
 

@@ -29,7 +29,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Protocol, 
 
 from src.errors import ConflictError, NotFoundError, UpstreamBlockedError, UpstreamError, UsageError
 from src.logger import get_logger
-from src.sports import normalize_sport
+from src.sports import follow_slices, normalize_sport
 
 if TYPE_CHECKING:
     from src.store import Follow, Store
@@ -42,7 +42,7 @@ ORIGIN_LEGACY = "legacy"
 ORIGIN_CONFIG = "config"
 ORIGIN_API = "api"
 # Bir kaynağın satırında değiştirilebilen alanlar
-FIELDS: Tuple[str, ...] = ("name", "sport", "seasons", "live", "enabled")
+FIELDS: Tuple[str, ...] = ("name", "sport", "seasons", "slices", "live", "enabled")
 WRITABLE: Mapping[str, Tuple[str, ...]] = {ORIGIN_LEGACY: ("sport",), ORIGIN_CONFIG: (), ORIGIN_API: FIELDS}
 SEARCH_LIMIT = 20
 _FOLLOW_ID = re.compile(r"^(tournament|team|player|event):([1-9][0-9]{0,18})$")
@@ -76,6 +76,8 @@ class NewFollow:
     seasons: Seasons = "all"
     live: bool = False
     enabled: bool = True
+    # Veri seçimi (plan maddesi P27): None = varsayılanlar; {"include": [...]} ya da {"enable": [...], "disable": [...]}
+    slices: Optional[Mapping[str, Any]] = None
 
 
 @dataclass(frozen=True)
@@ -137,6 +139,18 @@ def check_seasons(seasons: Seasons) -> Seasons:
     return tuple(dict.fromkeys(ids))
 
 
+def check_slices(slices: Any) -> Optional[Dict[str, List[str]]]:
+    """
+    Takibin veri seçimi (src/sports.py follow_slices): None, {"include": [...]} ya da {"enable": [...],
+    "disable": [...]}; adlar dilim anahtarı ya da grup adıdır. Uymuyorsa `invalid_request`.
+    """
+    try:
+        resolved = follow_slices(slices)
+    except ValueError as e:
+        raise UsageError(f"The data selection is not valid: {e}.", {"field": "slices"}) from None
+    return {key: list(names) for key, names in resolved.items()} if resolved is not None else None
+
+
 class FollowsService:
     """
     Takipler: liste, ekleme, değiştirme, kaldırma ve SofaScore'da turnuva araması.
@@ -193,9 +207,11 @@ class FollowsService:
         name = check_name(new.name)
         sport = check_sport(new.sport)
         seasons = check_seasons(new.seasons)
+        slices = check_slices(new.slices)
         if new.kind == TOURNAMENT and not self._config_file:
-            unsupported = [field for field, value, default in (("seasons", seasons, "all"), ("live", new.live, False),
-                                                             ("enabled", new.enabled, True)) if value != default]
+            unsupported = [field for field, value, default in (("seasons", seasons, "all"), ("slices", slices, None),
+                                                             ("live", new.live, False), ("enabled", new.enabled, True))
+                           if value != default]
             if unsupported:
                 raise UsageError(
                     "This follow is kept in config/leagues.txt, which stores the name and the sport only; set the "
@@ -214,7 +230,7 @@ class FollowsService:
                 raise _mirror_failed(new.entity_id)
             return found
         spec = FollowSpec(kind=new.kind, entity_id=new.entity_id, name=name, sport=sport, seasons=seasons,
-                          live=new.live, enabled=new.enabled)
+                          slices=slices, live=new.live, enabled=new.enabled)
         return self._store.follows.add(spec, origin=ORIGIN_API)
 
     def update(self, kind: str, entity_id: int, changes: Mapping[str, Any]) -> "Follow":
@@ -239,6 +255,8 @@ class FollowsService:
                 values[field] = check_sport(value)
             elif field == "seasons":
                 values[field] = check_seasons(value)
+            elif field == "slices":
+                values[field] = check_slices(value)
             else:
                 values[field] = bool(value)
         if row.origin == ORIGIN_LEGACY:
@@ -327,6 +345,8 @@ class FollowsService:
 
 def _value_of(row: "Follow", field: str) -> Any:
     value = getattr(row, field)
+    if field == "slices":
+        return check_slices(value) if value is not None else None
     return tuple(value) if isinstance(value, list) else value
 
 
