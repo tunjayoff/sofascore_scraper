@@ -48,6 +48,31 @@ export interface AuthState {
   authenticated: boolean
 }
 
+export interface BackupJobSpec {
+  scope?: "all" | "state" | "data" | "config" | "seasons" | "matches" | "match_details"
+  /** Also `.env` (it can hold secrets); the file name says so. */
+  include_env?: boolean
+}
+
+export interface BackupListResponse {
+  data: BackupRecord[]
+  page: PageInfo
+}
+
+/** A backup zip in the data directory's `backups/`. */
+export interface BackupRecord {
+  name: string
+  /** all, state, data, config, seasons, matches or match_details. */
+  scope: string
+  /** The time in the file name, as UTC. */
+  created_at_utc?: string | null
+  bytes: number
+  /** 2 (with backup.json), 1 (2.x), null: unreadable zip. */
+  format?: number | null
+  /** The zip holds `.env`, which can carry secrets. */
+  with_env: boolean
+}
+
 /** Whether SofaScore answers the requests of this process. */
 export interface BridgeHealth {
   state: "ok" | "degraded" | "blocked"
@@ -139,6 +164,12 @@ export interface ChangedField {
   new: unknown
 }
 
+export interface ClearJobSpec {
+  scope?: "all" | "events" | "schedules" | "seasons" | "match_details" | "matches"
+  /** Must be true: the stored data of the scope is deleted. */
+  confirm?: boolean
+}
+
 /** One innings of one side in cricket. */
 export interface CricketInnings {
   /** The side that batted. */
@@ -178,6 +209,11 @@ export interface DataSummary {
   catalog_rebuild_reason?: string | null
   tournaments: TournamentSummary[]
   disk?: DiskSummary | null
+}
+
+export interface DiagnosticsResponse {
+  /** The diagnostics summary; the same as diagnostics.json of the bundle. */
+  data: Record<string, unknown>
 }
 
 /** Disk use of the data directory in bytes; a measurement may be up to a minute old. */
@@ -306,6 +342,63 @@ export interface EventStatus {
   description: string | null
   /** The platform's class of the status. `not_started`: not begun. `live`: in progress, breaks included (half time, the night between two days of a cricket match: type `willcontinue`). `completed`: played and finished. `decided_without_play`: finished by walkover or retirement. `void`: postponed, cancelled, interrupted, suspended or abandoned. `unknown`: none of these; never silently treated as completed. */
   class: "not_started" | "live" | "completed" | "decided_without_play" | "void" | "unknown"
+}
+
+/** Which events to export; the fields are combined with AND, an empty field filters nothing. */
+export interface ExportFilter {
+  sport?: string | null
+  tournament_ids?: number[]
+  /** Not for the legacy-wide-csv profile. */
+  season_ids?: number[]
+  event_ids?: number[]
+}
+
+/**
+ * What to export. Today: the profile `legacy-wide-csv` (2.x's wide CSV, dataset `events`, format `csv`) and the
+ * raw schema (stored payloads as JSONL; dataset `events`: the event payload only, `slices`: every slice).
+ * Normalized datasets answer 501 `not_supported`.
+ */
+export interface ExportJobSpec {
+  dataset?: "events" | "slices"
+  format?: "csv" | "jsonl" | "parquet" | "sqlite"
+  schema?: "normalized" | "raw"
+  profile?: "legacy-wide-csv" | null
+  filter?: ExportFilter
+}
+
+export interface ExportListResponse {
+  data: ExportRecord[]
+  page: PageInfo
+}
+
+/** An export: the job that writes it and, once it has succeeded, its file. */
+export interface ExportRecord {
+  /** Id of the export, the id of its job. */
+  id: string
+  job_id: string
+  /** State of the job; the file can be downloaded when `succeeded`. */
+  state: JobState
+  dataset: string
+  format: string
+  schema: string
+  profile?: string | null
+  filter: ExportFilter
+  /** ISO-8601, UTC. */
+  created_at?: string | null
+  /** ISO-8601, UTC. */
+  finished_at?: string | null
+  /** Rows (CSV) or lines (JSONL) written. */
+  rows?: number | null
+  /** Events with at least one exported payload. */
+  events?: number | null
+  bytes?: number | null
+  /** Payloads that could not be read and were left out. */
+  skipped?: number | null
+  /** File name in the data directory's `exports/`. */
+  file?: string | null
+  media_type?: string | null
+  /** The file can be downloaded. */
+  available: boolean
 }
 
 /** Score family `fight`: no score; how the fight was decided and in which round (MMA). The winner is the event's `winner`. */
@@ -529,6 +622,31 @@ export interface LiveStatus {
   last_switch?: Record<string, unknown> | null
 }
 
+export interface LogEntry {
+  time: string
+  level: string
+  pid: number
+  logger: string
+  /** With secrets masked; a traceback follows its line. */
+  message: string
+}
+
+/** The newest entries of the log file, oldest first. */
+export interface LogTail {
+  /** False when file logging is off; `entries` is then empty. */
+  enabled: boolean
+  file?: string | null
+  /** The level the server logs at. */
+  level?: string | null
+  min_level?: string | null
+  count: number
+  entries: LogEntry[]
+}
+
+export interface LogTailResponse {
+  data: LogTail
+}
+
 /** Cursor pagination of a collection response. */
 export interface PageInfo {
   /** Maximum number of items in this page. */
@@ -599,8 +717,21 @@ export interface Quality {
   status_regressed: boolean
 }
 
+export interface RebuildJobSpec {
+  mode?: "auto" | "in_place" | "recreate"
+}
+
 export interface RefreshJobSpec {
   league_id?: number | null
+}
+
+export interface RestoreJobSpec {
+  /** A backup of `/backups`. */
+  name: string
+  /** Report what a restore with force would move to the trash. */
+  force?: boolean
+  /** Must be true: the API checks a restore; restoring is `ssc backup restore`. */
+  dry_run?: boolean
 }
 
 /** The round of an event. */
@@ -830,22 +961,46 @@ export interface Stage {
   name: string | null
 }
 
+/** Write a backup zip into the data directory's `backups/`; download it through `/backups/{name}`. */
+export interface StartBackupJob {
+  kind: "backup"
+  spec?: BackupJobSpec
+}
+
+/** Delete stored data (follows, job history, change log, backups and exports stay). */
+export interface StartClearJob {
+  kind: "clear"
+  spec?: ClearJobSpec
+}
+
+/** Write an export file into the data directory's `exports/`; download it through `/exports/{id}/download`. */
+export interface StartExportJob {
+  kind: "export"
+  spec?: ExportJobSpec
+}
+
 /** Event details only, for the schedules that are already stored. */
 export interface StartFetchJob {
   kind: "fetch"
   spec?: SyncJobSpec
 }
 
-/** Job kinds of the contract that cannot be started through the API yet; answered with 501 `not_supported`. */
-export interface StartOtherJob {
-  kind: "export" | "backup" | "clear" | "rebuild"
-  spec?: Record<string, unknown>
+/** Rebuild the catalog (`.meta/catalog.db`) from the stored files. */
+export interface StartRebuildJob {
+  kind: "rebuild"
+  spec?: RebuildJobSpec
 }
 
 /** Re-read the stored events that may still change. */
 export interface StartRefreshJob {
   kind: "refresh"
   spec?: RefreshJobSpec
+}
+
+/** Check what restoring a backup would do (the Check step of the UI); nothing is written. */
+export interface StartRestoreJob {
+  kind: "restore"
+  spec: RestoreJobSpec
 }
 
 /** Season lists, schedules and event details. */
@@ -1270,7 +1425,7 @@ export interface Operations {
     path: "/api/v1/jobs"
     params: {}
     query: {}
-    body: StartSyncJob | StartFetchJob | StartRefreshJob | StartOtherJob
+    body: StartSyncJob | StartFetchJob | StartRefreshJob | StartExportJob | StartBackupJob | StartClearJob | StartRebuildJob | StartRestoreJob
     response: JobResponse
   }
   /** Get a job */
@@ -1297,6 +1452,69 @@ export interface Operations {
     path: "/api/v1/jobs/{job_id}/events"
     params: { job_id: string }
     query: { after?: number | null }
+    body: never
+    response: string
+  }
+  /** List exports */
+  "listExports": {
+    method: "GET"
+    path: "/api/v1/exports"
+    params: {}
+    query: { limit?: number; cursor?: string | null }
+    body: never
+    response: ExportListResponse
+  }
+  /** Download an export */
+  "downloadExport": {
+    method: "GET"
+    path: "/api/v1/exports/{export_id}/download"
+    params: { export_id: string }
+    query: {}
+    body: never
+    response: string
+  }
+  /** List backups */
+  "listBackups": {
+    method: "GET"
+    path: "/api/v1/backups"
+    params: {}
+    query: {}
+    body: never
+    response: BackupListResponse
+  }
+  /** Download a backup */
+  "downloadBackup": {
+    method: "GET"
+    path: "/api/v1/backups/{name}"
+    params: { name: string }
+    query: {}
+    body: never
+    response: string
+  }
+  /** Read the log */
+  "listLogs": {
+    method: "GET"
+    path: "/api/v1/logs"
+    params: {}
+    query: { limit?: number; level?: "DEBUG" | "INFO" | "WARNING" | "ERROR" | "CRITICAL" | null }
+    body: never
+    response: LogTailResponse
+  }
+  /** Diagnostics summary */
+  "getDiagnostics": {
+    method: "GET"
+    path: "/api/v1/diagnostics"
+    params: {}
+    query: {}
+    body: never
+    response: DiagnosticsResponse
+  }
+  /** Download the diagnostics bundle */
+  "downloadDiagnosticsBundle": {
+    method: "GET"
+    path: "/api/v1/diagnostics/bundle"
+    params: {}
+    query: { log_lines?: number }
     body: never
     response: string
   }

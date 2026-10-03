@@ -344,10 +344,16 @@ def test_a_data_operation_refuses_the_start(store: JobStore, body: Any) -> None:
     assert "clear" in refused["message"] and body.specs == []
 
 
-@pytest.mark.parametrize("kind", ["export", "backup", "clear", "rebuild"])
-def test_kinds_without_a_service_are_not_supported_yet(store: JobStore, kind: str) -> None:
-    refused = error(client.post("/api/v1/jobs", json={"kind": kind, "spec": {"anything": 1}}), 501, "not_supported")
-    assert refused["details"] == {"kind": kind}
+# P21: export, backup, clear, rebuild ve restore (deneme) başlar (tests/test_api_v1_data_jobs.py); servisi
+# olmayanlar kaldı: normalleştirilmiş dışa aktarma (SC-2) ve gerçek geri yükleme (CLI)
+@pytest.mark.parametrize("request_body,details", [
+    ({"kind": "export", "spec": {"format": "parquet"}}, {"dataset": "events", "format": "parquet", "schema": "normalized"}),
+    ({"kind": "restore", "spec": {"name": "backup_all_20260101_000000.zip", "dry_run": False}}, {"kind": "restore"}),
+])
+def test_kinds_without_a_service_are_not_supported_yet(store: JobStore, request_body: Dict[str, Any],
+                                                       details: Dict[str, Any]) -> None:
+    refused = error(client.post("/api/v1/jobs", json=request_body), 501, "not_supported")
+    assert refused["details"] == details
     assert client.get("/api/v1/jobs").json()["data"] == []
 
 

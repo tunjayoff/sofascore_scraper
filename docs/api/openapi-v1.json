@@ -2921,7 +2921,7 @@
           "jobs"
         ],
         "summary": "Start a job",
-        "description": "Start a job in the background and return it at once (202). Only one job writes to a data directory at a\ntime: while another job or a data operation runs, in this server or in another process, the request is\nrefused with 409 and the holder in `details`.",
+        "description": "Start a job in the background and return it at once (202). Only one job writes to a data directory at a\ntime: while another job or a data operation runs, in this server or in another process, the request is\nrefused with 409 and the holder in `details`. `clear` and `rebuild` take the data directory for themselves\n(no download, live service or other data operation may run). A `clear` needs `confirm: true` (400\n`confirmation_required`). `restore` only checks (`dry_run: true`); restoring replaces the job history the\njob is recorded in and is done with `ssc backup restore` (501 `not_supported`). Normalized exports are 501.",
         "operationId": "startJob",
         "requestBody": {
           "required": true,
@@ -2939,7 +2939,19 @@
                     "$ref": "#/components/schemas/StartRefreshJob"
                   },
                   {
-                    "$ref": "#/components/schemas/StartOtherJob"
+                    "$ref": "#/components/schemas/StartExportJob"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StartBackupJob"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StartClearJob"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StartRebuildJob"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StartRestoreJob"
                   }
                 ],
                 "discriminator": {
@@ -2948,10 +2960,11 @@
                     "sync": "#/components/schemas/StartSyncJob",
                     "fetch": "#/components/schemas/StartFetchJob",
                     "refresh": "#/components/schemas/StartRefreshJob",
-                    "export": "#/components/schemas/StartOtherJob",
-                    "backup": "#/components/schemas/StartOtherJob",
-                    "clear": "#/components/schemas/StartOtherJob",
-                    "rebuild": "#/components/schemas/StartOtherJob"
+                    "export": "#/components/schemas/StartExportJob",
+                    "backup": "#/components/schemas/StartBackupJob",
+                    "clear": "#/components/schemas/StartClearJob",
+                    "rebuild": "#/components/schemas/StartRebuildJob",
+                    "restore": "#/components/schemas/StartRestoreJob"
                   }
                 },
                 "title": "Body"
@@ -3000,8 +3013,28 @@
               }
             }
           },
+          "400": {
+            "description": "invalid_request, confirmation_required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "forbidden_origin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
             "content": {
               "application/json": {
                 "schema": {
@@ -3308,6 +3341,527 @@
           },
           "501": {
             "description": "not_supported",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/exports": {
+      "get": {
+        "tags": [
+          "exports"
+        ],
+        "summary": "List exports",
+        "description": "Export jobs of the data directory, newest first, running and failed ones included.",
+        "operationId": "listExports",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "`page.next_cursor` of the previous page.",
+              "title": "Cursor"
+            },
+            "description": "`page.next_cursor` of the previous page."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/exports/{export_id}/download": {
+      "get": {
+        "tags": [
+          "exports"
+        ],
+        "summary": "Download an export",
+        "description": "The file of a succeeded export. 404 for an unknown id, an export that has not succeeded or a deleted file.",
+        "operationId": "downloadExport",
+        "parameters": [
+          {
+            "name": "export_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 64,
+              "title": "Export Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The export file (CSV or JSONL).",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backups": {
+      "get": {
+        "tags": [
+          "backups"
+        ],
+        "summary": "List backups",
+        "description": "The backups of the data directory, newest first.",
+        "operationId": "listBackups",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backups/{name}": {
+      "get": {
+        "tags": [
+          "backups"
+        ],
+        "summary": "Download a backup",
+        "description": "The backup zip; 404 for a name that is not a backup of this data directory.",
+        "operationId": "downloadBackup",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The backup zip.",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/logs": {
+      "get": {
+        "tags": [
+          "diagnostics"
+        ],
+        "summary": "Read the log",
+        "description": "The newest entries of the log file, oldest first. With file logging off, `enabled` is false.",
+        "operationId": "listLogs",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 2000,
+              "minimum": 1,
+              "description": "Newest entries to return.",
+              "default": 200,
+              "title": "Limit"
+            },
+            "description": "Newest entries to return."
+          },
+          {
+            "name": "level",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "DEBUG",
+                    "INFO",
+                    "WARNING",
+                    "ERROR",
+                    "CRITICAL"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only this level and above.",
+              "title": "Level"
+            },
+            "description": "Only this level and above."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogTailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/diagnostics": {
+      "get": {
+        "tags": [
+          "diagnostics"
+        ],
+        "summary": "Diagnostics summary",
+        "description": "Versions, runtime, settings (secrets masked), data directory, logging, bridge, request budget, checks, jobs.",
+        "operationId": "getDiagnostics",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosticsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/diagnostics/bundle": {
+      "get": {
+        "tags": [
+          "diagnostics"
+        ],
+        "summary": "Download the diagnostics bundle",
+        "description": "A zip to attach to a bug report; secrets and host names are masked.",
+        "operationId": "downloadDiagnosticsBundle",
+        "parameters": [
+          {
+            "name": "log_lines",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 0,
+              "description": "Log lines in the bundle.",
+              "default": 1000,
+              "title": "Log Lines"
+            },
+            "description": "Log lines in the bundle."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A zip: diagnostics.json, log_tail.txt, README.txt.",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
             "content": {
               "application/json": {
                 "schema": {
@@ -3626,6 +4180,108 @@
         ],
         "title": "AuthState",
         "description": "Whether the server asks for an access token, and whether this caller presents a valid one."
+      },
+      "BackupJobSpec": {
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": [
+              "all",
+              "state",
+              "data",
+              "config",
+              "seasons",
+              "matches",
+              "match_details"
+            ],
+            "title": "Scope",
+            "default": "all"
+          },
+          "include_env": {
+            "type": "boolean",
+            "title": "Include Env",
+            "description": "Also `.env` (it can hold secrets); the file name says so.",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "BackupJobSpec"
+      },
+      "BackupListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/BackupRecord"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "page"
+        ],
+        "title": "BackupListResponse"
+      },
+      "BackupRecord": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope",
+            "description": "all, state, data, config, seasons, matches or match_details."
+          },
+          "created_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At Utc",
+            "description": "The time in the file name, as UTC."
+          },
+          "bytes": {
+            "type": "integer",
+            "title": "Bytes"
+          },
+          "format": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Format",
+            "description": "2 (with backup.json), 1 (2.x), null: unreadable zip."
+          },
+          "with_env": {
+            "type": "boolean",
+            "title": "With Env",
+            "description": "The zip holds `.env`, which can carry secrets."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "scope",
+          "bytes",
+          "with_env"
+        ],
+        "title": "BackupRecord",
+        "description": "A backup zip in the data directory's `backups/`."
       },
       "BridgeHealth": {
         "properties": {
@@ -4064,6 +4720,32 @@
         "title": "ChangedField",
         "description": "One field that changed between two reads of an event."
       },
+      "ClearJobSpec": {
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": [
+              "all",
+              "events",
+              "schedules",
+              "seasons",
+              "match_details",
+              "matches"
+            ],
+            "title": "Scope",
+            "default": "all"
+          },
+          "confirm": {
+            "type": "boolean",
+            "title": "Confirm",
+            "description": "Must be true: the stored data of the scope is deleted.",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ClearJobSpec"
+      },
       "CricketInnings": {
         "properties": {
           "side": {
@@ -4244,6 +4926,21 @@
         ],
         "title": "DataSummary",
         "description": "What the data directory holds, counted from its catalog."
+      },
+      "DiagnosticsResponse": {
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data",
+            "description": "The diagnostics summary; the same as diagnostics.json of the bundle."
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "DiagnosticsResponse"
       },
       "DiskSummary": {
         "properties": {
@@ -4890,6 +5587,275 @@
         ],
         "title": "EventStatus",
         "description": "The status of an event: SofaScore's triple and the platform's class."
+      },
+      "ExportFilter": {
+        "properties": {
+          "sport": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sport"
+          },
+          "tournament_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Tournament Ids"
+          },
+          "season_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Season Ids",
+            "description": "Not for the legacy-wide-csv profile."
+          },
+          "event_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Event Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ExportFilter",
+        "description": "Which events to export; the fields are combined with AND, an empty field filters nothing."
+      },
+      "ExportJobSpec": {
+        "properties": {
+          "dataset": {
+            "type": "string",
+            "enum": [
+              "events",
+              "slices"
+            ],
+            "title": "Dataset",
+            "default": "events"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "csv",
+              "jsonl",
+              "parquet",
+              "sqlite"
+            ],
+            "title": "Format",
+            "default": "csv"
+          },
+          "schema": {
+            "type": "string",
+            "enum": [
+              "normalized",
+              "raw"
+            ],
+            "title": "Schema",
+            "default": "normalized"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "legacy-wide-csv"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile"
+          },
+          "filter": {
+            "$ref": "#/components/schemas/ExportFilter"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ExportJobSpec",
+        "description": "What to export. Today: the profile `legacy-wide-csv` (2.x's wide CSV, dataset `events`, format `csv`) and the\nraw schema (stored payloads as JSONL; dataset `events`: the event payload only, `slices`: every slice).\nNormalized datasets answer 501 `not_supported`."
+      },
+      "ExportListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ExportRecord"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "page"
+        ],
+        "title": "ExportListResponse"
+      },
+      "ExportRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Id of the export, the id of its job."
+          },
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "state": {
+            "$ref": "#/components/schemas/JobState",
+            "description": "State of the job; the file can be downloaded when `succeeded`."
+          },
+          "dataset": {
+            "type": "string",
+            "title": "Dataset"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "schema": {
+            "type": "string",
+            "title": "Schema"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile"
+          },
+          "filter": {
+            "$ref": "#/components/schemas/ExportFilter"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At",
+            "description": "ISO-8601, UTC."
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "ISO-8601, UTC."
+          },
+          "rows": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rows",
+            "description": "Rows (CSV) or lines (JSONL) written."
+          },
+          "events": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Events",
+            "description": "Events with at least one exported payload."
+          },
+          "bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bytes"
+          },
+          "skipped": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped",
+            "description": "Payloads that could not be read and were left out."
+          },
+          "file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File",
+            "description": "File name in the data directory's `exports/`."
+          },
+          "media_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Type"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "description": "The file can be downloaded."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "job_id",
+          "state",
+          "dataset",
+          "format",
+          "schema",
+          "filter",
+          "available"
+        ],
+        "title": "ExportRecord",
+        "description": "An export: the job that writes it and, once it has succeeded, its file."
       },
       "FightScore": {
         "properties": {
@@ -5984,6 +6950,114 @@
         "title": "LiveStatus",
         "description": "The live service of the data directory (`ssc watch`): its state only, never live data."
       },
+      "LogEntry": {
+        "properties": {
+          "time": {
+            "type": "string",
+            "title": "Time"
+          },
+          "level": {
+            "type": "string",
+            "title": "Level"
+          },
+          "pid": {
+            "type": "integer",
+            "title": "Pid"
+          },
+          "logger": {
+            "type": "string",
+            "title": "Logger"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "With secrets masked; a traceback follows its line."
+          }
+        },
+        "type": "object",
+        "required": [
+          "time",
+          "level",
+          "pid",
+          "logger",
+          "message"
+        ],
+        "title": "LogEntry"
+      },
+      "LogTail": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "False when file logging is off; `entries` is then empty."
+          },
+          "file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level",
+            "description": "The level the server logs at."
+          },
+          "min_level": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Level"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/LogEntry"
+            },
+            "type": "array",
+            "title": "Entries"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled",
+          "count",
+          "entries"
+        ],
+        "title": "LogTail",
+        "description": "The newest entries of the log file, oldest first."
+      },
+      "LogTailResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LogTail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "LogTailResponse"
+      },
       "PageInfo": {
         "properties": {
           "limit": {
@@ -6297,6 +7371,23 @@
         "title": "Quality",
         "description": "How much the record can be trusted, and where it comes from."
       },
+      "RebuildJobSpec": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "in_place",
+              "recreate"
+            ],
+            "title": "Mode",
+            "default": "auto"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RebuildJobSpec"
+      },
       "RefreshJobSpec": {
         "properties": {
           "league_id": {
@@ -6315,6 +7406,35 @@
         "additionalProperties": false,
         "type": "object",
         "title": "RefreshJobSpec"
+      },
+      "RestoreJobSpec": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "description": "A backup of `/backups`."
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "description": "Report what a restore with force would move to the trash.",
+            "default": false
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "description": "Must be true: the API checks a restore; restoring is `ssc backup restore`.",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "RestoreJobSpec"
       },
       "Round": {
         "properties": {
@@ -7229,6 +8349,63 @@
         "title": "Stage",
         "description": "The part of a tournament an event belongs to: SofaScore's (non-unique) tournament object."
       },
+      "StartBackupJob": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "backup",
+            "title": "Kind"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/BackupJobSpec"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "StartBackupJob",
+        "description": "Write a backup zip into the data directory's `backups/`; download it through `/backups/{name}`."
+      },
+      "StartClearJob": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "clear",
+            "title": "Kind"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/ClearJobSpec"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "StartClearJob",
+        "description": "Delete stored data (follows, job history, change log, backups and exports stay)."
+      },
+      "StartExportJob": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "export",
+            "title": "Kind"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/ExportJobSpec"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "StartExportJob",
+        "description": "Write an export file into the data directory's `exports/`; download it through `/exports/{id}/download`."
+      },
       "StartFetchJob": {
         "properties": {
           "kind": {
@@ -7248,22 +8425,15 @@
         "title": "StartFetchJob",
         "description": "Event details only, for the schedules that are already stored."
       },
-      "StartOtherJob": {
+      "StartRebuildJob": {
         "properties": {
           "kind": {
             "type": "string",
-            "enum": [
-              "export",
-              "backup",
-              "clear",
-              "rebuild"
-            ],
+            "const": "rebuild",
             "title": "Kind"
           },
           "spec": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Spec"
+            "$ref": "#/components/schemas/RebuildJobSpec"
           }
         },
         "additionalProperties": false,
@@ -7271,8 +8441,8 @@
         "required": [
           "kind"
         ],
-        "title": "StartOtherJob",
-        "description": "Job kinds of the contract that cannot be started through the API yet; answered with 501 `not_supported`."
+        "title": "StartRebuildJob",
+        "description": "Rebuild the catalog (`.meta/catalog.db`) from the stored files."
       },
       "StartRefreshJob": {
         "properties": {
@@ -7292,6 +8462,26 @@
         ],
         "title": "StartRefreshJob",
         "description": "Re-read the stored events that may still change."
+      },
+      "StartRestoreJob": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "restore",
+            "title": "Kind"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/RestoreJobSpec"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "spec"
+        ],
+        "title": "StartRestoreJob",
+        "description": "Check what restoring a backup would do (the Check step of the UI); nothing is written."
       },
       "StartSyncJob": {
         "properties": {
