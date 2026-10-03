@@ -4,11 +4,6 @@ import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
   plugins: [vue()],
-  define: {
-    // vue-i18n compiles messages with `new Function` unless this is on; the server's
-    // Content-Security-Policy has no 'unsafe-eval' (src/web/security.py; index.html declares it).
-    __INTLIFY_JIT_COMPILATION__: true,
-  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

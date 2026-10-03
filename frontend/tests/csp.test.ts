@@ -1,14 +1,16 @@
 import { spawnSync } from 'node:child_process'
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import viteConfigSource from '../vite.config.ts?raw'
 import indexHtml from '../index.html?raw'
 import en from '@/locales/en'
 import tr from '@/locales/tr'
 
 /**
- * The server's Content-Security-Policy has no 'unsafe-eval' (src/web/security.py). vue-i18n compiles
- * messages with `new Function` unless the build turns on __INTLIFY_JIT_COMPILATION__, so the flag,
- * the marker in index.html that tells the server about it, and the messages themselves must agree.
+ * The server's Content-Security-Policy has no 'unsafe-eval' (src/web/security.py). vue-i18n (10 and later)
+ * always compiles messages without eval, so what has to hold is checked directly: every message renders where
+ * eval and new Function are refused, and the production bundle contains neither.
  */
 
 /** Every leaf key of a locale object as "a.b.c". */
@@ -19,12 +21,12 @@ function keys(node: unknown, prefix = '', out: string[] = []): string[] {
   return out
 }
 
-/** The build-time flag as vite.config.ts sets it (`define`), read from the source. */
-const jitFlag = /\b__INTLIFY_JIT_COMPILATION__:\s*true\b/.test(viteConfigSource)
-
 // Runs in a separate Node process where eval / new Function throw, as they do under the CSP
 const CHILD = `
-globalThis.__INTLIFY_JIT_COMPILATION__ = process.env.JIT === 'true'
+// The sandbox is real: code generation from strings is refused here
+let refused = false
+try { new Function('return 1') } catch (e) { refused = e instanceof EvalError }
+if (!refused) throw new Error('code generation from strings is allowed in this process')
 const { createI18n } = await import('vue-i18n')
 let input = ''
 for await (const chunk of process.stdin) input += chunk
@@ -43,19 +45,17 @@ for (const lang of Object.keys(messages)) {
 process.stdout.write(String(done))
 `
 
-function translateWithoutEval(jit: boolean) {
-  return spawnSync(process.execPath, ['--disallow-code-generation-from-strings', '--input-type=module', '-e', CHILD], {
-    cwd: process.cwd(),
-    env: { ...process.env, JIT: String(jit) },
-    input: JSON.stringify({ messages: { en, tr }, keys: keys(en) }),
-    encoding: 'utf8',
-    timeout: 60000,
-  })
+/** `new Function` or a call of `eval` in built JavaScript. */
+const CODEGEN = /\bnew\s+Function\b|(?<![\w$.])eval\s*\(/
+
+function builtScripts(dir: string): string[] {
+  return readdirSync(dir, { recursive: true, encoding: 'utf8' })
+    .filter((f) => f.endsWith('.js'))
+    .map((f) => join(dir, f))
 }
 
 describe('the app runs without eval (Content-Security-Policy)', () => {
-  it('the build turns on vue-i18n JIT compilation and tells the server so', () => {
-    expect(jitFlag).toBe(true)
+  it('index.html tells the server and has no inline script', () => {
     // src/web/security.py: CSP_MARKER. Without it the server keeps 'unsafe-eval' for old builds.
     expect(indexHtml).toContain('<meta name="sofascore-csp" content="no-eval"')
     // No inline script: script-src is 'self' only
@@ -65,12 +65,35 @@ describe('the app runs without eval (Content-Security-Policy)', () => {
   it('every message of both languages renders where eval and new Function are refused', () => {
     const total = keys(en).length * 2
     expect(total).toBeGreaterThan(400)
-    const jit = translateWithoutEval(jitFlag)
-    expect(jit.status, jit.stderr).toBe(0)
-    expect(jit.stdout).toBe(String(total))
-    // The check is real: without the flag the same messages need eval
-    const legacy = translateWithoutEval(false)
-    expect(legacy.status).not.toBe(0)
-    expect(legacy.stderr).toContain('EvalError')
+    const run = spawnSync(process.execPath, ['--disallow-code-generation-from-strings', '--input-type=module', '-e', CHILD], {
+      cwd: process.cwd(),
+      input: JSON.stringify({ messages: { en, tr }, keys: keys(en) }),
+      encoding: 'utf8',
+      timeout: 60000,
+    })
+    expect(run.status, run.stderr).toBe(0)
+    expect(run.stdout).toBe(String(total))
   })
+
+  it('the production build contains no new Function and no eval', () => {
+    expect(CODEGEN.test('return new Function("a", body)')).toBe(true)
+    expect(CODEGEN.test('x=eval(s)')).toBe(true)
+    expect(CODEGEN.test('retrieval(x); obj.eval(s); medieval (y)')).toBe(false)
+    const out = mkdtempSync(join(tmpdir(), 'csp-dist-'))
+    try {
+      const vite = resolve(process.cwd(), 'node_modules/vite/bin/vite.js')
+      const run = spawnSync(process.execPath, [vite, 'build', '--outDir', out, '--emptyOutDir', '--logLevel', 'error'], {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+        timeout: 120000,
+      })
+      expect(run.status, run.stderr).toBe(0)
+      const scripts = builtScripts(out)
+      expect(scripts.length).toBeGreaterThan(5)
+      const hits = scripts.filter((f) => CODEGEN.test(readFileSync(f, 'utf8'))).map((f) => f.slice(out.length + 1))
+      expect(hits).toEqual([])
+    } finally {
+      rmSync(out, { recursive: true, force: true })
+    }
+  }, 150000)
 })

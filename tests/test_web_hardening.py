@@ -1037,9 +1037,10 @@ def test_policy_follows_the_build(tmp_path):
 
 def test_frontend_source_declares_what_the_policy_relies_on():
     index = (REPO / "frontend" / "index.html").read_text(encoding="utf-8")
-    config = (REPO / "frontend" / "vite.config.ts").read_text(encoding="utf-8")
+    package = json.loads((REPO / "frontend" / "package.json").read_text(encoding="utf-8"))
     assert security.CSP_MARKER in index
-    assert re.search(r"__INTLIFY_JIT_COMPILATION__:\s*true", config)
+    # vue-i18n 10 and later compile messages without eval; frontend/tests/csp.test.ts checks the build itself
+    assert int(re.match(r"\D*(\d+)", package["dependencies"]["vue-i18n"]).group(1)) >= 10
     page = _Page(index)
     assert page.inline == {"script": 0, "style": 0, "style-attr": 0, "handler": 0}
 
