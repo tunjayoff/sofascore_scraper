@@ -331,7 +331,7 @@
     "ssc_export_written": "Export written: {path} ({rows} matches)",
     "ssc_export_streamed": "Export written to stdout: {rows} matches",
     "ssc_export_raw_written": "Raw export written: {path} ({events} matches, {items} payloads)",
-    "ssc_help_export_dataset": "events, slices or changes (normalized); with --schema raw: events (the event payload only) or slices (every payload, the default)",
+    "ssc_help_export_dataset": "events, slices, changes, odds or standings (normalized); with --schema raw: events (the event payload only) or slices (every payload, the default)",
     "ssc_help_export_sport": "only the matches of this sport (slug, for example football)",
     "ssc_help_export_season": "only the matches of this season (repeatable; not for changes)",
     "ssc_help_export_status": "only the matches in this status class (repeatable; not for changes)",

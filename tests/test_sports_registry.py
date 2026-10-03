@@ -366,7 +366,9 @@ def test_select_slices_with_a_selection():
     assert _keys(sports.select_slices("event", "tennis", narrow)) == ("h2h", "incidents")
     # "statistics" hem dilim anahtarı hem (tasarımda) grup adı
     assert _keys(sports.select_slices("event", "football", ["statistics"])) == ("statistics",)
-    assert _keys(sports.select_slices("event", "football", ["odds"])) == ()
+    # P28: `odds` grubu maçın dört oran dilimini seçer (varsayılan olarak kapalılar)
+    assert _keys(sports.select_slices("event", "football", ["odds"])) == (
+        "odds_featured", "odds_all", "odds_changes", "winning_odds")
 
 
 def test_select_slices_turns_on_a_slice_that_is_off_by_default(monkeypatch):
@@ -380,7 +382,7 @@ def test_select_slices_turns_on_a_slice_that_is_off_by_default(monkeypatch):
 
 
 @pytest.mark.parametrize("selection", [["nope"], sports.SliceSelection(enable=("Lineups",)),
-                                       sports.SliceSelection(disable=("odds_all",))])
+                                       sports.SliceSelection(disable=("odds_everything",))])
 def test_select_slices_rejects_unknown_names(selection):
     with pytest.raises(sports.UnknownSliceName) as info:
         sports.select_slices("event", "football", selection)

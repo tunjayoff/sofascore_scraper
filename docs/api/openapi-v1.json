@@ -1540,6 +1540,186 @@
         }
       }
     },
+    "/api/v1/seasons/{season_id}/slices": {
+      "get": {
+        "tags": [
+          "tournaments"
+        ],
+        "summary": "List the slices of a season",
+        "description": "Every stored slice of the season, ordered by key and sub-key, without payloads: its schedule pages and,\nwhen selected for download, its standings, season info, cup tree, leaders and season odds.",
+        "operationId": "listSeasonSlices",
+        "parameters": [
+          {
+            "name": "season_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Season Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeasonSliceListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/seasons/{season_id}/standings": {
+      "get": {
+        "tags": [
+          "tournaments"
+        ],
+        "summary": "Get the standings of a season",
+        "description": "The stored standings of the season as rows (schema v1 StandingsRow), table by table and in rank order.\nEmpty when no standings are stored (they are downloaded only when selected).",
+        "operationId": "getSeasonStandings",
+        "parameters": [
+          {
+            "name": "season_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Season Id"
+            }
+          },
+          {
+            "name": "table",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "total",
+                    "home"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "One table only; both when omitted.",
+              "title": "Table"
+            },
+            "description": "One table only; both when omitted."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandingsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/seasons/{season_id}/slices/{key}": {
       "get": {
         "tags": [
@@ -2510,7 +2690,7 @@
           "events"
         ],
         "summary": "List the odds of an event",
-        "description": "The event's stored odds slices (keys starting with `odds`), without payloads. Empty until odds are\ndownloaded (they are not in the slice registry yet).",
+        "description": "The event's stored odds slices (the `odds` group of the slice registry: `odds_all`, `odds_featured`,\n`odds_changes`, `winning_odds`), one per provider (`sub`), without payloads. Empty unless odds were selected\nfor download (they are off by default). Each slice's `fetched_at_utc` is the time of its latest snapshot.",
         "operationId": "listEventOdds",
         "parameters": [
           {
@@ -2556,6 +2736,133 @@
             }
           },
           "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events/{event_id}/odds/{key}": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Get the odds of an event, snapshot by snapshot",
+        "description": "The odds of the event as normalized records (schema v1 Odds), oldest snapshot first. A read is a snapshot:\nodds change until the event ends, and a later price exists only when the odds were read again. Empty when no\nodds of this kind are stored; 404 for another slice name.",
+        "operationId": "listEventOddsSnapshots",
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Event Id"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,39}$",
+              "description": "Odds slice: `odds_all` (all markets) or `odds_featured` (the featured ones).",
+              "title": "Key"
+            },
+            "description": "Odds slice: `odds_all` (all markets) or `odds_featured` (the featured ones)."
+          },
+          {
+            "name": "sub",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9]{1,9}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Provider id (the slice's sub-key); all stored providers when omitted.",
+              "title": "Sub"
+            },
+            "description": "Provider id (the slice's sub-key); all stored providers when omitted."
+          },
+          {
+            "name": "history",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Every stored snapshot, oldest first; false: the latest one only.",
+              "default": true,
+              "title": "History"
+            },
+            "description": "Every stored snapshot, oldest first; false: the latest one only."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OddsListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
             "description": "invalid_request",
             "content": {
               "application/json": {
@@ -5679,7 +5986,9 @@
             "enum": [
               "events",
               "slices",
-              "changes"
+              "changes",
+              "odds",
+              "standings"
             ],
             "title": "Dataset",
             "default": "events"
@@ -5723,7 +6032,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "ExportJobSpec",
-        "description": "What to export. Schema `normalized`: the records of data schema v1 (`events`, `slices` or `changes`) as JSONL\n(one record per line), CSV, Parquet or SQLite (one column per leaf field, named by its path joined with `_`;\nlists as JSON text). Parquet needs the optional package pyarrow on the server (501 `not_supported` without\nit). Schema `raw`: the stored payloads as JSONL (dataset `events`: the event payload only, `slices`: every\nslice). The profile `legacy-wide-csv` is 2.x's wide CSV (dataset `events`, format `csv`)."
+        "description": "What to export. Schema `normalized`: the records of data schema v1 (`events`, `slices`, `changes`, `odds`: one\nrow per outcome of each odds snapshot, `standings`: the standings rows of the matched events' seasons) as JSONL\n(one record per line), CSV, Parquet or SQLite (one column per leaf field, named by its path joined with `_`;\nlists as JSON text). Parquet needs the optional package pyarrow on the server (501 `not_supported` without\nit). Schema `raw`: the stored payloads as JSONL (dataset `events`: the event payload only, `slices`: every\nslice). The profile `legacy-wide-csv` is 2.x's wide CSV (dataset `events`, format `csv`)."
       },
       "ExportListResponse": {
         "properties": {
@@ -7154,6 +7463,297 @@
         ],
         "title": "LogTailResponse"
       },
+      "Odds": {
+        "properties": {
+          "event_id": {
+            "type": "integer",
+            "title": "Event Id",
+            "description": "Id of the Event."
+          },
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "Odds slice the record comes from: `odds_all` or `odds_featured`."
+          },
+          "provider_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Id",
+            "description": "SofaScore's id of the bookmaker the odds come from. Which bookmakers SofaScore offers depends on the country it sees the request from; the platform stores no address or location of the machine."
+          },
+          "fetched_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At Utc",
+            "description": "When the odds were read. A read is a snapshot: odds change until the event ends, and only a later read shows a later price."
+          },
+          "markets": {
+            "items": {
+              "$ref": "#/components/schemas/OddsMarket"
+            },
+            "type": "array",
+            "title": "Markets",
+            "description": "The markets, in SofaScore's order."
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_id",
+          "key",
+          "provider_id",
+          "fetched_at_utc",
+          "markets"
+        ],
+        "title": "Odds",
+        "description": "The odds of an event from one provider as read at one moment."
+      },
+      "OddsChoice": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Name of the outcome as SofaScore gives it, for example `1`, `X`, `2`, `Over`."
+          },
+          "fractional": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fractional",
+            "description": "Current price as a fraction, for example `11/5`."
+          },
+          "decimal": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decimal",
+            "description": "Current price as a decimal (1 + the fraction), rounded to three places."
+          },
+          "initial_fractional": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initial Fractional",
+            "description": "Opening price as a fraction."
+          },
+          "initial_decimal": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initial Decimal",
+            "description": "Opening price as a decimal, rounded to three places."
+          },
+          "change": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change",
+            "description": "Direction of the last change of the price: 1 up, -1 down, 0 none."
+          },
+          "winning": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Winning",
+            "description": "True for the outcome that won once the event is settled; null while open or when SofaScore does not say."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "fractional",
+          "decimal",
+          "initial_fractional",
+          "initial_decimal",
+          "change",
+          "winning"
+        ],
+        "title": "OddsChoice",
+        "description": "One outcome of a betting market and its price."
+      },
+      "OddsListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Odds"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "page"
+        ],
+        "title": "OddsListResponse"
+      },
+      "OddsMarket": {
+        "properties": {
+          "market_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Market Id",
+            "description": "SofaScore's id of the market type (1 is the match result)."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name of the market, for example `Full time`."
+          },
+          "group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group",
+            "description": "Group of the market, for example `1X2` or `Home/Away`."
+          },
+          "period": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period",
+            "description": "Part of the event the market covers, for example `Full-time`."
+          },
+          "choice_group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Choice Group",
+            "description": "Line of a market with several lines, for example `2.5` for over/under; null for a market with one line."
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label",
+            "description": "Name under which the featured odds list the market (`default`, `fullTime`, `asian`); null in the full list."
+          },
+          "is_live": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Live",
+            "description": "True when the prices were offered during play."
+          },
+          "suspended": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suspended",
+            "description": "True when the market was closed for bets at the time of the read."
+          },
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/OddsChoice"
+            },
+            "type": "array",
+            "title": "Choices",
+            "description": "The outcomes of the market, in SofaScore's order."
+          }
+        },
+        "type": "object",
+        "required": [
+          "market_id",
+          "name",
+          "group",
+          "period",
+          "choice_group",
+          "label",
+          "is_live",
+          "suspended",
+          "choices"
+        ],
+        "title": "OddsMarket",
+        "description": "One betting market of an event with its outcomes."
+      },
       "PageInfo": {
         "properties": {
           "limit": {
@@ -7814,6 +8414,26 @@
           "data"
         ],
         "title": "SeasonResponse"
+      },
+      "SeasonSliceListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/Slice"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "page"
+        ],
+        "title": "SeasonSliceListResponse"
       },
       "SetScore": {
         "properties": {
@@ -8814,6 +9434,209 @@
         ],
         "title": "Stage",
         "description": "The part of a tournament an event belongs to: SofaScore's (non-unique) tournament object."
+      },
+      "StandingsResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/StandingsRow"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "page"
+        ],
+        "title": "StandingsResponse"
+      },
+      "StandingsRow": {
+        "properties": {
+          "tournament_id": {
+            "type": "integer",
+            "title": "Tournament Id",
+            "description": "Id of the Tournament."
+          },
+          "season_id": {
+            "type": "integer",
+            "title": "Season Id",
+            "description": "Id of the Season."
+          },
+          "table": {
+            "type": "string",
+            "title": "Table",
+            "description": "Which table: `total` (all matches) or `home` (home matches only)."
+          },
+          "group_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Name",
+            "description": "Name of the table or group, for example `Premier League 26/27` or `Group A`."
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position",
+            "description": "Rank in the table, 1 for the first."
+          },
+          "participant_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Participant Id",
+            "description": "Id of the Participant."
+          },
+          "participant_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Participant Name",
+            "description": "Name of the Participant."
+          },
+          "matches": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matches",
+            "description": "Matches played."
+          },
+          "wins": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wins",
+            "description": "Matches won."
+          },
+          "draws": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draws",
+            "description": "Matches drawn; null in sports without draws."
+          },
+          "losses": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Losses",
+            "description": "Matches lost."
+          },
+          "scores_for": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scores For",
+            "description": "Goals or points scored."
+          },
+          "scores_against": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scores Against",
+            "description": "Goals or points conceded."
+          },
+          "points": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points",
+            "description": "Table points (a fraction in a few sports)."
+          },
+          "fetched_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fetched At Utc",
+            "description": "When the table was read."
+          }
+        },
+        "type": "object",
+        "required": [
+          "tournament_id",
+          "season_id",
+          "table",
+          "group_name",
+          "position",
+          "participant_id",
+          "participant_name",
+          "matches",
+          "wins",
+          "draws",
+          "losses",
+          "scores_for",
+          "scores_against",
+          "points",
+          "fetched_at_utc"
+        ],
+        "title": "StandingsRow",
+        "description": "One row of a standings table of a season."
       },
       "StartBackupJob": {
         "properties": {

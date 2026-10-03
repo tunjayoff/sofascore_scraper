@@ -418,7 +418,8 @@ def test_parquet_without_pyarrow_is_not_supported_and_writes_nothing(canonical: 
 
 
 @pytest.mark.parametrize("spec", [
-    DatasetSpec(dataset="odds"),
+    DatasetSpec(dataset="lineups"),  # P28'den beri `odds` bir veri kümesidir
+    DatasetSpec(dataset="odds", schema="raw"),
     DatasetSpec(schema="pretty"),
     DatasetSpec(format="tree"),
     DatasetSpec(format="json"),

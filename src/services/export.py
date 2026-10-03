@@ -336,6 +336,12 @@ class ExportService:
                    sırasıyla. Yük (`payload`) null'dır: yükler ham dışa aktarmadadır.
           changes  Change; günlüğün sıra numarasıyla (`seq`). Süzgeçten yalnızca spor, turnuva, maç ve zaman
                    aralığı uygulanır; zaman aralığı kaydın zamanıdır (`recorded_at_utc`), maçın başlangıcı değil.
+          odds     OddsLine (P28); maçlar `events` sırasıyla, her maçın `odds_all` ve `odds_featured`
+                   dilimlerinin her anlık görüntüsünün her pazar seçeneği bir satır (geçmişi olmayan dilimde
+                   saklanan son yük). Oranlar yalnızca seçildilerse indirilir; yoksa veri kümesi boştur.
+          standings
+                   StandingsRow (P28); süzgece uyan maçların sezonları (turnuva, sezon; ilk görülme sırasıyla),
+                   her sezonun saklanan puan durumu tabloları, sıra düzeniyle.
         """
         flt = flt or DatasetFilter()
         if dataset == DATASET_EVENTS:
@@ -344,6 +350,10 @@ class ExportService:
             return self._slices(flt)
         if dataset == DATASET_CHANGES:
             return self._changes(flt)
+        if dataset == DATASET_ODDS:
+            return self._odds(flt)
+        if dataset == DATASET_STANDINGS:
+            return self._standings(flt)
         raise ValueError(f"dataset: expected one of {', '.join(DATASETS)}, got {dataset!r}")
 
     def _events(self, flt: "DatasetFilter") -> Iterator["Model"]:
@@ -367,6 +377,27 @@ class ExportService:
             for event_id in ids:
                 for info in found.get(event_id, ()):
                     yield schema.slice_from_info(info)
+
+    def _odds(self, flt: "DatasetFilter") -> Iterator["Model"]:
+        from src.services.owner_data import OwnerDataService
+
+        data = OwnerDataService(self._store)
+        rows = self._store.events.iter(_event_query(flt), batch=_PAGE)
+        while True:
+            ids = [row.id for row in itertools.islice(rows, _PAGE)]
+            if not ids:
+                return
+            yield from data.odds_lines(ids)
+
+    def _standings(self, flt: "DatasetFilter") -> Iterator["Model"]:
+        from src.services.owner_data import OwnerDataService
+        from src.store import Ref
+
+        seasons: Dict[Tuple[int, int], None] = {}
+        for row in self._store.events.iter(_event_query(flt), batch=_PAGE):
+            if row.tournament_id is not None and row.season_id is not None:
+                seasons.setdefault((int(row.tournament_id), int(row.season_id)), None)
+        yield from OwnerDataService(self._store).standings_rows(Ref.season(t, s) for t, s in seasons)
 
     def _changes(self, flt: "DatasetFilter") -> Iterator["Model"]:
         from src import schema
@@ -427,7 +458,9 @@ def _check(spec: ExportSpec) -> None:
 DATASET_EVENTS = "events"
 DATASET_SLICES = "slices"
 DATASET_CHANGES = "changes"
-DATASETS: Tuple[str, ...] = (DATASET_EVENTS, DATASET_SLICES, DATASET_CHANGES)
+DATASET_ODDS = "odds"  # P28: bahis oranları, satır başına bir pazar seçeneği
+DATASET_STANDINGS = "standings"  # P28: puan durumu satırları
+DATASETS: Tuple[str, ...] = (DATASET_EVENTS, DATASET_SLICES, DATASET_CHANGES, DATASET_ODDS, DATASET_STANDINGS)
 NORMALIZED = "normalized"
 RAW = "raw"
 SCHEMAS: Tuple[str, ...] = (NORMALIZED, RAW)
@@ -506,7 +539,7 @@ def check_dataset(spec: DatasetSpec) -> None:
         raise UsageError("Unknown dataset or schema.", details)
     if spec.schema == RAW:
         if spec.dataset not in RAW_DATASETS:
-            raise UsageError("The changes dataset has no raw form; export it normalized.", details)
+            raise UsageError(f"The {spec.dataset} dataset has no raw form; export it normalized.", details)
         if spec.format not in RAW_FORMATS:
             raise UsageError("A raw export is written as JSONL or as a tree.", details)
     elif spec.format not in DATASET_FORMATS:
@@ -545,7 +578,8 @@ def record_model(dataset: str) -> "Type[Model]":
     from src.schema import models
 
     found: Dict[str, Type[Model]] = {DATASET_EVENTS: models.Event, DATASET_SLICES: models.Slice,
-                                     DATASET_CHANGES: models.Change}
+                                     DATASET_CHANGES: models.Change, DATASET_ODDS: models.OddsLine,
+                                     DATASET_STANDINGS: models.StandingsRow}
     if dataset not in found:
         raise ValueError(f"dataset: expected one of {', '.join(DATASETS)}, got {dataset!r}")
     return found[dataset]

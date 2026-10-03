@@ -788,12 +788,15 @@ def test_sports_are_the_registry() -> None:
     football = data(client.get("/api/v1/sports/football"))
     assert football == body["data"][0]
     assert list(football) == ["slug", "name", "i18n_key", "score_family", "slices"]
-    assert [s["key"] for s in football["slices"]] == [s.key for s in sports.DETAIL_SLICES if s.applies_to("football")]
+    # P28: kayıt defterinin bütün dilimleri (oranlar ve maç dışı dilimler dahil; sahibi `owner`'da)
+    assert [s["key"] for s in football["slices"]] == [s.key for s in sports.registered_slices()
+                                                      if s.applies_to("football")]
     assert list(football["slices"][0]) == ["key", "path", "required", "default_enabled", "selected", "group", "owner",
                                            "phases", "keep_history", "max_age_seconds"]
-    # Eski uç ile aynı veri (zarf ve P27'nin seçim alanları dışında)
+    # Eski uç ile aynı veri (zarf, P27'nin seçim alanları ve P28'in eski uçta olmayan dilimleri dışında)
     legacy_fields = ("key", "path", "required", "default_enabled")
-    assert [{**sport, "slices": [{k: s[k] for k in legacy_fields} for s in sport["slices"]]}
+    detail_keys = {s.key for s in sports.DETAIL_SLICES}
+    assert [{**sport, "slices": [{k: s[k] for k in legacy_fields} for s in sport["slices"] if s["key"] in detail_keys]}
             for sport in body["data"]] == client.get("/api/sports").json()
 
     missing = error(client.get("/api/v1/sports/quidditch"), 404, "not_found")

@@ -34,6 +34,10 @@ from src.schema.models import (
     InningScore,
     InningsScore,
     LiveEvent,
+    Odds,
+    OddsChoice,
+    OddsLine,
+    OddsMarket,
     Participant,
     PeriodScore,
     PeriodsScore,
@@ -49,6 +53,7 @@ from src.schema.models import (
     SliceError,
     Sport,
     Stage,
+    StandingsRow,
     Status,
     Tournament,
 )
@@ -614,6 +619,129 @@ def live_event_from_record(record: "StreamRecord") -> LiveEvent:
     )
 
 
+# --- bahis oranları ve puan durumu (plan maddesi P28) ---------------------------------------------------
+#
+# Bu iki eşleyici yükü okur: türetme katmanı (src/store/derive.py) oranları ve puan durumunu dizinlemez, durum
+# sınıfı ve skor gibi tek bir okuyucusu yoktur. Yük beklenen biçimde değilse eşleyici hata fırlatmaz: tanımadığı
+# parçayı atlar (bir pazar nesne değilse, satırın takımı yoksa ...).
+
+# Oranları bu şemayla verilen dilimler; öteki oran dilimleri (odds_changes, winning_odds) Slice kaydıyla ham kalır
+ODDS_KEYS: Tuple[str, ...] = ("odds_all", "odds_featured")
+
+
+def fraction_decimal(text: Any) -> Optional[float]:
+    """"11/5" → 3.2 (1 + kesir, üç basamağa yuvarlanmış); kesir değilse ya da paydası 0 ise None."""
+    if not isinstance(text, str) or text.count("/") != 1:
+        return None
+    top, bottom = text.split("/")
+    try:
+        numerator, denominator = float(top), float(bottom)
+    except ValueError:
+        return None
+    if not (math.isfinite(numerator) and math.isfinite(denominator)) or denominator == 0:
+        return None
+    return round(1 + numerator / denominator, 3)
+
+
+def _odds_choice(raw: Mapping[str, Any]) -> Optional[OddsChoice]:
+    name = _text(raw.get("name"))
+    if name is None:
+        return None
+    return OddsChoice(
+        name=name,
+        fractional=_text(raw.get("fractionalValue")),
+        decimal=fraction_decimal(raw.get("fractionalValue")),
+        initial_fractional=_text(raw.get("initialFractionalValue")),
+        initial_decimal=fraction_decimal(raw.get("initialFractionalValue")),
+        change=_int(raw.get("change")),
+        winning=_flag(raw.get("winning")),
+    )
+
+
+def _odds_market(raw: Any, label: Optional[str] = None) -> Optional[OddsMarket]:
+    if not isinstance(raw, Mapping):
+        return None
+    choices = raw.get("choices") if isinstance(raw.get("choices"), list) else []
+    return OddsMarket(
+        market_id=_int(raw.get("marketId")),
+        name=_text(raw.get("marketName")),
+        group=_text(raw.get("marketGroup")),
+        period=_text(raw.get("marketPeriod")),
+        choice_group=_text(raw.get("choiceGroup")) if not isinstance(raw.get("choiceGroup"), (int, float))
+        else str(raw.get("choiceGroup")),
+        label=label,
+        is_live=_flag(raw.get("isLive")),
+        suspended=_flag(raw.get("suspended")),
+        choices=tuple(choice for choice in (_odds_choice(item) for item in choices if isinstance(item, Mapping))
+                      if choice is not None),
+    )
+
+
+def odds_from_payload(event_id: int, key: str, payload: Any, *, provider_id: Optional[int] = None,
+                      fetched_at: Any = None) -> Optional[Odds]:
+    """
+    Bir oran diliminin yükü → Odds. `odds_all`: `markets` listesi; `odds_featured`: `featured` nesnesinin her
+    değeri bir pazardır, adı `label` olur. Başka bir anahtar ya da nesne olmayan yük None.
+    """
+    if key not in ODDS_KEYS or not isinstance(payload, Mapping):
+        return None
+    markets: List[OddsMarket] = []
+    if key == "odds_all":
+        raw = payload.get("markets") if isinstance(payload.get("markets"), list) else []
+        markets = [market for market in (_odds_market(item) for item in raw) if market is not None]
+    else:
+        featured = payload.get("featured") if isinstance(payload.get("featured"), Mapping) else {}
+        markets = [market for market in (_odds_market(item, str(label)) for label, item in featured.items())
+                   if market is not None]
+    return Odds(event_id=int(event_id), key=key, provider_id=_int(provider_id), fetched_at_utc=utc_text(fetched_at),
+                markets=tuple(markets))
+
+
+def odds_lines(odds: Odds) -> List[OddsLine]:
+    """Bir Odds kaydının düz satırları: pazar ve seçenek başına bir satır, yükün sırasıyla."""
+    return [
+        OddsLine(
+            event_id=odds.event_id, key=odds.key, provider_id=odds.provider_id, fetched_at_utc=odds.fetched_at_utc,
+            market_id=market.market_id, market_name=market.name, market_group=market.group,
+            market_period=market.period, choice_group=market.choice_group, label=market.label,
+            is_live=market.is_live, suspended=market.suspended, choice=choice.name, fractional=choice.fractional,
+            decimal=choice.decimal, initial_fractional=choice.initial_fractional,
+            initial_decimal=choice.initial_decimal, change=choice.change, winning=choice.winning,
+        )
+        for market in odds.markets for choice in market.choices
+    ]
+
+
+def standings_rows(tournament_id: int, season_id: int, table: str, payload: Any, *,
+                   fetched_at: Any = None) -> List[StandingsRow]:
+    """
+    Puan durumu yükü (`{"standings": [{"name", "rows": [...]}]}`) → satırlar, tablo ve sıra düzeniyle. Grup
+    usulü turnuvada her grup bir tablodur (`group_name`). Ne takımı ne sırası olan satır atlanır.
+    """
+    tables = payload.get("standings") if isinstance(payload, Mapping) else None
+    out: List[StandingsRow] = []
+    for group in tables if isinstance(tables, list) else []:
+        if not isinstance(group, Mapping):
+            continue
+        rows = group.get("rows") if isinstance(group.get("rows"), list) else []
+        for row in rows:
+            if not isinstance(row, Mapping):
+                continue
+            team = row.get("team") if isinstance(row.get("team"), Mapping) else {}
+            if _int(team.get("id")) is None and _int(row.get("position")) is None:
+                continue  # takımı da sırası da olmayan satır bir tablo satırı değildir
+            out.append(StandingsRow(
+                tournament_id=int(tournament_id), season_id=int(season_id), table=table,
+                group_name=_text(group.get("name")), position=_int(row.get("position")),
+                participant_id=_int(team.get("id")), participant_name=_text(team.get("name")),
+                matches=_int(row.get("matches")), wins=_int(row.get("wins")), draws=_int(row.get("draws")),
+                losses=_int(row.get("losses")), scores_for=_int(row.get("scoresFor")),
+                scores_against=_int(row.get("scoresAgainst")), points=_number(row.get("points")),
+                fetched_at_utc=utc_text(fetched_at),
+            ))
+    return out
+
+
 __all__ = [
     "DEFAULT_REFRESH_WINDOW_S",
     "SETTLEMENT_OPEN",
@@ -636,4 +764,9 @@ __all__ = [
     "slice_from_info",
     "change_from_row",
     "live_event_from_record",
+    "ODDS_KEYS",
+    "fraction_decimal",
+    "odds_from_payload",
+    "odds_lines",
+    "standings_rows",
 ]

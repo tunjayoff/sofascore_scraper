@@ -331,7 +331,7 @@
     "ssc_export_written": "Dışa aktarma yazıldı: {path} ({rows} maç)",
     "ssc_export_streamed": "Dışa aktarma stdout'a yazıldı: {rows} maç",
     "ssc_export_raw_written": "Ham dışa aktarma yazıldı: {path} ({events} maç, {items} yük)",
-    "ssc_help_export_dataset": "events, slices ya da changes (normalleştirilmiş); --schema raw ile: events (yalnızca olay yükü) ya da slices (her yük, varsayılan)",
+    "ssc_help_export_dataset": "events, slices, changes, odds ya da standings (normalleştirilmiş); --schema raw ile: events (yalnızca olay yükü) ya da slices (her yük, varsayılan)",
     "ssc_help_export_sport": "yalnızca bu sporun maçları (kısa ad, örneğin football)",
     "ssc_help_export_season": "yalnızca bu sezonun maçları (yinelenebilir; changes için değil)",
     "ssc_help_export_status": "yalnızca bu durum sınıfındaki maçlar (yinelenebilir; changes için değil)",
