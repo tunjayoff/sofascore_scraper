@@ -61,6 +61,9 @@ OPERATION_PREFIX = "op:"  # "op:clear", "op:backup", ...
 # Veri dizinini değiştirmeyen, yalnızca tutarlı bir kopya isteyen işlemler `writer` alır; diğerleri
 # (silme, lig silme, DATA_DIR değişimi) `maintenance` (docs/design/01-storage.md bölüm 6.1)
 WRITER_OPERATIONS = frozenset({"backup"})
+# Bir işin tutabileceği kilitler (docs/design/02-services.md 2.8): indirmeler ve yedek `writer`, temizleme ve
+# katalog yeniden kurulumu `maintenance`
+JOB_LEASES: Tuple[str, ...] = (WRITER, MAINTENANCE)
 
 # Saklama (bölüm 9.3): iş yaratılırken en yeni bu kadar satır kalır; iş başına en yeni bu kadar olay
 JOB_HISTORY_LIMIT = 500
@@ -476,15 +479,18 @@ class JobStore:
         else:
             self._release_writer()
 
-    def _take_writer(self, purpose: str = JOB_PURPOSE) -> bool:
+    def _take_writer(self, purpose: str = JOB_PURPOSE, name: str = WRITER) -> bool:
         """
-        `writer` kilidini alır; depo zaten tutuyorsa hiçbir şey yapmaz ve False döner. Kilit başka bir
-        süreçte (ya da bu süreçteki başka bir depoda) ise JobRunningError / DataOperationRunningError.
+        İşin kilidini (`writer`, ya da bakım işinde `maintenance`) alır; depo onu zaten tutuyorsa hiçbir şey
+        yapmaz ve False döner. Depo başka bir kilit tutuyorsa (bu süreçte başka türden bir iş) ya da kilit başka
+        bir süreçte (ya da bu süreçteki başka bir depoda) ise JobRunningError / DataOperationRunningError.
         """
         if self._writer is not None and self._writer.held:
+            if self._writer.name != name:
+                raise JobRunningError()
             return False
         try:
-            self._writer = self._leases.acquire(WRITER, purpose=purpose)
+            self._writer = self._leases.acquire(name, purpose=purpose)
         except LeaseHeld as held:
             raise conflict_from_lease(held) from held
         return True
@@ -557,7 +563,9 @@ class JobStore:
             if not stale:
                 return 0
             holds_writer = self._writer is not None and self._writer.held
-            if not holds_writer and self._leases.holder(WRITER) is not None:
+            # Bakım işi (`maintenance` kilidi) de bir işin sahibidir: kilit başka bir süreçteyse satır onun olabilir
+            if not holds_writer and (self._leases.holder(WRITER) is not None
+                                     or self._leases.holder(MAINTENANCE) is not None):
                 return 0
             with self._state.write() as conn:
                 reaped = self._interrupt(conn, stale, _utc_now())
@@ -633,9 +641,11 @@ class JobStore:
 
     def create_running(self, payload: Any, *, job_id: Optional[str] = None, kind: str = DEFAULT_KIND,
                        origin: Optional[Mapping[str, Any]] = None, spec: Optional[Mapping[str, Any]] = None,
-                       wait: float = 0.0, purpose: str = JOB_PURPOSE, replace_running: bool = True) -> str:
+                       wait: float = 0.0, purpose: str = JOB_PURPOSE, replace_running: bool = True,
+                       lease: str = WRITER) -> str:
         """
-        `writer` kilidini alır ve işin satırını "running" olarak yazar; işin kimliğini döndürür.
+        İşin kilidini (`lease`: `writer`, bakım işinde `maintenance`) alır ve işin satırını "running" olarak yazar;
+        işin kimliğini döndürür.
 
         job_id   verilmezse uuid4 üretilir (iş yöneticisi sıralanabilir bir kimlik verir)
         kind     işin türü (`jobs.kind`)
@@ -646,15 +656,18 @@ class JobStore:
                  başlayamaz: o önek veri işlemlerinindir ve çakışan süreç ona göre hata seçer
         replace_running  True (bugünkü davranış): bu deponun çalışan işi varken de yeni iş açılır, kilit yeniden
                  kullanılır ve önceki iş sahipsiz kalır. False: o durumda JobRunningError (iş yöneticisi böyle çağırır)
+        lease    JOB_LEASES'ten biri. `maintenance` başka her işi ve veri işlemini dışlar (temizleme, katalog)
 
         Satır yazılırken geçmiş budanır: en yeni JOB_HISTORY_LIMIT satır kalır (bölüm 9.3).
         """
         if not purpose or purpose.startswith(OPERATION_PREFIX):
             raise ValueError(f"not a job lease purpose: {purpose!r}")
+        if lease not in JOB_LEASES:
+            raise ValueError(f"not a job lease: {lease!r}")
         deadline = time.monotonic() + max(0.0, float(wait))
         while True:
             try:
-                return self._create_running(payload, job_id, kind, origin, spec, purpose, replace_running)
+                return self._create_running(payload, job_id, kind, origin, spec, purpose, replace_running, lease)
             except JobStoreConflict:
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
@@ -662,7 +675,8 @@ class JobStore:
                 time.sleep(min(_LEASE_WAIT_POLL, remaining))
 
     def _create_running(self, payload: Any, job_id: Optional[str], kind: str, origin: Optional[Mapping[str, Any]],
-                        spec: Optional[Mapping[str, Any]], purpose: str, replace_running: bool) -> str:
+                        spec: Optional[Mapping[str, Any]], purpose: str, replace_running: bool,
+                        lease: str = WRITER) -> str:
         job_id = job_id or str(uuid.uuid4())
         now = _utc_now()
         payload_json = json.dumps(payload, default=str)
@@ -678,7 +692,7 @@ class JobStore:
             if not replace_running and self._active_id is not None and self._mirror.get("is_running"):
                 raise JobRunningError()
             # Başka bir süreç bu dizine yazıyorsa (web işi, CLI indirmesi, veri işlemi) iş başlamaz
-            taken = self._take_writer(purpose)
+            taken = self._take_writer(purpose, lease)
             try:
                 # Kilit bizde: kendi çalışan işimiz dışındaki her "running" satırı bayattır
                 self.reap_stale()

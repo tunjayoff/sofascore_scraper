@@ -307,12 +307,15 @@ class JobManager:
     # --- başlatma ve yürütme -------------------------------------------------------------------------
 
     def start(self, kind: JobKind, spec: Mapping[str, Any], *, origin: Origin, wait_for_lease: float = 0.0,
-              payload: Optional[Mapping[str, Any]] = None, lease_purpose: Optional[str] = None) -> Job:
+              payload: Optional[Mapping[str, Any]] = None, lease_purpose: Optional[str] = None,
+              lease: Optional[str] = None) -> Job:
         """
-        `writer` kilidini alır ve işi "running" olarak kaydeder; işi yürütmez (`run`).
+        İşin kilidini alır (`writer`; `lease="maintenance"`: temizleme ve katalog işleri) ve işi "running" olarak
+        kaydeder; işi yürütmez (`run`).
 
         payload        eski API'nin gösterdiği istek gövdesi (kartın başlığı ondan üretilir); verilmezse `spec`
         lease_purpose  kilidin amacı: aynı dizini isteyen başka bir süreç kullanıcıya bunu söyler (verilmezse "job")
+        lease          işin kilidi; verilmezse `writer`
 
         Kilit `wait_for_lease` saniye içinde alınamazsa JobRunningError / DataOperationRunningError; asıl
         LeaseHeld (sahibin bilgisiyle) hatanın `__cause__` alanındadır.
@@ -325,6 +328,8 @@ class JobManager:
                                    "wait": wait_for_lease, "replace_running": False}
         if lease_purpose is not None:
             created["purpose"] = lease_purpose
+        if lease is not None:
+            created["lease"] = lease
         self._store.create_running(dict(payload) if payload is not None else dict(spec), **created)
         self._append(job_id, JobEventType.STARTED, {"kind": kind_value, "origin": origin_data})
         self._announce(STREAM_JOB_STARTED, {"job_id": job_id, "kind": kind_value, "origin": origin_data})
@@ -379,7 +384,7 @@ class JobManager:
     def submit(self, kind: JobKind, spec: Mapping[str, Any], fn: JobBody, *, origin: Origin, background: bool,
                wait_for_lease: float = 0.0, phases: Sequence[str] = (),
                payload: Optional[Mapping[str, Any]] = None, lease_purpose: Optional[str] = None,
-               on_change: Optional[Callable[[], Any]] = None,
+               lease: Optional[str] = None, on_change: Optional[Callable[[], Any]] = None,
                on_log: Optional[Callable[[str], Any]] = None) -> Job:
         """
         İşi başlatır ve yürütür. background=True: iş kendi thread'inde çalışır ve başlamış iş hemen döner
@@ -389,7 +394,7 @@ class JobManager:
         Kilit `wait_for_lease` saniye içinde alınamazsa JobRunningError / DataOperationRunningError.
         """
         job = self.start(kind, spec, origin=origin, wait_for_lease=wait_for_lease, payload=payload,
-                         lease_purpose=lease_purpose)
+                         lease_purpose=lease_purpose, lease=lease)
         if not background:
             return self.run(job.id, fn, phases=phases, on_change=on_change, on_log=on_log)
 
