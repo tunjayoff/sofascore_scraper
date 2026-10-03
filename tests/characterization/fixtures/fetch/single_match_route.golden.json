@@ -1,5 +1,40 @@
 {
  "files": {
+  "changes/<yyyy-mm>.jsonl": [
+   {
+    "changed": {
+     "status.code": [
+      100,
+      6
+     ],
+     "status.description": [
+      "Ended",
+      "1st half"
+     ],
+     "status.type": [
+      "finished",
+      "inprogress"
+     ]
+    },
+    "event_id": 9100001,
+    "hours_after_start": 2.0,
+    "new_change_ts": 1724507200,
+    "old_change_ts": 1724507200,
+    "seq": 1,
+    "sport": "football",
+    "start_ts": 1724500000,
+    "status_class": [
+     "completed",
+     "live"
+    ],
+    "tier_hint": null,
+    "tournament": {
+     "id": 17,
+     "name": "Premier League"
+    },
+    "ts_utc": "<volatile>"
+   }
+  ],
   "v3/events/9/100/9100001/event.json.gz": "<binary>",
   "v3/events/9/100/9100001/h2h.json.gz": "<binary>",
   "v3/events/9/100/9100001/incidents.json.gz": "<binary>",
@@ -19,8 +54,8 @@
      "bytes": "<volatile>",
      "checked_at": "<volatile>",
      "fetched_at": "<volatile>",
-     "raw_bytes": 780,
-     "sha256": "ca89f835befb384777eadb15c4d287e7e6f4957fe615192c5a4c72844faa00b5",
+     "raw_bytes": 783,
+     "sha256": "4dc8c5826471c991344b4f91ef776d66d9c150b0547ead74b43c5ab666032335",
      "state": "ok"
     },
     "h2h": {
@@ -243,6 +278,28 @@
     }
    },
    "updated_at": "<volatile>"
+  },
+  "v3/events/9/100/9100004/event.json.gz": "<binary>",
+  "v3/events/9/100/9100004/manifest.json": {
+   "created_at": "<volatile>",
+   "format": 1,
+   "id": 9100004,
+   "kind": "event",
+   "observation": {
+    "observed_at_utc": "<volatile>",
+    "status_regressed": false
+   },
+   "slices": {
+    "event": {
+     "bytes": "<volatile>",
+     "checked_at": "<volatile>",
+     "fetched_at": "<volatile>",
+     "raw_bytes": 606,
+     "sha256": "b8933078d8f17c900b6b1f314d986f25eeadf224ce42417c1cda98d479961b4c",
+     "state": "ok"
+    }
+   },
+   "updated_at": "<volatile>"
   }
  },
  "steps": {
@@ -407,21 +464,29 @@
   },
   "not_started": {
    "body": {
-    "detail": "Match data could not be fetched (may be unfinished or unavailable)."
+    "match_id": "9100004",
+    "status": "success"
    },
    "requests": [
     {
      "concurrent": [
       "async /event/9100004 200",
+      "async /event/9100004/h2h 404",
+      "async /event/9100004/incidents 404",
+      "async /event/9100004/lineups 404",
+      "async /event/9100004/pregame-form 404",
+      "async /event/9100004/statistics 404",
+      "async /event/9100004/team-streaks 404",
       "async https://www.sofascore.com/ 200"
      ]
     }
    ],
-   "status": 404
+   "status": 200
   },
   "stored_match_now_live": {
    "body": {
-    "detail": "Match data could not be fetched (may be unfinished or unavailable)."
+    "match_id": "9100001",
+    "status": "success"
    },
    "requests": [
     {
@@ -431,7 +496,7 @@
      ]
     }
    ],
-   "status": 404
+   "status": 200
   },
   "unknown_event": {
    "body": {

@@ -496,17 +496,21 @@ def test_event_pages_are_deduplicated_and_paged(store: Any) -> None:
     assert _pages(store, 1) == {"last_0": {"filtered": True}, "last_1": {"filtered": True}}
 
 
-def test_unfiltered_event_pages_keep_unfinished_matches(store: Any) -> None:
+def test_event_pages_keep_unfinished_matches(store: Any) -> None:
+    """ST-27: sayfa her durumdaki maçıyla saklanır; "yalnızca bitmiş maçlar" yalnızca sonucun `chunks`'ını süzer."""
     base = f"{BASE}/season/1"
     api = _Api({f"{base}/events/next/0": _ok({"events": [_event(5, "notstarted", 0)], "hasNextPage": False})})
 
-    assert not _list(store, api).has_matches  # yalnızca bitmiş maçlar: sayfa saklanmaz
-    assert _pages(store, 1) == {}
+    result = _list(store, api)
+    assert not result.has_matches and result.chunks == []  # bitmiş maç yok: eski sonuç
+    assert _pages(store, 1) == {"next_0": {"filtered": True}}
+    assert store.events.get(5).status_class == "not_started"  # type: ignore[union-attr]
     result = _list(store, api, only_finished=False)
     assert result.has_matches and _pages(store, 1) == {"next_0": {"filtered": True}}
 
 
-def test_empty_rounds_are_stored_only_when_asked(store: Any) -> None:
+def test_empty_rounds_are_never_stored(store: Any) -> None:
+    """ST-27: SAVE_EMPTY_ROUNDS emekli; eski çağıranların argümanı kabul edilir ve bir şey değiştirmez."""
     base = f"{BASE}/season/1"
     api = _Api({f"{base}/rounds": _ok({"rounds": [{"round": 1}]}),
                 f"{base}/events/round/1": _ok({"events": [], "hasNextPage": False})})
@@ -514,8 +518,7 @@ def test_empty_rounds_are_stored_only_when_asked(store: Any) -> None:
     _list(store, api)
     assert _pages(store, 1) == {}
     _list(store, api, save_empty_rounds=True)
-    assert _pages(store, 1) == {"round_1": {"complete": False}}
-    assert store.entities.slice(Ref.season(LEAGUE, 1), "schedule", "round_1").state == "empty"
+    assert _pages(store, 1) == {}
 
 
 def test_rounds_that_list_only_unfinished_matches_fall_back_to_the_event_pages(store: Any) -> None:

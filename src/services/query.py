@@ -392,60 +392,29 @@ class QueryService:
     def detail_needs(self, event_ids: Iterable[Any], policy: RefreshPolicy, *,
                      threshold: int = DEFAULT_EMPTY_THRESHOLD, layout: Optional[str] = None) -> Dict[int, str]:
         """
-        Her maçın ihtiyacı (`NEED_*`), kimlik → ihtiyaç; kimlik olamayan değerler sonuçta yer almaz.
-
-          full     kayıt yok: maç bilinmiyor ya da olay yükü yok (yalnızca bir listeden biliniyor)
-          refill   olay yükü var, beklenen bir dilim eksik: satırı yok ya da `ok` değil ve kesin "veri yok"
-                   sayısı `threshold`un altında (`Store.events.missing`, `required_detail_keys()`)
-          refresh  dilimler tam, kayıt geçici ve yenileme zamanı gelmiş (`Store.events.refresh_candidates`)
-          none     tamam
+        Her maçın ihtiyacı (`NEED_*`), kimlik → ihtiyaç; kimlik olamayan değerler sonuçta yer almaz. Kural
+        planlayıcınındır (src/services/planning.py `event_needs` ve `compute_need`): bu yüz ona devreder, böylece
+        canlı, bayat, açık ve yalnızca listeden bilinen bitmemiş maçların kuralları (plan maddeleri P13, ST-27)
+        burada da geçerlidir.
 
         layout verilirse yalnızca o düzende saklanan olay yükü kayıt sayılır (eski düzen indiricisi `legacy`
-        verir: yalnızca o dizinleri tamamlayabilir ve yenileyebilir). Kimlikler 500'lük parçalarla sorulur;
-        parça başına üç ya da dört sorgu çalışır ve hiçbir yük okunmaz.
+        verir: yalnızca o dizinleri tamamlayabilir ve yenileyebilir). Hiçbir yük okunmaz.
         """
-        required = required_detail_keys()
-        needs: Dict[int, str] = {}
-        for chunk in _chunks(_event_ids(event_ids)):
-            scope = Scope(event_ids=tuple(chunk))
-            records = {row.id for row in self._store.events.iter(EventQuery(scope=scope, has_details=True))
-                       if layout is None or (row.layout == layout and row.path)}
-            refill = {row.event_id for row in self._store.events.missing(
-                scope, required, status_classes=(), threshold=threshold, exclusive=True) if row.has_event_payload}
-            due = set(self._store.events.refresh_candidates(
-                now=policy.now, window_s=policy.window_s, min_interval_s=policy.min_interval_s, scope=scope,
-                include_unobserved=policy.include_unobserved)) if records else set()
-            for event_id in chunk:
-                if event_id not in records:
-                    needs[event_id] = NEED_FULL
-                elif event_id in refill:
-                    needs[event_id] = NEED_REFILL
-                elif event_id in due:
-                    needs[event_id] = NEED_REFRESH
-                else:
-                    needs[event_id] = NEED_NONE
-        return needs
+        from src.services import planning
+
+        return planning.event_needs(self._store, event_ids, policy, threshold=threshold, layout=layout)
 
     def refresh_due(self, policy: RefreshPolicy, *, tournament_ids: Sequence[int] = (),
                     threshold: int = DEFAULT_EMPTY_THRESHOLD, layout: Optional[str] = None) -> List["EventRow"]:
         """
-        Yenilenecek kayıtlar (ihtiyacı `refresh` olanlar), kimlik sırasıyla: yenileme adayları, eksik dilimi
-        olanlar hariç (onlar `refill`dir). tournament_ids: boş = süzgeç yok; maçın turnuvasına bakılır.
-        layout: `detail_needs` ile aynı.
+        Yenilenecek kayıtlar (ihtiyacı `refresh` olanlar): önce bayat kayıtlar, sonra kapanmış durumdaki geçici
+        kayıtlardan zamanı gelenler, iki grup da kimlik sırasıyla (src/services/planning.py `refresh_due_events`'e
+        devreder). tournament_ids: boş = süzgeç yok; maçın turnuvasına bakılır. layout: `detail_needs` ile aynı.
         """
-        scope = Scope(tournament_ids=tuple(tournament_ids))
-        candidates = self._store.events.refresh_candidates(
-            now=policy.now, window_s=policy.window_s, min_interval_s=policy.min_interval_s, scope=scope,
-            include_unobserved=policy.include_unobserved)
-        required = required_detail_keys()
-        rows: List["EventRow"] = []
-        for chunk in _chunks(candidates):
-            chunk_scope = Scope(event_ids=tuple(chunk))
-            refill = {row.event_id for row in self._store.events.missing(
-                chunk_scope, required, status_classes=(), threshold=threshold, exclusive=True)}
-            rows.extend(row for row in self._store.events.iter(EventQuery(scope=chunk_scope, has_details=True))
-                        if row.id not in refill and (layout is None or (row.layout == layout and row.path)))
-        return sorted(rows, key=lambda row: row.id)
+        from src.services import planning
+
+        return planning.refresh_due_events(self._store, policy, tournament_ids=tournament_ids, threshold=threshold,
+                                           layout=layout)
 
     def listed_events(self, *, tournament_ids: Sequence[int] = (), season_ids: Sequence[int] = (),
                       only_finished: bool = True) -> Iterator["EventRow"]:

@@ -8,17 +8,21 @@ politikadadır). Depodan durumları okuyan sarmalayıcılar (`event_needs`, `ref
 
 İhtiyaçlar, öncelik sırasıyla (tasarım tablosu; ilk uyan kural kazanır):
 
-  full     kayıt yok: maç katalogda yok ya da olay yükü yok (yalnızca bir listeden biliniyor)
+  full     kayıt yok: maç katalogda yok, ya da olay yükü yok (yalnızca bir listeden biliniyor) ve listedeki durumu
+           bitmiş ya da bilinmiyor
+  none     yalnızca bir listeden biliniyor ve başlamamış, oynanıyor ya da ertelenmiş / iptal: listeler satırı
+           güncel tutar; maç bitince bir sonraki liste satırı bitmiş gösterir ve maç `full` olur (plan maddesi
+           ST-27: her durumdaki maç saklanır, detayı bitince indirilir)
   refresh  daha yeni bir liste kaydı bayatlamış saydı (`stale`: durum, skor ya da başlangıç zamanı değişmiş);
            önce /event yeniden okunur (eksik dilimler bir sonraki planda)
-  none     maç oynanıyor (canlı): canlı servisin işidir
-  none     maç başlamamış ya da ertelenmiş / iptal ve seçimde ön maç evresinde var olabilen dilim yok: listeler
-           kaydı güncel tutar. Kayıt defterinin bugünkü dilimleri her evrede istenebildiği için (P12'nin
-           varsayılanları) bu kural varsayılan seçimle uygulanmaz
-  refill   olay yükü var; seçilmiş, maçın sporuna uyan, evresinde var olabilen ve tamlık hesabına giren bir
-           dilim eksik: satırı yok ya da `ok` değil ve kesin + doğrulanmamış "veri yok" sayısı eşiğin altında
-  refresh  dilimler tam, kayıt geçici ve yenileme zamanı gelmiş (src/refresh.py; Store.events.refresh_candidates
-           ile aynı koşul)
+  none     kayıt açık (oynanıyor, başlamamış ya da durumu bilinmiyor): canlı servisin ve listelerin işidir;
+           liste maçı bitmiş gösterince kayıt bayatlar ve yenilenir
+  none     kayıt ertelenmiş / iptal (void) ve yenileme zamanı gelmemiş: dilim beklenmez
+  refill   olay yükü var ve maç bitmiş; seçilmiş, maçın sporuna uyan, evresinde var olabilen ve tamlık hesabına
+           giren bir dilim eksik: satırı yok ya da `ok` değil ve kesin + doğrulanmamış "veri yok" sayısı eşiğin
+           altında
+  refresh  kayıt kapanmış bir durumda (bitmiş ya da void), geçici ve yenileme zamanı gelmiş (src/refresh.py;
+           Store.events.refresh_candidates'in `status_classes=SETTLED_CLASSES` ile koşulu)
   none     tamam
 
 `refill` iş biriminin dilimleri, maçın eksik olan bütün seçili dilimleridir: tamlık hesabına girmeyen (isteğe
@@ -61,6 +65,15 @@ NEED_LISTING = "listing"
 LISTING_SEASONS = "seasons"
 LISTING_SCHEDULE = "schedule"
 _SLICE_OK = "ok"
+
+# Kapanmış durumlar (docs/design/01-storage.md 8.3): yenileme politikası yalnızca bunlara bakar. Açık olanlar
+# (başlamamış, oynanıyor, bilinmiyor) listelerin ve canlı servisin işidir.
+SETTLED_CLASSES: Tuple[str, ...] = (StatusClass.COMPLETED.value, StatusClass.DECIDED_WITHOUT_PLAY.value,
+                                    StatusClass.VOID.value)
+# Detayı indirilen durumlar: oynanıp biten ya da oynanmadan karara bağlanan maç
+_FINISHED_CLASSES = (StatusClass.COMPLETED.value, StatusClass.DECIDED_WITHOUT_PLAY.value)
+# Yalnızca bir listeden bilinen ve henüz indirilmeyen maçın durumları: maç bitince liste satırı değişir
+_WAITING_CLASSES = (StatusClass.NOT_STARTED.value, StatusClass.LIVE.value, StatusClass.VOID.value)
 
 # Durum sınıfından maçın evresi (dilimin `phases`'ı ile karşılaştırılır); bilinmeyen durumda evre yoktur.
 # Ertelenen ya da iptal edilen maç (void) tasarım tablosunda başlamamış maçla aynı satırdadır.
@@ -130,11 +143,11 @@ def wanted_slice_keys(state: "EventState", selection: Selection = None, *,
 
 def refresh_due(row: "EventRow", policy: RefreshPolicy) -> bool:
     """
-    Kayıt geçici ve yenileme zamanı gelmiş mi (Store.events.refresh_candidates'in koşulu, tek satır için): olay
-    yükü ve gözlemi var, gözlem başlangıçtan `window_s` geçmeden yapılmış ve son gözlemin üzerinden en az
-    `min_interval_s` geçmiş. include_unobserved: gözlemi olmayan kayıt da. window_s <= 0 politikayı kapatır.
+    Kayıt geçici ve yenileme zamanı gelmiş mi (Store.events.refresh_candidates'in `status_classes=SETTLED_CLASSES`
+    ile koşulu, tek satır için): olay yükü ve gözlemi var, durumu kapanmış (bitmiş ya da void), gözlem
+    başlangıçtan `window_s` geçmeden yapılmış ve son gözlemin üzerinden en az `min_interval_s` geçmiş. include_unobserved: gözlemi olmayan kayıt da. window_s <= 0 politikayı kapatır.
     """
-    if policy.window_s <= 0 or not row.has_event_payload:
+    if policy.window_s <= 0 or not row.has_event_payload or row.status_class not in SETTLED_CLASSES:
         return False
     if row.observed_at is None:
         return policy.include_unobserved
@@ -156,17 +169,18 @@ def compute_need(state: Optional["EventState"], selection: Selection, policy: Re
     defterinin varsayılanları). policy: yenileme politikası ve an. threshold: bu kadar kesin "veri yok"
     yanıtından sonra dilim artık beklenmez. layout: verilirse yalnızca o düzende saklanan olay yükü kayıt sayılır.
     """
-    if state is None or not _is_record(state.event, layout):
+    if state is None:
         return NEED_FULL
     row = state.event
+    if not row.has_event_payload:
+        return NEED_NONE if row.status_class in _WAITING_CLASSES else NEED_FULL
+    if not _is_record(row, layout):
+        return NEED_FULL
     if row.stale:
         return NEED_REFRESH
-    phase = phase_of(row.status_class)
-    if phase == "live":
+    if row.status_class not in SETTLED_CLASSES:
         return NEED_NONE
-    if phase == "pre" and not select_slices("event", row.sport or None, selection, phase="pre"):
-        return NEED_NONE
-    if missing_slice_keys(state, selection, threshold=threshold):
+    if row.status_class in _FINISHED_CLASSES and missing_slice_keys(state, selection, threshold=threshold):
         return NEED_REFILL
     if refresh_due(row, policy):
         return NEED_REFRESH
@@ -241,18 +255,22 @@ def refresh_due_events(store: "Store", policy: RefreshPolicy, *, tournament_ids:
                        selection: Selection = None, threshold: int = DEFAULT_EMPTY_THRESHOLD,
                        layout: Optional[str] = None) -> List["EventRow"]:
     """
-    İhtiyacı `refresh` olan kayıtlar, kimlik sırasıyla. Adaylar katalogdan (Store.events.refresh_candidates;
-    dizinli sorgu), karar `compute_need`'den. tournament_ids: boş = süzgeç yok; maçın turnuvasına bakılır.
+    İhtiyacı `refresh` olan kayıtlar: önce daha yeni bir listenin çeliştiği (bayat) kayıtlar
+    (`Store.events.stale`), sonra kapanmış durumdaki (`SETTLED_CLASSES`) geçici kayıtlardan zamanı gelenler
+    (`Store.events.refresh_candidates`; dizinli sorgu); iki grup da kimlik sırasıyla (docs/design/01-storage.md
+    8.2 kural 3 ve 8.3). Karar `compute_need`'den. tournament_ids: boş = süzgeç yok; maçın turnuvasına bakılır.
     """
-    candidates = store.events.refresh_candidates(
-        now=policy.now, window_s=policy.window_s, min_interval_s=policy.min_interval_s,
-        scope=Scope(tournament_ids=tuple(tournament_ids)), include_unobserved=policy.include_unobserved)
-    rows: List["EventRow"] = []
-    for chunk in _chunks(candidates):
+    scope = Scope(tournament_ids=tuple(tournament_ids))
+    stale = store.events.stale(scope)
+    due = store.events.refresh_candidates(
+        now=policy.now, window_s=policy.window_s, min_interval_s=policy.min_interval_s, scope=scope,
+        status_classes=SETTLED_CLASSES, include_unobserved=policy.include_unobserved)
+    rows: Dict[int, "EventRow"] = {}
+    for chunk in _chunks(sorted(set(stale) | set(due))):
         for state in store.events.states(Scope(event_ids=tuple(chunk))):
             if compute_need(state, selection, policy, threshold=threshold, layout=layout) == NEED_REFRESH:
-                rows.append(state.event)
-    return sorted(rows, key=lambda row: row.id)
+                rows[state.event.id] = state.event
+    return sorted(rows.values(), key=lambda row: (not row.stale, row.id))
 
 
 def _canonical(value: Any) -> Optional[int]:
@@ -292,7 +310,7 @@ def plan_items(store: "Store", event_ids: Iterable[Any], policy: RefreshPolicy, 
     return items
 
 
-__all__ = ["LISTING_SCHEDULE", "LISTING_SEASONS", "NEEDS", "NEED_LISTING", "Need", "Selection", "WorkItem",
-           "WorkNeed", "compute_need", "event_needs", "expected_slice_keys", "missing_slice_keys", "order_by_need",
+__all__ = ["LISTING_SCHEDULE", "LISTING_SEASONS", "NEEDS", "NEED_LISTING", "Need", "SETTLED_CLASSES", "Selection",
+           "WorkItem", "WorkNeed", "compute_need", "event_needs", "expected_slice_keys", "missing_slice_keys", "order_by_need",
            "phase_of", "plan_items", "refresh_due", "refresh_due_events", "schedule_item", "season_list_item",
            "slice_missing", "wanted_slice_keys", "work_item"]

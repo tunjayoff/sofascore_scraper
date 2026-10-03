@@ -18,9 +18,11 @@ Kurallar (eski src/season_fetcher.py ve src/match_fetcher.py'den taşındı; dav
   * Tur sayfası olduğu gibi saklanır, meta'sında `complete` (her maçı bitmiş ya da iptal mi) vardır. Tamamlanmış
     tur bir daha istenmez; tamamlanmamış tur ROUND_CACHE_TTL_SECONDS dolunca yeniden istenir. `complete`'i
     olmayan (eski sürümün süzerek yazdığı) tur bir kez yeniden istenir.
-  * Olay sayfaları maç kimliğine göre tekilleştirilir; meta'sı `{"filtered": True}`. "Yalnızca bitmiş maçlar"
-    açıkken (`only_finished`) sayfa bitmiş maçlarıyla saklanır, bitmiş maçı yoksa saklanmaz.
-  * Maçı olmayan tur atlanır (SAVE_EMPTY_ROUNDS açıksa `empty` olarak saklanır). 404 "yok"tur, hata değildir.
+  * Olay sayfaları maç kimliğine göre tekilleştirilir; meta'sı `{"filtered": True}` (eski düzenin adı). Her
+    durumdaki maç saklanır (plan maddesi ST-27): sayfa, maçı olduğu sürece bütün maçlarıyla yazılır. "Yalnızca
+    bitmiş maçlar" (`only_finished`) yalnızca sonucun `chunks`'ını süzer (çağıranın "maç listelendi mi" sorusu);
+    neyin saklandığını değiştirmez. Okuyanlar ayarı okurken uygular (src/services/query.py).
+  * Maçı olmayan tur atlanır ve saklanmaz (SAVE_EMPTY_ROUNDS emekli, ST-27). 404 "yok"tur, hata değildir.
   * Deneme sayıları istek katmanınınki gibidir: tur listesi 1, olay sayfası 2, tur ve sezon listesi ayardaki
     (`MAX_RETRIES`).
 
@@ -401,17 +403,16 @@ class ScheduleLister:
     çağrı.
 
     store              sayfaların yazıldığı ve önbellek kararının okunduğu depo
-    only_finished      "yalnızca bitmiş maçlar" (FETCH_ONLY_FINISHED)
-    save_empty_rounds  maçı olmayan tur da saklanır (SAVE_EMPTY_ROUNDS)
+    only_finished      sonucun `chunks`'ı yalnızca bitmiş maçları sayar (FETCH_ONLY_FINISHED); saklananı değiştirmez
+    save_empty_rounds  emekli (ST-27): eski çağıranlar için kabul edilir, etkisi yoktur; maçı olmayan tur saklanmaz
     concurrency        aynı anda istenen tur sayısı
     """
 
-    def __init__(self, store: "Store", *, only_finished: bool, save_empty_rounds: bool = False,
+    def __init__(self, store: "Store", *, only_finished: bool, save_empty_rounds: Optional[bool] = None,
                  concurrency: int = 5, max_round: int = MAX_ROUND,
                  clock: Callable[[], float] = time.time) -> None:
         self.store = store
         self.only_finished = bool(only_finished)
-        self.save_empty_rounds = bool(save_empty_rounds)
         self.concurrency = max(1, int(concurrency))
         self.max_round = max(1, int(max_round or MAX_ROUND))
         self.clock = clock
@@ -422,7 +423,7 @@ class ScheduleLister:
                   meta: Mapping[str, Any], empty: bool = False, fetched_at: Optional[dt.datetime] = None) -> None:
         """
         Program sayfasını Store'a yazar (`EntityStore.put`): sezonun `schedule/<sub>` dilimi. meta: tur için
-        {"complete": bool}, olay sayfası için {"filtered": True}. empty: maçı olmayan tur (SAVE_EMPTY_ROUNDS).
+        {"complete": bool}, olay sayfası için {"filtered": True}. empty: yük `empty` durumuyla saklanır.
         Depolama hatası (StoreError) çağırana çıkar.
         """
         outcome = Outcome(SLICE_EMPTY if empty else SLICE_OK, dict(payload), meta=dict(meta), fetched_at=fetched_at)
@@ -539,9 +540,6 @@ class ScheduleLister:
             return None
         if is_empty_round(data):
             logger.debug("Round %s of league %s, season %s has no matches", round_num, league_id, season_id)
-            if self.save_empty_rounds and data:
-                await self._save(write, run, path, league_id, season_id, sub, data, {"complete": False}, outcome,
-                                 empty=True)
             return None
         run.saw(data)
         await self._save(write, run, path, league_id, season_id, sub, data, {"complete": round_is_complete(data)},
@@ -586,14 +584,13 @@ class ScheduleLister:
                                 "source": f"{kind}/{page}"}
                 run.saw(page_payload)
                 sub = schedule_sub(kind, page)
-                to_save = kept_page(page_payload, self.only_finished)
-                if to_save and to_save.get("events"):
-                    await self._save(write, run, path, league_id, season_id, sub, to_save, {"filtered": True}, outcome)
-                    results.append(dict(to_save, round=f"{kind}_{page}"))
-                elif not self.only_finished and events:
+                if events:
+                    # Sayfa her durumdaki maçıyla saklanır; sonuca (özete) ayarın süzdüğü kısmı girer
                     await self._save(write, run, path, league_id, season_id, sub, page_payload, {"filtered": True},
                                      outcome)
-                    results.append(dict(page_payload, round=f"{kind}_{page}"))
+                    kept = kept_page(page_payload, self.only_finished)
+                    if kept and kept.get("events"):
+                        results.append(dict(kept, round=f"{kind}_{page}"))
                 if not data.get("hasNextPage"):
                     break
                 page += 1
@@ -674,13 +671,13 @@ class ListingFetcher:
     enqueue_events                     programda bitmiş görünen eksik maçlar için maç birimleri getirilir
     """
 
-    def __init__(self, store: "Store", *, only_finished: bool, save_empty_rounds: bool = False, concurrency: int = 5,
-                 max_round: int = MAX_ROUND, season_max_age: Optional[float] = None,
+    def __init__(self, store: "Store", *, only_finished: bool, save_empty_rounds: Optional[bool] = None,
+                 concurrency: int = 5, max_round: int = MAX_ROUND, season_max_age: Optional[float] = None,
                  schedule_max_age: Optional[float] = None, enqueue_events: bool = False,
                  clock: Callable[[], float] = time.time) -> None:
         self.store = store
-        self.schedule = ScheduleLister(store, only_finished=only_finished, save_empty_rounds=save_empty_rounds,
-                                       concurrency=concurrency, max_round=max_round, clock=clock)
+        self.schedule = ScheduleLister(store, only_finished=only_finished, concurrency=concurrency,
+                                       max_round=max_round, clock=clock)
         self.season_max_age = season_max_age
         self.schedule_max_age = schedule_max_age
         self.enqueue_events = enqueue_events
@@ -763,12 +760,11 @@ class ListingService:
     ve devre kesici çağıranın istek bağlamındadır (src.client.context.request_context).
     """
 
-    def __init__(self, store: "Store", *, only_finished: bool, save_empty_rounds: bool = False, concurrency: int = 5,
-                 max_round: int = MAX_ROUND, client: Optional["Client"] = None, enqueue_events: bool = False,
-                 clock: Callable[[], float] = time.time) -> None:
+    def __init__(self, store: "Store", *, only_finished: bool, save_empty_rounds: Optional[bool] = None,
+                 concurrency: int = 5, max_round: int = MAX_ROUND, client: Optional["Client"] = None,
+                 enqueue_events: bool = False, clock: Callable[[], float] = time.time) -> None:
         self.store = store
         self.only_finished = bool(only_finished)
-        self.save_empty_rounds = bool(save_empty_rounds)
         self.concurrency = max(1, int(concurrency))
         self.max_round = max_round
         self.client = client
@@ -779,13 +775,11 @@ class ListingService:
             schedule_max_age: Optional[float] = None, cancelled: Optional[Callable[[], bool]] = None,
             on_result: Optional[Callable[[ItemResult], None]] = None) -> PipelineSummary:
         """Birimleri sırayla yürütür (liste birimleri birer birer; bir programın turları eşzamanlı)."""
-        handler = ListingFetcher(self.store, only_finished=self.only_finished,
-                                 save_empty_rounds=self.save_empty_rounds, concurrency=self.concurrency,
+        handler = ListingFetcher(self.store, only_finished=self.only_finished, concurrency=self.concurrency,
                                  max_round=self.max_round, season_max_age=season_max_age,
                                  schedule_max_age=schedule_max_age, enqueue_events=self.enqueue_events,
                                  clock=self.clock)
-        pipeline = FetchPipeline(self.store, client=self.client, concurrency=1, only_finished=self.only_finished,
-                                 listing=handler)
+        pipeline = FetchPipeline(self.store, client=self.client, concurrency=1, listing=handler)
         return pipeline.run_sync(items, cancelled=cancelled, on_result=on_result)
 
     def season_list(self, league_id: int, *, max_age: Optional[float] = None) -> ListingResult:

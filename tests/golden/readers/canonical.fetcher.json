@@ -1,33 +1,33 @@
 {
  "_needs_detail_fetch": {
-  "14025001": "none", "14025002": "full", "16346148": "full", "16425949": "full", "16484334": "none",
-  "16599919": "full", "16837335": "none", "16837399": "full", "16867839": "none", "16872361": "none",
+  "14025001": "none", "14025002": "full", "16346148": "full", "16425949": "none", "16484334": "none",
+  "16599919": "none", "16837335": "none", "16837399": "full", "16867839": "none", "16872361": "none",
   "16950622": "none", "16951514": "refill", "16990001": "none", "17018554": "none", "17018572": "refill",
   "17058663": "full", "17060394": "refresh", "17078471": "refill", "17081861": "none", "17090707": "full",
-  "17092269": "none", "17099711": "refresh", "17102381": "none", "17148292": "full", "17148332": "none",
+  "17092269": "none", "17099711": "refresh", "17102381": "none", "17148292": "none", "17148332": "none",
   "17184988": "refill", "17185003": "refill", "17203939": "none", "17204710": "refresh", "17206241": "refill",
-  "17207542": "full", "17211681": "refill", "1": "full"
+  "17207542": "full", "17211681": "none", "1": "full"
  },
- "refresh_due_ids()": ["17099711", "17204710"],
+ "refresh_due_ids()": ["17060394", "17099711", "17204710"],
  "refresh_due_ids(league_id=17)": ["17099711"],
  "refresh_due_ids(league_id=19)": [],
- "refresh_due_ids(league_id=132)": [],
+ "refresh_due_ids(league_id=132)": ["17060394"],
  "refresh_due_ids(league_id=2361)": ["17204710"],
  "refresh_due_ids(league_id=8)": [],
  "refresh_due_ids(league_id=35)": [],
  "REFRESH_LEGACY=true": {
   "_needs_detail_fetch (only where it differs from the default)": {"14025001": "refresh", "16867839": "refresh", "16872361": "refresh", "17018554": "refresh", "17102381": "refresh", "17148332": "refresh"},
   "refresh_due_ids()": [
-   "17102381", "14025001", "16867839", "16872361", "17018554", "17099711", "17148332", "17204710"
+   "17060394", "17102381", "14025001", "16867839", "16872361", "17018554", "17099711", "17148332", "17204710"
   ]
  },
  "REFRESH_WINDOW_HOURS=0": {
   "_needs_detail_fetch (only where it differs from the default)": {"17099711": "none", "17204710": "none"},
-  "refresh_due_ids()": []
+  "refresh_due_ids()": ["17060394"]
  },
  "REFRESH_MIN_INTERVAL_HOURS=0": {
   "_needs_detail_fetch (only where it differs from the default)": {"17203939": "refresh"},
-  "refresh_due_ids()": ["17203939", "17099711", "17204710"]
+  "refresh_due_ids()": ["17060394", "17203939", "17099711", "17204710"]
  },
  "collect_detail_match_ids() sorted": [
   "14025001", "14025002", "16346148", "16484334", "16837335", "16837399", "16867839", "16872361", "16950622",
@@ -75,8 +75,7 @@
  "collect_detail_match_ids(league_id='999')": null,
  "collect_detail_match_ids(league_id='999', max_seasons=1)": null,
  "pending_detail_ids(all ids ascending)": [
-  "14025002", "16346148", "16425949", "16599919", "16837399", "16951514", "17018572", "17058663", "17078471",
-  "17090707", "17148292", "17184988", "17185003", "17206241", "17207542", "17211681", "1", "17060394", "17099711",
-  "17204710"
+  "14025002", "16346148", "16837399", "16951514", "17018572", "17058663", "17078471", "17090707", "17184988",
+  "17185003", "17206241", "17207542", "1", "17060394", "17099711", "17204710"
  ]
 }

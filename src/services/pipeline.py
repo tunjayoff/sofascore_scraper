@@ -10,14 +10,15 @@ refill ve yalnızca yenileme. Böylece:
 
   * istek politikası tektir: istek katmanının yeniden denemesi (`MAX_RETRIES`); maç başına ek deneme döngüsü yoktur;
   * her yol aynı dilimleri ister: sporun seçilen bütün dilimleri, isteğe bağlılar dahil (`select_slices`);
-  * "yalnızca bitmiş maçlar" (`only_finished`) her yolda aynı okunur; bitmemiş maç atlanır (`skipped` /
-    `not_due`), başarısız sayılmaz ve yazılmaz;
+  * her durumdaki maç saklanır (plan maddesi ST-27): bitmemiş maçın olay yükü ve gövdesi gelen dilimleri yazılır,
+    "veri yok" yanıtları sayılmaz. Hangi maçın indirileceğine planlayıcı karar verir (src/services/planning.py:
+    yalnızca listeden bilinen bitmemiş maç indirilmez); "yalnızca bitmiş maçlar" ayarı (FETCH_ONLY_FINISHED)
+    artık yalnızca okurken uygulanır (src/services/query.py);
   * bitmiş maçta istenen her dilimin "veri yok" yanıtı sayılır ve hata kaydı tutulur (isteğe bağlılar dahil);
   * yanıt gelen dilimin gövdesi her zaman dilimin kuralıyla okunur (src.slices.slice_body_state): veri var →
     `ok`, veri yok → `empty`, okunamadı → `failed` / `parse` (sayılmaz, yazılmaz, sonraki çalıştırmada yeniden
     istenir). 404'ün nedeni her yolda "404"tür;
   * açık devre kesici yüzünden gönderilmeyen istek `skipped` / `breaker` sonucudur; kalan işler de öyle biter;
-  * refill vazgeçerse (maç artık bitmiş görünmüyor) /event ikinci kez istenmez.
 
 Bekleme yoktur: hızı ortak istek bütçesi (src/throttle.py) ve istek katmanı belirler. İptal ve devre kesici
 çağıranın istek bağlamındadır (src.client.context.request_context); boru hattı onları her iş biriminden önce
@@ -90,7 +91,7 @@ ITEM_SKIPPED: ItemStatus = "skipped"
 
 # `skipped` nedenleri
 SKIP_BREAKER = request_breaker.BREAKER_OPEN  # "breaker": devre kesici açık, istek gönderilmedi
-SKIP_NOT_DUE = "not_due"  # maç bitmemiş ("yalnızca bitmiş maçlar" açık): yazılmadı
+SKIP_NOT_DUE = "not_due"  # ST-27'den beri üretilmez (bitmemiş maç da yazılır); eski çağıranlar için durur
 SKIP_CANCELLED = "cancelled"  # iş durduruldu, birim başlamadı
 # `failed` nedenleri (istek nedenleri "403", "429", "5xx", "timeout", "network", "parse", "other" dışında)
 FAIL_NOT_FOUND = "not_found"  # SofaScore'da böyle bir maç yok (404 ya da içinde olay olmayan yanıt)
@@ -239,14 +240,14 @@ class FetchPipeline:
     """
     Maç iş birimlerini (`full`, `refill`, `refresh`) yürüten boru hattı.
 
-        pipeline = FetchPipeline(store, concurrency=5, only_finished=True)
+        pipeline = FetchPipeline(store, concurrency=5)
         with request_context(cancel=job.cancelled, breaker=breaker):
             summary = pipeline.run_sync(items, on_result=print)
 
     store          yazmaların ve okumaların deposu
     client         istemci; verilmezse ortamın ayarlarıyla yenisi. Oturum çalıştırma başına açılır ve kapanır.
     concurrency    aynı anda işlenen birim sayısı (uçuşan istekleri istek katmanının semaforu sınırlar)
-    only_finished  True: bitmemiş maç atlanır (`skipped` / `not_due`); False: her durumdaki maç yazılır
+    only_finished  emekli (ST-27): eski çağıranlar için kabul edilir, etkisi yoktur; her durumdaki maç yazılır
     selection      dilim seçimi (None: kayıt defterinin varsayılanları; `select_slices`)
     threshold      "veri yok" eşiği (bilgi için; sayaçları Store tutar)
     writer_queue   bekleyebilecek yazma sayısı
@@ -255,13 +256,12 @@ class FetchPipeline:
     """
 
     def __init__(self, store: "Store", *, client: Optional[Client] = None, concurrency: int = 5,
-                 only_finished: bool = True, selection: "Optional[SliceSelection]" = None,
+                 only_finished: Optional[bool] = None, selection: "Optional[SliceSelection]" = None,
                  threshold: int = UNAVAILABLE_AFTER_ATTEMPTS, writer_queue: int = DEFAULT_WRITER_QUEUE,
                  source: str = "job", listing: Optional[ListingHandler] = None) -> None:
         self._store = store
         self._client = client
         self._concurrency = max(1, int(concurrency))
-        self._only_finished = bool(only_finished)
         self._selection = selection
         self._threshold = threshold
         self._writer_queue = max(1, int(writer_queue))
@@ -406,11 +406,10 @@ class FetchPipeline:
             return ended
         payload: Dict[str, Any] = event_outcome.data
         finished = is_finished(payload)
-        if self._only_finished and not finished:
+        if not finished:
             status = payload.get("status") or {}
-            logger.info("Match %s is not finished (%s/%s); skipped", event_id, status.get("description"),
+            logger.info("Match %s is not finished (%s/%s); stored as it is now", event_id, status.get("description"),
                         status.get("type"))
-            return ItemResult(item, ITEM_SKIPPED, SKIP_NOT_DUE, event=event_outcome, payload=payload)
 
         sport = event_sport_slug(payload) or ""
         phase = phase_of(classify_status(payload).value)

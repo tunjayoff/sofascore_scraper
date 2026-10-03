@@ -169,14 +169,19 @@ def test_an_answer_without_an_event_is_no_such_match(fake: FakeSofaScore, store:
 
 
 @pytest.mark.parametrize("event_id", [NOT_STARTED, LIVE])
-def test_an_unfinished_event_is_skipped_when_only_finished_matches_are_wanted(
-        fake: FakeSofaScore, store: Any, event_id: int) -> None:
-    summary = _run(store, [_full(event_id)])
+@pytest.mark.parametrize("only_finished", [True, False])
+def test_an_unfinished_event_is_stored_as_it_is_now(fake: FakeSofaScore, store: Any, event_id: int,
+                                                    only_finished: bool) -> None:
+    """ST-27: her durumdaki maç saklanır; emekli `only_finished` bir şey değiştirmez (planlayıcı karar verir)."""
+    summary = _run(store, [_full(event_id)], only_finished=only_finished)
 
     [result] = summary.results
-    assert result.skipped and result.reason == pipeline.SKIP_NOT_DUE and result.payload is not None
-    assert summary.skipped == {pipeline.SKIP_NOT_DUE: 1} and summary.failed == 0
-    assert _api(fake) == [f"/event/{event_id}"] and store.events.get(event_id) is None
+    assert result.ok and result.payload is not None
+    assert summary.skipped == {} and summary.failed == 0
+    stored = store.events.get(event_id)
+    assert stored is not None and stored.has_event_payload
+    assert stored.status_class == ("not_started" if event_id == NOT_STARTED else "live")
+    assert detail_records.slice_marks(store.data_dir, event_id) == {}  # 404'ler sayılmaz ve kayıt açmaz
 
 
 def test_an_unfinished_event_is_stored_without_marks_when_every_status_is_wanted(fake: FakeSofaScore,
