@@ -205,6 +205,7 @@ READ_ONLY_GETS = {
     "/api/v1/events",
     "/api/v1/events/1",
     "/api/v1/events/1/odds",
+    "/api/v1/events/1/odds/statistics",
     "/api/v1/events/1/raw",
     "/api/v1/events/1/slices",
     "/api/v1/events/1/slices/statistics",
@@ -219,7 +220,9 @@ READ_ONLY_GETS = {
     "/api/v1/jobs/1/events",
     "/api/v1/logs",
     "/api/v1/seasons/1",
+    "/api/v1/seasons/1/slices",
     "/api/v1/seasons/1/slices/statistics",
+    "/api/v1/seasons/1/standings",
     "/api/v1/settings",
     "/api/v1/sinks",
     "/api/v1/sports",
@@ -262,6 +265,7 @@ GETS_THAT_MAY_WRITE_A_CACHE = {
             "/api/v1/changes", "/api/v1/events", "/api/v1/events/1", "/api/v1/events/1/odds", "/api/v1/events/1/raw",
             "/api/v1/events/1/slices", "/api/v1/events/1/slices/statistics",
             "/api/v1/events/1/slices/statistics/raw", "/api/v1/seasons/1", "/api/v1/seasons/1/slices/statistics",
+            "/api/v1/events/1/odds/statistics", "/api/v1/seasons/1/slices", "/api/v1/seasons/1/standings",  # P28
             "/api/v1/tournaments", "/api/v1/tournaments/1", "/api/v1/tournaments/1/seasons", "/api/v1/follows",
             "/api/v1/follows/tournament:1", "/api/v1/backups", "/api/v1/backups/backup_all_20260101_000000.zip",
             # Eski yedek indirmesi dosyanın yolunu Store'dan alır (P21: web katmanı dosya sistemine dokunmaz)

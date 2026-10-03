@@ -28,6 +28,7 @@ from typing import Any, Dict, Iterator, List, Tuple
 import pytest
 from fastapi.testclient import TestClient
 
+from src import sports
 from src.web import api as api_paths
 from src.web import openapi
 from src.web.app import app
@@ -117,6 +118,8 @@ def test_the_document_is_the_v1_view(document: Dict[str, Any], full_document: Di
         "GET /api/v1/tournaments/{tournament_id}",
         "GET /api/v1/tournaments/{tournament_id}/seasons",
         "GET /api/v1/seasons/{season_id}",
+        "GET /api/v1/seasons/{season_id}/slices",  # P28
+        "GET /api/v1/seasons/{season_id}/standings",  # P28
         "GET /api/v1/seasons/{season_id}/slices/{key}",
         "GET /api/v1/events",
         "GET /api/v1/events/{event_id}",
@@ -125,6 +128,7 @@ def test_the_document_is_the_v1_view(document: Dict[str, Any], full_document: Di
         "GET /api/v1/events/{event_id}/raw",
         "GET /api/v1/events/{event_id}/slices/{key}/raw",
         "GET /api/v1/events/{event_id}/odds",
+        "GET /api/v1/events/{event_id}/odds/{key}",  # P28
         "GET /api/v1/changes",
         "GET /api/v1/jobs",
         "POST /api/v1/jobs",
@@ -171,9 +175,9 @@ def test_every_v1_operation_has_a_stable_id_and_a_summary(document: Dict[str, An
     assert ids == [
         "getHealth", "getStatus", "checkConnection", "listSports", "getSport", "listSinks", "getAuth", "login",
         "logout", "listFollows", "addFollow", "getFollow", "updateFollow", "removeFollow", "listTournaments",
-        "searchTournaments", "getTournament", "listTournamentSeasons", "getSeason", "getSeasonSlice", "listEvents",
-        "getEvent", "listEventSlices", "getEventSlice", "getEventRaw", "getEventSliceRaw", "listEventOdds",
-        "listChanges", "listJobs", "startJob", "getJob", "cancelJob", "streamJobEvents", "listExports",
+        "searchTournaments", "getTournament", "listTournamentSeasons", "getSeason", "listSeasonSlices",
+        "getSeasonStandings", "getSeasonSlice", "listEvents", "getEvent", "listEventSlices", "getEventSlice",
+        "getEventRaw", "getEventSliceRaw", "listEventOdds", "listEventOddsSnapshots", "listChanges", "listJobs", "startJob", "getJob", "cancelJob", "streamJobEvents", "listExports",
         "downloadExport", "listBackups", "downloadBackup", "listLogs", "getDiagnostics", "downloadDiagnosticsBundle",
         "getSettings", "updateSettings",
     ]
@@ -438,10 +442,12 @@ def test_legacy_responses_carry_the_deprecation_headers() -> None:
 
 
 def test_legacy_bodies_are_unchanged_by_the_headers() -> None:
-    # v1'in dilimleri P27'nin seçim alanlarını da taşır; eski uç yalnızca ilk dördünü
+    # v1'in dilimleri P27'nin seçim alanlarını da taşır; eski uç yalnızca ilk dördünü. P28'in dilimleri (oranlar,
+    # maç dışı dilimler) yalnızca v1'dedir
     legacy_fields = ("key", "path", "required", "default_enabled")
+    detail_keys = {s.key for s in sports.DETAIL_SLICES}
     assert client.get("/api/sports").json() == [
-        {**sport, "slices": [{k: s[k] for k in legacy_fields} for s in sport["slices"]]}
+        {**sport, "slices": [{k: s[k] for k in legacy_fields} for s in sport["slices"] if s["key"] in detail_keys]}
         for sport in client.get("/api/v1/sports").json()["data"]]
     assert list(client.get("/api/status").json()) == ["version", "leagues_count", "language"]
 

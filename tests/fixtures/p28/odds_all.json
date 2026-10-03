@@ -1,0 +1,84 @@
+{
+ "source": "research/all_sports/samples/football/event-id-odds-id-all__1.json",
+ "path": "/event/17144927/odds/1/all",
+ "body": {
+  "markets": [
+   {
+    "structureType": 1,
+    "marketId": 1,
+    "marketName": "Full time",
+    "isLive": true,
+    "fid": 202087817,
+    "suspended": false,
+    "id": 433014817,
+    "marketGroup": "1X2",
+    "marketPeriod": "Full-time",
+    "choices": [
+     {
+      "initialFractionalValue": "13/10",
+      "fractionalValue": "11/5",
+      "sourceId": 106963176,
+      "name": "1",
+      "slipContent": "/?bs=202087817-106963176~11/5~10",
+      "change": 1
+     },
+     {
+      "initialFractionalValue": "5/2",
+      "fractionalValue": "8/13",
+      "sourceId": 106963178,
+      "name": "X",
+      "slipContent": "/?bs=202087817-106963178~8/13~10",
+      "change": -1
+     },
+     {
+      "initialFractionalValue": "31/20",
+      "fractionalValue": "11/2",
+      "sourceId": 106963179,
+      "name": "2",
+      "slipContent": "/?bs=202087817-106963179~11/2~10",
+      "change": 1
+     }
+    ]
+   },
+   {
+    "structureType": 1,
+    "marketId": 1,
+    "marketName": "Full time",
+    "isLive": false,
+    "fid": 202086691,
+    "suspended": false,
+    "id": 432132498,
+    "marketGroup": "1X2",
+    "marketPeriod": "Full-time",
+    "choices": [
+     {
+      "initialFractionalValue": "13/10",
+      "fractionalValue": "13/10",
+      "sourceId": 106834863,
+      "name": "1",
+      "slipContent": "/?bs=202086691-106834863~13/10~10",
+      "change": 0
+     },
+     {
+      "initialFractionalValue": "5/2",
+      "fractionalValue": "5/2",
+      "sourceId": 106834865,
+      "name": "X",
+      "slipContent": "/?bs=202086691-106834865~5/2~10",
+      "change": 0
+     },
+     {
+      "initialFractionalValue": "31/20",
+      "fractionalValue": "31/20",
+      "sourceId": 106834866,
+      "name": "2",
+      "slipContent": "/?bs=202086691-106834866~31/20~10",
+      "change": 0
+     }
+    ]
+   }
+  ],
+  "eventId": 17144927,
+  "liveStreamUrl": null
+ }
+}

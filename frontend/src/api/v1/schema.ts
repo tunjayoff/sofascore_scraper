@@ -363,14 +363,15 @@ export interface ExportFilter {
 }
 
 /**
- * What to export. Schema `normalized`: the records of data schema v1 (`events`, `slices` or `changes`) as JSONL
+ * What to export. Schema `normalized`: the records of data schema v1 (`events`, `slices`, `changes`, `odds`: one
+ * row per outcome of each odds snapshot, `standings`: the standings rows of the matched events' seasons) as JSONL
  * (one record per line), CSV, Parquet or SQLite (one column per leaf field, named by its path joined with `_`;
  * lists as JSON text). Parquet needs the optional package pyarrow on the server (501 `not_supported` without
  * it). Schema `raw`: the stored payloads as JSONL (dataset `events`: the event payload only, `slices`: every
  * slice). The profile `legacy-wide-csv` is 2.x's wide CSV (dataset `events`, format `csv`).
  */
 export interface ExportJobSpec {
-  dataset?: "events" | "slices" | "changes"
+  dataset?: "events" | "slices" | "changes" | "odds" | "standings"
   format?: "csv" | "jsonl" | "parquet" | "sqlite"
   schema?: "normalized" | "raw"
   profile?: "legacy-wide-csv" | null
@@ -667,6 +668,65 @@ export interface LogTailResponse {
   data: LogTail
 }
 
+/** The odds of an event from one provider as read at one moment. */
+export interface Odds {
+  /** Id of the Event. */
+  event_id: number
+  /** Odds slice the record comes from: `odds_all` or `odds_featured`. */
+  key: string
+  /** SofaScore's id of the bookmaker the odds come from. Which bookmakers SofaScore offers depends on the country it sees the request from; the platform stores no address or location of the machine. */
+  provider_id: number | null
+  /** When the odds were read. A read is a snapshot: odds change until the event ends, and only a later read shows a later price. */
+  fetched_at_utc: string | null
+  /** The markets, in SofaScore's order. */
+  markets: OddsMarket[]
+}
+
+/** One outcome of a betting market and its price. */
+export interface OddsChoice {
+  /** Name of the outcome as SofaScore gives it, for example `1`, `X`, `2`, `Over`. */
+  name: string
+  /** Current price as a fraction, for example `11/5`. */
+  fractional: string | null
+  /** Current price as a decimal (1 + the fraction), rounded to three places. */
+  decimal: number | null
+  /** Opening price as a fraction. */
+  initial_fractional: string | null
+  /** Opening price as a decimal, rounded to three places. */
+  initial_decimal: number | null
+  /** Direction of the last change of the price: 1 up, -1 down, 0 none. */
+  change: number | null
+  /** True for the outcome that won once the event is settled; null while open or when SofaScore does not say. */
+  winning: boolean | null
+}
+
+export interface OddsListResponse {
+  data: Odds[]
+  page: PageInfo
+}
+
+/** One betting market of an event with its outcomes. */
+export interface OddsMarket {
+  /** SofaScore's id of the market type (1 is the match result). */
+  market_id: number | null
+  /** Name of the market, for example `Full time`. */
+  name: string | null
+  /** Group of the market, for example `1X2` or `Home/Away`. */
+  group: string | null
+  /** Part of the event the market covers, for example `Full-time`. */
+  period: string | null
+  /** Line of a market with several lines, for example `2.5` for over/under; null for a market with one line. */
+  choice_group: string | null
+  /** Name under which the featured odds list the market (`default`, `fullTime`, `asian`); null in the full list. */
+  label: string | null
+  /** True when the prices were offered during play. */
+  is_live: boolean | null
+  /** True when the market was closed for bets at the time of the read. */
+  suspended: boolean | null
+  /** The outcomes of the market, in SofaScore's order. */
+  choices: OddsChoice[]
+}
+
 /** Cursor pagination of a collection response. */
 export interface PageInfo {
   /** Maximum number of items in this page. */
@@ -820,6 +880,11 @@ export interface SeasonListResponse {
 
 export interface SeasonResponse {
   data: Season
+}
+
+export interface SeasonSliceListResponse {
+  data: Slice[]
+  page: PageInfo
 }
 
 /** One set. */
@@ -1066,6 +1131,45 @@ export interface Stage {
   id: number | null
   /** Name of the stage, for example `UEFA Champions League, Group A` or `Wimbledon, London, GB, Qualifying, 1st - 2nd Round`. */
   name: string | null
+}
+
+export interface StandingsResponse {
+  data: StandingsRow[]
+  page: PageInfo
+}
+
+/** One row of a standings table of a season. */
+export interface StandingsRow {
+  /** Id of the Tournament. */
+  tournament_id: number
+  /** Id of the Season. */
+  season_id: number
+  /** Which table: `total` (all matches) or `home` (home matches only). */
+  table: string
+  /** Name of the table or group, for example `Premier League 26/27` or `Group A`. */
+  group_name: string | null
+  /** Rank in the table, 1 for the first. */
+  position: number | null
+  /** Id of the Participant. */
+  participant_id: number | null
+  /** Name of the Participant. */
+  participant_name: string | null
+  /** Matches played. */
+  matches: number | null
+  /** Matches won. */
+  wins: number | null
+  /** Matches drawn; null in sports without draws. */
+  draws: number | null
+  /** Matches lost. */
+  losses: number | null
+  /** Goals or points scored. */
+  scores_for: number | null
+  /** Goals or points conceded. */
+  scores_against: number | null
+  /** Table points (a fraction in a few sports). */
+  points: number | null
+  /** When the table was read. */
+  fetched_at_utc: string | null
 }
 
 /** Write a backup zip into the data directory's `backups/`; download it through `/backups/{name}`. */
@@ -1438,6 +1542,24 @@ export interface Operations {
     body: never
     response: SeasonResponse
   }
+  /** List the slices of a season */
+  "listSeasonSlices": {
+    method: "GET"
+    path: "/api/v1/seasons/{season_id}/slices"
+    params: { season_id: number }
+    query: {}
+    body: never
+    response: SeasonSliceListResponse
+  }
+  /** Get the standings of a season */
+  "getSeasonStandings": {
+    method: "GET"
+    path: "/api/v1/seasons/{season_id}/standings"
+    params: { season_id: number }
+    query: { table?: "total" | "home" | null }
+    body: never
+    response: StandingsResponse
+  }
   /** Get a slice of a season */
   "getSeasonSlice": {
     method: "GET"
@@ -1509,6 +1631,15 @@ export interface Operations {
     query: {}
     body: never
     response: SliceListResponse
+  }
+  /** Get the odds of an event, snapshot by snapshot */
+  "listEventOddsSnapshots": {
+    method: "GET"
+    path: "/api/v1/events/{event_id}/odds/{key}"
+    params: { event_id: number; key: string }
+    query: { sub?: string | null; history?: boolean }
+    body: never
+    response: OddsListResponse
   }
   /** List recorded changes */
   "listChanges": {

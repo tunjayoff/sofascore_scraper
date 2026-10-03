@@ -190,7 +190,8 @@ class ExportFilter(BaseModel):
 
 class ExportJobSpec(BaseModel):
     """
-    What to export. Schema `normalized`: the records of data schema v1 (`events`, `slices` or `changes`) as JSONL
+    What to export. Schema `normalized`: the records of data schema v1 (`events`, `slices`, `changes`, `odds`: one
+    row per outcome of each odds snapshot, `standings`: the standings rows of the matched events' seasons) as JSONL
     (one record per line), CSV, Parquet or SQLite (one column per leaf field, named by its path joined with `_`;
     lists as JSON text). Parquet needs the optional package pyarrow on the server (501 `not_supported` without
     it). Schema `raw`: the stored payloads as JSONL (dataset `events`: the event payload only, `slices`: every
@@ -199,7 +200,7 @@ class ExportJobSpec(BaseModel):
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
-    dataset: Literal["events", "slices", "changes"] = "events"
+    dataset: Literal["events", "slices", "changes", "odds", "standings"] = "events"
     format: Literal["csv", "jsonl", "parquet", "sqlite"] = "csv"
     schema_: Literal["normalized", "raw"] = Field(default="normalized", alias="schema")
     profile: Optional[Literal["legacy-wide-csv"]] = None

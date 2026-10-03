@@ -205,22 +205,22 @@ def describe_sports() -> List[Dict[str, Any]]:
 
 def describe_slices() -> List[Dict[str, Any]]:
     """
-    Dilim kayıt defteri (src/sports.py). Bugün yalnızca maç (event) dilimleri vardır. `not_in`: dilimin
-    istenmediği sporlar; `optional_in`: istendiği ama tamlık hesabına girmediği sporlar. `selected_in`: etkin
-    yapılandırmanın varsayılan seçiminin ([defaults] slices ve [slices.<spor>]; plan maddesi P27) dilimi seçtiği
-    ve dilimin istendiği sporlar; bir takip kendi seçimini verebilir.
+    Dilim kayıt defteri (src/sports.py): maç dilimleri, bahis oranları ve maç dışı dilimler (plan maddesi P28;
+    `owner`). `not_in`: dilimin istenmediği sporlar; `optional_in`: istendiği ama tamlık hesabına girmediği
+    sporlar. `selected_in`: etkin yapılandırmanın varsayılan seçiminin ([defaults] slices ve [slices.<spor>]; plan
+    maddesi P27) dilimi seçtiği ve dilimin istendiği sporlar; bir takip kendi seçimini verebilir.
     """
     from src.services import planning
 
     policy = planning.configured_policy()
-    chosen = {sport: {spec.key for spec in sports.select_slices("event", sport, policy.for_sport(sport))}
+    chosen = {sport: {spec.key for spec in sports.chosen_slices(policy.for_sport(sport)) if spec.applies_to(sport)}
               for sport in sports.sport_slugs()}
     selected_in = {item.key: [sport for sport, keys in chosen.items() if item.key in keys]
-                   for item in sports.DETAIL_SLICES}
+                   for item in sports.registered_slices()}
     return [
         {
             "key": item.key,
-            "owner": "event",
+            "owner": item.owner,
             "path": item.path,
             "sports": sorted(item.sports) if item.sports is not None else None,
             "not_in": sorted(item.not_in),
@@ -233,7 +233,7 @@ def describe_slices() -> List[Dict[str, Any]]:
             "max_age_seconds": int(item.max_age.total_seconds()) if item.max_age is not None else None,
             "selected_in": selected_in[item.key],
         }
-        for item in sports.DETAIL_SLICES
+        for item in sports.registered_slices()
     ]
 
 

@@ -36,7 +36,7 @@ logger = get_logger("DataJobs")
 
 EXPORTS_DIR = "exports"  # src/store/layout.py EXPORTS_DIR
 LEGACY_WIDE_CSV = "legacy-wide-csv"
-DATASETS: Tuple[str, ...] = ("events", "slices", "changes")
+DATASETS: Tuple[str, ...] = ("events", "slices", "changes", "odds", "standings")
 FORMATS: Tuple[str, ...] = ("csv", "jsonl", "parquet", "sqlite")
 SCHEMAS: Tuple[str, ...] = ("normalized", "raw")
 MEDIA_TYPES: Dict[str, str] = {

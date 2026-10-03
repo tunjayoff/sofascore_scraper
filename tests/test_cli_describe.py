@@ -176,11 +176,12 @@ def test_sports_are_the_registry(described: Dict[str, Any]):
 
 
 def test_slices_are_the_registry(described: Dict[str, Any]):
-    assert [entry["key"] for entry in described["slices"]] == [item.key for item in sports.DETAIL_SLICES]
-    for entry, item in zip(described["slices"], sports.DETAIL_SLICES, strict=True):
+    # P28: kayıt defterinin bütün dilimleri, oranlar ve maç dışı dilimler dahil
+    assert [entry["key"] for entry in described["slices"]] == [item.key for item in sports.registered_slices()]
+    for entry, item in zip(described["slices"], sports.registered_slices(), strict=True):
         assert entry == {
             "key": item.key,
-            "owner": "event",
+            "owner": item.owner,
             "path": item.path,
             "sports": sorted(item.sports) if item.sports is not None else None,
             "not_in": sorted(item.not_in),
@@ -191,8 +192,8 @@ def test_slices_are_the_registry(described: Dict[str, Any]):
             "group": item.group,
             "phases": [phase for phase in sports.PHASES if phase in item.phases],
             "keep_history": item.keep_history,
-            "max_age_seconds": None,
-            "selected_in": [sport for sport in sports.sport_slugs() if item.applies_to(sport)],
+            "max_age_seconds": int(item.max_age.total_seconds()) if item.max_age is not None else None,
+            "selected_in": [sport for sport in sports.sport_slugs() if item.applies_to(sport) and item.default_enabled],
         }
     by_key = {entry["key"]: entry for entry in described["slices"]}
     assert by_key["point_by_point"]["sports"] == ["darts", "tennis"]
