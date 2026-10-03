@@ -1,0 +1,907 @@
+{
+ "source": "research/all_sports (PR #17): requests.jsonl, events/*.jsonl",
+ "pages": {
+  "bandy": [
+   {
+    "event_id": 16641811,
+    "state": "notstarted",
+    "complete": false
+   }
+  ],
+  "baseball": [
+   {
+    "event_id": 17206542,
+    "state": "notstarted",
+    "complete": true
+   }
+  ],
+  "basketball": [
+   {
+    "event_id": 17186711,
+    "state": "finished",
+    "complete": true
+   }
+  ],
+  "cricket": [
+   {
+    "event_id": 16526539,
+    "state": "finished",
+    "complete": true
+   }
+  ],
+  "darts": [
+   {
+    "event_id": 17099318,
+    "state": "finished",
+    "complete": true
+   }
+  ],
+  "esports": [
+   {
+    "event_id": 17223320,
+    "state": "live",
+    "complete": true
+   }
+  ],
+  "floorball": [
+   {
+    "event_id": 16956586,
+    "state": "notstarted",
+    "complete": true
+   }
+  ],
+  "football": [
+   {
+    "event_id": 17118211,
+    "state": "finished",
+    "complete": true
+   },
+   {
+    "event_id": 17167343,
+    "state": "finished",
+    "complete": true
+   },
+   {
+    "event_id": 17212341,
+    "state": "live",
+    "complete": true
+   }
+  ],
+  "futsal": [
+   {
+    "event_id": 17226246,
+    "state": "finished",
+    "complete": true
+   }
+  ],
+  "handball": [
+   {
+    "event_id": 17217388,
+    "state": "notstarted",
+    "complete": true
+   }
+  ],
+  "ice-hockey": [
+   {
+    "event_id": 16532341,
+    "state": "finished",
+    "complete": true
+   }
+  ],
+  "minifootball": [
+   {
+    "event_id": 17218801,
+    "state": "finished",
+    "complete": false
+   }
+  ],
+  "mma": [
+   {
+    "event_id": 16822910,
+    "state": "finished",
+    "complete": true
+   }
+  ],
+  "padel": [
+   {
+    "event_id": 17213167,
+    "state": "finished",
+    "complete": true
+   }
+  ],
+  "rugby": [
+   {
+    "event_id": 16237238,
+    "state": "finished",
+    "complete": false
+   }
+  ],
+  "snooker": [
+   {
+    "event_id": 17220573,
+    "state": "live",
+    "complete": true
+   }
+  ],
+  "table-tennis": [
+   {
+    "event_id": 17220134,
+    "state": "finished",
+    "complete": false
+   }
+  ],
+  "tennis": [
+   {
+    "event_id": 17204708,
+    "state": "finished",
+    "complete": true
+   },
+   {
+    "event_id": 17206248,
+    "state": "live",
+    "complete": true
+   }
+  ],
+  "volleyball": [
+   {
+    "event_id": 16450376,
+    "state": "notstarted",
+    "complete": true
+   }
+  ],
+  "waterpolo": [
+   {
+    "event_id": 17075775,
+    "state": "notstarted",
+    "complete": true
+   }
+  ]
+ },
+ "answers": {
+  "american-football": {
+   "/": [
+    "finished:403"
+   ],
+   "/at-bats": [
+    "finished:403"
+   ],
+   "/best-players": [
+    "finished:403"
+   ],
+   "/graph": [
+    "finished:403"
+   ],
+   "/graph/win-probability": [
+    "finished:403"
+   ],
+   "/highlights": [
+    "finished:403"
+   ],
+   "/incidents": [
+    "finished:403"
+   ],
+   "/lineups": [
+    "finished:403"
+   ],
+   "/media/summary/country/{cc}": [
+    "finished:403"
+   ],
+   "/official-tweets": [
+    "finished:403"
+   ],
+   "/pregame-form": [
+    "finished:403"
+   ],
+   "/statistics": [
+    "finished:403"
+   ],
+   "/votes": [
+    "finished:403"
+   ]
+  },
+  "bandy": {
+   "/at-bats": [
+    "notstarted:404"
+   ],
+   "/graph/win-probability": [
+    "notstarted:404"
+   ],
+   "/highlights": [
+    "notstarted:404"
+   ],
+   "/incidents": [
+    "notstarted:404"
+   ],
+   "/official-tweets": [
+    "notstarted:404"
+   ]
+  },
+  "baseball": {
+   "/": [
+    "finished:200",
+    "notstarted:200"
+   ],
+   "/at-bats": [
+    "notstarted:200"
+   ],
+   "/comments": [
+    "notstarted:404"
+   ],
+   "/graph/win-probability": [
+    "notstarted:404"
+   ],
+   "/h2h": [
+    "notstarted:200"
+   ],
+   "/highlights": [
+    "notstarted:404"
+   ],
+   "/lineups": [
+    "notstarted:404"
+   ],
+   "/managers": [
+    "notstarted:200"
+   ],
+   "/media/summary/country/{cc}": [
+    "notstarted:404"
+   ],
+   "/official-tweets": [
+    "notstarted:404"
+   ],
+   "/pregame-form": [
+    "notstarted:404"
+   ],
+   "/team-streaks": [
+    "notstarted:200"
+   ],
+   "/umpires": [
+    "notstarted:404"
+   ],
+   "/votes": [
+    "notstarted:200"
+   ],
+   "/weather": [
+    "notstarted:404"
+   ]
+  },
+  "basketball": {
+   "/": [
+    "finished:200"
+   ],
+   "/at-bats": [
+    "finished:404"
+   ],
+   "/best-players": [
+    "finished:200"
+   ],
+   "/graph": [
+    "finished:200"
+   ],
+   "/graph/win-probability": [
+    "finished:404"
+   ],
+   "/h2h": [
+    "finished:200"
+   ],
+   "/highlights": [
+    "finished:200"
+   ],
+   "/incidents": [
+    "finished:200"
+   ],
+   "/lineups": [
+    "finished:200"
+   ],
+   "/managers": [
+    "finished:200"
+   ],
+   "/media/summary/country/{cc}": [
+    "finished:200"
+   ],
+   "/official-tweets": [
+    "finished:404"
+   ],
+   "/pregame-form": [
+    "finished:404"
+   ],
+   "/statistics": [
+    "finished:200"
+   ],
+   "/team-streaks": [
+    "finished:200"
+   ],
+   "/votes": [
+    "finished:200"
+   ]
+  },
+  "cricket": {
+   "/": [
+    "finished:200"
+   ],
+   "/at-bats": [
+    "finished:404"
+   ],
+   "/graph/win-probability": [
+    "finished:404"
+   ],
+   "/highlights": [
+    "finished:404"
+   ],
+   "/incidents": [
+    "finished:200"
+   ],
+   "/innings": [
+    "finished:200"
+   ],
+   "/lineups": [
+    "finished:200"
+   ],
+   "/managers": [
+    "finished:404"
+   ],
+   "/media/summary/country/{cc}": [
+    "finished:404"
+   ],
+   "/official-tweets": [
+    "finished:404"
+   ],
+   "/pregame-form": [
+    "finished:404"
+   ],
+   "/statistics": [
+    "finished:404"
+   ],
+   "/votes": [
+    "finished:200"
+   ]
+  },
+  "darts": {
+   "/": [
+    "finished:200"
+   ],
+   "/at-bats": [
+    "finished:404"
+   ],
+   "/graph/win-probability": [
+    "finished:404"
+   ],
+   "/highlights": [
+    "finished:404"
+   ],
+   "/official-tweets": [
+    "finished:404"
+   ],
+   "/point-by-point": [
+    "finished:200"
+   ],
+   "/pregame-form": [
+    "finished:404"
+   ],
+   "/statistics": [
+    "finished:200"
+   ],
+   "/votes": [
+    "finished:200"
+   ]
+  },
+  "esports": {
+   "/": [
+    "live:200"
+   ],
+   "/at-bats": [
+    "live:404"
+   ],
+   "/esports-games": [
+    "live:200"
+   ],
+   "/graph/win-probability": [
+    "live:404"
+   ],
+   "/h2h": [
+    "live:200"
+   ],
+   "/highlights": [
+    "live:200"
+   ],
+   "/lineups": [
+    "live:200"
+   ],
+   "/live-match-tracker": [
+    "live:404"
+   ],
+   "/managers": [
+    "live:404"
+   ],
+   "/media/summary/country/{cc}": [
+    "live:200"
+   ],
+   "/official-tweets": [
+    "live:404"
+   ],
+   "/pregame-form": [
+    "live:404"
+   ],
+   "/statistics": [
+    "live:404"
+   ],
+   "/votes": [
+    "live:200"
+   ]
+  },
+  "floorball": {
+   "/": [
+    "finished:200",
+    "notstarted:200"
+   ],
+   "/at-bats": [
+    "notstarted:404"
+   ],
+   "/graph/win-probability": [
+    "notstarted:404"
+   ],
+   "/highlights": [
+    "notstarted:404"
+   ],
+   "/incidents": [
+    "notstarted:404"
+   ],
+   "/official-tweets": [
+    "notstarted:404"
+   ],
+   "/pregame-form": [
+    "notstarted:404"
+   ],
+   "/votes": [
+    "notstarted:200"
+   ]
+  },
+  "football": {
+   "/": [
+    "finished:200",
+    "live:200"
+   ],
+   "/ai-insights-postmatch/{lang}": [
+    "finished:404"
+   ],
+   "/ai-insights/{lang}": [
+    "finished:404",
+    "live:404"
+   ],
+   "/at-bats": [
+    "finished:404",
+    "live:404"
+   ],
+   "/average-positions": [
+    "finished:200"
+   ],
+   "/best-players/summary": [
+    "finished:200"
+   ],
+   "/graph": [
+    "finished:200",
+    "live:404"
+   ],
+   "/graph/win-probability": [
+    "finished:404",
+    "live:404"
+   ],
+   "/h2h": [
+    "finished:200",
+    "live:200"
+   ],
+   "/heatmap/{id}": [
+    "finished:200"
+   ],
+   "/highlights": [
+    "finished:200",
+    "finished:404",
+    "live:404"
+   ],
+   "/incidents": [
+    "finished:200",
+    "live:200"
+   ],
+   "/lineups": [
+    "finished:200",
+    "live:404"
+   ],
+   "/live-match-tracker": [
+    "finished:200",
+    "live:404"
+   ],
+   "/managers": [
+    "finished:200",
+    "live:200"
+   ],
+   "/media/summary/country/{cc}": [
+    "finished:200",
+    "live:404"
+   ],
+   "/official-tweets": [
+    "finished:404",
+    "live:404"
+   ],
+   "/player-of-the-match": [
+    "finished:200",
+    "live:404"
+   ],
+   "/pregame-form": [
+    "finished:404",
+    "live:404"
+   ],
+   "/shotmap": [
+    "finished:200"
+   ],
+   "/sport-video-highlights/country/{cc}/extended": [
+    "finished:404"
+   ],
+   "/statistics": [
+    "finished:200",
+    "live:200"
+   ],
+   "/team-streaks": [
+    "finished:200",
+    "live:200"
+   ],
+   "/votes": [
+    "finished:200",
+    "live:200"
+   ]
+  },
+  "futsal": {
+   "/": [
+    "finished:200"
+   ],
+   "/at-bats": [
+    "finished:404"
+   ],
+   "/graph/win-probability": [
+    "finished:404"
+   ],
+   "/highlights": [
+    "finished:404"
+   ],
+   "/incidents": [
+    "finished:200"
+   ],
+   "/lineups": [
+    "finished:404"
+   ],
+   "/official-tweets": [
+    "finished:404"
+   ],
+   "/pregame-form": [
+    "finished:404"
+   ],
+   "/statistics": [
+    "finished:404"
+   ],
+   "/votes": [
+    "finished:404"
+   ]
+  },
+  "handball": {
+   "/": [
+    "notstarted:200"
+   ],
+   "/at-bats": [
+    "notstarted:404"
+   ],
+   "/average-positions": [
+    "notstarted:404"
+   ],
+   "/graph/win-probability": [
+    "notstarted:404"
+   ],
+   "/highlights": [
+    "notstarted:404"
+   ],
+   "/incidents": [
+    "notstarted:404"
+   ],
+   "/lineups": [
+    "notstarted:200"
+   ],
+   "/managers": [
+    "notstarted:200"
+   ],
+   "/official-tweets": [
+    "notstarted:404"
+   ],
+   "/pregame-form": [
+    "notstarted:404"
+   ]
+  },
+  "ice-hockey": {
+   "/": [
+    "finished:200"
+   ],
+   "/at-bats": [
+    "finished:404"
+   ],
+   "/graph/win-probability": [
+    "finished:404"
+   ],
+   "/highlights": [
+    "finished:200"
+   ],
+   "/incidents": [
+    "finished:200"
+   ],
+   "/lineups": [
+    "finished:200"
+   ],
+   "/official-tweets": [
+    "finished:200"
+   ],
+   "/pregame-form": [
+    "finished:404"
+   ],
+   "/statistics": [
+    "finished:200"
+   ],
+   "/votes": [
+    "finished:200"
+   ]
+  },
+  "minifootball": {
+   "/at-bats": [
+    "finished:404"
+   ],
+   "/graph/win-probability": [
+    "finished:404"
+   ],
+   "/highlights": [
+    "finished:404"
+   ],
+   "/lineups": [
+    "finished:404"
+   ],
+   "/official-tweets": [
+    "finished:404"
+   ],
+   "/statistics": [
+    "finished:200"
+   ]
+  },
+  "mma": {
+   "/": [
+    "finished:200"
+   ],
+   "/at-bats": [
+    "finished:404"
+   ],
+   "/graph/win-probability": [
+    "finished:404"
+   ],
+   "/highlights": [
+    "finished:404"
+   ],
+   "/media/summary/country/{cc}": [
+    "finished:200"
+   ],
+   "/official-tweets": [
+    "finished:404"
+   ],
+   "/pregame-form": [
+    "finished:200"
+   ],
+   "/statistics": [
+    "finished:200"
+   ],
+   "/team-streaks": [
+    "finished:200"
+   ],
+   "/votes": [
+    "finished:200"
+   ]
+  },
+  "padel": {
+   "/": [
+    "finished:200"
+   ],
+   "/at-bats": [
+    "finished:404"
+   ],
+   "/graph/win-probability": [
+    "finished:404"
+   ],
+   "/highlights": [
+    "finished:404"
+   ],
+   "/media/summary/country/{cc}": [
+    "finished:404"
+   ],
+   "/official-tweets": [
+    "finished:404"
+   ],
+   "/pregame-form": [
+    "finished:404"
+   ],
+   "/statistics": [
+    "finished:404"
+   ]
+  },
+  "rugby": {
+   "/at-bats": [
+    "finished:404"
+   ],
+   "/graph/win-probability": [
+    "finished:404"
+   ],
+   "/highlights": [
+    "finished:200"
+   ],
+   "/lineups": [
+    "finished:200"
+   ],
+   "/official-tweets": [
+    "finished:404"
+   ]
+  },
+  "snooker": {
+   "/": [
+    "live:200"
+   ],
+   "/at-bats": [
+    "live:404"
+   ],
+   "/graph/win-probability": [
+    "live:404"
+   ],
+   "/highlights": [
+    "live:404"
+   ],
+   "/live-match-tracker": [
+    "live:404"
+   ],
+   "/official-tweets": [
+    "live:404"
+   ],
+   "/pregame-form": [
+    "live:404"
+   ],
+   "/statistics": [
+    "live:404"
+   ],
+   "/votes": [
+    "live:200"
+   ]
+  },
+  "table-tennis": {
+   "/at-bats": [
+    "finished:404"
+   ],
+   "/graph/win-probability": [
+    "finished:404"
+   ],
+   "/highlights": [
+    "finished:404"
+   ],
+   "/official-tweets": [
+    "finished:404"
+   ]
+  },
+  "tennis": {
+   "/": [
+    "finished:200",
+    "live:200"
+   ],
+   "/ai-insights-postmatch/{lang}": [
+    "finished:200"
+   ],
+   "/ai-insights/{lang}": [
+    "live:200"
+   ],
+   "/at-bats": [
+    "finished:404",
+    "live:404"
+   ],
+   "/graph/win-probability": [
+    "finished:404",
+    "live:404"
+   ],
+   "/h2h": [
+    "finished:200"
+   ],
+   "/highlights": [
+    "finished:200",
+    "live:404"
+   ],
+   "/live-match-tracker": [
+    "live:200"
+   ],
+   "/managers": [
+    "finished:404"
+   ],
+   "/media/summary/country/{cc}": [
+    "finished:200",
+    "live:404"
+   ],
+   "/official-tweets": [
+    "finished:404",
+    "live:404"
+   ],
+   "/point-by-point": [
+    "finished:200",
+    "live:200"
+   ],
+   "/pregame-form": [
+    "finished:404",
+    "live:404"
+   ],
+   "/statistics": [
+    "finished:200",
+    "live:200"
+   ],
+   "/team-streaks": [
+    "finished:200"
+   ],
+   "/votes": [
+    "finished:200",
+    "live:200"
+   ]
+  },
+  "volleyball": {
+   "/": [
+    "notstarted:200"
+   ],
+   "/at-bats": [
+    "notstarted:404"
+   ],
+   "/graph/win-probability": [
+    "notstarted:404"
+   ],
+   "/highlights": [
+    "notstarted:404"
+   ],
+   "/incidents": [
+    "notstarted:404"
+   ],
+   "/lineups": [
+    "notstarted:404"
+   ],
+   "/official-tweets": [
+    "notstarted:404"
+   ],
+   "/pregame-form": [
+    "notstarted:404"
+   ]
+  },
+  "waterpolo": {
+   "/": [
+    "notstarted:200"
+   ],
+   "/at-bats": [
+    "notstarted:404"
+   ],
+   "/graph/win-probability": [
+    "notstarted:404"
+   ],
+   "/h2h": [
+    "notstarted:200"
+   ],
+   "/highlights": [
+    "notstarted:404"
+   ],
+   "/incidents": [
+    "notstarted:404"
+   ],
+   "/managers": [
+    "notstarted:404"
+   ],
+   "/media/summary/country/{cc}": [
+    "notstarted:404"
+   ],
+   "/official-tweets": [
+    "notstarted:404"
+   ],
+   "/pregame-form": [
+    "notstarted:200"
+   ],
+   "/votes": [
+    "notstarted:200"
+   ]
+  }
+ }
+}

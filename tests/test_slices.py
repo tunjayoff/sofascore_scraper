@@ -48,6 +48,7 @@ TYPED_FUNCTIONS = {
     "incidents": "has_incidents_data_dict",
     "point_by_point": "has_point_by_point_data_dict",
     "esports_games": "has_esports_games_data_dict",
+    "innings": "has_innings_data_dict",
 }
 # Kendi kuralı olan dilimler: kayıt defterindeki her dilim
 RULE_KEYS = tuple(TYPED_FUNCTIONS)
@@ -85,6 +86,8 @@ PRESENT: Dict[str, Any] = {
     "point_by_point": {"pointByPoint": [{"games": []}]},
     # research/all_sports/samples/esports/event-id-esports-games__1.json biçiminde, kısaltılmış
     "esports_games": {"games": [{"id": 588243, "status": {"code": 100, "type": "finished"}, "winnerCode": 1}]},
+    # tests/fixtures/sport_slices/cricket_innings__16526539.json biçiminde, kısaltılmış
+    "innings": {"innings": [{"number": 1, "score": 285, "wickets": 4, "overs": 50}]},
     "graph": {"graphPoints": [{"minute": 1, "value": 3}]},
 }
 
@@ -169,6 +172,13 @@ BODY_CASES: List[Tuple[str, Any, bool]] = [
     ("esports_games", {"games": None}, False),
     ("esports_games", {"error": {"code": 404, "message": "Not Found"}}, False),
     ("esports_games", {"games": [{"id": 588244, "status": {"code": 20, "type": "inprogress"}}]}, True),
+    # --- innings: {"innings": [...]} listesi dolu olmalı (kriket)
+    ("innings", {}, False),
+    ("innings", [], False),
+    ("innings", {"innings": []}, False),
+    ("innings", {"innings": None}, False),
+    ("innings", {"error": {"code": 404, "message": "Not Found"}}, False),
+    ("innings", {"innings": [{"number": 1, "score": 0, "wickets": 0, "overs": 0}]}, True),
     # --- kendi kuralı olmayan anahtarlar: bool(değer)
     ("basic", {}, False),
     ("basic", {"id": 1}, True),
@@ -215,6 +225,11 @@ MALFORMED_CASES: List[Tuple[str, Any]] = [
     ("esports_games", [{"id": 588243}]),  # sarmalayıcısız liste bilinen bir biçim değil
     ("esports_games", {"games": {"id": 588243}}),
     ("esports_games", {"games": "abc"}),
+    ("innings", "abc"),
+    ("innings", 0),
+    ("innings", [{"number": 1}]),  # sarmalayıcısız liste bilinen bir biçim değil
+    ("innings", {"innings": {"number": 1}}),
+    ("innings", {"innings": "abc"}),
 ]
 
 

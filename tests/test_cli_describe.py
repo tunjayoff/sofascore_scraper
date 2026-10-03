@@ -179,11 +179,16 @@ def test_slices_are_the_registry(described: Dict[str, Any]):
             "owner": "event",
             "path": item.path,
             "sports": sorted(item.sports) if item.sports is not None else None,
+            "not_in": sorted(item.not_in),
             "default_enabled": item.default_enabled,
             "counts_for_completeness": item.required,
+            "optional_in": sorted(item.optional_in),
         }
     by_key = {entry["key"]: entry for entry in described["slices"]}
-    assert by_key["point_by_point"]["sports"] == ["tennis"] and by_key["point_by_point"]["counts_for_completeness"] is False
+    assert by_key["point_by_point"]["sports"] == ["darts", "tennis"]
+    assert by_key["point_by_point"]["counts_for_completeness"] is True
+    assert by_key["point_by_point"]["optional_in"] == ["tennis"]
+    assert by_key["lineups"]["not_in"] == ["darts", "mma", "padel", "snooker"]
     assert by_key["statistics"]["sports"] is None and by_key["statistics"]["path"] == "/event/{event_id}/statistics"
 
 

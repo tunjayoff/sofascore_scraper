@@ -225,6 +225,24 @@ def _esports_games_state(body: Any) -> BodyState:
     return _filled_list(games)
 
 
+def _innings_state(body: Any) -> BodyState:
+    """
+    {"innings": [...]} (kriketin skor kartı): liste doluysa veri var. Kuralı esports_games'inkiyle aynıdır:
+    None, boş nesne, boş liste ve `innings` anahtarı olmayan nesne "veri yok"; nesne olmayan başka gövde ile
+    liste olmayan `innings` okunamaz.
+    """
+    if body is None or (isinstance(body, (dict, list)) and not body):
+        return BODY_NO_DATA
+    if not isinstance(body, dict):
+        return BODY_MALFORMED
+    innings = body.get("innings")
+    if innings is None:
+        return BODY_NO_DATA
+    if not isinstance(innings, list):
+        return BODY_MALFORMED
+    return _filled_list(innings)
+
+
 # Dilim anahtarı → kural. Kayıt defterindeki her dilim burada olmalıdır.
 _BODY_RULES: Dict[str, Callable[[Any], BodyState]] = {
     "statistics": _statistics_state,
@@ -235,6 +253,7 @@ _BODY_RULES: Dict[str, Callable[[Any], BodyState]] = {
     "incidents": _incidents_state,
     "point_by_point": _point_by_point_state,
     "esports_games": _esports_games_state,
+    "innings": _innings_state,
 }
 
 # Kendi kuralı olan dilim anahtarları
@@ -292,6 +311,10 @@ def has_point_by_point_data_dict(d: Mapping[str, Any]) -> bool:
 
 def has_esports_games_data_dict(d: Mapping[str, Any]) -> bool:
     return _esports_games_state(d.get("esports_games")) == BODY_DATA
+
+
+def has_innings_data_dict(d: Mapping[str, Any]) -> bool:
+    return _innings_state(d.get("innings")) == BODY_DATA
 
 
 def match_detail_slice_present(key: str, d: Mapping[str, Any]) -> bool:

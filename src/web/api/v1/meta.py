@@ -133,7 +133,7 @@ def _sport(spec: sports.SportSpec) -> Sport:
         i18n_key=spec.i18n_key,
         score_family=spec.score_family,
         slices=[
-            SportSlice(key=s.key, path=s.path, required=s.required, default_enabled=s.default_enabled)
+            SportSlice(key=s.key, path=s.path, required=s.counts_in(spec.slug), default_enabled=s.default_enabled)
             for s in sports.DETAIL_SLICES
             if s.applies_to(spec.slug)
         ],

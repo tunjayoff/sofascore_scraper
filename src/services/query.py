@@ -70,7 +70,7 @@ from typing import TYPE_CHECKING, Any, Dict, Iterable, Iterator, List, Mapping, 
 from src import refresh
 from src.logger import get_logger
 from src.paths import league_dir_name
-from src.sports import DETAIL_SLICES, slices_for
+from src.sports import DETAIL_SLICES, slices_for, sport_slugs
 from src.status import StatusClass
 from src.store import EventQuery, PayloadCorrupt, PayloadMissing, Scope, StoreError
 
@@ -105,10 +105,11 @@ _DATE_SLACK = 86400  # saniye: yerel saatin yaz saati geçişlerine karşı aral
 
 def legacy_detail_keys() -> Tuple[str, ...]:
     """
-    Eski maç detayı yanıtındaki dilimler, yanıttaki sırayla: dilim tablosunun `required` satırları
-    (src/sports.py, DETAIL_SLICES). İsteğe bağlı dilimler (ör. tenisin `point_by_point`'i) eski yanıtta yoktur.
+    Eski maç detayı yanıtındaki dilimler, yanıttaki sırayla: dilim tablosunun spora bağlı olmayan `required`
+    satırları (src/sports.py, DETAIL_SLICES). İsteğe bağlı dilimler (ör. tenisin `point_by_point`'i) ve spora
+    özel dilimler (ör. kriketin `innings`'i) eski yanıtta yoktur.
     """
-    return tuple(detail.key for detail in DETAIL_SLICES if detail.required)
+    return tuple(detail.key for detail in DETAIL_SLICES if detail.required and detail.sports is None)
 
 
 # -- indirme planı (RD-3) -------------------------------------------------------------------------------
@@ -126,16 +127,14 @@ _ID_CHUNK = 500  # bir sorgunun kapsamına yazılan en çok kimlik
 
 def required_detail_keys() -> Dict[str, Tuple[str, ...]]:
     """
-    `Store.events.missing`'in `required` argümanı: her sporda beklenen dilimler `""` altında, yalnızca bazı
-    sporlarda beklenenler o sporun kısa adı altında. Kural `slices_for(spor, required_only=True)`'dur (dilim
-    tablosu, src/sports.py): bir maçın beklediği dilimler, `""` ile kendi sporunun anahtarlarının birleşimidir.
+    `Store.events.missing`'in `required` argümanı (`exclusive=True` ile): `""` altında sporu kayıt defterinde
+    olmayan ya da bilinmeyen maçın beklediği dilimler, kayıtlı her sporun altında o sporun bütün beklediği
+    dilimler. Kural `slices_for(spor, required_only=True)`'dur (dilim tablosu, src/sports.py). Bir spor ortak
+    bir dilimi beklemeyebildiği (`not_in`, `optional_in`) için sporlar `""`'nin üstüne eklenmez, onun yerine geçer.
     """
-    common = tuple(detail.key for detail in slices_for(None, required_only=True))
-    required: Dict[str, Tuple[str, ...]] = {"": common}
-    for sport in sorted({sport for detail in DETAIL_SLICES if detail.sports for sport in detail.sports}):
-        extra = tuple(detail.key for detail in slices_for(sport, required_only=True) if detail.key not in common)
-        if extra:
-            required[sport] = extra
+    required: Dict[str, Tuple[str, ...]] = {"": tuple(detail.key for detail in slices_for(None, required_only=True))}
+    for sport in sport_slugs():
+        required[sport] = tuple(detail.key for detail in slices_for(sport, required_only=True))
     return required
 
 
@@ -314,7 +313,7 @@ class QueryService:
             records = {row.id for row in self._store.events.iter(EventQuery(scope=scope, has_details=True))
                        if layout is None or (row.layout == layout and row.path)}
             refill = {row.event_id for row in self._store.events.missing(
-                scope, required, status_classes=(), threshold=threshold) if row.has_event_payload}
+                scope, required, status_classes=(), threshold=threshold, exclusive=True) if row.has_event_payload}
             due = set(self._store.events.refresh_candidates(
                 now=policy.now, window_s=policy.window_s, min_interval_s=policy.min_interval_s, scope=scope,
                 include_unobserved=policy.include_unobserved)) if records else set()
@@ -345,7 +344,7 @@ class QueryService:
         for chunk in _chunks(candidates):
             chunk_scope = Scope(event_ids=tuple(chunk))
             refill = {row.event_id for row in self._store.events.missing(
-                chunk_scope, required, status_classes=(), threshold=threshold)}
+                chunk_scope, required, status_classes=(), threshold=threshold, exclusive=True)}
             rows.extend(row for row in self._store.events.iter(EventQuery(scope=chunk_scope, has_details=True))
                         if row.id not in refill and (layout is None or (row.layout == layout and row.path)))
         return sorted(rows, key=lambda row: row.id)

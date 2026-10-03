@@ -95,9 +95,12 @@ def phase_of(status_class: Optional[str]) -> Optional[str]:
 
 def expected_slice_keys(sport: Optional[str], selection: Selection = None, *,
                         phase: Optional[str] = None) -> Tuple[str, ...]:
-    """Bu spordaki bir maçın tamlık için beklediği dilimler, tablo sırasıyla (`select_slices`, `required` olanlar)."""
+    """
+    Bu spordaki bir maçın tamlık için beklediği dilimler, tablo sırasıyla (`select_slices`, bu sporda tamlık
+    hesabına girenler: `SliceSpec.counts_in`).
+    """
     return tuple(spec.key for spec in select_slices("event", sport or None, selection, phase=phase)
-                 if spec.counts_for_completeness)
+                 if spec.counts_in(sport or None))
 
 
 def slice_missing(info: "SliceInfo", threshold: int = DEFAULT_EMPTY_THRESHOLD) -> bool:

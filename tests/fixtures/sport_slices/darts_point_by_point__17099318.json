@@ -1,0 +1,789 @@
+{
+ "source": "research/all_sports/samples/darts/event-id-point-by-point__1.json",
+ "status": 200,
+ "body": {
+  "pointByPoint": [
+   {
+    "set": 1,
+    "legs": [
+     {
+      "leg": 1,
+      "points": [
+       {
+        "homePoint": 501,
+        "awayPoint": 389,
+        "isHome": false
+       },
+       {
+        "homePoint": 355,
+        "awayPoint": 389,
+        "isHome": true
+       },
+       {
+        "homePoint": 355,
+        "awayPoint": 331,
+        "isHome": false
+       },
+       {
+        "homePoint": 315,
+        "awayPoint": 331,
+        "isHome": true
+       },
+       {
+        "homePoint": 315,
+        "awayPoint": 289,
+        "isHome": false
+       },
+       {
+        "homePoint": 255,
+        "awayPoint": 289,
+        "isHome": true
+       },
+       {
+        "homePoint": 255,
+        "awayPoint": 154,
+        "isHome": false
+       },
+       {
+        "homePoint": 122,
+        "awayPoint": 154,
+        "isHome": true
+       },
+       {
+        "homePoint": 122,
+        "awayPoint": 40,
+        "isHome": false
+       },
+       {
+        "homePoint": 44,
+        "awayPoint": 40,
+        "isHome": true
+       },
+       {
+        "homePoint": 44,
+        "awayPoint": 0,
+        "isHome": false
+       }
+      ],
+      "score": {
+       "homeScore": 0,
+       "awayScore": 1,
+       "throwing": 2,
+       "scoring": 2
+      }
+     },
+     {
+      "leg": 2,
+      "points": [
+       {
+        "homePoint": 430,
+        "awayPoint": 501,
+        "isHome": true
+       },
+       {
+        "homePoint": 430,
+        "awayPoint": 429,
+        "isHome": false
+       },
+       {
+        "homePoint": 370,
+        "awayPoint": 429,
+        "isHome": true
+       },
+       {
+        "homePoint": 370,
+        "awayPoint": 289,
+        "isHome": false
+       },
+       {
+        "homePoint": 230,
+        "awayPoint": 289,
+        "isHome": true
+       },
+       {
+        "homePoint": 230,
+        "awayPoint": 192,
+        "isHome": false
+       },
+       {
+        "homePoint": 95,
+        "awayPoint": 192,
+        "isHome": true
+       },
+       {
+        "homePoint": 95,
+        "awayPoint": 12,
+        "isHome": false
+       },
+       {
+        "homePoint": 41,
+        "awayPoint": 12,
+        "isHome": true
+       },
+       {
+        "homePoint": 41,
+        "awayPoint": 0,
+        "isHome": false
+       }
+      ],
+      "score": {
+       "homeScore": 0,
+       "awayScore": 2,
+       "throwing": 1,
+       "scoring": 2
+      }
+     },
+     {
+      "leg": 3,
+      "points": [
+       {
+        "homePoint": 501,
+        "awayPoint": 485,
+        "isHome": false
+       },
+       {
+        "homePoint": 430,
+        "awayPoint": 485,
+        "isHome": true
+       },
+       {
+        "homePoint": 430,
+        "awayPoint": 402,
+        "isHome": false
+       },
+       {
+        "homePoint": 370,
+        "awayPoint": 402,
+        "isHome": true
+       },
+       {
+        "homePoint": 370,
+        "awayPoint": 222,
+        "isHome": false
+       },
+       {
+        "homePoint": 325,
+        "awayPoint": 222,
+        "isHome": true
+       },
+       {
+        "homePoint": 325,
+        "awayPoint": 130,
+        "isHome": false
+       },
+       {
+        "homePoint": 185,
+        "awayPoint": 130,
+        "isHome": true
+       },
+       {
+        "homePoint": 185,
+        "awayPoint": 32,
+        "isHome": false
+       },
+       {
+        "homePoint": 126,
+        "awayPoint": 32,
+        "isHome": true
+       },
+       {
+        "homePoint": 126,
+        "awayPoint": 0,
+        "isHome": false
+       }
+      ],
+      "score": {
+       "homeScore": 0,
+       "awayScore": 3,
+       "throwing": 2,
+       "scoring": 2
+      }
+     }
+    ],
+    "score": {
+     "homeScore": 0,
+     "awayScore": 1,
+     "scoring": 2
+    }
+   },
+   {
+    "set": 2,
+    "legs": [
+     {
+      "leg": 1,
+      "points": [
+       {
+        "homePoint": 461,
+        "awayPoint": 501,
+        "isHome": true
+       },
+       {
+        "homePoint": 461,
+        "awayPoint": 425,
+        "isHome": false
+       },
+       {
+        "homePoint": 401,
+        "awayPoint": 425,
+        "isHome": true
+       },
+       {
+        "homePoint": 401,
+        "awayPoint": 245,
+        "isHome": false
+       },
+       {
+        "homePoint": 267,
+        "awayPoint": 245,
+        "isHome": true
+       },
+       {
+        "homePoint": 267,
+        "awayPoint": 65,
+        "isHome": false
+       },
+       {
+        "homePoint": 226,
+        "awayPoint": 65,
+        "isHome": true
+       },
+       {
+        "homePoint": 226,
+        "awayPoint": 40,
+        "isHome": false
+       },
+       {
+        "homePoint": 170,
+        "awayPoint": 40,
+        "isHome": true
+       },
+       {
+        "homePoint": 170,
+        "awayPoint": 0,
+        "isHome": false
+       }
+      ],
+      "score": {
+       "homeScore": 0,
+       "awayScore": 1,
+       "throwing": 1,
+       "scoring": 2
+      }
+     },
+     {
+      "leg": 2,
+      "points": [
+       {
+        "homePoint": 501,
+        "awayPoint": 409,
+        "isHome": false
+       },
+       {
+        "homePoint": 460,
+        "awayPoint": 409,
+        "isHome": true
+       },
+       {
+        "homePoint": 460,
+        "awayPoint": 328,
+        "isHome": false
+       },
+       {
+        "homePoint": 400,
+        "awayPoint": 328,
+        "isHome": true
+       },
+       {
+        "homePoint": 400,
+        "awayPoint": 148,
+        "isHome": false
+       },
+       {
+        "homePoint": 305,
+        "awayPoint": 148,
+        "isHome": true
+       },
+       {
+        "homePoint": 305,
+        "awayPoint": 8,
+        "isHome": false
+       },
+       {
+        "homePoint": 135,
+        "awayPoint": 8,
+        "isHome": true
+       },
+       {
+        "homePoint": 135,
+        "awayPoint": 8,
+        "isHome": false
+       },
+       {
+        "homePoint": 0,
+        "awayPoint": 8,
+        "isHome": true
+       }
+      ],
+      "score": {
+       "homeScore": 1,
+       "awayScore": 1,
+       "throwing": 2,
+       "scoring": 1
+      }
+     },
+     {
+      "leg": 3,
+      "points": [
+       {
+        "homePoint": 461,
+        "awayPoint": 501,
+        "isHome": true
+       },
+       {
+        "homePoint": 461,
+        "awayPoint": 465,
+        "isHome": false
+       },
+       {
+        "homePoint": 414,
+        "awayPoint": 465,
+        "isHome": true
+       },
+       {
+        "homePoint": 414,
+        "awayPoint": 368,
+        "isHome": false
+       },
+       {
+        "homePoint": 354,
+        "awayPoint": 368,
+        "isHome": true
+       },
+       {
+        "homePoint": 354,
+        "awayPoint": 188,
+        "isHome": false
+       },
+       {
+        "homePoint": 254,
+        "awayPoint": 188,
+        "isHome": true
+       },
+       {
+        "homePoint": 254,
+        "awayPoint": 48,
+        "isHome": false
+       },
+       {
+        "homePoint": 214,
+        "awayPoint": 48,
+        "isHome": true
+       },
+       {
+        "homePoint": 214,
+        "awayPoint": 0,
+        "isHome": false
+       }
+      ],
+      "score": {
+       "homeScore": 1,
+       "awayScore": 2,
+       "throwing": 1,
+       "scoring": 2
+      }
+     },
+     {
+      "leg": 4,
+      "points": [
+       {
+        "homePoint": 501,
+        "awayPoint": 389,
+        "isHome": false
+       },
+       {
+        "homePoint": 412,
+        "awayPoint": 389,
+        "isHome": true
+       },
+       {
+        "homePoint": 412,
+        "awayPoint": 289,
+        "isHome": false
+       },
+       {
+        "homePoint": 287,
+        "awayPoint": 289,
+        "isHome": true
+       },
+       {
+        "homePoint": 287,
+        "awayPoint": 229,
+        "isHome": false
+       },
+       {
+        "homePoint": 191,
+        "awayPoint": 229,
+        "isHome": true
+       },
+       {
+        "homePoint": 191,
+        "awayPoint": 144,
+        "isHome": false
+       },
+       {
+        "homePoint": 57,
+        "awayPoint": 144,
+        "isHome": true
+       },
+       {
+        "homePoint": 57,
+        "awayPoint": 104,
+        "isHome": false
+       },
+       {
+        "homePoint": 20,
+        "awayPoint": 104,
+        "isHome": true
+       },
+       {
+        "homePoint": 20,
+        "awayPoint": 0,
+        "isHome": false
+       }
+      ],
+      "score": {
+       "homeScore": 1,
+       "awayScore": 3,
+       "throwing": 2,
+       "scoring": 2
+      }
+     }
+    ],
+    "score": {
+     "homeScore": 0,
+     "awayScore": 2,
+     "scoring": 2
+    }
+   },
+   {
+    "set": 3,
+    "legs": [
+     {
+      "leg": 1,
+      "points": [
+       {
+        "homePoint": 501,
+        "awayPoint": 501
+       },
+       {
+        "homePoint": 391,
+        "awayPoint": 501,
+        "isHome": true
+       },
+       {
+        "homePoint": 391,
+        "awayPoint": 409,
+        "isHome": false
+       },
+       {
+        "homePoint": 331,
+        "awayPoint": 409,
+        "isHome": true
+       },
+       {
+        "homePoint": 331,
+        "awayPoint": 275,
+        "isHome": false
+       },
+       {
+        "homePoint": 151,
+        "awayPoint": 275,
+        "isHome": true
+       },
+       {
+        "homePoint": 151,
+        "awayPoint": 135,
+        "isHome": false
+       },
+       {
+        "homePoint": 32,
+        "awayPoint": 135,
+        "isHome": true
+       },
+       {
+        "homePoint": 32,
+        "awayPoint": 25,
+        "isHome": false
+       },
+       {
+        "homePoint": 0,
+        "awayPoint": 25,
+        "isHome": true
+       }
+      ],
+      "score": {
+       "homeScore": 1,
+       "awayScore": 0,
+       "throwing": 2,
+       "scoring": 1
+      }
+     },
+     {
+      "leg": 2,
+      "points": [
+       {
+        "homePoint": 460,
+        "awayPoint": 501,
+        "isHome": true
+       },
+       {
+        "homePoint": 460,
+        "awayPoint": 501,
+        "isHome": false
+       },
+       {
+        "homePoint": 337,
+        "awayPoint": 501,
+        "isHome": true
+       },
+       {
+        "homePoint": 337,
+        "awayPoint": 394,
+        "isHome": false
+       },
+       {
+        "homePoint": 197,
+        "awayPoint": 394,
+        "isHome": true
+       },
+       {
+        "homePoint": 197,
+        "awayPoint": 294,
+        "isHome": false
+       },
+       {
+        "homePoint": 97,
+        "awayPoint": 294,
+        "isHome": true
+       },
+       {
+        "homePoint": 97,
+        "awayPoint": 114,
+        "isHome": false
+       },
+       {
+        "homePoint": 40,
+        "awayPoint": 114,
+        "isHome": true
+       },
+       {
+        "homePoint": 40,
+        "awayPoint": 20,
+        "isHome": false
+       },
+       {
+        "homePoint": 10,
+        "awayPoint": 20,
+        "isHome": true
+       },
+       {
+        "homePoint": 10,
+        "awayPoint": 10,
+        "isHome": false
+       },
+       {
+        "homePoint": 0,
+        "awayPoint": 10,
+        "isHome": true
+       }
+      ],
+      "score": {
+       "homeScore": 2,
+       "awayScore": 0,
+       "throwing": 1,
+       "scoring": 1
+      }
+     },
+     {
+      "leg": 3,
+      "points": [
+       {
+        "homePoint": 501,
+        "awayPoint": 429,
+        "isHome": false
+       },
+       {
+        "homePoint": 412,
+        "awayPoint": 429,
+        "isHome": true
+       },
+       {
+        "homePoint": 412,
+        "awayPoint": 348,
+        "isHome": false
+       },
+       {
+        "homePoint": 312,
+        "awayPoint": 348,
+        "isHome": true
+       },
+       {
+        "homePoint": 312,
+        "awayPoint": 168,
+        "isHome": false
+       },
+       {
+        "homePoint": 252,
+        "awayPoint": 168,
+        "isHome": true
+       },
+       {
+        "homePoint": 252,
+        "awayPoint": 74,
+        "isHome": false
+       },
+       {
+        "homePoint": 112,
+        "awayPoint": 74,
+        "isHome": true
+       },
+       {
+        "homePoint": 112,
+        "awayPoint": 0,
+        "isHome": false
+       }
+      ],
+      "score": {
+       "homeScore": 2,
+       "awayScore": 1,
+       "throwing": 2,
+       "scoring": 2
+      }
+     },
+     {
+      "leg": 4,
+      "points": [
+       {
+        "homePoint": 450,
+        "awayPoint": 501,
+        "isHome": true
+       },
+       {
+        "homePoint": 450,
+        "awayPoint": 349,
+        "isHome": false
+       },
+       {
+        "homePoint": 310,
+        "awayPoint": 349,
+        "isHome": true
+       },
+       {
+        "homePoint": 310,
+        "awayPoint": 249,
+        "isHome": false
+       },
+       {
+        "homePoint": 251,
+        "awayPoint": 249,
+        "isHome": true
+       },
+       {
+        "homePoint": 251,
+        "awayPoint": 154,
+        "isHome": false
+       },
+       {
+        "homePoint": 111,
+        "awayPoint": 154,
+        "isHome": true
+       },
+       {
+        "homePoint": 111,
+        "awayPoint": 58,
+        "isHome": false
+       },
+       {
+        "homePoint": 16,
+        "awayPoint": 58,
+        "isHome": true
+       },
+       {
+        "homePoint": 16,
+        "awayPoint": 0,
+        "isHome": false
+       }
+      ],
+      "score": {
+       "homeScore": 2,
+       "awayScore": 2,
+       "throwing": 1,
+       "scoring": 2
+      }
+     },
+     {
+      "leg": 5,
+      "points": [
+       {
+        "homePoint": 501,
+        "awayPoint": 349,
+        "isHome": false
+       },
+       {
+        "homePoint": 412,
+        "awayPoint": 349,
+        "isHome": true
+       },
+       {
+        "homePoint": 412,
+        "awayPoint": 264,
+        "isHome": false
+       },
+       {
+        "homePoint": 232,
+        "awayPoint": 264,
+        "isHome": true
+       },
+       {
+        "homePoint": 232,
+        "awayPoint": 206,
+        "isHome": false
+       },
+       {
+        "homePoint": 186,
+        "awayPoint": 206,
+        "isHome": true
+       },
+       {
+        "homePoint": 186,
+        "awayPoint": 106,
+        "isHome": false
+       },
+       {
+        "homePoint": 141,
+        "awayPoint": 106,
+        "isHome": true
+       },
+       {
+        "homePoint": 141,
+        "awayPoint": 0,
+        "isHome": false
+       }
+      ],
+      "score": {
+       "homeScore": 2,
+       "awayScore": 3,
+       "throwing": 2,
+       "scoring": 2
+      }
+     }
+    ],
+    "score": {
+     "homeScore": 0,
+     "awayScore": 3,
+     "scoring": 2
+    }
+   }
+  ]
+ }
+}

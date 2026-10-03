@@ -1204,10 +1204,12 @@ class EventStore:
 
     def missing(self, scope: Optional[Scope], required: Mapping[str, Sequence[str]], *,
                 status_classes: Sequence[str] = FINISHED_CLASSES, threshold: int = DEFAULT_EMPTY_THRESHOLD,
-                limit: Optional[int] = None) -> Iterator[MissingRow]:
+                limit: Optional[int] = None, exclusive: bool = False) -> Iterator[MissingRow]:
         """
         Eksiği olan maçlar, kimlik sırasıyla. required: spor kısa adı → gereken dilim anahtarları; "" her
-        spor için geçerlidir (sporu bilinmeyen maç yalnızca onları bekler).
+        spor için geçerlidir (sporu bilinmeyen maç yalnızca onları bekler). exclusive: kendi girdisi olan spor
+        yalnızca kendi anahtarlarını bekler, "" yalnızca girdisi olmayan sporlara (ve sporu bilinmeyen maça)
+        uygulanır; bir spor ortak bir dilimi beklemeyebilir.
 
         Bir dilim eksiktir: satırı yoksa ya da durumu `ok` değilken kesin "veri yok" sayısı (doğrulanmış +
         doğrulanmamış) `threshold`un altındaysa. Olay yükü olmayan maç (yalnızca listeden bilinen) her zaman
@@ -1221,7 +1223,7 @@ class EventStore:
                 raise ValueError(f"required: expected sport slugs as keys, got {sport!r}")
             for key in keys:
                 pair = (sport, layout.validate_key(key))
-                if pair not in rows and not (sport and key in common):  # "" zaten her sporu kapsar
+                if pair not in rows and not (sport and key in common and not exclusive):  # "" her sporu kapsar
                     rows.append(pair)
         conditions, params = _scope_sql(scope)
         status = _status_sql(status_classes)
@@ -1236,14 +1238,20 @@ class EventStore:
         conditions.append(
             "(e.has_event_payload = 0 OR (r.key IS NOT NULL AND (s.event_id IS NULL "
             "OR (s.state != 'ok' AND s.empty_count + s.unverified_empty_count < ?))))")
+        # exclusive: "" satırları yalnızca `required`'da kendi girdisi olmayan spora (girdisi boş olan da kendi
+        # girdisidir: o spor hiçbir dilim beklemez)
+        listed = sorted(sport for sport in required if sport) if exclusive else []
+        default_rows = "r.sport = ''"
+        if listed:
+            default_rows += " AND e.sport NOT IN (" + ", ".join("?" for _ in listed) + ")"
         sql = (
             f"WITH req(sport, key, ord) AS ({requirement}) "
             "SELECT e.id, e.sport, e.has_event_payload, group_concat(r.ord) FROM events e "
-            "LEFT JOIN req r ON r.sport = e.sport OR r.sport = '' "
+            f"LEFT JOIN req r ON r.sport = e.sport OR ({default_rows}) "
             "LEFT JOIN event_slices s ON s.event_id = e.id AND s.key = r.key AND s.sub = ''"
             f"{_where(conditions)} GROUP BY e.id ORDER BY e.id"
         )
-        bound = [*bound, *params, threshold]
+        bound = [*bound, *listed, *params, threshold]
         if limit is not None:
             sql += " LIMIT ?"
             bound.append(_check_limit(limit))
