@@ -276,3 +276,36 @@ def test_the_shared_solve_still_takes_its_slot_after_the_starter_stopped(monkeyp
     with request_context(cancel=lambda: True):
         assert cs._run_sync(bridge.solve_challenge(), 5.0) == "jwt"
     assert reservations == [1]
+
+
+@pytest.mark.parametrize("sync", [True, False])
+def test_a_browser_first_answer_that_arrives_during_a_stop_is_returned(
+        monkeypatch: pytest.MonkeyPatch, sync: bool) -> None:
+    """
+    Satır 91: köprünün yanıtından sonraki bekleme iptalle kesilirse veri atılmaz, curl yolundaki gibi döndürülür;
+    iptal bir sonraki istekte işlenir. Eskiden bu bekleme FetchCancelled fırlatıyor, yanıt kayboluyordu.
+    """
+    answered: list = []
+
+    async def evaluate(script: str, arg: object = None) -> dict:
+        answered.append(arg)
+        return _OK
+
+    _count_reservations(monkeypatch)
+    bridge = _bridge()
+    bridge.evaluate = evaluate
+    _browser_first(monkeypatch, bridge, {**CFG, "wait_time_min": 30})
+    session = AsyncMock()
+
+    def request(path: str) -> object:
+        if sync:
+            return transport.make_api_request(path)
+        return asyncio.run(transport.make_api_request_async(session, path))
+
+    with request_context(cancel=lambda: bool(answered)):
+        started = time.monotonic()
+        assert request("/event/1") == {"a": 1}
+        assert time.monotonic() - started < 1.0 + _SLACK  # 30 sn'lik bekleme kesildi
+        with pytest.raises(FetchCancelled):  # iptal bir sonraki istekte işlenir
+            request("/event/2")
+    assert len(answered) == 1 and session.get.await_count == 0
