@@ -12,6 +12,9 @@ yöneticisi, iş deposu, eski arayüzün iş görüntüsü) src/web/deps.py'dedi
 Eskiden src/web/routes/ (leagues, matches, scrape, settings, data, sports, diagnostics, auth, common) ve
 src/web/fetch_job.py'deydiler. Farklar:
 
+  * Ayarlar: `POST /api/settings` değeri yine `.env`'e yazar, sonra aynı anahtarın `config/overrides.json`'daki
+    değerini siler (src.config.overrides): `PATCH /api/v1/settings` ile yazılmış bir değer artık eski Ayarlar
+    sayfasının sonraki kaydını gölgelemez (plan bölüm 15, satır 78).
   * Belge metinleri (OpenAPI `description`) ve log satırları İngilizcedir.
 """
 from __future__ import annotations
@@ -1024,7 +1027,8 @@ def update_settings(settings: SettingsUpdate):
     """
     Update application settings (written to `.env`).
 
-    Changing the data folder is refused while a job runs (409 `job_running`; nothing
+    A value written through `PATCH /api/v1/settings` for the same key is removed from the overrides file, so the
+    saved value takes effect. Changing the data folder is refused while a job runs (409 `job_running`; nothing
     is written); without a job the change takes effect at once and the job store moves to the new folder. A
     folder that cannot be used is 400 `data_dir_unusable`.
     """
@@ -1097,18 +1101,39 @@ _ENV_MAP: Dict[str, Any] = {
 }
 
 
+def _drop_shadowing_overrides(keys: List[str]) -> None:
+    """
+    `PATCH /api/v1/settings`in overrides.json'a yazdığı, `.env`'in üstünde duran değerleri siler: eski Ayarlar
+    sayfasının kaydettiği değer geçerli olsun (plan bölüm 15, satır 78). Dosyada olmayan anahtar için bir şey
+    yazılmaz; dosya yazılamazsa uyarı loglanır, kayıt yine başarılıdır (`.env` yazıldı).
+    """
+    from src.config import overrides
+
+    try:
+        written = overrides.read_document()
+        present = [key for key in keys if key.partition(".")[2] in (written.get(key.partition(".")[0]) or {})]
+        if present:
+            overrides.write_overrides({key: None for key in present})
+            logger.info("Settings saved by the legacy route replace the overrides of: %s", ", ".join(present))
+    except Exception as e:
+        logger.warning("The overrides of the saved settings could not be removed: %s", e)
+
+
 def _apply_settings(settings: SettingsUpdate) -> dict:
     manager = _cm()
     try:
         updated = False
+        saved: List[str] = []
         settings_dict = settings.model_dump(exclude_none=True)
         for field, value in settings_dict.items():
             if field in _ENV_MAP:
-                env_key, converter, _key = _ENV_MAP[field]
+                env_key, converter, key = _ENV_MAP[field]
                 if manager.update_env_variable(env_key, converter(value)):
                     updated = True
+                    saved.append(key)
 
         if updated:
+            _drop_shadowing_overrides(saved)
             manager.reload_config()
             return {"status": "success", "message": "Settings updated successfully."}
         else:

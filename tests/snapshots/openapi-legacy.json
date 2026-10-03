@@ -957,7 +957,7 @@
           "api"
         ],
         "summary": "Update Settings",
-        "description": "Update application settings (written to `.env`).\n\nChanging the data folder is refused while a job runs (409 `job_running`; nothing\nis written); without a job the change takes effect at once and the job store moves to the new folder. A\nfolder that cannot be used is 400 `data_dir_unusable`.",
+        "description": "Update application settings (written to `.env`).\n\nA value written through `PATCH /api/v1/settings` for the same key is removed from the overrides file, so the\nsaved value takes effect. Changing the data folder is refused while a job runs (409 `job_running`; nothing\nis written); without a job the change takes effect at once and the job store moves to the new folder. A\nfolder that cannot be used is 400 `data_dir_unusable`.",
         "operationId": "update_settings_api_settings_post",
         "requestBody": {
           "content": {

@@ -195,21 +195,28 @@ def test_a_value_written_here_beats_the_env_file_and_null_gives_it_back(sandbox:
     assert os.environ["MAX_CONCURRENT"] == "5"
 
 
-def test_a_value_written_here_shadows_a_later_save_of_the_legacy_route(sandbox: Path) -> None:
+def test_a_later_save_of_the_legacy_route_replaces_a_value_written_here(sandbox: Path) -> None:
     """
-    Bilinen sınır, eski rota v1'in yazarına geçene kadar (P21): overrides.json `.env`'in üstündedir. v1 ile
-    yazılmış bir anahtarı eski `POST /api/settings` sonradan kaydederse değer `.env`'e gider, başarı bildirilir
-    ve etkisi olmaz; v1 değeri `null` ile silince `.env`'deki değer geçerli olur.
+    Plan bölüm 15, satır 78 (P21): overrides.json `.env`'in üstündedir. Eski `POST /api/settings` bir anahtarı
+    `.env`'e yazınca aynı anahtarın overrides.json'daki değerini de siler: kaydedilen değer geçerli olur. Öteki
+    anahtarlar dosyada kalır.
     """
-    assert patch({"client.retries": 7}).status_code == 200
+    assert patch({"client.retries": 7, "client.timeout_seconds": 30}).status_code == 200
 
     legacy = client.post("/api/settings", json={"max_retries": 2})
 
     assert legacy.status_code == 200 and legacy.json()["status"] == "success"
-    assert deps.config_manager().get_max_retries() == 7 and rows()["client.retries"]["source"] == "overrides"
-    assert patch({"client.retries": None}).status_code == 200
     row = rows()["client.retries"]
     assert (row["value"], row["source"]) == (2, "dotenv") and deps.config_manager().get_max_retries() == 2
+    assert json.loads(sandbox.read_text(encoding="utf-8")) == {"client": {"timeout_seconds": 30}}
+    assert rows()["client.timeout_seconds"]["source"] == "overrides"
+
+
+def test_a_legacy_save_of_a_key_not_written_here_leaves_the_overrides_file_alone(sandbox: Path) -> None:
+    assert patch({"client.timeout_seconds": 30}).status_code == 200
+    before = sandbox.read_bytes()
+    assert client.post("/api/settings", json={"max_retries": 2}).json()["status"] == "success"
+    assert sandbox.read_bytes() == before
 
 
 def test_an_empty_patch_changes_nothing(sandbox: Path) -> None:
