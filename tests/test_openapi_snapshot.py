@@ -100,8 +100,13 @@ def test_the_document_is_the_v1_view(document: Dict[str, Any], full_document: Di
     assert [f"{method} {path}" for method, path, _op in operations(document)] == [
         "GET /api/v1/health",
         "GET /api/v1/status",
+        "POST /api/v1/status/check",
         "GET /api/v1/sports",
         "GET /api/v1/sports/{slug}",
+        "GET /api/v1/sinks",
+        "GET /api/v1/auth",
+        "POST /api/v1/auth/login",
+        "POST /api/v1/auth/logout",
         "GET /api/v1/jobs",
         "POST /api/v1/jobs",
         "GET /api/v1/jobs/{job_id}",
@@ -138,8 +143,8 @@ def test_v1_and_the_legacy_contract_share_no_schema(document: Dict[str, Any], fu
 def test_every_v1_operation_has_a_stable_id_and_a_summary(document: Dict[str, Any]) -> None:
     ids = [op["operationId"] for _m, _p, op in operations(document)]
     assert ids == [
-        "getHealth", "getStatus", "listSports", "getSport", "listJobs", "startJob", "getJob", "cancelJob",
-        "streamJobEvents", "getSettings", "updateSettings",
+        "getHealth", "getStatus", "checkConnection", "listSports", "getSport", "listSinks", "getAuth", "login",
+        "logout", "listJobs", "startJob", "getJob", "cancelJob", "streamJobEvents", "getSettings", "updateSettings",
     ]
     assert len(set(ids)) == len(ids)
     for method, path, op in operations(document):
@@ -177,7 +182,10 @@ def test_every_v1_operation_documents_its_errors_with_the_error_model(document: 
 
 def test_state_changing_requests_are_never_get(document: Dict[str, Any]) -> None:
     writes = {f"{method} {path}" for method, path, _op in operations(document) if method != "GET"}
-    assert writes == {"POST /api/v1/jobs", "POST /api/v1/jobs/{job_id}/cancel", "PATCH /api/v1/settings"}
+    assert writes == {
+        "POST /api/v1/jobs", "POST /api/v1/jobs/{job_id}/cancel", "PATCH /api/v1/settings", "POST /api/v1/status/check",
+        "POST /api/v1/auth/login", "POST /api/v1/auth/logout",
+    }
 
 
 # --- komut satırı ------------------------------------------------------------------------------------

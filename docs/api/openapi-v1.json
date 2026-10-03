@@ -64,7 +64,7 @@
           "meta"
         ],
         "summary": "Status of the service",
-        "description": "Service state: versions, access to SofaScore, the request budget and the job that is running now.",
+        "description": "Service state: versions, access to SofaScore, the request budget, the job that is running now, the live\nservice, what the data directory holds, the leases held right now and the optional features. When the\ndata directory cannot be read, `live` and `summary` are null and `storage_error` has the error code.",
         "operationId": "getStatus",
         "responses": {
           "200": {
@@ -99,6 +99,78 @@
           },
           "422": {
             "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/status/check": {
+      "post": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Check the connection to SofaScore",
+        "description": "Send one request to SofaScore now (the live list of football) and report whether it was answered. Only\ncalled when the user asks; it takes a turn of the shared request budget. A failed check answers 200 with\n`ok: false` and the `reason`: blocked, browser, rate_limited, network or upstream.",
+        "operationId": "checkConnection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusCheckRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusCheckResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden_origin",
             "content": {
               "application/json": {
                 "schema": {
@@ -223,6 +295,244 @@
           },
           "404": {
             "description": "not_found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sinks": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "List the output sinks",
+        "description": "The sinks of the configuration (config file `[[sink]]` or SOFASCORE_SINKS), in their order, with the\nposition each has delivered up to and how far it lags behind the event log. Sinks are configured in the\nfile only; this route only reads. Credentials in webhook addresses are masked. Whether a process\ndelivers right now is `served` (the holder of the `sinks` lease is in `/status` `leases`).",
+        "operationId": "listSinks",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SinkListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Session state",
+        "description": "Whether an access token is required and whether this caller presents it. Answers without a token.",
+        "operationId": "getAuth",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Sign in with the access token",
+        "description": "Exchange the access token for a session cookie (HttpOnly, SameSite=Strict). Without a configured token the\ncall does nothing and reports `authenticated`. A wrong token is 401 `unauthorized` with\n`details.reason = \"invalid_token\"`; after repeated wrong tokens from one address the attempts are refused\nfor a while (401 with `details.reason = \"too_many_attempts\"` and `Retry-After`), the right token included.",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthLogin"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden_origin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Sign out",
+        "description": "Delete the session cookie of this browser.",
+        "operationId": "logout",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "internal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden_origin",
             "content": {
               "application/json": {
                 "schema": {
@@ -980,6 +1290,54 @@
         ],
         "title": "ApiErrorResponse"
       },
+      "AuthLogin": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "maxLength": 4096,
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "AuthLogin",
+        "description": "The access token, sent once by the web UI in exchange for a session cookie."
+      },
+      "AuthResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AuthState"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "AuthResponse"
+      },
+      "AuthState": {
+        "properties": {
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "description": "An access token is configured."
+          },
+          "authenticated": {
+            "type": "boolean",
+            "title": "Authenticated",
+            "description": "This request carries the token or a valid session cookie."
+          }
+        },
+        "type": "object",
+        "required": [
+          "required",
+          "authenticated"
+        ],
+        "title": "AuthState",
+        "description": "Whether the server asks for an access token, and whether this caller presents a valid one."
+      },
       "BridgeHealth": {
         "properties": {
           "state": {
@@ -1102,6 +1460,154 @@
           "kind"
         ],
         "title": "BridgeLastError"
+      },
+      "Capabilities": {
+        "properties": {
+          "parquet": {
+            "type": "boolean",
+            "title": "Parquet",
+            "description": "Parquet exports (the optional package pyarrow is installed)."
+          },
+          "sse": {
+            "type": "boolean",
+            "title": "Sse",
+            "description": "Server-sent event streams of jobs (the package sse-starlette is installed)."
+          },
+          "scheduler": {
+            "type": "boolean",
+            "title": "Scheduler",
+            "description": "The in-app scheduler runs inside this server."
+          }
+        },
+        "type": "object",
+        "required": [
+          "parquet",
+          "sse",
+          "scheduler"
+        ],
+        "title": "Capabilities",
+        "description": "Optional features this server can offer."
+      },
+      "DataSummary": {
+        "properties": {
+          "only_finished": {
+            "type": "boolean",
+            "title": "Only Finished",
+            "description": "Matches count only finished events or events with details."
+          },
+          "matches": {
+            "type": "integer",
+            "title": "Matches"
+          },
+          "details": {
+            "type": "integer",
+            "title": "Details"
+          },
+          "seasons": {
+            "type": "integer",
+            "title": "Seasons"
+          },
+          "legacy_events": {
+            "type": "integer",
+            "title": "Legacy Events",
+            "description": "Events stored in the old layout; `ssc migrate` moves them."
+          },
+          "catalog_rebuild_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Rebuild Reason",
+            "description": "Set when the catalog does not describe the files; the counts are then partial."
+          },
+          "tournaments": {
+            "items": {
+              "$ref": "#/components/schemas/TournamentSummary"
+            },
+            "type": "array",
+            "title": "Tournaments"
+          },
+          "disk": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiskSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "only_finished",
+          "matches",
+          "details",
+          "seasons",
+          "legacy_events",
+          "tournaments"
+        ],
+        "title": "DataSummary",
+        "description": "What the data directory holds, counted from its catalog."
+      },
+      "DiskSummary": {
+        "properties": {
+          "entries": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Entries",
+            "description": "Every top-level entry of the data directory."
+          },
+          "seasons": {
+            "type": "integer",
+            "title": "Seasons"
+          },
+          "matches": {
+            "type": "integer",
+            "title": "Matches"
+          },
+          "details": {
+            "type": "integer",
+            "title": "Details"
+          },
+          "datasets": {
+            "type": "integer",
+            "title": "Datasets"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "seasons + matches + details + datasets."
+          },
+          "measured_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Measured At Utc"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entries",
+          "seasons",
+          "matches",
+          "details",
+          "datasets",
+          "total"
+        ],
+        "title": "DiskSummary",
+        "description": "Disk use of the data directory in bytes; a measurement may be up to a minute old."
       },
       "Health": {
         "properties": {
@@ -1437,6 +1943,155 @@
         "title": "JobState",
         "description": "İşin durumu. `QUEUED` ve `RUNNING` dışındakiler son durumdur."
       },
+      "LeaseHolder": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "writer, live, sinks, maintenance or watcher:<sport>."
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose",
+            "default": ""
+          },
+          "pid": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pid"
+          },
+          "host": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host"
+          },
+          "since_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Since Utc"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "LeaseHolder",
+        "description": "A lease of the data directory that is held right now."
+      },
+      "LiveStatus": {
+        "properties": {
+          "running": {
+            "type": "boolean",
+            "title": "Running",
+            "description": "A live service holds the `live` lease right now, in any process."
+          },
+          "pid": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pid"
+          },
+          "host": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source",
+            "description": "page, direct or poll; null when not running."
+          },
+          "sports": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sports",
+            "description": "The sports it watches; empty when not running."
+          },
+          "heartbeat_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heartbeat At",
+            "description": "Epoch seconds of the last heartbeat, also of a run that has ended."
+          },
+          "blocked": {
+            "type": "boolean",
+            "title": "Blocked",
+            "description": "SofaScore refuses the service right now.",
+            "default": false
+          },
+          "leaders": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Leaders",
+            "description": "Sport to the source that leads it now (page, direct or poll)."
+          },
+          "last_switch": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Switch",
+            "description": "The last change of a leading source."
+          }
+        },
+        "type": "object",
+        "required": [
+          "running"
+        ],
+        "title": "LiveStatus",
+        "description": "The live service of the data directory (`ssc watch`): its state only, never live data."
+      },
       "PageInfo": {
         "properties": {
           "limit": {
@@ -1606,6 +2261,142 @@
           "data"
         ],
         "title": "SettingsResponse"
+      },
+      "SinkListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/SinkStatus"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "page"
+        ],
+        "title": "SinkListResponse"
+      },
+      "SinkStatus": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "stdout, file or webhook."
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target",
+            "description": "The file path, or the webhook address with its credentials masked."
+          },
+          "events": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Events",
+            "description": "Event type patterns the sink takes."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error",
+              "pending"
+            ],
+            "title": "State",
+            "description": "`pending`: the sink has delivered nothing yet; `error`: the last delivery failed."
+          },
+          "served": {
+            "type": "boolean",
+            "title": "Served",
+            "description": "A process holds the `sinks` lease and delivers right now."
+          },
+          "cursor": {
+            "type": "integer",
+            "title": "Cursor",
+            "description": "Sequence number of the last event delivered to the sink."
+          },
+          "head_seq": {
+            "type": "integer",
+            "title": "Head Seq",
+            "description": "Sequence number of the newest event of the log."
+          },
+          "lag_events": {
+            "type": "integer",
+            "title": "Lag Events",
+            "description": "Events of the log after the cursor (all types, before the sink's filter)."
+          },
+          "lag_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lag Seconds",
+            "description": "Age of the oldest undelivered event; null when none."
+          },
+          "last_delivered_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Delivered At Utc"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "dropped": {
+            "type": "integer",
+            "title": "Dropped",
+            "description": "Undelivered events given up as too old, as far as the retained log tells."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "events",
+          "state",
+          "served",
+          "cursor",
+          "head_seq",
+          "lag_events",
+          "dropped"
+        ],
+        "title": "SinkStatus",
+        "description": "A configured output sink and how far it has delivered the event log."
       },
       "Sport": {
         "properties": {
@@ -1801,6 +2592,11 @@
             "const": "v1",
             "title": "Api Version"
           },
+          "schema_version": {
+            "type": "integer",
+            "title": "Schema Version",
+            "description": "Version of the normalized schema of the records this API returns (`sofascore.data/<n>`)."
+          },
           "auth_required": {
             "type": "boolean",
             "title": "Auth Required",
@@ -1822,17 +2618,153 @@
               }
             ],
             "description": "The job that runs on the data directory right now, in any process."
+          },
+          "live": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LiveStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The live service; null when the store cannot be read."
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DataSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when the store cannot be read."
+          },
+          "leases": {
+            "items": {
+              "$ref": "#/components/schemas/LeaseHolder"
+            },
+            "type": "array",
+            "title": "Leases",
+            "description": "Leases held right now, in any process."
+          },
+          "capabilities": {
+            "$ref": "#/components/schemas/Capabilities"
+          },
+          "storage_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Storage Error",
+            "description": "Error code when the data directory could not be read; the fields that need it are empty."
           }
         },
         "type": "object",
         "required": [
           "version",
           "api_version",
+          "schema_version",
           "auth_required",
           "bridge",
-          "throttle"
+          "throttle",
+          "capabilities"
         ],
         "title": "Status"
+      },
+      "StatusCheck": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "blocked",
+                  "browser",
+                  "rate_limited",
+                  "network",
+                  "upstream"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Why the check failed; null when it succeeded."
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "English text; clients translate by `reason`."
+          },
+          "events_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Events Count",
+            "description": "Live events in the answer; null on failure."
+          },
+          "checked_at_utc": {
+            "type": "string",
+            "title": "Checked At Utc"
+          },
+          "bridge": {
+            "$ref": "#/components/schemas/BridgeHealth"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "message",
+          "checked_at_utc",
+          "bridge"
+        ],
+        "title": "StatusCheck",
+        "description": "The outcome of one connection check; a failed check is a result, not an error."
+      },
+      "StatusCheckRequest": {
+        "properties": {
+          "target": {
+            "type": "string",
+            "const": "sofascore",
+            "title": "Target",
+            "description": "`sofascore`: one request for the live list of football."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target"
+        ],
+        "title": "StatusCheckRequest",
+        "description": "What to check."
+      },
+      "StatusCheckResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/StatusCheck"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "StatusCheckResponse"
       },
       "StatusResponse": {
         "properties": {
@@ -1908,6 +2840,97 @@
         ],
         "title": "ThrottleStatus",
         "description": "The request budget shared by all processes of this machine."
+      },
+      "TournamentSummary": {
+        "properties": {
+          "tournament_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tournament Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name of the follow, else the stored tournament name."
+          },
+          "followed": {
+            "type": "boolean",
+            "title": "Followed",
+            "description": "A tournament of the configured leagues."
+          },
+          "matches": {
+            "type": "integer",
+            "title": "Matches",
+            "description": "Events counted as matches (the `only_finished` rule of the summary)."
+          },
+          "details": {
+            "type": "integer",
+            "title": "Details",
+            "description": "Events with a stored event payload."
+          },
+          "events": {
+            "type": "integer",
+            "title": "Events",
+            "description": "Every stored event, unfinished schedule rows included."
+          },
+          "finished": {
+            "type": "integer",
+            "title": "Finished"
+          },
+          "seasons": {
+            "type": "integer",
+            "title": "Seasons",
+            "description": "Seasons in the tournament's stored season list."
+          },
+          "seasons_with_events": {
+            "type": "integer",
+            "title": "Seasons With Events"
+          },
+          "coverage": {
+            "type": "number",
+            "title": "Coverage",
+            "description": "details / matches in percent, one decimal; 0 without matches."
+          },
+          "last_update_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Update Utc",
+            "description": "Newest change of a stored payload."
+          }
+        },
+        "type": "object",
+        "required": [
+          "tournament_id",
+          "followed",
+          "matches",
+          "details",
+          "events",
+          "finished",
+          "seasons",
+          "seasons_with_events",
+          "coverage"
+        ],
+        "title": "TournamentSummary",
+        "description": "Counts of one tournament. `tournament_id` null: the events without a unique tournament."
       }
     }
   }

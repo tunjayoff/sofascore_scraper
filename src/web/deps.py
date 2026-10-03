@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from src.config import LoadedSettings
     from src.config_manager import ConfigManager
     from src.jobs.manager import JobManager
-    from src.store import JobStore
+    from src.store import JobStore, Store
 
 
 # --- servis bağlamı ------------------------------------------------------------------------------
@@ -53,6 +53,16 @@ def config_manager() -> "ConfigManager":
     from src.web.routes import common
 
     return common.config_manager
+
+
+def store() -> "Store":
+    """
+    Yapılandırılmış veri dizininin deposu (süreç başına dizin başına tek nesne: `open_store`). Açılamazsa
+    StoreError (SchemaTooNew, StoreBusy, ...): v1 rotası onu hata tablosundaki koduyla yanıtlar.
+    """
+    from src.store import open_store
+
+    return open_store(config_manager().get_data_dir())
 
 
 def loaded_settings() -> "LoadedSettings":
@@ -198,4 +208,5 @@ __all__ = [
     "presents_bearer",
     "refresh_job_mirror",
     "server_token",
+    "store",
 ]
