@@ -16,9 +16,11 @@ import csv
 import io
 import json
 import sqlite3
+import time
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Sequence
+from typing import Any, Dict, Iterator, List, Mapping, Optional, Sequence
 
+import conftest
 import pytest
 from fastapi.testclient import TestClient
 
@@ -28,8 +30,9 @@ from src.schema import SCHEMA_VERSION
 from src.services import export as export_service
 from src.services.export import (DatasetFilter, DatasetSpec, ExportService, check_dataset, dataset_columns,
                                  flatten_record, leaf_paths, parse_moment, record_model)
-from src.store import Store, StoreError, open_store
+from src.store import JobStore, Store, StoreError, default_db_path, open_store
 from src.store import export as store_export
+from src.web import deps
 from src.web.app import app
 
 client = TestClient(app)
@@ -424,3 +427,84 @@ def test_moments_are_read_as_the_api_reads_them(text: str, end: bool, expected: 
 def test_a_bad_moment_is_a_value_error() -> None:
     with pytest.raises(ValueError):
         parse_moment("yesterday", end=False)
+
+
+# --- API v1: dışa aktarma işi ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def jobs(canonical: Store, monkeypatch: pytest.MonkeyPatch) -> Iterator[JobStore]:
+    before = conftest.job_threads()
+    job_store = JobStore(default_db_path(str(canonical.data_dir)))
+    monkeypatch.setattr(deps, "job_store", lambda: job_store)
+    yield job_store
+    conftest.join_job_threads(before)
+    job_store.close()
+
+
+def finished(job_id: str) -> Dict[str, Any]:
+    deadline = time.monotonic() + 30
+    while True:
+        job = client.get(f"/api/v1/jobs/{job_id}").json()["data"]
+        if job["finished_at"]:
+            return job
+        assert time.monotonic() < deadline, "the export job did not end"
+        time.sleep(0.01)
+
+
+@pytest.mark.parametrize("dataset", DATASETS)
+@pytest.mark.parametrize("fmt", FORMATS)
+def test_the_export_job_writes_a_dataset(jobs: JobStore, canonical: Store, tmp_path: Path, dataset: str,
+                                         fmt: str) -> None:
+    needs_pyarrow(fmt)
+    spec = {"dataset": dataset, "format": fmt, "filter": {"sport": "football"}}
+    response = client.post("/api/v1/jobs", json={"kind": "export", "spec": spec})
+    assert response.status_code == 202, response.text
+    job = finished(response.json()["data"]["id"])
+    assert job["state"] == "succeeded", job
+    record = next(r for r in client.get("/api/v1/exports").json()["data"] if r["id"] == job["id"])
+    assert (record["dataset"], record["format"], record["schema"], record["schema_version"], record["available"]) == (
+        dataset, fmt, "normalized", SCHEMA_VERSION, True)
+    assert record["filter"]["sport"] == "football"
+
+    download = client.get(f"/api/v1/exports/{job['id']}/download")
+    assert download.status_code == 200 and download.headers["content-type"].startswith(record["media_type"])
+    copy = tmp_path / f"download.{fmt}"
+    copy.write_bytes(download.content)
+    expected = flat(canonical, dataset, DatasetFilter(sport="football"))
+    got = read_back(copy, fmt, dataset)
+    if fmt == "jsonl":
+        assert got == records(canonical, dataset, DatasetFilter(sport="football"))
+    elif fmt == "parquet":
+        same_parquet(got, expected_cells(expected, fmt))
+    else:
+        assert got == expected_cells(expected, fmt)
+    assert record["rows"] == len(got)
+
+
+def test_the_export_job_takes_the_time_and_status_filters(jobs: JobStore, canonical: Store, tmp_path: Path) -> None:
+    spec = {"dataset": "events", "format": "jsonl",
+            "filter": {"status_classes": ["completed"], "from": "2026-09-01", "to": "2026-09-30T23:59:59Z"}}
+    job = finished(client.post("/api/v1/jobs", json={"kind": "export", "spec": spec}).json()["data"]["id"])
+    assert job["state"] == "succeeded", job
+    assert job["spec"]["filter"]["from"] == "2026-09-01"
+    lines = client.get(f"/api/v1/exports/{job['id']}/download").text.splitlines()
+    flt = DatasetFilter(status_classes=("completed",), start_from=parse_moment("2026-09-01", end=False),
+                        start_to=parse_moment("2026-09-30T23:59:59Z", end=True))
+    assert [json.loads(line) for line in lines] == records(canonical, "events", flt)
+
+
+@pytest.mark.parametrize("spec,status,code", [
+    ({"dataset": "changes", "filter": {"season_ids": [1]}}, 400, "invalid_request"),
+    ({"dataset": "events", "filter": {"from": "soon"}}, 400, "invalid_request"),
+    ({"profile": "legacy-wide-csv", "filter": {"status_classes": ["live"]}}, 400, "invalid_request"),
+    ({"dataset": "events", "filter": {"status_classes": ["finished"]}}, 422, "invalid_request"),
+    ({"dataset": "events", "format": "parquet"}, 501, "not_supported"),
+])
+def test_export_jobs_that_cannot_be_made_start_no_job(jobs: JobStore, monkeypatch: pytest.MonkeyPatch,
+                                                      spec: Dict[str, Any], status: int, code: str) -> None:
+    monkeypatch.setattr(export_service, "parquet_available", lambda: False)
+    response = client.post("/api/v1/jobs", json={"kind": "export", "spec": spec})
+    assert response.status_code == status, response.text
+    assert response.json()["error"]["code"] == code
+    assert client.get("/api/v1/jobs").json()["data"] == []

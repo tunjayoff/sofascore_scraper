@@ -105,7 +105,8 @@ def test_the_wide_csv_export_is_written_and_downloaded(jobs: JobStore, store: St
         "schema": "normalized", "profile": "legacy-wide-csv", "rows": len(table.rows), "available": True,
         "file": f"{job['id']}.csv",
     }
-    assert record["filter"] == {"sport": None, "tournament_ids": [], "season_ids": [], "event_ids": []}
+    assert record["filter"] == {"sport": None, "tournament_ids": [], "season_ids": [], "event_ids": [],
+                                "status_classes": [], "from": None, "to": None}  # SC-2: üç süzgeç daha
 
     r = client.get(f"/api/v1/exports/{job['id']}/download")
     assert r.status_code == 200 and r.headers["content-type"].startswith("text/csv")
@@ -137,7 +138,7 @@ def test_a_raw_export_of_one_tournament(jobs: JobStore, store: Store) -> None:
     ({"schema": "raw", "format": "csv"}, 400, "invalid_request"),
     ({"profile": "legacy-wide-csv", "format": "jsonl"}, 400, "invalid_request"),
     ({"profile": "legacy-wide-csv", "filter": {"season_ids": [1]}}, 400, "invalid_request"),
-    ({"dataset": "slices", "format": "sqlite"}, 501, "not_supported"),
+    ({"dataset": "changes", "schema": "raw", "format": "jsonl"}, 400, "invalid_request"),  # SC-2: changes'in hamı yok
     ({"dataset": "odds"}, 422, "invalid_request"),
     ({"profile": "pretty"}, 422, "invalid_request"),
 ])
