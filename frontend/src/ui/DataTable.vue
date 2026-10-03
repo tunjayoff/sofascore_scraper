@@ -59,10 +59,35 @@ const props = withDefaults(
     hasNext?: boolean
     pageSize?: number
     paged?: boolean
+    /** Rows can be selected for bulk actions (4.8): a checkbox column; the keys are `rowKey`. */
+    selection?: string[] | null
+    /** The accessible name of a row's checkbox. */
+    rowLabel?: (row: T) => string
   }>(),
-  { sortMode: 'page', pageSize: 25, paged: true, sort: null, rowTo: undefined, error: undefined },
+  { sortMode: 'page', pageSize: 25, paged: true, sort: null, rowTo: undefined, error: undefined, selection: null, rowLabel: undefined },
 )
-const emit = defineEmits<{ 'update:sort': [Sort | null]; 'update:pageSize': [number]; prev: []; next: []; retry: [] }>()
+const emit = defineEmits<{ 'update:sort': [Sort | null]; 'update:pageSize': [number]; 'update:selection': [string[]]; prev: []; next: []; retry: [] }>()
+
+// ---- selection ----
+const selectable = computed(() => Array.isArray(props.selection))
+const chosen = computed(() => new Set(props.selection ?? []))
+const allChosen = computed(() => props.rows.length > 0 && props.rows.every((r) => chosen.value.has(props.rowKey(r))))
+const someChosen = computed(() => !allChosen.value && props.rows.some((r) => chosen.value.has(props.rowKey(r))))
+function toggleRow(row: T) {
+  const key = props.rowKey(row)
+  const next = new Set(chosen.value)
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
+  emit('update:selection', [...next])
+}
+function toggleAll() {
+  const next = new Set(chosen.value)
+  for (const r of props.rows) {
+    if (allChosen.value) next.delete(props.rowKey(r))
+    else next.add(props.rowKey(r))
+  }
+  emit('update:selection', [...next])
+}
 const { t } = useI18n()
 const router = useRouter()
 const phone = useMedia(PHONE)
@@ -161,6 +186,13 @@ const showSkeleton = computed(() => props.loading && !props.rows.length && !prop
       <UiMenu v-if="optional.length" :label="t('ui.table.columns')" icon="columns" button-class="u-btn u-btn-sm u-btn-ghost" :items="columnItems" @select="toggleColumn" />
     </div>
 
+    <div v-if="selectable && selection?.length" class="u-bulkbar" role="region" :aria-label="t('ui.table.bulk')" data-testid="bulk-bar">
+      <span class="font-semibold" aria-live="polite">{{ t('ui.table.selected', { n: selection.length }) }}</span>
+      <slot name="bulk" />
+      <span class="flex-1"></span>
+      <button type="button" class="u-btn u-btn-sm u-btn-ghost" @click="emit('update:selection', [])">{{ t('ui.table.unselect') }}</button>
+    </div>
+
     <ErrorState v-if="error" :error="error" @retry="emit('retry')" />
     <div v-else-if="showSkeleton" class="p-5"><SkeletonBlock :lines="6" :height="20" /></div>
     <div v-else-if="!rows.length && !loading"><slot name="empty" /></div>
@@ -169,6 +201,14 @@ const showSkeleton = computed(() => props.loading && !props.rows.length && !prop
     <ul v-else-if="phone" ref="body" class="u-cardlist" :aria-label="caption">
       <li v-for="(row, i) in shown" :key="rowKey(row)" data-row :class="{ 'is-active': i === active }" @click="onRowClick($event, row)">
         <div class="flex items-start gap-3">
+          <input
+            v-if="selectable"
+            type="checkbox"
+            class="u-check mt-1"
+            :checked="chosen.has(rowKey(row))"
+            :aria-label="rowLabel ? t('ui.table.selectRow', { row: rowLabel(row) }) : t('ui.table.select')"
+            @change="toggleRow(row)"
+          />
           <div class="flex-1 min-w-0">
             <RouterLink v-if="rowTo" :to="rowTo(row)" data-row-link class="u-row-link font-semibold">
               <slot :name="`cell-${cardTitle.key}`" :row="row">{{ cellValue(row, cardTitle) }}</slot>
@@ -188,6 +228,17 @@ const showSkeleton = computed(() => props.loading && !props.rows.length && !prop
         <caption class="u-sr">{{ caption }}</caption>
         <thead>
           <tr>
+            <th v-if="selectable" scope="col" class="u-select-cell">
+              <input
+                type="checkbox"
+                class="u-check"
+                :checked="allChosen"
+                :indeterminate="someChosen"
+                :aria-label="t('ui.table.selectPage')"
+                data-testid="select-page"
+                @change="toggleAll"
+              />
+            </th>
             <th v-for="c in visible" :key="c.key" scope="col" :aria-sort="ariaSort(c)" :class="{ 'text-right': c.align === 'right' }">
               <button v-if="c.sortable" type="button" class="u-sort" :data-sort="c.key" @click="toggleSort(c)">
                 {{ c.label }}
@@ -206,6 +257,15 @@ const showSkeleton = computed(() => props.loading && !props.rows.length && !prop
             :class="{ 'is-active': i === active, 'is-link': !!rowTo }"
             @click="onRowClick($event, row)"
           >
+            <td v-if="selectable" class="u-select-cell">
+              <input
+                type="checkbox"
+                class="u-check"
+                :checked="chosen.has(rowKey(row))"
+                :aria-label="rowLabel ? t('ui.table.selectRow', { row: rowLabel(row) }) : t('ui.table.select')"
+                @change="toggleRow(row)"
+              />
+            </td>
             <td v-for="(c, ci) in visible" :key="c.key" :class="{ 'text-right': c.align === 'right', 'u-mono': c.mono }">
               <RouterLink v-if="ci === 0 && rowTo" :to="rowTo(row)" data-row-link class="u-row-link" @focus="active = i">
                 <slot :name="`cell-${c.key}`" :row="row">{{ cellValue(row, c) }}</slot>
@@ -270,6 +330,20 @@ const showSkeleton = computed(() => props.loading && !props.rows.length && !prop
 }
 .u-table-scroll {
   overflow-x: auto;
+}
+.u-bulkbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-5);
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--line);
+}
+.u-table th.u-select-cell,
+.u-table td.u-select-cell {
+  width: 44px;
+  padding-right: 0;
 }
 .u-table {
   width: 100%;

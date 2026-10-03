@@ -6,7 +6,7 @@ import { authNeeded } from '@/lib/auth'
 import { clearToasts } from '@/ui/toast'
 import { i18n, setLocale } from '@/i18n'
 import { callsTo, flush, mockFetch } from './helpers'
-import { axeViolations, job, mountScreen, status, summary, v1Error } from './v1'
+import { axeViolations, change, event, job, mountScreen, status, summary, v1Error } from './v1'
 
 const t = i18n.global.t
 let w: VueWrapper
@@ -193,6 +193,23 @@ describe('Overview', () => {
     expect(w.find('[data-testid="attention"] a[href="/system/sinks"]').exists()).toBe(true)
     expect(w.find('[data-testid="services"]').text()).toContain(t('ui.overview.sinksBehind', { n: 1, total: 2 }))
     expect(await axeViolations(w.element)).toEqual([])
+  })
+
+  it('the recent corrections card lists the last changes with their match and leads to them', async () => {
+    mockFetch(
+      base({
+        'GET /api/v1/changes': { data: [change()], page: { limit: 5, next_cursor: null } },
+        'GET /api/v1/events/9100003': { data: event() },
+      }),
+    )
+    ;({ w } = await mountScreen(OverviewScreen, '/'))
+    await flush()
+    await flush()
+    const card = w.find('[data-testid="recent-corrections"]')
+    expect(card.text()).toContain('Chelsea – Liverpool')
+    expect(card.text()).toContain('2-1 → 2-2')
+    expect(card.find('a[href="/events/9100003?tab=corrections"]').exists()).toBe(true)
+    expect(card.find('a[href="/corrections"]').exists()).toBe(true)
   })
 
   it('the tiles count matches, details, follows and the disk', async () => {

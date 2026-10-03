@@ -43,7 +43,6 @@ watch(() => route.fullPath, () => (more.value = false))
         <li v-for="n in rest" :key="n.key">
           <RouterLink :to="n.to" class="u-more-item" :aria-current="current === n.key ? 'page' : undefined">
             <UiIcon :name="n.icon" /><span class="flex-1">{{ t(`ui.nav.${n.key}`) }}</span>
-            <span v-if="n.planned" class="u-small u-muted">{{ t('ui.nav.soon') }}</span>
           </RouterLink>
         </li>
       </ul>

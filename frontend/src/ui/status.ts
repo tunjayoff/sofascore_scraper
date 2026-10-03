@@ -70,6 +70,31 @@ export function sinkState(s: { state: string; served: boolean; lag_seconds?: num
   return 'delivering'
 }
 
+/** The platform's class of an event status (`Event.status.class`, 4.6). */
+export const EVENT_CLASS: Record<string, StatusLook> = {
+  not_started: { tone: 'neutral', icon: 'clock', key: 'ui.status.event.not_started' },
+  live: { tone: 'info', icon: 'jobs', key: 'ui.status.event.live' },
+  completed: { tone: 'ok', icon: 'okCircle', key: 'ui.status.event.completed' },
+  decided_without_play: { tone: 'ok', icon: 'okCircle', key: 'ui.status.event.decided_without_play' },
+  void: { tone: 'warn', icon: 'alert', key: 'ui.status.event.void' },
+  unknown: { tone: 'neutral', icon: 'circle', key: 'ui.status.event.unknown' },
+}
+
+/** The state of a stored slice (`Slice.state`, 4.6). */
+export const SLICE_STATE: Record<string, StatusLook> = {
+  ok: { tone: 'ok', icon: 'okCircle', key: 'ui.status.slice.ok' },
+  empty: { tone: 'neutral', icon: 'circle', key: 'ui.status.slice.empty' },
+  error: { tone: 'danger', icon: 'error', key: 'ui.status.slice.error' },
+  not_requested: { tone: 'neutral', icon: 'circle', key: 'ui.status.slice.not_requested' },
+}
+
+/** Where a follow comes from (4.6): the config file is locked, leagues.txt is legacy, the API's has no badge. */
+export const FOLLOW_ORIGIN: Record<string, StatusLook> = {
+  config: { tone: 'neutral', icon: 'lock', key: 'ui.status.origin.config' },
+  legacy: { tone: 'neutral', icon: 'classic', key: 'ui.status.origin.legacy' },
+  api: { tone: 'neutral', icon: 'plus', key: 'ui.status.origin.api' },
+}
+
 /** The health pill: one word and a tone for the whole server (3.3). */
 export type HealthLevel = 'ok' | 'attention' | 'blocked' | 'unknown'
 
@@ -80,7 +105,7 @@ export const HEALTH: Record<HealthLevel, StatusLook> = {
   unknown: { tone: 'neutral', icon: 'circle', key: 'ui.status.health.unknown' },
 }
 
-export const STATUS_KINDS = { job: JOB_STATES, connection: CONNECTION, live: LIVE, health: HEALTH, sink: SINK } as const
+export const STATUS_KINDS = { job: JOB_STATES, connection: CONNECTION, live: LIVE, health: HEALTH, sink: SINK, event: EVENT_CLASS, slice: SLICE_STATE, origin: FOLLOW_ORIGIN } as const
 export type StatusKind = keyof typeof STATUS_KINDS
 
 export function lookOf(kind: StatusKind, value: string): StatusLook {

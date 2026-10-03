@@ -15,7 +15,7 @@ import { startJob } from './startJob'
  * job writes, 501 for a kind the API cannot start) stays in the dialog with a link to the job that holds
  * the data folder. On success a toast links to the new job's detail (3.1).
  */
-const props = defineProps<{ body: StartJobBody; again?: boolean }>()
+const props = defineProps<{ body: StartJobBody; again?: boolean; title?: string; text?: string }>()
 const emit = defineEmits<{ close: []; started: [Job] }>()
 const { t, te } = useI18n()
 const status = useStatusStore()
@@ -24,8 +24,8 @@ const error = ref<unknown>(null)
 
 const kind = computed(() => props.body.kind)
 const known = computed(() => te(`ui.jobs.start.${kind.value}.title`, 'en'))
-const title = computed(() =>
-  props.again || !known.value ? t('ui.jobs.start.againTitle', { kind: jobKindText(kind.value) }) : t(`ui.jobs.start.${kind.value}.title`),
+const heading = computed(() =>
+  props.title ?? (props.again || !known.value ? t('ui.jobs.start.againTitle', { kind: jobKindText(kind.value) }) : t(`ui.jobs.start.${kind.value}.title`)),
 )
 const callsSofascore = computed(() => CALLS_SOFASCORE.includes(kind.value))
 
@@ -46,7 +46,7 @@ async function start() {
 
 <template>
   <ConfirmDialog
-    :title="title"
+    :title="heading"
     :confirm-label="t('ui.jobs.start.confirm')"
     :busy="busy"
     :error="error"
@@ -54,7 +54,8 @@ async function start() {
     @confirm="start"
     @close="emit('close')"
   >
-    <p v-if="known" class="m-0">{{ t(`ui.jobs.start.${kind}.text`) }}</p>
+    <p v-if="text" class="m-0">{{ text }}</p>
+    <p v-else-if="known" class="m-0">{{ t(`ui.jobs.start.${kind}.text`) }}</p>
     <p v-if="callsSofascore" class="m-0 flex items-center gap-2 u-small" style="color: var(--warn-fg)"><UiIcon name="external" :size="14" />{{ t('ui.jobs.start.sendsRequests') }}</p>
     <p v-else class="m-0 u-small u-muted">{{ t('ui.jobs.start.local') }}</p>
     <p class="m-0 u-small u-muted">{{ t('ui.jobs.start.oneAtATime') }}</p>
