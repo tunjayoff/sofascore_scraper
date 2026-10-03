@@ -699,6 +699,135 @@ class LiveEvent(Model):
     data: Mapping[str, Any] = spec("Type-specific content (see LiveEvent data).", source="the producer")
 
 
+# --- bahis oranları ve puan durumu (plan maddesi P28) ---------------------------------------------------
+#
+# Oranlar ve puan durumu, şemanın ham vermediği iki maç dışı yük biçimidir. Öteki P28 dilimleri (sezon bilgisi,
+# kupa ağacı, en iyiler listeleri, sıralamalar, oyuncu istatistikleri) Slice kaydıyla ham verilir.
+
+@dataclass(frozen=True)
+class OddsChoice(Model):
+    """Bir pazarın bir seçeneği ve oranı."""
+
+    SUMMARY: ClassVar[str] = "One outcome of a betting market and its price."
+
+    name: str = spec("Name of the outcome as SofaScore gives it, for example `1`, `X`, `2`, `Over`.",
+                     source="`choices[].name`")
+    fractional: Optional[str] = spec("Current price as a fraction, for example `11/5`.",
+                                     source="`choices[].fractionalValue`")
+    decimal: Optional[float] = spec("Current price as a decimal (1 + the fraction), rounded to three places.",
+                                    source="derived from `choices[].fractionalValue`")
+    initial_fractional: Optional[str] = spec("Opening price as a fraction.",
+                                             source="`choices[].initialFractionalValue`")
+    initial_decimal: Optional[float] = spec("Opening price as a decimal, rounded to three places.",
+                                            source="derived from `choices[].initialFractionalValue`")
+    change: Optional[int] = spec("Direction of the last change of the price: 1 up, -1 down, 0 none.",
+                                 source="`choices[].change`")
+    winning: Optional[bool] = spec("True for the outcome that won once the event is settled; null while open "
+                                   "or when SofaScore does not say.", source="`choices[].winning`")
+
+
+@dataclass(frozen=True)
+class OddsMarket(Model):
+    """Bir bahis pazarı (maç sonucu, alt/üst, handikap ...)."""
+
+    SUMMARY: ClassVar[str] = "One betting market of an event with its outcomes."
+
+    market_id: Optional[int] = spec("SofaScore's id of the market type (1 is the match result).",
+                                    source="`marketId`")
+    name: Optional[str] = spec("Name of the market, for example `Full time`.", source="`marketName`")
+    group: Optional[str] = spec("Group of the market, for example `1X2` or `Home/Away`.", source="`marketGroup`")
+    period: Optional[str] = spec("Part of the event the market covers, for example `Full-time`.",
+                                 source="`marketPeriod`")
+    choice_group: Optional[str] = spec("Line of a market with several lines, for example `2.5` for over/under; "
+                                       "null for a market with one line.", source="`choiceGroup`")
+    label: Optional[str] = spec("Name under which the featured odds list the market (`default`, `fullTime`, "
+                                "`asian`); null in the full list.", source="key of `featured`")
+    is_live: Optional[bool] = spec("True when the prices were offered during play.", source="`isLive`")
+    suspended: Optional[bool] = spec("True when the market was closed for bets at the time of the read.",
+                                     source="`suspended`")
+    choices: Tuple[OddsChoice, ...] = spec("The outcomes of the market, in SofaScore's order.",
+                                           source="`choices`")
+
+
+@dataclass(frozen=True)
+class Odds(Model):
+    """Bir maçın bir oran dilimi: tek okuma, bir anlık görüntü."""
+
+    SUMMARY: ClassVar[str] = "The odds of an event from one provider as read at one moment."
+
+    event_id: int = spec("Id of the Event.", source="the request that fetched it")
+    key: str = spec("Odds slice the record comes from: `odds_all` or `odds_featured`.",
+                    source="slice registry (`src/sports.py`)", open_enum=True,
+                    known=("odds_all", "odds_featured"))
+    provider_id: Optional[int] = spec("SofaScore's id of the bookmaker the odds come from. Which bookmakers "
+                                      "SofaScore offers depends on the country it sees the request from; the "
+                                      "platform stores no address or location of the machine.",
+                                      source="the request that fetched it")
+    fetched_at_utc: Optional[str] = spec("When the odds were read. A read is a snapshot: odds change until the "
+                                         "event ends, and only a later read shows a later price.",
+                                         unit="ISO 8601 UTC", fmt="date-time",
+                                         source="time of the platform's request")
+    markets: Tuple[OddsMarket, ...] = spec("The markets, in SofaScore's order.",
+                                           source="`markets`, or the values of `featured`")
+
+
+@dataclass(frozen=True)
+class OddsLine(Model):
+    """Dışa aktarmanın düz oran satırı: bir anlık görüntünün bir pazarının bir seçeneği."""
+
+    SUMMARY: ClassVar[str] = "One outcome of one market of one odds snapshot, as a flat row."
+
+    event_id: int = spec("Id of the Event.", source="the request that fetched it")
+    key: str = spec("Odds slice the row comes from.", source="slice registry (`src/sports.py`)", open_enum=True,
+                    known=("odds_all", "odds_featured"))
+    provider_id: Optional[int] = spec("As `Odds.provider_id`.", source="the request that fetched it")
+    fetched_at_utc: Optional[str] = spec("When the snapshot was read.", unit="ISO 8601 UTC", fmt="date-time",
+                                         source="time of the platform's request")
+    market_id: Optional[int] = spec("As `OddsMarket.market_id`.", source="`marketId`")
+    market_name: Optional[str] = spec("As `OddsMarket.name`.", source="`marketName`")
+    market_group: Optional[str] = spec("As `OddsMarket.group`.", source="`marketGroup`")
+    market_period: Optional[str] = spec("As `OddsMarket.period`.", source="`marketPeriod`")
+    choice_group: Optional[str] = spec("As `OddsMarket.choice_group`.", source="`choiceGroup`")
+    label: Optional[str] = spec("As `OddsMarket.label`.", source="key of `featured`")
+    is_live: Optional[bool] = spec("As `OddsMarket.is_live`.", source="`isLive`")
+    suspended: Optional[bool] = spec("As `OddsMarket.suspended`.", source="`suspended`")
+    choice: str = spec("As `OddsChoice.name`.", source="`choices[].name`")
+    fractional: Optional[str] = spec("As `OddsChoice.fractional`.", source="`choices[].fractionalValue`")
+    decimal: Optional[float] = spec("As `OddsChoice.decimal`.", source="derived from `choices[].fractionalValue`")
+    initial_fractional: Optional[str] = spec("As `OddsChoice.initial_fractional`.",
+                                             source="`choices[].initialFractionalValue`")
+    initial_decimal: Optional[float] = spec("As `OddsChoice.initial_decimal`.",
+                                            source="derived from `choices[].initialFractionalValue`")
+    change: Optional[int] = spec("As `OddsChoice.change`.", source="`choices[].change`")
+    winning: Optional[bool] = spec("As `OddsChoice.winning`.", source="`choices[].winning`")
+
+
+@dataclass(frozen=True)
+class StandingsRow(Model):
+    """Puan durumunun bir satırı."""
+
+    SUMMARY: ClassVar[str] = "One row of a standings table of a season."
+
+    tournament_id: int = spec("Id of the Tournament.", source="the request that fetched it")
+    season_id: int = spec("Id of the Season.", source="the request that fetched it")
+    table: str = spec("Which table: `total` (all matches) or `home` (home matches only).",
+                      source="the request that fetched it", open_enum=True, known=("total", "home"))
+    group_name: Optional[str] = spec("Name of the table or group, for example `Premier League 26/27` or "
+                                     "`Group A`.", source="`standings[].name`")
+    position: Optional[int] = spec("Rank in the table, 1 for the first.", source="`rows[].position`")
+    participant_id: Optional[int] = spec("Id of the Participant.", source="`rows[].team.id`")
+    participant_name: Optional[str] = spec("Name of the Participant.", source="`rows[].team.name`")
+    matches: Optional[int] = spec("Matches played.", source="`rows[].matches`")
+    wins: Optional[int] = spec("Matches won.", source="`rows[].wins`")
+    draws: Optional[int] = spec("Matches drawn; null in sports without draws.", source="`rows[].draws`")
+    losses: Optional[int] = spec("Matches lost.", source="`rows[].losses`")
+    scores_for: Optional[int] = spec("Goals or points scored.", source="`rows[].scoresFor`")
+    scores_against: Optional[int] = spec("Goals or points conceded.", source="`rows[].scoresAgainst`")
+    points: Optional[float] = spec("Table points (a fraction in a few sports).", source="`rows[].points`")
+    fetched_at_utc: Optional[str] = spec("When the table was read.", unit="ISO 8601 UTC", fmt="date-time",
+                                         source="time of the platform's request")
+
+
 MODELS: Tuple[type, ...] = (
     Sport, Category, Tournament, Season, Participant,
     Event, Status, EventParticipants, EventParticipant, Stage, Round, Aggregate, Quality,
@@ -710,6 +839,10 @@ MODELS: Tuple[type, ...] = (
 )
 # Kendi başına verilen kayıtlar (API kaynağı, dışa aktarma veri kümesi, akış satırı); gerisi bunların parçası.
 RECORDS: Tuple[type, ...] = (Sport, Category, Tournament, Season, Participant, Event, Slice, Change, LiveEvent)
+# P28'in modelleri. Sözleşme belgesinde (docs/design/04-schema-v1.md) blokları henüz yok: belgeler PR'ı alan
+# tablolarını ekleyince MODELS'e, kendi başına verilenler (Odds, OddsLine, StandingsRow) RECORDS'a girer ve JSON
+# Schema'da görünür. O zamana kadar API v1 ve dışa aktarma onları kullanır ama `describe schemas` göstermez.
+PENDING_MODELS: Tuple[type, ...] = (Odds, OddsMarket, OddsChoice, OddsLine, StandingsRow)
 
 __all__ = [
     "SCHEMA_VERSION",
@@ -717,7 +850,13 @@ __all__ = [
     "EVENT_ENVELOPE_ID",
     "MODELS",
     "RECORDS",
+    "PENDING_MODELS",
     "Model",
+    "Odds",
+    "OddsChoice",
+    "OddsLine",
+    "OddsMarket",
+    "StandingsRow",
     "Sport",
     "Category",
     "Tournament",
