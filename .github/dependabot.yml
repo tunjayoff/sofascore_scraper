@@ -16,7 +16,21 @@ updates:
     versioning-strategy: increase-if-necessary
     commit-message:
       prefix: "chore(deps)"
+    ignore:
+      # pydantic pins pydantic-core exactly (2.13.5 -> pydantic-core==2.46.5) and pydantic-core is
+      # released ahead of pydantic. Dependabot does not resolve requirements/constraints files
+      # against each other, so it kept proposing pydantic-core alone, which cannot install.
+      # pydantic-core therefore never gets a pull request of its own; in a "pydantic" pull
+      # request, set pydantic-core in constraints.txt to the version the new pydantic pins.
+      - dependency-name: "pydantic-core"
     groups:
+      # pydantic on its own, so the hand edit above does not hold back the other updates
+      pydantic:
+        patterns:
+          - "pydantic"
+        update-types:
+          - minor
+          - patch
       # The Turnstile solve was verified live with exactly these versions. CI only exercises
       # them against a local fake site, so before merging this group run:
       #   python -m pytest -m "live and browser" tests/test_live_bridge.py
