@@ -1564,8 +1564,22 @@
       "incidents",
       "point_by_point",
       "esports_games",
+      "innings",
+      "odds_featured",
+      "odds_all",
+      "odds_changes",
+      "winning_odds",
       "seasons",
-      "schedule"
+      "schedule",
+      "standings",
+      "season_info",
+      "cuptrees",
+      "top_players",
+      "top_teams",
+      "season_odds",
+      "team_rankings",
+      "player_statistics",
+      "rankings"
      ],
      "description": "Name of the slice, for example `event`, `statistics`, `lineups`, `incidents`.",
      "x-source": "slice registry (`src/sports.py`)"

@@ -600,7 +600,10 @@ class Slice(Model):
     key: str = spec("Name of the slice, for example `event`, `statistics`, `lineups`, `incidents`.",
                     source="slice registry (`src/sports.py`)", open_enum=True,
                     known=("event", "statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents",
-                           "point_by_point", "esports_games", "seasons", "schedule"))
+                           "point_by_point", "esports_games", "innings", "odds_featured", "odds_all",
+                           "odds_changes", "winning_odds", "seasons", "schedule", "standings", "season_info",
+                           "cuptrees", "top_players", "top_teams", "season_odds", "team_rankings",
+                           "player_statistics", "rankings"))
     sub: Optional[str] = spec("Sub-key for a slice that has several payloads per owner, for example the round "
                               "of a schedule page. Null when the slice has one payload.",
                               source="slice registry")

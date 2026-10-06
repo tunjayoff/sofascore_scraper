@@ -43,7 +43,15 @@ from src import schema
 from src.refresh import DEFAULT_REFRESH_WINDOW_HOURS
 from src.schema import jsonschema as schema_doc
 from src.schema import mappers, models
-from src.sports import SPORTS, PeriodFormat, ScoreFamily, period_format, score_family, set_format
+from src.sports import (
+    SPORTS,
+    PeriodFormat,
+    ScoreFamily,
+    period_format,
+    registered_slices,
+    score_family,
+    set_format,
+)
 from src.status import StatusClass, classify_status
 from src.store import (
     ChangeRow,
@@ -311,6 +319,18 @@ def test_enums_follow_the_domain_modules():
     assert {spec.set_format for spec in SPORTS} - {None} < set(typing.get_args(models.SetsFormat))  # legs_won: olaydan
     assert mappers.TERMINAL_CLASSES == {"completed", "decided_without_play", "void"}
     assert mappers.DEFAULT_REFRESH_WINDOW_S == 72 * 3600
+
+
+def test_slice_key_lists_every_registered_slice():
+    """`Slice.key` açık bir sayımdır; bilinen değerleri dilim kayıt defterinin her anahtarını sayar (FX-21)."""
+    meta = {item.name: item.metadata for item in dataclasses.fields(models.Slice)}
+    known = meta["key"]["known"]
+    assert len(known) == len(set(known))
+    registered = [spec.key for spec in registered_slices()]
+    assert [key for key in registered if key not in known] == []
+    # kayıt defterinde olmayan ama Store'un tuttuğu dilimler: olay yükü, sezon listesi, sezonun maç sayfaları
+    assert [key for key in known if key not in registered] == ["event", "seasons", "schedule"]
+    assert {spec.owner for spec in registered_slices()} <= set(meta["owner_kind"]["known"])
 
 
 # --- modeller -----------------------------------------------------------------------------------------
