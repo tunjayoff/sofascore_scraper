@@ -854,6 +854,7 @@ const tr: typeof en = {
     lastNLabel: 'Sezon sayısı',
     choose: 'Sezonları seç…',
     live: 'Canlı izlemeye dahil et',
+    liveNoPlayer: 'Canlı izleme (ssc watch) ligleri, takımları ve tek maçları izler; oyuncuları izlemez.',
     liveHint: 'Sunucuda çalışan ssc watch kullanır; web arayüzü canlı skor göstermez.',
     enabled: 'Açık',
     enabledHint: 'Kapalı bir takip verisini korur; onun için artık bir şey indirilmez.',

@@ -119,6 +119,11 @@ const stepValid = computed(() => {
 })
 /** Seasons of a league are seasons; for a team or a player they are a time window (FX-19). */
 const isWindow = computed(() => kind.value === 'team' || kind.value === 'player')
+/**
+ * Live watching (`ssc watch`) covers leagues, teams and single matches; it skips player follows (FX-19), so
+ * a player is not offered it (FX-20). A player follow that has it on keeps the box, to turn it off.
+ */
+const liveOffered = computed(() => kind.value !== 'player' || (!!original.value && original.value.live))
 
 // ---- save ----
 const saving = ref(false)
@@ -137,7 +142,7 @@ async function create() {
       sport: sport.value || null,
       seasons: kind.value === 'event' ? 'current' : seasonsValue.value,
       slices: slices.value,
-      live: live.value,
+      live: liveOffered.value && live.value,
     })
     saved = true
     noteFollowAdded(f)
@@ -373,13 +378,14 @@ onMounted(() => {
             <span class="u-label">{{ t('ui.followEditor.name') }}</span>
             <input v-model="name" class="u-field" autocomplete="off" />
           </label>
-          <div class="flex items-start gap-1">
+          <div v-if="liveOffered" class="flex items-start gap-1">
             <label class="flex items-start gap-3">
-              <input v-model="live" type="checkbox" class="u-check mt-1" />
+              <input v-model="live" type="checkbox" class="u-check mt-1" data-testid="editor-live" />
               <span class="flex flex-col"><span class="font-semibold">{{ t('ui.followEditor.live') }}</span><span class="u-small u-muted">{{ t('ui.followEditor.liveHint') }}</span></span>
             </label>
             <HelpTip term="live" />
           </div>
+          <p v-else class="m-0 u-small u-muted" data-testid="editor-no-live">{{ t('ui.followEditor.liveNoPlayer') }}</p>
           <div class="flex items-start gap-1">
             <label class="flex items-start gap-3">
               <input v-model="syncAfter" type="checkbox" class="u-check mt-1" data-testid="editor-sync-after" />
@@ -469,10 +475,11 @@ onMounted(() => {
 
         <section class="u-card p-6 flex flex-col gap-3">
           <h2 class="u-h3">{{ t('ui.followEditor.more') }}</h2>
-          <label class="flex items-start gap-3">
-            <input v-model="live" type="checkbox" class="u-check mt-1" :disabled="!!fieldLock('live')" />
+          <label v-if="liveOffered" class="flex items-start gap-3">
+            <input v-model="live" type="checkbox" class="u-check mt-1" :disabled="!!fieldLock('live')" data-testid="edit-live" />
             <span class="flex flex-col"><span class="font-semibold">{{ t('ui.followEditor.live') }}</span><span class="u-small u-muted">{{ t('ui.followEditor.liveHint') }}</span></span>
           </label>
+          <p v-else class="m-0 u-small u-muted" data-testid="edit-no-live">{{ t('ui.followEditor.liveNoPlayer') }}</p>
           <label class="flex items-start gap-3">
             <input v-model="enabled" type="checkbox" class="u-check mt-1" :disabled="!!fieldLock('enabled')" />
             <span class="flex flex-col"><span class="font-semibold">{{ t('ui.followEditor.enabled') }}</span><span class="u-small u-muted">{{ t('ui.followEditor.enabledHint') }}</span></span>

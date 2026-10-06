@@ -852,6 +852,7 @@ const en = {
     lastNLabel: 'Number of seasons',
     choose: 'Choose seasons…',
     live: 'Include in live watching',
+    liveNoPlayer: 'Live watching (ssc watch) follows leagues, teams and single matches, not players.',
     liveHint: 'Used by ssc watch on the server; the web UI shows no live scores.',
     enabled: 'Enabled',
     enabledHint: 'A disabled follow keeps its data; nothing more is downloaded for it.',
