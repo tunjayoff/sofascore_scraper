@@ -209,3 +209,13 @@ def test_redact_obj_masks_nested_values(env_file):
     assert out["jobs"][0]["log"][1] == "tamam"
     # Girdi değişmez
     assert doc["settings"]["SOFA_CAPTCHA_TOKEN"] == JWT
+
+
+def test_a_sink_list_masks_the_url_and_every_option_the_sinks_do_not_know():
+    """SOFASCORE_SINKS: `url` yapısal olarak, tanınmayan seçenek (adres taşıyabilir) tümüyle maskelenir (FX-15)."""
+    raw = ('[{"type":"webhook","url":"https://u:p@hooks.example.org/x?k=1","webhook_url":"https://h/secret",'
+           '"name":"a"}]')
+    assert redact.mask_value("SOFASCORE_SINKS", raw) == (
+        '[{"type":"webhook","url":"https://***@hooks.example.org/***","webhook_url":"***","name":"a"}]')
+    assert redact.mask_value("SOFASCORE_SINKS", "not a list") == redact.MASK
+    assert redact.mask_value("SOFASCORE_SINKS", '{"type": "webhook"}') == redact.MASK

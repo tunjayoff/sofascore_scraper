@@ -149,7 +149,14 @@ def mask_webhook_url(value: str) -> str:
 
 
 def _mask_sink_list(value: str) -> str:
-    """SOFASCORE_SINKS: listedeki her tablonun `url` alanı maskelenir; ayrıştırılamayan değer tümüyle `***` olur."""
+    """
+    SOFASCORE_SINKS: listedeki her tablonun `url` alanı maskelenir ve sink'lerin tanımadığı anahtarların değeri
+    `***` olur (`ssc config show` ile aynı kural: src/config/loader.py `mask_sink_table`; yanlış yazılmış bir
+    anahtar, ör. `webhook_url`, adresi taşıyabilir). Ayrıştırılamayan değer tümüyle `***` olur. Yükleyici işlev
+    içinde içe aktarılır: bu modül hafif kalır (günlükçü onu süreç başında yükler).
+    """
+    from src.config import loader
+
     try:
         items = json.loads(value)
     except ValueError:
@@ -157,7 +164,8 @@ def _mask_sink_list(value: str) -> str:
     if not isinstance(items, list) or any(not isinstance(item, dict) for item in items):
         return MASK
     shown = [
-        {k: (mask_webhook_url(v) if isinstance(v, str) else MASK) if k == "url" else v for k, v in item.items()}
+        {k: (mask_webhook_url(v) if isinstance(v, str) else MASK) if k == "url" else v
+         for k, v in loader.mask_sink_table(item).items()}
         for item in items
     ]
     return json.dumps(shown, ensure_ascii=False, separators=(",", ":"))
