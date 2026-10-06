@@ -3304,16 +3304,16 @@
               "anyOf": [
                 {
                   "type": "string",
-                  "pattern": "^(tournament|event):[1-9][0-9]{0,18}$"
+                  "pattern": "^(tournament|team|player|event):[1-9][0-9]{0,18}$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Only jobs whose spec names this tournament (`tournament:17`: its `league_id`, a selection or a follow) or this event (`event:123`: a selection's or `event_ids`' event). A job over every follow names none.",
+              "description": "Only jobs whose spec names this tournament (`tournament:17`: its `league_id`, a selection or a follow), this team or player (`team:42`, `player:7`: a follow) or this event (`event:123`: a selection's, a follow's or `event_ids`' event). A job over every follow names none.",
               "title": "Target"
             },
-            "description": "Only jobs whose spec names this tournament (`tournament:17`: its `league_id`, a selection or a follow) or this event (`event:123`: a selection's or `event_ids`' event). A job over every follow names none."
+            "description": "Only jobs whose spec names this tournament (`tournament:17`: its `league_id`, a selection or a follow), this team or player (`team:42`, `player:7`: a follow) or this event (`event:123`: a selection's, a follow's or `event_ids`' event). A job over every follow names none."
           }
         ],
         "responses": {
@@ -10551,7 +10551,7 @@
             "type": "array",
             "maxItems": 200,
             "title": "Follows",
-            "description": "`sync` only: these follows (`tournament:17`), each with its season choice. Team, player and event follows cannot be synced yet (400)."
+            "description": "`sync` only: these follows (`tournament:17`, `team:42`, `player:7`, `event:123`). A tournament with its season choice; a team or a player with its matches (the previous and next pages of SofaScore's list within the follow's window: `seasons` `current` = the last 365 days, `last:N` = N × 365 days, `all` = up to five pages back, season ids = those seasons); an event follow that one match. Season lists only (`only: \"seasons\"`) read tournaments only."
           },
           "only": {
             "anyOf": [
@@ -10580,7 +10580,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "SyncJobSpec",
-        "description": "What to download. Without `selections`, `league_id` and `follows`: every enabled tournament follow, each with\nits own season choice. Only one of `league_id`, `selections` and `follows` may be given."
+        "description": "What to download. Without `selections`, `league_id` and `follows`: every enabled follow, each tournament with\nits own season choice, each team, player and event follow with its matches. Only one of `league_id`,\n`selections` and `follows` may be given."
       },
       "ThrottleStatus": {
         "properties": {

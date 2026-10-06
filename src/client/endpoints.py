@@ -29,6 +29,10 @@ ROUNDS = "/unique-tournament/{tournament_id}/season/{season_id}/rounds"
 ROUND_EVENTS = "/unique-tournament/{tournament_id}/season/{season_id}/events/round/{round_number}"
 ROUND_EVENTS_SLUG = ROUND_EVENTS + "/slug/{slug}"
 SEASON_EVENTS_PAGE = "/unique-tournament/{tournament_id}/season/{season_id}/events/{kind}/{page}"
+# Takımın ve oyuncunun maç sayfaları (plan maddesi FX-19; docs/all-sports/endpoints.csv). Oyuncunun `next` sayfası
+# katalogda yoktur: yalnızca `last` kullanılır.
+TEAM_EVENTS_PAGE = "/team/{team_id}/events/{kind}/{page}"
+PLAYER_EVENTS_PAGE = "/player/{player_id}/events/last/{page}"
 SEARCH_UNIQUE_TOURNAMENTS = "/search/unique-tournaments/{query}"
 SEARCH_ALL = "/search/all?q={query}&page={page}"
 
@@ -103,6 +107,18 @@ def season_events_page(tournament_id: Id, season_id: Id, kind: str, page: int) -
     if kind not in SEASON_EVENT_KINDS:
         raise ValueError(f"kind must be one of {SEASON_EVENT_KINDS}: {kind!r}")
     return SEASON_EVENTS_PAGE.format(tournament_id=tournament_id, season_id=season_id, kind=kind, page=page)
+
+
+def team_events_page(team_id: Id, kind: str, page: int) -> str:
+    """Takımın maç sayfası; `kind`: "last" (oynanmış, sondan başa) ya da "next" (gelecek)."""
+    if kind not in SEASON_EVENT_KINDS:
+        raise ValueError(f"kind must be one of {SEASON_EVENT_KINDS}: {kind!r}")
+    return TEAM_EVENTS_PAGE.format(team_id=team_id, kind=kind, page=page)
+
+
+def player_events_page(player_id: Id, page: int) -> str:
+    """Oyuncunun oynadığı maçların sayfası (sondan başa)."""
+    return PLAYER_EVENTS_PAGE.format(player_id=player_id, page=page)
 
 
 def search_unique_tournaments(query: str) -> str:

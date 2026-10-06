@@ -124,12 +124,12 @@ def test_a_sync_of_named_follows(jobs: JobStore, store: Store, specs: List[Any])
     missing = error(client.post("/api/v1/jobs", json={"kind": "sync", "spec": {"follows": ["tournament:5"]}}),
                     404, "not_found")
     assert missing["details"] == {"follows": ["tournament:5"]}
-    refused = error(client.post("/api/v1/jobs", json={"kind": "sync", "spec": {"follows": ["team:42"]}}),
-                    400, "invalid_request")
-    assert refused["details"] == {"field": "follows", "unsupported": ["team:42"]}
+    # FX-19: takım, oyuncu ve maç takipleri de eşitlenir (önceden 400 `unsupported`)
+    team = start({"kind": "sync", "spec": {"follows": ["team:42"]}})
+    assert specs[-1].follows == ("team:42",) and team["spec"]["follows"] == ["team:42"]
     seasons = start({"kind": "sync", "spec": {"follows": ["tournament:4242"], "only": "seasons"}})
     assert specs[-1].mode == "seasons" and seasons["spec"]["follows"] == ["tournament:4242"]
-    assert len(data(client.get("/api/v1/jobs"))) == 2
+    assert len(data(client.get("/api/v1/jobs"))) == 3
 
 
 # --- maç kimlikleriyle getirme (G16) -------------------------------------------------------------------
@@ -208,7 +208,8 @@ def test_jobs_by_origin_and_by_target(jobs: JobStore, store: Store, specs: List[
     assert ids("target=event:123") == [by_event["id"]]
     assert ids("target=event:77") == [by_selection["id"]] and ids("target=tournament:8") == [by_selection["id"]]
     assert ids("target=tournament:4242&origin=cli") == []
-    error(client.get("/api/v1/jobs?target=team:1"), 422, "invalid_request")
+    assert ids("target=team:1") == []  # FX-19: takım ve oyuncu takipleri de hedeftir
+    error(client.get("/api/v1/jobs?target=league:1"), 422, "invalid_request")
     assert jobs_v1.job_targets({"mode": "full"}) == []
 
 

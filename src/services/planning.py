@@ -41,6 +41,7 @@ ya da olay sayfaları). Yürütülmeleri src/services/listing.py'dedir.
 """
 from __future__ import annotations
 
+import dataclasses
 import logging
 import sqlite3
 from dataclasses import dataclass, field
@@ -112,7 +113,9 @@ class SelectionPolicy:
                  (API ile eklenenler, origin api)
 
     Bir maçı birden çok takip kapsıyorsa en dar olan kazanır: maç takibi, turnuva takibi, ev sahibi takımın
-    takibi, konuk takımın takibi. Takip seçimi vermiyorsa sporun seçimi geçerlidir.
+    takibi, konuk takımın takibi, sonra maçı getiren oyuncu takibi (`via_events`, FX-19: maçın yükü oyuncuyu
+    söylemez; eşitleme oyuncunun listesinden getirdiği maçları `with_follow_events` ile bildirir). Takip seçimi
+    vermiyorsa sporun seçimi geçerlidir.
     """
 
     defaults: Optional[Tuple[str, ...]] = None
@@ -123,6 +126,8 @@ class SelectionPolicy:
     # [client] odds_country: oranların kaydına yazılan ülke (büyük harf); boş = yazılmaz. Kullanıcı verir, makineden
     # türetilmez (sahibin kararı, 2026-10-06; plan maddesi FX-15)
     country: str = ""
+    # maç → onu getiren takibin seçimi (oyuncu takibi; FX-19); en son bakılır
+    via_events: Mapping[int, Mapping[str, Any]] = field(default_factory=dict)
 
     @classmethod
     def from_settings(cls, settings: Any, follows: Iterable[Any] = (), *,
@@ -172,7 +177,20 @@ class SelectionPolicy:
                 found = self.follows.get((kind, int(entity)))
                 if found is not None:
                     return found
-        return None
+        return self.via_events.get(int(event_id)) if event_id is not None else None
+
+    def with_follow_events(self, kind: str, entity_id: int, event_ids: Iterable[int]) -> "SelectionPolicy":
+        """
+        Bir takibin (oyuncu) listesinden gelen maçlar o takibin seçimini alır, maçı daha dar bir takip
+        kapsamıyorsa (`follow_for`'un son halkası; FX-19). Takip seçim vermiyorsa politika aynen döner.
+        """
+        chosen = self.follows.get((kind, int(entity_id)))
+        if chosen is None:
+            return self
+        merged: Dict[int, Mapping[str, Any]] = dict(self.via_events)
+        for event_id in event_ids:
+            merged.setdefault(int(event_id), chosen)
+        return dataclasses.replace(self, via_events=merged)
 
     def for_sport(self, sport: Optional[str]) -> SliceSelection:
         """Takipsiz bir maçın (ya da sporun varsayılanının) seçimi."""

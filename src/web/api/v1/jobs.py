@@ -18,7 +18,8 @@ thread'de çalışır. Belirtim (`spec`) bugünkü eşitleme servisinin belirtim
 
     sync     sezon listeleri → maç listeleri → maç detayları           (SyncSpec mode="full")
              `only: "seasons"`: yalnızca sezon listeleri               (SyncSpec mode="seasons"; FX-13, G15)
-             `follows`: yalnızca adı verilen turnuva takipleri          (FollowsSyncSpec; FX-13, G23)
+             `follows`: yalnızca adı verilen takipler; takım, oyuncu ve  (FollowsSyncSpec; FX-13, G23;
+             maç takipleri maçlarını indirir                            FX-19)
     fetch    yalnızca maç detayları                                     (SyncSpec mode="details")
              `event_ids`: turnuvası bilinmese de bu maçlar              (FX-13, G16; `ssc fetch event` gibi)
     refresh  kayıtlı geçici maçların yeniden okunması                   (SyncSpec mode="refresh")
@@ -134,8 +135,9 @@ FollowId = Annotated[str, Field(pattern=r"^(tournament|team|player|event):[1-9][
 
 class SyncJobSpec(BaseModel):
     """
-    What to download. Without `selections`, `league_id` and `follows`: every enabled tournament follow, each with
-    its own season choice. Only one of `league_id`, `selections` and `follows` may be given.
+    What to download. Without `selections`, `league_id` and `follows`: every enabled follow, each tournament with
+    its own season choice, each team, player and event follow with its matches. Only one of `league_id`,
+    `selections` and `follows` may be given.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -144,8 +146,11 @@ class SyncJobSpec(BaseModel):
     selections: List[JobSelection] = Field(default_factory=list)
     follows: List[FollowId] = Field(
         default_factory=list, max_length=200,
-        description="`sync` only: these follows (`tournament:17`), each with its season choice. Team, player and "
-                    "event follows cannot be synced yet (400).",
+        description="`sync` only: these follows (`tournament:17`, `team:42`, `player:7`, `event:123`). A "
+                    "tournament with its season choice; a team or a player with its matches (the previous and next "
+                    "pages of SofaScore's list within the follow's window: `seasons` `current` = the last 365 "
+                    "days, `last:N` = N × 365 days, `all` = up to five pages back, season ids = those seasons); an "
+                    "event follow that one match. Season lists only (`only: \"seasons\"`) read tournaments only.",
     )
     only: Optional[Literal["seasons"]] = Field(
         default=None,
@@ -372,8 +377,9 @@ def job_targets(spec: Mapping[str, Any]) -> List[str]:
             for event_id in selection.get("match_ids") or ():
                 add("event", event_id)
     for follow in spec.get("follows") or ():
-        if isinstance(follow, str) and follow.startswith("tournament:") and follow[11:].isdigit():
-            add("tournament", int(follow[11:]))
+        kind, _, number = str(follow).partition(":")
+        if kind in ("tournament", "team", "player", "event") and number.isdigit():
+            add(kind, int(number))
     for event_id in spec.get("event_ids") or ():
         add("event", event_id)
     return list(found)
@@ -404,10 +410,10 @@ def list_jobs(
     origin: Annotated[Optional[List[Literal["cli", "api", "scheduler", "library"]]], Query(
         description="Only jobs started by one of these faces.")] = None,
     target: Optional[str] = Query(
-        None, pattern=r"^(tournament|event):[1-9][0-9]{0,18}$",
+        None, pattern=r"^(tournament|team|player|event):[1-9][0-9]{0,18}$",
         description="Only jobs whose spec names this tournament (`tournament:17`: its `league_id`, a selection or "
-                    "a follow) or this event (`event:123`: a selection's or `event_ids`' event). A job over every "
-                    "follow names none.",
+                    "a follow), this team or player (`team:42`, `player:7`: a follow) or this event (`event:123`: "
+                    "a selection's, a follow's or `event_ids`' event). A job over every follow names none.",
     ),
 ) -> JobListResponse:
     """Jobs of the data directory, newest first: those of this server and those started from the command line."""
@@ -489,23 +495,17 @@ def _check_targets(body: Union[StartSyncJob, StartFetchJob]) -> None:
 
 
 def _check_follows(follows: List[str]) -> None:
-    """Takipler var olmalı ve turnuva takibi olmalı (takım, oyuncu ve maç takipleri henüz eşitlenemez)."""
+    """Takipler var olmalı. Her tür eşitlenir (takım, oyuncu ve maç takipleri FX-19'dan beri)."""
     from src.services.follows import parse_follow_id
 
     service = deps.follows_service()
     missing: List[str] = []
-    unsupported: List[str] = []
     for text in dict.fromkeys(follows):
         parsed = parse_follow_id(text)
         if parsed is None or service.get(*parsed) is None:
             missing.append(text)
-        elif parsed[0] != "tournament":
-            unsupported.append(text)
     if missing:
         raise NotFoundError("No follow has this id.", {"follows": missing})
-    if unsupported:
-        raise UsageError("Only tournament follows can be synced; team, player and event follows cannot yet.",
-                         {"field": "follows", "unsupported": unsupported})
 
 
 def _event_selections(event_ids: List[int]) -> Tuple[Any, ...]:

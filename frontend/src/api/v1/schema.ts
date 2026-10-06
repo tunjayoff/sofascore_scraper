@@ -1371,14 +1371,15 @@ export interface StatusResponse {
 }
 
 /**
- * What to download. Without `selections`, `league_id` and `follows`: every enabled tournament follow, each with
- * its own season choice. Only one of `league_id`, `selections` and `follows` may be given.
+ * What to download. Without `selections`, `league_id` and `follows`: every enabled follow, each tournament with
+ * its own season choice, each team, player and event follow with its matches. Only one of `league_id`,
+ * `selections` and `follows` may be given.
  */
 export interface SyncJobSpec {
   /** One tournament, every season of it. */
   league_id?: number | null
   selections?: JobSelection[]
-  /** `sync` only: these follows (`tournament:17`), each with its season choice. Team, player and event follows cannot be synced yet (400). */
+  /** `sync` only: these follows (`tournament:17`, `team:42`, `player:7`, `event:123`). A tournament with its season choice; a team or a player with its matches (the previous and next pages of SofaScore's list within the follow's window: `seasons` `current` = the last 365 days, `last:N` = N × 365 days, `all` = up to five pages back, season ids = those seasons); an event follow that one match. Season lists only (`only: "seasons"`) read tournaments only. */
   follows?: string[]
   /** `sync` only. `seasons`: read the season lists from SofaScore again now, without schedules or event details (the Get season list button). */
   only?: "seasons" | null

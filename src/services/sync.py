@@ -24,6 +24,13 @@ her sezon, "current" listenin ilki (SofaScore en yeniyi önce verir), "last:N" i
 `follows` verilirse yalnızca o takipler. Takip tablosu okunamazsa (depo açılamadı) ligler eskisi gibi
 yapılandırmadan okunur (`ConfigManager.get_leagues`, bütün sezonlar).
 
+Takım, oyuncu ve maç takipleri (plan maddesi FX-19; src/services/follow_sync.py): tam kipte, belirtim bir lig ya da
+seçim vermiyorsa her etkin takım, oyuncu ve maç takibi (`follows` verilirse yalnızca adı verilenler) maçlarını
+indirir. Takımın ve oyuncunun maç listesi maç listesi aşamasında okunur (takibin penceresiyle), maçlar detay
+aşamasının sonunda getirme boru hattıyla, takiplerin veri seçimiyle indirilir. Okunamayan liste
+`failed_listings`'te (`kind` "team_events" ya da "player_events", `league_id` takımın ya da oyuncunun kimliği)
+ve iş `partial` biter.
+
 Maç detayları (detay aşaması, kimliğiyle seçilen maçlar, yalnızca yenileme) tek getirme boru hattıyla indirilir
 (src/services/pipeline.py, plan maddesi P13). Servis ona bağlamdaki MatchDataFetcher'ın eski adlı giriş noktalarıyla
 (`fetch_detail_ids`, `fetch_matches_batch`, `refresh_matches`) ulaşır: bunlar yalnızca iş birimlerini kurar; çekici
@@ -54,7 +61,7 @@ from src.client.context import FetchCancelled, request_context
 from src.exceptions import StorageError
 from src.jobs.progress import JobProgress
 from src.logger import get_logger
-from src.services import listing
+from src.services import follow_sync, listing
 from src.services.context import ServiceContext
 
 logger = get_logger("SyncService")
@@ -206,7 +213,9 @@ class RefreshCounts:
 @dataclass(frozen=True)
 class FailedListing:
     """
-    Çekilemeyen bir liste: sezon listesi (`kind` "seasons") ya da sezon programı ("schedule").
+    Çekilemeyen bir liste: sezon listesi (`kind` "seasons"), sezon programı ("schedule") ya da bir takım ya da
+    oyuncu takibinin maç listesi ("team_events", "player_events"; FX-19: `league_id` o takımın ya da oyuncunun
+    kimliğidir; iş kayıtlarının ve komut satırının biçimi değişmesin diye ayrı alan yok).
 
     reason  istek katmanının nedeni ("403", "429", "5xx", "timeout", "network", "parse", "other"), "not_found"
             (SofaScore'da böyle bir turnuva yok), "storage" (alındı ama yazılamadı)
@@ -453,8 +462,11 @@ class _SyncRun:
         detail_plan: DetailPlan = {}
         explicit_match_ids: List[int] = []
 
+        others: Optional[Tuple[List["follow_sync.FollowListing"], List[Any]]] = None
         if spec.mode != "details":
             detail_plan = self._listings()
+            # Takım, oyuncu ve maç takiplerinin listeleri (FX-19): maç listesi aşamasının sonunda
+            others = self._follow_listings()
         elif spec.selections:
             for s in spec.selections:
                 explicit_match_ids.extend(s.match_ids)
@@ -473,6 +485,10 @@ class _SyncRun:
                 self._details(detail_plan, explicit_match_ids)
             finally:
                 md.refresh_listener = None
+
+        # 3b. Takım, oyuncu ve maç takiplerinin maçları (FX-19)
+        if others is not None and not cancelled() and not self.blocked("match details"):
+            self._follow_details(*others)
 
         # 4. Bahis oranları ve maç dışı veriler (plan maddesi P28): yalnızca seçildilerse; seçilmediyse hiçbir
         # şey okunmaz ve istenmez
@@ -530,6 +546,8 @@ class _SyncRun:
             found: List[int] = []
             for follow in follows:
                 kind, _, number = str(follow).partition(":")
+                if kind in follow_sync.SYNCED_KINDS:
+                    continue  # takım, oyuncu ve maç takipleri: `_other_follows` (FX-19)
                 lid = int(number) if kind == "tournament" and number.isdigit() else None
                 if lid is None or lid not in self.targets:
                     self.log(f"The follow {follow} is not an enabled tournament follow; skipped.",
@@ -648,6 +666,126 @@ class _SyncRun:
 
             self.log(get_i18n().t("fetch_zero_matches"), "fetch_zero_matches")
         return detail_plan
+
+    # --- takım, oyuncu ve maç takipleri (FX-19) ------------------------------------------------------
+
+    def _store(self) -> Any:
+        """Bağlamın deposu; yoksa ya da açılamıyorsa None (uyarıyla)."""
+        from src.store import StoreError
+
+        try:
+            return getattr(self.ctx, "store", None)
+        except StoreError as e:
+            logger.warning("Team, player and match follows skipped: the data store could not be opened (%s)", e)
+            return None
+
+    def _other_follows(self) -> List[Any]:
+        """
+        Maçları indirilecek takım, oyuncu ve maç takipleri: tam kipte, belirtim lig ya da seçim vermiyorsa etkin
+        olanların hepsi; `follows` verildiyse yalnızca adı verilenler (etkin olmayan ya da olmayan takip atlanır ve
+        günlüğe yazılır).
+        """
+        from src.services.follows import ConfigLeagues, FollowsService
+
+        spec = self.spec
+        named = [text for text in _follows_of(spec) if str(text).partition(":")[0] in follow_sync.SYNCED_KINDS]
+        if spec.mode != "full" or (not named and (_follows_of(spec) or spec.selections or spec.league_id)):
+            return []
+        store = self._store()
+        if store is None:
+            return []
+        try:
+            rows = FollowsService(store, ConfigLeagues()).sync_others()
+        except StorageError as e:
+            if e.fatal:
+                raise
+            logger.warning("Team, player and match follows could not be read: %s", e)
+            return []
+        if not named:
+            return rows
+        by_id = {f"{row.kind}:{row.entity_id}": row for row in rows}
+        chosen: List[Any] = []
+        for text in dict.fromkeys(str(t) for t in named):
+            row = by_id.get(text)
+            if row is None:
+                self.log(f"The follow {text} is not an enabled follow; skipped.", "sync_follow_skipped", follow=text)
+                continue
+            chosen.append(row)
+        return chosen
+
+    def _follow_listings(self) -> Optional[Tuple[List["follow_sync.FollowListing"], List[Any]]]:
+        """
+        Takım ve oyuncu takiplerinin maç listeleri (maç listesi aşamasının sonunda, aşamanın sayacına eklenerek);
+        maç takipleri olduğu gibi döner. Takip yoksa None.
+        """
+        from src.client import Client
+
+        follows = self._other_follows()
+        if not follows or self.job.cancelled():
+            return None
+        listed = [row for row in follows if row.kind in follow_sync.LISTED_KINDS]
+        events = [row for row in follows if row.kind not in follow_sync.LISTED_KINDS]
+        tracker = self.tracker
+        if tracker.phase != "matches":
+            tracker.start_phase("matches", 0)
+        base = int(tracker.detail()["done"])
+        tracker.set_total(int(tracker.detail()["total"]) + len(listed))
+        client = Client()
+        listings: List[follow_sync.FollowListing] = []
+        for index, follow in enumerate(listed):
+            if self.job.cancelled() or self.blocked("match lists"):
+                break
+            fid = f"{follow.kind}:{follow.entity_id}"
+            tracker.set_context(league_name=follow.name)
+            self.log(f"Fetching the match list of {fid} ({follow.name})...", "sync_follow_listing", follow=fid,
+                     name=follow.name)
+            found = follow_sync.list_follow(follow, client.get_sync, cancelled=self.job.cancelled)
+            listings.append(found)
+            if found.failed is not None:
+                self.failed_listings.append(FailedListing(f"{follow.kind}_events", int(follow.entity_id), None,
+                                                          found.failed))
+                self.log(f"The match list of {fid} could not be fetched completely ({found.failed}).",
+                         "sync_follow_listing_failed", follow=fid, name=follow.name, reason=found.failed)
+            tracker.advance(base + index + 1)
+        return listings, events
+
+    def _follow_details(self, listings: List["follow_sync.FollowListing"], events: List[Any]) -> None:
+        """Takiplerin maçları: plan (`follow_sync.plan_items`), sonra boru hattı; detay aşamasının sayacına eklenir."""
+        from src.services import planning
+        from src.services.pipeline import FAIL_STORAGE
+        from src.services.query import RefreshPolicy
+
+        store = self._store()
+        if store is None:
+            return
+        items, policy = follow_sync.plan_items(store, listings, events, planning.configured_policy(store),
+                                               RefreshPolicy.current())
+        if not items:
+            return
+        tracker = self.tracker
+        if tracker.phase != "details":
+            tracker.start_phase("details", 0)
+        base = int(tracker.detail()["done"])
+        tracker.set_total(int(tracker.detail()["total"]) + len(items))
+        tracker.set_context()
+        self.log(f"Fetching {len(items)} matches of team, player and match follows...", "sync_follow_details",
+                 count=len(items))
+        done = 0
+
+        def on_result(result: Any) -> None:
+            nonlocal done
+            done += 1
+            tracker.advance(base + done)
+            if result.item.need == "refresh" and result.ok:
+                tracker.add_refreshed(str(result.event_id), bool(result.changed))
+            elif result.failed and (result.reason == FAIL_STORAGE or not self.breaker.tripped):
+                tracker.add_failed(str(result.event_id), None)
+
+        concurrency = getattr(self.ctx.config, "get_max_concurrent", lambda: 5)()
+        summary = follow_sync.run_items(store, items, policy, concurrency=int(concurrency),
+                                        cancelled=self.job.cancelled, on_result=on_result)
+        if summary.breaker:
+            self.report_breaker(summary.breaker, "match details")
 
     def _extras(self, detail_plan: DetailPlan) -> None:
         """
