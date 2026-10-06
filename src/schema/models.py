@@ -836,13 +836,13 @@ MODELS: Tuple[type, ...] = (
     Slice, SliceError,
     Change, ChangedField,
     LiveEvent,
+    Odds, OddsMarket, OddsChoice, OddsLine, StandingsRow,
 )
 # Kendi başına verilen kayıtlar (API kaynağı, dışa aktarma veri kümesi, akış satırı); gerisi bunların parçası.
-RECORDS: Tuple[type, ...] = (Sport, Category, Tournament, Season, Participant, Event, Slice, Change, LiveEvent)
-# P28'in modelleri. Sözleşme belgesinde (docs/design/04-schema-v1.md) blokları henüz yok: belgeler PR'ı alan
-# tablolarını ekleyince MODELS'e, kendi başına verilenler (Odds, OddsLine, StandingsRow) RECORDS'a girer ve JSON
-# Schema'da görünür. O zamana kadar API v1 ve dışa aktarma onları kullanır ama `describe schemas` göstermez.
-PENDING_MODELS: Tuple[type, ...] = (Odds, OddsMarket, OddsChoice, OddsLine, StandingsRow)
+# P28'in oran ve puan durumu kayıtları FX-21'den beri buradadır: `Odds` (API v1'in oran anlık görüntüsü),
+# `OddsLine` (dışa aktarmanın `odds` satırı), `StandingsRow` (puan durumu ve `standings` veri kümesinin satırı).
+RECORDS: Tuple[type, ...] = (Sport, Category, Tournament, Season, Participant, Event, Slice, Change, LiveEvent,
+                             Odds, OddsLine, StandingsRow)
 
 __all__ = [
     "SCHEMA_VERSION",
@@ -850,7 +850,6 @@ __all__ = [
     "EVENT_ENVELOPE_ID",
     "MODELS",
     "RECORDS",
-    "PENDING_MODELS",
     "Model",
     "Odds",
     "OddsChoice",

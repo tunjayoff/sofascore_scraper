@@ -948,8 +948,7 @@ into `MODELS`, and `Odds`, `OddsLine` and `StandingsRow` into `RECORDS`.
 
 One read of an odds slice of an event: a snapshot.
 
-The table below is copied from the model (`render_fields` of `tests/test_schema_v1.py` at `b6caf2f`). It is not yet a generated block: the model is in `models.PENDING_MODELS`, not in `MODELS`, so no test compares the two. It becomes a generated, test-checked block when FX-21 moves the models into `MODELS`.
-
+<!-- fields:Odds -->
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
 | `event_id` | integer | no |  | the request that fetched it | Id of the Event. |
@@ -957,13 +956,25 @@ The table below is copied from the model (`render_fields` of `tests/test_schema_
 | `provider_id` | integer | yes |  | the request that fetched it | SofaScore's id of the bookmaker the odds come from. Which bookmakers SofaScore offers depends on the country it sees the request from; the platform stores no address or location of the machine. |
 | `fetched_at_utc` | string | yes | ISO 8601 UTC | time of the platform's request | When the odds were read. A read is a snapshot: odds change until the event ends, and only a later read shows a later price. |
 | `markets` | array of [OddsMarket](#oddsmarket) | no |  | `markets`, or the values of `featured` | The markets, in SofaScore's order. |
+<!-- /fields:Odds -->
+
+```json example:Odds
+{"event_id": 17144927, "key": "odds_all", "provider_id": 1, "fetched_at_utc": "2026-09-21T14:13:20Z",
+ "markets": [{"market_id": 1, "name": "Full time", "group": "1X2", "period": "Full-time",
+  "choice_group": null, "label": null, "is_live": true, "suspended": false,
+  "choices": [{"name": "1", "fractional": "11/5", "decimal": 3.2, "initial_fractional": "13/10",
+               "initial_decimal": 2.3, "change": 1, "winning": null},
+              {"name": "X", "fractional": "8/13", "decimal": 1.615, "initial_fractional": "5/2",
+               "initial_decimal": 3.5, "change": -1, "winning": null},
+              {"name": "2", "fractional": "11/2", "decimal": 6.5, "initial_fractional": "31/20",
+               "initial_decimal": 2.55, "change": 1, "winning": null}]}]}
+```
 
 #### OddsMarket
 
 One market of a snapshot (match result, over/under, handicap, ...).
 
-The table below is copied from the model (`render_fields` of `tests/test_schema_v1.py` at `b6caf2f`). It is not yet a generated block: the model is in `models.PENDING_MODELS`, not in `MODELS`, so no test compares the two. It becomes a generated, test-checked block when FX-21 moves the models into `MODELS`.
-
+<!-- fields:OddsMarket -->
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
 | `market_id` | integer | yes |  | `marketId` | SofaScore's id of the market type (1 is the match result). |
@@ -975,13 +986,13 @@ The table below is copied from the model (`render_fields` of `tests/test_schema_
 | `is_live` | boolean | yes |  | `isLive` | True when the prices were offered during play. |
 | `suspended` | boolean | yes |  | `suspended` | True when the market was closed for bets at the time of the read. |
 | `choices` | array of [OddsChoice](#oddschoice) | no |  | `choices` | The outcomes of the market, in SofaScore's order. |
+<!-- /fields:OddsMarket -->
 
 #### OddsChoice
 
 One outcome of a market and its price.
 
-The table below is copied from the model (`render_fields` of `tests/test_schema_v1.py` at `b6caf2f`). It is not yet a generated block: the model is in `models.PENDING_MODELS`, not in `MODELS`, so no test compares the two. It becomes a generated, test-checked block when FX-21 moves the models into `MODELS`.
-
+<!-- fields:OddsChoice -->
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
 | `name` | string | no |  | `choices[].name` | Name of the outcome as SofaScore gives it, for example `1`, `X`, `2`, `Over`. |
@@ -991,13 +1002,13 @@ The table below is copied from the model (`render_fields` of `tests/test_schema_
 | `initial_decimal` | number | yes |  | derived from `choices[].initialFractionalValue` | Opening price as a decimal, rounded to three places. |
 | `change` | integer | yes |  | `choices[].change` | Direction of the last change of the price: 1 up, -1 down, 0 none. |
 | `winning` | boolean | yes |  | `choices[].winning` | True for the outcome that won once the event is settled; null while open or when SofaScore does not say. |
+<!-- /fields:OddsChoice -->
 
 #### OddsLine
 
 The flat row of the `odds` export dataset: one outcome of one market of one snapshot.
 
-The table below is copied from the model (`render_fields` of `tests/test_schema_v1.py` at `b6caf2f`). It is not yet a generated block: the model is in `models.PENDING_MODELS`, not in `MODELS`, so no test compares the two. It becomes a generated, test-checked block when FX-21 moves the models into `MODELS`.
-
+<!-- fields:OddsLine -->
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
 | `event_id` | integer | no |  | the request that fetched it | Id of the Event. |
@@ -1019,13 +1030,21 @@ The table below is copied from the model (`render_fields` of `tests/test_schema_
 | `initial_decimal` | number | yes |  | derived from `choices[].initialFractionalValue` | As `OddsChoice.initial_decimal`. |
 | `change` | integer | yes |  | `choices[].change` | As `OddsChoice.change`. |
 | `winning` | boolean | yes |  | `choices[].winning` | As `OddsChoice.winning`. |
+<!-- /fields:OddsLine -->
+
+```json example:OddsLine
+{"event_id": 17144927, "key": "odds_all", "provider_id": 1, "fetched_at_utc": "2026-09-21T14:13:20Z",
+ "market_id": 1, "market_name": "Full time", "market_group": "1X2", "market_period": "Full-time",
+ "choice_group": null, "label": null, "is_live": true, "suspended": false, "choice": "1",
+ "fractional": "11/5", "decimal": 3.2, "initial_fractional": "13/10", "initial_decimal": 2.3,
+ "change": 1, "winning": null}
+```
 
 #### StandingsRow
 
 One row of a season's table (`standings`, sub `total` or `home`); the row of the `standings` export dataset.
 
-The table below is copied from the model (`render_fields` of `tests/test_schema_v1.py` at `b6caf2f`). It is not yet a generated block: the model is in `models.PENDING_MODELS`, not in `MODELS`, so no test compares the two. It becomes a generated, test-checked block when FX-21 moves the models into `MODELS`.
-
+<!-- fields:StandingsRow -->
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
 | `tournament_id` | integer | no |  | the request that fetched it | Id of the Tournament. |
@@ -1043,6 +1062,14 @@ The table below is copied from the model (`render_fields` of `tests/test_schema_
 | `scores_against` | integer | yes |  | `rows[].scoresAgainst` | Goals or points conceded. |
 | `points` | number | yes |  | `rows[].points` | Table points (a fraction in a few sports). |
 | `fetched_at_utc` | string | yes | ISO 8601 UTC | time of the platform's request | When the table was read. |
+<!-- /fields:StandingsRow -->
+
+```json example:StandingsRow
+{"tournament_id": 17, "season_id": 96668, "table": "total", "group_name": "Premier League 26/27",
+ "position": 1, "participant_id": 17, "participant_name": "Manchester City", "matches": 5,
+ "wins": 5, "draws": 0, "losses": 0, "scores_for": 13, "scores_against": 5, "points": 15,
+ "fetched_at_utc": "2026-09-21T14:13:20Z"}
+```
 
 ## 5. What differs by sport
 
