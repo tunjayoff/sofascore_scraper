@@ -37,9 +37,26 @@ export function seasonsText(seasons: FollowRecord['seasons'] | null | undefined,
   return seasons ? String(seasons) : '—'
 }
 
-/** Where a search hit is from: the country of a team or a player, the category of a league. */
+/**
+ * Where a search hit is from: the country of a team or a player, the category of a league; a bare country
+ * code (a stored team, FX-20) in the user's language where the browser knows it.
+ */
 export function hitPlace(h: Pick<TournamentHit, 'country' | 'category'>): string {
-  return h.country?.name ?? h.category?.name ?? h.country?.code ?? ''
+  const code = h.country?.code ?? h.category?.country_code ?? null
+  return h.country?.name ?? h.category?.name ?? (code ? regionName(code) : '')
+}
+
+function regionName(code: string): string {
+  try {
+    return new Intl.DisplayNames([String(i18n.global.locale.value)], { type: 'region', fallback: 'code' }).of(code.toUpperCase()) ?? code
+  } catch {
+    return code
+  }
+}
+
+/** The icon of a search hit's kind (FX-20): a league, a team, a player. */
+export function kindIcon(kind: string | null | undefined): 'trophy' | 'shield' | 'user' {
+  return kind === 'team' ? 'shield' : kind === 'player' ? 'user' : 'trophy'
 }
 
 const isOdds = (k: unknown) => {

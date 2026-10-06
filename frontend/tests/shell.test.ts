@@ -174,7 +174,11 @@ describe('keyboard', () => {
     const input = w.find('input[role="combobox"]')
     expect(document.activeElement).toBe(input.element)
     await input.setValue('heal')
-    expect(w.findAll('[role="option"]').map((o) => o.text())).toEqual([expect.stringContaining(t('ui.nav.health'))])
+    // the stored results, then the SofaScore section (FX-20), here only its "Search SofaScore" entry so far
+    expect(w.findAll('[role="option"]').map((o) => o.text())).toEqual([
+      expect.stringContaining(t('ui.nav.health')),
+      expect.stringContaining(t('ui.palette.searchSofascore', { q: 'heal' })),
+    ])
     await input.trigger('keydown', { key: 'Enter' })
     await flush()
     expect(router.currentRoute.value.path).toBe('/system/health')
@@ -185,7 +189,7 @@ describe('keyboard', () => {
     expect(w.text()).toContain(t('ui.palette.note'))
   })
 
-  it('the quick search finds follows by name and stored tournaments of the catalog, never SofaScore', async () => {
+  it('the quick search finds follows by name and stored tournaments of the catalog at once', async () => {
     const f = await app('/', {
       'GET /api/v1/follows': { data: [{ id: 'tournament:17', kind: 'tournament', entity_id: 17, name: 'Premier League', sport: 'football', seasons: 'current', live: false, enabled: true, origin: 'api', position: 0, writable: [] }], page: { limit: 0 } },
       'GET /api/v1/tournaments': { data: [{ id: 17, name: 'Premier League', sport: 'football', category_id: 1, slug: 'pl' }, { id: 8, name: 'LaLiga', sport: 'football', category_id: 2, slug: 'laliga' }], page: { limit: 6 } },

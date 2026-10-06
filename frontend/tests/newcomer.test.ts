@@ -31,6 +31,7 @@ import { countsText, jobTarget } from '@/screens/jobs/jobText'
 import { MORE_FOLLOW_KINDS } from '@/screens/follows/followText'
 import { i18n, setLocale } from '@/i18n'
 import { callsTo, flush, mockFetch } from './helpers'
+import { clearSuggestCache } from '@/app/suggest'
 import { axeViolations, event, follow, job, mountScreen, page, slice, sport, status, useFakeES } from './v1'
 
 /**
@@ -175,31 +176,80 @@ describe('quick search', () => {
     expect(w.find('[data-testid="help-panel"]').exists()).toBe(true)
   })
 
-  it('when nothing stored matches it offers "Search SofaScore", and sends nothing until it is chosen', async () => {
+  it('from 2 letters it asks SofaScore after a pause, in its own section; "Search SofaScore" opens the editor at no cost', async () => {
     const f = await app('/', {
       ...SPORTS,
-      'POST /api/v1/tournaments/search': list([{ id: 17, name: 'Premier League', slug: 'pl', sport: 'football', category: { id: 1, name: 'England' }, followed: false }]),
+      'POST /api/v1/tournaments/search': list([{ kind: 'tournament', id: 17, name: 'Premier League', slug: 'pl', sport: 'football', category: { id: 1, name: 'England' }, followed: false }]),
       'GET /api/v1/tournaments': page([]),
     })
     key('k', { ctrlKey: true })
     await flush()
     await w.find('input[role="combobox"]').setValue('premier')
-    await new Promise((r) => setTimeout(r, 260))
     await flush()
-    const options = w.findAll('[role="option"]')
-    expect(options).toHaveLength(1)
-    expect(options[0].text()).toContain(t('ui.palette.searchSofascore', { q: 'premier' }))
+    // nothing before the pause
     expect(callsTo(f, 'POST /api/v1/tournaments/search')).toHaveLength(0)
+    expect(w.find('[data-testid="palette-sofascore"]').text()).toContain(t('ui.suggest.searching'))
+    await vi.waitFor(() => expect(callsTo(f, 'POST /api/v1/tournaments/search')).toHaveLength(1), { timeout: 2000 })
+    await flush()
+    expect(JSON.parse(String(callsTo(f, 'POST /api/v1/tournaments/search')[0][1]!.body))).toEqual({ q: 'premier', sport: null, kinds: ['tournament', 'team', 'player'] })
+    const section = w.find('[data-testid="palette-sofascore"]')
+    expect(section.find('[role="presentation"]').text()).toBe(t('ui.palette.sofascore'))
+    const options = section.findAll('[role="option"]')
+    expect(options.map((o) => o.text())).toEqual([expect.stringContaining('Premier League'), expect.stringContaining(t('ui.palette.searchSofascore', { q: 'premier' }))])
+    expect(options[0].text()).toContain('England')
+    // the last entry: every result in the follow editor; the answer kept by the page costs nothing
+    await w.find('input[role="combobox"]').trigger('keydown', { key: 'ArrowDown' })
     await w.find('input[role="combobox"]').trigger('keydown', { key: 'Enter' })
     await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/follows/new?q=premier'))
     await flush()
     await flush()
-    // the one request the user chose; the only hit is chosen, so Next is the only click left
     expect(callsTo(f, 'POST /api/v1/tournaments/search')).toHaveLength(1)
-    expect(JSON.parse(String(callsTo(f, 'POST /api/v1/tournaments/search')[0][1]!.body))).toEqual({ q: 'premier', sport: null, kinds: ['tournament'] })
     expect((w.find('[data-testid="editor-query"]').element as HTMLInputElement).value).toBe('premier')
+    // the only hit is chosen, so Next is the only click left
     expect((w.find('[data-testid="editor-name"]').element as HTMLInputElement).value).toBe('Premier League')
     expect(w.find('[data-testid="editor-next"]').attributes('disabled')).toBeUndefined()
+  })
+
+  it('Enter on a SofaScore hit opens the editor filled in; an added one opens its follow', async () => {
+    const f = await app('/', {
+      ...SPORTS,
+      'GET /api/v1/follows': { data: [follow({ id: 'team:42', kind: 'team', entity_id: 42, name: 'Arsenal' })], page: { limit: 0, next_cursor: null } },
+      'POST /api/v1/tournaments/search': list([
+        { kind: 'team', id: 42, name: 'Arsenal', sport: 'football', category: {}, country: { code: 'EN', name: 'England' }, followed: true },
+        { kind: 'player', id: 7, name: 'Bukayo Saka', sport: 'football', category: {}, country: { code: 'EN', name: 'England' }, team: { id: 42, name: 'Arsenal' }, followed: false },
+      ]),
+      'GET /api/v1/tournaments': page([]),
+    })
+    key('k', { ctrlKey: true })
+    await flush()
+    await w.find('input[role="combobox"]').setValue('ars')
+    await vi.waitFor(() => expect(w.findAll('[data-testid="palette-sofascore"] [role="option"]')).toHaveLength(3), { timeout: 2000 })
+    const section = w.find('[data-testid="palette-sofascore"]')
+    expect(section.find('[data-hit="ss-team-42"]').text()).toContain(t('ui.followEditor.alreadyFollowed'))
+    expect(section.find('[data-hit="ss-player-7"]').text()).toContain('Arsenal')
+    expect(await axeViolations(w.find('[role="dialog"]').element)).toEqual([])
+    // the stored follow "Arsenal" comes first, then the two SofaScore hits
+    const input = w.find('input[role="combobox"]')
+    const at = w.findAll('[role="option"]').findIndex((o) => o.attributes('data-hit') === 'ss-player-7')
+    for (let i = 0; i < at; i++) await input.trigger('keydown', { key: 'ArrowDown' })
+    expect(w.find('[role="option"][aria-selected="true"]').attributes('data-hit')).toBe('ss-player-7')
+    expect(input.attributes('aria-activedescendant')).toBe(w.find('[data-hit="ss-player-7"]').attributes('id'))
+    await input.trigger('keydown', { key: 'Enter' })
+    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/follows/new'))
+    expect(router.currentRoute.value.query).toEqual({ kind: 'player', id: '7', name: 'Bukayo Saka', sport: 'football' })
+    await flush()
+    expect((w.find('[data-testid="editor-id"]').element as HTMLInputElement).value).toBe('7')
+    expect((w.find('[data-kind="player"] input').element as HTMLInputElement).checked).toBe(true)
+    expect(callsTo(f, 'POST /api/v1/tournaments/search')).toHaveLength(1)
+    // an added one: its follow page
+    key('k', { ctrlKey: true })
+    await flush()
+    // (the editor's search is a combobox too: the quick search's is in its dialog)
+    await w.find('[role="dialog"] input[role="combobox"]').setValue('ars')
+    await vi.waitFor(() => expect(w.findAll('[data-testid="palette-sofascore"] [role="option"]')).toHaveLength(3), { timeout: 2000 })
+    expect(callsTo(f, 'POST /api/v1/tournaments/search')).toHaveLength(1)
+    await w.find('[data-hit="ss-team-42"]').trigger('click')
+    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/follows/team/42'))
   })
 })
 
@@ -211,19 +261,22 @@ describe('the follow editor', () => {
     mockFetch(routesWith([hit(17), hit(203)]))
     ;({ w } = await mountScreen(FollowEditorScreen, '/follows/new'))
     await flush()
-    expect(w.find('[data-testid="editor-query"]').attributes('placeholder')).toBe(t('ui.followEditor.searchPlaceholder.tournament'))
+    expect(w.find('[data-testid="editor-query"]').attributes('placeholder')).toBe(t('ui.suggest.placeholder'))
     await w.find('[data-testid="editor-query"]').setValue('premier')
     await w.find('[data-testid="editor-search"]').trigger('submit')
     await flush()
-    expect(w.findAll('[data-testid="editor-hits"] input:checked')).toHaveLength(0)
+    expect(w.findAll('[data-testid="editor-hits"] [role="option"]')).toHaveLength(2)
+    expect(w.find('[data-testid="editor-picked"]').exists()).toBe(false)
     w.unmount()
+    clearSuggestCache()
     mockFetch(routesWith([hit(17, true)]))
     ;({ w } = await mountScreen(FollowEditorScreen, '/follows/new'))
     await flush()
     await w.find('[data-testid="editor-query"]').setValue('premier')
     await w.find('[data-testid="editor-search"]').trigger('submit')
     await flush()
-    expect(w.findAll('[data-testid="editor-hits"] input:checked')).toHaveLength(0)
+    expect(w.findAll('[data-testid="editor-hits"] [role="option"]')).toHaveLength(1)
+    expect(w.find('[data-testid="editor-picked"]').exists()).toBe(false)
   })
 
   it('says "Last [2] seasons" and the review explains its words', async () => {

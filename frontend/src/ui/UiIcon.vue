@@ -59,6 +59,10 @@ export const ICONS = {
   link: 'M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1',
   planned: 'M12 3a9 9 0 100 18 9 9 0 000-18zM12 7v5h4',
   help: 'M12 3a9 9 0 100 18 9 9 0 000-18zM9.6 9.4a2.5 2.5 0 114.1 2c-.9.6-1.7 1.1-1.7 2.4M12 17h.01',
+  // the kinds of a search hit (FX-20): a league, a team, a player
+  trophy: 'M8 4h8v5a4 4 0 01-8 0zM8 6H5a3 3 0 003 4M16 6h3a3 3 0 01-3 4M12 13v4M8 20h8M10 17h4',
+  shield: 'M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z',
+  user: 'M12 4a4 4 0 100 8 4 4 0 000-8zM4 20a8 8 0 0116 0',
 } as const
 
 export type UiIconName = keyof typeof ICONS

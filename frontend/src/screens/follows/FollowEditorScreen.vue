@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, useId, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, useId, watch } from 'vue'
 import { RouterLink, onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import PageHeader from '@/ui/PageHeader.vue'
@@ -21,13 +21,16 @@ import SlicePicker from './SlicePicker.vue'
 import SeasonChooser from './SeasonChooser.vue'
 import MoveFollow from './MoveFollow.vue'
 import HelpTip from '@/ui/HelpTip.vue'
+import { noteFollowAdded } from '@/app/suggest'
+import FollowSearch from './FollowSearch.vue'
 import { FOLLOW_KINDS, MORE_FOLLOW_KINDS, dataText, followKindReady, followPath, hitPlace, lockReason, seasonsText, type FollowKind } from './followText'
 
 /**
  * The follow editor (6.3), "Add a league or team". A new follow in four steps:
- *  1. What: a league, a team or a player found by name at SofaScore (`POST /tournaments/search` with the
- *     kind, one request per search; a hit shows its kind, sport, country, a player's team and whether it
- *     is followed already, and brings its sport along), or anything by its SofaScore number; a single
+ *  1. What: a league, a team or a player suggested while typing (FX-20, `FollowSearch`): follows and stored
+ *     names at once, then SofaScore's leagues, teams and players together (one search after a short pause;
+ *     a hit shows its kind, sport, country, a player's team and whether it is followed already). Picking one
+ *     fills the kind, the number, the name and the sport. Or anything by its SofaScore number; a single
  *     match by its number (the match page's "Follow this match" fills it in).
  *  2. Seasons: a league's seasons (current, last N, all, or chosen by name; a league never downloaded gets
  *     its season list on an explicit click, FX-13); for a team or a player the same words are a time
@@ -70,43 +73,33 @@ function fieldLock(field: string) {
   return original.value ? lockReason(original.value, field) : null
 }
 
-// ---- search at SofaScore (one request per search) ----
-const SEARCHABLE: readonly FollowKind[] = ['tournament', 'team', 'player']
-const searchable = computed(() => SEARCHABLE.includes(kind.value))
+// ---- the search: suggestions while typing, every kind at once (FX-20) ----
+const searchable = computed(() => kind.value !== 'event')
 const query = ref('')
-const searching = ref(false)
-const hits = ref<TournamentHit[] | null>(null)
-const searchError = ref<unknown>(null)
-const pickedHit = ref<string | null>(null)
-const hitKey = (h: TournamentHit) => `${h.kind ?? 'tournament'}:${h.id}`
+const searchBox = ref<InstanceType<typeof FollowSearch> | null>(null)
+const nextButton = ref<HTMLButtonElement | null>(null)
+const picked = ref<TournamentHit | null>(null)
+const pickedHit = computed(() => (picked.value ? `${picked.value.kind ?? 'tournament'}:${picked.value.id}` : null))
+let picking = false
 
-async function search() {
-  if (!query.value.trim() || !searchable.value) return
-  searching.value = true
-  searchError.value = null
-  try {
-    hits.value = await v1.searchTournaments({ q: query.value.trim(), sport: sport.value || null, kinds: [kind.value as 'tournament' | 'team' | 'player'] })
-    // one hit that is not added yet: choose it, so Next is the only click left (FX-14a)
-    if (hits.value.length === 1 && !hits.value[0].followed) pick(hits.value[0])
-  } catch (e) {
-    hits.value = null
-    searchError.value = e
-  } finally {
-    searching.value = false
-  }
-}
 function pick(hit: TournamentHit) {
-  pickedHit.value = hitKey(hit)
+  const k = (hit.kind ?? 'tournament') as FollowKind
+  picking = k !== kind.value
+  kind.value = k
+  picked.value = hit
   entityId.value = String(hit.id)
   name.value = hit.name
   // the hit's sport comes along: a team or a player without one would not know its data types (FX-19)
   if (hit.sport) sport.value = hit.sport
+  // Next is the only step left (FX-14a); the kind watcher has run by then
+  void nextTick(() => {
+    picking = false
+    nextButton.value?.focus()
+  })
 }
-// another kind: another search, and another thing to pick
+// another kind chosen by hand: the picked hit was of the other kind
 watch(kind, () => {
-  hits.value = null
-  pickedHit.value = null
-  searchError.value = null
+  if (!picking) picked.value = null
   if (kind.value !== 'tournament' && seasonMode.value === 'choose') seasonMode.value = 'current'
 })
 
@@ -147,6 +140,7 @@ async function create() {
       live: live.value,
     })
     saved = true
+    noteFollowAdded(f)
     toast({ kind: 'ok', text: t('ui.followEditor.added', { name: f.name }), link: { to: followPath(f), label: t('ui.followEditor.open') } })
     // a download of this follow, with its own season choice (FX-13 `follows`)
     if (syncAfter.value && f.enabled) await startJob({ kind: 'sync', spec: { follows: [f.id] } }).catch((e) => toastError(e, status.activeJob?.id))
@@ -249,12 +243,12 @@ onMounted(() => {
     if (text(route.query.id)) entityId.value = text(route.query.id)
     if (text(route.query.name)) name.value = text(route.query.name)
     if (text(route.query.sport)) sport.value = text(route.query.sport)
-    // from the quick search: the text is searched at once, the one request the user asked for
+    // from the quick search: the text is searched at once (free when the quick search already asked it)
     const q = text(route.query.q)
     if (q) {
       if (!searchable.value) kind.value = 'tournament'
       query.value = q
-      void search()
+      void nextTick(() => searchBox.value?.search())
     }
   }
 })
@@ -294,35 +288,19 @@ onMounted(() => {
             </select>
           </label>
 
-          <div v-if="searchable" class="flex flex-col gap-2">
-            <form class="flex flex-wrap items-end gap-3" @submit.prevent="search">
-              <label class="flex flex-col flex-1 min-w-[220px]">
-                <span class="u-label">{{ t(`ui.followEditor.searchLabel.${kind}`) }}</span>
-                <input v-model="query" type="search" class="u-field" autocomplete="off" :placeholder="t(`ui.followEditor.searchPlaceholder.${kind}`)" data-testid="editor-query" />
-              </label>
-              <button type="submit" class="u-btn" :disabled="searching || !query.trim()" data-testid="editor-search">
-                <span v-if="searching" class="u-spinner" aria-hidden="true"></span><UiIcon v-else name="search" :size="16" />{{ t('ui.followEditor.search') }}
-              </button>
-            </form>
-            <p class="m-0 u-small u-muted flex items-center gap-2"><UiIcon name="external" :size="14" />{{ t('ui.followEditor.searchNote') }}</p>
-            <FormError v-if="searchError" :error="searchError" />
-            <p v-else-if="hits && !hits.length" class="m-0 u-muted" data-testid="editor-no-hits">{{ t(`ui.followEditor.noHits.${kind}`) }}</p>
-            <fieldset v-else-if="hits" class="flex flex-col gap-1" data-testid="editor-hits">
-              <legend class="u-sr">{{ t('ui.followEditor.hits') }}</legend>
-              <label v-for="h in hits" :key="hitKey(h)" class="u-option" :data-hit="hitKey(h)">
-                <input type="radio" :name="`${uid}-hit`" class="u-check" :checked="pickedHit === hitKey(h)" :value="hitKey(h)" @change="pick(h)" />
-                <span class="flex-1 flex flex-wrap items-baseline gap-x-3">
-                  <span class="font-semibold">{{ h.name }}</span>
-                  <span class="u-small u-muted">{{ t(`ui.follows.kind.${h.kind ?? 'tournament'}`) }}</span>
-                  <span v-if="h.sport" class="u-small u-muted">{{ sportName(h.sport) }}</span>
-                  <span v-if="hitPlace(h)" class="u-small u-muted">{{ hitPlace(h) }}</span>
-                  <span v-if="h.team?.name" class="u-small u-muted" data-testid="hit-team">{{ t('ui.followEditor.playsFor', { team: h.team.name }) }}</span>
-                  <span class="u-small u-muted u-mono">#{{ h.id }}</span>
-                </span>
-                <UiBadge v-if="h.followed" tone="ok" icon="check">{{ t('ui.followEditor.alreadyFollowed') }}</UiBadge>
-              </label>
-            </fieldset>
-          </div>
+          <template v-if="searchable">
+            <FollowSearch ref="searchBox" v-model="query" :sport="sport || null" :picked="pickedHit" @pick="pick" />
+            <p v-if="picked" class="m-0 u-notice flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="editor-picked" :data-hit="pickedHit">
+              <UiIcon name="check" :size="16" />
+              <span>{{ t('ui.suggest.picked') }} <strong>{{ picked.name }}</strong></span>
+              <span class="u-small u-muted">{{ t(`ui.follows.kind.${picked.kind ?? 'tournament'}`) }}</span>
+              <span v-if="picked.sport" class="u-small u-muted">{{ sportName(picked.sport) }}</span>
+              <span v-if="hitPlace(picked)" class="u-small u-muted">{{ hitPlace(picked) }}</span>
+              <span v-if="picked.team?.name" class="u-small u-muted">{{ t('ui.followEditor.playsFor', { team: picked.team.name }) }}</span>
+              <span class="u-small u-muted u-mono">#{{ picked.id }}</span>
+              <UiBadge v-if="picked.followed" tone="ok" icon="check">{{ t('ui.followEditor.alreadyFollowed') }}</UiBadge>
+            </p>
+          </template>
           <p v-else class="m-0 u-small u-muted" data-testid="editor-event-note">{{ t('ui.followEditor.eventNote') }}</p>
 
           <div class="grid gap-4 sm:grid-cols-2">
@@ -416,7 +394,7 @@ onMounted(() => {
         <div class="flex flex-wrap justify-end gap-3 pt-2" style="border-top: 1px solid var(--line)">
           <RouterLink v-if="step === 1" to="/follows" class="u-btn">{{ t('ui.common.cancel') }}</RouterLink>
           <button v-else type="button" class="u-btn" :disabled="saving" @click="step = (step - 1) as 1 | 2 | 3">{{ t('ui.restore.back') }}</button>
-          <button v-if="step < 4" type="button" class="u-btn u-btn-primary" :disabled="!stepValid" data-testid="editor-next" @click="step = (step + 1) as 2 | 3 | 4">{{ t('ui.restore.next') }}</button>
+          <button v-if="step < 4" ref="nextButton" type="button" class="u-btn u-btn-primary" :disabled="!stepValid" data-testid="editor-next" @click="step = (step + 1) as 2 | 3 | 4">{{ t('ui.restore.next') }}</button>
           <button v-else type="button" class="u-btn u-btn-primary" :disabled="saving || !stepValid || !name.trim()" data-testid="editor-save" @click="create">
             <span v-if="saving" class="u-spinner" aria-hidden="true"></span>{{ t('ui.followEditor.follow') }}
           </button>
