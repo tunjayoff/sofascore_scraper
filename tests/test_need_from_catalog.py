@@ -1,7 +1,7 @@
 """
 İndirme planı katalogdan (plan maddesi RD-3): `_needs_detail_fetch`, `pending_detail_ids`, `refresh_due_ids`,
 `collect_detail_match_ids` ve `GET /api/leagues/{id}/missing-details` dosya okumaz, kataloğa sorar
-(`QueryService.detail_needs`, `refresh_due`, `detail_candidates`, `missing_details_legacy`).
+(`planning.event_needs`, `refresh_due_events`, `QueryService.detail_candidates`, `missing_details_legacy`).
 
 Dört küme:
   * özellik testi: rastgele dilim, işaret ve gözlem durumlarında katalogdan çıkan ihtiyaç, dosyalardan elle
@@ -41,6 +41,7 @@ from src.services.query import (
 )
 from src.slices import match_detail_slice_present
 from src.sports import event_sport_slug, slices_for
+from src.services import planning
 from src.store import open_store
 from src.web.api import legacy as matches_routes
 from test_store_read_api import HOUR, NOW, _random_details
@@ -278,10 +279,10 @@ def test_refresh_policy_reads_the_settings(monkeypatch: pytest.MonkeyPatch) -> N
 def test_needs_ask_the_catalog_in_chunks(tmp_path: Path) -> None:
     """Çok sayıda kimlik parça parça sorulur; bilinmeyen kimlikler `full`dur."""
     fx = sf.build_fixture("canonical", tmp_path / "data")
-    service = QueryService(open_store(fx.data_dir))
+    store = open_store(fx.data_dir)
     ids: List[Optional[Any]] = list(range(1, 1300)) + list(fx.detail_ids) + [True, "x", "12"]
-    needs = service.detail_needs(ids, RefreshPolicy.current())
+    needs = planning.event_needs(store, ids, RefreshPolicy.current())
     assert set(needs) == set(range(1, 1300)) | set(fx.detail_ids)
     assert all(needs[i] == NEED_FULL for i in range(1, 1300) if i != 12)
     stored: Dict[int, str] = {i: needs[i] for i in fx.detail_ids}
-    assert stored == service.detail_needs(fx.detail_ids, RefreshPolicy.current())
+    assert stored == planning.event_needs(store, fx.detail_ids, RefreshPolicy.current())

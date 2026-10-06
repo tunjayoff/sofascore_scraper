@@ -2,9 +2,9 @@
 Sorgu servisi: yüzlerin (web, CLI, kitaplık) okuma tarafı (docs/design/02-services.md 2.3 ve 2.7).
 
 Okuyucular dosya ağacını gezmez; her soru deponun okuma API'sine sorulur (`Store.events`, `Store.entities`,
-`Store.changes`: docs/design/01-storage.md 2.3). Katalog, depo açılırken dosyalarla eşitlenir ve eski düzen
-yazıcılarının her yazmasından sonra güncellenir (gölge kip, 01-storage.md 3.5); iki düzen de (eski
-`match_details/` ağacı ve v3) aynı çağrılarla okunur.
+`Store.changes`: docs/design/01-storage.md 2.3). Katalog, depo açılırken dosyalarla eşitlenir ve Store'un her
+yazmasıyla aynı kritik bölümde güncellenir (01-storage.md 6.2); iki düzen de (eski `match_details/` ağacı ve v3)
+aynı çağrılarla okunur.
 
 Üç iş var: maç detayı (plan maddesi RD-1: `GET /api/matches/{id}` yanıtının bugünkü sözlüğü), maç listeleri
 (RD-2: `GET /api/matches` ile `GET /api/seasons/{id}/matches` satırları) ve indirme planı (RD-3: hangi maçın
@@ -387,33 +387,6 @@ class QueryService:
         """Katalog dosyalarla eşit değilse CatalogNotCurrent (`Store.catalog_current`): plan ondan çıkarılmaz."""
         if not self._store.catalog_current:
             raise CatalogNotCurrent(path=str(self._store.data_dir))
-
-    def detail_needs(self, event_ids: Iterable[Any], policy: RefreshPolicy, *,
-                     threshold: int = DEFAULT_EMPTY_THRESHOLD, layout: Optional[str] = None) -> Dict[int, str]:
-        """
-        Her maçın ihtiyacı (`NEED_*`), kimlik → ihtiyaç; kimlik olamayan değerler sonuçta yer almaz. Kural
-        planlayıcınındır (src/services/planning.py `event_needs` ve `compute_need`): bu yüz ona devreder, böylece
-        canlı, bayat, açık ve yalnızca listeden bilinen bitmemiş maçların kuralları (plan maddeleri P13, ST-27)
-        burada da geçerlidir.
-
-        layout verilirse yalnızca o düzende saklanan olay yükü kayıt sayılır (eski düzen indiricisi `legacy`
-        verir: yalnızca o dizinleri tamamlayabilir ve yenileyebilir). Hiçbir yük okunmaz.
-        """
-        from src.services import planning
-
-        return planning.event_needs(self._store, event_ids, policy, threshold=threshold, layout=layout)
-
-    def refresh_due(self, policy: RefreshPolicy, *, tournament_ids: Sequence[int] = (),
-                    threshold: int = DEFAULT_EMPTY_THRESHOLD, layout: Optional[str] = None) -> List["EventRow"]:
-        """
-        Yenilenecek kayıtlar (ihtiyacı `refresh` olanlar): önce bayat kayıtlar, sonra kapanmış durumdaki geçici
-        kayıtlardan zamanı gelenler, iki grup da kimlik sırasıyla (src/services/planning.py `refresh_due_events`'e
-        devreder). tournament_ids: boş = süzgeç yok; maçın turnuvasına bakılır. layout: `detail_needs` ile aynı.
-        """
-        from src.services import planning
-
-        return planning.refresh_due_events(self._store, policy, tournament_ids=tournament_ids, threshold=threshold,
-                                           layout=layout)
 
     def listed_events(self, *, tournament_ids: Sequence[int] = (), season_ids: Sequence[int] = (),
                       only_finished: bool = True) -> Iterator["EventRow"]:

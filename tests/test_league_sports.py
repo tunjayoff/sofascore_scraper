@@ -36,7 +36,7 @@ def test_set_load_and_forget():
     assert league_sports.load(cfg) == {132: "basketball"}
 
 
-def test_infer_from_downloaded_match_and_remember():
+def test_infer_from_downloaded_match_without_writing():
     root = tempfile.mkdtemp()
     cfg = _cfg(root)
     data = os.path.join(root, "data")
@@ -46,10 +46,10 @@ def test_infer_from_downloaded_match_and_remember():
         json.dump({"id": 14441992, "tournament": {"uniqueTournament": {"id": 132},
                                                   "category": {"sport": {"name": "Basketball", "slug": "basketball"}}}}, f)
 
-    out = league_sports.resolve_all(cfg, data, [132, 17])
+    out = league_sports.sports_for(cfg, data, [132, 17])
     assert out == {132: "basketball", 17: None}
-    # learned sports are stored, so the next read needs no file scan
-    assert league_sports.load(cfg) == {132: "basketball"}
+    # a read writes nothing: the sidecar keeps only what the user set
+    assert league_sports.load(cfg) == {}
 
 
 def test_stored_sport_wins_over_inference():
@@ -61,7 +61,7 @@ def test_stored_sport_wins_over_inference():
     os.makedirs(match_dir)
     with open(os.path.join(match_dir, "basic.json"), "w", encoding="utf-8") as f:
         json.dump({"tournament": {"category": {"sport": {"slug": "basketball"}}}}, f)
-    assert league_sports.resolve_all(cfg, data, [132]) == {132: "football"}
+    assert league_sports.sports_for(cfg, data, [132]) == {132: "football"}
 
 
 def test_parse_league_ids():
