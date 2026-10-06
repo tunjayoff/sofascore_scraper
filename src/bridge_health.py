@@ -37,7 +37,7 @@ import os
 import sys
 import threading
 import time
-from typing import Any, Callable, Dict, List, Mapping, Optional
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 
 from src.redact import redact_text
 
@@ -260,6 +260,18 @@ class ConnectionState:
         self.last_failure_at: Optional[float] = None
         self.last_failure_reason: Optional[str] = None
         self.last_failure_status: Optional[int] = None
+        # Son bağlantı denetimi (`POST /status/check`): (an, yanıt aldı mı, neden)
+        self.last_check: Optional[Tuple[float, bool, Optional[str]]] = None
+
+    def record_check(self, ok: bool, reason: Optional[str] = None) -> None:
+        """Bağlantı denetiminin sonucu: arayüz onu sekme başına hatırlamak zorunda kalmasın (FX-19)."""
+        with self._lock:
+            self.last_check = (self._clock(), bool(ok), None if ok else reason)
+
+    def times(self) -> Tuple[Optional[float], Optional[float]]:
+        """(son yanıt, son başarısızlık), epoch saniye."""
+        with self._lock:
+            return self.last_success_at, self.last_failure_at
 
     def record_answer(self) -> None:
         with self._lock:
@@ -281,12 +293,14 @@ class ConnectionState:
                 state = CONNECTION_OK
             else:
                 state = CONNECTION_FAILED
+            check = self.last_check
             return {
                 "state": state,
                 "last_success_at": _iso(success),
                 "last_failure_at": _iso(failure),
                 "last_failure_reason": self.last_failure_reason,
                 "last_failure_status": self.last_failure_status,
+                "last_check": None if check is None else {"at": _iso(check[0]), "ok": check[1], "reason": check[2]},
             }
 
 
@@ -308,6 +322,31 @@ def record_unanswered(reason: str, status: Optional[int] = None) -> None:
 def connection() -> Dict[str, Any]:
     """Bağlantının görüntüsü (`ConnectionState.snapshot`)."""
     return _connection.snapshot()
+
+
+def record_check(ok: bool, reason: Optional[str] = None) -> None:
+    """Bağlantı denetiminin sonucu (`POST /status/check`; FX-19)."""
+    _connection.record_check(ok, reason)
+
+
+def public_snapshot() -> BridgeHealthSnapshot:
+    """
+    API'nin gösterdiği köprü görüntüsü (FX-19): `snapshot()`, yalnızca `last_success_at` ve `last_failure_at` her
+    taşıyıcının son sonucunu da kapsar (curl yolunun yanıtları köprüye uğramaz; köprünün kendi zamanları onları
+    görmezdi ve arayüz bir indirmeden sonra da "henüz denenmedi" derdi). Durum, seri ve son hata köprünündür.
+    İçerideki çağıranlar (devre kesici, src/web/upstream.py) köprünün kendi zamanlarını `snapshot()`tan okur.
+    """
+    snap = _health.snapshot()
+    success, failure = _connection.times()
+    own_success, own_failure = _health.last_success_at, _health.last_failure_at
+    snap["last_success_at"] = _iso(_latest(own_success, success))
+    snap["last_failure_at"] = _iso(_latest(own_failure, failure))
+    return snap
+
+
+def _latest(*moments: Optional[float]) -> Optional[float]:
+    known = [moment for moment in moments if moment is not None]
+    return max(known) if known else None
 
 
 def record_success() -> None:

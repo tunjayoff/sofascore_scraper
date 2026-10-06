@@ -756,7 +756,7 @@ def test_health_reports_the_version_the_bridge_and_the_request_budget(store: Job
 
     assert list(health) == ["status", "version", "api_version", "bridge", "connection", "throttle"]
     assert (health["status"], health["version"], health["api_version"]) == ("ok", __version__, "v1")
-    assert health["bridge"] == bridge_health.snapshot() and health["throttle"] == throttle.status()
+    assert health["bridge"] == bridge_health.public_snapshot() and health["throttle"] == throttle.status()
 
 
 def test_status_reports_the_running_job(store: JobStore, body: Any) -> None:

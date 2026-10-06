@@ -73,11 +73,17 @@ export interface BackupRecord {
   with_env: boolean
 }
 
-/** Whether SofaScore answers the requests of this process. */
+/**
+ * Whether SofaScore answers the requests of this process. `state`, `consecutive_failures`, `failing_since` and
+ * `last_error` count the refusals of the browser bridge; `last_success_at` and `last_failure_at` are the last
+ * answered and the last failed request of any transport (curl or the bridge).
+ */
 export interface BridgeHealth {
   state: "ok" | "degraded" | "blocked"
   consecutive_failures: number
+  /** Last answered request, any transport. */
   last_success_at?: string | null
+  /** Last failed request, any transport (a refusal, 429, 5xx, timeout, network). */
   last_failure_at?: string | null
   failing_since?: string | null
   changed_at?: string | null
@@ -181,6 +187,15 @@ export interface ClearJobSpec {
   season_id?: number | null
 }
 
+/** The last connection check of this server (`POST /status/check`). */
+export interface ConnectionCheck {
+  /** ISO-8601, UTC. */
+  at?: string | null
+  ok: boolean
+  /** Why it failed (the check's `reason`); null when ok. */
+  reason?: string | null
+}
+
 /**
  * Whether this server's requests reach SofaScore: the outcome of the last request it sent (a job of this server,
  * a search, the connection check). Separate from `bridge`, which counts refused requests only and reads `ok`
@@ -197,6 +212,8 @@ export interface ConnectionStatus {
   last_failure_reason?: string | null
   /** HTTP status of the last failure, if any. */
   last_failure_status?: number | null
+  /** The last connection check since the server started; null: none yet. */
+  last_check?: ConnectionCheck | null
 }
 
 /** One innings of one side in cricket. */

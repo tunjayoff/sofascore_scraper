@@ -51,7 +51,7 @@ def test_the_state_follows_the_last_outcome() -> None:
     now = [1000.0]
     state = bridge_health.ConnectionState(clock=lambda: now[0])
     assert state.snapshot() == {"state": "never_tried", "last_success_at": None, "last_failure_at": None,
-                                "last_failure_reason": None, "last_failure_status": None}
+                                "last_failure_reason": None, "last_failure_status": None, "last_check": None}
     state.record_unanswered("timeout")
     assert state.snapshot()["state"] == "failed"
     now[0] = 1001.0
@@ -84,6 +84,20 @@ def test_an_answer_and_a_refusal_from_the_request_layer(fake: FakeSofaScore) -> 
     assert refused["last_success_at"] == answered["last_success_at"]
 
 
+def test_the_bridge_times_cover_every_transport(fake: FakeSofaScore) -> None:
+    """Curl yolunun yanıtı köprüye uğramaz; `/status.bridge`'in zamanları yine de her taşıyıcının sonucudur."""
+    before = client.get("/api/v1/status").json()["data"]["bridge"]
+    assert (before["state"], before["last_success_at"], before["last_failure_at"]) == ("ok", None, None)
+    assert Client().get_sync("/event/9100001").status == "ok"
+    bridge = client.get("/api/v1/status").json()["data"]["bridge"]
+    assert bridge["state"] == "ok" and bridge["last_success_at"] == connection()["last_success_at"]
+    assert bridge_health.snapshot()["last_success_at"] is None  # köprünün kendi kaydı (devre kesici, upstream)
+    fake.disconnect("/event/9100002")
+    Client().get_sync("/event/9100002", retries=1)
+    bridge = client.get("/api/v1/health").json()["data"]["bridge"]
+    assert bridge["last_failure_at"] == connection()["last_failure_at"] and bridge["consecutive_failures"] == 0
+
+
 def test_a_request_the_breaker_held_back_says_nothing() -> None:
     breaker.report_exception(CircuitOpenError("/event/1"))
     assert connection()["state"] == "never_tried"
@@ -91,9 +105,14 @@ def test_a_request_the_breaker_held_back_says_nothing() -> None:
 
 def test_the_connection_check_reports_it(fake: FakeSofaScore) -> None:
     fake.add("/sport/football/events/live", {"events": [{"id": 1}]})
+    assert connection()["last_check"] is None
     checked = client.post("/api/v1/status/check", json={"target": "sofascore"}).json()["data"]
     assert checked["ok"] is True and checked["connection"]["state"] == "ok"
+    last = connection()["last_check"]
+    assert (last["ok"], last["reason"]) == (True, None) and last["at"]
     fake.disconnect("/sport/football/events/live")
     failed = client.post("/api/v1/status/check", json={"target": "sofascore"}).json()["data"]
     assert failed["ok"] is False
     assert (failed["connection"]["state"], failed["connection"]["last_failure_reason"]) == ("failed", "network")
+    # Son denetim `/status`ta: arayüz onu sekme başına hatırlamak zorunda değil
+    assert {k: v for k, v in connection()["last_check"].items() if k != "at"} == {"ok": False, "reason": "network"}

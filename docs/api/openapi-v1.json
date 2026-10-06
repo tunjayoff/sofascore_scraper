@@ -4782,7 +4782,8 @@
                 "type": "null"
               }
             ],
-            "title": "Last Success At"
+            "title": "Last Success At",
+            "description": "Last answered request, any transport."
           },
           "last_failure_at": {
             "anyOf": [
@@ -4793,7 +4794,8 @@
                 "type": "null"
               }
             ],
-            "title": "Last Failure At"
+            "title": "Last Failure At",
+            "description": "Last failed request, any transport (a refusal, 429, 5xx, timeout, network)."
           },
           "failing_since": {
             "anyOf": [
@@ -4842,7 +4844,7 @@
           "thresholds"
         ],
         "title": "BridgeHealth",
-        "description": "Whether SofaScore answers the requests of this process."
+        "description": "Whether SofaScore answers the requests of this process. `state`, `consecutive_failures`, `failing_since` and\n`last_error` count the refusals of the browser bridge; `last_success_at` and `last_failure_at` are the last\nanswered and the last failed request of any transport (curl or the bridge)."
       },
       "BridgeLastError": {
         "properties": {
@@ -5271,6 +5273,44 @@
         "type": "object",
         "title": "ClearJobSpec"
       },
+      "ConnectionCheck": {
+        "properties": {
+          "at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At",
+            "description": "ISO-8601, UTC."
+          },
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Why it failed (the check's `reason`); null when ok."
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok"
+        ],
+        "title": "ConnectionCheck",
+        "description": "The last connection check of this server (`POST /status/check`)."
+      },
       "ConnectionStatus": {
         "properties": {
           "state": {
@@ -5330,6 +5370,17 @@
             ],
             "title": "Last Failure Status",
             "description": "HTTP status of the last failure, if any."
+          },
+          "last_check": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConnectionCheck"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The last connection check since the server started; null: none yet."
           }
         },
         "type": "object",
