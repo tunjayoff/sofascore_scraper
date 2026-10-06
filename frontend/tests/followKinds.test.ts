@@ -277,6 +277,13 @@ describe('removing a league with its data, and the old league list', () => {
     expect(w.emitted('removed')).toHaveLength(1)
   })
 
+  it('a dialog opened from a table row wraps its text and reads left to right (the row-actions cell is nowrap, right-aligned)', async () => {
+    const { readFileSync } = await import('node:fs')
+    const css = readFileSync(`${process.cwd()}/src/ui/UiDialog.vue`, 'utf8').match(/\.u-overlay \{[^}]*\}/)![0]
+    expect(css).toContain('white-space: normal')
+    expect(css).toContain('text-align: start')
+  })
+
   it('a team follow has no data to delete with it; a plain remove sends no delete_data', async () => {
     const f = mockFetch({ 'GET /api/v1/status': { data: status() }, 'DELETE /api/v1/follows/team:42': { data: { ...follow({ id: 'team:42', kind: 'team', entity_id: 42 }), clear_job: null } } })
     mountActions(follow({ id: 'team:42', kind: 'team', entity_id: 42, name: 'Arsenal' }))
