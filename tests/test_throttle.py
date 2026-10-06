@@ -189,9 +189,9 @@ def test_settings_page_knows_the_same_default():
     """Ayarlar sayfası uyarıyı bu sayıya göre gösterir; iki sabit ayrı düşmesin."""
     import re
 
-    path = os.path.join(ROOT, "frontend", "src", "views", "SettingsView.vue")
+    path = os.path.join(ROOT, "frontend", "src", "screens", "settings", "settingsMeta.ts")
     with open(path, encoding="utf-8") as f:
-        found = re.search(r"^const DEFAULT_RATE_LIMIT = ([\d.]+)$", f.read(), re.M)
+        found = re.search(r"^export const SAFE_RATE = ([\d.]+)$", f.read(), re.M)
     assert found and float(found.group(1)) == throttle.DEFAULT_RATE_LIMIT
 
 

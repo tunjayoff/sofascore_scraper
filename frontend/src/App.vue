@@ -2,8 +2,8 @@
 import { RouterView } from 'vue-router'
 
 /**
- * The root: the new app (src/app/AppShell.vue) at the paths of 05-web-ui.md 3.2, the classic views under
- * /classic (src/classic/ClassicLayout.vue) until FE-2b removes them. Each brings its own frame.
+ * The root: the app (src/app/AppShell.vue) at the paths of 05-web-ui.md 3.2. The classic views were
+ * removed by FX-14b; their addresses lead to the new screens (router.ts).
  */
 </script>
 

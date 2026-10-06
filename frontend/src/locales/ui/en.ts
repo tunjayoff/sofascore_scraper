@@ -63,11 +63,7 @@ const en = {
     density: 'Density',
     shortcuts: 'Keyboard shortcuts',
     help: 'Help',
-    classic: 'Classic interface',
     signOut: 'Sign out',
-  },
-  classic: {
-    backToNew: 'New interface',
   },
   help: {
     title: 'Help',

@@ -65,11 +65,7 @@ const tr: typeof en = {
     density: 'Yoğunluk',
     shortcuts: 'Klavye kısayolları',
     help: 'Yardım',
-    classic: 'Klasik arayüz',
     signOut: 'Oturumu kapat',
-  },
-  classic: {
-    backToNew: 'Yeni arayüz',
   },
   help: {
     title: 'Yardım',

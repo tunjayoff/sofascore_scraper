@@ -2,7 +2,7 @@ import { ref } from 'vue'
 
 /**
  * The browser's session with a server that has an access token (05-web-ui.md 5.3, 6.15). `authNeeded`
- * (lib/auth.ts, shared with the classic views) turns the token prompt on; this module adds what the new
+ * (lib/auth.ts) turns the token prompt on; this module adds what the
  * prompt needs: the lock after too many wrong tokens and whether a token is in use at all.
  */
 

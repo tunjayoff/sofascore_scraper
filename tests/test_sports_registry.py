@@ -284,15 +284,13 @@ def test_sport_spec_lists_its_slices():
     assert sports.get_sport("cricket").detail_slices == COMMON_KEYS + ("innings",)
 
 
-# --- web arayüzü listesi kayıt defteriyle aynı kalmalı (henüz /api/sports'tan okumuyor) ------
+# --- web arayüzü spor listesini kayıt defterinden okur (/api/v1/sports; klasik görünümlerin elle yazılmış
+# listesi FX-14b ile kaldırıldı) --------------------------------------------------------------------
 
 def test_frontend_sport_list_matches_the_registry():
-    src = (REPO / "frontend" / "src" / "lib" / "sport.ts").read_text(encoding="utf-8")
-    listed = re.search(r"export const SPORTS: SportKey\[\] = \[(.*?)\]", src, re.S)
-    union = re.search(r"export type SportKey = (.*)", src)
-    assert listed and union
-    assert tuple(re.findall(r"'([^']+)'", listed.group(1))) == sports.sport_slugs()
-    assert tuple(re.findall(r"'([^']+)'", union.group(1))) == sports.sport_slugs()
+    src = (REPO / "frontend" / "src" / "app" / "sports.ts").read_text(encoding="utf-8")
+    assert re.search(r"\bv1\s*\.sports\(\)", src)
+    assert not (REPO / "frontend" / "src" / "lib" / "sport.ts").exists()
 
 
 @pytest.mark.parametrize("locale", ["tr", "en"])

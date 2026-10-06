@@ -2,9 +2,9 @@ import { createRouter, createWebHistory, type LocationQuery, type LocationQueryR
 import AppShell from '@/app/AppShell.vue'
 
 /**
- * The URL map of the new app (05-web-ui.md 3.2) and the classic views beside it. Every screen of the map
- * exists. The classic views stay reachable under `/classic` (menu "⋯ → Classic interface") while one of
- * their functions still has no new home; today's addresses lead to the new screens, for one release.
+ * The URL map of the app (05-web-ui.md 3.2). Every screen of the map exists. The classic views were
+ * removed by FX-14b once each of their functions had a home here; their addresses (today's 2.x addresses
+ * and `/classic/…`) lead to the nearest new screen, for one release.
  */
 const shell: RouteRecordRaw[] = [
   { path: '', name: 'overview', component: () => import('@/screens/OverviewScreen.vue') },
@@ -30,15 +30,6 @@ const shell: RouteRecordRaw[] = [
 // Every part of the design system in its states, in development builds only (4)
 if (import.meta.env.DEV) shell.push({ path: 'dev/kitchen-sink', component: () => import('@/screens/KitchenSink.vue') })
 
-const classic: RouteRecordRaw[] = [
-  { path: '', name: 'classic-leagues', component: () => import('@/views/LeaguesView.vue') },
-  { path: 'download', name: 'classic-download', component: () => import('@/views/DownloadView.vue') },
-  { path: 'matches', name: 'classic-matches', component: () => import('@/views/MatchesView.vue') },
-  { path: 'match/:id', name: 'classic-match', component: () => import('@/views/MatchView.vue') },
-  { path: 'activity', name: 'classic-activity', component: () => import('@/views/ActivityView.vue') },
-  { path: 'settings', name: 'classic-settings', component: () => import('@/views/SettingsView.vue') },
-]
-
 /** The filters of the classic match list in the names of Events (league_id → tournament …). */
 function eventsQuery(r: { query: LocationQuery }): LocationQueryRaw {
   const q: LocationQueryRaw = {}
@@ -52,7 +43,13 @@ function eventsQuery(r: { query: LocationQuery }): LocationQueryRaw {
 
 export const routes: RouteRecordRaw[] = [
   { path: '/', component: AppShell, children: shell },
-  { path: '/classic', component: () => import('@/classic/ClassicLayout.vue'), children: classic },
+  // the addresses of the removed classic views (FX-14b): their new screens
+  { path: '/classic', redirect: '/follows' },
+  { path: '/classic/download', redirect: '/follows' },
+  { path: '/classic/matches', redirect: (r) => ({ path: '/events', query: eventsQuery(r) }) },
+  { path: '/classic/match/:id', redirect: (r) => ({ path: `/events/${String(r.params.id)}` }) },
+  { path: '/classic/activity', redirect: '/jobs' },
+  { path: '/classic/settings', redirect: '/settings' },
   // today's addresses (3.2): their nearest new screen, for one release
   { path: '/download', redirect: '/follows' },
   { path: '/matches', redirect: (r) => ({ path: '/events', query: eventsQuery(r) }) },
