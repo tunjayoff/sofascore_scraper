@@ -711,12 +711,14 @@ class QueryService:
 
     def changes(self, *, after: int = 0, before: Optional[int] = None, event_id: Optional[int] = None,
                 tournament_ids: Sequence[int] = (), since: Optional[float] = None, until: Optional[float] = None,
-                order: str = "asc", limit: int = 50) -> ChangePage:
+                order: str = "asc", limit: int = 50, sport: Optional[str] = None,
+                regressed: Optional[bool] = None) -> ChangePage:
         """
         Değişiklik günlüğü (`Store.changes`), kendi sıra numarasıyla: her iki sırada da `after`dan büyük numaralar.
         asc: artan; desc: `before`dan küçük numaralar (verilmezse en yeniden), azalan. since / until: kaydın zamanı (epoch
         saniye) aralığı, iki uç dahil. Sayfa dolduysa `next_cursor` son satırın numarasıdır: asc'de `after`,
-        desc'te `before` olarak verilir.
+        desc'te `before` olarak verilir. sport: yalnızca bu sporun (slug) satırları; regressed: True yalnızca
+        bitmişten geçersize dönenler, False yalnızca ötekiler (plan maddesi FX-13).
         """
         from src import schema
 
@@ -728,6 +730,10 @@ class QueryService:
 
         def keep(row: Any) -> bool:
             if wanted and row.tournament_id not in wanted:
+                return False
+            if sport is not None and row.sport != sport:
+                return False
+            if regressed is not None and bool(row.status_regressed) != regressed:
                 return False
             return until is None or row.ts <= until
 

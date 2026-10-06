@@ -117,7 +117,10 @@ export interface Category {
   country_code: string | null
 }
 
-/** A change of an already stored event that a later read found. */
+/**
+ * A change (schema v1 Change); with `include=names` also the participant names the catalog has for its event
+ * now (FX-13). The model keeps the name of the schema record: it is the `Change` of the generated client types.
+ */
 export interface Change {
   /** Sequence number of the change log. Increases by one per change; pass the last one seen to read the next changes. */
   seq: number
@@ -147,6 +150,10 @@ export interface Change {
   tier_hint: boolean | null
   /** The fields that changed, ordered by path. Compared are the status triple, the winner code, the start time and every score field. */
   fields: ChangedField[]
+  /** Only with `include=names`; null when the catalog does not know the event. */
+  home_name?: string | null
+  /** Only with `include=names`; null when the catalog does not know the event. */
+  away_name?: string | null
 }
 
 export interface ChangeListResponse {
@@ -876,8 +883,40 @@ export interface Season {
   year: string | null
 }
 
+/** Counts of one season of a tournament, from the catalog (`include=counts`). */
+export interface SeasonCounts {
+  /** Every stored event of the season, unfinished schedule rows included. */
+  events: number
+  /** Events that ended (completed or decided without play). */
+  finished: number
+  /** Events with a stored event payload. */
+  details: number
+  /** Events with details and no missing slice. */
+  complete: number
+  /** complete / details in percent, two decimals; 0 without details. */
+  completion_rate: number
+  /** Slice to the number of events with details that miss it. */
+  missing: Record<string, number>
+  /** When the newest page of the season's schedule was fetched; null: never. */
+  schedule_fetched_at_utc?: string | null
+}
+
+/** A season (schema v1 Season); with `include=counts` also its counts. */
+export interface SeasonEntry {
+  /** SofaScore's season id. */
+  id: number
+  /** Id of the Tournament the season belongs to. */
+  tournament_id: number
+  /** Name of the season, for example `Premier League 26/27`. */
+  name: string | null
+  /** The season's year text as SofaScore writes it: `26/27`, `2025`. */
+  year: string | null
+  /** Only with `include=counts`. */
+  counts?: SeasonCounts | null
+}
+
 export interface SeasonListResponse {
-  data: Season[]
+  data: SeasonEntry[]
   page: PageInfo
 }
 
@@ -1544,7 +1583,7 @@ export interface Operations {
     method: "GET"
     path: "/api/v1/tournaments/{tournament_id}/seasons"
     params: { tournament_id: number }
-    query: {}
+    query: { include?: "counts"[] | null }
     body: never
     response: SeasonListResponse
   }
@@ -1661,7 +1700,7 @@ export interface Operations {
     method: "GET"
     path: "/api/v1/changes"
     params: {}
-    query: { since?: number; event_id?: number | null; tournament?: number[] | null; from?: string | null; to?: string | null; order?: "asc" | "desc"; limit?: number; cursor?: string | null }
+    query: { since?: number; event_id?: number | null; tournament?: number[] | null; sport?: string | null; regressed?: boolean | null; include?: "names"[] | null; from?: string | null; to?: string | null; order?: "asc" | "desc"; limit?: number; cursor?: string | null }
     body: never
     response: ChangeListResponse
   }
