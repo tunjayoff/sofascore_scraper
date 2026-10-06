@@ -224,13 +224,18 @@ class BrowserBridge:
 
     _instance: Optional["BrowserBridge"] = None
 
-    def __init__(self, profile_dir: str = DEFAULT_PROFILE_DIR, home_url: Optional[str] = None):
+    def __init__(self, profile_dir: str = DEFAULT_PROFILE_DIR, home_url: Optional[str] = None, *,
+                 report_health: bool = True):
         """
-        home_url  köprü sekmesinin açıldığı ve sayfa SofaScore dışına çıkınca döndüğü adres; None: HOME_URL.
-                  Canlı sayfaların ayrı köprüsü (src/services/live/push_source.py) API çağırmayan bir sayfa verir.
+        home_url       köprü sekmesinin açıldığı ve sayfa SofaScore dışına çıkınca döndüğü adres; None: HOME_URL.
+                       Canlı sayfaların ayrı köprüsü (src/services/live/push_source.py) API çağırmayan bir sayfa verir.
+        report_health  başlatma hataları ve isteklerin sonucu süreç genelindeki köprü sağlığına (src/bridge_health.py)
+                       yazılır. Canlı kaynakların köprüleri False verir: onların tarayıcısı başlamazsa izleme sürecinin
+                       köprü sağlığı "bozuk" görünmesin, indirmelerin köprüsünün durumu o değildir (FX-15).
         """
         self.profile_dir = profile_dir
         self.home_url = home_url
+        self.report_health = report_health
         self.session: Any = None
         self.context: Any = None
         self.page: Any = None
@@ -262,7 +267,9 @@ class BrowserBridge:
             if self.page and not self.page.is_closed():
                 return
             if self._launch_failed_at and time.time() - self._launch_failed_at < _LAUNCH_RETRY_AFTER:
-                bridge_health.record_failure(bridge_health.KIND_BROWSER, "tarayıcı başlatılamadı (yeniden deneme bekleniyor)")
+                if self.report_health:
+                    bridge_health.record_failure(bridge_health.KIND_BROWSER,
+                                                 "tarayıcı başlatılamadı (yeniden deneme bekleniyor)")
                 raise RuntimeError(
                     "BrowserBridge başlatılamadı (yakın zamanda denendi). "
                     "Nedenini görmek için: `python main.py --doctor` "
@@ -276,7 +283,7 @@ class BrowserBridge:
                 # Yarım kalan başlatma (hata veya iptal) tarayıcı sürecini ve profil kilidini bırakmasın
                 self._launch_failed_at = time.time()
                 await self.close()
-                if isinstance(e, Exception):  # iptal bir sağlık sinyali değil
+                if isinstance(e, Exception) and self.report_health:  # iptal bir sağlık sinyali değil
                     bridge_health.record_failure(bridge_health.KIND_BROWSER, f"{e.__class__.__name__}: {e}")
                 raise
             self._launch_failed_at = 0.0

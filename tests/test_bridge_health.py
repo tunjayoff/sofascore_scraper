@@ -265,6 +265,31 @@ def test_failed_browser_launch_is_recorded(tmp_path):
     assert bridge._launch.await_count == 1
 
 
+def test_a_live_source_bridge_does_not_report_its_launch_failures(tmp_path):
+    """FX-15: canlı kaynakların köprüsü (report_health=False) süreç genelindeki köprü sağlığını bozmaz."""
+    bridge = cs.BrowserBridge(profile_dir=str(tmp_path), report_health=False)
+    bridge._launch = AsyncMock(side_effect=RuntimeError("chromium missing"))
+
+    async def run():
+        for _ in range(2):
+            with pytest.raises(RuntimeError):
+                await bridge.ensure_ready()
+
+    asyncio.run(run())
+    assert bridge_health.snapshot()["consecutive_failures"] == 0
+
+
+def test_the_live_sources_build_their_bridges_without_health_reports(tmp_path, monkeypatch):
+    from src.client import bridge as bridge_mod
+    from src.services.live import direct_source, push_source
+
+    made = []
+    monkeypatch.setattr(bridge_mod, "BrowserBridge", lambda **kwargs: made.append(kwargs) or object())
+    push_source.BrowserPageOpener(profile_dir=str(tmp_path))._get_bridge()
+    direct_source.BrowserCredentialReader(profile_dir=str(tmp_path))._get_bridge()
+    assert [kwargs["report_health"] for kwargs in made] == [False, False]
+
+
 def test_cancelled_launch_is_not_a_health_signal(tmp_path):
     bridge = cs.BrowserBridge(profile_dir=str(tmp_path))
     bridge._launch = AsyncMock(side_effect=asyncio.CancelledError())

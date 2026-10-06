@@ -652,7 +652,7 @@ def install_bridge(monkeypatch: pytest.MonkeyPatch, sockets: List[Tuple[str, Lis
 
     CredentialBridge.made = []
     monkeypatch.setattr(bridge, "HOME_URL", "https://www.sofascore.com/tr")
-    monkeypatch.setattr(bridge, "BrowserBridge", lambda profile_dir, home_url=None: CredentialBridge(
+    monkeypatch.setattr(bridge, "BrowserBridge", lambda profile_dir, home_url=None, report_health=True: CredentialBridge(
         profile_dir, home_url, sockets=sockets))
 
 
