@@ -189,6 +189,27 @@ def test_the_configured_provider_is_the_sub_key(fake: FakeSofaScore, store: Stor
     assert store.events.slice(FINISHED, "odds_all", "7").meta == {"provider_id": 7}
 
 
+def test_the_odds_country_is_recorded_only_when_the_user_sets_it(fake: FakeSofaScore, store: Store) -> None:
+    """FX-15 (sahibin kararı): sağlayıcı her zaman, ülke yalnızca `[client] odds_country` verilmişse yazılır."""
+    add_odds(fake, FINISHED)
+    download(store, [FINISHED], dataclasses.replace(WITH_ODDS, country="TR"))
+    assert store.events.slice(FINISHED, "odds_all", "1").meta == {"provider_id": 1, "country": "TR"}
+    assert store.events.slice(FINISHED, "odds_featured", "1").meta == {"provider_id": 1, "country": "TR"}
+    assert store.events.slice(FINISHED, "statistics").meta == {}  # öteki dilimler değişmez
+
+
+def test_the_odds_country_comes_from_the_client_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    path = tmp_path / "sofascore.toml"
+    path.write_text('[client]\nodds_country = " tr "\n[defaults]\nslices = ["core", "odds"]\n', encoding="utf-8")
+    monkeypatch.setenv(loader.CONFIG_ENV, str(path))
+    loader.reset()
+    try:
+        assert planning.configured_policy().country == "TR"
+    finally:
+        loader.reset()
+    assert planning.SelectionPolicy().country == ""  # varsayılan: yazılmaz
+
+
 def test_the_provider_comes_from_the_client_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     path = tmp_path / "sofascore.toml"
     path.write_text('[client]\nodds_provider = 4\n[defaults]\nslices = ["core", "odds"]\n', encoding="utf-8")
