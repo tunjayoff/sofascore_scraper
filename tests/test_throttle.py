@@ -1129,9 +1129,10 @@ def test_stop_reaches_browser_first_requests_waiting_for_a_request_slot(monkeypa
     Önce-tarayıcı modunda istek curl'e uğramadan köprüden gider ve aynı semaforu bekler: semaforu
     durdurmadan sonra alan istek köprüye verilmez. Eskiden bekleyenlerin hepsi köprüden giderdi.
 
-    Durdurma anında semaforu tutan istekler köprünün içindedir ve gider: köprü iptale yalnızca sıra
-    beklerken bakar (src/challenge_solver.py, _wait_for_slot), zamanı gelmiş sırada bakmaz. Aşağıdaki
-    REQUEST_SLOTS sayısı bunu olduğu gibi sabitler; köprüye böyle bir kontrol eklenirse 0 olur.
+    Durdurma anında semaforu tutan istekler köprünün içindedir (ensure_ready). FX-18'den beri onlar da
+    gitmez: köprü bütçeden sıra ayırmadan önce iptale bakar (src/client/bridge.py, _wait_for_slot).
+    Eskiden köprü iptale yalnızca sıra beklerken bakıyordu ve zamanı gelmiş sıradaki REQUEST_SLOTS istek
+    durdurmadan sonra gidiyordu; şimdi hiçbiri gitmez ve hiçbiri sıra ayırmaz.
     """
     reservations = _reserve_counter(monkeypatch)
     evaluated = []
@@ -1147,9 +1148,9 @@ def test_stop_reaches_browser_first_requests_waiting_for_a_request_slot(monkeypa
     with patch.object(cs.BrowserBridge, "get_instance", return_value=bridge):
         results = _stopped_job(lambda n: utils.make_api_request_async(session, f"/event/{n}"), count=30)
 
-    assert len(evaluated) == request_slots and len(reservations) == request_slots
+    assert len(evaluated) == 0 and len(reservations) == 0  # FX-18: eskiden request_slots
     assert session.get.await_count == 0
-    assert all(isinstance(r, utils.FetchCancelled) for r in results[request_slots:])
+    assert all(isinstance(r, utils.FetchCancelled) for r in results)
 
 
 @pytest.mark.parametrize("sync", [True, False])
