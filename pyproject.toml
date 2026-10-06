@@ -41,6 +41,13 @@ markers = [
     "browser: Playwright/Chrome başlatır",
 ]
 addopts = "-m 'not live and not browser'"
+# starlette 1.7 asks for `httpx2` under TestClient (it imports `httpx2 as httpx`, with httpx as a deprecated
+# fallback). Not switched in FX-15: httpx2 could not be installed and verified offline, and its version would have
+# to be pinned in constraints.txt without a run. The tests keep httpx (requirements-dev.txt); switch when a run
+# with httpx2 has passed, then drop this filter.
+filterwarnings = [
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated:UserWarning",
+]
 
 # Kapsam `pytest --cov` ile ölçülür (CI: Linux / Python 3.14 işi); satır + dal kapsamı birlikte.
 # main.py ve scripts/ ölçüme dahil değildir.
