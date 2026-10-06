@@ -1,39 +1,62 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import UiDialog from '@/ui/UiDialog.vue'
 import UiIcon from '@/ui/UiIcon.vue'
 import FormError from '@/ui/FormError.vue'
 import { v1 } from '@/api/v1/client'
-import type { ExportJobSpec, Job, TournamentRecord } from '@/api/v1/schema'
+import type { ExportFilter, ExportJobSpec, Job, TournamentRecord } from '@/api/v1/schema'
 import { useStatusStore } from '@/app/statusStore'
 import { loadSports, sportName, sports } from '@/app/sports'
 import { startJob } from '@/screens/jobs/startJob'
 
 /**
- * New export (6.10), with what the API writes today: the wide CSV of version 2 (`legacy-wide-csv`) and the
- * raw payloads as JSONL (events, or every slice). Normalized datasets and the Parquet and SQLite formats
- * are shown, disabled, with the reason (they answer 501 until SC-2; Parquet also needs pyarrow on the
- * server, which `/status.capabilities.parquet` tells). The filter is the set the export spec has: sport,
- * followed tournaments, season ids and event ids. Starting it is a job; a refusal stays in the dialog.
+ * New export (6.10; FX-14b): what the API writes (SC-2, P28). Three kinds:
+ *  - the match table of version 2 (`legacy-wide-csv`, CSV; filtered by league and match only);
+ *  - normalized data (schema v1): matches, data types, score changes, betting odds (one row per outcome
+ *    of each odds snapshot) or standings, as CSV, JSONL, Parquet or SQLite. Parquet needs pyarrow on the
+ *    server: `/status.capabilities.parquet` tells, and without it the choice is shown disabled with why;
+ *  - SofaScore's original data, unchanged (raw, JSONL): the match itself or every data type.
+ * The filter is the export spec's: sport, added leagues, season and match numbers, status classes (not for
+ * score changes) and a time range. The file is named after the league or dataset and the date (FX-19).
  */
 const emit = defineEmits<{ close: []; started: [Job] }>()
 const { t } = useI18n()
 const status = useStatusStore()
+const uid = useId()
 
-type Kind = 'legacy' | 'raw' | 'normalized'
+type Kind = 'legacy' | 'normalized' | 'raw'
+type Dataset = NonNullable<ExportJobSpec['dataset']>
+type Format = NonNullable<ExportJobSpec['format']>
+const NORMALIZED: readonly Dataset[] = ['events', 'slices', 'changes', 'odds', 'standings']
+const RAW: readonly Dataset[] = ['events', 'slices']
+const FORMATS: readonly Format[] = ['csv', 'jsonl', 'parquet', 'sqlite']
+const CLASSES = ['not_started', 'live', 'completed', 'decided_without_play', 'void', 'unknown'] as const
+
 const kind = ref<Kind>('legacy')
-const dataset = ref<'events' | 'slices'>('events')
+const dataset = ref<Dataset>('events')
+const format = ref<Format>('csv')
 const sport = ref('')
 const chosen = ref<number[]>([])
 const seasonText = ref('')
 const eventText = ref('')
+const classes = ref<string[]>([])
+const from = ref('')
+const to = ref('')
 const tournaments = ref<TournamentRecord[]>([])
 const busy = ref(false)
 const error = ref<unknown>(null)
 
 const parquet = computed(() => !!status.status?.capabilities?.parquet)
 const legacy = computed(() => kind.value === 'legacy')
+const datasets = computed(() => (kind.value === 'raw' ? RAW : NORMALIZED))
+const changes = computed(() => kind.value === 'normalized' && dataset.value === 'changes')
+watch(kind, () => {
+  if (!datasets.value.includes(dataset.value)) dataset.value = 'events'
+})
+watch(parquet, (on) => {
+  if (!on && format.value === 'parquet') format.value = 'csv'
+})
 
 function ids(text: string): number[] | null {
   const parts = text.split(/[\s,]+/).filter(Boolean)
@@ -42,17 +65,23 @@ function ids(text: string): number[] | null {
 }
 const seasonIds = computed(() => ids(seasonText.value))
 const eventIds = computed(() => ids(eventText.value))
-const valid = computed(() => kind.value !== 'normalized' && seasonIds.value !== null && eventIds.value !== null)
+const rangeOk = computed(() => !from.value || !to.value || from.value <= to.value)
+const valid = computed(() => seasonIds.value !== null && eventIds.value !== null && rangeOk.value && (format.value !== 'parquet' || parquet.value || kind.value !== 'normalized'))
 
 const spec = computed<ExportJobSpec>(() => {
-  const filter = {
+  const filter: ExportFilter = {
     sport: legacy.value ? null : sport.value || null,
     tournament_ids: chosen.value,
-    season_ids: legacy.value ? [] : (seasonIds.value ?? []),
+    season_ids: legacy.value || changes.value ? [] : (seasonIds.value ?? []),
     event_ids: eventIds.value ?? [],
   }
   if (legacy.value) return { dataset: 'events', format: 'csv', profile: 'legacy-wide-csv', filter }
-  return { dataset: dataset.value, format: 'jsonl', schema: 'raw', profile: null, filter }
+  // what is left empty is not sent
+  if (!changes.value && classes.value.length) filter.status_classes = classes.value as ExportFilter['status_classes']
+  if (from.value) filter.from = from.value
+  if (to.value) filter.to = to.value
+  if (kind.value === 'raw') return { dataset: dataset.value, format: 'jsonl', schema: 'raw', profile: null, filter }
+  return { dataset: dataset.value, format: format.value, schema: 'normalized', profile: null, filter }
 })
 
 async function submit() {
@@ -83,33 +112,33 @@ onMounted(() => {
     <form id="export-form" class="flex flex-col gap-5" @submit.prevent="submit">
       <fieldset class="flex flex-col gap-2">
         <legend class="u-label">{{ t('ui.exports.dialog.what') }}</legend>
-        <label class="u-option">
-          <input v-model="kind" type="radio" name="export-kind" value="legacy" class="u-check" />
-          <span class="flex flex-col"><span class="font-semibold">{{ t('ui.exports.kind.legacy') }}</span><span class="u-small u-muted">{{ t('ui.exports.dialog.legacyHint') }}</span></span>
-        </label>
-        <label class="u-option">
-          <input v-model="kind" type="radio" name="export-kind" value="raw" class="u-check" />
-          <span class="flex flex-col"><span class="font-semibold">{{ t('ui.exports.kind.raw') }}</span><span class="u-small u-muted">{{ t('ui.exports.dialog.rawHint') }}</span></span>
-        </label>
-        <label class="u-option">
-          <input v-model="kind" type="radio" name="export-kind" value="normalized" class="u-check" disabled />
-          <span class="flex flex-col"><span class="font-semibold">{{ t('ui.exports.kind.normalized') }}</span><span class="u-small u-muted">{{ t('ui.exports.dialog.normalizedLater') }}</span></span>
+        <label v-for="k in ['legacy', 'normalized', 'raw'] as const" :key="k" class="u-option" :data-kind="k">
+          <input v-model="kind" type="radio" :name="`${uid}-kind`" :value="k" class="u-check" />
+          <span class="flex flex-col"><span class="font-semibold">{{ t(`ui.exports.kind.${k}`) }}</span><span class="u-small u-muted">{{ t(`ui.exports.dialog.hint.${k}`) }}</span></span>
         </label>
       </fieldset>
 
-      <fieldset v-if="kind === 'raw'" class="flex flex-col gap-2">
+      <fieldset v-if="!legacy" class="flex flex-col gap-2" data-testid="export-datasets">
         <legend class="u-label">{{ t('ui.exports.dialog.dataset') }}</legend>
-        <div class="flex flex-wrap gap-4">
-          <label class="flex items-center gap-2"><input v-model="dataset" type="radio" name="export-dataset" value="events" class="u-check" />{{ t('ui.exports.dataset.events') }}</label>
-          <label class="flex items-center gap-2"><input v-model="dataset" type="radio" name="export-dataset" value="slices" class="u-check" />{{ t('ui.exports.dataset.slices') }}</label>
-        </div>
-        <p class="m-0 u-small u-muted">{{ dataset === 'events' ? t('ui.exports.dialog.eventsHint') : t('ui.exports.dialog.slicesHint') }}</p>
+        <label v-for="d in datasets" :key="d" class="flex items-start gap-2" :data-dataset="d">
+          <input v-model="dataset" type="radio" :name="`${uid}-dataset`" :value="d" class="u-check mt-1" />
+          <span class="flex flex-col"><span>{{ t(`ui.exports.dataset.${d}`) }}</span><span class="u-small u-muted">{{ t(`ui.exports.datasetHint.${kind === 'raw' ? 'raw' : 'normalized'}.${d}`) }}</span></span>
+        </label>
       </fieldset>
 
-      <div class="flex flex-col gap-1">
+      <fieldset v-if="kind === 'normalized'" class="flex flex-col gap-2" data-testid="export-formats">
+        <legend class="u-label">{{ t('ui.exports.dialog.format') }}</legend>
+        <div class="flex flex-wrap gap-x-5 gap-y-2">
+          <label v-for="fm in FORMATS" :key="fm" class="flex items-center gap-2" :data-format="fm">
+            <input v-model="format" type="radio" :name="`${uid}-format`" :value="fm" class="u-check" :disabled="fm === 'parquet' && !parquet" />{{ t(`ui.exports.format.${fm}`) }}
+          </label>
+        </div>
+        <p class="m-0 u-small u-muted">{{ t(`ui.exports.formatHint.${format}`) }}</p>
+        <p v-if="!parquet" class="m-0 u-small u-muted" data-testid="export-no-parquet">{{ t('ui.exports.dialog.noParquet') }}</p>
+      </fieldset>
+      <div v-else class="flex flex-col gap-1">
         <p class="m-0 u-label">{{ t('ui.exports.dialog.format') }}</p>
-        <p class="m-0"><span class="u-mono font-semibold">{{ legacy ? 'CSV' : 'JSONL' }}</span></p>
-        <p class="m-0 u-small u-muted">{{ t('ui.exports.dialog.formatsLater') }} {{ parquet ? '' : t('ui.exports.dialog.noParquet') }}</p>
+        <p class="m-0">{{ legacy ? t('ui.exports.format.csv') : t('ui.exports.format.jsonl') }}</p>
       </div>
 
       <fieldset class="flex flex-col gap-3">
@@ -122,8 +151,8 @@ onMounted(() => {
           </select>
         </label>
         <div class="flex flex-col gap-1">
-          <span id="export-tournaments" class="u-small">{{ t('ui.exports.dialog.tournaments') }}</span>
-          <div v-if="tournaments.length" class="flex flex-wrap gap-x-4 gap-y-2" role="group" aria-labelledby="export-tournaments">
+          <span :id="`${uid}-tournaments`" class="u-small">{{ t('ui.exports.dialog.tournaments') }}</span>
+          <div v-if="tournaments.length" class="flex flex-wrap gap-x-4 gap-y-2" role="group" :aria-labelledby="`${uid}-tournaments`">
             <label v-for="tour in tournaments" :key="tour.id" class="flex items-center gap-2">
               <input v-model="chosen" type="checkbox" :value="tour.id" class="u-check" />{{ tour.name ?? `#${tour.id}` }}
             </label>
@@ -131,7 +160,7 @@ onMounted(() => {
           <p v-else class="m-0 u-small u-muted">{{ t('ui.exports.dialog.noTournaments') }}</p>
           <p class="m-0 u-small u-muted">{{ t('ui.exports.dialog.allTournaments') }}</p>
         </div>
-        <label v-if="!legacy" class="flex flex-col">
+        <label v-if="!legacy && !changes" class="flex flex-col">
           <span class="u-small">{{ t('ui.exports.dialog.seasonIds') }}</span>
           <input v-model="seasonText" class="u-field u-mono" inputmode="numeric" autocomplete="off" :aria-invalid="seasonIds === null" />
         </label>
@@ -139,11 +168,28 @@ onMounted(() => {
           <span class="u-small">{{ t('ui.exports.dialog.eventIds') }}</span>
           <input v-model="eventText" class="u-field u-mono" inputmode="numeric" autocomplete="off" :aria-invalid="eventIds === null" />
         </label>
+        <div v-if="!legacy && !changes" class="flex flex-col gap-1">
+          <span :id="`${uid}-classes`" class="u-small">{{ t('ui.exports.dialog.classes') }}</span>
+          <div class="flex flex-wrap gap-x-4 gap-y-2" role="group" :aria-labelledby="`${uid}-classes`">
+            <label v-for="c in CLASSES" :key="c" class="flex items-center gap-2"><input v-model="classes" type="checkbox" :value="c" class="u-check" />{{ t(`ui.status.event.${c}`) }}</label>
+          </div>
+        </div>
+        <div v-if="!legacy" class="grid gap-3 sm:grid-cols-2">
+          <label class="flex flex-col">
+            <span class="u-small">{{ changes ? t('ui.exports.dialog.recordedFrom') : t('ui.exports.dialog.from') }}</span>
+            <input v-model="from" type="date" class="u-field" :aria-invalid="!rangeOk" />
+          </label>
+          <label class="flex flex-col">
+            <span class="u-small">{{ changes ? t('ui.exports.dialog.recordedTo') : t('ui.exports.dialog.to') }}</span>
+            <input v-model="to" type="date" class="u-field" :aria-invalid="!rangeOk" />
+          </label>
+        </div>
         <p v-if="seasonIds === null || eventIds === null" class="m-0 u-small" role="alert" style="color: var(--danger)">{{ t('ui.exports.dialog.badIds') }}</p>
+        <p v-if="!rangeOk" class="m-0 u-small" role="alert" style="color: var(--danger)">{{ t('ui.exports.dialog.badRange') }}</p>
         <p v-if="legacy" class="m-0 u-small u-muted">{{ t('ui.exports.dialog.legacyFilter') }}</p>
       </fieldset>
 
-      <p class="m-0 u-notice"><UiIcon name="info" :size="16" />{{ t('ui.exports.dialog.fullSize') }}</p>
+      <p class="m-0 u-notice"><UiIcon name="info" :size="16" />{{ kind === 'raw' ? t('ui.exports.dialog.fullSize') : t('ui.exports.dialog.fileName') }}</p>
       <p class="m-0 u-small u-muted">{{ t('ui.jobs.start.local') }}</p>
       <FormError v-if="error" :error="error" :active-job-id="status.activeJob?.id" @navigate="emit('close')" />
     </form>

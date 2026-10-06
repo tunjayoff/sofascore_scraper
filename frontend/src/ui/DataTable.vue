@@ -49,7 +49,8 @@ const props = withDefaults(
     columns: Column<T>[]
     rows: T[]
     rowKey: (row: T) => string
-    rowTo?: (row: T) => RouteLocationRaw
+    /** The detail a row opens; null: this row opens nothing (an export file that no job wrote). */
+    rowTo?: (row: T) => RouteLocationRaw | null
     loading?: boolean
     refreshing?: boolean
     error?: unknown
@@ -145,7 +146,8 @@ watch(
 )
 
 function open(row: T) {
-  if (props.rowTo) void router.push(props.rowTo(row))
+  const to = props.rowTo?.(row)
+  if (to) void router.push(to)
 }
 function onRowClick(e: MouseEvent, row: T) {
   // Buttons and links in the row do their own thing; a text selection is not a click
@@ -210,7 +212,7 @@ const showSkeleton = computed(() => props.loading && !props.rows.length && !prop
             @change="toggleRow(row)"
           />
           <div class="flex-1 min-w-0">
-            <RouterLink v-if="rowTo" :to="rowTo(row)" data-row-link class="u-row-link font-semibold">
+            <RouterLink v-if="rowTo && rowTo(row)" :to="rowTo(row)!" data-row-link class="u-row-link font-semibold">
               <slot :name="`cell-${cardTitle.key}`" :row="row">{{ cellValue(row, cardTitle) }}</slot>
             </RouterLink>
             <span v-else class="font-semibold"><slot :name="`cell-${cardTitle.key}`" :row="row">{{ cellValue(row, cardTitle) }}</slot></span>
@@ -254,7 +256,7 @@ const showSkeleton = computed(() => props.loading && !props.rows.length && !prop
             v-for="(row, i) in shown"
             :key="rowKey(row)"
             data-row
-            :class="{ 'is-active': i === active, 'is-link': !!rowTo }"
+            :class="{ 'is-active': i === active, 'is-link': !!rowTo?.(row) }"
             @click="onRowClick($event, row)"
           >
             <td v-if="selectable" class="u-select-cell">
@@ -267,7 +269,7 @@ const showSkeleton = computed(() => props.loading && !props.rows.length && !prop
               />
             </td>
             <td v-for="(c, ci) in visible" :key="c.key" :class="{ 'text-right': c.align === 'right', 'u-mono': c.mono }">
-              <RouterLink v-if="ci === 0 && rowTo" :to="rowTo(row)" data-row-link class="u-row-link" @focus="active = i">
+              <RouterLink v-if="ci === 0 && rowTo && rowTo(row)" :to="rowTo(row)!" data-row-link class="u-row-link" @focus="active = i">
                 <slot :name="`cell-${c.key}`" :row="row">{{ cellValue(row, c) }}</slot>
               </RouterLink>
               <slot v-else :name="`cell-${c.key}`" :row="row">{{ cellValue(row, c) ?? '—' }}</slot>

@@ -8,6 +8,7 @@ import EmptyState from '@/ui/EmptyState.vue'
 import StatusBadge from '@/ui/StatusBadge.vue'
 import TimeText from '@/ui/TimeText.vue'
 import UiIcon from '@/ui/UiIcon.vue'
+import UiBadge from '@/ui/UiBadge.vue'
 import { v1 } from '@/api/v1/client'
 import type { ExportFilter, ExportRecord } from '@/api/v1/schema'
 import { usePagedList } from '@/app/pagedList'
@@ -19,8 +20,10 @@ import ExportDialog from './ExportDialog.vue'
 /**
  * Exports (6.10): every export with its file, newest first; the file is downloaded at full size from the
  * server. An export runs as a job: a running one is listed with its state and a link to the job, and the
- * list is read again every 5 s while one runs. "New export" offers what the API writes today; `?new=1`
- * (the quick search's "Export") opens it at once.
+ * list is read again every 5 s while one runs. "New export" offers what the API writes (normalized data
+ * as CSV, JSONL, Parquet or SQLite, the match table, the original data); `?new=1` (the quick search's
+ * "Export") opens it at once. Files have readable names (league or dataset and date, FX-19), and the
+ * files `ssc export` wrote on the server are listed too (`source: "file"`), with no job to open.
  */
 const RUNNING_EVERY_MS = 5000
 const { t } = useI18n()
@@ -45,7 +48,7 @@ const columns = computed<Column<ExportRecord>[]>(() => [
   { key: 'state', label: t('ui.exports.col.state'), card: 'badge' },
   { key: 'rows', label: t('ui.exports.col.rows'), align: 'right', sortable: true, sortValue: (r) => r.rows ?? -1 },
   { key: 'size', label: t('ui.exports.col.size'), align: 'right', sortable: true, sortValue: (r) => r.bytes ?? -1 },
-  { key: 'file', label: t('ui.exports.col.file'), optional: true, mono: true },
+  { key: 'file', label: t('ui.exports.col.file'), card: 'meta', mono: true },
   { key: 'id', label: t('ui.exports.col.job'), optional: true, mono: true },
 ])
 
@@ -81,7 +84,7 @@ onUnmounted(() => {
       :columns="columns"
       :rows="list.rows.value"
       :row-key="(r) => r.id"
-      :row-to="(r) => `/jobs/${r.job_id}`"
+      :row-to="(r) => (r.job_id ? `/jobs/${r.job_id}` : null)"
       :loading="list.loading.value && !list.loadedOnce.value"
       :refreshing="list.loading.value && list.loadedOnce.value"
       :error="list.error.value"
@@ -99,13 +102,17 @@ onUnmounted(() => {
       <template #cell-state="{ row }"><StatusBadge kind="job" :value="row.state" /></template>
       <template #cell-rows="{ row }"><span class="u-num">{{ row.rows != null ? num(row.rows) : '—' }}</span></template>
       <template #cell-size="{ row }"><span class="u-num">{{ bytesText(row.bytes) }}</span></template>
-      <template #cell-file="{ row }">{{ row.file ?? '—' }}</template>
-      <template #cell-id="{ row }">{{ row.job_id }}</template>
+      <template #cell-file="{ row }">
+        <span class="inline-flex flex-wrap items-center gap-2"
+          >{{ row.file ?? '—' }}<UiBadge v-if="row.source === 'file'" tone="neutral" :title="t('ui.exports.fromCliHint')" data-testid="export-from-cli">{{ t('ui.exports.fromCli') }}</UiBadge></span
+        >
+      </template>
+      <template #cell-id="{ row }">{{ row.job_id ?? '—' }}</template>
       <template #row-actions="{ row }">
         <a v-if="row.available" :href="v1.exportUrl(row.id)" download class="u-btn u-btn-sm" :aria-label="t('ui.exports.downloadOne', { name: row.file ?? row.id })">
           <UiIcon name="exports" :size="14" />{{ t('ui.exports.download') }}
         </a>
-        <RouterLink v-else :to="`/jobs/${row.job_id}`" class="u-btn u-btn-sm u-btn-ghost">{{ t('ui.exports.openJob') }}</RouterLink>
+        <RouterLink v-else-if="row.job_id" :to="`/jobs/${row.job_id}`" class="u-btn u-btn-sm u-btn-ghost">{{ t('ui.exports.openJob') }}</RouterLink>
       </template>
       <template #empty>
         <EmptyState icon="exports" :title="t('ui.exports.empty')" :text="t('ui.exports.emptyText')">

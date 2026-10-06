@@ -86,7 +86,7 @@ describe('Exports', () => {
     expect(authNeeded.value).toBe(true)
   })
 
-  it('the dialog starts the wide CSV or a raw export with the filter; normalized is shown but disabled', async () => {
+  it('the dialog starts the wide CSV or a raw export with the filter; Parquet says it needs pyarrow', async () => {
     const f = mockFetch({
       'GET /api/v1/exports': page([]),
       'GET /api/v1/status': { data: status() },
@@ -99,9 +99,11 @@ describe('Exports', () => {
     await w.findAll('button').find((b) => b.text().includes(t('ui.exports.new')))!.trigger('click')
     await flush()
     const dialog = w.find('[role="dialog"]')
-    expect(dialog.find('input[value="normalized"]').attributes('disabled')).toBeDefined()
+    // FX-14b: normalized data can be chosen now; without pyarrow its Parquet choice says why it is off
+    expect(dialog.find('input[value="normalized"]').attributes('disabled')).toBeUndefined()
+    await dialog.find('input[value="normalized"]').setValue(true)
     expect(dialog.text()).toContain(t('ui.exports.dialog.noParquet'))
-    expect(dialog.text()).toContain(t('ui.exports.dialog.fullSize'))
+    await dialog.find('input[value="legacy"]').setValue(true)
     await dialog.find('input[type="checkbox"][value="17"]').setValue(true)
     await w.find('[data-testid="confirm"]').trigger('click')
     await flush()
@@ -212,7 +214,7 @@ describe('Backups', () => {
     expect(w.find('[role="dialog"] [data-testid="form-error"]').attributes('data-code')).toBe('data_operation_running')
   })
 
-  it('restore in three steps: the check is a dry run, the choice, then the server command', async () => {
+  it('restore in three steps: the check is a dry run, the choice, then the restore (here, or the server command)', async () => {
     const report = { name: backup().name, format: 2, scope: 'all', dry_run: true, force: false, restored: [], replaced: [], skipped: [], occupied: ['v3', '.meta/state.db'], counts: { events: 48210 } }
     const f = mockFetch(
       routes({
@@ -244,10 +246,10 @@ describe('Backups', () => {
     expect(body(f, 'POST /api/v1/jobs', 1).spec).toEqual({ name: backup().name, force: true, dry_run: true })
     expect(w.find('[data-testid="restore-replaced"]').text()).toBe(t('ui.restore.wouldMove', { what: 'v3' }))
     await w.find('[data-testid="next"]').trigger('click')
+    // FX-14b: the restore runs here after the typed word; the server command stays as the other way
     expect(w.find('[role="dialog"]').text()).toContain(`ssc backup restore ${backup().name} --force --yes`)
-    expect(w.find('[role="dialog"]').text()).toContain(t('ui.restore.apiChecksOnly'))
-    // no button restores: the API offers only the check
-    expect(w.findAll('[role="dialog"] .u-btn-primary')).toHaveLength(0)
+    expect(w.find('[role="dialog"]').text()).toContain(t('ui.restore.runsHere'))
+    expect(w.find('[data-testid="restore-run"]').attributes('disabled')).toBeDefined()
     expect(await axeViolations(w.find('[role="dialog"]').element)).toEqual([])
   })
 })

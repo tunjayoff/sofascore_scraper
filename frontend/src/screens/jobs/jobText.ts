@@ -170,7 +170,7 @@ export function exportText(spec: { dataset?: string; format?: string; schema?: s
   const parts = [
     spec.schema ? textOr(`ui.exports.schema.${spec.schema}`, spec.schema) : null,
     spec.dataset ? textOr(`ui.exports.dataset.${spec.dataset}`, spec.dataset) : null,
-    spec.format ? spec.format.toUpperCase() : null,
+    spec.format ? textOr(`ui.exports.format.${spec.format}`, spec.format.toUpperCase()) : null,
   ]
   return parts.filter(Boolean).join(' · ') || '—'
 }
