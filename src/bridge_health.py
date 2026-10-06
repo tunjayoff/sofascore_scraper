@@ -408,8 +408,8 @@ def cli_message(snap: Dict[str, Any], t: Callable[..., str]) -> str:
 
 def print_cli_line(snap: Dict[str, Any], previous: str) -> None:
     """
-    Dinleyici (main.py terminal modlarında ekler): durum değişince uygulama dilinde tek satır.
-    stderr'e yazılır; --watch'ta stdout olay akışıdır.
+    Dinleyici (indirme komutları ekler: `ssc sync`, `ssc fetch`, `ssc refresh`): durum değişince uygulama
+    dilinde tek satır. stderr'e yazılır; --watch'ta stdout olay akışıdır.
     """
     from src.i18n import get_i18n
 

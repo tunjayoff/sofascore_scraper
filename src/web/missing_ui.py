@@ -68,8 +68,9 @@ npm run build</pre>
         has been published. You can also copy a <code>frontend/dist/</code> folder built on another machine.</li>
     </ol>
     <p class="note">Everything else works without the interface: the API (<a href="/docs">/docs</a>,
-       <a href="/health">/health</a>) and the terminal modes (<code>python main.py</code>,
-       <code>--headless</code>). <code>python main.py --doctor</code> checks the whole setup.</p>
+       <a href="/health">/health</a>) and the command line (<code>ssc</code>, for example
+       <code>ssc sync</code>; or <code>python main.py sync</code>). <code>ssc doctor</code> checks the whole
+       setup.</p>
   </section>
 
   <section lang="tr">
@@ -90,8 +91,8 @@ npm run build</pre>
         Başka bir makinede derlenmiş <code>frontend/dist/</code> klasörünü de kopyalayabilirsiniz.</li>
     </ol>
     <p class="note">Geri kalan her şey arayüz olmadan çalışır: API (<a href="/docs">/docs</a>,
-       <a href="/health">/health</a>) ve terminal modları (<code>python main.py</code>,
-       <code>--headless</code>). <code>python main.py --doctor</code> tüm kurulumu denetler.</p>
+       <a href="/health">/health</a>) ve komut satırı (<code>ssc</code>, örneğin <code>ssc sync</code>;
+       ya da <code>python main.py sync</code>). <code>ssc doctor</code> tüm kurulumu denetler.</p>
   </section>
 </main>
 </body>

@@ -516,7 +516,7 @@ def test_frontend_built(make_ctx):
 
 def test_frontend_missing_is_a_warning_with_the_build_command(make_ctx):
     res = doctor.check_frontend(make_ctx(), node_version=lambda: (22, 12, 0))
-    assert (res.status, res.code) == (WARN, "frontend_missing")  # terminal modları onsuz çalışır: hata değil
+    assert (res.status, res.code) == (WARN, "frontend_missing")  # komut satırı (ssc) onsuz çalışır: hata değil
     assert "npm install && npm run build" in res.fix and "nodejs.org" not in res.fix
     assert res.detail["node"] == "22.12.0" and res.detail["node_supported"] is True
 

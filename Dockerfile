@@ -30,7 +30,8 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     # Tarayıcı root olarak imaja kurulur, uygulama kullanıcısı oradan okur
     PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright \
-    # Ayarlar sayfası .env'e yazar: config volume'unda dursun ki konteyner yenilenince kaybolmasın
+    # .env config volume'unda durur (2.x adlarıyla verilen ayarlar; konteyner yenilenince kaybolmasın). Ayarlar
+    # sayfası .env'e değil config/overrides.json'a yazar: o da aynı volume'dadır (CONFIG_DIR = /app/config)
     SOFASCORE_ENV_FILE=/app/config/.env \
     # Çözülmüş challenge (cookie'ler) kendi volume'unda: yeniden başlatmada ilk istek hızlı olur. Yeni ad
     # (SOFASCORE_CLIENT__BROWSER_PROFILE) ayardır: bir yapılandırma dosyası varken eski ad tek başına her
@@ -79,13 +80,13 @@ COPY --from=frontend /build/frontend/dist ./frontend/dist
 RUN chmod 0755 /usr/local/bin/sofascore-entrypoint
 
 LABEL org.opencontainers.image.title="SofaScore Scraper" \
-      org.opencontainers.image.description="Download football, basketball and tennis match data from SofaScore and browse it in a web app" \
+      org.opencontainers.image.description="Download match data of 21 sports from SofaScore and browse it in a web app" \
       org.opencontainers.image.source="https://github.com/tunjayoff/sofascore_scraper" \
       org.opencontainers.image.licenses="PolyForm-Noncommercial-1.0.0"
 
 USER app
 
-# data: indirilen veri ve iş geçmişi · config: leagues.txt, league_sports.json, .env
+# data: indirilen veri ve iş geçmişi · config: overrides.json (Ayarlar sayfası), .env, leagues.txt, league_sports.json
 # logs: dönen log dosyası (LOG_DIR varsayılanı; aynı satırlar stdout'a da yazılır: docker logs)
 # browser-profile: tarayıcı profili (çözülmüş challenge)
 VOLUME ["/app/data", "/app/config", "/app/logs", "/app/browser-profile"]
