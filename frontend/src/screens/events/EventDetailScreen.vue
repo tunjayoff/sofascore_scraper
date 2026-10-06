@@ -24,6 +24,7 @@ import { toast } from '@/ui/toast'
 import { useStatusStore } from '@/app/statusStore'
 import { sportName } from '@/app/sports'
 import { startJob, waitForJob } from '@/screens/jobs/startJob'
+import { MORE_FOLLOW_KINDS } from '@/screens/follows/followText'
 import SliceTab from './SliceTab.vue'
 import RawPayload from './RawPayload.vue'
 import ChangeFields from './ChangeFields.vue'
@@ -35,7 +36,8 @@ import { awayName, eventTitle, fetchSelections, homeName, loadSeasons, loadTourn
  * incidents (friendly views for football, basketball and tennis, the raw tree otherwise; decision 6),
  * every slice with its state (Data), the corrections recorded for it and, when an odds slice exists, the
  * odds. Every stored payload opens in the raw view, a side panel (decision 7). "Fetch again" re-reads the
- * event as a `fetch` job.
+ * event as a `fetch` job. The team names lead to Matches filtered by that team; the status is shown in
+ * words, SofaScore's own values only under "Details" (FX-14a).
  */
 const { t } = useI18n()
 const route = useRoute()
@@ -126,12 +128,11 @@ const facts = computed(() => {
   return [
     { key: 'id', label: t('ui.eventDetail.fact.id'), value: String(e.id), mono: true },
     { key: 'sport', label: t('ui.eventDetail.fact.sport'), value: sportName(e.sport) },
-    { key: 'status', label: t('ui.eventDetail.fact.status'), value: [e.status.type, e.status.code].filter((x) => x != null).join(' / ') || '—', mono: true },
-    { key: 'settlement', label: t('ui.eventDetail.fact.settlement'), value: t(`ui.status.settlement.${e.quality.settlement}`) },
+    { key: 'status', label: t('ui.eventDetail.fact.status') },
+    { key: 'settlement', label: t('ui.eventDetail.fact.settlement'), value: t(`ui.eventDetail.settled.${e.quality.settlement}`) },
     { key: 'observed', label: t('ui.eventDetail.fact.observed') },
     { key: 'changed', label: t('ui.eventDetail.fact.changed') },
     { key: 'source', label: t('ui.eventDetail.fact.source'), value: t(`ui.eventDetail.source.${e.quality.source}`) },
-    { key: 'tier', label: t('ui.eventDetail.fact.tier'), value: e.quality.tier_hint == null ? '—' : e.quality.tier_hint ? t('ui.common.yes') : t('ui.common.no') },
     { key: 'raw', label: t('ui.eventDetail.fact.raw') },
   ]
 })
@@ -145,6 +146,18 @@ const where = computed(() => {
     e.round?.name ?? (e.round?.number != null ? t('ui.eventDetail.round', { n: e.round.number }) : null),
   ].filter(Boolean) as string[]
 })
+
+/** SofaScore's own status values ("finished / 100 · Ended"), shown only under Details. */
+const statusRaw = computed(() => {
+  const s = event.value?.status
+  if (!s) return ''
+  return [[s.type, s.code].filter((x) => x != null).join(' / '), s.description].filter(Boolean).join(' · ')
+})
+
+/** Matches of one team: the Matches list filtered by its name. */
+function teamLink(name: string | null | undefined) {
+  return name ? { path: '/events', query: { q: name } } : null
+}
 
 const sofascoreUrl = computed(() => {
   const e = event.value
@@ -216,8 +229,8 @@ onMounted(() => {
     <div v-if="loading && !event" class="u-card p-6"><SkeletonBlock :lines="6" /></div>
 
     <div v-else-if="notFound" class="u-card" data-testid="event-not-found">
-      <EmptyState icon="events" :title="t('ui.eventDetail.notFound')" :text="t('ui.eventDetail.notFoundText', { id })">
-        <RouterLink :to="{ path: '/follows/new', query: { kind: 'event', id: String(id) } }" class="u-btn">{{ t('ui.eventDetail.followIt') }}</RouterLink>
+      <EmptyState icon="events" :title="t('ui.eventDetail.notFound')" :text="[t('ui.eventDetail.notFoundText', { id }), MORE_FOLLOW_KINDS ? t('ui.eventDetail.notFoundFollow') : ''].join(' ').trim()">
+        <RouterLink v-if="MORE_FOLLOW_KINDS" :to="{ path: '/follows/new', query: { kind: 'event', id: String(id) } }" class="u-btn">{{ t('ui.eventDetail.followIt') }}</RouterLink>
         <RouterLink to="/events" class="u-btn u-btn-ghost">{{ t('ui.eventDetail.backToEvents') }}</RouterLink>
       </EmptyState>
     </div>
@@ -240,14 +253,29 @@ onMounted(() => {
 
       <section class="u-card p-6 mb-6 flex flex-col items-center gap-2 text-center" data-testid="event-score">
         <div class="flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
-          <span class="u-h2">{{ homeName(event) }}</span>
+          <RouterLink
+            v-if="teamLink(event.participants.home?.name)"
+            :to="teamLink(event.participants.home?.name)!"
+            class="u-h2 u-team-link"
+            :title="t('ui.events.teamMatches', { name: homeName(event) })"
+            data-testid="team-home"
+            >{{ homeName(event) }}</RouterLink
+          >
+          <span v-else class="u-h2">{{ homeName(event) }}</span>
           <span class="u-display u-num">{{ scoreText(event) }}</span>
-          <span class="u-h2">{{ awayName(event) }}</span>
+          <RouterLink
+            v-if="teamLink(event.participants.away?.name)"
+            :to="teamLink(event.participants.away?.name)!"
+            class="u-h2 u-team-link"
+            :title="t('ui.events.teamMatches', { name: awayName(event) })"
+            data-testid="team-away"
+            >{{ awayName(event) }}</RouterLink
+          >
+          <span v-else class="u-h2">{{ awayName(event) }}</span>
         </div>
         <p v-if="scoreDetail(event).length" class="m-0 u-small u-muted">{{ scoreDetail(event).join(' · ') }}</p>
         <p class="m-0 flex flex-wrap items-center justify-center gap-2">
           <StatusBadge kind="event" :value="event.status.class" />
-          <span v-if="event.status.description" class="u-small u-muted">{{ event.status.description }}</span>
           <UiBadge v-if="event.quality.settlement === 'provisional'" tone="info" icon="clock">{{ t('ui.status.settlement.provisional') }}</UiBadge>
           <UiBadge v-if="event.quality.stale" tone="warn" icon="alert">{{ t('ui.status.quality.stale') }}</UiBadge>
           <UiBadge v-if="event.quality.status_regressed" tone="warn" icon="alert">{{ t('ui.status.quality.regressed') }}</UiBadge>
@@ -358,6 +386,15 @@ onMounted(() => {
         <aside class="u-card p-5 min-w-0 self-start" :aria-label="t('ui.eventDetail.facts')" data-testid="event-facts">
           <FactList :items="facts">
             <template #value-id><span class="inline-flex items-center gap-1">{{ event.id }}<CopyButton :text="String(event.id)" :label="t('ui.eventDetail.copyId')" /></span></template>
+            <template #value-status>
+              <span class="flex flex-col gap-1">
+                <span><StatusBadge kind="event" :value="event.status.class" /></span>
+                <details v-if="statusRaw" class="u-small u-muted" data-testid="status-details">
+                  <summary>{{ t('ui.eventDetail.statusDetails') }}</summary>
+                  <span>{{ t('ui.eventDetail.statusRaw') }}: </span><span class="u-mono" lang="en">{{ statusRaw }}</span>
+                </details>
+              </span>
+            </template>
             <template #value-observed><TimeText :value="event.quality.observed_at_utc" /></template>
             <template #value-changed><TimeText :value="event.quality.change_ts ? event.quality.change_ts * 1000 : null" /></template>
             <template #value-raw>
@@ -394,3 +431,15 @@ onMounted(() => {
     </template>
   </div>
 </template>
+
+<style>
+.u-app a.u-team-link {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+  text-underline-offset: 4px;
+}
+.u-app a.u-team-link:hover {
+  text-decoration-color: currentColor;
+}
+</style>

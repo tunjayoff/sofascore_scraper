@@ -1,6 +1,7 @@
 import { i18n } from '@/i18n'
 import type { BackupJobSpec, ExportJobSpec, Job, JobKind, JobState } from '@/api/v1/schema'
 import type { StartJobBody } from '@/api/v1/client'
+import { tournamentNames } from '@/screens/events/eventText'
 
 /**
  * Jobs in words (05-web-ui.md 6.8, 6.9). Everything shown is built from codes and numbers of the job
@@ -46,17 +47,37 @@ function asSpec(spec: unknown): Spec {
   return spec && typeof spec === 'object' ? (spec as Spec) : {}
 }
 
-/** "All followed tournaments", "Tournament #17", "2 tournaments", "3 events". */
-export function jobTarget(job: Pick<Job, 'kind' | 'spec'>): string {
+/**
+ * A league by its name (FX-14a): the stored catalog's name (`loadTournaments` in events/eventText.ts, read
+ * once by the screens that show jobs), else the name the job's progress reported, else "League #17".
+ */
+export function leagueName(id: number, progress?: unknown): string {
+  const known = tournamentNames.value.get(id)?.name
+  if (known) return known
+  const p = readProgress(progress)
+  return p.leagueName ?? t('ui.job.target.tournament', { id })
+}
+
+/** The one league a job works on, or null (all leagues, several, or not a league job). */
+export function jobLeague(job: Pick<Job, 'spec'>): number | null {
+  const spec = asSpec(job.spec)
+  const selections = Array.isArray(spec.selections) ? spec.selections : []
+  const ids = new Set(selections.map((s) => s.league_id).filter((x): x is number => typeof x === 'number' && x > 0))
+  if (typeof spec.league_id === 'number' && spec.league_id > 0) ids.add(spec.league_id)
+  return ids.size === 1 ? [...ids][0] : null
+}
+
+/** "All leagues", "Premier League", "2 leagues", "3 matches". */
+export function jobTarget(job: Pick<Job, 'kind' | 'spec'> & { progress?: unknown }): string {
   const spec = asSpec(job.spec)
   const selections = Array.isArray(spec.selections) ? spec.selections : []
   if (selections.length) {
     const events = selections.reduce((n, s) => n + (Array.isArray(s.match_ids) ? s.match_ids.length : 0), 0)
     if (events) return t('ui.job.target.events', { n: events })
-    if (selections.length === 1 && selections[0].league_id) return t('ui.job.target.tournament', { id: selections[0].league_id })
+    if (selections.length === 1 && selections[0].league_id) return leagueName(selections[0].league_id, job.progress)
     return t('ui.job.target.tournaments', { n: selections.length })
   }
-  if (spec.league_id) return t('ui.job.target.tournament', { id: spec.league_id })
+  if (spec.league_id) return leagueName(spec.league_id, job.progress)
   if (CALLS_SOFASCORE.includes(job.kind)) return t('ui.job.target.all')
   if (job.kind === 'export') return exportText(spec)
   if ((job.kind === 'backup' || job.kind === 'clear') && spec.scope) return scopeText(spec.scope)
@@ -125,6 +146,12 @@ export function readProgress(raw: unknown): ProgressView {
   }
 }
 
+/** "3 / 10", with "matches" while the job fetches match details (FX-14a: counts carry their unit). */
+export function countsText(p: Pick<ProgressView, 'phase' | 'done' | 'total'>, num: (n: number) => string = String): string {
+  const args = { done: num(p.done ?? 0), total: num(p.total ?? 0) }
+  return p.phase === 'details' ? t('ui.job.countsMatches', args) : t('ui.job.counts', args)
+}
+
 /** Percent of a job: the progress for a running one, 100 for a finished one, null when unknown. */
 export function jobPercent(job: Pick<Job, 'state' | 'progress'>): number | null {
   if (job.state === 'succeeded' || job.state === 'partial') return 100
@@ -177,6 +204,14 @@ export function jobErrorText(job: Pick<Job, 'error'>): string | null {
   if (!code) return null
   const key = `ui.error.${code}`
   return i18n.global.te(key, 'en') ? t(key) : code
+}
+
+/** Counts of a backup a user has no use for (the outputs' delivery positions); not shown (FX-14a). */
+const HIDDEN_COUNTS: readonly string[] = ['sink_cursors']
+
+/** Whether a count of a backup is shown. */
+export function countShown(key: string): boolean {
+  return !HIDDEN_COUNTS.includes(key)
 }
 
 /** A count of a backup (`backup.json`: follows, jobs, v3_events …) in words, else its key. */

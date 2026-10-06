@@ -6,7 +6,7 @@ import UiIcon from '@/ui/UiIcon.vue'
 import { v1 } from '@/api/v1/client'
 import type { Job } from '@/api/v1/schema'
 import { bytesText, duration, num } from '@/ui/time'
-import { countLabel, scopeText } from './jobText'
+import { countLabel, countShown, scopeText } from './jobText'
 
 /**
  * What a finished data job produced (6.9 "Output"): the export file and the backup with a download
@@ -29,7 +29,7 @@ const backup = computed(() => part('backup'))
 const clear = computed(() => part('clear'))
 const rebuild = computed(() => part('rebuild'))
 const restore = computed(() => part('restore'))
-const counts = computed(() => Object.entries((restore.value?.counts as Rec | undefined) ?? {}).filter(([, v]) => typeof v === 'number') as [string, number][])
+const counts = computed(() => Object.entries((restore.value?.counts as Rec | undefined) ?? {}).filter(([k, v]) => typeof v === 'number' && countShown(k)) as [string, number][])
 const succeeded = computed(() => props.job.state === 'succeeded' || props.job.state === 'partial')
 </script>
 
