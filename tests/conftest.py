@@ -556,6 +556,9 @@ def _isolate_request_layer(request, monkeypatch):
 
     monkeypatch.setattr(utils, "_browser_first_until", 0.0)
     bridge_health.reset()  # köprü sağlık durumu da testten teste taşınmaz
+    follows = sys.modules.get("src.services.follows")
+    if follows is not None:
+        follows.clear_search_cache()  # saklanan SofaScore araması da (FX-20)
     if request.node.get_closest_marker("browser") is None:
         async def _no_real_browser(self):
             raise RuntimeError("tests must not launch a real browser (mark the test with @pytest.mark.browser)")

@@ -1718,6 +1718,15 @@ export interface Operations {
     body: TournamentSearch
     response: TournamentHitListResponse
   }
+  /** Suggest stored tournaments and teams by name */
+  "suggestCatalog": {
+    method: "GET"
+    path: "/api/v1/catalog/suggest"
+    params: {}
+    query: { q: string; sport?: string | null; limit?: number }
+    body: never
+    response: TournamentHitListResponse
+  }
   /** Get a tournament */
   "getTournament": {
     method: "GET"

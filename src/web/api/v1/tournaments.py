@@ -4,6 +4,8 @@ API v1: turnuvalar ve sezonlar (docs/design/02-services.md bölüm 6; docs/desig
     GET /api/v1/tournaments                         katalogdaki turnuvalar (spor, ad, takip süzgeçleri)
     POST /api/v1/tournaments/search                 SofaScore'da ada göre arama: turnuva, takım, oyuncu (tek istek;
                                                     takım ve oyuncu FX-19)
+    GET /api/v1/catalog/suggest                     yazarken öneri: adında metin geçen kayıtlı turnuvalar ve takımlar
+                                                    (yalnızca katalog, SofaScore'a istek yok; FX-20)
     GET /api/v1/tournaments/{tournament_id}         tek turnuva, kategorisiyle
     GET /api/v1/tournaments/{tournament_id}/seasons turnuvanın sezonları, en yeni önce; `include=counts` ile sezon
                                                     başına sayımlar (FX-13, 05-web-ui.md G17)
@@ -23,9 +25,13 @@ indirilmez: grupları ya da adları bir seçimde geçince eşitleme onları sezo
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Literal, Optional
+import asyncio
+import logging
+import threading
+from typing import TYPE_CHECKING, Annotated, Any, Callable, Dict, List, Literal, Optional, TypeVar
 
-from fastapi import APIRouter, Path, Query
+from fastapi import APIRouter, Path, Query, Request, Response
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.errors import NotFoundError, UsageError
@@ -40,9 +46,16 @@ if TYPE_CHECKING:
     from src.services.query import QueryService, TournamentEntry
 
 router = APIRouter(tags=["tournaments"])
+logger = logging.getLogger("WebAPI")
 
 DEFAULT_PAGE_LIMIT = 50
 MAX_PAGE_LIMIT = 200
+DEFAULT_SUGGEST_LIMIT = 8
+MAX_SUGGEST_LIMIT = 20
+# İstemci gidince verilen yanıt (nginx'in "istemci kapattı" kodu): kimse okumaz, yalnızca erişim kaydında görünür
+CLIENT_CLOSED = 499
+
+T = TypeVar("T")
 
 
 class TournamentRecord(records.Tournament):  # type: ignore[misc,valid-type]
@@ -236,15 +249,25 @@ def list_tournaments(
     summary="Search tournaments, teams and players on SofaScore",
     responses=error_responses("invalid_request", "forbidden_origin", "blocked", "upstream_error"),
 )
-def search_tournaments(body: TournamentSearch) -> TournamentHitListResponse:
+async def search_tournaments(body: TournamentSearch, request: Request) -> Any:
     """
     Look the text up on SofaScore (one request, the shared request budget), at most 20 hits of the kinds asked
     for (`kinds`; tournaments by default), each typed by `kind`. An empty list: SofaScore answered and found
     nothing. 503 `blocked` / `rate_limited` and 502 `upstream_error` when it did not answer; `details.reason` is
     blocked, browser, rate_limited, network or upstream. POST, because every call sends a request to SofaScore (a
     GET could be triggered by another site).
+
+    Made for typing: the server keeps each answer for 10 minutes, so the same text again (case and spaces
+    ignored) sends nothing to SofaScore. When the client closes the connection before the request was sent
+    (for example while it waits for its turn in the request budget), it is not sent at all.
     """
-    hits = deps.follows_service().search(body.q, sport=body.sport, kinds=tuple(body.kinds))
+    from src.client.context import FetchCancelled
+
+    try:
+        hits = await run_while_connected(
+            request, lambda: deps.follows_service().search(body.q, sport=body.sport, kinds=tuple(body.kinds)))
+    except FetchCancelled:
+        return Response(status_code=CLIENT_CLOSED)
     return TournamentHitListResponse(
         data=[
             TournamentHit(
@@ -260,6 +283,83 @@ def search_tournaments(body: TournamentSearch) -> TournamentHitListResponse:
         ],
         page=PageInfo(limit=len(hits), next_cursor=None),
     )
+
+
+@router.get(
+    "/catalog/suggest",
+    response_model=TournamentHitListResponse,
+    operation_id="suggestCatalog",
+    summary="Suggest stored tournaments and teams by name",
+    responses=error_responses("invalid_request"),
+)
+def suggest_catalog(
+    q: str = Query(min_length=1, max_length=100, description="Text in the name; case and accents ignored."),
+    sport: Optional[str] = Query(None, max_length=40, description="Only names of this sport (slug)."),
+    limit: int = Query(DEFAULT_SUGGEST_LIMIT, ge=1, le=MAX_SUGGEST_LIMIT),
+) -> TournamentHitListResponse:
+    """
+    Names to suggest while the user types: the tournaments and the teams (competitors) the data directory knows,
+    in the shape of a search hit (`kind` `tournament` or `team`). Names that start with the text come first,
+    then names with a word that starts with it, then the others; followed ones first within each. Nothing is
+    sent to SofaScore; `POST /tournaments/search` does that.
+    """
+    found = _query().suggest(q, sport=sport, limit=limit)
+    return TournamentHitListResponse(
+        data=[
+            TournamentHit(
+                kind=s.kind,  # type: ignore[arg-type]
+                id=s.id, name=s.name, slug=s.slug, sport=s.sport, followed=s.followed,
+                category=TournamentHitCategory(id=s.category_id, name=s.category_name, slug=s.category_slug,
+                                               country_code=s.country_code),
+                country=SearchHitCountry(code=s.country_code) if s.country_code else None,
+            )
+            for s in found
+        ],
+        page=PageInfo(limit=limit, next_cursor=None),
+    )
+
+
+async def run_while_connected(request: Request, work: Callable[[], T]) -> T:
+    """
+    `work`ü bir işçi thread'inde, iptal kontrolü istemcinin bağlantısına bağlı bir istek bağlamında çalıştırır
+    (plan maddesi FX-20). İstemci bağlantıyı keserse bağlam iptal edilir: henüz gönderilmemiş SofaScore isteği
+    gönderilmez (ortak bütçede sıra beklerken kesilen istek sırasını geri verir, src/throttle.py) ve `work`
+    FetchCancelled ile biter. Gönderilmiş bir istek kesilemez: yanıtı gelir ve (aramada) saklanır.
+    """
+    from src.client.context import request_context
+
+    gone = threading.Event()
+
+    def run() -> T:
+        with request_context(cancel=gone.is_set):
+            return work()
+
+    task = asyncio.ensure_future(run_in_threadpool(run))
+    watcher = asyncio.ensure_future(_until_disconnected(request))
+    try:
+        done, _ = await asyncio.wait({task, watcher}, return_when=asyncio.FIRST_COMPLETED)
+        if watcher in done:
+            gone.set()
+            logger.debug("Search: the client left; a request not sent yet is not sent")
+        return await task
+    finally:
+        gone.set()
+        watcher.cancel()
+
+
+async def _until_disconnected(request: Request) -> None:
+    """
+    İstemci bağlantıyı kesene kadar bekler. `Request.is_disconnected()` kullanılmaz: anında iptal edilen okuması
+    uygulamanın `@app.middleware("http")` katmanından (Starlette BaseHTTPMiddleware) geçerken kesilme iletisini
+    yitirir; burada ileti gelene kadar beklenir (gövde FastAPI tarafından zaten okunmuştur).
+    """
+    while True:
+        try:
+            message = await request.receive()
+        except Exception:  # okunamayan bağlantı: istemci gitmiş sayılır
+            return
+        if message.get("type") == "http.disconnect":
+            return
 
 
 @router.get(
