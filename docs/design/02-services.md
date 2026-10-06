@@ -49,6 +49,17 @@ and the live sources (sections 3 and 8) were revised in the same pass. Reference
 in `/api/v1`. The routes it still lacks are named in section 6 with their owner, FX-13. Section 11
 lists the corrections.
 
+Revised a sixth time on 2026-10-06 after P27 (#134), ST-28 (#135), FX-18 (#139), P28 (#140), FX-13 (#152,
+#153), FX-15 (#155) and FX-19 (#156); the web UI items FX-14a (#154) and FX-14b (#161) are `05-web-ui.md`'s.
+The slice selection end to end (P27), the odds and non-match slices (P28), the sync from the follows table,
+the new job specs and filters and the real restore (FX-13), the clean-up of dead code and the scheduler and
+odds decisions (FX-15), the cancel checks of the async bridge path (FX-18), and the follows that always live in
+the follows table, team, player and match follows that download, the search by kind, the per-league delete,
+the connection state and the readable export names (FX-19) are described as built: sections 1.5, 2.4, 2.7,
+2.8, 3.1, 3.2, 3.4, 4.1, 4.3 and 6. The classic views are gone (FX-14b), so every function of the web UI
+uses `/api/v1`. References marked `b6caf2f` are to `origin/main` at that commit. Section 11 lists the
+corrections (items 102 to 117).
+
 Conventions used here: "event" is a SofaScore match; "slice" is one data type of an owner entity
 (event, season, team, player); "face" is one of Python library, CLI, HTTP API.
 The CLI executable is written `ssc` below (final name: decision D2).
@@ -175,6 +186,10 @@ service, `FollowsService.search_tournaments`, which the v1 route `POST /tourname
 legacy `POST /api/leagues/search-remote` keeps its own request. Restore exists only as
 `BackupService.restore` behind `ssc backup restore` (ST-24 #109); the TUI and its directory-copy restore are
 deleted (P26 #131).
+
+At `b6caf2f`: the search is `FollowsService.search(query, sport=, kinds=)` and finds teams and players as
+well (FX-19 #156; `search_tournaments` is a wrapper for tournaments only, 2.7), and a real restore runs as a
+v1 job from the Backups screen (FX-13 #152, #153; 6).
 
 ### 1.6 What the web backend imports from the terminal UI
 
@@ -682,6 +697,7 @@ Semantics:
 - A request that waits for its slot inside the browser bridge stops within 0.25 s when its job is cancelled,
   on the sync path as well (FX-6), and raises `FetchCancelled`. A caller that waits for a shared challenge
   solve (up to 90 s) or for the page's `fetch()` (up to 20 s) still cannot be interrupted on the sync path.
+  (Out of date: P24 made the sync path interruptible and FX-18 the async path; see the FX-18 bullet below.)
 - Requests that already waited for the request semaphore could still be sent after a stop, until FX-9.
   `_request_async` checked for a cancel before it waited for the semaphore and not after
   (`src/client/transport.py:553` and `:564` at `e0bae0c`), so a waiter whose reserved slot was already due
@@ -706,6 +722,22 @@ Semantics:
   the bridge still have no check between the reservation and the send. The FX-6 rule "a slot whose time has
   come is not given back" was made because waiters behind the semaphore did not look at the cancel; on the
   async curl path that reason is gone, and the rule is left as it is.
+- Since FX-18 (PR #139; `b6caf2f`) points (1) and (2) are done and the bullet above about a shared solve
+  holds for no path. `_wait_for_slot` (`src/client/bridge.py:188-215`, P24 moved it out of
+  `src/challenge_solver.py`, which is only an alias now) checks the cancel before it reserves a slot
+  (`:204-206`), except for the verification request of a shared challenge solve (`_SlotWait.shared`), so a
+  request that waited inside the bridge (`ensure_ready`, a shared solve) when the job stopped is not sent.
+  The async bridge path has the caller-side check of the sync path: `_run_on_background_loop(...,
+  cancellable=True)` (`:626-660`) looks at the caller's cancel every 0.25 s (`_CANCEL_CHECK_SECONDS`, `:170`),
+  gives the coroutine 0.5 s to end itself (a slot wait then gives its slot back, and an answer that arrives
+  in that time is returned), and otherwise raises `FetchCancelled` and cancels the coroutine; the shared
+  solve (`asyncio.shield`) goes on for the other waiters. `fetch_json` and `solve_challenge` are called with
+  `cancellable=True`, `ensure_ready` is not (a half-open browser leaves the profile locked; `:660-700`). A
+  browser-first answer that arrives during a stop is returned, as on the curl path
+  (`src/client/transport.py:350-355` and `:555-560`). Point (3) holds only for the sync curl path, which only
+  the doctor, the status check and the league search use; for the bridge it is the FX-6 rule: a slot whose
+  time has come counts as sent, so the check stands before the reservation. P30, the next owner of both
+  files, keeps both checks (`tests/test_bridge_cancel.py`).
 - The client writes nothing under `DATA_DIR`. It reports each bridge-health transition through
   `on_health_change`; since P11 (PR #69) `build_context` stores the snapshot with
   `store.runtime.set("bridge_health", ...)`, so another process (`ssc status`, a second server) can read
@@ -954,6 +986,9 @@ class SyncResult:
   specs still pass it; its removal was left to P13, which did not remove it. `export_all_csv(ctx)` survives
   as a forwarder for `MatchDataFetcher.convert_all_matches_to_csv` and has no caller in `src` or `main.py`
   since P19, which writes the CSV through `ExportService.write_legacy_csv`; only tests still use the name.
+  FX-15 (PR #155) removed both: `SyncSpec` has no `export` field (`src/services/sync.py:102-120` at
+  `b6caf2f`; a stored job spec is a dict and is not read back), `PHASE_WEIGHTS` has no `export` weight, and
+  `export_all_csv` and the two `MatchDataFetcher` CSV forwarders are gone.
 - The service installs the request context itself (`cancel=handle.cancelled`,
   `on_wait=handle.progress.wait`, one breaker) and takes it back when the run ends.
 - P10 (PR #64) added what the headless runs of `main.py` need. `SyncSpec.mode` has a third value,
@@ -1040,6 +1075,7 @@ class FollowsService:
         # origin "config": ConflictError("follow_managed").
         # origin "legacy": the change is written to leagues.txt / league_sports.json first (today's ConfigManager path), then mirrored.
         # With a config file present, new follows get origin "api"; without one they are written to leagues.txt as today.
+        # (Built otherwise since FX-19: a new follow is always origin "api"; leagues.txt is a read-only legacy source.)
     def resolve(self, names: Sequence[str] | None = None) -> tuple[Target, ...]: ...
     def search_tournaments(self, query: str, *, sport: str | None = None) -> list[TournamentHit]: ...   # routes/leagues.py:51-86
 
@@ -1171,6 +1207,7 @@ class MaintenanceService:
   nothing: `GET /api/leagues` no longer writes `config/league_sports.json`, so a sport learned from the data
   no longer reaches that file, the follows table or `config init --from-legacy` (a sport the user chose
   still wins). `league_sports.resolve_all` has no caller in `src` any more; two tests keep it until P21.
+  FX-15 (PR #155) removed it; its tests read `sports_for`.
 - **Is the catalog current.** `open_store` does not fail when the catalog could not be synced, and a
   reader then sees a stale or empty catalog; for a need computation an empty catalog would mean "full" for
   every match. Since ST-19 `Store.catalog_current` (`src/store/api.py:504-512`) says whether the catalog was
@@ -1331,7 +1368,9 @@ def sink_states(store, specs: Sequence[SinkSpec], *, now=None) -> list[SinkState
   `slices` is shown but cannot be set (P27). The legacy league routes do not use the service: they keep
   writing `leagues.txt` through `ConfigManager`, also with a config file (6.1). `ssc follows add` does not
   use it either: it writes the follows table directly with origin `api`, with or without a config file, so
-  a tournament added there is watched by `ssc watch` but not downloaded by `ssc sync` (4.3).
+  a tournament added there is watched by `ssc watch` but not downloaded by `ssc sync` (4.3). Changed by
+  FX-13 and FX-19 (below): the CLI's follows commands use the service, the sync reads the follows table,
+  and a new follow is always an `api` row.
 - **Coverage and the scheduler.** `StatusService.coverage(scope)` exists since P15 (#117) and reads the
   slice rows of the catalog; its only caller is `MatchDataFetcher.generate_file_report`, the old file
   report. Neither face uses it: `ssc status --coverage` and `/api/v1/status` show the per-tournament
@@ -1342,6 +1381,124 @@ def sink_states(store, specs: Sequence[SinkSpec], *, now=None) -> list[SinkState
   of the route; `slices_summary` adds, per event, the registry's default selection for its sport and how
   many of those slices are `ok`, `empty` and `error`; the cursor is tied to the order. `raw` returns the
   stored bytes, decompressed, with their sha256 and fetch time.
+
+What was added by `b6caf2f`, as built by P27 (#134), P28 (#140), FX-13 (#152, #153), FX-15 (#155) and
+FX-19 (#156). The services still take a Store and no lease of their own, except where noted.
+
+```python
+# services/follows.py (FX-13, FX-19)
+class FollowsService:
+    def __init__(self, store: Store, legacy: LegacyLeagues, *, config_file: bool = True): ...
+    def add(self, new: NewFollow) -> Follow: ...            # always an `api` row
+    def update(self, kind, entity_id, changes) -> Follow: ...  # changes may hold origin="api": adopt first
+    def adopt(self, kind, entity_id) -> Follow: ...          # a leagues.txt row moves into the follows table
+    def sync_tournaments(self) -> list[Follow]: ...          # enabled tournament follows of every origin
+    def sync_others(self) -> list[Follow]: ...               # enabled team, player and event follows
+    def search(self, query, *, sport=None, kinds=("tournament",)) -> list[SearchHit]: ...
+    def search_tournaments(self, query, *, sport=None) -> list[SearchHit]: ...   # = search(kinds=("tournament",))
+
+# services/maintenance.py (FX-19)
+class MaintenanceService:
+    def clear_tournament(self, tournament_id, *, season_id=None, confirm: bool) -> TournamentClearReport: ...
+
+# services/owner_data.py (P28): the v1 reads of odds and season data
+class OwnerDataService:
+    def odds_slices(event_id) ; def odds(event_id, key, sub, history=False) ; def odds_lines(...)
+    def season_slices(season_id) ; def standings(season_id, table="total") ; def standings_rows(...)
+
+# services/data_jobs.py (FX-19)
+def export_name(store, job_id, req, *, now=None) -> str: ...   # <label>_<UTC date>_<8 of the job id>.<ext>
+```
+
+- **Where follows live (FX-19).** The target block said that without a config file new follows are written
+  to `leagues.txt`, and P21 built it so. Built: `FollowsService.add` always writes an `api` row of the
+  follows table, with or without a config file (`src/services/follows.py:278-295` at `b6caf2f`), so every
+  field of a follow added through the API, the web UI or `ssc follows add` stays editable. `config/leagues.txt`
+  is a read-only legacy source: its rows are mirrored as origin `legacy`, `writable` is `["sport",
+  "origin"]` (`:51-52`), and only `sport` can change. `PATCH {"origin": "api"}` moves such a row into the
+  table (`adopt`, `:349-372`; `FollowStore.adopt`, `src/store/follows.py:440`): the row keeps its fields and
+  position and becomes `api`, then the league leaves `leagues.txt` and its sport sidecar, and the next mirror
+  does not bring it back, because `api` outranks `legacy`; other fields of the same request are written after
+  the move. The move is explicit: no rule moves rows on its own, and there is no `ssc follows` command for it
+  (only the PATCH). `config_file` no longer decides anything (`:219-226`; kept for callers). A follow added
+  while `leagues.txt` names the same league is `follow_exists` (409). Removing a `legacy` follow removes it
+  from the file (FX-13), so it no longer comes back with the next mirror. Since FX-13 the CLI's `follows
+  list|add|remove` go through the service (`src/cli/commands/follows.py:82-89`).
+- **Search (FX-19).** `search(query, sport=, kinds=)` (`:399-444`) sends one request through the client, on
+  the shared budget: tournaments alone ask `/search/unique-tournaments/{q}` (the 2.x endpoint), any other
+  choice asks `/search/all?q=…&page=0`, whose answer types hits as `team`, `player` or `uniqueTournament`.
+  At most 20 hits in SofaScore's order, each typed by `kind`, with its sport, its country, a player's team
+  and `followed` per kind; fewer than 2 characters is `invalid_request`. A 404 answer is an empty list (it
+  was 502). The tournament hit of `/search/all` is assumed to have the shape of the tournament search
+  (experimental; the live validation checks it). The route keeps the path `/tournaments/search` and the
+  component name `TournamentHit`, because the frontend imports it; a neutral `/search` could replace both
+  in P30. One request searches the chosen kinds; the web editor searches one kind at a time (FX-14b), and a
+  search across kinds as the user types is FX-20's.
+- **The sync reads the follows table (FX-13).** `sync_targets(ctx)` (`src/services/sync.py:168-190`) reads
+  the enabled tournament follows of every origin (`sync_tournaments`) after refreshing the mirror of
+  `leagues.txt`, and each follow is downloaded with its season choice (`all`, `current`, `last:N`, ids); a
+  run for one league (`league_id`, `--tournament`) keeps every season. When the Store cannot be read the
+  sync falls back to `ConfigManager.get_leagues()`, every season (the fallback P30 removes with the legacy
+  paths). Named follows are a `FollowsSyncSpec(follows=(…))` (`:133-140`), a subclass, so the job record of
+  an older spec keeps its shape. `mode="seasons"` reads the season lists only, without the freshness limit
+  and without schedules or details. The job-log lines of the sync path carry `code` and `params` (G24 of
+  `05-web-ui.md`).
+- **Team, player and match follows download (FX-19; owner decision of 2026-10-06).** `src/services/follow_sync.py`
+  (new). A sync without a target, `ssc sync`, the scheduler and `POST /jobs {"kind": "sync"}` also download
+  every enabled team, player and event follow (`sync_others`), in the full mode only; `follows=[…]` takes
+  `team:`, `player:` and `event:` ids (it answered 400 `unsupported` after FX-13). The rules of the follow
+  sync are in 3.2. Their matches go through the fetch pipeline with the follows' selection (3.1). An
+  unreadable list is a `FailedListing` of kind `team_events` or `player_events`, whose `league_id` holds the
+  team's or the player's id (`src/services/sync.py:214-227`; a separate field would have changed the job
+  records and the CLI output of every failed listing), and the job ends `partial`.
+- **Per-league delete (FX-19).** `MaintenanceService.clear_tournament(tournament_id, season_id=None,
+  confirm=True)` (`src/services/maintenance.py:106-119`) calls `Store.purge.tournament` (`01-storage.md`
+  9.3): one tournament's events in both layouts with their history, its schedules and, for the whole
+  tournament, its season list; follows, the change log, the job history, backups, exports and the team and
+  player directories stay. It holds `maintenance` like `clear` and rebuilds the catalog under the same
+  lease. The `clear` job takes `tournament_id` and `season_id`, and `DELETE /follows/{id}?delete_data=true`
+  starts that job (6). There is no CLI command for it.
+- **Connection state (FX-19).** The request layer reports the end of every request (`src/breaker.py:298-326`)
+  to `ConnectionState` (`src/bridge_health.py:247-306`): an answer (200 or 404) is success; 403, 429, 5xx,
+  a timeout, a network or a parse error is failure; a request the breaker held back counts for neither.
+  `state` is `never_tried` (no request has ended), `ok` (the last one was answered) or `failed`, with the
+  last success and failure times, reason and HTTP status, and `last_check {at, ok, reason}` of the last
+  `POST /status/check`. The bridge's own state, series and last error are unchanged, but the API shows the
+  bridge's `last_success_at` and `last_failure_at` over every transport (`public_snapshot`, `:332-344`),
+  because curl answers never reach the bridge. The state is per process: the web server does not see the
+  requests of `ssc` commands or `ssc watch`.
+- **Export names (FX-19).** An export job writes `exports/<label>_<UTC date>_<id8>.<ext>`
+  (`src/services/data_jobs.py:157-174`): the label is the tournament's name (from the follows table, else
+  the catalog) when the filter names one tournament, else the dataset, as a lower-case ASCII slug of at most
+  40 characters, with `-raw` for a raw export and `-wide` for the 2.x wide CSV; `id8` is the last 8 letters
+  or digits of the job id. For example `premier-league_2026-10-06_x7k2m9qa.csv`. Jobs before FX-19 keep
+  `<job id>.<ext>`. `ssc export` still names a dataset `exports/<dataset>_<epoch>.<format>`
+  (`src/cli/commands/export.py:166`); `GET /exports` lists those files too (6).
+- **Odds and season data (P28).** `OwnerDataService` (`src/services/owner_data.py`, new) reads odds
+  snapshot by snapshot from the slice history (`store.history.snapshots`), falling back to the stored
+  payload of a slice without history, and maps them to the schema's `Odds` records; it reads the season
+  slices and the standings rows. `ExportService` has two more normalized datasets, `odds` (one row per
+  outcome per snapshot) and `standings` (the seasons of the matched events), reachable from `ssc export
+  --dataset` and the v1 export job. Their models are in `models.PENDING_MODELS`, not in `MODELS`
+  (`04-schema-v1.md` section 4, FX-21).
+- **Counts and the selection (P27, FX-13).** `StatusService.season_counts` (FX-13, `src/services/status.py:458`)
+  gives per season `events`, `finished`, `details`, `complete`, `completion_rate`, `missing` per slice and
+  the schedule's `fetched_at`. It and `summary`'s per-tournament coverage count the missing slices with
+  `planning.missing_slice_keys` without a Store, that is with the configured selection only
+  (`:430`, `:481`): a follow's own selection in the follows table is not applied there, and with a narrower
+  selection those counts can call a match incomplete while the planner needs `none`. The same holds for
+  `slices_summary` and the `not_requested` placeholders of `/events/{id}/slices` (`src/services/query.py:496-536`,
+  the registry's default selection) and the legacy completeness (`required_detail_keys`, `:129-140`). P30, the
+  next owner of `query.py`, passes `planning.configured_policy(store)` there; the placeholders of slices
+  with subs (odds) then need `spec.sub_keys(policy.provider)`.
+- **Removed by FX-15.** `SyncSpec.export`, `export_all_csv`, `QueryService.detail_needs` and `refresh_due`
+  (only tests called them), `league_sports.resolve_all`, and the `MatchDataFetcher`, `MatchFetcher` and
+  `SeasonFetcher` methods only the terminal menu used: `MatchFetcher` is `list_schedule` plus the static
+  names, `SeasonFetcher` the season-list face (`fetch_seasons_checked`, `list_seasons`, `get_season_name`,
+  `resolve_season_id`). `MatchDataFetcher` keeps `fetch_match_data`, `refill_missing_match_slices`,
+  `refresh_match`, `SingleFetchReport` and `_save_match_data` for tests only; P30 ports their tests to
+  `FetchPipeline` when the module goes. The fetchers and `ServiceContext` no longer create empty `seasons/`
+  and `matches/` folders (`DATA_SUBDIRECTORIES` is `("match_details", "datasets")`).
 
 ### 2.8 Jobs: one model for web and CLI, across processes
 
@@ -1578,6 +1735,20 @@ Mechanics:
   `cron`, `options`, `next_run_at_utc`, `last_run_at_utc`, `last_job_id`, `last_result`) and
   `capabilities.scheduler`; both describe the scheduler of the answering process only, so `ssc status` and
   any other process see it as off.
+  Changed since (`src/jobs/scheduler.py` at `b6caf2f`): `ssc config validate` runs the same task check and
+  fails with `config_invalid` (exit 2) on a task `serve` would refuse, and `describe config` lists
+  `schedule_runs` (FX-13). An `every` task counts from its last run in the job history, not from the start
+  of the server (FX-15; a delegated decision of 2026-10-03; `:31-35`, `_anchor` at `:515`): the last run is the
+  newest job the scheduler started with the same kind and spec (tasks are matched by content, not position,
+  among the newest 200 jobs); a restart before the interval is up waits for the rest of it, an interval that
+  passed while the server was off runs once in the first round, and without a readable history or on a first
+  start the first run is one interval after the start, as before. `cron` tasks are unchanged. A fifth run,
+  `prune-history` (FX-15; a delegated decision of 2026-10-06; `:40-43`, `:327-389`), deletes the slice-history
+  snapshots older than its required `older_than` (for example `"90d"`) through `Store.history.prune`, which
+  keeps the newest snapshot of every slice; no task exists unless one is configured, so pruning is off by
+  default. The run is an ordinary job under `writer` (ST-26), of kind `clear` with spec
+  `{"scope": "history", "older_than": …}` and result `{"prune_history": {older_than, cutoff_utc, removed}}`;
+  the API's `clear` job does not accept that scope, and the web UI names the job by its spec (FX-14b).
 - **Terminal state rule.** `failed` if a fatal error aborted the job; else `cancelled` if cancelled; else
   `partial` if the breaker stopped it or any item failed; else `succeeded` (`model.terminal_state`). As
   built (P11): a job stopped by the circuit breaker, or one with a failed match, is stored as `partial`,
@@ -1758,6 +1929,62 @@ above differs:
   "Maç detay dilimleri, spor başına" of `docs/all-sports/README.md`; the proposals for football, basketball
   and tennis wait for the live validation run (section 11).
 
+As built by P27 (PR #134), P28 (PR #140), FX-15 (PR #155) and FX-19 (PR #156) (`src/sports.py` and
+`src/services/planning.py` at `b6caf2f`). Where the text above differs:
+
+- **The selection is resolved per event, not per follow** (`SelectionPolicy`, `src/services/planning.py:104-253`).
+  An event can be covered by an event, a tournament, a team or a player follow, or by none, and the narrowest
+  follow that gives a selection wins: the event follow, the tournament follow, the home team's, the away
+  team's, and last the player follow whose list brought the match (`via_events`, `with_follow_events`,
+  `:182-193`; FX-19, because the match payload does not name the players). A follow that gives no selection
+  leaves the sport's selection. `for_owner` resolves the selection of a non-match owner: its own follow (team,
+  player), else the follow of its tournament (season), then the sport and the defaults; the sport owner takes
+  the sport's selection only (`:208-222`).
+- **The chain** (`sports.resolve_selection`, `src/sports.py:712-734`): a follow's `{"include": [...]}` (or a
+  plain list) is the base and nothing else applies; otherwise `[defaults] slices` is the base, then
+  `[slices.<sport>]` enable/disable, then the follow's enable/disable, each later layer overriding the earlier
+  one, and inside one layer disable wins. The arrow notation above left the include case open.
+- **An unset `[defaults] slices` is the registry's `default_enabled`,** not the shown default `["core"]`
+  (`from_settings`, `:132-160`): `core` applied literally would also select the slices of group `core` that
+  are off by default. A value set in any layer is used as written, so naming a group selects every slice of
+  it.
+- **`required` only counts for completeness.** Every data type is selectable (owner decision): the API and
+  the config accept any registered name, and a slice with `required` true can be unselected; it then is not
+  requested and counts for nothing. Completeness (`refill`) counts only slices that are selected and count in
+  the sport (`counts_in`). An unknown name is a `ConfigError` that names where it is.
+- **Where the selection is set.** `[defaults] slices`, `[slices.<sport>]` (also in `overrides.json`, so the
+  web UI can write it; a sport set in the config file or the environment is locked), a follow's `slices`
+  (config `[[follow]]` and the follows table, through `POST` and `PATCH /follows`), and `PATCH /settings`.
+  The job spec has no per-job selection: a job uses the configured selection and the follows'
+  (`FetchPipeline(selection=CONFIGURED)` resolves it once per run with the follows table). `ssc sync` has no
+  `--slices`.
+- **Phases are unchanged:** every slice still has all three phases except `esports_games` and `innings`.
+  Narrowing them waits for the live validation, which records which slices exist before kick-off; then the
+  planner and the pipeline skip them per phase, and the need row "not started or void, no pre-match slice
+  selected" of 3.2 can become real.
+- **Odds (P28).** `ODDS_SLICES` (`src/sports.py:556-570`): `odds_featured`, `odds_all`, `odds_changes` and
+  `winning_odds`, owner `event`, group `odds`, `subs="provider"`, `keep_history=True`, `max_age` 30 minutes,
+  `default_enabled=False`, `required=False`; `winning_odds` is `experimental` (its only sample is a 404). The
+  sub is `[client] odds_provider` (default 1; `DEFAULT_ODDS_PROVIDER`, `:385`). "Pre-match odds are refetched
+  on each sync until kick-off" is built with a window: a not-started event's odds are read only within 7 days
+  before kick-off (`PREMATCH_WINDOW_S`, `src/services/planning.py:402`) when never read or older than
+  `max_age`, and once more after the event ended when the last read was before kick-off; live and void
+  events never. Without the window a season's whole fixture list would be requested on every sync, because
+  the empty answer of an unfinished event is not counted. Each odds outcome records its provider in
+  `meta.provider_id`; the country goes into `meta.country` only when the user sets `[client] odds_country`
+  (FX-15; a delegated decision of 2026-10-06: opt-in, never derived from the machine; 4.3).
+- **Non-match slices (P28).** `OWNER_SLICES` (`src/sports.py:576-608`), all `default_enabled=False`,
+  `required=False`, each with a `max_age`: season `standings` (subs `total` and `home`; there is no `away`,
+  which the catalog does not have), `season_info`, `cuptrees`, `top_players` and `top_teams` (football),
+  `season_odds` (football, provider sub, history, experimental); team `team_rankings` (tennis); player
+  `player_statistics` (experimental); sport `rankings` (sub `5`, the ATP list; tennis; experimental). The
+  design's `players` (owner team) and the `squads` group's slices are not built: the catalog has no such
+  endpoint. `SliceSpec` gained `body_key` (the top-level key that must be non-empty for "data") and
+  `experimental`, and the methods `sub_keys(provider)` and `format_path`. New groups `season`, `leaders` and
+  `players` (`:382-383`); `standings` and `rankings` are both a group and a key, and naming either selects
+  both. Which sports each owner slice exists in, the shapes of the experimental ones and which provider ids
+  answer without a login wait for the live validation.
+
 ### 3.2 Planning
 
 ```python
@@ -1826,6 +2053,43 @@ As built (P12, PR #106; P13, PR #113; ST-27, PR #129; `src/services/planning.py`
 - Phase order: listing items exist (P14) but the sync runs them before the details phase as separate runs
   (3.3); owner items are not built (P28). `MatchDataFetcher.refresh_due_ids` re-sorts the refresh list by
   legacy path, so "stale first" holds for the planner's list, not for that face.
+
+As built by P28 (PR #140) and FX-19 (PR #156) (`src/services/planning.py` and `src/services/follow_sync.py`
+at `b6caf2f`):
+
+- **Odds in the event rules.** `compute_need` returns `refill` for an event whose odds are due by the rule
+  of 3.1 (`timed_slices_due`), also for a not-started event known only from a listing; the refill item then
+  carries only the due `(key, provider)` pairs. The detail candidates are finished events, so the pre-match
+  odds have their own list, `prematch_items(store, policy, tournament_ids=)`.
+- **Owner items.** One `owner` work item per owner, not per event (`owner_items`, `:619-676`): the seasons
+  of the sync's plan (a league given without seasons uses its newest stored season), the teams seen in
+  those seasons' events (read only when a team slice is selected or a team is followed), the followed
+  players, and the sports of those seasons (through the catalog's numeric sport id, because `Ref.sport`
+  takes an int). A slice is due when it was never read, or when it is older than `max_age` and its owner is
+  still active; a season is active while it has an open event or one that started in the last 7 days
+  (`SEASON_ACTIVE_S`, `:558`), so a finished season's data is read once; teams, players and sports are
+  always active. When nothing selects odds or non-match data (`extras_selected`) the step reads and requests
+  nothing. The sync runs it after the details as one run (`run_extras`); when the Store cannot be opened it
+  logs a warning and the job still completes. The design's "owner set derived from the followed seasons and
+  the teams seen in their events" is this, with the plan's seasons and the player follows.
+- **Team, player and match follows (FX-19).** A team follow reads `/team/{id}/events/next/0` (upcoming, one
+  page) and `/team/{id}/events/last/{n}` backwards from `n = 0`; a player follow only
+  `/player/{id}/events/last/{n}` (the catalog has no `next` page for players, so a player's upcoming matches
+  are not read); an event follow is its match. The follow's `seasons` value is a window (`window_of`,
+  `src/services/follow_sync.py:104-115`): `current` the matches that started in the last 365 days,
+  `last:N` the last N × 365 days, `all` up to `MAX_LAST_PAGES` = 5 pages back (`:76`), season ids only the
+  matches of those seasons. Reading back stops at `hasNextPage: false` or a 404, at the page limit, or when a
+  page's oldest match is older than the window; upcoming matches are not cut by the time window. The lists
+  are not stored (the Store has no team or player schedule slice), so they are read again on every sync: at
+  least 2 requests per team and 1 per player, and a team with `all` up to 6 list requests plus its matches.
+  The need is the planner's `compute_need` with three more rules (`follow_need`, `src/services/follow_sync.py:228-242`): a match the list shows as
+  ended that the catalog does not hold as ended is `full` (a team's list gives no `stale` mark); an unknown
+  match that has not ended is read with its `/event` only (one request, no slices), so it becomes visible
+  and is downloaded once a later list shows it ended; an event follow whose stored match should have started
+  and has not ended is `full`. Lists run at the end of the match-list phase and the matches at the end of
+  the details phase, on the job's counters, the shared budget, the job's breaker and its cancel. The page
+  size, `next/0` for a team without fixtures, the player pages and `MAX_LAST_PAGES` wait for the live
+  validation. `ssc watch` still skips player follows (`live_follow_skipped`).
 
 ### 3.3 Execution
 
@@ -1947,6 +2211,9 @@ and season downloads, matches picked by id, the single-match fetch, refills and 
   check in `_wait_for_slot` before the reservation was not added (it would change a pinned count in
   `tests/test_throttle.py`). Downloads no longer use the sync request path (3.3), so its missing check
   between reservation and send concerns only the doctor, status and league-search callers.
+  Since FX-18 (PR #139): the async bridge path has the caller-side check (`cancellable=True`, every 0.25 s,
+  0.5 s of grace) and `_wait_for_slot` checks the cancel before the reservation, so the two "not built"
+  points of the paragraph above are built; browser start-up stays uncancellable (2.4).
 - Sizing note: at 5 req/s a football event costs 7 requests (1.4 s), a 380-event season about 9 minutes.
   `sync --dry-run` reports `estimated_requests` and `estimated_seconds` from the plan.
 
@@ -2081,6 +2348,12 @@ names `ssc serve` for the web app since P26 (#131). Where the options differ fro
   `--dry-run`. Not built: `--follow NAME…`, `--only listing,non-match,refresh`, `--slices`, `--force` and
   `--limit N`. The download still reads the leagues from the configuration (`ConfigManager.get_leagues()`),
   not from the follows table (FX-13). There is no command that fetches season lists alone.
+  At `b6caf2f` (`src/cli/commands/sync.py:88-90`): the sync reads the follows table (FX-13; 2.7);
+  `--only seasons` reads the season lists alone, without the freshness limit (FX-13), next to `--only events`;
+  `--follow KIND:ID` (repeatable; `tournament`, `team`, `player`, `event`) syncs named follows, not with
+  `--tournament` or `--only events` (exit 2), and `--dry-run` counts the team, player and event follows
+  (FX-19). Still not built: `--only listing,non-match,refresh`, `--slices`, `--force` and `--limit N`. `fetch
+  tournament --only` keeps `events` only.
 - `fetch tournament ID`: `--season ID` (repeatable; without it every season), `--only events` and
   `--dry-run`; `--season current|last:N` is not built. `fetch event ID…`: `--dry-run` only; no `--sport`,
   `--slices` or `--force`.
@@ -2093,7 +2366,8 @@ names `ssc serve` for the web app since P26 (#131). Where the options differ fro
   2.x wide CSV, which knows only `--tournament` and `--event`. Without `--out` the wide CSV keeps its old
   place, `match_details/processed/all_matches_<epoch>.csv`, so `--csv-export` setups find their file, and a
   dataset goes to `DATA_DIR/exports/<dataset>_<epoch>.<format>` (not listed by `GET /api/v1/exports`, which
-  lists jobs). `--out -` streams JSONL or CSV; Parquet and SQLite on stdout are refused. `--force` replaces
+  lists jobs; since FX-19 it lists these files too, with `source: "file"`). Since P28 `--dataset` also takes
+  `odds` and `standings` (normalized only). `--out -` streams JSONL or CSV; Parquet and SQLite on stdout are refused. `--force` replaces
   an existing target. An empty selection of the wide CSV is `not_found` (exit 1). The raw export writes the
   events oldest first since SC-2 (newest first before). `--json` has `schema_version` (null for raw and the
   wide CSV).
@@ -2103,11 +2377,17 @@ names `ssc serve` for the web app since P26 (#131). Where the options differ fro
   `--coverage` adds the matches, details and coverage per tournament. A folder that is not a Store is an
   empty, healthy status and nothing is created. Not built: the last migration (`migration_runs`), the
   stored bridge health, the scheduler (always off from another process) and the lag per sink.
+  Since FX-13 the JSON has `last_migration` (`Migrator.last_run`, the newest real run) and `lag_events` per
+  sink cursor, with a text line each, and `--disk` adds the disk use with `v3` and `changes` (the walk is
+  slow on a large folder, so it runs only on request). The stored bridge health and the scheduler are still
+  not shown.
 - `jobs list` has `--limit`, `--kind` and `--state`; `jobs tail ID` has `--after` and `--follow` and ends
   with an `end` line.
 - `follows add KIND ID` with `--name`, `--sport`, `--seasons`, `--live`, `--disabled`; `follows list
   --kind`; `follows remove KIND ID` (exit 0 with a note when nothing was followed); `follows export`. The
-  rows are written with origin `api` (2.7).
+  rows are written with origin `api` (2.7). Since FX-13 the commands go through `FollowsService`, so
+  removing a `leagues.txt` follow removes it from the file. No command moves a `leagues.txt` follow into the
+  follows table (only `PATCH /follows/{id}` with `origin: "api"`; 2.7).
 - `backup create [--scope all|state|data|config|seasons|matches|match_details] [--include-secrets]`,
   `backup list`, `backup verify NAME` (exit 1 when it finds problems) and `backup restore NAME [--force]
   [--dry-run] [--yes]`. A backup is named, not given as a path: only names inside the data folder's
@@ -2133,7 +2413,19 @@ names `ssc serve` for the web app since P26 (#131). Where the options differ fro
   Settings). Details in 4.6.
 - `version` prints the application version, the CLI envelope and config schema versions, the data schema
   version and the Store's layout, catalog and state versions; `describe schemas` includes the JSON Schema
-  of the normalized records (P19).
+  of the normalized records (P19). The P28 models are not in it yet (`models.PENDING_MODELS`; FX-21).
+- `doctor` has a `config` check since FX-15 (`check_config`, `src/doctor.py:597-634` at `b6caf2f`): it finds the file the
+  app would read (`--config`, `SOFASCORE_CONFIG`, `./sofascore.toml`, `CONFIG_DIR/sofascore.toml`), loads
+  it with the loader inside the check (the doctor stays stdlib-only at import) and probes the
+  `storage.data_dir` and `log.dir` it names. Codes: `config_ok`, `config_none`, `config_invalid` (a broken
+  file, with the loader's message), `config_dir_not_writable` and `config_unchecked` (a warning when the
+  packages the loader needs are missing).
+- `config init --from-legacy` reads `leagues.txt` itself (`config_manager.read_league_file`) since FX-15; it
+  no longer builds `ConfigManager`, so it creates no `config/leagues.txt` and mirrors nothing into
+  `state.db` (`src/cli/commands/meta.py:612-634`).
+- `describe slices` lists the whole registry with each slice's `group`, `owner`, `phases`, `keep_history`,
+  `max_age_seconds` and `selected_in` (the sports whose configured defaults select it; P27, P28). `describe
+  config` lists `schedule_runs` (FX-13).
 
 ### 4.2 Global flags
 
@@ -2196,6 +2488,7 @@ wait_time_min = 0.2       # the pause between two requests of one worker, in sec
 wait_time_max = 0.5
 proxy = ""                # or proxy_env = "PROXY_URL"; giving either one switches the proxy on (see below)
 odds_provider = 1
+odds_country = ""         # recorded with every odds read when set (e.g. "TR"); never derived from the machine (FX-15)
 browser_profile = ""      # empty = the default profile directory of the bridge
 browser_headed = false
 throttle_dir = ""         # empty = the default directory of the shared budget files
@@ -2567,6 +2860,23 @@ tournament `[[follow]]` of the config file is downloaded by `ssc sync` only when
 with `ssc follows add` (which always writes origin `api`), is therefore watched by `ssc watch` when `live`
 is set but **not downloaded**, until the sync reads the follows table (FX-13). Without a config file the web
 path changes nothing for the user, because the follow is written to `leagues.txt`.
+
+As built at `b6caf2f` (FX-13 #152, FX-19 #156). "`sync` processes every enabled follow regardless of
+origin" holds: the sync reads the enabled tournament follows of the follows table, every origin, each
+with its season choice, and, in a sync without a target, the team, player and event follows (2.7, 3.2);
+`ConfigManager.get_leagues()` is only the fallback when the Store cannot be read. The first bullet above no
+longer holds: without a config file a follow added through the API, the web UI or `ssc follows add` is an
+`api` row too, and `leagues.txt` is a read-only legacy source whose rows can change only `sport` and move
+into the table with `PATCH {"origin": "api"}` (2.7). `config init --from-legacy` reads `leagues.txt` without
+`ConfigManager` since FX-15 (4.1), so the last sentence of the ST-17 paragraph above is history.
+
+`[client] odds_provider` got its user with P28 (the sub of the odds slices, default 1; 3.1), and FX-15
+added `[client] odds_country` (`src/config/settings.py:114-118`): empty by default, and when the user sets it
+(for example `"TR"`, stripped and upper-cased) it is recorded as `meta.country` of every odds read; it is
+never derived from the machine (a delegated decision of 2026-10-06). The provider id is always recorded
+(`meta.provider_id`). `[defaults] slices` and `[slices.<sport>]` have their user since P27 (3.1), the
+`prune-history` schedule task since FX-15 (2.8). `[live] detail_slices` and `detail_interval_seconds` are
+still read by nothing.
 
 ### 4.4 Output conventions
 
@@ -3152,15 +3462,15 @@ paragraph describes the foundation.
 |---|---|---|
 | `/sports`, `/sports/{slug}` | GET | `QueryService.sports` (registry) |
 | `/tournaments`, `/tournaments/{id}`, `/tournaments/{id}/seasons` | GET | query |
-| `/tournaments/search`, body `{q, sport}` | POST (calls SofaScore; the first version said GET, which #43's rule forbids) | `FollowsService.search_tournaments` |
-| `/seasons/{id}`, `/seasons/{id}/slices/{key}` | GET | query (standings etc.) |
+| `/tournaments/search`, body `{q, sport, kinds}` | POST (calls SofaScore; the first version said GET, which #43's rule forbids) | `FollowsService.search` (tournaments, teams, players; FX-19) |
+| `/seasons/{id}`, `/seasons/{id}/slices`, `/seasons/{id}/slices/{key}`, `/seasons/{id}/standings` | GET | query, `OwnerDataService` (P28) |
 | `/events?sport=&tournament=&season=&from=&to=&status=&participant=&has=` | GET | query |
-| `/events/{id}`, `/events/{id}/slices`, `/events/{id}/slices/{key}`, `/events/{id}/odds` | GET | query |
+| `/events/{id}`, `/events/{id}/slices`, `/events/{id}/slices/{key}`, `/events/{id}/odds`, `/events/{id}/odds/{key}` | GET | query, `OwnerDataService` (P28) |
 | `/events/{id}/raw`, `/events/{id}/slices/{key}/raw` (no `?raw=1` form) | GET | `QueryService.raw`: the stored SofaScore payload (same values and key order as the response; see `01-storage.md` 4.1), with `ETag` (the payload's sha256) and `X-Sofascore-Fetched-At` |
 | `/changes?since=` | GET | query (change log by its own `seq`) |
 | `/follows`, `/follows/{id}` | GET, POST, PATCH, DELETE | follows |
 | `/jobs`, `/jobs/{id}`, `/jobs/{id}/cancel`, `/jobs/{id}/events` | GET, POST, POST, GET (SSE) | job manager |
-| `/jobs` body `{kind, spec}` | POST | starts `sync`, `fetch`, `refresh`, `export`, `backup`, `clear`, `rebuild`, and `restore` as a check only (`dry_run`) |
+| `/jobs` body `{kind, spec}` | POST | starts `sync`, `fetch`, `refresh`, `export`, `backup`, `clear`, `rebuild` and `restore` (a check with `dry_run`, a real restore since FX-13) |
 | `/exports`, `/exports/{id}/download` | GET | export results |
 | `/backups`, `/backups/{name}` | GET | backup |
 | `/settings` | GET, PATCH | settings; locked fields flagged |
@@ -3323,9 +3633,10 @@ routes in `src/web/api/v1/`, the OpenAPI document regenerated each time, and the
   is followed, `follow_managed` for a config follow. `slices` is shown and cannot be set (P27).
 - **Data jobs (#126, #130).** `POST /jobs` with `export` (spec `dataset`, `format`, `schema`, `profile`,
   `filter` with `sport`, `tournament_ids`, `season_ids`, `event_ids`, `status_classes`, `from`, `to`;
-  written to `DATA_DIR/exports/<job id>.<ext>`; Parquet without `pyarrow` is 501), `backup` (`scope`,
+  written to `DATA_DIR/exports/<job id>.<ext>`, since FX-19 to a readable name, 2.7; Parquet without
+  `pyarrow` is 501), `backup` (`scope`,
   `include_env`), `clear` (`scope`, `confirm`; 400 `confirmation_required` without it), `rebuild` (`mode`)
-  and `restore` (`name`, `force`; `dry_run: false` is 501). An invalid spec is 422 and starts no job. The
+  and `restore` (`name`, `force`; `dry_run: false` was 501 until FX-13). An invalid spec is 422 and starts no job. The
   leases are in 2.8. The legacy wide CSV of an export job is written by the Store's row writer (UTF-8,
   `\n` line ends, empty cell for null), so it differs in line ends from the legacy streaming download
   (`\r\n`). `GET /exports` lists the export jobs (`id` is the job id; `dataset`, `format`, `schema`,
@@ -3349,6 +3660,86 @@ routes in `src/web/api/v1/`, the OpenAPI document regenerated each time, and the
   editor needs are P27's and P28's (G9). Until FX-13 and the screens wired to it (FX-14), the old views stay
   under `/classic` and use the legacy routes, among them `POST /api/leagues/{id}/seasons/refresh` and
   `POST /api/matches/{id}/fetch`.
+  Built by FX-13 (#152), with G4 already built by P27 (#134), the slice fields of G9 by P27 and P28, and the
+  rest wired by FX-14b (#161), which removed the classic views (below).
+
+As built at `b6caf2f`: P27 (#134), P28 (#140), FX-13 (#152, #153) and FX-19 (#156) changed the routes and
+bodies below; each regenerated `docs/api/openapi-v1.json` and `frontend/src/api/v1/schema.ts`. Component
+names the frontend imports were kept (`TournamentHit`, `FollowRecord`, `ExportRecord`, `Change`).
+
+- **Settings and sports (P27).** `GET /settings` has `metadata[]` (G4: `type`, `section`, `description`,
+  `minimum`, `exclusive_minimum`, `maximum`, `choices`, `max_length`, `restart_needed`) and `slices[]`, one
+  row per registered sport with `enable`, `disable`, `source`, `source_name`, `locked` and `writable`.
+  `PATCH /settings` writes `defaults.slices` and `slices.<sport>` (`{"enable", "disable"}` or null), and
+  refuses a sport set in the config file or the environment with `details.locked`. Each slice of
+  `/sports/{slug}` adds `selected` (the configured defaults for that sport), `group`, `owner`, `phases`,
+  `keep_history` and `max_age_seconds` (G9); since P28 the list holds every registered slice that applies
+  to the sport, the odds and non-match slices included.
+- **Follows (P27, FX-13, FX-19).** `POST` and `PATCH /follows` take `slices` (a list, `{"include"}` or
+  `{"enable", "disable"}`; `null` returns a follow to the defaults; an invalid value is 400 with
+  `details.field = "slices"`). A new follow is always an `api` row, so `writable` lists every field;
+  `slices`, `seasons`, `live` and `enabled` are accepted without a config file (P27 answered 400
+  `unsupported` for a `leagues.txt` follow). `PATCH` takes `origin: "api"`: on a `legacy` follow it moves the
+  row into the follows table, then applies the other fields; on an `api` follow it changes nothing; on a
+  `config` follow it is 409 `follow_managed`; any other value is 422. A `legacy` follow's `writable` is
+  `["sport", "origin"]`. `GET /follows` takes `sport` (FX-13: the follow's own sport, else the catalog's for a
+  tournament; an unknown sport is 400). `DELETE /follows/{id}?delete_data=true` (FX-19) on a tournament
+  follow first starts a `clear` job with `tournament_id`, which takes `maintenance` (409 when it cannot),
+  then removes the follow and runs the job; the answer is `FollowRemoveResponse` with the follow and
+  `clear_job`. `delete_data` on another kind is 400, on a config follow 409 `follow_managed`.
+- **Search (FX-19).** `POST /tournaments/search` takes `kinds` (`tournament`, `team`, `player`; 1 to 3,
+  default `["tournament"]`). `TournamentHit` adds `kind`, `country {code, name}` and a player's `team {id,
+  name}`; `category` stays required and holds only `country_code` for a team or a player; `followed` is per
+  kind. A 404 from SofaScore is `[]` (it was 502).
+- **Jobs (FX-13, FX-19).** `sync`: `follows` (`tournament|team|player|event:<id>`, at most 200), `only:
+  "seasons"` (season lists only; G15); `fetch`: `event_ids` (at most 500; events whose tournament is unknown
+  or not followed, grouped per tournament from the catalog; G16); `refresh`: `event_ids` (only those events'
+  `/event`, due or not; G23). Only one of `league_id`, `selections`, `follows` and `event_ids` may be given
+  (`src/web/api/v1/jobs.py:499`; else 400 with `details.fields`); a field the kind does not read is 400;
+  an unknown follow is 404, a disabled one is skipped with `sync_follow_skipped`. Without a target a `sync`
+  downloads every enabled follow, the team, player and event follows included. `clear` takes `tournament_id`
+  and `season_id` (FX-19; `scope` must be `all`; result `clear: {scopes: ["tournament"], tournament_id,
+  season_id, events, event_dirs, listings, catalog_rebuilt}`). `restore` with `dry_run: false` (FX-13; G2)
+  restores under `maintenance`: a data folder that is not empty needs `force: true`, else 400
+  `confirmation_required` with `details.occupied` and `details.name`, checked before any job record is
+  written; the result adds `catalog_rebuilt`, `verify_ok` and `verify_issues`; the job history is the
+  backup's afterwards, with the restore job's own row kept (since #153 written into the staged copy that one
+  backup step swaps in, `01-storage.md` 9.2). The sync result has `failed_listings` (`kind` `seasons`,
+  `schedule`, `team_events` or `player_events`). Job-log lines of the sync path carry `code` and `params`
+  (G24; `sync_season_list`, `sync_schedule`, `sync_follow_listing`, `sync_follow_details`, `sync_extras`,
+  `fetch_zero_matches` and others). `GET /jobs` takes `origin` (repeatable; G14) and `target`
+  (`tournament:`, `event:`, `team:`, `player:`; G12): a job matches when its spec names it; a job over every
+  follow names none. The job record has no follow or target name (FX-20), and the recorded spec is the
+  service's `SyncSpec`, not the request body: `only: "seasons"` is recorded as `mode: "seasons"`, and a
+  fetch by `event_ids` as `mode: "details"` with per-tournament selections plus `event_ids`.
+- **Read routes (FX-13, P28).** `/tournaments/{id}/seasons?include=counts` (G17) gives each season with
+  `counts {events, finished, details, complete, completion_rate, missing, schedule_fetched_at_utc}`; the
+  age of the tournament's own season list (the `seasons` slice's `fetched_at`) is in no route. `/changes`
+  takes `sport` and `regressed`, and `include=names` adds `home_name` and `away_name` (G19); without it a
+  change is exactly the schema record, as the `changes` export writes it. `/events/{id}/odds` lists every
+  slice of the registry's `odds` group (it missed `winning_odds`); `/events/{id}/odds/{key}?sub=&history=`
+  gives `Odds` records, oldest snapshot first, for `odds_all` and `odds_featured` (another key is 404);
+  `/seasons/{id}/slices` and `/seasons/{id}/standings?table=total|home` are new. `/events/{id}/slices` still
+  shows the registry's default selection in its `not_requested` placeholders (2.7; P30).
+- **`/status`, `/health`, `/status/check` (FX-13, FX-19).** `summary.data_dir` (G20); `summary.disk.v3`
+  and `.changes`, and `total` = seasons + matches + details + datasets + v3 + changes (G21);
+  `summary.last_migration` (or null); top-level `sinks {configured, ok, error, pending, served,
+  max_lag_events, max_lag_seconds}` (G22; null when the Store cannot be read). `summary.tournaments[].followed`
+  is true when a follow of any origin names the tournament (FX-19, `followed_tournaments`,
+  `src/web/api/v1/meta.py:518-523`; it read the configured leagues, so an API follow was downloaded and not
+  shown as followed). All three carry `connection` (2.7: `state`, the last success and failure, reason,
+  status and `last_check`), and `bridge.last_success_at` / `last_failure_at` cover every transport.
+- **Exports (FX-19).** `GET /exports` lists the export jobs and, merged newest first, the files of
+  `exports/` that no job wrote (`ssc export`'s): `source: "file"`, id `file:<name>`, `job_id` null, `state:
+  succeeded`, `dataset` and `format` read from the name (else `unknown`); `/exports/{id}/download` takes
+  `file:<name>` too, and serves the stored, readable file name (it was `sofascore-export-<job id>.<ext>`).
+  `ExportJobSpec.dataset` takes `odds` and `standings` (P28).
+- **`PATCH /settings` with a new `storage.data_dir`** closes this process's Stores of the old folder
+  (FX-13, #120), unless this process holds one of its leases (the sink dispatcher of `serve`), which is
+  logged.
+- **The legacy routes** are unchanged; no web screen calls them since FX-14b removed the classic views, and
+  P30 removes them. The legacy single-match fetch (`src/web/api/legacy.py`) still asks only `writer_busy()`;
+  its v1 face is the `fetch` job with `event_ids`, which runs under the writer lease.
 
 ### 6.1 Existing `/api` routes
 
@@ -3544,11 +3935,11 @@ As built (P26 #131), where the table differs. The README has the table of what r
 
 | Menu entry | Home at `b3cb819` |
 |---|---|
-| Leagues: list / add / reload / search | web Follows (and the classic Leagues view); `ssc follows list`, `ssc follows add tournament ID`, `ssc follows remove`. Reload is not needed: every command reads the configuration at its start |
-| Seasons: update all / one / list | `ssc sync`, `ssc fetch tournament ID` (season lists together with schedules and details); season lists alone: the classic Download view (`POST /api/leagues/{id}/seasons/refresh`); `GET /api/v1/tournaments/{id}/seasons`. `ssc sync --only listing` does not exist (`--only` accepts `events`), and no v1 job lists seasons alone (FX-13, section 6) |
+| Leagues: list / add / reload / search | web Leagues & follows (the classic Leagues view until FX-14b removed it); `ssc follows list`, `ssc follows add tournament ID`, `ssc follows remove`. Reload is not needed: every command reads the configuration at its start |
+| Seasons: update all / one / list | `ssc sync`, `ssc fetch tournament ID` (season lists together with schedules and details); season lists alone: `ssc sync --only seasons` and the v1 `sync` job with `only: "seasons"` (FX-13; the classic Download view until FX-14b); `GET /api/v1/tournaments/{id}/seasons`. `ssc sync --only listing` does not exist |
 | Matches: one league / all / list | `ssc fetch tournament ID --season ID`, `ssc sync [--tournament ID]`; web Events; `GET /api/v1/events` |
 | Match details: by id / all | `ssc fetch event ID…`, `ssc sync --only events` |
-| Match details: CSV (one match / league / all) | `ssc export --event ID`, `ssc export --tournament ID`, `ssc export`; `GET /api/export/csv`; since FE-2b the web Exports screen (wide CSV and raw JSONL; the other datasets and formats wait for the screens of FX-14) |
+| Match details: CSV (one match / league / all) | `ssc export --event ID`, `ssc export --tournament ID`, `ssc export`; `GET /api/export/csv`; since FE-2b the web Exports screen (wide CSV and raw JSONL; since FX-14b also the normalized datasets as CSV, JSONL, Parquet and SQLite) |
 | File analysis report | `ssc status --coverage`, which shows matches, details and coverage per tournament, not the slice report. The menu entry could not be reached (`MatchDataMenuHandler.show_menu` was never called); only a test reached it |
 | Statistics: system / leagues / report file | `ssc status [--coverage] [--json]`; web Overview |
 | Settings: API, data folder, display, language | web Settings (`/api/settings` covers every key the menu wrote); `.env`, `sofascore.toml`; `ssc config show` |
@@ -3984,6 +4375,11 @@ folder is changed or removed), FX-14 (the screens wired to them, and the classic
 (cleanup of product-dead helpers and stale comments) and FX-16 (the per-sport slice proposals after the live
 validation). `03-implementation-plan.md` has the state and the owner of every item.
 
+State at `b6caf2f`: P27, ST-28, P28, FX-13, FX-15, FX-17, FX-18 and FX-19 are merged, and FX-14 was split
+into FX-14a and FX-14b, both merged (`05-web-ui.md`). In progress: FX-20 (type-ahead search, one search
+across kinds, job names, small UI gaps). To do: FX-21 (the P28 models in schema v1), REN-1, FX-16 after the
+live validation, and P30 after 3.0.0.
+
 ## 10. Testing strategy
 
 - A fake SofaScore transport (`tests/fakes/sofascore.py`, G-01) serves canned payloads, records every request
@@ -4285,7 +4681,8 @@ Changes after batches five to seven (2026-10-02, second revision of that day; re
     the browser-first path of `_request_async`, before the breaker check and the reservation. Left: a
     request already inside the bridge is sent if its slot is due (`_wait_for_slot`, P24), the browser-first
     path drops a response that arrives during a stop, and the sync path has no check between reservation
-    and send. Item 48 is history (2.4, 3.4, 10, 11; FX-9, PR #83).
+    and send. Item 48 is history (2.4, 3.4, 10, 11; FX-9, PR #83). The first two "left" points were
+    built by FX-18 (item 103).
 63. **The data summary as built.** 2.7 named `StatusService.summary() -> DataSummary` without defining it.
     Built: `DataSummary`, `TournamentCounts` and `DiskUsage`, counted from the catalog under decision D21
     (a match is finished or has stored details while `FETCH_ONLY_FINISHED` is on, every event while it is
@@ -4489,7 +4886,8 @@ is in `03-implementation-plan.md` section 11). Each item says what the document 
     `main.py` exits 2. Built: a sync caller of the bridge checks its cancel every 0.25 s; the async bridge
     path and a check before the reservation in `_wait_for_slot` are not built; the sync request path is no
     longer used by downloads; a breaker stop exits 4 through `main.py` since P19 (3.4; P24, PR #95; P13, PR
-    #113; P19, PR #119).
+    #113; P19, PR #119). The async bridge path's check and the check before the reservation were built
+    by FX-18 (item 103).
 99. **The `page` source and the arbiter as built.** 8.1 and 8.2 gave no numbers and said ads, analytics,
     images, media and fonts are blocked. Built: drain 1 s, safety poll 120 s, silence 180 s, 6 lookups per
     minute and sport, confirmation retried every 20 s up to 4 attempts, heartbeat 30 s; every non-SofaScore
@@ -4506,6 +4904,79 @@ is in `03-implementation-plan.md` section 11). Each item says what the document 
     live fields and the alias still runs `MatchWatcher`. Built: `live_status()` gives `leaders` and
     `last_switch`; `ssc status` and `/api/v1/status` show them; `main.py --watch` runs `ssc watch --source poll
     --stdout` and writes no `watch_events.jsonl` (8.1, 8.4, 8.5, 8.6; P24, PR #95; P19, PR #119; P21).
+102. **The selection is per event.** 3.1 said `SliceSelection` is resolved per follow, with an arrow chain
+    that left the include case open, and `[defaults] slices` defaults to `["core"]`. Built: `SelectionPolicy`
+    resolves it per event, the narrowest covering follow wins (event, tournament, home team, away team, and
+    since FX-19 the player follow that brought the match); a follow's include is the whole selection,
+    otherwise defaults, sport and follow layers in that order; an unset `[defaults] slices` is the registry's
+    `default_enabled`; `required` only counts for completeness and does not lock a slice; there is no per-job
+    selection (3.1; P27, PR #134; FX-19, PR #156).
+103. **Cancel on the async bridge path.** 2.4 and 3.4 said that a waiter of a shared solve cannot be
+    interrupted, that the async bridge path has no caller-side check and that `_wait_for_slot` has no check
+    before the reservation. Built: both checks (0.25 s, 0.5 s of grace; the shared solve shielded), a
+    browser-first answer that arrives during a stop is returned as on the curl path, and `ensure_ready` stays
+    uncancellable; the FX-6 rule stays for a due slot (2.4, 3.4; FX-18, PR #139).
+104. **Odds and non-match slices.** 3.1 said pre-match odds are refetched on each sync until kick-off,
+    listed a `players` slice and an `away` standings sub, and derived the owners from the followed seasons
+    and their teams. Built: a 7-day pre-match window and one read after the end; no `players` or squads slice
+    and no `away` sub (not in the catalog); the owners are the plan's seasons, their teams only when a team
+    slice is selected, the followed players and the seasons' sports; new groups `season`, `leaders` and
+    `players`, with `standings` and `rankings` both a group and a key; `body_key` and `experimental` on
+    `SliceSpec` (3.1, 3.2; P28, PR #140).
+105. **The odds routes and the season routes.** 6 listed `/events/{id}/odds` as the odds. Built: it lists the
+    `odds` slices; the normalized records are at `/events/{id}/odds/{key}`; `/seasons/{id}/slices` and
+    `/seasons/{id}/standings` are additions; the five new models are not in schema v1's `MODELS` yet
+    (`04-schema-v1.md` section 4; FX-21) (6; P28, PR #140).
+106. **The sync reads the follows table.** 2.7, 4.1 and 4.3 said the downloads read `leagues.txt` through
+    `ConfigManager`. Built: the enabled tournament follows of every origin, each with its season choice;
+    the configured leagues only as a fallback when the Store cannot be read; named follows and a
+    season-lists-only mode; the CLI's follows commands through `FollowsService` (2.7, 4.1, 4.3; FX-13, PR
+    #152).
+107. **Job specs and filters for the new web UI.** 6 said what the UI lacks (owner FX-13). Built: the job
+    specs `follows`, `only: "seasons"` and `event_ids`, exactly one target field, `/jobs?origin=&target=`,
+    `/follows?sport=`, `include=counts`, `/changes?sport=&regressed=&include=names`, the data-folder path, a
+    disk total with `v3/` and `changes/`, the last migration and the sinks in `/status`, job-log codes; not
+    built: `sync --only listing,non-match,refresh`, a route for a tournament's season-list age, and a recorded
+    job spec equal to the request body (6, 4.1; FX-13, PR #152).
+108. **A real restore.** 6 said a restore through the API is a check only (501). Built: `dry_run: false`
+    restores under `maintenance`, with `confirmation_required` and `details.occupied` before any job record,
+    and the restore job keeps its own row through the swap (6; FX-13, PRs #152 and #153; `01-storage.md` 9.2).
+109. **Where new follows go.** 2.7 and 4.3 said that without a config file new follows are written to
+    `leagues.txt`, and the "Follows (P21 part 3)" paragraph described it. Built: a new follow is always an
+    `api` row; `leagues.txt` is a read-only legacy source whose rows change only `sport` and move into the
+    table with `PATCH {"origin": "api"}`; no CLI command moves them (2.7, 4.3, 6; FX-19, PR #156).
+110. **Search by kind.** 2.7 named `search_tournaments`. Built: `FollowsService.search(query, sport=,
+    kinds=)`, one request per search (`/search/unique-tournaments/{q}` for tournaments alone, else
+    `/search/all`), hits typed by kind, 404 as no hit; the route path and `TournamentHit` kept (2.7, 6;
+    FX-19, PR #156).
+111. **Team, player and match follows download.** 03's open question (section 14) asked whether they can be
+    synced at all; FX-13 answered 400 `unsupported`. Built: lists by team and player within a window from the
+    follow's seasons (`MAX_LAST_PAGES` = 5, 365 days per season step), upcoming matches by `/event` only, an
+    event follow as its match; the lists are not stored; `FailedListing` kinds `team_events` and
+    `player_events` with `league_id` reused; `ssc sync --follow KIND:ID`; `ssc watch` skips player follows (2.7,
+    3.2, 4.1; FX-19, PR #156; owner decision of 2026-10-06).
+112. **Per-league delete.** 2.7 knew only scope clears. Built: `MaintenanceService.clear_tournament` over
+    `Store.purge.tournament` under `maintenance`, the `clear` job with `tournament_id` and `season_id`, and
+    `DELETE /follows/{id}?delete_data=true` (2.7, 6; FX-19, PR #156; `01-storage.md` 9.3).
+113. **Connection state.** `/status` had only the bridge state, which reads `ok` before any request and saw
+    only the browser bridge's answers. Built: `connection {state: never_tried|ok|failed, last_check}` in
+    `/status`, `/health` and `/status/check`, fed by the request layer; the bridge's times over every
+    transport; per process (2.7, 6; FX-19, PR #156).
+114. **Export names and the export list.** 6 said exports are written to `exports/<job id>.<ext>`, and
+    `/exports` lists jobs only. Built: `<label>_<UTC date>_<id8>.<ext>` and the files of `ssc export` in the
+    list with `source: "file"` (2.7, 4.1, 6; FX-19, PR #156).
+115. **The scheduler's `every` and `prune-history`.** 2.8 said `every` counts from the server start and only
+    `serve` checks task names. Built: `every` counts from the last run in the job history (FX-15),
+    `prune-history` with `older_than` as a fifth run, off unless configured (FX-15), and `ssc config
+    validate` checks the tasks (FX-13) (2.8; FX-13, PR #152; FX-15, PR #155).
+116. **The odds country and the selection settings.** 4.3 listed `[client] odds_provider` as modelled and
+    unused and had no country. Built: the provider is the odds sub (P28), `[client] odds_country` is an
+    opt-in setting recorded as `meta.country` (FX-15), and `[defaults] slices` and `[slices.<sport>]` are
+    read (P27) (3.1, 4.3; P27, PR #134; P28, PR #140; FX-15, PR #155).
+117. **Dead code and the doctor.** 2.7 still described `SyncSpec.export`, `export_all_csv`, `resolve_all`
+    and the menu-only fetcher methods, and 4.1 had no doctor check of the config file. Built: all removed;
+    the doctor's `config` check with five codes; `config init --from-legacy` without `ConfigManager`;
+    pandas is no longer installed and the `parquet` extra needs `pyarrow>=16` (2.7, 4.1; FX-15, PR #155).
 
 ---
 
@@ -4553,7 +5024,8 @@ is in `03-implementation-plan.md` section 11). Each item says what the document 
   the user still sees it. A second form came with P20: a value written through `PATCH /api/v1/settings`
   shadows a later save of the same key on the Settings page, until P21's legacy adapter writes through
   `src.config.overrides` (4.3). P21 (#127) ended the second form. The first stays while the classic
-  Settings page is in use.
+  Settings page is in use. FX-14b (#161) removed the classic Settings page; the new Settings screen uses
+  `/api/v1/settings`, which shows the lock.
 - The environment bridge of 4.3 writes settings into `os.environ`. It is correct only while every direct
   reader of a legacy name is in the loader's table; a module that starts reading a new variable by itself is
   not covered by the config file. `tests/test_config_loader.py` lists today's readers.
@@ -4588,11 +5060,13 @@ is in `03-implementation-plan.md` section 11). Each item says what the document 
 - Legacy `/api` adapters must reproduce shapes that were by-products of pandas (NaN handling, date strings,
   column names from CSV). Without the goldens these would drift unnoticed and break the current web UI before
   it moves to v1. The adapters exist since P21 (#127) and the G-02 and G-04 goldens passed unchanged; the
-  shapes now matter for the classic views under `/classic` only, until FX-14 removes them.
+  shapes now matter for the classic views under `/classic` only, until FX-14 removes them. FX-14b (#161)
+  removed them; the legacy routes stay for one release for other clients (P30).
 - Follows that are not downloaded. The follows service and `ssc follows add` write the follows table, but
   `ssc sync` still reads `leagues.txt` (4.3): with a config file, a tournament followed through the API or
   the CLI, or given as `[[follow]]` in the file, is watched by `ssc watch` but not downloaded. The UI and the
-  CLI give no hint of it. FX-13 makes the sync read the follows table.
+  CLI give no hint of it. FX-13 makes the sync read the follows table. Done by FX-13 (#152), and FX-19
+  (#156) makes team, player and match follows download as well.
 - An image that was never built. The Docker image of P25 (entrypoint, `CMD`, the live profile directory)
   is tested only as a script; `release.yml` builds it on a tag. The live validation run builds and
   smoke-tests it before the release.
@@ -4600,6 +5074,9 @@ is in `03-implementation-plan.md` section 11). Each item says what the document 
   UI must run `ssc backup restore` on the server. Moving the data folder is a manual step since the menu is
   gone (7.3), and the Store is not closed before the data folder is changed or removed, which matters on
   Windows (FX-13).
+  Since FX-13 (#152, #153) a real restore runs as a v1 job from the Backups screen (FX-14b), and a change
+  of the data folder through `PATCH /settings` closes the old folder's Stores; an archive must still already
+  be in the server's `backups/` folder (no upload; decision 15 of `05-web-ui.md`).
 - One file chain is long: `src/match_data_fetcher.py` has exactly one owning PR at a time through eleven PRs
   (`03-implementation-plan.md`). A stalled PR in that chain blocks everything behind it.
 - Closing a Store under a job. Since #93 a job store does not close the state database under a finishing

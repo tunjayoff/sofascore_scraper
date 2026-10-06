@@ -1,6 +1,6 @@
 # SofaScore push kanalı (NATS): dayanıklılık, kapsam ve maliyet
 
-SofaScore sitesi her sayfada `wss://ws.sofascore.com:9222/` adresine bir **NATS**-over-WebSocket bağlantısı
+SofaScore sitesi her sayfada SofaScore'un push sunucusuna bir **NATS**-over-WebSocket bağlantısı
 açıyor ve canlı maç değişikliklerini oradan alıyor (bkz. `docs/all-sports/README.md`, "Canlı sinyal"). Bu belge,
 canlı izlemeyi üretimde bu push kanalıyla yapmanın (yoklama yedekte) uygulanabilirliğini ölçer.
 
@@ -157,7 +157,7 @@ otomatik izin katmanı bunu "Credential Exploration" diye bir kez engelledi; kul
 onaylayınca yapıldı.
 
 **Yöntem:** tarayıcı sekmesi yok. Düz bir Python istemcisi (aiohttp WebSocket, **TLS parmak izi taklidi yok**)
-`wss://ws.sofascore.com:9222/`'ye bağlandı. Kimlik, köprünün açtığı futbol sayfasının **kendi `CONNECT`
+SofaScore'un push sunucusuna bağlandı. Kimlik, köprünün açtığı futbol sayfasının **kendi `CONNECT`
 karesinden** okundu, yalnızca bellekte tutuldu (bu, her anonim ziyaretçinin tarayıcısına giden paylaşımlı
 jeton; kimsenin hesabı değil). Davranış asgari: **tek bağlantı, tek konu `sport.football`, yalnız dinleme**,
 PUB yok, wildcard yok, 120 sn'de bir PING. Reddedilse durulacaktı.
