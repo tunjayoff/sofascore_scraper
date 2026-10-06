@@ -79,7 +79,8 @@ describe('Health', () => {
     expect(live.find('[data-fact="source"]').text()).toContain(`${t('sport.tennis')} · ${t('ui.health.source.direct')}`)
     expect(live.text()).toContain(t('ui.health.direct'))
     expect(live.text()).toContain(t('ui.health.liveStale', { time: '15 min' }))
-    expect(live.findAll('button')).toHaveLength(0)
+    // the only button is the glossary's (i): nothing starts or stops the service
+    expect(live.findAll('button:not([data-testid="help-tip"])')).toHaveLength(0)
   })
 
   it('the live service not running: the command that starts it, paused by a block as attention', async () => {
@@ -89,7 +90,7 @@ describe('Health', () => {
     const live = w.find('[data-testid="health-live"]')
     expect(live.find('[data-status="live:stopped"]').exists()).toBe(true)
     expect(live.text()).toContain('ssc watch')
-    expect(live.findAll('button').map((b) => b.attributes('aria-label'))).toEqual([t('ui.common.copyCommand')])
+    expect(live.findAll('button:not([data-testid="help-tip"])').map((b) => b.attributes('aria-label'))).toEqual([t('ui.common.copyCommand')])
   })
 
   it('runs the connection check only on click: one request, its result, a refusal by code', async () => {

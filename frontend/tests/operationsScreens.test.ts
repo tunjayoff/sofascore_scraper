@@ -272,7 +272,7 @@ describe('Maintenance', () => {
     expect(await axeViolations(w.element)).toEqual([])
   })
 
-  it('clears only after the scope is typed; says what is kept; a refusal stays in the dialog', async () => {
+  it('clears only after the shown word is typed (in any case); says what is kept; a refusal stays in the dialog', async () => {
     let answer: () => unknown = () => v1Error(409, 'instance_running', { holder: { purpose: 'live', pid: 4121, host: 'srv-1' } })
     const f = mockFetch({ 'GET /api/v1/status': { data: status() }, 'POST /api/v1/jobs': () => answer() })
     ;({ w } = await mountScreen(MaintenanceScreen, '/maintenance'))
@@ -282,9 +282,11 @@ describe('Maintenance', () => {
     const dialog = w.find('[role="alertdialog"]')
     expect(dialog.text()).toContain(t('ui.maintenance.clear.kept'))
     expect(w.find('[data-testid="confirm"]').attributes('disabled')).toBeDefined()
-    await dialog.find('input').setValue('season')
-    expect(w.find('[data-testid="confirm"]').attributes('disabled')).toBeDefined()
+    // the word to type is the shown word of the user's language, not the scope's key (FX-14a)
+    expect(dialog.text()).toContain(t('ui.confirm.typeWord', { word: 'DELETE' }))
     await dialog.find('input').setValue('seasons')
+    expect(w.find('[data-testid="confirm"]').attributes('disabled')).toBeDefined()
+    await dialog.find('input').setValue('delete')
     await w.find('[data-testid="confirm"]').trigger('click')
     await flush()
     expect(body(f, 'POST /api/v1/jobs')).toEqual({ kind: 'clear', spec: { scope: 'seasons', confirm: true } })

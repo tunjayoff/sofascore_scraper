@@ -13,7 +13,7 @@ import { resetNames } from '@/screens/events/eventText'
 import { clearToasts, uiToasts } from '@/ui/toast'
 import { i18n, setLocale } from '@/i18n'
 import { callsTo, deferred, flush, json, mockFetch } from './helpers'
-import { axeViolations, change, event, follow, job, mountScreen, page, slice, sport, status, summary, v1Error } from './v1'
+import { axeViolations, change, event, follow, job, mountScreen, page, slice, sport, sportWithOdds, status, summary, v1Error } from './v1'
 
 /**
  * The Data screens (05-web-ui.md 6.2 to 6.7) in their states with a fake API: loading, empty, an error by
@@ -153,9 +153,10 @@ describe('Follow editor', () => {
     ...over,
   })
 
-  it('follows a tournament in four steps: search, seasons, data (read-only, odds off), review; then syncs it', async () => {
+  it('follows a tournament in four steps: search, seasons, data (one line, odds off), review; then syncs it', async () => {
     const f = mockFetch(
       routes({
+        'GET /api/v1/sports/football': { data: sportWithOdds() },
         'POST /api/v1/tournaments/search': list([
           { id: 17, name: 'Premier League', slug: 'pl', sport: 'football', category: { id: 1, name: 'England', country_code: 'EN' }, followed: false },
           { id: 203, name: 'Premier League', slug: 'rpl', sport: 'football', category: { id: 2, name: 'Russia' }, followed: true },
@@ -187,13 +188,23 @@ describe('Follow editor', () => {
     await flush()
     await w.find('[data-testid="editor-next"]').trigger('click')
     await flush()
-    // 3: data
+    // 3: data, in one line; the list under "Details" (FX-14a)
     const picker = w.find('[data-testid="slice-picker"]')
-    expect(picker.text()).toContain(t('ui.slicePicker.readOnly'))
+    expect(picker.text()).toContain(t('ui.slicePicker.soon'))
+    expect(picker.find('[data-testid="slice-summary"]').text()).toContain(t('ui.slice.statistics'))
+    expect(picker.find('[data-testid="slice-summary"]').text()).toContain(t('ui.slicePicker.oddsOff'))
+    expect(picker.find('[data-testid="slice-cost"]').text()).toContain(t('ui.slicePicker.cost', { n: 7 }))
+    expect(picker.find('[data-testid="odds-group"]').exists()).toBe(false)
+    expect(picker.text()).not.toMatch(/\bP2\d\b|\bcore\b/)
+    await picker.find('[data-testid="slice-details"]').trigger('click')
+    expect(picker.find('[data-testid="slice-details"]').attributes('aria-expanded')).toBe('true')
+    // odds once, in their own group, off; every name in words
+    expect(picker.findAll('[data-slice="odds_featured"]')).toHaveLength(1)
     expect(picker.find('[data-testid="odds-group"]').findAll('input:checked')).toHaveLength(0)
+    expect(picker.find('[data-testid="odds-group"]').text()).toContain(t('ui.slice.winning_odds'))
     expect(picker.find('[data-testid="odds-group"]').text()).toContain(t('ui.slicePicker.oddsHistory'))
-    expect(picker.find('[data-testid="slice-cost"]').text()).toBe(t('ui.slicePicker.cost', { n: 7 }))
-    expect(picker.text()).toContain(t('ui.slicePicker.defaultsAre', { groups: 'core' }))
+    expect(picker.find('[data-slice="standings"]').text()).toBe(t('ui.slice.standings'))
+    expect(picker.text()).not.toContain('winning_odds')
     expect(await axeViolations(w.element)).toEqual([])
     await w.find('[data-testid="editor-next"]').trigger('click')
     // 4: review
@@ -222,22 +233,31 @@ describe('Follow editor', () => {
     expect(w.find('[data-testid="editor-no-hits"]').text()).toBe(t('ui.followEditor.noHits'))
   })
 
-  it('a team is followed by id; 409 follow_exists links to the follow', async () => {
+  it('team, player and single match are "coming soon"; a league by its number; 409 follow_exists links to the follow', async () => {
     mockFetch(routes({ 'POST /api/v1/follows': () => v1Error(409, 'follow_exists') }))
-    ;({ w } = await mountScreen(FollowEditorScreen, '/follows/new?kind=team&id=2672', '/follows/new'))
+    ;({ w } = await mountScreen(FollowEditorScreen, '/follows/new?kind=team&id=17', '/follows/new'))
     await flush()
-    expect((w.find('[data-testid="editor-id"]').element as HTMLInputElement).value).toBe('2672')
-    expect(w.find('[data-testid="editor-query"]').exists()).toBe(false)
-    await w.find('[data-testid="editor-name"]').setValue('Arsenal')
+    // FX-14a: the kinds that cannot download yet are shown, disabled, with the reason; ?kind=team is ignored
+    for (const k of ['team', 'player', 'event']) {
+      expect(w.find(`[data-kind="${k}"] input`).attributes('disabled')).toBeDefined()
+      expect(w.find(`[data-kind="${k}"]`).text()).toContain(t('ui.follows.soon'))
+    }
+    expect(w.find('[data-testid="editor-soon"]').text()).toBe(t('ui.follows.soonReason'))
+    expect(w.find('[data-testid="editor-query"]').exists()).toBe(true)
+    expect(w.text()).toContain(t('ui.followEditor.orId'))
+    expect(w.text()).toContain(t('ui.followEditor.idHint'))
+    expect((w.find('[data-testid="editor-id"]').element as HTMLInputElement).value).toBe('17')
+    await w.find('[data-testid="editor-name"]').setValue('Premier League')
+    await w.find('[data-testid="editor-sport"]').setValue('football')
     for (let i = 0; i < 3; i++) {
       await w.find('[data-testid="editor-next"]').trigger('click')
       await flush()
     }
-    expect(w.find('[data-testid="editor-sync-after"]').exists()).toBe(false)
+    expect(w.find('[data-testid="editor-sync-after"]').exists()).toBe(true)
     await w.find('[data-testid="editor-save"]').trigger('click')
     await flush()
     expect(w.find('[data-testid="form-error"]').attributes('data-code')).toBe('follow_exists')
-    expect(w.find('a[href="/follows/team/2672"]').exists()).toBe(true)
+    expect(w.find('a[href="/follows/tournament/17"]').exists()).toBe(true)
   })
 
   it('a change of a follow from leagues.txt sends only the sport; the other fields are locked', async () => {
@@ -353,12 +373,14 @@ describe('Events', () => {
     ...over,
   })
 
-  it('lists the stored events with score, status and data; default status filter finished', async () => {
+  it('lists the stored events with score, status and data; every status by default', async () => {
     const f = mockFetch(routes())
     ;({ w } = await mountScreen(EventsScreen, '/events'))
     await flush()
     const q = params(f, 'GET /api/v1/events')
-    expect(q.getAll('status')).toEqual(['completed', 'decided_without_play'])
+    // FX-14a: upcoming and in-progress matches are not hidden; "All statuses" is the pressed chip
+    expect(q.getAll('status')).toEqual([])
+    expect(w.find('[data-class="all"]').attributes('aria-pressed')).toBe('true')
     expect([q.get('sort'), q.get('include')]).toEqual(['-start_utc', 'slices_summary'])
     const rows = w.findAll('tbody tr')
     expect(rows[0].text()).toContain('Chelsea')
@@ -382,7 +404,8 @@ describe('Events', () => {
     expect([q.get('tournament'), q.get('has'), q.get('q')]).toEqual(['17', 'missing', 'Chelsea'])
     await w.find('[data-class="void"]').trigger('click')
     await flush()
-    expect(router.currentRoute.value.query.status).toEqual(['completed', 'decided_without_play', 'void'])
+    expect(router.currentRoute.value.query.status).toEqual(['void'])
+    expect(params(f, 'GET /api/v1/events').getAll('status')).toEqual(['void'])
     await w.find('[data-sort="start"]').trigger('click')
     await flush()
     expect(params(f, 'GET /api/v1/events').get('sort')).toBe('start_utc')
@@ -548,7 +571,8 @@ describe('Event detail', () => {
     ;({ w } = await mountScreen(EventDetailScreen, '/events/9100003', '/events/:id'))
     await flush()
     expect(w.find('[data-testid="event-not-found"]').text()).toContain(t('ui.eventDetail.notFound'))
-    expect(w.find('[data-testid="event-not-found"] a').attributes('href')).toBe('/follows/new?kind=event&id=9100003')
+    // single-match follows are "coming soon" (FX-14a): no way into a dead end, only back to the list
+    expect(w.findAll('[data-testid="event-not-found"] a').map((a) => a.attributes('href'))).toEqual(['/events'])
     w.unmount()
     mockFetch(routes({ 'GET /api/v1/events/9100003': { data: event({ quality: { ...event().quality, source: 'listing' } }) }, 'GET /api/v1/events/9100003/slices': list([]) }))
     ;({ w } = await mountScreen(EventDetailScreen, '/events/9100003', '/events/:id'))
