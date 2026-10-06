@@ -819,40 +819,46 @@ class BackupManager:
         Açılmış state.db'yi SQLite'ın yedekleme API'siyle deponun açık state.db'sinin üzerine yazar. Bu süreçteki
         kilit sahibi satırları korunur (kilitleri işletim sistemi tutar, satırlar bilgidir), olay günlüğü yeni
         bir kimlik alır: geri yüklenen günlüğün sıra numaraları tüketicinin sakladığı konumla karşılaştırılamaz.
+        Çalışan iş (geri yüklemeyi yapan iş, ör. API'nin `restore` işi) satırı ve olaylarıyla korunur: iş
+        bittiğinde kendi satırına yazar; geri yüklenen geçmişte o satır yoktur (plan maddesi FX-13).
+
+        Korunan satırlar ve yeni kimlik önce `path`teki kopyaya yazılır, sonra kopya tek bir yedekleme adımıyla
+        yerine konur: açık veritabanını okuyan başka bir bağlantı (iş geçmişini soran web isteği) ya eski ya
+        yeni içeriği görür, işin satırının olmadığı bir ara durumu görmez. Önceden satırlar yedeklemeden sonra
+        ayrı bir işlemle geri yazılıyordu; aradaki an Windows'ta (yavaş `fsync`) okuyana `not_found` verdi.
         """
         from src.store.streams import META_STREAM_ID
 
         state = self._store._state
         live = state.connection()
-        leases = live.execute(
-            "SELECT name, holder, pid, host, purpose, acquired_at, heartbeat_at FROM leases").fetchall()
-        # Çalışan iş (geri yüklemeyi yapan iş, ör. API'nin `restore` işi) satırı ve olaylarıyla korunur: iş
-        # bittiğinde kendi satırına yazar; geri yüklenen geçmişte o satır yoktur (plan maddesi FX-13)
+        leases = _rows_of(live, "SELECT * FROM leases")
         running = _rows_of(live, "SELECT * FROM jobs WHERE status IN ('running', 'queued')")
         running_ids = [row[running[0].index("id")] for row in running[1]] if running[1] else []
         events = _rows_of(live, "SELECT * FROM job_events WHERE job_id IN ({})".format(
             ", ".join("?" * len(running_ids))), running_ids) if running_ids else ([], [])
-        source = sqlite3.connect(path)
+        source = sqlite3.connect(path, isolation_level=None)
         try:
+            source.execute("BEGIN IMMEDIATE")
+            try:
+                source.execute("DELETE FROM leases")
+                for job_id in running_ids:
+                    source.execute("DELETE FROM jobs WHERE id = ?", (job_id,))
+                    source.execute("DELETE FROM job_events WHERE job_id = ?", (job_id,))
+                for table, (columns, rows) in (("leases", leases), ("jobs", running), ("job_events", events)):
+                    if rows:
+                        source.executemany(
+                            f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({', '.join('?' * len(columns))})",
+                            [tuple(row) for row in rows])
+                source.execute(
+                    "INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                    (META_STREAM_ID, uuid.uuid4().hex))
+                source.execute("COMMIT")
+            except BaseException:
+                source.execute("ROLLBACK")
+                raise
             source.backup(live)
         finally:
             source.close()
-        with state.write() as conn:
-            conn.execute("DELETE FROM leases")
-            conn.executemany(
-                "INSERT INTO leases (name, holder, pid, host, purpose, acquired_at, heartbeat_at) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?)", [tuple(row) for row in leases])
-            for job_id in running_ids:
-                conn.execute("DELETE FROM jobs WHERE id = ?", (job_id,))
-                conn.execute("DELETE FROM job_events WHERE job_id = ?", (job_id,))
-            for table, (columns, rows) in (("jobs", running), ("job_events", events)):
-                if rows:
-                    conn.executemany(
-                        f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({', '.join('?' * len(columns))})",
-                        [tuple(row) for row in rows])
-            conn.execute(
-                "INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-                (META_STREAM_ID, uuid.uuid4().hex))
         self._store.streams._stream_id = None
 
     def _roll_back(self, moved_aside: Sequence[Tuple[str, str]], placed: Sequence[str],
