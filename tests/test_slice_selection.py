@@ -474,12 +474,16 @@ def test_an_invalid_selection_is_refused(leagues: Path, slices: Dict[str, Any]) 
 
 
 def test_a_league_file_follow_cannot_hold_a_selection(leagues: Path) -> None:
-    refused = client.post("/api/v1/follows", json={"entity_id": 8, "name": "LaLiga", "slices": {"include": ["h2h"]}})
-    assert refused.status_code == 400
-    assert refused.json()["error"]["details"]["unsupported"] == ["slices"]
+    # FX-19: yeni takip (yapılandırma dosyası olmadan da) takip tablosundadır ve seçim tutar
+    created = client.post("/api/v1/follows", json={"entity_id": 8, "name": "LaLiga", "slices": {"include": ["h2h"]}})
+    assert created.status_code == 201, created.text
+    assert created.json()["data"]["slices"] == {"include": ["h2h"]}
+    # leagues.txt'in takibi tutmaz; takip tablosuna alınınca (`origin: "api"`) tutar
     patched = client.patch("/api/v1/follows/tournament:17", json={"slices": {"include": ["h2h"]}})
     assert patched.status_code == 400 and patched.json()["error"]["details"]["unsupported"] == ["slices"]
     assert client.patch("/api/v1/follows/tournament:17", json={"slices": None}).status_code == 200
+    moved = client.patch("/api/v1/follows/tournament:17", json={"origin": "api", "slices": {"include": ["h2h"]}})
+    assert moved.status_code == 200 and moved.json()["data"]["slices"] == {"include": ["h2h"]}
 
 
 def test_with_a_config_file_a_tournament_follow_holds_its_selection(leagues: Path, with_config_file: None) -> None:

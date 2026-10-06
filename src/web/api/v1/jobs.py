@@ -18,7 +18,8 @@ thread'de çalışır. Belirtim (`spec`) bugünkü eşitleme servisinin belirtim
 
     sync     sezon listeleri → maç listeleri → maç detayları           (SyncSpec mode="full")
              `only: "seasons"`: yalnızca sezon listeleri               (SyncSpec mode="seasons"; FX-13, G15)
-             `follows`: yalnızca adı verilen turnuva takipleri          (FollowsSyncSpec; FX-13, G23)
+             `follows`: yalnızca adı verilen takipler; takım, oyuncu ve  (FollowsSyncSpec; FX-13, G23;
+             maç takipleri maçlarını indirir                            FX-19)
     fetch    yalnızca maç detayları                                     (SyncSpec mode="details")
              `event_ids`: turnuvası bilinmese de bu maçlar              (FX-13, G16; `ssc fetch event` gibi)
     refresh  kayıtlı geçici maçların yeniden okunması                   (SyncSpec mode="refresh")
@@ -26,10 +27,13 @@ thread'de çalışır. Belirtim (`spec`) bugünkü eşitleme servisinin belirtim
 
 Üçü de CSV yazmaz: dışa aktarma kendi iş türüdür (`export`). Veri işleri (P21):
 
-    export   `exports/<iş>.<uzantı>`: normalleştirilmiş veri kümeleri (events, slices, changes; JSONL, CSV,
-             Parquet, SQLite), 2.x'in geniş CSV'si ya da ham yükler (src/services/data_jobs.py)
+    export   `exports/<lig ya da veri kümesi>_<tarih>_<kısa kimlik>.<uzantı>` (FX-19): normalleştirilmiş veri
+             kümeleri (events, slices, changes; JSONL, CSV, Parquet, SQLite), 2.x'in geniş CSV'si ya da ham yükler
+             (src/services/data_jobs.py)
     backup   `backups/` altına yedek (BackupService)
-    clear    saklanan verinin bir kısmını siler (MaintenanceService.clear); `confirm: true` ister
+    clear    saklanan verinin bir kısmını siler (MaintenanceService.clear); `confirm: true` ister;
+             `tournament_id` (ve isteğe bağlı `season_id`) ile yalnızca o turnuvanın verisi (FX-19,
+             MaintenanceService.clear_tournament)
     rebuild  kataloğu dosyalardan yeniden kurar (MaintenanceService.rebuild_catalog)
     restore  `dry_run: true` (varsayılan) denetler; `dry_run: false` geri yükler (FX-13, G2): `maintenance`
              kilidiyle; geri yüklenen state.db'nin iş geçmişine işin kendi satırı korunarak taşınır
@@ -42,9 +46,11 @@ değişiklik OpenAPI kaydında görünür.
 """
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 import logging
-from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Literal, Mapping, Optional, Tuple, Union
+import threading
+from typing import TYPE_CHECKING, Annotated, Any, Callable, Dict, List, Literal, Mapping, Optional, Tuple, Union
 
 from fastapi import APIRouter, Body, Header, Query, Response
 from pydantic import BaseModel, ConfigDict, Field
@@ -134,8 +140,9 @@ FollowId = Annotated[str, Field(pattern=r"^(tournament|team|player|event):[1-9][
 
 class SyncJobSpec(BaseModel):
     """
-    What to download. Without `selections`, `league_id` and `follows`: every enabled tournament follow, each with
-    its own season choice. Only one of `league_id`, `selections` and `follows` may be given.
+    What to download. Without `selections`, `league_id` and `follows`: every enabled follow, each tournament with
+    its own season choice, each team, player and event follow with its matches. Only one of `league_id`,
+    `selections` and `follows` may be given.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -144,8 +151,11 @@ class SyncJobSpec(BaseModel):
     selections: List[JobSelection] = Field(default_factory=list)
     follows: List[FollowId] = Field(
         default_factory=list, max_length=200,
-        description="`sync` only: these follows (`tournament:17`), each with its season choice. Team, player and "
-                    "event follows cannot be synced yet (400).",
+        description="`sync` only: these follows (`tournament:17`, `team:42`, `player:7`, `event:123`). A "
+                    "tournament with its season choice; a team or a player with its matches (the previous and next "
+                    "pages of SofaScore's list within the follow's window: `seasons` `current` = the last 365 "
+                    "days, `last:N` = N × 365 days, `all` = up to five pages back, season ids = those seasons); an "
+                    "event follow that one match. Season lists only (`only: \"seasons\"`) read tournaments only.",
     )
     only: Optional[Literal["seasons"]] = Field(
         default=None,
@@ -272,10 +282,20 @@ class ClearJobSpec(BaseModel):
 
     scope: Literal["all", "events", "schedules", "seasons", "match_details", "matches"] = "all"
     confirm: bool = Field(default=False, description="Must be true: the stored data of the scope is deleted.")
+    tournament_id: Optional[int] = Field(
+        default=None, gt=0,
+        description="Only this tournament's data: its events (with their payloads and odds history), schedules "
+                    "and season list; with `season_id` only that season's events and schedule. `scope` must be "
+                    "`all`. Follows, the change log, the job history, backups and exports stay.",
+    )
+    season_id: Optional[int] = Field(default=None, gt=0, description="With `tournament_id`: only this season.")
 
 
 class StartClearJob(BaseModel):
-    """Delete stored data (follows, job history, change log, backups and exports stay)."""
+    """
+    Delete stored data (follows, job history, change log, backups and exports stay): by scope, or one
+    tournament's (or one season's) data with `tournament_id` (and `season_id`).
+    """
 
     model_config = ConfigDict(extra="forbid")
 
@@ -366,14 +386,16 @@ def job_targets(spec: Mapping[str, Any]) -> List[str]:
             found[f"{kind}:{value}"] = None
 
     add("tournament", spec.get("league_id"))
+    add("tournament", spec.get("tournament_id"))  # turnuvanın verisini silen `clear` (FX-19)
     for selection in spec.get("selections") or ():
         if isinstance(selection, Mapping):
             add("tournament", selection.get("league_id"))
             for event_id in selection.get("match_ids") or ():
                 add("event", event_id)
     for follow in spec.get("follows") or ():
-        if isinstance(follow, str) and follow.startswith("tournament:") and follow[11:].isdigit():
-            add("tournament", int(follow[11:]))
+        kind, _, number = str(follow).partition(":")
+        if kind in ("tournament", "team", "player", "event") and number.isdigit():
+            add(kind, int(number))
     for event_id in spec.get("event_ids") or ():
         add("event", event_id)
     return list(found)
@@ -404,10 +426,10 @@ def list_jobs(
     origin: Annotated[Optional[List[Literal["cli", "api", "scheduler", "library"]]], Query(
         description="Only jobs started by one of these faces.")] = None,
     target: Optional[str] = Query(
-        None, pattern=r"^(tournament|event):[1-9][0-9]{0,18}$",
+        None, pattern=r"^(tournament|team|player|event):[1-9][0-9]{0,18}$",
         description="Only jobs whose spec names this tournament (`tournament:17`: its `league_id`, a selection or "
-                    "a follow) or this event (`event:123`: a selection's or `event_ids`' event). A job over every "
-                    "follow names none.",
+                    "a follow), this team or player (`team:42`, `player:7`: a follow) or this event (`event:123`: "
+                    "a selection's, a follow's or `event_ids`' event). A job over every follow names none.",
     ),
 ) -> JobListResponse:
     """Jobs of the data directory, newest first: those of this server and those started from the command line."""
@@ -489,23 +511,17 @@ def _check_targets(body: Union[StartSyncJob, StartFetchJob]) -> None:
 
 
 def _check_follows(follows: List[str]) -> None:
-    """Takipler var olmalı ve turnuva takibi olmalı (takım, oyuncu ve maç takipleri henüz eşitlenemez)."""
+    """Takipler var olmalı. Her tür eşitlenir (takım, oyuncu ve maç takipleri FX-19'dan beri)."""
     from src.services.follows import parse_follow_id
 
     service = deps.follows_service()
     missing: List[str] = []
-    unsupported: List[str] = []
     for text in dict.fromkeys(follows):
         parsed = parse_follow_id(text)
         if parsed is None or service.get(*parsed) is None:
             missing.append(text)
-        elif parsed[0] != "tournament":
-            unsupported.append(text)
     if missing:
         raise NotFoundError("No follow has this id.", {"follows": missing})
-    if unsupported:
-        raise UsageError("Only tournament follows can be synced; team, player and event follows cannot yet.",
-                         {"field": "follows", "unsupported": unsupported})
 
 
 def _event_selections(event_ids: List[int]) -> Tuple[Any, ...]:
@@ -675,11 +691,12 @@ def _config_files() -> Tuple[str, ...]:
 def _export_body(spec: Mapping[str, Any]) -> Any:
     def body(handle: "JobHandle") -> "JobOutcome":
         from src.jobs.manager import JobOutcome
-        from src.services.data_jobs import export_path, run_export
+        from src.services.data_jobs import export_name, export_path, run_export
 
         store = deps.store()
         request = export_request(spec)
-        result = run_export(store, request, export_path(str(store.data_dir), handle.id, request))
+        name = export_name(store, handle.id, request)  # okunur ad (FX-19); sonucun `file` alanında
+        result = run_export(store, request, export_path(str(store.data_dir), handle.id, request, name))
         result.pop("path", None)  # yol iş kaydına yazılmaz: indirme onu iş kimliğinden kurar
         return JobOutcome(result={"export": result})
 
@@ -704,6 +721,13 @@ def _clear_body(spec: Mapping[str, Any]) -> Any:
         from src.jobs.manager import JobOutcome
         from src.services.maintenance import MaintenanceService
 
+        if spec.get("tournament_id"):
+            purged = MaintenanceService(store=deps.store()).clear_tournament(
+                int(spec["tournament_id"]), season_id=spec.get("season_id"), confirm=True)
+            return JobOutcome(result={"clear": {
+                "scopes": ["tournament"], "tournament_id": purged.tournament_id, "season_id": purged.season_id,
+                "events": purged.events, "event_dirs": purged.event_dirs, "listings": purged.listings,
+                "catalog_rebuilt": purged.catalog_rebuilt}})
         report = MaintenanceService(store=deps.store()).clear(spec["scope"], confirm=True)
         return JobOutcome(result={"clear": {"scopes": list(report.scopes), "cleared": list(report.cleared),
                                             "v3_events": report.v3_events,
@@ -750,6 +774,57 @@ def _restore_body(spec: Mapping[str, Any]) -> Any:
     return body
 
 
+def _check_clear(spec: ClearJobSpec) -> None:
+    """Turnuvanın verisini silen `clear`: `season_id` turnuvayla, kapsam `all` (FX-19)."""
+    if spec.season_id is not None and spec.tournament_id is None:
+        raise UsageError("season_id needs tournament_id.", {"fields": ["season_id"]})
+    if spec.tournament_id is not None and spec.scope != "all":
+        raise UsageError("A tournament's data is cleared whole; leave scope at all.",
+                         {"fields": ["scope", "tournament_id"]})
+
+
+def _raising(error: BaseException) -> Callable[["JobHandle"], "JobOutcome"]:
+    """Verilen hatayı fırlatan iş gövdesi: başlamadan düşen işin kaydı başarısız biter, kilidi bırakılır."""
+    def body(handle: "JobHandle") -> "JobOutcome":
+        raise error
+
+    return body
+
+
+def start_tournament_clear(tournament_id: int, *, season_id: Optional[int] = None,
+                           before: Optional[Callable[[], Any]] = None) -> JobSnapshot:
+    """
+    Bir turnuvanın verisini silen `clear` işi (FX-19; takip kaldırmanın `delete_data` seçeneği). İş `maintenance`
+    kilidiyle kaydedilir; `before` (takibin kaldırılması) kilit alındıktan sonra, iş yürümeden önce bu thread'de
+    çalışır: hata verirse iş başarısız biter ve hata çağırana çıkar. Sonra iş arka planda yürür.
+    """
+    from src.jobs.manager import local_origin
+
+    spec: Dict[str, Any] = ClearJobSpec(confirm=True, tournament_id=tournament_id, season_id=season_id).model_dump()
+    manager = deps.job_manager()
+    job = manager.start(JobKind.CLEAR, spec, origin=local_origin("api"), lease=MAINTENANCE_LEASE,
+                        lease_purpose=JobKind.CLEAR.value)
+    if before is not None:
+        try:
+            before()
+        except BaseException as error:
+            with contextlib.suppress(BaseException):
+                manager.run(job.id, _raising(error), on_change=deps.refresh_job_mirror)
+            raise
+    body = _clear_body(spec)
+
+    def target() -> None:
+        try:
+            manager.run(job.id, body, on_change=deps.refresh_job_mirror)
+        except BaseException as e:  # arka plan thread'i: hata iş kaydındadır
+            logger.error("Background job %s failed: %s", job.id, type(e).__name__)
+
+    threading.Thread(target=target, name="job-clear", daemon=True).start()
+    deps.refresh_job_mirror()
+    found = manager.get(job.id)
+    return found if found is not None else job
+
+
 def _start_data_job(body: Any) -> JobSnapshot:
     """Bir veri işini denetler ve başlatır. Denetim iş başlamadan yapılır: reddedilen istek iş kaydı bırakmaz."""
     from src.jobs.manager import local_origin
@@ -767,6 +842,7 @@ def _start_data_job(body: Any) -> JobSnapshot:
         run = _backup_body(spec)
     elif isinstance(body, StartClearJob):
         spec = body.spec.model_dump()
+        _check_clear(body.spec)
         if not body.spec.confirm:
             raise UsageError("Clearing deletes stored data; send confirm: true.", {"scope": body.spec.scope},
                              code="confirmation_required")

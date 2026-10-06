@@ -73,11 +73,17 @@ export interface BackupRecord {
   with_env: boolean
 }
 
-/** Whether SofaScore answers the requests of this process. */
+/**
+ * Whether SofaScore answers the requests of this process. `state`, `consecutive_failures`, `failing_since` and
+ * `last_error` count the refusals of the browser bridge; `last_success_at` and `last_failure_at` are the last
+ * answered and the last failed request of any transport (curl or the bridge).
+ */
 export interface BridgeHealth {
   state: "ok" | "degraded" | "blocked"
   consecutive_failures: number
+  /** Last answered request, any transport. */
   last_success_at?: string | null
+  /** Last failed request, any transport (a refusal, 429, 5xx, timeout, network). */
   last_failure_at?: string | null
   failing_since?: string | null
   changed_at?: string | null
@@ -175,6 +181,39 @@ export interface ClearJobSpec {
   scope?: "all" | "events" | "schedules" | "seasons" | "match_details" | "matches"
   /** Must be true: the stored data of the scope is deleted. */
   confirm?: boolean
+  /** Only this tournament's data: its events (with their payloads and odds history), schedules and season list; with `season_id` only that season's events and schedule. `scope` must be `all`. Follows, the change log, the job history, backups and exports stay. */
+  tournament_id?: number | null
+  /** With `tournament_id`: only this season. */
+  season_id?: number | null
+}
+
+/** The last connection check of this server (`POST /status/check`). */
+export interface ConnectionCheck {
+  /** ISO-8601, UTC. */
+  at?: string | null
+  ok: boolean
+  /** Why it failed (the check's `reason`); null when ok. */
+  reason?: string | null
+}
+
+/**
+ * Whether this server's requests reach SofaScore: the outcome of the last request it sent (a job of this server,
+ * a search, the connection check). Separate from `bridge`, which counts refused requests only and reads `ok`
+ * before any request. Requests of other processes (`ssc` commands, `ssc watch`) are not counted here.
+ */
+export interface ConnectionStatus {
+  /** never_tried: no request has ended since the server started; ok: the last one was answered (200 or 404); failed: the last one was not. */
+  state: "never_tried" | "ok" | "failed"
+  /** ISO-8601, UTC. */
+  last_success_at?: string | null
+  /** ISO-8601, UTC. */
+  last_failure_at?: string | null
+  /** 403, 429, 5xx, timeout, network, parse or other. */
+  last_failure_reason?: string | null
+  /** HTTP status of the last failure, if any. */
+  last_failure_status?: number | null
+  /** The last connection check since the server started; null: none yet. */
+  last_check?: ConnectionCheck | null
 }
 
 /** One innings of one side in cricket. */
@@ -398,11 +437,17 @@ export interface ExportListResponse {
   page: PageInfo
 }
 
-/** An export: the job that writes it and, once it has succeeded, its file. */
+/**
+ * An export: the job that writes it and, once it has succeeded, its file; or a file of `exports/` no job
+ * wrote (`ssc export`).
+ */
 export interface ExportRecord {
-  /** Id of the export, the id of its job. */
+  /** Id of the export: the id of its job, or `file:<name>` for a file no job wrote. */
   id: string
-  job_id: string
+  /** job: an export job; file: a file in `exports/` that no job wrote (`ssc export`). */
+  source?: "job" | "file"
+  /** Null for a file no job wrote. */
+  job_id?: string | null
   /** State of the job; the file can be downloaded when `succeeded`. */
   state: JobState
   dataset: string
@@ -444,14 +489,14 @@ export interface FightScore {
   final_round: number | null
 }
 
-/** A new follow. Without a config file a tournament follow is written to config/leagues.txt (name and sport). */
+/** A new follow, kept in the follows table (`origin` api): every field can be changed later. */
 export interface FollowCreate {
   kind?: "tournament" | "team" | "player" | "event"
   entity_id: number
   name: string
   sport?: string | null
   seasons?: string | number[]
-  /** Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and `slices.<sport>` of GET /settings); `{"include": [...]}` = only these; `{"enable": [...], "disable": [...]}` = changes to the defaults. What is not selected is never fetched. Not available for a follow kept in config/leagues.txt (no config file). */
+  /** Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and `slices.<sport>` of GET /settings); `{"include": [...]}` = only these; `{"enable": [...], "disable": [...]}` = changes to the defaults. What is not selected is never fetched. */
   slices?: Record<string, string[]> | null
   live?: boolean
   enabled?: boolean
@@ -474,6 +519,8 @@ export interface FollowPatch {
   slices?: Record<string, string[]> | null
   live?: boolean | null
   enabled?: boolean | null
+  /** `api` moves a follow of config/leagues.txt into the follows table: it is removed from the file and every field becomes writable; the other fields of the same request are applied after the move. A follow of the follows table is left as it is. */
+  origin?: "api" | null
 }
 
 /** Something the platform downloads and watches: a tournament, a team, a player or one event. */
@@ -493,13 +540,17 @@ export interface FollowRecord {
   /** The live service watches it (`ssc watch`). */
   live: boolean
   enabled: boolean
-  /** legacy: config/leagues.txt; config: the config file (read-only here); api: added here. */
+  /** legacy: config/leagues.txt (the 2.x league list; only `sport` can change, or PATCH `origin: "api"` moves it into the follows table); config: the config file (read-only here); api: the follows table (added here, with `ssc follows add` or moved from config/leagues.txt). */
   origin: "legacy" | "config" | "api"
   position: number
   /** Fields PATCH can change on this follow. */
   writable: string[]
   created_at_utc?: string | null
   updated_at_utc?: string | null
+}
+
+export interface FollowRemoveResponse {
+  data: RemovedFollow
 }
 
 export interface FollowResponse {
@@ -529,6 +580,7 @@ export interface Health {
   version: string
   api_version: "v1"
   bridge: BridgeHealth
+  connection: ConnectionStatus
   throttle: ThrottleStatus
 }
 
@@ -837,6 +889,34 @@ export interface RefreshJobSpec {
   event_ids?: number[]
 }
 
+/** The follow as it was, and the clear job that deletes its data (`delete_data=true`). */
+export interface RemovedFollow {
+  /** `<kind>:<entity_id>`. */
+  id: string
+  kind: "tournament" | "team" | "player" | "event"
+  /** SofaScore's id of the followed entity. */
+  entity_id: number
+  name: string
+  /** Stored sport, else (tournaments) the one its events show. */
+  sport?: string | null
+  /** `all`, `current`, `last:N` or a list of season ids. */
+  seasons: string | number[]
+  /** Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and `slices.<sport>` of GET /settings); `{"include": [...]}` = only these; `{"enable": [...], "disable": [...]}` = changes to the defaults. What is not selected is never fetched. */
+  slices?: Record<string, string[]> | null
+  /** The live service watches it (`ssc watch`). */
+  live: boolean
+  enabled: boolean
+  /** legacy: config/leagues.txt (the 2.x league list; only `sport` can change, or PATCH `origin: "api"` moves it into the follows table); config: the config file (read-only here); api: the follows table (added here, with `ssc follows add` or moved from config/leagues.txt). */
+  origin: "legacy" | "config" | "api"
+  position: number
+  /** Fields PATCH can change on this follow. */
+  writable: string[]
+  created_at_utc?: string | null
+  updated_at_utc?: string | null
+  /** With `delete_data=true`: the clear job that deletes the tournament's data. */
+  clear_job?: Job | null
+}
+
 export interface RestoreJobSpec {
   /** A backup of `/backups`. */
   name: string
@@ -891,6 +971,17 @@ export interface ScorePair {
   home: number | null
   /** Value of the away side. */
   away: number | null
+}
+
+export interface SearchHitCountry {
+  /** SofaScore's country code (`alpha2`), as given. */
+  code?: string | null
+  name?: string | null
+}
+
+export interface SearchHitTeam {
+  id?: number | null
+  name?: string | null
 }
 
 /** One edition of a tournament. */
@@ -1259,7 +1350,10 @@ export interface StartBackupJob {
   spec?: BackupJobSpec
 }
 
-/** Delete stored data (follows, job history, change log, backups and exports stay). */
+/**
+ * Delete stored data (follows, job history, change log, backups and exports stay): by scope, or one
+ * tournament's (or one season's) data with `tournament_id` (and `season_id`).
+ */
 export interface StartClearJob {
   kind: "clear"
   spec?: ClearJobSpec
@@ -1312,6 +1406,7 @@ export interface Status {
   /** Whether an access token is configured. */
   auth_required: boolean
   bridge: BridgeHealth
+  connection: ConnectionStatus
   throttle: ThrottleStatus
   /** The job that runs on the data directory right now, in any process. */
   active_job?: Job | null
@@ -1341,6 +1436,7 @@ export interface StatusCheck {
   events_count?: number | null
   checked_at_utc: string
   bridge: BridgeHealth
+  connection: ConnectionStatus
 }
 
 /** What to check. */
@@ -1358,14 +1454,15 @@ export interface StatusResponse {
 }
 
 /**
- * What to download. Without `selections`, `league_id` and `follows`: every enabled tournament follow, each with
- * its own season choice. Only one of `league_id`, `selections` and `follows` may be given.
+ * What to download. Without `selections`, `league_id` and `follows`: every enabled follow, each tournament with
+ * its own season choice, each team, player and event follow with its matches. Only one of `league_id`,
+ * `selections` and `follows` may be given.
  */
 export interface SyncJobSpec {
   /** One tournament, every season of it. */
   league_id?: number | null
   selections?: JobSelection[]
-  /** `sync` only: these follows (`tournament:17`), each with its season choice. Team, player and event follows cannot be synced yet (400). */
+  /** `sync` only: these follows (`tournament:17`, `team:42`, `player:7`, `event:123`). A tournament with its season choice; a team or a player with its matches (the previous and next pages of SofaScore's list within the follow's window: `seasons` `current` = the last 365 days, `last:N` = N × 365 days, `all` = up to five pages back, season ids = those seasons); an event follow that one match. Season lists only (`only: "seasons"`) read tournaments only. */
   follows?: string[]
   /** `sync` only. `seasons`: read the season lists from SofaScore again now, without schedules or event details (the Get season list button). */
   only?: "seasons" | null
@@ -1381,15 +1478,24 @@ export interface ThrottleStatus {
   error?: string | null
 }
 
-/** A tournament SofaScore found. */
+/**
+ * A tournament, a team or a player SofaScore found (`kind`). Follow it with `POST /follows` (`kind`,
+ * `entity_id` = `id`, `name`, `sport`).
+ */
 export interface TournamentHit {
+  kind?: "tournament" | "team" | "player"
   id: number
   name: string
   slug?: string | null
   /** Slug of a registered sport; null for others. */
   sport?: string | null
+  /** The tournament's category; for a team or a player only `country_code` can be set. */
   category: TournamentHitCategory
-  /** A follow of any origin names the tournament already. */
+  /** Country of the tournament's category, of the team or of the player. */
+  country?: SearchHitCountry | null
+  /** A player's team; null for the other kinds. */
+  team?: SearchHitTeam | null
+  /** A follow of any origin names this tournament, team or player already. */
   followed: boolean
 }
 
@@ -1435,10 +1541,12 @@ export interface TournamentResponse {
 
 /** What to look for on SofaScore. */
 export interface TournamentSearch {
-  /** Text of the tournament name. */
+  /** Text of the name. */
   q: string
-  /** Only tournaments of this sport (slug). */
+  /** Only hits of this sport (slug). */
   sport?: string | null
+  /** What to look for: tournaments (the default), teams and players. Tournaments alone ask SofaScore's tournament search; any other choice asks its general search (one request either way). */
+  kinds?: ("tournament" | "team" | "player")[]
 }
 
 /** Counts of one tournament. `tournament_id` null: the events without a unique tournament. */
@@ -1446,7 +1554,7 @@ export interface TournamentSummary {
   tournament_id: number | null
   /** Name of the follow, else the stored tournament name. */
   name?: string | null
-  /** A tournament of the configured leagues. */
+  /** A follow of any origin names the tournament (the follows table). */
   followed: boolean
   /** Events counted as matches (the `only_finished` rule of the summary). */
   matches: number
@@ -1588,9 +1696,9 @@ export interface Operations {
     method: "DELETE"
     path: "/api/v1/follows/{follow_id}"
     params: { follow_id: string }
-    query: {}
+    query: { delete_data?: boolean }
     body: never
-    response: FollowResponse
+    response: FollowRemoveResponse
   }
   /** List tournaments */
   "listTournaments": {
@@ -1601,7 +1709,7 @@ export interface Operations {
     body: never
     response: TournamentListResponse
   }
-  /** Search tournaments on SofaScore */
+  /** Search tournaments, teams and players on SofaScore */
   "searchTournaments": {
     method: "POST"
     path: "/api/v1/tournaments/search"

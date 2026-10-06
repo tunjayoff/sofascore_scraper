@@ -99,7 +99,8 @@ def test_the_follows_of_the_league_file_are_listed(leagues: Path) -> None:
     assert {k: follow[k] for k in ("id", "kind", "entity_id", "name", "sport", "seasons", "slices", "live",
                                    "enabled", "origin", "writable")} == {
         "id": "tournament:17", "kind": "tournament", "entity_id": 17, "name": "Premier League", "sport": "football",
-        "seasons": "all", "slices": None, "live": False, "enabled": True, "origin": "legacy", "writable": ["sport"],
+        "seasons": "all", "slices": None, "live": False, "enabled": True, "origin": "legacy",
+        "writable": ["sport", "origin"],
     }
     assert follow["created_at_utc"].endswith("Z")
     assert data(client.get("/api/v1/follows/tournament:17")) == follow
@@ -149,20 +150,23 @@ def test_the_sport_falls_back_to_what_the_catalog_knows(leagues: Path, monkeypat
 # --- ekleme ------------------------------------------------------------------------------------------
 
 
-def test_a_tournament_follow_goes_to_the_league_file_without_a_config_file(leagues: Path) -> None:
+def test_a_tournament_follow_is_kept_in_the_follows_table_without_a_config_file(leagues: Path) -> None:
+    """FX-19: leagues.txt'e yazılmaz (sonra kilitli görünürdü); her alanı yazılabilir bir `api` satırıdır."""
     r = client.post("/api/v1/follows", json={"entity_id": 8, "name": "LaLiga", "sport": "Football"})
     follow = data(r, 201)
     assert r.headers["location"] == "/api/v1/follows/tournament:8"
     assert (follow["id"], follow["origin"], follow["sport"], follow["writable"]) == (
-        "tournament:8", "legacy", "football", ["sport"])
-    assert file_lines(leagues) == ["Premier League: 17", "LaLiga: 8"]
-    assert sidecar(leagues) == {"17": "football", "8": "football"}
+        "tournament:8", "api", "football", ["name", "sport", "seasons", "slices", "live", "enabled"])
+    assert file_lines(leagues) == ["Premier League: 17"]
+    assert sidecar(leagues) == {"17": "football"}
 
 
-def test_the_league_file_keeps_only_name_and_sport(leagues: Path) -> None:
-    body = error(client.post("/api/v1/follows", json={"entity_id": 8, "name": "LaLiga", "live": True,
-                                                      "seasons": "current"}), 400, "invalid_request")
-    assert body["details"] == {"unsupported": ["seasons", "live"], "origin": "legacy"}
+def test_a_web_follow_takes_and_changes_every_field_without_a_config_file(leagues: Path) -> None:
+    follow = data(client.post("/api/v1/follows", json={"entity_id": 8, "name": "LaLiga", "live": True,
+                                                       "seasons": "current"}), 201)
+    assert (follow["origin"], follow["live"], follow["seasons"]) == ("api", True, "current")
+    changed = data(client.patch("/api/v1/follows/tournament:8", json={"enabled": False, "seasons": [61643]}))
+    assert (changed["enabled"], changed["seasons"]) == (False, [61643])
     assert file_lines(leagues) == ["Premier League: 17"]
 
 
@@ -238,12 +242,43 @@ def test_a_follow_of_the_config_file_is_read_only_here(leagues: Path, store: Sto
 
 
 def test_removing_a_league_file_follow_edits_both_files(leagues: Path) -> None:
-    client.post("/api/v1/follows", json={"entity_id": 8, "name": "LaLiga", "sport": "football"})
+    with leagues.open("a", encoding="utf-8") as f:
+        f.write("LaLiga: 8\n")
+    data(client.patch("/api/v1/follows/tournament:8", json={"sport": "football"}))
+    assert sidecar(leagues) == {"17": "football", "8": "football"}
     removed = data(client.delete("/api/v1/follows/tournament:8"))
     assert (removed["id"], removed["origin"]) == ("tournament:8", "legacy")
     assert file_lines(leagues) == ["Premier League: 17"] and sidecar(leagues) == {"17": "football"}
     error(client.get("/api/v1/follows/tournament:8"), 404, "not_found")
     error(client.delete("/api/v1/follows/tournament:8"), 404, "not_found")
+
+
+def test_a_league_file_follow_is_moved_into_the_follows_table(leagues: Path, store: Store) -> None:
+    """FX-19: PATCH `origin: "api"` taşır; dosyadan çıkar, her alan yazılır, sonraki ayna geri getirmez."""
+    moved = data(client.patch("/api/v1/follows/tournament:17", json={"origin": "api", "live": True,
+                                                                      "seasons": "last:2"}))
+    assert (moved["origin"], moved["live"], moved["seasons"], moved["sport"]) == ("api", True, "last:2", "football")
+    assert moved["writable"] == ["name", "sport", "seasons", "slices", "live", "enabled"]
+    assert file_lines(leagues) == [] and sidecar(leagues) == {}
+    row = store.follows.get("tournament", 17)
+    assert row is not None and (row.origin, row.position, row.sport) == ("api", 0, "football")
+    # Elle düzenlenen dosya (başka bir lig) aynayı yeniler; taşınan satır yerinde kalır
+    with leagues.open("a", encoding="utf-8") as f:
+        f.write("LaLiga: 8\n")
+    assert [(f["id"], f["origin"]) for f in data(client.get("/api/v1/follows"))] == [
+        ("tournament:17", "api"), ("tournament:8", "legacy")]
+    # Kaldırınca geri gelmez
+    assert data(client.delete("/api/v1/follows/tournament:17"))["origin"] == "api"
+    assert [f["id"] for f in data(client.get("/api/v1/follows"))] == ["tournament:8"]
+
+
+def test_moving_a_follow_only_into_the_follows_table(leagues: Path, store: Store) -> None:
+    store.follows.add(FollowSpec(kind="team", entity_id=42, name="Arsenal"), origin="api")
+    assert data(client.patch("/api/v1/follows/team:42", json={"origin": "api"}))["origin"] == "api"
+    error(client.patch("/api/v1/follows/tournament:17", json={"origin": "legacy"}), 422, "invalid_request")
+    apply_follows(store.data_dir, [FollowSpec(kind="tournament", entity_id=35, name="Bundesliga")], origin="config")
+    error(client.patch("/api/v1/follows/tournament:35", json={"origin": "api"}), 409, "follow_managed")
+    assert file_lines(leagues) == ["Premier League: 17"]
 
 
 def test_removing_an_api_follow(leagues: Path, store: Store) -> None:
@@ -302,9 +337,10 @@ def test_the_tournament_search_asks_sofascore_once(leagues: Path, search: List[A
     from src.client import api_url, endpoints
 
     hits = data(client.post("/api/v1/tournaments/search", json={"q": "premier"}))
-    assert hits[0] == {"id": 17, "name": "Premier League", "slug": "premier-league", "sport": "football",
+    assert hits[0] == {"kind": "tournament", "id": 17, "name": "Premier League", "slug": "premier-league",
+                       "sport": "football",
                        "category": {"id": 170, "name": "England", "slug": "england", "country_code": "EN"},
-                       "followed": True}
+                       "country": {"code": "EN", "name": None}, "team": None, "followed": True}
     assert (hits[1]["sport"], hits[1]["followed"]) == ("basketball", False)
     assert search[0] == [(api_url(endpoints.search_unique_tournaments("premier")),
                           {"max_retries": 1, "timeout": 10, "raise_errors": True})]

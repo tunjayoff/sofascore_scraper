@@ -75,8 +75,18 @@ def _positive_id(value: str) -> int:
     return number
 
 
+def _follow_id(value: str) -> str:
+    from src.services.follows import parse_follow_id
+
+    if parse_follow_id(value) is None:
+        raise argparse.ArgumentTypeError(f"expected a follow id such as team:42, got {value!r}")
+    return value
+
+
 def _sync_arguments(parser: argparse.ArgumentParser, t: Translator) -> None:
     parser.add_argument("--tournament", type=_positive_id, metavar="ID", help=t("ssc_help_sync_tournament"))
+    parser.add_argument("--follow", dest="follows", action="append", type=_follow_id, metavar="KIND:ID",
+                        help=t("ssc_help_sync_follow"))
     parser.add_argument("--only", choices=("events", "seasons"), help=t("ssc_help_sync_only_any"))
     parser.add_argument("--recheck-unavailable", dest="recheck", nargs="?", const="legacy", choices=RECHECK_MODES,
                         metavar="legacy|all", help=t("ssc_help_sync_recheck"))
@@ -508,12 +518,16 @@ def plan_sync(ctx: "ServiceContext", spec: "SyncSpec") -> Dict[str, Any]:
 
     store = ctx.store
     targets = sync_targets(ctx)
+    named = tuple(getattr(spec, "follows", ()) or ())
     by_follow = not spec.selections and not spec.league_id
     leagues: List[int]
     if spec.selections:
         leagues = sorted({s.league_id for s in spec.selections})
     elif spec.league_id:
         leagues = [int(spec.league_id)]
+    elif named:
+        leagues = sorted({int(text.partition(":")[2]) for text in named
+                          if text.startswith("tournament:") and int(text.partition(":")[2]) in targets})
     else:
         leagues = sorted(int(lid) for lid in targets)
     lists = {"season_lists": 0, "schedules": 0, "fresh": 0}
@@ -552,14 +566,46 @@ def plan_sync(ctx: "ServiceContext", spec: "SyncSpec") -> Dict[str, Any]:
             seasons = seasons_of.get(lid, []) if lid is not None and spec.selections else []
             ids.extend(_stored_event_ids(ctx, [lid] if lid is not None else [], seasons))
     needs, event_requests = _plan_events(ctx, ids)
+    follows, follow_requests = _plan_follows(ctx, spec, needs)
     return {
         "dry_run": True,
         "tournaments": leagues,
         "listings": lists,
         "events": needs,
-        "requests": list_requests + event_requests,
+        "follows": follows,
+        "requests": list_requests + event_requests + follow_requests,
         "requests_is_minimum": spec.mode == "full",
     }
+
+
+def _plan_follows(ctx: "ServiceContext", spec: "SyncSpec", needs: Dict[str, int]) -> Tuple[Dict[str, int], int]:
+    """
+    Takım, oyuncu ve maç takiplerinin payı (FX-19): takip sayıları ve en az istek. Takımın ve oyuncunun listesi
+    istek atmadan bilinmez: takım en az iki sayfa (`next/0`, `last/0`), oyuncu bir sayfa; maçları listeye bağlıdır.
+    Maç takipleri katalogdan planlanır ve `needs`'e eklenir.
+    """
+    from src.services import follow_sync, planning
+    from src.services.follows import ConfigLeagues, FollowsService
+    from src.services.query import RefreshPolicy
+
+    counts = {"team": 0, "player": 0, "event": 0}
+    named = [text for text in (getattr(spec, "follows", ()) or ()) if not text.startswith("tournament:")]
+    if spec.mode != "full" or (not named and (getattr(spec, "follows", ()) or spec.selections or spec.league_id)):
+        return counts, 0
+    rows = FollowsService(ctx.store, ConfigLeagues()).sync_others()
+    if named:
+        rows = [row for row in rows if f"{row.kind}:{row.entity_id}" in named]
+    for row in rows:
+        counts[row.kind] = counts.get(row.kind, 0) + 1
+    requests = 2 * counts["team"] + counts["player"]
+    events = [row for row in rows if row.kind == "event"]
+    if events:
+        items, policy = follow_sync.plan_items(ctx.store, [], events, planning.configured_policy(ctx.store),
+                                               RefreshPolicy.current())
+        for item in items:
+            needs[item.need] = needs.get(item.need, 0) + 1
+            requests += _event_requests(item, policy, None)
+    return counts, requests
 
 
 def plan_refresh(ctx: "ServiceContext", league_id: Optional[int]) -> Dict[str, Any]:
@@ -581,6 +627,10 @@ def plan_text(t: Translator, plan: Mapping[str, Any]) -> str:
     if lists:
         lines.append(t("ssc_plan_listings", season_lists=lists.get("season_lists", 0),
                        schedules=lists.get("schedules", 0), fresh=lists.get("fresh", 0)))
+    follows = plan.get("follows") or {}
+    if any(follows.values()):
+        lines.append(t("ssc_plan_follows", teams=follows.get("team", 0), players=follows.get("player", 0),
+                       events=follows.get("event", 0)))
     lines.append(t("ssc_plan_events", full=events.get("full", 0), refill=events.get("refill", 0),
                    refresh=events.get("refresh", 0)))
     key = "ssc_plan_requests_minimum" if plan.get("requests_is_minimum") else "ssc_plan_requests"
@@ -633,7 +683,17 @@ def sync(inv: Invocation) -> CommandResult:
         raise UsageError("--recheck-unavailable resets match details; it cannot be used with --only seasons")
     _include_legacy(args.include_legacy)
     mode = {"events": "details", "seasons": "seasons"}.get(args.only or "", "full")
-    spec = SyncSpec(mode=mode, league_id=args.tournament)  # type: ignore[arg-type]
+    if args.follows and args.tournament:
+        raise UsageError("Give only one of --tournament and --follow")
+    if args.follows and mode == "details":
+        raise UsageError("--follow downloads the follows' lists and matches; it cannot be used with --only events")
+    spec: SyncSpec
+    if args.follows:
+        from src.services.sync import FollowsSyncSpec
+
+        spec = FollowsSyncSpec(mode=mode, follows=tuple(dict.fromkeys(args.follows)))  # type: ignore[arg-type]
+    else:
+        spec = SyncSpec(mode=mode, league_id=args.tournament)  # type: ignore[arg-type]
     return _download(inv, spec, kind="sync", purpose="sync", dry_run=args.dry_run,
                      before=_recheck(args.tournament, args.recheck))
 

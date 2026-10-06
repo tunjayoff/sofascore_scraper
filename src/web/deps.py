@@ -117,13 +117,12 @@ class _LegacyLeagues:
 
 def follows_service() -> "FollowsService":
     """
-    Takipler servisi: veri dizininin deposu, leagues.txt yazıcısı ve bir yapılandırma dosyasının etkin olup
-    olmadığı (yeni turnuva takibinin nereye yazılacağı).
+    Takipler servisi: veri dizininin deposu ve leagues.txt yazıcısı (ayna, kaldırma, spor, takip tablosuna alma).
+    Yeni takip her zaman takip tablosuna yazılır (FX-19): bir yapılandırma dosyasının olup olmadığı sorulmaz.
     """
     from src.services.follows import FollowsService
 
-    return FollowsService(store(), _LegacyLeagues(config_manager()),
-                          config_file=loaded_settings().config_file is not None)
+    return FollowsService(store(), _LegacyLeagues(config_manager()))
 
 
 def loaded_settings() -> "LoadedSettings":

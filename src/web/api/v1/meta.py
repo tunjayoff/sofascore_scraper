@@ -57,16 +57,52 @@ class BridgeLastError(BaseModel):
 
 
 class BridgeHealth(BaseModel):
-    """Whether SofaScore answers the requests of this process."""
+    """
+    Whether SofaScore answers the requests of this process. `state`, `consecutive_failures`, `failing_since` and
+    `last_error` count the refusals of the browser bridge; `last_success_at` and `last_failure_at` are the last
+    answered and the last failed request of any transport (curl or the bridge).
+    """
 
     state: Literal["ok", "degraded", "blocked"]
     consecutive_failures: int
-    last_success_at: Optional[str] = None
-    last_failure_at: Optional[str] = None
+    last_success_at: Optional[str] = Field(default=None, description="Last answered request, any transport.")
+    last_failure_at: Optional[str] = Field(
+        default=None, description="Last failed request, any transport (a refusal, 429, 5xx, timeout, network).",
+    )
     failing_since: Optional[str] = None
     changed_at: Optional[str] = None
     last_error: Optional[BridgeLastError] = None
     thresholds: Dict[str, float]
+
+
+class ConnectionCheck(BaseModel):
+    """The last connection check of this server (`POST /status/check`)."""
+
+    at: Optional[str] = Field(default=None, description="ISO-8601, UTC.")
+    ok: bool
+    reason: Optional[str] = Field(default=None, description="Why it failed (the check's `reason`); null when ok.")
+
+
+class ConnectionStatus(BaseModel):
+    """
+    Whether this server's requests reach SofaScore: the outcome of the last request it sent (a job of this server,
+    a search, the connection check). Separate from `bridge`, which counts refused requests only and reads `ok`
+    before any request. Requests of other processes (`ssc` commands, `ssc watch`) are not counted here.
+    """
+
+    state: Literal["never_tried", "ok", "failed"] = Field(
+        description="never_tried: no request has ended since the server started; ok: the last one was answered "
+                    "(200 or 404); failed: the last one was not.",
+    )
+    last_success_at: Optional[str] = Field(default=None, description="ISO-8601, UTC.")
+    last_failure_at: Optional[str] = Field(default=None, description="ISO-8601, UTC.")
+    last_failure_reason: Optional[str] = Field(
+        default=None, description="403, 429, 5xx, timeout, network, parse or other.",
+    )
+    last_failure_status: Optional[int] = Field(default=None, description="HTTP status of the last failure, if any.")
+    last_check: Optional[ConnectionCheck] = Field(
+        default=None, description="The last connection check since the server started; null: none yet.",
+    )
 
 
 class ThrottleStatus(BaseModel):
@@ -83,6 +119,7 @@ class Health(BaseModel):
     version: str
     api_version: Literal["v1"]
     bridge: BridgeHealth
+    connection: ConnectionStatus
     throttle: ThrottleStatus
 
 
@@ -113,7 +150,7 @@ class TournamentSummary(BaseModel):
 
     tournament_id: Optional[int]
     name: Optional[str] = Field(default=None, description="Name of the follow, else the stored tournament name.")
-    followed: bool = Field(description="A tournament of the configured leagues.")
+    followed: bool = Field(description="A follow of any origin names the tournament (the follows table).")
     matches: int = Field(description="Events counted as matches (the `only_finished` rule of the summary).")
     details: int = Field(description="Events with a stored event payload.")
     events: int = Field(description="Every stored event, unfinished schedule rows included.")
@@ -236,6 +273,7 @@ class Status(BaseModel):
     )
     auth_required: bool = Field(description="Whether an access token is configured.")
     bridge: BridgeHealth
+    connection: ConnectionStatus
     throttle: ThrottleStatus
     active_job: Optional[Job] = Field(
         default=None, description="The job that runs on the data directory right now, in any process.",
@@ -275,6 +313,7 @@ class StatusCheck(BaseModel):
     events_count: Optional[int] = Field(default=None, description="Live events in the answer; null on failure.")
     checked_at_utc: str
     bridge: BridgeHealth
+    connection: ConnectionStatus
 
 
 class StatusCheckResponse(BaseModel):
@@ -353,7 +392,13 @@ class SinkListResponse(BaseModel):
 def _bridge() -> BridgeHealth:
     from src import bridge_health
 
-    return BridgeHealth.model_validate(bridge_health.snapshot())
+    return BridgeHealth.model_validate(bridge_health.public_snapshot())
+
+
+def _connection() -> ConnectionStatus:
+    from src import bridge_health
+
+    return ConnectionStatus.model_validate(bridge_health.connection())
 
 
 def _throttle() -> ThrottleStatus:
@@ -470,6 +515,14 @@ def _tournament_names(store: "Store", ids: List[Optional[int]], followed: Mappin
     return names
 
 
+def followed_tournaments() -> Dict[int, str]:
+    """
+    Takip edilen turnuvalar (kimlik → ad): takip tablosunun her kaynaktan turnuva takipleri, kapalılar da (FX-19;
+    önceden yalnızca yapılandırmanın ligleri, bu yüzden API'den eklenen takip `followed` görünmüyordu).
+    """
+    return {row.entity_id: row.name for row in deps.follows_service().list(kind="tournament")}
+
+
 def data_summary(store: "Store", followed: Mapping[int, str]) -> DataSummary:
     """Veri dizininin özeti (StatusService.summary) v1 modeliyle; takip edilen ligler maçları olmasa da dökümdedir."""
     from src.services.status import StatusService
@@ -544,7 +597,8 @@ def sinks_summary(store: "Store") -> SinksSummary:
 def health() -> HealthResponse:
     """The server is up; whether SofaScore answers it; the request budget."""
     return HealthResponse(data=Health(
-        status="ok", version=__version__, api_version=API_VERSION, bridge=_bridge(), throttle=_throttle(),
+        status="ok", version=__version__, api_version=API_VERSION, bridge=_bridge(), connection=_connection(),
+        throttle=_throttle(),
     ))
 
 
@@ -566,7 +620,7 @@ def status() -> StatusResponse:
         store = deps.store()
         live = _live(store)
         leases = lease_holders(store)
-        summary = data_summary(store, deps.config_manager().get_leagues())
+        summary = data_summary(store, followed_tournaments())
         sinks = sinks_summary(store)
     except Exception as e:  # depo açılamadı ya da okunamadı: durum yine yanıtlanır
         error = to_platform_error(e)
@@ -580,6 +634,7 @@ def status() -> StatusResponse:
         schema_version=SCHEMA_VERSION,
         auth_required=bool(security.api_token()),
         bridge=_bridge(),
+        connection=_connection(),
         throttle=_throttle(),
         active_job=job_model(active) if active is not None else None,
         live=live,
@@ -621,9 +676,10 @@ def check_sofascore() -> StatusCheck:
         else:
             reason = upstream.UPSTREAM
     message = "SofaScore answered." if reason is None else upstream.detail(reason)["message"]
+    bridge_health.record_check(reason is None, reason)
     return StatusCheck(
         ok=reason is None, reason=reason, message=message, events_count=count,  # type: ignore[arg-type]
-        checked_at_utc=utc_text(time.time()) or "", bridge=_bridge(),
+        checked_at_utc=utc_text(time.time()) or "", bridge=_bridge(), connection=_connection(),
     )
 
 

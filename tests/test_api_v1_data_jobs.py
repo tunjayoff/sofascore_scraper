@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import io
 import json
+import re
 import time
 import zipfile
 from pathlib import Path
@@ -96,7 +97,10 @@ def test_the_wide_csv_export_is_written_and_downloaded(jobs: JobStore, store: St
     assert done["state"] == "succeeded", done
     table = ExportService(store).legacy_table()
     result = done["result"]["export"]
-    assert (result["rows"], result["file"], result["media_type"]) == (len(table.rows), f"{job['id']}.csv", "text/csv")
+    # FX-19: okunur ad: <lig ya da veri kümesi>_<UTC tarih>_<iş kimliğinin son 8 harfi>.<uzantı>
+    name = str(result["file"])
+    assert re.fullmatch(r"events-wide_\d{4}-\d{2}-\d{2}_" + job["id"][-8:].lower() + r"\.csv", name), name
+    assert (result["rows"], result["file"], result["media_type"]) == (len(table.rows), name, "text/csv")
     assert "path" not in result
 
     record = data(client.get("/api/v1/exports"))[0]
@@ -104,17 +108,17 @@ def test_the_wide_csv_export_is_written_and_downloaded(jobs: JobStore, store: St
                                    "available", "file")} == {
         "id": job["id"], "job_id": job["id"], "state": "succeeded", "dataset": "events", "format": "csv",
         "schema": "normalized", "profile": "legacy-wide-csv", "rows": len(table.rows), "available": True,
-        "file": f"{job['id']}.csv",
+        "file": name,
     }
     assert record["filter"] == {"sport": None, "tournament_ids": [], "season_ids": [], "event_ids": [],
                                 "status_classes": [], "from": None, "to": None}  # SC-2: üç süzgeç daha
 
     r = client.get(f"/api/v1/exports/{job['id']}/download")
     assert r.status_code == 200 and r.headers["content-type"].startswith("text/csv")
-    assert f'filename="sofascore-export-{job["id"]}.csv"' in r.headers["content-disposition"]
+    assert f'filename="{name}"' in r.headers["content-disposition"]
     lines = r.text.splitlines()
     assert lines[0].split(",") == list(table.columns) and len(lines) == len(table.rows) + 1
-    assert r.content == (store.data_dir / "exports" / f"{job['id']}.csv").read_bytes()
+    assert r.content == (store.data_dir / "exports" / name).read_bytes()
 
 
 def test_a_raw_export_of_one_tournament(jobs: JobStore, store: Store) -> None:
@@ -152,8 +156,7 @@ def test_exports_that_cannot_be_made_start_no_job(jobs: JobStore, spec: Dict[str
 def test_downloads_of_exports_without_a_file(jobs: JobStore, store: Store) -> None:
     error(client.get("/api/v1/exports/nope/download"), 404, "not_found")
     job = start({"kind": "export", "spec": {"profile": "legacy-wide-csv"}})
-    ended(job["id"])
-    (store.data_dir / "exports" / f"{job['id']}.csv").unlink()
+    (store.data_dir / "exports" / ended(job["id"])["result"]["export"]["file"]).unlink()
     gone = client.get(f"/api/v1/exports/{job['id']}/download")
     body = error(gone, 404, "not_found")
     assert body["details"] == {"export_id": job["id"]} and gone.headers["x-request-id"] == body["request_id"]

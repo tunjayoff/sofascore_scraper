@@ -643,7 +643,7 @@ def test_the_new_commands_are_registered_and_described(cli: CliRunner) -> None:
             "jobs cancel", "jobs tail"} <= names
     described = {command["name"]: command for command in cli("describe", "commands").data["commands"]["commands"]}
     assert [option["flags"][0] for option in described["sync"]["options"]] == [
-        "--tournament", "--only", "--recheck-unavailable", "--include-legacy", "--dry-run"]
+        "--tournament", "--follow", "--only", "--recheck-unavailable", "--include-legacy", "--dry-run"]
 
 
 def test_main_py_passes_a_subcommand_through(box: Sandbox) -> None:

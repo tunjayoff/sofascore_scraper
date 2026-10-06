@@ -37,7 +37,7 @@ import os
 import sys
 import threading
 import time
-from typing import Any, Callable, Dict, List, Mapping, Optional
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 
 from src.redact import redact_text
 
@@ -236,8 +236,117 @@ class BridgeHealth:
             self._change_callbacks.remove(fn)
 
 
+# --- bağlantı: istek katmanının son sonucu (plan maddesi FX-19) --------------------------------------------
+
+# Bağlantı durumları: hiç istek bitmedi / son istek yanıt aldı / son istek yanıt alamadı
+CONNECTION_NEVER = "never_tried"
+CONNECTION_OK = "ok"
+CONNECTION_FAILED = "failed"
+
+
+class ConnectionState:
+    """
+    Bu sürecin SofaScore'a son isteğinin sonucu (köprü durumundan ayrı: köprü yalnızca reddedilen istekleri sayar
+    ve hiç istek yokken de "ok" der). İstek katmanı her isteğin son halini bildirir (src/breaker.py
+    `report_ok` / `report_exception`): yanıt (200, 404) başarı; 403, 429, 5xx, zaman aşımı, ağ ve okunamayan yanıt
+    başarısızlık. Devre kesicinin göndermediği istek sayılmaz. Arayüz böylece hiçbir istek başarmadan "bağlı"
+    demez.
+    """
+
+    def __init__(self, clock: Callable[[], float] = time.time) -> None:
+        self._clock = clock
+        self._lock = threading.Lock()
+        self.last_success_at: Optional[float] = None
+        self.last_failure_at: Optional[float] = None
+        self.last_failure_reason: Optional[str] = None
+        self.last_failure_status: Optional[int] = None
+        # Son bağlantı denetimi (`POST /status/check`): (an, yanıt aldı mı, neden)
+        self.last_check: Optional[Tuple[float, bool, Optional[str]]] = None
+
+    def record_check(self, ok: bool, reason: Optional[str] = None) -> None:
+        """Bağlantı denetiminin sonucu: arayüz onu sekme başına hatırlamak zorunda kalmasın (FX-19)."""
+        with self._lock:
+            self.last_check = (self._clock(), bool(ok), None if ok else reason)
+
+    def times(self) -> Tuple[Optional[float], Optional[float]]:
+        """(son yanıt, son başarısızlık), epoch saniye."""
+        with self._lock:
+            return self.last_success_at, self.last_failure_at
+
+    def record_answer(self) -> None:
+        with self._lock:
+            self.last_success_at = self._clock()
+
+    def record_unanswered(self, reason: str, status: Optional[int] = None) -> None:
+        with self._lock:
+            self.last_failure_at = self._clock()
+            self.last_failure_reason = str(reason)
+            self.last_failure_status = status if isinstance(status, int) and not isinstance(status, bool) else None
+
+    def snapshot(self) -> Dict[str, Any]:
+        """JSON'a hazır görüntü; `state`: never_tried, ok ya da failed (son sonuç). Zamanlar ISO-8601 UTC."""
+        with self._lock:
+            success, failure = self.last_success_at, self.last_failure_at
+            if success is None and failure is None:
+                state = CONNECTION_NEVER
+            elif failure is None or (success is not None and success >= failure):
+                state = CONNECTION_OK
+            else:
+                state = CONNECTION_FAILED
+            check = self.last_check
+            return {
+                "state": state,
+                "last_success_at": _iso(success),
+                "last_failure_at": _iso(failure),
+                "last_failure_reason": self.last_failure_reason,
+                "last_failure_status": self.last_failure_status,
+                "last_check": None if check is None else {"at": _iso(check[0]), "ok": check[1], "reason": check[2]},
+            }
+
+
 # Süreç başına tek köprü (BrowserBridge.get_instance) → tek sağlık durumu
 _health = BridgeHealth()
+_connection = ConnectionState()
+
+
+def record_answer() -> None:
+    """SofaScore bir isteğe yanıt verdi (istek katmanından; FX-19)."""
+    _connection.record_answer()
+
+
+def record_unanswered(reason: str, status: Optional[int] = None) -> None:
+    """Bir istek yanıt alamadı: reason src/breaker.py `failure_kind`'ın türüdür (FX-19)."""
+    _connection.record_unanswered(reason, status)
+
+
+def connection() -> Dict[str, Any]:
+    """Bağlantının görüntüsü (`ConnectionState.snapshot`)."""
+    return _connection.snapshot()
+
+
+def record_check(ok: bool, reason: Optional[str] = None) -> None:
+    """Bağlantı denetiminin sonucu (`POST /status/check`; FX-19)."""
+    _connection.record_check(ok, reason)
+
+
+def public_snapshot() -> BridgeHealthSnapshot:
+    """
+    API'nin gösterdiği köprü görüntüsü (FX-19): `snapshot()`, yalnızca `last_success_at` ve `last_failure_at` her
+    taşıyıcının son sonucunu da kapsar (curl yolunun yanıtları köprüye uğramaz; köprünün kendi zamanları onları
+    görmezdi ve arayüz bir indirmeden sonra da "henüz denenmedi" derdi). Durum, seri ve son hata köprünündür.
+    İçerideki çağıranlar (devre kesici, src/web/upstream.py) köprünün kendi zamanlarını `snapshot()`tan okur.
+    """
+    snap = _health.snapshot()
+    success, failure = _connection.times()
+    own_success, own_failure = _health.last_success_at, _health.last_failure_at
+    snap["last_success_at"] = _iso(_latest(own_success, success))
+    snap["last_failure_at"] = _iso(_latest(own_failure, failure))
+    return snap
+
+
+def _latest(*moments: Optional[float]) -> Optional[float]:
+    known = [moment for moment in moments if moment is not None]
+    return max(known) if known else None
 
 
 def record_success() -> None:
@@ -269,9 +378,10 @@ def remove_on_health_change(fn: HealthChangeCallback) -> None:
 
 
 def reset() -> None:
-    """Durumu sıfırlar (testler)."""
-    global _health
+    """Durumu sıfırlar (testler): köprü ve bağlantı."""
+    global _health, _connection
     _health = BridgeHealth()
+    _connection = ConnectionState()
 
 
 # --- CLI ------------------------------------------------------------------------------------

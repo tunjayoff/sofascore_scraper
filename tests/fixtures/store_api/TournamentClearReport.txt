@@ -1,0 +1,10 @@
+# src.store.TournamentClearReport
+# kaynak: src/store/purge.py
+@dataclass(frozen=True)
+class TournamentClearReport:
+    tournament_id: int
+    season_id: Optional[int]
+    events: int
+    event_dirs: int
+    listings: int
+    catalog_rebuilt: bool

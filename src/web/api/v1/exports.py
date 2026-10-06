@@ -8,12 +8,19 @@ P21 ve SC-2).
 Dışa aktarma bir iştir (`POST /jobs {"kind": "export", "spec": {...}}`); kaydı iş kaydıdır. Kaynağın kimliği işin
 kimliğidir, alanları işin belirtiminden ve sonucundan gelir: veri kümesi, biçim, şema, profil, süzgeç, satır ve
 bayt sayısı, dosya adı; normalleştirilmiş bir veri kümesinde kayıtların şema sürümü (`schema_version`: kayıt
-sürümü taşımaz, onu taşıyan kap taşır; docs/design/04-schema-v1.md karar 19). Dosya
-`DATA_DIR/exports/<iş kimliği>.<uzantı>`dadır; yalnızca başarıyla bitmiş işin dosyası indirilir.
+sürümü taşımaz, onu taşıyan kap taşır; docs/design/04-schema-v1.md karar 19). Dosya `DATA_DIR/exports/`dadır,
+adı işin sonucundaki `file` alanıdır (FX-19'dan beri okunur bir ad; önceki işlerde `<iş kimliği>.<uzantı>`);
+yalnızca başarıyla bitmiş işin dosyası indirilir.
+
+`exports/` dizininde hiçbir işin sahiplenmediği dosyalar (`ssc export`'un yazdıkları; FX-19) da listelenir:
+kimliği `file:<ad>`dır, `source` "file", `job_id` null; veri kümesi ve biçim adından ve uzantısından okunur
+(bilinmiyorsa "unknown"). Dosyalar Store'dan okunur (`store.export.files`, `file_path`).
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+import datetime as dt
+import os
+from typing import Any, Dict, List, Literal, Optional, Set, Tuple
 
 from fastapi import APIRouter, Path, Query
 from pydantic import BaseModel, Field
@@ -29,16 +36,22 @@ from src.web.errors import error_responses
 
 router = APIRouter(tags=["exports"])
 
+FILE_PREFIX = "file:"  # `exports/`taki işsiz dosyanın kimlik öneki (FX-19)
+
 DEFAULT_PAGE_LIMIT = 50
 MAX_PAGE_LIMIT = 200
 HISTORY_LIMIT = 500
 
 
 class ExportRecord(BaseModel):
-    """An export: the job that writes it and, once it has succeeded, its file."""
+    """An export: the job that writes it and, once it has succeeded, its file; or a file of `exports/` no job
+    wrote (`ssc export`)."""
 
-    id: str = Field(description="Id of the export, the id of its job.")
-    job_id: str
+    id: str = Field(description="Id of the export: the id of its job, or `file:<name>` for a file no job wrote.")
+    source: Literal["job", "file"] = Field(
+        default="job", description="job: an export job; file: a file in `exports/` that no job wrote (`ssc export`).",
+    )
+    job_id: Optional[str] = Field(default=None, description="Null for a file no job wrote.")
     state: JobState = Field(description="State of the job; the file can be downloaded when `succeeded`.")
     dataset: str
     format: str
@@ -67,12 +80,52 @@ class ExportListResponse(BaseModel):
     page: PageInfo
 
 
+_KNOWN_FORMATS = {"csv": "csv", "jsonl": "jsonl", "parquet": "parquet", "sqlite": "sqlite", "db": "sqlite"}
+
+
+def _file_record(name: str, size: int, modified_at: float) -> ExportRecord:
+    """`exports/`taki bir işin olmayan dosyası: veri kümesi adın ilk parçasından, biçim uzantıdan."""
+    from src.services.data_jobs import DATASETS, MEDIA_TYPES
+
+    stem, _, ext = name.rpartition(".")
+    fmt = _KNOWN_FORMATS.get(ext.lower(), "unknown")
+    head = (stem or name).split("_", 1)[0].lower()
+    dataset = head if head in DATASETS else "unknown"
+    when = dt.datetime.fromtimestamp(modified_at, dt.timezone.utc).isoformat(timespec="seconds")
+    return ExportRecord(
+        id=f"{FILE_PREFIX}{name}", source="file", job_id=None, state=JobState.SUCCEEDED, dataset=dataset,
+        format=fmt, schema="normalized" if dataset != "unknown" else "unknown", profile=None, filter=ExportFilter(),
+        created_at=when, finished_at=when, bytes=size, file=name,
+        media_type=MEDIA_TYPES.get(fmt, "application/octet-stream"), available=True,
+    )
+
+
+def _sort_time(text: Optional[str]) -> float:
+    try:
+        return dt.datetime.fromisoformat(str(text).replace("Z", "+00:00")).timestamp() if text else 0.0
+    except ValueError:
+        return 0.0
+
+
+def _claimed(jobs: List[JobSnapshot]) -> Set[str]:
+    """İşlerin dosya adları: sonuçtaki `file`, yoksa FX-19'dan önceki `<iş kimliği>.<uzantı>`."""
+    from src.services.data_jobs import export_extension
+
+    names: Set[str] = set()
+    for job in jobs:
+        result = dict((job.result or {}).get("export") or {})
+        if result.get("file"):
+            names.add(str(result["file"]))
+        names.add(f"{job.id}.{export_extension(export_request(job.spec))}")
+    return names
+
+
 def _record(job: JobSnapshot) -> ExportRecord:
     spec = dict(job.spec)
     result: Dict[str, Any] = dict((job.result or {}).get("export") or {})
     flt = spec.get("filter") or {}
     return ExportRecord(
-        id=job.id, job_id=job.id, state=job.state, dataset=str(spec.get("dataset") or "events"),
+        id=job.id, source="job", job_id=job.id, state=job.state, dataset=str(spec.get("dataset") or "events"),
         format=str(spec.get("format") or "csv"), schema=str(spec.get("schema") or "normalized"),
         profile=spec.get("profile"),
         filter=ExportFilter(sport=flt.get("sport"), tournament_ids=list(flt.get("tournament_ids") or ()),
@@ -90,20 +143,27 @@ def _record(job: JobSnapshot) -> ExportRecord:
             responses=error_responses("invalid_request"))
 def list_exports(
     limit: int = Query(DEFAULT_PAGE_LIMIT, ge=1, le=MAX_PAGE_LIMIT),
-    cursor: Optional[str] = Query(None, max_length=64, description="`page.next_cursor` of the previous page."),
+    cursor: Optional[str] = Query(None, max_length=256, description="`page.next_cursor` of the previous page."),
 ) -> ExportListResponse:
-    """Export jobs of the data directory, newest first, running and failed ones included."""
+    """
+    Export jobs of the data directory, running and failed ones included, and the files of `exports/` that no job
+    wrote (`ssc export`; `source: "file"`), newest first.
+    """
     jobs = deps.job_manager().list(limit=HISTORY_LIMIT, kinds=[JobKind.EXPORT])
+    claimed = _claimed(jobs)
+    entries: List[Tuple[float, ExportRecord]] = [(_sort_time(job.created_at), _record(job)) for job in jobs]
+    entries += [(found.modified_at, _file_record(found.name, found.size, found.modified_at))
+                for found in deps.store().export.files() if found.name not in claimed]
+    records = [record for _when, record in sorted(entries, key=lambda pair: -pair[0])]
     start = 0
     if cursor:
-        position = next((i for i, job in enumerate(jobs) if job.id == cursor), None)
+        position = next((i for i, record in enumerate(records) if record.id == cursor), None)
         if position is None:
             raise UsageError("The cursor does not name an export of this list.", {"cursor": cursor})
         start = position + 1
-    page = jobs[start:start + limit]
-    more = start + limit < len(jobs)
-    return ExportListResponse(data=[_record(job) for job in page],
-                              page=PageInfo(limit=limit, next_cursor=page[-1].id if more and page else None))
+    page = records[start:start + limit]
+    more = start + limit < len(records)
+    return ExportListResponse(data=page, page=PageInfo(limit=limit, next_cursor=page[-1].id if more and page else None))
 
 
 @router.get(
@@ -116,10 +176,21 @@ def list_exports(
                                          "The export file (CSV, JSONL, Parquet or SQLite)."),
                **error_responses("not_found")},
 )
-def download_export(export_id: str = Path(max_length=64)) -> Download:
-    """The file of a succeeded export. 404 for an unknown id, an export that has not succeeded or a deleted file."""
-    from src.services.data_jobs import export_extension, export_path
+def download_export(export_id: str = Path(max_length=256)) -> Download:
+    """
+    The file of a succeeded export, or (`file:<name>`) a file of `exports/` that no job wrote. 404 for an unknown
+    id, an export that has not succeeded or a deleted file.
+    """
+    from src.services.data_jobs import export_path
 
+    if export_id.startswith(FILE_PREFIX):
+        name = export_id[len(FILE_PREFIX):]
+        found = deps.store().export.file_path(name)
+        if found is None:
+            raise NotFoundError("No export has this id.", {"export_id": export_id})
+        info = _file_record(name, 0, 0.0)
+        return Download(found, filename=name, media_type=info.media_type or "application/octet-stream",
+                        details={"export_id": export_id})
     job = deps.job_manager().get(export_id)
     if job is None or job.kind != JobKind.EXPORT:
         raise NotFoundError("No export has this id.", {"export_id": export_id})
@@ -128,8 +199,9 @@ def download_export(export_id: str = Path(max_length=64)) -> Download:
         raise NotFoundError("The export has no file (it has not succeeded).",
                             {"export_id": export_id, "state": job.state.value})
     request = export_request(job.spec)
-    path = export_path(str(deps.store().data_dir), job.id, request)
-    return Download(path, filename=f"sofascore-export-{job.id}.{export_extension(request)}",
+    named = deps.store().export.file_path(record.file) if record.file else None
+    path = named or export_path(str(deps.store().data_dir), job.id, request)
+    return Download(path, filename=os.path.basename(path),
                     media_type=record.media_type or "application/octet-stream", details={"export_id": export_id})
 
 

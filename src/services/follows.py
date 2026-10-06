@@ -3,21 +3,23 @@ Takipler servisi (docs/design/02-services.md 2.7 ve 4.3; docs/design/01-storage.
 P21): neyin indirileceği ve izleneceği. Okuma `follows` tablosundandır (Store.follows); yazma satırın kaynağına
 göre yapılır:
 
-  legacy  `config/leagues.txt` ve `config/league_sports.json` (yapılandırma dosyası olmayan her kurulum). Doğruluk
-          kaynağı dosyalardır: önce dosya yazılır (ConfigManager), tablo onun aynasıdır. Dosya yalnızca ad ve spor
-          tutar; sezon seçimi, canlı izleme ve kapatma bu satırlarda değiştirilemez (`invalid_request`).
+  legacy  `config/leagues.txt` ve `config/league_sports.json` (2.x'ten kalan lig listesi). Doğruluk kaynağı
+          dosyalardır: tablo onların aynasıdır. Dosya yalnızca ad ve spor tutar; bu satırlarda sezon seçimi, veri
+          seçimi, canlı izleme ve kapatma değiştirilemez (`invalid_request`). Satır `origin: "api"` ile takip
+          tablosuna alınabilir (`update`): önce satır `api` olur, sonra dosyadan çıkarılır; her alanı yazılabilir
+          olur. Taşıma açıktır: hiçbir kural satırları kendiliğinden taşımaz (plan maddesi FX-19).
   config  yapılandırma dosyasının `[[follow]]` girdileri: API'den değiştirilemez (`follow_managed`, 409).
-  api     `state.db`'nin kendisi: yapılandırma dosyası varken API'den eklenen turnuva takipleri ve her zaman
-          takım, oyuncu ve maç takipleri (dosya biçimi onları anlatamaz).
+  api     `state.db`'nin kendisi: API'den, web arayüzünden ve `ssc follows add` ile eklenen her takip.
 
-Yeni bir turnuva takibi: yapılandırma dosyası yoksa leagues.txt'e yazılır (bugünkü gibi), varsa `api` satırı
-olur. İndirmeler (`sync`) turnuvaları bu tablodan okur (`sync_tournaments`, plan maddesi FX-13): her kaynağın
-etkin turnuva takibi indirilir; `live = true` takipler ayrıca canlı servisin kapsamına girer.
+Yeni bir takip her zaman `api` satırıdır (plan maddesi FX-19; önceden yapılandırma dosyası yokken bir turnuva
+takibi leagues.txt'e yazılırdı ve sonra kilitli görünürdü). İndirmeler (`sync`) takipleri bu tablodan okur:
+turnuvalar `sync_tournaments` (plan maddesi FX-13), takım, oyuncu ve maç takipleri `sync_others` (FX-19); her
+kaynağın etkin takibi indirilir. `live = true` takipler ayrıca canlı servisin kapsamına girer.
 
 Yapılandırma dosyasının devraldığı bir `api` satırı, dosyadan sonra çıkarıldığında geri gelmez (ST-17'nin
 kuralı, karar P21): dosya kazanır; takip istenirse API'den yeniden eklenir.
 
-Turnuva araması SofaScore'a tek istek atar (istemci, ortak bütçe); engelleme ve ağ hatası tipli hatadır.
+SofaScore'da arama (`search`) tek istek atar (istemci, ortak bütçe); engelleme ve ağ hatası tipli hatadır.
 
 Bu modül web katmanını içe aktarmaz: leagues.txt ve spor dosyasının yazıcısı (`LegacyLeagues`) çağırandan gelir.
 """
@@ -25,9 +27,10 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Protocol, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Protocol, Sequence, Set, Tuple, Union
 
 from src.errors import ConflictError, NotFoundError, UpstreamBlockedError, UpstreamError, UsageError
+from src.exceptions import StorageError
 from src.logger import get_logger
 from src.sports import follow_slices, normalize_sport
 
@@ -41,10 +44,15 @@ TOURNAMENT = "tournament"
 ORIGIN_LEGACY = "legacy"
 ORIGIN_CONFIG = "config"
 ORIGIN_API = "api"
-# Bir kaynağın satırında değiştirilebilen alanlar
+# Bir kaynağın satırında değiştirilebilen alanlar. `origin`: leagues.txt'in satırını takip tablosuna almak için
+# (yalnızca "api" değeri; FX-19)
 FIELDS: Tuple[str, ...] = ("name", "sport", "seasons", "slices", "live", "enabled")
-WRITABLE: Mapping[str, Tuple[str, ...]] = {ORIGIN_LEGACY: ("sport",), ORIGIN_CONFIG: (), ORIGIN_API: FIELDS}
+ORIGIN_FIELD = "origin"
+WRITABLE: Mapping[str, Tuple[str, ...]] = {ORIGIN_LEGACY: ("sport", ORIGIN_FIELD), ORIGIN_CONFIG: (),
+                                           ORIGIN_API: FIELDS}
 SEARCH_LIMIT = 20
+# Aranabilen takip türleri (maç adla aranmaz; maç sayfasından ya da kimliğiyle takip edilir)
+SEARCH_KINDS: Tuple[str, ...] = (TOURNAMENT, "team", "player")
 _FOLLOW_ID = re.compile(r"^(tournament|team|player|event):([1-9][0-9]{0,18})$")
 _LAST_N = re.compile(r"^last:[1-9][0-9]{0,3}$")
 _NAME_FORBIDDEN = re.compile(r"[\r\n:/\\\x00]")
@@ -118,8 +126,15 @@ class NewFollow:
 
 
 @dataclass(frozen=True)
-class TournamentHit:
-    """SofaScore'un turnuva aramasındaki bir sonuç."""
+class SearchHit:
+    """
+    SofaScore aramasındaki bir sonuç (plan maddesi FX-19): turnuva, takım ya da oyuncu (`kind`).
+
+    category_*   turnuvanın kategorisi (takım ve oyuncuda boş)
+    country_*    ülke: turnuvada kategorinin `alpha2`'si, takımda ve oyuncuda varlığın `country`'si
+    team_*       oyuncunun takımı
+    followed     aynı türden bir takip bu varlığı zaten adlandırıyor
+    """
 
     id: int
     name: str
@@ -130,6 +145,14 @@ class TournamentHit:
     category_slug: Optional[str]
     country_code: Optional[str]
     followed: bool
+    kind: str = TOURNAMENT
+    country_name: Optional[str] = None
+    team_id: Optional[int] = None
+    team_name: Optional[str] = None
+
+
+# Eski ad (FX-13'e kadar yalnızca turnuva araması vardı)
+TournamentHit = SearchHit
 
 
 def follow_id(kind: str, entity_id: int) -> str:
@@ -190,13 +213,14 @@ def check_slices(slices: Any) -> Optional[Dict[str, List[str]]]:
 
 class FollowsService:
     """
-    Takipler: liste, ekleme, değiştirme, kaldırma ve SofaScore'da turnuva araması.
+    Takipler: liste, ekleme, değiştirme, kaldırma ve SofaScore'da arama.
 
-    store: veri dizininin deposu. legacy: leagues.txt yazıcısı. config_file: bir yapılandırma dosyası etkin mi
-    (yeni turnuva takipleri o zaman `api` kaynağıyla state.db'ye yazılır).
+    store: veri dizininin deposu. legacy: leagues.txt yazıcısı (ayna, kaldırma, spor ve takip tablosuna alma).
+    config_file: bir yapılandırma dosyası etkin mi; FX-19'dan beri yeni takibin nereye yazılacağını belirlemez
+    (her yeni takip `api` satırıdır), çağıranlar için kalır.
     """
 
-    def __init__(self, store: "Store", legacy: LegacyLeagues, *, config_file: bool) -> None:
+    def __init__(self, store: "Store", legacy: LegacyLeagues, *, config_file: bool = True) -> None:
         self._store = store
         self._legacy = legacy
         self._config_file = bool(config_file)
@@ -225,9 +249,16 @@ class FollowsService:
         """
         Bir eşitlemenin indirdiği turnuvalar: etkin turnuva takipleri, her kaynaktan (leagues.txt, yapılandırma
         dosyası, API ve `ssc follows`), konum sırasıyla (plan maddesi FX-13). Takım, oyuncu ve maç takipleri
-        indirilmez (plan bölüm 14'ün açık sorusu).
+        `sync_others`'tır.
         """
         return self.list(kind=TOURNAMENT, enabled=True)
+
+    def sync_others(self) -> List["Follow"]:
+        """
+        Bir eşitlemenin maçlarını indirdiği takım, oyuncu ve maç takipleri: etkin olanlar, konum sırasıyla (plan
+        maddesi FX-19; src/services/follow_sync.py).
+        """
+        return [row for row in self._store.follows.list(enabled=True) if row.kind != TOURNAMENT]
 
     def get(self, kind: str, entity_id: int) -> Optional["Follow"]:
         self._legacy.leagues()
@@ -246,9 +277,9 @@ class FollowsService:
 
     def add(self, new: NewFollow) -> "Follow":
         """
-        Yeni bir takip. Varlık ya da turnuva adı zaten takipteyse `follow_exists` (409). Yapılandırma dosyası
-        yokken bir turnuva takibi leagues.txt'e yazılır; dosya yalnızca ad ve spor tuttuğu için öteki alanların
-        varsayılan olmayan değeri `invalid_request`tir.
+        Yeni bir takip, her zaman takip tablosunun `api` satırı (yapılandırma dosyası olsun olmasın; FX-19): her
+        alanı sonra da değiştirilebilir. Varlık ya da turnuva adı zaten takipteyse (leagues.txt'in satırı da)
+        `follow_exists` (409); leagues.txt'te duran bir lig `origin: "api"` ile takip tablosuna alınır (`update`).
         """
         from src.store import FollowSpec
 
@@ -258,27 +289,7 @@ class FollowsService:
         sport = check_sport(new.sport)
         seasons = check_seasons(new.seasons)
         slices = check_slices(new.slices)
-        if new.kind == TOURNAMENT and not self._config_file:
-            unsupported = [field for field, value, default in (("seasons", seasons, "all"), ("slices", slices, None),
-                                                             ("live", new.live, False), ("enabled", new.enabled, True))
-                           if value != default]
-            if unsupported:
-                raise UsageError(
-                    "This follow is kept in config/leagues.txt, which stores the name and the sport only; set the "
-                    "other fields in a config file.", {"unsupported": unsupported, "origin": ORIGIN_LEGACY},
-                )
-            if self.get(TOURNAMENT, new.entity_id) is not None:
-                raise ConflictError("The tournament is already followed.", {"id": follow_id(TOURNAMENT, new.entity_id)},
-                                    code="follow_exists")
-            if not self._legacy.add(name, new.entity_id):
-                raise ConflictError("The tournament or its name is already followed.",
-                                    {"id": follow_id(TOURNAMENT, new.entity_id), "name": name}, code="follow_exists")
-            if sport:
-                self._legacy.set_sport(new.entity_id, sport)
-            found = self.get(TOURNAMENT, new.entity_id)
-            if found is None:  # tablo yansıtılamadı (state.db okunamıyor): dosya yazıldı, satır sonra gelir
-                raise _mirror_failed(new.entity_id)
-            return found
+        self._legacy.leagues()  # leagues.txt'in aynası güncel olsun: dosyadaki lig `follow_exists` alır
         spec = FollowSpec(kind=new.kind, entity_id=new.entity_id, name=name, sport=sport, seasons=seasons,
                           slices=slices, live=new.live, enabled=new.enabled)
         return self._store.follows.add(spec, origin=ORIGIN_API)
@@ -286,17 +297,25 @@ class FollowsService:
     def update(self, kind: str, entity_id: int, changes: Mapping[str, Any]) -> "Follow":
         """
         Bir takibin alanlarını değiştirir. Bilinmeyen takip `not_found`; yapılandırma dosyasının takibi
-        `follow_managed` (409); leagues.txt'in takibinde yalnızca `sport` değişir (öteki alanlar `invalid_request`).
+        `follow_managed` (409); leagues.txt'in takibinde yalnızca `sport` değişir (öteki alanlar `invalid_request`),
+        ya da `origin: "api"` ile satır takip tablosuna alınır ve aynı çağrıdaki öteki alanlar da yazılır (`adopt`).
         """
         row = self.get(kind, entity_id)
         if row is None:
             raise NotFoundError("No follow has this id.", {"id": follow_id(kind, entity_id)})
-        unknown = sorted(set(changes) - set(FIELDS))
+        unknown = sorted(set(changes) - set(FIELDS) - {ORIGIN_FIELD})
         if unknown:
             raise UsageError("These fields cannot be changed.", {"fields": unknown})
         if row.origin == ORIGIN_CONFIG:
             raise ConflictError("The follow comes from the config file; change it there.",
                                 {"id": follow_id(kind, entity_id), "origin": ORIGIN_CONFIG}, code="follow_managed")
+        if ORIGIN_FIELD in changes:
+            if changes[ORIGIN_FIELD] != ORIGIN_API:
+                raise UsageError("A follow can only be moved into the follows table (origin api).",
+                                 {"field": ORIGIN_FIELD})
+            if row.origin == ORIGIN_LEGACY:
+                row = self.adopt(kind, entity_id)
+            changes = {field: value for field, value in changes.items() if field != ORIGIN_FIELD}
         values: Dict[str, Any] = {}
         for field, value in changes.items():
             if field == "name":
@@ -323,7 +342,34 @@ class FollowsService:
             if found is None:
                 raise _mirror_failed(entity_id)
             return found
+        if not values:
+            return row
         return self._store.follows.update(kind, entity_id, **values)
+
+    def adopt(self, kind: str, entity_id: int) -> "Follow":
+        """
+        leagues.txt'in bir takibini takip tablosuna alır (plan maddesi FX-19): önce satır `api` olur (alanları ve
+        konumu aynı), sonra lig dosyadan ve spor dosyasından çıkarılır; bir sonraki ayna onu geri getirmez. Dosya
+        yazılamazsa satır yine `api` kalır (ayna isteği uygulanmaz) ve uyarı yazılır. `api` satırında hiçbir şey
+        yapmaz; yapılandırma dosyasının takibi `follow_managed`.
+        """
+        row = self.get(kind, entity_id)
+        if row is None:
+            raise NotFoundError("No follow has this id.", {"id": follow_id(kind, entity_id)})
+        if row.origin == ORIGIN_CONFIG:
+            raise ConflictError("The follow comes from the config file; change it there.",
+                                {"id": follow_id(kind, entity_id), "origin": ORIGIN_CONFIG}, code="follow_managed")
+        if row.origin != ORIGIN_LEGACY:
+            return row
+        adopted = self._store.follows.adopt(kind, entity_id, origin=ORIGIN_API)
+        try:
+            self._legacy.remove(entity_id)
+            self._legacy.set_sport(entity_id, None)
+        except (OSError, StorageError) as e:
+            logger.warning("Follow %s moved into the follows table, but config/leagues.txt could not be updated: %s",
+                           follow_id(kind, entity_id), e)
+        logger.info("Follow %s moved from config/leagues.txt into the follows table", follow_id(kind, entity_id))
+        return adopted
 
     def remove(self, kind: str, entity_id: int) -> "Follow":
         """
@@ -346,51 +392,81 @@ class FollowsService:
 
     # -- SofaScore'da arama -----------------------------------------------------------------------------
 
-    def search_tournaments(self, query: str, *, sport: Optional[str] = None) -> List[TournamentHit]:
+    def search_tournaments(self, query: str, *, sport: Optional[str] = None) -> List[SearchHit]:
+        """Yalnızca turnuvalar (`search(..., kinds=("tournament",))`)."""
+        return self.search(query, sport=sport, kinds=(TOURNAMENT,))
+
+    def search(self, query: str, *, sport: Optional[str] = None,
+               kinds: Sequence[str] = (TOURNAMENT,)) -> List[SearchHit]:
         """
-        SofaScore'un turnuva araması (tek istek, istemcinin API kökü, ortak bütçe), en çok 20 sonuç. Boş liste:
-        SofaScore yanıt verdi, bir şey bulamadı. Engelleme `blocked` / `rate_limited` (503), ağ hatası ve
-        beklenmeyen yanıt `upstream_error` (502); `details.reason` src/web/upstream.py'deki nedendir.
+        SofaScore'da ada göre arama (tek istek, istemcinin API kökü, ortak bütçe), en çok 20 sonuç, SofaScore'un
+        sırasıyla (plan maddesi FX-19). kinds: istenen türler ("tournament", "team", "player").
+
+        Yalnızca turnuva istendiğinde `/search/unique-tournaments/{q}` (2.x'ten beri kullanılan uç nokta); takım ya
+        da oyuncu istendiğinde `/search/all?q=...&page=0` (docs/all-sports/endpoints.csv, örneği
+        research/all_sports/samples/football/search-all__1.json): sonuçların `type`'ı `team`, `player` ya da
+        `uniqueTournament`tır. Bu uç noktada turnuva sonucunun biçimi örnekte yoktur: turnuva aramasınınkiyle
+        aynı varsayılır (deneysel; canlı doğrulamada denetlenecek).
+
+        Boş liste: SofaScore yanıt verdi, bir şey bulamadı (404 de "bulunamadı" sayılır). Engelleme `blocked` /
+        `rate_limited` (503), ağ hatası ve beklenmeyen yanıt `upstream_error` (502); `details.reason`
+        src/web/upstream.py'deki nedendir.
         """
-        from src import bridge_health
-        from src.client import api_url, endpoints
-        from src.exceptions import APIError, NetworkError, RateLimitError, ResourceNotFoundError, SofaScoreScraperError
-        from src.utils import make_api_request
+        from src.client import endpoints
 
         text = (query or "").strip()
         if len(text) < 2:
             raise UsageError("The search text needs at least 2 characters.", {"field": "q"})
         wanted_sport = check_sport(sport)
-        before = bridge_health.snapshot()
-        try:
-            # Etkileşimli arama: 403 bekleme döngüsüyle bir sunucu işçisini dakikalarca tutma
-            data = make_api_request(api_url(endpoints.search_unique_tournaments(text)), max_retries=1, timeout=10,
-                                    raise_errors=True)
-        except SofaScoreScraperError as e:
-            if isinstance(e, RateLimitError):
-                raise UpstreamBlockedError("SofaScore is rate limiting us.", {"reason": "rate_limited"},
-                                           code="rate_limited") from None
-            if isinstance(e, APIError) and not isinstance(e, ResourceNotFoundError) and e.status_code == 403:
-                reason = "browser" if _browser_failed(before, bridge_health.snapshot()) else "blocked"
-                raise UpstreamBlockedError("SofaScore refused the request.", {"reason": reason},
-                                           code="blocked") from None
-            reason = "network" if isinstance(e, NetworkError) else "upstream"
-            logger.error("Tournament search failed (%s): %s", reason, type(e).__name__)
-            raise UpstreamError("SofaScore could not be searched.", {"reason": reason}) from None
-        results = data.get("uniqueTournaments", data.get("results")) if isinstance(data, dict) else None
+        wanted = tuple(dict.fromkeys(kinds))
+        unknown = [kind for kind in wanted if kind not in SEARCH_KINDS]
+        if not wanted or unknown:
+            raise UsageError("Unknown search kind.", {"field": "kinds", "kinds": unknown})
+        only_tournaments = wanted == (TOURNAMENT,)
+        path = endpoints.search_unique_tournaments(text) if only_tournaments else endpoints.search_all(text)
+        data = self._ask(path)
+        if data is None:
+            return []
+        key = "uniqueTournaments" if only_tournaments else "results"
+        results = data.get(key, data.get("results")) if isinstance(data, dict) else None
         if not isinstance(results, list):
-            logger.error("Tournament search: the answer has no result list")
+            logger.error("Search: the answer has no result list")
             raise UpstreamError("SofaScore answered in an unexpected form.", {"reason": "upstream"})
-        followed = {row.entity_id for row in self._store.follows.list(kind=TOURNAMENT)}
-        hits: List[TournamentHit] = []
+        followed = {(row.kind, row.entity_id) for row in self._store.follows.list()}
+        hits: List[SearchHit] = []
         for item in results:
-            hit = _hit(item, followed)
-            if hit is None or (wanted_sport is not None and hit.sport != wanted_sport):
+            hit = _search_hit(item, followed, typed=not only_tournaments)
+            if hit is None or hit.kind not in wanted or (wanted_sport is not None and hit.sport != wanted_sport):
                 continue
             hits.append(hit)
             if len(hits) >= SEARCH_LIMIT:
                 break
         return hits
+
+    def _ask(self, path: str) -> Any:
+        """Aramanın tek isteği; 404 None (bulunamadı), öteki hatalar tipli hata."""
+        from src import bridge_health
+        from src.client import api_url
+        from src.exceptions import APIError, NetworkError, RateLimitError, ResourceNotFoundError, SofaScoreScraperError
+        from src.utils import make_api_request
+
+        before = bridge_health.snapshot()
+        try:
+            # Etkileşimli arama: 403 bekleme döngüsüyle bir sunucu işçisini dakikalarca tutma
+            return make_api_request(api_url(path), max_retries=1, timeout=10, raise_errors=True)
+        except SofaScoreScraperError as e:
+            if isinstance(e, ResourceNotFoundError):
+                return None
+            if isinstance(e, RateLimitError):
+                raise UpstreamBlockedError("SofaScore is rate limiting us.", {"reason": "rate_limited"},
+                                           code="rate_limited") from None
+            if isinstance(e, APIError) and e.status_code == 403:
+                reason = "browser" if _browser_failed(before, bridge_health.snapshot()) else "blocked"
+                raise UpstreamBlockedError("SofaScore refused the request.", {"reason": reason},
+                                           code="blocked") from None
+            reason = "network" if isinstance(e, NetworkError) else "upstream"
+            logger.error("Search failed (%s): %s", reason, type(e).__name__)
+            raise UpstreamError("SofaScore could not be searched.", {"reason": reason}) from None
 
 
 def _value_of(row: "Follow", field: str) -> Any:
@@ -401,8 +477,6 @@ def _value_of(row: "Follow", field: str) -> Any:
 
 
 def _mirror_failed(entity_id: int) -> Exception:
-    from src.exceptions import StorageError
-
     return StorageError("The follows table could not be updated from config/leagues.txt.",
                         detail=follow_id(TOURNAMENT, entity_id))
 
@@ -413,24 +487,62 @@ def _browser_failed(before: Mapping[str, Any], after: Mapping[str, Any]) -> bool
     return bool(last.get("kind") == "browser" and after.get("last_failure_at") != before.get("last_failure_at"))
 
 
-def _hit(item: Any, followed: set) -> Optional[TournamentHit]:
-    entity = item.get("entity", item) if isinstance(item, dict) else None
-    if not isinstance(entity, dict):
+# `/search/all` sonuçlarının `type`'ı → takip türü
+_SEARCH_TYPES: Mapping[str, str] = {"uniqueTournament": TOURNAMENT, "team": "team", "player": "player"}
+
+
+def _text(value: Any) -> Optional[str]:
+    return value if isinstance(value, str) and value else None
+
+
+def _number(value: Any) -> Optional[int]:
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _mapping(value: Any) -> Mapping[str, Any]:
+    return value if isinstance(value, Mapping) else {}
+
+
+def _sport_of(*holders: Mapping[str, Any]) -> Optional[str]:
+    for holder in holders:
+        sport = _mapping(holder.get("sport"))
+        found = normalize_sport(sport.get("slug") or sport.get("name"))
+        if found is not None:
+            return found
+    return None
+
+
+def _search_hit(item: Any, followed: Set[Tuple[str, int]], *, typed: bool) -> Optional[SearchHit]:
+    """
+    Bir arama sonucu → SearchHit; tanınmayan biçim ya da tür None. typed: `/search/all`'ın sonucu (`type` alanı
+    türü söyler); değilse turnuva aramasının sonucu.
+    """
+    if not isinstance(item, Mapping):
         return None
-    tid, name = entity.get("id"), entity.get("name")
-    if isinstance(tid, bool) or not isinstance(tid, int) or not isinstance(name, str) or not name:
+    kind = _SEARCH_TYPES.get(str(item.get("type"))) if typed else TOURNAMENT
+    entity = item.get("entity", item)
+    if kind is None or not isinstance(entity, Mapping):
         return None
-    category = entity.get("category") if isinstance(entity.get("category"), dict) else {}
-    sport_obj = category.get("sport") if isinstance(category.get("sport"), dict) else {}
-    sport = normalize_sport(sport_obj.get("slug") or sport_obj.get("name"))
-    cid = category.get("id")
-    return TournamentHit(
-        id=tid, name=name, slug=entity.get("slug") if isinstance(entity.get("slug"), str) else None, sport=sport,
-        category_id=cid if isinstance(cid, int) and not isinstance(cid, bool) else None,
-        category_name=category.get("name") if isinstance(category.get("name"), str) else None,
-        category_slug=category.get("slug") if isinstance(category.get("slug"), str) else None,
-        country_code=category.get("alpha2") if isinstance(category.get("alpha2"), str) else None,
-        followed=tid in followed,
+    entity_id, name = _number(entity.get("id")), _text(entity.get("name"))
+    if entity_id is None or name is None:
+        return None
+    country = _mapping(entity.get("country"))
+    if kind == TOURNAMENT:
+        category = _mapping(entity.get("category"))
+        return SearchHit(
+            id=entity_id, name=name, slug=_text(entity.get("slug")), sport=_sport_of(category, entity),
+            category_id=_number(category.get("id")), category_name=_text(category.get("name")),
+            category_slug=_text(category.get("slug")),
+            country_code=_text(category.get("alpha2")) or _text(_mapping(category.get("country")).get("alpha2")),
+            followed=(TOURNAMENT, entity_id) in followed, kind=TOURNAMENT,
+            country_name=_text(_mapping(category.get("country")).get("name")),
+        )
+    team = _mapping(entity.get("team")) if kind == "player" else {}
+    return SearchHit(
+        id=entity_id, name=name, slug=_text(entity.get("slug")), sport=_sport_of(entity, team),
+        category_id=None, category_name=None, category_slug=None, country_code=_text(country.get("alpha2")),
+        followed=(kind, entity_id) in followed, kind=kind, country_name=_text(country.get("name")),
+        team_id=_number(team.get("id")), team_name=_text(team.get("name")),
     )
 
 
@@ -441,7 +553,9 @@ __all__ = [
     "KINDS",
     "LegacyLeagues",
     "NewFollow",
+    "SEARCH_KINDS",
     "SEARCH_LIMIT",
+    "SearchHit",
     "TournamentHit",
     "check_name",
     "check_seasons",

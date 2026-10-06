@@ -24,7 +24,7 @@ from src import redact
 from src.config import SinkSpec
 from src.exceptions import APIError, NetworkError, RateLimitError, ResourceNotFoundError
 from src.services.status import StatusService
-from src.store import SchemaTooNew, StreamEvent, open_store
+from src.store import FollowSpec, SchemaTooNew, StreamEvent, open_store
 from src.web import deps, security
 from src.web.api.v1 import meta
 from src.web.app import app
@@ -207,8 +207,8 @@ def test_a_folder_written_by_3_0_has_a_disk_total(tmp_path: Path, monkeypatch: p
 
 def test_status_lists_followed_tournaments_without_matches(canonical: sf.LegacyFixture,
                                                            monkeypatch: pytest.MonkeyPatch) -> None:
-    leagues = {**deps.config_manager().get_leagues(), 424242: "Nowhere League"}
-    monkeypatch.setattr(deps.config_manager(), "get_leagues", lambda: leagues)
+    # FX-19: `followed` takip tablosundandır (her kaynak); API'den eklenen takip de sayılır
+    open_store(canonical.data_dir).follows.add(FollowSpec(kind="tournament", entity_id=424242, name="Nowhere League"))
     by_id = {t["tournament_id"]: t for t in data(client.get("/api/v1/status"))["summary"]["tournaments"]}
     assert by_id[424242] == {
         "tournament_id": 424242, "name": "Nowhere League", "followed": True, "matches": 0, "details": 0,

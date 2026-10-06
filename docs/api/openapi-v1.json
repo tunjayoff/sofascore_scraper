@@ -706,7 +706,7 @@
           "follows"
         ],
         "summary": "Follow something",
-        "description": "Add a follow and return it (201, with `Location`). A tournament follow is written to config/leagues.txt when\nno config file is in use (then only `name` and `sport` can be set), else to the follows table. A follow of a\nteam, a player or an event is always kept in the follows table. 409 `follow_exists` for an entity or a\ntournament name that is followed already.",
+        "description": "Add a follow and return it (201, with `Location`). Every new follow is kept in the follows table (`origin`\napi), with or without a config file, so each of its fields can be changed later. 409 `follow_exists` for an\nentity or a tournament name that is followed already (also by config/leagues.txt: move that one with PATCH\n`origin: \"api\"`).",
         "operationId": "addFollow",
         "requestBody": {
           "required": true,
@@ -881,7 +881,7 @@
           "follows"
         ],
         "summary": "Change a follow",
-        "description": "Change the given fields and return the follow. A follow of the config file cannot be changed here (409\n`follow_managed`); one of config/leagues.txt only its sport (`writable` says which fields can change).",
+        "description": "Change the given fields and return the follow. A follow of the config file cannot be changed here (409\n`follow_managed`); one of config/leagues.txt only its sport, unless `origin: \"api\"` moves it into the follows\ntable first (`writable` says which fields can change).",
         "operationId": "updateFollow",
         "parameters": [
           {
@@ -995,7 +995,7 @@
           "follows"
         ],
         "summary": "Stop following",
-        "description": "Remove the follow and return it as it was. Stored data stays. Refused while a job runs (409), because a job\nreads the names and sports of the follows; a follow of the config file is removed there (409 `follow_managed`).",
+        "description": "Remove the follow and return it as it was. Stored data stays, unless `delete_data=true` (a tournament follow):\nthen a `clear` job deletes that tournament's data, under the `maintenance` lease like every clear; the follow\nis removed once the job holds the lease. Refused while a job runs (409), because a job reads the names and\nsports of the follows; a follow of the config file is removed there (409 `follow_managed`).",
         "operationId": "removeFollow",
         "parameters": [
           {
@@ -1009,6 +1009,18 @@
               "title": "Follow Id"
             },
             "description": "`<kind>:<id>`, for example `tournament:17`."
+          },
+          {
+            "name": "delete_data",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Also delete the tournament's stored data (its events, schedules and season list) with a `clear` job (`clear_job` in the answer). Tournament follows only.",
+              "default": false,
+              "title": "Delete Data"
+            },
+            "description": "Also delete the tournament's stored data (its events, schedules and season list) with a `clear` job (`clear_job` in the answer). Tournament follows only."
           }
         ],
         "responses": {
@@ -1017,7 +1029,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FollowResponse"
+                  "$ref": "#/components/schemas/FollowRemoveResponse"
                 }
               }
             }
@@ -1052,6 +1064,16 @@
               }
             }
           },
+          "400": {
+            "description": "invalid_request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            }
+          },
           "403": {
             "description": "forbidden_origin",
             "content": {
@@ -1073,7 +1095,7 @@
             }
           },
           "409": {
-            "description": "follow_managed, job_running, data_operation_running",
+            "description": "follow_managed, job_running, data_operation_running, instance_running",
             "content": {
               "application/json": {
                 "schema": {
@@ -1242,8 +1264,8 @@
         "tags": [
           "tournaments"
         ],
-        "summary": "Search tournaments on SofaScore",
-        "description": "Look the text up on SofaScore (one request, the shared request budget), at most 20 tournaments. An empty\nlist: SofaScore answered and found nothing. 503 `blocked` / `rate_limited` and 502 `upstream_error` when it\ndid not answer; `details.reason` is blocked, browser, rate_limited, network or upstream. POST, because every\ncall sends a request to SofaScore (a GET could be triggered by another site).",
+        "summary": "Search tournaments, teams and players on SofaScore",
+        "description": "Look the text up on SofaScore (one request, the shared request budget), at most 20 hits of the kinds asked\nfor (`kinds`; tournaments by default), each typed by `kind`. An empty list: SofaScore answered and found\nnothing. 503 `blocked` / `rate_limited` and 502 `upstream_error` when it did not answer; `details.reason` is\nblocked, browser, rate_limited, network or upstream. POST, because every call sends a request to SofaScore (a\nGET could be triggered by another site).",
         "operationId": "searchTournaments",
         "requestBody": {
           "content": {
@@ -3304,16 +3326,16 @@
               "anyOf": [
                 {
                   "type": "string",
-                  "pattern": "^(tournament|event):[1-9][0-9]{0,18}$"
+                  "pattern": "^(tournament|team|player|event):[1-9][0-9]{0,18}$"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Only jobs whose spec names this tournament (`tournament:17`: its `league_id`, a selection or a follow) or this event (`event:123`: a selection's or `event_ids`' event). A job over every follow names none.",
+              "description": "Only jobs whose spec names this tournament (`tournament:17`: its `league_id`, a selection or a follow), this team or player (`team:42`, `player:7`: a follow) or this event (`event:123`: a selection's, a follow's or `event_ids`' event). A job over every follow names none.",
               "title": "Target"
             },
-            "description": "Only jobs whose spec names this tournament (`tournament:17`: its `league_id`, a selection or a follow) or this event (`event:123`: a selection's or `event_ids`' event). A job over every follow names none."
+            "description": "Only jobs whose spec names this tournament (`tournament:17`: its `league_id`, a selection or a follow), this team or player (`team:42`, `player:7`: a follow) or this event (`event:123`: a selection's, a follow's or `event_ids`' event). A job over every follow names none."
           }
         ],
         "responses": {
@@ -3811,7 +3833,7 @@
           "exports"
         ],
         "summary": "List exports",
-        "description": "Export jobs of the data directory, newest first, running and failed ones included.",
+        "description": "Export jobs of the data directory, running and failed ones included, and the files of `exports/` that no job\nwrote (`ssc export`; `source: \"file\"`), newest first.",
         "operationId": "listExports",
         "parameters": [
           {
@@ -3834,7 +3856,7 @@
               "anyOf": [
                 {
                   "type": "string",
-                  "maxLength": 64
+                  "maxLength": 256
                 },
                 {
                   "type": "null"
@@ -3906,7 +3928,7 @@
           "exports"
         ],
         "summary": "Download an export",
-        "description": "The file of a succeeded export. 404 for an unknown id, an export that has not succeeded or a deleted file.",
+        "description": "The file of a succeeded export, or (`file:<name>`) a file of `exports/` that no job wrote. 404 for an unknown\nid, an export that has not succeeded or a deleted file.",
         "operationId": "downloadExport",
         "parameters": [
           {
@@ -3915,7 +3937,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "maxLength": 64,
+              "maxLength": 256,
               "title": "Export Id"
             }
           }
@@ -4760,7 +4782,8 @@
                 "type": "null"
               }
             ],
-            "title": "Last Success At"
+            "title": "Last Success At",
+            "description": "Last answered request, any transport."
           },
           "last_failure_at": {
             "anyOf": [
@@ -4771,7 +4794,8 @@
                 "type": "null"
               }
             ],
-            "title": "Last Failure At"
+            "title": "Last Failure At",
+            "description": "Last failed request, any transport (a refusal, 429, 5xx, timeout, network)."
           },
           "failing_since": {
             "anyOf": [
@@ -4820,7 +4844,7 @@
           "thresholds"
         ],
         "title": "BridgeHealth",
-        "description": "Whether SofaScore answers the requests of this process."
+        "description": "Whether SofaScore answers the requests of this process. `state`, `consecutive_failures`, `failing_since` and\n`last_error` count the refusals of the browser bridge; `last_success_at` and `last_failure_at` are the last\nanswered and the last failed request of any transport (curl or the bridge)."
       },
       "BridgeLastError": {
         "properties": {
@@ -5217,11 +5241,154 @@
             "title": "Confirm",
             "description": "Must be true: the stored data of the scope is deleted.",
             "default": false
+          },
+          "tournament_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tournament Id",
+            "description": "Only this tournament's data: its events (with their payloads and odds history), schedules and season list; with `season_id` only that season's events and schedule. `scope` must be `all`. Follows, the change log, the job history, backups and exports stay."
+          },
+          "season_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Season Id",
+            "description": "With `tournament_id`: only this season."
           }
         },
         "additionalProperties": false,
         "type": "object",
         "title": "ClearJobSpec"
+      },
+      "ConnectionCheck": {
+        "properties": {
+          "at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At",
+            "description": "ISO-8601, UTC."
+          },
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Why it failed (the check's `reason`); null when ok."
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok"
+        ],
+        "title": "ConnectionCheck",
+        "description": "The last connection check of this server (`POST /status/check`)."
+      },
+      "ConnectionStatus": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "never_tried",
+              "ok",
+              "failed"
+            ],
+            "title": "State",
+            "description": "never_tried: no request has ended since the server started; ok: the last one was answered (200 or 404); failed: the last one was not."
+          },
+          "last_success_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Success At",
+            "description": "ISO-8601, UTC."
+          },
+          "last_failure_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Failure At",
+            "description": "ISO-8601, UTC."
+          },
+          "last_failure_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Failure Reason",
+            "description": "403, 429, 5xx, timeout, network, parse or other."
+          },
+          "last_failure_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Failure Status",
+            "description": "HTTP status of the last failure, if any."
+          },
+          "last_check": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConnectionCheck"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The last connection check since the server started; null: none yet."
+          }
+        },
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "title": "ConnectionStatus",
+        "description": "Whether this server's requests reach SofaScore: the outcome of the last request it sent (a job of this server,\na search, the connection check). Separate from `bridge`, which counts refused requests only and reads `ok`\nbefore any request. Requests of other processes (`ssc` commands, `ssc watch`) are not counted here."
       },
       "CricketInnings": {
         "properties": {
@@ -6258,11 +6425,29 @@
           "id": {
             "type": "string",
             "title": "Id",
-            "description": "Id of the export, the id of its job."
+            "description": "Id of the export: the id of its job, or `file:<name>` for a file no job wrote."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "job",
+              "file"
+            ],
+            "title": "Source",
+            "description": "job: an export job; file: a file in `exports/` that no job wrote (`ssc export`).",
+            "default": "job"
           },
           "job_id": {
-            "type": "string",
-            "title": "Job Id"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id",
+            "description": "Null for a file no job wrote."
           },
           "state": {
             "$ref": "#/components/schemas/JobState",
@@ -6409,7 +6594,6 @@
         "type": "object",
         "required": [
           "id",
-          "job_id",
           "state",
           "dataset",
           "format",
@@ -6418,7 +6602,7 @@
           "available"
         ],
         "title": "ExportRecord",
-        "description": "An export: the job that writes it and, once it has succeeded, its file."
+        "description": "An export: the job that writes it and, once it has succeeded, its file; or a file of `exports/` no job\nwrote (`ssc export`)."
       },
       "FightScore": {
         "properties": {
@@ -6556,7 +6740,7 @@
               }
             ],
             "title": "Slices",
-            "description": "Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and `slices.<sport>` of GET /settings); `{\"include\": [...]}` = only these; `{\"enable\": [...], \"disable\": [...]}` = changes to the defaults. What is not selected is never fetched. Not available for a follow kept in config/leagues.txt (no config file)."
+            "description": "Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and `slices.<sport>` of GET /settings); `{\"include\": [...]}` = only these; `{\"enable\": [...], \"disable\": [...]}` = changes to the defaults. What is not selected is never fetched."
           },
           "live": {
             "type": "boolean",
@@ -6576,7 +6760,7 @@
           "name"
         ],
         "title": "FollowCreate",
-        "description": "A new follow. Without a config file a tournament follow is written to config/leagues.txt (name and sport)."
+        "description": "A new follow, kept in the follows table (`origin` api): every field can be changed later."
       },
       "FollowListResponse": {
         "properties": {
@@ -6681,6 +6865,19 @@
               }
             ],
             "title": "Enabled"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "api"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin",
+            "description": "`api` moves a follow of config/leagues.txt into the follows table: it is removed from the file and every field becomes writable; the other fields of the same request are applied after the move. A follow of the follows table is left as it is."
           }
         },
         "additionalProperties": false,
@@ -6776,7 +6973,7 @@
               "api"
             ],
             "title": "Origin",
-            "description": "legacy: config/leagues.txt; config: the config file (read-only here); api: added here."
+            "description": "legacy: config/leagues.txt (the 2.x league list; only `sport` can change, or PATCH `origin: \"api\"` moves it into the follows table); config: the config file (read-only here); api: the follows table (added here, with `ssc follows add` or moved from config/leagues.txt)."
           },
           "position": {
             "type": "integer",
@@ -6828,6 +7025,18 @@
         ],
         "title": "FollowRecord",
         "description": "Something the platform downloads and watches: a tournament, a team, a player or one event."
+      },
+      "FollowRemoveResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RemovedFollow"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "FollowRemoveResponse"
       },
       "FollowResponse": {
         "properties": {
@@ -6950,6 +7159,9 @@
           "bridge": {
             "$ref": "#/components/schemas/BridgeHealth"
           },
+          "connection": {
+            "$ref": "#/components/schemas/ConnectionStatus"
+          },
           "throttle": {
             "$ref": "#/components/schemas/ThrottleStatus"
           }
@@ -6960,6 +7172,7 @@
           "version",
           "api_version",
           "bridge",
+          "connection",
           "throttle"
         ],
         "title": "Health"
@@ -8376,6 +8589,158 @@
         "title": "RefreshJobSpec",
         "description": "Without `event_ids`: the stored records that are due (of one tournament with `league_id`)."
       },
+      "RemovedFollow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "`<kind>:<entity_id>`."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "tournament",
+              "team",
+              "player",
+              "event"
+            ],
+            "title": "Kind"
+          },
+          "entity_id": {
+            "type": "integer",
+            "title": "Entity Id",
+            "description": "SofaScore's id of the followed entity."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "sport": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sport",
+            "description": "Stored sport, else (tournaments) the one its events show."
+          },
+          "seasons": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Seasons",
+            "description": "`all`, `current`, `last:N` or a list of season ids."
+          },
+          "slices": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slices",
+            "description": "Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and `slices.<sport>` of GET /settings); `{\"include\": [...]}` = only these; `{\"enable\": [...], \"disable\": [...]}` = changes to the defaults. What is not selected is never fetched."
+          },
+          "live": {
+            "type": "boolean",
+            "title": "Live",
+            "description": "The live service watches it (`ssc watch`)."
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "legacy",
+              "config",
+              "api"
+            ],
+            "title": "Origin",
+            "description": "legacy: config/leagues.txt (the 2.x league list; only `sport` can change, or PATCH `origin: \"api\"` moves it into the follows table); config: the config file (read-only here); api: the follows table (added here, with `ssc follows add` or moved from config/leagues.txt)."
+          },
+          "position": {
+            "type": "integer",
+            "title": "Position"
+          },
+          "writable": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Writable",
+            "description": "Fields PATCH can change on this follow."
+          },
+          "created_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At Utc"
+          },
+          "updated_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At Utc"
+          },
+          "clear_job": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Job"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "With `delete_data=true`: the clear job that deletes the tournament's data."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "entity_id",
+          "name",
+          "seasons",
+          "live",
+          "enabled",
+          "origin",
+          "position",
+          "writable"
+        ],
+        "title": "RemovedFollow",
+        "description": "The follow as it was, and the clear job that deletes its data (`delete_data=true`)."
+      },
       "RestoreJobSpec": {
         "properties": {
           "name": {
@@ -8608,6 +8973,63 @@
         ],
         "title": "ScorePair",
         "description": "A score of both sides."
+      },
+      "SearchHitCountry": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code",
+            "description": "SofaScore's country code (`alpha2`), as given."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "title": "SearchHitCountry"
+      },
+      "SearchHitTeam": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "title": "SearchHitTeam"
       },
       "Season": {
         "properties": {
@@ -10121,7 +10543,7 @@
           "kind"
         ],
         "title": "StartClearJob",
-        "description": "Delete stored data (follows, job history, change log, backups and exports stay)."
+        "description": "Delete stored data (follows, job history, change log, backups and exports stay): by scope, or one\ntournament's (or one season's) data with `tournament_id` (and `season_id`)."
       },
       "StartExportJob": {
         "properties": {
@@ -10262,6 +10684,9 @@
           "bridge": {
             "$ref": "#/components/schemas/BridgeHealth"
           },
+          "connection": {
+            "$ref": "#/components/schemas/ConnectionStatus"
+          },
           "throttle": {
             "$ref": "#/components/schemas/ThrottleStatus"
           },
@@ -10344,6 +10769,7 @@
           "schema_version",
           "auth_required",
           "bridge",
+          "connection",
           "throttle",
           "schedule",
           "capabilities"
@@ -10398,6 +10824,9 @@
           },
           "bridge": {
             "$ref": "#/components/schemas/BridgeHealth"
+          },
+          "connection": {
+            "$ref": "#/components/schemas/ConnectionStatus"
           }
         },
         "type": "object",
@@ -10405,7 +10834,8 @@
           "ok",
           "message",
           "checked_at_utc",
-          "bridge"
+          "bridge",
+          "connection"
         ],
         "title": "StatusCheck",
         "description": "The outcome of one connection check; a failed check is a result, not an error."
@@ -10481,7 +10911,7 @@
             "type": "array",
             "maxItems": 200,
             "title": "Follows",
-            "description": "`sync` only: these follows (`tournament:17`), each with its season choice. Team, player and event follows cannot be synced yet (400)."
+            "description": "`sync` only: these follows (`tournament:17`, `team:42`, `player:7`, `event:123`). A tournament with its season choice; a team or a player with its matches (the previous and next pages of SofaScore's list within the follow's window: `seasons` `current` = the last 365 days, `last:N` = N × 365 days, `all` = up to five pages back, season ids = those seasons); an event follow that one match. Season lists only (`only: \"seasons\"`) read tournaments only."
           },
           "only": {
             "anyOf": [
@@ -10510,7 +10940,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "SyncJobSpec",
-        "description": "What to download. Without `selections`, `league_id` and `follows`: every enabled tournament follow, each with\nits own season choice. Only one of `league_id`, `selections` and `follows` may be given."
+        "description": "What to download. Without `selections`, `league_id` and `follows`: every enabled follow, each tournament with\nits own season choice, each team, player and event follow with its matches. Only one of `league_id`,\n`selections` and `follows` may be given."
       },
       "ThrottleStatus": {
         "properties": {
@@ -10549,6 +10979,16 @@
       },
       "TournamentHit": {
         "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "tournament",
+              "team",
+              "player"
+            ],
+            "title": "Kind",
+            "default": "tournament"
+          },
           "id": {
             "type": "integer",
             "title": "Id"
@@ -10581,12 +11021,35 @@
             "description": "Slug of a registered sport; null for others."
           },
           "category": {
-            "$ref": "#/components/schemas/TournamentHitCategory"
+            "$ref": "#/components/schemas/TournamentHitCategory",
+            "description": "The tournament's category; for a team or a player only `country_code` can be set."
+          },
+          "country": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SearchHitCountry"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Country of the tournament's category, of the team or of the player."
+          },
+          "team": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SearchHitTeam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A player's team; null for the other kinds."
           },
           "followed": {
             "type": "boolean",
             "title": "Followed",
-            "description": "A follow of any origin names the tournament already."
+            "description": "A follow of any origin names this tournament, team or player already."
           }
         },
         "type": "object",
@@ -10597,7 +11060,7 @@
           "followed"
         ],
         "title": "TournamentHit",
-        "description": "A tournament SofaScore found."
+        "description": "A tournament, a team or a player SofaScore found (`kind`). Follow it with `POST /follows` (`kind`,\n`entity_id` = `id`, `name`, `sport`)."
       },
       "TournamentHitCategory": {
         "properties": {
@@ -10793,7 +11256,7 @@
             "maxLength": 100,
             "minLength": 2,
             "title": "Q",
-            "description": "Text of the tournament name."
+            "description": "Text of the name."
           },
           "sport": {
             "anyOf": [
@@ -10806,7 +11269,22 @@
               }
             ],
             "title": "Sport",
-            "description": "Only tournaments of this sport (slug)."
+            "description": "Only hits of this sport (slug)."
+          },
+          "kinds": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "tournament",
+                "team",
+                "player"
+              ]
+            },
+            "type": "array",
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "Kinds",
+            "description": "What to look for: tournaments (the default), teams and players. Tournaments alone ask SofaScore's tournament search; any other choice asks its general search (one request either way)."
           }
         },
         "additionalProperties": false,
@@ -10845,7 +11323,7 @@
           "followed": {
             "type": "boolean",
             "title": "Followed",
-            "description": "A tournament of the configured leagues."
+            "description": "A follow of any origin names the tournament (the follows table)."
           },
           "matches": {
             "type": "integer",

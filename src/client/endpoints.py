@@ -29,7 +29,12 @@ ROUNDS = "/unique-tournament/{tournament_id}/season/{season_id}/rounds"
 ROUND_EVENTS = "/unique-tournament/{tournament_id}/season/{season_id}/events/round/{round_number}"
 ROUND_EVENTS_SLUG = ROUND_EVENTS + "/slug/{slug}"
 SEASON_EVENTS_PAGE = "/unique-tournament/{tournament_id}/season/{season_id}/events/{kind}/{page}"
+# Takımın ve oyuncunun maç sayfaları (plan maddesi FX-19; docs/all-sports/endpoints.csv). Oyuncunun `next` sayfası
+# katalogda yoktur: yalnızca `last` kullanılır.
+TEAM_EVENTS_PAGE = "/team/{team_id}/events/{kind}/{page}"
+PLAYER_EVENTS_PAGE = "/player/{player_id}/events/last/{page}"
 SEARCH_UNIQUE_TOURNAMENTS = "/search/unique-tournaments/{query}"
+SEARCH_ALL = "/search/all?q={query}&page={page}"
 
 # Alt anahtar yolun bir parçasıdır: Store'un alt anahtar biçimi (küçük harf, rakam, _ . -)
 _SUB = re.compile(r"^[a-z0-9_.-]{1,80}$")
@@ -104,6 +109,29 @@ def season_events_page(tournament_id: Id, season_id: Id, kind: str, page: int) -
     return SEASON_EVENTS_PAGE.format(tournament_id=tournament_id, season_id=season_id, kind=kind, page=page)
 
 
+def team_events_page(team_id: Id, kind: str, page: int) -> str:
+    """Takımın maç sayfası; `kind`: "last" (oynanmış, sondan başa) ya da "next" (gelecek)."""
+    if kind not in SEASON_EVENT_KINDS:
+        raise ValueError(f"kind must be one of {SEASON_EVENT_KINDS}: {kind!r}")
+    return TEAM_EVENTS_PAGE.format(team_id=team_id, kind=kind, page=page)
+
+
+def player_events_page(player_id: Id, page: int) -> str:
+    """Oyuncunun oynadığı maçların sayfası (sondan başa)."""
+    return PLAYER_EVENTS_PAGE.format(player_id=player_id, page=page)
+
+
 def search_unique_tournaments(query: str) -> str:
     """Ada göre lig araması; sorgu yolun parçasıdır ve tümüyle kodlanır ("/" dahil)."""
     return SEARCH_UNIQUE_TOURNAMENTS.format(query=quote(query, safe=""))
+
+
+def search_all(query: str, page: int = 0) -> str:
+    """
+    Ada göre genel arama (takım, oyuncu, turnuva, ...; plan maddesi FX-19): `/search/all?q=...&page=N`
+    (docs/all-sports/endpoints.csv; örnek research/all_sports/samples/football/search-all__1.json). Sorgu tümüyle
+    kodlanır.
+    """
+    if isinstance(page, bool) or not isinstance(page, int) or page < 0:
+        raise ValueError(f"page must be a non-negative integer: {page!r}")
+    return SEARCH_ALL.format(query=quote(query, safe=""), page=page)

@@ -5,11 +5,13 @@ API v1: takipler (docs/design/02-services.md bölüm 6 ve 4.3; docs/design/05-we
     POST   /api/v1/follows                 yeni takip
     GET    /api/v1/follows/{follow_id}     tek takip
     PATCH  /api/v1/follows/{follow_id}     alanlarını değiştirir
-    DELETE /api/v1/follows/{follow_id}     kaldırır (saklanan veri silinmez)
+    DELETE /api/v1/follows/{follow_id}     kaldırır; saklanan veri silinmez, `delete_data=true` ile turnuvanınki de
+                                           silinir (bir `clear` işi; FX-19)
 
 Takibin kimliği `<kind>:<id>`dir (`tournament:17`). Kaynağı (`origin`) neyin değiştirilebileceğini belirler
-(`writable`): yapılandırma dosyasının takibi hiç (409 `follow_managed`), leagues.txt'in takibi yalnızca sporu,
-API'nin takibi her alanı. Kurallar: src/services/follows.py.
+(`writable`): yapılandırma dosyasının takibi hiç (409 `follow_managed`), leagues.txt'in takibi yalnızca sporu ya da
+`origin: "api"` ile takip tablosuna alınır, API'nin takibi her alanı. Yeni takip her zaman takip tablosundadır
+(`origin` api; plan maddesi FX-19). Kurallar: src/services/follows.py.
 
 Takip kaldırma, çalışan bir iş varken reddedilir (409 `job_running`): iş lig adını ve sporunu yapılandırmadan okur
 (eski `DELETE /api/leagues/{id}` ile aynı kural).
@@ -26,6 +28,7 @@ from src.schema import utc_text
 from src.web import deps
 from src.web.api import V1_PREFIX
 from src.web.api.v1 import PageInfo
+from src.web.api.v1.jobs import Job, job_model
 from src.web.errors import error_responses
 
 if TYPE_CHECKING:
@@ -59,7 +62,9 @@ class FollowRecord(BaseModel):
     live: bool = Field(description="The live service watches it (`ssc watch`).")
     enabled: bool
     origin: Literal["legacy", "config", "api"] = Field(
-        description="legacy: config/leagues.txt; config: the config file (read-only here); api: added here.",
+        description="legacy: config/leagues.txt (the 2.x league list; only `sport` can change, or PATCH "
+                    "`origin: \"api\"` moves it into the follows table); config: the config file (read-only here); "
+                    "api: the follows table (added here, with `ssc follows add` or moved from config/leagues.txt).",
     )
     position: int
     writable: List[str] = Field(description="Fields PATCH can change on this follow.")
@@ -76,8 +81,20 @@ class FollowListResponse(BaseModel):
     page: PageInfo
 
 
+class RemovedFollow(FollowRecord):
+    """The follow as it was, and the clear job that deletes its data (`delete_data=true`)."""
+
+    clear_job: Optional[Job] = Field(
+        default=None, description="With `delete_data=true`: the clear job that deletes the tournament's data.",
+    )
+
+
+class FollowRemoveResponse(BaseModel):
+    data: RemovedFollow
+
+
 class FollowCreate(BaseModel):
-    """A new follow. Without a config file a tournament follow is written to config/leagues.txt (name and sport)."""
+    """A new follow, kept in the follows table (`origin` api): every field can be changed later."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -86,10 +103,7 @@ class FollowCreate(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     sport: Optional[str] = Field(default=None, max_length=40)
     seasons: SeasonChoice = "all"
-    slices: Optional[SliceChoice] = Field(
-        default=None,
-        description=_SLICES_TEXT + " Not available for a follow kept in config/leagues.txt (no config file).",
-    )
+    slices: Optional[SliceChoice] = Field(default=None, description=_SLICES_TEXT)
     live: bool = False
     enabled: bool = True
 
@@ -106,6 +120,12 @@ class FollowPatch(BaseModel):
     slices: Optional[SliceChoice] = Field(default=None, description=_SLICES_TEXT)
     live: Optional[bool] = None
     enabled: Optional[bool] = None
+    origin: Optional[Literal["api"]] = Field(
+        default=None,
+        description="`api` moves a follow of config/leagues.txt into the follows table: it is removed from the "
+                    "file and every field becomes writable; the other fields of the same request are applied "
+                    "after the move. A follow of the follows table is left as it is.",
+    )
 
 
 def record(service: "FollowsService", follow: "Follow") -> FollowRecord:
@@ -177,10 +197,10 @@ def get_follow(follow_id: FollowId) -> FollowResponse:
 )
 def add_follow(response: Response, body: FollowCreate) -> FollowResponse:
     """
-    Add a follow and return it (201, with `Location`). A tournament follow is written to config/leagues.txt when
-    no config file is in use (then only `name` and `sport` can be set), else to the follows table. A follow of a
-    team, a player or an event is always kept in the follows table. 409 `follow_exists` for an entity or a
-    tournament name that is followed already.
+    Add a follow and return it (201, with `Location`). Every new follow is kept in the follows table (`origin`
+    api), with or without a config file, so each of its fields can be changed later. 409 `follow_exists` for an
+    entity or a tournament name that is followed already (also by config/leagues.txt: move that one with PATCH
+    `origin: "api"`).
     """
     from src.services.follows import NewFollow, follow_id
 
@@ -202,13 +222,14 @@ def add_follow(response: Response, body: FollowCreate) -> FollowResponse:
 def update_follow(follow_id: FollowId, body: FollowPatch) -> FollowResponse:
     """
     Change the given fields and return the follow. A follow of the config file cannot be changed here (409
-    `follow_managed`); one of config/leagues.txt only its sport (`writable` says which fields can change).
+    `follow_managed`); one of config/leagues.txt only its sport, unless `origin: "api"` moves it into the follows
+    table first (`writable` says which fields can change).
     """
     kind, entity_id = _key(follow_id)
     changes: Dict[str, Any] = body.model_dump(exclude_unset=True)
     if isinstance(changes.get("seasons"), list):
         changes["seasons"] = tuple(changes["seasons"])
-    for field in ("name", "seasons", "live", "enabled"):
+    for field in ("name", "seasons", "live", "enabled", "origin"):
         if field in changes and changes[field] is None:
             del changes[field]  # yalnızca spor ve veri seçimi null ile silinir
     service = deps.follows_service()
@@ -217,22 +238,48 @@ def update_follow(follow_id: FollowId, body: FollowPatch) -> FollowResponse:
 
 @router.delete(
     "/follows/{follow_id}",
-    response_model=FollowResponse,
+    response_model=FollowRemoveResponse,
     operation_id="removeFollow",
     summary="Stop following",
-    responses=error_responses("not_found", "forbidden_origin", "follow_managed", "job_running",
-                              "data_operation_running"),
+    responses=error_responses("not_found", "invalid_request", "forbidden_origin", "follow_managed", "job_running",
+                              "data_operation_running", "instance_running"),
 )
-def remove_follow(follow_id: FollowId) -> FollowResponse:
+def remove_follow(
+    follow_id: FollowId,
+    delete_data: bool = Query(
+        False, description="Also delete the tournament's stored data (its events, schedules and season list) "
+                           "with a `clear` job (`clear_job` in the answer). Tournament follows only.",
+    ),
+) -> FollowRemoveResponse:
     """
-    Remove the follow and return it as it was. Stored data stays. Refused while a job runs (409), because a job
-    reads the names and sports of the follows; a follow of the config file is removed there (409 `follow_managed`).
+    Remove the follow and return it as it was. Stored data stays, unless `delete_data=true` (a tournament follow):
+    then a `clear` job deletes that tournament's data, under the `maintenance` lease like every clear; the follow
+    is removed once the job holds the lease. Refused while a job runs (409), because a job reads the names and
+    sports of the follows; a follow of the config file is removed there (409 `follow_managed`).
     """
+    from src.errors import ConflictError, UsageError
+    from src.services.follows import ORIGIN_CONFIG
+    from src.web.api.v1.jobs import start_tournament_clear
+
     kind, entity_id = _key(follow_id)
     service = deps.follows_service()
-    with deps.job_store().exclusive("follow_delete"):
-        removed = service.remove(kind, entity_id)
-    return FollowResponse(data=record(service, removed))
+    if not delete_data:
+        with deps.job_store().exclusive("follow_delete"):
+            removed = service.remove(kind, entity_id)
+        return FollowRemoveResponse(data=RemovedFollow(**record(service, removed).model_dump()))
+    found = service.get(kind, entity_id)
+    if found is None:
+        raise NotFoundError("No follow has this id.", {"id": follow_id})
+    if kind != "tournament":
+        raise UsageError("Only a tournament follow's data can be deleted with it.",
+                         {"field": "delete_data", "kind": kind})
+    if found.origin == ORIGIN_CONFIG:
+        raise ConflictError("The follow comes from the config file; remove it there.",
+                            {"id": follow_id, "origin": ORIGIN_CONFIG}, code="follow_managed")
+    gone: List["Follow"] = []
+    job = start_tournament_clear(entity_id, before=lambda: gone.append(service.remove(kind, entity_id)))
+    return FollowRemoveResponse(data=RemovedFollow(**record(service, gone[0]).model_dump(),
+                                                   clear_job=job_model(job)))
 
 
 __all__ = ["FollowRecord", "record", "router"]
