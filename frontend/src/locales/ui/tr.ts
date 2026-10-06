@@ -1572,8 +1572,7 @@ const tr: typeof en = {
       ignore: 'Hiçbir zaman erken durma',
     },
     fetch: {
-      only_finished: 'Yalnızca bitmiş maçları çek',
-      save_empty_rounds: 'Boş haftaları sakla',
+      only_finished: 'Yalnızca bitmiş maçları göster',
     },
     defaults: {
       slices: 'Varsayılan indirilecek veriler',
@@ -1631,7 +1630,7 @@ const tr: typeof en = {
       proxy: 'Parola hiçbir zaman gösterilmez; Değiştir yeni bir adres ayarlar.',
     },
     fetch: {
-      only_finished: 'Bitmemiş maçlar çekilmez.',
+      only_finished: 'Maç listeleri yalnızca bitmiş maçları gösterir. İndirileni değiştirmez: listelenen her maç durumu ne olursa olsun saklanır, bilerek çektiğiniz bitmemiş bir maç da.',
     },
     defaults: {
       slices: 'Veri türleri ya da grupları, virgülle ayrılmış. “core” temel maç verisidir: maç, istatistikler, kadrolar, olaylar ve diğerleri; oranlar ayrı bir gruptur (“odds”).',

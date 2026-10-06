@@ -1570,8 +1570,7 @@ const en = {
       ignore: 'Never stop early',
     },
     fetch: {
-      only_finished: 'Fetch finished matches only',
-      save_empty_rounds: 'Keep empty rounds',
+      only_finished: 'Show finished matches only',
     },
     defaults: {
       slices: 'Default data to download',
@@ -1629,7 +1628,7 @@ const en = {
       proxy: 'The password is never shown; Replace sets a new address.',
     },
     fetch: {
-      only_finished: 'Matches that have not ended are not fetched.',
+      only_finished: 'The match lists show only matches that have ended. It does not change what is downloaded: every listed match is stored whatever its status, and so is an unfinished match you fetch on purpose.',
     },
     defaults: {
       slices: 'Data types or groups, separated by commas. “core” is the core match data: the match, statistics, line-ups, incidents and the rest; odds are a group of their own (“odds”).',

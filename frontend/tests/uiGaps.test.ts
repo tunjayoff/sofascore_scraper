@@ -10,7 +10,8 @@ import { axeViolations, follow, mountScreen, setting, settingsDoc, sport, sportW
 
 /**
  * FX-20, the small gaps FX-14b and FX-19 left: live watching is not offered for a player (`ssc watch` skips
- * player follows); Settings › Data shows the followed sports first and the rest under "Other sports".
+ * player follows); Settings › Data shows the followed sports first and the rest under "Other sports"; the
+ * retired "keep empty rounds" is gone and "finished matches only" says what it does.
  */
 const t = i18n.global.t
 let w: VueWrapper
@@ -116,5 +117,18 @@ describe('Settings', () => {
     const others = w.find('[data-testid="slice-sports-others"]')
     expect(others.find('summary').text()).toContain(t('ui.sliceDefaults.allSports'))
     expect(others.findAll('[data-sport]')).toHaveLength(4)
+  })
+
+  it('the retired "keep empty rounds" is not shown; "finished matches only" says it only filters the lists', async () => {
+    await open([])
+    expect(w.find('[data-setting="fetch.save_empty_rounds"]').exists()).toBe(false)
+    expect(w.text()).not.toContain('Keep empty rounds')
+    const onlyFinished = w.find('[data-setting="fetch.only_finished"]')
+    expect(onlyFinished.text()).toContain(t('ui.setting.fetch.only_finished'))
+    expect(onlyFinished.text()).toContain(t('ui.settingHelp.fetch.only_finished'))
+    expect(t('ui.settingHelp.fetch.only_finished')).toContain('does not change what is downloaded')
+    setLocale('tr')
+    expect(t('ui.setting.fetch.only_finished')).toBe('Yalnızca bitmiş maçları göster')
+    setLocale('en')
   })
 })

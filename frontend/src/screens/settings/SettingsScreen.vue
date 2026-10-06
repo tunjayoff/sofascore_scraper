@@ -17,7 +17,7 @@ import { toast } from '@/ui/toast'
 import SettingRow from './SettingRow.vue'
 import BrowserSettings from './BrowserSettings.vue'
 import SliceDefaults from './SliceDefaults.vue'
-import { DATA_DIR, metaOf, SECTIONS, type Section } from './settingsMeta'
+import { DATA_DIR, metaOf, RETIRED, SECTIONS, type Section } from './settingsMeta'
 
 /**
  * Settings (6.16): the server's settings by section, each with where its value comes from; locked and
@@ -46,7 +46,7 @@ const count = computed(() => Object.keys(staged.value).length)
 
 const bySection = computed(() => {
   const out: Record<string, SettingsDocument['settings']> = {}
-  for (const s of doc.value?.settings ?? []) (out[metaOf(s.key).section] ||= []).push(s)
+  for (const s of doc.value?.settings ?? []) if (!RETIRED.includes(s.key)) (out[metaOf(s.key).section] ||= []).push(s)
   return out
 })
 const tabs = computed(() => {
