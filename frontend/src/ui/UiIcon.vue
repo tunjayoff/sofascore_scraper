@@ -58,6 +58,7 @@ export const ICONS = {
   terminal: 'M4 5h16v14H4zM8 10l3 2-3 2M13 15h3',
   link: 'M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1',
   planned: 'M12 3a9 9 0 100 18 9 9 0 000-18zM12 7v5h4',
+  help: 'M12 3a9 9 0 100 18 9 9 0 000-18zM9.6 9.4a2.5 2.5 0 114.1 2c-.9.6-1.7 1.1-1.7 2.4M12 17h.01',
 } as const
 
 export type UiIconName = keyof typeof ICONS

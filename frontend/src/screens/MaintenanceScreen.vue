@@ -17,7 +17,8 @@ import { startJob } from '@/screens/jobs/startJob'
  * Maintenance (6.11): three cards. Rebuild the index (safe; reads the stored files), shown with the reason
  * when `/status` reports one. The old data layout: how many matches are stored in the 2.x layout and the
  * server command that moves them; there is no migrate button (decision 16). Clear data: a scope and a
- * typed confirmation of that scope; follows, job history, the change log, backups and exports stay. Both
+ * typed confirmation, the shown word of the user's language ("SİL", "DELETE"; FX-14a); follows, job
+ * history, the change log, backups and exports stay. Both
  * jobs work on the data folder only and send nothing to SofaScore.
  */
 const { t } = useI18n()
@@ -69,7 +70,7 @@ onMounted(() => {
 
 <template>
   <div>
-    <PageHeader :title="t('ui.nav.maintenance')" :description="t('ui.maintenance.description')" />
+    <PageHeader :title="t('ui.nav.maintenance')" :description="t('ui.maintenance.description')" help="cleanup" />
 
     <p v-if="status.activeJob" class="m-0 mb-4 u-notice u-notice-warn" role="status" data-testid="busy-banner">
       <UiIcon name="alert" :size="16" />
@@ -138,7 +139,7 @@ onMounted(() => {
       :title="t('ui.maintenance.clear.confirmTitle', { scope: scopeText(clearScope) })"
       :confirm-label="t('ui.maintenance.clear.button')"
       danger
-      :typed-word="clearScope"
+      :typed-word="t('ui.maintenance.clear.word')"
       :busy="clearBusy"
       :error="clearError"
       :active-job-id="status.activeJob?.id"

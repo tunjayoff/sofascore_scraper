@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import PageHeader from '@/ui/PageHeader.vue'
 import DataTable, { type Column } from '@/ui/DataTable.vue'
@@ -19,12 +19,15 @@ import ExportDialog from './ExportDialog.vue'
 /**
  * Exports (6.10): every export with its file, newest first; the file is downloaded at full size from the
  * server. An export runs as a job: a running one is listed with its state and a link to the job, and the
- * list is read again every 5 s while one runs. "New export" offers what the API writes today.
+ * list is read again every 5 s while one runs. "New export" offers what the API writes today; `?new=1`
+ * (the quick search's "Export") opens it at once.
  */
 const RUNNING_EVERY_MS = 5000
 const { t } = useI18n()
 const list = usePagedList<ExportRecord>(({ cursor, size, signal }) => v1.exports({ cursor, limit: size }, signal), { serverKeys: [] })
 const creating = ref(false)
+const route = useRoute()
+const router = useRouter()
 
 function filterText(f: ExportFilter): string {
   const parts: string[] = []
@@ -49,6 +52,10 @@ const columns = computed<Column<ExportRecord>[]>(() => [
 const running = computed(() => list.rows.value.some((r) => !isTerminal(r.state)))
 let timer: ReturnType<typeof setInterval> | null = null
 onMounted(() => {
+  if (route.query.new === '1') {
+    creating.value = true
+    void router.replace({ query: { ...route.query, new: undefined } })
+  }
   void list.load()
   timer = setInterval(() => {
     if (running.value && document.visibilityState !== 'hidden') void list.load()

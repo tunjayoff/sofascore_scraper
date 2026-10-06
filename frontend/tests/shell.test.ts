@@ -65,10 +65,12 @@ async function app(path: string, extra: Record<string, unknown> = {}, statusOver
 }
 
 describe('the application shell', () => {
-  it('has the side rail with the four groups, every screen, and the current page marked', async () => {
+  it('has the side rail with its groups, every screen, and the current page marked', async () => {
     await app('/jobs')
     const rail = w.find('nav.u-rail-nav')
-    expect(rail.findAll('.u-rail-label').map((x) => x.text())).toEqual(['data', 'operations', 'system'].map((g) => t(`ui.nav.group.${g}`)))
+    // FX-14a: score changes, outputs and data cleanup sit in a smaller last group
+    expect(rail.findAll('.u-rail-label').map((x) => x.text())).toEqual(['data', 'operations', 'system', 'advanced'].map((g) => t(`ui.nav.group.${g}`)))
+    expect(rail.findAll('.u-rail-group.is-minor [data-nav]').map((x) => x.attributes('data-nav'))).toEqual(['corrections', 'sinks', 'maintenance'])
     const items = rail.findAll('[data-nav]').map((x) => x.attributes('data-nav'))
     expect(items).toEqual(NAV.filter((n) => !n.hidden).map((n) => n.key))
     expect(rail.find('[aria-current="page"]').attributes('data-nav')).toBe('jobs')
@@ -195,7 +197,8 @@ describe('keyboard', () => {
     await w.find('input[role="combobox"]').setValue('lig')
     await new Promise((r) => setTimeout(r, 260))
     await flush()
-    expect(new URL(String(callsTo(f, 'GET /api/v1/tournaments')[0][0]), 'http://x').searchParams.get('q')).toBe('lig')
+    // (the catalog is also read once without a text, for the leagues' names of the jobs)
+    expect(callsTo(f, 'GET /api/v1/tournaments').map(([u]) => new URL(String(u), 'http://x').searchParams.get('q'))).toContain('lig')
     const options = w.findAll('[role="option"]').map((o) => o.text())
     expect(options).toEqual(expect.arrayContaining([expect.stringContaining('LaLiga')]))
     await w.find('input[role="combobox"]').setValue('premier')

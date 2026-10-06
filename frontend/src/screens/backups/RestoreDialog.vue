@@ -10,7 +10,7 @@ import StatusBadge from '@/ui/StatusBadge.vue'
 import type { BackupRecord, Job } from '@/api/v1/schema'
 import { useStatusStore } from '@/app/statusStore'
 import { num } from '@/ui/time'
-import { countLabel, jobErrorText, scopeText } from '@/screens/jobs/jobText'
+import { countLabel, countShown, jobErrorText, scopeText } from '@/screens/jobs/jobText'
 import { startJob, waitForJob } from '@/screens/jobs/startJob'
 
 /**
@@ -42,7 +42,7 @@ const report = (j: Job | null): Report | null => {
 const checked = computed(() => report(check.value))
 const forcedReport = computed(() => report(forced.value))
 const occupied = computed(() => checked.value?.occupied ?? [])
-const counts = computed(() => Object.entries(checked.value?.counts ?? {}).filter(([, v]) => typeof v === 'number'))
+const counts = computed(() => Object.entries(checked.value?.counts ?? {}).filter(([k, v]) => typeof v === 'number' && countShown(k)))
 const command = computed(() => `ssc backup restore ${props.backup.name}${replace.value ? ' --force' : ''} --yes`)
 
 async function run(force: boolean) {

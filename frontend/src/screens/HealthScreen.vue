@@ -11,6 +11,7 @@ import ErrorState from '@/ui/ErrorState.vue'
 import FormError from '@/ui/FormError.vue'
 import SkeletonBlock from '@/ui/SkeletonBlock.vue'
 import CodeHint from '@/ui/CodeHint.vue'
+import HelpTip from '@/ui/HelpTip.vue'
 import UiIcon from '@/ui/UiIcon.vue'
 import { v1 } from '@/api/v1/client'
 import type { StatusCheck } from '@/api/v1/schema'
@@ -24,6 +25,8 @@ import { bytesText, duration, now as clockNow, num, useClock } from '@/ui/time'
  * connection check (one request to SofaScore, on click only). The live service card never starts or stops
  * anything (R2, decision 17); a `direct` source gets its warning. Who holds the data folder comes from
  * the leases; the storage card from the data summary. The scheduler's next runs are not reported yet (P29).
+ * The connection is "Not tried yet" while no request has been answered, and amber when the last request
+ * or the connection check run here failed (FX-14a).
  */
 const STALE_LIVE_S = 120
 const { t, te } = useI18n()
@@ -111,6 +114,7 @@ async function runCheck() {
   checkError.value = null
   try {
     check.value = await v1.checkConnection()
+    store.noteCheck(check.value)
     void store.refresh().catch(() => {})
   } catch (e) {
     checkError.value = e
@@ -145,7 +149,8 @@ onMounted(() => {
 
     <div v-else-if="s" class="grid gap-6 lg:grid-cols-2">
       <section class="u-card p-6 flex flex-col gap-4" data-testid="health-connection">
-        <header class="flex items-center gap-3"><h2 class="u-h3 flex-1">{{ t('ui.health.connection') }}</h2><StatusBadge kind="connection" :value="s.bridge.state" /></header>
+        <header class="flex items-center gap-3"><h2 class="u-h3 flex-1">{{ t('ui.health.connection') }}</h2><StatusBadge kind="connection" :value="store.connection ?? s.bridge.state" /></header>
+        <p v-if="store.connection === 'untried' || store.connection === 'failing'" class="m-0 u-small u-muted" data-testid="connection-note">{{ store.connection === 'untried' ? t('ui.health.untried') : t('ui.health.failing') }}</p>
         <FactList :items="connection">
           <template #value-lastSuccess><TimeText :value="s.bridge.last_success_at" relative /></template>
           <template #value-failingSince><TimeText :value="s.bridge.failing_since" /></template>
@@ -179,7 +184,7 @@ onMounted(() => {
 
       <section class="u-card p-6 flex flex-col gap-4" data-testid="health-live">
         <header class="flex items-center gap-3">
-          <h2 class="u-h3 flex-1">{{ t('ui.health.live') }}</h2>
+          <span class="flex-1 flex items-center gap-1"><h2 class="u-h3">{{ t('ui.health.live') }}</h2><HelpTip term="live" /></span>
           <UiBadge v-if="direct" tone="warn" icon="alert">{{ t('ui.health.direct') }}</UiBadge>
           <StatusBadge kind="live" :value="live_" />
         </header>

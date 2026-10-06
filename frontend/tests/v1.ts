@@ -148,6 +148,23 @@ export const sport = (slug = 'football') => ({
   slices: ['statistics', 'team_streaks', 'pregame_form', 'h2h', 'lineups', 'incidents'].map((key) => ({ key, path: `/event/{event_id}/${key}`, required: true, default_enabled: true })),
 })
 
+/** A sport of the registry with groups and owners (P27, P28): the defaults, two odds slices and standings. */
+export const sportWithOdds = (slug = 'football') => {
+  const base = sport(slug)
+  const slice = (key: string, over: Record<string, unknown> = {}) => ({
+    key, path: `/event/{event_id}/${key}`, required: false, default_enabled: false, selected: false, group: 'core', owner: 'event', phases: ['post'], keep_history: false, ...over,
+  })
+  return {
+    ...base,
+    slices: [
+      ...base.slices.map((s) => ({ ...s, selected: true, group: 'core', owner: 'event', phases: ['post'], keep_history: false })),
+      slice('odds_featured', { group: 'odds', keep_history: true }),
+      slice('winning_odds', { path: '/event/{event_id}/provider/{sub}/winning-odds', group: 'odds', keep_history: true }),
+      slice('standings', { path: '/unique-tournament/{tournament_id}/season/{season_id}/standings/{sub}', group: 'standings', owner: 'season', phases: ['pre', 'live', 'post'] }),
+    ],
+  }
+}
+
 export const page = <T>(data: T[], next: string | null = null) => ({ data, page: { limit: 25, next_cursor: next } })
 
 export const setting = (key: string, value: unknown, over: Partial<Setting> = {}): Setting => ({

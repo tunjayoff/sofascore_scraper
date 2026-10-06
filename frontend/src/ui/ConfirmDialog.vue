@@ -7,8 +7,9 @@ import { describeError } from '@/api/v1/errors'
 
 /**
  * For destructive or costly actions (4.7): the body states what will happen. With `typedWord` (an
- * irreversible action) the button enables only after the user typed that word. A refusal is shown in the
- * dialog, so the user can read it and try again.
+ * irreversible action) the button enables only after the user typed that word, in either case of the
+ * user's language ("sil" for "SİL"). A refusal is shown in the dialog, so the user can read it and try
+ * again.
  */
 const props = defineProps<{
   title: string
@@ -21,11 +22,12 @@ const props = defineProps<{
   activeJobId?: string | null
 }>()
 const emit = defineEmits<{ confirm: []; close: [] }>()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const typed = ref('')
+const upper = (s: string) => s.trim().toLocaleUpperCase(locale.value)
 const inputId = useId()
-const ready = computed(() => !props.typedWord || typed.value.trim() === props.typedWord)
+const ready = computed(() => !props.typedWord || upper(typed.value) === upper(props.typedWord))
 const errorView = computed(() => (props.error ? describeError(props.error) : null))
 const errorJob = computed(() => {
   const v = errorView.value

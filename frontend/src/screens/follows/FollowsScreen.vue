@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import PageHeader from '@/ui/PageHeader.vue'
@@ -15,16 +15,18 @@ import type { FollowRecord, Job } from '@/api/v1/schema'
 import { queryText } from '@/app/pagedList'
 import { loadSports, sportName, sports } from '@/app/sports'
 import { useStatusStore } from '@/app/statusStore'
+import { onJobEnded } from '@/app/jobWatch'
 import { pct } from '@/ui/time'
 import StartJobDialog from '@/screens/jobs/StartJobDialog.vue'
 import FollowActions from './FollowActions.vue'
 import { FOLLOW_KINDS, dataText, followPath, hasOdds, lastSyncOf, seasonsText } from './followText'
 
 /**
- * Follows (6.2): what the platform collects, one row per follow with its seasons, data selection, coverage
- * (from the data summary of `/status`) and last sync. Name, kind, origin and "enabled only" are filtered
- * by the server; the sport within the list (the route has no sport filter). A follow from the config file
- * is locked: its actions say where to change it.
+ * Leagues & follows (6.2): what the platform downloads, one row per follow with its seasons, data
+ * selection, matches with details (from the data summary of `/status`) and last download. Name, kind,
+ * origin and "enabled only" are filtered by the server; the sport within the list (the route has no sport
+ * filter). A follow from the config file is locked: its actions say where to change it. When a download
+ * ends, the last downloads and the counts are read again (FX-14a).
  */
 const { t } = useI18n()
 const route = useRoute()
@@ -108,21 +110,32 @@ const search = ref(f.value.q)
 watch(() => f.value.q, (q) => (search.value = q))
 watch(() => [f.value.q, f.value.kind, f.value.origin, f.value.enabled], () => void load())
 
-onMounted(() => {
-  void loadSports().catch(() => {})
-  void load()
+function loadSyncs() {
   v1.jobs({ kind: ['sync'], limit: 50 })
     .then((r) => (syncs.value = r.data))
     .catch(() => {})
+}
+
+const stopListening = onJobEnded((job) => {
+  if (job.kind !== 'sync' && job.kind !== 'fetch') return
+  loadSyncs()
+  void status.refresh().catch(() => {})
+})
+onUnmounted(stopListening)
+
+onMounted(() => {
+  void loadSports().catch(() => {})
+  void load()
+  loadSyncs()
 })
 </script>
 
 <template>
   <div>
-    <PageHeader :title="t('ui.nav.follows')" :description="t('ui.follows.description')">
+    <PageHeader :title="t('ui.nav.follows')" :description="t('ui.follows.description')" help="follow">
       <template #actions>
         <button type="button" class="u-btn" @click="syncingAll = true"><UiIcon name="jobs" :size="16" />{{ t('ui.follows.syncAll') }}</button>
-        <RouterLink to="/follows/new" class="u-btn u-btn-primary"><UiIcon name="plus" :size="16" />{{ t('ui.follows.add') }}</RouterLink>
+        <RouterLink to="/follows/new" class="u-btn u-btn-primary" data-testid="follows-add"><UiIcon name="plus" :size="16" />{{ t('ui.follows.add') }}</RouterLink>
       </template>
     </PageHeader>
 
@@ -191,7 +204,7 @@ onMounted(() => {
         <TimeText v-if="lastSyncOf(row, syncs)" :value="lastSyncOf(row, syncs)!.finished_at" relative />
         <span v-else class="u-muted">—</span>
       </template>
-      <template #cell-origin="{ row }"><StatusBadge v-if="row.origin !== 'api'" kind="origin" :value="row.origin" /></template>
+      <template #cell-origin="{ row }"><StatusBadge kind="origin" :value="row.origin" /></template>
       <template #cell-live="{ row }">{{ row.live ? t('ui.follows.liveYes') : '—' }}</template>
       <template #cell-id="{ row }">{{ row.id }}</template>
       <template #row-actions="{ row }"><FollowActions :follow="row" compact @changed="load" @removed="load" /></template>

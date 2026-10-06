@@ -15,6 +15,7 @@ import { poll } from '@/app/poll'
 import { duration, pct, secondsBetween } from '@/ui/time'
 import StartJobDialog from './StartJobDialog.vue'
 import { faceText, jobErrorText, jobKindText, jobTarget, readProgress, STARTABLE } from './jobText'
+import { loadTournaments } from '@/screens/events/eventText'
 
 /**
  * Jobs (6.8): every piece of work from every face (web, CLI, scheduler) and every process. State and kind
@@ -137,6 +138,8 @@ watch(
 
 let stop: (() => void) | null = null
 onMounted(() => {
+  // the leagues' names for the Target column
+  void loadTournaments()
   stop = poll(load, () => JOBS_EVERY_MS)
 })
 onUnmounted(() => {
@@ -147,7 +150,7 @@ onUnmounted(() => {
 
 <template>
   <div>
-    <PageHeader :title="t('ui.nav.jobs')" :description="t('ui.jobs.description')">
+    <PageHeader :title="t('ui.nav.jobs')" :description="t('ui.jobs.description')" help="download">
       <template #actions>
         <UiMenu :label="t('ui.jobs.startMenu')" icon="jobs" align="right" button-class="u-btn u-btn-primary" :items="startItems" @select="(k) => (starting = k === 'rebuild' ? { kind: 'rebuild', spec: { mode: 'auto' } } : { kind: k as 'sync' | 'fetch' | 'refresh', spec: {} })" />
       </template>

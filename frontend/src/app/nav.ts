@@ -1,7 +1,11 @@
 import type { UiIconName } from '@/ui/UiIcon.vue'
 
-/** The screens of the new app and their place in the menu (05-web-ui.md 3.1, 3.2). */
-export type NavGroup = 'start' | 'data' | 'operations' | 'system'
+/**
+ * The screens of the new app and their place in the menu (05-web-ui.md 3.1, 3.2). Score changes, outputs
+ * and data cleanup sit in a lower-weight group at the end (FX-14a), so that Leagues & follows and Matches
+ * stand out for a newcomer.
+ */
+export type NavGroup = 'start' | 'data' | 'operations' | 'system' | 'advanced'
 
 export type NavItem = {
   key: string
@@ -20,18 +24,18 @@ export const NAV: readonly NavItem[] = [
   { key: 'overview', to: '/', icon: 'home', group: 'start', bottom: true, hotkey: 'o' },
   { key: 'follows', to: '/follows', icon: 'follows', group: 'data', bottom: true, hotkey: 'f' },
   { key: 'events', to: '/events', icon: 'events', group: 'data', bottom: true, hotkey: 'e' },
-  { key: 'corrections', to: '/corrections', icon: 'corrections', group: 'data' },
   { key: 'jobs', to: '/jobs', icon: 'jobs', group: 'operations', bottom: true, hotkey: 'j' },
   { key: 'exports', to: '/exports', icon: 'exports', group: 'operations' },
   { key: 'backups', to: '/backups', icon: 'backups', group: 'operations' },
-  { key: 'maintenance', to: '/maintenance', icon: 'maintenance', group: 'operations' },
   { key: 'health', to: '/system/health', icon: 'health', group: 'system' },
-  { key: 'sinks', to: '/system/sinks', icon: 'sinks', group: 'system' },
   { key: 'logs', to: '/system/logs', icon: 'logs', group: 'system' },
   { key: 'settings', to: '/settings', icon: 'settings', group: 'system', hotkey: 's' },
+  { key: 'corrections', to: '/corrections', icon: 'corrections', group: 'advanced' },
+  { key: 'sinks', to: '/system/sinks', icon: 'sinks', group: 'advanced' },
+  { key: 'maintenance', to: '/maintenance', icon: 'maintenance', group: 'advanced' },
 ]
 
-export const GROUPS: readonly NavGroup[] = ['start', 'data', 'operations', 'system']
+export const GROUPS: readonly NavGroup[] = ['start', 'data', 'operations', 'system', 'advanced']
 
 export function navItem(key: string): NavItem | undefined {
   return NAV.find((n) => n.key === key)

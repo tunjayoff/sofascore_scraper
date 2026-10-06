@@ -21,7 +21,8 @@ import StartJobDialog from './StartJobDialog.vue'
 import JobOutput from './JobOutput.vue'
 import { JobStream, type JobEventMessage } from './jobStream'
 import { logLine, codeText, type LogLine } from './eventText'
-import { breakerText, faceText, isTerminal, jobErrorText, jobKindText, jobTarget, phaseText, readProgress, rerunBody, waitText, type ProgressView } from './jobText'
+import { loadTournaments } from '@/screens/events/eventText'
+import { breakerText, countsText, faceText, isTerminal, jobErrorText, jobKindText, jobTarget, phaseText, readProgress, rerunBody, waitText, type ProgressView } from './jobText'
 
 /**
  * Job detail (6.9): state, origin and times; the live progress with phase, counts, ETA and SofaScore's
@@ -227,7 +228,11 @@ const ticker = setInterval(() => {
 }, 1000)
 
 watch(id, () => void start())
-onMounted(() => void start())
+onMounted(() => {
+  // the league's name for the title and the target
+  void loadTournaments()
+  void start()
+})
 onUnmounted(() => {
   teardown()
   stopClock()
@@ -271,9 +276,9 @@ onUnmounted(() => {
           <template v-if="progress.phase">{{ t('ui.job.phaseOf', { i: progress.phaseIndex ?? '?', n: progress.phaseCount ?? '?', phase: phaseText(progress.phase) }) }}</template>
           <template v-else>{{ t('ui.job.waitingStart') }}</template>
         </p>
-        <ProgressBar :value="progress.percent" :label="t('ui.job.progressLabel')" :text="progress.total ? t('ui.job.counts', { done: num(progress.done), total: num(progress.total) }) : undefined" />
+        <ProgressBar :value="progress.percent" :label="t('ui.job.progressLabel')" :text="progress.total ? countsText(progress, num) : undefined" />
         <p class="m-0 u-small u-muted flex flex-wrap gap-x-4">
-          <span v-if="progress.total">{{ t('ui.job.counts', { done: num(progress.done), total: num(progress.total) }) }}</span>
+          <span v-if="progress.total">{{ countsText(progress, num) }}</span>
           <span v-if="progress.eta">{{ t('ui.job.eta', { time: duration(progress.eta) }) }}</span>
           <span v-if="progress.failedCount" style="color: var(--danger)">{{ t('ui.jobs.failedCount', { n: num(progress.failedCount) }) }}</span>
         </p>
@@ -295,7 +300,7 @@ onUnmounted(() => {
         <dl v-if="result" class="u-result">
           <template v-if="result.details_total != null">
             <dt>{{ t('ui.job.details') }}</dt>
-            <dd class="u-num">{{ t('ui.job.counts', { done: num(Number(result.details_done) || 0), total: num(Number(result.details_total) || 0) }) }}</dd>
+            <dd class="u-num">{{ countsText({ phase: 'details', done: Number(result.details_done) || 0, total: Number(result.details_total) || 0 }, num) }}</dd>
           </template>
           <template v-if="result.failed_count != null">
             <dt>{{ t('ui.job.failedItems') }}</dt>

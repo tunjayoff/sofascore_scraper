@@ -20,12 +20,40 @@ export const JOB_STATES: Record<JobState, StatusLook> = {
   interrupted: { tone: 'warn', icon: 'alert', key: 'ui.status.job.interrupted' },
 }
 
-export type ConnectionState = BridgeHealth['state']
+/**
+ * The connection as shown (FX-14a): the bridge's state, and while that is `ok` also whether anything has
+ * been answered yet (`untried`), whether the last request failed after earlier ones worked (`failing`) and
+ * whether the connection check run in this browser failed after the last success (`checkFailed`). So the
+ * UI never says "Connected" before a request has been answered.
+ */
+export type ConnectionState = BridgeHealth['state'] | 'untried' | 'failing' | 'checkFailed'
 
 export const CONNECTION: Record<ConnectionState, StatusLook> = {
   ok: { tone: 'ok', icon: 'okCircle', key: 'ui.status.connection.ok' },
   degraded: { tone: 'warn', icon: 'alert', key: 'ui.status.connection.degraded' },
   blocked: { tone: 'danger', icon: 'error', key: 'ui.status.connection.blocked' },
+  untried: { tone: 'neutral', icon: 'circle', key: 'ui.status.connection.untried' },
+  failing: { tone: 'warn', icon: 'alert', key: 'ui.status.connection.failing' },
+  checkFailed: { tone: 'warn', icon: 'alert', key: 'ui.status.connection.checkFailed' },
+}
+
+/** A connection check run in this browser: whether SofaScore answered, and when (ISO-8601). */
+export type CheckSeen = { ok: boolean; at: string }
+
+const ms = (iso: string | null | undefined) => (iso ? Date.parse(iso) : NaN)
+
+export function connectionState(
+  b: Pick<BridgeHealth, 'state' | 'last_success_at' | 'last_failure_at'> | null | undefined,
+  check: CheckSeen | null = null,
+): ConnectionState | null {
+  if (!b) return null
+  if (b.state !== 'ok') return b.state
+  const success = ms(b.last_success_at)
+  if (check && !check.ok && !(success > ms(check.at))) return 'checkFailed'
+  const failure = ms(b.last_failure_at)
+  if (!Number.isNaN(failure) && !(success >= failure)) return 'failing'
+  if (Number.isNaN(success)) return 'untried'
+  return 'ok'
 }
 
 /** The live service (`ssc watch`) from `/status.live`; "unknown" when the server could not read it. */
@@ -88,21 +116,22 @@ export const SLICE_STATE: Record<string, StatusLook> = {
   not_requested: { tone: 'neutral', icon: 'circle', key: 'ui.status.slice.not_requested' },
 }
 
-/** Where a follow comes from (4.6): the config file is locked, leagues.txt is legacy, the API's has no badge. */
+/** Where a follow comes from (4.6): the config file is locked, leagues.txt is the old league list, the API's is added here. */
 export const FOLLOW_ORIGIN: Record<string, StatusLook> = {
   config: { tone: 'neutral', icon: 'lock', key: 'ui.status.origin.config' },
   legacy: { tone: 'neutral', icon: 'classic', key: 'ui.status.origin.legacy' },
   api: { tone: 'neutral', icon: 'plus', key: 'ui.status.origin.api' },
 }
 
-/** The health pill: one word and a tone for the whole server (3.3). */
-export type HealthLevel = 'ok' | 'attention' | 'blocked' | 'unknown'
+/** The health pill: one word and a tone for the whole server (3.3); `untried` before any answer (FX-14a). */
+export type HealthLevel = 'ok' | 'attention' | 'blocked' | 'unknown' | 'untried'
 
 export const HEALTH: Record<HealthLevel, StatusLook> = {
   ok: { tone: 'ok', icon: 'okCircle', key: 'ui.status.health.ok' },
   attention: { tone: 'warn', icon: 'alert', key: 'ui.status.health.attention' },
   blocked: { tone: 'danger', icon: 'error', key: 'ui.status.health.blocked' },
   unknown: { tone: 'neutral', icon: 'circle', key: 'ui.status.health.unknown' },
+  untried: { tone: 'neutral', icon: 'circle', key: 'ui.status.health.untried' },
 }
 
 export const STATUS_KINDS = { job: JOB_STATES, connection: CONNECTION, live: LIVE, health: HEALTH, sink: SINK, event: EVENT_CLASS, slice: SLICE_STATE, origin: FOLLOW_ORIGIN } as const

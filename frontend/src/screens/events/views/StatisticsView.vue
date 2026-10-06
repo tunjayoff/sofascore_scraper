@@ -5,7 +5,8 @@ import { parseStatistics, type StatItem } from '@/lib/matchDetail'
 
 /**
  * Statistics of football, basketball and tennis as SofaScore stores them (decision 6): one block per
- * period, groups of items with the two values and a bar. The item names are SofaScore's (English data).
+ * period, groups of items with the two values and a bar. The item names are SofaScore's (English data),
+ * marked `lang="en"` so a caption is upper-cased as English ("MATCH OVERVIEW", not "MATCH OVERVİEW").
  */
 const props = defineProps<{ payload: unknown; home: string; away: string }>()
 const { t, te } = useI18n()
@@ -35,11 +36,11 @@ function share(item: StatItem) {
       <button v-for="(p, i) in periods" :key="i" type="button" :aria-pressed="i === index" @click="index = i">{{ periodName(p.period, i) }}</button>
     </div>
     <section v-for="(g, gi) in groups" :key="gi" class="flex flex-col gap-2">
-      <h3 v-if="g.groupName" class="u-caption">{{ g.groupName }}</h3>
+      <h3 v-if="g.groupName" class="u-caption" lang="en">{{ g.groupName }}</h3>
       <div v-for="(item, ii) in g.statisticsItems ?? []" :key="ii" class="u-stat">
         <div class="flex items-baseline gap-3">
           <span class="u-num font-semibold w-16">{{ item.home ?? '—' }}</span>
-          <span class="flex-1 text-center u-small">{{ item.name }}</span>
+          <span class="flex-1 text-center u-small" lang="en">{{ item.name }}</span>
           <span class="u-num font-semibold w-16 text-right">{{ item.away ?? '—' }}</span>
         </div>
         <div class="u-stat-bar" aria-hidden="true"><span :style="{ width: `${share(item)}%` }"></span></div>

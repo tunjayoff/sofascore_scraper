@@ -7,6 +7,18 @@ const t = (key: string, args?: Record<string, unknown>) => i18n.global.t(key, ar
 export const FOLLOW_KINDS = ['tournament', 'team', 'player', 'event'] as const
 export type FollowKind = (typeof FOLLOW_KINDS)[number]
 
+/**
+ * Team, player and single-match follows: off until the API can search them and a download can target them
+ * (FX-19, FX-14b). Until then the editor shows them as "coming soon" with the reason instead of leading to
+ * a follow that never downloads anything; their code paths stay, and FX-14b turns them on here.
+ */
+export const MORE_FOLLOW_KINDS = false
+
+/** Whether a kind can be chosen in the editor now. */
+export function followKindReady(kind: FollowKind): boolean {
+  return kind === 'tournament' || MORE_FOLLOW_KINDS
+}
+
 export function followPath(f: Pick<FollowRecord, 'kind' | 'entity_id'>) {
   return `/follows/${f.kind}/${f.entity_id}`
 }
