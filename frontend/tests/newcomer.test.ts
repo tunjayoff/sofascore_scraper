@@ -196,7 +196,7 @@ describe('quick search', () => {
     await flush()
     // the one request the user chose; the only hit is chosen, so Next is the only click left
     expect(callsTo(f, 'POST /api/v1/tournaments/search')).toHaveLength(1)
-    expect(JSON.parse(String(callsTo(f, 'POST /api/v1/tournaments/search')[0][1]!.body))).toEqual({ q: 'premier', sport: null })
+    expect(JSON.parse(String(callsTo(f, 'POST /api/v1/tournaments/search')[0][1]!.body))).toEqual({ q: 'premier', sport: null, kinds: ['tournament'] })
     expect((w.find('[data-testid="editor-query"]').element as HTMLInputElement).value).toBe('premier')
     expect((w.find('[data-testid="editor-name"]').element as HTMLInputElement).value).toBe('Premier League')
     expect(w.find('[data-testid="editor-next"]').attributes('disabled')).toBeUndefined()
@@ -211,7 +211,7 @@ describe('the follow editor', () => {
     mockFetch(routesWith([hit(17), hit(203)]))
     ;({ w } = await mountScreen(FollowEditorScreen, '/follows/new'))
     await flush()
-    expect(w.find('[data-testid="editor-query"]').attributes('placeholder')).toBe(t('ui.followEditor.searchPlaceholder'))
+    expect(w.find('[data-testid="editor-query"]').attributes('placeholder')).toBe(t('ui.followEditor.searchPlaceholder.tournament'))
     await w.find('[data-testid="editor-query"]').setValue('premier')
     await w.find('[data-testid="editor-search"]').trigger('submit')
     await flush()
@@ -248,18 +248,22 @@ describe('the follow editor', () => {
     expect(await axeViolations(w.element)).toEqual([])
   })
 
-  it('team, player and single-match follows wait behind one flag', () => {
-    expect(MORE_FOLLOW_KINDS).toBe(false)
+  it('team, player and single-match follows are on since FX-19 (one flag)', () => {
+    expect(MORE_FOLLOW_KINDS).toBe(true)
   })
 
-  it('an existing team follow says why it cannot be downloaded yet', async () => {
-    mockFetch({ 'GET /api/v1/status': { data: status() } })
+  it('an existing team follow is downloaded by its follow id (FX-19)', async () => {
+    const f = mockFetch({ 'GET /api/v1/status': { data: status() }, 'POST /api/v1/jobs': { data: job({ id: 'T1', state: 'running', spec: { follows: ['team:42'] } }) } })
     setActivePinia(createPinia())
     router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/:p(.*)*', component: { template: '<div />' } }] })
-    w = mount(FollowActions, { props: { follow: follow({ id: 'team:42', kind: 'team', entity_id: 42, name: 'Arsenal' }) }, global: { plugins: [i18n, router] } })
+    w = mount(FollowActions, { props: { follow: follow({ id: 'team:42', kind: 'team', entity_id: 42, name: 'Arsenal' }) }, global: { plugins: [i18n, router] }, attachTo: document.body })
     const sync = w.find('[data-testid="follow-sync"]')
-    expect(sync.attributes('disabled')).toBeDefined()
-    expect(sync.attributes('title')).toBe(t('ui.follows.syncTournamentsOnly'))
+    expect(sync.attributes('disabled')).toBeUndefined()
+    await sync.trigger('click')
+    expect(document.querySelector('[role="alertdialog"]')?.textContent).toContain(t('ui.follows.syncTextKind.team'))
+    ;(document.querySelector('[data-testid="confirm"]') as HTMLButtonElement).click()
+    await flush()
+    expect(JSON.parse(String(callsTo(f, 'POST /api/v1/jobs')[0][1]!.body))).toEqual({ kind: 'sync', spec: { follows: ['team:42'] } })
   })
 })
 
@@ -528,7 +532,8 @@ describe('when a download ends', () => {
     watchJob({ id: 'D1' })
     await vi.advanceTimersByTimeAsync(JOB_WATCH_MS + 50)
     await flush()
-    expect(callsTo(f, 'GET /api/v1/jobs').length).toBe(jobsBefore + 1)
+    // its jobs by target and the downloads of every follow (FX-14b)
+    expect(callsTo(f, 'GET /api/v1/jobs').length).toBe(jobsBefore + 2)
     expect(callsTo(f, 'GET /api/v1/status').length).toBe(statusBefore + 1)
     stop()
   })

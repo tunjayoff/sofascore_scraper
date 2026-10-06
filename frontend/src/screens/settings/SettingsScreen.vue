@@ -16,6 +16,7 @@ import { useStatusStore } from '@/app/statusStore'
 import { toast } from '@/ui/toast'
 import SettingRow from './SettingRow.vue'
 import BrowserSettings from './BrowserSettings.vue'
+import SliceDefaults from './SliceDefaults.vue'
 import { DATA_DIR, metaOf, SECTIONS, type Section } from './settingsMeta'
 
 /**
@@ -50,7 +51,7 @@ const bySection = computed(() => {
 })
 const tabs = computed(() => {
   const list: { key: Tab; label: string; badge?: string }[] = SECTIONS.filter((s) => s !== 'other' || bySection.value.other?.length).map((s) => {
-    const changes = (bySection.value[s] ?? []).filter((x) => x.key in staged.value).length
+    const changes = (bySection.value[s] ?? []).filter((x) => x.key in staged.value).length + (s === 'data' ? Object.keys(staged.value).filter((k) => k.startsWith('slices.')).length : 0)
     return { key: s, label: t(`ui.settings.section.${s}`), badge: changes ? String(changes) : undefined }
   })
   list.push({ key: 'browser', label: t('ui.settings.section.browser') })
@@ -63,7 +64,8 @@ const tab = computed<Tab>({
   },
   set: (v) => void router.replace({ query: { ...route.query, tab: v === 'requests' ? undefined : v } }),
 })
-const rows = computed(() => (tab.value === 'browser' ? [] : (bySection.value[tab.value] ?? [])))
+// the data types are a checklist of their own (SliceDefaults), not a row of text
+const rows = computed(() => (tab.value === 'browser' ? [] : (bySection.value[tab.value] ?? []).filter((s) => s.key !== 'defaults.slices')))
 
 async function load() {
   loading.value = true
@@ -167,6 +169,15 @@ onMounted(load)
       <UiTabs v-model="tab" :tabs="tabs" id-prefix="settings" :label="t('ui.settings.sections')">
         <BrowserSettings v-if="tab === 'browser'" />
         <template v-else>
+          <SliceDefaults
+            v-if="tab === 'data'"
+            :doc="doc"
+            :staged="staged"
+            :config-file="doc.config_file"
+            :problems="problems"
+            @stage="(k, v) => stage(k, v)"
+            @unstage="(k) => unstage(k)"
+          />
           <section v-if="tab === 'server'" class="u-card px-6 py-4 mb-4">
             <p class="m-0 mb-2 u-small u-muted">{{ t('ui.settings.serverNote') }}</p>
             <FactList :items="serverFacts" />

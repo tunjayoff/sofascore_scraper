@@ -164,13 +164,30 @@ const sofascoreUrl = computed(() => {
   if (!e?.slug || !e.custom_id) return null
   return `https://www.sofascore.com/${encodeURIComponent(e.slug)}/${encodeURIComponent(e.custom_id)}#id:${e.id}`
 })
+/** "Follow this match", "Follow Chelsea": the follow editor with the kind, number, name and sport filled in. */
+const followLinks = computed(() => {
+  const e = event.value
+  if (!e || !MORE_FOLLOW_KINDS) return {}
+  const sport = e.sport ?? undefined
+  const out: Record<string, { label: string; to: { path: string; query: Record<string, string | undefined> } }> = {
+    'follow-match': { label: t('ui.eventDetail.followIt'), to: { path: '/follows/new', query: { kind: 'event', id: String(e.id), name: eventTitle(e), sport } } },
+  }
+  for (const side of ['home', 'away'] as const) {
+    const p = e.participants[side]
+    if (p?.id && p.name) out[`follow-${side}`] = { label: t('ui.eventDetail.followTeam', { name: p.name }), to: { path: '/follows/new', query: { kind: 'team', id: String(p.id), name: p.name, sport } } }
+  }
+  return out
+})
 const menu = computed<MenuItem[]>(() => [
+  ...Object.entries(followLinks.value).map(([key, l]) => ({ key, label: l.label, icon: 'follows' as const })),
   { key: 'copy-id', label: t('ui.eventDetail.copyId'), icon: 'copy' },
   { key: 'copy-api', label: t('ui.eventDetail.copyApi'), icon: 'link' },
   ...(sofascoreUrl.value ? [{ key: 'sofascore', label: t('ui.eventDetail.openSofascore'), icon: 'external' as const, hint: t('ui.eventDetail.openSofascoreHint') }] : []),
 ])
 async function onMenu(key: string) {
-  if (key === 'copy-id' || key === 'copy-api') {
+  const follow = followLinks.value[key]
+  if (follow) void router.push(follow.to)
+  else if (key === 'copy-id' || key === 'copy-api') {
     const text = key === 'copy-id' ? String(id.value) : `${window.location.origin}/api/v1/events/${id.value}`
     const ok = await copyText(text)
     toast({ kind: ok ? 'ok' : 'error', text: ok ? t('ui.json.copied') : t('ui.json.copyFailed') })
@@ -180,13 +197,16 @@ async function onMenu(key: string) {
   }
 }
 
+/**
+ * Fetch again: by the match's league (`selections`), or by its number alone (`event_ids`, G16) when it has
+ * no league or is not stored at all (the 404 page's "Fetch this match").
+ */
 async function fetchAgain() {
   const e = event.value
-  if (!e) return
   fetchBusy.value = true
   fetchError.value = null
   try {
-    const job = await startJob({ kind: 'fetch', spec: { selections: fetchSelections([e]).selections } })
+    const job = await startJob(e?.tournament_id ? { kind: 'fetch', spec: { selections: fetchSelections([e]).selections } } : { kind: 'fetch', spec: { event_ids: [id.value] } })
     fetching.value = false
     // When the job has ended the page reads the event again (6.6, navigation)
     watcher?.abort()
@@ -229,7 +249,8 @@ onMounted(() => {
     <div v-if="loading && !event" class="u-card p-6"><SkeletonBlock :lines="6" /></div>
 
     <div v-else-if="notFound" class="u-card" data-testid="event-not-found">
-      <EmptyState icon="events" :title="t('ui.eventDetail.notFound')" :text="[t('ui.eventDetail.notFoundText', { id }), MORE_FOLLOW_KINDS ? t('ui.eventDetail.notFoundFollow') : ''].join(' ').trim()">
+      <EmptyState icon="events" :title="t('ui.eventDetail.notFound')" :text="[t('ui.eventDetail.notFoundText', { id }), t('ui.eventDetail.notFoundFetch'), MORE_FOLLOW_KINDS ? t('ui.eventDetail.notFoundFollow') : ''].join(' ').trim()">
+        <button type="button" class="u-btn u-btn-primary" data-testid="fetch-unknown" @click="fetching = true"><UiIcon name="exports" :size="16" />{{ t('ui.eventDetail.fetchIt') }}</button>
         <RouterLink v-if="MORE_FOLLOW_KINDS" :to="{ path: '/follows/new', query: { kind: 'event', id: String(id) } }" class="u-btn">{{ t('ui.eventDetail.followIt') }}</RouterLink>
         <RouterLink to="/events" class="u-btn u-btn-ghost">{{ t('ui.eventDetail.backToEvents') }}</RouterLink>
       </EmptyState>
@@ -244,7 +265,7 @@ onMounted(() => {
           <span class="u-small u-muted"><TimeText :value="event.start_utc" /></span>
         </template>
         <template #actions>
-          <button type="button" class="u-btn" :disabled="!event.tournament_id" :title="event.tournament_id ? t('ui.jobs.start.sendsRequests') : t('ui.eventDetail.noTournament')" @click="fetching = true">
+          <button type="button" class="u-btn" :title="t('ui.jobs.start.sendsRequests')" @click="fetching = true">
             <UiIcon name="refresh" :size="16" />{{ listingOnly ? t('ui.eventDetail.fetchDetails') : t('ui.eventDetail.fetchAgain') }}
           </button>
           <UiMenu :label="t('ui.eventDetail.more')" icon="more" icon-only button-class="u-btn u-btn-icon" :items="menu" @select="onMenu" />
@@ -414,21 +435,21 @@ onMounted(() => {
         </template>
         <RawPayload :event-id="id" :slice-key="raw.key" :sub="raw.sub" :slice="raw.key === 'event' ? null : slices.find((s) => s.key === raw!.key && s.sub === raw!.sub)" />
       </SidePanel>
-
-      <ConfirmDialog
-        v-if="fetching"
-        :title="listingOnly ? t('ui.eventDetail.fetchDetails') : t('ui.eventDetail.fetchAgainTitle')"
-        :confirm-label="t('ui.jobs.start.confirm')"
-        :busy="fetchBusy"
-        :error="fetchError"
-        :active-job-id="status.activeJob?.id"
-        @confirm="fetchAgain"
-        @close="fetching = false"
-      >
-        <p class="m-0">{{ t('ui.eventDetail.fetchAgainText') }}</p>
-        <p class="m-0 flex items-center gap-2 u-small" style="color: var(--warn-fg)"><UiIcon name="external" :size="14" />{{ t('ui.jobs.start.sendsRequests') }}</p>
-      </ConfirmDialog>
     </template>
+
+    <ConfirmDialog
+      v-if="fetching"
+      :title="!event ? t('ui.eventDetail.fetchIt') : listingOnly ? t('ui.eventDetail.fetchDetails') : t('ui.eventDetail.fetchAgainTitle')"
+      :confirm-label="t('ui.jobs.start.confirm')"
+      :busy="fetchBusy"
+      :error="fetchError"
+      :active-job-id="status.activeJob?.id"
+      @confirm="fetchAgain"
+      @close="fetching = false"
+    >
+      <p class="m-0">{{ t('ui.eventDetail.fetchAgainText') }}</p>
+      <p class="m-0 flex items-center gap-2 u-small" style="color: var(--warn-fg)"><UiIcon name="external" :size="14" />{{ t('ui.jobs.start.sendsRequests') }}</p>
+    </ConfirmDialog>
   </div>
 </template>
 

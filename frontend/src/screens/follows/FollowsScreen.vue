@@ -18,6 +18,7 @@ import { useStatusStore } from '@/app/statusStore'
 import { onJobEnded } from '@/app/jobWatch'
 import { pct } from '@/ui/time'
 import StartJobDialog from '@/screens/jobs/StartJobDialog.vue'
+import { noteFollowNames } from '@/screens/jobs/jobText'
 import FollowActions from './FollowActions.vue'
 import { FOLLOW_KINDS, dataText, followPath, hasOdds, lastSyncOf, seasonsText } from './followText'
 
@@ -72,6 +73,7 @@ async function load() {
       mine.signal,
     )
     rows.value = page.data
+    noteFollowNames(page.data)
     error.value = null
     loaded.value = true
   } catch (e) {
@@ -189,7 +191,7 @@ onMounted(() => {
       </template>
       <template #cell-sport="{ row }">{{ sportName(row.sport) }}</template>
       <template #cell-kind="{ row }">{{ t(`ui.follows.kind.${row.kind}`) }}</template>
-      <template #cell-seasons="{ row }">{{ seasonsText(row.seasons) }}</template>
+      <template #cell-seasons="{ row }">{{ row.kind === 'event' ? '—' : seasonsText(row.seasons, row.kind) }}</template>
       <template #cell-data="{ row }">
         <span class="inline-flex items-center gap-2">{{ dataText(row.slices) }}<UiBadge v-if="hasOdds(row.slices)" tone="info">{{ t('ui.follows.data.odds') }}</UiBadge></span>
       </template>

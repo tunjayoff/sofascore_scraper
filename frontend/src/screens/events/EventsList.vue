@@ -32,7 +32,8 @@ import {
 } from './eventText'
 
 /**
- * The list of stored events (6.5), also embedded in a follow's detail with its tournament fixed (6.4). It
+ * The list of stored events (6.5), also embedded in a follow's detail with its tournament (or, for a team
+ * follow, the team: `participant`) fixed (6.4). It
  * does not update by itself: an event "in progress" is the state of its last read, not a live score (R2).
  * Filters, sort and the page are in the query string; the server filters and sorts. The Data column comes
  * from `include=slices_summary`. Selected events can be fetched: "Fetch missing data" sends only the
@@ -40,7 +41,7 @@ import {
  * selection per tournament. Without a status filter every status is shown, upcoming and in-progress
  * matches too (FX-14a); "All statuses" says so and brings it back.
  */
-const props = defineProps<{ fixedTournament?: number | null; tableId?: string }>()
+const props = defineProps<{ fixedTournament?: number | null; fixedParticipant?: number | null; tableId?: string }>()
 const { t } = useI18n()
 const route = useRoute()
 const status = useStatusStore()
@@ -79,6 +80,7 @@ const list = usePagedList<EventListItem>(
       status: f.value.classes.length ? f.value.classes : null,
       has: f.value.has || null,
       q: f.value.team || null,
+      participant: props.fixedParticipant ? [props.fixedParticipant] : null,
       sort: f.value.asc ? 'start_utc' : '-start_utc',
       include: ['slices_summary'],
       limit: size,
