@@ -2,8 +2,8 @@
  * Design tokens of the web UI (docs/design/05-web-ui.md section 4). Components use these variables only,
  * never colour values. tests/tokens.test.ts reads this file and checks every text pair against WCAG 2.2 AA.
  *
- * The classic views (src/views, until FE-2b removes them) read the same names from style.css; the values
- * here win for the names both files define, so both look alike.
+ * style.css carries the base layer and the older shared names (it served the classic views, removed by
+ * FX-14b); the values here win for the names both files define.
  */
 :root {
   --bg: #f4f3ee;

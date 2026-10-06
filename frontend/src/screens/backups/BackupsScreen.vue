@@ -19,8 +19,8 @@ import RestoreDialog from './RestoreDialog.vue'
 /**
  * Backups (6.11): the archives in the server's backups folder, newest first, each with Download, Check (a
  * dry run of the restore) and Restore. There is no upload (decision 15): an archive must already be in the
- * backups folder. Restoring itself is done with `ssc backup restore` while the API offers only the check;
- * the restore dialog leads there. While a job holds the data folder a banner says so (5.4).
+ * backups folder. The restore dialog checks the archive, then restores it as a job (FX-13, FX-14b), with
+ * `ssc backup restore` as the other way. While a job holds the data folder a banner says so (5.4).
  */
 const { t } = useI18n()
 const status = useStatusStore()
@@ -112,7 +112,7 @@ onUnmounted(() => {
       <p v-if="status.activeJob" class="m-0 u-notice u-notice-warn" role="status" data-testid="busy-banner">
         <UiIcon name="alert" :size="16" />
         <span>
-          {{ t('ui.backups.busy', { kind: jobKindText(status.activeJob.kind) }) }}
+          {{ t('ui.backups.busy', { kind: jobKindText(status.activeJob.kind, status.activeJob.spec) }) }}
           <RouterLink :to="`/jobs/${status.activeJob.id}`">{{ t('ui.error.openJob') }}</RouterLink>
         </span>
       </p>

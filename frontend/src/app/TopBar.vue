@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import UiIcon from '@/ui/UiIcon.vue'
 import UiMenu, { type MenuItem } from '@/ui/UiMenu.vue'
@@ -17,14 +17,13 @@ import { pct } from '@/ui/time'
 /**
  * The top bar (3.3): the page title; "Add league", always there (FX-14a; icon only on phone); the health
  * pill (one word and a colour from `/status`, opens Health); the job pill while a job runs (opens its
- * detail); the menu with language, theme, density, quick search, the keyboard shortcuts, Help, the classic
- * interface and, when a token is in use, Sign out.
+ * detail); the menu with language, theme, density, quick search, the keyboard shortcuts, Help and, when a
+ * token is in use, Sign out.
  */
 defineProps<{ title: string; compact?: boolean }>()
 const emit = defineEmits<{ shortcuts: []; palette: []; help: [] }>()
 const { t, locale } = useI18n()
 const route = useRoute()
-const router = useRouter()
 const status = useStatusStore()
 
 const health = computed(() => HEALTH[status.level])
@@ -32,7 +31,7 @@ const job = computed(() => status.activeJob)
 const jobLabel = computed(() => {
   if (!job.value) return ''
   const p = jobPercent(job.value)
-  return p == null ? jobKindText(job.value.kind) : `${jobKindText(job.value.kind)} · ${pct(p)}`
+  return p == null ? jobKindText(job.value.kind, job.value.spec) : `${jobKindText(job.value.kind, job.value.spec)} · ${pct(p)}`
 })
 
 const menu = computed<MenuItem[]>(() => [
@@ -49,7 +48,6 @@ const menu = computed<MenuItem[]>(() => [
   { key: 'search', label: t('ui.shell.search'), icon: 'search', hint: 'Ctrl K' },
   { key: 'shortcuts', label: t('ui.menu.shortcuts'), icon: 'keyboard', hint: '?' },
   { key: 'help', label: t('ui.menu.help'), icon: 'help' },
-  { key: 'classic', label: t('ui.menu.classic'), icon: 'classic' },
   ...(tokenInUse.value ? [{ key: 'signout', label: t('ui.menu.signOut'), icon: 'signOut' as const, danger: true }] : []),
 ])
 
@@ -61,7 +59,6 @@ function onMenu(key: string) {
   else if (key === 'shortcuts') emit('shortcuts')
   else if (key === 'search') emit('palette')
   else if (key === 'help') emit('help')
-  else if (key === 'classic') void router.push('/classic')
   else if (key === 'signout') void signOut()
 }
 </script>

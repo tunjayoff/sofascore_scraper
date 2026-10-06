@@ -7,18 +7,22 @@ import HelpTip from '@/ui/HelpTip.vue'
 import SkeletonBlock from '@/ui/SkeletonBlock.vue'
 import ErrorState from '@/ui/ErrorState.vue'
 import { v1 } from '@/api/v1/client'
-import type { FollowRecord, Sport, SportSlice } from '@/api/v1/schema'
+import type { Sport } from '@/api/v1/schema'
 import { sportName } from '@/app/sports'
 import { sliceLabel } from '@/screens/events/eventText'
+import SliceChecklist from './SliceChecklist.vue'
+import { costPerMatch, followChosen, ownerOf, sectionOf, type Selection } from './sliceSelection'
 
 /**
- * The data a follow downloads (6.3 step 3, decision 4), in one readable line (FX-14a): the data types
- * fetched for each match, whether betting odds are on, and the request cost per match; "Details" opens
- * the grouped list (match data, betting odds once, season and other data). The registry of
- * `GET /sports/{slug}` says what the configured defaults select (`selected`); a follow with its own
- * selection is resolved against it. It is read-only: choosing per follow comes with FX-14b.
+ * The data a follow downloads (6.3 step 3, decision 4; FX-14b). One readable line says what is fetched for
+ * each match, whether betting odds are on, and the request cost per match. Editable (`editable`), the
+ * follow chooses between "Use the defaults for <sport>" (`slices: null`) and "Choose for this follow"
+ * (`{include: [...]}`, P27), and the grouped checklist of `GET /sports/{slug}` starts from the defaults'
+ * ticks (`selected`). Read-only, "Details" opens the same checklist without controls. A follow kept with
+ * enable/disable changes (config file, `ssc follows add`) is shown resolved; choosing writes `include`.
  */
-const props = defineProps<{ sport: string | null | undefined; selection: FollowRecord['slices'] | null }>()
+const props = defineProps<{ sport: string | null | undefined; selection: Selection | null; editable?: boolean; lockReason?: string | null }>()
+const emit = defineEmits<{ 'update:selection': [Selection | null] }>()
 const { t } = useI18n()
 const uid = useId()
 
@@ -44,33 +48,31 @@ async function load() {
 }
 watch(() => props.sport, () => void load(), { immediate: true })
 
-/** Older servers give no group or owner: odds are told by their key, the rest by their path. */
-function groupOf(s: SportSlice): string {
-  return s.group ?? (s.key.startsWith('odds') || s.key.endsWith('_odds') ? 'odds' : 'core')
-}
-function ownerOf(s: SportSlice): string {
-  return s.owner ?? (s.path.startsWith('/event/') ? 'event' : 'season')
-}
-
-/** Whether a slice is downloaded: the configured defaults, or the follow's own selection over them. */
-function chosen(s: SportSlice): boolean {
-  const base = s.selected ?? s.default_enabled
-  const sel = props.selection as { include?: string[]; enable?: string[]; disable?: string[] } | null
-  if (!sel) return base
-  const names = (list?: string[]) => !!list?.some((x) => x === s.key || x === groupOf(s))
-  if (Array.isArray(sel.include)) return s.required || names(sel.include)
-  return (base || names(sel.enable)) && !names(sel.disable)
-}
-
 const slices = computed(() => registry.value?.slices ?? [])
-const matchSlices = computed(() => slices.value.filter((s) => ownerOf(s) === 'event' && groupOf(s) !== 'odds'))
-const oddsSlices = computed(() => slices.value.filter((s) => groupOf(s) === 'odds'))
-const otherSlices = computed(() => slices.value.filter((s) => ownerOf(s) !== 'event' && groupOf(s) !== 'odds'))
-const oddsOn = computed(() => oddsSlices.value.some(chosen))
+const custom = computed(() => props.selection != null)
+const chosen = computed(() => followChosen(slices.value, props.selection))
+const defaults = computed(() => followChosen(slices.value, null))
+const oddsOn = computed(() => slices.value.some((s) => sectionOf(s) === 'odds' && chosen.value.has(s.key)))
 /** "Match, Statistics, Line-ups, …": the match itself and every chosen data type of a match. */
-const summary = computed(() => [t('ui.slice.event'), ...slices.value.filter((s) => ownerOf(s) === 'event' && groupOf(s) !== 'odds' && chosen(s)).map((s) => sliceLabel(s.key))].join(', '))
-/** The event itself plus every chosen data type of a match (6.3, "requests per match"). */
-const cost = computed(() => 1 + slices.value.filter((s) => ownerOf(s) === 'event' && chosen(s)).length)
+const summary = computed(() => [t('ui.slice.event'), ...slices.value.filter((s) => sectionOf(s) === 'match' && chosen.value.has(s.key)).map((s) => sliceLabel(s.key))].join(', '))
+const others = computed(() => slices.value.filter((s) => ownerOf(s) !== 'event' && chosen.value.has(s.key)).map((s) => sliceLabel(s.key)))
+const cost = computed(() => costPerMatch(slices.value, chosen.value))
+const canEdit = computed(() => !!props.editable && !props.lockReason)
+
+function useDefaults() {
+  emit('update:selection', null)
+}
+function choose() {
+  // the checklist starts from what the defaults download now
+  if (!custom.value) emit('update:selection', { include: slices.value.filter((s) => defaults.value.has(s.key)).map((s) => s.key) })
+  open.value = true
+}
+function toggle(key: string, on: boolean) {
+  const next = new Set(chosen.value)
+  if (on) next.add(key)
+  else next.delete(key)
+  emit('update:selection', { include: slices.value.filter((s) => next.has(s.key)).map((s) => s.key) })
+}
 </script>
 
 <template>
@@ -79,60 +81,49 @@ const cost = computed(() => 1 + slices.value.filter((s) => ownerOf(s) === 'event
       <h3 class="u-h3">{{ t('ui.slicePicker.mode') }}</h3>
       <HelpTip term="dataType" />
     </div>
-    <div v-if="!props.sport" class="u-muted">{{ t('ui.slicePicker.noSport') }}</div>
+    <div v-if="!props.sport" class="u-muted" data-testid="slice-no-sport">{{ t('ui.slicePicker.noSport') }}</div>
     <SkeletonBlock v-else-if="loading" :lines="2" />
     <ErrorState v-else-if="error" compact :error="error" @retry="load" />
     <template v-else-if="registry">
-      <p class="m-0" data-testid="slice-summary">
-        <template v-if="selection">{{ t('ui.slicePicker.summaryCustom') }} </template>{{ t('ui.slicePicker.summary', { list: summary }) }}
+      <fieldset v-if="editable" class="flex flex-col gap-2" :disabled="!canEdit" data-testid="slice-mode">
+        <legend class="u-sr">{{ t('ui.slicePicker.mode') }}</legend>
+        <label class="u-option">
+          <input type="radio" class="u-check" :name="`${uid}-mode`" :checked="!custom" data-testid="slice-mode-defaults" @change="useDefaults" />
+          <span class="flex flex-col"
+            ><span class="font-semibold">{{ t('ui.slicePicker.useDefaults', { sport: sportName(registry.slug) }) }}</span
+            ><span class="u-small u-muted">{{ t('ui.slicePicker.useDefaultsHint') }}</span></span
+          >
+        </label>
+        <label class="u-option">
+          <input type="radio" class="u-check" :name="`${uid}-mode`" :checked="custom" data-testid="slice-mode-choose" @change="choose" />
+          <span class="flex flex-col"
+            ><span class="font-semibold">{{ t('ui.slicePicker.choose') }}</span><span class="u-small u-muted">{{ t('ui.slicePicker.chooseHint') }}</span></span
+          >
+        </label>
+      </fieldset>
+      <p v-if="lockReason" class="m-0 u-small u-muted flex items-center gap-2" data-testid="slice-locked"><UiIcon name="lock" :size="14" />{{ lockReason }}</p>
+
+      <p class="m-0" data-testid="slice-summary" aria-live="polite">
+        <template v-if="custom && !editable">{{ t('ui.slicePicker.summaryCustom') }} </template>{{ t('ui.slicePicker.summary', { list: summary }) }}
         <span :class="oddsOn ? '' : 'u-muted'">{{ oddsOn ? t('ui.slicePicker.oddsOn') : t('ui.slicePicker.oddsOff') }}</span>
+        <template v-if="others.length"> {{ t('ui.slicePicker.othersOn', { list: others.join(', ') }) }}</template>
       </p>
       <p class="m-0 u-small u-muted" data-testid="slice-cost">{{ t('ui.slicePicker.cost', { n: cost }) }} · {{ sportName(registry.slug) }}</p>
-      <div>
-        <button type="button" class="u-btn u-btn-sm u-btn-ghost" :aria-expanded="open" :aria-controls="`${uid}-details`" data-testid="slice-details" @click="open = !open">
-          <UiIcon :name="open ? 'chevronDown' : 'chevronRight'" :size="14" />{{ t('ui.slicePicker.details') }}
-        </button>
-      </div>
-      <div v-if="open" :id="`${uid}-details`" class="flex flex-col gap-4">
-        <section class="flex flex-col gap-2" :aria-labelledby="`${uid}-match`">
-          <header class="flex items-baseline gap-3">
-            <h4 :id="`${uid}-match`" class="u-caption flex-1">{{ t('ui.slicePicker.group.match') }}</h4>
-            <span class="u-small u-muted">{{ t('ui.slicePicker.perMatch') }}</span>
-          </header>
-          <label class="flex items-center gap-3">
-            <input type="checkbox" class="u-check" checked disabled />
-            <span class="flex-1">{{ t('ui.slicePicker.match') }}</span>
-            <span class="u-small u-muted">{{ t('ui.slicePicker.always') }}</span>
-          </label>
-          <label v-for="s in matchSlices" :key="s.key" class="flex items-center gap-3" :data-slice="s.key">
-            <input type="checkbox" class="u-check" :checked="chosen(s)" disabled />
-            <span class="flex-1">{{ sliceLabel(s.key) }}</span>
-            <span v-if="s.required" class="u-small u-muted">{{ t('ui.slicePicker.always') }}</span>
-          </label>
-        </section>
 
-        <section v-if="oddsSlices.length" class="flex flex-col gap-2" :aria-labelledby="`${uid}-odds`" data-testid="odds-group">
-          <header class="flex items-baseline gap-3">
-            <h4 :id="`${uid}-odds`" class="u-caption flex-1">{{ t('ui.slicePicker.group.odds') }}</h4>
-            <span class="u-small u-muted">{{ t('ui.slicePicker.offByDefault') }}</span>
-          </header>
-          <label v-for="s in oddsSlices" :key="s.key" class="flex items-center gap-3" :data-slice="s.key">
-            <input type="checkbox" class="u-check" :checked="chosen(s)" disabled />
-            <span class="flex-1">{{ sliceLabel(s.key) }}</span>
-          </label>
-          <p class="m-0 u-small u-muted flex gap-2"><UiIcon name="info" :size="14" />{{ t('ui.slicePicker.oddsHistory') }}</p>
-        </section>
+      <SliceChecklist v-if="editable && custom && canEdit" :slices="slices" :chosen="chosen" :label="t('ui.slicePicker.mode')" @toggle="toggle" />
+      <template v-else>
+        <div>
+          <button type="button" class="u-btn u-btn-sm u-btn-ghost" :aria-expanded="open" :aria-controls="`${uid}-details`" data-testid="slice-details" @click="open = !open">
+            <UiIcon :name="open ? 'chevronDown' : 'chevronRight'" :size="14" />{{ t('ui.slicePicker.details') }}
+          </button>
+        </div>
+        <div v-if="open" :id="`${uid}-details`">
+          <SliceChecklist :slices="slices" :chosen="chosen" disabled :label="t('ui.slicePicker.mode')" />
+        </div>
+      </template>
 
-        <section v-if="otherSlices.length" class="flex flex-col gap-2" :aria-labelledby="`${uid}-other`">
-          <h4 :id="`${uid}-other`" class="u-caption">{{ t('ui.slicePicker.group.other') }}</h4>
-          <label v-for="s in otherSlices" :key="s.key" class="flex items-center gap-3" :data-slice="s.key">
-            <input type="checkbox" class="u-check" :checked="chosen(s)" disabled />
-            <span class="flex-1">{{ sliceLabel(s.key) }}</span>
-          </label>
-        </section>
-      </div>
-      <p class="m-0 u-notice" data-testid="slice-note">
-        <UiIcon name="info" :size="16" /><span>{{ t('ui.slicePicker.soon') }} {{ t('ui.slicePicker.defaultsWhere') }} <RouterLink :to="{ path: '/settings', query: { tab: 'data' } }">{{ t('ui.nav.settings') }}</RouterLink></span>
+      <p class="m-0 u-small u-muted" data-testid="slice-note">
+        <span v-if="!custom">{{ t('ui.slicePicker.defaultsWhere') }} <RouterLink :to="{ path: '/settings', query: { tab: 'data' } }">{{ t('ui.slicePicker.defaultsLink') }}</RouterLink></span>
       </p>
     </template>
   </div>

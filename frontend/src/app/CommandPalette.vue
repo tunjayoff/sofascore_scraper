@@ -7,7 +7,7 @@ import { trapTab } from '@/ui/focus'
 import { v1 } from '@/api/v1/client'
 import type { FollowRecord, Job, TournamentRecord } from '@/api/v1/schema'
 import { NAV } from '@/app/nav'
-import { jobKindText, jobTarget } from '@/screens/jobs/jobText'
+import { jobKindText, jobTarget, noteFollowNames } from '@/screens/jobs/jobText'
 import { loadTournaments } from '@/screens/events/eventText'
 
 /**
@@ -68,6 +68,14 @@ const actions = computed<Action[]>(() => [
     run: () => emit('help'),
     words: ['yardım', 'help', 'nasıl', 'how', 'sözlük', 'glossary', 'canlı', 'live', 'watch', 'izleme', '?'],
   },
+  // the address /health is the server's own check (JSON); this screen is /system/health (FX-14b)
+  {
+    id: 'act-health',
+    label: t('ui.nav.health'),
+    icon: 'health',
+    to: '/system/health',
+    words: ['sağlık', 'saglik', 'health', 'durum', 'status', 'bağlantı', 'connection', 'sorun', 'problem', 'hata', 'error'],
+  },
 ])
 
 /** The label holds the text, or every word typed starts one of the action's words. */
@@ -80,7 +88,7 @@ const hits = computed<Hit[]>(() => {
   const out: Hit[] = []
   for (const a of actions.value) if (!q || actionMatches(a, q)) out.push({ ...a, hint: t('ui.palette.action') })
   for (const n of NAV) {
-    if (n.hidden || n.key === 'settings') continue
+    if (n.hidden || n.key === 'settings' || n.key === 'health') continue
     const label = t(`ui.nav.${n.key}`)
     if (!q || lower(label).includes(q)) out.push({ id: `nav-${n.key}`, label, hint: t('ui.palette.screen'), icon: n.icon, to: n.to })
   }
@@ -95,7 +103,7 @@ const hits = computed<Hit[]>(() => {
         out.push({ id: `tournament-${tour.id}`, label: tour.name ?? `#${tour.id}`, hint: t('ui.palette.tournament'), icon: 'events', to: { path: '/events', query: { tournament: String(tour.id) } } })
   }
   for (const j of jobs.value) {
-    const label = `${jobKindText(j.kind)} · ${jobTarget(j)}`
+    const label = `${jobKindText(j.kind, j.spec)} · ${jobTarget(j)}`
     if (q && (lower(label).includes(q) || j.id.toLowerCase().startsWith(q))) out.push({ id: `recent-${j.id}`, label, hint: j.id, icon: 'jobs', to: `/jobs/${j.id}` })
   }
   // Nothing matches: offer the search at SofaScore, sent only when the user picks it (FX-14a)
@@ -144,7 +152,10 @@ onMounted(() => {
     .then((r) => (jobs.value = r.data))
     .catch(() => {})
   v1.follows()
-    .then((r) => (follows.value = r.data))
+    .then((r) => {
+      follows.value = r.data
+      noteFollowNames(r.data)
+    })
     .catch(() => {})
   // names for the leagues of the recent jobs
   void loadTournaments()

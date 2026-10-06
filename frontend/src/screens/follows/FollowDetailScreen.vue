@@ -13,23 +13,27 @@ import EmptyState from '@/ui/EmptyState.vue'
 import ErrorState from '@/ui/ErrorState.vue'
 import SkeletonBlock from '@/ui/SkeletonBlock.vue'
 import { v1, V1Error } from '@/api/v1/client'
-import type { FollowRecord, Job, Season, TournamentRecord } from '@/api/v1/schema'
+import type { FollowRecord, Job, SeasonEntry, TournamentRecord } from '@/api/v1/schema'
 import { sportName } from '@/app/sports'
 import { useStatusStore } from '@/app/statusStore'
 import { onJobEnded } from '@/app/jobWatch'
 import { num, pct } from '@/ui/time'
 import StartJobDialog from '@/screens/jobs/StartJobDialog.vue'
-import { faceText, jobKindText, jobLeague } from '@/screens/jobs/jobText'
+import { faceText, jobKindText, jobLeague, jobTarget, noteFollowNames } from '@/screens/jobs/jobText'
 import EventsList from '@/screens/events/EventsList.vue'
 import FollowActions from './FollowActions.vue'
+import MoveFollow from './MoveFollow.vue'
 import SlicePicker from './SlicePicker.vue'
 import { dataText, hasOdds, lastSyncOf, lockReason, seasonsText, syncIncludes } from './followText'
 
 /**
- * Follow detail (6.4): one follow with its seasons, its matches, its data selection and its jobs. The
- * facts panel says what is followed and how; a follow from the config file is locked. The per-season
- * counts are not in the API yet; the tournament's coverage comes from the data summary of `/status`. When a
- * download of this league ends, its last download, the counts and the seasons are read again (FX-14a).
+ * Follow detail (6.4): one follow with its seasons, its matches, its data selection and its downloads.
+ * A league has a Seasons tab with each stored season's counts (`include=counts`, FX-13: matches, finished,
+ * with details, complete) and the age of its schedule; a league whose season list was never read gets it
+ * on a click. A team's Matches tab lists the stored matches it played; a single match links to it. The
+ * Jobs tab lists the jobs that name this follow (`GET /jobs?target=<kind>:<id>`, FX-13/FX-19) and the
+ * downloads of every follow. A follow of the old league list can be moved here. When a job of this follow
+ * ends, its last download, the counts and the seasons are read again (FX-14a).
  */
 const { t } = useI18n()
 const route = useRoute()
@@ -42,24 +46,24 @@ const followId = computed(() => `${kind.value}:${entityId.value}`)
 
 const follow = ref<FollowRecord | null>(null)
 const tournament = ref<TournamentRecord | null>(null)
-const seasons = ref<Season[] | null>(null)
+const seasons = ref<SeasonEntry[] | null>(null)
 const seasonsError = ref<unknown>(null)
 const jobs = ref<Job[] | null>(null)
 const loading = ref(true)
 const error = ref<unknown>(null)
-const syncSeason = ref<Season | null>(null)
+const syncSeason = ref<SeasonEntry | null>(null)
 const fetchMissing = ref(false)
+const gettingSeasons = ref(false)
 
 type Tab = 'seasons' | 'events' | 'data' | 'jobs'
 const isTournament = computed(() => kind.value === 'tournament')
+const TABS: Record<string, Tab[]> = { tournament: ['seasons', 'events', 'data', 'jobs'], team: ['events', 'data', 'jobs'] }
+const allowed = computed<Tab[]>(() => TABS[kind.value] ?? ['data', 'jobs'])
 const tab = computed<Tab>(() => {
   const q = String(route.query.tab ?? '')
-  const allowed: Tab[] = isTournament.value ? ['seasons', 'events', 'data', 'jobs'] : ['data', 'jobs']
-  return allowed.includes(q as Tab) ? (q as Tab) : allowed[0]
+  return allowed.value.includes(q as Tab) ? (q as Tab) : allowed.value[0]
 })
-const tabs = computed(() =>
-  (isTournament.value ? (['seasons', 'events', 'data', 'jobs'] as Tab[]) : (['data', 'jobs'] as Tab[])).map((k) => ({ key: k, label: t(`ui.followDetail.tab.${k}`) })),
-)
+const tabs = computed(() => allowed.value.map((k) => ({ key: k, label: t(`ui.followDetail.tab.${k}`) })))
 function setTab(k: Tab) {
   // the events list keeps its own filters in the address; a new tab starts clean
   void router.replace({ query: { tab: k } })
@@ -67,14 +71,20 @@ function setTab(k: Tab) {
 
 const notFound = computed(() => error.value instanceof V1Error && error.value.code === 'not_found')
 const coverage = computed(() => status.status?.summary?.tournaments.find((x) => x.tournament_id === entityId.value) ?? null)
-const ownJobs = computed(() => (jobs.value ?? []).filter((j) => follow.value && syncIncludes(follow.value, j)))
+/** The jobs of this follow and the downloads of every follow, newest first. */
+const ownJobs = computed(() => (jobs.value ?? []).filter((j) => (follow.value && syncIncludes(follow.value, j)) || targets(j)))
 const lastSync = computed(() => (follow.value ? lastSyncOf(follow.value, jobs.value ?? []) : null))
+
+/** A job the server listed for this follow's target (a clear of the league, a fetch of its events …). */
+const targeted = ref<Set<string>>(new Set())
+const targets = (j: Job) => targeted.value.has(j.id)
 
 async function load() {
   loading.value = true
   error.value = null
   try {
     follow.value = await v1.follow(followId.value)
+    noteFollowNames([follow.value])
     if (isTournament.value) {
       v1.tournament(entityId.value)
         .then((x) => (tournament.value = x))
@@ -91,14 +101,20 @@ async function load() {
 }
 
 function loadJobs() {
-  v1.jobs({ kind: ['sync'], limit: 50 })
-    .then((r) => (jobs.value = r.data))
-    .catch(() => (jobs.value = jobs.value ?? []))
+  const byTarget = v1.jobs({ target: followId.value, limit: 50 }).then((r) => r.data)
+  const syncs = v1.jobs({ kind: ['sync'], limit: 50 }).then((r) => r.data)
+  Promise.allSettled([byTarget, syncs]).then(([a, b]) => {
+    const mine = a.status === 'fulfilled' ? a.value : []
+    targeted.value = new Set(mine.map((j) => j.id))
+    const all = new Map<string, Job>()
+    for (const j of [...mine, ...(b.status === 'fulfilled' ? b.value : [])]) all.set(j.id, j)
+    jobs.value = [...all.values()].sort((x, y) => String(y.created_at ?? '').localeCompare(String(x.created_at ?? '')))
+  })
 }
 
 const stopListening = onJobEnded((job) => {
   const f = follow.value
-  if (!f || !(syncIncludes(f, job) || (job.kind === 'fetch' && jobLeague(job) === f.entity_id))) return
+  if (!f || !(syncIncludes(f, job) || jobLeague(job) === f.entity_id || targets(job))) return
   loadJobs()
   void status.refresh().catch(() => {})
   if (isTournament.value) loadSeasons()
@@ -107,29 +123,37 @@ onUnmounted(stopListening)
 
 function loadSeasons() {
   seasonsError.value = null
-  v1.tournamentSeasons(entityId.value)
+  v1.tournamentSeasons(entityId.value, undefined, true)
     .then((s) => (seasons.value = s))
-    .catch((e) => (seasonsError.value = e))
+    .catch((e) => {
+      if (e instanceof V1Error && e.code === 'not_found') seasons.value = []
+      else seasonsError.value = e
+    })
 }
 
 /** Whether a season is covered by the follow's season rule, as far as the rule tells without dates. */
-function followed(s: Season): boolean | null {
+function followed(s: SeasonEntry): boolean | null {
   const rule = follow.value?.seasons
   if (Array.isArray(rule)) return rule.includes(s.id)
   if (rule === 'all') return true
   return null
 }
 
+function moved(f: FollowRecord) {
+  follow.value = f
+}
+
 const facts = computed(() => {
   const f = follow.value
   if (!f) return []
   return [
-    { key: 'seasons', label: t('ui.followDetail.fact.seasons'), value: seasonsText(f.seasons) },
+    ...(f.kind !== 'event' ? [{ key: 'seasons', label: f.kind === 'tournament' ? t('ui.followDetail.fact.seasons') : t('ui.followEditor.window'), value: seasonsText(f.seasons, f.kind) }] : []),
+    ...(f.kind === 'event' ? [{ key: 'match', label: t('ui.followDetail.fact.match') }] : []),
     { key: 'data', label: t('ui.followDetail.fact.data') },
     { key: 'live', label: t('ui.followDetail.fact.live'), value: f.live ? t('ui.follows.liveYes') : t('ui.common.no') },
     { key: 'enabled', label: t('ui.followDetail.fact.enabled'), value: f.enabled ? t('ui.common.yes') : t('ui.common.no') },
     { key: 'lastSync', label: t('ui.followDetail.fact.lastSync') },
-    { key: 'coverage', label: t('ui.followDetail.fact.coverage') },
+    ...(f.kind === 'tournament' ? [{ key: 'coverage', label: t('ui.followDetail.fact.coverage') }] : []),
     { key: 'origin', label: t('ui.followDetail.fact.origin') },
     { key: 'created', label: t('ui.followDetail.fact.created') },
   ]
@@ -162,7 +186,8 @@ onMounted(() => void load())
           <FollowActions :follow="follow" @changed="(f) => (follow = f)" @removed="router.push('/follows')" />
         </template>
       </PageHeader>
-      <p v-if="lockReason(follow)" class="m-0 mb-4 u-notice" data-testid="follow-locked"><UiIcon name="lock" :size="16" />{{ lockReason(follow) }}</p>
+      <p v-if="follow.origin === 'config'" class="m-0 mb-4 u-notice" data-testid="follow-locked"><UiIcon name="lock" :size="16" />{{ lockReason(follow) }}</p>
+      <MoveFollow v-if="follow.origin === 'legacy'" class="mb-4" :follow="follow" @moved="moved" />
 
       <div class="grid gap-6 lg:grid-cols-3">
         <div class="lg:col-span-2 min-w-0">
@@ -170,13 +195,25 @@ onMounted(() => void load())
             <div v-if="tab === 'seasons'" data-testid="follow-seasons">
               <ErrorState v-if="seasonsError" compact :error="seasonsError" @retry="loadSeasons" />
               <SkeletonBlock v-else-if="!seasons" :lines="4" />
-              <EmptyState v-else-if="!seasons.length" icon="events" :title="t('ui.followDetail.noSeasons')" :text="t('ui.followDetail.noSeasonsText')" />
+              <EmptyState v-else-if="!seasons.length" icon="events" :title="t('ui.followDetail.noSeasons')" :text="t('ui.followDetail.noSeasonsText')">
+                <button type="button" class="u-btn" data-testid="follow-get-seasons" @click="gettingSeasons = true"><UiIcon name="external" :size="16" />{{ t('ui.seasonChooser.get') }}</button>
+              </EmptyState>
               <ul v-else class="m-0 p-0 list-none">
-                <li v-for="s in seasons" :key="s.id" class="flex flex-wrap items-center gap-3 py-3" style="border-top: 1px solid var(--line)">
-                  <span class="flex-1 min-w-[160px]">
-                    <span class="font-semibold">{{ s.year ?? s.name ?? s.id }}</span>
-                    <span class="u-small u-muted"> · #{{ s.id }}</span>
-                    <UiBadge v-if="followed(s) === false" tone="neutral" class="ml-2">{{ t('ui.followDetail.notFollowed') }}</UiBadge>
+                <li v-for="s in seasons" :key="s.id" class="flex flex-wrap items-center gap-3 py-3" style="border-top: 1px solid var(--line)" :data-season="s.id">
+                  <span class="flex-1 min-w-[200px] flex flex-col gap-1">
+                    <span>
+                      <span class="font-semibold">{{ s.name ?? s.year ?? s.id }}</span>
+                      <UiBadge v-if="followed(s) === false" tone="neutral" class="ml-2">{{ t('ui.followDetail.notFollowed') }}</UiBadge>
+                    </span>
+                    <span v-if="s.counts" class="u-small u-muted u-num inline-flex flex-wrap items-center gap-x-3" data-testid="season-counts">
+                      <span>{{ t('ui.followDetail.seasonCounts', { events: num(s.counts.events), finished: num(s.counts.finished), details: num(s.counts.details) }) }}</span>
+                      <span v-if="s.counts.details" class="inline-flex items-center gap-2"
+                        ><span class="u-minibar" aria-hidden="true"><span :style="{ width: `${s.counts.completion_rate}%` }"></span></span
+                        >{{ t('ui.followDetail.complete', { pct: pct(s.counts.completion_rate) }) }}</span
+                      >
+                      <span v-if="s.counts.schedule_fetched_at_utc">{{ t('ui.followDetail.scheduleRead') }} <TimeText :value="s.counts.schedule_fetched_at_utc" relative /></span>
+                      <span v-else>{{ t('ui.followDetail.scheduleNever') }}</span>
+                    </span>
                   </span>
                   <RouterLink :to="{ path: '/events', query: { tournament: String(entityId), season: String(s.id) } }" class="u-btn u-btn-sm u-btn-ghost">{{ t('ui.nav.events') }}</RouterLink>
                   <button type="button" class="u-btn u-btn-sm" :disabled="!follow.enabled" @click="syncSeason = s">{{ t('ui.followDetail.syncSeason') }}</button>
@@ -191,7 +228,10 @@ onMounted(() => void load())
               </div>
             </div>
 
-            <EventsList v-else-if="tab === 'events'" :fixed-tournament="entityId" table-id="follow-events" />
+            <template v-else-if="tab === 'events'">
+              <EventsList v-if="isTournament" :fixed-tournament="entityId" table-id="follow-events" />
+              <EventsList v-else :fixed-participant="entityId" table-id="follow-team-events" />
+            </template>
 
             <div v-else-if="tab === 'data'" class="flex flex-col gap-4">
               <SlicePicker :sport="follow.sport" :selection="follow.slices ?? null" />
@@ -201,9 +241,9 @@ onMounted(() => void load())
               <SkeletonBlock v-if="!jobs" :lines="4" />
               <p v-else-if="!ownJobs.length" class="m-0 u-muted">{{ t('ui.followDetail.noJobs') }}</p>
               <ul v-else class="m-0 p-0 list-none">
-                <li v-for="j in ownJobs" :key="j.id" class="flex flex-wrap items-center gap-3 py-2" style="border-top: 1px solid var(--line)">
+                <li v-for="j in ownJobs" :key="j.id" class="flex flex-wrap items-center gap-3 py-2" style="border-top: 1px solid var(--line)" :data-job="j.id">
                   <StatusBadge kind="job" :value="j.state" />
-                  <RouterLink :to="`/jobs/${j.id}`" class="flex-1 font-semibold">{{ jobKindText(j.kind) }}</RouterLink>
+                  <RouterLink :to="`/jobs/${j.id}`" class="flex-1 font-semibold">{{ jobKindText(j.kind, j.spec) }} · {{ jobTarget(j) }}</RouterLink>
                   <span class="u-small u-muted">{{ faceText(j.origin.face) }}</span>
                   <span class="u-small u-muted"><TimeText :value="j.started_at ?? j.created_at" /></span>
                 </li>
@@ -215,6 +255,9 @@ onMounted(() => void load())
 
         <aside class="u-card p-5 min-w-0 self-start" :aria-label="t('ui.followDetail.facts')" data-testid="follow-facts">
           <FactList :items="facts">
+            <template #value-match>
+              <RouterLink :to="`/events/${follow.entity_id}`" data-testid="follow-open-match">{{ t('ui.followDetail.openMatch') }}</RouterLink>
+            </template>
             <template #value-data>
               <span class="inline-flex items-center gap-2">{{ dataText(follow.slices) }}<UiBadge v-if="hasOdds(follow.slices)" tone="info">{{ t('ui.follows.data.odds') }}</UiBadge></span>
             </template>
@@ -238,7 +281,7 @@ onMounted(() => void load())
       <StartJobDialog
         v-if="syncSeason"
         :body="{ kind: 'sync', spec: { selections: [{ league_id: entityId, season_ids: [syncSeason.id] }] } }"
-        :title="t('ui.followDetail.syncSeasonTitle', { season: syncSeason.year ?? syncSeason.name ?? syncSeason.id })"
+        :title="t('ui.followDetail.syncSeasonTitle', { season: syncSeason.name ?? syncSeason.year ?? syncSeason.id })"
         :text="t('ui.follows.syncText')"
         @close="syncSeason = null"
       />
@@ -248,6 +291,13 @@ onMounted(() => void load())
         :title="t('ui.followDetail.fetchMissingTitle', { name: follow.name })"
         :text="t('ui.followDetail.fetchMissingText')"
         @close="fetchMissing = false"
+      />
+      <StartJobDialog
+        v-if="gettingSeasons"
+        :body="{ kind: 'sync', spec: { league_id: entityId, only: 'seasons' } }"
+        :title="t('ui.seasonChooser.get')"
+        :text="t('ui.seasonChooser.getNote')"
+        @close="gettingSeasons = false"
       />
     </template>
   </div>

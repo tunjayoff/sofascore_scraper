@@ -211,8 +211,9 @@ export const v1 = {
     request<Op<'addFollow'>['response']>('POST', '/api/v1/follows', { body }).then((r) => r.data),
   updateFollow: (id: string, body: Op<'updateFollow'>['body']): Promise<Data<'updateFollow'>> =>
     request<Op<'updateFollow'>['response']>('PATCH', `/api/v1/follows/${encFollow(id)}`, { body }).then((r) => r.data),
-  removeFollow: (id: string): Promise<Data<'removeFollow'>> =>
-    request<Op<'removeFollow'>['response']>('DELETE', `/api/v1/follows/${encFollow(id)}`).then((r) => r.data),
+  /** `deleteData`: a tournament follow's stored matches go too, by the clear job of the answer (FX-19). */
+  removeFollow: (id: string, deleteData = false): Promise<Data<'removeFollow'>> =>
+    request<Op<'removeFollow'>['response']>('DELETE', `/api/v1/follows/${encFollow(id)}`, { query: { delete_data: deleteData || null } }).then((r) => r.data),
   tournaments: (query: ListTournamentsQuery = {}, signal?: AbortSignal) =>
     request<Op<'listTournaments'>['response']>('GET', '/api/v1/tournaments', { query, signal }),
   tournament: (id: number, signal?: AbortSignal): Promise<Data<'getTournament'>> =>
@@ -220,8 +221,9 @@ export const v1 = {
   /** Sends one request to SofaScore; the button that starts it says so (5.1). */
   searchTournaments: (body: Op<'searchTournaments'>['body']): Promise<Data<'searchTournaments'>> =>
     request<Op<'searchTournaments'>['response']>('POST', '/api/v1/tournaments/search', { body }).then((r) => r.data),
-  tournamentSeasons: (id: number, signal?: AbortSignal): Promise<Data<'listTournamentSeasons'>> =>
-    request<Op<'listTournamentSeasons'>['response']>('GET', `/api/v1/tournaments/${id}/seasons`, { signal }).then((r) => r.data),
+  /** `counts`: each season with its stored counts (FX-13 `include=counts`). */
+  tournamentSeasons: (id: number, signal?: AbortSignal, counts = false): Promise<Data<'listTournamentSeasons'>> =>
+    request<Op<'listTournamentSeasons'>['response']>('GET', `/api/v1/tournaments/${id}/seasons`, { query: { include: counts ? ['counts'] : null }, signal }).then((r) => r.data),
 
   // ---- events ----
   events: (query: ListEventsQuery = {}, signal?: AbortSignal) =>

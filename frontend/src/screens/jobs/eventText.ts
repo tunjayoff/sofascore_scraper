@@ -1,11 +1,13 @@
 import { i18n } from '@/i18n'
 import type { JobEventMessage } from './jobStream'
-import { breakerText, faceText, phaseText } from './jobText'
+import { breakerText, faceText, followName, leagueName, phaseText } from './jobText'
+import { seasonName } from '@/screens/events/eventText'
 import { num, pct } from '@/ui/time'
 
 /**
- * One line of a job's log in words (6.9), translated by event type and `code` (#39). A log line without a
- * known code is the server's English text and is shown as it is (`raw`), as log messages are (6.14).
+ * One line of a job's log in words (6.9), translated by event type and `code` (#39, G24). A log line
+ * without a code the UI knows is the server's English text and is shown as it is (`raw`), as log messages
+ * are (6.14).
  */
 export type LogLine = { seq: number; ts: number; type: string; text: string; raw?: boolean; eventId?: string }
 
@@ -15,12 +17,37 @@ function known(key: string) {
   return i18n.global.te(key, 'en')
 }
 
-/** A coded text: `ui.job.code.<code>` with its params, or null when the UI does not know the code. */
+/** Codes whose `reason` is the circuit breaker's (403, 429, 5xx, other); the others carry a request outcome. */
+const BREAKER_CODES: readonly string[] = ['fetch_stopped_by_breaker', 'refresh_stopped_by_breaker', 'sync_breaker_stopped']
+
+/** Why a list could not be read (`404`, `timeout`, `parse` …) in words; an unknown reason as it is. */
+export function failureText(reason: string): string {
+  const key = `ui.job.reason.${reason}`
+  return known(key) ? t(key) : reason
+}
+
+/** What the breaker stopped ("match details", "season lists" …): the sync names it in English. */
+function whatText(what: string): string {
+  const key = `ui.job.what.${what.replace(/[^a-z]+/gi, '_').toLowerCase()}`
+  return known(key) ? t(key) : what
+}
+
+/**
+ * A coded log line (`code` and `params`, G24; the codes of the download path of FX-13 and FX-19) in the
+ * reader's language, or null when the UI does not know the code (the server's text is shown then). Ids in
+ * the params are shown by name: a league, a season, a follow.
+ */
 export function codeText(code: unknown, params: unknown): string | null {
   if (typeof code !== 'string' || !known(`ui.job.code.${code}`)) return null
   const p = params && typeof params === 'object' ? (params as Record<string, unknown>) : {}
   const args: Record<string, unknown> = { ...p }
-  if (typeof p.reason === 'string') args.reason = breakerText(p.reason)
+  if (typeof p.reason === 'string') args.reason = BREAKER_CODES.includes(code) ? breakerText(p.reason) : failureText(p.reason)
+  if ('league_id' in p) args.league = typeof p.league_id === 'number' ? leagueName(p.league_id) : t('ui.job.target.all')
+  if (typeof p.season_id === 'number') args.season = seasonName(p.season_id)
+  if (typeof p.resolved === 'number') args.resolved = seasonName(p.resolved)
+  if (typeof p.follow === 'string') args.follow = typeof p.name === 'string' && p.name ? p.name : followName(p.follow)
+  if (typeof p.what === 'string') args.what = whatText(p.what)
+  for (const k of ['count', 'stored', 'failed', 'skipped']) if (typeof p[k] === 'number') args[k] = num(p[k] as number)
   return t(`ui.job.code.${code}`, args)
 }
 

@@ -14,7 +14,7 @@ import { isTerminal, jobKindText } from './jobText'
 export async function startJob(body: StartJobBody): Promise<Job> {
   const t = i18n.global.t
   const job = await v1.startJob(body)
-  toast({ kind: 'ok', text: t('ui.jobs.started', { kind: jobKindText(job.kind) }), link: { to: `/jobs/${job.id}`, label: t('ui.jobs.openJob') } })
+  toast({ kind: 'ok', text: t('ui.jobs.started', { kind: jobKindText(job.kind, job.spec) }), link: { to: `/jobs/${job.id}`, label: t('ui.jobs.openJob') } })
   watchJob(job)
   void useStatusStore()
     .refresh()

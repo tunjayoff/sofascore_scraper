@@ -79,6 +79,9 @@ onUnmounted(() => {
   padding: 12vh var(--sp-5) var(--sp-5);
   background: var(--overlay);
   overflow-y: auto;
+  /* a dialog opened from a table row (its actions cell is right-aligned and does not wrap) reads as any other */
+  white-space: normal;
+  text-align: start;
 }
 .u-dialog {
   width: 100%;

@@ -128,19 +128,17 @@ describe('the application shell', () => {
     expect(localStorage.getItem('ssui.rail')).toBe('1')
   })
 
-  it('the ⋯ menu has language, theme, density, shortcuts, the classic interface; Sign out only with a token', async () => {
+  it('the ⋯ menu has language, theme, density, shortcuts; no classic interface (FX-14b); Sign out only with a token', async () => {
     await app('/', LEGACY)
     const menuButton = w.find(`button[aria-label="${t('ui.menu.label')}"]`)
     await menuButton.trigger('click')
     const keys = w.findAll('[role="menu"] [data-key]').map((x) => x.attributes('data-key'))
-    expect(keys).toEqual(expect.arrayContaining(['lang:en', 'lang:tr', 'theme:system', 'density:compact', 'shortcuts', 'classic']))
+    expect(keys).toEqual(expect.arrayContaining(['lang:en', 'lang:tr', 'theme:system', 'density:compact', 'shortcuts']))
+    expect(keys).not.toContain('classic')
     expect(keys).not.toContain('signout')
     await w.find('[data-key="lang:tr"]').trigger('click')
     expect(i18n.global.locale.value).toBe('tr')
     setLocale('en')
-    await menuButton.trigger('click')
-    await w.find('[data-key="classic"]').trigger('click')
-    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/classic'))
   })
 
   it('offers Sign out when a token is in use', async () => {
@@ -231,13 +229,17 @@ describe('routing', () => {
     expect(resolve('/follows/league/17')).toBeUndefined()
   })
 
-  it('old addresses lead to the new screens; the classic views stay reachable under /classic', async () => {
+  it('old addresses lead to the new screens, those of the removed classic views too (FX-14b)', async () => {
     const legacy = LEGACY
     await app('/matches?league_id=17&season_id=52186&details=missing', { ...legacy, 'GET /api/v1/events': { data: [], page: { limit: 25, next_cursor: null } } })
     expect(router.currentRoute.value.fullPath).toBe('/events?tournament=17&season=52186&has=missing')
     w.unmount()
-    await app('/classic/matches?league_id=17', legacy)
-    expect(w.find('[data-testid="new-ui-link"]').attributes('href')).toBe('/')
+    await app('/classic/matches?league_id=17', { ...legacy, 'GET /api/v1/events': { data: [], page: { limit: 25, next_cursor: null } } })
+    expect(router.currentRoute.value.fullPath).toBe('/events?tournament=17')
+    for (const [from, to] of [['/classic', '/follows'], ['/classic/download', '/follows'], ['/classic/match/7', '/events/7'], ['/classic/activity', '/jobs'], ['/classic/settings', '/settings']]) {
+      await router.push(from).catch(() => {})
+      expect(router.currentRoute.value.fullPath).toBe(to)
+    }
     w.unmount()
     await app('/activity', legacy)
     expect(router.currentRoute.value.path).toBe('/jobs')

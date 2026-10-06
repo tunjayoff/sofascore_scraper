@@ -199,7 +199,7 @@ onUnmounted(() => {
       @next="forward"
       @retry="load"
     >
-      <template #cell-kind="{ row }">{{ jobKindText(row.kind) }}</template>
+      <template #cell-kind="{ row }">{{ jobKindText(row.kind, row.spec) }}</template>
       <template #cell-target="{ row }">{{ jobTarget(row) }}</template>
       <template #cell-state="{ row }"><StatusBadge kind="job" :value="row.state" /></template>
       <template #cell-progress="{ row }"><span class="u-small u-num">{{ progressText(row) }}</span></template>

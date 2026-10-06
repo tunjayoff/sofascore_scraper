@@ -25,7 +25,7 @@ const error = ref<unknown>(null)
 const kind = computed(() => props.body.kind)
 const known = computed(() => te(`ui.jobs.start.${kind.value}.title`, 'en'))
 const heading = computed(() =>
-  props.title ?? (props.again || !known.value ? t('ui.jobs.start.againTitle', { kind: jobKindText(kind.value) }) : t(`ui.jobs.start.${kind.value}.title`)),
+  props.title ?? (props.again || !known.value ? t('ui.jobs.start.againTitle', { kind: jobKindText(kind.value, props.body.spec) }) : t(`ui.jobs.start.${kind.value}.title`)),
 )
 const callsSofascore = computed(() => CALLS_SOFASCORE.includes(kind.value))
 

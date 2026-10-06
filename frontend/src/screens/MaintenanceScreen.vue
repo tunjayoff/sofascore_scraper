@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import PageHeader from '@/ui/PageHeader.vue'
@@ -7,18 +7,20 @@ import ConfirmDialog from '@/ui/ConfirmDialog.vue'
 import CodeHint from '@/ui/CodeHint.vue'
 import UiIcon from '@/ui/UiIcon.vue'
 import UiBadge from '@/ui/UiBadge.vue'
-import type { ClearJobSpec } from '@/api/v1/schema'
+import { v1 } from '@/api/v1/client'
+import type { ClearJobSpec, Season, TournamentRecord } from '@/api/v1/schema'
 import { useStatusStore } from '@/app/statusStore'
 import { num } from '@/ui/time'
 import { jobKindText, scopeText } from '@/screens/jobs/jobText'
 import { startJob } from '@/screens/jobs/startJob'
 
 /**
- * Maintenance (6.11): three cards. Rebuild the index (safe; reads the stored files), shown with the reason
+ * Maintenance (6.11): four cards. Rebuild the index (safe; reads the stored files), shown with the reason
  * when `/status` reports one. The old data layout: how many matches are stored in the 2.x layout and the
  * server command that moves them; there is no migrate button (decision 16). Clear data: a scope and a
  * typed confirmation, the shown word of the user's language ("SİL", "DELETE"; FX-14a); follows, job
- * history, the change log, backups and exports stay. Both
+ * history, the change log, backups and exports stay. One league's data (or one season's) can be deleted
+ * too (`clear` with `tournament_id`, `season_id`; FX-19), with the same typed confirmation. The
  * jobs work on the data folder only and send nothing to SofaScore.
  */
 const { t } = useI18n()
@@ -63,8 +65,47 @@ async function clear() {
   }
 }
 
+// ---- one league's data (FX-19: clear with tournament_id, season_id) ----
+const leagues = ref<TournamentRecord[]>([])
+const league = ref<number | null>(null)
+const leagueSeasons = ref<Season[]>([])
+const season = ref<number | null>(null)
+const leagueClearing = ref(false)
+const leagueBusy = ref(false)
+const leagueError = ref<unknown>(null)
+const leagueName = computed(() => leagues.value.find((l) => l.id === league.value)?.name ?? (league.value ? `#${league.value}` : ''))
+const seasonLabel = computed(() => {
+  const s = leagueSeasons.value.find((x) => x.id === season.value)
+  return s ? (s.name ?? s.year ?? String(s.id)) : ''
+})
+watch(league, (id) => {
+  season.value = null
+  leagueSeasons.value = []
+  if (id)
+    v1.tournamentSeasons(id)
+      .then((s) => (leagueSeasons.value = s))
+      .catch(() => {})
+})
+
+async function clearLeague() {
+  if (!league.value) return
+  leagueBusy.value = true
+  leagueError.value = null
+  try {
+    await startJob({ kind: 'clear', spec: { scope: 'all', tournament_id: league.value, season_id: season.value, confirm: true } })
+    leagueClearing.value = false
+  } catch (e) {
+    leagueError.value = e
+  } finally {
+    leagueBusy.value = false
+  }
+}
+
 onMounted(() => {
   if (!status.status && !status.loading) void status.refresh().catch(() => {})
+  v1.tournaments({ limit: 200 })
+    .then((r) => (leagues.value = r.data))
+    .catch(() => {})
 })
 </script>
 
@@ -75,7 +116,7 @@ onMounted(() => {
     <p v-if="status.activeJob" class="m-0 mb-4 u-notice u-notice-warn" role="status" data-testid="busy-banner">
       <UiIcon name="alert" :size="16" />
       <span>
-        {{ t('ui.backups.busy', { kind: jobKindText(status.activeJob.kind) }) }}
+        {{ t('ui.backups.busy', { kind: jobKindText(status.activeJob.kind, status.activeJob.spec) }) }}
         <RouterLink :to="`/jobs/${status.activeJob.id}`">{{ t('ui.error.openJob') }}</RouterLink>
       </span>
     </p>
@@ -118,7 +159,52 @@ onMounted(() => {
         <p class="m-0 u-small u-muted">{{ t('ui.maintenance.clear.kept') }}</p>
         <div><button type="button" class="u-btn u-btn-danger" data-testid="clear-open" @click="clearing = true"><UiIcon name="x" :size="16" />{{ t('ui.maintenance.clear.button') }}</button></div>
       </section>
+
+      <section class="u-card p-6 flex flex-col gap-4 lg:col-span-2" data-testid="card-clear-league">
+        <h2 class="u-h3">{{ t('ui.maintenance.league.title') }}</h2>
+        <p class="m-0">{{ t('ui.maintenance.league.text') }}</p>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="flex flex-col">
+            <span class="u-label">{{ t('ui.maintenance.league.league') }}</span>
+            <select v-model="league" class="u-field" data-testid="clear-league">
+              <option :value="null">{{ t('ui.maintenance.league.choose') }}</option>
+              <option v-for="l in leagues" :key="l.id" :value="l.id">{{ l.name ?? `#${l.id}` }}</option>
+            </select>
+          </label>
+          <label class="flex flex-col">
+            <span class="u-label">{{ t('ui.maintenance.league.season') }}</span>
+            <select v-model="season" class="u-field" :disabled="!league" data-testid="clear-season">
+              <option :value="null">{{ t('ui.maintenance.league.allSeasons') }}</option>
+              <option v-for="s in leagueSeasons" :key="s.id" :value="s.id">{{ s.name ?? s.year ?? s.id }}</option>
+            </select>
+          </label>
+        </div>
+        <p v-if="!leagues.length" class="m-0 u-small u-muted">{{ t('ui.maintenance.league.none') }}</p>
+        <p class="m-0 u-small u-muted">{{ t('ui.maintenance.league.kept') }}</p>
+        <div>
+          <button type="button" class="u-btn u-btn-danger" :disabled="!league" data-testid="clear-league-open" @click="leagueClearing = true">
+            <UiIcon name="x" :size="16" />{{ t('ui.maintenance.league.button') }}
+          </button>
+        </div>
+      </section>
     </div>
+
+    <ConfirmDialog
+      v-if="leagueClearing"
+      :title="season ? t('ui.maintenance.league.confirmSeason', { name: leagueName, season: seasonLabel }) : t('ui.maintenance.league.confirmTitle', { name: leagueName })"
+      :confirm-label="t('ui.maintenance.league.button')"
+      danger
+      :typed-word="t('ui.maintenance.clear.word')"
+      :busy="leagueBusy"
+      :error="leagueError"
+      :active-job-id="status.activeJob?.id"
+      @confirm="clearLeague"
+      @close="leagueClearing = false"
+    >
+      <p class="m-0">{{ season ? t('ui.maintenance.league.whatSeason') : t('ui.maintenance.league.what') }}</p>
+      <p class="m-0">{{ t('ui.maintenance.league.kept') }}</p>
+      <p class="m-0 u-small u-muted">{{ t('ui.maintenance.clear.irreversible') }}</p>
+    </ConfirmDialog>
 
     <ConfirmDialog
       v-if="rebuilding"

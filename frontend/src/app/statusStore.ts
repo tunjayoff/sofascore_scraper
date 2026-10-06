@@ -1,8 +1,8 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { NETWORK, V1Error, v1 } from '@/api/v1/client'
-import type { Status } from '@/api/v1/schema'
-import { connectionState, type CheckSeen, type ConnectionState, type HealthLevel } from '@/ui/status'
+import type { Status, StatusCheck } from '@/api/v1/schema'
+import { connectionState, type ConnectionState, type HealthLevel } from '@/ui/status'
 import { tokenInUse } from '@/app/session'
 import { poll } from '@/app/poll'
 
@@ -35,15 +35,12 @@ export const useStatusStore = defineStore('v1-status', () => {
 
   const offline = computed(() => error.value instanceof V1Error && error.value.code === NETWORK)
   const activeJob = computed(() => status.value?.active_job ?? null)
-  /**
-   * The last connection check run in this browser (Health). `/status` does not keep the result of a check,
-   * so a failed one is remembered here until the next success (FX-14a; the API gap is noted for FX-19).
-   */
-  const lastCheck = ref<CheckSeen | null>(null)
-  const connection = computed<ConnectionState | null>(() => connectionState(status.value?.bridge, lastCheck.value))
+  /** The connection from `/status` (`connection`, kept by the server for every browser since FX-19). */
+  const connection = computed<ConnectionState | null>(() => connectionState(status.value))
 
-  function noteCheck(check: { ok: boolean; checked_at_utc: string }) {
-    lastCheck.value = { ok: check.ok, at: check.checked_at_utc }
+  /** A connection check's answer carries the server's new connection and bridge: shown at once. */
+  function noteCheck(check: Pick<StatusCheck, 'bridge' | 'connection'>) {
+    if (status.value) status.value = { ...status.value, bridge: check.bridge ?? status.value.bridge, connection: check.connection ?? status.value.connection }
   }
 
   /**
@@ -95,5 +92,5 @@ export const useStatusStore = defineStore('v1-status', () => {
     stop = null
   }
 
-  return { status, error, loading, fetchedAt, offline, activeJob, lastCheck, connection, noteCheck, level, refresh, start, stop: stopPolling }
+  return { status, error, loading, fetchedAt, offline, activeJob, connection, noteCheck, level, refresh, start, stop: stopPolling }
 })
