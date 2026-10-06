@@ -31,6 +31,7 @@ from src.services.listing import ListingResult
 from src.services.sync import (
     SEASONS_PHASES,
     FollowsSyncSpec,
+    SyncSelection,
     SyncService,
     SyncSpec,
     pick_seasons,
@@ -251,6 +252,34 @@ def test_season_lists_only(store: Store) -> None:
     assert ctx.match_fetcher.calls == [] and ctx.match_data_fetcher.collected == []
     assert [line["code"] for line in handle.lines] == ["sync_season_list", "sync_season_list"]
     assert handle.lines[0]["params"] == {"league_id": 8}
+
+
+class FakeRefresh(FakeDetails):
+    def __init__(self) -> None:
+        super().__init__()
+        self.refreshed: List[List[str]] = []
+
+    def refresh_due_ids(self, league_id: Optional[int] = None) -> List[str]:
+        return ["1", "2"]
+
+    def refresh_matches(self, ids: List[str], progress_callback: Any = None, should_cancel: Any = None) -> Dict[str, Any]:
+        self.refreshed.append(list(ids))
+        return {"refreshed": len(ids), "changed": 0, "failed": 0}
+
+
+def test_a_refresh_of_named_events_ignores_what_is_due(store: Store) -> None:
+    """05-web-ui.md G23: `refresh` + seçimler yalnızca o maçların /event'ini okur (Fetch again)."""
+    ctx = context(store)
+    ctx.match_data_fetcher = FakeRefresh()
+    spec = SyncSpec(mode="refresh", export=False, selections=(SyncSelection(0, match_ids=(7, 9, 7)),
+                                                              SyncSelection(17, match_ids=(5,))))
+    result = SyncService(ctx).run(spec, handle=Handle(spec))  # type: ignore[arg-type]
+    assert ctx.match_data_fetcher.refreshed == [["7", "9", "5"]]
+    assert result.refresh is not None and (result.refresh.due, result.refresh.refreshed) == (3, 3)
+
+    spec = SyncSpec(mode="refresh", export=False)
+    SyncService(ctx).run(spec, handle=Handle(spec))  # type: ignore[arg-type]
+    assert ctx.match_data_fetcher.refreshed[-1] == ["1", "2"]
 
 
 def test_log_lines_carry_codes_and_an_old_handle_gets_the_text_only(store: Store) -> None:

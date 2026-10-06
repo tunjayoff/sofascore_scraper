@@ -363,6 +363,12 @@ def _count_members(paths: Iterator[str]) -> Counter[str]:
     return counts
 
 
+def _rows_of(conn: sqlite3.Connection, sql: str, params: Sequence[Any] = ()) -> Tuple[List[str], List[Any]]:
+    """Sorgunun sütun adları ve satırları (satırları sütunlarıyla başka bir veritabanına geri yazmak için)."""
+    cursor = conn.execute(sql, tuple(params))
+    return [str(column[0]) for column in cursor.description or ()], cursor.fetchall()
+
+
 def _has_files(path: str) -> bool:
     """Yol bir dosyaysa (boş değilse) ya da altında en az bir dosya varsa True."""
     if os.path.isfile(path):
@@ -820,6 +826,12 @@ class BackupManager:
         live = state.connection()
         leases = live.execute(
             "SELECT name, holder, pid, host, purpose, acquired_at, heartbeat_at FROM leases").fetchall()
+        # Çalışan iş (geri yüklemeyi yapan iş, ör. API'nin `restore` işi) satırı ve olaylarıyla korunur: iş
+        # bittiğinde kendi satırına yazar; geri yüklenen geçmişte o satır yoktur (plan maddesi FX-13)
+        running = _rows_of(live, "SELECT * FROM jobs WHERE status IN ('running', 'queued')")
+        running_ids = [row[running[0].index("id")] for row in running[1]] if running[1] else []
+        events = _rows_of(live, "SELECT * FROM job_events WHERE job_id IN ({})".format(
+            ", ".join("?" * len(running_ids))), running_ids) if running_ids else ([], [])
         source = sqlite3.connect(path)
         try:
             source.backup(live)
@@ -830,6 +842,14 @@ class BackupManager:
             conn.executemany(
                 "INSERT INTO leases (name, holder, pid, host, purpose, acquired_at, heartbeat_at) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?)", [tuple(row) for row in leases])
+            for job_id in running_ids:
+                conn.execute("DELETE FROM jobs WHERE id = ?", (job_id,))
+                conn.execute("DELETE FROM job_events WHERE job_id = ?", (job_id,))
+            for table, (columns, rows) in (("jobs", running), ("job_events", events)):
+                if rows:
+                    conn.executemany(
+                        f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({', '.join('?' * len(columns))})",
+                        [tuple(row) for row in rows])
             conn.execute(
                 "INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
                 (META_STREAM_ID, uuid.uuid4().hex))

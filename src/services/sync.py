@@ -96,7 +96,8 @@ class SyncSpec:
     Ne indirilecek.
 
     mode        "full": sezon listeleri + maç listeleri + detaylar; "details": yalnızca detaylar;
-                "refresh": yalnızca kayıtlı geçici maçların yenilenmesi (`selections` okunmaz);
+                "refresh": yalnızca kayıtlı geçici maçların yenilenmesi; `selections` verilirse yalnızca onların
+                maçları, yenilenmeleri gerekmese de (yalnızca /event; plan maddesi FX-13, 05-web-ui.md G23);
                 "seasons": yalnızca sezon listeleri, tazelik süresine bakılmadan
     league_id   tek lig; yoksa takip edilen bütün turnuvalar. `selections` ya da `follows` varsa okunmaz.
     selections  hedefli seçimler; boşsa `league_id` geçerlidir
@@ -496,7 +497,8 @@ class _SyncRun:
         md.refresh_listener = tracker.add_refreshed
         md.begin_job_cache()
         try:
-            ids = md.refresh_due_ids(league_id=self.spec.league_id)
+            explicit = [str(mid) for s in self.spec.selections for mid in s.match_ids]
+            ids = list(dict.fromkeys(explicit)) if explicit else md.refresh_due_ids(league_id=self.spec.league_id)
             tracker.start_phase("details", len(ids))
             self.log(f"Refreshing {len(ids)} provisional records...", "sync_refreshing", count=len(ids))
             stats = md.refresh_matches(

@@ -3168,6 +3168,52 @@
               "title": "Kind"
             },
             "description": "Only jobs of one of these kinds."
+          },
+          {
+            "name": "origin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "cli",
+                      "api",
+                      "scheduler",
+                      "library"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only jobs started by one of these faces.",
+              "title": "Origin"
+            },
+            "description": "Only jobs started by one of these faces."
+          },
+          {
+            "name": "target",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(tournament|event):[1-9][0-9]{0,18}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only jobs whose spec names this tournament (`tournament:17`: its `league_id`, a selection or a follow) or this event (`event:123`: a selection's or `event_ids`' event). A job over every follow names none.",
+              "title": "Target"
+            },
+            "description": "Only jobs whose spec names this tournament (`tournament:17`: its `league_id`, a selection or a follow) or this event (`event:123`: a selection's or `event_ids`' event). A job over every follow names none."
           }
         ],
         "responses": {
@@ -3228,7 +3274,7 @@
           "jobs"
         ],
         "summary": "Start a job",
-        "description": "Start a job in the background and return it at once (202). Only one job writes to a data directory at a\ntime: while another job or a data operation runs, in this server or in another process, the request is\nrefused with 409 and the holder in `details`. `clear` and `rebuild` take the data directory for themselves\n(no download, live service or other data operation may run). A `clear` needs `confirm: true` (400\n`confirmation_required`). `restore` only checks (`dry_run: true`); restoring replaces the job history the\njob is recorded in and is done with `ssc backup restore` (501 `not_supported`). A Parquet export without\npyarrow on the server is 501.",
+        "description": "Start a job in the background and return it at once (202). Only one job writes to a data directory at a\ntime: while another job or a data operation runs, in this server or in another process, the request is\nrefused with 409 and the holder in `details`. `clear`, `rebuild` and a real `restore` take the data\ndirectory for themselves (no download, live service or other data operation may run). A `clear` needs\n`confirm: true` (400 `confirmation_required`). `restore` checks by default (`dry_run: true`); with\n`dry_run: false` it restores, and into a data directory that is not empty only with `force: true` (else 400\n`confirmation_required` with `details.occupied`). A Parquet export without pyarrow on the server is 501.\nA `sync` with `only: \"seasons\"` reads season lists only; `follows` names the follows to sync; a `fetch` with\n`event_ids` fetches events without their tournament, and a `refresh` with `event_ids` reads those events again.",
         "operationId": "startJob",
         "requestBody": {
           "required": true,
@@ -8097,11 +8143,22 @@
               }
             ],
             "title": "League Id"
+          },
+          "event_ids": {
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0.0
+            },
+            "type": "array",
+            "maxItems": 500,
+            "title": "Event Ids",
+            "description": "Read `/event` of these events again, whether or not they are due (the Fetch again button). Not with `league_id`."
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "title": "RefreshJobSpec"
+        "title": "RefreshJobSpec",
+        "description": "Without `event_ids`: the stored records that are due (of one tournament with `league_id`)."
       },
       "RestoreJobSpec": {
         "properties": {
@@ -8115,13 +8172,13 @@
           "force": {
             "type": "boolean",
             "title": "Force",
-            "description": "Report what a restore with force would move to the trash.",
+            "description": "Move the current data to the trash first (`.meta/trash/`); needed when the data directory is not empty. With `dry_run`: report what that would move.",
             "default": false
           },
           "dry_run": {
             "type": "boolean",
             "title": "Dry Run",
-            "description": "Must be true: the API checks a restore; restoring is `ssc backup restore`.",
+            "description": "True: only check (nothing is written). False: restore the backup.",
             "default": true
           }
         },
@@ -9770,7 +9827,7 @@
           "spec"
         ],
         "title": "StartRestoreJob",
-        "description": "Check what restoring a backup would do (the Check step of the UI); nothing is written."
+        "description": "Check what restoring a backup would do (`dry_run: true`, the Check step of the UI), or restore it\n(`dry_run: false`, the Choose step). A restore replaces the data and the job history; this job stays in it."
       },
       "StartSyncJob": {
         "properties": {
@@ -10006,7 +10063,7 @@
               }
             ],
             "title": "League Id",
-            "description": "One tournament; not read when `selections` is given."
+            "description": "One tournament, every season of it."
           },
           "selections": {
             "items": {
@@ -10014,12 +10071,45 @@
             },
             "type": "array",
             "title": "Selections"
+          },
+          "follows": {
+            "items": {
+              "type": "string",
+              "pattern": "^(tournament|team|player|event):[1-9][0-9]{0,18}$"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Follows",
+            "description": "`sync` only: these follows (`tournament:17`), each with its season choice. Team, player and event follows cannot be synced yet (400)."
+          },
+          "only": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "seasons"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Only",
+            "description": "`sync` only. `seasons`: read the season lists from SofaScore again now, without schedules or event details (the Get season list button)."
+          },
+          "event_ids": {
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0.0
+            },
+            "type": "array",
+            "maxItems": 500,
+            "title": "Event Ids",
+            "description": "`fetch` only: these events, whether or not their tournament is known or followed. Not with `league_id` or `selections`."
           }
         },
         "additionalProperties": false,
         "type": "object",
         "title": "SyncJobSpec",
-        "description": "What to download. Without `selections` and `league_id`: every followed tournament."
+        "description": "What to download. Without `selections`, `league_id` and `follows`: every enabled tournament follow, each with\nits own season choice. Only one of `league_id`, `selections` and `follows` may be given."
       },
       "ThrottleStatus": {
         "properties": {

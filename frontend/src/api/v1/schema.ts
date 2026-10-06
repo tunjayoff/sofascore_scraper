@@ -801,16 +801,19 @@ export interface RebuildJobSpec {
   mode?: "auto" | "in_place" | "recreate"
 }
 
+/** Without `event_ids`: the stored records that are due (of one tournament with `league_id`). */
 export interface RefreshJobSpec {
   league_id?: number | null
+  /** Read `/event` of these events again, whether or not they are due (the Fetch again button). Not with `league_id`. */
+  event_ids?: number[]
 }
 
 export interface RestoreJobSpec {
   /** A backup of `/backups`. */
   name: string
-  /** Report what a restore with force would move to the trash. */
+  /** Move the current data to the trash first (`.meta/trash/`); needed when the data directory is not empty. With `dry_run`: report what that would move. */
   force?: boolean
-  /** Must be true: the API checks a restore; restoring is `ssc backup restore`. */
+  /** True: only check (nothing is written). False: restore the backup. */
   dry_run?: boolean
 }
 
@@ -1208,7 +1211,10 @@ export interface StartRefreshJob {
   spec?: RefreshJobSpec
 }
 
-/** Check what restoring a backup would do (the Check step of the UI); nothing is written. */
+/**
+ * Check what restoring a backup would do (`dry_run: true`, the Check step of the UI), or restore it
+ * (`dry_run: false`, the Choose step). A restore replaces the data and the job history; this job stays in it.
+ */
 export interface StartRestoreJob {
   kind: "restore"
   spec: RestoreJobSpec
@@ -1271,11 +1277,20 @@ export interface StatusResponse {
   data: Status
 }
 
-/** What to download. Without `selections` and `league_id`: every followed tournament. */
+/**
+ * What to download. Without `selections`, `league_id` and `follows`: every enabled tournament follow, each with
+ * its own season choice. Only one of `league_id`, `selections` and `follows` may be given.
+ */
 export interface SyncJobSpec {
-  /** One tournament; not read when `selections` is given. */
+  /** One tournament, every season of it. */
   league_id?: number | null
   selections?: JobSelection[]
+  /** `sync` only: these follows (`tournament:17`), each with its season choice. Team, player and event follows cannot be synced yet (400). */
+  follows?: string[]
+  /** `sync` only. `seasons`: read the season lists from SofaScore again now, without schedules or event details (the Get season list button). */
+  only?: "seasons" | null
+  /** `fetch` only: these events, whether or not their tournament is known or followed. Not with `league_id` or `selections`. */
+  event_ids?: number[]
 }
 
 /** The request budget shared by all processes of this machine. */
@@ -1655,7 +1670,7 @@ export interface Operations {
     method: "GET"
     path: "/api/v1/jobs"
     params: {}
-    query: { limit?: number; cursor?: string | null; state?: JobState[] | null; kind?: JobKind[] | null }
+    query: { limit?: number; cursor?: string | null; state?: JobState[] | null; kind?: JobKind[] | null; origin?: ("cli" | "api" | "scheduler" | "library")[] | null; target?: string | null }
     body: never
     response: JobListResponse
   }

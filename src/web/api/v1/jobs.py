@@ -1,7 +1,8 @@
 """
 API v1: işler (docs/design/02-services.md bölüm 6 ve 2.8).
 
-    GET  /api/v1/jobs                  iş geçmişi (en yeni önce), `state` ve `kind` süzgeçleri, imleçle sayfalama
+    GET  /api/v1/jobs                  iş geçmişi (en yeni önce), `state`, `kind`, `origin` ve `target` süzgeçleri,
+                                       imleçle sayfalama
     POST /api/v1/jobs                  iş başlatır: {"kind": "sync" | "fetch" | "refresh" | "export" | "backup" |
                                        "clear" | "rebuild" | "restore", "spec": {...}}
     GET  /api/v1/jobs/{id}             tek iş
@@ -16,8 +17,12 @@ Başlatma: iş, web sürecinin iş deposu üzerinde (eski `/api/fetch` ile aynı
 thread'de çalışır. Belirtim (`spec`) bugünkü eşitleme servisinin belirtimidir (src/services/sync.py: SyncSpec):
 
     sync     sezon listeleri → maç listeleri → maç detayları           (SyncSpec mode="full")
+             `only: "seasons"`: yalnızca sezon listeleri               (SyncSpec mode="seasons"; FX-13, G15)
+             `follows`: yalnızca adı verilen turnuva takipleri          (FollowsSyncSpec; FX-13, G23)
     fetch    yalnızca maç detayları                                     (SyncSpec mode="details")
+             `event_ids`: turnuvası bilinmese de bu maçlar              (FX-13, G16; `ssc fetch event` gibi)
     refresh  kayıtlı geçici maçların yeniden okunması                   (SyncSpec mode="refresh")
+             `event_ids`: yalnızca bu maçların /event'i                  (FX-13, G23)
 
 Üçü de CSV yazmaz: dışa aktarma kendi iş türüdür (`export`). Veri işleri (P21):
 
@@ -26,10 +31,12 @@ thread'de çalışır. Belirtim (`spec`) bugünkü eşitleme servisinin belirtim
     backup   `backups/` altına yedek (BackupService)
     clear    saklanan verinin bir kısmını siler (MaintenanceService.clear); `confirm: true` ister
     rebuild  kataloğu dosyalardan yeniden kurar (MaintenanceService.rebuild_catalog)
-    restore  yalnızca deneme (`dry_run`): geri yükleme state.db'yi, yani işin kaydedildiği iş geçmişini
-             değiştirir; `ssc backup restore` yapar
+    restore  `dry_run: true` (varsayılan) denetler; `dry_run: false` geri yükler (FX-13, G2): `maintenance`
+             kilidiyle; geri yüklenen state.db'nin iş geçmişine işin kendi satırı korunarak taşınır
+             (src/store/backup.py `_load_state`), iş bitişini yine kendi satırına yazar
 
-İndirmeler, dışa aktarma, yedek ve deneme `writer` kilidiyle, temizleme ve katalog `maintenance` kilidiyle çalışır
+İndirmeler, dışa aktarma, yedek ve deneme `writer` kilidiyle; temizleme, katalog ve geri yükleme `maintenance` kilidiyle
+çalışır
 (docs/design/02-services.md 2.8). Belirtim, alma hattı hedeflere ve aşamalara geçtiğinde değişecektir;
 değişiklik OpenAPI kaydında görünür.
 """
@@ -42,7 +49,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Literal, Mapping, 
 from fastapi import APIRouter, Body, Header, Query, Response
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.errors import NotFoundError, NotSupportedError, UsageError
+from src.errors import NotFoundError, UsageError
 from src.jobs.model import Job as JobSnapshot
 from src.jobs.model import JobKind, JobState
 from src.web import deps, sse
@@ -122,19 +129,47 @@ class JobSelection(BaseModel):
     match_ids: List[int] = Field(default_factory=list, description="Read by `fetch` only.")
 
 
+FollowId = Annotated[str, Field(pattern=r"^(tournament|team|player|event):[1-9][0-9]{0,18}$")]
+
+
 class SyncJobSpec(BaseModel):
-    """What to download. Without `selections` and `league_id`: every followed tournament."""
+    """
+    What to download. Without `selections`, `league_id` and `follows`: every enabled tournament follow, each with
+    its own season choice. Only one of `league_id`, `selections` and `follows` may be given.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
-    league_id: Optional[int] = Field(default=None, gt=0, description="One tournament; not read when `selections` is given.")
+    league_id: Optional[int] = Field(default=None, gt=0, description="One tournament, every season of it.")
     selections: List[JobSelection] = Field(default_factory=list)
+    follows: List[FollowId] = Field(
+        default_factory=list, max_length=200,
+        description="`sync` only: these follows (`tournament:17`), each with its season choice. Team, player and "
+                    "event follows cannot be synced yet (400).",
+    )
+    only: Optional[Literal["seasons"]] = Field(
+        default=None,
+        description="`sync` only. `seasons`: read the season lists from SofaScore again now, without schedules or "
+                    "event details (the Get season list button).",
+    )
+    event_ids: List[Annotated[int, Field(gt=0)]] = Field(
+        default_factory=list, max_length=500,
+        description="`fetch` only: these events, whether or not their tournament is known or followed. Not with "
+                    "`league_id` or `selections`.",
+    )
 
 
 class RefreshJobSpec(BaseModel):
+    """Without `event_ids`: the stored records that are due (of one tournament with `league_id`)."""
+
     model_config = ConfigDict(extra="forbid")
 
     league_id: Optional[int] = Field(default=None, gt=0)
+    event_ids: List[Annotated[int, Field(gt=0)]] = Field(
+        default_factory=list, max_length=500,
+        description="Read `/event` of these events again, whether or not they are due (the Fetch again button). "
+                    "Not with `league_id`.",
+    )
 
 
 class StartSyncJob(BaseModel):
@@ -267,14 +302,21 @@ class RestoreJobSpec(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(min_length=1, max_length=200, description="A backup of `/backups`.")
-    force: bool = Field(default=False, description="Report what a restore with force would move to the trash.")
+    force: bool = Field(
+        default=False,
+        description="Move the current data to the trash first (`.meta/trash/`); needed when the data directory is "
+                    "not empty. With `dry_run`: report what that would move.",
+    )
     dry_run: bool = Field(
-        default=True, description="Must be true: the API checks a restore; restoring is `ssc backup restore`.",
+        default=True, description="True: only check (nothing is written). False: restore the backup.",
     )
 
 
 class StartRestoreJob(BaseModel):
-    """Check what restoring a backup would do (the Check step of the UI); nothing is written."""
+    """
+    Check what restoring a backup would do (`dry_run: true`, the Check step of the UI), or restore it
+    (`dry_run: false`, the Choose step). A restore replaces the data and the job history; this job stays in it.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
@@ -312,6 +354,31 @@ def job_model(job: JobSnapshot) -> Job:
     )
 
 
+def job_targets(spec: Mapping[str, Any]) -> List[str]:
+    """
+    Bir iş belirtiminin adını verdiği turnuvalar ve maçlar (`tournament:17`, `event:123`): `league_id`, seçimlerin
+    ligleri ve maçları, takipler, `event_ids`. Bütün takipleri ya da bütün kataloğu kapsayan iş hiçbirini vermez.
+    """
+    found: Dict[str, None] = {}
+
+    def add(kind: str, value: Any) -> None:
+        if isinstance(value, int) and not isinstance(value, bool) and value > 0:
+            found[f"{kind}:{value}"] = None
+
+    add("tournament", spec.get("league_id"))
+    for selection in spec.get("selections") or ():
+        if isinstance(selection, Mapping):
+            add("tournament", selection.get("league_id"))
+            for event_id in selection.get("match_ids") or ():
+                add("event", event_id)
+    for follow in spec.get("follows") or ():
+        if isinstance(follow, str) and follow.startswith("tournament:") and follow[11:].isdigit():
+            add("tournament", int(follow[11:]))
+    for event_id in spec.get("event_ids") or ():
+        add("event", event_id)
+    return list(found)
+
+
 def _existing(job_id: str) -> JobSnapshot:
     job = deps.job_manager().get(job_id)
     if job is None:
@@ -334,9 +401,22 @@ def list_jobs(
     cursor: Optional[str] = Query(None, max_length=64, description="`page.next_cursor` of the previous page."),
     state: Annotated[Optional[List[JobState]], Query(description="Only jobs in one of these states.")] = None,
     kind: Annotated[Optional[List[JobKind]], Query(description="Only jobs of one of these kinds.")] = None,
+    origin: Annotated[Optional[List[Literal["cli", "api", "scheduler", "library"]]], Query(
+        description="Only jobs started by one of these faces.")] = None,
+    target: Optional[str] = Query(
+        None, pattern=r"^(tournament|event):[1-9][0-9]{0,18}$",
+        description="Only jobs whose spec names this tournament (`tournament:17`: its `league_id`, a selection or "
+                    "a follow) or this event (`event:123`: a selection's or `event_ids`' event). A job over every "
+                    "follow names none.",
+    ),
 ) -> JobListResponse:
     """Jobs of the data directory, newest first: those of this server and those started from the command line."""
     jobs = deps.job_manager().list(limit=HISTORY_LIMIT, kinds=kind or None, states=state or None)
+    if origin:
+        faces = set(origin)
+        jobs = [job for job in jobs if job.origin.face in faces]
+    if target:
+        jobs = [job for job in jobs if target in job_targets(job.spec)]
     start = 0
     if cursor:
         # İmleç, önceki sayfanın son işinin kimliğidir
@@ -388,18 +468,86 @@ def cancel_job(job_id: str) -> JobResponse:
 # --- başlatma ------------------------------------------------------------------------------------
 
 
+def _check_targets(body: Union[StartSyncJob, StartFetchJob]) -> None:
+    """Belirtimin hedef alanlarının birlikte kullanımı; uymayan istek iş kaydı bırakmadan `invalid_request`tir."""
+    spec = body.spec
+    given = [name for name, value in (("league_id", spec.league_id), ("selections", spec.selections),
+                                      ("follows", spec.follows), ("event_ids", spec.event_ids)) if value]
+    if len(given) > 1:
+        raise UsageError("Give only one of league_id, selections, follows and event_ids.", {"fields": given})
+    wrong = [name for name, value, allowed in (("follows", spec.follows, StartSyncJob),
+                                               ("only", spec.only, StartSyncJob),
+                                               ("event_ids", spec.event_ids, StartFetchJob))
+             if value and not isinstance(body, allowed)]
+    if wrong:
+        raise UsageError(f"These fields are not read by a {body.kind} job.", {"fields": wrong, "kind": body.kind})
+    if spec.only == "seasons" and spec.selections:
+        raise UsageError("A season-list job reads whole season lists; give league_id or follows.",
+                         {"fields": ["selections", "only"]})
+    if spec.follows:
+        _check_follows(spec.follows)
+
+
+def _check_follows(follows: List[str]) -> None:
+    """Takipler var olmalı ve turnuva takibi olmalı (takım, oyuncu ve maç takipleri henüz eşitlenemez)."""
+    from src.services.follows import parse_follow_id
+
+    service = deps.follows_service()
+    missing: List[str] = []
+    unsupported: List[str] = []
+    for text in dict.fromkeys(follows):
+        parsed = parse_follow_id(text)
+        if parsed is None or service.get(*parsed) is None:
+            missing.append(text)
+        elif parsed[0] != "tournament":
+            unsupported.append(text)
+    if missing:
+        raise NotFoundError("No follow has this id.", {"follows": missing})
+    if unsupported:
+        raise UsageError("Only tournament follows can be synced; team, player and event follows cannot yet.",
+                         {"field": "follows", "unsupported": unsupported})
+
+
+def _event_selections(event_ids: List[int]) -> Tuple[Any, ...]:
+    """
+    Maç kimlikleri → turnuva başına seçimler (`ssc fetch event` gibi). Turnuva katalogdan; bilinmeyen maçın turnuvası
+    0'dır (yalnızca iş kartında ve başarısız öğede görünür).
+    """
+    from src.services.sync import SyncSelection
+
+    store = deps.store()
+    by_tournament: Dict[int, List[int]] = {}
+    for event_id in dict.fromkeys(event_ids):
+        row = store.events.get(int(event_id))
+        tournament = int(row.tournament_id) if row is not None and row.tournament_id else 0
+        by_tournament.setdefault(tournament, []).append(int(event_id))
+    return tuple(SyncSelection(league_id=tid, match_ids=tuple(ids)) for tid, ids in sorted(by_tournament.items()))
+
+
 def _sync_spec(body: Union[StartSyncJob, StartFetchJob, StartRefreshJob]) -> "SyncSpec":
     """İstek gövdesi → servis belirtimi (SyncSpec). CSV aşaması istenmez: dışa aktarma ayrı bir iş türüdür."""
-    from src.services.sync import SyncSelection, SyncSpec
+    from src.services.sync import FollowsSyncSpec, SyncSelection, SyncSpec
 
     if isinstance(body, StartRefreshJob):
+        if body.spec.event_ids and body.spec.league_id:
+            raise UsageError("Give only one of league_id and event_ids.", {"fields": ["league_id", "event_ids"]})
+        if body.spec.event_ids:
+            # Yenileme kipi seçimlerin maçlarını okur; turnuva yalnızca iş kartında görünür
+            return SyncSpec(mode="refresh", selections=_event_selections(list(body.spec.event_ids)), export=False)
         return SyncSpec(mode="refresh", league_id=body.spec.league_id, export=False)
+    _check_targets(body)
+    spec = body.spec
+    mode = "details" if isinstance(body, StartFetchJob) else "seasons" if spec.only == "seasons" else "full"
+    if spec.follows:
+        return FollowsSyncSpec(mode=mode, export=False, follows=tuple(dict.fromkeys(spec.follows)))  # type: ignore[arg-type]
+    if spec.event_ids:
+        return SyncSpec(mode="details", selections=_event_selections(list(spec.event_ids)), export=False)
     return SyncSpec(
-        mode="full" if isinstance(body, StartSyncJob) else "details",
-        league_id=body.spec.league_id,
+        mode=mode,  # type: ignore[arg-type]
+        league_id=spec.league_id,
         selections=tuple(
             SyncSelection(league_id=s.league_id, season_ids=tuple(s.season_ids), match_ids=tuple(s.match_ids))
-            for s in body.spec.selections
+            for s in spec.selections
         ),
         export=False,
     )
@@ -435,7 +583,8 @@ def _run_sync(handle: "JobHandle", spec: "SyncSpec") -> "JobOutcome":
     result = SyncService(ctx).run(spec, handle=handle)
     if result.state == "cancelled":
         return JobOutcome(state=JobState.CANCELLED)
-    summary: Dict[str, Any] = {"schedule_empty_seasons": result.schedule_empty_seasons, **result.progress}
+    summary: Dict[str, Any] = {"schedule_empty_seasons": result.schedule_empty_seasons, **result.progress,
+                               "failed_listings": [dataclasses.asdict(item) for item in result.failed_listings]}
     if result.refresh is not None:
         summary["refresh"] = dataclasses.asdict(result.refresh)
     if result.breaker:
@@ -465,11 +614,13 @@ def start_job(response: Response, body: Annotated[StartJob, Body(discriminator="
     """
     Start a job in the background and return it at once (202). Only one job writes to a data directory at a
     time: while another job or a data operation runs, in this server or in another process, the request is
-    refused with 409 and the holder in `details`. `clear` and `rebuild` take the data directory for themselves
-    (no download, live service or other data operation may run). A `clear` needs `confirm: true` (400
-    `confirmation_required`). `restore` only checks (`dry_run: true`); restoring replaces the job history the
-    job is recorded in and is done with `ssc backup restore` (501 `not_supported`). A Parquet export without
-    pyarrow on the server is 501.
+    refused with 409 and the holder in `details`. `clear`, `rebuild` and a real `restore` take the data
+    directory for themselves (no download, live service or other data operation may run). A `clear` needs
+    `confirm: true` (400 `confirmation_required`). `restore` checks by default (`dry_run: true`); with
+    `dry_run: false` it restores, and into a data directory that is not empty only with `force: true` (else 400
+    `confirmation_required` with `details.occupied`). A Parquet export without pyarrow on the server is 501.
+    A `sync` with `only: "seasons"` reads season lists only; `follows` names the follows to sync; a `fetch` with
+    `event_ids` fetches events without their tournament, and a `refresh` with `event_ids` reads those events again.
     """
     from src.jobs.manager import local_origin
 
@@ -479,9 +630,12 @@ def start_job(response: Response, body: Annotated[StartJob, Body(discriminator="
         response.headers["Location"] = f"{V1_PREFIX}/jobs/{job.id}"
         return JobResponse(data=job_model(job))
     spec = _sync_spec(body)
+    recorded = dataclasses.asdict(spec)
+    if isinstance(body, (StartFetchJob, StartRefreshJob)) and body.spec.event_ids:
+        recorded["event_ids"] = list(dict.fromkeys(body.spec.event_ids))  # `target` süzgeci için (G12)
     job = deps.job_manager().submit(
         JobKind(body.kind),
-        dataclasses.asdict(spec),
+        recorded,
         lambda handle: _run_sync(handle, spec),
         origin=local_origin("api"),
         background=True,
@@ -579,12 +733,20 @@ def _restore_body(spec: Mapping[str, Any]) -> Any:
         from src.jobs.manager import JobOutcome
         from src.services.backup import BackupService
 
-        report = BackupService(deps.store()).restore(spec["name"], force=bool(spec.get("force")), dry_run=True)
-        return JobOutcome(result={"restore": {
-            "name": report.name, "format": report.format, "scope": report.scope, "dry_run": True,
+        dry_run = bool(spec.get("dry_run", True))
+        report = BackupService(deps.store()).restore(spec["name"], force=bool(spec.get("force")), dry_run=dry_run)
+        result: Dict[str, Any] = {
+            "name": report.name, "format": report.format, "scope": report.scope, "dry_run": dry_run,
             "force": report.force, "restored": list(report.restored), "replaced": list(report.replaced),
             "skipped": list(report.skipped), "occupied": list(report.occupied), "counts": dict(report.counts),
-        }})
+        }
+        if not dry_run:
+            result.update(catalog_rebuilt=report.catalog_rebuilt, verify_ok=report.verify_ok,
+                          verify_issues=report.verify_issues)
+            from src.services.status import forget_sizes
+
+            forget_sizes()  # disk ölçümü geri yüklenen ağaca göre yeniden yapılsın
+        return JobOutcome(result={"restore": result})
 
     return body
 
@@ -615,15 +777,20 @@ def _start_data_job(body: Any) -> JobSnapshot:
         run, lease = _rebuild_body(spec), MAINTENANCE_LEASE
     else:
         spec = body.spec.model_dump()
-        if not body.spec.dry_run:
-            raise NotSupportedError(
-                "A restore replaces the job history this job would be recorded in; restore with "
-                "`ssc backup restore`. The API checks a restore (dry_run: true).", {"kind": "restore"},
-            )
         from src.services.backup import BackupService
 
-        if body.spec.name not in {info.name for info in BackupService(deps.store()).list()}:
+        backups = BackupService(deps.store())
+        if body.spec.name not in {info.name for info in backups.list()}:
             raise NotFoundError("No backup has this name.", {"name": body.spec.name})
+        if not body.spec.dry_run:
+            # Boş olmayan hedef: istek, iş başlamadan reddedilir (Choose adımı `occupied`ı gösterir, `force` gönderir)
+            check = backups.restore(body.spec.name, force=body.spec.force, dry_run=True)
+            if check.occupied and not body.spec.force:
+                raise UsageError(
+                    "The data directory is not empty; a restore never merges. Send force: true to move the current "
+                    "data to the trash first.", {"name": body.spec.name, "occupied": list(check.occupied)},
+                    code="confirmation_required")
+            lease = MAINTENANCE_LEASE
         run = _restore_body(spec)
     return deps.job_manager().submit(
         kind, spec, run, origin=local_origin("api"), background=True, lease=lease,
