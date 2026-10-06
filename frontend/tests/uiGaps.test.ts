@@ -159,7 +159,7 @@ describe('Health', () => {
     const card = w.find('[data-testid="health-scheduler"]')
     const runs = card.findAll('[data-task]')
     expect(runs).toHaveLength(3)
-    expect(runs[0].text()).toContain(t('ui.job.kind.sync'))
+    expect(runs[0].text()).toContain(`${t('ui.job.kind.sync')} · Premier League`)
     expect(runs[0].text()).toContain(t('ui.health.every', { every: '6h' }))
     expect(runs[1].text()).toContain('0 3 * * *')
     expect(runs[1].text()).toContain(t('ui.health.lastResult.skipped_busy'))

@@ -19,6 +19,7 @@ import { diskBytes, useStatusStore } from '@/app/statusStore'
 import { sportName } from '@/app/sports'
 import { liveState } from '@/ui/status'
 import { failureText } from '@/screens/jobs/eventText'
+import { loadTournaments } from '@/screens/events/eventText'
 import { jobKindText, leagueName } from '@/screens/jobs/jobText'
 import type { ScheduledRun } from '@/api/v1/schema'
 import { bytesText, duration, now as clockNow, num, useClock } from '@/ui/time'
@@ -143,6 +144,8 @@ function reasonText(reason: string | null | undefined) {
 // Inside the shell the status is already polled; opened on its own, the screen reads it once
 onMounted(() => {
   if (!store.status && !store.loading) void store.refresh().catch(() => {})
+  // the leagues of the scheduled tasks by name (the stored catalog, read once per page)
+  void loadTournaments()
 })
 </script>
 
