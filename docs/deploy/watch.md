@@ -1,7 +1,7 @@
 # The live service (`ssc watch`) as a service
 
 `ssc watch` is the only way to run the live service: a foreground process for systemd or a container. The web
-server (`ssc serve`) does not run it, and there is no HTTP endpoint for live data. The service watches live
+server (`ssc serve`) does not run it, there is no HTTP endpoint for live data and the web app has no live view. The service watches live
 matches, writes every change (status, score, a confirmed finish) to the data folder and to the event log, and
 the configured sinks (stdout, file, webhook) deliver those events. Read them later with `ssc events`, follow
 them with `ssc events --follow`, or print them as they happen with `ssc watch --stdout`.
@@ -95,8 +95,8 @@ The unit does not restart on exit code 2 (a configuration error, or nothing to w
 `live = true`) or 6 (another live service holds this data folder); it restarts after other failures.
 
 The `page` and `direct` sources start Chromium with the profile `<profile>-live` next to the bridge profile
-(`SOFASCORE_BROWSER_PROFILE`, default `~/.cache/sofascore_scraper/chrome_profile`), so the service user needs
-a writable home or `SOFASCORE_BROWSER_PROFILE` pointing to a folder it can write. Polling and confirmation
+(`[client] browser_profile` or `SOFASCORE_BROWSER_PROFILE`, default `~/.cache/sofascore_scraper/chrome_profile`),
+so the service user needs a writable home or a profile setting that points to a folder it can write. Polling and confirmation
 requests go through the shared request budget (`[client] rate`) together with downloads and the web app.
 
 ## In Docker

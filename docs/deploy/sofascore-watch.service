@@ -8,7 +8,7 @@
 
 [Unit]
 Description=SofaScore Scraper live service (ssc watch)
-Documentation=https://github.com/tunjayoff/sofascore_scraper/tree/main/docs/deploy/watch.md
+Documentation=https://github.com/tunjayoff/sofascore_scraper/blob/main/docs/deploy/watch.md
 After=network-online.target
 Wants=network-online.target
 

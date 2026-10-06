@@ -4,7 +4,7 @@ This folder is for people who run the platform on a server or in automation. It 
 
 | Page / file | What it is for |
 |---|---|
-| this page | `ssc serve` as a service, the access token, the Host allow-list, a reverse proxy, backups, `ssc migrate`, sharing a data folder |
+| this page | `ssc serve` as a service, the access token, the Host allow-list, a reverse proxy, scheduled downloads (a timer or the in-app scheduler), backups and restores, `ssc migrate`, sharing a data folder |
 | [`watch.md`](watch.md) | the live service `ssc watch` as a service: sources, memory, the warnings of the `direct` source |
 | [`docker.md`](docker.md) | the Docker image and the Compose example |
 | [`sofascore-serve.service`](sofascore-serve.service) | systemd unit for `ssc serve` (web app and HTTP API) |
@@ -56,12 +56,14 @@ What `serve` does at a stop and at an error:
 - SIGTERM (`systemctl stop`) or Ctrl+C stops the server gracefully, delivers what the sinks still have for up
   to 10 seconds, releases its locks and exits with **0**.
 - A configuration it cannot use stops it before it listens, with exit code **2**: a broken `sofascore.toml`, a
-  bad sink option or a missing sink secret, or `--host 0.0.0.0` without allowed host names. The unit does not
+  bad sink option or a missing sink secret, an invalid `[[schedule.task]]` while the scheduler is on, or
+  `--host 0.0.0.0` without allowed host names. The unit does not
   restart on 2 (`RestartPreventExitStatus=2`): the log line says what to fix.
 - A server that cannot start (the port is in use) exits with **1**, and systemd restarts it.
 
 Options: `--host`, `--port` (defaults: `[server] host` and `port`, `127.0.0.1` and `8000`), `--allowed-hosts`,
-`--allow-any-host`, `--dev` (restart on code changes; development only). There is deliberately no option for the
+`--allow-any-host`, `--dev` (restart on code changes; development only), `--scheduler` / `--no-scheduler` (the
+in-app scheduler, see [Scheduled downloads](#scheduled-downloads)). There is deliberately no option for the
 access token: a command line is visible to every user of the machine in the process list.
 
 ## Access token
@@ -185,8 +187,9 @@ without delivering anything.
 [`sofascore-sync.service`](sofascore-sync.service) with [`sofascore-sync.timer`](sofascore-sync.timer) runs
 `ssc sync` every six hours. It waits up to 15 minutes for a download that the web app or another process is
 running (`--wait 900`) instead of failing with 6. Exit codes a scheduler sees: **0** done or nothing to do,
-**3** done but some matches or lists could not be fetched (they are retried next time), **4** SofaScore kept
-refusing and the circuit breaker stopped the job, **5** storage error, **6** the data folder stayed busy.
+**1** general error, **2** usage or configuration error, **3** done but some matches or lists could not be
+fetched (they are retried next time), **4** SofaScore kept refusing and the circuit breaker stopped the job,
+**5** storage error, **6** the data folder stayed busy.
 
 ```bash
 sudo cp sofascore-sync.service sofascore-sync.timer /etc/systemd/system/
@@ -198,12 +201,38 @@ systemctl list-timers sofascore-sync.timer
 A daily `ssc refresh` (re-read matches whose result was still provisional) can be a second timer of the same
 shape.
 
+**The in-app scheduler** is the alternative when `ssc serve` runs anyway. It is off by default: `ssc serve
+--scheduler`, or `[schedule] enabled = true` in the config file, runs the `[[schedule.task]]` entries inside the
+server (`--no-scheduler` turns it off for one run; it never runs with `--dev`):
+
+```toml
+[schedule]
+enabled = true
+
+[[schedule.task]]
+run = "sync"              # or "fetch", "refresh", "backup", "prune-history"
+every = "6h"              # or cron = "15 */6 * * *" (the machine's local time)
+```
+
+- Each run is an ordinary job in the job list. When the previous run of the task or another download still
+  holds the data folder, the run is skipped and logged; missed runs are not queued up.
+- `every` counts from the task's last run in the job history, so restarting the server does not restart the
+  count. With no earlier run, the first one comes one interval after the server starts.
+- `prune-history` (no such task exists unless you add one) needs `older_than` (for example `"90d"`) and deletes
+  older snapshots of the kept slice history (odds), keeping the newest one of every slice.
+- `ssc config validate` checks the tasks; an invalid task stops `serve` before it listens (exit code 2). The next
+  runs are listed in `GET /api/v1/status`.
+
+A timer and the scheduler do not know each other: when both are set up, the one that finds the data folder
+busy waits (`--wait`), exits with 6 or, for a scheduler task, skips that run.
+
 ## Backups
 
-`ssc backup create` writes a zip under `<data folder>/backups/` (scopes: `all`, the default; `state`, the
-follows, job history and event log; `data`; `config`). It takes the writer lock for the data scopes: while a
-download runs it exits with 6, so schedule it between downloads. `.env` goes in only with `--include-secrets`,
-and the file name then says `_with_env`.
+`ssc backup create` writes a zip under `<data folder>/backups/` (`--scope`: `all`, the default; `state`, the
+follows, job history and event log; `data`, the match files and the change log; `config`, the settings files
+only; or one old 2.x folder: `seasons`, `matches`, `match_details`). Every scope except `config` takes the writer
+lock: while a download runs it exits with 6, so schedule it between downloads (or as a `backup` task of the
+in-app scheduler). `.env` goes in only with `--include-secrets`, and the file name then says `_with_env`.
 
 ```bash
 ssc backup create
@@ -215,8 +244,14 @@ Copy the zips off the machine: a backup on the same disk does not survive the di
 with `rsync` or a snapshot works too, but only while no `serve`, `watch` or download runs, because
 `.meta/state.db` is a SQLite database in WAL mode.
 
-To restore, stop `serve`, `watch` and the timer first (a restore takes the `maintenance` lock and refuses while
-anything else uses the folder), then:
+A restore always replaces the data folder (nothing is merged) and, when the backup has it, the job history.
+Backups of version 2.x can be restored too. There are two ways:
+
+- **From the web app**, while `serve` runs: the **Backups** page has **Restore…** for every backup in the
+  backups folder (there is no upload). It checks the archive first, then restores as a job of the server. It
+  runs only while no other job and no live service (`ssc watch`) is running.
+- **From the command line**: stop `serve`, `watch` and the timer first (a restore takes the `maintenance` lock
+  and refuses while anything else uses the folder), then:
 
 ```bash
 ssc backup restore NAME --dry-run      # what would happen
@@ -228,8 +263,8 @@ Settings files and `.env` are never restored; the result lists them as skipped.
 
 ## Moving old data to the new layout (`ssc migrate`)
 
-A data folder written by version 2 keeps working, and `ssc migrate` converts it to the new layout. Stop the
-services and the timer while it runs.
+A data folder written by version 2 keeps working as it is: nothing is converted on its own. `ssc migrate`
+converts it to the new layout when you run it. Stop the services and the timer while it runs.
 
 ```bash
 ssc migrate --dry-run          # what would be converted, sizes before and after, what cannot be converted
