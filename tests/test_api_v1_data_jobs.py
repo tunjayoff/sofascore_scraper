@@ -139,7 +139,7 @@ def test_a_raw_export_of_one_tournament(jobs: JobStore, store: Store) -> None:
     ({"profile": "legacy-wide-csv", "format": "jsonl"}, 400, "invalid_request"),
     ({"profile": "legacy-wide-csv", "filter": {"season_ids": [1]}}, 400, "invalid_request"),
     ({"dataset": "changes", "schema": "raw", "format": "jsonl"}, 400, "invalid_request"),  # SC-2: changes'in hamı yok
-    ({"dataset": "odds"}, 422, "invalid_request"),
+    ({"dataset": "lineups"}, 422, "invalid_request"),  # P28'den beri `odds` bir veri kümesidir
     ({"profile": "pretty"}, 422, "invalid_request"),
 ])
 def test_exports_that_cannot_be_made_start_no_job(jobs: JobStore, spec: Dict[str, Any], status: int,

@@ -1,0 +1,22 @@
+{
+ "source": "research/all_sports/samples/american-football/unique-tournament-id-season-id-info__1.json",
+ "path": "/unique-tournament/9464/season/94366/info",
+ "body": {
+  "info": {
+   "season": {
+    "name": "NFL 26/27",
+    "year": "26/27",
+    "editor": false,
+    "id": 94366
+   },
+   "newcomersUpperDivision": [],
+   "newcomersLowerDivision": [],
+   "newcomersOther": [],
+   "numberOfCompetitors": 32,
+   "id": 64555,
+   "hostCountries": [
+    "USA"
+   ]
+  }
+ }
+}

@@ -6,26 +6,34 @@ API v1: turnuvalar ve sezonlar (docs/design/02-services.md bölüm 6; docs/desig
     GET /api/v1/tournaments/{tournament_id}         tek turnuva, kategorisiyle
     GET /api/v1/tournaments/{tournament_id}/seasons turnuvanın sezonları, en yeni önce
     GET /api/v1/seasons/{season_id}                 tek sezon
+    GET /api/v1/seasons/{season_id}/slices          sezonun saklanan dilimleri, yüksüz (P28)
     GET /api/v1/seasons/{season_id}/slices/{key}    sezonun bir dilimi (puan durumu ...), saklanan yüküyle
+    GET /api/v1/seasons/{season_id}/standings       sezonun puan durumu, satır satır (şema v1 StandingsRow; P28)
 
 Kayıtlar şema v1'indir (src/schema; docs/design/04-schema-v1.md): Tournament, Category, Season, Slice. Bir turnuva
 kaydı iki alan ekler (ek alan eklemek sürüm artırmaz): `category` (katalogdaki kategori kaydı, yoksa null) ve
 `followed` (turnuva takip ediliyor). Okumalar katalogdandır (QueryService) ve SofaScore'a istek atmaz; arama
 SofaScore'a sorar ve bu yüzden POST'tur (GET olsaydı başka bir site onu kullanıcının adına tetikleyebilirdi).
+
+Sezonun maç dışı dilimleri (puan durumu, sezon bilgisi, kupa ağacı, en iyiler; plan maddesi P28) varsayılan olarak
+indirilmez: grupları ya da adları bir seçimde geçince eşitleme onları sezon başına bir kez, sezon sürerken
+`max_age`'den eskiyse yeniden okur.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Path, Query
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.errors import NotFoundError, UsageError
 from src.web import deps
+from src.schema import models as schema_models
 from src.web.api.v1 import PageInfo, records
 from src.web.errors import error_responses
 
 if TYPE_CHECKING:
+    from src.services.owner_data import OwnerDataService
     from src.services.query import QueryService, TournamentEntry
 
 router = APIRouter(tags=["tournaments"])
@@ -63,6 +71,19 @@ class SeasonListResponse(BaseModel):
 
 class SliceResponse(BaseModel):
     data: records.Slice  # type: ignore[valid-type]
+
+
+class SeasonSliceListResponse(BaseModel):
+    data: List[records.Slice]  # type: ignore[valid-type]
+    page: PageInfo
+
+
+StandingsRowRecord = records.mirror(schema_models.StandingsRow)
+
+
+class StandingsResponse(BaseModel):
+    data: List[StandingsRowRecord]  # type: ignore[valid-type]
+    page: PageInfo
 
 
 class TournamentSearch(BaseModel):
@@ -107,6 +128,16 @@ def _query() -> "QueryService":
     from src.services.query import QueryService
 
     return QueryService(deps.store())
+
+
+def _owner_data() -> "OwnerDataService":
+    from src.services.owner_data import OwnerDataService
+
+    return OwnerDataService(deps.store())
+
+
+def _season_not_found(season_id: int) -> NotFoundError:
+    return NotFoundError("The data directory knows no season with this id.", {"season_id": season_id})
 
 
 def _offset(cursor: Optional[str]) -> int:
@@ -222,6 +253,51 @@ def get_season(season_id: Annotated[int, Path(ge=1)]) -> SeasonResponse:
     if season is None:
         raise NotFoundError("The data directory knows no season with this id.", {"season_id": season_id})
     return SeasonResponse(data=records.as_json(season))
+
+
+@router.get(
+    "/seasons/{season_id}/slices",
+    response_model=SeasonSliceListResponse,
+    operation_id="listSeasonSlices",
+    summary="List the slices of a season",
+    responses=error_responses("not_found"),
+)
+def list_season_slices(season_id: Annotated[int, Path(ge=1)]) -> SeasonSliceListResponse:
+    """
+    Every stored slice of the season, ordered by key and sub-key, without payloads: its schedule pages and,
+    when selected for download, its standings, season info, cup tree, leaders and season odds.
+    """
+    found = _owner_data().season_slices(season_id)
+    if found is None:
+        raise _season_not_found(season_id)
+    return SeasonSliceListResponse(
+        data=[records.as_json(s) for s in found],  # type: ignore[misc]
+        page=PageInfo(limit=len(found), next_cursor=None),
+    )
+
+
+@router.get(
+    "/seasons/{season_id}/standings",
+    response_model=StandingsResponse,
+    operation_id="getSeasonStandings",
+    summary="Get the standings of a season",
+    responses=error_responses("not_found", "invalid_request"),
+)
+def get_season_standings(
+    season_id: Annotated[int, Path(ge=1)],
+    table: Optional[Literal["total", "home"]] = Query(None, description="One table only; both when omitted."),
+) -> StandingsResponse:
+    """
+    The stored standings of the season as rows (schema v1 StandingsRow), table by table and in rank order.
+    Empty when no standings are stored (they are downloaded only when selected).
+    """
+    found = _owner_data().standings(season_id, table)
+    if found is None:
+        raise _season_not_found(season_id)
+    return StandingsResponse(
+        data=[records.as_json(row) for row in found],  # type: ignore[misc]
+        page=PageInfo(limit=len(found), next_cursor=None),
+    )
 
 
 @router.get(

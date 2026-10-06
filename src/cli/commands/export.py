@@ -45,7 +45,7 @@ if TYPE_CHECKING:
 
 PROFILES = ("legacy-wide-csv",)
 SCHEMAS = ("normalized", "raw")
-DATASETS = ("events", "slices", "changes")
+DATASETS = ("events", "slices", "changes", "odds", "standings")
 FORMATS = ("csv", "jsonl", "tree", "parquet", "sqlite")
 STATUS_CLASSES = ("not_started", "live", "completed", "decided_without_play", "void", "unknown")
 STDOUT = "-"

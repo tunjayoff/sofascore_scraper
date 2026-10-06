@@ -374,9 +374,14 @@ Phase = Literal["pre", "live", "post"]
 OWNERS: Tuple[str, ...] = ("event", "season", "tournament", "team", "player", "sport")
 PHASES: Tuple[str, ...] = ("pre", "live", "post")
 ALL_PHASES: FrozenSet[str] = frozenset(PHASES)
-# Dilim grupları: seçimde bir dilim anahtarı yerine grup adı da yazılabilir ([defaults] slices = ["core"])
-GROUPS: Tuple[str, ...] = ("core", "odds", "standings", "statistics", "squads", "rankings", "live")
+# Dilim grupları: seçimde bir dilim anahtarı yerine grup adı da yazılabilir ([defaults] slices = ["core"]).
+# P28: `season` (sezon bilgisi, kupa ağacı), `leaders` (sezonun en iyi oyuncu ve takım listeleri), `players`
+# (oyuncu istatistikleri). Yeni gruplar mevcut bir dilim anahtarıyla aynı adı taşımaz: aksi halde o anahtarı
+# yazan bir yapılandırma yeni dilimleri de seçerdi.
+GROUPS: Tuple[str, ...] = ("core", "odds", "standings", "statistics", "squads", "rankings", "live",
+                           "season", "leaders", "players")
 PROVIDER_SUBS = "provider"  # subs="provider": alt anahtar yapılandırılan bahis sağlayıcısının kimliğidir
+DEFAULT_ODDS_PROVIDER = "1"  # [client] odds_provider'ın varsayılanı (src/config/settings.py)
 
 
 @dataclass(frozen=True)
@@ -414,6 +419,12 @@ class SliceSpec:
     not_in: FrozenSet[str] = frozenset()
     # Dilimin istendiği ama tamlık hesabına girmediği sporlar (`required` True iken): orada veri hep gelmiyor
     optional_in: FrozenSet[str] = frozenset()
+    # Yanıtta verinin durduğu üst anahtar (P28'in dilimleri): gövde bir nesne ve bu anahtarın değeri doluysa veri
+    # var. None: src/slices.py'deki kural (kuralı yoksa gövdenin dolu olması yeter)
+    body_key: Optional[str] = None
+    # Uç noktanın yanıt biçimi yalnızca katalogdan (docs/all-sports/endpoints.csv) biliniyor, kayıtlı örneği
+    # yok ya da örnek 404: canlı doğrulamaya kadar deneysel (docs'ta "needs live validation")
+    experimental: bool = False
 
     def __post_init__(self) -> None:
         if self.owner not in OWNERS:
@@ -431,6 +442,28 @@ class SliceSpec:
             raise ValueError(f"slice {self.key!r}: optional_in needs a required slice")
         if self.sports is not None and not (self.not_in | self.optional_in) <= self.sports:
             raise ValueError(f"slice {self.key!r}: not_in and optional_in must be subsets of sports")
+        if (self.subs is None) == ("{sub}" in self.path):
+            raise ValueError(f"slice {self.key!r}: a slice with subs has {{sub}} in its path, one without has not")
+        if self.max_age is not None and self.max_age.total_seconds() <= 0:
+            raise ValueError(f"slice {self.key!r}: max_age must be positive")
+
+    def sub_keys(self, provider: Optional[str] = None) -> Tuple[str, ...]:
+        """
+        Dilimin alt anahtarları: alt anahtarı yoksa (""), sabit bir demetse o demet, "provider" ise yapılandırılan
+        bahis sağlayıcısının kimliği (verilmezse DEFAULT_ODDS_PROVIDER; Store alt anahtarı ondalık rakamlardır).
+        """
+        if self.subs is None:
+            return ("",)
+        if self.subs == PROVIDER_SUBS:
+            return (str(provider or DEFAULT_ODDS_PROVIDER),)
+        return tuple(self.subs)
+
+    def format_path(self, sub: str = "", **ids: object) -> str:
+        """
+        Dilimin API yolu (köke göre): yer tutucular `ids`'ten (event_id, tournament_id, season_id, team_id,
+        player_id) ve `sub`'dan doldurulur. Sahibinin bir kimliği eksikse KeyError.
+        """
+        return self.path.format(sub=sub, **ids)
 
     @property
     def counts_for_completeness(self) -> bool:
@@ -505,8 +538,85 @@ DETAIL_SLICES: Tuple[SliceSpec, ...] = (
 )
 
 
+# --- P28: bahis oranları ve maç dışı veriler ------------------------------------------------------------
+#
+# Hepsi varsayılan olarak kapalıdır (`default_enabled=False`) ve tamlık hesabına girmez (`required=False`): adı
+# ya da grubu bir seçimde ([defaults] slices, [slices.<spor>], takibin `slices`'ı) geçmedikçe hiç istenmez.
+# Uç noktalar docs/all-sports/endpoints.csv'den; yanıt örnekleri research/all_sports/samples altında. Örneği
+# olmayan ya da örneği 404 olan dilim `experimental`dır (canlı doğrulama projenin sonunda).
+#
+# Bahis oranları (grup `odds`): alt anahtar yapılandırılan sağlayıcının kimliğidir ([client] odds_provider;
+# kayıtlı örneklerin hepsi sağlayıcı 1, girişsiz). Hangi sağlayıcının döndüğü SofaScore'da ülke koduna bağlıdır;
+# dilimin `meta`sı isteğin sağlayıcısını kaydeder (istemcinin IP'si ya da konumu saklanmaz). Tek bir okuma bir
+# anlık görüntüdür: değişen yük dilimin geçmişine eklenir (`keep_history`). Maç başlamadan önce her eşitlemede
+# `max_age`'den eskiyse yeniden okunur, maç bittikten sonra bir kez daha (src/services/planning.py).
+ODDS_MAX_AGE = timedelta(minutes=30)
+
+ODDS_SLICES: Tuple[SliceSpec, ...] = (
+    # Öne çıkan pazar (maç sonucu): {"featured": {"default": market, "fullTime": market, ...}}
+    SliceSpec("odds_featured", "/event/{event_id}/odds/{sub}/featured", subs=PROVIDER_SUBS, group="odds",
+              default_enabled=False, required=False, keep_history=True, max_age=ODDS_MAX_AGE, body_key="featured"),
+    # Bütün pazarlar: {"markets": [market, ...], "eventId": ...}
+    SliceSpec("odds_all", "/event/{event_id}/odds/{sub}/all", subs=PROVIDER_SUBS, group="odds",
+              default_enabled=False, required=False, keep_history=True, max_age=ODDS_MAX_AGE, body_key="markets"),
+    # Maç sonucu oranlarının zaman çizelgesi: {"changedOdds": [{"timestamp", "choice1", ...}]}
+    SliceSpec("odds_changes", "/event/{event_id}/odds/{sub}/changes", subs=PROVIDER_SUBS, group="odds",
+              default_enabled=False, required=False, keep_history=True, max_age=ODDS_MAX_AGE,
+              body_key="changedOdds"),
+    # Oranlara göre beklenen ve gerçekleşen kazanma oranı. Tek kayıtlı örnek 404: biçim bilinmiyor
+    SliceSpec("winning_odds", "/event/{event_id}/provider/{sub}/winning-odds", subs=PROVIDER_SUBS, group="odds",
+              default_enabled=False, required=False, keep_history=True, max_age=ODDS_MAX_AGE, experimental=True),
+)
+
+# Maç dışı dilimler: sahibi sezon, takım, oyuncu ya da spordur. Planlayıcı sahip başına bir iş birimi üretir
+# (src/services/planning.py `owner_items`); `max_age`'den eski dilim yeniden okunur.
+_SEASON = "/unique-tournament/{tournament_id}/season/{season_id}"
+
+OWNER_SLICES: Tuple[SliceSpec, ...] = (
+    # Puan durumu: {"standings": [{"type", "name", "rows": [...]}]}. `home` alt anahtarının örneği yok
+    SliceSpec("standings", _SEASON + "/standings/{sub}", owner="season", subs=("total", "home"),
+              group="standings", default_enabled=False, required=False, max_age=timedelta(hours=6),
+              body_key="standings"),
+    SliceSpec("season_info", _SEASON + "/info", owner="season", group="season", default_enabled=False,
+              required=False, max_age=timedelta(days=7), body_key="info"),
+    # Kupa ağacı (eleme turları): {"cupTrees": [...]}
+    SliceSpec("cuptrees", _SEASON + "/cuptrees", owner="season", group="season", default_enabled=False,
+              required=False, max_age=timedelta(hours=12), body_key="cupTrees"),
+    # Sezonun en iyi oyuncuları ve takımları (istatistik türüne göre listeler); yalnızca futbolda görüldü
+    SliceSpec("top_players", _SEASON + "/top-players/overall", owner="season", group="leaders",
+              sports=frozenset({"football"}), default_enabled=False, required=False, max_age=timedelta(days=1),
+              body_key="topPlayers"),
+    SliceSpec("top_teams", _SEASON + "/top-teams/overall", owner="season", group="leaders",
+              sports=frozenset({"football"}), default_enabled=False, required=False, max_age=timedelta(days=1),
+              body_key="topTeams"),
+    # Sezonun uzun vadeli oranları (şampiyon, küme düşme). Tek kayıtlı örnek 404
+    SliceSpec("season_odds", "/odds/season/{season_id}/provider/{sub}/all", owner="season", subs=PROVIDER_SUBS,
+              group="odds", sports=frozenset({"football"}), default_enabled=False, required=False,
+              keep_history=True, max_age=timedelta(hours=6), body_key="markets", experimental=True),
+    # Tenisçinin sıralamaları (ATP/WTA, canlı sıralama, UTR): {"rankings": [...]}
+    SliceSpec("team_rankings", "/team/{team_id}/rankings", owner="team", group="rankings",
+              sports=frozenset({"tennis"}), default_enabled=False, required=False, max_age=timedelta(days=1),
+              body_key="rankings"),
+    # Oyuncunun sezon istatistikleri; yalnızca katalogda (örnek yok). Sahibi takip edilen oyunculardır
+    SliceSpec("player_statistics", "/player/{player_id}/statistics/seasons", owner="player", group="players",
+              default_enabled=False, required=False, max_age=timedelta(days=1), experimental=True),
+    # Sporun sıralama listesi; alt anahtar sıralama türü (5: ATP, sitenin ATP sayfası). Gövdesinin örneği yok
+    SliceSpec("rankings", "/rankings/{sub}", owner="sport", subs=("5",), group="rankings",
+              sports=frozenset({"tennis"}), default_enabled=False, required=False, max_age=timedelta(days=1),
+              body_key="rankings", experimental=True),
+)
+
+
+def registered_slices() -> Tuple[SliceSpec, ...]:
+    """
+    Kayıt defterinin bütün dilimleri, tablo sırasıyla: maç detayları (DETAIL_SLICES), bahis oranları, maç dışı
+    dilimler. Tablolar çağrı anında okunur (testler onları değiştirebilir).
+    """
+    return DETAIL_SLICES + ODDS_SLICES + OWNER_SLICES
+
+
 def get_slice(key: str) -> Optional[SliceSpec]:
-    return next((s for s in DETAIL_SLICES if s.key == key), None)
+    return next((s for s in registered_slices() if s.key == key), None)
 
 
 class UnknownSliceName(ValueError):
@@ -547,7 +657,7 @@ class SliceSelection:
 
 def known_slice_names() -> Tuple[str, ...]:
     """Seçimde geçerli adlar: kayıtlı dilim anahtarları (tablo sırasıyla), sonra öteki grup adları."""
-    keys = tuple(s.key for s in DETAIL_SLICES)
+    keys = tuple(s.key for s in registered_slices())
     return keys + tuple(group for group in GROUPS if group not in keys)
 
 
@@ -635,7 +745,8 @@ def select_slices(
     phase: Optional[str] = None,
 ) -> Tuple[SliceSpec, ...]:
     """
-    Bir sahibin (bugün yalnızca "event") bu sporda istenecek dilimleri, tablo sırasıyla.
+    Bir sahibin ("event", "season", "team", "player", "sport") bu sporda istenecek dilimleri, tablo sırasıyla.
+    Sahibi maç olmayan dilimde `phase` anlamsızdır (dilimlerin evresi hep üçüdür).
 
     sport: olayın küçük harfli slug'ı (event_sport_slug); kayıt defterinde olmayan ya da bilinmeyen (None / "")
     spor yalnızca her sporda geçerli dilimleri alır. selection: None = kayıt defterinin varsayılanları; bir ad
@@ -655,25 +766,37 @@ def select_slices(
     if selection is not None:
         check_slice_names(selection.names())
 
-    def selected(spec: SliceSpec) -> bool:
-        if selection is None:
-            return spec.default_enabled
-        chosen = spec.default_enabled if selection.base is None else _named(spec, selection.base)
-        if _named(spec, selection.enable):
-            chosen = True
-        if _named(spec, selection.disable):
-            chosen = False
-        for enable, disable in selection.layers:
-            if _named(spec, enable):
-                chosen = True
-            if _named(spec, disable):
-                chosen = False
-        return chosen
-
     return tuple(
-        s for s in DETAIL_SLICES
-        if s.owner == owner and s.applies_to(sport) and s.valid_in(phase) and selected(s)
+        s for s in registered_slices()
+        if s.owner == owner and s.applies_to(sport) and s.valid_in(phase) and _selected(s, selection)
     )
+
+
+def _selected(spec: SliceSpec, selection: Optional[SliceSelection]) -> bool:
+    if selection is None:
+        return spec.default_enabled
+    chosen = spec.default_enabled if selection.base is None else _named(spec, selection.base)
+    if _named(spec, selection.enable):
+        chosen = True
+    if _named(spec, selection.disable):
+        chosen = False
+    for enable, disable in selection.layers:
+        if _named(spec, enable):
+            chosen = True
+        if _named(spec, disable):
+            chosen = False
+    return chosen
+
+
+def chosen_slices(selection: Union[SliceSelection, Iterable[str], None] = None) -> Tuple[SliceSpec, ...]:
+    """Seçimin seçtiği bütün dilimler, sahibine, sporuna ve evresine bakılmadan (tablo sırasıyla)."""
+    if selection is not None and not isinstance(selection, SliceSelection):
+        if isinstance(selection, str):
+            raise ValueError("selection: expected a list of slice names, got a single string")
+        selection = SliceSelection(base=tuple(selection))
+    if selection is not None:
+        check_slice_names(selection.names())
+    return tuple(s for s in registered_slices() if _selected(s, selection))
 
 
 def slices_for(sport: Optional[str], required_only: bool = False) -> Tuple[SliceSpec, ...]:

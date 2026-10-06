@@ -360,6 +360,11 @@ class _SyncRun:
             finally:
                 md.refresh_listener = None
 
+        # 4. Bahis oranları ve maç dışı veriler (plan maddesi P28): yalnızca seçildilerse; seçilmediyse hiçbir
+        # şey okunmaz ve istenmez
+        if detail_plan and not cancelled() and not self.blocked("match details"):
+            self._extras(detail_plan)
+
         if cancelled():
             return self.result(cancelled=True)
         return self.result(cancelled=False)
@@ -477,6 +482,40 @@ class _SyncRun:
 
             job.log(get_i18n().t("fetch_zero_matches"))
         return detail_plan
+
+    def _extras(self, detail_plan: DetailPlan) -> None:
+        """
+        P28 aşaması (src/services/pipeline.py `run_extras`): planın liglerindeki başlamamış maçların oranları ve
+        sezonların, takımların, oyuncuların ve sporların seçilen dilimleri. Lig sezonsuz verildiyse en yeni sezonu.
+        """
+        from src.services import planning
+        from src.services.pipeline import run_extras
+
+        from src.store import StoreError
+
+        try:
+            store = getattr(self.ctx, "store", None)
+        except StoreError as e:
+            logger.warning("Odds and non-match data skipped: the data store could not be opened (%s)", e)
+            return
+        if store is None:
+            return
+        policy = planning.configured_policy(store)
+        if not planning.extras_selected(policy):
+            return
+        leagues = sorted(self.league_names) if None in detail_plan else []
+        plan = {**{lid: None for lid in leagues}, **{lid: sids for lid, sids in detail_plan.items() if lid is not None}}
+        seasons: List[Tuple[int, int]] = []
+        for lid, sids in plan.items():
+            chosen = list(sids) if sids else [row.id for row in store.entities.seasons(int(lid))[:1]]
+            seasons.extend((int(lid), int(sid)) for sid in chosen)
+        summary = run_extras(store, seasons=seasons, tournament_ids=tuple(int(lid) for lid in plan),
+                             cancelled=self.job.cancelled, concurrency=self.ctx.config.get_max_concurrent(),
+                             selection=policy)
+        if summary is not None and summary.total:
+            self.job.log(f"Odds and non-match data: {summary.ok} stored, {summary.failed} failed.")
+            if summary.breaker:
+                self.report_breaker(summary.breaker, "odds and non-match data")
 
     def _details(self, detail_plan: DetailPlan, explicit_match_ids: List[int]) -> None:
         """Detay aşaması: önce tüm liglerde eksik maçları sayar, sonra tek bir sayaçla indirir."""

@@ -8,7 +8,8 @@ docs/design/04-schema-v1.md bölüm 7; docs/design/05-web-ui.md 7.2 ve 7.3: G6, 
     GET /api/v1/events/{event_id}/slices/{key}          tek dilim, saklanan yüküyle
     GET /api/v1/events/{event_id}/raw                   olay yükü, olduğu gibi
     GET /api/v1/events/{event_id}/slices/{key}/raw      dilimin yükü, olduğu gibi
-    GET /api/v1/events/{event_id}/odds                  bahis oranı dilimleri (içerik P28 ile)
+    GET /api/v1/events/{event_id}/odds                  bahis oranı dilimleri (yük olmadan; P28)
+    GET /api/v1/events/{event_id}/odds/{key}            bir oran diliminin anlık görüntüleri, şema v1 Odds
     GET /api/v1/changes                                 değişiklik günlüğü, kendi sıra numarasıyla
 
 Kayıtlar şema v1'indir (Event, Slice, Change). Liste satırı istenirse `slices_summary` alanını da taşır
@@ -18,7 +19,9 @@ Ham yük (bölüm 7): saklanan SofaScore yükü, zarfsız ve değiştirilmeden; 
 `X-Sofascore-Fetched-At` alındığı an. Yük saklanmıyorsa 404 `not_found`; boş bir yük uydurulmaz. Yük her zaman
 sıkıştırması açılmış döner (depo gzip baytlarını dışarı vermez; `Content-Encoding` ile geçirmek yok).
 
-Okumalar katalogdandır (QueryService); hiçbiri SofaScore'a istek atmaz.
+Okumalar katalogdandır (QueryService; oranlar OwnerDataService); hiçbiri SofaScore'a istek atmaz. Oranlar
+varsayılan olarak indirilmez: `odds` grubu bir seçimde adlandırılınca (plan maddesi P28). Bir okuma bir anlık
+görüntüdür; oranın zaman içindeki seyri ancak yeniden okunduysa (dilimin geçmişi) vardır.
 """
 from __future__ import annotations
 
@@ -31,10 +34,12 @@ from pydantic import BaseModel, Field
 
 from src.errors import NotFoundError, UsageError
 from src.web import deps
+from src.schema import models as schema_models
 from src.web.api.v1 import PageInfo, records
 from src.web.errors import ValidationFailed, error_responses
 
 if TYPE_CHECKING:
+    from src.services.owner_data import OwnerDataService
     from src.services.query import QueryService, RawPayload
 
 router = APIRouter(tags=["events"])
@@ -89,6 +94,14 @@ class EventSliceResponse(BaseModel):
     data: records.Slice  # type: ignore[valid-type]
 
 
+OddsRecord = records.mirror(schema_models.Odds)
+
+
+class OddsListResponse(BaseModel):
+    data: List[OddsRecord]  # type: ignore[valid-type]
+    page: PageInfo
+
+
 class ChangeListResponse(BaseModel):
     data: List[records.Change]  # type: ignore[valid-type]
     page: PageInfo
@@ -101,6 +114,12 @@ def _query() -> "QueryService":
     from src.services.query import QueryService
 
     return QueryService(deps.store())
+
+
+def _owner_data() -> "OwnerDataService":
+    from src.services.owner_data import OwnerDataService
+
+    return OwnerDataService(deps.store())
 
 
 def _moment(text: Optional[str], name: str, *, end: bool) -> Optional[float]:
@@ -342,16 +361,50 @@ def get_event_slice_raw(
 )
 def list_event_odds(event_id: Annotated[int, Path(ge=1)]) -> SliceListResponse:
     """
-    The event's stored odds slices (keys starting with `odds`), without payloads. Empty until odds are
-    downloaded (they are not in the slice registry yet).
+    The event's stored odds slices (the `odds` group of the slice registry: `odds_all`, `odds_featured`,
+    `odds_changes`, `winning_odds`), one per provider (`sub`), without payloads. Empty unless odds were selected
+    for download (they are off by default). Each slice's `fetched_at_utc` is the time of its latest snapshot.
     """
-    found = _query().event_slices(event_id)
+    found = _owner_data().odds_slices(event_id)
     if found is None:
         raise _event_not_found(event_id)
-    odds = [s for s in found if s.key.startswith("odds") and s.state != "not_requested"]
     return SliceListResponse(
-        data=[records.as_json(s) for s in odds],  # type: ignore[misc]
-        page=PageInfo(limit=len(odds), next_cursor=None),
+        data=[records.as_json(s) for s in found],  # type: ignore[misc]
+        page=PageInfo(limit=len(found), next_cursor=None),
+    )
+
+
+@router.get(
+    "/events/{event_id}/odds/{key}",
+    response_model=OddsListResponse,
+    operation_id="listEventOddsSnapshots",
+    summary="Get the odds of an event, snapshot by snapshot",
+    responses=error_responses("not_found", "invalid_request"),
+)
+def list_event_odds_snapshots(
+    event_id: Annotated[int, Path(ge=1)],
+    key: Annotated[str, Path(pattern=KEY_PATTERN,
+                             description="Odds slice: `odds_all` (all markets) or `odds_featured` (the featured ones).")],
+    sub: Optional[str] = Query(None, pattern=r"^[0-9]{1,9}$",
+                               description="Provider id (the slice's sub-key); all stored providers when omitted."),
+    history: bool = Query(True, description="Every stored snapshot, oldest first; false: the latest one only."),
+) -> OddsListResponse:
+    """
+    The odds of the event as normalized records (schema v1 Odds), oldest snapshot first. A read is a snapshot:
+    odds change until the event ends, and a later price exists only when the odds were read again. Empty when no
+    odds of this kind are stored; 404 for another slice name.
+    """
+    from src.services.owner_data import NORMALIZED_ODDS_KEYS
+
+    if key not in NORMALIZED_ODDS_KEYS:
+        raise NotFoundError("Normalized odds exist for odds_all and odds_featured only.",
+                            {"key": key, "keys": list(NORMALIZED_ODDS_KEYS)})
+    found = _owner_data().odds(event_id, key, sub, history=history)
+    if found is None:
+        raise _event_not_found(event_id)
+    return OddsListResponse(
+        data=[records.as_json(o) for o in found],  # type: ignore[misc]
+        page=PageInfo(limit=len(found), next_cursor=None),
     )
 
 

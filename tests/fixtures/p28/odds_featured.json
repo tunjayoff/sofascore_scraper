@@ -1,0 +1,94 @@
+{
+ "source": "research/all_sports/samples/american-football/event-id-odds-id-featured__1.json",
+ "path": "/event/16244831/odds/1/featured",
+ "body": {
+  "featured": {
+   "default": {
+    "sourceId": 201876753,
+    "structureType": 1,
+    "marketId": 1,
+    "marketName": "Full time",
+    "isLive": false,
+    "fid": 201876755,
+    "suspended": false,
+    "id": 430297973,
+    "marketGroup": "Home/Away",
+    "marketPeriod": "Match",
+    "choices": [
+     {
+      "initialFractionalValue": "3/5",
+      "fractionalValue": "91/100",
+      "sourceId": 80453608,
+      "name": "1",
+      "change": 1
+     },
+     {
+      "initialFractionalValue": "5/4",
+      "fractionalValue": "41/50",
+      "sourceId": 80453607,
+      "name": "2",
+      "change": -1
+     }
+    ]
+   },
+   "asian": {
+    "sourceId": 201876753,
+    "structureType": 1,
+    "marketId": 1,
+    "marketName": "Full time",
+    "isLive": false,
+    "fid": 201876755,
+    "suspended": false,
+    "id": 430297973,
+    "marketGroup": "Home/Away",
+    "marketPeriod": "Match",
+    "choices": [
+     {
+      "initialFractionalValue": "3/5",
+      "fractionalValue": "91/100",
+      "sourceId": 80453608,
+      "name": "1",
+      "change": 1
+     },
+     {
+      "initialFractionalValue": "5/4",
+      "fractionalValue": "41/50",
+      "sourceId": 80453607,
+      "name": "2",
+      "change": -1
+     }
+    ]
+   },
+   "fullTime": {
+    "sourceId": 201876753,
+    "structureType": 1,
+    "marketId": 1,
+    "marketName": "Full time",
+    "isLive": false,
+    "fid": 201876755,
+    "suspended": false,
+    "id": 430297973,
+    "marketGroup": "Home/Away",
+    "marketPeriod": "Match",
+    "choices": [
+     {
+      "initialFractionalValue": "3/5",
+      "fractionalValue": "91/100",
+      "sourceId": 80453608,
+      "name": "1",
+      "change": 1
+     },
+     {
+      "initialFractionalValue": "5/4",
+      "fractionalValue": "41/50",
+      "sourceId": 80453607,
+      "name": "2",
+      "change": -1
+     }
+    ]
+   }
+  },
+  "hasMoreOdds": false,
+  "liveStreamUrl": null
+ }
+}

@@ -489,8 +489,10 @@ def test_with_a_config_file_a_tournament_follow_holds_its_selection(leagues: Pat
     assert created.json()["data"]["origin"] == "api"
     store = open_store(leagues.parent.parent / "follows-data")
     policy = planning.configured_policy(store)
+    # P28: `odds` seçilince maçın dört oran dilimi de seçilir
     assert _keys(policy.for_event("football", tournament_id=8), "football") == [
-        key for key in FOOTBALL_SLICES if key != "lineups"]
+        key for key in FOOTBALL_SLICES if key != "lineups"] + ["odds_featured", "odds_all", "odds_changes",
+                                                                "winning_odds"]
 
 
 # --- /sports ---------------------------------------------------------------------------------------------

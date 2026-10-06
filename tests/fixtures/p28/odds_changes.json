@@ -1,0 +1,134 @@
+{
+ "source": "research/all_sports/samples/football/event-id-odds-id-changes__1.json",
+ "path": "/event/17217388/odds/1/changes",
+ "body": {
+  "changedOdds": [
+   {
+    "timestamp": "1790763802",
+    "choice1": {
+     "name": "1",
+     "fractionalValue": "49/1",
+     "changeFromInitial": 0,
+     "changeFromLast": 0
+    },
+    "choice2": {
+     "name": "X",
+     "fractionalValue": "44/1",
+     "changeFromInitial": 0,
+     "changeFromLast": 0
+    },
+    "choice3": {
+     "name": "2",
+     "fractionalValue": "0/1",
+     "changeFromInitial": 0,
+     "changeFromLast": 0
+    }
+   },
+   {
+    "timestamp": "1790767402",
+    "choice1": {
+     "name": "1",
+     "fractionalValue": "34/1",
+     "changeFromInitial": -30,
+     "changeFromLast": -30
+    },
+    "choice2": {
+     "name": "X",
+     "fractionalValue": "34/1",
+     "changeFromInitial": -22.222222222222,
+     "changeFromLast": -22.222222222222
+    },
+    "choice3": {
+     "name": "2",
+     "fractionalValue": "0/1",
+     "changeFromInitial": 0.099900099900111,
+     "changeFromLast": 0.099900099900111
+    }
+   },
+   {
+    "timestamp": "1790774604",
+    "choice1": {
+     "name": "1",
+     "fractionalValue": "39/1",
+     "changeFromInitial": -20,
+     "changeFromLast": 14.285714285714
+    },
+    "choice2": {
+     "name": "X",
+     "fractionalValue": "39/1",
+     "changeFromInitial": -11.111111111111,
+     "changeFromLast": 14.285714285714
+    },
+    "choice3": {
+     "name": "2",
+     "fractionalValue": "0/1",
+     "changeFromInitial": 0.099900099900111,
+     "changeFromLast": 0
+    }
+   },
+   {
+    "timestamp": "1790803402",
+    "choice1": {
+     "name": "1",
+     "fractionalValue": "16/1",
+     "changeFromInitial": -66,
+     "changeFromLast": -57.5
+    },
+    "choice2": {
+     "name": "X",
+     "fractionalValue": "19/1",
+     "changeFromInitial": -55.555555555556,
+     "changeFromLast": -50
+    },
+    "choice3": {
+     "name": "2",
+     "fractionalValue": "0/1",
+     "changeFromInitial": 0.3996003996004,
+     "changeFromLast": 0.29940119760479
+    }
+   },
+   {
+    "timestamp": "1790824994",
+    "choice1": {
+     "name": "1",
+     "fractionalValue": "12/1",
+     "changeFromInitial": -74,
+     "changeFromLast": -23.529411764706
+    },
+    "choice2": {
+     "name": "X",
+     "fractionalValue": "17/1",
+     "changeFromInitial": -60,
+     "changeFromLast": -10
+    },
+    "choice3": {
+     "name": "2",
+     "fractionalValue": "1/50",
+     "changeFromInitial": 1.8981018981019,
+     "changeFromLast": 1.4925373134328
+    }
+   },
+   {
+    "timestamp": "1790850203",
+    "choice1": {
+     "name": "1",
+     "fractionalValue": "10/1",
+     "changeFromInitial": -78,
+     "changeFromLast": -15.384615384615
+    },
+    "choice2": {
+     "name": "X",
+     "fractionalValue": "15/1",
+     "changeFromInitial": -64.444444444444,
+     "changeFromLast": -11.111111111111
+    },
+    "choice3": {
+     "name": "2",
+     "fractionalValue": "1/25",
+     "changeFromInitial": 3.8961038961039,
+     "changeFromLast": 1.9607843137255
+    }
+   }
+  ]
+ }
+}

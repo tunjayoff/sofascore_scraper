@@ -329,7 +329,8 @@ def _throttle() -> ThrottleStatus:
 def _sport(spec: sports.SportSpec) -> Sport:
     from src.services import planning
 
-    chosen = {s.key for s in sports.select_slices("event", spec.slug, planning.configured_policy().for_sport(spec.slug))}
+    # P28: maç dışı dilimler ve oranlar da listelenir (sahibi `owner`'da); `selected` sahibine bakılmadan
+    chosen = {s.key for s in sports.chosen_slices(planning.configured_policy().for_sport(spec.slug))}
     return Sport(
         slug=spec.slug,
         name=spec.name,
@@ -343,7 +344,7 @@ def _sport(spec: sports.SportSpec) -> Sport:
                 keep_history=s.keep_history,
                 max_age_seconds=int(s.max_age.total_seconds()) if s.max_age is not None else None,
             )
-            for s in sports.DETAIL_SLICES
+            for s in sports.registered_slices()
             if s.applies_to(spec.slug)
         ],
     )
