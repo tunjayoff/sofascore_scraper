@@ -290,9 +290,14 @@ class MatchDataFetcher:
 
     @staticmethod
     def _match_data(result: pipeline.ItemResult) -> Dict[str, Any]:
-        """Sonucun eski sözlük biçimi: `basic`, gözlem ve bu çağrıda istenen dilimlerin yükleri."""
+        """
+        Sonucun eski sözlük biçimi: `basic`, gözlem ve bu çağrıda istenen dilimlerin yükleri. Gözlem anı /event
+        yanıtının alındığı andır (Store da onu saklar); şimdiki an değil: yazmayla bu sözlük arasında saniye
+        dönerse ikisi bir saniye ayrışıyordu (Windows CI'da görülen yarış, plan maddesi FX-15).
+        """
         payload = result.payload or {}
-        data: Dict[str, Any] = {"basic": payload, OBSERVATION_KEY: observation_record(payload)}
+        fetched_at = result.event.fetched_at if result.event is not None else None
+        data: Dict[str, Any] = {"basic": payload, OBSERVATION_KEY: observation_record(payload, fetched_at)}
         data.update((key, outcome.data) for key, outcome in result.slices.items())
         return data
 
