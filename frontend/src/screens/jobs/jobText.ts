@@ -27,12 +27,21 @@ export const CALLS_SOFASCORE: readonly JobKind[] = ['sync', 'fetch', 'refresh']
  */
 export function jobKindText(kind: string, spec?: unknown): string {
   const s = asSpec(spec)
-  if (kind === 'sync' && s.only === 'seasons') return t('ui.job.kind.seasonList')
+  if (kind === 'sync' && isSeasonList(s)) return t('ui.job.kind.seasonList')
   if (kind === 'clear' && s.scope === 'history') return t('ui.job.kind.pruneHistory')
   if (kind === 'clear' && typeof s.tournament_id === 'number') return t('ui.job.kind.clearLeague')
   if (kind === 'restore' && s.dry_run === false) return t('ui.job.kind.restoreReal')
   const key = `ui.job.kind.${kind}`
   return i18n.global.te(key, 'en') ? t(key) : kind
+}
+
+/**
+ * A download of the season lists only: `only: "seasons"` in the body that starts it, `mode: "seasons"` in
+ * the spec the job records (the service's `SyncSpec`, what `GET /jobs` returns).
+ */
+export function isSeasonList(spec: unknown): boolean {
+  const s = asSpec(spec)
+  return s.only === 'seasons' || s.mode === 'seasons'
 }
 
 /** The kind of one job in words, with its spec's variant. */
@@ -261,8 +270,8 @@ export function rerunBody(job: Pick<Job, 'kind' | 'spec'>): StartJobBody | null 
   if (job.kind === 'refresh') return { kind: 'refresh', spec: eventIds.length ? { event_ids: eventIds } : { league_id: leagueId } }
   if (job.kind === 'fetch' && eventIds.length) return { kind: 'fetch', spec: { event_ids: eventIds } }
   const follows = jobFollows(job)
-  if (job.kind === 'sync' && (follows.length || spec.only === 'seasons'))
-    return { kind: 'sync', spec: { ...(follows.length ? { follows } : leagueId ? { league_id: leagueId } : {}), only: spec.only === 'seasons' ? 'seasons' : null } }
+  if (job.kind === 'sync' && (follows.length || isSeasonList(spec)))
+    return { kind: 'sync', spec: { ...(follows.length ? { follows } : leagueId ? { league_id: leagueId } : {}), only: isSeasonList(spec) ? 'seasons' : null } }
   if (job.kind === 'rebuild') return { kind: 'rebuild', spec: { mode: 'auto' } }
   if (job.kind === 'export') return { kind: 'export', spec: job.spec as ExportJobSpec }
   if (job.kind === 'backup') return { kind: 'backup', spec: job.spec as BackupJobSpec }

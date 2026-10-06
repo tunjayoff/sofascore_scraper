@@ -1,6 +1,6 @@
 import { i18n } from '@/i18n'
 import type { FollowRecord, Job, TournamentHit } from '@/api/v1/schema'
-import { jobFollows } from '@/screens/jobs/jobText'
+import { isSeasonList, jobFollows } from '@/screens/jobs/jobText'
 
 /** Follows in words (05-web-ui.md 6.2 to 6.4). */
 const t = (key: string, args?: Record<string, unknown>) => i18n.global.t(key, args ?? {})
@@ -79,7 +79,7 @@ export function lastSyncOf(f: Pick<FollowRecord, 'kind' | 'entity_id'>, jobs: Jo
 export function syncIncludes(f: Pick<FollowRecord, 'kind' | 'entity_id'>, j: Job): boolean {
   if (j.kind !== 'sync') return false
   const spec = (j.spec ?? {}) as { league_id?: number | null; selections?: { league_id?: number }[] | null; only?: string | null }
-  if (spec.only === 'seasons') return false
+  if (isSeasonList(spec)) return false
   const follows = jobFollows(j)
   if (follows.length) return follows.includes(`${f.kind}:${f.entity_id}`)
   const selections = Array.isArray(spec.selections) ? spec.selections : []

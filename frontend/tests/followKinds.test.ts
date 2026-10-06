@@ -132,9 +132,9 @@ describe('seasons before the first download', () => {
         list(read ? [{ id: 77805, tournament_id: 52, name: 'Süper Lig 25/26', year: '25/26' }, { id: 63814, tournament_id: 52, name: 'Süper Lig 24/25', year: '24/25' }] : []),
       'POST /api/v1/jobs': () => {
         read = true
-        return { data: job({ id: 'SL1', state: 'running', spec: { league_id: 52, only: 'seasons' }, finished_at: null }) }
+        return { data: job({ id: 'SL1', state: 'running', spec: { mode: 'seasons', league_id: 52, selections: [] }, finished_at: null }) }
       },
-      'GET /api/v1/jobs/SL1': { data: job({ id: 'SL1', state: 'succeeded', spec: { league_id: 52, only: 'seasons' } }) },
+      'GET /api/v1/jobs/SL1': { data: job({ id: 'SL1', state: 'succeeded', spec: { mode: 'seasons', league_id: 52, selections: [] } }) },
       'POST /api/v1/follows': { data: follow({ id: 'tournament:52', entity_id: 52, name: 'Süper Lig' }) },
     })
     ;({ w } = await mountScreen(FollowEditorScreen, '/follows/new?id=52&name=S%C3%BCper%20Lig&sport=football', '/follows/new'))
@@ -170,8 +170,8 @@ describe('seasons before the first download', () => {
     mockFetch({
       ...SPORTS,
       'GET /api/v1/tournaments/52/seasons': list([]),
-      'POST /api/v1/jobs': { data: job({ id: 'SL2', state: 'running', spec: { league_id: 52, only: 'seasons' } }) },
-      'GET /api/v1/jobs/SL2': { data: job({ id: 'SL2', state: 'partial', spec: { league_id: 52, only: 'seasons' } }) },
+      'POST /api/v1/jobs': { data: job({ id: 'SL2', state: 'running', spec: { mode: 'seasons', league_id: 52, selections: [] } }) },
+      'GET /api/v1/jobs/SL2': { data: job({ id: 'SL2', state: 'partial', spec: { mode: 'seasons', league_id: 52, selections: [] } }) },
     })
     ;({ w } = await mountScreen(FollowEditorScreen, '/follows/new?id=52&name=X&sport=football', '/follows/new'))
     await flush()

@@ -128,7 +128,9 @@ describe('coded job log lines', () => {
 
 describe('job kinds and targets by their spec', () => {
   it('a season list, the clean-up of old odds, one league’s deletion and a real restore have their own names', () => {
+    // the body says only: seasons; the recorded spec (GET /jobs) says mode: seasons
     expect(jobKindText('sync', { only: 'seasons', league_id: 52 })).toBe(t('ui.job.kind.seasonList'))
+    expect(jobKindText('sync', { mode: 'seasons', league_id: 52, selections: [] })).toBe(t('ui.job.kind.seasonList'))
     expect(jobKindText('clear', { scope: 'history', older_than: '90d' })).toBe('Clean-up of old odds')
     expect(jobKindText('clear', { scope: 'all', tournament_id: 17, confirm: true })).toBe(t('ui.job.kind.clearLeague'))
     expect(jobKindText('restore', { name: 'b.zip', dry_run: false })).toBe('Restore')
@@ -163,7 +165,7 @@ describe('job kinds and targets by their spec', () => {
 
   it('"Run again" keeps the follows, the season-list choice and the event ids', () => {
     expect(rerunBody(job({ spec: { follows: ['team:42'], only: null } }))).toEqual({ kind: 'sync', spec: { follows: ['team:42'], only: null } })
-    expect(rerunBody(job({ spec: { league_id: 52, only: 'seasons' } }))).toEqual({ kind: 'sync', spec: { league_id: 52, only: 'seasons' } })
+    expect(rerunBody(job({ spec: { mode: 'seasons', league_id: 52, selections: [] } }))).toEqual({ kind: 'sync', spec: { league_id: 52, only: 'seasons' } })
     expect(rerunBody(job({ kind: 'fetch', spec: { event_ids: [5] } }))).toEqual({ kind: 'fetch', spec: { event_ids: [5] } })
     expect(rerunBody(job({ kind: 'refresh', spec: { event_ids: [5] } }))).toEqual({ kind: 'refresh', spec: { event_ids: [5] } })
   })
