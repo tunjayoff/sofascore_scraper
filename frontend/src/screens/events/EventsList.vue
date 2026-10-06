@@ -37,7 +37,8 @@ import {
  * Filters, sort and the page are in the query string; the server filters and sorts. The Data column comes
  * from `include=slices_summary`. Selected events can be fetched: "Fetch missing data" sends only the
  * events with something missing, "Fetch again" all of them; both are `fetch` jobs by event id, one
- * selection per tournament.
+ * selection per tournament. Without a status filter every status is shown, upcoming and in-progress
+ * matches too (FX-14a); "All statuses" says so and brings it back.
  */
 const props = defineProps<{ fixedTournament?: number | null; tableId?: string }>()
 const { t } = useI18n()
@@ -46,8 +47,8 @@ const status = useStatusStore()
 
 const CLASSES = ['not_started', 'live', 'completed', 'decided_without_play', 'void', 'unknown'] as const
 type StatusClass = (typeof CLASSES)[number]
-/** Without a status filter in the address: finished and decided without play (today's "finished only"). */
-const DEFAULT_CLASSES: StatusClass[] = ['completed', 'decided_without_play']
+/** Without a status filter in the address: every status (FX-14a; it was "finished only"). */
+const DEFAULT_CLASSES: StatusClass[] = []
 const SERVER_KEYS = ['sport', 'tournament', 'season', 'from', 'to', 'status', 'has', 'q', 'sort'] as const
 
 const f = computed(() => {
@@ -61,7 +62,6 @@ const f = computed(() => {
     from: queryText(q, 'from'),
     to: queryText(q, 'to'),
     classes,
-    statusSet: raw.length > 0,
     has: (['details', 'missing'].includes(queryText(q, 'has')) ? queryText(q, 'has') : '') as '' | 'details' | 'missing',
     team: queryText(q, 'q'),
     asc: queryText(q, 'sort') === 'asc',
@@ -129,7 +129,7 @@ function toggleClass(c: StatusClass) {
   const set = new Set(f.value.classes)
   if (set.has(c)) set.delete(c)
   else set.add(c)
-  list.setQuery({ status: set.size ? [...set] : ['any'] })
+  list.setQuery({ status: set.size ? [...set] : null })
 }
 
 const chips = computed(() => {
@@ -139,7 +139,7 @@ const chips = computed(() => {
   if (f.value.season) out.push({ key: 'season', label: seasonName(f.value.season) })
   if (f.value.from) out.push({ key: 'from', label: t('ui.events.from', { date: f.value.from }) })
   if (f.value.to) out.push({ key: 'to', label: t('ui.events.to', { date: f.value.to }) })
-  if (f.value.statusSet) out.push({ key: 'status', label: f.value.classes.length ? f.value.classes.map((c) => t(`ui.status.event.${c}`)).join(', ') : t('ui.events.anyStatus') })
+  if (f.value.classes.length) out.push({ key: 'status', label: f.value.classes.map((c) => t(`ui.status.event.${c}`)).join(', ') })
   if (f.value.has) out.push({ key: 'has', label: t(`ui.events.has.${f.value.has}`) })
   if (f.value.team) out.push({ key: 'q', label: `“${f.value.team}”` })
   return out
@@ -236,11 +236,12 @@ defineExpose({ reload: list.load })
       </label>
       <form class="flex flex-col" @submit.prevent="list.setQuery({ q: teamText.trim() })">
         <label class="u-label" for="events-team">{{ t('ui.events.team') }}</label>
-        <input id="events-team" v-model="teamText" type="search" class="u-field" autocomplete="off" data-filter="q" @change="list.setQuery({ q: teamText.trim() })" />
+        <input id="events-team" v-model="teamText" type="search" class="u-field" autocomplete="off" :placeholder="t('ui.events.teamPlaceholder')" data-filter="q" @change="list.setQuery({ q: teamText.trim() })" />
       </form>
       <div class="flex flex-col basis-full">
         <span id="events-status" class="u-label">{{ t('ui.events.col.status') }}</span>
         <div class="flex flex-wrap gap-2" role="group" aria-labelledby="events-status">
+          <button type="button" class="u-chip u-toggle-chip" :aria-pressed="!f.classes.length" data-class="all" @click="list.setQuery({ status: null })">{{ t('ui.events.anyStatus') }}</button>
           <button v-for="c in CLASSES" :key="c" type="button" class="u-chip u-toggle-chip" :aria-pressed="f.classes.includes(c)" :data-class="c" @click="toggleClass(c)">
             {{ t(`ui.status.event.${c}`) }}
           </button>
@@ -292,7 +293,6 @@ defineExpose({ reload: list.load })
           <UiBadge v-if="row.quality.settlement === 'provisional'" tone="info" icon="clock">{{ t('ui.status.settlement.provisional') }}</UiBadge>
           <UiBadge v-if="row.quality.stale" tone="warn" icon="alert">{{ t('ui.status.quality.stale') }}</UiBadge>
           <UiBadge v-if="row.quality.status_regressed" tone="warn" icon="alert">{{ t('ui.status.quality.regressed') }}</UiBadge>
-          <span v-if="row.status.description" class="u-small u-muted">{{ row.status.description }}</span>
         </span>
       </template>
       <template #cell-data="{ row }">
