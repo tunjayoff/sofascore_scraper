@@ -40,4 +40,4 @@ def test_config_validate_counts_valid_tasks(cli: CliRunner, tmp_path: Path) -> N
 def test_describe_config_lists_the_task_runs(cli: CliRunner) -> None:
     doc = cli("describe", "config", "--json").data["config"]
     assert doc["schedule_runs"] == [{"run": name, "options": sorted(run.options)} for name, run in TASK_RUNS.items()]
-    assert [item["run"] for item in doc["schedule_runs"]] == ["sync", "fetch", "refresh", "backup"]
+    assert [item["run"] for item in doc["schedule_runs"]] == ["sync", "fetch", "refresh", "backup", "prune-history"]

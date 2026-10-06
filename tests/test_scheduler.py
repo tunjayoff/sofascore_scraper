@@ -190,11 +190,16 @@ def test_an_invalid_cron_expression_is_rejected(expression: str) -> None:
 
 def test_the_known_tasks_pass_the_check() -> None:
     check_tasks([task("sync"), task("fetch", league_id=17), task("refresh", cron="*/15 * * * *"),
-                 task("backup", cron="0 3 * * sun", scope="data", include_env=False)])
+                 task("backup", cron="0 3 * * sun", scope="data", include_env=False),
+                 task("prune-history", cron="0 4 * * *", older_than="90d")])
 
 
 @pytest.mark.parametrize("bad, message", [
-    (task("download"), "#1 run: 'download' is not a task the scheduler knows (sync, fetch, refresh, backup)"),
+    (task("download"),
+     "#1 run: 'download' is not a task the scheduler knows (sync, fetch, refresh, backup, prune-history)"),
+    (task("prune-history"), "#1 older_than: required, a duration such as \"90d\""),
+    (task("prune-history", older_than="soon"), "#1 older_than: expected a duration"),
+    (task("prune-history", older_than="90d", scope="all"), "unknown option(s) for run = 'prune-history': scope"),
     (task("sync", season_id=5), "unknown option(s) for run = 'sync': season_id (allowed: league_id)"),
     (task("sync", league_id="17"), "league_id: expected a positive whole number"),
     (task("refresh", league_id=0), "league_id: expected a positive whole number"),
@@ -695,3 +700,124 @@ def test_the_real_scheduler_is_built_on_the_web_job_manager(monkeypatch: pytest.
 def test_the_two_scheduler_flags_exclude_each_other(cli: CliRunner, server: FakeServer) -> None:  # noqa: F811
     run = cli("serve", "--scheduler", "--no-scheduler", "--json")
     assert run.exit_code == 2 and server.calls == []
+
+
+# === `every` iş geçmişinden; geçmişin budanması (plan maddesi FX-15) ====================================
+
+
+def _history_job(manager: JobManager, spec: Dict[str, Any], *, kind: JobKind = JobKind.SYNC,
+                 face: str = "scheduler") -> Any:
+    """Geçmişte bitmiş bir iş: verilen kaynaktan, verilen türde ve belirtimle."""
+    job = manager.start(kind, spec, origin=local_origin(face))  # type: ignore[arg-type]
+    manager.run(job.id, lambda handle: JobOutcome(result={}))
+    return manager.get(job.id)
+
+
+def _started(job: Any) -> float:
+    return datetime.fromisoformat(job.started_at.replace("Z", "+00:00")).timestamp()
+
+
+def test_an_every_task_counts_from_its_last_run_in_the_job_history(job_store: JobStore) -> None:
+    """Sunucu yeniden başladığında sayaç baştan başlamaz: son çalışma iş geçmişindedir (sahibin kararı)."""
+    manager = JobManager(job_store, cancel_poll=0.05)
+    sync_spec = dict(scheduler_mod.TASK_RUNS["sync"].plan({}, lambda: None).spec)
+    _history_job(manager, sync_spec, face="cli")  # elle başlatılan aynı iş: sayılmaz
+    last = _history_job(manager, sync_spec)
+    _history_job(manager, {**sync_spec, "league_id": 17})  # başka bir görevin işi
+    started = _started(last)
+    clock = Clock(started + 0.5 * HOUR)  # bir aralık dolmadan yeniden başlayan sunucu
+    sched = Scheduler([task(every="1h", seconds=HOUR)], jobs=lambda: manager, clock=clock)
+
+    assert sched.tick() == []
+    (state,) = sched.states()
+    assert (state.next_run_at, state.last_run_at, state.last_job_id) == (started + HOUR, started, last.id)
+
+
+def test_an_every_task_whose_interval_passed_while_the_server_was_off_runs_once_at_start() -> None:
+    jobs = FakeJobs(finish_at_once=True)
+    spec = {**scheduler_mod.TASK_RUNS["refresh"].plan({}, lambda: None).spec, "selections": []}  # kayıttaki biçim (JSON)
+    stamp = "2026-10-03T08:00:00+00:00"
+    old = SimpleNamespace(id="old", kind=JobKind.REFRESH, spec=spec, origin=SimpleNamespace(face="scheduler"),
+                          started_at=stamp, created_at=stamp)
+    jobs.list = lambda limit: [old]  # type: ignore[attr-defined]
+    clock = Clock(at(2026, 10, 3, 12, 0))  # dört saat sonra; aralık bir saat
+    sched = make([task("refresh", every="1h", seconds=HOUR)], jobs, clock)
+
+    (state,) = sched.tick()
+    assert state.last_result == STARTED and len(jobs.submitted) == 1  # kaçanlar biriktirilmez: tek çalışma
+    assert state.next_run_at == at(2026, 10, 3, 13, 0)
+    clock.now += 60
+    assert sched.tick() == []
+
+
+def test_without_a_readable_history_an_every_task_counts_from_the_start(caplog: pytest.LogCaptureFixture) -> None:
+    jobs = FakeJobs()
+
+    def broken(limit: int) -> Any:
+        raise StoreError("no state.db")
+
+    jobs.list = broken  # type: ignore[attr-defined]
+    clock = Clock(at(2026, 10, 3, 10, 0))
+    sched = make([task(every="1h", seconds=HOUR), task(cron="0 3 * * *")], jobs, clock)
+    with caplog.at_level(logging.WARNING, logger="Scheduler"):
+        assert sched.tick() == []
+    assert sched.states()[0].next_run_at == clock.now + HOUR
+    assert any("job history could not be read" in r.getMessage() for r in caplog.records)
+
+
+def test_a_cron_task_ignores_the_job_history() -> None:
+    jobs = FakeJobs()
+    jobs.list = lambda limit: pytest.fail("cron tasks do not read the history")  # type: ignore[attr-defined]
+    clock = Clock(at(2026, 10, 3, 10, 0))
+    sched = make([task(cron="0 3 * * *")], jobs, clock)
+    assert sched.tick() == []
+
+
+def test_the_prune_task_is_a_clear_job_of_the_history() -> None:
+    calls: List[float] = []
+    store = SimpleNamespace(history=SimpleNamespace(prune=lambda *, older_than: calls.append(older_than) or 7))
+    plan = scheduler_mod.TASK_RUNS["prune-history"].plan({"older_than": "90d"}, lambda: SimpleNamespace(store=store))
+    assert (plan.kind, dict(plan.spec)) == (JobKind.CLEAR, {"scope": "history", "older_than": "90d"})
+    before = time.time()
+    outcome = plan.body(SimpleNamespace())
+    (cutoff,) = calls
+    assert before - 90 * 86400 - 1 <= cutoff <= time.time() - 90 * 86400
+    result = outcome.result["prune_history"]  # type: ignore[index]
+    assert (result["older_than"], result["removed"]) == ("90d", 7) and result["cutoff_utc"].endswith("+00:00")
+
+
+def test_a_scheduled_prune_runs_under_the_writer_lease_and_removes_old_snapshots(tmp_path: Path) -> None:
+    from src.slices import SLICE_OK, Outcome
+    from src.store import Ref, open_store
+
+    import store_fixtures as sf
+
+    store = open_store(tmp_path / "data")
+    event_id = sf.event_id(sf.PL_ARS)
+    old = datetime(2026, 1, 1, tzinfo=UTC)
+    for minute, price in enumerate(("1.5", "2.0", "2.5")):
+        moment = old + timedelta(minutes=minute)
+        outcomes: Dict[Any, Outcome] = {("odds_all", "1"): Outcome(SLICE_OK, {"markets": [{"price": price}]},
+                                                                    fetched_at=moment)}
+        if minute == 0:
+            outcomes["event"] = Outcome(SLICE_OK, sf.basic_payload(sf.PL_ARS), fetched_at=moment)
+        store.events.put(event_id, outcomes, keep_history=("odds_all",))
+    assert len(store.history.index(Ref.event(event_id), "odds_all", "1")) == 3
+    before = conftest.job_threads()
+    manager = JobManager(JobStore.for_store(store), cancel_poll=0.05)
+    clock = Clock(time.time())
+    sched = Scheduler([task("prune-history", every="1d", seconds=86400.0, older_than="30d")], jobs=lambda: manager,
+                      clock=clock, context=lambda: SimpleNamespace(store=store))
+    clock.now += 86400
+    try:
+        (state,) = sched.tick()
+        assert state.last_result == STARTED
+        job_id = state.last_job_id or ""
+        wait_until(lambda: manager.get(job_id).state.terminal)  # type: ignore[union-attr]
+    finally:
+        conftest.join_job_threads(before)
+    job = manager.get(job_id)
+    assert job is not None and job.state is JobState.SUCCEEDED and job.kind is JobKind.CLEAR
+    assert job.result["prune_history"]["removed"] == 2  # type: ignore[index]
+    assert len(store.history.index(Ref.event(event_id), "odds_all", "1")) == 1  # en yenisi kalır
+    assert store.lease_holder("writer") is None
