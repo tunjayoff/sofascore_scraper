@@ -522,7 +522,7 @@ def test_version(box: Sandbox, argv: List[str]) -> None:
 
 
 # Tarayıcı başlatmayan ve makineye (Python sürümü, kurulu paketler, Node) bağlı olmayan denetimler
-DOCTOR_PORTABLE_CHECKS = "profile,data_dir,config_dir,env"
+DOCTOR_PORTABLE_CHECKS = "profile,data_dir,config_dir,config,env"
 
 
 def _doctor_golden(run: CliRun) -> Dict[str, Any]:
@@ -582,7 +582,7 @@ def test_doctor_json_shape_with_the_machine_dependent_checks(box: Sandbox) -> No
     assert sorted(report) == ["checks", "counts", "language", "ok", "root", "status"]
     # P19: `--doctor` `ssc doctor`un takma adı; istek bütçesi denetimi de listede
     assert [check["id"] for check in report["checks"]] == [
-        "python", "packages", "profile", "data_dir", "config_dir", "frontend", "env", "budget",
+        "python", "packages", "profile", "data_dir", "config_dir", "config", "frontend", "env", "budget",
     ]
     for check in report["checks"]:
         assert sorted(check) == ["code", "detail", "fix", "fix_command", "id", "label", "status", "summary"]

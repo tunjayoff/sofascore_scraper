@@ -3,7 +3,7 @@
   "--doctor",
   "--json",
   "--only",
-  "profile,data_dir,config_dir,env"
+  "profile,data_dir,config_dir,config,env"
  ],
  "exit_code": 0,
  "files": {},
@@ -46,7 +46,7 @@
   "src.version"
  ],
  "stderr": [
-  "main.py flags are deprecated and will be removed; this run is: ssc doctor --json --only profile,data_dir,config_dir,env"
+  "main.py flags are deprecated and will be removed; this run is: ssc doctor --json --only profile,data_dir,config_dir,config,env"
  ],
  "stdout": {
   "checks": [
@@ -87,6 +87,19 @@
     "summary": "<SANDBOX>/config"
    },
    {
+    "code": "config_none",
+    "detail": {
+     "path": null,
+     "search_disabled": true
+    },
+    "fix": null,
+    "fix_command": null,
+    "id": "config",
+    "label": "Config file",
+    "status": "ok",
+    "summary": "The config file search is off (SOFASCORE_CONFIG=none)"
+   },
+   {
     "code": "env_ok",
     "detail": {
      "exists": true,
@@ -102,7 +115,7 @@
   ],
   "counts": {
    "fail": 0,
-   "ok": 4,
+   "ok": 5,
    "warn": 0
   },
   "language": "en",

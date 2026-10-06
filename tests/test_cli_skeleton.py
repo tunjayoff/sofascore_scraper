@@ -661,6 +661,18 @@ def test_doctor_reports_a_broken_config_file_as_a_warning(cli, tmp_path):
     assert text.stderr.startswith("Warning: ") and BROKEN_MESSAGE in text.stderr
 
 
+def test_doctor_checks_the_config_file_of_the_flag(cli, tmp_path):
+    """FX-15: the `config` check reads the same file as the command (`--config`) and fails on a broken one."""
+    broken = write_config(tmp_path / "broken.toml", BROKEN_CONFIG)
+    run = cli("doctor", "--only", "config", "--json", "--config", broken)
+    (check,) = run.data["checks"]
+    assert run.exit_code == 1 and (check["id"], check["status"], check["code"]) == ("config", "fail", "config_invalid")
+    assert BROKEN_MESSAGE in check["detail"]["error"] and same_path(check["detail"]["path"], broken)
+    good = write_config(tmp_path / "good.toml", "schema = 1\n[client]\nrate = 2\n")
+    run = cli("doctor", "--only", "config", "--json", "--config", good)
+    assert run.exit_code == 0 and run.data["checks"][0]["code"] == "config_ok"
+
+
 def test_doctor_live_runs_only_when_asked_and_with_the_settings_loaded(cli, tmp_path, monkeypatch):
     """Gerçek istek atılmaz: canlı denetim sahtedir. `--live` ayarları yükler (istek uygulamanın ayarlarıyla atılır)."""
     monkeypatch.delenv("REQUEST_RATE_LIMIT")
@@ -963,6 +975,26 @@ def test_config_init_from_legacy_command(cli, tmp_path, monkeypatch):
     # Bozuk bir yapılandırma dosyası bugünkü kaynakların okunmasını engellemez: dosya hesaba katılmaz
     broken = write_config(tmp_path / "broken.toml", BROKEN_CONFIG)
     assert cli("config", "init", "--from-legacy", "--config", broken, "--json").data["toml"] == text
+
+
+def test_config_init_from_legacy_only_reads(cli, tmp_path, monkeypatch):
+    """FX-15: eksik leagues.txt yaratılmaz, takipler state.db'ye yansıtılmaz (ConfigManager kurulmaz)."""
+    config_dir, data_dir = tmp_path / "config", tmp_path / "data"
+    monkeypatch.setenv("SOFASCORE_CONFIG_DIR", str(config_dir))
+    monkeypatch.setenv("DATA_DIR", str(data_dir))
+    run = cli("config", "init", "--from-legacy", "--json")
+    assert run.exit_code == 0 and run.data["follows"] == 0 and "\n[[follow]]\n" not in run.data["toml"]
+    assert not config_dir.exists() and not data_dir.exists()
+
+    config_dir.mkdir()
+    (config_dir / "leagues.txt").write_text(
+        "\ufeff# ligler\nPremier League: 17\n8 LaLiga\nbroken line\nOld Name: 17\n", encoding="utf-8")
+    from src.config_manager import read_league_file
+
+    assert read_league_file(str(config_dir / "leagues.txt")) == {17: "Old Name", 8: "LaLiga"}
+    run = cli("config", "init", "--from-legacy", "--json")
+    assert run.data["follows"] == 2 and sorted(p.name for p in config_dir.iterdir()) == ["leagues.txt"]
+    assert not data_dir.exists()
 
 
 # === diagnostics =================================================================================

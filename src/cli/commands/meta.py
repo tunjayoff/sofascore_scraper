@@ -168,7 +168,7 @@ def doctor(inv: Invocation) -> CommandResult:
     data_dir = inv.flags.get("storage.data_dir")
     if data_dir:
         environ["DATA_DIR"] = str(data_dir)
-    ctx = checks.Context(environ=environ, lang=inv.lang)
+    ctx = checks.Context(environ=environ, lang=inv.lang, config_file=inv.config_file)
     rate, warnings = _effective_rate(inv)
     if rate is not None:
         ctx.request_rate, ctx.request_rate_source = rate
@@ -620,15 +620,17 @@ def config_init(inv: Invocation) -> CommandResult:
         leagues_count: Optional[int] = None
     else:
         logs_to_stderr()
-        from src.config_manager import ConfigManager
+        from src.config_manager import read_league_file
+        from src.paths import default_league_config_path
         from src.web import league_sports
 
-        # Yapılandırma dosyası hesaba katılmaz: yalnızca bugünkü kaynaklar okunur
+        # Yapılandırma dosyası hesaba katılmaz: yalnızca bugünkü kaynaklar okunur. Lig dosyası yalnızca okunur
+        # (ConfigManager kurulmaz: eksik dosyayı yaratır ve takipleri state.db'ye yansıtırdı).
         loaded = read_settings(inv, config_file=False)
-        manager = ConfigManager()
-        leagues = manager.get_leagues()
-        leagues_file = os.path.abspath(manager.league_config_path)
-        text = legacy_config_text(loaded, leagues, league_sports.load(manager.league_config_path), leagues_file)
+        leagues_path = default_league_config_path()
+        leagues = read_league_file(leagues_path)
+        leagues_file = os.path.abspath(leagues_path)
+        text = legacy_config_text(loaded, leagues, league_sports.load(leagues_path), leagues_file)
         leagues_count = len(leagues)
     data = {"from_legacy": bool(inv.args.from_legacy), "follows": leagues_count, "toml": text}
     typed = f"{inv.out.prog} config init" + (" --from-legacy" if inv.args.from_legacy else "")
