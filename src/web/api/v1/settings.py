@@ -33,10 +33,12 @@ başlatma isteyip istemediği (`restart_needed`).
 Veri dizini değişimi çalışan iş varken reddedilir (409 `job_running`). Yeni dizin önce iş deposuyla açılır;
 açılamıyorsa hiçbir şey yazılmaz ve neden hata kodundan okunur: başka bir sürecin kilidi 409 (sahibi
 `details.holder`da), deponun açamadığı bir dizin 507 `storage_error` (`details.class`: SchemaTooNew,
-StoreBusy, ...; işletim sistemi hatasında `details.reason`).
+StoreBusy, ...; işletim sistemi hatasında `details.reason`). Değişimden sonra eski dizinin deposu bu süreçte
+kapatılır (`close_data_dir`; plan maddesi FX-13): eski dizin uygulama çalışırken taşınabilir ya da silinebilir.
 """
 from __future__ import annotations
 
+import logging
 import os
 import sqlite3
 from dataclasses import dataclass
@@ -56,6 +58,7 @@ from src.store import StoreError
 from src.web import deps
 from src.web.errors import STORAGE_ERROR, ValidationFailed, error_responses
 
+logger = logging.getLogger("WebAPI")
 router = APIRouter(tags=["settings"])
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -466,6 +469,7 @@ def _move_data_dir(changes: Mapping[str, Any], target: str) -> None:
     from src.web.jobs import default_db_path
 
     store = deps.job_store()
+    previous = os.path.abspath(deps.config_manager().get_data_dir())
     with store.exclusive("data_dir_change"):
         try:
             store.rebind(default_db_path(target))
@@ -477,8 +481,40 @@ def _move_data_dir(changes: Mapping[str, Any], target: str) -> None:
             _write(changes)
         finally:
             # Ayar yazılamadıysa depo geçerli veri dizinine geri döner; yazıldıysa bu çağrı bir şey yapmaz
-            store.rebind(default_db_path(os.path.abspath(deps.config_manager().get_data_dir())))
+            current = os.path.abspath(deps.config_manager().get_data_dir())
+            store.rebind(default_db_path(current))
             deps.refresh_job_mirror()
+    # İş deposunun `maintenance` kilidi (eski dizinde) bırakıldıktan sonra
+    if os.path.normcase(os.path.realpath(current)) != os.path.normcase(os.path.realpath(previous)):
+        close_data_dir(previous)
+
+
+def close_data_dir(data_dir: str) -> bool:
+    """
+    Eski veri dizininin bu süreçteki depolarını (yazılabilir ve salt okunur; `open_store`un kayıt defteri) kapatır:
+    Windows'ta açık bir veri dizini taşınamaz ve silinemez (#120, plan maddesi FX-13). Depo açık değilse
+    kurulmadan açılır (`create=False`, katalog eşitlenmeden) ve kapatılır; dizin bir depo değilse bir şey yapılmaz.
+    Bu süreç o dizinin bir kilidini tutuyorsa (ör. `serve`in sink dağıtıcısı `sinks`i) depo açık kalır: onu
+    kullanan thread'in altından kapatılmaz; uyarı yazılır. Kapattıysa True.
+    """
+    from src.store import open_store
+
+    names = ("writer", "live", "sinks", "maintenance", *(f"watcher:{spec.slug}" for spec in sports.SPORTS))
+    try:
+        found = open_store(data_dir, create=False, sync_catalog=False)
+        held = [name for name in names
+                if (info := found.lease_holder(name)) is not None and info.pid == os.getpid()]
+    except (StoreError, OSError, sqlite3.Error):
+        return False  # bir depo değil (ya da açılamıyor): kapatılacak bir şey yok
+    if held:
+        logger.warning("The previous data directory stays open: this process holds its %s lease", ", ".join(held))
+        return False
+    found.close()
+    try:
+        open_store(data_dir, create=False, readonly=True, sync_catalog=False).close()
+    except (StoreError, OSError, sqlite3.Error):
+        pass
+    return True
 
 
 @router.patch(
@@ -510,4 +546,4 @@ def update_settings(body: SettingsPatch) -> SettingsResponse:
     return SettingsResponse(data=_document())
 
 
-__all__ = ["RESTART_NEEDED", "WRITABLE", "Rule", "router"]
+__all__ = ["RESTART_NEEDED", "WRITABLE", "Rule", "close_data_dir", "router"]
