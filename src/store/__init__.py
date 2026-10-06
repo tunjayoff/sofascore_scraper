@@ -75,6 +75,7 @@ if _TYPE_CHECKING:  # tür denetleyicileri ve API anlık görüntüsü adları b
     from src.store.catalog import CATALOG_SCHEMA
     from src.store.state import load_migrations
     from src.store.legacy import league_dir_name
+    from src.store.purge import Purger, TournamentClearReport
 
 _LAZY = {
     "open_store": "src.store.api",
@@ -153,6 +154,8 @@ _LAZY = {
     "CATALOG_SCHEMA": "src.store.catalog",
     "load_migrations": "src.store.state",
     "league_dir_name": "src.store.legacy",
+    "Purger": "src.store.purge",
+    "TournamentClearReport": "src.store.purge",
 }
 
 
@@ -246,6 +249,8 @@ __all__ = [
     "CATALOG_SCHEMA",
     "load_migrations",
     "league_dir_name",
+    "Purger",
+    "TournamentClearReport",
     "StoreError",
     "LeaseHeld",
     "StoreBusy",

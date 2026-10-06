@@ -5,7 +5,8 @@ API v1: takipler (docs/design/02-services.md bölüm 6 ve 4.3; docs/design/05-we
     POST   /api/v1/follows                 yeni takip
     GET    /api/v1/follows/{follow_id}     tek takip
     PATCH  /api/v1/follows/{follow_id}     alanlarını değiştirir
-    DELETE /api/v1/follows/{follow_id}     kaldırır (saklanan veri silinmez)
+    DELETE /api/v1/follows/{follow_id}     kaldırır; saklanan veri silinmez, `delete_data=true` ile turnuvanınki de
+                                           silinir (bir `clear` işi; FX-19)
 
 Takibin kimliği `<kind>:<id>`dir (`tournament:17`). Kaynağı (`origin`) neyin değiştirilebileceğini belirler
 (`writable`): yapılandırma dosyasının takibi hiç (409 `follow_managed`), leagues.txt'in takibi yalnızca sporu ya da
@@ -27,6 +28,7 @@ from src.schema import utc_text
 from src.web import deps
 from src.web.api import V1_PREFIX
 from src.web.api.v1 import PageInfo
+from src.web.api.v1.jobs import Job, job_model
 from src.web.errors import error_responses
 
 if TYPE_CHECKING:
@@ -77,6 +79,18 @@ class FollowResponse(BaseModel):
 class FollowListResponse(BaseModel):
     data: List[FollowRecord]
     page: PageInfo
+
+
+class RemovedFollow(FollowRecord):
+    """The follow as it was, and the clear job that deletes its data (`delete_data=true`)."""
+
+    clear_job: Optional[Job] = Field(
+        default=None, description="With `delete_data=true`: the clear job that deletes the tournament's data.",
+    )
+
+
+class FollowRemoveResponse(BaseModel):
+    data: RemovedFollow
 
 
 class FollowCreate(BaseModel):
@@ -224,22 +238,48 @@ def update_follow(follow_id: FollowId, body: FollowPatch) -> FollowResponse:
 
 @router.delete(
     "/follows/{follow_id}",
-    response_model=FollowResponse,
+    response_model=FollowRemoveResponse,
     operation_id="removeFollow",
     summary="Stop following",
-    responses=error_responses("not_found", "forbidden_origin", "follow_managed", "job_running",
-                              "data_operation_running"),
+    responses=error_responses("not_found", "invalid_request", "forbidden_origin", "follow_managed", "job_running",
+                              "data_operation_running", "instance_running"),
 )
-def remove_follow(follow_id: FollowId) -> FollowResponse:
+def remove_follow(
+    follow_id: FollowId,
+    delete_data: bool = Query(
+        False, description="Also delete the tournament's stored data (its events, schedules and season list) "
+                           "with a `clear` job (`clear_job` in the answer). Tournament follows only.",
+    ),
+) -> FollowRemoveResponse:
     """
-    Remove the follow and return it as it was. Stored data stays. Refused while a job runs (409), because a job
-    reads the names and sports of the follows; a follow of the config file is removed there (409 `follow_managed`).
+    Remove the follow and return it as it was. Stored data stays, unless `delete_data=true` (a tournament follow):
+    then a `clear` job deletes that tournament's data, under the `maintenance` lease like every clear; the follow
+    is removed once the job holds the lease. Refused while a job runs (409), because a job reads the names and
+    sports of the follows; a follow of the config file is removed there (409 `follow_managed`).
     """
+    from src.errors import ConflictError, UsageError
+    from src.services.follows import ORIGIN_CONFIG
+    from src.web.api.v1.jobs import start_tournament_clear
+
     kind, entity_id = _key(follow_id)
     service = deps.follows_service()
-    with deps.job_store().exclusive("follow_delete"):
-        removed = service.remove(kind, entity_id)
-    return FollowResponse(data=record(service, removed))
+    if not delete_data:
+        with deps.job_store().exclusive("follow_delete"):
+            removed = service.remove(kind, entity_id)
+        return FollowRemoveResponse(data=RemovedFollow(**record(service, removed).model_dump()))
+    found = service.get(kind, entity_id)
+    if found is None:
+        raise NotFoundError("No follow has this id.", {"id": follow_id})
+    if kind != "tournament":
+        raise UsageError("Only a tournament follow's data can be deleted with it.",
+                         {"field": "delete_data", "kind": kind})
+    if found.origin == ORIGIN_CONFIG:
+        raise ConflictError("The follow comes from the config file; remove it there.",
+                            {"id": follow_id, "origin": ORIGIN_CONFIG}, code="follow_managed")
+    gone: List["Follow"] = []
+    job = start_tournament_clear(entity_id, before=lambda: gone.append(service.remove(kind, entity_id)))
+    return FollowRemoveResponse(data=RemovedFollow(**record(service, gone[0]).model_dump(),
+                                                   clear_job=job_model(job)))
 
 
 __all__ = ["FollowRecord", "record", "router"]

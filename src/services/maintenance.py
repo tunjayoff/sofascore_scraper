@@ -7,7 +7,8 @@ Bakım servisi: veri dizininde ağ isteği gerektirmeyen düzeltmeler (docs/desi
     yüzlerden bağımsız, türü belli bir sonuçla sunar. Bağlam (`ServiceContext`) ister.
   * verinin temizlenmesi (`clear`, plan maddesi ST-19): işi Store yapar (`Store.clear`,
     docs/design/01-storage.md 9.3); servis bugünkü kapsam adlarını (`match_details`, `matches`, `seasons`,
-    `all`) Store'un adlarına çevirir. Yalnızca depo ister: `MaintenanceService(store=...)`.
+    `all`) Store'un adlarına çevirir. Yalnızca depo ister: `MaintenanceService(store=...)`. Bir turnuvanın (ya da
+    sezonunun) verisi `clear_tournament` ile silinir (`store.purge`, plan maddesi FX-19).
   * eski düzenden v3'e taşıma (`migrate`, plan maddesi ST-23): işi Store yapar (`Store.migrate`,
     docs/design/01-storage.md 5.4); kuru çalıştırma (`dry_run=True`) planı, gerçek çalıştırma raporu döndürür.
   * kataloğun yönetimi (`rebuild_catalog`, `verify_catalog`, `reconcile_catalog`; ST-23): `Store.catalog`
@@ -31,7 +32,8 @@ from src.store import ClearReport, Store
 
 if TYPE_CHECKING:
     from src.services.context import ServiceContext
-    from src.store import MigrationPlan, MigrationProgress, MigrationReport, RebuildReport, ReconcileReport, VerifyReport
+    from src.store import (MigrationPlan, MigrationProgress, MigrationReport, RebuildReport, ReconcileReport,
+                           TournamentClearReport, VerifyReport)
 
 logger = get_logger("MaintenanceService")
 
@@ -100,6 +102,21 @@ class MaintenanceService:
         if scope not in STORE_SCOPES:
             raise ValueError(f"unknown clear scope: {scope!r}")
         return self._store.clear(STORE_SCOPES[scope])
+
+    def clear_tournament(self, tournament_id: int, *, season_id: Optional[int] = None,
+                         confirm: bool) -> "TournamentClearReport":
+        """
+        Bir turnuvanın (season_id verildiyse yalnızca o sezonun) saklanan verisini siler (`store.purge.tournament`,
+        plan maddesi FX-19): maçları, programları ve turnuvanın tamamında sezon listesini; takipler, değişiklik
+        günlüğü, iş geçmişi, yedekler ve dışa aktarmalar kalır. `maintenance` kilidi `clear` gibidir; katalog aynı
+        kilit altında yeniden kurulur.
+
+        confirm=False ValueError; geçersiz kimlik ValueError; başka bir süreç dizini kullanıyorsa LeaseHeld;
+        dosya sistemi hatası StoreError.
+        """
+        if not confirm:
+            raise ValueError("clear_tournament needs confirm=True")
+        return self._store.purge.tournament(tournament_id, season_id=season_id)
 
     def migrate(
         self,

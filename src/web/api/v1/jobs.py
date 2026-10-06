@@ -30,7 +30,9 @@ thread'de çalışır. Belirtim (`spec`) bugünkü eşitleme servisinin belirtim
     export   `exports/<iş>.<uzantı>`: normalleştirilmiş veri kümeleri (events, slices, changes; JSONL, CSV,
              Parquet, SQLite), 2.x'in geniş CSV'si ya da ham yükler (src/services/data_jobs.py)
     backup   `backups/` altına yedek (BackupService)
-    clear    saklanan verinin bir kısmını siler (MaintenanceService.clear); `confirm: true` ister
+    clear    saklanan verinin bir kısmını siler (MaintenanceService.clear); `confirm: true` ister;
+             `tournament_id` (ve isteğe bağlı `season_id`) ile yalnızca o turnuvanın verisi (FX-19,
+             MaintenanceService.clear_tournament)
     rebuild  kataloğu dosyalardan yeniden kurar (MaintenanceService.rebuild_catalog)
     restore  `dry_run: true` (varsayılan) denetler; `dry_run: false` geri yükler (FX-13, G2): `maintenance`
              kilidiyle; geri yüklenen state.db'nin iş geçmişine işin kendi satırı korunarak taşınır
@@ -43,9 +45,11 @@ değişiklik OpenAPI kaydında görünür.
 """
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 import logging
-from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Literal, Mapping, Optional, Tuple, Union
+import threading
+from typing import TYPE_CHECKING, Annotated, Any, Callable, Dict, List, Literal, Mapping, Optional, Tuple, Union
 
 from fastapi import APIRouter, Body, Header, Query, Response
 from pydantic import BaseModel, ConfigDict, Field
@@ -277,10 +281,20 @@ class ClearJobSpec(BaseModel):
 
     scope: Literal["all", "events", "schedules", "seasons", "match_details", "matches"] = "all"
     confirm: bool = Field(default=False, description="Must be true: the stored data of the scope is deleted.")
+    tournament_id: Optional[int] = Field(
+        default=None, gt=0,
+        description="Only this tournament's data: its events (with their payloads and odds history), schedules "
+                    "and season list; with `season_id` only that season's events and schedule. `scope` must be "
+                    "`all`. Follows, the change log, the job history, backups and exports stay.",
+    )
+    season_id: Optional[int] = Field(default=None, gt=0, description="With `tournament_id`: only this season.")
 
 
 class StartClearJob(BaseModel):
-    """Delete stored data (follows, job history, change log, backups and exports stay)."""
+    """
+    Delete stored data (follows, job history, change log, backups and exports stay): by scope, or one
+    tournament's (or one season's) data with `tournament_id` (and `season_id`).
+    """
 
     model_config = ConfigDict(extra="forbid")
 
@@ -371,6 +385,7 @@ def job_targets(spec: Mapping[str, Any]) -> List[str]:
             found[f"{kind}:{value}"] = None
 
     add("tournament", spec.get("league_id"))
+    add("tournament", spec.get("tournament_id"))  # turnuvanın verisini silen `clear` (FX-19)
     for selection in spec.get("selections") or ():
         if isinstance(selection, Mapping):
             add("tournament", selection.get("league_id"))
@@ -704,6 +719,13 @@ def _clear_body(spec: Mapping[str, Any]) -> Any:
         from src.jobs.manager import JobOutcome
         from src.services.maintenance import MaintenanceService
 
+        if spec.get("tournament_id"):
+            purged = MaintenanceService(store=deps.store()).clear_tournament(
+                int(spec["tournament_id"]), season_id=spec.get("season_id"), confirm=True)
+            return JobOutcome(result={"clear": {
+                "scopes": ["tournament"], "tournament_id": purged.tournament_id, "season_id": purged.season_id,
+                "events": purged.events, "event_dirs": purged.event_dirs, "listings": purged.listings,
+                "catalog_rebuilt": purged.catalog_rebuilt}})
         report = MaintenanceService(store=deps.store()).clear(spec["scope"], confirm=True)
         return JobOutcome(result={"clear": {"scopes": list(report.scopes), "cleared": list(report.cleared),
                                             "v3_events": report.v3_events,
@@ -750,6 +772,57 @@ def _restore_body(spec: Mapping[str, Any]) -> Any:
     return body
 
 
+def _check_clear(spec: ClearJobSpec) -> None:
+    """Turnuvanın verisini silen `clear`: `season_id` turnuvayla, kapsam `all` (FX-19)."""
+    if spec.season_id is not None and spec.tournament_id is None:
+        raise UsageError("season_id needs tournament_id.", {"fields": ["season_id"]})
+    if spec.tournament_id is not None and spec.scope != "all":
+        raise UsageError("A tournament's data is cleared whole; leave scope at all.",
+                         {"fields": ["scope", "tournament_id"]})
+
+
+def _raising(error: BaseException) -> Callable[["JobHandle"], "JobOutcome"]:
+    """Verilen hatayı fırlatan iş gövdesi: başlamadan düşen işin kaydı başarısız biter, kilidi bırakılır."""
+    def body(handle: "JobHandle") -> "JobOutcome":
+        raise error
+
+    return body
+
+
+def start_tournament_clear(tournament_id: int, *, season_id: Optional[int] = None,
+                           before: Optional[Callable[[], Any]] = None) -> JobSnapshot:
+    """
+    Bir turnuvanın verisini silen `clear` işi (FX-19; takip kaldırmanın `delete_data` seçeneği). İş `maintenance`
+    kilidiyle kaydedilir; `before` (takibin kaldırılması) kilit alındıktan sonra, iş yürümeden önce bu thread'de
+    çalışır: hata verirse iş başarısız biter ve hata çağırana çıkar. Sonra iş arka planda yürür.
+    """
+    from src.jobs.manager import local_origin
+
+    spec: Dict[str, Any] = ClearJobSpec(confirm=True, tournament_id=tournament_id, season_id=season_id).model_dump()
+    manager = deps.job_manager()
+    job = manager.start(JobKind.CLEAR, spec, origin=local_origin("api"), lease=MAINTENANCE_LEASE,
+                        lease_purpose=JobKind.CLEAR.value)
+    if before is not None:
+        try:
+            before()
+        except BaseException as error:
+            with contextlib.suppress(BaseException):
+                manager.run(job.id, _raising(error), on_change=deps.refresh_job_mirror)
+            raise
+    body = _clear_body(spec)
+
+    def target() -> None:
+        try:
+            manager.run(job.id, body, on_change=deps.refresh_job_mirror)
+        except BaseException as e:  # arka plan thread'i: hata iş kaydındadır
+            logger.error("Background job %s failed: %s", job.id, type(e).__name__)
+
+    threading.Thread(target=target, name="job-clear", daemon=True).start()
+    deps.refresh_job_mirror()
+    found = manager.get(job.id)
+    return found if found is not None else job
+
+
 def _start_data_job(body: Any) -> JobSnapshot:
     """Bir veri işini denetler ve başlatır. Denetim iş başlamadan yapılır: reddedilen istek iş kaydı bırakmaz."""
     from src.jobs.manager import local_origin
@@ -767,6 +840,7 @@ def _start_data_job(body: Any) -> JobSnapshot:
         run = _backup_body(spec)
     elif isinstance(body, StartClearJob):
         spec = body.spec.model_dump()
+        _check_clear(body.spec)
         if not body.spec.confirm:
             raise UsageError("Clearing deletes stored data; send confirm: true.", {"scope": body.spec.scope},
                              code="confirmation_required")

@@ -175,6 +175,10 @@ export interface ClearJobSpec {
   scope?: "all" | "events" | "schedules" | "seasons" | "match_details" | "matches"
   /** Must be true: the stored data of the scope is deleted. */
   confirm?: boolean
+  /** Only this tournament's data: its events (with their payloads and odds history), schedules and season list; with `season_id` only that season's events and schedule. `scope` must be `all`. Follows, the change log, the job history, backups and exports stay. */
+  tournament_id?: number | null
+  /** With `tournament_id`: only this season. */
+  season_id?: number | null
 }
 
 /** One innings of one side in cricket. */
@@ -502,6 +506,10 @@ export interface FollowRecord {
   writable: string[]
   created_at_utc?: string | null
   updated_at_utc?: string | null
+}
+
+export interface FollowRemoveResponse {
+  data: RemovedFollow
 }
 
 export interface FollowResponse {
@@ -837,6 +845,34 @@ export interface RefreshJobSpec {
   league_id?: number | null
   /** Read `/event` of these events again, whether or not they are due (the Fetch again button). Not with `league_id`. */
   event_ids?: number[]
+}
+
+/** The follow as it was, and the clear job that deletes its data (`delete_data=true`). */
+export interface RemovedFollow {
+  /** `<kind>:<entity_id>`. */
+  id: string
+  kind: "tournament" | "team" | "player" | "event"
+  /** SofaScore's id of the followed entity. */
+  entity_id: number
+  name: string
+  /** Stored sport, else (tournaments) the one its events show. */
+  sport?: string | null
+  /** `all`, `current`, `last:N` or a list of season ids. */
+  seasons: string | number[]
+  /** Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and `slices.<sport>` of GET /settings); `{"include": [...]}` = only these; `{"enable": [...], "disable": [...]}` = changes to the defaults. What is not selected is never fetched. */
+  slices?: Record<string, string[]> | null
+  /** The live service watches it (`ssc watch`). */
+  live: boolean
+  enabled: boolean
+  /** legacy: config/leagues.txt (the 2.x league list; only `sport` can change, or PATCH `origin: "api"` moves it into the follows table); config: the config file (read-only here); api: the follows table (added here, with `ssc follows add` or moved from config/leagues.txt). */
+  origin: "legacy" | "config" | "api"
+  position: number
+  /** Fields PATCH can change on this follow. */
+  writable: string[]
+  created_at_utc?: string | null
+  updated_at_utc?: string | null
+  /** With `delete_data=true`: the clear job that deletes the tournament's data. */
+  clear_job?: Job | null
 }
 
 export interface RestoreJobSpec {
@@ -1272,7 +1308,10 @@ export interface StartBackupJob {
   spec?: BackupJobSpec
 }
 
-/** Delete stored data (follows, job history, change log, backups and exports stay). */
+/**
+ * Delete stored data (follows, job history, change log, backups and exports stay): by scope, or one
+ * tournament's (or one season's) data with `tournament_id` (and `season_id`).
+ */
 export interface StartClearJob {
   kind: "clear"
   spec?: ClearJobSpec
@@ -1613,9 +1652,9 @@ export interface Operations {
     method: "DELETE"
     path: "/api/v1/follows/{follow_id}"
     params: { follow_id: string }
-    query: {}
+    query: { delete_data?: boolean }
     body: never
-    response: FollowResponse
+    response: FollowRemoveResponse
   }
   /** List tournaments */
   "listTournaments": {
