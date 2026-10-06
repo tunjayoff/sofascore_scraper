@@ -45,7 +45,7 @@ pluggy==1.6.0
 protego==0.7.0
 pycparser==3.0
 pydantic==2.13.5
-pydantic-core==2.46.5
+pydantic-core==2.49.0
 pyee==13.0.1
 pygments==2.21.0
 pytest==9.1.1
