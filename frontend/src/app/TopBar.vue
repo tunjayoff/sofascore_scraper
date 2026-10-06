@@ -32,7 +32,7 @@ const job = computed(() => status.activeJob)
 const jobLabel = computed(() => {
   if (!job.value) return ''
   const p = jobPercent(job.value)
-  return p == null ? jobKindText(job.value.kind) : `${jobKindText(job.value.kind)} · ${pct(p)}`
+  return p == null ? jobKindText(job.value.kind, job.value.spec) : `${jobKindText(job.value.kind, job.value.spec)} · ${pct(p)}`
 })
 
 const menu = computed<MenuItem[]>(() => [

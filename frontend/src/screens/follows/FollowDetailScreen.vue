@@ -203,7 +203,7 @@ onMounted(() => void load())
               <ul v-else class="m-0 p-0 list-none">
                 <li v-for="j in ownJobs" :key="j.id" class="flex flex-wrap items-center gap-3 py-2" style="border-top: 1px solid var(--line)">
                   <StatusBadge kind="job" :value="j.state" />
-                  <RouterLink :to="`/jobs/${j.id}`" class="flex-1 font-semibold">{{ jobKindText(j.kind) }}</RouterLink>
+                  <RouterLink :to="`/jobs/${j.id}`" class="flex-1 font-semibold">{{ jobKindText(j.kind, j.spec) }}</RouterLink>
                   <span class="u-small u-muted">{{ faceText(j.origin.face) }}</span>
                   <span class="u-small u-muted"><TimeText :value="j.started_at ?? j.created_at" /></span>
                 </li>

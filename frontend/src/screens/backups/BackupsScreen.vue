@@ -112,7 +112,7 @@ onUnmounted(() => {
       <p v-if="status.activeJob" class="m-0 u-notice u-notice-warn" role="status" data-testid="busy-banner">
         <UiIcon name="alert" :size="16" />
         <span>
-          {{ t('ui.backups.busy', { kind: jobKindText(status.activeJob.kind) }) }}
+          {{ t('ui.backups.busy', { kind: jobKindText(status.activeJob.kind, status.activeJob.spec) }) }}
           <RouterLink :to="`/jobs/${status.activeJob.id}`">{{ t('ui.error.openJob') }}</RouterLink>
         </span>
       </p>

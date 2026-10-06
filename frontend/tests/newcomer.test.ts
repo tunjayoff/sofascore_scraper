@@ -537,20 +537,38 @@ describe('when a download ends', () => {
 describe('the connection is not "Connected" before anything was answered', () => {
   const bridge = (over = {}) => ({ ...status().bridge, ...over })
 
-  it('connectionState: not tried, last request failed, last check failed, connected', () => {
-    expect(connectionState(bridge({ last_success_at: null }))).toBe('untried')
-    expect(connectionState(bridge({ last_success_at: '2026-10-02T10:00:00Z', last_failure_at: '2026-10-02T10:05:00Z' }))).toBe('failing')
-    expect(connectionState(bridge({ last_success_at: '2026-10-02T10:00:00Z' }), { ok: false, at: '2026-10-02T10:01:00Z' })).toBe('checkFailed')
-    expect(connectionState(bridge({ last_success_at: '2026-10-02T10:02:00Z' }), { ok: false, at: '2026-10-02T10:01:00Z' })).toBe('ok')
-    expect(connectionState(bridge({ last_success_at: null }), { ok: false, at: '2026-10-02T10:01:00Z' })).toBe('checkFailed')
-    expect(connectionState(bridge({ state: 'blocked', last_success_at: null }))).toBe('blocked')
+  it('connectionState: a server without `connection` (before FX-19) is read from the bridge times', () => {
+    expect(connectionState({ bridge: bridge({ last_success_at: null }) })).toBe('untried')
+    expect(connectionState({ bridge: bridge({ last_success_at: '2026-10-02T10:00:00Z', last_failure_at: '2026-10-02T10:05:00Z' }) })).toBe('failing')
+    expect(connectionState({ bridge: bridge({ last_success_at: '2026-10-02T10:00:00Z' }) })).toBe('ok')
+    expect(connectionState({ bridge: bridge({ state: 'blocked', last_success_at: null }) })).toBe('blocked')
     expect(connectionState(null)).toBeNull()
   })
 
+  it('connectionState: the server keeps the state and the last check (FX-19), the same for every browser', () => {
+    const at = (state: 'never_tried' | 'ok' | 'failed', over = {}) => ({ bridge: bridge(), connection: { state, last_success_at: null, last_failure_at: null, last_check: null, ...over } })
+    expect(connectionState(at('never_tried'))).toBe('untried')
+    expect(connectionState(at('failed', { last_success_at: '2026-10-02T10:00:00Z', last_failure_at: '2026-10-02T10:05:00Z' }))).toBe('failing')
+    expect(connectionState(at('ok', { last_success_at: '2026-10-02T10:00:00Z' }))).toBe('ok')
+    const failedCheck = { ok: false, at: '2026-10-02T10:01:00Z', reason: 'upstream' }
+    expect(connectionState(at('failed', { last_success_at: '2026-10-02T10:00:00Z', last_check: failedCheck }))).toBe('checkFailed')
+    expect(connectionState(at('ok', { last_success_at: '2026-10-02T10:02:00Z', last_check: failedCheck }))).toBe('ok')
+    expect(connectionState(at('failed', { last_check: failedCheck }))).toBe('checkFailed')
+    expect(connectionState({ ...at('ok'), bridge: bridge({ state: 'blocked' }) })).toBe('blocked')
+  })
+
   it('Health and the pill say "Not tried yet" before a success, and turn amber after a failed check', async () => {
+    const never = { state: 'never_tried', last_success_at: null, last_failure_at: null, last_check: null }
+    const failed = { state: 'failed', last_success_at: null, last_failure_at: '2026-10-02T11:00:00Z', last_failure_reason: 'network', last_check: { at: '2026-10-02T11:00:00Z', ok: false, reason: 'upstream' } }
+    // the server keeps the check: every later `/status` has it, in this browser and any other
+    let checked = false
     const f = await app('/system/health', {
-      'POST /api/v1/status/check': { data: { ok: false, reason: 'upstream', message: 'x', events_count: null, checked_at_utc: '2026-10-02T11:00:00Z', bridge: bridge({ last_success_at: null }) } },
-    }, { bridge: bridge({ last_success_at: null }) })
+      'GET /api/v1/status': () => ({ data: status({ bridge: bridge({ last_success_at: null }), connection: (checked ? failed : never) as never }) }),
+      'POST /api/v1/status/check': () => {
+        checked = true
+        return { data: { ok: false, reason: 'upstream', message: 'x', events_count: null, checked_at_utc: '2026-10-02T11:00:00Z', bridge: bridge({ last_success_at: null }), connection: failed } }
+      },
+    })
     const card = w.find('[data-testid="health-connection"]')
     expect(card.find('[data-status="connection:untried"]').text()).toBe(t('ui.status.connection.untried'))
     expect(card.find('[data-testid="connection-note"]').text()).toBe(t('ui.health.untried'))

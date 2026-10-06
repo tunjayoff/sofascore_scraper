@@ -149,7 +149,7 @@ const attention = computed<Attention[]>(() => {
       const failed = Number((j.result as Record<string, unknown> | null)?.failed_count) || 0
       out.push({
         key: `job-${j.id}`,
-        text: t(`ui.overview.attention.job.${j.state}`, { kind: jobKindText(j.kind), n: num(failed) }),
+        text: t(`ui.overview.attention.job.${j.state}`, { kind: jobKindText(j.kind, j.spec), n: num(failed) }),
         to: `/jobs/${j.id}`,
         link: t('ui.overview.openJob'),
       })
@@ -272,7 +272,7 @@ onUnmounted(() => stopPoll?.())
             <h2 class="u-h3">{{ t('ui.overview.running') }}</h2>
             <template v-if="active">
               <p class="m-0 flex flex-wrap items-center gap-2">
-                <span class="font-semibold">{{ jobKindText(active.kind) }} · {{ jobTarget(active) }}</span>
+                <span class="font-semibold">{{ jobKindText(active.kind, active.spec) }} · {{ jobTarget(active) }}</span>
                 <span class="u-small u-muted">{{ faceText(active.origin.face) }}</span>
               </p>
               <ProgressBar :value="jobPercent(active)" :label="t('ui.job.progressLabel')" />
@@ -299,7 +299,7 @@ onUnmounted(() => stopPoll?.())
             <ul v-else class="m-0 p-0 list-none">
               <li v-for="j in recent" :key="j.id" class="flex flex-wrap items-center gap-3 py-2" style="border-top: 1px solid var(--line)">
                 <StatusBadge kind="job" :value="j.state" />
-                <RouterLink :to="`/jobs/${j.id}`" class="flex-1 min-w-0 truncate font-semibold">{{ jobKindText(j.kind) }} · {{ jobTarget(j) }}</RouterLink>
+                <RouterLink :to="`/jobs/${j.id}`" class="flex-1 min-w-0 truncate font-semibold">{{ jobKindText(j.kind, j.spec) }} · {{ jobTarget(j) }}</RouterLink>
                 <span class="u-small u-muted">{{ faceText(j.origin.face) }}</span>
                 <span class="u-small u-muted"><TimeText :value="j.started_at ?? j.created_at" /></span>
                 <span v-if="j.finished_at" class="u-small u-muted u-num">{{ duration(secondsBetween(j.started_at ?? j.created_at, j.finished_at)) }}</span>

@@ -70,7 +70,7 @@ const heartbeatAge = computed(() => {
   if (!job.value || job.value.state !== 'running' || !job.value.heartbeat_at) return null
   return Math.max(0, Math.round((clockNow.value - job.value.heartbeat_at) / 1000))
 })
-const title = computed(() => (job.value ? `${jobKindText(job.value.kind)} · ${jobTarget(job.value)}` : t('ui.nav.jobs')))
+const title = computed(() => (job.value ? `${jobKindText(job.value.kind, job.value.spec)} · ${jobTarget(job.value)}` : t('ui.nav.jobs')))
 const took = computed(() => {
   if (!job.value) return null
   const end = job.value.finished_at ?? (terminal.value ? null : new Date(clockNow.value).toISOString())
@@ -93,7 +93,7 @@ const facts = computed(() => {
   if (!j) return []
   return [
     { key: 'id', label: t('ui.job.fact.id'), value: j.id, mono: true },
-    { key: 'kind', label: t('ui.job.fact.kind'), value: jobKindText(j.kind) },
+    { key: 'kind', label: t('ui.job.fact.kind'), value: jobKindText(j.kind, j.spec) },
     { key: 'target', label: t('ui.job.fact.target'), value: jobTarget(j) },
     { key: 'origin', label: t('ui.job.fact.origin'), value: [faceText(j.origin.face), j.origin.host, j.origin.pid != null ? `pid ${j.origin.pid}` : null].filter(Boolean).join(' · ') },
     { key: 'created', label: t('ui.job.fact.created') },

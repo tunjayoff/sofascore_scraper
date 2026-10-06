@@ -6,12 +6,15 @@ import UiIcon from '@/ui/UiIcon.vue'
 import { v1 } from '@/api/v1/client'
 import type { Job } from '@/api/v1/schema'
 import { bytesText, duration, num } from '@/ui/time'
-import { countLabel, countShown, scopeText } from './jobText'
+import { ageText, countLabel, countShown, leagueName, scopeText } from './jobText'
+import { seasonName } from '@/screens/events/eventText'
 
 /**
  * What a finished data job produced (6.9 "Output"): the export file and the backup with a download
- * button, what a clear removed, what a rebuild of the index found, and what a restore check would do.
- * Everything comes from the job's `result`, read defensively: a field the server leaves out is not shown.
+ * button, what a clear removed (by scope, or one league's data), what the clean-up of old odds snapshots
+ * removed, what a rebuild of the index found, and what a restore check would do or a restore did (the
+ * index rebuilt, the check after it). Everything comes from the job's `result`, read defensively: a field
+ * the server leaves out is not shown.
  */
 const props = defineProps<{ job: Job }>()
 const { t } = useI18n()
@@ -29,12 +32,13 @@ const backup = computed(() => part('backup'))
 const clear = computed(() => part('clear'))
 const rebuild = computed(() => part('rebuild'))
 const restore = computed(() => part('restore'))
+const prune = computed(() => part('prune_history'))
 const counts = computed(() => Object.entries((restore.value?.counts as Rec | undefined) ?? {}).filter(([k, v]) => typeof v === 'number' && countShown(k)) as [string, number][])
 const succeeded = computed(() => props.job.state === 'succeeded' || props.job.state === 'partial')
 </script>
 
 <template>
-  <div v-if="exp || backup || clear || rebuild || restore" class="flex flex-col gap-3" data-testid="job-output">
+  <div v-if="exp || backup || clear || rebuild || restore || prune" class="flex flex-col gap-3" data-testid="job-output">
     <template v-if="exp">
       <dl class="u-result">
         <dt>{{ t('ui.jobOutput.file') }}</dt>
@@ -77,7 +81,17 @@ const succeeded = computed(() => props.job.state === 'succeeded' || props.job.st
       </div>
     </template>
 
-    <dl v-if="clear" class="u-result">
+    <dl v-if="clear && n(clear.tournament_id) != null" class="u-result" data-testid="output-clear-league">
+      <dt>{{ t('ui.jobOutput.league') }}</dt>
+      <dd>{{ leagueName(n(clear.tournament_id)!) }}<template v-if="n(clear.season_id) != null"> · {{ seasonName(n(clear.season_id)) }}</template></dd>
+      <dt>{{ t('ui.jobOutput.events') }}</dt>
+      <dd class="u-num">{{ num(n(clear.events) ?? 0) }}</dd>
+      <dt>{{ t('ui.jobOutput.listings') }}</dt>
+      <dd class="u-num">{{ num(n(clear.listings) ?? 0) }}</dd>
+      <dt>{{ t('ui.jobOutput.indexRebuilt') }}</dt>
+      <dd>{{ clear.catalog_rebuilt ? t('ui.common.yes') : t('ui.common.no') }}</dd>
+    </dl>
+    <dl v-else-if="clear" class="u-result">
       <dt>{{ t('ui.jobOutput.cleared') }}</dt>
       <dd>{{ list(clear.cleared).map(scopeText).join(', ') || t('ui.jobOutput.nothing') }}</dd>
       <template v-if="n(clear.v3_events) != null">
@@ -105,8 +119,15 @@ const succeeded = computed(() => props.job.state === 'succeeded' || props.job.st
       </template>
     </dl>
 
+    <dl v-if="prune" class="u-result" data-testid="output-prune">
+      <dt>{{ t('ui.jobOutput.olderThan') }}</dt>
+      <dd>{{ typeof prune.older_than === 'string' ? ageText(prune.older_than) : '—' }}</dd>
+      <dt>{{ t('ui.jobOutput.removed') }}</dt>
+      <dd class="u-num">{{ num(n(prune.removed) ?? 0) }}</dd>
+    </dl>
+
     <template v-if="restore">
-      <p class="m-0 u-small u-muted">{{ t('ui.jobOutput.dryRun') }}</p>
+      <p class="m-0 u-small u-muted">{{ restore.dry_run === false ? t('ui.jobOutput.restored') : t('ui.jobOutput.dryRun') }}</p>
       <dl class="u-result">
         <dt>{{ t('ui.jobOutput.archive') }}</dt>
         <dd class="u-mono break-all">{{ restore.name ?? '—' }}</dd>
@@ -114,8 +135,18 @@ const succeeded = computed(() => props.job.state === 'succeeded' || props.job.st
           <dt>{{ countLabel(k) }}</dt>
           <dd class="u-num">{{ num(v) }}</dd>
         </template>
-        <dt>{{ t('ui.jobOutput.occupied') }}</dt>
-        <dd>{{ list(restore.occupied).join(', ') || t('ui.jobOutput.emptyFolder') }}</dd>
+        <template v-if="restore.dry_run === false">
+          <dt>{{ t('ui.jobOutput.indexRebuilt') }}</dt>
+          <dd>{{ restore.catalog_rebuilt ? t('ui.common.yes') : t('ui.common.no') }}</dd>
+          <dt>{{ t('ui.jobOutput.verify') }}</dt>
+          <dd :style="restore.verify_ok === false ? 'color: var(--warn-fg)' : undefined">
+            {{ restore.verify_ok === false ? t('ui.jobOutput.verifyIssues', { n: num(n(restore.verify_issues) ?? 0) }) : restore.verify_ok ? t('ui.jobOutput.verifyOk') : '—' }}
+          </dd>
+        </template>
+        <template v-else>
+          <dt>{{ t('ui.jobOutput.occupied') }}</dt>
+          <dd>{{ list(restore.occupied).join(', ') || t('ui.jobOutput.emptyFolder') }}</dd>
+        </template>
       </dl>
       <RouterLink to="/backups" class="u-btn u-btn-sm self-start">{{ t('ui.nav.backups') }}</RouterLink>
     </template>

@@ -18,6 +18,7 @@ import type { StatusCheck } from '@/api/v1/schema'
 import { diskBytes, useStatusStore } from '@/app/statusStore'
 import { sportName } from '@/app/sports'
 import { liveState } from '@/ui/status'
+import { failureText } from '@/screens/jobs/eventText'
 import { bytesText, duration, now as clockNow, num, useClock } from '@/ui/time'
 
 /**
@@ -26,7 +27,7 @@ import { bytesText, duration, now as clockNow, num, useClock } from '@/ui/time'
  * anything (R2, decision 17); a `direct` source gets its warning. Who holds the data folder comes from
  * the leases; the storage card from the data summary. The scheduler's next runs are not reported yet (P29).
  * The connection is "Not tried yet" while no request has been answered, and amber when the last request
- * or the connection check run here failed (FX-14a).
+ * or the server's last connection check failed (FX-14a; read from `/status.connection` since FX-14b).
  */
 const STALE_LIVE_S = 120
 const { t, te } = useI18n()
@@ -40,6 +41,7 @@ const connection = computed(() => {
   if (!b) return []
   return [
     { key: 'lastSuccess', label: t('ui.health.lastSuccess') },
+    ...(s.value?.connection ? [{ key: 'lastFailure', label: t('ui.health.lastFailure') }, { key: 'lastCheck', label: t('ui.health.lastCheck') }] : []),
     { key: 'failures', label: t('ui.health.failures'), value: num(b.consecutive_failures) },
     { key: 'failingSince', label: t('ui.health.failingSince') },
     { key: 'lastError', label: t('ui.health.lastError') },
@@ -152,7 +154,20 @@ onMounted(() => {
         <header class="flex items-center gap-3"><h2 class="u-h3 flex-1">{{ t('ui.health.connection') }}</h2><StatusBadge kind="connection" :value="store.connection ?? s.bridge.state" /></header>
         <p v-if="store.connection === 'untried' || store.connection === 'failing'" class="m-0 u-small u-muted" data-testid="connection-note">{{ store.connection === 'untried' ? t('ui.health.untried') : t('ui.health.failing') }}</p>
         <FactList :items="connection">
-          <template #value-lastSuccess><TimeText :value="s.bridge.last_success_at" relative /></template>
+          <template #value-lastSuccess><TimeText :value="s.connection?.last_success_at ?? s.bridge.last_success_at" relative /></template>
+          <template #value-lastFailure>
+            <span v-if="s.connection?.last_failure_at" data-testid="connection-last-failure">
+              {{ failureText(s.connection.last_failure_reason ?? 'other') }} · <TimeText :value="s.connection.last_failure_at" relative />
+            </span>
+            <span v-else>—</span>
+          </template>
+          <template #value-lastCheck>
+            <span v-if="s.connection?.last_check" data-testid="connection-last-check" :style="s.connection.last_check.ok ? undefined : 'color: var(--warn-fg)'">
+              {{ s.connection.last_check.ok ? t('ui.health.lastCheckOk') : t('ui.health.check.failed', { reason: reasonText(s.connection.last_check.reason) }) }}
+              <template v-if="s.connection.last_check.at"> · <TimeText :value="s.connection.last_check.at" relative /></template>
+            </span>
+            <span v-else>{{ t('ui.health.noCheck') }}</span>
+          </template>
           <template #value-failingSince><TimeText :value="s.bridge.failing_since" /></template>
           <template #value-changedAt><TimeText :value="s.bridge.changed_at" /></template>
           <template #value-lastError>

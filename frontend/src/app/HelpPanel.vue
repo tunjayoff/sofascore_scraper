@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import SidePanel from '@/ui/SidePanel.vue'
 import UiIcon from '@/ui/UiIcon.vue'
@@ -8,7 +9,8 @@ import { startCardHidden } from '@/ui/prefs'
 
 /**
  * Help (FX-14a): what the app does, the words it uses, the three getting-started steps (and the way back
- * to the Overview card), the keyboard shortcuts and the project's README on GitHub (a link the user
+ * to the Overview card), where the Health page is (the address /health is the server's JSON check), the
+ * keyboard shortcuts and the project's README on GitHub (a link the user
  * opens; the app itself sends nothing there).
  */
 const emit = defineEmits<{ close: []; shortcuts: [] }>()
@@ -33,6 +35,11 @@ const { t, locale } = useI18n()
             <dd>{{ t(`ui.help.term.${term}.text`) }}</dd>
           </template>
         </dl>
+      </section>
+
+      <section class="flex flex-col gap-2 items-start" data-testid="help-health">
+        <p class="m-0">{{ t('ui.help.health') }}</p>
+        <RouterLink to="/system/health" class="u-btn u-btn-sm" @click="emit('close')"><UiIcon name="health" :size="14" />{{ t('ui.help.healthLink') }}</RouterLink>
       </section>
 
       <div class="flex flex-col gap-2 items-start">

@@ -1,4 +1,4 @@
-import type { BridgeHealth, JobState } from '@/api/v1/schema'
+import type { BridgeHealth, ConnectionStatus, JobState } from '@/api/v1/schema'
 import type { UiIconName } from '@/ui/UiIcon.vue'
 
 /**
@@ -21,10 +21,11 @@ export const JOB_STATES: Record<JobState, StatusLook> = {
 }
 
 /**
- * The connection as shown (FX-14a): the bridge's state, and while that is `ok` also whether anything has
- * been answered yet (`untried`), whether the last request failed after earlier ones worked (`failing`) and
- * whether the connection check run in this browser failed after the last success (`checkFailed`). So the
- * UI never says "Connected" before a request has been answered.
+ * The connection as shown (FX-14a, FX-14b): the bridge's state, and while that is `ok` the server's own
+ * view of its requests (`/status.connection`, FX-19): nothing answered yet (`untried`), the last request
+ * failed (`failing`), the last connection check of this server failed and nothing succeeded since
+ * (`checkFailed`). So the UI never says "Connected" before a request has been answered, and every browser
+ * shows the same state.
  */
 export type ConnectionState = BridgeHealth['state'] | 'untried' | 'failing' | 'checkFailed'
 
@@ -37,19 +38,26 @@ export const CONNECTION: Record<ConnectionState, StatusLook> = {
   checkFailed: { tone: 'warn', icon: 'alert', key: 'ui.status.connection.checkFailed' },
 }
 
-/** A connection check run in this browser: whether SofaScore answered, and when (ISO-8601). */
-export type CheckSeen = { ok: boolean; at: string }
-
 const ms = (iso: string | null | undefined) => (iso ? Date.parse(iso) : NaN)
 
-export function connectionState(
-  b: Pick<BridgeHealth, 'state' | 'last_success_at' | 'last_failure_at'> | null | undefined,
-  check: CheckSeen | null = null,
-): ConnectionState | null {
-  if (!b) return null
+type ConnectionSource = {
+  bridge: Pick<BridgeHealth, 'state' | 'last_success_at' | 'last_failure_at'>
+  /** `/status.connection` (FX-19); a server before it has none, and the bridge's times are read instead. */
+  connection?: Pick<ConnectionStatus, 'state' | 'last_success_at' | 'last_check'> | null
+}
+
+export function connectionState(s: ConnectionSource | null | undefined): ConnectionState | null {
+  if (!s?.bridge) return null
+  const b = s.bridge
   if (b.state !== 'ok') return b.state
+  const c = s.connection
+  if (c) {
+    const check = c.last_check
+    if (check && !check.ok && !(ms(c.last_success_at) > ms(check.at))) return 'checkFailed'
+    if (c.state === 'never_tried') return 'untried'
+    return c.state === 'failed' ? 'failing' : 'ok'
+  }
   const success = ms(b.last_success_at)
-  if (check && !check.ok && !(success > ms(check.at))) return 'checkFailed'
   const failure = ms(b.last_failure_at)
   if (!Number.isNaN(failure) && !(success >= failure)) return 'failing'
   if (Number.isNaN(success)) return 'untried'

@@ -5,7 +5,7 @@ import type { Job } from '@/api/v1/schema'
 import { useStatusStore } from '@/app/statusStore'
 import { toast } from '@/ui/toast'
 import { loadTournaments } from '@/screens/events/eventText'
-import { isTerminal, jobLeague, jobTarget } from '@/screens/jobs/jobText'
+import { isTerminal, jobFollows, jobLeague, jobTarget } from '@/screens/jobs/jobText'
 
 /**
  * The end of a job, told wherever the user is (FX-14a). The shell (`watchJobs`) follows the jobs started
@@ -66,7 +66,8 @@ async function tick() {
 
 async function ended(job: Job) {
   for (const fn of [...listeners]) fn(job)
-  if (TOLD.includes(job.kind)) {
+  // a season list only (FX-13 `only: "seasons"`) downloads no match: whoever started it shows its seasons
+  if (TOLD.includes(job.kind) && (job.spec as { only?: unknown } | null)?.only !== 'seasons') {
     await loadTournaments().catch(() => {})
     tellEnd(job)
   }
@@ -88,7 +89,7 @@ export function tellEnd(job: Job) {
         ? t('ui.jobDone.fetched', { n })
         : !n
           ? t('ui.jobDone.upToDate', { name })
-          : league
+          : league || jobFollows(job).length === 1
             ? t('ui.jobDone.synced', { name, n })
             : t('ui.jobDone.syncedAll', { n })
     toast({ kind: 'ok', text, link: matches })
