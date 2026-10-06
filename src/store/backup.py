@@ -3,8 +3,9 @@ Veri yedeği, doğrulaması, geri yüklemesi ve eskilerin silinmesi (docs/design
 maddeleri ST-19 ve ST-24).
 
 Biçim 2 (ST-24). Dosya `backups/backup_<kapsam>[_with_env]_<yyyymmdd>_<hhmmss>.zip` (yerel saat); `.env`
-pakete giriyorsa adı bunu söyler ve dosya yalnızca sahibince okunur (0600). Üye adları veri dizinine
-göredir ("/" ayırıcılı):
+pakete giriyorsa adı bunu söyler ve dosya yalnızca sahibince okunur (0600). `overrides.json` (web arayüzünde
+kaydedilen ayarlar; proxy adresi parola taşıyabilir) pakete giriyorsa dosya yine 0600'dür, adı değişmez.
+Üye adları veri dizinine göredir ("/" ayırıcılı):
 
     üye                                        all  state  data  config  seasons  matches  match_details
     backup.json (biçim, sürümler, sayımlar)    +    +      +     +       +        +        +
@@ -14,6 +15,7 @@ göredir ("/" ayırıcılı):
     changes/**, score_changes.jsonl            +           +
     seasons/, matches/, match_details/         +           +             seasons/ matches/ match_details/
     config/<ad> (verilen ayar dosyaları)       +    +            +
+    config/overrides.json (verildiyse)         +    +            +
     config/.env (yalnızca istenirse)           +    +            +
 
     (1) v3/tournaments altında turnuvaların `seasons/` dışında kalanı (sezon listeleri)
@@ -34,7 +36,11 @@ ağaçları olarak yerine konur (Store onları yerinde okur).
 
 Geri yükleme yalnızca `backups/` dizinindeki bir yedeği adıyla alır (web arayüzü kararı 15: yükleme yok).
 Ayar dosyaları ve `.env` geri yüklenmez: veri dizininin dışındadırlar ve çalışan kurulumun ayarlarını
-değiştirmek geri yüklemenin işi değildir; rapor onları `skipped` olarak adlandırır.
+değiştirmek geri yüklemenin işi değildir; rapor onları `skipped` olarak adlandırır. Tek istisna
+`config/overrides.json`: web arayüzünde kaydedilen ayarlar yoksa geri yüklemeden sonra kaybolurdu (FX-22).
+Çağıran onun yerini verirse (`restore(overrides_file=...)`) veriyle aynı adımda, 0600 izniyle yerine konur
+ve bir adım başarısız olursa önceki hali geri gelir; vermezse ya da yedekte yoksa (eski yedekler) dosyaya
+dokunulmaz. İçeriği hiçbir zaman günlüğe yazılmaz.
 
 Kilitler: `create` kilit almaz, veri içeren bir yedek için `writer` kilidini (amaç `op:backup`) çağıran tutar
 (web'in iş deposu, `JobStore.exclusive("backup")`, ya da `ssc backup create`). `restore` `maintenance`
@@ -80,6 +86,8 @@ LEGACY_CHANGES = "score_changes.jsonl"
 DATA_ENTRIES: Tuple[str, ...] = (layout.V3_DIR, layout.CHANGES_DIR, *LEGACY_TREES, LEGACY_CHANGES)
 CONFIG_MEMBER_DIR = "config"
 ENV_MEMBER = ".env"
+OVERRIDES_MEMBER = f"{CONFIG_MEMBER_DIR}/overrides.json"  # web arayüzünde kaydedilen ayarlar (geri yüklenir)
+_OVERRIDES_MAX_BYTES = 1024 * 1024  # ayar belgesi küçüktür; daha büyüğü açılmaz
 STATE_MEMBER = layout.STATE_DB  # ".meta/state.db"
 SCHEMA_MEMBER = layout.SCHEMA_FILE  # ".meta/schema.json"
 CATALOG_MEMBER = layout.CATALOG_DB  # biçim 2'de yazılmaz; başka bir araçla eklenmişse yok sayılır
@@ -171,9 +179,12 @@ class RestoreReport:
     """
     `BackupManager.restore` sonucu (deneme çalıştırmasında: olacak olan).
 
-    restored         yerine konan üst düzey girdiler ("v3", "match_details", ".meta/state.db", ...)
-    replaced         hedefte bulunup çöpe taşınan girdiler (geri yükleme bitince silinir)
-    skipped          geri yüklenmeyen üyeler: ayar dosyaları, `.env`, katalog
+    restored         yerine konan üst düzey girdiler ("v3", "match_details", ".meta/state.db", ...) ve
+                     yerine konan ayar belgesi ("config/overrides.json")
+    replaced         hedefte bulunup çöpe taşınan girdiler (geri yükleme bitince silinir); üzerine yazılan
+                     ayar belgesi de ("config/overrides.json") burada adlandırılır
+    skipped          geri yüklenmeyen üyeler: ayar dosyaları, `.env`, katalog; yeri verilmeyen ya da
+                     okunamayan `config/overrides.json`
     occupied         hedefte bulunan ve `force` gerektiren şeyler; boşsa hedef boştu
     counts           yedeğin sayımları (`backup.json`; biçim 1'de üyelerden sayılır)
     catalog_rebuilt  katalog geri yüklenen dosyalardan yeniden kuruldu
@@ -205,6 +216,7 @@ class _Plan:
     data: List[Tuple[zipfile.ZipInfo, str]] = field(default_factory=list)  # (üye, hedef yol)
     state: Optional[zipfile.ZipInfo] = None
     schema: Optional[zipfile.ZipInfo] = None
+    overrides: Optional[zipfile.ZipInfo] = None  # config/overrides.json
     skipped: List[str] = field(default_factory=list)
 
     @property
@@ -302,6 +314,8 @@ def _plan_v2(infos: Sequence[zipfile.ZipInfo], manifest: Dict[str, Any]) -> _Pla
             plan.schema = info
         elif name == CATALOG_MEMBER:
             plan.skipped.append(name)
+        elif name == OVERRIDES_MEMBER:
+            plan.overrides = info
         elif top == CONFIG_MEMBER_DIR and name.count("/") == 1:
             plan.skipped.append(name)
         elif (top in DATA_ENTRIES and top != LEGACY_CHANGES and "/" in name) or name == LEGACY_CHANGES:
@@ -369,6 +383,37 @@ def _rows_of(conn: sqlite3.Connection, sql: str, params: Sequence[Any] = ()) -> 
     return [str(column[0]) for column in cursor.description or ()], cursor.fetchall()
 
 
+def _overrides_payload(zf: zipfile.ZipFile, info: zipfile.ZipInfo) -> Optional[bytes]:
+    """
+    Yedekteki `config/overrides.json`'ın baytları; bir JSON nesnesi değilse ya da çok büyükse None (uyarı
+    günlüğüyle; içerik proxy parolası taşıyabileceği için günlüğe yazılmaz).
+    """
+    problem = ""
+    data = b""
+    if info.file_size > _OVERRIDES_MAX_BYTES:
+        problem = f"larger than {_OVERRIDES_MAX_BYTES} bytes"
+    else:
+        try:
+            data = zf.read(info)
+            if not isinstance(json.loads(data.decode("utf-8")), dict):
+                problem = "not a JSON object"
+        except (UnicodeDecodeError, ValueError):
+            problem = "not valid JSON"
+        except (zipfile.BadZipFile, OSError, RuntimeError, EOFError) as e:
+            problem = f"unreadable ({e.__class__.__name__})"
+    if problem:
+        logger.warning("The backup's %s is %s; the settings file was not restored", OVERRIDES_MEMBER, problem)
+        return None
+    return data
+
+
+def _read_if_present(path: str) -> Optional[bytes]:
+    """Dosyanın baytları; dosya yoksa None (başka okuma hatası StoreError)."""
+    if not os.path.lexists(path):
+        return None
+    return files.read_bytes(path)
+
+
 def _has_files(path: str) -> bool:
     """Yol bir dosyaysa (boş değilse) ya da altında en az bir dosya varsa True."""
     if os.path.isfile(path):
@@ -396,7 +441,7 @@ class BackupManager:
     # --- yazma -----------------------------------------------------------------------------------
 
     def create(self, scope: str = "all", *, config_files: Sequence[str] = (), env_file: Optional[str] = None,
-               now: Optional[datetime] = None) -> BackupInfo:
+               overrides_file: Optional[str] = None, now: Optional[datetime] = None) -> BackupInfo:
         """
         Yedeği biçim 2'de yazar ve bilgisini döndürür (modül belgesindeki tablo).
 
@@ -404,6 +449,8 @@ class BackupManager:
                       dosyaları (verildiği sırayla; olmayan atlanır)
         env_file      verilirse, kapsam `all`, `state` ya da `config` ise ve dosya varsa `config/.env` olarak
                       eklenir; dosya adı `_with_env` taşır ve izni 0600 olur
+        overrides_file  verilirse, aynı kapsamlarda ve dosya varsa `config/overrides.json` olarak eklenir;
+                      proxy adresi parola taşıyabildiği için dosyanın izni 0600 olur (adı değişmez)
         now           dosya adındaki zaman (yerel); verilmezse şimdi
 
         Bilinmeyen kapsam ValueError; dosya sistemi hatası StoreError (yarım zip silinir).
@@ -414,6 +461,7 @@ class BackupManager:
         moment = now or datetime.now()
         stamp = moment.strftime(_TIME_FORMAT)
         with_env = env_file is not None and scope in CONFIG_SCOPES and os.path.exists(env_file)
+        with_overrides = overrides_file is not None and scope in CONFIG_SCOPES and os.path.isfile(overrides_file)
         name = f"backup_{scope}{WITH_ENV_TAG if with_env else ''}_{stamp}.zip"
         directory = self.directory
         path = os.path.join(directory, name)
@@ -423,8 +471,9 @@ class BackupManager:
             raise StoreError.from_exception(e, directory) from e
         staging: Optional[str] = None
         try:
-            if with_env:
-                # İçinde .env var: dosya baştan yalnızca sahibince okunur yaratılır (zip sonra içini yazar)
+            if with_env or with_overrides:
+                # İçinde .env ya da overrides.json var: dosya baştan yalnızca sahibince okunur yaratılır (zip
+                # sonra içini yazar)
                 os.close(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, _PRIVATE_MODE))
                 if os.name == "posix":
                     os.chmod(path, _PRIVATE_MODE)
@@ -448,8 +497,12 @@ class BackupManager:
                 counts.update(_count_members(iter(members)))
                 if scope in CONFIG_SCOPES:
                     for config_file in config_files:
-                        if os.path.exists(config_file):
-                            zf.write(config_file, f"{CONFIG_MEMBER_DIR}/{os.path.basename(config_file)}")
+                        member = f"{CONFIG_MEMBER_DIR}/{os.path.basename(config_file)}"
+                        if os.path.exists(config_file) and not (with_overrides and member == OVERRIDES_MEMBER):
+                            zf.write(config_file, member)
+                    if with_overrides:
+                        assert overrides_file is not None
+                        zf.write(overrides_file, OVERRIDES_MEMBER)
                     if with_env:
                         assert env_file is not None
                         zf.write(env_file, f"{CONFIG_MEMBER_DIR}/{ENV_MEMBER}")
@@ -652,7 +705,8 @@ class BackupManager:
 
     # --- geri yükleme ----------------------------------------------------------------------------
 
-    def restore(self, name: str, *, force: bool = False, dry_run: bool = False) -> RestoreReport:
+    def restore(self, name: str, *, force: bool = False, dry_run: bool = False,
+                overrides_file: Optional[str] = None) -> RestoreReport:
         """
         `backups/` altındaki yedeği bu veri dizinine geri yükler (bölüm 9.2).
 
@@ -672,8 +726,13 @@ class BackupManager:
         `op:restore`; dizini kullanan varsa LeaseHeld). dry_run=True: kilit almaz, hiçbir şey yazmaz; raporda
         olacak olan durur ve hedef boş değilse `occupied` doludur (hata değildir).
 
-        Ayar dosyaları ve `.env` geri yüklenmez (`skipped`). Bilinmeyen ad BackupNotFound, okunamayan ya da
-        güvensiz yedek BackupInvalid, daha yeni sürüm SchemaTooNew, salt okunur depo StoreError.
+        Ayar dosyaları ve `.env` geri yüklenmez (`skipped`). İstisna `config/overrides.json`: `overrides_file`
+        verilirse ve yedekte varsa 3. adımın sonunda oraya 0600 izniyle atomik olarak yazılır (önceki hali geri
+        almada geri gelir); yedekte yoksa (eski yedekler) dosyaya dokunulmaz. Bir JSON nesnesi değilse geri
+        yüklenmez (`skipped`, uyarı günlüğü; içerik günlüğe yazılmaz).
+
+        Bilinmeyen ad BackupNotFound, okunamayan ya da güvensiz yedek BackupInvalid, daha yeni sürüm
+        SchemaTooNew, salt okunur depo StoreError.
         """
         path = self.path_of(name)
         try:
@@ -685,12 +744,23 @@ class BackupManager:
             self._check_versions(plan)
             counts = _counts_of(plan)
             restored = plan.entries() + ([STATE_MEMBER] if plan.state is not None else [])
+            skipped = list(plan.skipped)
+            settings: Optional[Tuple[str, bytes]] = None  # (hedef yol, içerik)
+            if plan.overrides is not None:
+                payload = _overrides_payload(zf, plan.overrides) if overrides_file is not None else None
+                if payload is None or overrides_file is None:
+                    skipped.append(OVERRIDES_MEMBER)
+                else:
+                    settings = (overrides_file, payload)
+                    restored.append(OVERRIDES_MEMBER)
+            settings_replaced = [OVERRIDES_MEMBER] if settings is not None and os.path.lexists(settings[0]) else []
             if dry_run:
                 occupied = self._occupied(plan)
                 return RestoreReport(
                     name=name, format=plan.format, scope=plan.scope, dry_run=True, force=force,
-                    restored=tuple(restored), replaced=tuple(self._to_replace(plan, force or bool(occupied))),
-                    skipped=tuple(plan.skipped), occupied=tuple(occupied), counts=counts)
+                    restored=tuple(restored),
+                    replaced=tuple(self._to_replace(plan, force or bool(occupied)) + settings_replaced),
+                    skipped=tuple(skipped), occupied=tuple(occupied), counts=counts)
             if self._store.readonly:
                 raise StoreError(f"A store opened read-only cannot be restored into: {self._store.data_dir}",
                                  path=str(self._store.data_dir))
@@ -704,7 +774,7 @@ class BackupManager:
                         f"The data directory is not empty ({', '.join(occupied)}); a restore never merges. "
                         f"Restore with force to move the current data to the trash first: {self._store.data_dir}",
                         path=str(self._store.data_dir), reasons=occupied)
-                replaced = self._apply(zf, plan, force=force)
+                replaced = self._apply(zf, plan, force=force, settings=settings) + settings_replaced
                 rebuilt, verify_ok, verify_issues = self._after_restore()
             finally:
                 if lease is not None:
@@ -714,7 +784,7 @@ class BackupManager:
                     ",".join(replaced) or "-", rebuilt, verify_ok)
         return RestoreReport(
             name=name, format=plan.format, scope=plan.scope, dry_run=False, force=force, restored=tuple(restored),
-            replaced=tuple(replaced), skipped=tuple(plan.skipped), occupied=tuple(occupied), counts=counts,
+            replaced=tuple(replaced), skipped=tuple(skipped), occupied=tuple(occupied), counts=counts,
             catalog_rebuilt=rebuilt, verify_ok=verify_ok, verify_issues=verify_issues)
 
     def _occupied(self, plan: _Plan) -> List[str]:
@@ -739,8 +809,12 @@ class BackupManager:
         with zf.open(info) as source, open(target, "wb") as sink:
             shutil.copyfileobj(source, sink, _COPY_CHUNK)
 
-    def _apply(self, zf: zipfile.ZipFile, plan: _Plan, *, force: bool) -> List[str]:
-        """Planı uygular (kilit altında); çöpe taşınan girdileri döndürür. Hata olursa yapılanı geri alır."""
+    def _apply(self, zf: zipfile.ZipFile, plan: _Plan, *, force: bool,
+               settings: Optional[Tuple[str, bytes]] = None) -> List[str]:
+        """
+        Planı uygular (kilit altında); çöpe taşınan girdileri döndürür. Hata olursa yapılanı geri alır.
+        settings: (yol, içerik) verilirse ayar belgesi en son, 0600 izniyle yazılır.
+        """
         data_dir = str(self._store.data_dir)
         staging = files.new_staging_dir(data_dir, "restore")
         trash = os.path.join(layout.resolve(data_dir, layout.TRASH_DIR),
@@ -749,6 +823,7 @@ class BackupManager:
         moved_aside: List[Tuple[str, str]] = []  # (asıl yer, çöpteki yer)
         placed: List[str] = []  # yerine konan girdiler
         state_saved: Optional[str] = None
+        settings_saved: Optional[Tuple[str, Optional[bytes]]] = None  # (yol, önceki içerik; dosya yoksa None)
         keep_trash = False  # geri alma başarısız oldu: önceki veri çöpte kalır
         try:
             try:
@@ -775,9 +850,13 @@ class BackupManager:
                     self._copy_db(self._store._state.connection(), saved)
                     state_saved = saved  # yalnızca tam kopya geri yüklenir
                     self._load_state(staged_state)
+                if settings is not None:
+                    target, payload = settings
+                    settings_saved = (target, _read_if_present(target))
+                    files.write_bytes(target, payload, durable=True, mode=_PRIVATE_MODE)
             except BaseException as e:
                 try:
-                    self._roll_back(moved_aside, placed, state_saved)
+                    self._roll_back(moved_aside, placed, state_saved, settings_saved)
                 except StoreError:
                     keep_trash = True
                     raise
@@ -862,9 +941,18 @@ class BackupManager:
         self._store.streams._stream_id = None
 
     def _roll_back(self, moved_aside: Sequence[Tuple[str, str]], placed: Sequence[str],
-                   state_saved: Optional[str]) -> None:
-        """Yarıda kalan geri yüklemeyi geri alır: yerine konanlar silinir, çöpe taşınanlar geri gelir."""
+                   state_saved: Optional[str], settings_saved: Optional[Tuple[str, Optional[bytes]]] = None) -> None:
+        """
+        Yarıda kalan geri yüklemeyi geri alır: yerine konanlar silinir, çöpe taşınanlar geri gelir, ayar belgesi
+        önceki haline döner (yoksa silinir).
+        """
         try:
+            if settings_saved is not None:
+                target, before = settings_saved
+                if before is None:
+                    files.remove(target)
+                else:
+                    files.write_bytes(target, before, durable=True, mode=_PRIVATE_MODE)
             for origin in reversed(placed):
                 files.remove_tree(origin)
             for origin, aside in reversed(moved_aside):

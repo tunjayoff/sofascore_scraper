@@ -4,6 +4,9 @@ Yedek servisi (docs/design/02-services.md 2.7; plan maddeleri ST-19 ve ST-24).
 Yedeği Store yazar, doğrular ve geri yükler (`Store.backup`, docs/design/01-storage.md bölüm 9); servis
 yüzlerden (CLI, web) bağımsız giriş noktasıdır: hangi ayar dosyalarının pakete gireceğini çağıran söyler,
 `.env` yalnızca `include_secrets=True` ile girer (proxy parolası, captcha ve erişim belirteci taşıyabilir).
+Web arayüzünde kaydedilen ayarlar (`CONFIG_DIR/overrides.json`) ayar taşıyan her kapsamda pakete girer ve
+geri yüklemede yerine konur (FX-22): yoksa geri yüklemeden sonra kaybolurlardı. Proxy adresi parola
+taşıyabildiği için bu dosyayı taşıyan yedek de geri yüklenen dosya da 0600'dür.
 
 Yedekler biçim 2'dedir (`backup.json`, `state.db`, v3 ağacı, değişiklik günlüğü); geri yükleme bugünkü
 (biçim 1) zip'leri de okur. Geri yükleme yalnızca `backups/` dizinindeki bir yedeği adıyla alır (web arayüzü
@@ -16,7 +19,9 @@ alır. Store'un hataları kodlu hatalara çevrilir: bilinmeyen ad `not_found`, o
 """
 from __future__ import annotations
 
+import dataclasses
 from datetime import datetime
+from pathlib import Path
 from typing import List, Literal, Optional, Sequence
 
 from src.errors import NotFoundError, UsageError
@@ -33,6 +38,9 @@ from src.store import (
 )
 
 logger = get_logger("BackupService")
+
+# Yedekteki ayar belgesinin üye adı (src/store/backup.py OVERRIDES_MEMBER; rapor bu adla söyler)
+OVERRIDES_MEMBER = "config/overrides.json"
 
 BackupScope = Literal["all", "state", "data", "config", "seasons", "matches", "match_details"]
 
@@ -52,9 +60,12 @@ class BackupService:
                          spor eşlemesi, yapılandırma dosyası); olmayan atlanır
         include_secrets  `.env` de pakete girer (aynı kapsamlarda ve dosya varsa); dosyanın adı bunu söyler
                          (`_with_env`) ve yalnızca sahibince okunur
+
+        `overrides.json` (web arayüzünde kaydedilen ayarlar) aynı kapsamlarda, dosya varsa her zaman girer.
         """
         info = self._store.backup.create(
-            scope, config_files=config_files, env_file=env_file_path() if include_secrets else None)
+            scope, config_files=config_files, env_file=env_file_path() if include_secrets else None,
+            overrides_file=str(_overrides_path()))
         logger.info("Backup created: %s (scope=%s, with_env=%s, %d bytes)", info.name, info.scope, info.with_env,
                     info.size)
         return info
@@ -79,9 +90,28 @@ class BackupService:
         """
         `backups/` altındaki yedeği veri dizinine geri yükler (`BackupManager.restore`). force=True: hedefteki
         veri önce çöpe taşınır. dry_run=True: hiçbir şey yazılmaz, rapor olacak olanı söyler.
+
+        Yedekte `config/overrides.json` varsa (FX-22'den sonra alınan yedekler) bu kurulumun overrides.json'ı
+        onunla değiştirilir ve ayarlar yeniden yüklenir; ayarlar arayüzünün yazdığı dosyayla aynı kilit altında.
+        Geri yüklenen belgeyle ayarlar kurulamıyorsa (ör. başka bir sürümün bilmediği anahtar) önceki dosya geri
+        konur, önceki ayarlar yürürlükte kalır ve rapor dosyayı `skipped` olarak adlandırır.
         """
+        if dry_run:
+            return self._restore(name, force=force, dry_run=True)
+        from src.config.overrides import current_bytes
+        from src.config_files import file_lock
+
+        with file_lock(str(_overrides_path())):
+            before = current_bytes()
+            report = self._restore(name, force=force, dry_run=False)
+            if OVERRIDES_MEMBER in report.restored:
+                report = _reload_settings(report, before)
+        return report
+
+    def _restore(self, name: str, *, force: bool, dry_run: bool) -> RestoreReport:
         try:
-            return self._store.backup.restore(name, force=force, dry_run=dry_run)
+            return self._store.backup.restore(name, force=force, dry_run=dry_run,
+                                              overrides_file=str(_overrides_path()))
         except BackupNotFound as e:
             raise NotFoundError(str(e), {"name": name}) from e
         except BackupInvalid as e:
@@ -94,3 +124,30 @@ class BackupService:
               now: Optional[datetime] = None) -> List[BackupInfo]:
         """Eski yedekleri siler (`BackupManager.prune`); varsayılan: hiçbiri silinmez."""
         return self._store.backup.prune(keep, max_age_days, now=now)
+
+
+def _overrides_path() -> Path:
+    """Ayar yükleyicisinin okuduğu overrides.json (CONFIG_DIR / overrides.json)."""
+    from src.config.overrides import overrides_path
+
+    return overrides_path()
+
+
+def _reload_settings(report: RestoreReport, before: Optional[bytes]) -> RestoreReport:
+    """
+    Geri yüklenen overrides.json'la ayarları yeniden yükler. Kurulamazsa önceki dosya geri konur ve rapor
+    dosyayı `restored`dan `skipped`a taşır. Hata iletisi değer taşıyabileceği için günlüğe yalnızca türü yazılır.
+    """
+    from src.config.overrides import reload_or_put_back
+
+    error = reload_or_put_back(before)
+    if error is None:
+        logger.info("Settings reloaded after the restore: %s brought back the settings saved in the web app",
+                    report.name)
+        return report
+    logger.warning("The settings file in backup %s cannot be used (%s); the previous settings file was kept",
+                   report.name, error)
+    return dataclasses.replace(
+        report, restored=tuple(x for x in report.restored if x != OVERRIDES_MEMBER),
+        replaced=tuple(x for x in report.replaced if x != OVERRIDES_MEMBER),
+        skipped=(*report.skipped, OVERRIDES_MEMBER))

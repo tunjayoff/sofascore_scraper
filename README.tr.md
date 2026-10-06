@@ -201,7 +201,7 @@ ssc export --schema raw --format jsonl --out raw.jsonl     # saklanan SofaScore 
 ssc export --out matches.csv                               # 2.x'in geniş CSV'si
 ```
 
-- **Yedekler** takipleri, iş geçmişini, olay günlüğünü ve saklanan verileri içerir; `.env` yalnızca `--include-secrets` ile eklenir. **Geri yükleme** (web arayüzünde **Yedekler** ya da `ssc backup restore NAME --yes`) yedeği denetler, sonra veri klasörünü değiştirir; 2.x'in yaptığı yedekler de geri yüklenir. Yedeklerin ve indirmelerin zamanlanması: [docs/deploy](docs/deploy/README.md#scheduled-downloads) (İngilizce).
+- **Yedekler** takipleri, iş geçmişini, olay günlüğünü, saklanan verileri ve **Ayarlar** sayfasında kaydedilen ayarları (`config/overrides.json`; proxy parolasını taşıyabildiği için böyle bir yedeği yalnızca sahibi okuyabilir) içerir; `.env` yalnızca `--include-secrets` ile eklenir. **Geri yükleme** (web arayüzünde **Yedekler** ya da `ssc backup restore NAME --yes`) yedeği denetler, sonra veri klasörünü değiştirir; kaydedilen ayarlar da onunla geri gelir (yalnızca sahibi okuyabilir) ve yeniden yüklenir. Bu ayarları taşımayan bir yedek mevcut ayarlara dokunmaz; 2.x'in yaptığı yedekler de geri yüklenir. Yedeklerin ve indirmelerin zamanlanması: [docs/deploy](docs/deploy/README.md#scheduled-downloads) (İngilizce).
 
 ## Canlı izleme
 

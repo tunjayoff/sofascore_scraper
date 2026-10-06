@@ -201,7 +201,7 @@ ssc export --schema raw --format jsonl --out raw.jsonl     # the stored SofaScor
 ssc export --out matches.csv                               # the 2.x wide CSV
 ```
 
-- **Backups** contain the follows, the job history, the event log and the stored data; `.env` only with `--include-secrets`. **Restore** (web app **Backups**, or `ssc backup restore NAME --yes`) checks the backup, then replaces the data folder; backups made by 2.x restore too. Schedules for backups and downloads: [docs/deploy](docs/deploy/README.md#scheduled-downloads).
+- **Backups** contain the follows, the job history, the event log, the stored data and the settings saved on the **Settings** page (`config/overrides.json`; it can hold the proxy password, so such a backup is readable by its owner only); `.env` only with `--include-secrets`. **Restore** (web app **Backups**, or `ssc backup restore NAME --yes`) checks the backup, then replaces the data folder; the saved settings come back with it (readable by the owner only) and are reloaded. A backup without them leaves the current settings alone; backups made by 2.x restore too. Schedules for backups and downloads: [docs/deploy](docs/deploy/README.md#scheduled-downloads).
 
 ## Live watching
 
