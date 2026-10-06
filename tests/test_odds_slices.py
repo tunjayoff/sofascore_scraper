@@ -337,7 +337,7 @@ def test_run_extras_reads_pre_match_odds(fake: FakeSofaScore, store: Store) -> N
 # --- şema, API ve dışa aktarma ------------------------------------------------------------------------------
 
 
-P28_MODELS = models.PENDING_MODELS
+P28_MODELS = (models.Odds, models.OddsMarket, models.OddsChoice, models.OddsLine, models.StandingsRow)
 
 
 @pytest.mark.parametrize("model", P28_MODELS, ids=lambda model: model.__name__)
@@ -349,8 +349,8 @@ def test_the_new_models_carry_their_contract(model: type) -> None:
         assert item.metadata["doc"].endswith(".") and item.metadata["source"], f"{model.__name__}.{item.name}"
         if item.name.endswith("_utc"):
             assert item.metadata["format"] == "date-time" and item.metadata["unit"] == "ISO 8601 UTC"
-    # Sözleşme belgesine girene kadar JSON Schema'da yoklar (models.PENDING_MODELS)
-    assert model not in models.MODELS
+    # FX-21'den beri sözleşmededirler: JSON Schema'da ve belgenin üretilmiş alan tablolarında
+    assert model in models.MODELS
 
 
 def test_odds_map_to_markets_and_flat_lines() -> None:

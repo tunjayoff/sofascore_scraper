@@ -13,7 +13,10 @@
   "Event",
   "Slice",
   "Change",
-  "LiveEvent"
+  "LiveEvent",
+  "Odds",
+  "OddsLine",
+  "StandingsRow"
  ],
  "$defs": {
   "Sport": {
@@ -976,7 +979,7 @@
       "integer",
       "null"
      ],
-     "description": "Headline score of the home side: points including overtime.",
+     "description": "Headline score of the home side: points including overtime; goals in the goal sports (ice hockey, handball, futsal, minifootball, floorball).",
      "x-unit": "points",
      "x-source": "`homeScore.display`, else `homeScore.current`"
     },
@@ -985,7 +988,7 @@
       "integer",
       "null"
      ],
-     "description": "Headline score of the away side: points including overtime.",
+     "description": "Headline score of the away side: points including overtime; goals in the goal sports (ice hockey, handball, futsal, minifootball, floorball).",
      "x-unit": "points",
      "x-source": "`awayScore.display`, else `awayScore.current`"
     },
@@ -999,7 +1002,7 @@
       "halves",
       "thirds"
      ],
-     "description": "How regulation time is divided. Null while no period score exists.",
+     "description": "How regulation time is divided: `quarters` (basketball, American football, Aussie rules), `halves` (basketball, handball, rugby, futsal, minifootball) or `thirds` (ice hockey, floorball). Null while no period score exists.",
      "x-source": "sport registry (`src/sports.py`); basketball: `quarters` when `period1` or `period3` is present, `halves` when only `period2` / `period4` are"
     },
     "periods": {
@@ -1007,7 +1010,7 @@
      "items": {
       "$ref": "#/$defs/PeriodScore"
      },
-     "description": "Points of each period of regulation time that has a score, in order.",
+     "description": "Points (goals in the goal sports) of each period of regulation time that has a score, in order.",
      "x-source": "`period1` to `period4`"
     },
     "regulation": {
@@ -1019,7 +1022,7 @@
        "type": "null"
       }
      ],
-     "description": "Points at the end of regulation time.",
+     "description": "Points (goals in the goal sports) at the end of regulation time.",
      "x-unit": "points",
      "x-source": "`normaltime`"
     },
@@ -1032,7 +1035,7 @@
        "type": "null"
       }
      ],
-     "description": "Points scored in overtime alone. Null without overtime.",
+     "description": "Points (goals in the goal sports) scored in overtime alone. Null without overtime.",
      "x-unit": "points",
      "x-source": "`overtime`"
     },
@@ -1045,7 +1048,7 @@
        "type": "null"
       }
      ],
-     "description": "Final points including overtime.",
+     "description": "Final points (goals in the goal sports) including overtime.",
      "x-unit": "points",
      "x-source": "`current`"
     },
@@ -1123,7 +1126,7 @@
       "integer",
       "null"
      ],
-     "description": "Headline score of the home side: sets won.",
+     "description": "Headline score of the home side: sets won; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`.",
      "x-unit": "sets",
      "x-source": "`homeScore.display`, else `homeScore.current`"
     },
@@ -1132,7 +1135,7 @@
       "integer",
       "null"
      ],
-     "description": "Headline score of the away side: sets won.",
+     "description": "Headline score of the away side: sets won; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`.",
      "x-unit": "sets",
      "x-source": "`awayScore.display`, else `awayScore.current`"
     },
@@ -1161,7 +1164,7 @@
        "type": "null"
       }
      ],
-     "description": "Sets won by each side.",
+     "description": "Sets won by each side; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`.",
      "x-unit": "sets",
      "x-source": "`current`"
     },
@@ -1170,12 +1173,12 @@
      "items": {
       "$ref": "#/$defs/SetScore"
      },
-     "description": "The sets that have a score, in order.",
-     "x-source": "`period1` to `period5`, `period1TieBreak` to `period5TieBreak`"
+     "description": "The sets that have a score, in order. Empty with the formats `frames`, `legs_won` and `games_won`.",
+     "x-source": "`period1` to `period7` (tennis: to `period5`); tie-breaks from `period1TieBreak` to `period7TieBreak` (tennis: to `period5TieBreak`), in tennis and padel only"
     },
     "match_tiebreak": {
      "type": "boolean",
-     "description": "True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more.",
+     "description": "True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more. Always false outside tennis and padel.",
      "x-source": "derived from the set scores (`src/status.py`)"
     }
    }
@@ -1201,7 +1204,7 @@
       "integer",
       "null"
      ],
-     "description": "Games the home side won in the set; points when the set is a match tie-break.",
+     "description": "What the home side won in the set, as `SetsScore.format` says: games in tennis and padel (points when the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played in sets.",
      "x-unit": "games",
      "x-source": "`homeScore.periodN`"
     },
@@ -1210,7 +1213,7 @@
       "integer",
       "null"
      ],
-     "description": "Games the away side won in the set; points when the set is a match tie-break.",
+     "description": "What the away side won in the set, as `SetsScore.format` says: games in tennis and padel (points when the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played in sets.",
      "x-unit": "games",
      "x-source": "`awayScore.periodN`"
     },
@@ -1223,7 +1226,7 @@
        "type": "null"
       }
      ],
-     "description": "Points of the set's tie-break. Null when the set had none.",
+     "description": "Points of the set's tie-break. Null when the set had none, and always null outside tennis and padel.",
      "x-unit": "points",
      "x-source": "`periodNTieBreak`"
     }
@@ -1561,8 +1564,22 @@
       "incidents",
       "point_by_point",
       "esports_games",
+      "innings",
+      "odds_featured",
+      "odds_all",
+      "odds_changes",
+      "winning_odds",
       "seasons",
-      "schedule"
+      "schedule",
+      "standings",
+      "season_info",
+      "cuptrees",
+      "top_players",
+      "top_teams",
+      "season_odds",
+      "team_rankings",
+      "player_statistics",
+      "rankings"
      ],
      "description": "Name of the slice, for example `event`, `statistics`, `lineups`, `incidents`.",
      "x-source": "slice registry (`src/sports.py`)"
@@ -1952,6 +1969,537 @@
      "type": "object",
      "description": "Type-specific content (see LiveEvent data).",
      "x-source": "the producer"
+    }
+   }
+  },
+  "Odds": {
+   "type": "object",
+   "title": "Odds",
+   "description": "The odds of an event from one provider as read at one moment.",
+   "required": [
+    "event_id",
+    "key",
+    "provider_id",
+    "fetched_at_utc",
+    "markets"
+   ],
+   "properties": {
+    "event_id": {
+     "type": "integer",
+     "description": "Id of the Event.",
+     "x-source": "the request that fetched it"
+    },
+    "key": {
+     "type": "string",
+     "examples": [
+      "odds_all",
+      "odds_featured"
+     ],
+     "description": "Odds slice the record comes from: `odds_all` or `odds_featured`.",
+     "x-source": "slice registry (`src/sports.py`)"
+    },
+    "provider_id": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "SofaScore's id of the bookmaker the odds come from. Which bookmakers SofaScore offers depends on the country it sees the request from; the platform stores no address or location of the machine.",
+     "x-source": "the request that fetched it"
+    },
+    "fetched_at_utc": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date-time",
+     "description": "When the odds were read. A read is a snapshot: odds change until the event ends, and only a later read shows a later price.",
+     "x-unit": "ISO 8601 UTC",
+     "x-source": "time of the platform's request"
+    },
+    "markets": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/OddsMarket"
+     },
+     "description": "The markets, in SofaScore's order.",
+     "x-source": "`markets`, or the values of `featured`"
+    }
+   }
+  },
+  "OddsMarket": {
+   "type": "object",
+   "title": "OddsMarket",
+   "description": "One betting market of an event with its outcomes.",
+   "required": [
+    "market_id",
+    "name",
+    "group",
+    "period",
+    "choice_group",
+    "label",
+    "is_live",
+    "suspended",
+    "choices"
+   ],
+   "properties": {
+    "market_id": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "SofaScore's id of the market type (1 is the match result).",
+     "x-source": "`marketId`"
+    },
+    "name": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Name of the market, for example `Full time`.",
+     "x-source": "`marketName`"
+    },
+    "group": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Group of the market, for example `1X2` or `Home/Away`.",
+     "x-source": "`marketGroup`"
+    },
+    "period": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Part of the event the market covers, for example `Full-time`.",
+     "x-source": "`marketPeriod`"
+    },
+    "choice_group": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Line of a market with several lines, for example `2.5` for over/under; null for a market with one line.",
+     "x-source": "`choiceGroup`"
+    },
+    "label": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Name under which the featured odds list the market (`default`, `fullTime`, `asian`); null in the full list.",
+     "x-source": "key of `featured`"
+    },
+    "is_live": {
+     "type": [
+      "boolean",
+      "null"
+     ],
+     "description": "True when the prices were offered during play.",
+     "x-source": "`isLive`"
+    },
+    "suspended": {
+     "type": [
+      "boolean",
+      "null"
+     ],
+     "description": "True when the market was closed for bets at the time of the read.",
+     "x-source": "`suspended`"
+    },
+    "choices": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/OddsChoice"
+     },
+     "description": "The outcomes of the market, in SofaScore's order.",
+     "x-source": "`choices`"
+    }
+   }
+  },
+  "OddsChoice": {
+   "type": "object",
+   "title": "OddsChoice",
+   "description": "One outcome of a betting market and its price.",
+   "required": [
+    "name",
+    "fractional",
+    "decimal",
+    "initial_fractional",
+    "initial_decimal",
+    "change",
+    "winning"
+   ],
+   "properties": {
+    "name": {
+     "type": "string",
+     "description": "Name of the outcome as SofaScore gives it, for example `1`, `X`, `2`, `Over`.",
+     "x-source": "`choices[].name`"
+    },
+    "fractional": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Current price as a fraction, for example `11/5`.",
+     "x-source": "`choices[].fractionalValue`"
+    },
+    "decimal": {
+     "type": [
+      "number",
+      "null"
+     ],
+     "description": "Current price as a decimal (1 + the fraction), rounded to three places.",
+     "x-source": "derived from `choices[].fractionalValue`"
+    },
+    "initial_fractional": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Opening price as a fraction.",
+     "x-source": "`choices[].initialFractionalValue`"
+    },
+    "initial_decimal": {
+     "type": [
+      "number",
+      "null"
+     ],
+     "description": "Opening price as a decimal, rounded to three places.",
+     "x-source": "derived from `choices[].initialFractionalValue`"
+    },
+    "change": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Direction of the last change of the price: 1 up, -1 down, 0 none.",
+     "x-source": "`choices[].change`"
+    },
+    "winning": {
+     "type": [
+      "boolean",
+      "null"
+     ],
+     "description": "True for the outcome that won once the event is settled; null while open or when SofaScore does not say.",
+     "x-source": "`choices[].winning`"
+    }
+   }
+  },
+  "OddsLine": {
+   "type": "object",
+   "title": "OddsLine",
+   "description": "One outcome of one market of one odds snapshot, as a flat row.",
+   "required": [
+    "event_id",
+    "key",
+    "provider_id",
+    "fetched_at_utc",
+    "market_id",
+    "market_name",
+    "market_group",
+    "market_period",
+    "choice_group",
+    "label",
+    "is_live",
+    "suspended",
+    "choice",
+    "fractional",
+    "decimal",
+    "initial_fractional",
+    "initial_decimal",
+    "change",
+    "winning"
+   ],
+   "properties": {
+    "event_id": {
+     "type": "integer",
+     "description": "Id of the Event.",
+     "x-source": "the request that fetched it"
+    },
+    "key": {
+     "type": "string",
+     "examples": [
+      "odds_all",
+      "odds_featured"
+     ],
+     "description": "Odds slice the row comes from.",
+     "x-source": "slice registry (`src/sports.py`)"
+    },
+    "provider_id": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "As `Odds.provider_id`.",
+     "x-source": "the request that fetched it"
+    },
+    "fetched_at_utc": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date-time",
+     "description": "When the snapshot was read.",
+     "x-unit": "ISO 8601 UTC",
+     "x-source": "time of the platform's request"
+    },
+    "market_id": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "As `OddsMarket.market_id`.",
+     "x-source": "`marketId`"
+    },
+    "market_name": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "As `OddsMarket.name`.",
+     "x-source": "`marketName`"
+    },
+    "market_group": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "As `OddsMarket.group`.",
+     "x-source": "`marketGroup`"
+    },
+    "market_period": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "As `OddsMarket.period`.",
+     "x-source": "`marketPeriod`"
+    },
+    "choice_group": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "As `OddsMarket.choice_group`.",
+     "x-source": "`choiceGroup`"
+    },
+    "label": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "As `OddsMarket.label`.",
+     "x-source": "key of `featured`"
+    },
+    "is_live": {
+     "type": [
+      "boolean",
+      "null"
+     ],
+     "description": "As `OddsMarket.is_live`.",
+     "x-source": "`isLive`"
+    },
+    "suspended": {
+     "type": [
+      "boolean",
+      "null"
+     ],
+     "description": "As `OddsMarket.suspended`.",
+     "x-source": "`suspended`"
+    },
+    "choice": {
+     "type": "string",
+     "description": "As `OddsChoice.name`.",
+     "x-source": "`choices[].name`"
+    },
+    "fractional": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "As `OddsChoice.fractional`.",
+     "x-source": "`choices[].fractionalValue`"
+    },
+    "decimal": {
+     "type": [
+      "number",
+      "null"
+     ],
+     "description": "As `OddsChoice.decimal`.",
+     "x-source": "derived from `choices[].fractionalValue`"
+    },
+    "initial_fractional": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "As `OddsChoice.initial_fractional`.",
+     "x-source": "`choices[].initialFractionalValue`"
+    },
+    "initial_decimal": {
+     "type": [
+      "number",
+      "null"
+     ],
+     "description": "As `OddsChoice.initial_decimal`.",
+     "x-source": "derived from `choices[].initialFractionalValue`"
+    },
+    "change": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "As `OddsChoice.change`.",
+     "x-source": "`choices[].change`"
+    },
+    "winning": {
+     "type": [
+      "boolean",
+      "null"
+     ],
+     "description": "As `OddsChoice.winning`.",
+     "x-source": "`choices[].winning`"
+    }
+   }
+  },
+  "StandingsRow": {
+   "type": "object",
+   "title": "StandingsRow",
+   "description": "One row of a standings table of a season.",
+   "required": [
+    "tournament_id",
+    "season_id",
+    "table",
+    "group_name",
+    "position",
+    "participant_id",
+    "participant_name",
+    "matches",
+    "wins",
+    "draws",
+    "losses",
+    "scores_for",
+    "scores_against",
+    "points",
+    "fetched_at_utc"
+   ],
+   "properties": {
+    "tournament_id": {
+     "type": "integer",
+     "description": "Id of the Tournament.",
+     "x-source": "the request that fetched it"
+    },
+    "season_id": {
+     "type": "integer",
+     "description": "Id of the Season.",
+     "x-source": "the request that fetched it"
+    },
+    "table": {
+     "type": "string",
+     "examples": [
+      "total",
+      "home"
+     ],
+     "description": "Which table: `total` (all matches) or `home` (home matches only).",
+     "x-source": "the request that fetched it"
+    },
+    "group_name": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Name of the table or group, for example `Premier League 26/27` or `Group A`.",
+     "x-source": "`standings[].name`"
+    },
+    "position": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Rank in the table, 1 for the first.",
+     "x-source": "`rows[].position`"
+    },
+    "participant_id": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Id of the Participant.",
+     "x-source": "`rows[].team.id`"
+    },
+    "participant_name": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "description": "Name of the Participant.",
+     "x-source": "`rows[].team.name`"
+    },
+    "matches": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Matches played.",
+     "x-source": "`rows[].matches`"
+    },
+    "wins": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Matches won.",
+     "x-source": "`rows[].wins`"
+    },
+    "draws": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Matches drawn; null in sports without draws.",
+     "x-source": "`rows[].draws`"
+    },
+    "losses": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Matches lost.",
+     "x-source": "`rows[].losses`"
+    },
+    "scores_for": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Goals or points scored.",
+     "x-source": "`rows[].scoresFor`"
+    },
+    "scores_against": {
+     "type": [
+      "integer",
+      "null"
+     ],
+     "description": "Goals or points conceded.",
+     "x-source": "`rows[].scoresAgainst`"
+    },
+    "points": {
+     "type": [
+      "number",
+      "null"
+     ],
+     "description": "Table points (a fraction in a few sports).",
+     "x-source": "`rows[].points`"
+    },
+    "fetched_at_utc": {
+     "type": [
+      "string",
+      "null"
+     ],
+     "format": "date-time",
+     "description": "When the table was read.",
+     "x-unit": "ISO 8601 UTC",
+     "x-source": "time of the platform's request"
     }
    }
   }

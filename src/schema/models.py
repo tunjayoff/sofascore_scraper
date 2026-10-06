@@ -269,28 +269,41 @@ class PeriodScore(Model):
 
 @dataclass(frozen=True)
 class PeriodsScore(Model):
-    """Periyot ailesi skoru (basketbol)."""
+    """
+    Periyot ailesi skoru: basketbol, Amerikan futbolu, Avustralya futbolu, ragbi (sayı) ile buz hokeyi, hentbol,
+    futsal, minifutbol ve floorball (gol). Alan tabloları belgeyle bağlı olduğundan birim `points` kalır (SP-1);
+    gol sporlarında sayılanın gol olduğunu metinler söyler (FX-21).
+    """
 
     SUMMARY: ClassVar[str] = ("Score family `periods`: points by period (basketball, American football, Aussie rules, "
                               "ice hockey, handball, rugby, futsal, minifootball, floorball).")
 
     family: Literal["periods"] = spec("Always `periods`.", source="sport registry")
-    home: Optional[int] = spec("Headline score of the home side: points including overtime.", unit="points",
-                               source="`homeScore.display`, else `homeScore.current`")
-    away: Optional[int] = spec("Headline score of the away side: points including overtime.", unit="points",
-                               source="`awayScore.display`, else `awayScore.current`")
+    home: Optional[int] = spec(
+        "Headline score of the home side: points including overtime; goals in the goal sports (ice hockey, "
+        "handball, futsal, minifootball, floorball).", unit="points",
+        source="`homeScore.display`, else `homeScore.current`")
+    away: Optional[int] = spec(
+        "Headline score of the away side: points including overtime; goals in the goal sports (ice hockey, "
+        "handball, futsal, minifootball, floorball).", unit="points",
+        source="`awayScore.display`, else `awayScore.current`")
     format: Optional[PeriodsFormat] = spec(
-        "How regulation time is divided. Null while no period score exists.",
+        "How regulation time is divided: `quarters` (basketball, American football, Aussie rules), `halves` "
+        "(basketball, handball, rugby, futsal, minifootball) or `thirds` (ice hockey, floorball). Null while no "
+        "period score exists.",
         source="sport registry (`src/sports.py`); basketball: `quarters` when `period1` or `period3` is present, "
                "`halves` when only `period2` / `period4` are",
         open_enum=True)
-    periods: Tuple[PeriodScore, ...] = spec("Points of each period of regulation time that has a score, in order.",
-                                            source="`period1` to `period4`")
-    regulation: Optional[ScorePair] = spec("Points at the end of regulation time.", unit="points",
-                                           source="`normaltime`")
-    overtime: Optional[ScorePair] = spec("Points scored in overtime alone. Null without overtime.",
-                                         unit="points", source="`overtime`")
-    final: Optional[ScorePair] = spec("Final points including overtime.", unit="points", source="`current`")
+    periods: Tuple[PeriodScore, ...] = spec(
+        "Points (goals in the goal sports) of each period of regulation time that has a score, in order.",
+        source="`period1` to `period4`")
+    regulation: Optional[ScorePair] = spec("Points (goals in the goal sports) at the end of regulation time.",
+                                           unit="points", source="`normaltime`")
+    overtime: Optional[ScorePair] = spec(
+        "Points (goals in the goal sports) scored in overtime alone. Null without overtime.",
+        unit="points", source="`overtime`")
+    final: Optional[ScorePair] = spec("Final points (goals in the goal sports) including overtime.", unit="points",
+                                      source="`current`")
     penalties: Optional[ScorePair] = spec(
         "Goals of the penalty shoot-out alone. Null without a shoot-out, and always null for basketball. In the "
         "one recorded handball shoot-out, `final` and the headline score include these goals.",
@@ -304,12 +317,17 @@ class SetScore(Model):
     SUMMARY: ClassVar[str] = "One set."
 
     number: int = spec("Number of the set, starting at 1.", source="`periodN`")
-    home: Optional[int] = spec("Games the home side won in the set; points when the set is a match tie-break.",
-                               unit="games", source="`homeScore.periodN`")
-    away: Optional[int] = spec("Games the away side won in the set; points when the set is a match tie-break.",
-                               unit="games", source="`awayScore.periodN`")
-    tiebreak: Optional[ScorePair] = spec("Points of the set's tie-break. Null when the set had none.",
-                                         unit="points", source="`periodNTieBreak`")
+    home: Optional[int] = spec(
+        "What the home side won in the set, as `SetsScore.format` says: games in tennis and padel (points when "
+        "the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played "
+        "in sets.", unit="games", source="`homeScore.periodN`")
+    away: Optional[int] = spec(
+        "What the away side won in the set, as `SetsScore.format` says: games in tennis and padel (points when "
+        "the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played "
+        "in sets.", unit="games", source="`awayScore.periodN`")
+    tiebreak: Optional[ScorePair] = spec(
+        "Points of the set's tie-break. Null when the set had none, and always null outside tennis and padel.",
+        unit="points", source="`periodNTieBreak`")
 
 
 @dataclass(frozen=True)
@@ -327,10 +345,12 @@ class SetsScore(Model):
         "played in legs only and e-sports give only the frames, legs or games won and no sets.")
 
     family: Literal["sets"] = spec("Always `sets`.", source="sport registry")
-    home: Optional[int] = spec("Headline score of the home side: sets won.", unit="sets",
-                               source="`homeScore.display`, else `homeScore.current`")
-    away: Optional[int] = spec("Headline score of the away side: sets won.", unit="sets",
-                               source="`awayScore.display`, else `awayScore.current`")
+    home: Optional[int] = spec(
+        "Headline score of the home side: sets won; the frames, legs or games won with the formats `frames`, "
+        "`legs_won` and `games_won`.", unit="sets", source="`homeScore.display`, else `homeScore.current`")
+    away: Optional[int] = spec(
+        "Headline score of the away side: sets won; the frames, legs or games won with the formats `frames`, "
+        "`legs_won` and `games_won`.", unit="sets", source="`awayScore.display`, else `awayScore.current`")
     format: Optional[SetsFormat] = spec(
         "What the score counts. `games`, `points`, `legs`: sets won, and each set counts games (tennis, padel), "
         "points (volleyball, badminton, table tennis) or legs (darts played in sets). `frames`, `legs_won`, "
@@ -338,12 +358,17 @@ class SetsScore(Model):
         "in legs only) or games (e-sports) won. Null when the record has no score sheet.",
         source="sport registry (`src/sports.py`); darts: `legs` when the event has `bestOfSets`, else `legs_won`",
         open_enum=True)
-    sets_won: Optional[ScorePair] = spec("Sets won by each side.", unit="sets", source="`current`")
-    sets: Tuple[SetScore, ...] = spec("The sets that have a score, in order.",
-                                      source="`period1` to `period5`, `period1TieBreak` to `period5TieBreak`")
+    sets_won: Optional[ScorePair] = spec(
+        "Sets won by each side; the frames, legs or games won with the formats `frames`, `legs_won` and "
+        "`games_won`.", unit="sets", source="`current`")
+    sets: Tuple[SetScore, ...] = spec(
+        "The sets that have a score, in order. Empty with the formats `frames`, `legs_won` and `games_won`.",
+        source="`period1` to `period7` (tennis: to `period5`); tie-breaks from `period1TieBreak` to "
+               "`period7TieBreak` (tennis: to `period5TieBreak`), in tennis and padel only")
     match_tiebreak: bool = spec(
         "True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A "
-        "heuristic: the last of three or five sets has a side with 10 or more.",
+        "heuristic: the last of three or five sets has a side with 10 or more. Always false outside tennis "
+        "and padel.",
         source="derived from the set scores (`src/status.py`)")
 
 
@@ -600,7 +625,10 @@ class Slice(Model):
     key: str = spec("Name of the slice, for example `event`, `statistics`, `lineups`, `incidents`.",
                     source="slice registry (`src/sports.py`)", open_enum=True,
                     known=("event", "statistics", "team_streaks", "pregame_form", "h2h", "lineups", "incidents",
-                           "point_by_point", "esports_games", "seasons", "schedule"))
+                           "point_by_point", "esports_games", "innings", "odds_featured", "odds_all",
+                           "odds_changes", "winning_odds", "seasons", "schedule", "standings", "season_info",
+                           "cuptrees", "top_players", "top_teams", "season_odds", "team_rankings",
+                           "player_statistics", "rankings"))
     sub: Optional[str] = spec("Sub-key for a slice that has several payloads per owner, for example the round "
                               "of a schedule page. Null when the slice has one payload.",
                               source="slice registry")
@@ -836,13 +864,13 @@ MODELS: Tuple[type, ...] = (
     Slice, SliceError,
     Change, ChangedField,
     LiveEvent,
+    Odds, OddsMarket, OddsChoice, OddsLine, StandingsRow,
 )
 # Kendi başına verilen kayıtlar (API kaynağı, dışa aktarma veri kümesi, akış satırı); gerisi bunların parçası.
-RECORDS: Tuple[type, ...] = (Sport, Category, Tournament, Season, Participant, Event, Slice, Change, LiveEvent)
-# P28'in modelleri. Sözleşme belgesinde (docs/design/04-schema-v1.md) blokları henüz yok: belgeler PR'ı alan
-# tablolarını ekleyince MODELS'e, kendi başına verilenler (Odds, OddsLine, StandingsRow) RECORDS'a girer ve JSON
-# Schema'da görünür. O zamana kadar API v1 ve dışa aktarma onları kullanır ama `describe schemas` göstermez.
-PENDING_MODELS: Tuple[type, ...] = (Odds, OddsMarket, OddsChoice, OddsLine, StandingsRow)
+# P28'in oran ve puan durumu kayıtları FX-21'den beri buradadır: `Odds` (API v1'in oran anlık görüntüsü),
+# `OddsLine` (dışa aktarmanın `odds` satırı), `StandingsRow` (puan durumu ve `standings` veri kümesinin satırı).
+RECORDS: Tuple[type, ...] = (Sport, Category, Tournament, Season, Participant, Event, Slice, Change, LiveEvent,
+                             Odds, OddsLine, StandingsRow)
 
 __all__ = [
     "SCHEMA_VERSION",
@@ -850,7 +878,6 @@ __all__ = [
     "EVENT_ENVELOPE_ID",
     "MODELS",
     "RECORDS",
-    "PENDING_MODELS",
     "Model",
     "Odds",
     "OddsChoice",

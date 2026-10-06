@@ -43,7 +43,15 @@ from src import schema
 from src.refresh import DEFAULT_REFRESH_WINDOW_HOURS
 from src.schema import jsonschema as schema_doc
 from src.schema import mappers, models
-from src.sports import SPORTS, PeriodFormat, ScoreFamily, period_format, score_family, set_format
+from src.sports import (
+    SPORTS,
+    PeriodFormat,
+    ScoreFamily,
+    period_format,
+    registered_slices,
+    score_family,
+    set_format,
+)
 from src.status import StatusClass, classify_status
 from src.store import (
     ChangeRow,
@@ -249,8 +257,13 @@ def test_version_and_ids():
     assert schema.SCHEMA_ID == "sofascore.data/1"
     assert schema.EVENT_ENVELOPE_ID == "sofascore.event/1"
     assert [model.__name__ for model in schema.RECORDS] == [
-        "Sport", "Category", "Tournament", "Season", "Participant", "Event", "Slice", "Change", "LiveEvent"]
+        "Sport", "Category", "Tournament", "Season", "Participant", "Event", "Slice", "Change", "LiveEvent",
+        "Odds", "OddsLine", "StandingsRow"]
     assert set(schema.RECORDS) <= set(schema.MODELS)
+    # P28'in beş modeli FX-21'den beri sözleşmededir; pazar ve seçenek yalnızca `Odds`un parçasıdır
+    assert [model.__name__ for model in schema.MODELS[-5:]] == [
+        "Odds", "OddsMarket", "OddsChoice", "OddsLine", "StandingsRow"]
+    assert not hasattr(models, "PENDING_MODELS")
 
 
 def _imports(path: Path) -> List[Tuple[int, str, bool]]:
@@ -306,6 +319,18 @@ def test_enums_follow_the_domain_modules():
     assert {spec.set_format for spec in SPORTS} - {None} < set(typing.get_args(models.SetsFormat))  # legs_won: olaydan
     assert mappers.TERMINAL_CLASSES == {"completed", "decided_without_play", "void"}
     assert mappers.DEFAULT_REFRESH_WINDOW_S == 72 * 3600
+
+
+def test_slice_key_lists_every_registered_slice():
+    """`Slice.key` açık bir sayımdır; bilinen değerleri dilim kayıt defterinin her anahtarını sayar (FX-21)."""
+    meta = {item.name: item.metadata for item in dataclasses.fields(models.Slice)}
+    known = meta["key"]["known"]
+    assert len(known) == len(set(known))
+    registered = [spec.key for spec in registered_slices()]
+    assert [key for key in registered if key not in known] == []
+    # kayıt defterinde olmayan ama Store'un tuttuğu dilimler: olay yükü, sezon listesi, sezonun maç sayfaları
+    assert [key for key in known if key not in registered] == ["event", "seasons", "schedule"]
+    assert {spec.owner for spec in registered_slices()} <= set(meta["owner_kind"]["known"])
 
 
 # --- modeller -----------------------------------------------------------------------------------------
@@ -932,6 +957,38 @@ def test_live_events_are_the_stream_envelope(canon: Store):
     assert system["data"] == {"reason": "403"}
 
 
+# --- oranlar ve puan durumu (P28; sözleşmeye FX-21 ile girdi) ------------------------------------------
+
+P28_FIXTURES = Path(__file__).parent / "fixtures" / "p28"
+
+
+def _p28_body(name: str) -> Any:
+    return json.loads((P28_FIXTURES / f"{name}.json").read_text(encoding="utf-8"))["body"]
+
+
+def test_odds_and_standings_records_follow_the_json_schema():
+    """Kayıtlı yanıtlardan (tests/fixtures/p28) eşlenen oran ve puan durumu kayıtları JSON Schema'ya uyar."""
+    found: Dict[str, List[Dict[str, Any]]] = {"Odds": [], "OddsLine": [], "StandingsRow": []}
+    for key in ("odds_all", "odds_featured"):
+        odds = mappers.odds_from_payload(17144927, key, _p28_body(key), provider_id=1, fetched_at=1_790_000_000)
+        assert odds is not None and odds.markets, key
+        found["Odds"].append(odds.to_dict())
+        found["OddsLine"].extend(line.to_dict() for line in mappers.odds_lines(odds))
+    rows = mappers.standings_rows(17, 96668, "total", _p28_body("standings_total"), fetched_at=1_790_000_000)
+    found["StandingsRow"].extend(row.to_dict() for row in rows)
+
+    assert all(found.values())
+    for name, records in found.items():
+        for record in records:
+            assert check(record, name) == [], name
+    # Kapalı tipler denetlenir; açık sayım bilinmeyen değeri kabul eder; her alan her kayıtta vardır
+    line = found["OddsLine"][0]
+    assert check({**line, "decimal": "3.2"}, "OddsLine") and check({**line, "event_id": None}, "OddsLine")
+    assert check({**found["StandingsRow"][0], "table": "away"}, "StandingsRow") == []
+    assert check({key: value for key, value in found["Odds"][0].items() if key != "provider_id"}, "Odds") == [
+        "$: missing 'provider_id'"]
+
+
 # --- JSON Schema --------------------------------------------------------------------------------------
 
 def test_json_schema_matches_the_golden_document():
@@ -1028,7 +1085,9 @@ def test_record_schema_and_describe():
     assert document["$ref"] == "#/$defs/Change" and document["$id"] == "sofascore.data/1/Change"
     assert document["$defs"] == schema.json_schema()["$defs"]
     with pytest.raises(KeyError):
-        schema.record_schema("Odds")
+        schema.record_schema("Standings")  # kaydın adı StandingsRow'dur
+    odds = schema.record_schema("Odds")
+    assert odds["$ref"] == "#/$defs/Odds" and odds["$id"] == "sofascore.data/1/Odds"
 
     described = schema.describe()
     assert described == {"id": "sofascore.data/1", "version": 1,
@@ -1109,7 +1168,8 @@ def test_document_states_the_version_and_its_examples_are_valid():
 
     assert f"`schema_version` is **{schema.SCHEMA_VERSION}**" in text
     assert f"`{schema.SCHEMA_ID}`" in text and f"`{schema.EVENT_ENVELOPE_ID}`" in text
-    assert "\n## 9. Open questions\n" in text
+    # Belgenin "section 9, point N" atıfları bu bölümün kararlarınadır; açık soru kalmadı (FX-21 başlığı değiştirdi)
+    assert "\n## 9. Decisions\n" in text and "\n## 9. Open questions\n" not in text
     # Belgedeki her örnek kayıt (```json example:Model) kendi modelinin şemasına uyar
     examples = re.findall(r"```json example:(\w+)\n(.*?)\n```", text, flags=re.S)
     named = {name for name, _body in examples}

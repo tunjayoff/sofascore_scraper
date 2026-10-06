@@ -830,19 +830,19 @@ export interface PeriodScore {
 export interface PeriodsScore {
   /** Always `periods`. */
   family: "periods"
-  /** Headline score of the home side: points including overtime. */
+  /** Headline score of the home side: points including overtime; goals in the goal sports (ice hockey, handball, futsal, minifootball, floorball). */
   home: number | null
-  /** Headline score of the away side: points including overtime. */
+  /** Headline score of the away side: points including overtime; goals in the goal sports (ice hockey, handball, futsal, minifootball, floorball). */
   away: number | null
-  /** How regulation time is divided. Null while no period score exists. */
+  /** How regulation time is divided: `quarters` (basketball, American football, Aussie rules), `halves` (basketball, handball, rugby, futsal, minifootball) or `thirds` (ice hockey, floorball). Null while no period score exists. */
   format: "quarters" | "halves" | "thirds" | null
-  /** Points of each period of regulation time that has a score, in order. */
+  /** Points (goals in the goal sports) of each period of regulation time that has a score, in order. */
   periods: PeriodScore[]
-  /** Points at the end of regulation time. */
+  /** Points (goals in the goal sports) at the end of regulation time. */
   regulation: ScorePair | null
-  /** Points scored in overtime alone. Null without overtime. */
+  /** Points (goals in the goal sports) scored in overtime alone. Null without overtime. */
   overtime: ScorePair | null
-  /** Final points including overtime. */
+  /** Final points (goals in the goal sports) including overtime. */
   final: ScorePair | null
   /** Goals of the penalty shoot-out alone. Null without a shoot-out, and always null for basketball. In the one recorded handball shoot-out, `final` and the headline score include these goals. */
   penalties: ScorePair | null
@@ -1046,11 +1046,11 @@ export interface SeasonSliceListResponse {
 export interface SetScore {
   /** Number of the set, starting at 1. */
   number: number
-  /** Games the home side won in the set; points when the set is a match tie-break. */
+  /** What the home side won in the set, as `SetsScore.format` says: games in tennis and padel (points when the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played in sets. */
   home: number | null
-  /** Games the away side won in the set; points when the set is a match tie-break. */
+  /** What the away side won in the set, as `SetsScore.format` says: games in tennis and padel (points when the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played in sets. */
   away: number | null
-  /** Points of the set's tie-break. Null when the set had none. */
+  /** Points of the set's tie-break. Null when the set had none, and always null outside tennis and padel. */
   tiebreak: ScorePair | null
 }
 
@@ -1058,17 +1058,17 @@ export interface SetScore {
 export interface SetsScore {
   /** Always `sets`. */
   family: "sets"
-  /** Headline score of the home side: sets won. */
+  /** Headline score of the home side: sets won; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`. */
   home: number | null
-  /** Headline score of the away side: sets won. */
+  /** Headline score of the away side: sets won; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`. */
   away: number | null
   /** What the score counts. `games`, `points`, `legs`: sets won, and each set counts games (tennis, padel), points (volleyball, badminton, table tennis) or legs (darts played in sets). `frames`, `legs_won`, `games_won`: no sets; `sets_won` and the headline score are the frames (snooker), legs (darts played in legs only) or games (e-sports) won. Null when the record has no score sheet. */
   format: "games" | "points" | "frames" | "legs" | "legs_won" | "games_won" | null
-  /** Sets won by each side. */
+  /** Sets won by each side; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`. */
   sets_won: ScorePair | null
-  /** The sets that have a score, in order. */
+  /** The sets that have a score, in order. Empty with the formats `frames`, `legs_won` and `games_won`. */
   sets: SetScore[]
-  /** True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more. */
+  /** True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more. Always false outside tennis and padel. */
   match_tiebreak: boolean
 }
 

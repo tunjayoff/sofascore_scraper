@@ -8315,7 +8315,7 @@
               }
             ],
             "title": "Home",
-            "description": "Headline score of the home side: points including overtime."
+            "description": "Headline score of the home side: points including overtime; goals in the goal sports (ice hockey, handball, futsal, minifootball, floorball)."
           },
           "away": {
             "anyOf": [
@@ -8327,7 +8327,7 @@
               }
             ],
             "title": "Away",
-            "description": "Headline score of the away side: points including overtime."
+            "description": "Headline score of the away side: points including overtime; goals in the goal sports (ice hockey, handball, futsal, minifootball, floorball)."
           },
           "format": {
             "anyOf": [
@@ -8344,7 +8344,7 @@
               }
             ],
             "title": "Format",
-            "description": "How regulation time is divided. Null while no period score exists."
+            "description": "How regulation time is divided: `quarters` (basketball, American football, Aussie rules), `halves` (basketball, handball, rugby, futsal, minifootball) or `thirds` (ice hockey, floorball). Null while no period score exists."
           },
           "periods": {
             "items": {
@@ -8352,7 +8352,7 @@
             },
             "type": "array",
             "title": "Periods",
-            "description": "Points of each period of regulation time that has a score, in order."
+            "description": "Points (goals in the goal sports) of each period of regulation time that has a score, in order."
           },
           "regulation": {
             "anyOf": [
@@ -8363,7 +8363,7 @@
                 "type": "null"
               }
             ],
-            "description": "Points at the end of regulation time."
+            "description": "Points (goals in the goal sports) at the end of regulation time."
           },
           "overtime": {
             "anyOf": [
@@ -8374,7 +8374,7 @@
                 "type": "null"
               }
             ],
-            "description": "Points scored in overtime alone. Null without overtime."
+            "description": "Points (goals in the goal sports) scored in overtime alone. Null without overtime."
           },
           "final": {
             "anyOf": [
@@ -8385,7 +8385,7 @@
                 "type": "null"
               }
             ],
-            "description": "Final points including overtime."
+            "description": "Final points (goals in the goal sports) including overtime."
           },
           "penalties": {
             "anyOf": [
@@ -9265,7 +9265,7 @@
               }
             ],
             "title": "Home",
-            "description": "Games the home side won in the set; points when the set is a match tie-break."
+            "description": "What the home side won in the set, as `SetsScore.format` says: games in tennis and padel (points when the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played in sets."
           },
           "away": {
             "anyOf": [
@@ -9277,7 +9277,7 @@
               }
             ],
             "title": "Away",
-            "description": "Games the away side won in the set; points when the set is a match tie-break."
+            "description": "What the away side won in the set, as `SetsScore.format` says: games in tennis and padel (points when the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played in sets."
           },
           "tiebreak": {
             "anyOf": [
@@ -9288,7 +9288,7 @@
                 "type": "null"
               }
             ],
-            "description": "Points of the set's tie-break. Null when the set had none."
+            "description": "Points of the set's tie-break. Null when the set had none, and always null outside tennis and padel."
           }
         },
         "type": "object",
@@ -9319,7 +9319,7 @@
               }
             ],
             "title": "Home",
-            "description": "Headline score of the home side: sets won."
+            "description": "Headline score of the home side: sets won; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`."
           },
           "away": {
             "anyOf": [
@@ -9331,7 +9331,7 @@
               }
             ],
             "title": "Away",
-            "description": "Headline score of the away side: sets won."
+            "description": "Headline score of the away side: sets won; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`."
           },
           "format": {
             "anyOf": [
@@ -9362,7 +9362,7 @@
                 "type": "null"
               }
             ],
-            "description": "Sets won by each side."
+            "description": "Sets won by each side; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`."
           },
           "sets": {
             "items": {
@@ -9370,12 +9370,12 @@
             },
             "type": "array",
             "title": "Sets",
-            "description": "The sets that have a score, in order."
+            "description": "The sets that have a score, in order. Empty with the formats `frames`, `legs_won` and `games_won`."
           },
           "match_tiebreak": {
             "type": "boolean",
             "title": "Match Tiebreak",
-            "description": "True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more."
+            "description": "True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more. Always false outside tennis and padel."
           }
         },
         "type": "object",

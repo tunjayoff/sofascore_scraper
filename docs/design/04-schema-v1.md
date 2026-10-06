@@ -517,13 +517,13 @@ Not mapped in version 1: the goals of each half of extra time (`extra1`, `extra2
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
 | `family` | constant `periods` | no |  | sport registry | Always `periods`. |
-| `home` | integer | yes | points | `homeScore.display`, else `homeScore.current` | Headline score of the home side: points including overtime. |
-| `away` | integer | yes | points | `awayScore.display`, else `awayScore.current` | Headline score of the away side: points including overtime. |
-| `format` | string, open set: `quarters`, `halves`, `thirds` | yes |  | sport registry (`src/sports.py`); basketball: `quarters` when `period1` or `period3` is present, `halves` when only `period2` / `period4` are | How regulation time is divided. Null while no period score exists. |
-| `periods` | array of [PeriodScore](#periodscore) | no |  | `period1` to `period4` | Points of each period of regulation time that has a score, in order. |
-| `regulation` | [ScorePair](#scorepair) | yes | points | `normaltime` | Points at the end of regulation time. |
-| `overtime` | [ScorePair](#scorepair) | yes | points | `overtime` | Points scored in overtime alone. Null without overtime. |
-| `final` | [ScorePair](#scorepair) | yes | points | `current` | Final points including overtime. |
+| `home` | integer | yes | points | `homeScore.display`, else `homeScore.current` | Headline score of the home side: points including overtime; goals in the goal sports (ice hockey, handball, futsal, minifootball, floorball). |
+| `away` | integer | yes | points | `awayScore.display`, else `awayScore.current` | Headline score of the away side: points including overtime; goals in the goal sports (ice hockey, handball, futsal, minifootball, floorball). |
+| `format` | string, open set: `quarters`, `halves`, `thirds` | yes |  | sport registry (`src/sports.py`); basketball: `quarters` when `period1` or `period3` is present, `halves` when only `period2` / `period4` are | How regulation time is divided: `quarters` (basketball, American football, Aussie rules), `halves` (basketball, handball, rugby, futsal, minifootball) or `thirds` (ice hockey, floorball). Null while no period score exists. |
+| `periods` | array of [PeriodScore](#periodscore) | no |  | `period1` to `period4` | Points (goals in the goal sports) of each period of regulation time that has a score, in order. |
+| `regulation` | [ScorePair](#scorepair) | yes | points | `normaltime` | Points (goals in the goal sports) at the end of regulation time. |
+| `overtime` | [ScorePair](#scorepair) | yes | points | `overtime` | Points (goals in the goal sports) scored in overtime alone. Null without overtime. |
+| `final` | [ScorePair](#scorepair) | yes | points | `current` | Final points (goals in the goal sports) including overtime. |
 | `penalties` | [ScorePair](#scorepair) | yes | goals | `penalties` | Goals of the penalty shoot-out alone. Null without a shoot-out, and always null for basketball. In the one recorded handball shoot-out, `final` and the headline score include these goals. |
 <!-- /fields:PeriodsScore -->
 
@@ -569,12 +569,12 @@ these eight sports was recorded, so `format` and the periods during a live game 
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
 | `family` | constant `sets` | no |  | sport registry | Always `sets`. |
-| `home` | integer | yes | sets | `homeScore.display`, else `homeScore.current` | Headline score of the home side: sets won. |
-| `away` | integer | yes | sets | `awayScore.display`, else `awayScore.current` | Headline score of the away side: sets won. |
+| `home` | integer | yes | sets | `homeScore.display`, else `homeScore.current` | Headline score of the home side: sets won; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`. |
+| `away` | integer | yes | sets | `awayScore.display`, else `awayScore.current` | Headline score of the away side: sets won; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`. |
 | `format` | string, open set: `games`, `points`, `frames`, `legs`, `legs_won`, `games_won` | yes |  | sport registry (`src/sports.py`); darts: `legs` when the event has `bestOfSets`, else `legs_won` | What the score counts. `games`, `points`, `legs`: sets won, and each set counts games (tennis, padel), points (volleyball, badminton, table tennis) or legs (darts played in sets). `frames`, `legs_won`, `games_won`: no sets; `sets_won` and the headline score are the frames (snooker), legs (darts played in legs only) or games (e-sports) won. Null when the record has no score sheet. |
-| `sets_won` | [ScorePair](#scorepair) | yes | sets | `current` | Sets won by each side. |
-| `sets` | array of [SetScore](#setscore) | no |  | `period1` to `period5`, `period1TieBreak` to `period5TieBreak` | The sets that have a score, in order. |
-| `match_tiebreak` | boolean | no |  | derived from the set scores (`src/status.py`) | True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more. |
+| `sets_won` | [ScorePair](#scorepair) | yes | sets | `current` | Sets won by each side; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`. |
+| `sets` | array of [SetScore](#setscore) | no |  | `period1` to `period7` (tennis: to `period5`); tie-breaks from `period1TieBreak` to `period7TieBreak` (tennis: to `period5TieBreak`), in tennis and padel only | The sets that have a score, in order. Empty with the formats `frames`, `legs_won` and `games_won`. |
+| `match_tiebreak` | boolean | no |  | derived from the set scores (`src/status.py`) | True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more. Always false outside tennis and padel. |
 <!-- /fields:SetsScore -->
 
 ```json example:SetsScore
@@ -620,9 +620,9 @@ because the recorded compact records lost `bestOf*` (the not-started fixture 170
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
 | `number` | integer | no |  | `periodN` | Number of the set, starting at 1. |
-| `home` | integer | yes | games | `homeScore.periodN` | Games the home side won in the set; points when the set is a match tie-break. |
-| `away` | integer | yes | games | `awayScore.periodN` | Games the away side won in the set; points when the set is a match tie-break. |
-| `tiebreak` | [ScorePair](#scorepair) | yes | points | `periodNTieBreak` | Points of the set's tie-break. Null when the set had none. |
+| `home` | integer | yes | games | `homeScore.periodN` | What the home side won in the set, as `SetsScore.format` says: games in tennis and padel (points when the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played in sets. |
+| `away` | integer | yes | games | `awayScore.periodN` | What the away side won in the set, as `SetsScore.format` says: games in tennis and padel (points when the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played in sets. |
+| `tiebreak` | [ScorePair](#scorepair) | yes | points | `periodNTieBreak` | Points of the set's tie-break. Null when the set had none, and always null outside tennis and padel. |
 <!-- /fields:SetScore -->
 
 #### InningsScore
@@ -714,7 +714,7 @@ event the slices are the event payload itself (key `event`) and its detail endpo
 |---|---|---|---|---|---|
 | `owner_kind` | string, open set: `event`, `tournament`, `season`, `team`, `player`, `sport` | no |  | the request that fetched it | What the slice belongs to. |
 | `owner_id` | integer | no |  | the request that fetched it | Id of the owner; for `event` the event id. |
-| `key` | string, open set: `event`, `statistics`, `team_streaks`, `pregame_form`, `h2h`, `lineups`, `incidents`, `point_by_point`, `esports_games`, `seasons`, `schedule` | no |  | slice registry (`src/sports.py`) | Name of the slice, for example `event`, `statistics`, `lineups`, `incidents`. |
+| `key` | string, open set: `event`, `statistics`, `team_streaks`, `pregame_form`, `h2h`, `lineups`, `incidents`, `point_by_point`, `esports_games`, `innings`, `odds_featured`, `odds_all`, `odds_changes`, `winning_odds`, `seasons`, `schedule`, `standings`, `season_info`, `cuptrees`, `top_players`, `top_teams`, `season_odds`, `team_rankings`, `player_statistics`, `rankings` | no |  | slice registry (`src/sports.py`) | Name of the slice, for example `event`, `statistics`, `lineups`, `incidents`. |
 | `sub` | string | yes |  | slice registry | Sub-key for a slice that has several payloads per owner, for example the round of a schedule page. Null when the slice has one payload. |
 | `state` | string, one of `ok`, `empty`, `error`, `not_requested` | no |  | the platform's bookkeeping | `ok`: a payload with data is stored. `empty`: SofaScore answered that it has no such data (404, or a response without content). `error`: the last attempt failed and it is unknown whether data exists. `not_requested`: the platform has not asked for it. |
 | `has_payload` | boolean | no |  | the platform's bookkeeping | True when a payload is stored. A slice in state `error` can still hold the payload of an earlier successful read. |
@@ -948,8 +948,7 @@ into `MODELS`, and `Odds`, `OddsLine` and `StandingsRow` into `RECORDS`.
 
 One read of an odds slice of an event: a snapshot.
 
-The table below is copied from the model (`render_fields` of `tests/test_schema_v1.py` at `b6caf2f`). It is not yet a generated block: the model is in `models.PENDING_MODELS`, not in `MODELS`, so no test compares the two. It becomes a generated, test-checked block when FX-21 moves the models into `MODELS`.
-
+<!-- fields:Odds -->
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
 | `event_id` | integer | no |  | the request that fetched it | Id of the Event. |
@@ -957,13 +956,25 @@ The table below is copied from the model (`render_fields` of `tests/test_schema_
 | `provider_id` | integer | yes |  | the request that fetched it | SofaScore's id of the bookmaker the odds come from. Which bookmakers SofaScore offers depends on the country it sees the request from; the platform stores no address or location of the machine. |
 | `fetched_at_utc` | string | yes | ISO 8601 UTC | time of the platform's request | When the odds were read. A read is a snapshot: odds change until the event ends, and only a later read shows a later price. |
 | `markets` | array of [OddsMarket](#oddsmarket) | no |  | `markets`, or the values of `featured` | The markets, in SofaScore's order. |
+<!-- /fields:Odds -->
+
+```json example:Odds
+{"event_id": 17144927, "key": "odds_all", "provider_id": 1, "fetched_at_utc": "2026-09-21T14:13:20Z",
+ "markets": [{"market_id": 1, "name": "Full time", "group": "1X2", "period": "Full-time",
+  "choice_group": null, "label": null, "is_live": true, "suspended": false,
+  "choices": [{"name": "1", "fractional": "11/5", "decimal": 3.2, "initial_fractional": "13/10",
+               "initial_decimal": 2.3, "change": 1, "winning": null},
+              {"name": "X", "fractional": "8/13", "decimal": 1.615, "initial_fractional": "5/2",
+               "initial_decimal": 3.5, "change": -1, "winning": null},
+              {"name": "2", "fractional": "11/2", "decimal": 6.5, "initial_fractional": "31/20",
+               "initial_decimal": 2.55, "change": 1, "winning": null}]}]}
+```
 
 #### OddsMarket
 
 One market of a snapshot (match result, over/under, handicap, ...).
 
-The table below is copied from the model (`render_fields` of `tests/test_schema_v1.py` at `b6caf2f`). It is not yet a generated block: the model is in `models.PENDING_MODELS`, not in `MODELS`, so no test compares the two. It becomes a generated, test-checked block when FX-21 moves the models into `MODELS`.
-
+<!-- fields:OddsMarket -->
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
 | `market_id` | integer | yes |  | `marketId` | SofaScore's id of the market type (1 is the match result). |
@@ -975,13 +986,13 @@ The table below is copied from the model (`render_fields` of `tests/test_schema_
 | `is_live` | boolean | yes |  | `isLive` | True when the prices were offered during play. |
 | `suspended` | boolean | yes |  | `suspended` | True when the market was closed for bets at the time of the read. |
 | `choices` | array of [OddsChoice](#oddschoice) | no |  | `choices` | The outcomes of the market, in SofaScore's order. |
+<!-- /fields:OddsMarket -->
 
 #### OddsChoice
 
 One outcome of a market and its price.
 
-The table below is copied from the model (`render_fields` of `tests/test_schema_v1.py` at `b6caf2f`). It is not yet a generated block: the model is in `models.PENDING_MODELS`, not in `MODELS`, so no test compares the two. It becomes a generated, test-checked block when FX-21 moves the models into `MODELS`.
-
+<!-- fields:OddsChoice -->
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
 | `name` | string | no |  | `choices[].name` | Name of the outcome as SofaScore gives it, for example `1`, `X`, `2`, `Over`. |
@@ -991,13 +1002,13 @@ The table below is copied from the model (`render_fields` of `tests/test_schema_
 | `initial_decimal` | number | yes |  | derived from `choices[].initialFractionalValue` | Opening price as a decimal, rounded to three places. |
 | `change` | integer | yes |  | `choices[].change` | Direction of the last change of the price: 1 up, -1 down, 0 none. |
 | `winning` | boolean | yes |  | `choices[].winning` | True for the outcome that won once the event is settled; null while open or when SofaScore does not say. |
+<!-- /fields:OddsChoice -->
 
 #### OddsLine
 
 The flat row of the `odds` export dataset: one outcome of one market of one snapshot.
 
-The table below is copied from the model (`render_fields` of `tests/test_schema_v1.py` at `b6caf2f`). It is not yet a generated block: the model is in `models.PENDING_MODELS`, not in `MODELS`, so no test compares the two. It becomes a generated, test-checked block when FX-21 moves the models into `MODELS`.
-
+<!-- fields:OddsLine -->
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
 | `event_id` | integer | no |  | the request that fetched it | Id of the Event. |
@@ -1019,13 +1030,21 @@ The table below is copied from the model (`render_fields` of `tests/test_schema_
 | `initial_decimal` | number | yes |  | derived from `choices[].initialFractionalValue` | As `OddsChoice.initial_decimal`. |
 | `change` | integer | yes |  | `choices[].change` | As `OddsChoice.change`. |
 | `winning` | boolean | yes |  | `choices[].winning` | As `OddsChoice.winning`. |
+<!-- /fields:OddsLine -->
+
+```json example:OddsLine
+{"event_id": 17144927, "key": "odds_all", "provider_id": 1, "fetched_at_utc": "2026-09-21T14:13:20Z",
+ "market_id": 1, "market_name": "Full time", "market_group": "1X2", "market_period": "Full-time",
+ "choice_group": null, "label": null, "is_live": true, "suspended": false, "choice": "1",
+ "fractional": "11/5", "decimal": 3.2, "initial_fractional": "13/10", "initial_decimal": 2.3,
+ "change": 1, "winning": null}
+```
 
 #### StandingsRow
 
 One row of a season's table (`standings`, sub `total` or `home`); the row of the `standings` export dataset.
 
-The table below is copied from the model (`render_fields` of `tests/test_schema_v1.py` at `b6caf2f`). It is not yet a generated block: the model is in `models.PENDING_MODELS`, not in `MODELS`, so no test compares the two. It becomes a generated, test-checked block when FX-21 moves the models into `MODELS`.
-
+<!-- fields:StandingsRow -->
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
 | `tournament_id` | integer | no |  | the request that fetched it | Id of the Tournament. |
@@ -1043,6 +1062,14 @@ The table below is copied from the model (`render_fields` of `tests/test_schema_
 | `scores_against` | integer | yes |  | `rows[].scoresAgainst` | Goals or points conceded. |
 | `points` | number | yes |  | `rows[].points` | Table points (a fraction in a few sports). |
 | `fetched_at_utc` | string | yes | ISO 8601 UTC | time of the platform's request | When the table was read. |
+<!-- /fields:StandingsRow -->
+
+```json example:StandingsRow
+{"tournament_id": 17, "season_id": 96668, "table": "total", "group_name": "Premier League 26/27",
+ "position": 1, "participant_id": 17, "participant_name": "Manchester City", "matches": 5,
+ "wins": 5, "draws": 0, "losses": 0, "scores_for": 13, "scores_against": 5, "points": 15,
+ "fetched_at_utc": "2026-09-21T14:13:20Z"}
+```
 
 ## 5. What differs by sport
 
@@ -1158,7 +1185,7 @@ What a raw request returns:
     unknown value of a closed enumeration;
   - the field tables of this document equal the models, and every example in this document validates.
 
-## 9. Open questions
+## 9. Decisions
 
 None are left. The 28 points of this section were the open questions of the proposal, and the approval of
 2026-10-02 settled every one of them as chosen (decision P2). The heading of the section is kept as it was,
