@@ -45,8 +45,9 @@ if TYPE_CHECKING:
 
 logger = get_logger("Services")
 
-# Veri dizini altında her bağlam kuruluşunda var edilen dizinler (bugünkü yerleşim)
-DATA_SUBDIRECTORIES = ("seasons", "matches", "match_details", "datasets")
+# Veri dizini altında her bağlam kuruluşunda var edilen dizinler. Sezon listeleri ve programlar v3/tournaments/
+# altına yazılır (plan maddesi ST-22); boş `seasons/` ve `matches/` artık kurulmaz (plan maddesi FX-15).
+DATA_SUBDIRECTORIES = ("match_details", "datasets")
 
 
 @dataclass(frozen=True)

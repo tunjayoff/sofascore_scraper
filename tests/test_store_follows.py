@@ -1081,7 +1081,7 @@ def test_build_context_without_follows_does_not_create_a_store(setup: Setup, con
     config_file("[client]\nretries = 2\n")
     build_context(cm, data_dir=str(setup.data_dir))
 
-    assert sorted(p.name for p in setup.data_dir.iterdir()) == ["datasets", "match_details", "matches", "seasons"]
+    assert sorted(p.name for p in setup.data_dir.iterdir()) == ["datasets", "match_details"]
     assert api_mod._registry == {}
 
 

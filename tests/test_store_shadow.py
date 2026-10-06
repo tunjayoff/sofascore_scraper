@@ -36,10 +36,10 @@ import conftest
 import legacy_writer
 import src.store
 import store_fixtures as sf
+from schedule_runner import list_schedule, list_schedule_async
 from src.web import deps
 from src.exceptions import StorageError
 from src.match_data_fetcher import SCORE_CHANGES_FILE, UNAVAILABLE_FILE, MatchDataFetcher
-from src.match_fetcher import MatchFetcher
 from src.season_fetcher import SeasonFetcher
 from src.slices import SLICE_EMPTY, SLICE_OK, SliceOutcome
 from src.utils import ensure_directory
@@ -608,22 +608,7 @@ def test_first_payload_of_a_tournament_fills_the_sport_of_its_summary_rows(tmp_p
     assert differences(store) == []
 
 
-# --- kancalar: program, sezon özeti, sezon listesi ------------------------------------------------------
-
-@contextlib.asynccontextmanager
-async def _no_session() -> Any:
-    yield None
-
-
-def _schedule_fetcher(data: Path) -> MatchFetcher:
-    config = MagicMock()
-    config.get_leagues.return_value = {PL: sf.PL.name}
-    config.get_league_by_id.return_value = sf.PL.name
-    config.get_max_concurrent.return_value = 2
-    seasons = MagicMock()
-    seasons.get_season_name.return_value = sf.PL_2627.name
-    return MatchFetcher(config, seasons, data_dir=str(data))
-
+# --- program (listing.ScheduleLister), sezon listesi ------------------------------------------------------
 
 def _rounds_api(rounds: Dict[int, List[sf.Ev]]) -> Any:
     base = f"/unique-tournament/{PL}/season/{PL_SEASON}"
@@ -640,11 +625,8 @@ def _rounds_api(rounds: Dict[int, List[sf.Ev]]) -> Any:
 def test_fetching_a_season_schedule_indexes_rounds(tmp_path: Path) -> None:
     data = tmp_path / "data"
     rounds = {1: [sf.PL_ARS, sf.PL_LIV], 2: [sf.PL_NO_DETAIL, sf.PL_NOT_STARTED]}
-    fetcher = _schedule_fetcher(data)
 
-    with patch("src.utils.make_api_request_async", new=_rounds_api(rounds)), \
-            patch("src.utils.create_session_async", new=_no_session), patch("src.utils.FETCH_ONLY_FINISHED", True):
-        assert fetcher.fetch_all_matches_for_season(PL, PL_SEASON) is True
+    assert list_schedule(data, PL, PL_SEASON, _rounds_api(rounds), only_finished=True).chunks
 
     store = open_store(data)
     # ST-22: turlar v3 sezon dizinine yazılır; eski düzen dizini ve sezon özeti dosyaları yazılmaz
@@ -670,9 +652,7 @@ def test_fetching_event_pages_indexes_them(tmp_path: Path) -> None:
             return {"rounds": []}
         return {"events": [sf.event_payload(ev) for ev in pages.get(url, [])], "hasNextPage": False}
 
-    with patch("src.utils.make_api_request_async", new=api), \
-            patch("src.utils.create_session_async", new=_no_session), patch("src.utils.FETCH_ONLY_FINISHED", False):
-        assert _schedule_fetcher(data).fetch_all_matches_for_season(PL, PL_SEASON) is True
+    assert list_schedule(data, PL, PL_SEASON, api, only_finished=False).chunks
 
     store = open_store(data)
     assert [info.sub for info in store.entities.slices(Ref.season(PL, PL_SEASON))] == ["last_0", "next_0"]
@@ -682,20 +662,15 @@ def test_fetching_event_pages_indexes_them(tmp_path: Path) -> None:
 
 
 def test_a_schedule_fetch_that_is_cut_short_still_indexes_the_saved_rounds(tmp_path: Path) -> None:
-    """Kanca `finally` içindedir: iptal edilen ya da hata veren çekim, yazdığı turları katalogda bırakır."""
+    """Her sayfa çekilir çekilmez yazılır: iptal edilen ya da hata veren çekim, yazdığı turları katalogda bırakır."""
     data = tmp_path / "data"
-    fetcher = _schedule_fetcher(data)
-    real = fetcher.fetch_all_rounds_async
 
-    async def cancelled(*args: Any, **kwargs: Any) -> Any:
-        await real(*args, **kwargs)
+    async def cancelled() -> Any:
+        await list_schedule_async(data, PL, PL_SEASON, _rounds_api({1: [sf.PL_ARS]}), only_finished=True)
         raise asyncio.CancelledError()
 
-    with patch("src.utils.make_api_request_async", new=_rounds_api({1: [sf.PL_ARS]})), \
-            patch("src.utils.create_session_async", new=_no_session), patch("src.utils.FETCH_ONLY_FINISHED", True), \
-            patch.object(fetcher, "fetch_all_rounds_async", new=cancelled):
-        with pytest.raises(asyncio.CancelledError):
-            fetcher.fetch_all_rounds_for_season(PL, PL_SEASON)
+    with pytest.raises(asyncio.CancelledError):
+        asyncio.run(cancelled())
 
     store = open_store(data)
     assert store.events.get(ARS).listed_in == "round_1" and differences(store) == []

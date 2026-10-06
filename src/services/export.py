@@ -27,8 +27,8 @@ boştu) ve lig süzgeçli indirme artık pandas'tan geçmez: satırları birleş
 tamsayı sütunları `1.0` biçiminde çıkmaz, satır sonu her yerde `\\r\\n`'dir.
 
 Servis dosya yazmaz; yalnızca istenen akışa ya da yola yazar. Web'in GET'i çıktıyı istekte üretip akıtır
-(karar D16); terminal menüsü ve `--headless --csv-export` dosyayı `match_details/processed/` altına yazar
-(`export_all_csv`, `write_legacy_csv_files`). Dışa aktarma kilit almaz: katalogdan okur.
+(karar D16); `ssc export --profile legacy-wide-csv` (ve onun eski adı `--headless --csv-export`) dosyayı
+`match_details/processed/` altına yazar (`write_legacy_csv`). Dışa aktarma kilit almaz: katalogdan okur.
 """
 from __future__ import annotations
 
@@ -54,7 +54,6 @@ from src.store import EventQuery, PayloadCorrupt, PayloadMissing, Scope, StoreEr
 
 if TYPE_CHECKING:
     from src.schema.models import Model
-    from src.services.context import ServiceContext
     from src.store import EventRow, Store
 
 logger = get_logger("ExportService")
@@ -905,28 +904,9 @@ def _formation(value: Any) -> Optional[str]:
     return value if isinstance(value, str) and value else None
 
 
-# -- eski girişler ----------------------------------------------------------------------------------------
-
-def export_all_csv(ctx: "ServiceContext") -> Optional[str]:
-    """
-    İndirilmiş bütün maçları tek CSV dosyasına yazar (`match_details/processed/all_matches_<epoch>.csv`); dosyanın
-    yolunu döndürür. `--headless --csv-export`in adımıdır.
-
-    None: dosya üretilmedi (maç yok ya da hata). Hata yutulur ve loglanır (P08'in sözleşmesi; çıkış kodu P19'un
-    işidir). FetchCancelled BaseException olduğu için buradan geçer.
-    """
-    try:
-        result = ctx.match_data_fetcher.convert_all_matches_to_csv()
-    except Exception as exc:
-        logger.error("CSV export failed: %s", exc)
-        return None
-    # `separate_by_league` verilmediği için sonuç tek bir yoldur; boş metin "üretilemedi" demektir
-    return result if isinstance(result, str) and result else None
-
-
 __all__ = ["COLUMN_SEPARATOR", "DATASETS", "DATASET_CHANGES", "DATASET_EVENTS", "DATASET_FORMATS", "DATASET_SLICES",
            "DatasetFilter", "DatasetSpec", "ExportResult", "ExportService", "ExportSpec", "LEGACY_WIDE_CSV",
            "LegacyTable", "NORMALIZED", "PreparedExport", "RAW", "RAW_DATASETS", "RAW_FORMATS", "SCHEMAS",
-           "TEXT_FORMATS", "check_dataset", "column_types", "dataset_columns", "export_all_csv", "flatten_record", "leaf_paths",
+           "TEXT_FORMATS", "check_dataset", "column_types", "dataset_columns", "flatten_record", "leaf_paths",
            "legacy_columns", "legacy_folders", "legacy_wide_row", "parquet_available", "parse_moment",
            "record_model"]

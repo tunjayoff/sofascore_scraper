@@ -264,9 +264,6 @@ def test_no_plan_from_a_catalog_that_is_not_current(tmp_path: Path, monkeypatch:
         with pytest.raises(CatalogNotCurrent) as caught:
             plan()
         assert isinstance(caught.value, StorageError)
-    # toplu indirme planı yapamayınca durur ve hatayı çağırana verir (disk hatası gibi)
-    with pytest.raises(CatalogNotCurrent):
-        fetcher.fetch_all_match_details()
 
 
 def test_refresh_policy_reads_the_settings(monkeypatch: pytest.MonkeyPatch) -> None:

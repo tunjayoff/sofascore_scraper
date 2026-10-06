@@ -27,9 +27,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import store_fixtures as sf
-from src.config_manager import ConfigManager
 from src.errors import NotSupportedError
-from src.match_data_fetcher import MatchDataFetcher
 from src.services import export as export_module
 from src.services import sync as sync_module
 from src.services.export import (
@@ -347,33 +345,29 @@ def test_a_storage_error_is_a_500(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     assert r.status_code == 500 and r.json() == {"detail": "CSV generation failed"}
 
 
-def test_the_fetcher_entry_points_forward_to_the_service(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_legacy_csv_files_of_the_service(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Birleşik dosya, seçilen maçlar ve lig başına dosyalar (eski `create_csv_dataset` yönlendirmesinin işi)."""
     fixture = _fixture("canonical", tmp_path, monkeypatch)
-    fetcher = MatchDataFetcher(config_manager=ConfigManager(), data_dir=str(fixture.data_dir))
+    service = ExportService(open_store(fixture.data_dir))
+    out = tmp_path / "out"
+    out.mkdir()
 
-    path = fetcher.convert_all_matches_to_csv()
-    one = fetcher.create_csv_dataset(match_ids=[str(ARS), "x"])
-    by_league = fetcher.create_csv_dataset(separate_by_league=True)
+    combined = service.write_legacy_csv(str(out))
+    one = service.write_legacy_csv(str(out), ExportSpec(event_ids=(ARS,)))
+    by_league = service.write_legacy_csv_by_league(str(out))
 
-    assert isinstance(path, str) and os.path.dirname(path) == fetcher.processed_dir
-    assert isinstance(one, str) and [r[0] for r in _table(Path(one).read_text(encoding="utf-8"))[1:]] == [str(ARS)]
-    assert isinstance(by_league, list) and len(by_league) > 1
-    assert fetcher.create_csv_dataset(match_ids=["x"]) == "" and fetcher.create_csv_dataset([1], True) == []
-
-
-def test_export_all_csv_writes_the_combined_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    fixture = _fixture("canonical", tmp_path, monkeypatch)
-    fetcher = MatchDataFetcher(config_manager=ConfigManager(), data_dir=str(fixture.data_dir))
-
-    path = export_module.export_all_csv(SimpleNamespace(match_data_fetcher=fetcher))  # type: ignore[arg-type]
-
-    assert path is not None and os.path.basename(path).startswith("all_matches_") and os.path.isfile(path)
+    assert combined is not None and combined.path and os.path.dirname(combined.path) == str(out)
+    assert os.path.basename(combined.path).startswith("all_matches_") and os.path.isfile(combined.path)
+    assert one is not None and [r[0] for r in _table(Path(one.path).read_text(encoding="utf-8"))[1:]] == [str(ARS)]
+    assert len([r for r in by_league if r.path]) > 1
+    assert service.write_legacy_csv(str(out), ExportSpec(event_ids=(1,))) is None
+    assert service.write_legacy_csv_by_league(str(out), ExportSpec(event_ids=(1,))) == []
 
 
 # --- 6. web işinde CSV aşaması yok ------------------------------------------------------------------
 
 def test_a_sync_job_has_no_export_phase() -> None:
-    assert not hasattr(sync_module, "export_all_csv")
+    assert not hasattr(sync_module, "export_all_csv") and not hasattr(export_module, "export_all_csv")
     for spec in (sync_module.SyncSpec(), sync_module.SyncSpec(mode="details"),
                  sync_module.SyncSpec(export=False), sync_module.SyncSpec(mode="refresh")):
         assert "export" not in spec.job_phases

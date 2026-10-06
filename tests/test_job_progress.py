@@ -205,7 +205,6 @@ def run(fj, store, monkeypatch, ui, payload):
     ui.config = deps.config_manager()
     _listing_faces(ui)
     monkeypatch.setattr(fj, "build_context", lambda config_manager: ui)
-    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: ctx.export_all_to_csv())
     req = FetchRequest(**payload)
     job_id = store.create_running(req.model_dump())
     fj.run_fetch_job(job_id, req)

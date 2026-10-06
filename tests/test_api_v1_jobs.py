@@ -441,9 +441,6 @@ def service(store: JobStore, monkeypatch: pytest.MonkeyPatch) -> _Details:
     details = _Details()
     ctx = SimpleNamespace(config=deps.config_manager(), match_data_fetcher=details)
     monkeypatch.setattr("src.services.context.build_context", lambda config_manager: ctx)
-    exported: List[Any] = []
-    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: exported.append(ctx))
-    details.exported = exported  # type: ignore[attr-defined]
     return details
 
 
@@ -453,7 +450,6 @@ def test_a_fetch_job_runs_the_service_and_writes_no_csv(store: JobStore, service
 
     assert ended["state"] == "succeeded" and ended["error"] is None
     assert ended["result"]["details_done"] == 3 and ended["result"]["schedule_empty_seasons"] == 0
-    assert service.exported == []  # type: ignore[attr-defined]
     types = [event.type for event in JobManager(store).events(job["id"])]
     assert types[0] == "started" and types[-1] == "finished" and "phase" in types
 

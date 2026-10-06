@@ -1096,7 +1096,6 @@ def web(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     details = Details()
     ctx = SimpleNamespace(config=deps.config_manager(), match_data_fetcher=details)
     monkeypatch.setattr(fj, "build_context", lambda config_manager: ctx)
-    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: None)
 
     def run(**payload: Any) -> Job:
         request = FetchRequest(**payload)
@@ -1173,7 +1172,6 @@ def test_a_web_job_makes_its_data_directory_a_full_store(
     jobs = JobStore(default_db_path(str(data_dir)))  # web sunucusunun iş deposu: yalnızca state.db kurar
     monkeypatch.setattr(deps, "job_store", lambda: jobs)
     monkeypatch.setattr(deps, "refresh_job_mirror", lambda: jobs.snapshot())
-    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: None)
     try:
         with pytest.raises(StoreError):
             open_store(data_dir, create=False)  # henüz bir depo değil: schema.json yok

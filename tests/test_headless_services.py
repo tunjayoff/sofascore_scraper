@@ -172,15 +172,12 @@ def test_refresh_mode_has_one_phase_whatever_the_export_switch_says() -> None:
 
 @pytest.mark.parametrize("export", [True, False])
 def test_no_csv_is_written_whatever_the_spec_says(monkeypatch: pytest.MonkeyPatch, export: bool) -> None:
-    exported: List[Any] = []
-    monkeypatch.setattr("src.services.export.export_all_csv", exported.append)
     ctx = make_ctx(FakeRefresher())
     spec = SyncSpec(mode="details", league_id=17, export=export)
     handle = RecordingHandle(spec)
 
     result = SyncService(ctx).run(spec, handle=handle)
 
-    assert exported == []
     assert "Exporting data to CSV..." not in handle.lines
     assert "export" not in handle.phases
     assert (result.state, result.refresh) == ("succeeded", None)
@@ -190,8 +187,6 @@ def test_a_run_without_a_handle_and_without_export_never_starts_the_export_phase
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Tutamaçsız çalıştırmanın ilerleme nesnesi `job_phases` ile kurulur: "export" aşaması onda yoktur."""
-    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: pytest.fail("export must not run"))
-
     result = SyncService(make_ctx(FakeRefresher())).run(SyncSpec(mode="details", export=False))
 
     assert result == SyncResult(
@@ -204,7 +199,6 @@ def test_a_run_without_a_handle_and_without_export_never_starts_the_export_phase
 
 def test_refresh_mode_reproduces_the_call_order_of_the_cli(monkeypatch: pytest.MonkeyPatch) -> None:
     """begin_job_cache → refresh_due_ids → refresh_matches → end_job_cache; başka hiçbir indirici çağrılmaz."""
-    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: pytest.fail("export must not run"))
     md = FakeRefresher(due=["1", "2", "3"], stats={"refreshed": 2, "changed": 1, "failed": 1})
     md.changed_ids = ("2",)
 

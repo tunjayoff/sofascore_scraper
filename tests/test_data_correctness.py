@@ -5,15 +5,18 @@ import asyncio
 import json
 import os
 from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
 
 import conftest
+from schedule_runner import inline, legacy_get
 from src.match_data_fetcher import (SLICE_EMPTY, SLICE_FAILED, UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher,
                                     SliceOutcome)
 from src.match_fetcher import MatchFetcher
+from src.services import listing
+from src.services.status import StatusService
 from src.slices import SLICE_OK, Outcome
 from src.store import Ref, league_dir_name, open_store, shadow_schedules
 from src.web import deps
@@ -26,11 +29,9 @@ def _event(mid, status_type="finished", desc="Ended", code=100):
     return {"id": mid, "status": {"type": status_type, "description": desc, "code": code}}
 
 
-def _fetcher(tmp_path) -> MatchFetcher:
-    config = MagicMock()
-    config.get_leagues.return_value = {17: "Premier League"}
-    config.get_league_by_id.return_value = "Premier League"
-    return MatchFetcher(config, MagicMock(), data_dir=str(tmp_path))
+def _lister(tmp_path) -> listing.ScheduleLister:
+    """Sezon programının kuralları (src/services/listing.py); "yalnızca bitmiş maçlar" açık."""
+    return listing.ScheduleLister(open_store(str(tmp_path)), only_finished=True, concurrency=2)
 
 
 # --- tur önbelleği ---------------------------------------------------------------
@@ -55,42 +56,39 @@ def _legacy_round_file(tmp_path, data):
 
 
 def test_complete_round_is_reused(tmp_path):
-    f = _fetcher(tmp_path)
+    f = _lister(tmp_path)
     _store_round(tmp_path, {"events": [_event(1)]}, complete=True, age_seconds=10 * 86400)
-    assert f._load_cached_round(17, SEASON, "round_1") == {"events": [_event(1)]}
+    assert f.cached_round(17, SEASON, "round_1") == {"events": [_event(1)]}
 
 
 def test_incomplete_round_is_refetched_after_ttl(tmp_path):
-    f = _fetcher(tmp_path)
+    f = _lister(tmp_path)
     data = {"events": [_event(1), _event(2, "notstarted", "Not started", 0)]}
     _store_round(tmp_path, data, complete=False)
-    assert f._load_cached_round(17, SEASON, "round_1") is not None
+    assert f.cached_round(17, SEASON, "round_1") is not None
     _store_round(tmp_path, data, complete=False, age_seconds=MatchFetcher.ROUND_CACHE_TTL_SECONDS + 60)
-    assert f._load_cached_round(17, SEASON, "round_1") is None
+    assert f.cached_round(17, SEASON, "round_1") is None
 
 
 def test_legacy_round_file_is_refetched_once(tmp_path):
     """Eski sürüm yalnız bitmiş maçları süzüp yazıyordu; _complete yok → yeniden çek."""
-    f = _fetcher(tmp_path)
+    f = _lister(tmp_path)
     _legacy_round_file(tmp_path, {"events": [_event(1)]})
-    assert f._load_cached_round(17, SEASON, "round_1") is None
+    assert f.cached_round(17, SEASON, "round_1") is None
 
 
 def test_complete_legacy_round_file_is_reused(tmp_path):
     """`_complete` taşıyan eski tur dosyası da önbellektir (yükü `_complete` anahtarı olmadan gelir)."""
-    f = _fetcher(tmp_path)
+    f = _lister(tmp_path)
     _legacy_round_file(tmp_path, {"events": [_event(1)], "_complete": True})
-    assert f._load_cached_round(17, SEASON, "round_1") == {"events": [_event(1)]}
+    assert f.cached_round(17, SEASON, "round_1") == {"events": [_event(1)]}
 
 
 def test_round_saves_raw_payload_and_returns_only_finished(tmp_path):
-    f = _fetcher(tmp_path)
+    f = _lister(tmp_path)
     payload = {"events": [_event(1), _event(2, "inprogress", "1st half", 6)]}
-    with patch("src.utils.make_api_request_async", new=AsyncMock(return_value=payload)), \
-            patch("src.utils.FETCH_ONLY_FINISHED", True):
-        result = asyncio.run(
-            f._fetch_and_save_round(asyncio.Semaphore(2), None, 17, SEASON, 1)
-        )
+    get = legacy_get(AsyncMock(return_value=payload))
+    result = asyncio.run(f.round(asyncio.Semaphore(2), 17, SEASON, 1, None, get, inline, listing.ScheduleRun()))
     store = open_store(str(tmp_path))
     saved = store.entities.payload(Ref.season(17, SEASON), "schedule", "round_1")
     assert [e["id"] for e in saved["events"]] == [1, 2] and "_complete" not in saved
@@ -174,7 +172,8 @@ def _files(root) -> set:
             for n in names if ".meta" not in d.split(os.sep)}
 
 
-def test_file_report_comes_from_the_catalog_and_writes_nothing(tmp_path, capsys):
+def test_coverage_report_counts_the_slices_the_writer_marked_and_writes_nothing(tmp_path, capsys):
+    """Terminal menüsünün dosya raporu (FX-15'te kalktı) yerine: kapsam raporu katalogdan gelir, dosya yazılmaz."""
     f = _detail_fetcher(tmp_path)
     f._save_match_data("42", _partial_match(), {key: SliceOutcome(SLICE_EMPTY, reason="404", http_status=404)
                                                  for key in _EMPTY_SLICES})
@@ -184,37 +183,18 @@ def test_file_report_comes_from_the_catalog_and_writes_nothing(tmp_path, capsys)
     capsys.readouterr()
     before = _files(tmp_path)
 
-    report = f.generate_file_report()
+    report = StatusService(open_store(str(tmp_path))).coverage()
     assert capsys.readouterr().out == ""
     assert _files(tmp_path) == before
-    assert not os.path.exists(os.path.join(f.processed_dir, "match_files_stats.json"))
-    assert set(report) == {"league_stats", "overall_stats"}
     # 42: tek kesin "yok" yetmez, beş dilim eksik; 43: istatistik beklenmez, beş dilim eksik
-    missing = {f"{key}.json": 2 for key in ("team_streaks", "pregame_form", "h2h", "lineups", "incidents")}
-    assert report["overall_stats"] == {"total_matches": 2, "matches_with_all_files": 0, "completion_rate": 0.0,
-                                       "missing_files": missing}
-    (league, stats), = report["league_stats"].items()
-    assert league == "2361_Wimbledon,_Men"
-    assert stats["total_matches"] == 2 and stats["complete_matches"] == 0
-    assert set(stats["seasons"]) == {"season_1"}
-    assert stats["seasons"]["season_1"]["missing_files"] == stats["missing_files"]
+    missing = {key: 2 for key in ("team_streaks", "pregame_form", "h2h", "lineups", "incidents")}
+    assert (report.matches, report.complete, report.completion_rate) == (2, 0, 0.0)
+    assert dict(report.missing) == missing
+    (tournament,) = report.tournaments
+    assert (tournament.tournament_id, tournament.matches, tournament.complete) == (2361, 2, 0)
+    assert [season.season_id for season in tournament.seasons] == [1]
+    assert dict(tournament.seasons[0].missing) == dict(tournament.missing) == missing
 
-
-def test_file_report_of_another_folder(tmp_path):
-    here, other = tmp_path / "here", tmp_path / "other"
-    _detail_fetcher(other)._save_match_data("42", _partial_match())
-    f = _detail_fetcher(here)
-    assert f.generate_file_report()["overall_stats"]["total_matches"] == 0
-    for path in (other, other / "match_details", str(other) + os.sep):
-        assert f.generate_file_report(str(path))["overall_stats"]["total_matches"] == 1
-    assert f.generate_file_report(str(here / "match_details"))["overall_stats"]["total_matches"] == 0
-    stray = tmp_path / "stray"
-    stray.mkdir()
-    assert f.generate_file_report(str(stray)) == {}
-    assert os.listdir(stray) == []  # rastgele dizinde depo kurulmaz
-
-
-# --- yol düzeni -----------------------------------------------------------------
 
 def test_path_helpers_match_existing_layout():
     """2.x düzeninin lig dizini adı (Store'un ad kuralı; eskiden src/paths.py)."""

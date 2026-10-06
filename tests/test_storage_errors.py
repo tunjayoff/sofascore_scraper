@@ -200,15 +200,13 @@ def test_refresh_write_failure_is_a_storage_error(tmp_path):
     assert info.value.fatal
 
 
-def test_fetch_all_match_details_lets_fatal_storage_errors_through(tmp_path):
-    """Headless yol eskiden her hatayı yutup False dönüyordu; disk dolu ise çağıran bunu görmeli."""
+def test_fetch_detail_ids_lets_fatal_storage_errors_through(tmp_path):
+    """Detay aşaması (SyncService) hatayı yutmaz: disk dolu ise çağıran bunu görmeli."""
     f = _fetcher(tmp_path)
     boom = StorageError.from_exception(OSError(errno.ENOSPC, os.strerror(errno.ENOSPC)), str(tmp_path))
-    with patch.object(f, "collect_detail_match_ids", return_value=["1"]), \
-            patch.object(f, "pending_detail_ids", return_value=["1"]), \
-            patch.object(f, "_run_batch", side_effect=boom):
+    with patch.object(f, "_run_batch", side_effect=boom):
         with pytest.raises(StorageError):
-            f.fetch_all_match_details()
+            f.fetch_detail_ids(["1"])
 
 
 def test_headless_cli_reports_a_storage_error_and_exits_5(tmp_path, monkeypatch, capsys):
@@ -245,8 +243,6 @@ def test_web_job_fails_with_a_clear_message_on_enospc(tmp_path, monkeypatch):
     monkeypatch.setattr(deps, "job_store", lambda: store)
     monkeypatch.setattr(deps, "refresh_job_mirror", lambda: store.snapshot())
     monkeypatch.setattr(deps.config_manager(), "get_leagues", lambda: {17: "Premier League"})
-    exported: List[bool] = []
-
     class FullDisk:
         rate_limit_breaker_triggered = False
         last_status_counts: Dict[str, int] = {}
@@ -270,10 +266,9 @@ def test_web_job_fails_with_a_clear_message_on_enospc(tmp_path, monkeypatch):
                 OSError(errno.ENOSPC, os.strerror(errno.ENOSPC)), "/data/match_details/17_PL/season_x/a"
             )
 
-    # Servis bağlamının (ServiceContext) yerini tutar; CSV adımı çağrılırsa `exported`a yazılır
+    # Servis bağlamının (ServiceContext) yerini tutar
     ctx = SimpleNamespace(config=deps.config_manager(), match_data_fetcher=FullDisk())
     monkeypatch.setattr(fj, "build_context", lambda config_manager: ctx)
-    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: exported.append(True))
     req = FetchRequest(mode="details", league_id=17)
     fj.run_fetch_job(store.create_running(req.model_dump()), req)
 
@@ -283,7 +278,6 @@ def test_web_job_fails_with_a_clear_message_on_enospc(tmp_path, monkeypatch):
     assert os.strerror(errno.ENOSPC) in final["current_task"]
     assert final["matches_failed"] == 1
     assert final["result"]["error"] == "storage"
-    assert exported == []  # iş durdu: dışa aktarma aşamasına geçilmedi
 
 
 # --- maçın yeri: v3, kimlikten (uniqueTournament.id'si olmasa da) ------------------------------------
