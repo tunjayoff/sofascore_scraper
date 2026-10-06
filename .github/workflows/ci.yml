@@ -48,11 +48,13 @@ jobs:
   # The frontend is built once (above) and its dist/ is shared with every Python job.
   python:
     needs: frontend
-    name: python (${{ matrix.os }}, ${{ matrix.python-version }})
+    # A split job adds its part to the name; the names of the other jobs stay as they were.
+    name: python (${{ matrix.os }}, ${{ matrix.python-version }}${{ matrix.part && format(', {0}', matrix.part) || '' }})
     runs-on: ${{ matrix.os }}
-    # A guard against a hung run, not a performance budget: about twice the slowest normal run.
-    # On 2026-10-02 the slowest job, Windows, takes 10 to 15 minutes (Linux and macOS 3 to 7); the
-    # previous limit of 15 cancelled Windows runs in which no test had failed.
+    # A guard against a hung run, not a performance budget. On 2026-10-02 the slowest job, Windows,
+    # took 10 to 15 minutes (Linux and macOS 3 to 7); the previous limit of 15 cancelled Windows runs
+    # in which no test had failed. By 2026-10-03 the single Windows job took 26 to 28.6 minutes and
+    # one run hit this limit, so Windows now runs as two jobs (see `part` below), each with this limit.
     timeout-minutes: 30
     # Support policy: Linux and Docker are the officially supported platforms; Windows and macOS are
     # best-effort. Their jobs (`best-effort: true` below) still run and show their result, but a
@@ -63,11 +65,28 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Oldest and newest supported Python on Linux; the newest also enforces the coverage floor
-          - { os: ubuntu-latest, python-version: "3.10" }
+          # Oldest and newest supported Python on Linux; the newest also enforces the coverage floor.
+          # The oldest also installs the `parquet` extra (pyproject.toml), so the Parquet round trips,
+          # which skip without pyarrow, run in one job. 16.0.0 is the oldest pyarrow that works with
+          # the numpy 2 of constraints.txt: 15 requires numpy<2 and does not install, and 14 installs
+          # but fails on import ("numpy.core.multiarray failed to import"), which the tests'
+          # importorskip would turn into a silent skip.
+          - { os: ubuntu-latest, python-version: "3.10", parquet: "pyarrow==16.0.0" }
           - { os: ubuntu-latest, python-version: "3.14", coverage: true }
-          # The installers and launchers target Windows and macOS too (best-effort, non-blocking)
-          - { os: windows-latest, python-version: "3.14", best-effort: true }
+          # The installers and launchers target Windows and macOS too (best-effort, non-blocking).
+          # Windows is the slowest runner (Store tests that start processes or write many files are
+          # several times slower there), so it runs as two jobs: the Store tests and the rest. The two
+          # selections are complementary; --durations lists the slowest tests of each part.
+          - os: windows-latest
+            python-version: "3.14"
+            best-effort: true
+            part: store
+            pytest-args: --durations=30 tests/test_store_*.py
+          - os: windows-latest
+            python-version: "3.14"
+            best-effort: true
+            part: rest
+            pytest-args: "--durations=30 '--ignore-glob=tests/test_store_*.py'"
           - { os: macos-latest, python-version: "3.14", best-effort: true }
     steps:
       - uses: actions/checkout@v7
@@ -87,12 +106,20 @@ jobs:
       # constraints.txt pins every package to a verified version: a new upstream release cannot
       # change this job. The latest allowed versions are tried weekly in latest-deps.yml.
       - run: python -m pip install -r requirements-dev.txt -c constraints.txt
+      # The `parquet` extra; the import check fails the job where a skip would hide a broken pyarrow
+      - name: parquet extra
+        if: ${{ matrix.parquet }}
+        run: |
+          python -m pip install "${{ matrix.parquet }}" -c constraints.txt
+          python -c "import pyarrow, pyarrow.parquet; print('pyarrow', pyarrow.__version__)"
       - run: ruff check .
       # pyproject.toml deselects `live` (network) and `browser` tests.
       # -rfExX lists failures, known issues (xfail) and unexpectedly passing tests with their reasons.
+      # bash on every runner, so the test selection of a split job (a glob) reads the same everywhere.
       - name: pytest
         if: ${{ !matrix.coverage }}
-        run: python -m pytest -q -rfExX
+        shell: bash
+        run: python -m pytest -q -rfExX ${{ matrix.pytest-args }}
       # Fails below the floor in pyproject.toml ([tool.coverage.report] fail_under)
       - name: pytest with coverage floor
         if: ${{ matrix.coverage }}
