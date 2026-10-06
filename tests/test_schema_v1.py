@@ -1168,7 +1168,8 @@ def test_document_states_the_version_and_its_examples_are_valid():
 
     assert f"`schema_version` is **{schema.SCHEMA_VERSION}**" in text
     assert f"`{schema.SCHEMA_ID}`" in text and f"`{schema.EVENT_ENVELOPE_ID}`" in text
-    assert "\n## 9. Open questions\n" in text
+    # Belgenin "section 9, point N" atıfları bu bölümün kararlarınadır; açık soru kalmadı (FX-21 başlığı değiştirdi)
+    assert "\n## 9. Decisions\n" in text and "\n## 9. Open questions\n" not in text
     # Belgedeki her örnek kayıt (```json example:Model) kendi modelinin şemasına uyar
     examples = re.findall(r"```json example:(\w+)\n(.*?)\n```", text, flags=re.S)
     named = {name for name, _body in examples}

@@ -1185,7 +1185,7 @@ What a raw request returns:
     unknown value of a closed enumeration;
   - the field tables of this document equal the models, and every example in this document validates.
 
-## 9. Open questions
+## 9. Decisions
 
 None are left. The 28 points of this section were the open questions of the proposal, and the approval of
 2026-10-02 settled every one of them as chosen (decision P2). The heading of the section is kept as it was,
