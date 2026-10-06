@@ -767,7 +767,7 @@ def test_health_reports_the_version_the_bridge_and_the_request_budget(store: Job
 def test_status_reports_the_running_job(store: JobStore, body: Any) -> None:
     idle = data(client.get("/api/v1/status"))
     assert list(idle) == [
-        "version", "api_version", "schema_version", "auth_required", "bridge", "throttle", "active_job", "live", "summary", "leases", "schedule",
+        "version", "api_version", "schema_version", "auth_required", "bridge", "throttle", "active_job", "live", "summary", "leases", "sinks", "schedule",
         "capabilities", "storage_error",
     ]
     assert (idle["version"], idle["api_version"], idle["auth_required"], idle["active_job"]) == (__version__, "v1", False, None)

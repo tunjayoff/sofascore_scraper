@@ -205,6 +205,8 @@ export interface CricketScore {
 
 /** What the data directory holds, counted from its catalog. */
 export interface DataSummary {
+  /** Path of the data directory on the server. */
+  data_dir: string
   /** Matches count only finished events or events with details. */
   only_finished: boolean
   matches: number
@@ -216,6 +218,8 @@ export interface DataSummary {
   catalog_rebuild_reason?: string | null
   tournaments: TournamentSummary[]
   disk?: DiskSummary | null
+  /** Null when `ssc migrate` never ran. */
+  last_migration?: MigrationRun | null
 }
 
 export interface DiagnosticsResponse {
@@ -231,7 +235,11 @@ export interface DiskSummary {
   matches: number
   details: number
   datasets: number
-  /** seasons + matches + details + datasets. */
+  /** The 3.0 layout (`v3/`: events, tournaments, teams, players, sports). */
+  v3: number
+  /** The change log (`changes/`). */
+  changes: number
+  /** The data in both layouts, the change log and the datasets: seasons + matches + details + datasets + v3 + changes. `.meta`, backups and exports are in `entries` only. */
   total: number
   measured_at_utc?: string | null
 }
@@ -675,6 +683,20 @@ export interface LogTailResponse {
   data: LogTail
 }
 
+/** The last move of events from the old layout to the 3.0 layout (`ssc migrate`), not a dry run. */
+export interface MigrationRun {
+  id: number
+  started_at_utc?: string | null
+  /** Null when the run did not finish. */
+  finished_at_utc?: string | null
+  /** The run removed the old copies. */
+  delete_legacy: boolean
+  events_done: number
+  events_failed: number
+  bytes_before: number
+  bytes_after: number
+}
+
 /** The odds of an event from one provider as read at one moment. */
 export interface Odds {
   /** Id of the Event. */
@@ -1052,6 +1074,23 @@ export interface SinkStatus {
   dropped: number
 }
 
+/** The configured sinks at a glance (`/sinks` has each one). */
+export interface SinksSummary {
+  /** Sinks of the configuration. */
+  configured: number
+  ok: number
+  /** Sinks whose last delivery failed. */
+  error: number
+  /** Sinks that have delivered nothing yet. */
+  pending: number
+  /** A process holds the `sinks` lease and delivers right now. */
+  served: boolean
+  /** The largest `lag_events` of a sink; 0 without sinks. */
+  max_lag_events: number
+  /** Age of the oldest event a sink has not received; null when every sink is current. */
+  max_lag_seconds?: number | null
+}
+
 /** One stored response of SofaScore about an event or another entity, and its state. */
 export interface Slice {
   /** What the slice belongs to. */
@@ -1282,6 +1321,8 @@ export interface Status {
   summary?: DataSummary | null
   /** Leases held right now, in any process. */
   leases?: LeaseHolder[]
+  /** Null when the store cannot be read. */
+  sinks?: SinksSummary | null
   /** The in-app scheduler and the next runs of its tasks. */
   schedule: ScheduleStatus
   capabilities: Capabilities

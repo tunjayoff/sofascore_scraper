@@ -1639,7 +1639,8 @@ def test_the_diagnostics_bundle_never_contains_a_webhook_address_beyond_its_host
 # API v1'in tek sink rotası salt okunurdur: yapılandırmadaki sink'lerin konumu ve gecikmesi (docs/design/05-web-ui.md
 # 7.3, G1; plan maddesi P21). Sink kaydeden, değiştiren ya da silen bir rota yoktur.
 READ_ONLY_SINK_ROUTE = "/api/v1/sinks"
-READ_ONLY_SINK_SCHEMAS = ("SinkListResponse", "SinkStatus")
+# FX-13: `/status`un salt okunur sink özeti (05-web-ui.md G22)
+READ_ONLY_SINK_SCHEMAS = ("SinkListResponse", "SinkStatus", "SinksSummary")
 
 
 def test_no_http_route_and_no_web_module_knows_sinks():

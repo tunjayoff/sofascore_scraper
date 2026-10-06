@@ -70,6 +70,8 @@ AREA_SEASONS = "seasons"
 AREA_MATCHES = "matches"
 AREA_DETAILS = "match_details"
 AREA_DATASETS = "datasets"
+AREA_V3 = "v3"  # 3.0 düzeni: maçlar, turnuvalar, takımlar, oyuncular, sporlar (src/store/layout.py)
+AREA_CHANGES = "changes"  # değişiklik günlüğü (aylık parçalar)
 
 _FINISHED = frozenset({StatusClass.COMPLETED.value, StatusClass.DECIDED_WITHOUT_PLAY.value})
 _NOT_FINISHED: Tuple[str, ...] = tuple(member.value for member in StatusClass if member.value not in _FINISHED)
@@ -130,9 +132,21 @@ class DiskUsage:
         return int(self.entries.get(AREA_DATASETS, 0))
 
     @property
+    def v3(self) -> int:
+        return int(self.entries.get(AREA_V3, 0))
+
+    @property
+    def changes(self) -> int:
+        return int(self.entries.get(AREA_CHANGES, 0))
+
+    @property
     def total(self) -> int:
-        """İndirilen veri ve ondan üretilen veri setleri: seasons + matches + details + datasets."""
-        return self.seasons + self.matches + self.details + self.datasets
+        """
+        İndirilen veri iki düzende, değişiklik günlüğü ve üretilen veri setleri: seasons + matches + details +
+        datasets + v3 + changes (plan maddesi FX-13: 3.0'ın yazdığı bir dizinde toplam önceden 0'dı). `.meta`,
+        yedekler ve dışa aktarmalar girmez; hepsi `entries`tedir.
+        """
+        return self.seasons + self.matches + self.details + self.datasets + self.v3 + self.changes
 
 
 @dataclass(frozen=True)
@@ -560,7 +574,9 @@ class StatusService:
 
 
 __all__ = [
+    "AREA_CHANGES",
     "AREA_DATASETS",
+    "AREA_V3",
     "CoverageReport",
     "SeasonCoverage",
     "TournamentCoverage",

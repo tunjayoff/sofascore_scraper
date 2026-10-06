@@ -64,7 +64,7 @@
           "meta"
         ],
         "summary": "Status of the service",
-        "description": "Service state: versions, access to SofaScore, the request budget, the job that is running now, the live\nservice, what the data directory holds, the leases held right now and the optional features. When the\ndata directory cannot be read, `live` and `summary` are null and `storage_error` has the error code.",
+        "description": "Service state: versions, access to SofaScore, the request budget, the job that is running now, the live\nservice, what the data directory holds (with its path and the last migration), the leases held right now,\nthe sinks at a glance and the optional features. When the data directory cannot be read, `live`, `summary`\nand `sinks` are null and `storage_error` has the error code.",
         "operationId": "getStatus",
         "responses": {
           "200": {
@@ -5340,6 +5340,11 @@
       },
       "DataSummary": {
         "properties": {
+          "data_dir": {
+            "type": "string",
+            "title": "Data Dir",
+            "description": "Path of the data directory on the server."
+          },
           "only_finished": {
             "type": "boolean",
             "title": "Only Finished",
@@ -5390,10 +5395,22 @@
                 "type": "null"
               }
             ]
+          },
+          "last_migration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MigrationRun"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when `ssc migrate` never ran."
           }
         },
         "type": "object",
         "required": [
+          "data_dir",
           "only_finished",
           "matches",
           "details",
@@ -5445,10 +5462,20 @@
             "type": "integer",
             "title": "Datasets"
           },
+          "v3": {
+            "type": "integer",
+            "title": "V3",
+            "description": "The 3.0 layout (`v3/`: events, tournaments, teams, players, sports)."
+          },
+          "changes": {
+            "type": "integer",
+            "title": "Changes",
+            "description": "The change log (`changes/`)."
+          },
           "total": {
             "type": "integer",
             "title": "Total",
-            "description": "seasons + matches + details + datasets."
+            "description": "The data in both layouts, the change log and the datasets: seasons + matches + details + datasets + v3 + changes. `.meta`, backups and exports are in `entries` only."
           },
           "measured_at_utc": {
             "anyOf": [
@@ -5469,6 +5496,8 @@
           "matches",
           "details",
           "datasets",
+          "v3",
+          "changes",
           "total"
         ],
         "title": "DiskSummary",
@@ -7633,6 +7662,69 @@
         ],
         "title": "LogTailResponse"
       },
+      "MigrationRun": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "started_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At Utc"
+          },
+          "finished_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At Utc",
+            "description": "Null when the run did not finish."
+          },
+          "delete_legacy": {
+            "type": "boolean",
+            "title": "Delete Legacy",
+            "description": "The run removed the old copies."
+          },
+          "events_done": {
+            "type": "integer",
+            "title": "Events Done"
+          },
+          "events_failed": {
+            "type": "integer",
+            "title": "Events Failed"
+          },
+          "bytes_before": {
+            "type": "integer",
+            "title": "Bytes Before"
+          },
+          "bytes_after": {
+            "type": "integer",
+            "title": "Bytes After"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "delete_legacy",
+          "events_done",
+          "events_failed",
+          "bytes_before",
+          "bytes_after"
+        ],
+        "title": "MigrationRun",
+        "description": "The last move of events from the old layout to the 3.0 layout (`ssc migrate`), not a dry run."
+      },
       "Odds": {
         "properties": {
           "event_id": {
@@ -9263,6 +9355,62 @@
         "title": "SinkStatus",
         "description": "A configured output sink and how far it has delivered the event log."
       },
+      "SinksSummary": {
+        "properties": {
+          "configured": {
+            "type": "integer",
+            "title": "Configured",
+            "description": "Sinks of the configuration."
+          },
+          "ok": {
+            "type": "integer",
+            "title": "Ok"
+          },
+          "error": {
+            "type": "integer",
+            "title": "Error",
+            "description": "Sinks whose last delivery failed."
+          },
+          "pending": {
+            "type": "integer",
+            "title": "Pending",
+            "description": "Sinks that have delivered nothing yet."
+          },
+          "served": {
+            "type": "boolean",
+            "title": "Served",
+            "description": "A process holds the `sinks` lease and delivers right now."
+          },
+          "max_lag_events": {
+            "type": "integer",
+            "title": "Max Lag Events",
+            "description": "The largest `lag_events` of a sink; 0 without sinks."
+          },
+          "max_lag_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Lag Seconds",
+            "description": "Age of the oldest event a sink has not received; null when every sink is current."
+          }
+        },
+        "type": "object",
+        "required": [
+          "configured",
+          "ok",
+          "error",
+          "pending",
+          "served",
+          "max_lag_events"
+        ],
+        "title": "SinksSummary",
+        "description": "The configured sinks at a glance (`/sinks` has each one)."
+      },
       "Slice": {
         "properties": {
           "owner_kind": {
@@ -10157,6 +10305,17 @@
             "type": "array",
             "title": "Leases",
             "description": "Leases held right now, in any process."
+          },
+          "sinks": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SinksSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when the store cannot be read."
           },
           "schedule": {
             "$ref": "#/components/schemas/ScheduleStatus",

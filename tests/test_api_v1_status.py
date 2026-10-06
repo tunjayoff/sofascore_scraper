@@ -5,7 +5,8 @@ docs/design/05-web-ui.md 7.2 ve 7.3: G1, G3, G10, G11). Tümü çevrimdışı: S
   * `/api/v1/auth*`: eski oturum yollarının halefleri; belirteçsiz yanıt verir, aynı cookie'yi kurar, başarısız
     giriş sınırını eski girişle paylaşır;
   * `/status`: canlı servisin durumu, veri özeti (katalogdan), tutulan kilitler, eski düzendeki maç sayısı,
-    isteğe bağlı yetenekler; depo açılamazsa yine yanıt verir;
+    isteğe bağlı yetenekler; depo açılamazsa yine yanıt verir; FX-13'ten beri dizinin yolu, v3'ü sayan disk
+    toplamı, son taşıma ve sink'lerin özeti (G20, G21, G22);
   * `POST /status/check`: tek istek, istemcinin API köküyle; başarısızlık bir sonuçtur (200, `ok: false`);
   * `/sinks`: yapılandırmadaki sink'ler, konumları, gecikmeleri, bırakılan olaylar; adresler maskeli.
 """
@@ -167,6 +168,43 @@ def test_status_has_the_data_summary_of_the_catalog(canonical: sf.LegacyFixture)
     assert status["storage_error"] is None
 
 
+def test_status_has_the_path_a_disk_total_with_the_v3_tree_and_the_last_migration(
+        canonical: sf.LegacyFixture) -> None:
+    """05-web-ui.md G20 ve G21, ST-23'ün notu (FX-13): dizinin yolu, v3'ü sayan disk toplamı, son taşıma."""
+    from src.services.status import forget_sizes
+
+    summary = data(client.get("/api/v1/status"))["summary"]
+    assert summary["data_dir"] == str(canonical.data_dir)
+    assert summary["last_migration"] is None
+    before = summary["disk"]
+    assert before["v3"] == before["entries"].get("v3", 0)
+
+    report = open_store(canonical.data_dir).migrate.run()
+    forget_sizes()
+    summary = data(client.get("/api/v1/status"))["summary"]
+    run = summary["last_migration"]
+    assert run["id"] == report.run_id and run["finished_at_utc"].endswith("Z") and run["events_failed"] == 0
+    assert run["events_done"] > 0 and run["delete_legacy"] is False
+    disk = summary["disk"]
+    assert disk["v3"] == disk["entries"]["v3"] > 0
+    assert disk["total"] == sum(disk[k] for k in ("seasons", "matches", "details", "datasets", "v3", "changes"))
+    assert disk["total"] > before["total"]
+
+
+def test_a_folder_written_by_3_0_has_a_disk_total(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """G21: `summary.disk.total` bir 3.0 dizininde 0 değildir (önceden yalnızca 2.x ağaçlarını sayıyordu)."""
+    from src.services.status import forget_sizes
+
+    monkeypatch.setenv("DATA_DIR", str(tmp_path / "fresh"))
+    store = open_store(tmp_path / "fresh")
+    (Path(store.data_dir) / "v3" / "events").mkdir(parents=True, exist_ok=True)
+    (Path(store.data_dir) / "v3" / "events" / "probe.bin").write_bytes(b"x" * 1000)
+    forget_sizes()
+    disk = data(client.get("/api/v1/status"))["summary"]["disk"]
+    assert (disk["seasons"], disk["matches"], disk["details"]) == (0, 0, 0)
+    assert disk["v3"] >= 1000 and disk["total"] >= 1000
+
+
 def test_status_lists_followed_tournaments_without_matches(canonical: sf.LegacyFixture,
                                                            monkeypatch: pytest.MonkeyPatch) -> None:
     leagues = {**deps.config_manager().get_leagues(), 424242: "Nowhere League"}
@@ -326,6 +364,29 @@ def test_sinks_show_their_position_lag_and_errors(canonical: sf.LegacyFixture, m
 
     with store.lease("sinks", purpose="dispatcher"):
         assert all(item["served"] for item in data(client.get("/api/v1/sinks")))
+
+
+def test_status_has_the_sinks_at_a_glance(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
+    """05-web-ui.md G22 (FX-13): sink'lerin özeti `/status`ta (raydaki nokta ve sağlık hapı için)."""
+    assert data(client.get("/api/v1/status"))["sinks"] == {
+        "configured": 0, "ok": 0, "error": 0, "pending": 0, "served": False, "max_lag_events": 0,
+        "max_lag_seconds": None}
+    store = open_store(canonical.data_dir)
+    seqs = store.streams.append("live", [StreamEvent(type="live.score_changed", data={"n": i}, ts=1000.0 + i)
+                                         for i in range(4)])
+    head = store.streams.head().last_seq
+    store.streams.set_cursor("hook", seqs[0], error="HTTP 500")
+    store.streams.set_cursor("file", head)
+    _with_sinks(monkeypatch, SinkSpec(name="hook", type="webhook", url="https://hooks.example.org/x"),
+                SinkSpec(name="file", type="file", path="/var/log/events.jsonl"), SinkSpec(name="out", type="stdout"))
+
+    sinks = data(client.get("/api/v1/status"))["sinks"]
+
+    assert {k: sinks[k] for k in ("configured", "ok", "error", "pending", "served")} == {
+        "configured": 3, "ok": 1, "error": 1, "pending": 1, "served": False}
+    assert sinks["max_lag_events"] == head and sinks["max_lag_seconds"] > 0
+    with store.lease("sinks", purpose="dispatcher"):
+        assert data(client.get("/api/v1/status"))["sinks"]["served"] is True
 
 
 def test_the_sink_status_service_names_what_the_dispatcher_writes() -> None:

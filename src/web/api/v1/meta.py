@@ -3,8 +3,9 @@ API v1: sağlık, durum, sporlar ve sink'ler (docs/design/02-services.md bölüm
 
     GET  /api/v1/health          sunucu ayakta mı, sürümü, SofaScore'a erişimin durumu, istek bütçesi
     GET  /api/v1/status          yukarıdakiler + çalışan iş + belirteç gerekiyor mu + canlı servisin durumu +
-                                 veri özeti + tutulan kilitler + zamanlayıcının sonraki çalışmaları (P29) +
-                                 isteğe bağlı yetenekler
+                                 veri özeti (FX-13: dizinin yolu, v3'ü sayan disk toplamı, son taşıma) +
+                                 tutulan kilitler + sink'lerin özeti (FX-13) + zamanlayıcının sonraki
+                                 çalışmaları (P29) + isteğe bağlı yetenekler
     POST /api/v1/status/check    SofaScore'a tek bir istekle bağlantı denemesi (yalnızca kullanıcı istediğinde)
     GET  /api/v1/sports          kayıtlı sporlar ve maç detay dilimleri (src/sports.py)
     GET  /api/v1/sports/{slug}   tek spor
@@ -131,13 +132,32 @@ class DiskSummary(BaseModel):
     matches: int
     details: int
     datasets: int
-    total: int = Field(description="seasons + matches + details + datasets.")
+    v3: int = Field(description="The 3.0 layout (`v3/`: events, tournaments, teams, players, sports).")
+    changes: int = Field(description="The change log (`changes/`).")
+    total: int = Field(
+        description="The data in both layouts, the change log and the datasets: seasons + matches + details + "
+                    "datasets + v3 + changes. `.meta`, backups and exports are in `entries` only.",
+    )
     measured_at_utc: Optional[str] = None
+
+
+class MigrationRun(BaseModel):
+    """The last move of events from the old layout to the 3.0 layout (`ssc migrate`), not a dry run."""
+
+    id: int
+    started_at_utc: Optional[str] = None
+    finished_at_utc: Optional[str] = Field(default=None, description="Null when the run did not finish.")
+    delete_legacy: bool = Field(description="The run removed the old copies.")
+    events_done: int
+    events_failed: int
+    bytes_before: int
+    bytes_after: int
 
 
 class DataSummary(BaseModel):
     """What the data directory holds, counted from its catalog."""
 
+    data_dir: str = Field(description="Path of the data directory on the server.")
     only_finished: bool = Field(description="Matches count only finished events or events with details.")
     matches: int
     details: int
@@ -148,6 +168,7 @@ class DataSummary(BaseModel):
     )
     tournaments: List[TournamentSummary]
     disk: Optional[DiskSummary] = None
+    last_migration: Optional[MigrationRun] = Field(default=None, description="Null when `ssc migrate` never ran.")
 
 
 class LeaseHolder(BaseModel):
@@ -193,6 +214,20 @@ class ScheduleStatus(BaseModel):
     next_runs: List[ScheduledRun] = Field(default_factory=list, description="Empty when the scheduler is off.")
 
 
+class SinksSummary(BaseModel):
+    """The configured sinks at a glance (`/sinks` has each one)."""
+
+    configured: int = Field(description="Sinks of the configuration.")
+    ok: int
+    error: int = Field(description="Sinks whose last delivery failed.")
+    pending: int = Field(description="Sinks that have delivered nothing yet.")
+    served: bool = Field(description="A process holds the `sinks` lease and delivers right now.")
+    max_lag_events: int = Field(description="The largest `lag_events` of a sink; 0 without sinks.")
+    max_lag_seconds: Optional[float] = Field(
+        default=None, description="Age of the oldest event a sink has not received; null when every sink is current.",
+    )
+
+
 class Status(BaseModel):
     version: str
     api_version: Literal["v1"]
@@ -208,6 +243,7 @@ class Status(BaseModel):
     live: Optional[LiveStatus] = Field(default=None, description="The live service; null when the store cannot be read.")
     summary: Optional[DataSummary] = Field(default=None, description="Null when the store cannot be read.")
     leases: List[LeaseHolder] = Field(default_factory=list, description="Leases held right now, in any process.")
+    sinks: Optional[SinksSummary] = Field(default=None, description="Null when the store cannot be read.")
     schedule: ScheduleStatus = Field(description="The in-app scheduler and the next runs of its tasks.")
     capabilities: Capabilities
     storage_error: Optional[str] = Field(
@@ -443,6 +479,7 @@ def data_summary(store: "Store", followed: Mapping[int, str]) -> DataSummary:
     names = _tournament_names(store, [t.tournament_id for t in data.tournaments], followed)
     disk = data.disk
     return DataSummary(
+        data_dir=str(store.data_dir),
         only_finished=data.only_finished,
         matches=data.matches,
         details=data.details,
@@ -463,8 +500,40 @@ def data_summary(store: "Store", followed: Mapping[int, str]) -> DataSummary:
         disk=None if disk is None else DiskSummary(
             entries={str(k): int(v) for k, v in disk.entries.items()},
             seasons=disk.seasons, matches=disk.matches, details=disk.details, datasets=disk.datasets,
-            total=disk.total, measured_at_utc=utc_text(disk.measured_at) if disk.measured_at else None,
+            v3=disk.v3, changes=disk.changes, total=disk.total,
+            measured_at_utc=utc_text(disk.measured_at) if disk.measured_at else None,
         ),
+        last_migration=last_migration(store),
+    )
+
+
+def last_migration(store: "Store") -> Optional[MigrationRun]:
+    """`migration_runs`ın son gerçek çalışması (Migrator.last_run), yoksa None."""
+    run = store.migrate.last_run()
+    if run is None:
+        return None
+    return MigrationRun(
+        id=run["id"], started_at_utc=utc_text(run["started_at"]), finished_at_utc=utc_text(run["finished_at"]),
+        delete_legacy=run["delete_legacy"], events_done=run["events_done"], events_failed=run["events_failed"],
+        bytes_before=run["bytes_before"], bytes_after=run["bytes_after"],
+    )
+
+
+def sinks_summary(store: "Store") -> SinksSummary:
+    """Yapılandırılmış sink'lerin özeti (sink_status.sink_states; G22): durum sayıları ve en büyük gecikme."""
+    from src.services.sink_status import STATE_ERROR, STATE_OK, STATE_PENDING, sink_states
+
+    specs = list(deps.loaded_settings().settings.sinks)
+    states = sink_states(store, specs) if specs else []
+    lags = [st.lag_seconds for st in states if st.lag_seconds is not None]
+    return SinksSummary(
+        configured=len(states),
+        ok=sum(st.state == STATE_OK for st in states),
+        error=sum(st.state == STATE_ERROR for st in states),
+        pending=sum(st.state == STATE_PENDING for st in states),
+        served=any(st.served for st in states),
+        max_lag_events=max((st.lag_events for st in states), default=0),
+        max_lag_seconds=max(lags) if lags else None,
     )
 
 
@@ -483,19 +552,22 @@ def health() -> HealthResponse:
 def status() -> StatusResponse:
     """
     Service state: versions, access to SofaScore, the request budget, the job that is running now, the live
-    service, what the data directory holds, the leases held right now and the optional features. When the
-    data directory cannot be read, `live` and `summary` are null and `storage_error` has the error code.
+    service, what the data directory holds (with its path and the last migration), the leases held right now,
+    the sinks at a glance and the optional features. When the data directory cannot be read, `live`, `summary`
+    and `sinks` are null and `storage_error` has the error code.
     """
     active = deps.job_manager().active()
     live: Optional[LiveStatus] = None
     summary: Optional[DataSummary] = None
     leases: List[LeaseHolder] = []
+    sinks: Optional[SinksSummary] = None
     storage_error: Optional[str] = None
     try:
         store = deps.store()
         live = _live(store)
         leases = lease_holders(store)
         summary = data_summary(store, deps.config_manager().get_leagues())
+        sinks = sinks_summary(store)
     except Exception as e:  # depo açılamadı ya da okunamadı: durum yine yanıtlanır
         error = to_platform_error(e)
         if error.code == "internal":
@@ -513,6 +585,7 @@ def status() -> StatusResponse:
         live=live,
         summary=summary,
         leases=leases,
+        sinks=sinks,
         schedule=schedule(),
         capabilities=capabilities(),
         storage_error=storage_error,
