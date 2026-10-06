@@ -377,3 +377,93 @@ def test_settings_api_says_whether_the_language_is_pinned(monkeypatch):
     monkeypatch.setenv("APP_LANGUAGE", "tr")
     body = client.get("/api/settings").json()
     assert (body["language"], body["language_explicit"]) == ("tr", True)
+
+
+# --- yapılandırma katmanları: sofascore.toml ve Ayarlar sayfası (FX-22) ------------------------------------
+# Uygulama dili ayar yükleyicisinin katman sırasıyla da bulur: süreç ortamı > sofascore.toml > overrides.json
+# (Ayarlar sayfası) > .env > sistem dili. Başlatıcı ve başlatma betikleri yükleyiciyi (dotenv'e bağlı) yüklemeden
+# aynı sonucu doctor.Context'ten alır.
+
+# (süreç ortamı, .env, sofascore.toml'un [display] language'ı, overrides.json'ınki, beklenen)
+LAYER_CASES = [
+    ({"LANG": "en_US.UTF-8"}, None, None, "tr", "tr"),  # Ayarlar sayfası sistem dilinin önünde
+    ({"LANG": "tr_TR.UTF-8"}, None, "en", None, "en"),  # yapılandırma dosyası da
+    ({"LANG": "en_US.UTF-8"}, None, "tr", "en", "tr"),  # dosya overrides'ın üstünde
+    ({"LANG": "en_US.UTF-8"}, "APP_LANGUAGE=en\n", None, "tr", "tr"),  # overrides .env'in üstünde
+    ({"LANG": "en_US.UTF-8", "APP_LANGUAGE": "en"}, None, "tr", "tr", "en"),  # süreç ortamı hepsinin üstünde
+    ({"LANG": "en_US.UTF-8", "SOFASCORE_DISPLAY__LANGUAGE": "tr"}, None, "en", "en", "tr"),
+    ({"LANG": "en_US.UTF-8", "APP_LANGUAGE": "tr"}, "APP_LANGUAGE=tr\n", None, "en", "en"),  # .env'den gelen
+    ({"LANG": "tr_TR.UTF-8"}, None, None, None, "tr"),
+    ({"LANG": "tr_TR.UTF-8", "SOFASCORE_CONFIG": "none"}, None, "en", None, "tr"),  # dosya araması kapalı
+]
+
+
+def _layers(tmp_path: Path, env_text, toml_language, overrides_language) -> None:
+    (tmp_path / "config").mkdir(exist_ok=True)
+    if env_text is not None:
+        (tmp_path / ".env").write_text(env_text, encoding="utf-8")
+    if toml_language is not None:
+        (tmp_path / "sofascore.toml").write_text(f'schema = 1\n[display]\nlanguage = "{toml_language}"\n',
+                                                 encoding="utf-8")
+    if overrides_language is not None:
+        (tmp_path / "config" / "overrides.json").write_text(
+            json.dumps({"display": {"language": overrides_language}}), encoding="utf-8")
+
+
+@pytest.mark.parametrize("environ,env_text,toml_language,overrides_language,expected", LAYER_CASES)
+def test_the_launcher_language_follows_the_config_layers(tmp_path, environ, env_text, toml_language,
+                                                         overrides_language, expected):
+    _layers(tmp_path, env_text, toml_language, overrides_language)
+    ctx = doctor.Context(root=tmp_path, environ=environ, platform="linux")
+    assert ctx.lang == expected
+
+    # Yükleyici aynı dili verir (python-dotenv `.env`'i süreç ortamına yükler; süreç ortamı önce gelir)
+    from src.config import loader
+
+    dotenv = dict(ctx.file_env)
+    use_file = toml_language is not None and environ.get("SOFASCORE_CONFIG") != "none"
+    loaded = loader.load_settings(
+        config_file=tmp_path / "sofascore.toml" if use_file else None,
+        environ={**dotenv, **environ}, dotenv_values=dotenv, overrides_file=tmp_path / "config" / "overrides.json")
+    configured = loaded.source(loader.LANGUAGE_KEY).layer != loader.LAYER_DEFAULT
+    found = loaded.settings.display.language if configured else language.resolve_language(environ, "linux")
+    assert found == expected
+
+
+def test_an_unreadable_config_file_does_not_break_the_launcher_language(tmp_path):
+    (tmp_path / "sofascore.toml").write_text("[display\nlanguage = ", encoding="utf-8")
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "overrides.json").write_text("{not json", encoding="utf-8")
+    assert doctor.Context(root=tmp_path, environ={"LANG": "tr_TR.UTF-8"}, platform="linux").lang == "tr"
+
+
+def _app_lang_function(script: str) -> str:
+    text = (REPO / script).read_text(encoding="utf-8")
+    match = re.search(r"^app_lang\(\) \{\n.*?^\}\n", text, flags=re.S | re.M)
+    assert match, f"{script} has no app_lang()"
+    return match.group(0)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="bash betikleri POSIX'te çalışır")
+def test_the_shell_launchers_ask_the_app_for_the_language(tmp_path):
+    """Python varken başlatma betikleri dili uygulamaya sorar: Ayarlar sayfasında seçilen dil de sayılır."""
+    bash = shutil.which("bash")
+    if bash is None or shutil.which("python3") is None:
+        pytest.skip("bash ya da python3 yok")
+    scripts = ("start-sofascore.sh", "Start SofaScore.command")
+    assert len({_app_lang_function(script) for script in scripts}) == 1
+    for name in scripts:
+        text = (REPO / name).read_text(encoding="utf-8")
+        assert 'case "$(app_lang)" in tr) UI_LANG=tr ;; en) UI_LANG=en ;; esac' in text
+    config = tmp_path / "config"
+    config.mkdir()
+    (config / "overrides.json").write_text(json.dumps({"display": {"language": "tr"}}), encoding="utf-8")
+    env = {"PATH": os.environ.get("PATH", ""), "LANG": "en_US.UTF-8", "SOFASCORE_CONFIG": "none",
+           "SOFASCORE_CONFIG_DIR": str(config), "SOFASCORE_ENV_FILE": str(tmp_path / "none.env")}
+    script = "set -uo pipefail\n" + _app_lang_function(scripts[0]) + "app_lang\n"
+    run = subprocess.run([bash, "-c", script], cwd=str(REPO), env=env, capture_output=True, text=True, timeout=60)
+    assert run.returncode == 0 and run.stdout.strip() == "tr", run.stderr
+    # Python cevap veremezse (src yok) çıktı boştur ve betik kendi tahminini kullanır
+    run = subprocess.run([bash, "-c", script], cwd=str(tmp_path), env=env, capture_output=True, text=True,
+                         timeout=60)
+    assert run.returncode == 0 and run.stdout.strip() == ""

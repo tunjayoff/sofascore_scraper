@@ -103,6 +103,48 @@ _NUMBER_RULES: Tuple[Tuple[str, bool, float, bool, Optional[float]], ...] = (
 # doktor yükleyiciyi yalnızca `check_config` içinde içe aktarır)
 _CONFIG_FILE_NAME = "sofascore.toml"
 _CONFIG_DISABLED = "none"
+_OVERRIDES_FILE_NAME = "overrides.json"  # src/config/loader.py OVERRIDES_FILE_NAME
+_LANGUAGE_SETTING_ENV = "SOFASCORE_DISPLAY__LANGUAGE"  # [display] language'ın yeni ortam adı
+
+
+def _language_code(value: Any) -> Optional[str]:
+    """Açık bir dil ayarı ("tr", "EN"); desteklenmeyen ya da boş değer None."""
+    code = str(value or "").strip().lower()
+    return code if code in SUPPORTED_LANGUAGES else None
+
+
+def _document_language(document: Any) -> Optional[str]:
+    """Bölümlü bir ayar belgesinin (sofascore.toml, overrides.json) `[display] language` değeri."""
+    display = document.get("display") if isinstance(document, dict) else None
+    return _language_code(display.get("language")) if isinstance(display, dict) else None
+
+
+def _read_toml(path: Path) -> Any:
+    """TOML belgesi; okunamıyorsa ya da okuyucu yoksa (Python 3.10'da tomli kurulmamış) None."""
+    try:
+        try:
+            import tomllib as toml
+        except ImportError:
+            import tomli as toml
+        with open(path, "rb") as f:
+            return toml.load(f)
+    except Exception:  # bozuk dosyayı `config` denetimi bildirir; dil için yok sayılır
+        return None
+
+
+def _configured_language(ctx: "Context") -> Optional[str]:
+    """Yapılandırma dosyasının, sonra overrides.json'ın verdiği dil (yükleyicide dosya overrides'ın üstündedir)."""
+    path, _disabled = _config_file(ctx)
+    if path is not None:
+        code = _document_language(_read_toml(path))
+        if code is not None:
+            return code
+    try:
+        with open(ctx.config_dir() / _OVERRIDES_FILE_NAME, "r", encoding="utf-8") as f:
+            return _document_language(json.load(f))
+    except (OSError, ValueError):
+        return None
+
 
 # Kod bunları `.lower() == "true"` ile okur: "1" ya da "yes" sessizce false olur
 _BOOL_KEYS = ("USE_PROXY", "USE_COLOR", "FETCH_ONLY_FINISHED", "SAVE_EMPTY_ROUNDS")
@@ -172,9 +214,22 @@ class Context:
         return p if p.is_absolute() else self.root / p
 
     def _app_language(self) -> str:
-        # Uygulamayla aynı kural (src/language.py): açık ayar > sistem dili > İngilizce. Değerler
-        # uygulamanın göreceği gibi okunur (süreç ortamı, sonra .env).
-        return language.resolve_language({key: self.get(key) for key in language.ENV_KEYS}, platform=self.platform)
+        # Uygulamayla aynı kural (src/language.py): açık ayar > sistem dili > İngilizce. Açık ayar, ayar
+        # yükleyicisinin katman sırasıyla aranır (src/config/loader.py; FX-22): süreç ortamı > sofascore.toml >
+        # overrides.json (Ayarlar sayfası) > .env. Yükleyici dotenv'e bağlı olduğu için burada yalnızca standart
+        # kütüphaneyle okunur: başlatıcı (scripts/start_web.py) ve başlatma betikleri dili buradan alır.
+        new_name = _language_code(self.get(_LANGUAGE_SETTING_ENV))  # SOFASCORE_DISPLAY__LANGUAGE: ortam katmanı
+        legacy, legacy_from_env = None, False
+        for name in language.EXPLICIT_KEYS:  # yükleyici gibi: geçerli kodu taşıyan ilk eski ad, katmanı onun
+            legacy = language.explicit_language({name: self.get(name)})
+            if legacy is not None:
+                legacy_from_env = name in self.environ and self.environ[name] != self.file_env.get(name)
+                break
+        explicit = (new_name or (legacy if legacy_from_env else None) or _configured_language(self)
+                    or legacy)
+        return explicit or language.detected_language(
+            {key: self.get(key) for key in language.LOCALE_KEYS}, platform=self.platform
+        ) or language.DEFAULT_LANGUAGE
 
     def get(self, key: str, default: str = "") -> str:
         """Geçerli değer: süreç ortamı .env'in önündedir (uygulama load_dotenv'i override'sız çağırır)."""

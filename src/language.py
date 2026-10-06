@@ -7,7 +7,10 @@ bunu kullanır; kurulum betikleri (scripts/install.sh, install.ps1) ve web aray�
 
   açık ayar     APP_LANGUAGE (.env ya da ortam). Eski LANGUAGE değişkeni yalnızca tam olarak
                 desteklenen bir koda eşitse sayılır: aynı ad GNU gettext'in değişkenidir
-                ("en_US:en" gibi değerler kabuktan gelir ve ayar değildir).
+                ("en_US:en" gibi değerler kabuktan gelir ve ayar değildir). sofascore.toml'daki ve
+                Ayarlar sayfasındaki dil (overrides.json) de açık ayardır: ayar yükleyicisi onu
+                APP_LANGUAGE olarak ortama yansıtır; yükleyiciyi yüklemeyen başlatıcı ve başlatma
+                betikleri aynı sırayı src/doctor.py'nin Context'inden alır (FX-22).
   sistem dili   POSIX önceliğiyle LC_ALL, LC_MESSAGES, LANG: ilk dolu olan belirler. Hiçbiri
                 yoksa Windows'ta kullanıcının arayüz dili.
   İngilizce     desteklenmeyen her dil (de_DE, C, POSIX, ...) için de geçerli.
