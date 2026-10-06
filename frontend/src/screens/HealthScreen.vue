@@ -19,17 +19,27 @@ import { diskBytes, useStatusStore } from '@/app/statusStore'
 import { sportName } from '@/app/sports'
 import { liveState } from '@/ui/status'
 import { failureText } from '@/screens/jobs/eventText'
+import { jobKindText, leagueName } from '@/screens/jobs/jobText'
+import type { ScheduledRun } from '@/api/v1/schema'
 import { bytesText, duration, now as clockNow, num, useClock } from '@/ui/time'
 
 /**
  * Health (6.12): the state of the services, read-only, from `/api/v1/status`, with one action: the
  * connection check (one request to SofaScore, on click only). The live service card never starts or stops
  * anything (R2, decision 17); a `direct` source gets its warning. Who holds the data folder comes from
- * the leases; the storage card from the data summary. The scheduler's next runs are not reported yet (P29).
+ * the leases; the storage card from the data summary. The scheduler card lists the next run of every task
+ * (`/status.schedule`, P29; shown since FX-20), with a run that was skipped last time marked.
  * The connection is "Not tried yet" while no request has been answered, and amber when the last request
  * or the server's last connection check failed (FX-14a; read from `/status.connection` since FX-14b).
  */
 const STALE_LIVE_S = 120
+
+/** A scheduled task in words: "Download · Premier League", "Back up", "Clean-up of old odds". */
+function taskText(r: ScheduledRun): string {
+  const kind = r.run === 'prune-history' ? jobKindText('clear', { scope: 'history' }) : jobKindText(r.run)
+  const league = typeof r.options?.league_id === 'number' ? leagueName(r.options.league_id) : null
+  return league ? `${kind} · ${league}` : kind
+}
 const { t, te } = useI18n()
 const store = useStatusStore()
 const s = computed(() => store.status)
@@ -254,7 +264,15 @@ onMounted(() => {
           <UiBadge :tone="s.capabilities.scheduler ? 'ok' : 'neutral'" :icon="s.capabilities.scheduler ? 'okCircle' : 'circle'">{{ s.capabilities.scheduler ? t('ui.common.on') : t('ui.common.off') }}</UiBadge>
         </header>
         <p class="m-0">{{ s.capabilities.scheduler ? t('ui.health.schedulerOn') : t('ui.health.schedulerOff') }}</p>
-        <p class="m-0 u-small u-muted">{{ t('ui.health.schedulerLater') }}</p>
+        <ul v-if="s.schedule?.next_runs?.length" class="m-0 p-0 list-none flex flex-col gap-2" data-testid="scheduler-runs" :aria-label="t('ui.health.nextRuns')">
+          <li v-for="r in s.schedule.next_runs" :key="r.index" class="flex flex-wrap items-baseline gap-x-3 gap-y-1" :data-task="r.index">
+            <span class="font-semibold">{{ taskText(r) }}</span>
+            <span class="u-small u-muted u-mono">{{ r.every ? t('ui.health.every', { every: r.every }) : r.cron }}</span>
+            <span class="u-small">{{ t('ui.health.nextRun') }} <TimeText :value="r.next_run_at_utc" relative /></span>
+            <span v-if="r.last_result && r.last_result !== 'started'" class="u-small" style="color: var(--warn-fg)">{{ t(`ui.health.lastResult.${r.last_result}`) }}</span>
+          </li>
+        </ul>
+        <p v-else-if="s.capabilities.scheduler" class="m-0 u-small u-muted" data-testid="scheduler-no-tasks">{{ t('ui.health.noTasks') }}</p>
       </section>
 
       <section class="u-card p-6 flex flex-col gap-4 lg:col-span-2" data-testid="health-storage">
