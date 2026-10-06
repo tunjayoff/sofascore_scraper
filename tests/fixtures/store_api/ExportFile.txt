@@ -1,0 +1,7 @@
+# src.store.ExportFile
+# kaynak: src/store/export.py
+@dataclass(frozen=True)
+class ExportFile:
+    name: str
+    size: int
+    modified_at: float

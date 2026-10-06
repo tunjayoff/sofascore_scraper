@@ -46,6 +46,7 @@ import gzip
 import json
 import logging
 import os
+import re
 import shutil
 import sqlite3
 import uuid
@@ -116,6 +117,19 @@ class ExportSkip:
     sub: str
     reason: str
     detail: str = ""
+
+
+@dataclass(frozen=True)
+class ExportFile:
+    """`exports/` dizinindeki bir dosya (FX-19: API'nin ve `ssc export`'un yazdıkları). modified_at epoch saniye."""
+
+    name: str
+    size: int
+    modified_at: float
+
+
+# `exports/` dizininde listelenen ve indirilebilen dosya adı: yol ayırıcısız, gizli değil
+_EXPORT_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._,()+-]{0,199}$")
 
 
 @dataclass(frozen=True)
@@ -451,6 +465,35 @@ class Exporter:
         self._store = store
         self._data_dir = str(store.data_dir)
         self._reader = LegacyReader(self._data_dir)
+
+    # -- `exports/` dizini (FX-19) ---------------------------------------------------------------------
+
+    def files(self) -> List[ExportFile]:
+        """
+        Veri dizininin `exports/` dizinindeki dosyalar, en yeni önce (API'nin dışa aktarma işlerinin ve
+        `ssc export`'un yazdıkları). Dizin yoksa boş liste; alt dizinler ve adı uymayan girdiler atlanır.
+        """
+        root = layout.resolve(self._data_dir, layout.EXPORTS_DIR)
+        found: List[ExportFile] = []
+        try:
+            with os.scandir(root) as scan:
+                for entry in scan:
+                    if not _EXPORT_NAME.match(entry.name) or not entry.is_file(follow_symlinks=False):
+                        continue
+                    st = entry.stat(follow_symlinks=False)
+                    found.append(ExportFile(entry.name, int(st.st_size), float(st.st_mtime)))
+        except FileNotFoundError:
+            return []
+        except OSError as e:
+            raise StoreError.from_exception(e, root, reading=True) from e
+        return sorted(found, key=lambda f: (-f.modified_at, f.name))
+
+    def file_path(self, name: str) -> Optional[str]:
+        """`exports/` altındaki dosyanın yolu; ad uymuyorsa ya da dosya yoksa None (dizin dışına çıkılamaz)."""
+        if not isinstance(name, str) or not _EXPORT_NAME.match(name):
+            return None
+        path = layout.resolve(self._data_dir, f"{layout.EXPORTS_DIR}/{name}")
+        return path if os.path.isfile(path) and not os.path.islink(path) else None
 
     # -- ham yükler ------------------------------------------------------------------------------------
 
@@ -860,6 +903,7 @@ def _pretty(data: bytes, where: str) -> bytes:
 
 __all__ = [
     "Exporter",
+    "ExportFile",
     "ExportReport",
     "ExportSkip",
     "RAW_FORMATS",

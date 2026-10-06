@@ -16,12 +16,17 @@ Dışa aktarma üç biçim üretir:
   raw              saklanan SofaScore yükleri, sıkıştırmasız JSONL (`Store.export.raw`; dilim başına bir satır:
                    `{"event_id", "key", "sub", "fetched_at", "payload"}`)
 
-Dışa aktarma dosyası `DATA_DIR/exports/<iş kimliği>.<uzantı>`ya yazılır; aynı işin
-dosyası yeniden yazılabilir (`overwrite`).
+Dışa aktarma dosyası `DATA_DIR/exports/`a okunur bir adla yazılır (plan maddesi FX-19; `export_name`):
+`<lig ya da veri kümesi>_<UTC tarih>_<iş kimliğinin son 8 harfi>.<uzantı>`, ör.
+`premier-league_2026-10-06_x7k2m9qa.csv`; adı işin sonucundaki `file` alanı taşır. FX-19'dan önceki işlerin
+dosyası `<iş kimliği>.<uzantı>`dır. Aynı işin dosyası yeniden yazılabilir (`overwrite`).
 """
 from __future__ import annotations
 
+import datetime as dt
 import os
+import re
+import unicodedata
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
@@ -119,9 +124,54 @@ def export_extension(req: ExportRequest) -> str:
     return "jsonl" if req.schema == "raw" and req.profile is None else req.format
 
 
-def export_path(data_dir: str, job_id: str, req: ExportRequest) -> str:
-    """İşin dışa aktarma dosyası: `DATA_DIR/exports/<iş kimliği>.<uzantı>`."""
-    return os.path.join(os.path.abspath(data_dir), EXPORTS_DIR, f"{job_id}.{export_extension(req)}")
+def export_path(data_dir: str, job_id: str, req: ExportRequest, name: Optional[str] = None) -> str:
+    """
+    İşin dışa aktarma dosyası: `DATA_DIR/exports/<name>`; name verilmezse FX-19'dan önceki ad
+    `<iş kimliği>.<uzantı>` (eski işlerin dosyası).
+    """
+    return os.path.join(os.path.abspath(data_dir), EXPORTS_DIR, name or f"{job_id}.{export_extension(req)}")
+
+
+_SLUG_DROP = re.compile(r"[^a-z0-9]+")
+LABEL_MAX = 40
+
+
+def slug(text: str) -> str:
+    """Dosya adına giren parça: aksanlar çıkarılır, küçük harf, harf ve rakam dışı `-`, en çok 40 karakter."""
+    plain = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii").lower()
+    return _SLUG_DROP.sub("-", plain).strip("-")[:LABEL_MAX].strip("-")
+
+
+def export_label(req: ExportRequest, tournament_name: Optional[str] = None) -> str:
+    """
+    Dosya adının baş parçası: tek bir turnuva süzülmüşse onun adı (biliniyorsa), yoksa veri kümesi; ham dışa
+    aktarmada `-raw`, 2.x'in geniş CSV'sinde `-wide` eklenir.
+    """
+    base = slug(tournament_name or "") if tournament_name else ""
+    base = base or req.dataset
+    if req.profile == LEGACY_WIDE_CSV:
+        return f"{base}-wide"
+    return f"{base}-raw" if req.schema == "raw" else base
+
+
+def export_name(store: "Store", job_id: str, req: ExportRequest, *, now: Optional[float] = None) -> str:
+    """
+    Okunur dosya adı (FX-19): `<etiket>_<UTC tarih>_<iş kimliğinin son 8 harfi>.<uzantı>`. Turnuvanın adı takip
+    tablosundan, yoksa katalogdan.
+    """
+    name: Optional[str] = None
+    if len(req.tournament_ids) == 1:
+        tid = int(req.tournament_ids[0])
+        followed = store.follows.get("tournament", tid)
+        if followed is not None:
+            name = followed.name
+        else:
+            row = store.entities.tournament(tid)
+            name = row.name if row is not None else None
+    moment = dt.datetime.fromtimestamp(now if now is not None else dt.datetime.now(dt.timezone.utc).timestamp(),
+                                       dt.timezone.utc)
+    short = "".join(ch for ch in job_id.lower() if ch.isalnum())[-8:] or "export"
+    return f"{export_label(req, name)}_{moment:%Y-%m-%d}_{short}.{export_extension(req)}"
 
 
 def run_export(store: "Store", req: ExportRequest, dest: str) -> Dict[str, Any]:
@@ -158,6 +208,8 @@ __all__ = [
     "check_export",
     "dataset_spec",
     "export_extension",
+    "export_label",
+    "export_name",
     "export_path",
     "run_export",
 ]

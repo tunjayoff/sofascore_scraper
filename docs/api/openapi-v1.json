@@ -3833,7 +3833,7 @@
           "exports"
         ],
         "summary": "List exports",
-        "description": "Export jobs of the data directory, newest first, running and failed ones included.",
+        "description": "Export jobs of the data directory, running and failed ones included, and the files of `exports/` that no job\nwrote (`ssc export`; `source: \"file\"`), newest first.",
         "operationId": "listExports",
         "parameters": [
           {
@@ -3856,7 +3856,7 @@
               "anyOf": [
                 {
                   "type": "string",
-                  "maxLength": 64
+                  "maxLength": 256
                 },
                 {
                   "type": "null"
@@ -3928,7 +3928,7 @@
           "exports"
         ],
         "summary": "Download an export",
-        "description": "The file of a succeeded export. 404 for an unknown id, an export that has not succeeded or a deleted file.",
+        "description": "The file of a succeeded export, or (`file:<name>`) a file of `exports/` that no job wrote. 404 for an unknown\nid, an export that has not succeeded or a deleted file.",
         "operationId": "downloadExport",
         "parameters": [
           {
@@ -3937,7 +3937,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "maxLength": 64,
+              "maxLength": 256,
               "title": "Export Id"
             }
           }
@@ -6374,11 +6374,29 @@
           "id": {
             "type": "string",
             "title": "Id",
-            "description": "Id of the export, the id of its job."
+            "description": "Id of the export: the id of its job, or `file:<name>` for a file no job wrote."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "job",
+              "file"
+            ],
+            "title": "Source",
+            "description": "job: an export job; file: a file in `exports/` that no job wrote (`ssc export`).",
+            "default": "job"
           },
           "job_id": {
-            "type": "string",
-            "title": "Job Id"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id",
+            "description": "Null for a file no job wrote."
           },
           "state": {
             "$ref": "#/components/schemas/JobState",
@@ -6525,7 +6543,6 @@
         "type": "object",
         "required": [
           "id",
-          "job_id",
           "state",
           "dataset",
           "format",
@@ -6534,7 +6551,7 @@
           "available"
         ],
         "title": "ExportRecord",
-        "description": "An export: the job that writes it and, once it has succeeded, its file."
+        "description": "An export: the job that writes it and, once it has succeeded, its file; or a file of `exports/` no job\nwrote (`ssc export`)."
       },
       "FightScore": {
         "properties": {

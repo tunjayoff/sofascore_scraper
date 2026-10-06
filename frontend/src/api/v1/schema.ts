@@ -420,11 +420,17 @@ export interface ExportListResponse {
   page: PageInfo
 }
 
-/** An export: the job that writes it and, once it has succeeded, its file. */
+/**
+ * An export: the job that writes it and, once it has succeeded, its file; or a file of `exports/` no job
+ * wrote (`ssc export`).
+ */
 export interface ExportRecord {
-  /** Id of the export, the id of its job. */
+  /** Id of the export: the id of its job, or `file:<name>` for a file no job wrote. */
   id: string
-  job_id: string
+  /** job: an export job; file: a file in `exports/` that no job wrote (`ssc export`). */
+  source?: "job" | "file"
+  /** Null for a file no job wrote. */
+  job_id?: string | null
   /** State of the job; the file can be downloaded when `succeeded`. */
   state: JobState
   dataset: string

@@ -27,8 +27,9 @@ thread'de çalışır. Belirtim (`spec`) bugünkü eşitleme servisinin belirtim
 
 Üçü de CSV yazmaz: dışa aktarma kendi iş türüdür (`export`). Veri işleri (P21):
 
-    export   `exports/<iş>.<uzantı>`: normalleştirilmiş veri kümeleri (events, slices, changes; JSONL, CSV,
-             Parquet, SQLite), 2.x'in geniş CSV'si ya da ham yükler (src/services/data_jobs.py)
+    export   `exports/<lig ya da veri kümesi>_<tarih>_<kısa kimlik>.<uzantı>` (FX-19): normalleştirilmiş veri
+             kümeleri (events, slices, changes; JSONL, CSV, Parquet, SQLite), 2.x'in geniş CSV'si ya da ham yükler
+             (src/services/data_jobs.py)
     backup   `backups/` altına yedek (BackupService)
     clear    saklanan verinin bir kısmını siler (MaintenanceService.clear); `confirm: true` ister;
              `tournament_id` (ve isteğe bağlı `season_id`) ile yalnızca o turnuvanın verisi (FX-19,
@@ -690,11 +691,12 @@ def _config_files() -> Tuple[str, ...]:
 def _export_body(spec: Mapping[str, Any]) -> Any:
     def body(handle: "JobHandle") -> "JobOutcome":
         from src.jobs.manager import JobOutcome
-        from src.services.data_jobs import export_path, run_export
+        from src.services.data_jobs import export_name, export_path, run_export
 
         store = deps.store()
         request = export_request(spec)
-        result = run_export(store, request, export_path(str(store.data_dir), handle.id, request))
+        name = export_name(store, handle.id, request)  # okunur ad (FX-19); sonucun `file` alanında
+        result = run_export(store, request, export_path(str(store.data_dir), handle.id, request, name))
         result.pop("path", None)  # yol iş kaydına yazılmaz: indirme onu iş kimliğinden kurar
         return JobOutcome(result={"export": result})
 
