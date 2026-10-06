@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import PageHeader from '@/ui/PageHeader.vue'
@@ -16,9 +16,10 @@ import { v1, V1Error } from '@/api/v1/client'
 import type { FollowRecord, Job, Season, TournamentRecord } from '@/api/v1/schema'
 import { sportName } from '@/app/sports'
 import { useStatusStore } from '@/app/statusStore'
+import { onJobEnded } from '@/app/jobWatch'
 import { num, pct } from '@/ui/time'
 import StartJobDialog from '@/screens/jobs/StartJobDialog.vue'
-import { faceText, jobKindText } from '@/screens/jobs/jobText'
+import { faceText, jobKindText, jobLeague } from '@/screens/jobs/jobText'
 import EventsList from '@/screens/events/EventsList.vue'
 import FollowActions from './FollowActions.vue'
 import SlicePicker from './SlicePicker.vue'
@@ -27,7 +28,8 @@ import { dataText, hasOdds, lastSyncOf, lockReason, seasonsText, syncIncludes } 
 /**
  * Follow detail (6.4): one follow with its seasons, its matches, its data selection and its jobs. The
  * facts panel says what is followed and how; a follow from the config file is locked. The per-season
- * counts are not in the API yet; the tournament's coverage comes from the data summary of `/status`.
+ * counts are not in the API yet; the tournament's coverage comes from the data summary of `/status`. When a
+ * download of this league ends, its last download, the counts and the seasons are read again (FX-14a).
  */
 const { t } = useI18n()
 const route = useRoute()
@@ -79,9 +81,7 @@ async function load() {
         .catch(() => (tournament.value = null))
       loadSeasons()
     }
-    v1.jobs({ kind: ['sync'], limit: 50 })
-      .then((r) => (jobs.value = r.data))
-      .catch(() => (jobs.value = []))
+    loadJobs()
   } catch (e) {
     follow.value = null
     error.value = e
@@ -89,6 +89,21 @@ async function load() {
     loading.value = false
   }
 }
+
+function loadJobs() {
+  v1.jobs({ kind: ['sync'], limit: 50 })
+    .then((r) => (jobs.value = r.data))
+    .catch(() => (jobs.value = jobs.value ?? []))
+}
+
+const stopListening = onJobEnded((job) => {
+  const f = follow.value
+  if (!f || !(syncIncludes(f, job) || (job.kind === 'fetch' && jobLeague(job) === f.entity_id))) return
+  loadJobs()
+  void status.refresh().catch(() => {})
+  if (isTournament.value) loadSeasons()
+})
+onUnmounted(stopListening)
 
 function loadSeasons() {
   seasonsError.value = null
