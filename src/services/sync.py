@@ -680,7 +680,8 @@ class _SyncRun:
                              cancelled=self.job.cancelled, concurrency=self.ctx.config.get_max_concurrent(),
                              selection=policy)
         if summary is not None and summary.total:
-            self.job.log(f"Odds and non-match data: {summary.ok} stored, {summary.failed} failed.")
+            self.log(f"Odds and non-match data: {summary.ok} stored, {summary.failed} failed.", "sync_extras",
+                     stored=int(summary.ok), failed=int(summary.failed))
             if summary.breaker:
                 self.report_breaker(summary.breaker, "odds and non-match data")
 
