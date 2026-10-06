@@ -8,8 +8,9 @@ API v1: takipler (docs/design/02-services.md bölüm 6 ve 4.3; docs/design/05-we
     DELETE /api/v1/follows/{follow_id}     kaldırır (saklanan veri silinmez)
 
 Takibin kimliği `<kind>:<id>`dir (`tournament:17`). Kaynağı (`origin`) neyin değiştirilebileceğini belirler
-(`writable`): yapılandırma dosyasının takibi hiç (409 `follow_managed`), leagues.txt'in takibi yalnızca sporu,
-API'nin takibi her alanı. Kurallar: src/services/follows.py.
+(`writable`): yapılandırma dosyasının takibi hiç (409 `follow_managed`), leagues.txt'in takibi yalnızca sporu ya da
+`origin: "api"` ile takip tablosuna alınır, API'nin takibi her alanı. Yeni takip her zaman takip tablosundadır
+(`origin` api; plan maddesi FX-19). Kurallar: src/services/follows.py.
 
 Takip kaldırma, çalışan bir iş varken reddedilir (409 `job_running`): iş lig adını ve sporunu yapılandırmadan okur
 (eski `DELETE /api/leagues/{id}` ile aynı kural).
@@ -59,7 +60,9 @@ class FollowRecord(BaseModel):
     live: bool = Field(description="The live service watches it (`ssc watch`).")
     enabled: bool
     origin: Literal["legacy", "config", "api"] = Field(
-        description="legacy: config/leagues.txt; config: the config file (read-only here); api: added here.",
+        description="legacy: config/leagues.txt (the 2.x league list; only `sport` can change, or PATCH "
+                    "`origin: \"api\"` moves it into the follows table); config: the config file (read-only here); "
+                    "api: the follows table (added here, with `ssc follows add` or moved from config/leagues.txt).",
     )
     position: int
     writable: List[str] = Field(description="Fields PATCH can change on this follow.")
@@ -77,7 +80,7 @@ class FollowListResponse(BaseModel):
 
 
 class FollowCreate(BaseModel):
-    """A new follow. Without a config file a tournament follow is written to config/leagues.txt (name and sport)."""
+    """A new follow, kept in the follows table (`origin` api): every field can be changed later."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -86,10 +89,7 @@ class FollowCreate(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     sport: Optional[str] = Field(default=None, max_length=40)
     seasons: SeasonChoice = "all"
-    slices: Optional[SliceChoice] = Field(
-        default=None,
-        description=_SLICES_TEXT + " Not available for a follow kept in config/leagues.txt (no config file).",
-    )
+    slices: Optional[SliceChoice] = Field(default=None, description=_SLICES_TEXT)
     live: bool = False
     enabled: bool = True
 
@@ -106,6 +106,12 @@ class FollowPatch(BaseModel):
     slices: Optional[SliceChoice] = Field(default=None, description=_SLICES_TEXT)
     live: Optional[bool] = None
     enabled: Optional[bool] = None
+    origin: Optional[Literal["api"]] = Field(
+        default=None,
+        description="`api` moves a follow of config/leagues.txt into the follows table: it is removed from the "
+                    "file and every field becomes writable; the other fields of the same request are applied "
+                    "after the move. A follow of the follows table is left as it is.",
+    )
 
 
 def record(service: "FollowsService", follow: "Follow") -> FollowRecord:
@@ -177,10 +183,10 @@ def get_follow(follow_id: FollowId) -> FollowResponse:
 )
 def add_follow(response: Response, body: FollowCreate) -> FollowResponse:
     """
-    Add a follow and return it (201, with `Location`). A tournament follow is written to config/leagues.txt when
-    no config file is in use (then only `name` and `sport` can be set), else to the follows table. A follow of a
-    team, a player or an event is always kept in the follows table. 409 `follow_exists` for an entity or a
-    tournament name that is followed already.
+    Add a follow and return it (201, with `Location`). Every new follow is kept in the follows table (`origin`
+    api), with or without a config file, so each of its fields can be changed later. 409 `follow_exists` for an
+    entity or a tournament name that is followed already (also by config/leagues.txt: move that one with PATCH
+    `origin: "api"`).
     """
     from src.services.follows import NewFollow, follow_id
 
@@ -202,13 +208,14 @@ def add_follow(response: Response, body: FollowCreate) -> FollowResponse:
 def update_follow(follow_id: FollowId, body: FollowPatch) -> FollowResponse:
     """
     Change the given fields and return the follow. A follow of the config file cannot be changed here (409
-    `follow_managed`); one of config/leagues.txt only its sport (`writable` says which fields can change).
+    `follow_managed`); one of config/leagues.txt only its sport, unless `origin: "api"` moves it into the follows
+    table first (`writable` says which fields can change).
     """
     kind, entity_id = _key(follow_id)
     changes: Dict[str, Any] = body.model_dump(exclude_unset=True)
     if isinstance(changes.get("seasons"), list):
         changes["seasons"] = tuple(changes["seasons"])
-    for field in ("name", "seasons", "live", "enabled"):
+    for field in ("name", "seasons", "live", "enabled", "origin"):
         if field in changes and changes[field] is None:
             del changes[field]  # yalnızca spor ve veri seçimi null ile silinir
     service = deps.follows_service()

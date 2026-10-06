@@ -706,7 +706,7 @@
           "follows"
         ],
         "summary": "Follow something",
-        "description": "Add a follow and return it (201, with `Location`). A tournament follow is written to config/leagues.txt when\nno config file is in use (then only `name` and `sport` can be set), else to the follows table. A follow of a\nteam, a player or an event is always kept in the follows table. 409 `follow_exists` for an entity or a\ntournament name that is followed already.",
+        "description": "Add a follow and return it (201, with `Location`). Every new follow is kept in the follows table (`origin`\napi), with or without a config file, so each of its fields can be changed later. 409 `follow_exists` for an\nentity or a tournament name that is followed already (also by config/leagues.txt: move that one with PATCH\n`origin: \"api\"`).",
         "operationId": "addFollow",
         "requestBody": {
           "required": true,
@@ -881,7 +881,7 @@
           "follows"
         ],
         "summary": "Change a follow",
-        "description": "Change the given fields and return the follow. A follow of the config file cannot be changed here (409\n`follow_managed`); one of config/leagues.txt only its sport (`writable` says which fields can change).",
+        "description": "Change the given fields and return the follow. A follow of the config file cannot be changed here (409\n`follow_managed`); one of config/leagues.txt only its sport, unless `origin: \"api\"` moves it into the follows\ntable first (`writable` says which fields can change).",
         "operationId": "updateFollow",
         "parameters": [
           {
@@ -6556,7 +6556,7 @@
               }
             ],
             "title": "Slices",
-            "description": "Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and `slices.<sport>` of GET /settings); `{\"include\": [...]}` = only these; `{\"enable\": [...], \"disable\": [...]}` = changes to the defaults. What is not selected is never fetched. Not available for a follow kept in config/leagues.txt (no config file)."
+            "description": "Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and `slices.<sport>` of GET /settings); `{\"include\": [...]}` = only these; `{\"enable\": [...], \"disable\": [...]}` = changes to the defaults. What is not selected is never fetched."
           },
           "live": {
             "type": "boolean",
@@ -6576,7 +6576,7 @@
           "name"
         ],
         "title": "FollowCreate",
-        "description": "A new follow. Without a config file a tournament follow is written to config/leagues.txt (name and sport)."
+        "description": "A new follow, kept in the follows table (`origin` api): every field can be changed later."
       },
       "FollowListResponse": {
         "properties": {
@@ -6681,6 +6681,19 @@
               }
             ],
             "title": "Enabled"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "api"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin",
+            "description": "`api` moves a follow of config/leagues.txt into the follows table: it is removed from the file and every field becomes writable; the other fields of the same request are applied after the move. A follow of the follows table is left as it is."
           }
         },
         "additionalProperties": false,
@@ -6776,7 +6789,7 @@
               "api"
             ],
             "title": "Origin",
-            "description": "legacy: config/leagues.txt; config: the config file (read-only here); api: added here."
+            "description": "legacy: config/leagues.txt (the 2.x league list; only `sport` can change, or PATCH `origin: \"api\"` moves it into the follows table); config: the config file (read-only here); api: the follows table (added here, with `ssc follows add` or moved from config/leagues.txt)."
           },
           "position": {
             "type": "integer",
@@ -10845,7 +10858,7 @@
           "followed": {
             "type": "boolean",
             "title": "Followed",
-            "description": "A tournament of the configured leagues."
+            "description": "A follow of any origin names the tournament (the follows table)."
           },
           "matches": {
             "type": "integer",

@@ -113,7 +113,7 @@ class TournamentSummary(BaseModel):
 
     tournament_id: Optional[int]
     name: Optional[str] = Field(default=None, description="Name of the follow, else the stored tournament name.")
-    followed: bool = Field(description="A tournament of the configured leagues.")
+    followed: bool = Field(description="A follow of any origin names the tournament (the follows table).")
     matches: int = Field(description="Events counted as matches (the `only_finished` rule of the summary).")
     details: int = Field(description="Events with a stored event payload.")
     events: int = Field(description="Every stored event, unfinished schedule rows included.")
@@ -470,6 +470,14 @@ def _tournament_names(store: "Store", ids: List[Optional[int]], followed: Mappin
     return names
 
 
+def followed_tournaments() -> Dict[int, str]:
+    """
+    Takip edilen turnuvalar (kimlik → ad): takip tablosunun her kaynaktan turnuva takipleri, kapalılar da (FX-19;
+    önceden yalnızca yapılandırmanın ligleri, bu yüzden API'den eklenen takip `followed` görünmüyordu).
+    """
+    return {row.entity_id: row.name for row in deps.follows_service().list(kind="tournament")}
+
+
 def data_summary(store: "Store", followed: Mapping[int, str]) -> DataSummary:
     """Veri dizininin özeti (StatusService.summary) v1 modeliyle; takip edilen ligler maçları olmasa da dökümdedir."""
     from src.services.status import StatusService
@@ -566,7 +574,7 @@ def status() -> StatusResponse:
         store = deps.store()
         live = _live(store)
         leases = lease_holders(store)
-        summary = data_summary(store, deps.config_manager().get_leagues())
+        summary = data_summary(store, followed_tournaments())
         sinks = sinks_summary(store)
     except Exception as e:  # depo açılamadı ya da okunamadı: durum yine yanıtlanır
         error = to_platform_error(e)

@@ -3,21 +3,23 @@ Takipler servisi (docs/design/02-services.md 2.7 ve 4.3; docs/design/01-storage.
 P21): neyin indirileceği ve izleneceği. Okuma `follows` tablosundandır (Store.follows); yazma satırın kaynağına
 göre yapılır:
 
-  legacy  `config/leagues.txt` ve `config/league_sports.json` (yapılandırma dosyası olmayan her kurulum). Doğruluk
-          kaynağı dosyalardır: önce dosya yazılır (ConfigManager), tablo onun aynasıdır. Dosya yalnızca ad ve spor
-          tutar; sezon seçimi, canlı izleme ve kapatma bu satırlarda değiştirilemez (`invalid_request`).
+  legacy  `config/leagues.txt` ve `config/league_sports.json` (2.x'ten kalan lig listesi). Doğruluk kaynağı
+          dosyalardır: tablo onların aynasıdır. Dosya yalnızca ad ve spor tutar; bu satırlarda sezon seçimi, veri
+          seçimi, canlı izleme ve kapatma değiştirilemez (`invalid_request`). Satır `origin: "api"` ile takip
+          tablosuna alınabilir (`update`): önce satır `api` olur, sonra dosyadan çıkarılır; her alanı yazılabilir
+          olur. Taşıma açıktır: hiçbir kural satırları kendiliğinden taşımaz (plan maddesi FX-19).
   config  yapılandırma dosyasının `[[follow]]` girdileri: API'den değiştirilemez (`follow_managed`, 409).
-  api     `state.db`'nin kendisi: yapılandırma dosyası varken API'den eklenen turnuva takipleri ve her zaman
-          takım, oyuncu ve maç takipleri (dosya biçimi onları anlatamaz).
+  api     `state.db`'nin kendisi: API'den, web arayüzünden ve `ssc follows add` ile eklenen her takip.
 
-Yeni bir turnuva takibi: yapılandırma dosyası yoksa leagues.txt'e yazılır (bugünkü gibi), varsa `api` satırı
-olur. İndirmeler (`sync`) turnuvaları bu tablodan okur (`sync_tournaments`, plan maddesi FX-13): her kaynağın
-etkin turnuva takibi indirilir; `live = true` takipler ayrıca canlı servisin kapsamına girer.
+Yeni bir takip her zaman `api` satırıdır (plan maddesi FX-19; önceden yapılandırma dosyası yokken bir turnuva
+takibi leagues.txt'e yazılırdı ve sonra kilitli görünürdü). İndirmeler (`sync`) takipleri bu tablodan okur:
+turnuvalar `sync_tournaments` (plan maddesi FX-13), takım, oyuncu ve maç takipleri `sync_others` (FX-19); her
+kaynağın etkin takibi indirilir. `live = true` takipler ayrıca canlı servisin kapsamına girer.
 
 Yapılandırma dosyasının devraldığı bir `api` satırı, dosyadan sonra çıkarıldığında geri gelmez (ST-17'nin
 kuralı, karar P21): dosya kazanır; takip istenirse API'den yeniden eklenir.
 
-Turnuva araması SofaScore'a tek istek atar (istemci, ortak bütçe); engelleme ve ağ hatası tipli hatadır.
+SofaScore'da arama (`search`) tek istek atar (istemci, ortak bütçe); engelleme ve ağ hatası tipli hatadır.
 
 Bu modül web katmanını içe aktarmaz: leagues.txt ve spor dosyasının yazıcısı (`LegacyLeagues`) çağırandan gelir.
 """
@@ -28,6 +30,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Protocol, Sequence, Tuple, Union
 
 from src.errors import ConflictError, NotFoundError, UpstreamBlockedError, UpstreamError, UsageError
+from src.exceptions import StorageError
 from src.logger import get_logger
 from src.sports import follow_slices, normalize_sport
 
@@ -41,9 +44,12 @@ TOURNAMENT = "tournament"
 ORIGIN_LEGACY = "legacy"
 ORIGIN_CONFIG = "config"
 ORIGIN_API = "api"
-# Bir kaynağın satırında değiştirilebilen alanlar
+# Bir kaynağın satırında değiştirilebilen alanlar. `origin`: leagues.txt'in satırını takip tablosuna almak için
+# (yalnızca "api" değeri; FX-19)
 FIELDS: Tuple[str, ...] = ("name", "sport", "seasons", "slices", "live", "enabled")
-WRITABLE: Mapping[str, Tuple[str, ...]] = {ORIGIN_LEGACY: ("sport",), ORIGIN_CONFIG: (), ORIGIN_API: FIELDS}
+ORIGIN_FIELD = "origin"
+WRITABLE: Mapping[str, Tuple[str, ...]] = {ORIGIN_LEGACY: ("sport", ORIGIN_FIELD), ORIGIN_CONFIG: (),
+                                           ORIGIN_API: FIELDS}
 SEARCH_LIMIT = 20
 _FOLLOW_ID = re.compile(r"^(tournament|team|player|event):([1-9][0-9]{0,18})$")
 _LAST_N = re.compile(r"^last:[1-9][0-9]{0,3}$")
@@ -190,13 +196,14 @@ def check_slices(slices: Any) -> Optional[Dict[str, List[str]]]:
 
 class FollowsService:
     """
-    Takipler: liste, ekleme, değiştirme, kaldırma ve SofaScore'da turnuva araması.
+    Takipler: liste, ekleme, değiştirme, kaldırma ve SofaScore'da arama.
 
-    store: veri dizininin deposu. legacy: leagues.txt yazıcısı. config_file: bir yapılandırma dosyası etkin mi
-    (yeni turnuva takipleri o zaman `api` kaynağıyla state.db'ye yazılır).
+    store: veri dizininin deposu. legacy: leagues.txt yazıcısı (ayna, kaldırma, spor ve takip tablosuna alma).
+    config_file: bir yapılandırma dosyası etkin mi; FX-19'dan beri yeni takibin nereye yazılacağını belirlemez
+    (her yeni takip `api` satırıdır), çağıranlar için kalır.
     """
 
-    def __init__(self, store: "Store", legacy: LegacyLeagues, *, config_file: bool) -> None:
+    def __init__(self, store: "Store", legacy: LegacyLeagues, *, config_file: bool = True) -> None:
         self._store = store
         self._legacy = legacy
         self._config_file = bool(config_file)
@@ -225,9 +232,16 @@ class FollowsService:
         """
         Bir eşitlemenin indirdiği turnuvalar: etkin turnuva takipleri, her kaynaktan (leagues.txt, yapılandırma
         dosyası, API ve `ssc follows`), konum sırasıyla (plan maddesi FX-13). Takım, oyuncu ve maç takipleri
-        indirilmez (plan bölüm 14'ün açık sorusu).
+        `sync_others`'tır.
         """
         return self.list(kind=TOURNAMENT, enabled=True)
+
+    def sync_others(self) -> List["Follow"]:
+        """
+        Bir eşitlemenin maçlarını indirdiği takım, oyuncu ve maç takipleri: etkin olanlar, konum sırasıyla (plan
+        maddesi FX-19; src/services/follow_sync.py).
+        """
+        return [row for row in self._store.follows.list(enabled=True) if row.kind != TOURNAMENT]
 
     def get(self, kind: str, entity_id: int) -> Optional["Follow"]:
         self._legacy.leagues()
@@ -246,9 +260,9 @@ class FollowsService:
 
     def add(self, new: NewFollow) -> "Follow":
         """
-        Yeni bir takip. Varlık ya da turnuva adı zaten takipteyse `follow_exists` (409). Yapılandırma dosyası
-        yokken bir turnuva takibi leagues.txt'e yazılır; dosya yalnızca ad ve spor tuttuğu için öteki alanların
-        varsayılan olmayan değeri `invalid_request`tir.
+        Yeni bir takip, her zaman takip tablosunun `api` satırı (yapılandırma dosyası olsun olmasın; FX-19): her
+        alanı sonra da değiştirilebilir. Varlık ya da turnuva adı zaten takipteyse (leagues.txt'in satırı da)
+        `follow_exists` (409); leagues.txt'te duran bir lig `origin: "api"` ile takip tablosuna alınır (`update`).
         """
         from src.store import FollowSpec
 
@@ -258,27 +272,7 @@ class FollowsService:
         sport = check_sport(new.sport)
         seasons = check_seasons(new.seasons)
         slices = check_slices(new.slices)
-        if new.kind == TOURNAMENT and not self._config_file:
-            unsupported = [field for field, value, default in (("seasons", seasons, "all"), ("slices", slices, None),
-                                                             ("live", new.live, False), ("enabled", new.enabled, True))
-                           if value != default]
-            if unsupported:
-                raise UsageError(
-                    "This follow is kept in config/leagues.txt, which stores the name and the sport only; set the "
-                    "other fields in a config file.", {"unsupported": unsupported, "origin": ORIGIN_LEGACY},
-                )
-            if self.get(TOURNAMENT, new.entity_id) is not None:
-                raise ConflictError("The tournament is already followed.", {"id": follow_id(TOURNAMENT, new.entity_id)},
-                                    code="follow_exists")
-            if not self._legacy.add(name, new.entity_id):
-                raise ConflictError("The tournament or its name is already followed.",
-                                    {"id": follow_id(TOURNAMENT, new.entity_id), "name": name}, code="follow_exists")
-            if sport:
-                self._legacy.set_sport(new.entity_id, sport)
-            found = self.get(TOURNAMENT, new.entity_id)
-            if found is None:  # tablo yansıtılamadı (state.db okunamıyor): dosya yazıldı, satır sonra gelir
-                raise _mirror_failed(new.entity_id)
-            return found
+        self._legacy.leagues()  # leagues.txt'in aynası güncel olsun: dosyadaki lig `follow_exists` alır
         spec = FollowSpec(kind=new.kind, entity_id=new.entity_id, name=name, sport=sport, seasons=seasons,
                           slices=slices, live=new.live, enabled=new.enabled)
         return self._store.follows.add(spec, origin=ORIGIN_API)
@@ -286,17 +280,25 @@ class FollowsService:
     def update(self, kind: str, entity_id: int, changes: Mapping[str, Any]) -> "Follow":
         """
         Bir takibin alanlarını değiştirir. Bilinmeyen takip `not_found`; yapılandırma dosyasının takibi
-        `follow_managed` (409); leagues.txt'in takibinde yalnızca `sport` değişir (öteki alanlar `invalid_request`).
+        `follow_managed` (409); leagues.txt'in takibinde yalnızca `sport` değişir (öteki alanlar `invalid_request`),
+        ya da `origin: "api"` ile satır takip tablosuna alınır ve aynı çağrıdaki öteki alanlar da yazılır (`adopt`).
         """
         row = self.get(kind, entity_id)
         if row is None:
             raise NotFoundError("No follow has this id.", {"id": follow_id(kind, entity_id)})
-        unknown = sorted(set(changes) - set(FIELDS))
+        unknown = sorted(set(changes) - set(FIELDS) - {ORIGIN_FIELD})
         if unknown:
             raise UsageError("These fields cannot be changed.", {"fields": unknown})
         if row.origin == ORIGIN_CONFIG:
             raise ConflictError("The follow comes from the config file; change it there.",
                                 {"id": follow_id(kind, entity_id), "origin": ORIGIN_CONFIG}, code="follow_managed")
+        if ORIGIN_FIELD in changes:
+            if changes[ORIGIN_FIELD] != ORIGIN_API:
+                raise UsageError("A follow can only be moved into the follows table (origin api).",
+                                 {"field": ORIGIN_FIELD})
+            if row.origin == ORIGIN_LEGACY:
+                row = self.adopt(kind, entity_id)
+            changes = {field: value for field, value in changes.items() if field != ORIGIN_FIELD}
         values: Dict[str, Any] = {}
         for field, value in changes.items():
             if field == "name":
@@ -323,7 +325,34 @@ class FollowsService:
             if found is None:
                 raise _mirror_failed(entity_id)
             return found
+        if not values:
+            return row
         return self._store.follows.update(kind, entity_id, **values)
+
+    def adopt(self, kind: str, entity_id: int) -> "Follow":
+        """
+        leagues.txt'in bir takibini takip tablosuna alır (plan maddesi FX-19): önce satır `api` olur (alanları ve
+        konumu aynı), sonra lig dosyadan ve spor dosyasından çıkarılır; bir sonraki ayna onu geri getirmez. Dosya
+        yazılamazsa satır yine `api` kalır (ayna isteği uygulanmaz) ve uyarı yazılır. `api` satırında hiçbir şey
+        yapmaz; yapılandırma dosyasının takibi `follow_managed`.
+        """
+        row = self.get(kind, entity_id)
+        if row is None:
+            raise NotFoundError("No follow has this id.", {"id": follow_id(kind, entity_id)})
+        if row.origin == ORIGIN_CONFIG:
+            raise ConflictError("The follow comes from the config file; change it there.",
+                                {"id": follow_id(kind, entity_id), "origin": ORIGIN_CONFIG}, code="follow_managed")
+        if row.origin != ORIGIN_LEGACY:
+            return row
+        adopted = self._store.follows.adopt(kind, entity_id, origin=ORIGIN_API)
+        try:
+            self._legacy.remove(entity_id)
+            self._legacy.set_sport(entity_id, None)
+        except (OSError, StorageError) as e:
+            logger.warning("Follow %s moved into the follows table, but config/leagues.txt could not be updated: %s",
+                           follow_id(kind, entity_id), e)
+        logger.info("Follow %s moved from config/leagues.txt into the follows table", follow_id(kind, entity_id))
+        return adopted
 
     def remove(self, kind: str, entity_id: int) -> "Follow":
         """
@@ -401,8 +430,6 @@ def _value_of(row: "Follow", field: str) -> Any:
 
 
 def _mirror_failed(entity_id: int) -> Exception:
-    from src.exceptions import StorageError
-
     return StorageError("The follows table could not be updated from config/leagues.txt.",
                         detail=follow_id(TOURNAMENT, entity_id))
 

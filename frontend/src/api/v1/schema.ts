@@ -444,14 +444,14 @@ export interface FightScore {
   final_round: number | null
 }
 
-/** A new follow. Without a config file a tournament follow is written to config/leagues.txt (name and sport). */
+/** A new follow, kept in the follows table (`origin` api): every field can be changed later. */
 export interface FollowCreate {
   kind?: "tournament" | "team" | "player" | "event"
   entity_id: number
   name: string
   sport?: string | null
   seasons?: string | number[]
-  /** Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and `slices.<sport>` of GET /settings); `{"include": [...]}` = only these; `{"enable": [...], "disable": [...]}` = changes to the defaults. What is not selected is never fetched. Not available for a follow kept in config/leagues.txt (no config file). */
+  /** Data selection (slice keys or groups, see GET /sports/{slug}): null = the defaults (`defaults.slices` and `slices.<sport>` of GET /settings); `{"include": [...]}` = only these; `{"enable": [...], "disable": [...]}` = changes to the defaults. What is not selected is never fetched. */
   slices?: Record<string, string[]> | null
   live?: boolean
   enabled?: boolean
@@ -474,6 +474,8 @@ export interface FollowPatch {
   slices?: Record<string, string[]> | null
   live?: boolean | null
   enabled?: boolean | null
+  /** `api` moves a follow of config/leagues.txt into the follows table: it is removed from the file and every field becomes writable; the other fields of the same request are applied after the move. A follow of the follows table is left as it is. */
+  origin?: "api" | null
 }
 
 /** Something the platform downloads and watches: a tournament, a team, a player or one event. */
@@ -493,7 +495,7 @@ export interface FollowRecord {
   /** The live service watches it (`ssc watch`). */
   live: boolean
   enabled: boolean
-  /** legacy: config/leagues.txt; config: the config file (read-only here); api: added here. */
+  /** legacy: config/leagues.txt (the 2.x league list; only `sport` can change, or PATCH `origin: "api"` moves it into the follows table); config: the config file (read-only here); api: the follows table (added here, with `ssc follows add` or moved from config/leagues.txt). */
   origin: "legacy" | "config" | "api"
   position: number
   /** Fields PATCH can change on this follow. */
@@ -1446,7 +1448,7 @@ export interface TournamentSummary {
   tournament_id: number | null
   /** Name of the follow, else the stored tournament name. */
   name?: string | null
-  /** A tournament of the configured leagues. */
+  /** A follow of any origin names the tournament (the follows table). */
   followed: boolean
   /** Events counted as matches (the `only_finished` rule of the summary). */
   matches: number

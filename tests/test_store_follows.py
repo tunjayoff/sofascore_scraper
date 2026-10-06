@@ -206,6 +206,27 @@ def test_update_and_remove_of_a_config_follow_raise_follow_managed(follows: Foll
     assert follows.remove("tournament", 8) is True
 
 
+def test_adopt_moves_a_legacy_row_to_api_and_keeps_its_fields(follows: FollowStore):
+    """FX-19: leagues.txt'in satırı takip tablosuna alınır; alanlar ve konum aynı, sonraki ayna geri almaz."""
+    follows.apply([PL, LALIGA], origin="legacy")
+    before = follows.get("tournament", 8)
+    adopted = follows.adopt("tournament", 8)
+    assert (adopted.origin, adopted.position, adopted.name, adopted.sport) == ("api", before.position, "LaLiga",
+                                                                               "football")
+    assert follows.adopt("tournament", 8) == adopted  # zaten api: hiçbir şey yazılmaz
+    # Dosya satırı hâlâ dursa da ayna onu geri almaz; dosyadan çıkınca da silmez
+    assert [c.reason for c in follows.apply([PL, LALIGA], origin="legacy").conflicts] == ["owned_by_api"]
+    follows.apply([PL], origin="legacy")
+    assert follows.get("tournament", 8).origin == "api"
+    with pytest.raises(KeyError):
+        follows.adopt("tournament", 99)
+    with pytest.raises(ValueError):
+        follows.adopt("tournament", 8, origin="legacy")
+    follows.apply([NBA], origin="config", prune=False)
+    with pytest.raises(FollowManaged):
+        follows.adopt("tournament", 132)
+
+
 def test_list_filters_and_orders_by_position(follows: FollowStore):
     follows.apply([PL, FollowSpec("team", 42, "Arsenal", enabled=False)], origin="config")
     follows.add(NBA)

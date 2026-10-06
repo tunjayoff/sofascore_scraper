@@ -437,6 +437,31 @@ class FollowStore:
         assert row is not None
         return _follow(row)
 
+    def adopt(self, kind: str, entity_id: int, *, origin: str = ORIGIN_API) -> Follow:
+        """
+        Satırı daha güçlü bir kaynağa taşır (bugün yalnızca legacy → api; plan maddesi FX-19): alanları ve konumu
+        aynı kalır, yalnızca `origin` ve `updated_at` değişir. Satır zaten o kaynağınsa hiçbir şey yazılmaz.
+        Satır yoksa KeyError, yapılandırma dosyasınınsa FollowManaged, kaynak daha zayıfsa ValueError.
+
+        Dosyanın satırı (leagues.txt) silinmez: çağıran siler. Silinmezse bir sonraki ayna isteği uygulanmaz
+        (`owned_by_api`), satır api kalır.
+        """
+        _check_origin(origin)
+        with self._state.write() as conn:
+            row = self._row(conn, kind, entity_id)
+            if row is None:
+                raise KeyError((kind, entity_id))
+            self._require_unmanaged(row)
+            current = str(row["origin"])
+            if current != origin:
+                if _RANK[origin] < _RANK[current]:
+                    raise ValueError(f"origin: a {current} follow cannot move to the weaker origin {origin}")
+                conn.execute("UPDATE follows SET origin = ?, updated_at = ? WHERE id = ?",
+                             (origin, int(time.time()), int(row["id"])))
+                row = self._row(conn, kind, entity_id)
+        assert row is not None
+        return _follow(row)
+
     def remove(self, kind: str, entity_id: int) -> bool:
         """Takibi siler; satır yoksa False. Yapılandırma dosyasından gelen satır için FollowManaged."""
         with self._state.write() as conn:

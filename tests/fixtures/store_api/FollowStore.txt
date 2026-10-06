@@ -7,5 +7,6 @@ class FollowStore:
     def leagues(self) -> Dict[int, str]
     def add(self, spec: FollowSpec, *, origin: str = 'api') -> Follow
     def update(self, kind: str, entity_id: int, **changes: Any) -> Follow
+    def adopt(self, kind: str, entity_id: int, *, origin: str = ORIGIN_API) -> Follow
     def remove(self, kind: str, entity_id: int) -> bool
     def apply(self, desired: Sequence[FollowSpec], *, origin: str, prune: bool = True) -> ApplyResult
