@@ -411,7 +411,7 @@ def test_the_download_tasks_run_the_sync_service(monkeypatch: pytest.MonkeyPatch
 
     monkeypatch.setattr(sync_mod, "SyncService", FakeService)
     plan = scheduler_mod.TASK_RUNS[run].plan({"league_id": 8}, lambda: "ctx")
-    assert plan.kind is kind and plan.spec["mode"] == mode and plan.spec["export"] is False
+    assert plan.kind is kind and plan.spec["mode"] == mode and "export" not in plan.spec
     assert plan.phases == sync_mod.SyncSpec(mode=mode).job_phases  # type: ignore[arg-type]
     outcome = plan.body("handle")
     assert seen["ctx"] == "ctx" and seen["handle"] == "handle" and seen["spec"].league_id == 8

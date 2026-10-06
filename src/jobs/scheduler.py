@@ -268,7 +268,7 @@ def _sync_plan(mode: str) -> Callable[[Mapping[str, Any], ContextFactory], TaskP
 
         from src.services.sync import SyncService, SyncSpec
 
-        spec = SyncSpec(mode=mode, league_id=_league_id(options, "schedule task"), export=False)  # type: ignore[arg-type]
+        spec = SyncSpec(mode=mode, league_id=_league_id(options, "schedule task"))  # type: ignore[arg-type]
 
         def body(handle: Any) -> JobOutcome:
             ctx = context()

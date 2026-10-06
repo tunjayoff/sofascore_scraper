@@ -104,7 +104,7 @@ def test_a_season_list_job_reads_season_lists_only(jobs: JobStore, specs: List[A
     (spec,) = specs
     assert (spec.mode, spec.league_id, spec.job_phases) == ("seasons", 17, ("seasons",))
     assert job["kind"] == "sync"
-    assert job["spec"] == {"mode": "seasons", "league_id": 17, "selections": [], "export": False}
+    assert job["spec"] == {"mode": "seasons", "league_id": 17, "selections": []}
 
 
 # --- adı verilen takipler (G23) ------------------------------------------------------------------------

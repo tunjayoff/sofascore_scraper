@@ -269,14 +269,14 @@ def test_start_runs_a_sync_job_in_the_background(store: JobStore, body: Any) -> 
     assert (job["kind"], job["state"], job["finished_at"]) == ("sync", "running", None)
     assert job["origin"]["face"] == "api" and job["origin"]["pid"] == os.getpid()
     # CSV aşaması istenmez: dışa aktarma ayrı bir iş türüdür
-    assert job["spec"] == {"mode": "full", "league_id": 17, "selections": [], "export": False}
+    assert job["spec"] == {"mode": "full", "league_id": 17, "selections": []}
     assert len(job["id"]) == 26
 
     body.release.set()
     ended = _ended(job["id"])
     assert (ended["state"], ended["result"], ended["error"]) == ("succeeded", {"details_done": 2}, None)
     (spec,) = body.specs
-    assert (spec.mode, spec.league_id, spec.export, spec.job_phases) == ("full", 17, False, ("seasons", "matches", "details"))
+    assert (spec.mode, spec.league_id, spec.job_phases) == ("full", 17, ("seasons", "matches", "details"))
     # Eski arayüzün iş kartı başlığı için istek gövdesi biçimi
     assert store.get_job(job["id"])["payload"] == {"league_id": 17, "mode": "full", "selections": None}
 
@@ -304,7 +304,6 @@ def test_each_kind_maps_to_the_service_spec(store: JobStore, body: Any, request_
     (spec,) = body.specs
     selections = tuple((s.league_id, s.season_ids, s.match_ids) for s in spec.selections)
     assert (job["kind"], spec.mode, spec.league_id, selections) == expected
-    assert spec.export is False
 
 
 def test_only_one_job_runs_at_a_time(store: JobStore, body: Any) -> None:

@@ -533,15 +533,15 @@ def _sync_spec(body: Union[StartSyncJob, StartFetchJob, StartRefreshJob]) -> "Sy
             raise UsageError("Give only one of league_id and event_ids.", {"fields": ["league_id", "event_ids"]})
         if body.spec.event_ids:
             # Yenileme kipi seçimlerin maçlarını okur; turnuva yalnızca iş kartında görünür
-            return SyncSpec(mode="refresh", selections=_event_selections(list(body.spec.event_ids)), export=False)
-        return SyncSpec(mode="refresh", league_id=body.spec.league_id, export=False)
+            return SyncSpec(mode="refresh", selections=_event_selections(list(body.spec.event_ids)))
+        return SyncSpec(mode="refresh", league_id=body.spec.league_id)
     _check_targets(body)
     spec = body.spec
     mode = "details" if isinstance(body, StartFetchJob) else "seasons" if spec.only == "seasons" else "full"
     if spec.follows:
-        return FollowsSyncSpec(mode=mode, export=False, follows=tuple(dict.fromkeys(spec.follows)))  # type: ignore[arg-type]
+        return FollowsSyncSpec(mode=mode, follows=tuple(dict.fromkeys(spec.follows)))  # type: ignore[arg-type]
     if spec.event_ids:
-        return SyncSpec(mode="details", selections=_event_selections(list(spec.event_ids)), export=False)
+        return SyncSpec(mode="details", selections=_event_selections(list(spec.event_ids)))
     return SyncSpec(
         mode=mode,  # type: ignore[arg-type]
         league_id=spec.league_id,
@@ -549,7 +549,6 @@ def _sync_spec(body: Union[StartSyncJob, StartFetchJob, StartRefreshJob]) -> "Sy
             SyncSelection(league_id=s.league_id, season_ids=tuple(s.season_ids), match_ids=tuple(s.match_ids))
             for s in spec.selections
         ),
-        export=False,
     )
 
 

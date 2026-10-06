@@ -1,7 +1,7 @@
 """
 Eşitleme servisi: seçilen ligleri, sezonları ve maçları indirir (docs/design/02-services.md 2.7).
 
-Bugünkü web işinin akışını taşır (src/web/fetch_job.py'den buraya geldi): sezon listeleri → maç listeleri →
+İndirme işinin akışı (eskiden web işinin modülündeydi; plan maddesi P08 taşıdı): sezon listeleri → maç listeleri →
 maç detayları. Akış modül değişkenleri yerine bir iş tutamacıyla (JobHandle) konuşur: iptal sorusu,
 ilerleme (JobProgress), iş günlüğü satırı. Tutamaç verilmezse iş kaydı olmadan çalışır.
 
@@ -30,7 +30,7 @@ Maç detayları (detay aşaması, kimliğiyle seçilen maçlar, yalnızca yenile
 P15'te kalktığında çağrılar buraya taşınır. Bitmemiş maç atlanır ve başarısız sayılmaz.
 
 İşin sonunda CSV yazılmaz (karar D9, plan maddesi EX-1): dışa aktarma istendiğinde üretilir
-(src/services/export.py; web'de `GET /api/export/csv`, komut satırında `--csv-export`).
+(src/services/export.py; web'de `GET /api/export/csv` ve dışa aktarma işi, komut satırında `ssc export`).
 
 İşin tek bir devre kesicisi vardır (src/breaker.py). İstek katmanı her isteğin sonucunu ona bildirir; her aşama
 döngüsünde ona bakar. SofaScore engellediğinde kalan lig/sezon/maç için istek atılmaz ve neden iş kartına
@@ -38,7 +38,8 @@ yazılır. Servis SofaScore kaynaklı hiçbir durumda fırlatmaz; kalıcı depol
 izin yok) çağırana çıkar.
 
 Servis yazdırmaz (print) ve işin bitiş durumunu kendisi yazmaz: sonucu SyncResult olarak döndürür, onu iş
-kaydına ve kullanıcı metnine çeviren çağıran yüzdür (web: src/web/fetch_job.py).
+kaydına ve kullanıcı metnine çeviren çağıran yüzdür (`ssc sync`, `POST /api/v1/jobs`, eski `/api/fetch`
+(src/web/api/legacy.py) ve zamanlayıcı).
 """
 from __future__ import annotations
 
@@ -103,15 +104,13 @@ class SyncSpec:
     selections  hedefli seçimler; boşsa `league_id` geçerlidir
 
     Takip kimlikleriyle hedeflenen çalışma `FollowsSyncSpec`tir (alt sınıf: bu sınıfın iş kaydındaki sözlüğü,
-    `dataclasses.asdict`, FX-13'ten önceki gibi kalır).
-    export      okunmaz. CSV aşaması kalktı (EX-1); alan, onu veren çağıranlar ve iş kayıtlarında saklanmış
-                belirtimler geçerli kalsın diye duruyor ve belirtim `targets`/`phases`'e geçerken (P13) kalkar.
+    `dataclasses.asdict`, FX-13'ten önceki gibi kalır). İşin sonunda CSV aşaması yoktur (EX-1); okunmayan `export`
+    alanı plan maddesi FX-15'te kalktı (eski iş kayıtlarının saklanan belirtimi bir sözlüktür, yeniden okunmaz).
     """
 
     mode: SyncMode = "full"
     league_id: Optional[int] = None
     selections: Tuple[SyncSelection, ...] = ()
-    export: bool = True
 
     @property
     def job_phases(self) -> Tuple[str, ...]:

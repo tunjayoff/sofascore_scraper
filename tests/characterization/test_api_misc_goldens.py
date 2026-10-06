@@ -404,7 +404,7 @@ class _JobScript:
         self.store, self.clock, self.full = store, clock, payload["mode"] != "details"
         self.job_id: str = store.create_running(payload)
         self._state("Running", 0, f"Starting fetch for {summary}")
-        phases = ["seasons", "matches", "details", "export"] if self.full else ["details", "export"]
+        phases = ["seasons", "matches", "details"] if self.full else ["details"]  # CSV aşaması yok (EX-1, FX-15)
         self.tracker = JobProgress(phases, lambda fields: store.update(**fields), clock=clock, wall_clock=clock)
 
     def _state(self, status: str, progress: int, task: str) -> None:  # fetch_job.update_state
@@ -452,10 +452,7 @@ class _JobScript:
         self._note(f"Too many failed requests ({reason}); stopped fetching {what}.")
 
     def complete(self, task: str, empty_seasons: int = 0) -> None:
-        self.tracker.start_phase("export", 1)
-        self._note("Exporting data to CSV...")
         self.clock.tick(1)
-        self.tracker.advance(1)
         self.store.update(result={"schedule_empty_seasons": empty_seasons, **self.tracker.result()})
         self._state("Completed", 100, task)
 

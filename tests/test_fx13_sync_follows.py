@@ -201,7 +201,7 @@ def test_a_sync_downloads_each_follow_with_its_season_choice(store: Store) -> No
     follow(store, "tournament", 8, "LaLiga", seasons=(84, 83))
     follow(store, "tournament", 23, "Serie A", seasons="current")
     ctx = context(store)
-    spec = SyncSpec(mode="full", export=False)
+    spec = SyncSpec(mode="full")
     handle = Handle(spec)
 
     result = SyncService(ctx).run(spec, handle=handle)  # type: ignore[arg-type]
@@ -216,7 +216,7 @@ def test_a_single_tournament_keeps_every_season(store: Store) -> None:
     """`--tournament` ve `ssc fetch tournament`: takibin seçimi uygulanmaz (bugünkü gibi bütün sezonlar)."""
     follow(store, "tournament", 23, "Serie A", seasons="current")
     ctx = context(store)
-    spec = SyncSpec(mode="full", league_id=23, export=False)
+    spec = SyncSpec(mode="full", league_id=23)
     SyncService(ctx).run(spec, handle=Handle(spec))  # type: ignore[arg-type]
     assert ctx.match_fetcher.calls == [(23, 235), (23, 234)]
 
@@ -225,7 +225,7 @@ def test_named_follows_only(store: Store) -> None:
     follow(store, "tournament", 17, "Premier League", origin="legacy")
     follow(store, "tournament", 23, "Serie A", seasons="last:1")
     ctx = context(store)
-    spec = FollowsSyncSpec(mode="full", export=False, follows=("tournament:23", "tournament:5", "team:42"))
+    spec = FollowsSyncSpec(mode="full", follows=("tournament:23", "tournament:5", "team:42"))
     handle = Handle(spec)
 
     SyncService(ctx).run(spec, handle=handle)  # type: ignore[arg-type]
@@ -241,7 +241,7 @@ def test_season_lists_only(store: Store) -> None:
     follow(store, "tournament", 17, "Premier League", origin="legacy")
     follow(store, "tournament", 8, "LaLiga")
     ctx = context(store)
-    spec = SyncSpec(mode="seasons", export=False)
+    spec = SyncSpec(mode="seasons")
     assert spec.job_phases == SEASONS_PHASES
     handle = Handle(spec)
 
@@ -271,20 +271,20 @@ def test_a_refresh_of_named_events_ignores_what_is_due(store: Store) -> None:
     """05-web-ui.md G23: `refresh` + seçimler yalnızca o maçların /event'ini okur (Fetch again)."""
     ctx = context(store)
     ctx.match_data_fetcher = FakeRefresh()
-    spec = SyncSpec(mode="refresh", export=False, selections=(SyncSelection(0, match_ids=(7, 9, 7)),
+    spec = SyncSpec(mode="refresh", selections=(SyncSelection(0, match_ids=(7, 9, 7)),
                                                               SyncSelection(17, match_ids=(5,))))
     result = SyncService(ctx).run(spec, handle=Handle(spec))  # type: ignore[arg-type]
     assert ctx.match_data_fetcher.refreshed == [["7", "9", "5"]]
     assert result.refresh is not None and (result.refresh.due, result.refresh.refreshed) == (3, 3)
 
-    spec = SyncSpec(mode="refresh", export=False)
+    spec = SyncSpec(mode="refresh")
     SyncService(ctx).run(spec, handle=Handle(spec))  # type: ignore[arg-type]
     assert ctx.match_data_fetcher.refreshed[-1] == ["1", "2"]
 
 
 def test_log_lines_carry_codes_and_an_old_handle_gets_the_text_only(store: Store) -> None:
     follow(store, "tournament", 23, "Serie A", seasons="current")
-    spec = SyncSpec(mode="full", export=False)
+    spec = SyncSpec(mode="full")
     coded, old = Handle(spec), OldHandle(spec)
     SyncService(context(store)).run(spec, handle=coded)  # type: ignore[arg-type]
     SyncService(context(store)).run(spec, handle=old)  # type: ignore[arg-type]

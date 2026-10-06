@@ -123,7 +123,7 @@ def test_sync_runs_the_service_as_a_job_and_prints_the_envelope(cli: CliRunner, 
 
     assert run.exit_code == 0, run.stderr
     data = run.data
-    assert fake_sync.specs == [SyncSpec(mode="full", league_id=17, export=False)]
+    assert fake_sync.specs == [SyncSpec(mode="full", league_id=17)]
     (job,) = jobs_of(data_dir)
     assert (job.kind, job.state, job.origin.face) == (JobKind.SYNC, JobState.SUCCEEDED, "cli")
     assert data["job_id"] == job.id and data["state"] == "succeeded" and data["kind"] == "sync"
@@ -174,11 +174,11 @@ def test_sync_options_become_the_spec(cli: CliRunner, data_dir: Path, fake_sync:
     from src.services.sync import SyncSelection
 
     assert fake_sync.specs == [
-        SyncSpec(mode="details", league_id=None, export=False),
-        SyncSpec(mode="full", league_id=8, selections=(SyncSelection(8, season_ids=(61627, 52186)),), export=False),
-        SyncSpec(mode="details", league_id=8, export=False),
+        SyncSpec(mode="details", league_id=None),
+        SyncSpec(mode="full", league_id=8, selections=(SyncSelection(8, season_ids=(61627, 52186)),)),
+        SyncSpec(mode="details", league_id=8),
         # Katalogda bilinmeyen maçların turnuvası 0'dır (yalnızca iş kartında görünür)
-        SyncSpec(mode="details", selections=(SyncSelection(0, match_ids=(9100001, 9100002)),), export=False),
+        SyncSpec(mode="details", selections=(SyncSelection(0, match_ids=(9100001, 9100002)),)),
     ]
     assert [job.kind for job in jobs_of(data_dir)] == [JobKind.FETCH, JobKind.FETCH, JobKind.FETCH, JobKind.SYNC]
 

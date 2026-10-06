@@ -369,5 +369,5 @@ def test_the_legacy_csv_files_of_the_service(tmp_path: Path, monkeypatch: pytest
 def test_a_sync_job_has_no_export_phase() -> None:
     assert not hasattr(sync_module, "export_all_csv") and not hasattr(export_module, "export_all_csv")
     for spec in (sync_module.SyncSpec(), sync_module.SyncSpec(mode="details"),
-                 sync_module.SyncSpec(export=False), sync_module.SyncSpec(mode="refresh")):
+                 sync_module.SyncSpec(), sync_module.SyncSpec(mode="refresh")):
         assert "export" not in spec.job_phases
