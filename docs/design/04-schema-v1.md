@@ -517,13 +517,13 @@ Not mapped in version 1: the goals of each half of extra time (`extra1`, `extra2
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
 | `family` | constant `periods` | no |  | sport registry | Always `periods`. |
-| `home` | integer | yes | points | `homeScore.display`, else `homeScore.current` | Headline score of the home side: points including overtime. |
-| `away` | integer | yes | points | `awayScore.display`, else `awayScore.current` | Headline score of the away side: points including overtime. |
-| `format` | string, open set: `quarters`, `halves`, `thirds` | yes |  | sport registry (`src/sports.py`); basketball: `quarters` when `period1` or `period3` is present, `halves` when only `period2` / `period4` are | How regulation time is divided. Null while no period score exists. |
-| `periods` | array of [PeriodScore](#periodscore) | no |  | `period1` to `period4` | Points of each period of regulation time that has a score, in order. |
-| `regulation` | [ScorePair](#scorepair) | yes | points | `normaltime` | Points at the end of regulation time. |
-| `overtime` | [ScorePair](#scorepair) | yes | points | `overtime` | Points scored in overtime alone. Null without overtime. |
-| `final` | [ScorePair](#scorepair) | yes | points | `current` | Final points including overtime. |
+| `home` | integer | yes | points | `homeScore.display`, else `homeScore.current` | Headline score of the home side: points including overtime; goals in the goal sports (ice hockey, handball, futsal, minifootball, floorball). |
+| `away` | integer | yes | points | `awayScore.display`, else `awayScore.current` | Headline score of the away side: points including overtime; goals in the goal sports (ice hockey, handball, futsal, minifootball, floorball). |
+| `format` | string, open set: `quarters`, `halves`, `thirds` | yes |  | sport registry (`src/sports.py`); basketball: `quarters` when `period1` or `period3` is present, `halves` when only `period2` / `period4` are | How regulation time is divided: `quarters` (basketball, American football, Aussie rules), `halves` (basketball, handball, rugby, futsal, minifootball) or `thirds` (ice hockey, floorball). Null while no period score exists. |
+| `periods` | array of [PeriodScore](#periodscore) | no |  | `period1` to `period4` | Points (goals in the goal sports) of each period of regulation time that has a score, in order. |
+| `regulation` | [ScorePair](#scorepair) | yes | points | `normaltime` | Points (goals in the goal sports) at the end of regulation time. |
+| `overtime` | [ScorePair](#scorepair) | yes | points | `overtime` | Points (goals in the goal sports) scored in overtime alone. Null without overtime. |
+| `final` | [ScorePair](#scorepair) | yes | points | `current` | Final points (goals in the goal sports) including overtime. |
 | `penalties` | [ScorePair](#scorepair) | yes | goals | `penalties` | Goals of the penalty shoot-out alone. Null without a shoot-out, and always null for basketball. In the one recorded handball shoot-out, `final` and the headline score include these goals. |
 <!-- /fields:PeriodsScore -->
 
@@ -569,12 +569,12 @@ these eight sports was recorded, so `format` and the periods during a live game 
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
 | `family` | constant `sets` | no |  | sport registry | Always `sets`. |
-| `home` | integer | yes | sets | `homeScore.display`, else `homeScore.current` | Headline score of the home side: sets won. |
-| `away` | integer | yes | sets | `awayScore.display`, else `awayScore.current` | Headline score of the away side: sets won. |
+| `home` | integer | yes | sets | `homeScore.display`, else `homeScore.current` | Headline score of the home side: sets won; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`. |
+| `away` | integer | yes | sets | `awayScore.display`, else `awayScore.current` | Headline score of the away side: sets won; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`. |
 | `format` | string, open set: `games`, `points`, `frames`, `legs`, `legs_won`, `games_won` | yes |  | sport registry (`src/sports.py`); darts: `legs` when the event has `bestOfSets`, else `legs_won` | What the score counts. `games`, `points`, `legs`: sets won, and each set counts games (tennis, padel), points (volleyball, badminton, table tennis) or legs (darts played in sets). `frames`, `legs_won`, `games_won`: no sets; `sets_won` and the headline score are the frames (snooker), legs (darts played in legs only) or games (e-sports) won. Null when the record has no score sheet. |
-| `sets_won` | [ScorePair](#scorepair) | yes | sets | `current` | Sets won by each side. |
-| `sets` | array of [SetScore](#setscore) | no |  | `period1` to `period5`, `period1TieBreak` to `period5TieBreak` | The sets that have a score, in order. |
-| `match_tiebreak` | boolean | no |  | derived from the set scores (`src/status.py`) | True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more. |
+| `sets_won` | [ScorePair](#scorepair) | yes | sets | `current` | Sets won by each side; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`. |
+| `sets` | array of [SetScore](#setscore) | no |  | `period1` to `period7` (tennis: to `period5`); tie-breaks from `period1TieBreak` to `period7TieBreak` (tennis: to `period5TieBreak`), in tennis and padel only | The sets that have a score, in order. Empty with the formats `frames`, `legs_won` and `games_won`. |
+| `match_tiebreak` | boolean | no |  | derived from the set scores (`src/status.py`) | True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more. Always false outside tennis and padel. |
 <!-- /fields:SetsScore -->
 
 ```json example:SetsScore
@@ -620,9 +620,9 @@ because the recorded compact records lost `bestOf*` (the not-started fixture 170
 | Field | Type | Null | Unit | Source | Meaning |
 |---|---|---|---|---|---|
 | `number` | integer | no |  | `periodN` | Number of the set, starting at 1. |
-| `home` | integer | yes | games | `homeScore.periodN` | Games the home side won in the set; points when the set is a match tie-break. |
-| `away` | integer | yes | games | `awayScore.periodN` | Games the away side won in the set; points when the set is a match tie-break. |
-| `tiebreak` | [ScorePair](#scorepair) | yes | points | `periodNTieBreak` | Points of the set's tie-break. Null when the set had none. |
+| `home` | integer | yes | games | `homeScore.periodN` | What the home side won in the set, as `SetsScore.format` says: games in tennis and padel (points when the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played in sets. |
+| `away` | integer | yes | games | `awayScore.periodN` | What the away side won in the set, as `SetsScore.format` says: games in tennis and padel (points when the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played in sets. |
+| `tiebreak` | [ScorePair](#scorepair) | yes | points | `periodNTieBreak` | Points of the set's tie-break. Null when the set had none, and always null outside tennis and padel. |
 <!-- /fields:SetScore -->
 
 #### InningsScore

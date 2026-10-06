@@ -979,7 +979,7 @@
       "integer",
       "null"
      ],
-     "description": "Headline score of the home side: points including overtime.",
+     "description": "Headline score of the home side: points including overtime; goals in the goal sports (ice hockey, handball, futsal, minifootball, floorball).",
      "x-unit": "points",
      "x-source": "`homeScore.display`, else `homeScore.current`"
     },
@@ -988,7 +988,7 @@
       "integer",
       "null"
      ],
-     "description": "Headline score of the away side: points including overtime.",
+     "description": "Headline score of the away side: points including overtime; goals in the goal sports (ice hockey, handball, futsal, minifootball, floorball).",
      "x-unit": "points",
      "x-source": "`awayScore.display`, else `awayScore.current`"
     },
@@ -1002,7 +1002,7 @@
       "halves",
       "thirds"
      ],
-     "description": "How regulation time is divided. Null while no period score exists.",
+     "description": "How regulation time is divided: `quarters` (basketball, American football, Aussie rules), `halves` (basketball, handball, rugby, futsal, minifootball) or `thirds` (ice hockey, floorball). Null while no period score exists.",
      "x-source": "sport registry (`src/sports.py`); basketball: `quarters` when `period1` or `period3` is present, `halves` when only `period2` / `period4` are"
     },
     "periods": {
@@ -1010,7 +1010,7 @@
      "items": {
       "$ref": "#/$defs/PeriodScore"
      },
-     "description": "Points of each period of regulation time that has a score, in order.",
+     "description": "Points (goals in the goal sports) of each period of regulation time that has a score, in order.",
      "x-source": "`period1` to `period4`"
     },
     "regulation": {
@@ -1022,7 +1022,7 @@
        "type": "null"
       }
      ],
-     "description": "Points at the end of regulation time.",
+     "description": "Points (goals in the goal sports) at the end of regulation time.",
      "x-unit": "points",
      "x-source": "`normaltime`"
     },
@@ -1035,7 +1035,7 @@
        "type": "null"
       }
      ],
-     "description": "Points scored in overtime alone. Null without overtime.",
+     "description": "Points (goals in the goal sports) scored in overtime alone. Null without overtime.",
      "x-unit": "points",
      "x-source": "`overtime`"
     },
@@ -1048,7 +1048,7 @@
        "type": "null"
       }
      ],
-     "description": "Final points including overtime.",
+     "description": "Final points (goals in the goal sports) including overtime.",
      "x-unit": "points",
      "x-source": "`current`"
     },
@@ -1126,7 +1126,7 @@
       "integer",
       "null"
      ],
-     "description": "Headline score of the home side: sets won.",
+     "description": "Headline score of the home side: sets won; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`.",
      "x-unit": "sets",
      "x-source": "`homeScore.display`, else `homeScore.current`"
     },
@@ -1135,7 +1135,7 @@
       "integer",
       "null"
      ],
-     "description": "Headline score of the away side: sets won.",
+     "description": "Headline score of the away side: sets won; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`.",
      "x-unit": "sets",
      "x-source": "`awayScore.display`, else `awayScore.current`"
     },
@@ -1164,7 +1164,7 @@
        "type": "null"
       }
      ],
-     "description": "Sets won by each side.",
+     "description": "Sets won by each side; the frames, legs or games won with the formats `frames`, `legs_won` and `games_won`.",
      "x-unit": "sets",
      "x-source": "`current`"
     },
@@ -1173,12 +1173,12 @@
      "items": {
       "$ref": "#/$defs/SetScore"
      },
-     "description": "The sets that have a score, in order.",
-     "x-source": "`period1` to `period5`, `period1TieBreak` to `period5TieBreak`"
+     "description": "The sets that have a score, in order. Empty with the formats `frames`, `legs_won` and `games_won`.",
+     "x-source": "`period1` to `period7` (tennis: to `period5`); tie-breaks from `period1TieBreak` to `period7TieBreak` (tennis: to `period5TieBreak`), in tennis and padel only"
     },
     "match_tiebreak": {
      "type": "boolean",
-     "description": "True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more.",
+     "description": "True when the deciding set was a match tie-break (first to 10 points) and not a normal set. A heuristic: the last of three or five sets has a side with 10 or more. Always false outside tennis and padel.",
      "x-source": "derived from the set scores (`src/status.py`)"
     }
    }
@@ -1204,7 +1204,7 @@
       "integer",
       "null"
      ],
-     "description": "Games the home side won in the set; points when the set is a match tie-break.",
+     "description": "What the home side won in the set, as `SetsScore.format` says: games in tennis and padel (points when the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played in sets.",
      "x-unit": "games",
      "x-source": "`homeScore.periodN`"
     },
@@ -1213,7 +1213,7 @@
       "integer",
       "null"
      ],
-     "description": "Games the away side won in the set; points when the set is a match tie-break.",
+     "description": "What the away side won in the set, as `SetsScore.format` says: games in tennis and padel (points when the set is a match tie-break), points in volleyball, badminton and table tennis, legs in darts played in sets.",
      "x-unit": "games",
      "x-source": "`awayScore.periodN`"
     },
@@ -1226,7 +1226,7 @@
        "type": "null"
       }
      ],
-     "description": "Points of the set's tie-break. Null when the set had none.",
+     "description": "Points of the set's tie-break. Null when the set had none, and always null outside tennis and padel.",
      "x-unit": "points",
      "x-source": "`periodNTieBreak`"
     }
