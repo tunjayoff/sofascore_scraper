@@ -1,9 +1,12 @@
-# League configuration file
+# League list of version 2.x (legacy)
 # Format: League Name: ID  (the ID is the SofaScore unique-tournament id)
 # Copied to config/leagues.txt on first run; edit that file, not this one.
 #
-# A new install starts with no leagues. Add them in the web app (Leagues > Add league,
-# which also records each league's sport) or in the terminal menu, or add lines to
-# config/leagues.txt by hand, like this one without the leading "#":
+# A new install starts with no leagues. Since 3.0 the app keeps what it follows (leagues, teams,
+# players, single matches) in its own follows table: add them in the web app (Leagues & follows >
+# Add league) or with `ssc follows add tournament 17 --sport football`. Nothing new is written to
+# this file. Lines in config/leagues.txt are still read and downloaded (name and sport only), and a
+# league listed here can be moved into the follows table from the web app. A line looks like this,
+# without the leading "#":
 #
 # Premier League: 17
