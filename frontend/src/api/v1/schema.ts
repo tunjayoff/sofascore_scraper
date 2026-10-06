@@ -895,6 +895,17 @@ export interface ScorePair {
   away: number | null
 }
 
+export interface SearchHitCountry {
+  /** SofaScore's country code (`alpha2`), as given. */
+  code?: string | null
+  name?: string | null
+}
+
+export interface SearchHitTeam {
+  id?: number | null
+  name?: string | null
+}
+
 /** One edition of a tournament. */
 export interface Season {
   /** SofaScore's season id. */
@@ -1383,15 +1394,24 @@ export interface ThrottleStatus {
   error?: string | null
 }
 
-/** A tournament SofaScore found. */
+/**
+ * A tournament, a team or a player SofaScore found (`kind`). Follow it with `POST /follows` (`kind`,
+ * `entity_id` = `id`, `name`, `sport`).
+ */
 export interface TournamentHit {
+  kind?: "tournament" | "team" | "player"
   id: number
   name: string
   slug?: string | null
   /** Slug of a registered sport; null for others. */
   sport?: string | null
+  /** The tournament's category; for a team or a player only `country_code` can be set. */
   category: TournamentHitCategory
-  /** A follow of any origin names the tournament already. */
+  /** Country of the tournament's category, of the team or of the player. */
+  country?: SearchHitCountry | null
+  /** A player's team; null for the other kinds. */
+  team?: SearchHitTeam | null
+  /** A follow of any origin names this tournament, team or player already. */
   followed: boolean
 }
 
@@ -1437,10 +1457,12 @@ export interface TournamentResponse {
 
 /** What to look for on SofaScore. */
 export interface TournamentSearch {
-  /** Text of the tournament name. */
+  /** Text of the name. */
   q: string
-  /** Only tournaments of this sport (slug). */
+  /** Only hits of this sport (slug). */
   sport?: string | null
+  /** What to look for: tournaments (the default), teams and players. Tournaments alone ask SofaScore's tournament search; any other choice asks its general search (one request either way). */
+  kinds?: ("tournament" | "team" | "player")[]
 }
 
 /** Counts of one tournament. `tournament_id` null: the events without a unique tournament. */
@@ -1603,7 +1625,7 @@ export interface Operations {
     body: never
     response: TournamentListResponse
   }
-  /** Search tournaments on SofaScore */
+  /** Search tournaments, teams and players on SofaScore */
   "searchTournaments": {
     method: "POST"
     path: "/api/v1/tournaments/search"

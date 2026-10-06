@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Protocol, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Protocol, Sequence, Set, Tuple, Union
 
 from src.errors import ConflictError, NotFoundError, UpstreamBlockedError, UpstreamError, UsageError
 from src.exceptions import StorageError
@@ -51,6 +51,8 @@ ORIGIN_FIELD = "origin"
 WRITABLE: Mapping[str, Tuple[str, ...]] = {ORIGIN_LEGACY: ("sport", ORIGIN_FIELD), ORIGIN_CONFIG: (),
                                            ORIGIN_API: FIELDS}
 SEARCH_LIMIT = 20
+# Aranabilen takip türleri (maç adla aranmaz; maç sayfasından ya da kimliğiyle takip edilir)
+SEARCH_KINDS: Tuple[str, ...] = (TOURNAMENT, "team", "player")
 _FOLLOW_ID = re.compile(r"^(tournament|team|player|event):([1-9][0-9]{0,18})$")
 _LAST_N = re.compile(r"^last:[1-9][0-9]{0,3}$")
 _NAME_FORBIDDEN = re.compile(r"[\r\n:/\\\x00]")
@@ -124,8 +126,15 @@ class NewFollow:
 
 
 @dataclass(frozen=True)
-class TournamentHit:
-    """SofaScore'un turnuva aramasındaki bir sonuç."""
+class SearchHit:
+    """
+    SofaScore aramasındaki bir sonuç (plan maddesi FX-19): turnuva, takım ya da oyuncu (`kind`).
+
+    category_*   turnuvanın kategorisi (takım ve oyuncuda boş)
+    country_*    ülke: turnuvada kategorinin `alpha2`'si, takımda ve oyuncuda varlığın `country`'si
+    team_*       oyuncunun takımı
+    followed     aynı türden bir takip bu varlığı zaten adlandırıyor
+    """
 
     id: int
     name: str
@@ -136,6 +145,14 @@ class TournamentHit:
     category_slug: Optional[str]
     country_code: Optional[str]
     followed: bool
+    kind: str = TOURNAMENT
+    country_name: Optional[str] = None
+    team_id: Optional[int] = None
+    team_name: Optional[str] = None
+
+
+# Eski ad (FX-13'e kadar yalnızca turnuva araması vardı)
+TournamentHit = SearchHit
 
 
 def follow_id(kind: str, entity_id: int) -> str:
@@ -375,51 +392,81 @@ class FollowsService:
 
     # -- SofaScore'da arama -----------------------------------------------------------------------------
 
-    def search_tournaments(self, query: str, *, sport: Optional[str] = None) -> List[TournamentHit]:
+    def search_tournaments(self, query: str, *, sport: Optional[str] = None) -> List[SearchHit]:
+        """Yalnızca turnuvalar (`search(..., kinds=("tournament",))`)."""
+        return self.search(query, sport=sport, kinds=(TOURNAMENT,))
+
+    def search(self, query: str, *, sport: Optional[str] = None,
+               kinds: Sequence[str] = (TOURNAMENT,)) -> List[SearchHit]:
         """
-        SofaScore'un turnuva araması (tek istek, istemcinin API kökü, ortak bütçe), en çok 20 sonuç. Boş liste:
-        SofaScore yanıt verdi, bir şey bulamadı. Engelleme `blocked` / `rate_limited` (503), ağ hatası ve
-        beklenmeyen yanıt `upstream_error` (502); `details.reason` src/web/upstream.py'deki nedendir.
+        SofaScore'da ada göre arama (tek istek, istemcinin API kökü, ortak bütçe), en çok 20 sonuç, SofaScore'un
+        sırasıyla (plan maddesi FX-19). kinds: istenen türler ("tournament", "team", "player").
+
+        Yalnızca turnuva istendiğinde `/search/unique-tournaments/{q}` (2.x'ten beri kullanılan uç nokta); takım ya
+        da oyuncu istendiğinde `/search/all?q=...&page=0` (docs/all-sports/endpoints.csv, örneği
+        research/all_sports/samples/football/search-all__1.json): sonuçların `type`'ı `team`, `player` ya da
+        `uniqueTournament`tır. Bu uç noktada turnuva sonucunun biçimi örnekte yoktur: turnuva aramasınınkiyle
+        aynı varsayılır (deneysel; canlı doğrulamada denetlenecek).
+
+        Boş liste: SofaScore yanıt verdi, bir şey bulamadı (404 de "bulunamadı" sayılır). Engelleme `blocked` /
+        `rate_limited` (503), ağ hatası ve beklenmeyen yanıt `upstream_error` (502); `details.reason`
+        src/web/upstream.py'deki nedendir.
         """
-        from src import bridge_health
-        from src.client import api_url, endpoints
-        from src.exceptions import APIError, NetworkError, RateLimitError, ResourceNotFoundError, SofaScoreScraperError
-        from src.utils import make_api_request
+        from src.client import endpoints
 
         text = (query or "").strip()
         if len(text) < 2:
             raise UsageError("The search text needs at least 2 characters.", {"field": "q"})
         wanted_sport = check_sport(sport)
-        before = bridge_health.snapshot()
-        try:
-            # Etkileşimli arama: 403 bekleme döngüsüyle bir sunucu işçisini dakikalarca tutma
-            data = make_api_request(api_url(endpoints.search_unique_tournaments(text)), max_retries=1, timeout=10,
-                                    raise_errors=True)
-        except SofaScoreScraperError as e:
-            if isinstance(e, RateLimitError):
-                raise UpstreamBlockedError("SofaScore is rate limiting us.", {"reason": "rate_limited"},
-                                           code="rate_limited") from None
-            if isinstance(e, APIError) and not isinstance(e, ResourceNotFoundError) and e.status_code == 403:
-                reason = "browser" if _browser_failed(before, bridge_health.snapshot()) else "blocked"
-                raise UpstreamBlockedError("SofaScore refused the request.", {"reason": reason},
-                                           code="blocked") from None
-            reason = "network" if isinstance(e, NetworkError) else "upstream"
-            logger.error("Tournament search failed (%s): %s", reason, type(e).__name__)
-            raise UpstreamError("SofaScore could not be searched.", {"reason": reason}) from None
-        results = data.get("uniqueTournaments", data.get("results")) if isinstance(data, dict) else None
+        wanted = tuple(dict.fromkeys(kinds))
+        unknown = [kind for kind in wanted if kind not in SEARCH_KINDS]
+        if not wanted or unknown:
+            raise UsageError("Unknown search kind.", {"field": "kinds", "kinds": unknown})
+        only_tournaments = wanted == (TOURNAMENT,)
+        path = endpoints.search_unique_tournaments(text) if only_tournaments else endpoints.search_all(text)
+        data = self._ask(path)
+        if data is None:
+            return []
+        key = "uniqueTournaments" if only_tournaments else "results"
+        results = data.get(key, data.get("results")) if isinstance(data, dict) else None
         if not isinstance(results, list):
-            logger.error("Tournament search: the answer has no result list")
+            logger.error("Search: the answer has no result list")
             raise UpstreamError("SofaScore answered in an unexpected form.", {"reason": "upstream"})
-        followed = {row.entity_id for row in self._store.follows.list(kind=TOURNAMENT)}
-        hits: List[TournamentHit] = []
+        followed = {(row.kind, row.entity_id) for row in self._store.follows.list()}
+        hits: List[SearchHit] = []
         for item in results:
-            hit = _hit(item, followed)
-            if hit is None or (wanted_sport is not None and hit.sport != wanted_sport):
+            hit = _search_hit(item, followed, typed=not only_tournaments)
+            if hit is None or hit.kind not in wanted or (wanted_sport is not None and hit.sport != wanted_sport):
                 continue
             hits.append(hit)
             if len(hits) >= SEARCH_LIMIT:
                 break
         return hits
+
+    def _ask(self, path: str) -> Any:
+        """Aramanın tek isteği; 404 None (bulunamadı), öteki hatalar tipli hata."""
+        from src import bridge_health
+        from src.client import api_url
+        from src.exceptions import APIError, NetworkError, RateLimitError, ResourceNotFoundError, SofaScoreScraperError
+        from src.utils import make_api_request
+
+        before = bridge_health.snapshot()
+        try:
+            # Etkileşimli arama: 403 bekleme döngüsüyle bir sunucu işçisini dakikalarca tutma
+            return make_api_request(api_url(path), max_retries=1, timeout=10, raise_errors=True)
+        except SofaScoreScraperError as e:
+            if isinstance(e, ResourceNotFoundError):
+                return None
+            if isinstance(e, RateLimitError):
+                raise UpstreamBlockedError("SofaScore is rate limiting us.", {"reason": "rate_limited"},
+                                           code="rate_limited") from None
+            if isinstance(e, APIError) and e.status_code == 403:
+                reason = "browser" if _browser_failed(before, bridge_health.snapshot()) else "blocked"
+                raise UpstreamBlockedError("SofaScore refused the request.", {"reason": reason},
+                                           code="blocked") from None
+            reason = "network" if isinstance(e, NetworkError) else "upstream"
+            logger.error("Search failed (%s): %s", reason, type(e).__name__)
+            raise UpstreamError("SofaScore could not be searched.", {"reason": reason}) from None
 
 
 def _value_of(row: "Follow", field: str) -> Any:
@@ -440,24 +487,62 @@ def _browser_failed(before: Mapping[str, Any], after: Mapping[str, Any]) -> bool
     return bool(last.get("kind") == "browser" and after.get("last_failure_at") != before.get("last_failure_at"))
 
 
-def _hit(item: Any, followed: set) -> Optional[TournamentHit]:
-    entity = item.get("entity", item) if isinstance(item, dict) else None
-    if not isinstance(entity, dict):
+# `/search/all` sonuçlarının `type`'ı → takip türü
+_SEARCH_TYPES: Mapping[str, str] = {"uniqueTournament": TOURNAMENT, "team": "team", "player": "player"}
+
+
+def _text(value: Any) -> Optional[str]:
+    return value if isinstance(value, str) and value else None
+
+
+def _number(value: Any) -> Optional[int]:
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _mapping(value: Any) -> Mapping[str, Any]:
+    return value if isinstance(value, Mapping) else {}
+
+
+def _sport_of(*holders: Mapping[str, Any]) -> Optional[str]:
+    for holder in holders:
+        sport = _mapping(holder.get("sport"))
+        found = normalize_sport(sport.get("slug") or sport.get("name"))
+        if found is not None:
+            return found
+    return None
+
+
+def _search_hit(item: Any, followed: Set[Tuple[str, int]], *, typed: bool) -> Optional[SearchHit]:
+    """
+    Bir arama sonucu → SearchHit; tanınmayan biçim ya da tür None. typed: `/search/all`'ın sonucu (`type` alanı
+    türü söyler); değilse turnuva aramasının sonucu.
+    """
+    if not isinstance(item, Mapping):
         return None
-    tid, name = entity.get("id"), entity.get("name")
-    if isinstance(tid, bool) or not isinstance(tid, int) or not isinstance(name, str) or not name:
+    kind = _SEARCH_TYPES.get(str(item.get("type"))) if typed else TOURNAMENT
+    entity = item.get("entity", item)
+    if kind is None or not isinstance(entity, Mapping):
         return None
-    category = entity.get("category") if isinstance(entity.get("category"), dict) else {}
-    sport_obj = category.get("sport") if isinstance(category.get("sport"), dict) else {}
-    sport = normalize_sport(sport_obj.get("slug") or sport_obj.get("name"))
-    cid = category.get("id")
-    return TournamentHit(
-        id=tid, name=name, slug=entity.get("slug") if isinstance(entity.get("slug"), str) else None, sport=sport,
-        category_id=cid if isinstance(cid, int) and not isinstance(cid, bool) else None,
-        category_name=category.get("name") if isinstance(category.get("name"), str) else None,
-        category_slug=category.get("slug") if isinstance(category.get("slug"), str) else None,
-        country_code=category.get("alpha2") if isinstance(category.get("alpha2"), str) else None,
-        followed=tid in followed,
+    entity_id, name = _number(entity.get("id")), _text(entity.get("name"))
+    if entity_id is None or name is None:
+        return None
+    country = _mapping(entity.get("country"))
+    if kind == TOURNAMENT:
+        category = _mapping(entity.get("category"))
+        return SearchHit(
+            id=entity_id, name=name, slug=_text(entity.get("slug")), sport=_sport_of(category, entity),
+            category_id=_number(category.get("id")), category_name=_text(category.get("name")),
+            category_slug=_text(category.get("slug")),
+            country_code=_text(category.get("alpha2")) or _text(_mapping(category.get("country")).get("alpha2")),
+            followed=(TOURNAMENT, entity_id) in followed, kind=TOURNAMENT,
+            country_name=_text(_mapping(category.get("country")).get("name")),
+        )
+    team = _mapping(entity.get("team")) if kind == "player" else {}
+    return SearchHit(
+        id=entity_id, name=name, slug=_text(entity.get("slug")), sport=_sport_of(entity, team),
+        category_id=None, category_name=None, category_slug=None, country_code=_text(country.get("alpha2")),
+        followed=(kind, entity_id) in followed, kind=kind, country_name=_text(country.get("name")),
+        team_id=_number(team.get("id")), team_name=_text(team.get("name")),
     )
 
 
@@ -468,7 +553,9 @@ __all__ = [
     "KINDS",
     "LegacyLeagues",
     "NewFollow",
+    "SEARCH_KINDS",
     "SEARCH_LIMIT",
+    "SearchHit",
     "TournamentHit",
     "check_name",
     "check_seasons",

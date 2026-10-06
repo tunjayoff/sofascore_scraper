@@ -1,0 +1,163 @@
+{
+ "source": "research/all_sports/samples/football/search-all__1.json",
+ "path": "/search/all?q=galatasaray&page=0",
+ "body": {
+  "results": [
+   {
+    "entity": {
+     "id": 3061,
+     "name": "Galatasaray",
+     "nameCode": "GAL",
+     "slug": "galatasaray",
+     "national": false,
+     "sport": {
+      "id": 1,
+      "slug": "football",
+      "name": "Football"
+     },
+     "userCount": 1037152,
+     "teamColors": {
+      "primary": "#ff9900",
+      "secondary": "#ff0000",
+      "text": "#ff0000"
+     },
+     "type": 0,
+     "gender": "M",
+     "country": {
+      "alpha2": "TR",
+      "name": "Türkiye",
+      "slug": "turkiye"
+     },
+     "fieldTranslations": {
+      "nameTranslation": {
+       "ar": "غلطة سراي",
+       "bn": "গালাতাসারায়",
+       "hi": "गैलातसराय",
+       "ru": "Галатасарай"
+      },
+      "shortNameTranslation": {}
+     }
+    },
+    "score": 141701.39,
+    "type": "team"
+   },
+   {
+    "entity": {
+     "id": 822471,
+     "name": "Victor Osimhen",
+     "slug": "victor-osimhen",
+     "userCount": 259098,
+     "team": {
+      "id": 3061,
+      "name": "Galatasaray",
+      "nameCode": "GAL",
+      "slug": "galatasaray",
+      "national": false,
+      "sport": {
+       "id": 1,
+       "slug": "football",
+       "name": "Football"
+      },
+      "userCount": 1037152,
+      "teamColors": {
+       "primary": "#ff9900",
+       "secondary": "#ff0000",
+       "text": "#ff0000"
+      },
+      "gender": "M",
+      "fieldTranslations": {
+       "nameTranslation": {
+        "ar": "غلطة سراي",
+        "bn": "গালাতাসারায়",
+        "hi": "गैलातसराय",
+        "ru": "Галатасарай"
+       },
+       "shortNameTranslation": {}
+      }
+     },
+     "deceased": false,
+     "country": {
+      "alpha2": "NG",
+      "name": "Nigeria",
+      "slug": "nigeria"
+     },
+     "shortName": "V. Osimhen",
+     "position": "F",
+     "jerseyNumber": "45",
+     "sofascoreId": "6az-9vh",
+     "fieldTranslations": {
+      "nameTranslation": {
+       "ar": "ف. أوسيمين",
+       "bn": "ভি. ওসিমেন",
+       "hi": "वी. ओसिमेंन",
+       "ru": "В. Осимхен"
+      },
+      "shortNameTranslation": {}
+     }
+    },
+    "score": 61336.1,
+    "type": "player"
+   },
+   {
+    "entity": {
+     "id": 851284,
+     "name": "Rafael Leão",
+     "slug": "rafael-leao",
+     "userCount": 85885,
+     "team": {
+      "id": 3061,
+      "name": "Galatasaray",
+      "nameCode": "GAL",
+      "slug": "galatasaray",
+      "national": false,
+      "sport": {
+       "id": 1,
+       "slug": "football",
+       "name": "Football"
+      },
+      "userCount": 1037152,
+      "teamColors": {
+       "primary": "#ff9900",
+       "secondary": "#ff0000",
+       "text": "#ff0000"
+      },
+      "gender": "M",
+      "fieldTranslations": {
+       "nameTranslation": {
+        "ar": "غلطة سراي",
+        "bn": "গালাতাসারায়",
+        "hi": "गैलातसराय",
+        "ru": "Галатасарай"
+       },
+       "shortNameTranslation": {}
+      }
+     },
+     "deceased": false,
+     "country": {
+      "alpha2": "PT",
+      "name": "Portugal",
+      "slug": "portugal"
+     },
+     "shortName": "R. Leão",
+     "position": "F",
+     "jerseyNumber": "27",
+     "sofascoreId": "ghf-2ai",
+     "fieldTranslations": {
+      "nameTranslation": {
+       "ar": "ر. لياو",
+       "bn": "আর. লিয়াও",
+       "hi": "आर. लिओ",
+       "ru": "Р. Леао"
+      },
+      "shortNameTranslation": {}
+     }
+    },
+    "score": 35313.805,
+    "type": "player"
+   },
+   {
+    "__trimmed__": 17
+   }
+  ]
+ }
+}

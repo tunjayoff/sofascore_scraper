@@ -1242,8 +1242,8 @@
         "tags": [
           "tournaments"
         ],
-        "summary": "Search tournaments on SofaScore",
-        "description": "Look the text up on SofaScore (one request, the shared request budget), at most 20 tournaments. An empty\nlist: SofaScore answered and found nothing. 503 `blocked` / `rate_limited` and 502 `upstream_error` when it\ndid not answer; `details.reason` is blocked, browser, rate_limited, network or upstream. POST, because every\ncall sends a request to SofaScore (a GET could be triggered by another site).",
+        "summary": "Search tournaments, teams and players on SofaScore",
+        "description": "Look the text up on SofaScore (one request, the shared request budget), at most 20 hits of the kinds asked\nfor (`kinds`; tournaments by default), each typed by `kind`. An empty list: SofaScore answered and found\nnothing. 503 `blocked` / `rate_limited` and 502 `upstream_error` when it did not answer; `details.reason` is\nblocked, browser, rate_limited, network or upstream. POST, because every call sends a request to SofaScore (a\nGET could be triggered by another site).",
         "operationId": "searchTournaments",
         "requestBody": {
           "content": {
@@ -8622,6 +8622,63 @@
         "title": "ScorePair",
         "description": "A score of both sides."
       },
+      "SearchHitCountry": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code",
+            "description": "SofaScore's country code (`alpha2`), as given."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "title": "SearchHitCountry"
+      },
+      "SearchHitTeam": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "title": "SearchHitTeam"
+      },
       "Season": {
         "properties": {
           "id": {
@@ -10562,6 +10619,16 @@
       },
       "TournamentHit": {
         "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "tournament",
+              "team",
+              "player"
+            ],
+            "title": "Kind",
+            "default": "tournament"
+          },
           "id": {
             "type": "integer",
             "title": "Id"
@@ -10594,12 +10661,35 @@
             "description": "Slug of a registered sport; null for others."
           },
           "category": {
-            "$ref": "#/components/schemas/TournamentHitCategory"
+            "$ref": "#/components/schemas/TournamentHitCategory",
+            "description": "The tournament's category; for a team or a player only `country_code` can be set."
+          },
+          "country": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SearchHitCountry"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Country of the tournament's category, of the team or of the player."
+          },
+          "team": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SearchHitTeam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A player's team; null for the other kinds."
           },
           "followed": {
             "type": "boolean",
             "title": "Followed",
-            "description": "A follow of any origin names the tournament already."
+            "description": "A follow of any origin names this tournament, team or player already."
           }
         },
         "type": "object",
@@ -10610,7 +10700,7 @@
           "followed"
         ],
         "title": "TournamentHit",
-        "description": "A tournament SofaScore found."
+        "description": "A tournament, a team or a player SofaScore found (`kind`). Follow it with `POST /follows` (`kind`,\n`entity_id` = `id`, `name`, `sport`)."
       },
       "TournamentHitCategory": {
         "properties": {
@@ -10806,7 +10896,7 @@
             "maxLength": 100,
             "minLength": 2,
             "title": "Q",
-            "description": "Text of the tournament name."
+            "description": "Text of the name."
           },
           "sport": {
             "anyOf": [
@@ -10819,7 +10909,22 @@
               }
             ],
             "title": "Sport",
-            "description": "Only tournaments of this sport (slug)."
+            "description": "Only hits of this sport (slug)."
+          },
+          "kinds": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "tournament",
+                "team",
+                "player"
+              ]
+            },
+            "type": "array",
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "Kinds",
+            "description": "What to look for: tournaments (the default), teams and players. Tournaments alone ask SofaScore's tournament search; any other choice asks its general search (one request either way)."
           }
         },
         "additionalProperties": false,

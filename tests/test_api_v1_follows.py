@@ -337,9 +337,10 @@ def test_the_tournament_search_asks_sofascore_once(leagues: Path, search: List[A
     from src.client import api_url, endpoints
 
     hits = data(client.post("/api/v1/tournaments/search", json={"q": "premier"}))
-    assert hits[0] == {"id": 17, "name": "Premier League", "slug": "premier-league", "sport": "football",
+    assert hits[0] == {"kind": "tournament", "id": 17, "name": "Premier League", "slug": "premier-league",
+                       "sport": "football",
                        "category": {"id": 170, "name": "England", "slug": "england", "country_code": "EN"},
-                       "followed": True}
+                       "country": {"code": "EN", "name": None}, "team": None, "followed": True}
     assert (hits[1]["sport"], hits[1]["followed"]) == ("basketball", False)
     assert search[0] == [(api_url(endpoints.search_unique_tournaments("premier")),
                           {"max_retries": 1, "timeout": 10, "raise_errors": True})]

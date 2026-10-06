@@ -2,7 +2,8 @@
 API v1: turnuvalar ve sezonlar (docs/design/02-services.md bölüm 6; docs/design/05-web-ui.md 7.2; plan maddesi P21).
 
     GET /api/v1/tournaments                         katalogdaki turnuvalar (spor, ad, takip süzgeçleri)
-    POST /api/v1/tournaments/search                 SofaScore'da turnuva araması (tek istek)
+    POST /api/v1/tournaments/search                 SofaScore'da ada göre arama: turnuva, takım, oyuncu (tek istek;
+                                                    takım ve oyuncu FX-19)
     GET /api/v1/tournaments/{tournament_id}         tek turnuva, kategorisiyle
     GET /api/v1/tournaments/{tournament_id}/seasons turnuvanın sezonları, en yeni önce; `include=counts` ile sezon
                                                     başına sayımlar (FX-13, 05-web-ui.md G17)
@@ -108,13 +109,22 @@ class StandingsResponse(BaseModel):
     page: PageInfo
 
 
+SearchKind = Literal["tournament", "team", "player"]
+
+
 class TournamentSearch(BaseModel):
     """What to look for on SofaScore."""
 
     model_config = ConfigDict(extra="forbid")
 
-    q: str = Field(min_length=2, max_length=100, description="Text of the tournament name.")
-    sport: Optional[str] = Field(default=None, max_length=40, description="Only tournaments of this sport (slug).")
+    q: str = Field(min_length=2, max_length=100, description="Text of the name.")
+    sport: Optional[str] = Field(default=None, max_length=40, description="Only hits of this sport (slug).")
+    kinds: List[SearchKind] = Field(
+        default_factory=lambda: ["tournament"], min_length=1, max_length=3,
+        description="What to look for: tournaments (the default), teams and players. Tournaments alone ask "
+                    "SofaScore's tournament search; any other choice asks its general search (one request either "
+                    "way).",
+    )
 
 
 class TournamentHitCategory(BaseModel):
@@ -124,15 +134,35 @@ class TournamentHitCategory(BaseModel):
     country_code: Optional[str] = Field(default=None, description="SofaScore's country code, as given.")
 
 
-class TournamentHit(BaseModel):
-    """A tournament SofaScore found."""
+class SearchHitCountry(BaseModel):
+    code: Optional[str] = Field(default=None, description="SofaScore's country code (`alpha2`), as given.")
+    name: Optional[str] = None
 
+
+class SearchHitTeam(BaseModel):
+    id: Optional[int] = None
+    name: Optional[str] = None
+
+
+class TournamentHit(BaseModel):
+    """
+    A tournament, a team or a player SofaScore found (`kind`). Follow it with `POST /follows` (`kind`,
+    `entity_id` = `id`, `name`, `sport`).
+    """
+
+    kind: SearchKind = "tournament"
     id: int
     name: str
     slug: Optional[str] = None
     sport: Optional[str] = Field(default=None, description="Slug of a registered sport; null for others.")
-    category: TournamentHitCategory
-    followed: bool = Field(description="A follow of any origin names the tournament already.")
+    category: TournamentHitCategory = Field(
+        description="The tournament's category; for a team or a player only `country_code` can be set.",
+    )
+    country: Optional[SearchHitCountry] = Field(
+        default=None, description="Country of the tournament's category, of the team or of the player.",
+    )
+    team: Optional[SearchHitTeam] = Field(default=None, description="A player's team; null for the other kinds.")
+    followed: bool = Field(description="A follow of any origin names this tournament, team or player already.")
 
 
 class TournamentHitListResponse(BaseModel):
@@ -203,22 +233,29 @@ def list_tournaments(
     "/tournaments/search",
     response_model=TournamentHitListResponse,
     operation_id="searchTournaments",
-    summary="Search tournaments on SofaScore",
+    summary="Search tournaments, teams and players on SofaScore",
     responses=error_responses("invalid_request", "forbidden_origin", "blocked", "upstream_error"),
 )
 def search_tournaments(body: TournamentSearch) -> TournamentHitListResponse:
     """
-    Look the text up on SofaScore (one request, the shared request budget), at most 20 tournaments. An empty
-    list: SofaScore answered and found nothing. 503 `blocked` / `rate_limited` and 502 `upstream_error` when it
-    did not answer; `details.reason` is blocked, browser, rate_limited, network or upstream. POST, because every
-    call sends a request to SofaScore (a GET could be triggered by another site).
+    Look the text up on SofaScore (one request, the shared request budget), at most 20 hits of the kinds asked
+    for (`kinds`; tournaments by default), each typed by `kind`. An empty list: SofaScore answered and found
+    nothing. 503 `blocked` / `rate_limited` and 502 `upstream_error` when it did not answer; `details.reason` is
+    blocked, browser, rate_limited, network or upstream. POST, because every call sends a request to SofaScore (a
+    GET could be triggered by another site).
     """
-    hits = deps.follows_service().search_tournaments(body.q, sport=body.sport)
+    hits = deps.follows_service().search(body.q, sport=body.sport, kinds=tuple(body.kinds))
     return TournamentHitListResponse(
         data=[
-            TournamentHit(id=h.id, name=h.name, slug=h.slug, sport=h.sport, followed=h.followed,
-                          category=TournamentHitCategory(id=h.category_id, name=h.category_name,
-                                                         slug=h.category_slug, country_code=h.country_code))
+            TournamentHit(
+                kind=h.kind,  # type: ignore[arg-type]
+                id=h.id, name=h.name, slug=h.slug, sport=h.sport, followed=h.followed,
+                category=TournamentHitCategory(id=h.category_id, name=h.category_name, slug=h.category_slug,
+                                               country_code=h.country_code),
+                country=SearchHitCountry(code=h.country_code, name=h.country_name)
+                if h.country_code or h.country_name else None,
+                team=SearchHitTeam(id=h.team_id, name=h.team_name) if h.team_id is not None else None,
+            )
             for h in hits
         ],
         page=PageInfo(limit=len(hits), next_cursor=None),
