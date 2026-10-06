@@ -313,15 +313,19 @@ def job_outcome(result: Optional["SyncResult"]) -> "JobOutcome":
 
 
 def run_sync_job(inv: Invocation, ctx: "ServiceContext", spec: "SyncSpec", *, kind: str, purpose: str,
-                 before: Optional[Callable[["ServiceContext"], Any]] = None) -> JobRun:
+                 before: Optional[Callable[["ServiceContext"], Any]] = None,
+                 event_ids: Sequence[int] = ()) -> JobRun:
     """
     Eşitleme servisini bir iş olarak bu süreçte çalıştırır (`writer` kilidiyle). `before(ctx)` işin içinde,
-    servisten önce çalışır (`--recheck-unavailable`); döndürdüğü `JobRun.recheck` olur.
+    servisten önce çalışır (`--recheck-unavailable`); döndürdüğü `JobRun.recheck` olur. İşin belirtimi API'nin
+    gövdesiyle aynı alanlarla kaydedilir (FX-20, src/services/job_spec.py), hedeflerin adlarıyla; event_ids:
+    kimliğiyle seçilen maçlar (`ssc fetch event`).
 
     Kilit alınamazsa LeaseHeld (sahibiyle); depolama hatası StorageError olarak çıkar (iş `failed` kaydedilir).
     """
     from src.jobs.manager import local_origin
     from src.jobs.model import JobKind
+    from src.services import job_spec
     from src.services.sync import SyncService
     from src.store import JobStoreConflict, LeaseHeld
 
@@ -330,9 +334,13 @@ def run_sync_job(inv: Invocation, ctx: "ServiceContext", spec: "SyncSpec", *, ki
     service_log = logging.getLogger("SyncService")
     cancel = signals.CancelRequest(on_first=lambda signum: inv.out.info(inv.t("ssc_cancel_requested")))
     started = time.monotonic()
+    recorded = job_spec.record(kind, spec, event_ids=event_ids)
+    names = job_spec.names(ctx.store, job_spec.targets(recorded))
+    if names:
+        recorded[job_spec.NAMES] = names
     try:
         job = jobs.start(
-            JobKind(kind), dataclasses.asdict(spec), origin=local_origin("cli"),
+            JobKind(kind), recorded, origin=local_origin("cli"),
             wait_for_lease=float(option(inv, "wait", 0.0)),
             # Web arayüzünün iş kartı başlığı istek gövdesinden üretilir: aynı biçim
             payload={"league_id": spec.league_id, "mode": spec.mode, "selections": None},
@@ -727,7 +735,7 @@ def fetch_event(inv: Invocation) -> CommandResult:
         else:
             dispatcher = register_sinks(ctx.store)
             try:
-                run = run_sync_job(inv, ctx, spec, kind="fetch", purpose="fetch")
+                run = run_sync_job(inv, ctx, spec, kind="fetch", purpose="fetch", event_ids=ids)
             finally:
                 drain_sinks(dispatcher)
     if inv.args.dry_run:

@@ -243,7 +243,7 @@ def test_a_due_task_is_submitted_as_an_ordinary_background_job_of_the_scheduler(
     submitted = jobs.submitted[0]
     assert submitted["kind"] is JobKind.SYNC and submitted["background"] is True
     assert submitted["origin"].face == "scheduler" and submitted["origin"].pid
-    assert submitted["spec"]["mode"] == "full" and submitted["spec"]["league_id"] == 17
+    assert submitted["spec"] == {"league_id": 17, "selections": [], "follows": [], "only": None, "event_ids": []}  # the fields of the API body (FX-20)
     assert submitted["payload"] == {"league_id": 17, "mode": "full", "selections": None}
     assert submitted["on_change"] is not None and changes == [1]
     state = sched.states()[0]
@@ -416,7 +416,7 @@ def test_the_download_tasks_run_the_sync_service(monkeypatch: pytest.MonkeyPatch
 
     monkeypatch.setattr(sync_mod, "SyncService", FakeService)
     plan = scheduler_mod.TASK_RUNS[run].plan({"league_id": 8}, lambda: "ctx")
-    assert plan.kind is kind and plan.spec["mode"] == mode and "export" not in plan.spec
+    assert plan.kind is kind and "mode" not in plan.spec and "export" not in plan.spec and plan.spec["league_id"] == 8
     assert plan.phases == sync_mod.SyncSpec(mode=mode).job_phases  # type: ignore[arg-type]
     outcome = plan.body("handle")
     assert seen["ctx"] == "ctx" and seen["handle"] == "handle" and seen["spec"].league_id == 8
@@ -735,7 +735,8 @@ def test_an_every_task_counts_from_its_last_run_in_the_job_history(job_store: Jo
 
 def test_an_every_task_whose_interval_passed_while_the_server_was_off_runs_once_at_start() -> None:
     jobs = FakeJobs(finish_at_once=True)
-    spec = {**scheduler_mod.TASK_RUNS["refresh"].plan({}, lambda: None).spec, "selections": []}  # kayıttaki biçim (JSON)
+    # a record of before FX-20 (the service's spec, `mode`) still counts as the task's last run
+    spec = {"mode": "refresh", "league_id": None, "selections": []}
     stamp = "2026-10-03T08:00:00+00:00"
     old = SimpleNamespace(id="old", kind=JobKind.REFRESH, spec=spec, origin=SimpleNamespace(face="scheduler"),
                           started_at=stamp, created_at=stamp)

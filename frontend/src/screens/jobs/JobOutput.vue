@@ -6,7 +6,7 @@ import UiIcon from '@/ui/UiIcon.vue'
 import { v1 } from '@/api/v1/client'
 import type { Job } from '@/api/v1/schema'
 import { bytesText, duration, num } from '@/ui/time'
-import { ageText, countLabel, countShown, leagueName, scopeText } from './jobText'
+import { ageText, countLabel, countShown, jobNames, leagueName, scopeText } from './jobText'
 import { seasonName } from '@/screens/events/eventText'
 
 /**
@@ -83,7 +83,7 @@ const succeeded = computed(() => props.job.state === 'succeeded' || props.job.st
 
     <dl v-if="clear && n(clear.tournament_id) != null" class="u-result" data-testid="output-clear-league">
       <dt>{{ t('ui.jobOutput.league') }}</dt>
-      <dd>{{ leagueName(n(clear.tournament_id)!) }}<template v-if="n(clear.season_id) != null"> · {{ seasonName(n(clear.season_id)) }}</template></dd>
+      <dd>{{ leagueName(n(clear.tournament_id)!, job.progress, jobNames(job.spec)) }}<template v-if="n(clear.season_id) != null"> · {{ seasonName(n(clear.season_id)) }}</template></dd>
       <dt>{{ t('ui.jobOutput.events') }}</dt>
       <dd class="u-num">{{ num(n(clear.events) ?? 0) }}</dd>
       <dt>{{ t('ui.jobOutput.listings') }}</dt>

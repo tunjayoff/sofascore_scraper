@@ -1306,8 +1306,8 @@ def cli(data_dir: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
 
 @pytest.mark.parametrize("argv, kind, spec", [
     (["--headless", "--update-all", "--league-id", "17"], JobKind.SYNC,
-     {"mode": "full", "league_id": 17, "selections": []}),
-    (["--refresh-only"], JobKind.REFRESH, {"mode": "refresh", "league_id": None, "selections": []}),
+     {"league_id": 17, "selections": [], "follows": [], "only": None, "event_ids": []}),
+    (["--refresh-only"], JobKind.REFRESH, {"league_id": None, "event_ids": []}),
 ])
 def test_cli_runs_appear_in_the_job_history(cli: Any, data_dir: Path, argv: List[str], kind: JobKind, spec: Dict[str, Any]) -> None:
     assert cli.call(*argv) == 0
@@ -1324,7 +1324,8 @@ def test_cli_runs_appear_in_the_job_history(cli: Any, data_dir: Path, argv: List
     try:
         (row,) = web_store.list_jobs()
         assert (row["id"], row["status"], row["is_running"]) == (job.id, "completed", False)
-        assert row["payload"] == {"league_id": spec["league_id"], "mode": spec["mode"], "selections": None}
+        mode = {JobKind.SYNC: "full", JobKind.REFRESH: "refresh"}[kind]  # the legacy card keeps the service's mode
+        assert row["payload"] == {"league_id": spec["league_id"], "mode": mode, "selections": None}
         assert row["log"][0] == "[Running] Checking which matches need details..."
     finally:
         web_store.close()

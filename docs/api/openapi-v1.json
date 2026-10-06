@@ -7456,7 +7456,7 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Spec",
-            "description": "The service spec the job was started with."
+            "description": "What the job was started with. A download (`sync`, `fetch`, `refresh`) has the fields of its request body (`only: \"events\"`: a `sync` of event details only, from `ssc sync --only events`); one by `event_ids` also has `selections`, the leagues of those events (league 0: an event not stored); `names` maps the follows and leagues it names to their names when it started (`{\"team:42\": \"Arsenal\"}`)."
           },
           "progress": {
             "anyOf": [

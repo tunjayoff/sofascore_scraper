@@ -123,7 +123,9 @@ def test_jobs_are_listed_newest_first_with_the_fields_of_the_job_model(manager: 
         "code": "rate_limited", "message": "stopped by the circuit breaker (429)", "details": {"reason": "429"},
     }
     assert (oldest["kind"], oldest["state"], oldest["error"]) == ("sync", "succeeded", None)
-    assert oldest["spec"] == {"mode": "full", "league_id": 17} and oldest["cancel_requested"] is False
+    # a record of before FX-20 (the service's spec) is given in the shape of the request body
+    assert oldest["spec"] == {"league_id": 17, "selections": [], "follows": [], "only": None, "event_ids": []}
+    assert oldest["cancel_requested"] is False
     assert oldest["created_at"] and oldest["started_at"] and oldest["finished_at"]
 
 
@@ -268,8 +270,8 @@ def test_start_runs_a_sync_job_in_the_background(store: JobStore, body: Any) -> 
     assert response.headers["location"] == f"/api/v1/jobs/{job['id']}"
     assert (job["kind"], job["state"], job["finished_at"]) == ("sync", "running", None)
     assert job["origin"]["face"] == "api" and job["origin"]["pid"] == os.getpid()
-    # CSV aşaması istenmez: dışa aktarma ayrı bir iş türüdür
-    assert job["spec"] == {"mode": "full", "league_id": 17, "selections": []}
+    # CSV aşaması istenmez: dışa aktarma ayrı bir iş türüdür. Belirtim gövdenin alanlarıyla, ligin adıyla (FX-20)
+    assert job["spec"] == {"league_id": 17, "selections": [], "follows": [], "only": None, "event_ids": [], "names": {"tournament:17": "Premier League"}}
     assert len(job["id"]) == 26
 
     body.release.set()
