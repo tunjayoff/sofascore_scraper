@@ -1,15 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { VueWrapper } from '@vue/test-utils'
 import FollowEditorScreen from '@/screens/follows/FollowEditorScreen.vue'
+import SettingsScreen from '@/screens/settings/SettingsScreen.vue'
 import { resetSports } from '@/app/sports'
 import { resetNames } from '@/screens/events/eventText'
 import { i18n, setLocale } from '@/i18n'
 import { callsTo, flush, mockFetch } from './helpers'
-import { axeViolations, follow, mountScreen, sport, status } from './v1'
+import { axeViolations, follow, mountScreen, setting, settingsDoc, sport, sportWithOdds, status } from './v1'
 
 /**
  * FX-20, the small gaps FX-14b and FX-19 left: live watching is not offered for a player (`ssc watch` skips
- * player follows).
+ * player follows); Settings › Data shows the followed sports first and the rest under "Other sports".
  */
 const t = i18n.global.t
 let w: VueWrapper
@@ -72,5 +73,48 @@ describe('live watching and players', () => {
     await w.find('[data-testid="edit-save"]').trigger('click')
     await flush()
     expect(body(f, 'PATCH /api/v1/follows/player:7')).toEqual({ live: false })
+  })
+})
+
+describe('Settings', () => {
+  const sportRows = [
+    { sport: 'football', enable: [], disable: [], source: 'default', source_name: '', locked: false, writable: true },
+    { sport: 'basketball', enable: [], disable: [], source: 'default', source_name: '', locked: false, writable: true },
+    { sport: 'tennis', enable: [], disable: [], source: 'default', source_name: '', locked: false, writable: true },
+    { sport: 'darts', enable: ['standings'], disable: [], source: 'overrides', source_name: '', locked: false, writable: true },
+  ]
+  async function open(follows: unknown[], rows = sportRows) {
+    const settings = [setting('defaults.slices', ['core']), setting('fetch.only_finished', true), setting('fetch.save_empty_rounds', false)]
+    const f = mockFetch({
+      'GET /api/v1/settings': { data: settingsDoc(settings, { slices: rows } as never) },
+      'GET /api/v1/status': { data: status() },
+      'GET /api/v1/sports': list(['football', 'basketball', 'tennis', 'darts'].map((s) => sportWithOdds(s))),
+      'GET /api/v1/follows': list(follows),
+    })
+    ;({ w } = await mountScreen(SettingsScreen, '/settings?tab=data', '/settings'))
+    await flush()
+    await flush()
+    return f
+  }
+
+  it('Data: the followed sports (and one with its own saved change) first, the others closed under "Other sports"', async () => {
+    await open([follow({ sport: 'football' }), follow({ id: 'team:3', kind: 'team', entity_id: 3, name: 'Fenerbahçe Beko', sport: 'basketball' })])
+    const mine = w.find('[data-testid="slice-sports-mine"]')
+    expect(mine.findAll('[data-sport]').map((d) => d.attributes('data-sport'))).toEqual(['football', 'basketball', 'darts'])
+    const others = w.find('[data-testid="slice-sports-others"]')
+    expect(others.element.tagName).toBe('DETAILS')
+    expect((others.element as HTMLDetailsElement).open).toBe(false)
+    expect(others.find('summary').text()).toContain(t('ui.sliceDefaults.otherSports'))
+    expect(others.find('summary').text()).toContain(t('ui.sliceDefaults.sportCount', { n: 1 }))
+    expect(others.findAll('[data-sport]').map((d) => d.attributes('data-sport'))).toEqual(['tennis'])
+    expect(await axeViolations(w.find('[data-testid="slice-defaults"]').element)).toEqual([])
+  })
+
+  it('Data: without follows or changes every sport is under "All sports", closed', async () => {
+    await open([], sportRows.slice(0, 3))
+    expect(w.find('[data-testid="slice-sports-mine"]').exists()).toBe(false)
+    const others = w.find('[data-testid="slice-sports-others"]')
+    expect(others.find('summary').text()).toContain(t('ui.sliceDefaults.allSports'))
+    expect(others.findAll('[data-sport]')).toHaveLength(4)
   })
 })
