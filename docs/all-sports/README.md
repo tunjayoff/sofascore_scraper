@@ -55,7 +55,7 @@ Yeniden üretmek için: `python scripts/analyze_all_sports.py all` (ağ isteği 
    `status.code` yok; `finished` stage'ler ve tipi boş sezon stage'leri **UNKNOWN**.
 4. **`extract_scores` yalnızca futbol, basketbol ve tenisi destekliyor.** Diğer 20 spor için "desteklenmeyen spor"
    uyarısıyla boş bir `ScoreSheet` dönüyor. Çoğunun skor yapısı ise mevcut sınıflardan biriyle aynı biçimde.
-5. **Push kanalı var.** `wss://ws.sofascore.com:9222/`, kimlik doğrulamalı bir **NATS** sunucusu. Maç bitişi
+5. **Push kanalı var.** SofaScore'un push sunucusu, kimlik doğrulamalı bir **NATS** sunucusu. Maç bitişi
    (`status.type: finished`), SofaScore'un kendi değişiklik anından **medyan 0,5–1,2 sn** sonra geliyor
    (36 kare; küçük örneklem). Polling ile daha önce ölçülen bitiş gecikmesi medyan 19 sn (futbol) ve 48 sn (tenis) idi.
 6. **175 SofaScore pattern'i görüldü; 160'ı repoda yok.**
@@ -240,7 +240,7 @@ Spor sayfasındaki **Bitti** filtresi repoda kullanılan `scheduled-tournaments`
 
 ### Push kanalı (NATS)
 
-`wss://ws.sofascore.com:9222/`. Kaynak: `research/all_sports/ws.jsonl`.
+SofaScore'un push sunucusu (WebSocket üzerinden NATS). Kaynak: `research/all_sports/ws.jsonl`.
 
 - **Bağlantı:** sitenin her sayfası bağlanıyor.
   - Sunucu `INFO` karesinde `"version": "2.12.15"`, `"auth_required": true` diyor. Kayıtta INFO'dan yalnızca

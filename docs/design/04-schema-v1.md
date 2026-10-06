@@ -20,6 +20,15 @@ The field tables below are generated from the models in `src/schema/models.py`, 
 and the code differ (`tests/test_schema_v1.py`). The same models produce the JSON Schema that
 `ssc describe schemas` will print. So the tables, the JSON Schema and the code cannot drift apart.
 
+Revised on 2026-10-06 (the sixth revision of the design documents, checked against `origin/main` at
+`b6caf2f`). P28 (#140) added the models of odds and standings, `Odds`, `OddsMarket`, `OddsChoice`, `OddsLine`
+and `StandingsRow` (`src/schema/models.py:708-829`). They are in `models.PENDING_MODELS`, not in `MODELS` and
+`RECORDS`: API v1 and the exports use them, but `ssc describe schemas` and the JSON Schema golden do not show
+them yet. Section 4, "Odds and standings", describes them with field tables copied from the models; plan item
+FX-21 moves them into `MODELS` (and `Odds`, `OddsLine` and `StandingsRow` into `RECORDS`), makes those tables
+generated blocks and regenerates `tests/golden/schema/`. FX-15 (#155) added the odds country as an opt-in
+setting; it is recorded in the slice's meta, not in the `Odds` record.
+
 ## 1. What the schema is, and what it is not
 
 The platform stores SofaScore's responses as they are (one file per response, see `01-storage.md`). The
@@ -48,6 +57,9 @@ Not part of version 1:
 
 - **Odds** and **non-match data** (standings, season statistics, squads, rankings). Plan item P28 adds their
   models. Until then their payloads are slices like any other and are available raw.
+  P28 (#140) added the models `Odds`, `OddsMarket`, `OddsChoice`, `OddsLine` and `StandingsRow` (section 4,
+  "Odds and standings"); they are not in version 1's `MODELS` yet (FX-21). The other non-match slices (season
+  info, cup trees, top players and teams, season odds, rankings, player statistics) stay raw slices.
 - **Normalized content of slices.** A slice's payload (statistics, lineups, incidents, head-to-head, form,
   streaks, point-by-point) is SofaScore's response, unchanged. Version 1 normalizes the state of a slice, not
   its content (section 9, point 16).
@@ -737,6 +749,18 @@ Slices of other owners today: `seasons` of a tournament (the season list), and `
 payload per round or page with `sub` such as `round_12` or `last_0`. More keys come with P28 (odds, standings,
 …); `key` is an open set.
 
+Keys added by P28 (#140; `src/sports.py:556-608` at `b6caf2f`), all off unless a selection names them and none
+counting for completeness. Event slices of group `odds`, with the provider id as `sub` (`[client]
+odds_provider`, default `1`): `odds_featured` (`/event/{id}/odds/{provider}/featured`), `odds_all`
+(`/event/{id}/odds/{provider}/all`), `odds_changes` (`/event/{id}/odds/{provider}/changes`) and `winning_odds`
+(`/event/{id}/provider/{provider}/winning-odds`). Slices of other owners: `owner_kind` `season`: `standings`
+(sub `total` or `home`), `season_info`, `cuptrees`, `top_players`, `top_teams`, `season_odds` (provider sub);
+`team`: `team_rankings`; `player`: `player_statistics`; `sport`: `rankings` (sub `5`, the ATP list). The known
+values of `Slice.key` in the field table above do not list them, nor `innings`; FX-21 adds them. An odds
+slice records the provider in its meta (`meta.provider_id`) and, only when the user sets `[client]
+odds_country`, the country (`meta.country`, upper case; a decision of 2026-10-06: opt-in, never derived from
+the machine). The slice record of API v1 does not carry the meta.
+
 `state` and `has_payload` together:
 
 | `state` | `has_payload` | Meaning |
@@ -900,6 +924,126 @@ on purpose (decision D20 in `03-implementation-plan.md`, section 13, settled on 
 API deliver to the operator's own systems. The diagnostics bundle, which is made to be handed to other
 people, carries the face and the pid and not the host name (PR #71).
 
+### Odds and standings
+
+Added by P28 (#140). Odds are read from the event's odds slices (`odds_all`, `odds_featured`) and kept as a
+history of snapshots (the slice history of `01-storage.md`): a record is one read, and odds change until the
+event ends. API v1 gives them at `/events/{id}/odds/{key}` (oldest snapshot first; `?history=` for every
+snapshot) and the export dataset `odds` as `OddsLine` rows; standings come from the season slice `standings`
+at `/seasons/{id}/standings` and the export dataset `standings`. `odds_featured` gives the values of its
+`featured` object, each with its key as `label`; `odds_all` its `markets`. Prices are fractions as SofaScore
+gives them, with a decimal derived as 1 + the fraction, rounded to three places (`fraction_decimal`,
+`src/schema/mappers.py:632`). The mappers are `odds_from_payload`, `odds_lines` and `standings_rows`
+(`:680-742`); `standings_rows` skips rows that have neither a team nor a position. The country SofaScore
+answered for is not a field of `Odds`: it is in the slice's meta (`meta.country`) when the user set `[client]
+odds_country`, and the provider id is in `meta.provider_id` as well as in the record. `winning_odds` and
+`season_odds` have no model (their only samples were 404s); they are raw slices.
+
+These models are in `models.PENDING_MODELS` (`src/schema/models.py:845`), not in `MODELS`: `ssc describe
+schemas` and the JSON Schema (`tests/golden/schema/`) do not include them, while API v1 and the exports use
+them, and a test applies the field-contract checks of the other models to them. Plan item FX-21 moves them
+into `MODELS`, and `Odds`, `OddsLine` and `StandingsRow` into `RECORDS`.
+
+#### Odds
+
+One read of an odds slice of an event: a snapshot.
+
+The table below is copied from the model (`render_fields` of `tests/test_schema_v1.py` at `b6caf2f`). It is not yet a generated block: the model is in `models.PENDING_MODELS`, not in `MODELS`, so no test compares the two. It becomes a generated, test-checked block when FX-21 moves the models into `MODELS`.
+
+| Field | Type | Null | Unit | Source | Meaning |
+|---|---|---|---|---|---|
+| `event_id` | integer | no |  | the request that fetched it | Id of the Event. |
+| `key` | string, open set: `odds_all`, `odds_featured` | no |  | slice registry (`src/sports.py`) | Odds slice the record comes from: `odds_all` or `odds_featured`. |
+| `provider_id` | integer | yes |  | the request that fetched it | SofaScore's id of the bookmaker the odds come from. Which bookmakers SofaScore offers depends on the country it sees the request from; the platform stores no address or location of the machine. |
+| `fetched_at_utc` | string | yes | ISO 8601 UTC | time of the platform's request | When the odds were read. A read is a snapshot: odds change until the event ends, and only a later read shows a later price. |
+| `markets` | array of [OddsMarket](#oddsmarket) | no |  | `markets`, or the values of `featured` | The markets, in SofaScore's order. |
+
+#### OddsMarket
+
+One market of a snapshot (match result, over/under, handicap, ...).
+
+The table below is copied from the model (`render_fields` of `tests/test_schema_v1.py` at `b6caf2f`). It is not yet a generated block: the model is in `models.PENDING_MODELS`, not in `MODELS`, so no test compares the two. It becomes a generated, test-checked block when FX-21 moves the models into `MODELS`.
+
+| Field | Type | Null | Unit | Source | Meaning |
+|---|---|---|---|---|---|
+| `market_id` | integer | yes |  | `marketId` | SofaScore's id of the market type (1 is the match result). |
+| `name` | string | yes |  | `marketName` | Name of the market, for example `Full time`. |
+| `group` | string | yes |  | `marketGroup` | Group of the market, for example `1X2` or `Home/Away`. |
+| `period` | string | yes |  | `marketPeriod` | Part of the event the market covers, for example `Full-time`. |
+| `choice_group` | string | yes |  | `choiceGroup` | Line of a market with several lines, for example `2.5` for over/under; null for a market with one line. |
+| `label` | string | yes |  | key of `featured` | Name under which the featured odds list the market (`default`, `fullTime`, `asian`); null in the full list. |
+| `is_live` | boolean | yes |  | `isLive` | True when the prices were offered during play. |
+| `suspended` | boolean | yes |  | `suspended` | True when the market was closed for bets at the time of the read. |
+| `choices` | array of [OddsChoice](#oddschoice) | no |  | `choices` | The outcomes of the market, in SofaScore's order. |
+
+#### OddsChoice
+
+One outcome of a market and its price.
+
+The table below is copied from the model (`render_fields` of `tests/test_schema_v1.py` at `b6caf2f`). It is not yet a generated block: the model is in `models.PENDING_MODELS`, not in `MODELS`, so no test compares the two. It becomes a generated, test-checked block when FX-21 moves the models into `MODELS`.
+
+| Field | Type | Null | Unit | Source | Meaning |
+|---|---|---|---|---|---|
+| `name` | string | no |  | `choices[].name` | Name of the outcome as SofaScore gives it, for example `1`, `X`, `2`, `Over`. |
+| `fractional` | string | yes |  | `choices[].fractionalValue` | Current price as a fraction, for example `11/5`. |
+| `decimal` | number | yes |  | derived from `choices[].fractionalValue` | Current price as a decimal (1 + the fraction), rounded to three places. |
+| `initial_fractional` | string | yes |  | `choices[].initialFractionalValue` | Opening price as a fraction. |
+| `initial_decimal` | number | yes |  | derived from `choices[].initialFractionalValue` | Opening price as a decimal, rounded to three places. |
+| `change` | integer | yes |  | `choices[].change` | Direction of the last change of the price: 1 up, -1 down, 0 none. |
+| `winning` | boolean | yes |  | `choices[].winning` | True for the outcome that won once the event is settled; null while open or when SofaScore does not say. |
+
+#### OddsLine
+
+The flat row of the `odds` export dataset: one outcome of one market of one snapshot.
+
+The table below is copied from the model (`render_fields` of `tests/test_schema_v1.py` at `b6caf2f`). It is not yet a generated block: the model is in `models.PENDING_MODELS`, not in `MODELS`, so no test compares the two. It becomes a generated, test-checked block when FX-21 moves the models into `MODELS`.
+
+| Field | Type | Null | Unit | Source | Meaning |
+|---|---|---|---|---|---|
+| `event_id` | integer | no |  | the request that fetched it | Id of the Event. |
+| `key` | string, open set: `odds_all`, `odds_featured` | no |  | slice registry (`src/sports.py`) | Odds slice the row comes from. |
+| `provider_id` | integer | yes |  | the request that fetched it | As `Odds.provider_id`. |
+| `fetched_at_utc` | string | yes | ISO 8601 UTC | time of the platform's request | When the snapshot was read. |
+| `market_id` | integer | yes |  | `marketId` | As `OddsMarket.market_id`. |
+| `market_name` | string | yes |  | `marketName` | As `OddsMarket.name`. |
+| `market_group` | string | yes |  | `marketGroup` | As `OddsMarket.group`. |
+| `market_period` | string | yes |  | `marketPeriod` | As `OddsMarket.period`. |
+| `choice_group` | string | yes |  | `choiceGroup` | As `OddsMarket.choice_group`. |
+| `label` | string | yes |  | key of `featured` | As `OddsMarket.label`. |
+| `is_live` | boolean | yes |  | `isLive` | As `OddsMarket.is_live`. |
+| `suspended` | boolean | yes |  | `suspended` | As `OddsMarket.suspended`. |
+| `choice` | string | no |  | `choices[].name` | As `OddsChoice.name`. |
+| `fractional` | string | yes |  | `choices[].fractionalValue` | As `OddsChoice.fractional`. |
+| `decimal` | number | yes |  | derived from `choices[].fractionalValue` | As `OddsChoice.decimal`. |
+| `initial_fractional` | string | yes |  | `choices[].initialFractionalValue` | As `OddsChoice.initial_fractional`. |
+| `initial_decimal` | number | yes |  | derived from `choices[].initialFractionalValue` | As `OddsChoice.initial_decimal`. |
+| `change` | integer | yes |  | `choices[].change` | As `OddsChoice.change`. |
+| `winning` | boolean | yes |  | `choices[].winning` | As `OddsChoice.winning`. |
+
+#### StandingsRow
+
+One row of a season's table (`standings`, sub `total` or `home`); the row of the `standings` export dataset.
+
+The table below is copied from the model (`render_fields` of `tests/test_schema_v1.py` at `b6caf2f`). It is not yet a generated block: the model is in `models.PENDING_MODELS`, not in `MODELS`, so no test compares the two. It becomes a generated, test-checked block when FX-21 moves the models into `MODELS`.
+
+| Field | Type | Null | Unit | Source | Meaning |
+|---|---|---|---|---|---|
+| `tournament_id` | integer | no |  | the request that fetched it | Id of the Tournament. |
+| `season_id` | integer | no |  | the request that fetched it | Id of the Season. |
+| `table` | string, open set: `total`, `home` | no |  | the request that fetched it | Which table: `total` (all matches) or `home` (home matches only). |
+| `group_name` | string | yes |  | `standings[].name` | Name of the table or group, for example `Premier League 26/27` or `Group A`. |
+| `position` | integer | yes |  | `rows[].position` | Rank in the table, 1 for the first. |
+| `participant_id` | integer | yes |  | `rows[].team.id` | Id of the Participant. |
+| `participant_name` | string | yes |  | `rows[].team.name` | Name of the Participant. |
+| `matches` | integer | yes |  | `rows[].matches` | Matches played. |
+| `wins` | integer | yes |  | `rows[].wins` | Matches won. |
+| `draws` | integer | yes |  | `rows[].draws` | Matches drawn; null in sports without draws. |
+| `losses` | integer | yes |  | `rows[].losses` | Matches lost. |
+| `scores_for` | integer | yes |  | `rows[].scoresFor` | Goals or points scored. |
+| `scores_against` | integer | yes |  | `rows[].scoresAgainst` | Goals or points conceded. |
+| `points` | number | yes |  | `rows[].points` | Table points (a fraction in a few sports). |
+| `fetched_at_utc` | string | yes | ISO 8601 UTC | time of the platform's request | When the table was read. |
+
 ## 5. What differs by sport
 
 Everything that is not listed here is the same for every sport.
@@ -997,6 +1141,9 @@ What a raw request returns:
   `slice_from_info` (SliceInfo), `change_from_row` (ChangeRow), `live_event_from_record` (StreamRecord). The
   refresh window is passed in; nothing reads a setting, a file or the clock.
 - `src/schema/jsonschema.py`: the JSON Schema, generated from the models.
+- Since P28 (#140): the models `Odds`, `OddsMarket`, `OddsChoice`, `OddsLine` and `StandingsRow` in
+  `models.PENDING_MODELS`, and the mappers `odds_from_payload`, `odds_lines`, `standings_rows` and
+  `fraction_decimal`; they are outside the JSON Schema and the generated tables until FX-21 (section 4).
 - The package imports only the pure domain modules (`src.sports`, `src.status`, `src.refresh`).
 - `tests/test_schema_v1.py`, with goldens under `tests/golden/schema/`:
   - each of the real status payloads maps to a golden Event record (154 of three sports at SC-1; 231 of the
@@ -1016,7 +1163,8 @@ What a raw request returns:
 None are left. The 28 points of this section were the open questions of the proposal, and the approval of
 2026-10-02 settled every one of them as chosen (decision P2). The heading of the section is kept as it was,
 because `tests/test_schema_v1.py` asserts that line; what the section holds is the list of decisions. The
-heading and its assertion are renamed together by an item that owns the test (P28). Points 11 and 13 say below
+heading and its assertion are renamed together by an item that owns the test (P28; P28 did not, so it is
+FX-21's now, with the move of the P28 models into `MODELS`). Points 11 and 13 say below
 what SP-1 to SP-3 changed.
 
 ### Decisions taken (approved on 2026-10-02)

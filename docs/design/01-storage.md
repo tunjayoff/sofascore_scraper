@@ -51,6 +51,17 @@ from item 107 on. Both points the fourth revision left open are closed: decision
 proposed (section 0), and FX-12 is merged. References marked `b3cb819` are to `origin/main` at that
 commit.
 
+Revised a sixth time on 2026-10-06 after ST-28 #135 (the transition code removed; the boundary tests
+strict), and the Store-side parts of P28 #140 (odds and non-match slices, entity history), FX-13 #152 and
+#153 (a real restore through the API that keeps the running job's record; the old data folder closed after
+a data-folder change; the last migration read), FX-15 #155 (the five shadow hooks removed; the first caller
+of `HistoryStore.prune`; the `parquet` extra at `pyarrow>=16`) and FX-19 #156 (`Store.purge`: one
+tournament's or one season's data deleted). `src/fsutil.py` is gone; the 2.x file helpers live in
+`src/config_files.py`, outside the Store, and the Store root exports `league_dir_name`. The strict boundary
+checks, the purge, the restore step that keeps the job record and the prune caller are described as built;
+section 12 lists the corrections, from item 128 on. References marked `b6caf2f` are to `origin/main` at
+that commit.
+
 Terms used throughout:
 
 - **payload**: one SofaScore JSON response, stored as a file.
@@ -141,7 +152,10 @@ Also touching `DATA_DIR`:
 - `DATA_DIR` change, as built at `b3cb819`: `src/web/api/v1/settings.py:334` and the legacy route
   (`src/web/api/legacy.py:1051`) rebind the job store; neither closes the Store that `open_store` keeps for
   the old directory for the life of the process (2.3). On Windows a data directory can be removed or moved
-  only after `Store.close()` (#120, 6.4).
+  only after `Store.close()` (#120, 6.4). As built since FX-13 (#152) the v1 route closes the old
+  directory's Stores after the rebind (`close_data_dir`, `src/web/api/v1/settings.py:489` and `:492` at
+  `b6caf2f`), unless this process holds one of that directory's leases; the legacy route still only
+  rebinds, until P30 removes it.
 - `scripts/migrate_match_details.py:33-73` renames id-less league directories in place.
 - `src/doctor.py` probes that the directory is writable.
 - The web backend builds the terminal-UI object to reach the fetchers (`src/web/fetch_job.py:19`, `:109`;
@@ -256,7 +270,15 @@ root) and nothing from its submodules.
 
 One import of a submodule exists during the transition: the shim `src/fsutil.py` imports `src.store.files`
 until ST-28 deletes it. `src/web/jobs.py` imported `src.store.jobs` until FX-1 (PR #60) switched it to the
-root; its ratchet file is gone.
+root; its ratchet file is gone. As built since ST-28 (#135) no module outside `src/store/` imports a
+submodule: `src/fsutil.py` is deleted, and the 2.x file helpers it re-exported (`atomic_write_text`,
+`atomic_write_json`, `file_lock`) are in `src/config_files.py`, which writes only the configuration files
+outside `DATA_DIR` (`config/leagues.txt`, `config/league_sports.json`, `overrides.json`, and the lock of
+the log rotation). They write atomically with mode 0600 and, after the Windows retries, raise the plain
+`PermissionError` (`src/config_files.py:44-55` at `b6caf2f`); before, `ReplaceBusy`, a subclass of
+`PermissionError`, so callers see no difference. The Store keeps no 2.x helper; `ReplaceBusy` stays inside
+`src/store/files.py` (`:48`) as the internal signal of its own retry, which `_store_error` turns into a
+non-fatal `StoreError` (`:132-139`).
 
 The root as built (`src/store/__init__.py` at `e0bae0c`) exports the error classes, the facade (`open_store`,
 `Store`, `StoreInfo`), `Lease` and `LeaseInfo`, the job store names (`JobStore`, `JobStoreConflict`,
@@ -278,12 +300,15 @@ and `SportRow` (ST-22), `Exporter`, `ExportReport` and `ExportSkip` (ST-25), `Ba
 `MigrationIssue` (ST-23). The first version said that no version number is exported from the root; since
 P19 (#119) `LAYOUT_VERSION`, `CATALOG_SCHEMA` and `load_migrations` are, for `ssc version`, while
 `DERIVE_VERSION` and `MIN_READER_LAYOUT` stay inside, and a caller reads the versions of a directory from
-`StoreInfo`. Every name except the error classes is loaded on first use (a module
-`__getattr__`, with a `TYPE_CHECKING` block for static tools and the API snapshot). The reason: importing a
-submodule runs the package root first, `src/fsutil.py` imports `src.store.files` from the lowest layers of
-the application, and `tests/test_store_catalog.py` pins the exact set of modules that importing a store
-submodule loads. A new public name therefore goes into three places of that file: the `TYPE_CHECKING` import,
-`_LAZY` and `__all__`.
+`StoreInfo`. At `b6caf2f` the five hooks are no longer exported: FX-15 (#155) removed them, because no
+product code called them after P26 (3.5). ST-28 (#135) added `league_dir_name`, the 2.x folder name of a
+league (`src/store/legacy.py:344`), which `src/paths.py` held before and `QueryService` now imports from
+the root; FX-19 (#156) added `Purger` and `TournamentClearReport` (9.3). Every name except the error
+classes is loaded on first use (a module `__getattr__`, with a `TYPE_CHECKING` block for static tools and
+the API snapshot). The reason: importing a submodule runs the package root first, `src/fsutil.py` imported
+`src.store.files` from the lowest layers of the application until ST-28, and `tests/test_store_catalog.py`
+pins the exact set of modules that importing a store submodule loads. A new public name therefore goes
+into three places of that file: the `TYPE_CHECKING` import, `_LAZY` and `__all__`.
 
 The Store contains no network code and no policy. It does not know which slices a sport needs, how long the
 refresh window is, or what "finished" means for a job. Callers pass those in as arguments. It may import
@@ -301,7 +326,9 @@ src/store/
                   sync on open and the hooks of the legacy writers (3.4, 3.5)
   errors.py       StoreError and subclasses
   codec.py        canonical JSON bytes, gzip read/write, sha256
-  files.py        atomic write/replace/remove, staging dir, retry on Windows (absorbs src/fsutil.py)
+  files.py        atomic write/replace/remove, staging dir, retry on Windows (absorbed src/fsutil.py; since
+                  ST-28 the 2.x helpers are in src/config_files.py, outside the Store)
+  purge.py        one tournament's or one season's data deleted (FX-19, #156; 9.3)
   layout.py       v3 path functions (pure)
   manifest.py     manifest.json dataclasses, read, write, validate
   legacy.py       read-only discovery and readers for every legacy form
@@ -448,7 +475,8 @@ that exists:
   `:590-642` at `9b03c64`). `EntityStore.put` exists since ST-22 (#98), `export` since ST-25 (#108) and
   `migrate` since ST-23 (#110); `backup` gained format 2, `verify`, `restore`, `prune` and `path_of` with
   ST-24 (#109) and P21 (#126). At `b3cb819` the facade is complete: `backup`, `export` and `migrate` are
-  attribute lines of `Store.__init__` (`src/store/api.py:288-290`).
+  attribute lines of `Store.__init__` (`src/store/api.py:288-290`). FX-19 (#156) added `purge`, the
+  `Purger` of 9.3 (`src/store/api.py:287` at `b6caf2f`).
 - `catalog_current` (ST-19) answers whether the catalog is in sync: True when the Store is open and the
   last sync of this process, and every hook since, succeeded. A reader that plans from the catalog refuses
   to plan when it is False, instead of calling every match missing (`open_store` does not fail when the
@@ -808,6 +836,16 @@ owner + key + optional sub. Examples of how the known endpoints map:
 | a player's season statistics | `player(id)` | `season_statistics` / `<ut>-<sid>` |
 | rankings | `sport(id)` | `rankings` / `<ranking type>` |
 
+As built (P28, #140; `OWNER_SLICES`, `src/sports.py:576-607` at `b6caf2f`), all off by default: season
+slices `standings` with the subs `total` and `home` (no `away` in the endpoint catalog), `season_info`,
+`cuptrees`, `top_players`, `top_teams` and `season_odds` (provider as sub); the team slice `team_rankings`;
+the player slice `player_statistics` (no sub, `/player/{id}/statistics/seasons`); the sport slice
+`rankings` with the sub `5`, under the catalog's numeric sport id (`Ref.sport` takes an int). The squad
+row (`team` / `players`) is not built: no `/team/{id}/players` endpoint is documented. A team's or a
+player's match list is not stored either: FX-19 (#156) reads `/team/{id}/events/last|next/{n}` and
+`/player/{id}/events/last/{n}` on every sync of a team or player follow, because the Store has no team or
+player schedule slice (team `events` pages give no listing rows, 4.2 and the note of ST-22).
+
 The `/event/{id}` payload is stored under the key `event`. The name `basic` survives only in the legacy file
 name `basic.json` and in the response shape of the legacy `GET /api/matches/{id}` route.
 
@@ -817,7 +855,11 @@ Odds are ordinary slices of the event (`odds_all`, `odds_featured`, `odds_change
 provider id as `sub`). The latest payload is the slice file. In addition, a key written with `keep_history`
 appends the payload to the slice's history file whenever its content hash differs from the last stored one.
 SofaScore's own change list for the main market (`/event/{id}/odds/{provider}/changes`) is the `odds_changes`
-slice.
+slice. As built (P28 #140, FX-15 #155) the slice's `meta` records where the payload came from: always the
+provider id (`meta.provider_id`, the sub, `[client] odds_provider`, default 1) and, only when the user sets
+`[client] odds_country`, the country (`meta.country`); the country is never derived from the machine
+(decision of 2026-10-06; `with_provenance`, `src/services/pipeline.py:627` at `b6caf2f`). The normalized
+`Odds` record carries no country.
 
 ```python
 class HistoryStore:
@@ -844,7 +886,19 @@ class HistoryStore:
 - A reader retries once when a member's sha256 does not match the catalog (a prune ran meanwhile); no test
   runs a prune against concurrent readers.
 - The first caller is P28, which registers the odds slices and passes them as `keep_history`; nothing in the
-  application keeps history at `9b03c64`.
+  application keeps history at `9b03c64`. As built (P28, #140): the four odds slices of an event
+  (`odds_featured`, `odds_all`, `odds_changes`, `winning_odds`) and the season slice `season_odds` have
+  `keep_history` (`src/sports.py:558-569` and `:594-596` at `b6caf2f`); the pipeline passes the selected
+  keys to `EventStore.put` and to `EntityStore.put` (`src/services/pipeline.py:452`, `:528`). So entity
+  history is written now (`season_odds`, off by default and experimental), while `prune` still handles
+  event history only (`src/store/history.py:486`: `kind = 'event'`); the history of a season is never
+  pruned.
+- The first caller of `prune` is FX-15 (#155), not P28: the scheduler task `prune-history` with a required
+  `older_than` (for example `"90d"`) runs a `clear` job with the spec `{scope: history, older_than}` that
+  calls `store.history.prune(older_than=...)` under the job's writer lease and reports `prune_history`
+  (`src/jobs/scheduler.py:327-358` at `b6caf2f`). No task exists by default, so nothing is pruned unless
+  the user configures one (decision of 2026-10-06). The concurrency test against readers that ST-26 asked
+  of the first caller was not added.
 
 The catalog does not shred odds payloads into market/choice rows. Normalising a payload is the job of the
 schema layer (`src/schema/`), on request or during export, never of the catalog. Reason: those tables would
@@ -911,7 +965,8 @@ the first version of this section was silent, or from which the code differs:
   `refresh._parse_utc`.
 - **`EventRow.path`** is set only for an event with a legacy detail directory. A listing-only row and a v3
   event have no path, and `SliceInfo` carries none either, so a caller that needs the league folder of such
-  an event derives it (RD-2 uses `src/paths.league_dir_name`).
+  an event derives it (RD-2 uses `src/paths.league_dir_name`; since ST-28, #135, the function is
+  `src.store.league_dir_name`, and `src/paths.py` keeps only the configuration and browser-profile paths).
 - **`EventQuery`** joins its conditions with AND. RD-2 (#89) runs the counting rule of decision D21
   ("finished, or has stored details") as two disjoint queries merged in order; an OR option would let it
   page in SQL. There is no date-substring filter: the legacy date filter, a substring of local ISO text,
@@ -924,7 +979,10 @@ the first version of this section was silent, or from which the code differs:
   key, with all subs. An unknown event gives an empty dictionary. A slice the catalog marks corrupt is
   absent; a legacy file whose content is the JSON value `null` is returned as None under its key.
 - **`Scope.followed`** restricts to the enabled follows of kind `tournament`, the one shape 3.7 pins
-  (`src/store/events.py:82-83`). Team, player and event follows do not widen the scope.
+  (`src/store/events.py:82-83`). Team, player and event follows do not widen the scope. This still holds
+  at `b6caf2f` (`_FOLLOWED_SQL`, `src/store/events.py:123-124`) after FX-19 (#156): the matches of a
+  team, player or event follow are downloaded, but `GET /events?followed=true` does not list them unless
+  their tournament is followed too.
 - **`EventQuery.text`** searches `participants.name_folded`, as 3.7 prescribes. A listing row that was built
   from a summary CSV has no participant ids (3.4), so it cannot be found by name.
 - **`EventQuery.sort`** has only `start_desc` and `start_asc`. The "changed since" shape of 3.7
@@ -1377,7 +1435,7 @@ Error types as built (ST-03, ST-06, ST-09), where the first version of this sect
 | an unknown file suffix, or a payload write to anything but `.json.gz` | `LayoutError` |
 | a `.json.zst` file while no zstd module can be imported | a plain `StoreError` that names `backports.zstd` |
 | a payload that cannot be serialised | a non-fatal `StoreError` |
-| a replace that still fails after the Windows retries | Store-layer functions: a non-fatal `StoreError`; the 2.x helpers of `src/fsutil.py`: `ReplaceBusy`, a `PermissionError` subclass, which 2.x callers treat as fatal (4.4) |
+| a replace that still fails after the Windows retries | Store-layer functions: a non-fatal `StoreError`; the 2.x helpers of `src/fsutil.py`: `ReplaceBusy`, a `PermissionError` subclass, which 2.x callers treat as fatal (4.4). Since ST-28 (#135) the Store has no 2.x helpers; `src/config_files.py`, outside the Store, raises the plain `PermissionError` for the configuration files (2.1) |
 | a SQLite lock that outlasts `busy_timeout`, including the switch to WAL | `StoreBusy` |
 | the SQLite library is older than 3.24 | a plain `StoreError`, one wording for both files, with the found version in `detail` (FX-3) |
 | a `sub` with an upper-case letter (FX-4) | `LayoutError` |
@@ -1418,7 +1476,13 @@ describes them as built by plan item ST-04 (PR #47).
    (browser profile), `src/logger.py` and `src/diagnostics.py` (log files and the diagnostics bundle, PR #24),
    `src/sinks/file.py` (the file sink's own output path), `src/web/app.py` and `src/web/missing_ui.py` (static
    files). The allowlist exempts a module from the file-system rule only; the import rule and the runtime
-   check still apply to it.
+   check still apply to it. As built since ST-28 (#135; `FS_ALLOWLIST`, `tests/test_store_boundary.py:55-76`
+   at `b6caf2f`) it also names seven modules that sat in the baseline before: `src/config_files.py` (the
+   atomic writes and the lock of the configuration files), `src/private_files.py` (modes of `.env` and the
+   browser profile), `src/redact.py` (when `.env` changed), `src/version.py` (`pyproject.toml`; the Store
+   may import it), `src/web/security.py` (the UI's `index.html`, for the CSP decision),
+   `src/web/league_sports.py` (`league_sports.json`) and `src/web/openapi.py` (the committed OpenAPI
+   document, a developer tool).
 2. **Runtime check** (`tests/conftest.py`, `sys.addaudithook`). CPython raises audit events for `open`,
    `os.listdir`, `os.scandir`, `os.remove`, `os.rename`, `os.mkdir`, `os.rmdir`, `shutil.rmtree`,
    `sqlite3.connect` and others. The hook looks at paths inside the test data directory, walks the call stack
@@ -1438,6 +1502,11 @@ describes them as built by plan item ST-04 (PR #47).
    - A write that goes through the `src/fsutil.py` shim has its nearest `src/` frame in `src/store/files.py`
      and is therefore not a violation, although the caller built the path; the static check does not flag
      `from src.fsutil import ...` either. Those call sites become visible when the shim is removed (ST-28).
+     As built (ST-28, #135) the shim is gone; its writers moved to `src/config_files.py` (allowlisted, and
+     writing outside `DATA_DIR` only), so no hidden call site appeared. The shadow recorder of 3.5
+     (`ShadowEdits`) still skips frames of `src/store/files.py` and looks at their caller
+     (`tests/conftest.py:361` at `b6caf2f`), which mattered only for the shim; it is harmless now and keeps
+     tests that call `files.remove_tree` themselves counted as test writes.
    - On Windows with Python 3.12 or later `shutil.copy2` copies through `_winapi.CopyFile2`, which raises only
      the audit event `_winapi.CopyFile2` and no `shutil.copyfile` or `open` event. #86 found that such a copy
      into a data directory was invisible to this check and to the shadow check; since #88 both event sets of
@@ -1455,7 +1524,8 @@ describes them as built by plan item ST-04 (PR #47).
    same on Python 3.10 to 3.14. A Store class that appears in a public signature without being exported gets a
    file too. Every public name bound in `src/store/__init__.py` must be in `__all__`.
 
-Both the static and the runtime check use a **ratchet**: `tests/store_boundary/baseline/<module>.txt`, one
+Until ST-28 (#135; "The strict checks as built" below), both the static and the runtime check used a
+**ratchet**: `tests/store_boundary/baseline/<module>.txt`, one
 file per offending source module. A new violation fails the test. A baseline entry that no longer occurs also
 fails the test, so entries must be removed in the PR that fixes them and the lists can only shrink. One file
 per module means two PRs that clean up different modules do not edit the same baseline file. The last PR
@@ -1496,6 +1566,32 @@ Open points that ST-28 has to settle before the baseline directory can be delete
 - The runtime check has no allowlist, but two allowlisted modules do touch `DATA_DIR`: `src/doctor.py`
   (`_dir_state` creates and removes a probe file in the data directory) and `src/diagnostics.py` (`_jobs`
   opens the job database read-only). Each needs a Store method or a named exception.
+
+**The strict checks as built (ST-28, #135; `tests/test_store_boundary.py` at `b6caf2f`).** The two lists
+above and the ratchet are history. `tests/store_boundary/baseline/` is deleted and a test asserts that it
+stays deleted (`test_the_ratchet_baseline_is_gone`, `:584`); there are no `STORE_BOUNDARY_UPDATE` modes and
+no counts. Both open points are settled: the five modules are on the allowlist (with `src/config_files.py`
+and `src/web/openapi.py`, item 1 above), and every remaining access to `DATA_DIR` from outside the Store is
+a **named exception**: one function, its reason and the item that removes it (`NAMED_EXCEPTIONS`,
+`:80-95`). There are five:
+
+| Function | Why it touches `DATA_DIR` | Removed by |
+|---|---|---|
+| `src/doctor.py::_dir_state` | the writability probe opens and removes a file; the doctor runs without opening the Store | whoever adds a Store method for the probe |
+| `src/diagnostics.py::_jobs` | the diagnostics bundle opens `state.db` (or the 2.x `jobs.db`) read-only, without a lease or a reconcile | whoever adds a Store method for that read |
+| `src/services/context.py::_ensure_directory` | the context creates the data directory and the 2.x folders it still needs (`DATA_SUBDIRECTORIES`, `match_details` and `datasets` since FX-15) | P30, with the 2.x directory creation |
+| `src/utils.py::ensure_directory` | the 2.x fetchers and the CSV export create their directories | P30, with the fetcher faces |
+| `src/services/export.py::_write_file` | the export's output file at the path the user chose, which may lie inside the data directory (like the file sink) | — (kept) |
+
+An exception covers every file call of that function, static and at run time, never an import. A new access
+outside the Store now fails at once: a new file outside `DATA_DIR` needs an allowlist entry with a reason,
+an unavoidable access to `DATA_DIR` a named exception with a reason and its owner, each stated in the pull
+request. An exception that no longer occurs fails the test too: statically from the source
+(`test_static_named_exceptions_are_still_needed`, `:558`), at run time only when the whole suite runs
+(`test_runtime_named_exceptions_are_still_needed`, `:635`), for the reason the stale-entry check of the
+ratchet had. So P30 deletes the rows of `ensure_directory` and `_ensure_directory` in the pull request that
+removes the 2.x directory creation, and whoever moves the doctor's probe or the diagnostics read into the
+Store deletes theirs.
 
 ---
 
@@ -2019,7 +2115,9 @@ in 7.3. The next state migration is 0003.
 `migration_runs` as used (ST-23, #110): every real run of `migrate` leaves one row with its counts and a
 JSON summary in `report_json` (`report_summary`); a dry run writes nothing, `state.db` included, so the
 `dry_run` column is always 0. No item added a state migration in batches eleven to nineteen; the next one
-is still 0003.
+is still 0003. Since FX-13 (#152) `Migrator.last_run()` (`src/store/migrate.py:390` at `b6caf2f`) gives the
+newest real run without `report_json`; `ssc status` and `/api/v1/status` show it. No item of this revision
+added a state migration either.
 
 Notes on the event row:
 
@@ -2360,8 +2458,13 @@ round, page and season-list writers, #102 the last summary writer, and P26 (#131
 catalog itself (9.3), and a restore rebuilds it through the same internal path (9.2). The hooks stay as
 transition code with their own tests (`tests/test_shadow_cleared_hook.py` since P26) until ST-28 removes
 them; `shadow_schedules` is still in the API snapshot and used by `tests/test_data_correctness.py`. The
-shadow check of the whole suite (below) still compares every touched directory with a rebuild. The list
-below describes the hooks as ST-11 built them:
+shadow check of the whole suite (below) still compares every touched directory with a rebuild. ST-28 (#135)
+left them because tests called them; FX-15 (#155) removed all five with their tests
+(`tests/test_shadow_cleared_hook.py` is gone), so the table above and the list below are history at
+`b6caf2f`. Tests that build records in the old layout index the catalog themselves (`tests/catalog_index.py`;
+`tests/schedule_runner.py` replaces the menu path), and the shared body `_shadow` survives only as the
+wrapper of `Store.clear`'s in-place rebuild (`src/store/api.py:653`). The list below describes the hooks as
+ST-11 built them:
 
 - **Eight call sites**, not "one line per site": five of them sit in a `finally` (the three of
   `shadow_event`, the round fetch and the clear), so that a write that fails half way, or a fetch that is
@@ -2446,7 +2549,12 @@ this; it also tells the Store what the test wrote itself, so that the catalog is
 trusting signatures before the next product write, and a directory that the test edited after the last
 product call is not compared. A full run makes 182 comparisons in 17 test files. The comparison does not
 run inside the subprocesses of the CLI goldens, whose environment is an allow-list; checked by hand, all
-39 stores those runs leave equal a rebuild once the harness's own in-place edits are reconciled.
+39 stores those runs leave equal a rebuild once the harness's own in-place edits are reconciled. As built
+since FX-15 (#155), with no hooks left, the check notes two things: a product write under a legacy root
+from outside the Store (`shadow_written`, `src/store/api.py:902` at `b6caf2f`; no product code does that
+any more, so such a write is reported at the end of the test unless the catalog was synced after it, even
+in a directory whose Store was never opened), and the data directories `Store.clear` touched; the report
+still says "written without a shadow hook afterwards" (`:965`).
 
 By hand the same calls are reached through `scripts/catalog_tool.py` (`rebuild`, `reconcile [--deep] [--v3]`,
 `verify`, `stats`), until the `catalog` commands of ST-23 replace it. On a directory that is a store the
@@ -2626,7 +2734,8 @@ measurement add an estimated 15–20 MB). The real data gives 1.1 MB for 1,051 e
 
 - Bytes stored: `json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")`. Key order is
   the order of the response. This is the parsed response serialised again, as today
-  (`src/fsutil.py:33-36`), not the bytes on the wire: escapes and number spelling may differ, values do not.
+  (`src/fsutil.py:33-36` at `3ae2599`; `src/store/codec.py` since ST-03), not the bytes on the wire:
+  escapes and number spelling may differ, values do not.
   "Raw" everywhere in the platform (raw export, the `/raw` API routes) means these bytes.
 - Compression: `gzip.compress(data, 6, mtime=0)`. `mtime=0` makes the output deterministic on one machine:
   the same payload gives the same file, which keeps backups and `rsync` quiet. Across machines the files are
@@ -2806,7 +2915,7 @@ Conclusions:
 
 - A payload file is written to `.<name>.<random>.tmp` in the same directory and moved into place with
   `os.replace`. A reader sees the old file or the new file, never a partial one. This is today's technique
-  (`src/fsutil.py:19-30`).
+  (`src/fsutil.py:19-30` at `3ae2599`; the shim is gone since ST-28).
 - A new entity directory that is created with several files at once (promotion, migration) is built under
   `.meta/tmp/` and moved into place with one directory rename. It appears complete or not at all.
 - `manifest.json` is replaced after the payload files. A crash between the two leaves a payload that is newer
@@ -2839,12 +2948,16 @@ Conclusions:
   before the retry existed. One sharing violation can therefore still stop a 2.x job, only more rarely, until
   the writers use the Store (ST-21, ST-22). Since ST-21 (#104) and ST-22 (#98) they do, so a download meets
   the Store's retry and its non-fatal `StoreError`; the 2.x helpers of `src/fsutil.py` remain for the
-  callers that ST-28 removes.
+  callers that ST-28 removes. As built (ST-28, #135) they left the Store: `src/config_files.py` keeps the
+  same atomic write and retry for the configuration files outside `DATA_DIR` and raises the plain
+  `PermissionError` when the retries are spent (2.1); nothing under `DATA_DIR` is written by them.
 - The retries do not help against a reader that holds the file open in a tight loop: the test
   `test_reader_never_sees_a_partial_file_while_it_is_rewritten` still fails on the Windows runner (an expected
   failure). The six-concurrent-writers test of `tests/test_fsutil.py`, which shares the marker, passes there
   since the retry exists; the marker stays shared and non-strict, with a reason that says so (FX-4). The
-  design relies on the first sentence above: Store readers read in one call and close.
+  design relies on the first sentence above: Store readers read in one call and close. Since ST-28 (#135)
+  both tests are in `tests/test_config_files.py` (`:193`, `:220` at `b6caf2f`) and test the configuration
+  helpers, with the Windows markers (`xfail`, non-strict) kept.
 - `files.publish_dir` refuses an existing target, even an empty directory, on every platform.
 - File mode (decision S12, FX-4, PR #53). Files written by the Store layer follow the process umask: 0644
   under 022, 0600 under 077, 0664 under 002. That covers `files.write_bytes` and so `codec.write_payload`,
@@ -2854,7 +2967,9 @@ Conclusions:
   the umask is never read, because reading it is only possible by setting it, which is not thread-safe. A
   rewrite gives the file the umask mode again; the old file's mode is not kept. The 2.x helpers
   (`atomic_write_*`) keep 0600, as `tempfile.mkstemp` creates them, and files that hold secrets (`.env`, the
-  browser profile) are not written through the Store.
+  browser profile) are not written through the Store. Since ST-28 (#135) those helpers are
+  `src/config_files.py`, still 0600, and `src/store/files.py` has no 0600 path left: every file the Store
+  writes follows the umask.
 - `publish_dir` cannot normalise a directory that was staged by other means (`mkdtemp`, `mkstemp`, the
   `atomic_write_*` helpers, a copy): such a tree is published with the modes it has (pinned by a test). A
   writer builds an entity directory with `files.new_staging_dir` and fills it through the Store-layer
@@ -2971,7 +3086,10 @@ differs from the text above:
   (SC-2, #130), so an empty export has the same schema as a full one; a later value that does not fit
   raises a `StoreError` that names the column. Without `pyarrow` the call raises
   `StoreError(..., detail="pyarrow")` before a row is read; the optional extra is `parquet = ["pyarrow>=14"]`
-  in `pyproject.toml`. Parquet was verified with pyarrow 25.0.1 only, and CI does not install it.
+  in `pyproject.toml`. Parquet was verified with pyarrow 25.0.1 only, and CI does not install it. As built
+  since FX-17 (#145) and FX-15 (#155): the Linux job on Python 3.10 installs `pyarrow==16.0.0` and imports
+  it, so the Parquet tests run in CI; pyarrow 14 fails to import with the numpy 2 of `constraints.txt` and 15
+  does not install, so the extra is `parquet = ["pyarrow>=16"]` (`pyproject.toml:18` at `b6caf2f`).
 - **Callers.** SC-2 (#130) and P19's `ssc export` expose both functions; ST-25 itself had none.
 
 ---
@@ -3598,7 +3716,12 @@ Store per directory open for the life of the process (2.3). Deleting or moving a
 application runs therefore needs `Store.close()` first (#120, a finding of a test fix: the tests that
 remove a temporary data directory now close the registry's Store first). The data-directory change of the
 settings routes rebinds the job store but does not close the Store of the old directory (1.1); closing it
-there is left to a follow-up item of the plan (FX-13 of `03-implementation-plan.md`).
+there is left to a follow-up item of the plan (FX-13 of `03-implementation-plan.md`). As built (FX-13,
+#152) `PATCH /api/v1/settings` closes the writable and read-only Stores of the old directory after the
+rebind (`close_data_dir`, `src/web/api/v1/settings.py:492` at `b6caf2f`); it leaves the Store open, with a
+warning, while this process holds one of that directory's leases (for example the `sinks` lease of
+`serve`'s dispatcher), because a thread still uses it. The legacy settings route only rebinds; it goes with
+P30. Neither was run on a Windows machine: CI's Windows jobs are best-effort.
 
 CI runs the Python tests on Windows and macOS already, with Python 3.14 only
 (`.github/workflows/ci.yml:62-63`; Python 3.10 runs on Linux only, `:59`). The Store's tests run there too,
@@ -4039,7 +4162,10 @@ file-system error is a `StoreError`. The members and the name are the same as be
 `Backup failed` instead of an unhandled 500. Format 2 (the table above, with `backup.json`, `state.db`,
 `config/` and `include_catalog`), `verify`, `restore` and `prune` remain ST-24's, in `src/store/backup.py`.
 ST-24 (#109) built them, without `include_catalog` ("Format 2 as built" above); the five scopes and their
-old member names survive as the partial scopes, renamed without the data directory's name.
+old member names survive as the partial scopes, renamed without the data directory's name. The four old
+partial scopes (`config`, `seasons`, `matches`, `match_details`; `BACKUP_SCOPES`, `src/store/backup.py:74`
+at `b6caf2f`) are deprecated in 3.0.0 and removed with the legacy aliases in P30 (decision of 2026-10-03);
+`all`, `state` and `data` stay.
 
 ### 9.2 Restore
 
@@ -4096,15 +4222,37 @@ NAME [--force] [--dry-run] [--yes]`):
 - A migrated directory keeps `changes/0000-legacy.jsonl` through a backup and a restore, because the index
   reads it in place of `score_changes.jsonl` (8.5).
 
+As built since FX-13 (#152) and its Windows fix (#153), a restore also runs as a job of the API
+(`restore` with `dry_run: false`, under the job's `maintenance` lease; a non-empty target is refused with
+`confirmation_required` and `details.occupied` before any job record is written, and `force` replaces). The
+job runs inside the `state.db` it replaces, so the step that loads the backup's state keeps more than the
+lease rows (`BackupManager._load_state`, `src/store/backup.py:817-862` at `b6caf2f`):
+
+- It reads from the open database the lease rows, the rows of every running or queued job and their
+  `job_events`, and writes them, with a new `stream_id`, into the **staged copy** in one transaction.
+- Then one SQLite backup step copies the staged state over the open database. Another connection (the web
+  request that polls the restore job) sees either the old or the new content, and the running job is in
+  both. Until #153 the rows went back in a second transaction after the backup step; between the two
+  commits another connection saw a history without the job, which on Windows (slow `FlushFileBuffers`)
+  lasted long enough for a poll to get 404 `not_found`.
+- The rollback loads the saved state through the same function.
+- After the restore the job history is the backup's plus the jobs that were running, among them the restore
+  job, which finishes in its own row.
+- One edge is left, unchanged in kind: a write by another thread to a kept job row between the read and the
+  backup step (a heartbeat, a cancel request) is not carried over. The restore job writes its own progress
+  on the restoring thread, so nothing of its own is lost. `tests/test_restore_keeps_the_running_job.py`
+  reads `state.db` through a second connection right after each backup step, for a restore and for a
+  rolled-back one.
+
 ### 9.3 Retention
 
 Nothing is deleted unless a setting says so. Defaults:
 
 | Data | Default | Mechanism |
 |---|---|---|
-| payloads, manifests | kept | `EventStore.delete`, `Store.clear(scope)` on request |
+| payloads, manifests | kept | `EventStore.delete`, `Store.clear(scope)` on request; since FX-19 (#156) also `Store.purge.tournament(id, season_id=)` for one tournament or one season (below) |
 | change log | kept | — |
-| slice history (odds snapshots) | kept | `HistoryStore.prune(older_than=...)` |
+| slice history (odds snapshots) | kept | `HistoryStore.prune(older_than=...)`. As built since FX-15 (#155) the scheduler task `prune-history` with `older_than` calls it as a `clear` job under the writer lease; no task exists by default, so history is kept unless the user adds one. It prunes event history only; the history of `season_odds` (an entity slice, P28) is never pruned (2.3) |
 | stream events | 7 days and at most 1,000,000 rows | `StreamLog.prune`, run by the process that holds `live` or `sinks`, once per hour. Since ST-24 (#109) these are the defaults of `prune()` itself (2.3). `prune` exists (ST-18). Since P22 (#73) the sink dispatcher calls it with these values, once per hour (`src/sinks/dispatcher.py:79-81`, `:586-592` at `e0bae0c`), but no process hosts the dispatcher yet (P23, P25, P19); the live service's call comes with P23. Since P23 (#91) `ssc watch` hosts the dispatcher, and the live service prunes with the same values once per hour (`src/services/live/supervisor.py:561-572` at `9b03c64`) |
 | watcher state | rows of events that are done and older than 7 days are dropped | on `WatchStateStore.save`. As built the age is the row's `updated_at` (its last content change); the check runs on every save, for the saved watcher only, and reads `done` in Python, because SQLite's JSON functions are optional before 3.38 and the minimum is 3.24 |
 | jobs | newest 500 rows; 2,000 events per job | As built (P11, #69; `src/store/jobs.py:616-630` and `:163-172` at `e0bae0c`): job rows beyond the newest 500 are removed when a job is created, with their events; a running or queued row is never removed. Each job keeps its newest 2,000 events: the check runs at every 100th event of a job, so up to 2,099 exist in between |
@@ -4147,6 +4295,32 @@ clear and restore have no hook yet, and ST-19 moves them onto the Store as well.
   `datasets/` and `reports/` in the menu. As built ST-21 (#104) did so (3.5), and P26 (#131) removed the
   menu; the callers of the clear at `b3cb819` are the legacy web clear, the `clear` job of API v1 (under a
   `maintenance` job lease since P21, #126; 6.1) and `ssc data clear`.
+
+`Store.purge`, one tournament's data, as built (FX-19, #156; `Purger.tournament`, `src/store/purge.py:83-182`
+at `b6caf2f`). The first-time-user review found no way to delete one league's data; `Store.clear` deletes
+by scope for every tournament. `store.purge.tournament(tournament_id, season_id=None)` deletes what one
+tournament, or one of its seasons, has stored, and returns a `TournamentClearReport` (`events`,
+`event_dirs`, `listings`, `catalog_rebuilt`):
+
+- **Matches.** Every event the catalog links to the tournament (or season): its v3 directory with its
+  history files, and every legacy copy (a directory under `match_details/` named by the event id). Legacy
+  league and season folders left empty are removed; the empty bucket directories of `v3/events/` (the two
+  levels above an event directory) are left.
+- **Schedules.** The v3 season directory (`v3/tournaments/<ut>/seasons/<sid>/`: schedule pages and the
+  season's non-match slices) and the legacy `matches/<league>/<season>/` with the season's summary files.
+- **The season list,** only when the whole tournament is purged: the v3 tournament directory and, in the
+  legacy layout, `matches/<league>/` and the JSON season list under `seasons/`.
+- **What stays:** the follows, the change log (`changes/`, `score_changes.jsonl`), the job history,
+  backups, exports, and the team and player directories (matches of other tournaments use them too).
+- **Lease and catalog.** It refuses a read-only Store, runs under `maintenance` (taken with purpose
+  `op:clear` when this process does not hold it, as `Store.clear` does) and then, also when the delete
+  stops half way, rebuilds the catalog in place from the remaining files under the same lease; a failed
+  rebuild is a warning and `catalog_rebuilt` False.
+- **Callers.** `MaintenanceService.clear_tournament` (`src/services/maintenance.py:106-119`), the API's
+  `clear` job with `tournament_id` (and optionally `season_id`), and `DELETE /api/v1/follows/{id}?
+  delete_data=true`, which removes a tournament follow and starts that job (`clear_job` in the answer).
+- It deletes whole directories itself, like `Store.clear`, and does not use `EventStore.delete`; decision
+  S18 (section 0) covers it: the user asked for the delete, so every form of what it names goes.
 
 Staging under `.meta/tmp` (decision S16, settled as chosen on 2026-10-02). The first version said that
 `.meta/tmp/` is emptied when the writer lease is taken. That cannot hold: an export stages files there
@@ -4295,7 +4469,13 @@ and Parquet with a pyarrow older than 25.0.1 (the floor is 14; CI does not insta
 change-log copy of `migrate` on real data; a real 2.x backup zip; a crash test that kills a real process
 during `migrate` (the seven checkpoints raise an exception); the planner and the pipeline of ST-27 on real
 data. Windows and macOS were verified by CI only, and some of these pull requests were reported before
-their Windows job had finished; the Windows peak of the legacy export was found that way (#111).
+their Windows job had finished; the Windows peak of the legacy export was found that way (#111). Since
+FX-17 (#145) the Linux job on Python 3.10 installs pyarrow 16.0.0, the floor FX-15 set, so Parquet runs in
+CI at the floor. The pull requests of the sixth revision (ST-28, P28, FX-13, FX-15, FX-19) measured nothing
+on the Store: no timing of `Store.purge` or of the restore that keeps the job record on real data, no prune
+of a real odds history, and no odds or non-match payload beyond the recorded samples. The restore fix
+(#153) was found and checked by CI's Windows job; the old data folder's close (FX-13) was not run on
+Windows.
 
 ---
 
@@ -4765,6 +4945,42 @@ in `03-implementation-plan.md` section 11). Each item says what the document cla
      types. Section 2.1 (P19 #119; ST-22, ST-23, ST-24, ST-25).
 127. **Measurements** of RD-3, ST-22, FX-12, ST-21, ST-25 with #111, ST-24 and ST-23 were added, with what was
      not measured. Section 11.
+128. **No submodule import, no 2.x helper in the Store.** The document said that `src/fsutil.py` imports
+     `src.store.files` and re-exports the 2.x helpers, which keep 0600 and raise `ReplaceBusy`. ST-28
+     deleted the shim; the helpers are `src/config_files.py`, outside the Store (0600, the plain
+     `PermissionError` after the Windows retries), and the Store root exports `league_dir_name`. Sections
+     2.1, 2.2, 2.3 (error table), 4.4 (ST-28 #135).
+129. **The boundary checks are strict.** The document described the ratchet, the `STORE_BOUNDARY_UPDATE`
+     modes, the open points ST-28 had to settle and the writes the shim hid. The baseline is gone; the
+     allowlist names seven more modules; five functions are named exceptions, each with its reason and the
+     item that removes it, and an exception that no longer occurs fails. Section 2.4 (ST-28 #135).
+130. **The shadow hooks are gone.** The document listed the five hooks among the root's exports and in the
+     table of 3.5. FX-15 removed them with their tests; `_shadow` wraps only `Store.clear`'s rebuild, and
+     the shadow check covers product writes under legacy roots and the directories `Store.clear` touched.
+     Sections 2.1, 3.5, 13 (FX-15 #155).
+131. **The first caller of `HistoryStore.prune`** is FX-15's scheduler task `prune-history`, off by default,
+     not P28; entity history is written since P28 (`season_odds`) and is not pruned; no concurrency test was
+     added. Sections 2.3, 9.3, 13 (FX-15 #155, P28 #140).
+132. **Non-match slices as built.** The document's examples had a standings sub `away` and a squad slice
+     `players`; neither exists in the endpoint catalog. Team and player match lists are not stored. The odds
+     slices record the provider always and the country only when the user sets it. Section 2.3 (P28 #140,
+     FX-15 #155, FX-19 #156).
+133. **The restore keeps the running job.** The document said that the backup's `state.db` is loaded over
+     the open one and the lease rows are kept. The running and queued jobs are kept too, and the kept rows go
+     into the staged copy before the one backup step, so no reader sees a history without the restore job;
+     a write to a kept row between the read and the step is lost. Section 9.2 (FX-13 #152, #153).
+134. **Deleting one tournament's data.** The document knew only the clear by scope. `Store.purge.tournament`
+     deletes one tournament's or one season's matches, schedules and (for the whole tournament) season
+     list under `maintenance`, rebuilds the catalog, and keeps follows, changes, jobs, backups, exports and
+     the team and player directories; empty `v3/events/` buckets stay. Sections 2.2, 2.3, 9.3, 13 (FX-19
+     #156).
+135. **The old data folder is closed.** The document said that the settings routes do not close the Store
+     of the old data folder. The v1 route does since FX-13, unless this process holds one of its leases.
+     Sections 1.1, 6.4, 13 (FX-13 #152).
+136. **Smaller corrections.** `Scope.followed` still means tournament follows only, although team, player
+     and event follows download their matches (2.3, FX-19); `Migrator.last_run()` feeds the status pages
+     (3.3, FX-13); the four old backup scope names are deprecated (9.1, decision of 2026-10-03); the
+     `parquet` extra needs pyarrow 16 and CI installs it (4.5, FX-15, FX-17).
 
 ---
 
@@ -4818,6 +5034,8 @@ in `03-implementation-plan.md` section 11). Each item says what the document cla
   not see files changed without a hook until the next open (3.5). Since ST-21 and ST-22 the writers go
   through the Store, and P26 (#131) removed the menu, so no product code writes the indexed trees outside
   the Store at `b3cb819` and no hook has a caller; the risk is left to 2.x processes and hand edits.
+  FX-15 (#155) removed the hooks; the suite's shadow check still reports a product write under a legacy
+  root from outside the Store (3.5).
 - Two names for one tournament. With a config file, `FollowStore.leagues()` gives the config name of a
   tournament that is in both sources, while the directories on disk carry the `leagues.txt` name (2.3). A
   reader that resolves legacy file names from the follows would miss them. The catalog does so since ST-11:
@@ -4836,7 +5054,9 @@ in `03-implementation-plan.md` section 11). Each item says what the document cla
   outside the contract.
 - Deleting a data directory on Windows (6.4). The registry keeps a Store open per directory for the life
   of the process, so a directory can be deleted or moved only after `Store.close()` (#120); the settings
-  routes' data-directory change does not close it yet.
+  routes' data-directory change does not close it yet. Since FX-13 (#152) the v1 route closes it unless
+  this process holds one of the old directory's leases; the legacy route does not (P30), and neither was
+  tried on a Windows machine.
 - A delete that removes legacy copies (section 0). `EventStore.delete` contradicts decision 4 as written;
   decision S18 is open. Nothing calls `delete` yet. Settled on 2026-10-03 (S18): decision 4 governs writes
   and maintenance, and a delete or a clear that the user asks for removes every form of what it names and
@@ -4862,3 +5082,10 @@ in `03-implementation-plan.md` section 11). Each item says what the document cla
   re-fetched. On a server with the rate limit removed this could be thousands of requests.
 - `state.db` is written by up to three processes (a job, the live service, the server). Its writes are small,
   but `synchronous = FULL` makes each transaction cost an `fsync`; high-volume writers must batch.
+- Growth of the odds history. Odds snapshots are kept until a `prune-history` task removes them, and no
+  task exists by default (FX-15). With odds selected, every sync inside the pre-match window can add a
+  snapshot per provider and slice. `prune` handles event history only, so `season_odds` history grows
+  without a bound; it is off by default and experimental (P28).
+- A purge leaves directories. `Store.purge` removes the event directories but not the empty bucket
+  directories above them under `v3/events/`, and it keeps the team and player directories, which matches
+  of other tournaments share (9.3). They cost inodes, not data.
