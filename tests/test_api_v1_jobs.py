@@ -341,11 +341,10 @@ def test_a_data_operation_refuses_the_start(store: JobStore, body: Any) -> None:
     assert "clear" in refused["message"] and body.specs == []
 
 
-# P21: export, backup, clear, rebuild ve restore (deneme) başlar (tests/test_api_v1_data_jobs.py); servisi
-# olmayanlar kaldı: `pyarrow` kurulu olmayan sunucuda Parquet dışa aktarması (SC-2) ve gerçek geri yükleme (CLI)
+# P21: export, backup, clear, rebuild ve restore başlar (tests/test_api_v1_data_jobs.py; gerçek geri yükleme FX-13);
+# servisi olmayan kaldı: `pyarrow` kurulu olmayan sunucuda Parquet dışa aktarması (SC-2)
 @pytest.mark.parametrize("request_body,details", [
     ({"kind": "export", "spec": {"format": "parquet"}}, {"dataset": "events", "format": "parquet", "schema": "normalized"}),
-    ({"kind": "restore", "spec": {"name": "backup_all_20260101_000000.zip", "dry_run": False}}, {"kind": "restore"}),
 ])
 def test_kinds_without_a_service_are_not_supported_yet(store: JobStore, request_body: Dict[str, Any],
                                                        details: Dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
@@ -768,7 +767,7 @@ def test_health_reports_the_version_the_bridge_and_the_request_budget(store: Job
 def test_status_reports_the_running_job(store: JobStore, body: Any) -> None:
     idle = data(client.get("/api/v1/status"))
     assert list(idle) == [
-        "version", "api_version", "schema_version", "auth_required", "bridge", "throttle", "active_job", "live", "summary", "leases", "schedule",
+        "version", "api_version", "schema_version", "auth_required", "bridge", "throttle", "active_job", "live", "summary", "leases", "sinks", "schedule",
         "capabilities", "storage_error",
     ]
     assert (idle["version"], idle["api_version"], idle["auth_required"], idle["active_job"]) == (__version__, "v1", False, None)

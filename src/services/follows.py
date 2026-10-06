@@ -11,8 +11,8 @@ göre yapılır:
           takım, oyuncu ve maç takipleri (dosya biçimi onları anlatamaz).
 
 Yeni bir turnuva takibi: yapılandırma dosyası yoksa leagues.txt'e yazılır (bugünkü gibi), varsa `api` satırı
-olur. Bugün indirmeler (`sync`) turnuvaları leagues.txt'den okur; `api` satırları canlı servisin kapsamına girer
-(`live = true`), indirmeler onları sync takiplere geçtiğinde okur (plan bölüm 16).
+olur. İndirmeler (`sync`) turnuvaları bu tablodan okur (`sync_tournaments`, plan maddesi FX-13): her kaynağın
+etkin turnuva takibi indirilir; `live = true` takipler ayrıca canlı servisin kapsamına girer.
 
 Yapılandırma dosyasının devraldığı bir `api` satırı, dosyadan sonra çıkarıldığında geri gelmez (ST-17'nin
 kuralı, karar P21): dosya kazanır; takip istenirse API'den yeniden eklenir.
@@ -63,6 +63,43 @@ class LegacyLeagues(Protocol):
     def remove(self, tournament_id: int) -> bool: ...
 
     def set_sport(self, tournament_id: int, sport: Optional[str]) -> None: ...
+
+
+class ConfigLeagues:
+    """
+    `LegacyLeagues`in ConfigManager üzerindeki hali (komut satırı ve indirmeler için; web'in kendi yazıcısı
+    src/web/deps.py'dedir). Sporların yazıcısı çağırandan gelir (`set_sport`): bu modül web katmanını içe
+    aktarmaz. Verilmezse spor değişikliği yazılmaz.
+
+    manager: ConfigManager ya da onun gibi `get_leagues`, `add_league`, `remove_league` sunan bir nesne; None
+    ise ilk yazmada kurulur (ConfigManager kurulurken leagues.txt yoksa örnekten oluşturur: salt okuyan bir
+    komut onu yaratmasın diye `leagues()` o durumda tabloya dokunmaz).
+    """
+
+    def __init__(self, manager: Any = None, *, set_sport: Any = None) -> None:
+        self._manager = manager
+        self._set_sport = set_sport
+
+    def _config(self) -> Any:
+        if self._manager is None:
+            from src.config_manager import ConfigManager
+
+            self._manager = ConfigManager()
+        return self._manager
+
+    def leagues(self) -> Mapping[int, str]:
+        # Ayna (leagues.txt → tablo) yalnızca bir ConfigManager verildiyse yenilenir; yoksa tablo olduğu gibi okunur
+        return self._manager.get_leagues() if self._manager is not None else {}
+
+    def add(self, name: str, tournament_id: int) -> bool:
+        return bool(self._config().add_league(name, tournament_id))
+
+    def remove(self, tournament_id: int) -> bool:
+        return bool(self._config().remove_league(tournament_id))
+
+    def set_sport(self, tournament_id: int, sport: Optional[str]) -> None:
+        if self._set_sport is not None:
+            self._set_sport(self._config().league_config_path, tournament_id, sport)
 
 
 @dataclass(frozen=True)
@@ -167,17 +204,30 @@ class FollowsService:
     # -- okuma ----------------------------------------------------------------------------------------
 
     def list(self, *, kind: Optional[str] = None, origin: Optional[str] = None, enabled: Optional[bool] = None,
-             text: Optional[str] = None) -> List["Follow"]:
+             text: Optional[str] = None, sport: Optional[str] = None) -> List["Follow"]:
         """
         Takipler, konum sırasıyla. Önce lig dosyası okunur: başka bir süreç ya da editör değiştirdiyse tablo ona
-        eşitlenir (ConfigManager'ın aynası). text: adda geçen metin, büyük-küçük harf ayrımı yok.
+        eşitlenir (ConfigManager'ın aynası). text: adda geçen metin, büyük-küçük harf ayrımı yok. sport: yalnızca
+        bu sporun takipleri (`sport_of`: kaydedilen, yoksa turnuvanın katalogdaki sporu); bilinmeyen spor
+        `invalid_request`.
         """
+        wanted_sport = check_sport(sport)
         self._legacy.leagues()
         rows = self._store.follows.list(kind=kind, enabled=enabled, origin=origin)
         if text:
             needle = text.casefold()
             rows = [row for row in rows if needle in row.name.casefold()]
+        if wanted_sport is not None:
+            rows = [row for row in rows if normalize_sport(self.sport_of(row)) == wanted_sport]
         return rows
+
+    def sync_tournaments(self) -> List["Follow"]:
+        """
+        Bir eşitlemenin indirdiği turnuvalar: etkin turnuva takipleri, her kaynaktan (leagues.txt, yapılandırma
+        dosyası, API ve `ssc follows`), konum sırasıyla (plan maddesi FX-13). Takım, oyuncu ve maç takipleri
+        indirilmez (plan bölüm 14'ün açık sorusu).
+        """
+        return self.list(kind=TOURNAMENT, enabled=True)
 
     def get(self, kind: str, entity_id: int) -> Optional["Follow"]:
         self._legacy.leagues()
@@ -385,6 +435,7 @@ def _hit(item: Any, followed: set) -> Optional[TournamentHit]:
 
 
 __all__ = [
+    "ConfigLeagues",
     "FIELDS",
     "FollowsService",
     "KINDS",

@@ -64,7 +64,7 @@
           "meta"
         ],
         "summary": "Status of the service",
-        "description": "Service state: versions, access to SofaScore, the request budget, the job that is running now, the live\nservice, what the data directory holds, the leases held right now and the optional features. When the\ndata directory cannot be read, `live` and `summary` are null and `storage_error` has the error code.",
+        "description": "Service state: versions, access to SofaScore, the request budget, the job that is running now, the live\nservice, what the data directory holds (with its path and the last migration), the leases held right now,\nthe sinks at a glance and the optional features. When the data directory cannot be read, `live`, `summary`\nand `sinks` are null and `storage_error` has the error code.",
         "operationId": "getStatus",
         "responses": {
           "200": {
@@ -637,6 +637,25 @@
               "title": "Q"
             },
             "description": "Text in the name; case ignored."
+          },
+          {
+            "name": "sport",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only follows of this sport (slug): the follow's own sport, else the sport the catalog knows for a tournament. An unknown sport is 400.",
+              "title": "Sport"
+            },
+            "description": "Only follows of this sport (slug): the follow's own sport, else the sport the catalog knows for a tournament. An unknown sport is 400."
           }
         ],
         "responses": {
@@ -1411,6 +1430,28 @@
               "minimum": 1,
               "title": "Tournament Id"
             }
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "const": "counts",
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "`counts`: each season's event, detail and completeness counts and the age of its schedule.",
+              "title": "Include"
+            },
+            "description": "`counts`: each season's event, detail and completeness counts and the age of its schedule."
           }
         ],
         "responses": {
@@ -2948,6 +2989,65 @@
             "description": "Only changes of these tournaments."
           },
           {
+            "name": "sport",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only changes of events of this sport (slug).",
+              "title": "Sport"
+            },
+            "description": "Only changes of events of this sport (slug)."
+          },
+          {
+            "name": "regressed",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "true: only changes from completed to void (`status_regressed`); false: only the others.",
+              "title": "Regressed"
+            },
+            "description": "true: only changes from completed to void (`status_regressed`); false: only the others."
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "const": "names",
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "`names`: each change also carries `home_name` and `away_name` (the catalog's names now). Without it the records are exactly the schema v1 Change records (as the `changes` export).",
+              "title": "Include"
+            },
+            "description": "`names`: each change also carries `home_name` and `away_name` (the catalog's names now). Without it the records are exactly the schema v1 Change records (as the `changes` export)."
+          },
+          {
             "name": "from",
             "in": "query",
             "required": false,
@@ -3168,6 +3268,52 @@
               "title": "Kind"
             },
             "description": "Only jobs of one of these kinds."
+          },
+          {
+            "name": "origin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "cli",
+                      "api",
+                      "scheduler",
+                      "library"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only jobs started by one of these faces.",
+              "title": "Origin"
+            },
+            "description": "Only jobs started by one of these faces."
+          },
+          {
+            "name": "target",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(tournament|event):[1-9][0-9]{0,18}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only jobs whose spec names this tournament (`tournament:17`: its `league_id`, a selection or a follow) or this event (`event:123`: a selection's or `event_ids`' event). A job over every follow names none.",
+              "title": "Target"
+            },
+            "description": "Only jobs whose spec names this tournament (`tournament:17`: its `league_id`, a selection or a follow) or this event (`event:123`: a selection's or `event_ids`' event). A job over every follow names none."
           }
         ],
         "responses": {
@@ -3228,7 +3374,7 @@
           "jobs"
         ],
         "summary": "Start a job",
-        "description": "Start a job in the background and return it at once (202). Only one job writes to a data directory at a\ntime: while another job or a data operation runs, in this server or in another process, the request is\nrefused with 409 and the holder in `details`. `clear` and `rebuild` take the data directory for themselves\n(no download, live service or other data operation may run). A `clear` needs `confirm: true` (400\n`confirmation_required`). `restore` only checks (`dry_run: true`); restoring replaces the job history the\njob is recorded in and is done with `ssc backup restore` (501 `not_supported`). A Parquet export without\npyarrow on the server is 501.",
+        "description": "Start a job in the background and return it at once (202). Only one job writes to a data directory at a\ntime: while another job or a data operation runs, in this server or in another process, the request is\nrefused with 409 and the holder in `details`. `clear`, `rebuild` and a real `restore` take the data\ndirectory for themselves (no download, live service or other data operation may run). A `clear` needs\n`confirm: true` (400 `confirmation_required`). `restore` checks by default (`dry_run: true`); with\n`dry_run: false` it restores, and into a data directory that is not empty only with `force: true` (else 400\n`confirmation_required` with `details.occupied`). A Parquet export without pyarrow on the server is 501.\nA `sync` with `only: \"seasons\"` reads season lists only; `follows` names the follows to sync; a `fetch` with\n`event_ids` fetches events without their tournament, and a `refresh` with `event_ids` reads those events again.",
         "operationId": "startJob",
         "requestBody": {
           "required": true,
@@ -4960,6 +5106,30 @@
             "type": "array",
             "title": "Fields",
             "description": "The fields that changed, ordered by path. Compared are the status triple, the winner code, the start time and every score field."
+          },
+          "home_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Home Name",
+            "description": "Only with `include=names`; null when the catalog does not know the event."
+          },
+          "away_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Away Name",
+            "description": "Only with `include=names`; null when the catalog does not know the event."
           }
         },
         "type": "object",
@@ -4980,7 +5150,7 @@
           "fields"
         ],
         "title": "Change",
-        "description": "A change of an already stored event that a later read found."
+        "description": "A change (schema v1 Change); with `include=names` also the participant names the catalog has for its event\nnow (FX-13). The model keeps the name of the schema record: it is the `Change` of the generated client types."
       },
       "ChangeListResponse": {
         "properties": {
@@ -5170,6 +5340,11 @@
       },
       "DataSummary": {
         "properties": {
+          "data_dir": {
+            "type": "string",
+            "title": "Data Dir",
+            "description": "Path of the data directory on the server."
+          },
           "only_finished": {
             "type": "boolean",
             "title": "Only Finished",
@@ -5220,10 +5395,22 @@
                 "type": "null"
               }
             ]
+          },
+          "last_migration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MigrationRun"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when `ssc migrate` never ran."
           }
         },
         "type": "object",
         "required": [
+          "data_dir",
           "only_finished",
           "matches",
           "details",
@@ -5275,10 +5462,20 @@
             "type": "integer",
             "title": "Datasets"
           },
+          "v3": {
+            "type": "integer",
+            "title": "V3",
+            "description": "The 3.0 layout (`v3/`: events, tournaments, teams, players, sports)."
+          },
+          "changes": {
+            "type": "integer",
+            "title": "Changes",
+            "description": "The change log (`changes/`)."
+          },
           "total": {
             "type": "integer",
             "title": "Total",
-            "description": "seasons + matches + details + datasets."
+            "description": "The data in both layouts, the change log and the datasets: seasons + matches + details + datasets + v3 + changes. `.meta`, backups and exports are in `entries` only."
           },
           "measured_at_utc": {
             "anyOf": [
@@ -5299,6 +5496,8 @@
           "matches",
           "details",
           "datasets",
+          "v3",
+          "changes",
           "total"
         ],
         "title": "DiskSummary",
@@ -7463,6 +7662,69 @@
         ],
         "title": "LogTailResponse"
       },
+      "MigrationRun": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "started_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At Utc"
+          },
+          "finished_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At Utc",
+            "description": "Null when the run did not finish."
+          },
+          "delete_legacy": {
+            "type": "boolean",
+            "title": "Delete Legacy",
+            "description": "The run removed the old copies."
+          },
+          "events_done": {
+            "type": "integer",
+            "title": "Events Done"
+          },
+          "events_failed": {
+            "type": "integer",
+            "title": "Events Failed"
+          },
+          "bytes_before": {
+            "type": "integer",
+            "title": "Bytes Before"
+          },
+          "bytes_after": {
+            "type": "integer",
+            "title": "Bytes After"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "delete_legacy",
+          "events_done",
+          "events_failed",
+          "bytes_before",
+          "bytes_after"
+        ],
+        "title": "MigrationRun",
+        "description": "The last move of events from the old layout to the 3.0 layout (`ssc migrate`), not a dry run."
+      },
       "Odds": {
         "properties": {
           "event_id": {
@@ -8097,11 +8359,22 @@
               }
             ],
             "title": "League Id"
+          },
+          "event_ids": {
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0.0
+            },
+            "type": "array",
+            "maxItems": 500,
+            "title": "Event Ids",
+            "description": "Read `/event` of these events again, whether or not they are due (the Fetch again button). Not with `league_id`."
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "title": "RefreshJobSpec"
+        "title": "RefreshJobSpec",
+        "description": "Without `event_ids`: the stored records that are due (of one tournament with `league_id`)."
       },
       "RestoreJobSpec": {
         "properties": {
@@ -8115,13 +8388,13 @@
           "force": {
             "type": "boolean",
             "title": "Force",
-            "description": "Report what a restore with force would move to the trash.",
+            "description": "Move the current data to the trash first (`.meta/trash/`); needed when the data directory is not empty. With `dry_run`: report what that would move.",
             "default": false
           },
           "dry_run": {
             "type": "boolean",
             "title": "Dry Run",
-            "description": "Must be true: the API checks a restore; restoring is `ssc backup restore`.",
+            "description": "True: only check (nothing is written). False: restore the backup.",
             "default": true
           }
         },
@@ -8383,11 +8656,129 @@
         "title": "Season",
         "description": "One edition of a tournament."
       },
+      "SeasonCounts": {
+        "properties": {
+          "events": {
+            "type": "integer",
+            "title": "Events",
+            "description": "Every stored event of the season, unfinished schedule rows included."
+          },
+          "finished": {
+            "type": "integer",
+            "title": "Finished",
+            "description": "Events that ended (completed or decided without play)."
+          },
+          "details": {
+            "type": "integer",
+            "title": "Details",
+            "description": "Events with a stored event payload."
+          },
+          "complete": {
+            "type": "integer",
+            "title": "Complete",
+            "description": "Events with details and no missing slice."
+          },
+          "completion_rate": {
+            "type": "number",
+            "title": "Completion Rate",
+            "description": "complete / details in percent, two decimals; 0 without details."
+          },
+          "missing": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Missing",
+            "description": "Slice to the number of events with details that miss it."
+          },
+          "schedule_fetched_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schedule Fetched At Utc",
+            "description": "When the newest page of the season's schedule was fetched; null: never."
+          }
+        },
+        "type": "object",
+        "required": [
+          "events",
+          "finished",
+          "details",
+          "complete",
+          "completion_rate",
+          "missing"
+        ],
+        "title": "SeasonCounts",
+        "description": "Counts of one season of a tournament, from the catalog (`include=counts`)."
+      },
+      "SeasonEntry": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "SofaScore's season id."
+          },
+          "tournament_id": {
+            "type": "integer",
+            "title": "Tournament Id",
+            "description": "Id of the Tournament the season belongs to."
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Name of the season, for example `Premier League 26/27`."
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year",
+            "description": "The season's year text as SofaScore writes it: `26/27`, `2025`."
+          },
+          "counts": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeasonCounts"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only with `include=counts`."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "tournament_id",
+          "name",
+          "year"
+        ],
+        "title": "SeasonEntry",
+        "description": "A season (schema v1 Season); with `include=counts` also its counts."
+      },
       "SeasonListResponse": {
         "properties": {
           "data": {
             "items": {
-              "$ref": "#/components/schemas/Season"
+              "$ref": "#/components/schemas/SeasonEntry"
             },
             "type": "array",
             "title": "Data"
@@ -8963,6 +9354,62 @@
         ],
         "title": "SinkStatus",
         "description": "A configured output sink and how far it has delivered the event log."
+      },
+      "SinksSummary": {
+        "properties": {
+          "configured": {
+            "type": "integer",
+            "title": "Configured",
+            "description": "Sinks of the configuration."
+          },
+          "ok": {
+            "type": "integer",
+            "title": "Ok"
+          },
+          "error": {
+            "type": "integer",
+            "title": "Error",
+            "description": "Sinks whose last delivery failed."
+          },
+          "pending": {
+            "type": "integer",
+            "title": "Pending",
+            "description": "Sinks that have delivered nothing yet."
+          },
+          "served": {
+            "type": "boolean",
+            "title": "Served",
+            "description": "A process holds the `sinks` lease and delivers right now."
+          },
+          "max_lag_events": {
+            "type": "integer",
+            "title": "Max Lag Events",
+            "description": "The largest `lag_events` of a sink; 0 without sinks."
+          },
+          "max_lag_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Lag Seconds",
+            "description": "Age of the oldest event a sink has not received; null when every sink is current."
+          }
+        },
+        "type": "object",
+        "required": [
+          "configured",
+          "ok",
+          "error",
+          "pending",
+          "served",
+          "max_lag_events"
+        ],
+        "title": "SinksSummary",
+        "description": "The configured sinks at a glance (`/sinks` has each one)."
       },
       "Slice": {
         "properties": {
@@ -9770,7 +10217,7 @@
           "spec"
         ],
         "title": "StartRestoreJob",
-        "description": "Check what restoring a backup would do (the Check step of the UI); nothing is written."
+        "description": "Check what restoring a backup would do (`dry_run: true`, the Check step of the UI), or restore it\n(`dry_run: false`, the Choose step). A restore replaces the data and the job history; this job stays in it."
       },
       "StartSyncJob": {
         "properties": {
@@ -9858,6 +10305,17 @@
             "type": "array",
             "title": "Leases",
             "description": "Leases held right now, in any process."
+          },
+          "sinks": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SinksSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when the store cannot be read."
           },
           "schedule": {
             "$ref": "#/components/schemas/ScheduleStatus",
@@ -10006,7 +10464,7 @@
               }
             ],
             "title": "League Id",
-            "description": "One tournament; not read when `selections` is given."
+            "description": "One tournament, every season of it."
           },
           "selections": {
             "items": {
@@ -10014,12 +10472,45 @@
             },
             "type": "array",
             "title": "Selections"
+          },
+          "follows": {
+            "items": {
+              "type": "string",
+              "pattern": "^(tournament|team|player|event):[1-9][0-9]{0,18}$"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Follows",
+            "description": "`sync` only: these follows (`tournament:17`), each with its season choice. Team, player and event follows cannot be synced yet (400)."
+          },
+          "only": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "seasons"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Only",
+            "description": "`sync` only. `seasons`: read the season lists from SofaScore again now, without schedules or event details (the Get season list button)."
+          },
+          "event_ids": {
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0.0
+            },
+            "type": "array",
+            "maxItems": 500,
+            "title": "Event Ids",
+            "description": "`fetch` only: these events, whether or not their tournament is known or followed. Not with `league_id` or `selections`."
           }
         },
         "additionalProperties": false,
         "type": "object",
         "title": "SyncJobSpec",
-        "description": "What to download. Without `selections` and `league_id`: every followed tournament."
+        "description": "What to download. Without `selections`, `league_id` and `follows`: every enabled tournament follow, each with\nits own season choice. Only one of `league_id`, `selections` and `follows` may be given."
       },
       "ThrottleStatus": {
         "properties": {

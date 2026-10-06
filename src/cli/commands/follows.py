@@ -10,8 +10,12 @@
   * Her takibin bir kaynağı vardır: `config` (yapılandırma dosyasının `[[follow]]` girdileri), `legacy`
     (`config/leagues.txt`) ya da `api` (bu komut ve HTTP API'si). Yapılandırma dosyasından gelen takip burada
     değiştirilemez ve silinemez (`follow_managed`); dosyada düzenlenir.
-  * Canlı servis (`ssc watch`) `live = true` takipleri izler. İndirme (`ssc sync`) bugün ligleri yapılandırmadan
-    okur (`config/leagues.txt`, `[[follow]]`): buradan eklenen bir turnuva takibi indirmeye henüz girmez (P27).
+  * Canlı servis (`ssc watch`) `live = true` takipleri izler; indirme (`ssc sync`) her kaynağın etkin turnuva
+    takiplerini indirir (plan maddesi FX-13): buradan eklenen bir turnuva bir sonraki eşitlemede indirilir.
+  * Komutlar takipler servisinden geçer (src/services/follows.py, `FollowsService`; web'in kullandığı servis).
+    Yeni takip her zaman `api` kaynağıyla state.db'ye yazılır (P19'un kuralı; yapılandırma dosyası olmasa da).
+    `config/leagues.txt`ten gelen bir takibin kaldırılması dosyadan (ve spor dosyasından) çıkarır: bir sonraki
+    yansıtmada geri gelmez.
   * Takipler kilit almadan yazılır (tek satırlık state.db işlemi).
 
 Ağır içe aktarmalar (ayarlar, Store) işlevlerin içindedir.
@@ -70,6 +74,21 @@ def _open(create: bool) -> Optional[Any]:
         raise
 
 
+def _service(store: Any) -> Any:
+    """
+    Takipler servisi, komut satırının lig dosyası yazıcısıyla. Lig dosyası yalnızca bir `legacy` satırı
+    kaldırılırken açılır (ConfigManager bir okumada dosyayı yaratmasın); yeni turnuva takibi `api` satırıdır.
+    """
+    from src.services.follows import ConfigLeagues, FollowsService
+
+    def set_sport(league_config_path: str, tournament_id: int, sport: Optional[str]) -> None:
+        from src.web import league_sports
+
+        league_sports.set_sport(league_config_path, tournament_id, sport)
+
+    return FollowsService(store, ConfigLeagues(set_sport=set_sport), config_file=True)
+
+
 def follow_dict(follow: Any) -> Dict[str, Any]:
     data = dataclasses.asdict(follow)
     seasons = data.get("seasons")
@@ -95,7 +114,7 @@ group("follows", help="ssc_help_cmd_follows")
 @command("follows list", help="ssc_help_cmd_follows_list", configure=_list_arguments, settings=True)
 def follows_list(inv: Invocation) -> CommandResult:
     store = _open(create=False)
-    rows = store.follows.list(kind=inv.args.kind) if store is not None else []
+    rows = _service(store).list(kind=inv.args.kind) if store is not None else []
     text = "\n".join(_line(inv.t, row) for row in rows) if rows else inv.t("ssc_follows_none")
     return CommandResult(data={"follows": [follow_dict(row) for row in rows]}, text=text)
 
@@ -103,7 +122,7 @@ def follows_list(inv: Invocation) -> CommandResult:
 @command("follows add", help="ssc_help_cmd_follows_add", configure=_add_arguments, settings=True)
 def follows_add(inv: Invocation) -> CommandResult:
     from src.config import loader
-    from src.store import FollowSpec
+    from src.services.follows import NewFollow
 
     args = inv.args
     table: Dict[str, Any] = {args.kind: args.entity_id, "live": bool(args.live), "enabled": not args.disabled}
@@ -120,10 +139,10 @@ def follows_add(inv: Invocation) -> CommandResult:
         raise UsageError(str(e).replace("follows add: [[follow]] #1", "follows add"), {"follow": table}) from None
     store = _open(create=True)
     assert store is not None
-    added = store.follows.add(FollowSpec(
+    added = _service(store).add(NewFollow(
         kind=parsed.kind, entity_id=parsed.entity_id, name=parsed.name, sport=parsed.sport, seasons=parsed.seasons,
         slices=parsed.slices, live=parsed.live, enabled=parsed.enabled,
-    ), origin="api")
+    ))
     return CommandResult(data={"follow": follow_dict(added)}, text=inv.t("ssc_follows_added", line=_line(inv.t, added)))
 
 
@@ -137,9 +156,17 @@ def _seasons(raw: str) -> Any:
 
 @command("follows remove", help="ssc_help_cmd_follows_remove", configure=_target_arguments, settings=True)
 def follows_remove(inv: Invocation) -> CommandResult:
+    from src.errors import NotFoundError
+
     args = inv.args
     store = _open(create=False)
-    removed = bool(store is not None and store.follows.remove(args.kind, args.entity_id))
+    removed = False
+    if store is not None:
+        try:
+            _service(store).remove(args.kind, args.entity_id)
+            removed = True
+        except NotFoundError:
+            removed = False
     data = {"kind": args.kind, "entity_id": args.entity_id, "removed": removed}
     if not removed:
         # Yinelenebilir: takip zaten yoksa sonuç aynıdır; çıkış kodu 0, bilgi stderr'e

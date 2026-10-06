@@ -70,6 +70,8 @@ AREA_SEASONS = "seasons"
 AREA_MATCHES = "matches"
 AREA_DETAILS = "match_details"
 AREA_DATASETS = "datasets"
+AREA_V3 = "v3"  # 3.0 düzeni: maçlar, turnuvalar, takımlar, oyuncular, sporlar (src/store/layout.py)
+AREA_CHANGES = "changes"  # değişiklik günlüğü (aylık parçalar)
 
 _FINISHED = frozenset({StatusClass.COMPLETED.value, StatusClass.DECIDED_WITHOUT_PLAY.value})
 _NOT_FINISHED: Tuple[str, ...] = tuple(member.value for member in StatusClass if member.value not in _FINISHED)
@@ -130,9 +132,21 @@ class DiskUsage:
         return int(self.entries.get(AREA_DATASETS, 0))
 
     @property
+    def v3(self) -> int:
+        return int(self.entries.get(AREA_V3, 0))
+
+    @property
+    def changes(self) -> int:
+        return int(self.entries.get(AREA_CHANGES, 0))
+
+    @property
     def total(self) -> int:
-        """İndirilen veri ve ondan üretilen veri setleri: seasons + matches + details + datasets."""
-        return self.seasons + self.matches + self.details + self.datasets
+        """
+        İndirilen veri iki düzende, değişiklik günlüğü ve üretilen veri setleri: seasons + matches + details +
+        datasets + v3 + changes (plan maddesi FX-13: 3.0'ın yazdığı bir dizinde toplam önceden 0'dı). `.meta`,
+        yedekler ve dışa aktarmalar girmez; hepsi `entries`tedir.
+        """
+        return self.seasons + self.matches + self.details + self.datasets + self.v3 + self.changes
 
 
 @dataclass(frozen=True)
@@ -230,6 +244,34 @@ class CoverageReport:
             if found.tournament_id == tournament_id:
                 return found
         return TournamentCoverage(tournament_id)
+
+
+@dataclass(frozen=True)
+class SeasonCounts:
+    """
+    Bir turnuvanın bir sezonunun sayıları (plan maddesi FX-13, 05-web-ui.md G17). season_id None: sezonu
+    bilinmeyen maçlar.
+
+    events       katalogdaki bütün maçlar (bitmemiş program satırları dahil)
+    finished     bitmiş olanlar (completed, decided_without_play)
+    details      `/event/{id}` yükü saklananlar
+    complete     detayı saklanıp eksik dilimi olmayanlar (kapsam kuralları modül belgesinde)
+    missing      dilim → o dilimi eksik olan maç sayısı (tablo sırasıyla)
+    schedule_fetched_at  sezon programının en yeni sayfasının alındığı an (epoch saniye); program yoksa None
+    """
+
+    season_id: Optional[int]
+    events: int = 0
+    finished: int = 0
+    details: int = 0
+    complete: int = 0
+    missing: Mapping[str, int] = field(default_factory=dict)
+    schedule_fetched_at: Optional[float] = None
+
+    @property
+    def completion_rate(self) -> float:
+        """Detayı saklanan maçlardan tam olanların yüzdesi, iki ondalık."""
+        return _rate(self.complete, self.details)
 
 
 class _Tally:
@@ -413,6 +455,47 @@ class StatusService:
             catalog_rebuild_reason=info.catalog_rebuild_reason,
         )
 
+    def season_counts(self, tournament_id: int, *,
+                      threshold: int = planning.DEFAULT_EMPTY_THRESHOLD) -> Tuple[SeasonCounts, ...]:
+        """
+        Turnuvanın sezon başına sayıları (05-web-ui.md G17): sezon listesindeki her sezon (maçı olmasa da) ve maçı
+        bilinen her sezon; sezon kimliği büyükten küçüğe, sezonu bilinmeyen maçlar en sonda. Katalogdan okunur;
+        turnuvanın maçları ve dilim satırları bir kez gezilir, her sezonun program dilimleri ayrıca okunur.
+        """
+        from src.services.listing import SCHEDULE_KEY
+        from src.store import Ref
+
+        store = self._store
+        seasons: Dict[Optional[int], Dict[str, Any]] = {
+            int(row.id): {} for row in store.entities.seasons(int(tournament_id)) if row.id is not None}
+        tallies: Dict[Optional[int], _Tally] = {}
+        events: Dict[Optional[int], List[int]] = {}
+        for state in store.events.states(Scope(tournament_ids=(int(tournament_id),))):
+            row = state.event
+            counts = events.setdefault(row.season_id, [0, 0, 0])
+            seasons.setdefault(row.season_id, {})
+            counts[0] += 1
+            counts[1] += 1 if row.status_class in _FINISHED else 0
+            if row.has_event_payload:
+                counts[2] += 1
+                tallies.setdefault(row.season_id, _Tally()).add(planning.missing_slice_keys(state, threshold=threshold))
+        out: List[SeasonCounts] = []
+        for season_id in sorted(seasons, key=_season_order):
+            fetched: Optional[float] = None
+            if season_id is not None:
+                times = [info.fetched_at.timestamp() for info in store.entities.slices(Ref.season(
+                    int(tournament_id), int(season_id))) if info.key == SCHEDULE_KEY and info.fetched_at is not None]
+                fetched = max(times) if times else None
+            number = events.get(season_id, [0, 0, 0])
+            tally = tallies.get(season_id, _Tally())
+            out.append(SeasonCounts(
+                season_id=season_id, events=number[0], finished=number[1], details=number[2],
+                complete=tally.complete,
+                missing=dict(sorted(tally.missing.items(), key=lambda item: _slice_rank(item[0]))),
+                schedule_fetched_at=fetched,
+            ))
+        return tuple(out)
+
     # --- sayımlar ---------------------------------------------------------------------------------------
 
     @staticmethod
@@ -491,7 +574,9 @@ class StatusService:
 
 
 __all__ = [
+    "AREA_CHANGES",
     "AREA_DATASETS",
+    "AREA_V3",
     "CoverageReport",
     "SeasonCoverage",
     "TournamentCoverage",
@@ -500,6 +585,7 @@ __all__ = [
     "AREA_SEASONS",
     "SIZES_MAX_AGE",
     "DataSummary",
+    "SeasonCounts",
     "DiskUsage",
     "ScheduleStatus",
     "StatusService",

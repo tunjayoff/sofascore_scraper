@@ -4,7 +4,8 @@ API v1: turnuvalar ve sezonlar (docs/design/02-services.md bölüm 6; docs/desig
     GET /api/v1/tournaments                         katalogdaki turnuvalar (spor, ad, takip süzgeçleri)
     POST /api/v1/tournaments/search                 SofaScore'da turnuva araması (tek istek)
     GET /api/v1/tournaments/{tournament_id}         tek turnuva, kategorisiyle
-    GET /api/v1/tournaments/{tournament_id}/seasons turnuvanın sezonları, en yeni önce
+    GET /api/v1/tournaments/{tournament_id}/seasons turnuvanın sezonları, en yeni önce; `include=counts` ile sezon
+                                                    başına sayımlar (FX-13, 05-web-ui.md G17)
     GET /api/v1/seasons/{season_id}                 tek sezon
     GET /api/v1/seasons/{season_id}/slices          sezonun saklanan dilimleri, yüksüz (P28)
     GET /api/v1/seasons/{season_id}/slices/{key}    sezonun bir dilimi (puan durumu ...), saklanan yüküyle
@@ -27,6 +28,7 @@ from fastapi import APIRouter, Path, Query
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.errors import NotFoundError, UsageError
+from src.schema import utc_text
 from src.web import deps
 from src.schema import models as schema_models
 from src.web.api.v1 import PageInfo, records
@@ -64,8 +66,28 @@ class SeasonResponse(BaseModel):
     data: records.Season  # type: ignore[valid-type]
 
 
+class SeasonCounts(BaseModel):
+    """Counts of one season of a tournament, from the catalog (`include=counts`)."""
+
+    events: int = Field(description="Every stored event of the season, unfinished schedule rows included.")
+    finished: int = Field(description="Events that ended (completed or decided without play).")
+    details: int = Field(description="Events with a stored event payload.")
+    complete: int = Field(description="Events with details and no missing slice.")
+    completion_rate: float = Field(description="complete / details in percent, two decimals; 0 without details.")
+    missing: Dict[str, int] = Field(description="Slice to the number of events with details that miss it.")
+    schedule_fetched_at_utc: Optional[str] = Field(
+        default=None, description="When the newest page of the season's schedule was fetched; null: never.",
+    )
+
+
+class SeasonEntry(records.Season):  # type: ignore[misc,valid-type]
+    """A season (schema v1 Season); with `include=counts` also its counts."""
+
+    counts: Optional[SeasonCounts] = Field(default=None, description="Only with `include=counts`.")
+
+
 class SeasonListResponse(BaseModel):
-    data: List[records.Season]  # type: ignore[valid-type]
+    data: List[SeasonEntry]
     page: PageInfo
 
 
@@ -224,7 +246,12 @@ def get_tournament(tournament_id: Annotated[int, Path(ge=1)]) -> TournamentRespo
     summary="List the seasons of a tournament",
     responses=error_responses("not_found"),
 )
-def list_tournament_seasons(tournament_id: Annotated[int, Path(ge=1)]) -> SeasonListResponse:
+def list_tournament_seasons(
+    tournament_id: Annotated[int, Path(ge=1)],
+    include: Annotated[Optional[List[Literal["counts"]]], Query(
+        description="`counts`: each season's event, detail and completeness counts and the age of its schedule.",
+    )] = None,
+) -> SeasonListResponse:
     """
     The tournament's seasons the data directory knows, newest first. An empty list: the tournament is known
     but no season is stored (its season list was not downloaded yet).
@@ -232,8 +259,27 @@ def list_tournament_seasons(tournament_id: Annotated[int, Path(ge=1)]) -> Season
     seasons = _query().seasons(tournament_id)
     if seasons is None:
         raise NotFoundError("The data directory knows no tournament with this id.", {"tournament_id": tournament_id})
+    found: Dict[Optional[int], Any] = {}
+    if include and "counts" in include:
+        from src.services.status import StatusService
+
+        found = {c.season_id: c for c in StatusService(deps.store()).season_counts(tournament_id)}
+
+    def entry(season: Any) -> Dict[str, Any]:
+        body = records.as_json(season)
+        counts = found.get(body.get("id"))
+        if counts is not None:
+            body["counts"] = SeasonCounts(
+                events=counts.events, finished=counts.finished, details=counts.details, complete=counts.complete,
+                completion_rate=counts.completion_rate, missing=dict(counts.missing),
+                schedule_fetched_at_utc=utc_text(counts.schedule_fetched_at),
+            )
+        elif found:
+            body["counts"] = SeasonCounts(events=0, finished=0, details=0, complete=0, completion_rate=0.0, missing={})
+        return body
+
     return SeasonListResponse(
-        data=[records.as_json(s) for s in seasons],  # type: ignore[misc]
+        data=[entry(s) for s in seasons],  # type: ignore[misc]
         page=PageInfo(limit=len(seasons), next_cursor=None),
     )
 

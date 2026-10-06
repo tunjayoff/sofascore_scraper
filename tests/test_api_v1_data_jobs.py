@@ -3,7 +3,8 @@ API v1: veri işleri, dışa aktarmalar, yedekler, log ve tanılama (plan maddes
 ve 6; docs/design/05-web-ui.md 6.10, 6.11, 6.14 ve 7.3: G2, G13). Tümü çevrimdışı.
 
   * `POST /jobs` türleri: export (2.x'in geniş CSV'si, ham JSONL), backup, clear (`confirm` ister), rebuild ve
-    restore (yalnızca deneme); reddedilen istek iş kaydı bırakmaz;
+    restore (deneme; FX-13'ten beri gerçek geri yükleme de, `maintenance` kilidiyle); reddedilen istek iş kaydı
+    bırakmaz;
   * temizleme ve katalog işleri `maintenance` kilidiyle çalışır: sürerken başka iş ve veri işlemi başlamaz, başka
     bir sürecin depo kopyası onların satırını bayat saymaz (iş deposunun kilit seçimi);
   * `/exports` ve dosyası, `/backups` ve dosyası (silinmiş dosya v1 modeliyle 404);
@@ -211,9 +212,49 @@ def test_a_restore_is_checked_not_done(jobs: JobStore, store: Store) -> None:
     report = done["result"]["restore"]
     assert report["dry_run"] is True and report["name"] == name and report["occupied"]
     error(client.post("/api/v1/jobs", json={"kind": "restore", "spec": {"name": "nope.zip"}}), 404, "not_found")
-    error(client.post("/api/v1/jobs", json={"kind": "restore", "spec": {"name": name, "dry_run": False}}), 501,
-          "not_supported")
+    # FX-13: gerçek geri yükleme boş olmayan bir hedefe `force` olmadan başlamaz; iş kaydı bırakmaz
+    refused = error(client.post("/api/v1/jobs", json={"kind": "restore", "spec": {"name": name, "dry_run": False}}),
+                    400, "confirmation_required")
+    assert refused["details"]["occupied"] == report["occupied"]
     assert len(data(client.get("/api/v1/jobs"))) == 1
+
+
+def test_a_restore_replaces_the_data_and_leaves_a_finished_job(jobs: JobStore, store: Store) -> None:
+    """
+    FX-13 (G2): `dry_run: false` geri yükler. Geri yüklenen state.db'nin iş geçmişinde işin kendi satırı korunur:
+    iş `succeeded` biter ve `RestoreReport`u taşır; yedekten sonra yazılan veri çöpe taşınmıştır.
+    """
+    name = BackupService(store).create("all").name
+    before = store.events.count(EventQuery(has_details=True))
+    cleared = start({"kind": "clear", "spec": {"scope": "events", "confirm": True}})
+    assert ended(cleared["id"])["state"] == "succeeded"
+    assert store.events.count(EventQuery(has_details=True)) == 0
+
+    job = start({"kind": "restore", "spec": {"name": name, "dry_run": False, "force": True}})
+    done = ended(job["id"])
+
+    assert done["state"] == "succeeded", done
+    report = done["result"]["restore"]
+    assert report["dry_run"] is False and report["force"] is True and report["name"] == name
+    assert report["catalog_rebuilt"] is True and report["verify_ok"] in (True, None)
+    assert set(report) >= {"occupied", "replaced", "restored", "skipped", "counts"}
+    assert open_store(store.data_dir).events.count(EventQuery(has_details=True)) == before
+    # İşin satırı ve olayları geri yüklenen geçmişte durur; bitişini kendi satırına yazdı
+    assert data(client.get(f"/api/v1/jobs/{job['id']}"))["state"] == "succeeded"
+    events = jobs.read_events(job["id"])
+    assert events[0]["type"] == "started" and events[-1]["type"] == "finished"
+    # Yedeğin iş geçmişi geri gelir (kapsam `all` state.db'yi taşır); temizleme işi yedekten sonraydı
+    assert cleared["id"] not in {j["id"] for j in data(client.get("/api/v1/jobs"))}
+
+
+def test_a_restore_holds_the_maintenance_lease(jobs: JobStore, store: Store) -> None:
+    name = BackupService(store).create("data").name
+    jobs.create_running({"kind": "sync"}, kind="sync", purpose="sync")
+    try:
+        error(client.post("/api/v1/jobs", json={"kind": "restore", "spec": {"name": name, "dry_run": False,
+                                                                          "force": True}}), 409, "job_running")
+    finally:
+        jobs.update(status="Cancelled", finished=True)
 
 
 # --- temizleme ve katalog: `maintenance` kilidi ---------------------------------------------------------

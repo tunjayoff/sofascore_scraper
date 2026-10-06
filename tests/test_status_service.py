@@ -408,8 +408,10 @@ def test_disk_usage_is_the_size_of_the_top_level_entries(fx: sf.LegacyFixture) -
     assert disk.matches == tree_bytes(data_dir / "matches")
     assert disk.details == tree_bytes(data_dir / "match_details")
     assert disk.datasets == tree_bytes(data_dir / "datasets")
-    assert disk.total == disk.seasons + disk.matches + disk.details + disk.datasets
-    # Store her üst düzey girdiyi verir; toplam yalnızca dört veri alanıdır
+    assert disk.v3 == tree_bytes(data_dir / "v3") and disk.changes == tree_bytes(data_dir / "changes")
+    # FX-13: toplam iki düzenin verisini ve değişiklik günlüğünü de sayar (3.0'ın dizininde önceden 0'dı)
+    assert disk.total == disk.seasons + disk.matches + disk.details + disk.datasets + disk.v3 + disk.changes
+    # Store her üst düzey girdiyi verir; toplam yalnızca veri alanlarıdır
     assert ".meta" in disk.entries and disk.entries[".meta"] > 0
     assert set(disk.entries) == {p.name for p in data_dir.iterdir()}
 

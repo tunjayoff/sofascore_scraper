@@ -121,6 +121,23 @@ def test_list_filters(leagues: Path, store: Store) -> None:
     assert data(client.get("/api/v1/follows", params={"enabled": "false"})) == []
 
 
+def test_follows_by_sport(leagues: Path, store: Store, monkeypatch: pytest.MonkeyPatch) -> None:
+    """05-web-ui.md G18 (FX-13): kaydedilen spor, yoksa turnuvanın katalogdaki sporu; bilinmeyen spor 400."""
+    store.follows.add(FollowSpec(kind="team", entity_id=42, name="Lakers", sport="basketball"), origin="api")
+    store.follows.add(FollowSpec(kind="tournament", entity_id=8, name="LaLiga"), origin="api")
+    store.follows.add(FollowSpec(kind="tournament", entity_id=132, name="NBA"), origin="api")
+    monkeypatch.setattr(store.entities, "sport_of_tournament", lambda tid: "basketball" if tid == 132 else None)
+
+    def ids(**params: Any) -> List[str]:
+        return [f["id"] for f in data(client.get("/api/v1/follows", params=params))]
+
+    assert ids(sport="basketball") == ["team:42", "tournament:132"]
+    assert ids(sport="football") == ["tournament:17"]
+    assert ids(sport="basketball", kind="team") == ["team:42"]
+    assert ids(sport="tennis") == []
+    error(client.get("/api/v1/follows", params={"sport": "curling-on-mars"}), 400, "invalid_request")
+
+
 def test_the_sport_falls_back_to_what_the_catalog_knows(leagues: Path, monkeypatch: pytest.MonkeyPatch,
                                                         store: Store) -> None:
     (leagues.parent / "league_sports.json").write_text("{}", encoding="utf-8")

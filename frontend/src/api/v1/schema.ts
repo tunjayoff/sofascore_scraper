@@ -117,7 +117,10 @@ export interface Category {
   country_code: string | null
 }
 
-/** A change of an already stored event that a later read found. */
+/**
+ * A change (schema v1 Change); with `include=names` also the participant names the catalog has for its event
+ * now (FX-13). The model keeps the name of the schema record: it is the `Change` of the generated client types.
+ */
 export interface Change {
   /** Sequence number of the change log. Increases by one per change; pass the last one seen to read the next changes. */
   seq: number
@@ -147,6 +150,10 @@ export interface Change {
   tier_hint: boolean | null
   /** The fields that changed, ordered by path. Compared are the status triple, the winner code, the start time and every score field. */
   fields: ChangedField[]
+  /** Only with `include=names`; null when the catalog does not know the event. */
+  home_name?: string | null
+  /** Only with `include=names`; null when the catalog does not know the event. */
+  away_name?: string | null
 }
 
 export interface ChangeListResponse {
@@ -198,6 +205,8 @@ export interface CricketScore {
 
 /** What the data directory holds, counted from its catalog. */
 export interface DataSummary {
+  /** Path of the data directory on the server. */
+  data_dir: string
   /** Matches count only finished events or events with details. */
   only_finished: boolean
   matches: number
@@ -209,6 +218,8 @@ export interface DataSummary {
   catalog_rebuild_reason?: string | null
   tournaments: TournamentSummary[]
   disk?: DiskSummary | null
+  /** Null when `ssc migrate` never ran. */
+  last_migration?: MigrationRun | null
 }
 
 export interface DiagnosticsResponse {
@@ -224,7 +235,11 @@ export interface DiskSummary {
   matches: number
   details: number
   datasets: number
-  /** seasons + matches + details + datasets. */
+  /** The 3.0 layout (`v3/`: events, tournaments, teams, players, sports). */
+  v3: number
+  /** The change log (`changes/`). */
+  changes: number
+  /** The data in both layouts, the change log and the datasets: seasons + matches + details + datasets + v3 + changes. `.meta`, backups and exports are in `entries` only. */
   total: number
   measured_at_utc?: string | null
 }
@@ -668,6 +683,20 @@ export interface LogTailResponse {
   data: LogTail
 }
 
+/** The last move of events from the old layout to the 3.0 layout (`ssc migrate`), not a dry run. */
+export interface MigrationRun {
+  id: number
+  started_at_utc?: string | null
+  /** Null when the run did not finish. */
+  finished_at_utc?: string | null
+  /** The run removed the old copies. */
+  delete_legacy: boolean
+  events_done: number
+  events_failed: number
+  bytes_before: number
+  bytes_after: number
+}
+
 /** The odds of an event from one provider as read at one moment. */
 export interface Odds {
   /** Id of the Event. */
@@ -801,16 +830,19 @@ export interface RebuildJobSpec {
   mode?: "auto" | "in_place" | "recreate"
 }
 
+/** Without `event_ids`: the stored records that are due (of one tournament with `league_id`). */
 export interface RefreshJobSpec {
   league_id?: number | null
+  /** Read `/event` of these events again, whether or not they are due (the Fetch again button). Not with `league_id`. */
+  event_ids?: number[]
 }
 
 export interface RestoreJobSpec {
   /** A backup of `/backups`. */
   name: string
-  /** Report what a restore with force would move to the trash. */
+  /** Move the current data to the trash first (`.meta/trash/`); needed when the data directory is not empty. With `dry_run`: report what that would move. */
   force?: boolean
-  /** Must be true: the API checks a restore; restoring is `ssc backup restore`. */
+  /** True: only check (nothing is written). False: restore the backup. */
   dry_run?: boolean
 }
 
@@ -873,8 +905,40 @@ export interface Season {
   year: string | null
 }
 
+/** Counts of one season of a tournament, from the catalog (`include=counts`). */
+export interface SeasonCounts {
+  /** Every stored event of the season, unfinished schedule rows included. */
+  events: number
+  /** Events that ended (completed or decided without play). */
+  finished: number
+  /** Events with a stored event payload. */
+  details: number
+  /** Events with details and no missing slice. */
+  complete: number
+  /** complete / details in percent, two decimals; 0 without details. */
+  completion_rate: number
+  /** Slice to the number of events with details that miss it. */
+  missing: Record<string, number>
+  /** When the newest page of the season's schedule was fetched; null: never. */
+  schedule_fetched_at_utc?: string | null
+}
+
+/** A season (schema v1 Season); with `include=counts` also its counts. */
+export interface SeasonEntry {
+  /** SofaScore's season id. */
+  id: number
+  /** Id of the Tournament the season belongs to. */
+  tournament_id: number
+  /** Name of the season, for example `Premier League 26/27`. */
+  name: string | null
+  /** The season's year text as SofaScore writes it: `26/27`, `2025`. */
+  year: string | null
+  /** Only with `include=counts`. */
+  counts?: SeasonCounts | null
+}
+
 export interface SeasonListResponse {
-  data: Season[]
+  data: SeasonEntry[]
   page: PageInfo
 }
 
@@ -1008,6 +1072,23 @@ export interface SinkStatus {
   last_error?: string | null
   /** Undelivered events given up as too old, as far as the retained log tells. */
   dropped: number
+}
+
+/** The configured sinks at a glance (`/sinks` has each one). */
+export interface SinksSummary {
+  /** Sinks of the configuration. */
+  configured: number
+  ok: number
+  /** Sinks whose last delivery failed. */
+  error: number
+  /** Sinks that have delivered nothing yet. */
+  pending: number
+  /** A process holds the `sinks` lease and delivers right now. */
+  served: boolean
+  /** The largest `lag_events` of a sink; 0 without sinks. */
+  max_lag_events: number
+  /** Age of the oldest event a sink has not received; null when every sink is current. */
+  max_lag_seconds?: number | null
 }
 
 /** One stored response of SofaScore about an event or another entity, and its state. */
@@ -1208,7 +1289,10 @@ export interface StartRefreshJob {
   spec?: RefreshJobSpec
 }
 
-/** Check what restoring a backup would do (the Check step of the UI); nothing is written. */
+/**
+ * Check what restoring a backup would do (`dry_run: true`, the Check step of the UI), or restore it
+ * (`dry_run: false`, the Choose step). A restore replaces the data and the job history; this job stays in it.
+ */
 export interface StartRestoreJob {
   kind: "restore"
   spec: RestoreJobSpec
@@ -1237,6 +1321,8 @@ export interface Status {
   summary?: DataSummary | null
   /** Leases held right now, in any process. */
   leases?: LeaseHolder[]
+  /** Null when the store cannot be read. */
+  sinks?: SinksSummary | null
   /** The in-app scheduler and the next runs of its tasks. */
   schedule: ScheduleStatus
   capabilities: Capabilities
@@ -1271,11 +1357,20 @@ export interface StatusResponse {
   data: Status
 }
 
-/** What to download. Without `selections` and `league_id`: every followed tournament. */
+/**
+ * What to download. Without `selections`, `league_id` and `follows`: every enabled tournament follow, each with
+ * its own season choice. Only one of `league_id`, `selections` and `follows` may be given.
+ */
 export interface SyncJobSpec {
-  /** One tournament; not read when `selections` is given. */
+  /** One tournament, every season of it. */
   league_id?: number | null
   selections?: JobSelection[]
+  /** `sync` only: these follows (`tournament:17`), each with its season choice. Team, player and event follows cannot be synced yet (400). */
+  follows?: string[]
+  /** `sync` only. `seasons`: read the season lists from SofaScore again now, without schedules or event details (the Get season list button). */
+  only?: "seasons" | null
+  /** `fetch` only: these events, whether or not their tournament is known or followed. Not with `league_id` or `selections`. */
+  event_ids?: number[]
 }
 
 /** The request budget shared by all processes of this machine. */
@@ -1457,7 +1552,7 @@ export interface Operations {
     method: "GET"
     path: "/api/v1/follows"
     params: {}
-    query: { kind?: "tournament" | "team" | "player" | "event" | null; origin?: "legacy" | "config" | "api" | null; enabled?: boolean | null; q?: string | null }
+    query: { kind?: "tournament" | "team" | "player" | "event" | null; origin?: "legacy" | "config" | "api" | null; enabled?: boolean | null; q?: string | null; sport?: string | null }
     body: never
     response: FollowListResponse
   }
@@ -1529,7 +1624,7 @@ export interface Operations {
     method: "GET"
     path: "/api/v1/tournaments/{tournament_id}/seasons"
     params: { tournament_id: number }
-    query: {}
+    query: { include?: "counts"[] | null }
     body: never
     response: SeasonListResponse
   }
@@ -1646,7 +1741,7 @@ export interface Operations {
     method: "GET"
     path: "/api/v1/changes"
     params: {}
-    query: { since?: number; event_id?: number | null; tournament?: number[] | null; from?: string | null; to?: string | null; order?: "asc" | "desc"; limit?: number; cursor?: string | null }
+    query: { since?: number; event_id?: number | null; tournament?: number[] | null; sport?: string | null; regressed?: boolean | null; include?: "names"[] | null; from?: string | null; to?: string | null; order?: "asc" | "desc"; limit?: number; cursor?: string | null }
     body: never
     response: ChangeListResponse
   }
@@ -1655,7 +1750,7 @@ export interface Operations {
     method: "GET"
     path: "/api/v1/jobs"
     params: {}
-    query: { limit?: number; cursor?: string | null; state?: JobState[] | null; kind?: JobKind[] | null }
+    query: { limit?: number; cursor?: string | null; state?: JobState[] | null; kind?: JobKind[] | null; origin?: ("cli" | "api" | "scheduler" | "library")[] | null; target?: string | null }
     body: never
     response: JobListResponse
   }

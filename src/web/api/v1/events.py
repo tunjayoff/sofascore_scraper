@@ -10,7 +10,9 @@ docs/design/04-schema-v1.md bölüm 7; docs/design/05-web-ui.md 7.2 ve 7.3: G6, 
     GET /api/v1/events/{event_id}/slices/{key}/raw      dilimin yükü, olduğu gibi
     GET /api/v1/events/{event_id}/odds                  bahis oranı dilimleri (yük olmadan; P28)
     GET /api/v1/events/{event_id}/odds/{key}            bir oran diliminin anlık görüntüleri, şema v1 Odds
-    GET /api/v1/changes                                 değişiklik günlüğü, kendi sıra numarasıyla
+    GET /api/v1/changes                                 değişiklik günlüğü, kendi sıra numarasıyla; spor ve "geri
+                                                        düştü" süzgeçleri, `include=names` ile maçın yarışmacı adları (FX-13,
+                                                        G19)
 
 Kayıtlar şema v1'indir (Event, Slice, Change). Liste satırı istenirse `slices_summary` alanını da taşır
 (`include=slices_summary`): seçilen dilimler ve onlardan kaçının `ok`, `empty`, `error` olduğu.
@@ -27,7 +29,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Literal, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Literal, Optional, Set
 
 from fastapi import APIRouter, Header, Path, Query, Response
 from pydantic import BaseModel, Field
@@ -102,8 +104,22 @@ class OddsListResponse(BaseModel):
     page: PageInfo
 
 
+class Change(records.Change):  # type: ignore[misc,valid-type]
+    """
+    A change (schema v1 Change); with `include=names` also the participant names the catalog has for its event
+    now (FX-13). The model keeps the name of the schema record: it is the `Change` of the generated client types.
+    """
+
+    home_name: Optional[str] = Field(
+        default=None, description="Only with `include=names`; null when the catalog does not know the event.",
+    )
+    away_name: Optional[str] = Field(
+        default=None, description="Only with `include=names`; null when the catalog does not know the event.",
+    )
+
+
 class ChangeListResponse(BaseModel):
-    data: List[records.Change]  # type: ignore[valid-type]
+    data: List[Change]
     page: PageInfo
 
 
@@ -414,6 +430,7 @@ def list_event_odds_snapshots(
 @router.get(
     "/changes",
     response_model=ChangeListResponse,
+    response_model_exclude_unset=True,
     operation_id="listChanges",
     summary="List recorded changes",
     responses=error_responses("invalid_request"),
@@ -422,6 +439,14 @@ def list_changes(
     since: int = Query(0, ge=0, description="Only changes with a sequence number above this one."),
     event_id: Optional[int] = Query(None, ge=1, description="Only the changes of this event."),
     tournament: Annotated[Optional[List[int]], Query(description="Only changes of these tournaments.")] = None,
+    sport: Optional[str] = Query(None, max_length=40, description="Only changes of events of this sport (slug)."),
+    regressed: Optional[bool] = Query(
+        None, description="true: only changes from completed to void (`status_regressed`); false: only the others.",
+    ),
+    include: Annotated[Optional[List[Literal["names"]]], Query(
+        description="`names`: each change also carries `home_name` and `away_name` (the catalog's names now). "
+                    "Without it the records are exactly the schema v1 Change records (as the `changes` export).",
+    )] = None,
     from_: Optional[str] = Query(None, alias="from", max_length=40, description="Recorded at or after (ISO 8601)."),
     to: Optional[str] = Query(None, max_length=40, description="Recorded at or before; a date includes the whole day."),
     order: Literal["asc", "desc"] = Query("asc", description="`asc`: oldest first (for syncing); `desc`: newest first."),
@@ -441,12 +466,30 @@ def list_changes(
     page = _query().changes(
         after=after, before=position if order == "desc" else None, event_id=event_id,
         tournament_ids=tuple(tournament or ()), since=_moment(from_, "from", end=False),
-        until=_moment(to, "to", end=True), order=order, limit=limit,
+        until=_moment(to, "to", end=True), order=order, limit=limit, sport=sport, regressed=regressed,
     )
+    items = [records.as_json(c) for c in page.items]
+    if include and "names" in include:
+        names = _participant_names({c.event_id for c in page.items})
+        items = [{**item, **names.get(item["event_id"], _NO_NAMES)} for item in items]
     return ChangeListResponse(
-        data=[records.as_json(c) for c in page.items],  # type: ignore[misc]
+        data=items,  # type: ignore[arg-type]
         page=PageInfo(limit=limit, next_cursor=page.next_cursor),
     )
+
+
+_NO_NAMES: Dict[str, Optional[str]] = {"home_name": None, "away_name": None}
+
+
+def _participant_names(event_ids: Set[int]) -> Dict[int, Dict[str, Optional[str]]]:
+    """Maçların katalogdaki yarışmacı adları (tek sorgu; bilinmeyen maç sözlükte yoktur)."""
+    if not event_ids:
+        return {}
+    from src.store import EventQuery, Scope
+
+    rows = deps.store().events.list(EventQuery(scope=Scope(event_ids=tuple(sorted(event_ids))),
+                                               limit=len(event_ids))).items
+    return {row.id: {"home_name": row.home_name, "away_name": row.away_name} for row in rows}
 
 
 __all__ = ["router"]

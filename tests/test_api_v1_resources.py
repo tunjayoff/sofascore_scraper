@@ -6,8 +6,9 @@ API v1: okuma kaynakları (plan maddesi P21; docs/design/02-services.md bölüm 
   * `/events`: süzgeçler (spor, turnuva, sezon, yarışmacı, durum sınıfı, tarih, detay, ad, takip), iki sıra,
     imleçle sayfalama, istenirse maç başına dilim özeti;
   * `/events/{id}`, dilimleri, tek dilim yüküyle, bahis oranları;
-  * `/tournaments`, `/tournaments/{id}`, sezonları, `/seasons/{id}` ve sezon dilimleri;
-  * `/changes`: kendi sıra numarasıyla, iki yönde, süzgeçlerle.
+  * `/tournaments`, `/tournaments/{id}`, sezonları (FX-13: sezon başına sayımlar), `/seasons/{id}` ve sezon
+    dilimleri;
+  * `/changes`: kendi sıra numarasıyla, iki yönde, süzgeçlerle (FX-13: spor ve "geri düştü"), maçın adlarıyla.
 
 Ham yük rotaları tests/test_api_raw.py'dedir.
 """
@@ -25,7 +26,7 @@ import store_fixtures as sf
 from src import schema
 from src.schema import models as schema_models
 from src.services.query import QueryService, refresh_window_seconds
-from src.store import EventQuery, FollowSpec, Ref, Store, open_store
+from src.store import EventQuery, FollowSpec, Ref, Scope, Store, open_store
 from src.web.api.v1 import records
 from src.web.app import app
 
@@ -302,10 +303,33 @@ def test_a_tournament_has_its_category_when_the_catalog_knows_it(store: Store, m
     assert found["category"] == {"id": 1, "sport": "football", "name": "England", "slug": "england", "country_code": "EN"}
 
 
+def test_the_counts_of_each_season(store: Store) -> None:
+    """05-web-ui.md G17 (FX-13): sezon başına maç, detay ve tamlık sayıları ve programın yaşı, katalogdan."""
+    seasons = data(client.get(f"/api/v1/tournaments/{PL}/seasons", params={"include": "counts"}))
+    assert [s["id"] for s in seasons] == [96668, 76986, 61627]
+    for season in seasons:
+        counts = season["counts"]
+        scope = Scope(tournament_ids=(PL,), season_ids=(season["id"],))
+        assert counts["events"] == store.events.count(EventQuery(scope=scope))
+        assert counts["details"] == store.events.count(EventQuery(scope=scope, has_details=True))
+        assert counts["finished"] == store.events.count(
+            EventQuery(scope=scope, status_classes=("completed", "decided_without_play")))
+        assert 0 <= counts["complete"] <= counts["details"]
+        assert counts["completion_rate"] == (round(counts["complete"] / counts["details"] * 100, 2)
+                                             if counts["details"] else 0.0)
+        pages = [info for info in store.entities.slices(Ref.season(PL, season["id"])) if info.key == "schedule"]
+        assert (counts["schedule_fetched_at_utc"] is None) == (not pages)
+    assert sum(s["counts"]["details"] for s in seasons) > 0
+    assert any(s["counts"]["schedule_fetched_at_utc"] for s in seasons)
+    error(client.get(f"/api/v1/tournaments/{PL}/seasons", params={"include": "everything"}), 422, "invalid_request")
+
+
 def test_one_tournament_and_its_seasons(store: Store) -> None:
     error(client.get("/api/v1/tournaments/999999"), 404, "not_found")
     seasons = data(client.get(f"/api/v1/tournaments/{PL}/seasons"))
-    assert seasons == [schema.season_from_row(row).to_dict() for row in store.entities.seasons(PL)]
+    # FX-13: sayımlar yalnızca `include=counts` ile; yoksa alan null (olay listesinin `slices_summary`si gibi)
+    assert seasons == [{**schema.season_from_row(row).to_dict(), "counts": None}
+                       for row in store.entities.seasons(PL)]
     assert [s["id"] for s in seasons] == [96668, 76986, 61627]
     error(client.get("/api/v1/tournaments/999999/seasons"), 404, "not_found")
 
@@ -344,6 +368,16 @@ def test_changes_by_sequence_number(store: Store) -> None:
     rows = store.changes.list(limit=100)
     found = data(client.get("/api/v1/changes"))
     assert found == [schema.change_from_row(row).to_dict() for row in rows]
+
+    # FX-13: `include=names` ile her satır maçın katalogdaki yarışmacı adlarını da taşır (bilinmeyen maçta null)
+    def names(event_id: int) -> Dict[str, Any]:
+        event = store.events.get(event_id)
+        return {"home_name": event.home_name if event else None, "away_name": event.away_name if event else None}
+
+    named = data(client.get("/api/v1/changes", params={"include": "names"}))
+    assert named == [{**schema.change_from_row(row).to_dict(), **names(row.event_id)} for row in rows]
+    assert named[0]["home_name"] == "Liverpool" and named[-1]["home_name"] is None
+    error(client.get("/api/v1/changes", params={"include": "everything"}), 422, "invalid_request")
     assert [c["seq"] for c in walk("/api/v1/changes", {"limit": 3})] == [row.seq for row in rows]
     assert [c["seq"] for c in walk("/api/v1/changes", {"since": rows[2].seq})] == [row.seq for row in rows[3:]]
     newest = [c["seq"] for c in walk("/api/v1/changes", {"order": "desc", "limit": 3})]
@@ -366,6 +400,32 @@ def test_changes_filters(store: Store) -> None:
         900004, 900003, 900002]
     error(client.get("/api/v1/changes", params={"cursor": "x"}), 400, "invalid_request")
     error(client.get("/api/v1/changes", params={"order": "random"}), 422, "invalid_request")
+
+
+def test_changes_by_sport_and_regressed_with_the_names(store: Store) -> None:
+    """05-web-ui.md G19 (FX-13): spor ve "bitmişten geçersize döndü" süzgeçleri; satırda maçın yarışmacı adları."""
+    _more_changes(store, 4)
+    liverpool = sf.event_id(sf.PL_LIV)
+    store.changes.append({
+        "ts_utc": "2026-09-30T12:00:00+00:00", "event_id": liverpool, "sport": "football",
+        "tournament": {"id": PL, "name": None}, "start_ts": 1789990000, "status_regressed": True,
+        "changed": {"status.type": ["finished", "canceled"]}, "status_class": ["completed", "void"],
+    })
+    rows = store.changes.list(limit=100)
+
+    football = walk("/api/v1/changes", {"sport": "football", "limit": 2})
+    assert [c["seq"] for c in football] == [row.seq for row in rows if row.sport == "football"]
+    assert [c["seq"] for c in walk("/api/v1/changes", {"sport": "basketball"})] == [
+        row.seq for row in rows if row.sport == "basketball"]
+    assert walk("/api/v1/changes", {"sport": "curling"}) == []
+    regressed = walk("/api/v1/changes", {"regressed": "true", "include": "names"})
+    assert [c["seq"] for c in regressed] == [row.seq for row in rows if row.status_regressed]
+    assert regressed[-1]["event_id"] == liverpool and regressed[-1]["status_regressed"] is True
+    assert (regressed[-1]["home_name"], regressed[-1]["away_name"]) == ("Liverpool", "Everton")
+    assert [c["seq"] for c in walk("/api/v1/changes", {"regressed": "false", "order": "desc"})] == [
+        row.seq for row in reversed(rows) if not row.status_regressed]
+    assert [c["seq"] for c in walk("/api/v1/changes", {"regressed": "true", "sport": "basketball"})] == [
+        row.seq for row in rows if row.status_regressed and row.sport == "basketball"]
 
 
 def test_an_empty_change_log(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

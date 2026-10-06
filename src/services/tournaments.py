@@ -25,7 +25,7 @@ Servis yazmaz, istek atmaz ve depoyu açmaz: açık bir `Store` alır. Depolama 
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Mapping, Optional, Set
 
 from src import sports
 # Paket kökü üzerinden: Store'un cephesi ve sorgu türleri ilk çağrıda yüklenir (bu modülü içe aktarmak hafif kalır)
@@ -37,6 +37,7 @@ if TYPE_CHECKING:
 SEASONS_KEY = "seasons"  # turnuvanın sezon listesi dilimi
 SCHEDULE_KEY = "schedule"  # sezonun program sayfaları (tur dosyaları, olay sayfaları)
 ROW_SOURCE_LISTING = "listing"
+LAYOUT_V3 = "v3"  # katalogda v3 düzeninde duran dilimin `layout` değeri
 SEASONS_SUFFIX = "_seasons.json"
 # `<id>_<ad>_seasons.json` ve `<id>_seasons.json`: turnuvası adında yazılı dosya (soneksiz ada uygulanır;
 # eski düzen okuyucusunun kuralıyla aynı)
@@ -81,6 +82,11 @@ def _unknown_to_catalog(store: "Store", names: Mapping[int, Optional[str]]) -> D
             if isinstance(name, str) and name and known.get(int(league_id)) != name}
 
 
+def _with_v3_list(store: "Store") -> Set[int]:
+    """Sezon listesi v3 düzeninde saklanan turnuvalar: onların listesi adında kimlik olmayan eski dosyaya yenilmez."""
+    return set(store.entities.tournaments_with_slice(SEASONS_KEY, layout_name=LAYOUT_V3))
+
+
 def _from_catalog(store: "Store", tournament_id: int) -> Optional[Mapping[str, Any]]:
     payload = store.entities.payload(store_api.Ref.tournament(tournament_id), SEASONS_KEY)
     return payload if isinstance(payload, Mapping) else None
@@ -96,6 +102,8 @@ def seasons_of(store: "Store", tournament_id: int, *, name: Optional[str] = None
     """
     tournament_id = int(tournament_id)
     differing = _unknown_to_catalog(store, {tournament_id: name})
+    if differing and tournament_id in _with_v3_list(store):
+        differing = {}
     payload = _named_only_lists(_legacy_lists(store, differing), differing).get(tournament_id) if differing else None
     if payload is None:
         payload = _from_catalog(store, tournament_id)
@@ -108,18 +116,22 @@ def season_lists(store: "Store", names: Mapping[int, Optional[str]]) -> Dict[int
 
     names: adlarıyla birlikte yapılandırılmış ligler (bkz. `seasons_of`). Hangi turnuvalara bakılacağı:
     yapılandırılmış ligler, takipler, katalogda satırı olan (en az bir maçı bilinen) turnuvalar ve eski düzende
-    sezon listesi dosyası olan turnuvalar. Katalogda "sezon listesi olan turnuvalar" sorgusu yoktur; maçı
-    bilinmeyen ve yapılandırılmamış bir turnuvanın listesi bu yüzden dosya taramasıyla bulunur, yükü yine
-    katalogdan okunur.
+    sezon listesi dosyası olan turnuvalar, ayrıca katalogda sezon listesi saklanan her turnuva
+    (`EntityStore.tournaments_with_slice`; maçı bilinmeyen, yapılandırılmamış ve takip edilmeyen bir turnuvanın
+    yalnızca v3'te duran listesi de böyle bulunur). v3 düzeninde saklanan bir liste, adında kimlik olmayan eski
+    bir dosyaya (`<ad>_seasons.json`) yenilmez.
     """
     configured: Dict[int, Optional[str]] = {int(league_id): name for league_id, name in names.items()}
     differing = _unknown_to_catalog(store, configured)
     legacy = _legacy_lists(store, differing)
-    named_only = _named_only_lists(legacy, differing)
+    v3_lists = _with_v3_list(store) if differing else set()
+    named_only = {tid: payload for tid, payload in _named_only_lists(legacy, differing).items() if tid not in v3_lists}
 
     wanted: Dict[int, None] = dict.fromkeys(configured)  # sıralı küme
     wanted.update(dict.fromkeys(store.follows.leagues()))
     wanted.update(dict.fromkeys(row.id for row in store.entities.tournaments(limit=_ALL)))
+    # Sezon listesi olan ama maçı, takibi ve satırı olmayan turnuva (yalnızca v3'te duran liste dahil)
+    wanted.update(dict.fromkeys(store.entities.tournaments_with_slice(SEASONS_KEY)))
     wanted.update(dict.fromkeys(item.tournament_id for item in legacy if item.tournament_id is not None))
 
     out: Dict[int, List[Any]] = {}

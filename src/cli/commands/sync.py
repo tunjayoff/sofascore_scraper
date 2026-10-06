@@ -2,8 +2,9 @@
 İndirme komutları (docs/design/02-services.md bölüm 4.1; plan maddesi P19): `sync`, `fetch event|tournament`,
 `refresh`. Üçü de eşitleme servisini (src/services/sync.py) bir iş olarak çalıştırır.
 
-    ssc sync                                   yapılandırılmış her lig: sezon listeleri, programlar, detaylar
+    ssc sync                                   takip edilen her turnuva: sezon listeleri, programlar, detaylar
     ssc sync --tournament 17 --only events     tek lig, yalnızca maç detayları (programlar indirilmez)
+    ssc sync --only seasons                    yalnızca sezon listeleri, tazelik süresine bakılmadan
     ssc sync --recheck-unavailable all         önce "yok" işaretlerini aç, sonra indir
     ssc sync --dry-run                         istek atmadan planı ve istek tahminini göster
     ssc fetch event 12345678 12345679          yalnızca bu maçların detayları
@@ -26,8 +27,9 @@ Her iş (P11'in iş yöneticisi, src/jobs/manager.py) veri dizininin `writer` ki
   * Yapılandırılmış sink'ler (`[[sink]]`) işten önce kaydedilir ve işten sonra en çok 10 sn boşaltılır
     (`sinks.drain_at_exit`): işin `job.started` / `job.finished` olayları da onlara gider.
 
-Ligler bugün yapılandırmadan (`config/leagues.txt`, `[[follow]]`) gelir; `--tournament` yapılandırılmamış bir
-turnuvayı da indirir. Ağır içe aktarmalar (servisler, Store, istek katmanı) işlevlerin içindedir.
+Turnuvalar takip tablosundan gelir (plan maddesi FX-13): leagues.txt'in, yapılandırma dosyasının `[[follow]]`
+girdilerinin, API'nin ve `ssc follows add`in etkin turnuva takipleri, her biri kendi sezon seçimiyle
+(src/services/sync.py `sync_targets`). `--tournament` takip edilmeyen bir turnuvayı da indirir (bütün sezonları). Ağır içe aktarmalar (servisler, Store, istek katmanı) işlevlerin içindedir.
 """
 from __future__ import annotations
 
@@ -75,7 +77,7 @@ def _positive_id(value: str) -> int:
 
 def _sync_arguments(parser: argparse.ArgumentParser, t: Translator) -> None:
     parser.add_argument("--tournament", type=_positive_id, metavar="ID", help=t("ssc_help_sync_tournament"))
-    parser.add_argument("--only", choices=("events",), help=t("ssc_help_sync_only"))
+    parser.add_argument("--only", choices=("events", "seasons"), help=t("ssc_help_sync_only_any"))
     parser.add_argument("--recheck-unavailable", dest="recheck", nargs="?", const="legacy", choices=RECHECK_MODES,
                         metavar="legacy|all", help=t("ssc_help_sync_recheck"))
     parser.add_argument("--include-legacy", dest="include_legacy", action="store_true",
@@ -502,18 +504,25 @@ def plan_sync(ctx: "ServiceContext", spec: "SyncSpec") -> Dict[str, Any]:
     kuralıdır (src/services/listing.py); maçların ihtiyacı planlamanınkidir (src/services/planning.py).
     """
     from src.services import listing
+    from src.services.sync import pick_seasons, sync_targets
 
     store = ctx.store
+    targets = sync_targets(ctx)
+    by_follow = not spec.selections and not spec.league_id
     leagues: List[int]
     if spec.selections:
         leagues = sorted({s.league_id for s in spec.selections})
     elif spec.league_id:
         leagues = [int(spec.league_id)]
     else:
-        leagues = sorted(int(lid) for lid in ctx.config.get_leagues())
+        leagues = sorted(int(lid) for lid in targets)
     lists = {"season_lists": 0, "schedules": 0, "fresh": 0}
     list_requests = 0
     seasons_of: Dict[int, List[int]] = {}
+    if spec.mode == "seasons":
+        # Yalnızca sezon listeleri: tazelik süresine bakılmadan her biri bir istek
+        lists["season_lists"] = len(leagues)
+        list_requests = len(leagues)
     if spec.mode == "full":
         for lid in leagues:
             if listing.season_list_is_fresh(store, lid, listing.SEASON_LIST_TTL_SECONDS):
@@ -523,6 +532,8 @@ def plan_sync(ctx: "ServiceContext", spec: "SyncSpec") -> Dict[str, Any]:
                 list_requests += 1
             wanted = [sid for s in spec.selections if s.league_id == lid for sid in s.season_ids]
             known = [int(s["id"]) for s in ctx.season_fetcher.get_seasons_for_league(lid) if s.get("id") is not None]
+            if by_follow and lid in targets:
+                known = pick_seasons(known, targets[lid].seasons)  # takibin sezon seçimi (sync'in kuralı)
             seasons_of[lid] = wanted or known
             for sid in seasons_of[lid]:
                 if listing.schedule_is_fresh(store, lid, sid, listing.SCHEDULE_TTL_SECONDS):
@@ -531,8 +542,10 @@ def plan_sync(ctx: "ServiceContext", spec: "SyncSpec") -> Dict[str, Any]:
                     lists["schedules"] += 1
                     list_requests += 1  # en az tur listesi; tur ve olay sayfaları önceden bilinmez
     explicit = [mid for s in spec.selections for mid in s.match_ids]
-    if explicit:
-        ids: List[Any] = list(dict.fromkeys(explicit))
+    if spec.mode == "seasons":
+        ids: List[Any] = []
+    elif explicit:
+        ids = list(dict.fromkeys(explicit))
     else:
         ids = []
         for lid in leagues or [None]:  # type: ignore[list-item]
@@ -616,8 +629,11 @@ def sync(inv: Invocation) -> CommandResult:
     args = inv.args
     if args.dry_run and args.recheck:
         raise UsageError("--recheck-unavailable changes the data folder; it cannot be part of --dry-run")
+    if args.only == "seasons" and args.recheck:
+        raise UsageError("--recheck-unavailable resets match details; it cannot be used with --only seasons")
     _include_legacy(args.include_legacy)
-    spec = SyncSpec(mode="details" if args.only == "events" else "full", league_id=args.tournament, export=False)
+    mode = {"events": "details", "seasons": "seasons"}.get(args.only or "", "full")
+    spec = SyncSpec(mode=mode, league_id=args.tournament, export=False)  # type: ignore[arg-type]
     return _download(inv, spec, kind="sync", purpose="sync", dry_run=args.dry_run,
                      before=_recheck(args.tournament, args.recheck))
 

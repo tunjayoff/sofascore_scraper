@@ -28,7 +28,7 @@ from src import redact
 from src.config import loader, overrides
 from src.config import settings as model
 from src.exceptions import ConfigError
-from src.store import LeaseHeld, SchemaTooNew
+from src.store import LeaseHeld, SchemaTooNew, open_store
 from src.web import deps
 from src.web.api.v1 import settings as settings_v1
 from src.web.app import app
@@ -439,6 +439,45 @@ def test_a_data_dir_change_moves_the_job_store(data_dir_sandbox: Path) -> None:
     # (Windows'ta geçici dizin ev dizininin altındadır ve kural onu kabul eder.)
     if not Path(conftest.DATA_DIR).resolve().is_relative_to(Path.home().resolve()):
         assert "inside the project" in issues(patch({"storage.data_dir": conftest.DATA_DIR}))["storage.data_dir"]
+
+
+def _open_stores_of(data_dir: str) -> list:
+    from src.store import api
+
+    key = os.path.normcase(os.path.realpath(data_dir))
+    return [found for (path, _readonly), found in api._registry.items() if path == key and not found.closed]
+
+
+def test_a_data_dir_change_closes_the_store_of_the_old_folder(data_dir_sandbox: Path) -> None:
+    """
+    FX-13 (#120): değişimden sonra eski dizinin deposu bu süreçte açık kalmaz; Windows'ta eski dizin uygulama
+    çalışırken taşınabilir ya da silinebilir.
+    """
+    import shutil
+
+    first = str(data_dir_sandbox / "first")
+    assert patch({"storage.data_dir": first}).status_code == 200
+    assert client.get("/api/v1/status").json()["data"]["storage_error"] is None  # depo açılır
+    readonly = open_store(first, readonly=True, create=False)
+    assert _open_stores_of(first)
+
+    assert patch({"storage.data_dir": str(data_dir_sandbox / "second")}).status_code == 200
+
+    assert _open_stores_of(first) == [] and readonly.closed
+    shutil.rmtree(first)  # açık dosya yok (Windows'ta açık catalog.db silinemezdi)
+    assert client.get("/api/v1/status").json()["data"]["summary"]["data_dir"] == str(data_dir_sandbox / "second")
+
+
+def test_the_old_store_stays_open_while_this_process_holds_one_of_its_leases(data_dir_sandbox: Path) -> None:
+    """`serve`in sink dağıtıcısı eski dizinin `sinks` kilidini tutuyorsa depo onun altından kapatılmaz."""
+    first = str(data_dir_sandbox / "first")
+    assert patch({"storage.data_dir": first}).status_code == 200
+    old = open_store(first)
+    with old.lease("sinks", purpose="dispatcher"):
+        assert patch({"storage.data_dir": str(data_dir_sandbox / "second")}).status_code == 200
+        assert not old.closed and _open_stores_of(first) == [old]
+    assert settings_v1.close_data_dir(first) is True and old.closed
+    assert settings_v1.close_data_dir(str(data_dir_sandbox / "not-a-store")) is False
 
 
 def test_a_relative_data_dir_is_stored_as_an_absolute_path(data_dir_sandbox: Path, monkeypatch: pytest.MonkeyPatch) -> None:

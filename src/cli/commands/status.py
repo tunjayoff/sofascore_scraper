@@ -3,14 +3,18 @@
 almaz, SofaScore'a istek atmaz.
 
     ssc status                 veri özeti, depo sürümleri, kilitler, çalışan ve son iş, canlı servis, sink'ler
+                               ve gecikmeleri, son taşıma
     ssc status --coverage      ayrıca turnuva başına maç ve detay sayıları
+    ssc status --disk          ayrıca veri klasörünün disk kullanımı (klasörü gezer; v3 ağacı dahil, FX-13)
     ssc status --check         yalnızca çıkış kodu: 0 sağlıklı, 1 sağlıksız (katalog yeniden kurulmalı)
 
   * Henüz depo olmayan bir veri dizini (hiçbir komut çalışmamış) boş bir durumdur, hata değildir; hiçbir şey
     oluşturulmaz.
   * Canlı servisin alanları `services.live.live_status`'tandır: kilit sahibi, kaynak, öndeki kaynak (spor
     başına), son kaynak değişimi, son kalp atışı.
-  * Sink'lerin konumu ve son hatası olay günlüğünün sink imleçlerindendir.
+  * Sink'lerin konumu ve son hatası olay günlüğünün sink imleçlerindendir; gecikme (`lag_events`) günlüğün son
+    sıra numarası eksi konumdur (plan maddesi FX-13).
+  * Son taşıma (`ssc migrate`) `migration_runs`ın son gerçek çalışmasıdır (`Migrator.last_run`, FX-13).
 
 Ağır içe aktarmalar (servisler, Store) işlevin içindedir.
 """
@@ -30,6 +34,7 @@ from src.cli.output import Translator
 def _arguments(parser: argparse.ArgumentParser, t: Translator) -> None:
     parser.add_argument("--check", action="store_true", help=t("ssc_help_status_check"))
     parser.add_argument("--coverage", action="store_true", help=t("ssc_help_status_coverage"))
+    parser.add_argument("--disk", action="store_true", help=t("ssc_help_status_disk"))
 
 
 def _open(data_dir: str) -> Optional[Any]:
@@ -59,9 +64,25 @@ def _leases(info: Any) -> List[Dict[str, Any]]:
 def _sinks(store: Any) -> List[Dict[str, Any]]:
     try:
         cursors = store.streams.cursors()
+        head = store.streams.head().last_seq
     except Exception:  # olay günlüğü okunamıyor: durumun geri kalanı yine verilir
         return []
-    return [dataclasses.asdict(cursor) for cursor in cursors]
+    return [dict(dataclasses.asdict(cursor), lag_events=max(0, head - cursor.seq)) for cursor in cursors]
+
+
+def _migration(store: Any) -> Optional[Dict[str, Any]]:
+    run = store.migrate.last_run()
+    if run is None:
+        return None
+    return dict(run, started_at=_iso(run["started_at"]), finished_at=_iso(run["finished_at"]))
+
+
+def _disk(summary: Any) -> Optional[Dict[str, Any]]:
+    disk = summary.disk
+    if disk is None:
+        return None
+    return {"entries": dict(disk.entries), "seasons": disk.seasons, "matches": disk.matches, "details": disk.details,
+            "datasets": disk.datasets, "v3": disk.v3, "changes": disk.changes, "total": disk.total}
 
 
 def _jobs(store: Any) -> Dict[str, Any]:
@@ -98,7 +119,7 @@ def status(inv: Invocation) -> CommandResult:
                              exit_code=exit_codes.OK)
 
     info = store.info(sizes=False)
-    summary = StatusService(store).summary(sizes=False)
+    summary = StatusService(store).summary(sizes=bool(inv.args.disk))
     jobs = _jobs(store)
     live = _live(store)
     healthy = info.catalog_rebuild_reason is None
@@ -122,7 +143,10 @@ def status(inv: Invocation) -> CommandResult:
         "jobs": {"running": jobs["running"], "last": jobs["last"]},
         "live": live,
         "sinks": _sinks(store),
+        "last_migration": _migration(store),
     }
+    if inv.args.disk:
+        data["disk"] = _disk(summary)
     if inv.args.coverage:
         data["coverage"] = [dict(dataclasses.asdict(row), coverage=row.coverage) for row in summary.tournaments]
     code = exit_codes.OK if healthy else exit_codes.GENERAL_ERROR
@@ -137,6 +161,16 @@ def status(inv: Invocation) -> CommandResult:
     else:
         lines.append(t("ssc_status_unhealthy", reason=info.catalog_rebuild_reason))
     lines.append(t("ssc_status_data", matches=summary.matches, details=summary.details, seasons=summary.seasons))
+    if data.get("disk"):
+        from src.services.stats import format_size
+
+        lines.append(t("ssc_status_disk", total=format_size(data["disk"]["total"]), v3=format_size(data["disk"]["v3"])))
+    migration = data["last_migration"]
+    if migration is not None:
+        lines.append(t("ssc_status_migration", id=migration["id"], done=migration["events_done"],
+                       failed=migration["events_failed"], finished=migration["finished_at"])
+                     if migration["finished_at"] else
+                     t("ssc_status_migration_unfinished", id=migration["id"], started=migration["started_at"] or "?"))
     running, last = jobs["_running"], jobs["_last"]
     lines.append(t("ssc_status_running_job", job=job_line(t, running)) if running is not None
                  else t("ssc_status_no_running_job"))
@@ -154,6 +188,8 @@ def status(inv: Invocation) -> CommandResult:
     for cursor in data["sinks"]:
         if cursor.get("last_error"):
             lines.append(t("ssc_status_sink_error", sink=cursor.get("sink") or "?", error=cursor["last_error"]))
+        if cursor.get("lag_events"):
+            lines.append(t("ssc_status_sink_lag", sink=cursor.get("sink") or "?", lag=cursor["lag_events"]))
     if inv.args.coverage:
         for row in summary.tournaments:
             lines.append(t("ssc_status_coverage", tournament=row.tournament_id if row.tournament_id is not None else "-",

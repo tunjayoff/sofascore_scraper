@@ -13,7 +13,16 @@ tur "sezon yok" / "maç yok" gibi görünmez: başarısız bir iş birimidir (`S
 çekilmiş) yeniden istenmez.
 
 Komut satırı da aynı servisi çağırır (main.py: `--headless --update-all` ve `--refresh-only`); yalnızca yenileme
-ayrı bir kiptir (`mode="refresh"`: kayıtlı geçici maçların /event'i yeniden okunur, başka istek atılmaz).
+ayrı bir kiptir (`mode="refresh"`: kayıtlı geçici maçların /event'i yeniden okunur, başka istek atılmaz). Yalnızca
+sezon listeleri de bir kiptir (`mode="seasons"`, plan maddesi FX-13): listeler tazelik süresine bakılmadan yeniden
+okunur, program ve detay istenmez.
+
+Hangi turnuvalar (plan maddesi FX-13): belirtim bir lig ya da seçim vermiyorsa takip tablosunun etkin turnuva
+takipleri (`FollowsService.sync_tournaments`: leagues.txt'in aynası, yapılandırma dosyasının `[[follow]]`
+girdileri, API'den ve `ssc follows add` ile eklenenler). Her takibin `seasons` seçimi uygulanır: "all" listedeki
+her sezon, "current" listenin ilki (SofaScore en yeniyi önce verir), "last:N" ilk N, kimlikler o sezonlar.
+`follows` verilirse yalnızca o takipler. Takip tablosu okunamazsa (depo açılamadı) ligler eskisi gibi
+yapılandırmadan okunur (`ConfigManager.get_leagues`, bütün sezonlar).
 
 Maç detayları (detay aşaması, kimliğiyle seçilen maçlar, yalnızca yenileme) tek getirme boru hattıyla indirilir
 (src/services/pipeline.py, plan maddesi P13). Servis ona bağlamdaki MatchDataFetcher'ın eski adlı giriş noktalarıyla
@@ -33,9 +42,11 @@ kaydına ve kullanıcı metnine çeviren çağıran yüzdür (web: src/web/fetch
 """
 from __future__ import annotations
 
+import inspect
+import re
 from collections import Counter
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Literal, Mapping, Optional, Protocol, Tuple
+from typing import Any, Callable, Dict, List, Literal, Mapping, Optional, Protocol, Sequence, Tuple, Union
 
 from src import breaker as request_breaker
 from src.client.context import FetchCancelled, request_context
@@ -47,7 +58,7 @@ from src.services.context import ServiceContext
 
 logger = get_logger("SyncService")
 
-SyncMode = Literal["full", "details", "refresh"]
+SyncMode = Literal["full", "details", "refresh", "seasons"]
 SyncState = Literal["succeeded", "partial", "cancelled"]
 
 # JobProgress aşamaları, çalıştıkları sırayla
@@ -55,6 +66,9 @@ FULL_PHASES: Tuple[str, ...] = ("seasons", "matches", "details")
 DETAILS_PHASES: Tuple[str, ...] = ("details",)
 # Yalnızca yenileme: kayıtlı maçlar yeniden okunur; ilerleme detay aşamasının sayacıyla gösterilir
 REFRESH_PHASES: Tuple[str, ...] = ("details",)
+# Yalnızca sezon listeleri (plan maddesi FX-13)
+SEASONS_PHASES: Tuple[str, ...] = ("seasons",)
+_LAST_N = re.compile(r"^last:([1-9][0-9]*)$")
 
 # (lig, sezon, sezon adı): maç listesi aşamasının bir adımı
 SeasonStep = Tuple[int, int, Optional[str]]
@@ -82,9 +96,14 @@ class SyncSpec:
     Ne indirilecek.
 
     mode        "full": sezon listeleri + maç listeleri + detaylar; "details": yalnızca detaylar;
-                "refresh": yalnızca kayıtlı geçici maçların yenilenmesi (`selections` okunmaz)
-    league_id   tek lig; yoksa yapılandırılmış bütün ligler. `selections` varsa okunmaz.
+                "refresh": yalnızca kayıtlı geçici maçların yenilenmesi; `selections` verilirse yalnızca onların
+                maçları, yenilenmeleri gerekmese de (yalnızca /event; plan maddesi FX-13, 05-web-ui.md G23);
+                "seasons": yalnızca sezon listeleri, tazelik süresine bakılmadan
+    league_id   tek lig; yoksa takip edilen bütün turnuvalar. `selections` ya da `follows` varsa okunmaz.
     selections  hedefli seçimler; boşsa `league_id` geçerlidir
+
+    Takip kimlikleriyle hedeflenen çalışma `FollowsSyncSpec`tir (alt sınıf: bu sınıfın iş kaydındaki sözlüğü,
+    `dataclasses.asdict`, FX-13'ten önceki gibi kalır).
     export      okunmaz. CSV aşaması kalktı (EX-1); alan, onu veren çağıranlar ve iş kayıtlarında saklanmış
                 belirtimler geçerli kalsın diye duruyor ve belirtim `targets`/`phases`'e geçerken (P13) kalkar.
     """
@@ -99,7 +118,71 @@ class SyncSpec:
         """Bu işin geçeceği JobProgress aşamaları (tutamacın ilerleme nesnesi bunlarla kurulur)."""
         if self.mode == "refresh":
             return REFRESH_PHASES
+        if self.mode == "seasons":
+            return SEASONS_PHASES
         return DETAILS_PHASES if self.mode == "details" else FULL_PHASES
+
+
+@dataclass(frozen=True)
+class FollowsSyncSpec(SyncSpec):
+    """
+    Adı verilen takiplerin eşitlemesi (plan maddesi FX-13, 05-web-ui.md G23). follows: takip kimlikleri
+    (`tournament:17`); yalnızca bu turnuva takipleri, kendi sezon seçimleriyle indirilir (tam ve sezon kipi).
+    `league_id` ve `selections` okunmaz.
+    """
+
+    follows: Tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class SyncTarget:
+    """İndirilecek bir turnuva: takibin adı ve sezon seçimi ("all", "current", "last:N" ya da kimlikler)."""
+
+    tournament_id: int
+    name: Optional[str] = None
+    seasons: Union[str, Tuple[int, ...]] = "all"
+
+
+def pick_seasons(listed: Sequence[int], choice: Union[str, Sequence[int]]) -> List[int]:
+    """
+    Takibin sezon seçimi, sezon listesindeki kimliklere uygulanır (liste SofaScore'un sırasıyla, en yeni önce):
+    "all" hepsi, "current" ilki, "last:N" ilk N; kimlik listesi verilen kimliklerdir (listede olmasalar da;
+    eskimiş kimliği çağıran çözer). Tanınmayan seçim "all" sayılır.
+    """
+    if isinstance(choice, str):
+        if choice == "current":
+            return list(listed[:1])
+        found = _LAST_N.match(choice)
+        if found:
+            return list(listed[:int(found.group(1))])
+        return list(listed)
+    return list(dict.fromkeys(int(v) for v in choice))
+
+
+def sync_targets(ctx: ServiceContext) -> Dict[int, SyncTarget]:
+    """
+    Eşitlemenin turnuvaları: takip tablosunun etkin turnuva takipleri (kimlik → hedef), takip sırasıyla. Tablo
+    okunamazsa (depo açılamadı ya da meşgul) yapılandırmanın ligleri, bütün sezonlarıyla (bugünkü yedek yol).
+    """
+    from src.services.follows import ConfigLeagues, FollowsService
+
+    try:
+        try:
+            store = ctx.store
+        except AttributeError:  # deposu olmayan bağlam (gömülü kullanım, testlerin sahte bağlamı)
+            store = None
+        if store is None:
+            return {int(lid): SyncTarget(int(lid), name) for lid, name in ctx.config.get_leagues().items()}
+        # Lig dosyasının aynası şimdi yenilenir: bağlam kurulurken veri dizininin state.db'si henüz yoksa ayna
+        # yazılmamıştır (yeni bir veri dizininin ilk eşitlemesi)
+        mirror = getattr(ctx.config, "mirror_follows", None)
+        if callable(mirror):
+            mirror(ctx.data_dir)
+        rows = FollowsService(store, ConfigLeagues(), config_file=True).sync_tournaments()
+    except StorageError as e:
+        logger.warning("The follows table could not be read; the sync uses the leagues of the configuration: %s", e)
+        return {int(lid): SyncTarget(int(lid), name) for lid, name in ctx.config.get_leagues().items()}
+    return {row.entity_id: SyncTarget(row.entity_id, row.name, row.seasons) for row in rows}
 
 
 @dataclass(frozen=True)
@@ -204,6 +287,19 @@ class DetachedHandle:
         pass
 
 
+def _follows_of(spec: SyncSpec) -> Tuple[str, ...]:
+    return tuple(getattr(spec, "follows", ()) or ())
+
+
+def _accepts_fields(log: Callable[..., Any]) -> bool:
+    """Tutamacın `log`u kod ve parametre alabiliyor mu (`log(message, **fields)`; iş yöneticisinin tutamacı)."""
+    try:
+        parameters = inspect.signature(log).parameters.values()
+    except (TypeError, ValueError):
+        return False
+    return any(p.kind is inspect.Parameter.VAR_KEYWORD or p.name == "code" for p in parameters)
+
+
 def _status_counts_reason(status_counts: Optional[Mapping[str, int]]) -> str:
     """Devreyi kesen hatanın türü: en sık görülen 403 / 429 / 5xx."""
     relevant = Counter({k: v for k, v in (status_counts or {}).items() if k in ("403", "429", "5xx")})
@@ -250,20 +346,33 @@ class _SyncRun:
         self.tracker = job.progress
         self.breaker = breaker
         self.league_names: Dict[int, str] = {}
+        self.targets: Dict[int, SyncTarget] = {}
         self.empty_schedule = 0
         self.failed_listings: List[FailedListing] = []
+        self._coded_log = _accepts_fields(job.log)
 
     # --- yardımcılar ---------------------------------------------------------------------------------
 
     def lname(self, lid: Optional[int]) -> Optional[str]:
         return self.league_names.get(int(lid)) if lid is not None else None
 
+    def log(self, message: str, code: str, **params: Any) -> None:
+        """
+        İş günlüğüne bir satır, koduyla (05-web-ui.md G24): istemci metni `code` ve `params`tan üretir; kodu
+        taşıyamayan tutamaca (eski imza `log(message)`) yalnızca metin gider.
+        """
+        if self._coded_log:
+            self.job.log(message, code=code, params=params)
+        else:
+            self.job.log(message)
+
     def report_breaker(self, reason: str, what: str) -> None:
         """Devre kesildiğini karta ve iş günlüğüne bir kez yazar."""
         if self.tracker.result().get("breaker"):
             return
         self.tracker.breaker(reason)
-        self.job.log(f"Too many failed requests ({reason}); stopped fetching {what}.")
+        self.log(f"Too many failed requests ({reason}); stopped fetching {what}.", "sync_breaker_stopped",
+                 reason=reason, what=what)
 
     def blocked(self, what: str) -> bool:
         if not self.breaker.tripped:
@@ -322,9 +431,11 @@ class _SyncRun:
             return result
         self.failed_listings.append(FailedListing(kind, int(league_id), season_id, str(reason)))
         if kind == "seasons":
-            self.job.log(f"The season list of league {league_id} could not be fetched ({reason}).")
+            self.log(f"The season list of league {league_id} could not be fetched ({reason}).",
+                     "sync_season_list_failed", league_id=int(league_id), reason=str(reason))
         else:
-            self.job.log(f"The match list of {what} could not be fetched completely ({reason}).")
+            self.log(f"The match list of {what} could not be fetched completely ({reason}).",
+                     "sync_schedule_failed", league_id=int(league_id), season_id=season_id, reason=str(reason))
         return None
 
     # --- akış ----------------------------------------------------------------------------------------
@@ -334,7 +445,11 @@ class _SyncRun:
         cancelled = job.cancelled
         if spec.mode == "refresh":
             return self._refresh()
-        self.league_names = self.ctx.config.get_leagues()
+        self.targets = sync_targets(self.ctx)
+        self.league_names = {lid: target.name for lid, target in self.targets.items() if target.name}
+        if spec.mode == "seasons":
+            self._season_lists(self._leagues(), max_age=None)
+            return self.result(cancelled=cancelled())
 
         detail_plan: DetailPlan = {}
         explicit_match_ids: List[int] = []
@@ -382,9 +497,10 @@ class _SyncRun:
         md.refresh_listener = tracker.add_refreshed
         md.begin_job_cache()
         try:
-            ids = md.refresh_due_ids(league_id=self.spec.league_id)
+            explicit = [str(mid) for s in self.spec.selections for mid in s.match_ids]
+            ids = list(dict.fromkeys(explicit)) if explicit else md.refresh_due_ids(league_id=self.spec.league_id)
             tracker.start_phase("details", len(ids))
-            job.log(f"Refreshing {len(ids)} provisional records...")
+            self.log(f"Refreshing {len(ids)} provisional records...", "sync_refreshing", count=len(ids))
             stats = md.refresh_matches(
                 ids,
                 progress_callback=lambda done, _total, _msg: tracker.advance(done),
@@ -404,29 +520,73 @@ class _SyncRun:
         )
         return self.result(cancelled=job.cancelled(), refresh=counts)
 
+    def _leagues(self) -> List[int]:
+        """
+        Çalışmanın ligleri: seçimlerin, tek ligin, verilen takiplerin ya da (hiçbiri yoksa) takip edilen bütün
+        turnuvaların. Takip edilmeyen bir takip kimliği atlanır ve iş günlüğüne yazılır.
+        """
+        spec = self.spec
+        follows = _follows_of(spec)
+        if follows:
+            found: List[int] = []
+            for follow in follows:
+                kind, _, number = str(follow).partition(":")
+                lid = int(number) if kind == "tournament" and number.isdigit() else None
+                if lid is None or lid not in self.targets:
+                    self.log(f"The follow {follow} is not an enabled tournament follow; skipped.",
+                             "sync_follow_skipped", follow=str(follow))
+                    continue
+                if lid not in found:
+                    found.append(lid)
+            return sorted(found)
+        if spec.selections:
+            return sorted({s.league_id for s in spec.selections})
+        if spec.league_id:
+            return [spec.league_id]
+        return sorted(self.targets)
+
+    def _season_lists(self, leagues: Sequence[int], *, max_age: Optional[float]) -> None:
+        """Sezon listeleri aşaması (tam kipin ilk aşaması; sezon kipinin tamamı)."""
+        job, tracker, ctx = self.job, self.tracker, self.ctx
+        tracker.start_phase("seasons", len(leagues))
+        for i, lid in enumerate(leagues):
+            if job.cancelled() or self.blocked("season lists"):
+                break
+            tracker.set_context(league_id=lid, league_name=self.lname(lid))
+            self.log(f"Refreshing season list for league {lid}...", "sync_season_list", league_id=int(lid))
+            self._listing(lambda _l=lid: ctx.season_fetcher.list_seasons(_l, max_age=max_age), "seasons", lid)
+            tracker.advance(i + 1)
+
+    def _followed_seasons(self, lid: int, names: Mapping[int, Optional[str]]) -> List[int]:
+        """Bir takibin indirilecek sezonları (sezon listesine takibin seçimi uygulanır; `pick_seasons`)."""
+        target = self.targets.get(int(lid))
+        listed = list(names)
+        if target is None or target.seasons == "all":
+            return listed
+        chosen = pick_seasons(listed, target.seasons)
+        if isinstance(target.seasons, str):
+            return chosen
+        resolved: List[int] = []
+        for sid in chosen:
+            current = self.ctx.season_fetcher.resolve_season_id(lid, sid)
+            if current not in resolved:
+                resolved.append(current)
+        return resolved
+
     def _listings(self) -> DetailPlan:
         """Tam kipin ilk iki aşaması: sezon listeleri ve maç listeleri. Detay aşamasının planını döndürür."""
         spec, job, tracker, ctx = self.spec, self.job, self.tracker, self.ctx
         cancelled = job.cancelled
         detail_plan: DetailPlan = {}
 
-        if spec.selections:
-            unique_leagues = sorted({s.league_id for s in spec.selections})
-        elif spec.league_id:
-            unique_leagues = [spec.league_id]
-        else:
-            unique_leagues = sorted(self.league_names)
+        unique_leagues = self._leagues()
+        # Takibin sezon seçimi, turnuvalar takiplerden geldiğinde uygulanır; tek lig (`league_id`, ör. `ssc fetch
+        # tournament`) bugünkü gibi listedeki her sezonu indirir
+        follows = _follows_of(spec)
+        by_follow = bool(follows) or (not spec.selections and not spec.league_id)
 
         # 1. Sezon listeleri
-        tracker.start_phase("seasons", len(unique_leagues))
-        for i, lid in enumerate(unique_leagues):
-            if cancelled() or self.blocked("season lists"):
-                break
-            tracker.set_context(league_id=lid, league_name=self.lname(lid))
-            job.log(f"Refreshing season list for league {lid}...")
-            self._listing(lambda _l=lid: ctx.season_fetcher.list_seasons(
-                _l, max_age=listing.SEASON_LIST_TTL_SECONDS), "seasons", lid)
-            tracker.advance(i + 1)
+        self._season_lists(unique_leagues, max_age=listing.SEASON_LIST_TTL_SECONDS)
 
         # 2. Maç listeleri: hangi (lig, sezon) çiftleri
         steps: List[SeasonStep] = []
@@ -439,13 +599,14 @@ class _SyncRun:
                 if s.get("id") is not None
             }
 
-        if spec.selections:
+        if spec.selections and not follows:
             for s in spec.selections:
                 names = season_names(s.league_id)
                 for sid in s.season_ids:
                     resolved = ctx.season_fetcher.resolve_season_id(s.league_id, sid)
                     if resolved != sid:
-                        job.log(f"Season {sid} outdated → using {resolved} for league {s.league_id}")
+                        self.log(f"Season {sid} outdated → using {resolved} for league {s.league_id}",
+                                 "sync_season_outdated", season_id=sid, resolved=resolved, league_id=s.league_id)
                     if (s.league_id, resolved) not in seen:
                         seen.add((s.league_id, resolved))
                         steps.append((s.league_id, resolved, names.get(resolved)))
@@ -453,9 +614,14 @@ class _SyncRun:
                 detail_plan.setdefault(lid, []).append(sid)  # type: ignore[union-attr]
         else:
             for lid in unique_leagues:
-                for sid, name in season_names(lid).items():
-                    steps.append((lid, sid, name))
-            if spec.league_id:
+                names = season_names(lid)
+                chosen = self._followed_seasons(lid, names) if by_follow else list(names)
+                for sid in chosen:
+                    steps.append((lid, sid, names.get(sid)))
+            if follows:
+                for lid in unique_leagues:
+                    detail_plan[lid] = None
+            elif spec.league_id:
                 detail_plan[spec.league_id] = None
             else:
                 detail_plan[None] = None
@@ -466,7 +632,8 @@ class _SyncRun:
             if cancelled() or self.blocked("match lists"):
                 break
             tracker.set_context(league_id=lid, league_name=self.lname(lid), season_name=sname)
-            job.log(f"Fetching matches: league {lid}, season {sid}")
+            self.log(f"Fetching matches: league {lid}, season {sid}", "sync_schedule", league_id=int(lid),
+                     season_id=int(sid))
             result = self._listing(lambda _l=lid, _s=sid: ctx.match_fetcher.list_schedule(
                 _l, _s, max_age=listing.SCHEDULE_TTL_SECONDS), "schedule", lid, sid)
             # Boş program: listelendi ama maç yok. Başarısız ya da devre kesici yüzünden yarım kalan program
@@ -480,7 +647,7 @@ class _SyncRun:
         elif steps and self.empty_schedule >= len(steps):
             from src.i18n import get_i18n
 
-            job.log(get_i18n().t("fetch_zero_matches"))
+            self.log(get_i18n().t("fetch_zero_matches"), "fetch_zero_matches")
         return detail_plan
 
     def _extras(self, detail_plan: DetailPlan) -> None:
@@ -513,7 +680,8 @@ class _SyncRun:
                              cancelled=self.job.cancelled, concurrency=self.ctx.config.get_max_concurrent(),
                              selection=policy)
         if summary is not None and summary.total:
-            self.job.log(f"Odds and non-match data: {summary.ok} stored, {summary.failed} failed.")
+            self.log(f"Odds and non-match data: {summary.ok} stored, {summary.failed} failed.", "sync_extras",
+                     stored=int(summary.ok), failed=int(summary.failed))
             if summary.breaker:
                 self.report_breaker(summary.breaker, "odds and non-match data")
 
@@ -530,7 +698,8 @@ class _SyncRun:
             lid = next(iter(leagues)) if len(leagues) == 1 else None
             if lid is not None:
                 tracker.set_context(league_id=lid, league_name=self.lname(lid))
-            job.log(f"Fetching details for {len(explicit_match_ids)} selected matches...")
+            self.log(f"Fetching details for {len(explicit_match_ids)} selected matches...", "sync_details_selected",
+                     count=len(explicit_match_ids))
 
             def cb(done: int, total: int, _msg: str) -> None:
                 if total != tracker.detail()["total"]:
@@ -549,7 +718,7 @@ class _SyncRun:
 
         md.begin_job_cache()
         try:
-            job.log("Checking which matches need details...")
+            self.log("Checking which matches need details...", "sync_details_checking")
             work: List[Tuple[Optional[int], List[str]]] = []
             for lid, only_sids in detail_plan.items():
                 if cancelled():
@@ -569,8 +738,9 @@ class _SyncRun:
                 if cancelled():
                     break
                 tracker.set_context(league_id=lid, league_name=self.lname(lid))
-                job.log(
-                    f"Fetching match details: league {lid if lid is not None else 'all'} ({len(pending)} matches)…"
+                self.log(
+                    f"Fetching match details: league {lid if lid is not None else 'all'} ({len(pending)} matches)…",
+                    "sync_details", league_id=lid, count=len(pending),
                 )
                 md.fetch_detail_ids(
                     pending,
