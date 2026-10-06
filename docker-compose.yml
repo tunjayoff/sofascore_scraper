@@ -55,7 +55,8 @@ services:
   # It watches the follows marked `live = true` and writes the changes to the event log
   # (`ssc events`) and to the configured sinks. It shares the data and config volumes with the
   # server but needs a browser profile of its own (one Chromium process per profile) and a log
-  # folder of its own.
+  # folder of its own. The live pages use one more profile, /app/browser-profile-live: on a volume
+  # the solved challenge survives a recreated container.
   #
   # Memory: the default source, `page`, keeps one browser page per watched sport open: plan for
   # about 2.6 GB per sport (1.8 to 2.6 GB measured) and set mem_limit above that peak.
@@ -75,6 +76,7 @@ services:
       - data:/app/data
       - config:/app/config
       - watch-browser-profile:/app/browser-profile
+      - watch-browser-profile-live:/app/browser-profile-live # the live pages' profile (page and direct sources)
       - watch-logs:/app/logs # a log file of its own: two processes must not rotate one file
 
 volumes:
@@ -82,5 +84,6 @@ volumes:
   config:
   browser-profile:
   watch-browser-profile:
+  watch-browser-profile-live:
   logs:
   watch-logs:

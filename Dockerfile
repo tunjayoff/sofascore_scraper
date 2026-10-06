@@ -59,8 +59,9 @@ RUN pip install -r requirements.txt -c constraints.txt \
 # root olmayan kullanıcı; yalnızca volume dizinleri ona aittir (kod salt okunur kalır).
 # --non-unique: APP_UID/APP_GID imajda zaten varsa (ör. gid 100 = users) derleme düşmesin.
 # ARG'lar ağır katmandan sonra: başka bir uid ile derlemek tarayıcıyı yeniden indirmez.
-# browser-profile-live: `ssc watch`un kendi tarayıcı profili (<profil>-live, karar D10); volume değildir
-# (çözülmüş challenge konteyner yenilenince yeniden çözülür), docs/deploy/docker.md onu bağlamayı anlatır.
+# browser-profile-live: `ssc watch`un canlı sayfalarının profili (<profil>-live, karar D10). İmajın VOLUME'u
+# değildir (yalnızca `watch` kullanır); Compose örneği `sofascore-watch` için ona adlandırılmış bir volume bağlar
+# (docs/deploy/docker.md). Dizin burada uygulama kullanıcısına ait yaratılır: yeni volume bu sahipliği alır.
 ARG APP_UID=1000
 ARG APP_GID=1000
 RUN groupadd --non-unique --gid "${APP_GID}" app \
