@@ -8,6 +8,9 @@ import TopBar from '@/app/TopBar.vue'
 import CommandPalette from '@/app/CommandPalette.vue'
 import ShortcutsDialog from '@/app/ShortcutsDialog.vue'
 import TokenPrompt from '@/app/TokenPrompt.vue'
+import HelpPanel from '@/app/HelpPanel.vue'
+import { helpOpen } from '@/app/help'
+import { watchJobs } from '@/app/jobWatch'
 import ToastHost from '@/ui/ToastHost.vue'
 import UiIcon from '@/ui/UiIcon.vue'
 import { NAV, navFor } from '@/app/nav'
@@ -20,7 +23,8 @@ import { BELOW_DESKTOP, BELOW_TABLET, useMedia } from '@/ui/media'
 /**
  * The frame of the new app (3.3): side rail on desktop (collapsed on tablet), bottom bar with "More" on
  * phone, the top bar, the banner while the server cannot be reached, toasts, the quick search, the
- * shortcuts and the token prompt. Global keys (4.9) are off while the user types in a field.
+ * shortcuts, the help panel and the token prompt. Global keys (4.9) are off while the user types in a
+ * field. Download jobs are watched here, so their end is told wherever the user is (FX-14a).
  */
 const { t } = useI18n()
 const route = useRoute()
@@ -52,7 +56,7 @@ function onKey(e: KeyboardEvent) {
     return
   }
   if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target)) return
-  if (palette.value || shortcuts.value || authNeeded.value || document.querySelector('[aria-modal="true"], [role="menu"]')) return
+  if (palette.value || shortcuts.value || helpOpen.value || authNeeded.value || document.querySelector('[aria-modal="true"], [role="menu"]')) return
   if (e.key === '?') {
     shortcuts.value = true
   } else if (e.key === '/') {
@@ -73,12 +77,14 @@ function onKey(e: KeyboardEvent) {
 
 // Started here and not in onMounted: the screen inside mounts first and should find the request running
 status.start()
+const stopJobs = watchJobs()
 onMounted(() => {
   applyDensity()
   document.addEventListener('keydown', onKey)
 })
 onUnmounted(() => {
   status.stop()
+  stopJobs()
   document.removeEventListener('keydown', onKey)
 })
 </script>
@@ -86,9 +92,9 @@ onUnmounted(() => {
 <template>
   <div class="u-app u-shell" :class="{ 'is-phone': phone }">
     <a href="#main" class="u-skip">{{ t('ui.shell.skip') }}</a>
-    <SideRail v-if="!phone" :force-collapsed="tablet" @palette="palette = true" />
+    <SideRail v-if="!phone" :force-collapsed="tablet" @palette="palette = true" @help="helpOpen = true" />
     <div class="u-shell-main">
-      <TopBar :title="title" :compact="phone" @shortcuts="shortcuts = true" @palette="palette = true" />
+      <TopBar :title="title" :compact="phone" @shortcuts="shortcuts = true" @palette="palette = true" @help="helpOpen = true" />
       <div v-if="status.offline" class="u-offline" role="status" data-testid="offline-banner">
         <UiIcon name="alert" :size="16" />{{ t('ui.shell.offline') }}
       </div>
@@ -96,9 +102,10 @@ onUnmounted(() => {
         <RouterView />
       </main>
     </div>
-    <BottomBar v-if="phone" />
+    <BottomBar v-if="phone" @help="helpOpen = true" />
     <ToastHost />
-    <CommandPalette v-if="palette" @close="palette = false" />
+    <CommandPalette v-if="palette" @close="palette = false" @help="helpOpen = true" />
+    <HelpPanel v-if="helpOpen" @close="helpOpen = false" @shortcuts="(helpOpen = false), (shortcuts = true)" />
     <ShortcutsDialog v-if="shortcuts" @close="shortcuts = false" />
     <TokenPrompt v-if="authNeeded" />
   </div>

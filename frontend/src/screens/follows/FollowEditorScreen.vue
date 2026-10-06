@@ -18,13 +18,16 @@ import { toast } from '@/ui/toast'
 import { toastError } from '@/api/v1/errors'
 import { startJob } from '@/screens/jobs/startJob'
 import SlicePicker from './SlicePicker.vue'
-import { FOLLOW_KINDS, followPath, lockReason, seasonsText, type FollowKind } from './followText'
+import HelpTip from '@/ui/HelpTip.vue'
+import { FOLLOW_KINDS, MORE_FOLLOW_KINDS, followKindReady, followPath, lockReason, seasonsText, type FollowKind } from './followText'
 
 /**
- * The follow editor (6.3). A new follow in four steps: what (a tournament by search at SofaScore or by id;
- * a team, a player or one event by id), seasons, data selection, review. A change shows the same sections
- * on one page; a field this follow cannot change here (`writable`) is locked with the reason. The data
- * selection is shown read-only while the follows API takes none (P27). Saving can start a sync.
+ * The follow editor (6.3), "Add a league or team". A new follow in four steps: what (a league by search at
+ * SofaScore or by its SofaScore number; a team, a player or one match by number, "coming soon" until
+ * MORE_FOLLOW_KINDS), seasons, data selection, review. A single search hit is chosen at once; `?q=` (the
+ * quick search's "Search SofaScore") fills the search and runs it, one request. A change shows the same
+ * sections on one page; a field this follow cannot change here (`writable`) is locked with the reason.
+ * The data selection is shown read-only until FX-14b. Saving can start the download.
  */
 const { t } = useI18n()
 const route = useRoute()
@@ -70,6 +73,8 @@ async function searchTournaments() {
   searchError.value = null
   try {
     hits.value = await v1.searchTournaments({ q: query.value.trim(), sport: sport.value || null })
+    // one hit that is not added yet: choose it, so Next is the only click left (FX-14a)
+    if (hits.value.length === 1 && !hits.value[0].followed) pick(hits.value[0])
   } catch (e) {
     hits.value = null
     searchError.value = e
@@ -219,8 +224,15 @@ onMounted(() => {
   if (editing.value) void loadFollow()
   else {
     const k = String(route.query.kind ?? '')
-    if ((FOLLOW_KINDS as readonly string[]).includes(k)) kind.value = k as FollowKind
+    if ((FOLLOW_KINDS as readonly string[]).includes(k) && followKindReady(k as FollowKind)) kind.value = k as FollowKind
     if (typeof route.query.id === 'string') entityId.value = route.query.id
+    // from the quick search: the text is searched at once, the one request the user asked for
+    const q = typeof route.query.q === 'string' ? route.query.q.trim() : ''
+    if (q) {
+      kind.value = 'tournament'
+      query.value = q
+      void searchTournaments()
+    }
   }
 })
 </script>
@@ -245,10 +257,12 @@ onMounted(() => {
         <template v-if="step === 1">
           <fieldset class="flex flex-wrap gap-2">
             <legend class="u-label">{{ t('ui.followEditor.kind') }}</legend>
-            <label v-for="k in FOLLOW_KINDS" :key="k" class="u-option">
-              <input v-model="kind" type="radio" :name="`${uid}-kind`" :value="k" class="u-check" />{{ t(`ui.follows.kind.${k}`) }}
+            <label v-for="k in FOLLOW_KINDS" :key="k" class="u-option" :class="{ 'is-soon': !followKindReady(k) }" :data-kind="k">
+              <input v-model="kind" type="radio" :name="`${uid}-kind`" :value="k" class="u-check" :disabled="!followKindReady(k)" />{{ t(`ui.follows.kind.${k}`) }}
+              <UiBadge v-if="!followKindReady(k)" tone="neutral">{{ t('ui.follows.soon') }}</UiBadge>
             </label>
           </fieldset>
+          <p v-if="!MORE_FOLLOW_KINDS" class="m-0 u-small u-muted" data-testid="editor-soon">{{ t('ui.follows.soonReason') }}</p>
           <label class="flex flex-col max-w-[320px]">
             <span class="u-label">{{ t('ui.follows.col.sport') }}</span>
             <select v-model="sport" class="u-field" data-testid="editor-sport">
@@ -261,7 +275,7 @@ onMounted(() => {
             <form class="flex flex-wrap items-end gap-3" @submit.prevent="searchTournaments">
               <label class="flex flex-col flex-1 min-w-[220px]">
                 <span class="u-label">{{ t('ui.followEditor.searchLabel') }}</span>
-                <input v-model="query" type="search" class="u-field" autocomplete="off" data-testid="editor-query" />
+                <input v-model="query" type="search" class="u-field" autocomplete="off" :placeholder="t('ui.followEditor.searchPlaceholder')" data-testid="editor-query" />
               </label>
               <button type="submit" class="u-btn" :disabled="searching || !query.trim()" data-testid="editor-search">
                 <span v-if="searching" class="u-spinner" aria-hidden="true"></span><UiIcon v-else name="search" :size="16" />{{ t('ui.followEditor.search') }}
@@ -288,7 +302,16 @@ onMounted(() => {
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="flex flex-col">
               <span class="u-label">{{ kind === 'tournament' ? t('ui.followEditor.orId') : t('ui.followEditor.id', { kind: t(`ui.follows.kind.${kind}`) }) }}</span>
-              <input v-model="entityId" class="u-field u-mono" inputmode="numeric" autocomplete="off" data-testid="editor-id" :aria-invalid="!!entityId && !idValue" />
+              <input
+                v-model="entityId"
+                class="u-field u-mono"
+                inputmode="numeric"
+                autocomplete="off"
+                data-testid="editor-id"
+                :aria-invalid="!!entityId && !idValue"
+                :aria-describedby="kind === 'tournament' ? `${uid}-idhint` : undefined"
+              />
+              <span v-if="kind === 'tournament'" :id="`${uid}-idhint`" class="u-small u-muted mt-1">{{ t('ui.followEditor.idHint') }}</span>
             </label>
             <label class="flex flex-col">
               <span class="u-label">{{ t('ui.followEditor.name') }}</span>
@@ -306,7 +329,12 @@ onMounted(() => {
             <label class="u-option"><input v-model="seasonMode" type="radio" :name="`${uid}-s`" value="current" class="u-check" />{{ t('ui.follows.seasons.current') }}</label>
             <label class="u-option items-center">
               <input v-model="seasonMode" type="radio" :name="`${uid}-s`" value="last" class="u-check" />
-              <span class="inline-flex items-center gap-2">{{ t('ui.followEditor.lastN') }}<input v-model.number="lastN" type="number" min="1" max="50" class="u-field" style="width: 80px; height: 32px" :aria-label="t('ui.followEditor.lastNLabel')" @focus="seasonMode = 'last'" /></span>
+              <span class="inline-flex items-center gap-2"
+                >{{ t('ui.followEditor.lastN')
+                }}<input v-model.number="lastN" type="number" min="1" max="50" class="u-field" style="width: 80px; height: 32px" :aria-label="t('ui.followEditor.lastNLabel')" @focus="seasonMode = 'last'" />{{
+                  t('ui.followEditor.lastNSuffix')
+                }}</span
+              >
             </label>
             <label class="u-option"><input v-model="seasonMode" type="radio" :name="`${uid}-s`" value="all" class="u-check" />{{ t('ui.follows.seasons.all') }}</label>
             <label class="u-option"><input v-model="seasonMode" type="radio" :name="`${uid}-s`" value="choose" class="u-check" />{{ t('ui.followEditor.choose') }}</label>
@@ -340,14 +368,20 @@ onMounted(() => {
             <span class="u-label">{{ t('ui.followEditor.name') }}</span>
             <input v-model="name" class="u-field" autocomplete="off" />
           </label>
-          <label class="flex items-start gap-3">
-            <input v-model="live" type="checkbox" class="u-check mt-1" />
-            <span class="flex flex-col"><span class="font-semibold">{{ t('ui.followEditor.live') }}</span><span class="u-small u-muted">{{ t('ui.followEditor.liveHint') }}</span></span>
-          </label>
-          <label v-if="kind === 'tournament'" class="flex items-start gap-3">
-            <input v-model="syncAfter" type="checkbox" class="u-check mt-1" data-testid="editor-sync-after" />
-            <span class="flex flex-col"><span class="font-semibold">{{ t('ui.followEditor.syncAfter') }}</span><span class="u-small u-muted">{{ t('ui.jobs.start.sendsRequests') }}</span></span>
-          </label>
+          <div class="flex items-start gap-1">
+            <label class="flex items-start gap-3">
+              <input v-model="live" type="checkbox" class="u-check mt-1" />
+              <span class="flex flex-col"><span class="font-semibold">{{ t('ui.followEditor.live') }}</span><span class="u-small u-muted">{{ t('ui.followEditor.liveHint') }}</span></span>
+            </label>
+            <HelpTip term="live" />
+          </div>
+          <div v-if="kind === 'tournament'" class="flex items-start gap-1">
+            <label class="flex items-start gap-3">
+              <input v-model="syncAfter" type="checkbox" class="u-check mt-1" data-testid="editor-sync-after" />
+              <span class="flex flex-col"><span class="font-semibold">{{ t('ui.followEditor.syncAfter') }}</span><span class="u-small u-muted">{{ t('ui.jobs.start.sendsRequests') }}</span></span>
+            </label>
+            <HelpTip term="download" />
+          </div>
           <FormError v-if="saveError" :error="saveError" :active-job-id="status.activeJob?.id" />
           <p v-if="exists && idValue" class="m-0"><RouterLink :to="`/follows/${kind}/${idValue}`" class="font-semibold">{{ t('ui.followEditor.openExisting') }}</RouterLink></p>
         </template>
@@ -400,7 +434,11 @@ onMounted(() => {
             <label class="u-option"><input v-model="seasonMode" type="radio" :name="`${uid}-es`" value="current" class="u-check" />{{ t('ui.follows.seasons.current') }}</label>
             <label class="u-option items-center">
               <input v-model="seasonMode" type="radio" :name="`${uid}-es`" value="last" class="u-check" />
-              <span class="inline-flex items-center gap-2">{{ t('ui.followEditor.lastN') }}<input v-model.number="lastN" type="number" min="1" max="50" class="u-field" style="width: 80px; height: 32px" :aria-label="t('ui.followEditor.lastNLabel')" /></span>
+              <span class="inline-flex items-center gap-2"
+                >{{ t('ui.followEditor.lastN') }}<input v-model.number="lastN" type="number" min="1" max="50" class="u-field" style="width: 80px; height: 32px" :aria-label="t('ui.followEditor.lastNLabel')" />{{
+                  t('ui.followEditor.lastNSuffix')
+                }}</span
+              >
             </label>
             <label class="u-option"><input v-model="seasonMode" type="radio" :name="`${uid}-es`" value="all" class="u-check" />{{ t('ui.follows.seasons.all') }}</label>
             <label class="u-option"><input v-model="seasonMode" type="radio" :name="`${uid}-es`" value="choose" class="u-check" />{{ t('ui.followEditor.choose') }}</label>

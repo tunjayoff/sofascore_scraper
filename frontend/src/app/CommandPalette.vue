@@ -8,14 +8,17 @@ import { v1 } from '@/api/v1/client'
 import type { FollowRecord, Job, TournamentRecord } from '@/api/v1/schema'
 import { NAV } from '@/app/nav'
 import { jobKindText, jobTarget } from '@/screens/jobs/jobText'
+import { loadTournaments } from '@/screens/events/eventText'
 
 /**
- * Quick search, `Ctrl K` / `⌘ K` (3.3, decision 20). It searches stored data only and never sends a request
- * to SofaScore: the screens, the follows and the stored tournaments by name, an event or job id, and the
- * recent jobs.
+ * Quick search, `Ctrl K` / `⌘ K` (3.3, decision 20). It searches stored data: the actions (Add league,
+ * Back up, Export, Settings, Help; FX-14a), the screens, the follows and the stored tournaments by name, an
+ * event or job id, and the recent jobs. It sends nothing to SofaScore by itself: when nothing stored
+ * matches, it offers "Search SofaScore: '<text>'", which opens the follow editor with the text and runs
+ * that one search, only when the user picks it.
  */
-const emit = defineEmits<{ close: [] }>()
-const { t } = useI18n()
+const emit = defineEmits<{ close: []; help: [] }>()
+const { t, locale } = useI18n()
 const router = useRouter()
 
 const query = ref('')
@@ -47,29 +50,65 @@ watch(query, (value) => {
   }, 200)
 })
 
-type Hit = { id: string; label: string; hint?: string; icon: UiIconName; to: RouteLocationRaw }
+type Hit = { id: string; label: string; hint?: string; icon: UiIconName; to?: RouteLocationRaw; run?: () => void }
+type Action = Hit & { words: string[] }
+
+const lower = (s: string) => s.toLocaleLowerCase(locale.value)
+
+/** The actions, found by their label or by a word in either language ("lig ekle", "add league", "backup"). */
+const actions = computed<Action[]>(() => [
+  { id: 'act-add', label: t('ui.shell.addLeague'), icon: 'plus', to: '/follows/new', words: ['lig', 'ekle', 'add', 'league', 'takip', 'follow', 'turnuva', 'tournament', 'yeni', 'new', 'indir', 'download'] },
+  { id: 'act-backup', label: t('ui.palette.backup'), icon: 'backups', to: { path: '/backups', query: { new: '1' } }, words: ['yedek', 'backup'] },
+  { id: 'act-export', label: t('ui.palette.export'), icon: 'exports', to: { path: '/exports', query: { new: '1' } }, words: ['dışa', 'aktar', 'export', 'csv', 'json'] },
+  { id: 'act-settings', label: t('ui.nav.settings'), icon: 'settings', to: '/settings', words: ['ayar', 'setting', 'dil', 'language', 'proxy', 'vekil'] },
+  {
+    id: 'act-help',
+    label: t('ui.menu.help'),
+    icon: 'help',
+    run: () => emit('help'),
+    words: ['yardım', 'help', 'nasıl', 'how', 'sözlük', 'glossary', 'canlı', 'live', 'watch', 'izleme', '?'],
+  },
+])
+
+/** The label holds the text, or every word typed starts one of the action's words. */
+function actionMatches(a: Action, q: string) {
+  return lower(a.label).includes(q) || q.split(/\s+/).every((part) => a.words.some((w) => w.startsWith(part)))
+}
 
 const hits = computed<Hit[]>(() => {
-  const q = query.value.trim().toLowerCase()
+  const q = lower(query.value.trim())
   const out: Hit[] = []
+  for (const a of actions.value) if (!q || actionMatches(a, q)) out.push({ ...a, hint: t('ui.palette.action') })
   for (const n of NAV) {
-    if (n.hidden) continue
+    if (n.hidden || n.key === 'settings') continue
     const label = t(`ui.nav.${n.key}`)
-    if (!q || label.toLowerCase().includes(q)) out.push({ id: `nav-${n.key}`, label, hint: t('ui.palette.screen'), icon: n.icon, to: n.to })
+    if (!q || lower(label).includes(q)) out.push({ id: `nav-${n.key}`, label, hint: t('ui.palette.screen'), icon: n.icon, to: n.to })
   }
   if (/^\d{1,12}$/.test(q)) out.unshift({ id: `event-${q}`, label: t('ui.palette.openEvent', { id: q }), hint: t('ui.nav.events'), icon: 'events', to: `/events/${q}` })
   if (/^[0-9a-hjkmnp-tv-z]{26}$/i.test(q)) out.unshift({ id: `job-${q}`, label: t('ui.palette.openJob', { id: q.toUpperCase() }), hint: t('ui.nav.jobs'), icon: 'jobs', to: `/jobs/${q.toUpperCase()}` })
   if (q) {
     for (const f of follows.value)
-      if (f.name.toLowerCase().includes(q)) out.push({ id: `follow-${f.id}`, label: f.name, hint: t('ui.palette.follow'), icon: 'follows', to: `/follows/${f.kind}/${f.entity_id}` })
+      if (lower(f.name).includes(q)) out.push({ id: `follow-${f.id}`, label: f.name, hint: t('ui.nav.follows'), icon: 'follows', to: `/follows/${f.kind}/${f.entity_id}` })
     const followed = new Set(follows.value.filter((f) => f.kind === 'tournament').map((f) => f.entity_id))
     for (const tour of tournaments.value)
-      if (!followed.has(tour.id) && (tour.name ?? '').toLowerCase().includes(q))
+      if (!followed.has(tour.id) && lower(tour.name ?? '').includes(q))
         out.push({ id: `tournament-${tour.id}`, label: tour.name ?? `#${tour.id}`, hint: t('ui.palette.tournament'), icon: 'events', to: { path: '/events', query: { tournament: String(tour.id) } } })
   }
   for (const j of jobs.value) {
     const label = `${jobKindText(j.kind)} · ${jobTarget(j)}`
-    if (q && (label.toLowerCase().includes(q) || j.id.toLowerCase().startsWith(q))) out.push({ id: `recent-${j.id}`, label, hint: j.id, icon: 'jobs', to: `/jobs/${j.id}` })
+    if (q && (lower(label).includes(q) || j.id.toLowerCase().startsWith(q))) out.push({ id: `recent-${j.id}`, label, hint: j.id, icon: 'jobs', to: `/jobs/${j.id}` })
+  }
+  // Nothing matches: offer the search at SofaScore, sent only when the user picks it (FX-14a)
+  const text = query.value.trim()
+  if (!out.length && text.length >= 2 && !/^\d+$/.test(text)) {
+    const sofascore: Hit = {
+      id: 'sofascore',
+      label: t('ui.palette.searchSofascore', { q: text }),
+      hint: t('ui.palette.searchSofascoreHint'),
+      icon: 'external',
+      to: { path: '/follows/new', query: { q: text } },
+    }
+    return [...out.slice(0, 11), sofascore]
   }
   return out.slice(0, 12)
 })
@@ -77,7 +116,8 @@ const hits = computed<Hit[]>(() => {
 function go(hit: Hit | undefined) {
   if (!hit) return
   emit('close')
-  void router.push(hit.to)
+  if (hit.run) hit.run()
+  else if (hit.to) void router.push(hit.to)
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -106,6 +146,8 @@ onMounted(() => {
   v1.follows()
     .then((r) => (follows.value = r.data))
     .catch(() => {})
+  // names for the leagues of the recent jobs
+  void loadTournaments()
 })
 onUnmounted(() => {
   if (timer) clearTimeout(timer)

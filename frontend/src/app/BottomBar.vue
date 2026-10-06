@@ -7,7 +7,11 @@ import SidePanel from '@/ui/SidePanel.vue'
 import { NAV, navFor } from '@/app/nav'
 import { useStatusStore } from '@/app/statusStore'
 
-/** The phone's bottom bar (3.3): Home, Follows, Events, Jobs and "More", a sheet with the other screens. */
+/**
+ * The phone's bottom bar (3.3): Home, Leagues & follows, Matches, Jobs and "More", a sheet that starts with
+ * "Add league" and Help (FX-14a), then the other screens.
+ */
+const emit = defineEmits<{ help: [] }>()
 const { t } = useI18n()
 const route = useRoute()
 const status = useStatusStore()
@@ -33,13 +37,19 @@ watch(() => route.fullPath, () => (more.value = false))
       <span class="relative"
         ><UiIcon :name="n.icon" :size="20" /><span v-if="n.key === 'jobs' && status.activeJob" class="u-bottom-dot" aria-hidden="true"></span
       ></span>
-      <span>{{ t(n.key === 'overview' ? 'ui.nav.home' : `ui.nav.${n.key}`) }}</span>
+      <span>{{ n.key === 'overview' ? t('ui.nav.home') : n.key === 'follows' ? t('ui.nav.followsShort') : t(`ui.nav.${n.key}`) }}</span>
     </RouterLink>
     <button type="button" class="u-bottom-item" :class="{ 'is-active': inMore }" aria-haspopup="dialog" :aria-expanded="more" @click="more = true">
       <UiIcon name="menu" :size="20" /><span>{{ t('ui.nav.more') }}</span>
     </button>
     <SidePanel v-if="more" :title="t('ui.nav.more')" @close="more = false">
       <ul class="m-0 p-0 list-none flex flex-col gap-1">
+        <li>
+          <RouterLink to="/follows/new" class="u-more-item u-more-primary" data-testid="more-add-league"><UiIcon name="plus" /><span class="flex-1">{{ t('ui.shell.addLeague') }}</span></RouterLink>
+        </li>
+        <li>
+          <button type="button" class="u-more-item" data-testid="more-help" @click="(more = false), emit('help')"><UiIcon name="help" /><span class="flex-1 text-left">{{ t('ui.menu.help') }}</span></button>
+        </li>
         <li v-for="n in rest" :key="n.key">
           <RouterLink :to="n.to" class="u-more-item" :aria-current="current === n.key ? 'page' : undefined">
             <UiIcon :name="n.icon" /><span class="flex-1">{{ t(`ui.nav.${n.key}`) }}</span>
@@ -93,6 +103,7 @@ watch(() => route.fullPath, () => (more.value = false))
   border-radius: 50%;
   background: var(--info-fg);
 }
+.u-more-item,
 .u-app a.u-more-item {
   display: flex;
   align-items: center;
@@ -102,6 +113,17 @@ watch(() => route.fullPath, () => (more.value = false))
   border-radius: var(--r-control);
   color: var(--text);
   text-decoration: none;
+}
+.u-more-item {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+.u-app a.u-more-primary {
+  color: var(--accent);
+  font-weight: 600;
 }
 .u-app a.u-more-item[aria-current='page'] {
   background: var(--accent-soft);

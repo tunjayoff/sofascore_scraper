@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import UiIcon from '@/ui/UiIcon.vue'
 import UiMenu, { type MenuItem } from '@/ui/UiMenu.vue'
@@ -15,13 +15,15 @@ import { density, type Density } from '@/ui/prefs'
 import { pct } from '@/ui/time'
 
 /**
- * The top bar (3.3): the page title; the health pill (one word and a colour from `/status`, opens Health);
- * the job pill while a job runs (opens its detail); the menu with language, theme, density, the keyboard
- * shortcuts, the classic interface and, when a token is in use, Sign out.
+ * The top bar (3.3): the page title; "Add league", always there (FX-14a; icon only on phone); the health
+ * pill (one word and a colour from `/status`, opens Health); the job pill while a job runs (opens its
+ * detail); the menu with language, theme, density, quick search, the keyboard shortcuts, Help, the classic
+ * interface and, when a token is in use, Sign out.
  */
 defineProps<{ title: string; compact?: boolean }>()
-const emit = defineEmits<{ shortcuts: []; palette: [] }>()
+const emit = defineEmits<{ shortcuts: []; palette: []; help: [] }>()
 const { t, locale } = useI18n()
+const route = useRoute()
 const router = useRouter()
 const status = useStatusStore()
 
@@ -46,6 +48,7 @@ const menu = computed<MenuItem[]>(() => [
   { kind: 'separator', key: 's3' },
   { key: 'search', label: t('ui.shell.search'), icon: 'search', hint: 'Ctrl K' },
   { key: 'shortcuts', label: t('ui.menu.shortcuts'), icon: 'keyboard', hint: '?' },
+  { key: 'help', label: t('ui.menu.help'), icon: 'help' },
   { key: 'classic', label: t('ui.menu.classic'), icon: 'classic' },
   ...(tokenInUse.value ? [{ key: 'signout', label: t('ui.menu.signOut'), icon: 'signOut' as const, danger: true }] : []),
 ])
@@ -57,6 +60,7 @@ function onMenu(key: string) {
   else if (kind === 'density') density.value = value as Density
   else if (key === 'shortcuts') emit('shortcuts')
   else if (key === 'search') emit('palette')
+  else if (key === 'help') emit('help')
   else if (key === 'classic') void router.push('/classic')
   else if (key === 'signout') void signOut()
 }
@@ -65,6 +69,16 @@ function onMenu(key: string) {
 <template>
   <header class="u-topbar">
     <p class="u-h3 flex-1 truncate m-0" aria-hidden="true">{{ title }}</p>
+    <RouterLink
+      v-if="route.path !== '/follows/new'"
+      to="/follows/new"
+      class="u-btn u-btn-primary"
+      :class="compact ? 'u-btn-icon' : 'u-btn-sm'"
+      :aria-label="compact ? t('ui.shell.addLeague') : undefined"
+      data-testid="topbar-add-league"
+    >
+      <UiIcon name="plus" :size="16" /><span v-if="!compact">{{ t('ui.shell.addLeague') }}</span>
+    </RouterLink>
     <RouterLink
       to="/system/health"
       class="u-pill"

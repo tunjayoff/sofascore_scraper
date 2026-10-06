@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import PageHeader from '@/ui/PageHeader.vue'
 import DataTable, { type Column } from '@/ui/DataTable.vue'
@@ -29,6 +29,8 @@ const loading = ref(true)
 const loaded = ref(false)
 const error = ref<unknown>(null)
 const creating = ref(false)
+const route = useRoute()
+const router = useRouter()
 const restoring = ref<BackupRecord | null>(null)
 
 async function load() {
@@ -79,6 +81,11 @@ function onMenu(b: BackupRecord, key: string) {
 let timer: ReturnType<typeof setInterval> | null = null
 let lastActive: string | null = null
 onMounted(() => {
+  // the quick search's "Back up" opens the dialog at once
+  if (route.query.new === '1') {
+    creating.value = true
+    void router.replace({ query: { ...route.query, new: undefined } })
+  }
   void load()
   timer = setInterval(() => {
     const id = status.activeJob?.id ?? null

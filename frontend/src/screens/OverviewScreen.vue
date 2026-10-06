@@ -12,6 +12,8 @@ import ProgressBar from '@/ui/ProgressBar.vue'
 import ErrorState from '@/ui/ErrorState.vue'
 import SkeletonBlock from '@/ui/SkeletonBlock.vue'
 import ConfirmDialog from '@/ui/ConfirmDialog.vue'
+import GettingStarted from '@/app/GettingStarted.vue'
+import { startCardHidden } from '@/ui/prefs'
 import { v1 } from '@/api/v1/client'
 import type { Change, FollowRecord, Job, SinkStatus } from '@/api/v1/schema'
 import { diskBytes, useStatusStore } from '@/app/statusStore'
@@ -21,16 +23,18 @@ import { liveState, sinkState } from '@/ui/status'
 import { toast } from '@/ui/toast'
 import { bytesText, duration, num, pct, secondsBetween } from '@/ui/time'
 import StartJobDialog from './jobs/StartJobDialog.vue'
-import { faceText, jobKindText, jobPercent, jobTarget, readProgress } from './jobs/jobText'
+import { countsText, faceText, jobKindText, jobPercent, jobTarget, readProgress } from './jobs/jobText'
 import ChangeFields from './events/ChangeFields.vue'
-import { eventTitle } from './events/eventText'
+import { eventTitle, loadTournaments } from './events/eventText'
 
 /**
  * Overview, the start page (6.1, decision 1): is everything working, what runs, what needs me. The tiles
  * count the stored data (`/status.summary`) and the follows; the attention list is built from the
  * connection, the live service, the sinks, the index, old-layout data and the last job of each kind; the
  * services card, the running job with Open and Stop, the recent jobs. With nothing followed and nothing
- * stored the page is one empty state that leads to the follow editor.
+ * stored the page is one empty state that leads to the follow editor. "Add league" is always the page's
+ * primary action, and a "Getting started" card (hidden by the user, back from Help) shows the three steps
+ * (FX-14a). The connection is not called "Connected" before a request has been answered.
  */
 const { t } = useI18n()
 const store = useStatusStore()
@@ -177,6 +181,7 @@ onMounted(() => {
   // Inside the shell the status is already polled; opened on its own, the screen reads it once
   if (!store.status && !store.loading) void store.refresh().catch(() => {})
   loadOnce()
+  void loadTournaments()
   stopPoll = poll(loadJobs, () => 10000)
 })
 onUnmounted(() => stopPoll?.())
@@ -185,14 +190,17 @@ onUnmounted(() => stopPoll?.())
 <template>
   <div>
     <PageHeader :title="t('ui.nav.overview')" :description="t('ui.overview.description')">
-      <template v-if="!firstRun" #actions>
-        <button type="button" class="u-btn u-btn-primary" @click="syncing = true"><UiIcon name="jobs" :size="16" />{{ t('ui.overview.syncAll') }}</button>
+      <template #actions>
+        <button v-if="!firstRun" type="button" class="u-btn" data-testid="sync-all" @click="syncing = true"><UiIcon name="jobs" :size="16" />{{ t('ui.overview.syncAll') }}</button>
+        <RouterLink to="/follows/new" class="u-btn u-btn-primary" data-testid="overview-add-league"><UiIcon name="plus" :size="16" />{{ t('ui.shell.addLeague') }}</RouterLink>
       </template>
     </PageHeader>
 
+    <GettingStarted v-if="startCardHidden !== '1'" dismissible class="mb-6" />
+
     <div v-if="firstRun" class="u-card" data-testid="first-run">
       <EmptyState icon="follows" :title="t('ui.overview.firstRun')" :text="t('ui.overview.firstRunText')">
-        <RouterLink to="/follows/new" class="u-btn u-btn-primary"><UiIcon name="plus" :size="16" />{{ t('ui.overview.firstRunButton') }}</RouterLink>
+        <RouterLink to="/follows/new" class="u-btn u-btn-primary"><UiIcon name="plus" :size="16" />{{ t('ui.shell.addLeague') }}</RouterLink>
       </EmptyState>
     </div>
 
@@ -221,7 +229,7 @@ onUnmounted(() => stopPoll?.())
           <dl v-else-if="s" class="u-result">
             <dt>{{ t('ui.health.connection') }}</dt>
             <dd class="flex flex-wrap items-center gap-2">
-              <StatusBadge kind="connection" :value="s.bridge.state" />
+              <StatusBadge kind="connection" :value="store.connection ?? s.bridge.state" />
               <span v-if="s.bridge.last_success_at" class="u-small u-muted"><TimeText :value="s.bridge.last_success_at" relative /></span>
             </dd>
             <dt>{{ t('ui.health.rate') }}</dt>
@@ -269,7 +277,7 @@ onUnmounted(() => stopPoll?.())
               </p>
               <ProgressBar :value="jobPercent(active)" :label="t('ui.job.progressLabel')" />
               <p v-if="activeProgress.total" class="m-0 u-small u-muted">
-                {{ t('ui.job.counts', { done: num(activeProgress.done), total: num(activeProgress.total) }) }}
+                {{ countsText(activeProgress, num) }}
                 <template v-if="activeProgress.eta"> · {{ t('ui.job.eta', { time: duration(activeProgress.eta) }) }}</template>
               </p>
               <div class="flex gap-2 justify-end">
@@ -291,7 +299,7 @@ onUnmounted(() => stopPoll?.())
             <ul v-else class="m-0 p-0 list-none">
               <li v-for="j in recent" :key="j.id" class="flex flex-wrap items-center gap-3 py-2" style="border-top: 1px solid var(--line)">
                 <StatusBadge kind="job" :value="j.state" />
-                <RouterLink :to="`/jobs/${j.id}`" class="flex-1 min-w-0 truncate font-semibold">{{ jobKindText(j.kind) }}</RouterLink>
+                <RouterLink :to="`/jobs/${j.id}`" class="flex-1 min-w-0 truncate font-semibold">{{ jobKindText(j.kind) }} · {{ jobTarget(j) }}</RouterLink>
                 <span class="u-small u-muted">{{ faceText(j.origin.face) }}</span>
                 <span class="u-small u-muted"><TimeText :value="j.started_at ?? j.created_at" /></span>
                 <span v-if="j.finished_at" class="u-small u-muted u-num">{{ duration(secondsBetween(j.started_at ?? j.created_at, j.finished_at)) }}</span>

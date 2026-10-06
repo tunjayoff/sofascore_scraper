@@ -10,10 +10,11 @@ import { railCollapsed } from '@/ui/prefs'
 /**
  * The side rail (3.3): four groups, one item per screen; 232 px, or 64 px icons only (tablet, or when the
  * user collapses it; stored per browser). Jobs carries the count of running jobs, Health a dot when
- * anything is not OK. Screens that wait for P21 are marked, not hidden.
+ * anything is not OK. The last group (score changes, outputs, data cleanup) is drawn smaller, so the
+ * screens a newcomer needs stand out; Help sits in the foot (FX-14a).
  */
 const props = defineProps<{ forceCollapsed?: boolean }>()
-const emit = defineEmits<{ palette: [] }>()
+const emit = defineEmits<{ palette: []; help: [] }>()
 const { t } = useI18n()
 const route = useRoute()
 const status = useStatusStore()
@@ -44,7 +45,7 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigat
     </RouterLink>
 
     <nav class="u-rail-nav" :aria-label="t('ui.shell.mainNav')">
-      <div v-for="g in groups" :key="g.key" class="u-rail-group">
+      <div v-for="g in groups" :key="g.key" class="u-rail-group" :class="{ 'is-minor': g.key === 'advanced' }">
         <p v-if="g.key !== 'start' && !collapsed" :id="`rail-${g.key}`" class="u-caption u-rail-label">{{ t(`ui.nav.group.${g.key}`) }}</p>
         <ul :aria-labelledby="g.key !== 'start' && !collapsed ? `rail-${g.key}` : undefined">
           <li v-for="n in g.items" :key="n.key">
@@ -68,6 +69,9 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigat
 
     <div class="u-rail-foot">
       <span v-if="!collapsed && status.status" class="u-mono u-muted" style="font-size: 0.75rem">v{{ status.status.version }}</span>
+      <button type="button" class="u-btn u-btn-ghost u-btn-sm u-btn-icon" :aria-label="t('ui.menu.help')" :title="t('ui.menu.help')" data-testid="rail-help" @click="emit('help')">
+        <UiIcon name="help" :size="16" />
+      </button>
       <button type="button" class="u-btn u-btn-ghost u-btn-sm" :aria-label="t('ui.shell.search')" @click="emit('palette')">
         <UiIcon name="search" :size="14" /><kbd v-if="!collapsed" class="u-kbd">{{ isMac ? '⌘K' : 'Ctrl K' }}</kbd>
       </button>
@@ -130,6 +134,14 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigat
 .u-rail-label {
   margin: 0 0 var(--sp-2);
   padding: 0 var(--sp-3);
+}
+.u-rail-group.is-minor a.u-rail-item {
+  min-height: 32px;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.u-rail.is-collapsed .u-rail-group.is-minor a.u-rail-item {
+  min-height: 44px;
 }
 .u-app a.u-rail-item {
   display: flex;
