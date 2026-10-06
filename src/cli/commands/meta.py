@@ -261,7 +261,18 @@ def describe_config() -> Dict[str, Any]:
         "environment_only": config_schema.environment_only_keys(),
         "schema": config_schema.config_schema(),
         "live_sources": describe_live_sources(),
+        "schedule_runs": describe_schedule_runs(),
     }
+
+
+def describe_schedule_runs() -> List[Dict[str, Any]]:
+    """
+    `[[schedule.task]]`in `run` adları ve her birinin seçenekleri (src/jobs/scheduler.py TASK_RUNS; plan maddesi
+    FX-13): `config validate` aynı tabloyla denetler, `serve` başlarken de.
+    """
+    from src.jobs.scheduler import TASK_RUNS
+
+    return [{"run": name, "options": sorted(run.options)} for name, run in TASK_RUNS.items()]
 
 
 # Canlı kaynaklar (02-services.md 8.2 ve 8.3); `ssc watch --source` ve `[live] source`: page (P24), poll ve açık
@@ -395,11 +406,17 @@ def config_validate(inv: Invocation) -> CommandResult:
     """
     Dosyayı ve ortamı sürece dokunmadan denetler. Geçersizse ConfigError: `config_invalid`, çıkış kodu 2.
     Sink'ler de kurulur (açılmadan): bilinmeyen bir seçenek, eksik imza anahtarı ya da veri dizininin içine
-    yazan dosya sink'i burada bildirilir, komut çalışırken değil.
+    yazan dosya sink'i burada bildirilir, komut çalışırken değil. Zamanlayıcının görevleri de `serve`in
+    denetimiyle denetlenir (`run` adı, seçenekleri, cron ifadesi; plan maddesi FX-13).
     """
     loaded = read_settings(inv)
     if loaded.settings.sinks:
         _check_sinks(loaded)
+    if loaded.settings.schedule.tasks:
+        # `serve`in başlarken yaptığı denetim (run adı, seçenekleri, cron ifadesi; plan maddesi FX-13)
+        from src.jobs.scheduler import check_tasks
+
+        check_tasks(loaded.settings.schedule.tasks)
     data = {
         "valid": True,
         "config_file": loaded.config_file,
