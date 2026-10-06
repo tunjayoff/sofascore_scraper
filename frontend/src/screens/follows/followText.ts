@@ -38,19 +38,21 @@ export function seasonsText(seasons: FollowRecord['seasons'] | null | undefined,
 }
 
 /**
- * Where a search hit is from: the country of a team or a player, the category of a league; a bare country
- * code (a stored team, FX-20) in the user's language where the browser knows it.
+ * Where a search hit is from: the country of a team or a player, the category of a league. A country code
+ * the browser knows is named in the user's language (FX-20: SofaScore gives English names, a stored team only
+ * its code); SofaScore's own codes such as "EN" (England) keep SofaScore's name.
  */
 export function hitPlace(h: Pick<TournamentHit, 'country' | 'category'>): string {
   const code = h.country?.code ?? h.category?.country_code ?? null
-  return h.country?.name ?? h.category?.name ?? (code ? regionName(code) : '')
+  return (code ? regionName(code) : null) ?? h.country?.name ?? h.category?.name ?? code ?? ''
 }
 
-function regionName(code: string): string {
+function regionName(code: string): string | null {
   try {
-    return new Intl.DisplayNames([String(i18n.global.locale.value)], { type: 'region', fallback: 'code' }).of(code.toUpperCase()) ?? code
+    const name = new Intl.DisplayNames([String(i18n.global.locale.value)], { type: 'region', fallback: 'none' }).of(code.toUpperCase())
+    return name && name !== code.toUpperCase() ? name : null
   } catch {
-    return code
+    return null
   }
 }
 

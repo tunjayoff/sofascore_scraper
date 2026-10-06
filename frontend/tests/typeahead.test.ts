@@ -3,6 +3,7 @@ import type { VueWrapper } from '@vue/test-utils'
 import FollowEditorScreen from '@/screens/follows/FollowEditorScreen.vue'
 import { resetSports } from '@/app/sports'
 import { REMOTE_DELAY } from '@/app/suggest'
+import { hitPlace } from '@/screens/follows/followText'
 import { i18n, setLocale } from '@/i18n'
 import { callsTo, flush, json, mockFetch } from './helpers'
 import { axeViolations, follow, mountScreen, sport, status } from './v1'
@@ -246,5 +247,17 @@ describe('suggestions while typing', () => {
     await w.find('[data-testid="editor-sport"]').setValue('basketball')
     await vi.advanceTimersByTimeAsync(10)
     expect(w.findAll('[role="option"]')).toHaveLength(0)
+  })
+
+  it('a country is named in the reader’s language; SofaScore’s own codes keep SofaScore’s name', () => {
+    const spain = { category: {}, country: { code: 'ES', name: 'Spain' } }
+    const england = { category: { name: 'England', country_code: 'EN' }, country: null }
+    expect(hitPlace(spain)).toBe('Spain')
+    expect(hitPlace({ category: {}, country: { code: 'TR', name: null } })).toBe('Türkiye')
+    setLocale('tr')
+    expect(hitPlace(spain)).toBe('İspanya')
+    expect(hitPlace(england)).toBe('England')
+    expect(hitPlace({ category: { name: 'World' }, country: null })).toBe('World')
+    setLocale('en')
   })
 })
