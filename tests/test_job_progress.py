@@ -27,40 +27,42 @@ def make(phases: List[str]):
 
 
 def test_percent_follows_phase_weights_and_never_hits_100():
-    p, _, _ = make(["seasons", "matches", "details", "export"])
+    p, _, _ = make(["seasons", "matches", "details"])
     assert p.percent() == 0
     p.start_phase("seasons", 2)
     p.advance(1)
-    assert p.percent() == 2  # half of 5
+    assert p.percent() == 2  # half of 5 of 95
     p.start_phase("details", 10)
-    assert p.percent() == 30  # seasons 5 + matches 25
+    assert p.percent() == 31  # (seasons 5 + matches 25) of 95
     p.advance(5)
-    assert p.percent() == 62  # 30 + 65 * 0.5
-    p.start_phase("export", 1)
-    p.advance(1)
+    assert p.percent() == 65  # 31.6 + 68.4 * 0.5
+    p.advance(10)  # mutlak sayı: aşamanın hepsi
     assert p.percent() == 99
 
 
 def test_weights_are_rescaled_when_phases_are_skipped():
-    p, _, _ = make(["details", "export"])
+    p, _, _ = make(["matches", "details"])
     p.start_phase("details", 4)
     p.advance(2)
-    # details is 65 of 70 → 92.86 %, half of it
-    assert p.percent() == 46
+    # matches 25 + half of details 65, of 90 → 63.9 %
+    assert p.percent() == 63
 
 
 def test_detail_counters_are_published_as_matches_fields():
-    p, published, _ = make(["details", "export"])
+    p, published, _ = make(["matches", "details"])
     p.start_phase("details", 0)
     p.set_total(7)
     p.advance(3)
     last = published[-1]
     assert (last["matches_done"], last["matches_total"]) == (3, 7)
     assert last["detail"]["phase"] == "details"
-    assert last["detail"]["phase_index"] == 1 and last["detail"]["phase_count"] == 2
-    # Counters stay after the export phase starts, so the finished card can report them
-    p.start_phase("export", 1)
-    assert (published[-1]["matches_done"], published[-1]["matches_total"]) == (3, 7)
+    assert last["detail"]["phase_index"] == 2 and last["detail"]["phase_count"] == 2
+
+
+def test_the_export_phase_is_gone():
+    """İşin CSV aşaması EX-1'de kalktı; ağırlığı FX-15'te: bilinmeyen aşama reddedilir."""
+    with pytest.raises(ValueError):
+        make(["details", "export"])
 
 
 def test_eta_needs_some_progress_and_time():
@@ -205,7 +207,6 @@ def run(fj, store, monkeypatch, ui, payload):
     ui.config = deps.config_manager()
     _listing_faces(ui)
     monkeypatch.setattr(fj, "build_context", lambda config_manager: ui)
-    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: ctx.export_all_to_csv())
     req = FetchRequest(**payload)
     job_id = store.create_running(req.model_dump())
     fj.run_fetch_job(job_id, req)

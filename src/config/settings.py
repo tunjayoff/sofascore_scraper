@@ -112,6 +112,10 @@ class ClientSettings:
     proxy: str = setting("", KIND_STR, "Proxy URL; may carry credentials.", secret=True)
     proxy_env: str = setting("", KIND_STR, "Name of the environment variable that holds the proxy URL.")
     odds_provider: int = setting(1, KIND_INT, "Odds provider id used by the odds slices.", minimum=1)
+    odds_country: str = setting(
+        "", KIND_STR, "Country recorded with every odds read (the country SofaScore answers for, e.g. \"TR\"); "
+        "empty = not recorded. It is never derived from this machine.",
+    )
     captcha_token: str = setting(
         "", KIND_STR, "A sofa_captcha token entered by hand; empty = the browser bridge solves the challenge.",
         secret=True, in_file=False,
@@ -152,7 +156,9 @@ class BridgeSettings:
 
 @dataclass(frozen=True)
 class FetchSettings:
-    only_finished: bool = setting(True, KIND_BOOL, "Keep finished events only in summaries and event pages.")
+    only_finished: bool = setting(
+        True, KIND_BOOL, "Show only finished events in the match lists; every listed event is stored whatever its status.",
+    )
     save_empty_rounds: bool = setting(False, KIND_BOOL, "Write round files that hold no event.")
 
 

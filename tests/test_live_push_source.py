@@ -689,7 +689,7 @@ def fake_bridge(monkeypatch: pytest.MonkeyPatch) -> Callable[..., None]:
     FakeBridge.made = []
 
     def install(**options: Any) -> None:
-        monkeypatch.setattr(bridge, "BrowserBridge", lambda profile_dir, home_url=None: FakeBridge(
+        monkeypatch.setattr(bridge, "BrowserBridge", lambda profile_dir, home_url=None, report_health=True: FakeBridge(
             profile_dir, home_url, **options))
 
     install()

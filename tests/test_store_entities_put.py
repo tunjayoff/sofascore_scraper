@@ -13,7 +13,6 @@ Tümü çevrimdışıdır: ağ istekleri yamalanır.
 """
 from __future__ import annotations
 
-import contextlib
 import json
 import os
 import time
@@ -26,6 +25,7 @@ import pytest
 
 import store_dump
 import store_fixtures as sf
+from schedule_runner import list_schedule
 from src.match_fetcher import MatchFetcher
 from src.season_fetcher import SeasonFetcher
 from src.services.query import QueryService
@@ -349,22 +349,7 @@ def test_categories_and_sports_are_read_from_the_catalog(tmp_path: Path) -> None
         store.entities.sport(1)  # type: ignore[arg-type]
 
 
-# --- yazıcılar: MatchFetcher ve SeasonFetcher ------------------------------------------------------------
-
-@contextlib.asynccontextmanager
-async def _no_session() -> Any:
-    yield None
-
-
-def _match_fetcher(data_dir: Path, league: sf.League, season: sf.Season) -> MatchFetcher:
-    config = MagicMock()
-    config.get_leagues.return_value = {league.id: league.name}
-    config.get_league_by_id.return_value = league.name
-    config.get_max_concurrent.return_value = 2
-    seasons = MagicMock()
-    seasons.get_season_name.return_value = season.name
-    return MatchFetcher(config, seasons, data_dir=str(data_dir))
-
+# --- yazıcılar: program (listing.ScheduleLister) ve SeasonFetcher ------------------------------------------------------------
 
 def _api(league: sf.League, season: sf.Season, listings: Sequence[sf.Listing]) -> Any:
     """Listelerden sahte SofaScore: turlar `/rounds` ve tur uç noktalarından, sayfalar `events/last|next`'ten."""
@@ -411,10 +396,7 @@ def test_the_schedule_writer_stores_what_the_legacy_writer_wrote(league: sf.Leag
     key = f"{league.id}/{season.id}"
     expected = store_dump.dump_legacy(built.data_dir)["schedules"][key]
     data = tmp_path / "written"
-    fetcher = _match_fetcher(data, league, season)
-    with patch("src.utils.make_api_request_async", new=_api(league, season, listings)), \
-            patch("src.utils.create_session_async", new=_no_session):
-        assert fetcher.fetch_all_matches_for_season(league.id, season.id) is True
+    assert list_schedule(data, league.id, season.id, _api(league, season, listings), only_finished=filtered).chunks
 
     written = store_dump.dump(data)
     assert written["schedules"] == {key: expected}
@@ -433,7 +415,6 @@ def test_the_schedule_writer_stores_what_the_legacy_writer_wrote(league: sf.Leag
 def test_a_complete_round_is_not_fetched_again(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("src.utils.FETCH_ONLY_FINISHED", True)
     data = tmp_path / "data"
-    fetcher = _match_fetcher(data, sf.PL, sf.PL_2627)
     calls: List[str] = []
     api = _api(sf.PL, sf.PL_2627, sf.PL_ROUNDS)
 
@@ -441,12 +422,10 @@ def test_a_complete_round_is_not_fetched_again(tmp_path: Path, monkeypatch: pyte
         calls.append(url)
         return await api(session, url, max_retries)
 
-    with patch("src.utils.make_api_request_async", new=counting), \
-            patch("src.utils.create_session_async", new=_no_session):
-        fetcher.fetch_all_matches_for_season(PL, PL_SEASON)
-        first = len(calls)
-        calls.clear()
-        fetcher.fetch_all_matches_for_season(PL, PL_SEASON)
+    list_schedule(data, PL, PL_SEASON, counting, only_finished=True)
+    first = len(calls)
+    calls.clear()
+    list_schedule(data, PL, PL_SEASON, counting, only_finished=True)
     assert first == 4  # /rounds ve üç tur
     assert [url.rsplit("/", 1)[1] for url in calls] == ["rounds"]  # bitmemiş turlar TTL içinde, bitmiş tur hep
     assert differences(open_store(data)) == []

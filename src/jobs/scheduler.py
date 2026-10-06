@@ -12,10 +12,11 @@ P29). İsteğe bağlıdır ve varsayılan olarak kapalıdır: yalnızca `ssc ser
 
 Görevler (`run`) ve seçenekleri (`TASK_RUNS`):
 
-    sync      sezon listeleri, programlar ve detaylar (web'in "sync" işi)       league_id
-    fetch     yalnızca detaylar, kayıtlı programlar için                         league_id
-    refresh   değişebilecek kayıtlı maçların yeniden okunması                    league_id
-    backup    `backups/` altına yedek                                            scope, include_env
+    sync           sezon listeleri, programlar ve detaylar (web'in "sync" işi)  league_id
+    fetch          yalnızca detaylar, kayıtlı programlar için                    league_id
+    refresh        değişebilecek kayıtlı maçların yeniden okunması               league_id
+    backup         `backups/` altına yedek                                       scope, include_env
+    prune-history  dilim geçmişinin (bahis oranlarının anlık görüntüleri) eskileri older_than (zorunlu, "90d")
 
 Bilinmeyen bir `run` adı ya da seçenek, sunucu başlamadan reddedilir (`check_tasks`: ConfigError, çıkış kodu 2).
 
@@ -27,12 +28,19 @@ Kurallar:
     loglanır. Kilit başka bir işte ya da süreçteyse (CLI'den bir indirme, bir yedek) de atlanır. Kaçan
     çalışmalar biriktirilmez: sunucu kapalıyken ya da makine uykudayken geçen anlar için tek çalışma yapılır,
     sonraki an şimdiden sonraki ilk andır.
-  * `every`: ilk çalışma zamanlayıcının başlamasından bir aralık sonradır (sunucu başlarken indirme yapılmaz);
-    sonrakiler önceki anın üstüne aralık eklenerek. Sunucu yeniden başlarsa sayaç baştan başlar.
+  * `every`: görevin iş geçmişindeki son çalışmasından bir aralık sonradır (plan maddesi FX-15; sahibin
+    devrettiği karar): sunucu yeniden başlarsa sayaç baştan başlamaz. Son çalışma, aynı türde ve aynı belirtimle
+    zamanlayıcının başlattığı en yeni iştir (görevler sıralarıyla değil içerikleriyle tanınır). Geçmişte yoksa (ilk
+    başlangıç) ilk çalışma zamanlayıcının başlamasından bir aralık sonradır; sunucu başlarken indirme yapılmaz.
+    Aralık sunucu kapalıyken dolduysa ilk turda bir kez çalışılır. Sonrakiler önceki anın üstüne aralık eklenerek.
   * `cron`: beş alan (dakika saat gün ay haftanın-günü), makinenin yerel saatiyle; `*`, `*/n`, `a-b`, `a-b/n`,
     `a/n`, virgülle listeler, ay ve gün adları (jan, mon). Gün ve haftanın günü ikisi de kısıtlıysa biri
     tutması yeter (cron'un bilinen kuralı). 0 ve 7 pazardır.
   * `queued` durumu yazılmaz: bir çalışma ya başlar ya atlanır (iş deposu satırı kilit alındıktan sonra yazar).
+  * `prune-history` (plan maddesi FX-15; varsayılan olarak hiçbir görev yoktur): `older_than`dan eski dilim geçmişi
+    anlık görüntülerini siler (`Store.history.prune`; her dilimin en yenisi kalır). Budama `writer` kilidini ister
+    (ST-26): iş, öteki işler gibi kilidi alır; kilit başkasındaysa çalışma atlanır. İş türü `clear`'dır
+    (kısmi bir temizleme; belirtimi `{"scope": "history", "older_than": ...}`).
   * Durdurma (`stop`): döngü durur; zamanlayıcının başlattığı ve hâlâ süren iş iptal edilir ve en çok
     `timeout` saniye beklenir.
   * Sonraki çalışmalar `/api/v1/status`'ta görünür (`schedule`): süreçte çalışan zamanlayıcı `current()`'tir.
@@ -44,12 +52,13 @@ gövdeleri servisleri çalıştırır ve onları ilk kullanımda içe aktarır.
 """
 from __future__ import annotations
 
+import json
 import logging
 import re
 import threading
 import time
 from dataclasses import dataclass, field, replace
-from datetime import date, datetime, timedelta, tzinfo
+from datetime import date, datetime, timedelta, timezone, tzinfo
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Callable, Dict, FrozenSet, List, Mapping, Optional, Sequence, Tuple
 
@@ -68,6 +77,7 @@ logger = logging.getLogger("Scheduler")
 MAX_WAIT_SECONDS = 60.0  # döngü en geç bu aralıkla uyanır: saat ileri atlarsa (uyku, yaz saati) gecikme sınırlı
 STOP_TIMEOUT_SECONDS = 30.0  # durdurmada zamanlayıcının başlattığı işin bitmesi en çok bu kadar beklenir
 CRON_SEARCH_DAYS = 366 * 5  # cron ifadesinin sonraki anı bu kadar gün içinde aranır (29 şubat dahil)
+HISTORY_SCAN = 200  # `every` görevlerinin son çalışması iş geçmişinin en yeni bu kadar işinde aranır
 
 # Son çalışmanın sonucu (`TaskState.last_result`)
 STARTED = "started"
@@ -268,7 +278,7 @@ def _sync_plan(mode: str) -> Callable[[Mapping[str, Any], ContextFactory], TaskP
 
         from src.services.sync import SyncService, SyncSpec
 
-        spec = SyncSpec(mode=mode, league_id=_league_id(options, "schedule task"), export=False)  # type: ignore[arg-type]
+        spec = SyncSpec(mode=mode, league_id=_league_id(options, "schedule task"))  # type: ignore[arg-type]
 
         def body(handle: Any) -> JobOutcome:
             ctx = context()
@@ -314,8 +324,44 @@ def _backup_plan(options: Mapping[str, Any], context: ContextFactory) -> TaskPla
     return TaskPlan(kind=JobKind.BACKUP, spec=spec, body=body)
 
 
+PRUNE_HISTORY = "prune-history"
+HISTORY_SCOPE = "history"  # budama işinin belirtimindeki kapsam
+
+
+def _older_than(options: Mapping[str, Any], where: str) -> float:
+    """`older_than` ("90d", "12h"): saniye. Zorunludur: kendiliğinden geçmiş silinmez."""
+    from src.config import loader  # işlev içinde: bu modül yüz ve yapılandırma modüllerini yüklemeden içe aktarılır
+
+    value = options.get("older_than")
+    if not isinstance(value, str) or not value.strip():
+        raise ConfigError(f"{where} older_than: required, a duration such as \"90d\", got {value!r}")
+    try:
+        return loader.parse_duration(value)
+    except ValueError as e:
+        raise ConfigError(f"{where} older_than: {e}") from None
+
+
+def _prune_plan(options: Mapping[str, Any], context: ContextFactory) -> TaskPlan:
+    older_than = str(options.get("older_than"))
+    seconds = _older_than(options, "schedule task")
+    spec = {"scope": HISTORY_SCOPE, "older_than": older_than}
+
+    def body(handle: Any) -> JobOutcome:
+        cutoff = time.time() - seconds
+        removed = context().store.history.prune(older_than=cutoff)
+        cutoff_text = datetime.fromtimestamp(cutoff, timezone.utc).isoformat(timespec="seconds")
+        return JobOutcome(result={"prune_history": {"older_than": older_than, "cutoff_utc": cutoff_text,
+                                                    "removed": removed}})
+
+    return TaskPlan(kind=JobKind.CLEAR, spec=spec, body=body)
+
+
 def _check_league(options: Mapping[str, Any], where: str) -> None:
     _league_id(options, where)
+
+
+def _check_prune(options: Mapping[str, Any], where: str) -> None:
+    _older_than(options, where)
 
 
 def _check_backup(options: Mapping[str, Any], where: str) -> None:
@@ -340,6 +386,7 @@ TASK_RUNS: Mapping[str, TaskRun] = MappingProxyType({
     "fetch": TaskRun(frozenset({"league_id"}), _check_league, _sync_plan("details")),
     "refresh": TaskRun(frozenset({"league_id"}), _check_league, _sync_plan("refresh")),
     "backup": TaskRun(frozenset({"scope", "include_env"}), _check_backup, _backup_plan),
+    PRUNE_HISTORY: TaskRun(frozenset({"older_than"}), _check_prune, _prune_plan),
 })
 
 
@@ -429,6 +476,58 @@ class Scheduler:
         ]
         self._stop = threading.Event()
         self._thread: Optional[threading.Thread] = None
+        self._anchored = False
+
+    # --- iş geçmişi ----------------------------------------------------------------------------------
+
+    def _last_runs(self) -> Dict[int, Job]:
+        """
+        `every` görevlerinin iş geçmişindeki son çalışması (görevin sırası → iş): zamanlayıcının başlattığı, aynı
+        türde ve aynı belirtimle en yeni iş. Geçmiş okunamazsa (depo yok, iş yöneticisi listeyi bilmiyor) boş.
+        """
+        positions = [i for i, trigger in enumerate(self._triggers) if isinstance(trigger, EveryTrigger)]
+        if not positions:
+            return {}
+        try:
+            manager = self._jobs()
+            listing = getattr(manager, "list", None)
+            if listing is None:
+                return {}
+            history = [job for job in listing(limit=HISTORY_SCAN) if job.origin.face == "scheduler"]
+        except Exception as e:
+            logger.warning("The job history could not be read; every-tasks count from now: %s: %s",
+                           type(e).__name__, e)
+            return {}
+        found: Dict[int, Job] = {}
+        for position in positions:
+            task = self._tasks[position]
+            try:
+                plan = TASK_RUNS[task.run].plan(task.options, self._context)
+            except Exception:  # pragma: no cover - check_tasks görevleri kurucuda denetledi
+                continue
+            spec = json.loads(json.dumps(dict(plan.spec)))
+            for job in history:  # en yeni önce
+                if job.kind == plan.kind and dict(job.spec) == spec:
+                    found[position] = job
+                    break
+        return found
+
+    def _anchor(self) -> None:
+        """`every` görevlerinin ilk anını iş geçmişindeki son çalışmalarına göre kurar (bir kez)."""
+        if self._anchored:
+            return
+        self._anchored = True
+        for position, job in self._last_runs().items():
+            started = _epoch(job.started_at or job.created_at)
+            if started is None:
+                continue
+            trigger = self._triggers[position]
+            with self._lock:
+                state = self._states[position]
+                self._states[position] = replace(state, next_run_at=started + trigger.seconds, last_run_at=started,
+                                                 last_job_id=job.id)
+            logger.info("Schedule task #%d (%s): last run at %s (job %s)", state.index, state.run, _iso(started),
+                        job.id)
 
     # --- durum ---------------------------------------------------------------------------------------
 
@@ -453,6 +552,7 @@ class Scheduler:
         görevlerin yeni durumlarını döndürür. Aynı anda gelen görevler yapılandırma sırasıyla başlatılır: ilki
         kilidi alırsa sonrakiler `skipped_busy` olur.
         """
+        self._anchor()
         now = self._clock()
         handled: List[TaskState] = []
         for position, trigger in enumerate(self._triggers):
@@ -526,6 +626,7 @@ class Scheduler:
         global _current
         if self._thread is not None:
             return
+        self._anchor()
         self._thread = threading.Thread(target=self.run, name="scheduler", daemon=True)
         with _current_lock:
             _current = self
@@ -571,9 +672,23 @@ def _iso(epoch: float) -> str:
     return datetime.fromtimestamp(epoch).astimezone().isoformat(timespec="seconds")
 
 
+def _epoch(text: Optional[str]) -> Optional[float]:
+    """İş kaydının ISO-8601 zamanı → epoch saniye; okunamazsa None. Saat dilimi yoksa UTC sayılır."""
+    if not text:
+        return None
+    try:
+        moment = datetime.fromisoformat(str(text).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    return moment.timestamp()
+
+
 __all__ = [
     "BACKUP_SCOPES",
     "FAILED_TO_START",
+    "PRUNE_HISTORY",
     "SKIPPED_BUSY",
     "SKIPPED_RUNNING",
     "STARTED",

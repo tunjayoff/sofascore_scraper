@@ -11,6 +11,8 @@ Komut satırının çağırdığı servisler (plan maddesi P10; docs/design/02-s
 """
 from __future__ import annotations
 
+import dataclasses
+
 import errno
 import json
 import os
@@ -153,34 +155,31 @@ def make_ctx(md: Any, *, seasons: Any = None, schedule: Any = None) -> Any:
 # --- SyncSpec: aşamalar ------------------------------------------------------------------------------
 
 
-def test_the_job_has_no_export_phase_whatever_the_export_switch_says() -> None:
-    """CSV aşaması kalktı (EX-1, karar D9); `export` alanı eski çağıranlar için duruyor ve okunmuyor."""
-    assert SyncSpec().export is True
+def test_the_job_has_no_export_phase() -> None:
+    """CSV aşaması kalktı (EX-1, karar D9); okunmayan `export` alanı da (FX-15)."""
+    assert not hasattr(SyncSpec(), "export")
     assert SyncSpec().job_phases == FULL_PHASES == ("seasons", "matches", "details")
     assert SyncSpec(mode="details").job_phases == DETAILS_PHASES == ("details",)
-    assert SyncSpec(export=False).job_phases == ("seasons", "matches", "details")
-    assert SyncSpec(mode="details", export=False).job_phases == ("details",)
+    assert SyncSpec().job_phases == ("seasons", "matches", "details")
+    assert SyncSpec(mode="details").job_phases == ("details",)
 
 
 def test_refresh_mode_has_one_phase_whatever_the_export_switch_says() -> None:
     assert SyncSpec(mode="refresh").job_phases == REFRESH_PHASES == ("details",)
-    assert SyncSpec(mode="refresh", export=False).job_phases == ("details",)
+    assert SyncSpec(mode="refresh").job_phases == ("details",)
 
 
 # --- CSV aşaması yok ---------------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("export", [True, False])
-def test_no_csv_is_written_whatever_the_spec_says(monkeypatch: pytest.MonkeyPatch, export: bool) -> None:
-    exported: List[Any] = []
-    monkeypatch.setattr("src.services.export.export_all_csv", exported.append)
+def test_no_csv_is_written_and_the_spec_has_no_export_field(monkeypatch: pytest.MonkeyPatch) -> None:
+    assert "export" not in {f.name for f in dataclasses.fields(SyncSpec)}  # FX-15: okunmayan alan kalktı
     ctx = make_ctx(FakeRefresher())
-    spec = SyncSpec(mode="details", league_id=17, export=export)
+    spec = SyncSpec(mode="details", league_id=17)
     handle = RecordingHandle(spec)
 
     result = SyncService(ctx).run(spec, handle=handle)
 
-    assert exported == []
     assert "Exporting data to CSV..." not in handle.lines
     assert "export" not in handle.phases
     assert (result.state, result.refresh) == ("succeeded", None)
@@ -190,9 +189,7 @@ def test_a_run_without_a_handle_and_without_export_never_starts_the_export_phase
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Tutamaçsız çalıştırmanın ilerleme nesnesi `job_phases` ile kurulur: "export" aşaması onda yoktur."""
-    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: pytest.fail("export must not run"))
-
-    result = SyncService(make_ctx(FakeRefresher())).run(SyncSpec(mode="details", export=False))
+    result = SyncService(make_ctx(FakeRefresher())).run(SyncSpec(mode="details"))
 
     assert result == SyncResult(
         state="succeeded", schedule_empty_seasons=0, breaker=None, progress=result.progress, refresh=None
@@ -204,7 +201,6 @@ def test_a_run_without_a_handle_and_without_export_never_starts_the_export_phase
 
 def test_refresh_mode_reproduces_the_call_order_of_the_cli(monkeypatch: pytest.MonkeyPatch) -> None:
     """begin_job_cache → refresh_due_ids → refresh_matches → end_job_cache; başka hiçbir indirici çağrılmaz."""
-    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: pytest.fail("export must not run"))
     md = FakeRefresher(due=["1", "2", "3"], stats={"refreshed": 2, "changed": 1, "failed": 1})
     md.changed_ids = ("2",)
 

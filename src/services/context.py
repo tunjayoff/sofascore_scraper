@@ -1,8 +1,8 @@
 """
 Servis bağlamı: bir servisin çalışmak için ihtiyaç duyduğu nesneler (docs/design/02-services.md 2.3).
 
-`build_context`, terminal arayüzünün kurucusunda duran bağlama işini (src/SofaScoreUi.py: veri dizinleri)
-arayüzden bağımsız yapar; web ve CLI aynı bağlamı kurar.
+`build_context` bir servisin bağlamını kurar (veri dizinleri, takiplerin eşitlenmesi, istemci); web, CLI ve
+zamanlayıcı aynı bağlamı kurar. Eskiden bu iş terminal arayüzünün kurucusundaydı (P08 taşıdı, P26 arayüzü kaldırdı).
 
 Bağlam SofaScore istemcisini ve veri dizininin deposuna giden yolu taşır:
 
@@ -17,8 +17,7 @@ Tasarımdaki diğer alanlar (Settings, Clock) onları getiren plan maddeleriyle 
 
 Eski indiriciler (`season_fetcher`, `match_fetcher`, `match_data_fetcher`; plan maddesi P15) bağlam kurulurken
 kurulmaz: ilk erişimde kurulur ve bağlamın ömrü boyunca aynı nesne kalır. Yalnızca eski adlı yüzlerdir (iş
-src/services/ altındadır); eşitleme, dışa aktarma ve bakım servisleri ile bir web ucu onları hâlâ bu adlarla
-çağırır. Modül onları içe aktarmaz: bağlamı içe aktarmak üç indiriciyi yüklemez.
+src/services/ altındadır); eşitleme ve bakım servisleri ile bir web ucu onları hâlâ bu adlarla çağırır. Modül onları içe aktarmaz: bağlamı içe aktarmak üç indiriciyi yüklemez.
 
 Bağlam kurulurken takipler de `follows` tablosuna eşitlenir (plan maddesi ST-17): yapılandırma dosyasının
 `[[follow]]` girdileri "config" kaynağıyla, lig dosyaları "legacy" kaynağıyla (bkz. `_sync_follows`). Bu eşitleme
@@ -45,8 +44,9 @@ if TYPE_CHECKING:
 
 logger = get_logger("Services")
 
-# Veri dizini altında her bağlam kuruluşunda var edilen dizinler (bugünkü yerleşim)
-DATA_SUBDIRECTORIES = ("seasons", "matches", "match_details", "datasets")
+# Veri dizini altında her bağlam kuruluşunda var edilen dizinler. Sezon listeleri ve programlar v3/tournaments/
+# altına yazılır (plan maddesi ST-22); boş `seasons/` ve `matches/` artık kurulmaz (plan maddesi FX-15).
+DATA_SUBDIRECTORIES = ("match_details", "datasets")
 
 
 @dataclass(frozen=True)
@@ -61,7 +61,7 @@ class ServiceContext:
     jobs                (özellik) deponun iş yöneticisi
     season_fetcher      (özellik) sezon listelerinin eski yüzü; ilk erişimde kurulur
     match_fetcher       (özellik) maç listelerinin (program) eski yüzü; ilk erişimde kurulur
-    match_data_fetcher  (özellik) maç detayları, yenileme ve CSV'nin eski yüzü; ilk erişimde kurulur
+    match_data_fetcher  (özellik) maç detaylarının ve yenilemenin eski yüzü; ilk erişimde kurulur
     """
 
     config: ConfigManager

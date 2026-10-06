@@ -92,11 +92,11 @@ def test_packages_fix_installs_with_the_constraints_file_when_there_is_one(make_
 
 def test_packages_broken_install_counts_as_missing(make_ctx):
     def fake_import(name):
-        if name == "pandas":
+        if name == "curl_cffi":
             raise OSError("libstdc++.so.6: cannot open shared object file")
 
     res = doctor.check_packages(make_ctx(), import_module=fake_import)
-    assert res.status == FAIL and "pandas" in res.summary
+    assert res.status == FAIL and "curl_cffi" in res.summary
 
 
 def test_packages_version_differs_from_pin_is_a_warning(make_ctx):
@@ -437,6 +437,70 @@ def test_dir_that_cannot_be_created_fails(make_ctx):
 def test_config_dir_follows_the_override(make_ctx, tmp_path):
     ctx = make_ctx(environ={"SOFASCORE_CONFIG_DIR": str(tmp_path / "cfg")})
     assert doctor.check_config_dir(ctx).detail["path"] == str(tmp_path / "cfg")
+
+
+# --- yapılandırma dosyası (FX-15) -------------------------------------------------------------
+
+
+def test_config_without_a_file_is_ok(make_ctx):
+    res = doctor.check_config(make_ctx())
+    assert (res.status, res.code, res.label) == (OK, "config_none", "Config file")
+    assert res.detail == {"path": None, "search_disabled": False}
+    assert "sofascore.toml" in res.summary
+
+
+def test_config_search_turned_off_is_ok(make_ctx):
+    res = doctor.check_config(make_ctx(environ={"SOFASCORE_CONFIG": "none"}))
+    assert (res.status, res.code) == (OK, "config_none")
+    assert res.detail["search_disabled"] is True and "SOFASCORE_CONFIG=none" in res.summary
+
+
+def test_a_valid_config_file_in_the_project_or_the_config_folder(make_ctx, tmp_path):
+    ctx = make_ctx()
+    (ctx.root / "sofascore.toml").write_text('[client]\nretries = 2\n', encoding="utf-8")
+    res = doctor.check_config(ctx)
+    assert (res.status, res.code) == (OK, "config_ok") and res.detail["path"] == str(ctx.root / "sofascore.toml")
+
+    other = make_ctx(environ={"SOFASCORE_CONFIG_DIR": str(tmp_path / "cfg")})
+    (ctx.root / "sofascore.toml").unlink()
+    (tmp_path / "cfg").mkdir()
+    (tmp_path / "cfg" / "sofascore.toml").write_text("[storage]\ndata_dir = \"data\"\n", encoding="utf-8")
+    assert doctor.check_config(other).detail["path"] == str(tmp_path / "cfg" / "sofascore.toml")
+
+
+@pytest.mark.parametrize("text, fragment", [
+    ("[client\nretries = 2\n", "sofascore.toml"),  # TOML olarak okunamaz
+    ("[client]\nretries = -1\n", "retries: must be at least 0"),  # aralık dışı
+    ("[nope]\nx = 1\n", "nope"),  # bilinmeyen bölüm
+])
+def test_a_broken_config_file_fails_with_the_loader_message(make_ctx, text, fragment):
+    ctx = make_ctx()
+    (ctx.root / "sofascore.toml").write_text(text, encoding="utf-8")
+    res = doctor.check_config(ctx)
+    assert (res.status, res.code) == (FAIL, "config_invalid")
+    assert fragment in res.detail["error"] and "ssc config validate" in res.fix
+
+
+def test_a_named_config_file_that_is_missing_fails(make_ctx, tmp_path):
+    res = doctor.check_config(make_ctx(environ={"SOFASCORE_CONFIG": str(tmp_path / "missing.toml")}))
+    assert (res.status, res.code) == (FAIL, "config_invalid") and "not found" in res.detail["error"]
+
+
+def test_a_data_folder_from_the_config_file_that_cannot_be_written_fails(make_ctx, tmp_path):
+    ctx = make_ctx()
+    blocker = tmp_path / "not-a-folder"
+    blocker.write_text("x", encoding="utf-8")
+    (ctx.root / "sofascore.toml").write_text(f"[storage]\ndata_dir = {json.dumps(str(blocker))}\n", encoding="utf-8")
+    res = doctor.check_config(ctx)
+    assert (res.status, res.code) == (FAIL, "config_dir_not_writable")
+    assert res.detail["directory"] == {"key": "storage.data_dir", "path": str(blocker), "error": "not a directory"}
+    assert "storage.data_dir" in res.fix
+
+
+def test_config_is_not_checked_without_the_packages_of_the_loader(make_ctx, monkeypatch):
+    monkeypatch.setitem(sys.modules, "src.config", None)  # içe aktarma ImportError verir
+    res = doctor.check_config(make_ctx())
+    assert (res.status, res.code) == (WARN, "config_unchecked") and "Error" in res.detail["error"]
 
 
 # --- web arayüzü ------------------------------------------------------------------------------

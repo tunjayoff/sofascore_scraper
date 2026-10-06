@@ -32,7 +32,7 @@ değişiklikler (CSV dışa aktarımı, yedekler, elle silinen dosyalar) en geç
 Kapsam (coverage) kuralları:
 
   * Yalnızca `/event/{id}` yükü saklanan maçlar sayılır (`details`); yalnızca bir listeden bilinen maç girmez.
-    Eski rapor (src/match_data_fetcher.py `generate_file_report`) `basic.json`'ı olmayan bir dizini de maç
+    Terminal menüsünün eski dosya raporu (`generate_file_report`, FX-15'te kalktı) `basic.json`'ı olmayan bir dizini de maç
     sayıyordu ve yalnızca `match_details/<lig>/season_*/` altındaki dizinlere bakıyordu; düz, `_no_tournament/`
     ve v3 düzenindeki kayıtlar da artık sayılır.
   * Beklenen dilimler maçın sporuna ve evresine göredir (src/services/planning.py `expected_slice_keys`,

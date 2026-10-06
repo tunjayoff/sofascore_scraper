@@ -856,25 +856,6 @@ def test_the_sport_sidecar_is_mirrored_after_every_write(setup: Setup):
     assert [row[1] for row in setup.table()] == [17, 132]
 
 
-def test_a_sport_learned_from_downloaded_data_is_mirrored(setup: Setup):
-    setup.write_leagues("NBA: 132\nPremier League: 17\n")
-    setup.make_store()
-    setup.manager()
-    match_dir = setup.data_dir / "match_details" / "132_NBA" / "season_NBA_25_26" / "14441992"
-    match_dir.mkdir(parents=True)
-    (match_dir / "basic.json").write_text(
-        json.dumps({"id": 14441992, "tournament": {"uniqueTournament": {"id": 132},
-                                                   "category": {"sport": {"name": "Basketball", "slug": "basketball"}}}}),
-        encoding="utf-8",
-    )
-
-    assert league_sports.resolve_all(str(setup.leagues_file), str(setup.data_dir), [132, 17]) == {
-        132: "basketball", 17: None,
-    }
-
-    assert [(row[1], row[3]) for row in setup.table()] == [(132, "basketball"), (17, None)]
-
-
 def test_a_hand_edit_of_the_sidecar_reaches_the_table_with_the_next_mirror(setup: Setup):
     setup.write_leagues("Premier League: 17\n")
     setup.make_store()
@@ -1081,7 +1062,7 @@ def test_build_context_without_follows_does_not_create_a_store(setup: Setup, con
     config_file("[client]\nretries = 2\n")
     build_context(cm, data_dir=str(setup.data_dir))
 
-    assert sorted(p.name for p in setup.data_dir.iterdir()) == ["datasets", "match_details", "matches", "seasons"]
+    assert sorted(p.name for p in setup.data_dir.iterdir()) == ["datasets", "match_details"]
     assert api_mod._registry == {}
 
 

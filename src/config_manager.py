@@ -58,6 +58,32 @@ class League:
     name: str
 
 
+def read_league_file(path: str) -> Dict[int, str]:
+    """
+    leagues.txt'in ligleri (kimlik → ad), ConfigManager'ın kuralıyla (`Ad: ID` ya da eski `ID Ad`; BOM, yorum,
+    geçersiz ve adsız satırlar atlanır; yinelenen kimlikte sonuncusu). Yalnızca okunur: dosya yoksa boş sözlük;
+    ConfigManager gibi örnek dosya yaratmaz ve takipleri `state.db`'ye yansıtmaz (`ssc config init --from-legacy`;
+    plan maddesi FX-15).
+    """
+    leagues: Dict[int, str] = {}
+    try:
+        with open(path, "r", encoding="utf-8-sig") as f:
+            lines = f.readlines()
+    except FileNotFoundError:
+        return leagues
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        try:
+            name, league_id = ConfigManager._parse_league_line(line)
+        except ValueError:
+            continue
+        if name:
+            leagues[league_id] = name
+    return leagues
+
+
 class ConfigManager:
     """Lig yapılandırma dosyalarını yöneten sınıf. Singleton tasarım desenini uygular."""
 

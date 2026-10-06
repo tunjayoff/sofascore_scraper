@@ -367,7 +367,9 @@ def test_a_refused_handshake_counts_as_a_rejection(server: Any) -> None:
     conn = fast(reader)
     DirectSource("football", conn).ensure_open()
     try:
-        wait_for(lambda: len(reader.reads) == 3)  # iki ret, sonra okunacak kimlik bilgisi kalmadı
+        # İki ret, sonra okunacak kimlik bilgisi kalmadı. Bağlantı okumayı kısa aralıkla yeniden dener: sayaç 3'te
+        # durmaz, `== 3` yavaş bir makinede (macOS CI) o anı kaçırıp zaman aşımına düşüyordu (FX-15)
+        wait_for(lambda: len(reader.reads) >= 3)
     finally:
         conn.close()
     assert conn.rejections == 2 and conn.opens == 0
@@ -650,7 +652,7 @@ def install_bridge(monkeypatch: pytest.MonkeyPatch, sockets: List[Tuple[str, Lis
 
     CredentialBridge.made = []
     monkeypatch.setattr(bridge, "HOME_URL", "https://www.sofascore.com/tr")
-    monkeypatch.setattr(bridge, "BrowserBridge", lambda profile_dir, home_url=None: CredentialBridge(
+    monkeypatch.setattr(bridge, "BrowserBridge", lambda profile_dir, home_url=None, report_health=True: CredentialBridge(
         profile_dir, home_url, sockets=sockets))
 
 

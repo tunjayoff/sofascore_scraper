@@ -61,6 +61,32 @@ def test_fetch_saves_observation_with_the_match(tmp_path):
     assert read_observation(loaded) == data[OBSERVATION_KEY]
 
 
+def test_the_returned_observation_is_the_moment_the_store_keeps(tmp_path, monkeypatch):
+    """
+    FX-15: dönen sözlüğün gözlem anı /event yanıtının alındığı andır, sonradan okunan saat değil. Eskiden şimdiki an
+    okunuyordu ve yazmayla arasında saniye dönünce katalogdaki tam saniyeden bir fazla çıkıyordu (Windows CI).
+    """
+    import src.match_data_fetcher as mdf
+
+    seen = []
+    real = mdf.observation_record
+
+    def spy(event, observed_at=None):
+        seen.append(observed_at)
+        return real(event, observed_at)
+
+    monkeypatch.setattr(mdf, "observation_record", spy)
+    f = _fetcher(tmp_path)
+    event = _event()
+    with _serving(event):
+        data = f.fetch_match_data(event["event_id"])
+    (moment,) = seen
+    assert moment is not None and moment.tzinfo is not None
+    row = open_store(tmp_path).events.get(event["event_id"])
+    assert row.observed_at == int(moment.timestamp())
+    assert data[OBSERVATION_KEY]["observed_at_utc"] == moment.astimezone(dt.timezone.utc).isoformat(timespec="seconds")
+
+
 def test_old_records_without_observation_read_as_none(tmp_path):
     f = _fetcher(tmp_path)
     event = _event()

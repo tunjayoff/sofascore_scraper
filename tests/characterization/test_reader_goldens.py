@@ -300,18 +300,12 @@ def test_api_matches(fx: sf.LegacyFixture) -> None:
 
 # --- GET /api/seasons/{id}/matches --------------------------------------------------------------
 
-# Bu sezonların iki özet dosyası var; satır sırası dizin listeleme sırasına bağlı olduğundan sıralanır
-UNORDERED_SEASONS = {("legacy", 17, 96668)}
-
-
 def test_api_season_matches(fx: sf.LegacyFixture) -> None:
+    """Satırlar katalogdan, belirli bir sırayla gelir (RD-2): iki özet dosyası olan sezon da artık sıralanmaz (FX-15)."""
     golden: Dict[str, Any] = {}
     pairs = list(fx.listed) + [(UNKNOWN_LEAGUE, 96668), (next(iter(fx.leagues)), 1)]
     for league_id, season_id in pairs:
         response = _get(f"/api/seasons/{season_id}/matches?league_id={league_id}")
-        if (fx.name, league_id, season_id) in UNORDERED_SEASONS:
-            response["body"]["matches"].sort(key=lambda row: json.dumps(row, sort_keys=True))
-            response["order"] = "sorted here: two summary files, read in directory order"
         golden[f"season_id={season_id}&league_id={league_id}"] = response
     golden["season_id=96668 (league_id missing)"] = _get("/api/seasons/96668/matches")
     check_golden(fx.name, "api_season_matches", golden)
@@ -405,8 +399,9 @@ def _needs(fetcher: MatchDataFetcher, ids: Sequence[int]) -> Dict[str, str]:
 
 def test_fetcher_readers(fx: sf.LegacyFixture, frozen_clock: None, monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    `collect_detail_match_ids()` (lig vermeden) ligleri dizin listeleme sırasıyla dolaşır: sıralanarak kaydedilir.
-    Tek lig için sıra belirlidir (sezon id'si büyükten küçüğe, dosyadaki satır sırası).
+    Planlayıcılar katalogdan okur (RD-3): sıralar belirlidir. `collect_detail_match_ids()` ligleri kimlik sırasıyla,
+    bir ligin sezonlarını kimlik büyükten küçüğe, sezon içini başlangıç zamanıyla verir; lig vermeyen çağrının
+    sonucu goldena eski anahtarıyla, sıralanarak yazılır.
     """
     fetcher = _fetcher(fx.data_dir)
     ids = fx.event_ids + [UNKNOWN_ID]
@@ -444,11 +439,10 @@ def test_fetcher_readers(fx: sf.LegacyFixture, frozen_clock: None, monkeypatch: 
 
 def test_needs_are_the_same_with_the_job_cache(fx: sf.LegacyFixture, frozen_clock: None) -> None:
     """
-    İş önbelleği (`begin_job_cache`) aynı kararları verir. İki yerde duran maç hariç: önbellek dizini
-    hangi kopyayı önce listelerse onu tutar, önbelleksiz arama ise lig/sezon dizinindekini seçer.
+    İş önbelleği (`begin_job_cache`) aynı kararları verir, iki yerde duran maçta da: iki yol da katalogdan okur ve
+    olay yükü en yeni olan kopyayı seçer (RD-3; eskiden önbellek dizini önce listelenen kopyayı tutuyordu).
     """
-    duplicated = {i for i in fx.detail_ids if sum(d.event_id == i for d in fx.details) > 1}
-    ids = [i for i in fx.event_ids + [UNKNOWN_ID] if i not in duplicated]
+    ids = fx.event_ids + [UNKNOWN_ID]
     plain = _needs(_fetcher(fx.data_dir), ids)
     cached = _fetcher(fx.data_dir)
     cached.begin_job_cache()

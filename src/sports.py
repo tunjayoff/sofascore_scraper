@@ -1,9 +1,10 @@
 """
 Spor kayıt defteri: desteklenen sporlar ve maç detay dilimleri tek yerde.
 
-Okuyanlar: src/status.py (skor ailesi), src/watcher.py (izleyici parametreleri), src/match_data_fetcher.py
-(istenecek detay uç noktaları), src/web/league_sports.py (liglerin sporu), src/web/routes/sports.py (GET /api/sports),
-main.py (--sport seçenekleri), src/services/planning.py (bir maçın ihtiyacı: beklenen dilimler).
+Okuyanlar: src/status.py (skor ailesi), src/services/live/ (izleyici parametreleri), src/services/pipeline.py
+(istenecek detay uç noktaları), src/web/league_sports.py (liglerin sporu), src/web/api/legacy.py ve
+src/web/api/v1/ (GET /api/sports, /api/v1/sports), `ssc watch` (--sport seçenekleri), src/services/planning.py
+(bir maçın ihtiyacı: beklenen dilimler).
 
 Yeni spor eklemek:
   1. SPORTS'a bir SportSpec (periyot ailesindeyse `period_format`, set ailesindeyse `set_format` ile).

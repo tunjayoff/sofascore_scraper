@@ -297,13 +297,12 @@ def test_refresh_blocked_end_to_end_through_the_request_layer(client):
     assert r.status_code == 502 and _detail(r)["reason"] == "blocked"
 
 
-def test_legacy_season_fetch_still_returns_an_empty_list_on_failure():
-    """CLI ve arka plan işi fetch_seasons_for_league'den liste bekler; hata fırlatmamalı."""
+def test_the_checked_season_fetch_raises_the_typed_error_and_returns_the_list():
+    """`fetch_seasons_checked` (web'in "sezonları yenile" uç noktası) başarısızlığı boş listeyle gizlemez."""
     fetcher = SeasonFetcher(deps.config_manager(), DATA_DIR)
     with patch.object(season_fetcher_mod, "make_api_request", side_effect=APIError("HTTP 403", status_code=403)):
-        assert fetcher.fetch_seasons_for_league(LEAGUE_ID) == []
         with pytest.raises(APIError):
             fetcher.fetch_seasons_checked(LEAGUE_ID)
     with patch.object(season_fetcher_mod, "make_api_request", return_value={"seasons": SEEDED_SEASONS}) as req:
-        assert fetcher.fetch_seasons_for_league(LEAGUE_ID) == SEEDED_SEASONS
+        assert fetcher.fetch_seasons_checked(LEAGUE_ID) == SEEDED_SEASONS
     assert req.call_args.kwargs == {"max_retries": None, "raise_errors": True}  # yapılandırılan deneme sayısı

@@ -120,30 +120,3 @@ def sports_for(league_config_path: str, data_dir: str, league_ids: Iterable[int]
         lid = int(lid)
         out[lid] = stored.get(lid) or infer_from_data(data_dir, lid)
     return out
-
-
-def resolve_all(league_config_path: str, data_dir: str, league_ids) -> Dict[int, Optional[str]]:
-    """
-    Sport for each id: stored, else inferred from local data (and then stored), else None.
-
-    The web app does not call this any more (GET /api/leagues uses `sports_for`, which writes nothing); it
-    is kept for callers that want the learned sport in the sidecar and in the follows table.
-    """
-    stored = load(league_config_path)
-    out: Dict[int, Optional[str]] = {}
-    learned: Dict[int, str] = {}
-    for lid in league_ids:
-        lid = int(lid)
-        sport = stored.get(lid)
-        if not sport:
-            sport = infer_from_data(data_dir, lid)
-            if sport:
-                learned[lid] = sport
-        out[lid] = sport
-    if learned:
-        with _lock, file_lock(sidecar_path(league_config_path)):
-            data = load(league_config_path)
-            data.update(learned)
-            _save(league_config_path, data)
-        _mirror_follows(league_config_path)
-    return out

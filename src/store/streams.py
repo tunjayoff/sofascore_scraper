@@ -13,8 +13,9 @@ Sıra numaraları:
   * Her ekleme `BEGIN IMMEDIATE` işlemindedir, yani numaralar kayıt (commit) sırasıyla verilir: okuyan,
     daha küçük numaralı bir satır henüz kaydedilmemişken daha büyüğünü görmez. `read` bu yüzden "okuduğum
     son numara"yı güvenle ilerletebilir.
-  * `stream_id` state.db'de duran bir UUID'dir; yalnızca state.db yeniden yaratılırsa değişir ve tüketiciye
-    sakladığı konumun artık anlamsız olduğunu söyler.
+  * `stream_id` state.db'de duran bir UUID'dir; state.db yeniden yaratılırsa ya da bir yedekten geri yüklenirse
+    (yedeğin state.db'si kendi `stream_id`'siyle gelir) değişir ve tüketiciye sakladığı konumun artık anlamsız
+    olduğunu söyler.
 
 `wait`, aynı süreçteki eklemeler için süreç içi bir koşul değişkeni kullanır; başka süreçlerin
 eklemelerini `PRAGMA data_version`'ı WAIT_POLL_SECONDS aralıkla yoklayarak görür (SQLite'ın süreçler arası

@@ -18,8 +18,6 @@
   "LOG INFO ConfigManager: 1 lig yapılandırması yüklendi",
   "LOG INFO ConfigManager: Yapılandırma yöneticisi başlatıldı: 1 lig yüklendi (<SANDBOX>/config/leagues.txt)",
   "LOG INFO Services: Created directory: <SANDBOX>/data",
-  "LOG INFO Services: Created directory: <SANDBOX>/data/seasons",
-  "LOG INFO Services: Created directory: <SANDBOX>/data/matches",
   "LOG INFO Services: Created directory: <SANDBOX>/data/match_details",
   "LOG INFO Services: Created directory: <SANDBOX>/data/datasets",
   "LOG INFO Store: state.db migration applied: 0001_initial",

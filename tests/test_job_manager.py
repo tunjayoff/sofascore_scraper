@@ -1096,7 +1096,6 @@ def web(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     details = Details()
     ctx = SimpleNamespace(config=deps.config_manager(), match_data_fetcher=details)
     monkeypatch.setattr(fj, "build_context", lambda config_manager: ctx)
-    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: None)
 
     def run(**payload: Any) -> Job:
         request = FetchRequest(**payload)
@@ -1116,7 +1115,7 @@ def test_web_job_is_recorded_with_its_kind_origin_and_spec(web: Any) -> None:
 
     assert (job.kind, job.state) == (JobKind.FETCH, JobState.SUCCEEDED)
     assert job.origin == Origin(face="api", pid=os.getpid(), host=job.origin.host) and job.origin.host
-    assert job.spec == {"mode": "details", "league_id": 17, "selections": [], "export": True}
+    assert job.spec == {"mode": "details", "league_id": 17, "selections": []}
     assert job.result["details_done"] == 3 and job.result["schedule_empty_seasons"] == 0
     row = web.jobs.get_job(job.id)
     assert row["payload"] == {"league_id": 17, "mode": "details", "selections": None}
@@ -1173,7 +1172,6 @@ def test_a_web_job_makes_its_data_directory_a_full_store(
     jobs = JobStore(default_db_path(str(data_dir)))  # web sunucusunun iş deposu: yalnızca state.db kurar
     monkeypatch.setattr(deps, "job_store", lambda: jobs)
     monkeypatch.setattr(deps, "refresh_job_mirror", lambda: jobs.snapshot())
-    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: None)
     try:
         with pytest.raises(StoreError):
             open_store(data_dir, create=False)  # henüz bir depo değil: schema.json yok
@@ -1232,7 +1230,7 @@ def test_api_fetch_starts_a_job_through_the_manager_and_cancel_reaches_another_s
     try:
         record = jobs.get_record(job_id)
         assert len(job_id) == 26 and record["kind"] == "fetch" and record["origin"]["face"] == "api"
-        assert record["spec"] == {"mode": "full", "league_id": 17, "selections": [], "export": True}
+        assert record["spec"] == {"mode": "full", "league_id": 17, "selections": []}
         assert record["payload"] == {"league_id": 17, "mode": "full", "selections": None}
     finally:
         jobs.update(status="Cancelled", finished=True)
@@ -1308,8 +1306,8 @@ def cli(data_dir: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
 
 @pytest.mark.parametrize("argv, kind, spec", [
     (["--headless", "--update-all", "--league-id", "17"], JobKind.SYNC,
-     {"mode": "full", "league_id": 17, "selections": [], "export": False}),
-    (["--refresh-only"], JobKind.REFRESH, {"mode": "refresh", "league_id": None, "selections": [], "export": True}),
+     {"mode": "full", "league_id": 17, "selections": []}),
+    (["--refresh-only"], JobKind.REFRESH, {"mode": "refresh", "league_id": None, "selections": []}),
 ])
 def test_cli_runs_appear_in_the_job_history(cli: Any, data_dir: Path, argv: List[str], kind: JobKind, spec: Dict[str, Any]) -> None:
     assert cli.call(*argv) == 0

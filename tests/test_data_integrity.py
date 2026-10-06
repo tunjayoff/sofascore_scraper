@@ -29,13 +29,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 import legacy_writer
+from catalog_index import index_event
 import src.utils as utils
 from src.exceptions import APIError, DataParsingError, NetworkError, RateLimitError, ResourceNotFoundError
 from src.match_data_fetcher import (DETAIL_SLICE_KEYS, SLICE_EMPTY, SLICE_FAILED, SLICE_OK,
                                     UNAVAILABLE_AFTER_ATTEMPTS, UNAVAILABLE_FILE, MatchDataFetcher, SliceOutcome)
 from src.services import pipeline
 from src.store import SliceInfo, open_store
-from src.store import api as store_api
 
 MID = "4242"
 BASE = "https://www.sofascore.com/api/v1"
@@ -438,9 +438,9 @@ def _legacy_record(f: MatchDataFetcher, match_data: Dict[str, Any], outcomes: An
 
 
 def _legacy_markers(match_dir: Path, markers: Dict[str, int]) -> None:
-    """Eski sürümün işaret dosyası; eski yazıcılar gibi ardından Store'un kancası (katalog dosyayı görür)."""
+    """Eski sürümün işaret dosyası; ardından maç kataloğa alınır (katalog dosyayı görür)."""
     (match_dir / UNAVAILABLE_FILE).write_text(json.dumps(markers), encoding="utf-8")
-    store_api.shadow_event(match_dir.parents[3], match_dir.name, match_dir)
+    index_event(match_dir.parents[3], match_dir.name, match_dir)
 
 
 def _files(match_dir: Path) -> Dict[str, bytes]:

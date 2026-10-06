@@ -42,7 +42,7 @@ PROCESS_LOG = "process.json"
 CONCURRENT_BEGIN = "<<cli-golden:concurrent-begin>>"
 CONCURRENT_END = "<<cli-golden:concurrent-end>>"
 
-BRIDGE_MODULE = "src.challenge_solver"
+BRIDGE_MODULE = "src.client.bridge"  # tarayıcı köprüsü (P24); eski adı `src.challenge_solver` bir takma addır
 _FAKE_MODULE_NAME = "_cli_golden_fake_sofascore"
 _FAKE_SOURCE = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "fakes", "sofascore.py"

@@ -140,19 +140,19 @@ def test_row01_reached_from(fake: FakeSofaScore, data_dir: Path) -> None:
     md.fetch_detail_ids([str(FINISHED)])  # web işi, lig/sezon planı (fetch_job.py)
     assert {r.via for r in fake.requests} == {"async"} and len(fake.sessions) == 1
 
-    # CLI headless ve terminal menüsü: listelerden toplanan maçlar
+    # CLI ve web işi, takip edilen ligler: listelerden toplanan maçlar (SyncService'in detay aşaması)
     summary = data_dir / "matches" / "17_Premier_League" / "61627_Premier_League_24_25_summary.csv"
     summary.parent.mkdir(parents=True)
     summary.write_text(f"match_id\n{FINISHED_2}\n", encoding="utf-8")
     fake.reset_log()
-    assert md.fetch_all_match_details(league_id="17") is True
+    assert md.fetch_detail_ids(md.pending_detail_ids(md.collect_detail_match_ids("17") or [])) == 1
     assert {r.via for r in fake.requests} == {"async"}
 
-    # Kimliğiyle seçilen maçlar, tek maç uç noktası, terminal menüsünün tek maçı: aynı yol, her biri kendi oturumuyla
+    # Kimliğiyle seçilen maçlar, tek maç uç noktası, tek maçın eski yüzü: aynı yol, her biri kendi oturumuyla
     fake.reset_log()
     md.fetch_matches_batch([9100002])
     assert matches_routes._fetch_single_match_sync("9100010") == {"status": "success", "match_id": "9100010"}
-    assert md.fetch_match_details(TENNIS) is True
+    assert md.fetch_match_data(TENNIS) is not None
     assert {r.via for r in fake.requests} == {"async"} and len(fake.sessions) == 3
 
     # Eksik dilim (refill) de aynı oturumda tamamlanır: başka bir thread'e geçilmez

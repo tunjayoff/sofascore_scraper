@@ -9,7 +9,7 @@ import time
 from typing import Any, Callable, Dict, List, Optional
 
 # Her aşamanın genel yüzdedeki payı. İş planında olmayan aşamaların payı diğerlerine dağılır.
-PHASE_WEIGHTS: Dict[str, int] = {"seasons": 5, "matches": 25, "details": 65, "export": 5}
+PHASE_WEIGHTS: Dict[str, int] = {"seasons": 5, "matches": 25, "details": 65}
 
 MAX_FAILED_LISTED = 50
 # Bu kadar ilerleme ve süre birikmeden tahmini süre verme: ilk birkaç maçın hızı yanıltıcı

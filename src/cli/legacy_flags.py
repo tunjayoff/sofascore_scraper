@@ -21,8 +21,8 @@ D5): loglar stderr'de, sonuç stdout'ta.
     --config YOL                                                     --config YOL (yapılandırma dosyası; eski lig
                                                                      dosyası `.txt` uyarıyla yok sayılır)
 
-Karşılığı henüz olmayan tek kip eskisi gibi `main.py`de kalır: bayraksız terminal menüsü (P26 kaldırır). `--version`
-her zaman eskisi gibi yanıtlanır.
+Bayraksız çalıştırma eskiden terminal menüsünü açardı; menü P26 ile kalktı ve `main.py` o durumda yeni komutları
+anlatan yardımı yazar (`print_no_menu_help`). `--version` her zaman eskisi gibi yanıtlanır.
 
 `--web` (P25) `serve`e çevrilir. Eski ayrıştırıcının varsayılanları (127.0.0.1, 8000) her zaman açıkça geçirilir:
 `python main.py --web` bugün olduğu gibi yapılandırma dosyasının `[server] host` / `port` değerine bakmadan
@@ -57,7 +57,7 @@ class Translation:
 
     commands     sırayla çalıştırılacak yeni komutlar (her biri tam bir argv: genel bayraklar dahil)
     error        çevrilemeyen bir birleşim (NEEDS_ACTION, WATCH_USAGE): hiçbir komut çalışmaz, çıkış kodu 2
-    interactive  eylem bayrağı yok: terminal menüsü (main.py)
+    interactive  eylem bayrağı yok: `main.py` yeni komutları anlatan yardımı yazar (eskiden terminal menüsü)
     warnings     İngilizce uyarılar (kullanımdan kalkma satırının yanında stderr'e yazılır)
     """
 
@@ -118,7 +118,8 @@ def _recheck(args: argparse.Namespace, flags: Sequence[str]) -> Tuple[str, ...]:
 def translate(args: argparse.Namespace, cwd: str) -> Translation:
     """
     `main.py`nin ayrıştırılmış eski bayrakları → yeni komutlar. Öncelik eskisi gibidir: --diagnostics, --web,
-    --watch, sonra --refresh-only, --headless ve --recheck-unavailable; hiçbiri yoksa terminal menüsü.
+    --watch, sonra --refresh-only, --headless ve --recheck-unavailable; hiçbiri yoksa (eskiden terminal menüsü,
+    P26 ile kalktı) bayraksız yardım.
     """
     flags, warnings = global_flags(args, cwd)
     notes = tuple(warnings)

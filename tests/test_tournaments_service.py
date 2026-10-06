@@ -424,6 +424,12 @@ def _event(event_id: int, tournament_id: int, season_id: int, start: int) -> Dic
     }
 
 
+def _downloaded(store: Store, league_id: int, season_id: int) -> Tuple[int, bool]:
+    """(saklanan program sayfası, sezonun maç listesi indirilmiş mi), katalogdan (eski `SeasonFetcher._downloaded_matches`)."""
+    pages = tournaments.schedule_pages(store, league_id, season_id)
+    return pages, pages > 0 or tournaments.has_matches(store, league_id, season_id)
+
+
 def _files_say(data_dir: Path, league_id: int, league_name: Optional[str], season: Dict[str, Any]) -> Tuple[int, bool]:
     """RD-5'ten önceki kural: ligin ve sezonun adından kurulan dizindeki sayfa dosyaları ya da özet JSON'u."""
     league_dir = data_dir / "matches" / f"{league_id}_{sf.safe_name(league_name or f'League_{league_id}')}"
@@ -452,7 +458,7 @@ def test_on_a_directory_written_by_todays_code_nothing_changes(tmp_path: Path, m
         assert get_seasons(league_id) == {"seasons": on_disk or [], "fetched": on_disk is not None}
         for season in on_disk or []:
             expected = _files_say(fx.data_dir, league_id, name, season)
-            assert fetcher._downloaded_matches(league_id, season["id"]) == expected, (league_id, season)
+            assert _downloaded(store, league_id, season["id"]) == expected, (league_id, season)
             assert tournaments.schedule_pages(store, league_id, season["id"]) == expected[0]
             checked += expected[1]
     assert checked >= 5  # dizinde gerçekten indirilmiş sezonlar var
@@ -480,45 +486,12 @@ def test_downloaded_seasons_are_seen_whatever_their_directory_is_called(data_dir
     fetcher = SeasonFetcher(Leagues({17: "Premier League"}), str(data_dir))
 
     assert tournaments.schedule_pages(store, 17, 96668) == 2
-    assert fetcher._downloaded_matches(17, 96668) == (2, True)
-    assert fetcher._downloaded_matches(17, 76986) == (0, True)
+    assert _downloaded(store, 17, 96668) == (2, True)
+    assert _downloaded(store, 17, 76986) == (0, True)
     assert (tournaments.schedule_pages(store, 17, 76986), tournaments.has_matches(store, 17, 76986)) == (0, True)
-    assert fetcher._downloaded_matches(17, 61627) == (0, False)
-    assert fetcher._downloaded_matches(17, 500) == (0, False)
-    for junk in (None, "96668", True, 1.5):
-        assert fetcher._downloaded_matches(17, junk) == (0, False)
-
-
-def test_current_season_prefers_the_newest_active_season_with_a_downloaded_list(
-    data_dir: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    import src.season_fetcher as module
-
-    class Clock(module.datetime.datetime):
-        @classmethod
-        def now(cls, tz: Any = None) -> "Clock":
-            return cls(2026, 10, 2, tzinfo=tz)
-
-    monkeypatch.setattr(module.datetime, "datetime", Clock)
-    seasons = {"seasons": [
-        {"id": 3, "name": "PL 27/28", "year": "27/28"},  # gelecek
-        {"id": 2, "name": "PL 26/27", "year": "26/27"},  # aktif, listesi indirilmemiş
-        {"id": 1, "name": "PL 25/26", "year": "25/26"},  # geçmiş, listesi indirilmiş
-    ]}
-    write(data_dir, "seasons/17_Premier_League_seasons.json", seasons)
-    write(data_dir, "matches/17_Premier_League/1_PL_25_26/round_1.json",
-          {"events": [_event(11, 17, 1, 1_760_000_000)], "_complete": True})
-    fetcher = SeasonFetcher(Leagues({17: "Premier League"}), str(data_dir))
-    assert fetcher.get_current_season_id(17) == 1
-
-    write(data_dir, "matches/17_Premier_League/2_PL_26_27/events_last_0.json",
-          {"events": [_event(12, 17, 2, 1_790_000_000)], "hasNextPage": False})
-    reopened(data_dir)
-    assert fetcher.get_current_season_id(17) == 2
-    assert fetcher.get_current_season_id(999) == 0
-
-
-# --- spor ------------------------------------------------------------------------------------------------
+    assert _downloaded(store, 17, 61627) == (0, False)
+    assert _downloaded(store, 17, 500) == (0, False)
+    assert fetcher.get_seasons_for_league(17)
 
 
 def test_sport_of_a_tournament_comes_from_the_payloads_not_from_directory_names(data_dir: Path) -> None:

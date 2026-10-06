@@ -1319,7 +1319,35 @@ def test_watcher_default_fetch_also_passes_the_api_lane(shared_dir, tmp_path, mo
 
 # --- ayarlar uç noktası -----------------------------------------------------------------------
 
-def test_settings_expose_and_update_rate_limit(monkeypatch):
+@pytest.fixture
+def env_file_restored():
+    """
+    Ayarlar uç noktası paylaşılan test `.env`'ine yazar (REQUEST_RATE_LIMIT) ve yükleyiciye o değerin `.env`'den
+    geldiğini bildirir. Dosya ve yükleyicinin durumu testten sonra eski haline döner: yoksa sonraki bir test
+    süreç ortamındaki REQUEST_RATE_LIMIT=0'ı `.env`'in değeri sayar ve yapılandırma dosyası onu ezer
+    (tests/test_config_loader.py, bu dosyadan sonra çalışınca; FX-15).
+    """
+    import conftest
+    from src.config import loader
+
+    try:
+        with open(conftest.ENV_FILE, "rb") as f:
+            saved = f.read()
+    except FileNotFoundError:
+        saved = None
+    yield
+    if saved is None:
+        try:
+            os.remove(conftest.ENV_FILE)
+        except FileNotFoundError:
+            pass
+    else:
+        with open(conftest.ENV_FILE, "wb") as f:
+            f.write(saved)
+    loader.reset()
+
+
+def test_settings_expose_and_update_rate_limit(monkeypatch, env_file_restored):
     from fastapi.testclient import TestClient
 
     from src.web.app import app
@@ -1338,7 +1366,7 @@ def test_settings_expose_and_update_rate_limit(monkeypatch):
         os.environ["REQUEST_RATE_LIMIT"] = before or "0"
 
 
-def test_settings_show_the_default_when_unset_and_accept_off(monkeypatch):
+def test_settings_show_the_default_when_unset_and_accept_off(monkeypatch, env_file_restored):
     from fastapi.testclient import TestClient
 
     from src.web.app import app

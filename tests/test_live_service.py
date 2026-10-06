@@ -738,3 +738,14 @@ def test_the_watch_module_loads_nothing_heavy() -> None:
 
 
 assert conftest  # sınır denetimi ve kancalar conftest'te kurulur
+
+
+def test_the_package_exports_the_live_sources_lazily() -> None:
+    """P24 ve P31'in adları da paket kökünden alınır (FX-15); kök onları ilk erişimde yükler."""
+    import src.services.live as live
+    from src.services.live import arbiter, direct_source, push_source
+
+    assert live.PageSource is push_source.PageSource and live.SportArbiter is arbiter.SportArbiter
+    assert live.DirectSource is direct_source.DirectSource
+    for name in live.__all__:
+        assert getattr(live, name) is not None, name

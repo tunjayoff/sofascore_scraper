@@ -120,6 +120,9 @@ class SelectionPolicy:
     follows: Mapping[Tuple[str, int], Mapping[str, Any]] = field(default_factory=dict)
     # [client] odds_provider: sağlayıcı alt anahtarlı dilimlerin (bahis oranları) alt anahtarı (P28)
     provider: str = sports_registry.DEFAULT_ODDS_PROVIDER
+    # [client] odds_country: oranların kaydına yazılan ülke (büyük harf); boş = yazılmaz. Kullanıcı verir, makineden
+    # türetilmez (sahibin kararı, 2026-10-06; plan maddesi FX-15)
+    country: str = ""
 
     @classmethod
     def from_settings(cls, settings: Any, follows: Iterable[Any] = (), *,
@@ -144,8 +147,10 @@ class SelectionPolicy:
                      for sport, override in (getattr(settings, "slices", None) or {}).items()}
         defaults = tuple(settings.defaults.slices) if defaults_given else None
         provider = getattr(getattr(settings, "client", None), "odds_provider", None)
+        country = str(getattr(getattr(settings, "client", None), "odds_country", "") or "").strip().upper()
         policy = cls(defaults=defaults, sports=per_sport, follows=chosen,
-                     provider=str(provider) if provider is not None else sports_registry.DEFAULT_ODDS_PROVIDER)
+                     provider=str(provider) if provider is not None else sports_registry.DEFAULT_ODDS_PROVIDER,
+                     country=country)
         policy.check()
         return policy
 

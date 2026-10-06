@@ -21,7 +21,7 @@ Bağlantı kuralları (iş parçacığı başına bağlantı, PRAGMA'lar, WAL'a 
 kapatan bağlantı) catalog.db ile ortaktır ve src/store/sqlite.py'de durur.
 
 SQLite hataları (bozuk dosya, açılamayan yol) burada çevrilmez, `sqlite3.Error` olarak çıkar: iş deposunun
-bugünkü çağıranları bunları öyle yakalar (src/web/routes/settings.py). Tek istisna kilit zaman aşımıdır:
+çağıranları bunları öyle yakalar (ayarların ve işlerin web yolları, src/web/api/). Tek istisna kilit zaman aşımıdır:
 StoreBusy.
 """
 from __future__ import annotations

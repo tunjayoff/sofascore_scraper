@@ -4,7 +4,7 @@ Loglama: konsol + dönen (rotating) log dosyası.
 Konsol: terminalde Rich ile renkli; çıktı terminal değilse (Docker, cron, yönlendirme) dosyadakiyle
 aynı düz biçimde. Kapsayıcıda birincil çıktı stdout'tur ve her zaman açıktır.
 
-Konsol akışı seçilebilir (`set_console_stream`): varsayılan stdout'tur (web sunucusu, terminal menüsü); yeni
+Konsol akışı seçilebilir (`set_console_stream`): varsayılan stdout'tur (web sunucusu); yeni
 CLI (src/cli; `python main.py`nin bayrakları da ona çevrilir) stderr'i seçer, çünkü orada stdout yalnızca
 komutun sonucunu taşır (docs/design/02-services.md 4.4).
 

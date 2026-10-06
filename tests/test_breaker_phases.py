@@ -266,7 +266,6 @@ def _run_job(fj, store, monkeypatch, ui, payload: Dict[str, Any]) -> Dict[str, A
     ui.config = deps.config_manager()
     _listing_faces(ui)
     monkeypatch.setattr(fj, "build_context", lambda config_manager: ui)
-    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: ctx.export_all_to_csv())
     req = FetchRequest(**payload)
     job_id = store.create_running(req.model_dump())
     with _request_layer(), patch.object(utils.cffi_requests, "get", return_value=Resp(403, text="no")) as get:

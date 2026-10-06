@@ -195,7 +195,8 @@ class BrowserCredentialReader:
         from src.client import bridge
 
         if self._bridge is None:
-            self._bridge = bridge.BrowserBridge(profile_dir=self.profile_dir, home_url=quiet_url())
+            # Sağlık sinyali yazılmaz: kimlik bilgisini okuyan tarayıcı indirmelerin köprüsünün sağlığını belirlemez
+            self._bridge = bridge.BrowserBridge(profile_dir=self.profile_dir, home_url=quiet_url(), report_health=False)
         return self._bridge
 
     def read(self, sport: str) -> Credential:

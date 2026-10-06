@@ -8,7 +8,7 @@ test_storage_errors.py ile sabitlidir. Burada servis tek başına, bir iş depos
   * katman: src/web terminal arayüzünü, src/services hiçbir yüzü içe aktarmaz;
   * build_context: veri dizinleri ve üç indirici;
   * SyncService.run: aşamalar, detay planı, iptal, devre kesici, sonuç, istek bağlamının geri alınması;
-  * export_all_csv: menü metni yazdırmaz, hatayı yutar; işin CSV aşaması yoktur (EX-1);
+  * işin CSV aşaması yoktur (EX-1); eski CSV yönlendirmeleri FX-15'te kalktı;
   * web bağdaştırıcısı: istek → SyncSpec, konsol satırları, iptal kontrolünün iş bitince geri alınması;
   * lig araması API kökünü istemciden alır.
 
@@ -40,9 +40,7 @@ from src.jobs.progress import JobProgress
 from src.match_data_fetcher import MatchDataFetcher
 from src.match_fetcher import MatchFetcher
 from src.season_fetcher import SeasonFetcher
-from src.services import export as export_service
 from src.services.context import DATA_SUBDIRECTORIES, ServiceContext, build_context
-from src.services.export import export_all_csv
 from src.services.listing import ListingResult
 from src.services.sync import (
     DETAILS_PHASES,
@@ -147,9 +145,11 @@ def test_build_context_creates_the_data_directories_and_the_three_fetchers(
 
     assert isinstance(ctx, ServiceContext)
     assert ctx.config is config and ctx.data_dir == str(data_dir)
-    assert DATA_SUBDIRECTORIES == ("seasons", "matches", "match_details", "datasets")
+    assert DATA_SUBDIRECTORIES == ("match_details", "datasets")
     for name in DATA_SUBDIRECTORIES:
         assert (data_dir / name).is_dir(), name
+    # Listeler v3/tournaments/ altına yazılır: boş `seasons/` ve `matches/` kurulmaz (FX-15)
+    assert not (data_dir / "seasons").exists() and not (data_dir / "matches").exists()
     assert isinstance(ctx.season_fetcher, SeasonFetcher) and ctx.season_fetcher.data_dir == str(data_dir)
     assert isinstance(ctx.match_fetcher, MatchFetcher) and ctx.match_fetcher.data_dir == str(data_dir)
     assert ctx.match_fetcher.season_fetcher is ctx.season_fetcher
@@ -841,68 +841,6 @@ def test_a_storage_error_leaves_the_service_and_the_context_is_taken_back(
     assert raised.value is error
     assert details.exports == 0 and details.cache_events == ["begin", "end"] and details.refresh_listener is None
     assert _request_context_state() == (None, None, None)
-
-
-# --- export_all_csv ----------------------------------------------------------------------------------
-
-
-def test_export_returns_the_path_of_the_file(config: ConfigManager, monkeypatch: pytest.MonkeyPatch) -> None:
-    details = FakeDetails()
-    ctx = make_ctx(config, monkeypatch, details=details)
-
-    assert export_all_csv(ctx) == "/data/match_details/processed/all_matches_x.csv"
-    assert details.exports == 1
-
-
-@pytest.mark.parametrize("nothing", ["", None, []])
-def test_export_returns_none_when_no_file_was_written(
-    config: ConfigManager, monkeypatch: pytest.MonkeyPatch, nothing: Any
-) -> None:
-    details = FakeDetails()
-    details.export_result = nothing
-
-    assert export_all_csv(make_ctx(config, monkeypatch, details=details)) is None
-
-
-def test_export_swallows_and_logs_an_error_like_the_menu_step_did(
-    config: ConfigManager, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Menü adımı her hatayı yutuyordu: dışa aktarma hatası işi düşürmez, iş "Completed" biter."""
-    logged: List[str] = []
-    monkeypatch.setattr(export_service.logger, "error", lambda message, *args: logged.append(message % args))
-    details = FakeDetails({"17": ["a"]})
-    details.export_result = StorageError.from_exception(OSError(errno.ENOSPC, "No space left on device"), "/data/x.csv")
-    ctx = make_ctx(config, monkeypatch, details=details)
-
-    assert export_all_csv(ctx) is None
-    assert len(logged) == 1 and logged[0].startswith("CSV export failed: ")
-
-    result = SyncService(ctx).run(SyncSpec(mode="details", league_id=17))
-    assert result.state == "succeeded" and details.exports == 1  # işin CSV aşaması yok (EX-1)
-
-
-def test_export_lets_a_cancel_through(config: ConfigManager, monkeypatch: pytest.MonkeyPatch) -> None:
-    details = FakeDetails()
-    details.export_result = request_ctx.FetchCancelled()
-
-    with pytest.raises(request_ctx.FetchCancelled):
-        export_all_csv(make_ctx(config, monkeypatch, details=details))
-
-
-def test_export_of_a_real_data_dir_prints_no_menu_text(
-    tmp_path: Path, config: ConfigManager, capsys: pytest.CaptureFixture[str]
-) -> None:
-    """Terminal menüsünün CSV adımı başlık ve sonuç satırı yazdırıyordu; servis yazdırmaz."""
-    from src.i18n import get_i18n
-
-    ctx = build_context(config, data_dir=str(tmp_path))
-
-    assert export_all_csv(ctx) is None  # indirilmiş maç yok
-
-    out = capsys.readouterr().out
-    i18n = get_i18n()
-    for key in ("headless_exporting_csv", "title_csv_conversion", "csv_created_success", "csv_created_error"):
-        assert i18n.t(key) not in out, key
 
 
 # --- web bağdaştırıcısı ------------------------------------------------------------------------------

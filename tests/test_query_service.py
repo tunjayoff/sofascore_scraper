@@ -749,10 +749,10 @@ def test_season_rows_follow_the_only_finished_rule(canonical: sf.LegacyFixture) 
 
 def test_list_routes_answer_from_the_service(old_forms: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
     """Uç noktalar dosya ağacını okumaz: özet CSV'si okuyan bir çağrı testi düşürür."""
-    import pandas as pd
+    from src.store.legacy import LegacyReader
 
-    monkeypatch.setattr(pd, "read_csv", MagicMock(side_effect=AssertionError("not used")))
-    queries = service(old_forms)
+    queries = service(old_forms)  # katalog kuruldu: özet CSV'leri dizinlendi
+    monkeypatch.setattr(LegacyReader, "read_summary_rows", MagicMock(side_effect=AssertionError("not used")))
     body = client.get("/api/matches?league_id=17,8&sort=asc&limit=5&offset=2").json()
     page = queries.matches_legacy(tournament_ids=[8, 17], sort="asc", offset=2, limit=5)
     assert body == {"items": list(page.items), "total": page.total, "limit": 5, "offset": 2, "sort": "asc"}

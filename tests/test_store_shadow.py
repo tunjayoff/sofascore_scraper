@@ -1,16 +1,15 @@
 """
 Gölge kip (plan maddesi ST-11; docs/design/01-storage.md bölüm 3.4 ve 3.5): depo açılışında kataloğun kurulması
-ve uzlaştırılması, eski düzen yazıcılarının kancaları ve kataloğu yeniden kurulmuş haliyle karşılaştıran
-denetim.
+ve uzlaştırılması, yazıcılardan sonra kataloğun hali ve kataloğu yeniden kurulmuş haliyle karşılaştıran denetim.
 
-Ölçüt hep aynıdır: bir yazıcı dosyalarını yazıp kancasını çağırdıktan sonra katalog, aynı ağacın sıfırdan
-kurulmuş haline eşittir (`CatalogAdmin.diff_from_rebuild() == []`). Aynı denetim, `STORE_SHADOW_CHECK=1` ile
-bütün test paketinde her testin sonunda çalışır (tests/conftest.py); buradaki testler her kancayı tek tek ve
-denetimin kendisini sınar. Tümü çevrimdışıdır: ağ istekleri yamalanır.
+Ölçüt hep aynıdır: bir yazıcı yazdıktan sonra katalog, aynı ağacın sıfırdan kurulmuş haline eşittir
+(`CatalogAdmin.diff_from_rebuild() == []`). Aynı denetim, `STORE_SHADOW_CHECK=1` ile bütün test paketinde her
+testin sonunda çalışır (tests/conftest.py); buradaki testler yazıcıları ve denetimin kendisini sınar. Tümü
+çevrimdışıdır: ağ istekleri yamalanır.
 
-Maç detaylarının indiricisi ST-21'den beri eski düzene yazmaz: maçları `Store.events.put` ile v3'e yazar ve yazma
-kataloğu kendisi günceller (kanca yok). `shadow_event` kancasının kendisini sınayan testler eski düzen yazıcısının
-dondurulmuş kopyasını kullanır (tests/legacy_writer.py: dosyalar, ardından kanca).
+Yazıcıların hepsi Store'dadır (maçlar ST-21, listeler ST-22): yazma kataloğu kendisi günceller. Eski düzen
+yazıcılarının kancaları (`shadow_*`) FX-15'te kalktı; eski düzende kayıt kuran testler eski yazıcının dondurulmuş
+kopyasını kullanır (tests/legacy_writer.py: dosyalar, ardından tests/catalog_index.py ile dizinleme).
 
 İmzalar mtime'a bakar: elle değiştirilen dizinlerin mtime'ı `bump` ile açıkça ileri alınır.
 """
@@ -28,7 +27,7 @@ import threading
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -36,10 +35,10 @@ import conftest
 import legacy_writer
 import src.store
 import store_fixtures as sf
+from schedule_runner import list_schedule, list_schedule_async
 from src.web import deps
 from src.exceptions import StorageError
 from src.match_data_fetcher import SCORE_CHANGES_FILE, UNAVAILABLE_FILE, MatchDataFetcher
-from src.match_fetcher import MatchFetcher
 from src.season_fetcher import SeasonFetcher
 from src.slices import SLICE_EMPTY, SLICE_OK, SliceOutcome
 from src.utils import ensure_directory
@@ -116,7 +115,7 @@ def fetcher_of(data_dir: Path) -> MatchDataFetcher:
 
 
 def legacy_save(data_dir: Path, event_id: int, match_data: Dict[str, Any], outcomes: Any = None) -> str:
-    """Eski düzen yazıcısı (dondurulmuş kopya): dosyalar, ardından kanca (`shadow_event`)."""
+    """Eski düzen yazıcısı (dondurulmuş kopya): dosyalar, ardından maçın dizinlenmesi (tests/catalog_index.py)."""
     return legacy_writer.save_legacy(data_dir, event_id, match_data, outcomes)
 
 
@@ -608,22 +607,7 @@ def test_first_payload_of_a_tournament_fills_the_sport_of_its_summary_rows(tmp_p
     assert differences(store) == []
 
 
-# --- kancalar: program, sezon özeti, sezon listesi ------------------------------------------------------
-
-@contextlib.asynccontextmanager
-async def _no_session() -> Any:
-    yield None
-
-
-def _schedule_fetcher(data: Path) -> MatchFetcher:
-    config = MagicMock()
-    config.get_leagues.return_value = {PL: sf.PL.name}
-    config.get_league_by_id.return_value = sf.PL.name
-    config.get_max_concurrent.return_value = 2
-    seasons = MagicMock()
-    seasons.get_season_name.return_value = sf.PL_2627.name
-    return MatchFetcher(config, seasons, data_dir=str(data))
-
+# --- program (listing.ScheduleLister), sezon listesi ------------------------------------------------------
 
 def _rounds_api(rounds: Dict[int, List[sf.Ev]]) -> Any:
     base = f"/unique-tournament/{PL}/season/{PL_SEASON}"
@@ -640,11 +624,8 @@ def _rounds_api(rounds: Dict[int, List[sf.Ev]]) -> Any:
 def test_fetching_a_season_schedule_indexes_rounds(tmp_path: Path) -> None:
     data = tmp_path / "data"
     rounds = {1: [sf.PL_ARS, sf.PL_LIV], 2: [sf.PL_NO_DETAIL, sf.PL_NOT_STARTED]}
-    fetcher = _schedule_fetcher(data)
 
-    with patch("src.utils.make_api_request_async", new=_rounds_api(rounds)), \
-            patch("src.utils.create_session_async", new=_no_session), patch("src.utils.FETCH_ONLY_FINISHED", True):
-        assert fetcher.fetch_all_matches_for_season(PL, PL_SEASON) is True
+    assert list_schedule(data, PL, PL_SEASON, _rounds_api(rounds), only_finished=True).chunks
 
     store = open_store(data)
     # ST-22: turlar v3 sezon dizinine yazılır; eski düzen dizini ve sezon özeti dosyaları yazılmaz
@@ -670,9 +651,7 @@ def test_fetching_event_pages_indexes_them(tmp_path: Path) -> None:
             return {"rounds": []}
         return {"events": [sf.event_payload(ev) for ev in pages.get(url, [])], "hasNextPage": False}
 
-    with patch("src.utils.make_api_request_async", new=api), \
-            patch("src.utils.create_session_async", new=_no_session), patch("src.utils.FETCH_ONLY_FINISHED", False):
-        assert _schedule_fetcher(data).fetch_all_matches_for_season(PL, PL_SEASON) is True
+    assert list_schedule(data, PL, PL_SEASON, api, only_finished=False).chunks
 
     store = open_store(data)
     assert [info.sub for info in store.entities.slices(Ref.season(PL, PL_SEASON))] == ["last_0", "next_0"]
@@ -682,20 +661,15 @@ def test_fetching_event_pages_indexes_them(tmp_path: Path) -> None:
 
 
 def test_a_schedule_fetch_that_is_cut_short_still_indexes_the_saved_rounds(tmp_path: Path) -> None:
-    """Kanca `finally` içindedir: iptal edilen ya da hata veren çekim, yazdığı turları katalogda bırakır."""
+    """Her sayfa çekilir çekilmez yazılır: iptal edilen ya da hata veren çekim, yazdığı turları katalogda bırakır."""
     data = tmp_path / "data"
-    fetcher = _schedule_fetcher(data)
-    real = fetcher.fetch_all_rounds_async
 
-    async def cancelled(*args: Any, **kwargs: Any) -> Any:
-        await real(*args, **kwargs)
+    async def cancelled() -> Any:
+        await list_schedule_async(data, PL, PL_SEASON, _rounds_api({1: [sf.PL_ARS]}), only_finished=True)
         raise asyncio.CancelledError()
 
-    with patch("src.utils.make_api_request_async", new=_rounds_api({1: [sf.PL_ARS]})), \
-            patch("src.utils.create_session_async", new=_no_session), patch("src.utils.FETCH_ONLY_FINISHED", True), \
-            patch.object(fetcher, "fetch_all_rounds_async", new=cancelled):
-        with pytest.raises(asyncio.CancelledError):
-            fetcher.fetch_all_rounds_for_season(PL, PL_SEASON)
+    with pytest.raises(asyncio.CancelledError):
+        asyncio.run(cancelled())
 
     store = open_store(data)
     assert store.events.get(ARS).listed_in == "round_1" and differences(store) == []
@@ -841,12 +815,12 @@ def test_catalog_current_follows_the_sync(canonical: sf.LegacyFixture, monkeypat
     def busy(self: CatalogAdmin, *args: Any, **kwargs: Any) -> Any:
         raise src.store.StoreBusy("catalog.db kilitli", path=str(canonical.data_dir))
 
-    monkeypatch.setattr(CatalogAdmin, "index_event", busy)
-    legacy_save(canonical.data_dir, NO_DETAIL, {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
-    assert not store.catalog_current  # kanca yazamadı: okuyucular kataloğu güncel saymamalı
+    monkeypatch.setattr(CatalogAdmin, "rebuild", busy)
+    assert not store.clear("events").catalog_rebuilt
+    assert not store.catalog_current  # temizleme kataloğu yeniden kuramadı: okuyucular güncel saymamalı
     monkeypatch.undo()
     store._catalog_retry_at = 0.0
-    legacy_save(canonical.data_dir, NO_DETAIL, {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
+    store.clear("events")  # katalog güncel değil: önce baştan eşitlenir
     assert store.catalog_current and differences(store) == []
     store.close()
     assert not store.catalog_current
@@ -958,12 +932,13 @@ def test_the_window_can_be_set_through_the_environment(monkeypatch: pytest.Monke
 
 _WRITER_SCRIPT = """
 import os, sys
-from src.store import open_store, shadow_event
+from pathlib import Path
+from src.store import open_store
 data, staged, target, event_id = sys.argv[1:5]
 store = open_store(data)
 lease = store.lease("writer", purpose="job")
-os.replace(staged, target)  # 2.x yazıcısı gibi: dosyalar yerinde, ardından kanca
-shadow_event(data, event_id, target)
+os.replace(staged, target)  # 2.x yazıcısı gibi: dosyalar yerinde, ardından maçın dizinlenmesi
+store.catalog.index_event(int(event_id), paths=[Path(target).resolve().relative_to(store.data_dir).as_posix()])
 print("written", flush=True)
 sys.stdin.readline()
 lease.release()
@@ -971,10 +946,10 @@ print("released", flush=True)
 """
 
 
-def test_an_open_in_another_process_sees_what_a_writer_process_hooked(canonical: sf.LegacyFixture,
+def test_an_open_in_another_process_sees_what_a_writer_process_indexed(canonical: sf.LegacyFixture,
                                                                       tmp_path: Path) -> None:
     """
-    Bir süreç `writer` kilidini tutup bir maç dizini yazar ve kancasını çağırır; aynı dizini başka bir süreç
+    Bir süreç `writer` kilidini tutup bir maç dizini yazar ve kataloğa alır; aynı dizini başka bir süreç
     (bu test) açar. Açılış kilitten dolayı düşmez ve, karar S17'nin sınırıyla maç dizinlerini taramasa da,
     yazılanı kataloğun kendisinden görür.
     """
@@ -1018,34 +993,7 @@ def test_an_open_in_another_process_sees_what_a_writer_process_hooked(canonical:
     assert differences(store) == []
 
 
-# --- kancalar: hata halinde ------------------------------------------------------------------------------
-
-def test_a_catalog_that_cannot_be_written_does_not_fail_the_save(
-        canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
-    data = canonical.data_dir
-    store = open_store(data)
-    index_event = CatalogAdmin.index_event
-
-    def busy(self: CatalogAdmin, event_id: int, **kwargs: Any) -> Optional[str]:
-        raise src.store.StoreBusy("catalog.db kilitli", path=self.catalog.path)
-
-    monkeypatch.setattr(CatalogAdmin, "index_event", busy)
-    with caplog.at_level(logging.WARNING):
-        legacy_save(data, NO_DETAIL, {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})  # hata yok
-        assert store.events.get(NO_DETAIL).row_source == "listing"  # kanca kataloğa yazamadı
-        # Sonraki kanca önce baştan uzlaştırır (kaçan yazma kataloğa girer), sonra kendi maçında yine düşer
-        legacy_save(data, ARS, {"basic": sf.basic_payload(sf.PL_ARS)})
-    warned = warnings_of(caplog)
-    assert len(warned) == 1 and "was not updated after a write to event" in warned[0]  # veri dizini başına bir uyarı
-    assert str(NO_DETAIL) in warned[0]
-    assert store.events.get(NO_DETAIL).has_event_payload
-    assert api_mod.shadow_check() == []  # kancası başarısız olan dizin karşılaştırılmaz
-
-    # Katalog yeniden yazılabiliyor: sonraki kanca kataloğu eşitler; yeni bir hata yeniden uyarır
-    monkeypatch.setattr(CatalogAdmin, "index_event", index_event)
-    legacy_save(data, ARS, {"basic": sf.basic_payload(sf.PL_ARS)})
-    assert differences(store) == [] and api_mod._shadow_warned == {}
-
+# --- yazıcı: katalog yazılamazken -----------------------------------------------------------------------
 
 def test_a_catalog_that_stays_busy_fails_the_save_of_the_downloader(
         canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
@@ -1079,45 +1027,19 @@ def test_a_catalog_that_stays_busy_fails_the_save_of_the_downloader(
     assert store.events.get(NO_DETAIL).has_event_payload and differences(store) == []
 
 
-def test_a_store_that_cannot_be_opened_does_not_fail_the_save(tmp_path: Path,
-                                                              caplog: pytest.LogCaptureFixture) -> None:
+def test_the_downloader_does_not_write_into_a_folder_of_a_newer_version(tmp_path: Path) -> None:
+    """İndirici Store'a yazar: daha yeni bir sürümün dizinine yazmaz, maç başarısız olur (dosya yazılmaz)."""
     data = tmp_path / "data"
     open_store(data).close()
     schema = data / ".meta" / "schema.json"
     schema.write_text(json.dumps({**read_json(schema), "layout_version": 99, "min_reader_layout": 99}))
 
-    with caplog.at_level(logging.WARNING):
-        legacy_save(data, ARS, {"basic": sf.basic_payload(sf.PL_ARS)})
-        legacy_save(data, LIV, {"basic": sf.basic_payload(sf.PL_LIV)})
-
-    assert len(list(data.rglob("basic.json"))) == 2  # dosyalar yazıldı
-    assert len(warnings_of(caplog)) == 1 and "was not updated after a write to event" in warnings_of(caplog)[0]
-    assert api_mod.shadow_check() == []  # kancası depoyu açamayan dizin karşılaştırılmaz
-
-    # İndirici Store'a yazar: daha yeni bir sürümün dizinine yazmaz, maç başarısız olur (dosya yazılmaz)
     with pytest.raises(src.store.SchemaTooNew):
         fetcher_of(data)._save_match_data(str(NO_DETAIL), {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
     assert not (data / "v3").exists()
 
 
-def test_an_unexpected_indexer_error_is_logged_not_raised_outside_the_check_mode(
-        canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture,
-        no_check: None) -> None:
-    data = canonical.data_dir
-    open_store(data)
-
-    def broken(self: CatalogAdmin, event_id: int, **kwargs: Any) -> Optional[str]:
-        raise RuntimeError("dizinleyicide hata")
-
-    monkeypatch.setattr(CatalogAdmin, "index_event", broken)
-    with caplog.at_level(logging.ERROR):
-        legacy_save(data, NO_DETAIL, {"basic": sf.basic_payload(sf.PL_NO_DETAIL)})
-
-    assert [m for m in messages(caplog, "Store") if m.startswith("Unexpected error while updating the catalog")]
-    assert api_mod._shadow_notes == {}  # denetim kipi kapalıyken not tutulmaz
-
-
-def test_an_unexpected_indexer_error_fails_the_writer_in_the_check_mode(
+def test_an_unexpected_indexer_error_fails_the_save_of_the_downloader(
         canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
     data = canonical.data_dir
     open_store(data)
@@ -1126,10 +1048,6 @@ def test_an_unexpected_indexer_error_fails_the_writer_in_the_check_mode(
         raise RuntimeError("dizinleyicide hata")
 
     monkeypatch.setattr(CatalogAdmin, "index_event", broken)
-    with pytest.raises(RuntimeError, match="dizinleyicide hata"):
-        api_mod.shadow_event(data, NO_DETAIL)
-    assert api_mod.shadow_check() == []  # kanca düştü: dizin karşılaştırılmaz
-
     # İndiricinin Store'a yazması: dizinleyicinin hatası yazmayı düşürür (kalıcı olmayan StorageError); yazma
     # yarım kaldığı için işaret durur, sonraki açılış maçı dosyalardan toparlar
     with pytest.raises(StorageError, match="dizinleyicide hata"):
@@ -1141,36 +1059,24 @@ def test_an_unexpected_indexer_error_fails_the_writer_in_the_check_mode(
     assert store.events.get(NO_DETAIL).has_event_payload and differences(store) == []
 
 
-def test_an_id_that_is_not_a_match_id_is_ignored() -> None:
-    with patch.object(api_mod, "open_store") as opened:
-        api_mod.shadow_event("/nowhere", "0123", "/nowhere/match_details/0123")
-        api_mod.shadow_event("/nowhere", "abc")
-    opened.assert_not_called()
-
-
 # --- denetim: test paketinin her testin sonunda çalıştırdığı karşılaştırma -------------------------------
 
-# Store'un dışında ağaç kopyalayan ürün kodu (terminal menüsünün geri yüklemesi böyleydi; plan maddesi P26 menüyü
-# kaldırdı). Kaynak, proje dışında (diskte olmayan) bir dosya adıyla derlenir ve paketin denetim kancası
+# Store'un dışında ağaç kopyalayan ürün kodu (terminal menüsünün geri yüklemesi böyleydi; plan maddesi P26 menüyü,
+# FX-15 kancaları kaldırdı: böyle bir yazmanın ardından katalog eşitlenmez). Kaynak, proje dışında (diskte olmayan) bir dosya adıyla derlenir ve paketin denetim kancası
 # (tests/conftest.py, ShadowEdits) o dosya adını ürün kodu sayacak biçimde kaydedilir. src/ altında bir ad
 # kullanılmaz: kapsam ölçümü (coverage, kaynak src/) olmayan dosyayı raporlayamaz. Veri dizinleri DATA_DIR'in
 # dışındadır; sınır kaydedicisi proje dışı çerçeveyi atlar.
 _PRODUCT_WRITER = """
 import shutil
 
-import src.store
-
 
 def restore_tree(backup, data_dir, name):
-    try:
-        shutil.copytree(backup / name, data_dir / name, dirs_exist_ok=True)
-    finally:
-        src.store.shadow_cleared(data_dir)
+    shutil.copytree(backup / name, data_dir / name, dirs_exist_ok=True)
 """
 
 
 def _restore_tree(backup: Path, data_dir: Path, name: str, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Ürün kodu `backup/<name>`'i `data_dir/<name>`'e kopyalar, ardından `shadow_cleared`'ı çağırır."""
+    """Ürün kodu `backup/<name>`'i `data_dir/<name>`'e kopyalar (Store'un dışında, kataloğu eşitlemeden)."""
     filename = str(backup.parent / "product_writer.py")  # yok; yalnızca çerçevenin adı
     recorders = [r for r in conftest.BOUNDARY_RECORDERS if isinstance(r, conftest.ShadowEdits)]
     assert len(recorders) == 1
@@ -1183,14 +1089,12 @@ def _restore_tree(backup: Path, data_dir: Path, name: str, monkeypatch: pytest.M
 def test_the_check_reports_a_write_that_no_hook_follows(canonical: sf.LegacyFixture, tmp_path: Path,
                                                        monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Store'un dışında ağaçlara yazan ürün kodu kancasını çağırmalıdır. ST-21'den beri böyle yazan bir indirici,
-    P26'dan beri terminal menüsü yok: yazıcı, `match_details/`'i kopyalayıp `shadow_cleared`'ı çağıran ürün kodu
-    taklididir (`_restore_tree`).
+    Ürün kodu eski düzen köklerine Store'un dışından yazmaz. ST-21'den beri böyle yazan bir indirici, P26'dan
+    beri terminal menüsü yok: yazıcı, `match_details/`'i kopyalayan ürün kodu taklididir (`_restore_tree`).
     """
     data = tmp_path / "restored"
     shutil.copytree(canonical.data_dir / "match_details", tmp_path / "backup" / "data" / "match_details")
     open_store(data)
-    monkeypatch.setattr(src.store, "shadow_cleared", lambda *args, **kwargs: None)  # kancası unutulmuş yazıcı
 
     _restore_tree(tmp_path / "backup" / "data", data, "match_details", monkeypatch)
 
@@ -1201,10 +1105,9 @@ def test_the_check_reports_a_write_that_no_hook_follows(canonical: sf.LegacyFixt
 
 
 def test_a_clear_through_the_store_needs_no_hook(canonical: sf.LegacyFixture, monkeypatch: pytest.MonkeyPatch) -> None:
-    """`Store.clear` siler ve kataloğu kendisi yeniden kurar: dışarıdaki kanca (`shadow_cleared`) gerekmez."""
+    """`Store.clear` siler ve kataloğu kendisi yeniden kurar: dışarıda bir kanca gerekmez."""
     data = canonical.data_dir
     store = open_store(data)
-    monkeypatch.setattr(src.store, "shadow_cleared", lambda *args, **kwargs: None)
 
     report = store.clear("events")
 
@@ -1212,20 +1115,18 @@ def test_a_clear_through_the_store_needs_no_hook(canonical: sf.LegacyFixture, mo
     assert api_mod.shadow_check() == []
 
 
-def test_the_check_reports_a_catalog_that_differs_from_a_rebuild(canonical: sf.LegacyFixture, tmp_path: Path,
+def test_the_check_reports_a_catalog_that_differs_from_a_rebuild(canonical: sf.LegacyFixture,
                                                                  monkeypatch: pytest.MonkeyPatch) -> None:
-    """Kanca çağrıldı ama kataloğu yanlış güncelledi (burada: hiç güncellemedi): denetim farkı bildirir."""
-    data = tmp_path / "restored"
-    shutil.copytree(canonical.data_dir / "match_details", tmp_path / "backup" / "data" / "match_details")
-    open_store(data)
-    monkeypatch.setattr(CatalogAdmin, "rebuild", lambda self, **kwargs: None)  # kanca yanlış dizinliyor
+    """Temizleme kataloğu yanlış güncelledi (burada: yeniden kurmadı): denetim farkı bildirir."""
+    data = canonical.data_dir
+    store = open_store(data)
+    monkeypatch.setattr(CatalogAdmin, "rebuild", lambda self, **kwargs: None)  # yeniden kurma yanlış
 
-    _restore_tree(tmp_path / "backup" / "data", data, "match_details", monkeypatch)
+    store.clear("events")
     monkeypatch.undo()  # denetimin karşılaştırması gerçek yeniden kurmayla yapılır
 
     found = [line for line in api_mod.shadow_check() if line.startswith(str(data))]
     assert any(f"events[{ARS}]" in line for line in found)
-    assert any(f"event_slices[{ARS}, 'event', '']: missing in the catalog" in line for line in found)
 
 
 def test_what_the_test_writes_itself_is_reconciled_before_the_next_product_write(canonical: sf.LegacyFixture) -> None:

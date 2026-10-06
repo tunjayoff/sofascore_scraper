@@ -8,7 +8,8 @@ Ortam ön denetimi ("doctor"): uygulamanın çalışması için gerekenler yerin
 
 Denetimler SofaScore'a bağlanmaz: Python sürümü, gerekli paketler, köprünün başlatacağı tarayıcı
 (patchright'ın Chromium'u; yerel bir about:blank sayfasıyla denenir), tarayıcı profili, veri ve
-yapılandırma dizinleri, web arayüzü derlemesi ve .env. Her denetim ok / warn / fail ile tek satırlık
+yapılandırma dizinleri, yapılandırma dosyası (sofascore.toml) ve onun verdiği dizinler, web arayüzü derlemesi
+ve .env. Her denetim ok / warn / fail ile tek satırlık
 bir çözüm döndürür. `--live` açıkça istenirse köprü üzerinden TEK gerçek istek atılır; varsayılan
 olarak ve testlerde çalışmaz.
 
@@ -58,7 +59,6 @@ REQUIRED_MODULES: Tuple[Tuple[str, str], ...] = (
     ("scrapling", "scrapling"),
     ("patchright", "patchright"),
     ("playwright", "playwright"),
-    ("pandas", "pandas"),
     ("rich", "rich"),
     ("dotenv", "python-dotenv"),
     # sofascore.toml okuyucusu: Python 3.11+ standart kütüphanedeki tomllib, 3.10'da tomli paketi
@@ -99,6 +99,11 @@ _NUMBER_RULES: Tuple[Tuple[str, bool, float, bool, Optional[float]], ...] = (
     ("BRIDGE_BLOCKED_MIN_SECONDS", False, 0, True, None),
     ("WATCH_MAX_EVENT_POLLS", True, 1, True, None),
 )
+# Yapılandırma dosyasının adı ve aramayı kapatan değer (src/config/loader.py CONFIG_FILE_NAME, CONFIG_DISABLED;
+# doktor yükleyiciyi yalnızca `check_config` içinde içe aktarır)
+_CONFIG_FILE_NAME = "sofascore.toml"
+_CONFIG_DISABLED = "none"
+
 # Kod bunları `.lower() == "true"` ile okur: "1" ya da "yes" sessizce false olur
 _BOOL_KEYS = ("USE_PROXY", "USE_COLOR", "FETCH_ONLY_FINISHED", "SAVE_EMPTY_ROUNDS")
 
@@ -148,6 +153,8 @@ class Context:
     # ve bayrakları da hesaba katarak verir. None: bütçe denetimi ortamı ve .env'i kendisi okur.
     request_rate: Optional[float] = None
     request_rate_source: str = ""
+    # Açıkça verilen yapılandırma dosyası (`ssc --config`); None: SOFASCORE_CONFIG ve aranan yerler
+    config_file: Optional[str] = None
 
     def __post_init__(self) -> None:
         self.root = Path(self.root)
@@ -564,6 +571,69 @@ def check_config_dir(ctx: Context) -> CheckResult:
     return _check_dir(ctx, "config_dir", ctx.config_dir(), "doctor_config_dir_fix")
 
 
+# --- yapılandırma dosyası -----------------------------------------------------------------------
+
+
+def _config_file(ctx: Context) -> Tuple[Optional[Path], bool]:
+    """
+    Yükleyicinin okuyacağı yapılandırma dosyası ve aramanın kapalı olup olmadığı (src/config/loader.py
+    `find_config_file` ile aynı sıra: `--config`, SOFASCORE_CONFIG, ./sofascore.toml, CONFIG_DIR/sofascore.toml). Göreli
+    yollar proje köküne göredir (uygulama oraya chdir eder). SOFASCORE_CONFIG'in gösterdiği dosya yoksa da yolu
+    döner: yükleyici onu hata sayar ve denetim bunu bildirir.
+    """
+    if ctx.config_file:
+        return ctx._resolve(ctx.config_file), False
+    named = ctx.get("SOFASCORE_CONFIG")
+    if named.lower() == _CONFIG_DISABLED:
+        return None, True
+    if named:
+        return ctx._resolve(named), False
+    for candidate in (ctx.root / _CONFIG_FILE_NAME, ctx.config_dir() / _CONFIG_FILE_NAME):
+        if candidate.is_file():
+            return candidate, False
+    return None, False
+
+
+def check_config(ctx: Context) -> CheckResult:
+    """
+    Yapılandırma dosyası okunabiliyor ve geçerli mi; verdiği veri ve log dizinlerine yazılabiliyor mu. Doktor
+    yalnızca standart kütüphaneyle yüklenir: yükleyici (src/config/loader.py, dotenv'e bağlıdır) burada, korumalı
+    içe aktarmayla yüklenir; paketler eksikse denetim yapılamaz ve uyarı verir (eksik paket `packages`
+    denetiminin bulgusudur). `ssc config validate` sink'leri ve zamanlayıcının görevlerini de denetler.
+    """
+    path, disabled = _config_file(ctx)
+    detail: Dict[str, Any] = {"path": str(path) if path is not None else None, "search_disabled": disabled}
+    try:
+        from src.config import loader
+    except Exception as e:  # paketler eksik (dotenv, tomli): denetim yapılamaz
+        detail["error"] = "{}: {}".format(e.__class__.__name__, e)
+        return _result(ctx, "config", WARN, "config_unchecked", ctx.t("doctor_config_unchecked"),
+                       fix=ctx.t("doctor_config_unchecked_fix"), detail=detail)
+    try:
+        overrides = ctx.config_dir() / loader.OVERRIDES_FILE_NAME
+        loaded = loader.load_settings(config_file=path, environ=ctx.environ, dotenv_values=ctx.file_env,
+                                      overrides_file=overrides)
+    except Exception as e:  # ConfigError: bozuk TOML, bilinmeyen anahtar, aralık dışı değer, eksik dosya
+        detail["error"] = str(e)
+        return _result(ctx, "config", FAIL, "config_invalid",
+                       ctx.t("doctor_config_invalid", error=_first_line(e, 300)),
+                       fix=ctx.t("doctor_config_invalid_fix"), detail=detail)
+    directories = {"storage.data_dir": loaded.settings.storage.data_dir, "log.dir": loaded.settings.log.dir}
+    for key, value in directories.items():
+        if not value:
+            continue
+        state, reason = _dir_state(ctx._resolve(str(value)))
+        if state == "bad":
+            detail["directory"] = {"key": key, "path": str(ctx._resolve(str(value))), "error": reason}
+            return _result(ctx, "config", FAIL, "config_dir_not_writable",
+                           ctx.t("doctor_config_dir_unwritable", key=key, path=ctx._resolve(str(value)), error=reason),
+                           fix=ctx.t("doctor_config_dir_unwritable_fix", key=key), detail=detail)
+    if path is None:
+        key = "doctor_config_disabled" if disabled else "doctor_config_none"
+        return _result(ctx, "config", OK, "config_none", ctx.t(key), detail=detail)
+    return _result(ctx, "config", OK, "config_ok", ctx.t("doctor_config_ok", path=path), detail=detail)
+
+
 def _pid_alive(pid: int) -> bool:
     if os.name == "nt":
         # Windows'ta os.kill(pid, 0) yoklamaz, süreci SONLANDIRIR. Orada profil kilidi sembolik bağ
@@ -928,6 +998,7 @@ CHECKS: Tuple[Tuple[str, Callable[[Context], CheckResult]], ...] = (
     ("profile", check_profile),
     ("data_dir", check_data_dir),
     ("config_dir", check_config_dir),
+    ("config", check_config),
     ("frontend", check_frontend),
     ("env", check_env),
     ("budget", check_budget),

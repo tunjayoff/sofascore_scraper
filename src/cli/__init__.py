@@ -13,7 +13,8 @@ Modüller:
   exit_codes.py  çıkış kodu tablosu
   commands/      her komut kendini kaydeden bir modül (commands/__init__.py)
 
-Depo kökündeki `main.py` (eski giriş noktası) bu pakete P19 ile bağlanır; o zamana kadar ikisi yan yana durur.
+Depo kökündeki `main.py` (eski giriş noktası) bir kabuktur: eski bayrakları bu paketin komutlarına çevirir
+(src/cli/legacy_flags.py, plan maddesi P19); bayraklarla birlikte P30'da kalkar.
 
 Bu dosya yalnızca standart kütüphaneyi ve src/version.py'yi içe aktarır: `ssc --version` paketler
 kurulmadan da çalışır.

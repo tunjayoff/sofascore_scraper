@@ -2,9 +2,10 @@
 SofaScore API'sinden lig sezonlarını çeken modül (uyumluluk sarmalayıcısı; plan maddesi P14).
 
 Sezon listesinin çekilmesi ve saklanması src/services/listing.py'dedir: eşitleme servisi `list_seasons` ile
-tipli sonucu (`ListingResult`) alır; liste getirme boru hattında çekilir. `fetch_seasons_for_league` (terminal
-menüsü; başarısızlıkta boş liste) ve `fetch_seasons_checked` (web'in "sezonları yenile" uç noktası; tipli hata)
-eski yüzlerdir ve istek katmanının senkron yolunu kullanır.
+tipli sonucu (`ListingResult`) alır; liste getirme boru hattında çekilir. `fetch_seasons_checked` (web'in "sezonları
+yenile" uç noktası; tipli hata) eski yüzdür ve istek katmanının senkron yolunu kullanır. Terminal menüsünün
+kullandığı yüzler (`fetch_seasons_for_league`, `get_current_season_id`, `get_season_info`) plan maddesi FX-15'te
+kalktı.
 
 Saklanan sezon listeleri ve "bu sezonun maç listesi indirilmiş mi" sorusu deponun kataloğundan okunur
 (src/services/tournaments.py; plan maddesi RD-5): bir ligin birden çok sezon listesi dosyası varsa adı ne
@@ -14,15 +15,12 @@ kataloğu kendisi günceller; v3 listesi olan ligin eski `seasons/*_seasons.json
 okunmaz.
 """
 
-import os
-from typing import TYPE_CHECKING, Dict, List, Optional, Any, Tuple
-import datetime
-import re
+from typing import TYPE_CHECKING, Dict, List, Optional, Any
 
 from src.client import base_url
 from src.config_manager import ConfigManager
-from src.exceptions import DataParsingError, SofaScoreScraperError
-from src.utils import make_api_request, ensure_directory
+from src.exceptions import DataParsingError
+from src.utils import make_api_request
 
 # Okumalar ve yazmalar aynı depodan yapılır (`open_store`). Paket kökü üzerinden: cephe ilk çağrıda yüklenir.
 from src import store as store_hooks
@@ -48,12 +46,7 @@ class SeasonFetcher:
         """
         self.config_manager = config_manager
         self.data_dir = data_dir
-        self.seasons_dir = os.path.join(data_dir, "seasons")
         self.base_url = base_url()
-
-        # Veri dizinlerinin var olduğundan emin ol
-        ensure_directory(self.data_dir)
-        ensure_directory(self.seasons_dir)
 
         # Sezon verilerini saklamak için sözlük; None: henüz yüklenmedi (bkz. league_seasons)
         self._league_seasons: Optional[Dict[int, List[Dict[str, Any]]]] = None
@@ -104,26 +97,9 @@ class SeasonFetcher:
                 cache[league_id] = seasons
         return seasons or []
 
-    def fetch_seasons_for_league(self, league_id: int) -> List[Dict[str, Any]]:
-        """
-        Belirli bir lig için tüm sezonları çeker.
-
-        Args:
-            league_id: Lig ID'si
-
-        Returns:
-            List[Dict[str, Any]]: Sezon bilgilerini içeren liste (çekilemediyse boş liste)
-        """
-        try:
-            return self.fetch_seasons_checked(league_id)
-        except SofaScoreScraperError as e:
-            league_name = self.config_manager.get_leagues().get(league_id, f"League {league_id}")
-            logger.error("Season list of %s could not be fetched: %s", league_name, e)
-            return []
-
     def fetch_seasons_checked(self, league_id: int, max_retries: Optional[int] = None) -> List[Dict[str, Any]]:
         """
-        fetch_seasons_for_league gibi, ama başarısızlığı boş listeyle gizlemez: istek katmanının
+        Ligin sezon listesini çeker ve saklar. Başarısızlığı boş listeyle gizlemez: istek katmanının
         tipli hatasını fırlatır (APIError / RateLimitError / ResourceNotFoundError / NetworkError),
         yanıt sezon listesi içermiyorsa DataParsingError. Boş liste yalnızca SofaScore gerçekten
         boş bir sezon listesi döndürdüğünde gelir. Nedeni kullanıcıya gösteren çağıranlar içindir.
@@ -160,137 +136,6 @@ class SeasonFetcher:
         if result.ok and result.seasons is not None:
             self.league_seasons[int(league_id)] = result.seasons
         return result
-
-    def get_current_season_id(self, league_id) -> int:
-        """
-        Belirli bir lig için en güncel sezon ID'sini döndürür.
-        Eğer en güncel sezon henüz başlamamışsa, bir önceki aktif sezonu döndürür.
-
-        Args:
-            league_id: Lig ID'si
-
-        Returns:
-            int: Güncel sezon ID'si
-        """
-        seasons = self.get_seasons_for_league(league_id)
-        if not seasons:
-            logger.error("No season found for league %s", league_id)
-            return 0
-
-        # Şimdiki tarih
-        current_date = datetime.datetime.now()
-        current_year = current_date.year
-        current_month = current_date.month
-
-        # Sezonları yıl değerine göre sırala
-        sorted_seasons = sorted(
-            seasons,
-            key=lambda s: self._get_sortable_year_value(s.get("year", "0")),
-            reverse=True  # En yeni sezon en üstte
-        )
-
-        # Kontrol için listeyi logla
-        logger.debug("Seasons of league %s (sorted): %s", league_id,
-                     [(s.get('id'), s.get('name', ''), s.get('year', '')) for s in sorted_seasons[:5]])
-
-        # Aktif veya geçmiş sezonları değerlendir
-        active_seasons = []      # Aktif sezonlar (güncel yıl ve önceki yıl bazen)
-        past_seasons = []        # Geçmiş sezonlar
-        future_seasons = []      # Gelecek sezonlar
-
-        # Önce tüm sezonları kategorize et
-        for idx, season in enumerate(sorted_seasons):
-            season_id = season.get("id")
-            season_name = season.get("name", "")
-            season_year_str = season.get("year", "")
-
-            # Sezon yılını çıkar
-            season_year = None
-            if season_year_str:
-                if '/' in season_year_str:
-                    # "2024/25" veya "2024/2025" formatı
-                    start_year = season_year_str.split('/')[0].strip()
-                    if len(start_year) == 4:
-                        season_year = int(start_year)
-                    elif len(start_year) == 2:
-                        # 2 haneli yıl (örn. "24/25")
-                        season_year = 2000 + int(start_year)
-                else:
-                    # Tek yıl formatı: "2024"
-                    try:
-                        season_year = int(season_year_str)
-                    except (ValueError, TypeError):
-                        pass
-
-            # Sezon adından yıl çıkarmaya çalış
-            if not season_year and season_name:
-                year_matches = re.findall(r'20\d\d', season_name)
-                if year_matches:
-                    try:
-                        season_year = int(year_matches[0])
-                    except (ValueError, TypeError):
-                        pass
-
-            # Sezon tipi belirle (gelecek, aktif, geçmiş)
-            if season_year:
-                if season_year > current_year:
-                    future_seasons.append(season)
-                elif season_year == current_year:
-                    active_seasons.append(season)
-                elif season_year == current_year - 1:
-                    if current_month <= 6:  # Yılın ilk yarısındaysak, önceki sezon da aktif olabilir
-                        active_seasons.append(season)
-                    else:
-                        past_seasons.append(season)
-                else:
-                    past_seasons.append(season)
-            else:
-                # Yıl belirlenemezse mevcut en yeni sezondur
-                if idx < 2:  # İlk iki sıradaki sezonları aktif kabul et
-                    active_seasons.append(season)
-                else:
-                    past_seasons.append(season)
-
-            logger.debug("Season %s (id %s, year %s): %s", season_name, season_id, season_year_str,
-                         'active' if season in active_seasons else 'future' if season in future_seasons else 'past')
-
-            # Maç listesi indirilmiş mi: katalogdaki program sayfaları (dizin adına bakılmaz)
-            season["match_count"], season["has_matches"] = self._downloaded_matches(league_id, season_id)
-
-            if season["has_matches"]:
-                logger.info("Season %s (id %s): %s schedule pages stored", season_name, season_id, season['match_count'])
-            elif season in active_seasons:
-                logger.warning("Active season %s (id %s) has no stored schedule", season_name, season_id)
-
-        # En iyi sezon seçimi kriterlerini uygula
-        # 1. Aktif sezonlar arasında maç dosyası olan varsa, onu seç
-        active_seasons_with_matches = [s for s in active_seasons if s.get("has_matches", False)]
-        if active_seasons_with_matches:
-            selected_season = active_seasons_with_matches[0]  # En yeni olanı al
-            logger.info("Chose the newest active season with a stored schedule: %s (id %s)",
-                        selected_season.get('name'), selected_season.get('id'))
-            return selected_season.get("id")
-
-        # 2. Aktif sezon yoksa veya hiçbirinde maç yoksa, en son tamamlanan sezonu seç
-        past_seasons_with_matches = [s for s in past_seasons if s.get("has_matches", False)]
-        if past_seasons_with_matches:
-            selected_season = past_seasons_with_matches[0]  # En yeni olanı al
-            logger.info("Chose the newest past season with a stored schedule: %s (id %s)",
-                        selected_season.get('name'), selected_season.get('id'))
-            return selected_season.get("id")
-
-        # 3. Hiçbir sezonda maç dosyası yoksa, aktif sezonları tercih et
-        if active_seasons:
-            selected_season = active_seasons[0]  # En yeni aktif sezonu al
-            logger.info("No season has a stored schedule; chose the newest active season: %s (id %s)",
-                        selected_season.get('name'), selected_season.get('id'))
-            return selected_season.get("id")
-
-        # 4. Aktif sezon yoksa, tüm sezonlar içinden en yenisini al
-        selected_season = sorted_seasons[0]
-        logger.info("No active season and no stored schedule; chose the newest season: %s (id %s)",
-                    selected_season.get('name'), selected_season.get('id'))
-        return selected_season.get("id")
 
     def get_season_name(self, league_id: int, season_id: int) -> str:
         """
@@ -365,18 +210,6 @@ class SeasonFetcher:
             logger.info("No stored season list found")
         return loaded
 
-    def _downloaded_matches(self, league_id: int, season_id: Any) -> Tuple[int, bool]:
-        """
-        (saklanan program sayfası sayısı, sezonun maç listesi indirilmiş mi), katalogdan. Sezonun dizini hangi
-        adla yazılmış olursa olsun görülür; sayfası kalmamış ama özet dosyasından bilinen sezon da "indirilmiş"
-        sayılır. Kimliği olmayan sezon öğesi için (0, False).
-        """
-        if isinstance(season_id, bool) or not isinstance(season_id, int):
-            return 0, False
-        store = self._store()
-        pages = tournaments.schedule_pages(store, league_id, season_id)
-        return pages, pages > 0 or tournaments.has_matches(store, league_id, season_id)
-
     def _save_seasons_json(self, league_id: int, data: Dict[str, Any]):
         """
         Bir lig için çekilen sezon listesini Store'a yazar: turnuvanın `seasons` dilimi
@@ -418,24 +251,3 @@ class SeasonFetcher:
             logger.warning("No stored season list for league %s", league_id)
             return []
         return seasons
-
-    def get_season_info(self, league_id: int, season_id: int) -> Optional[Dict[str, Any]]:
-        """
-        Belirli bir lig ve sezon ID'si için sezon bilgisini döndürür.
-
-        Args:
-            league_id: Lig ID
-            season_id: Sezon ID
-
-        Returns:
-            Optional[Dict[str, Any]]: Sezon bilgisi veya None
-        """
-        seasons = self.get_seasons_for_league(league_id)
-
-        # Sezon ID'sine göre sezon bilgisini bul
-        for season in seasons:
-            if season.get("id") == season_id:
-                return season
-
-        logger.warning("No season info: league %s, season %s", league_id, season_id)
-        return None

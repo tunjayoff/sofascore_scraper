@@ -7,7 +7,7 @@
     {
      "id": "job-6",
      "status": "running",
-     "progress": 37,
+     "progress": 40,
      "current_task": "Fetching match details: league 17 (10 matches)…",
      "started_at": "2026-10-01T13:01:11+00:00",
      "finished_at": null,
@@ -39,7 +39,7 @@
     {
      "id": "job-6",
      "status": "interrupted",
-     "progress": 37,
+     "progress": 40,
      "current_task": "Fetching match details: league 17 (10 matches)…",
      "started_at": "2026-10-01T13:01:11+00:00",
      "finished_at": "2026-10-01T13:02:19+00:00",
@@ -64,7 +64,7 @@
     {
      "id": "job-5",
      "status": "failed",
-     "progress": 30,
+     "progress": 33,
      "current_task": "(storage error message, translated by the server)",
      "started_at": "2026-10-01T12:51:07+00:00",
      "finished_at": "2026-10-01T12:51:11+00:00",
@@ -100,7 +100,7 @@
     {
      "id": "job-4",
      "status": "cancelled",
-     "progress": 43,
+     "progress": 45,
      "current_task": "Cancelled",
      "started_at": "2026-10-01T12:40:51+00:00",
      "finished_at": "2026-10-01T12:41:07+00:00",
@@ -155,7 +155,6 @@
       "[Running] Checking which matches need details...",
       "[Running] Fetching match details: league 17 (40 matches)…",
       "[Running] Too many failed requests (403); stopped fetching match details.",
-      "[Running] Exporting data to CSV...",
       "[Completed] (message of the circuit breaker stop, translated by the server)"
      ],
      "result": {
@@ -195,7 +194,6 @@
       "[Running] Starting fetch for 1 targeted selection(s)",
       "[Running] Checking which matches need details...",
       "[Running] Fetching match details: league 17 (3 matches)…",
-      "[Running] Exporting data to CSV...",
       "[Completed] Background Task Completed Successfully."
      ],
      "result": {
@@ -234,7 +232,6 @@
       "[Running] Fetching matches: league 17, season 76986",
       "[Running] Checking which matches need details...",
       "[Running] Fetching match details: league 17 (8 matches)…",
-      "[Running] Exporting data to CSV...",
       "[Completed] Background Task Completed Successfully."
      ],
      "result": {

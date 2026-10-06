@@ -1,3 +1,0 @@
-# src.store.shadow_schedules
-# kaynak: src/store/api.py
-def shadow_schedules(data_dir: PathLike) -> None

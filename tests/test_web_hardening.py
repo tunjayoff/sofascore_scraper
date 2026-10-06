@@ -323,9 +323,6 @@ def test_get_routes_are_the_reviewed_read_only_set():
 
 def test_no_get_route_writes_files_or_sends_requests(monkeypatch):
     monkeypatch.setattr(utils.cffi_requests, "get", lambda *a, **k: pytest.fail("a GET route sent a request"))
-    monkeypatch.setattr(
-        "src.services.export.export_all_csv", lambda ctx: pytest.fail("a GET route wrote an export")
-    )
     # Kataloğu okuyan uç noktalar depoyu açar; ilk açılış `.meta/` altını kurar (GETS_THAT_MAY_WRITE_A_CACHE).
     # Ölçülen, veri dizini bir kez açıldıktan sonraki GET'lerdir: onlar hiçbir dosyayı ve satırı değiştirmez.
     open_store(conftest.DATA_DIR)
@@ -358,8 +355,6 @@ def test_csv_export_get_and_post_compute_the_export_and_write_no_file(tmp_path, 
     """EX-1 (karar D16): GET dışa aktarmayı istekte üretir ve hiçbir dosya yazmaz; POST bir sürüm boyunca aynı yanıttır."""
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     processed = tmp_path / "match_details" / "processed"
-    monkeypatch.setattr("src.services.export.export_all_csv", lambda ctx: pytest.fail("a route wrote an export file"))
-
     # İndirilmiş maç yok: 404, hiçbir şey üretilmez
     r = client.get("/api/export/csv")
     assert r.status_code == 404 and r.json()["detail"] == "No CSV data available. Run a fetch first."

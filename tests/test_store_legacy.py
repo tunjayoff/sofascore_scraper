@@ -1200,10 +1200,13 @@ def test_watch_state_files(tmp_path: Path) -> None:
 # --- bugünkü gezginlerle karşılaştırma (01-storage.md, bölüm 1.2) -------------------------------
 
 def _csv_export_ids(fetcher: MatchDataFetcher) -> List[str]:
-    path = fetcher.create_csv_dataset()
-    if not path:
+    """CSV dışa aktarmasının (`legacy-wide-csv`, ExportService) satırlarındaki maç kimlikleri."""
+    from src.services.export import ExportService
+
+    result = ExportService(open_store(fetcher.data_dir)).write_legacy_csv(fetcher.processed_dir)
+    if result is None or not result.path:
         return []
-    with open(path, newline="", encoding="utf-8") as f:
+    with open(result.path, newline="", encoding="utf-8") as f:
         return [row["match_id"] for row in csv.DictReader(f)]
 
 
@@ -1265,16 +1268,18 @@ def test_csv_export_lists_every_event_once(old_forms: sf.LegacyFixture) -> None:
 
 def test_counting_walkers(fx: sf.LegacyFixture, capsys: pytest.CaptureFixture[str]) -> None:
     """
-    Yalnızca sayı veren iki okuyucu. İstatistikler (RD-4) ve dosya raporu (P15, StatusService.coverage)
-    katalogdan gelir: okuyucunun bulduğu her maç bir kez sayılır. Eski rapor ağacı geziyor, yalnızca `season_*`
-    dizinlerine bakıyor ve olay yükü olmayan dizini de sayıyordu.
+    Yalnızca sayı veren iki okuyucu. İstatistikler (RD-4) ve kapsam raporu (P15, StatusService.coverage)
+    katalogdan gelir: okuyucunun bulduğu her maç bir kez sayılır. Eski dosya raporu ağacı geziyor, yalnızca
+    `season_*` dizinlerine bakıyor ve olay yükü olmayan dizini de sayıyordu.
     """
     events, _ = scan(fx.data_dir)
     system = stats_service.system_counts(stats_service.data_summary(str(fx.data_dir), fx.leagues), fx.leagues)
     assert system["details"] == len(events)
-    report = fetcher_for(fx.data_dir).generate_file_report()
+    from src.services.status import StatusService
+
+    report = StatusService(open_store(fx.data_dir)).coverage()
     assert capsys.readouterr().out == ""
-    assert report["overall_stats"]["total_matches"] == len(events)
+    assert report.matches == len(events)
 
 
 # --- yalnızca okur; katman kuralı -----------------------------------------------------------------

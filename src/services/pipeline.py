@@ -495,11 +495,15 @@ class FetchPipeline:
         outcome = await client.get(endpoints.event_slice(key, event_id, sub) if sub
                                    else endpoints.event_slice(key, event_id))
         if outcome.status == SLICE_OK or (outcome.status == SLICE_EMPTY and outcome.data is not None):
-            return with_provenance(key, sub, answered_outcome(key, outcome))
+            return with_provenance(key, sub, answered_outcome(key, outcome), self._country())
         if outcome.failed:
             logger.warning("Slice %s of match %s could not be fetched (%s); it is requested again on the next run",
                            slice_label(key, sub), event_id, outcome.reason)
-        return with_provenance(key, sub, outcome)
+        return with_provenance(key, sub, outcome, self._country())
+
+    def _country(self) -> str:
+        """Oranların kaydına yazılacak ülke (`[client] odds_country`); seçim politikası yoksa ya da verilmemişse ""."""
+        return self._active.country if isinstance(self._active, SelectionPolicy) else ""
 
     async def _owner(self, client: Client, item: WorkItem, writer: concurrent.futures.Executor,
                      slots: asyncio.Semaphore) -> ItemResult:
@@ -535,11 +539,11 @@ class FetchPipeline:
     async def _get_owner_slice(self, client: Client, ref: Any, key: str, sub: str, ids: Mapping[str, int]) -> Outcome:
         outcome = await client.get(endpoints.owner_slice(key, sub, **ids))
         if outcome.status == SLICE_OK or (outcome.status == SLICE_EMPTY and outcome.data is not None):
-            return with_provenance(key, sub, answered_outcome(key, outcome))
+            return with_provenance(key, sub, answered_outcome(key, outcome), self._country())
         if outcome.failed:
             logger.warning("Slice %s of %s %s could not be fetched (%s); it is requested again on the next run",
                            slice_label(key, sub), ref.kind, ref.id, outcome.reason)
-        return with_provenance(key, sub, outcome)
+        return with_provenance(key, sub, outcome, self._country())
 
     @staticmethod
     def _change_fn(found: Dict[str, Any]) -> Callable[[Optional[Mapping[str, Any]], Mapping[str, Any]],
@@ -620,16 +624,20 @@ def owner_path_ids(ref: Any) -> Dict[str, int]:
     return {}
 
 
-def with_provenance(key: str, sub: str, outcome: Outcome) -> Outcome:
+def with_provenance(key: str, sub: str, outcome: Outcome, country: str = "") -> Outcome:
     """
-    Sağlayıcı alt anahtarlı dilimin (bahis oranları) sonucuna yükün kaynağı yazılır: sağlayıcı kimliği
-    (`meta.provider_id`). Hangi sağlayıcının döndüğü SofaScore'da ülkeye bağlıdır; istemcinin IP'si ya da konumu
-    saklanmaz. Öteki dilimlerin sonucu değişmez.
+    Sağlayıcı alt anahtarlı dilimin (bahis oranları) sonucuna yükün kaynağı yazılır: sağlayıcı kimliği her zaman
+    (`meta.provider_id`), ülke yalnızca kullanıcı `[client] odds_country` verdiyse (`meta.country`). Hangi
+    sağlayıcının döndüğü SofaScore'da ülkeye bağlıdır; ülke makineden (IP, konum) türetilmez ve istemcinin IP'si
+    saklanmaz (sahibin kararı, 2026-10-06). Öteki dilimlerin sonucu değişmez.
     """
     spec = get_slice(key)
     if spec is None or spec.subs != PROVIDER_SUBS or not sub or outcome.status == SLICE_SKIPPED:
         return outcome
-    return dataclasses.replace(outcome, meta={**(outcome.meta or {}), "provider_id": int(sub)})
+    meta: Dict[str, Any] = {**(outcome.meta or {}), "provider_id": int(sub)}
+    if country:
+        meta["country"] = country
+    return dataclasses.replace(outcome, meta=meta)
 
 
 def body_state(key: str, body: Any) -> str:

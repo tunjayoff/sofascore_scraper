@@ -633,7 +633,7 @@ def sync(inv: Invocation) -> CommandResult:
         raise UsageError("--recheck-unavailable resets match details; it cannot be used with --only seasons")
     _include_legacy(args.include_legacy)
     mode = {"events": "details", "seasons": "seasons"}.get(args.only or "", "full")
-    spec = SyncSpec(mode=mode, league_id=args.tournament, export=False)  # type: ignore[arg-type]
+    spec = SyncSpec(mode=mode, league_id=args.tournament)  # type: ignore[arg-type]
     return _download(inv, spec, kind="sync", purpose="sync", dry_run=args.dry_run,
                      before=_recheck(args.tournament, args.recheck))
 
@@ -660,7 +660,7 @@ def fetch_event(inv: Invocation) -> CommandResult:
         by_tournament: Dict[int, List[int]] = {}
         for event_id, tournament in _tournament_of(ctx, ids).items():
             by_tournament.setdefault(tournament, []).append(event_id)
-        spec = SyncSpec(mode="details", export=False, selections=tuple(
+        spec = SyncSpec(mode="details", selections=tuple(
             SyncSelection(league_id=tid, match_ids=tuple(events)) for tid, events in sorted(by_tournament.items())))
         if inv.args.dry_run:
             needs, requests = _plan_events(ctx, ids)
@@ -688,7 +688,7 @@ def fetch_tournament(inv: Invocation) -> CommandResult:
     if seasons and mode == "details":
         raise UsageError("--season selects schedules to fetch; it cannot be used with --only events")
     selections = (SyncSelection(league_id=args.tournament, season_ids=seasons),) if seasons else ()
-    spec = SyncSpec(mode=mode, league_id=args.tournament, selections=selections, export=False)
+    spec = SyncSpec(mode=mode, league_id=args.tournament, selections=selections)
     return _download(inv, spec, kind="fetch", purpose="fetch", dry_run=args.dry_run)
 
 

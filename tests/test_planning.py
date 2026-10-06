@@ -2,20 +2,22 @@
 Planlama (plan maddesi P12; src/services/planning.py): bir maçın ihtiyacı `compute_need` ile, katalogdaki
 durumundan (`EventState`).
 
-Üç küme:
+İki küme:
   * tablo testleri: elle kurulan durumlarla her kural ve sınırı (dilim durumu, eşik, düzen, yenileme politikası,
     seçim, evre);
   * G-01 dünyası (tests/characterization/fixtures/fetch/world.json): sahte API'den indirilen maçların ihtiyacı,
-    maç maç ve bir tablo halinde;
-  * eşitlik: rastgele dilim, işaret ve gözlem durumlarında `planning.event_needs` ve `refresh_due_events`,
-    RD-3'ün katalog sorgularıyla (`QueryService.detail_needs`, `refresh_due`) aynı kararları verir.
+    maç maç ve bir tablo halinde.
+
+Rastgele dilim, işaret ve gözlem durumlarında planlamanın dosyalardan kurulan kehanete eşitliği
+tests/test_need_from_catalog.py'dedir. RD-3'ün katalog sorgularıyla (`QueryService.detail_needs`, `refresh_due`)
+eşitlik testi, o yüzler planlamaya devrettiğinden beri planlamayı kendisiyle karşılaştırıyordu; yüzlerle birlikte
+FX-15'te kalktı.
 Ağ yok.
 """
 from __future__ import annotations
 
 import dataclasses
 import datetime as dt
-import random
 from pathlib import Path
 from typing import Any, Dict, Iterator, Optional, Tuple
 
@@ -24,10 +26,10 @@ import pytest
 import store_fixtures as sf
 from src.services import planning
 from src.services.planning import WorkItem, compute_need, order_by_need, phase_of, refresh_due, work_item
-from src.services.query import NEED_FULL, NEED_NONE, NEED_REFILL, NEED_REFRESH, QueryService, RefreshPolicy
+from src.services.query import NEED_FULL, NEED_NONE, NEED_REFILL, NEED_REFRESH, RefreshPolicy
 from src.sports import SliceSelection, slices_for
-from src.store import EventRow, EventState, Ref, Scope, SliceInfo, open_store
-from test_store_read_api import HOUR, NOW, _random_details
+from src.store import EventRow, EventState, Ref, SliceInfo, open_store
+from test_store_read_api import HOUR
 
 COMMON = tuple(detail.key for detail in slices_for(None, required_only=True))
 START = 1_700_000_000
@@ -296,7 +298,6 @@ def _world_needs(data_dir: Path, policy: RefreshPolicy) -> Dict[int, str]:
     states = {state.event.id: state for state in store.events.states()}
     needs = {event_id: compute_need(states.get(event_id), None, policy) for event_id in WORLD_IDS}
     assert planning.event_needs(store, WORLD_IDS, policy) == needs
-    assert QueryService(store).detail_needs(WORLD_IDS, policy) == needs
     return needs
 
 
@@ -341,43 +342,6 @@ def test_needs_of_the_g01_world(world: Tuple[Any, Path]) -> None:
     assert [row.id for row in planning.refresh_due_events(open_store(data_dir), RefreshPolicy.current())] == [9100010]
     assert md.refresh_due_ids() == ["9100010"]
     assert md.pending_detail_ids([str(i) for i in WORLD_IDS]) == ["9100001", "9100010"]
-
-
-# --- eşitlik: RD-3'ün katalog sorguları -----------------------------------------------------------------
-
-@pytest.mark.parametrize("seed", range(8))
-def test_needs_equal_the_catalog_queries_of_rd3(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, seed: int) -> None:
-    rng = random.Random(5000 + seed)
-    window_h, min_interval_h = rng.choice([(72, 6), (1, 0), (24, 12), (200, 1)])
-    builder = sf._Builder("random", tmp_path / "data", (sf.PL, sf.FA_CUP, sf.NBA, sf.WIMBLEDON, sf.LALIGA))
-    for detail in _random_details(rng, window_h * HOUR, min_interval_h * HOUR):
-        builder.detail(detail)
-    fx = builder.fixture
-    store = open_store(fx.data_dir)
-    service = QueryService(store)
-    ids = sorted({record.event_id for record in fx.details} | {1, 2})
-    # P13 tasarım tablosunun canlı ve bayat satırlarını uyguladı; RD-3'ün SQL kopyası (src/services/query.py) bunları
-    # bilmez. Eşitlik öteki kayıtlarda aranır; canlı kayıtta planlamanın kararı ayrıca sabitlenir.
-    states = list(store.events.states(Scope(event_ids=tuple(ids))))
-    live = {state.event.id for state in states
-            if state.event.has_event_payload and phase_of(state.event.status_class) == "live"}
-    assert not any(state.event.stale for state in states)
-    shared = [event_id for event_id in ids if event_id not in live]
-    for include_unobserved in (False, True):
-        policy = RefreshPolicy(now=float(NOW), window_s=window_h * HOUR, min_interval_s=min_interval_h * HOUR,
-                               include_unobserved=include_unobserved)
-        for threshold in (1, 2, 3):
-            for layout in (None, "legacy", "v3"):
-                needs = planning.event_needs(store, ids, policy, threshold=threshold, layout=layout)
-                assert {event_id: needs[event_id] for event_id in shared} == \
-                    service.detail_needs(shared, policy, threshold=threshold, layout=layout)
-                assert all(needs[event_id] in (NEED_NONE, NEED_FULL) for event_id in live)
-                assert [r.id for r in planning.refresh_due_events(store, policy, threshold=threshold, layout=layout)] \
-                    == [r.id for r in service.refresh_due(policy, threshold=threshold, layout=layout)
-                        if r.id not in live]
-        tournaments = (sf.PL.id,)
-        assert [r.id for r in planning.refresh_due_events(store, policy, tournament_ids=tournaments)] == \
-            [r.id for r in service.refresh_due(policy, tournament_ids=tournaments) if r.id not in live]
 
 
 def test_identifiers_that_are_not_event_ids_are_left_out(tmp_path: Path) -> None:

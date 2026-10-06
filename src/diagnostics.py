@@ -15,8 +15,8 @@ pakete girmez; iş metinlerinde, tarayıcı profili kilidinde ve log kuyruğunda
 Okunan dosyalar sabittir: log dosyası yalnızca src.logger'ın yazdığı dosyadır,
 dışarıdan yol alınmaz. Paket üretmek hiçbir şeyi değiştirmez (iş geçmişi salt okunur açılır).
 
-Web: GET /api/logs, GET /api/diagnostics, GET /api/diagnostics/bundle (src/web/routes/diagnostics.py).
-CLI: python main.py --diagnostics [YOL]
+Web: GET /api/logs, GET /api/diagnostics, GET /api/diagnostics/bundle (src/web/api/legacy.py) ve
+GET /api/v1/diagnostics (src/web/api/v1/). CLI: ssc diagnostics [YOL] (eski adı: python main.py --diagnostics)
 """
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ import dotenv
 
 from src import logger as app_logger
 from src.paths import default_league_config_path, env_file_path
-from src.redact import KNOWN_SINK_LIST_KEYS, MASK, mask_value, redact_obj, redact_text
+from src.redact import MASK, mask_value, redact_obj, redact_text
 from src.version import __version__
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -90,7 +90,7 @@ SETTING_KEYS: Tuple[str, ...] = (
     "LOG_LEVEL", "DEBUG", "LOG_DIR", "LOG_TO_FILE", "LOG_MAX_MB", "LOG_BACKUP_COUNT",
 )
 _PACKAGES = (
-    "curl_cffi", "scrapling", "playwright", "patchright", "pandas", "rich",
+    "curl_cffi", "scrapling", "playwright", "patchright", "rich",
     "python-dotenv", "fastapi", "pydantic", "uvicorn", "sse-starlette",
 )
 
@@ -392,31 +392,12 @@ def _runtime() -> Dict[str, Any]:
     }
 
 
-def _sink_list(raw: str) -> str:
-    """
-    SOFASCORE_SINKS'in pakete girecek hali: her tabloda sink'lerin tanımadığı anahtarların değeri `***` olur
-    (`ssc config show` ile aynı kural: loader.mask_sink_table). Yanlış yazılmış bir anahtar (`webhook_url`)
-    adresi taşıyabilir. `url` alanını ve tablo listesi olmayan değeri redact.mask_value maskeler; öyle bir
-    değer burada olduğu gibi döner.
-    """
-    try:
-        items = json.loads(raw)
-    except ValueError:
-        return raw
-    if not isinstance(items, list) or any(not isinstance(item, dict) for item in items):
-        return raw
-    from src.config import loader
-
-    return json.dumps([loader.mask_sink_table(item) for item in items], ensure_ascii=False, separators=(",", ":"))
-
-
 def _settings() -> Dict[str, Any]:
     """Etkin ayarlar (ortamdan). None: ayarlanmamış, uygulama varsayılanı kullanıyor."""
     values: Dict[str, Optional[str]] = {key: mask_value(key, os.environ.get(key)) for key in SETTING_KEYS}
     for key in sorted(os.environ):
         if key.startswith("SOFASCORE_") and key not in values:
-            raw = os.environ[key]
-            values[key] = mask_value(key, _sink_list(raw) if key in KNOWN_SINK_LIST_KEYS else raw)
+            values[key] = mask_value(key, os.environ[key])  # SOFASCORE_SINKS: redact.mask_value'nin kuralı
 
     path = env_file_path()
     # Uygulamanın tanımadığı .env anahtarları: değerleri hiç yazılmaz, yalnızca adları

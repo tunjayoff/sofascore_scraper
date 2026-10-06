@@ -205,10 +205,10 @@ def test_a_subcommand_goes_to_the_new_cli(argv: List[str], expected: bool) -> No
 
 
 @pytest.mark.parametrize("argv, expected", [
-    ([], SyncSpec(mode="full", league_id=None, export=False)),
-    (["--league-id", "17"], SyncSpec(mode="full", league_id=17, export=False)),
-    (["--fetch-mode", "details"], SyncSpec(mode="details", league_id=None, export=False)),
-    (["--fetch-mode", "details", "--league-id", "8"], SyncSpec(mode="details", league_id=8, export=False)),
+    ([], SyncSpec(mode="full", league_id=None)),
+    (["--league-id", "17"], SyncSpec(mode="full", league_id=17)),
+    (["--fetch-mode", "details"], SyncSpec(mode="details", league_id=None)),
+    (["--fetch-mode", "details", "--league-id", "8"], SyncSpec(mode="details", league_id=8)),
 ])
 def test_headless_update_calls_the_sync_service_under_the_writer_lease(
     run_cli: RunCli, data_dir: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
@@ -416,7 +416,7 @@ def test_recheck_then_download_runs_inside_the_download_job(
     assert run_cli("--recheck-unavailable", "--headless", "--update-all", "--fetch-mode", "details") == 0
 
     assert recheck == [(None, False, "sync")]
-    assert recorder.specs == [SyncSpec(mode="details", export=False)]
+    assert recorder.specs == [SyncSpec(mode="details")]
     assert recorder.holders[0].purpose == "sync"
 
 
