@@ -4,8 +4,8 @@ Saklanan maç kayıtlarını testler için elle değiştiren yardımcılar (plan
 İndirici maçları Store'a, v3 düzenine yazar (`v3/events/.../<id>/`: manifest + `<dilim>.json.gz`). Eskiden
 testler bir kaydın durumunu dosyasını silerek ya da düzenleyerek kurardı (`h2h.json`'ı silmek, `observation.json`'ı
 geriye almak). Buradaki işlevler aynı durumu her iki düzende kurar: v3'te yük dosyası ve manifest kaydı birlikte
-değişir, ardından maç Store'un kancasıyla (`shadow_event`) yeniden dizinlenir; eski düzende dosya değişir ve aynı
-kanca çağrılır. Yükler ve kayıtlar Store'dan okunur.
+değişir, ardından maç yeniden dizinlenir (tests/catalog_index.py; eskiden Store'un kancası `shadow_event`); eski
+düzende dosya değişir ve maç aynı yolla dizinlenir. Yükler ve kayıtlar Store'dan okunur.
 """
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from src.store import api as store_api
+from catalog_index import index_event
 from src.store import layout, open_store
 from src.store import manifest as manifest_mod
 
@@ -37,7 +37,7 @@ def record_dir(data_dir: PathLike, event_id: int) -> Path:
 
 
 def _reindex(data_dir: PathLike, event_id: int, directory: Optional[Path] = None) -> None:
-    store_api.shadow_event(data_dir, int(event_id), directory)
+    index_event(data_dir, int(event_id), directory)
 
 
 def drop_slices(data_dir: PathLike, event_id: int, *keys: str) -> None:

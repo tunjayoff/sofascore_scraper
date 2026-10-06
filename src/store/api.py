@@ -34,17 +34,16 @@ düzeyindedir (komut çıktısı değişmez); kurulum, dizinde veri varsa tek bi
 aynı dizinin bir açılışı eski düzen maç dizinlerini bir dakikadan kısa süre önce taradıysa açılış o taramayı
 atlar (`Store._reconcile_on_open`; `STORE_OPEN_RECONCILE_SECONDS`).
 
-Gölge kip (plan maddesi ST-11): dosyaları hâlâ eski düzen yazıcıları (src/match_data_fetcher.py,
-src/match_fetcher.py, src/season_fetcher.py, terminal menüsünün temizleme ve geri yüklemesi) yazar ve her
-yazmadan sonra buradaki kancalardan
-birini çağırır: `shadow_event`, `shadow_schedules`, `shadow_season_lists`, `shadow_changes`,
-`shadow_cleared`. Kanca depoyu açar ve yazılanı diskten yeniden dizinler. Katalog ikincil bir kayıttır:
-güncellenememesi yazmayı düşürmez (uyarı; sonraki kanca ya da açılış uzlaştırır). Henüz hiçbir özellik
-kataloğu okumaz.
+Gölge kip (plan maddesi ST-11): eski düzen yazıcıları dosyalarını yazdıktan sonra buradaki kancalarla kataloğu
+güncelliyordu. Yazıcıların hepsi Store'a geçti (ST-21, ST-22; terminal menüsü P26 ile gitti) ve çağıranı kalmayan
+beş kanca (`shadow_event`, `shadow_schedules`, `shadow_season_lists`, `shadow_changes`, `shadow_cleared`) plan
+maddesi FX-15'te kalktı; eski düzende kayıt kuran testler kataloğu kendileri dizinler (tests/catalog_index.py).
+Ortak gövde (`_shadow`) `Store.clear`'ın yeniden kurmasını sarar.
 
-`STORE_SHADOW_CHECK=1` (test paketi, tests/conftest.py): kancaların dokunduğu veri dizinleri not edilir ve
-`shadow_check()` her birinin kataloğunu aynı ağacın sıfırdan kurulmuş haliyle karşılaştırır
-(`CatalogAdmin.diff_from_rebuild`). Bu kipte beklenmeyen bir dizinleme hatası yutulmaz, testi düşürür.
+`STORE_SHADOW_CHECK=1` (test paketi, tests/conftest.py): Store'un dışında eski düzen köklerine yazan ürün kodu ve
+`Store.clear`'ın dokunduğu veri dizinleri not edilir; `shadow_check()` dizinlerin kataloğunu aynı ağacın sıfırdan
+kurulmuş haliyle karşılaştırır (`CatalogAdmin.diff_from_rebuild`) ve ardından katalog eşitlenmeyen bir ürün
+yazmasını bildirir. Bu kipte beklenmeyen bir dizinleme hatası yutulmaz, testi düşürür.
 """
 from __future__ import annotations
 
@@ -73,14 +72,10 @@ from src.store.export import Exporter
 from src.store.follows import FollowStore
 from src.store.history import HistoryStore
 from src.store.indexer import (
-    LISTING_CHANGES,
-    LISTING_SCHEDULES,
-    LISTING_SEASON_LISTS,
     MODE_AUTO,
     MODE_IN_PLACE,
     MODE_RECREATE,
     CatalogAdmin,
-    canonical_id,
 )
 from src.store.jobs import JobStore, import_legacy_jobs
 from src.store.lease import MAINTENANCE, Lease, LeaseInfo, LeaseManager
@@ -733,7 +728,7 @@ def open_store(data_dir: Optional[PathLike] = None, *, create: bool = True, read
         return store
 
 
-# --- gölge kip: eski düzen yazıcılarının kancaları -------------------------------------------------
+# --- gölge kip: denetim ve temizlemenin yeniden kurması ---------------------------------------------
 
 @dataclass
 class _ShadowNote:
@@ -1025,60 +1020,6 @@ def _shadow(data_dir: PathLike, what: str, action: Callable[[Store], None], *,
         return False
 
 
-def shadow_event(data_dir: PathLike, event_id: Union[int, str], directory: Optional[PathLike] = None) -> None:
-    """
-    Kanca: bir maçın eski düzen dizini yazıldı ya da değişti (dilim dosyaları, işaret dosyaları, gözlem).
-    Maç diskten yeniden dizinlenir; `directory` yazılan maç dizinidir (katalog onu henüz bilmiyor olabilir).
-    """
-    number = canonical_id(str(event_id))
-    if number is None:
-        return  # kurallı bir maç kimliği değil: yeniden kurma da böyle bir dizini maç saymaz
-
-    def action(store: Store) -> None:
-        paths: List[str] = []
-        if directory is not None:
-            try:
-                paths.append(Path(os.path.abspath(os.fspath(directory))).relative_to(store.data_dir).as_posix())
-            except ValueError:
-                pass  # veri dizininin dışında: katalogdaki yola güvenilir
-        store.catalog.index_event(number, paths=paths)
-
-    _shadow(data_dir, f"a write to event {number}", action)
-
-
-def _shadow_listings(data_dir: PathLike, what: str, kinds: Iterable[str]) -> None:
-    def action(store: Store) -> None:
-        store.catalog.sync_listings(kinds)
-
-    _shadow(data_dir, what, action)
-
-
-def shadow_schedules(data_dir: PathLike) -> None:
-    """Kanca: `matches/` altında tur / sayfa dosyaları ya da bir sezon özeti yazıldı; değişen sezonlar yeniden dizinlenir."""
-    _shadow_listings(data_dir, "a schedule write", LISTING_SCHEDULES)
-
-
-def shadow_season_lists(data_dir: PathLike) -> None:
-    """Kanca: `seasons/` altında bir sezon listesi yazıldı; sezon listeleri yeniden dizinlenir."""
-    _shadow_listings(data_dir, "a season list write", LISTING_SEASON_LISTS)
-
-
-def shadow_changes(data_dir: PathLike) -> None:
-    """Kanca: `score_changes.jsonl`'a satır eklendi; değişiklik günlüğü yeniden dizinlenir."""
-    _shadow_listings(data_dir, "a change log append", LISTING_CHANGES)
-
-
-def shadow_cleared(data_dir: PathLike) -> None:
-    """
-    Kanca: dizin ağaçları Store'un dışında topluca değişti: terminal menüsünün temizlemesi, geri yüklemesi ve
-    veri dizinini taşıması (src/ui/settings_ui.py). Katalog kalan dosyalardan yerinde yeniden kurulur:
-    uzlaştırma varlık satırlarını silmez, temizlenen turnuvalar katalogda kalırdı. Kilit almaz (terminal
-    menüsü kilit almaz). Web'in temizlemesi bunu çağırmaz: `Store.clear` aynı yeniden kurmayı kendi kilidi
-    altında yapar. Uyarı satırı tarihsel olarak "after a clear" der.
-    """
-    _shadow(data_dir, "a clear", _rebuild_in_place)
-
-
 def _rebuild_in_place(store: Store) -> None:
     """Temizlemeden sonra: uzlaştırma varlık satırlarını silmez, bu yüzden katalog yerinde yeniden kurulur."""
     store.catalog.rebuild(mode=MODE_IN_PLACE)
@@ -1095,14 +1036,9 @@ __all__ = [
     "check_layout",
     "open_store",
     "read_schema",
-    "shadow_changes",
     "shadow_check",
-    "shadow_cleared",
     "shadow_edited",
-    "shadow_event",
     "shadow_resync",
-    "shadow_schedules",
-    "shadow_season_lists",
     "shadow_unsynced",
     "shadow_watching",
     "shadow_written",

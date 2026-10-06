@@ -11,6 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import conftest
+from catalog_index import LISTING_SCHEDULES, index_listings
 from schedule_runner import inline, legacy_get
 from src.match_data_fetcher import (SLICE_EMPTY, SLICE_FAILED, UNAVAILABLE_AFTER_ATTEMPTS, MatchDataFetcher,
                                     SliceOutcome)
@@ -18,7 +19,7 @@ from src.match_fetcher import MatchFetcher
 from src.services import listing
 from src.services.status import StatusService
 from src.slices import SLICE_OK, Outcome
-from src.store import Ref, league_dir_name, open_store, shadow_schedules
+from src.store import Ref, league_dir_name, open_store
 from src.web import deps
 from src.web.app import app
 
@@ -52,7 +53,7 @@ def _legacy_round_file(tmp_path, data):
     season_dir = tmp_path / "matches" / "17_Premier_League" / f"{SEASON}_Premier_League_26_27"
     season_dir.mkdir(parents=True, exist_ok=True)
     (season_dir / "round_1.json").write_text(json.dumps(data))
-    shadow_schedules(str(tmp_path))  # testin kendi yazdığı eski dosya kataloğa girer
+    index_listings(str(tmp_path), LISTING_SCHEDULES)  # testin kendi yazdığı eski dosya kataloğa girer
 
 
 def test_complete_round_is_reused(tmp_path):

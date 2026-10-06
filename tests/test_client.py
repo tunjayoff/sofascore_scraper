@@ -916,7 +916,7 @@ def _imports_of(path: Path) -> List[str]:
 
 def test_the_client_package_imports_neither_the_store_nor_a_face() -> None:
     """docs/design/02-services.md 2.1: src/client ve src/store birbirini içe aktarmaz; istemci yüzleri de bilmez."""
-    forbidden = ("src.store", "src.web", "src.ui", "src.services", "src.jobs", "src.utils", "src.fsutil")
+    forbidden = ("src.store", "src.web", "src.services", "src.jobs", "src.utils", "src.config_files")
     problems = [
         f"{path.name}: {module}"
         for path in sorted((SRC / "client").glob("*.py"))

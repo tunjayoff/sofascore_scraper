@@ -1,3 +1,0 @@
-# src.store.shadow_season_lists
-# kaynak: src/store/api.py
-def shadow_season_lists(data_dir: PathLike) -> None

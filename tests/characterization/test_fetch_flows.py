@@ -29,6 +29,7 @@ import curl_cffi.requests as cffi_requests
 import pytest
 
 import detail_records
+from catalog_index import index_event
 import legacy_writer
 import src.utils as utils
 from characterization import WORLD, assert_golden, pin_default_settings, snapshot_tree
@@ -150,7 +151,6 @@ def _as_legacy_record(data_dir: Path, event_id: int, *, drop: Any = (), unavaila
     `unavailable` eski sürümün `_unavailable.json`'ıdır (doğrulanmamış sayımlar). Maç dizinini döndürür.
     """
     from src.store import open_store
-    from src.store import api as store_api
 
     store = open_store(data_dir)
     payloads = store.events.payloads(event_id)
@@ -159,7 +159,7 @@ def _as_legacy_record(data_dir: Path, event_id: int, *, drop: Any = (), unavaila
     match_dir = Path(legacy_writer.save_legacy(data_dir, event_id, match_data))
     if unavailable is not None:
         (match_dir / "_unavailable.json").write_text(json.dumps(unavailable), encoding="utf-8")
-        store_api.shadow_event(data_dir, event_id, match_dir)
+        index_event(data_dir, event_id, match_dir)
     return match_dir
 
 

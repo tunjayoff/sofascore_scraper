@@ -10,7 +10,8 @@ kullanır:
     (tests/test_store_put.py'deki durum tablosu) aynı sonuç dizisini bir yanda buraya, öte yanda `put`'a verir;
   * eski kayıt: önceki bir sürümün yazdığı bir maç dizinini (gözlemi olmayan kayıt, işaret dosyaları) kurmak.
 
-Her yazmadan sonra eski yazıcı gibi Store'un kancası (`shadow_event`) çağrılır: katalog yazılanı görür.
+Her yazmadan sonra maç kataloğa alınır (tests/catalog_index.py; eskiden Store'un kancası `shadow_event`): katalog
+yazılanı görür.
 """
 from __future__ import annotations
 
@@ -24,7 +25,7 @@ from src import breaker as request_breaker
 from src.match_fetcher import MatchFetcher
 from src.slices import SliceOutcome, match_detail_slice_present
 from src.sports import event_sport_slug, slices_for
-from src.store import api as store_api
+from catalog_index import LISTING_CHANGES, index_event, index_listings
 
 UNAVAILABLE_FILE = "_unavailable.json"
 SLICE_STATUS_FILE = "_slice_status.json"
@@ -166,7 +167,7 @@ def save_legacy(data_dir: Any, match_id: Any, match_data: Mapping[str, Any],
         if MatchFetcher._is_finished_event(dict(basic_data)):
             _update_slice_markers(match_dir, event_sport_slug(dict(basic_data)) or "", match_data, outcomes or {})
     finally:
-        store_api.shadow_event(data_dir, mid, match_dir)
+        index_event(data_dir, mid, match_dir)
     return match_dir
 
 
@@ -174,7 +175,7 @@ def append_legacy_change(data_dir: Any, row: Mapping[str, Any]) -> None:
     """Eski değişiklik günlüğüne (`score_changes.jsonl`) bir satır, eski yazıcı gibi metin kipinde."""
     with open(os.path.join(os.fspath(data_dir), SCORE_CHANGES_FILE), "a", encoding="utf-8") as f:
         f.write(json.dumps(dict(row), ensure_ascii=False) + "\n")
-    store_api.shadow_changes(data_dir)
+    index_listings(data_dir, LISTING_CHANGES)
 
 
 def _reset_match_markers(data_dir: Any, match_dir: str, include_confirmed: bool, threshold: int) -> int:
@@ -212,7 +213,7 @@ def _reset_match_markers(data_dir: Any, match_dir: str, include_confirmed: bool,
             else:
                 os.remove(status_path)
     finally:
-        store_api.shadow_event(data_dir, os.path.basename(match_dir), match_dir)
+        index_event(data_dir, os.path.basename(match_dir), match_dir)
     return reopened
 
 

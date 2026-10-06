@@ -5,8 +5,8 @@ Paketin dışındaki kod yalnızca bu kökten içe aktarır (`from src.store imp
 değil. Dışa açık olanlar: hata sınıfları, cephe (`open_store`, `Store`, `StoreInfo`), takipler (`FollowStore`,
 `apply_follows`), kilitler (`Lease`, `LeaseInfo`), iş deposu, olay akışları ve kataloğun okuma API'leri
 (`EventStore`, `EntityStore`, `ChangeLog` ile sorgu ve sonuç türleri: `Ref`, `Scope`, `EventQuery`, `Page`,
-`EventRow`, `SliceInfo`, ...), kataloğun yönetimi (`CatalogAdmin` ve raporları) ve eski düzen yazıcılarının
-gölge kip kancaları (`shadow_*`). Maçların yazma API'si `EventStore.put` / `observe` / `reset_empty_markers` /
+`EventRow`, `SliceInfo`, ...) ve kataloğun yönetimi (`CatalogAdmin` ve raporları). Eski düzen yazıcılarının gölge
+kip kancaları (`shadow_*`) plan maddesi FX-15'te kalktı. Maçların yazma API'si `EventStore.put` / `observe` / `reset_empty_markers` /
 `delete` (sonucu `PutResult`) ve `ChangeLog.append`'tir; maç dışı varlıklarınki `EntityStore.put`.
 
 Hata sınıfları dışındaki adlar ilk kullanımda yüklenir: kök, cepheyi (SQLite, katalog, türetme) içe
@@ -62,7 +62,6 @@ if _TYPE_CHECKING:  # tür denetleyicileri ve API anlık görüntüsü adları b
     from src.store.lease import Lease, LeaseInfo
     from src.store.streams import StreamBatch, StreamEvent, StreamHead, StreamLog, StreamRecord
     from src.store.watch import WatchStateStore
-    from src.store.api import shadow_changes, shadow_cleared, shadow_event, shadow_schedules, shadow_season_lists
     from src.store.indexer import CatalogAdmin, IndexProblem, RebuildReport, ReconcileReport, SupersededDir
     from src.store.verify import VerifyIssue, VerifyReport
     from src.store.api import ClearReport
@@ -132,11 +131,6 @@ _LAZY = {
     "ClearReport": "src.store.api",
     "BackupManager": "src.store.backup",
     "BackupInfo": "src.store.backup",
-    "shadow_event": "src.store.api",
-    "shadow_schedules": "src.store.api",
-    "shadow_season_lists": "src.store.api",
-    "shadow_changes": "src.store.api",
-    "shadow_cleared": "src.store.api",
     "CategoryRow": "src.store.entities",
     "SportRow": "src.store.entities",
     "Exporter": "src.store.export",
@@ -230,11 +224,6 @@ __all__ = [
     "ClearReport",
     "BackupManager",
     "BackupInfo",
-    "shadow_event",
-    "shadow_schedules",
-    "shadow_season_lists",
-    "shadow_changes",
-    "shadow_cleared",
     "CategoryRow",
     "SportRow",
     "Exporter",
