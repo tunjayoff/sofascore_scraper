@@ -373,7 +373,7 @@ ssc serve                   # ya da: python -m src.cli.main serve
 
 Varsayılan adres: `http://127.0.0.1:8000` (yapılandırma dosyasındaki `[server] host` ve `port` varsayılanı değiştirir). Sunucu yalnızca bu bilgisayarı dinler. `--host` onu ağa açar; önce [Güvenlik modeli](#güvenlik-modeli) bölümünü okuyun. Tek bir adres (`--host 192.168.1.5`) olduğu gibi çalışır. `--host 0.0.0.0` (tüm arayüzler) ayrıca izin verilen ana makine adlarını ister (`--allowed-hosts`, `[server] allowed_hosts` ya da `SOFASCORE_ALLOWED_HOSTS`), onlar olmadan çıkış kodu 2 ile başlamaz; `SOFASCORE_API_TOKEN` yoksa uygulama başlangıçta, porta ulaşabilen herkesin veriyi okuyup silebileceği ve ayarları değiştirebileceği konusunda uyarır. `--port` portu değiştirir, `--dev` kod değişince yeniden başlatır. Ctrl+C ya da SIGTERM onu 0 çıkış koduyla durdurur; yapılandırılmış sink'ler o çalışırken teslim edilir. Sağlık kontrolü: `GET /health` (sürümü de bildirir). `python main.py --web` bir sürüm daha çalışır ve `ssc serve`i çalıştırır. systemd servisi, ters vekil, yedekler: [docs/deploy/](docs/deploy/README.md) (İngilizce).
 
-Arka plan işlemleri `GET /api/scrape/status` ve `GET /api/scrape/stream` (SSE) ile izlenir. Ağır dosya/pandas işleri event loop dışına alındığından uzun çekimler sırasında arayüz genelde yanıt vermeye devam eder.
+Arka plan işlemleri `GET /api/scrape/status` ve `GET /api/scrape/stream` (SSE) ile izlenir. Ağır dosya işleri event loop dışına alındığından uzun çekimler sırasında arayüz genelde yanıt vermeye devam eder.
 
 ### Güvenlik modeli
 

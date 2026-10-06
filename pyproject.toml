@@ -14,7 +14,8 @@ dev = [
 # Parquet dışa aktarması (src/store/export.py, Exporter.rows). İsteğe bağlı: yoksa yalnızca Parquet biçimi
 # kullanılamaz ve paketi adıyla anan bir hata verir. Kurulum: pip install -e ".[parquet]"
 parquet = [
-    "pyarrow>=14",
+    # 16: numpy 2 ile çalışan en eski sürüm (15 numpy<2 ister, 14 numpy 2 ile içe aktarılamaz; CI'ın Parquet işi)
+    "pyarrow>=16",
 ]
 
 # Yeni CLI (src/cli; docs/design/02-services.md bölüm 4). Kurulum gerektirmeden: python -m src.cli.main

@@ -92,11 +92,11 @@ def test_packages_fix_installs_with_the_constraints_file_when_there_is_one(make_
 
 def test_packages_broken_install_counts_as_missing(make_ctx):
     def fake_import(name):
-        if name == "pandas":
+        if name == "curl_cffi":
             raise OSError("libstdc++.so.6: cannot open shared object file")
 
     res = doctor.check_packages(make_ctx(), import_module=fake_import)
-    assert res.status == FAIL and "pandas" in res.summary
+    assert res.status == FAIL and "curl_cffi" in res.summary
 
 
 def test_packages_version_differs_from_pin_is_a_warning(make_ctx):

@@ -90,7 +90,7 @@ SETTING_KEYS: Tuple[str, ...] = (
     "LOG_LEVEL", "DEBUG", "LOG_DIR", "LOG_TO_FILE", "LOG_MAX_MB", "LOG_BACKUP_COUNT",
 )
 _PACKAGES = (
-    "curl_cffi", "scrapling", "playwright", "patchright", "pandas", "rich",
+    "curl_cffi", "scrapling", "playwright", "patchright", "rich",
     "python-dotenv", "fastapi", "pydantic", "uvicorn", "sse-starlette",
 )
 

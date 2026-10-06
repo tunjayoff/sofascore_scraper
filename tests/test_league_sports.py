@@ -1,11 +1,11 @@
 """League sport storage/inference and the multi-league match filter (temp dirs only, no network)."""
 from __future__ import annotations
 
+import csv
 import json
 import os
 import tempfile
-
-import pandas as pd
+from typing import Any, Dict, List
 
 from src.web import league_sports
 from src.web.api.legacy import _get_matches_sync, _parse_league_ids
@@ -72,14 +72,21 @@ def test_parse_league_ids():
     assert _parse_league_ids("x") is None
 
 
+def _write_csv(path: str, columns: Dict[str, List[Any]]) -> None:
+    """A table given column by column, as a CSV with a header (what pandas' `to_csv(index=False)` wrote)."""
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f, lineterminator="\n")
+        writer.writerow(list(columns))
+        writer.writerows(zip(*columns.values(), strict=True))
+
+
 def _summary(root: str, folder: str, fname: str, ids, dates=None) -> None:
     """A season summary as the match fetcher writes it (ten columns; `status` says the match is finished)."""
     d = os.path.join(root, "matches", folder)
     os.makedirs(d, exist_ok=True)
-    pd.DataFrame(
-        {"round": [1] * len(ids), "match_id": ids, "home_team": ["H"] * len(ids), "away_team": ["A"] * len(ids),
-         "match_date": dates or ["2025-08-22T20:00:00"] * len(ids), "status": ["Ended"] * len(ids)}
-    ).to_csv(os.path.join(d, fname), index=False)
+    _write_csv(os.path.join(d, fname), {
+        "round": [1] * len(ids), "match_id": ids, "home_team": ["H"] * len(ids), "away_team": ["A"] * len(ids),
+        "match_date": dates or ["2025-08-22T20:00:00"] * len(ids), "status": ["Ended"] * len(ids)})
 
 
 def _ids(root: str, league_id, season_id=None, details=None):
@@ -105,9 +112,8 @@ def test_match_list_uses_summaries_even_when_export_csv_is_stale():
     # export CSV knows only one Premier League match (details)
     processed = os.path.join(root, "match_details", "processed")
     os.makedirs(processed)
-    pd.DataFrame({"match_id": [1], "league_folder": ["17_Premier_League"], "home_team_name": ["A"]}).to_csv(
-        os.path.join(processed, "all_matches_1.csv"), index=False
-    )
+    _write_csv(os.path.join(processed, "all_matches_1.csv"),
+               {"match_id": [1], "league_folder": ["17_Premier_League"], "home_team_name": ["A"]})
     # summaries: PL has 2 matches, LaLiga (stopped job) has 2
     _summary(root, "17_Premier_League", "61627_PL_24_25_summary.csv", [1, 2])
     _summary(root, "8_LaLiga", "77559_LaLiga_25_26_summary.csv", [3, 4])
@@ -123,9 +129,8 @@ def test_match_list_does_not_fall_back_to_the_export_csv():
     root = tempfile.mkdtemp()
     processed = os.path.join(root, "match_details", "processed")
     os.makedirs(processed)
-    pd.DataFrame({"match_id": [1, 2], "league_folder": ["17_Premier_League", "8_LaLiga"]}).to_csv(
-        os.path.join(processed, "all_matches_1.csv"), index=False
-    )
+    _write_csv(os.path.join(processed, "all_matches_1.csv"),
+               {"match_id": [1, 2], "league_folder": ["17_Premier_League", "8_LaLiga"]})
     assert _ids(root, "8") == []
     assert _ids(root, None) == []
 

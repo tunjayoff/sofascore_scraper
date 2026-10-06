@@ -1430,7 +1430,7 @@ sys.exit(code)
 
 def test_version_and_doctor_work_before_the_packages_are_installed(box: Sandbox):
     blocked = sorted({module for module, _dist in doctor.REQUIRED_MODULES} - set(sys.stdlib_module_names))
-    assert {"dotenv", "rich", "pandas", "curl_cffi"} <= set(blocked)
+    assert {"dotenv", "rich", "curl_cffi"} <= set(blocked)
     code = _WITHOUT_PACKAGES.format(blocked=set(blocked))
 
     assert box.run("--version", code=code).stdout == VERSION_TEXT + "\n"
