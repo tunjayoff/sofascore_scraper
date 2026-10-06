@@ -4,68 +4,32 @@
 
 **Türkçe:** [README.tr.md](README.tr.md)
 
-Python tool to download football, basketball and tennis match data from [SofaScore](https://www.sofascore.com/) public HTTP APIs, store it locally (JSON and CSV), and browse it through a web app; a command line (`ssc`) runs it on servers and in scripts.
+Python tool to download match data of 21 sports from [SofaScore](https://www.sofascore.com/) public HTTP APIs and store it locally in a data folder of its own. One core with three faces: a web app for people, a command line (`ssc`) for servers and scripts, and a versioned HTTP API (`/api/v1`) that the web app is built on.
 
 This project is not affiliated with SofaScore. Use reasonable request rates and comply with applicable terms and laws.
 
 ## Features
 
-- **Three sports** — Football, basketball and tennis. Every league remembers its sport, and the whole web app can be switched to one sport at a time.
-- **Leagues** — Add tournaments by searching SofaScore (web) or by ID (`config/leagues.txt`).
-- **Seasons & matches** — Pick seasons from one or several leagues and download them in one go; browse matches by league, season, date and whether details are downloaded.
-- **Match details** — Statistics (per period), incidents, lineups, H2H and form; score lines per half, quarter or set depending on the sport.
-- **Web app** — Leagues, Download, Matches, Activity and Settings pages; live progress (SSE) with a Stop that takes effect immediately; English and Turkish, following your browser's language on the first visit; light, dark or system theme.
-- **Command line** — `ssc` for servers and automation (sync, fetch, export, backup, watch, serve); the terminal menu of 2.x was removed in 3.0 ([what replaces it](#from-the-terminal-menu-removed-in-30)).
-- **Automation** — Headless flags for CI/scripts (`--update-all`, `--fetch-mode`, `--league-id`, `--csv-export`, paths).
-- **Export** — Datasets of events, slices and corrections in a stable, documented schema as JSONL, CSV, Parquet or SQLite; the stored payloads as they are; the 2.x “all matches” CSV. From `ssc export` or the HTTP API (v1 export jobs).
-
-## Screenshots
-
-The web app with two football leagues downloaded. The images follow your GitHub theme (light or dark).
-
-**Leagues — followed leagues with downloaded match counts and detail coverage**
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/leagues-en-dark.png">
-  <img src="docs/screenshots/leagues-en-light.png" alt="Leagues page">
-</picture>
-
-**Download — pick seasons from several leagues into one download list**
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/download-en-dark.png">
-  <img src="docs/screenshots/download-en-light.png" alt="Download page">
-</picture>
-
-**Matches — filter by league, season, date and details**
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/matches-en-dark.png">
-  <img src="docs/screenshots/matches-en-light.png" alt="Matches page">
-</picture>
-
-**Match — score by period, key moments, form and head to head**
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/match-en-dark.png">
-  <img src="docs/screenshots/match-en-light.png" alt="Match overview">
-</picture>
-
-**Match statistics — whole match or per period**
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/match-stats-en-dark.png">
-  <img src="docs/screenshots/match-stats-en-light.png" alt="Match statistics">
-</picture>
+- **21 sports** — Football, basketball, tennis, American football, Aussie rules, ice hockey, handball, rugby, futsal, minifootball, floorball, volleyball, badminton, table tennis, padel, snooker, baseball, cricket, e-sports, darts and MMA, each with its own score shape (`ssc describe sports`).
+- **Leagues and follows** — Follow a league, a team, a player or a single match: search SofaScore by name in the web app or give the SofaScore id. Each follow has its season choice (current, last N, all or chosen seasons) and its data selection.
+- **Choose what is downloaded** — Statistics, line-ups, incidents, head to head, form, streaks and the rest are on by default; betting odds, standings, season, leader, ranking and player data are off until you select them, for all sports, per sport or per follow.
+- **Web app** — Overview, Leagues & follows, Matches, Score changes, Jobs, Exports, Backups, Health, Logs, Settings, Outputs and Data cleanup; **Add league** is always one click away and a **Help** panel explains the words. English and Turkish; light, dark or system theme. It shows stored data; there is no live score view.
+- **Command line** — `ssc` for servers and automation (sync, fetch, refresh, export, backup, follows, jobs, status, watch, serve, …); the terminal menu of 2.x was removed in 3.0 ([what replaces it](#from-the-terminal-menu-removed-in-30)), the old `main.py` flags keep working for one more release.
+- **Export** — Datasets of matches, data types, score changes, odds and standings in a stable, documented schema as JSONL, CSV, Parquet or SQLite; the stored payloads as they are; the 2.x “all matches” CSV. Files are named after the league or dataset and the date. From the web app's **Exports**, `ssc export` or the HTTP API.
+- **Backup and restore** — Backups of the data folder, restored from the web app's **Backups** or with `ssc backup restore`.
+- **Live watching** — `ssc watch` watches followed matches while they are played and writes their changes to an event log and to outputs (webhook, file, stdout).
+- **Scheduling** — An optional in-app scheduler (off by default) runs downloads, refreshes and backups inside the web server; a systemd timer or cron does the same from outside.
 
 ## Requirements
 
 - Python **3.10+** (3.11+ recommended).
 - **Platforms:** Linux and Docker are the officially supported platforms; Windows and macOS are best-effort (the installers, launchers and CI cover them, but a problem that only occurs there does not block a release).
 - **Chromium for patchright** — the browser the app reaches SofaScore through. A one-time download made by the install scripts and by the launcher (`python -m patchright install chromium --no-shell`). A Google Chrome or Chromium already on the machine is **not** used.
-- **Node.js 20.19+ or 22.12+ and npm** — to build the web app (`frontend/`). The install scripts and `scripts/start_web.py` build it when Node.js is installed. Without it the terminal modes still work, and the web address shows a help page instead of the app.
+- **Node.js 20.19+ or 22.12+ and npm** — to build the web app (`frontend/`). The install scripts and `scripts/start_web.py` build it when Node.js is installed. Without it the command line and the HTTP API still work, and the web address shows a help page instead of the app. A [release archive](#release-archive) comes with the web app built.
+- **A current browser** for the web app: Safari 16.4, Chrome 111, Firefox 128 or newer.
 - **Git** — required for the one-line `curl | bash` installer (clones this repo); optional if you already extracted or cloned the project manually.
 - Network access to SofaScore.
+- Optional: **pyarrow 16 or newer** for Parquet exports (`pip install -e ".[parquet]"`). Without it every other export format works.
 
 With [Docker](#docker) you need none of these on the host: the image carries Python, the built web app and the browser.
 
@@ -160,15 +124,15 @@ Images are published to `ghcr.io/tunjayoff/sofascore_scraper` with each tagged r
 
 | Volume | Holds |
 |--------|-------|
-| `/app/data` | Everything downloaded (`DATA_DIR`): seasons, matches, details, backups, job history |
-| `/app/config` | `leagues.txt`, `league_sports.json` and `.env` (settings saved on the **Settings** page) |
+| `/app/data` | Everything downloaded (`DATA_DIR`): seasons, matches, details, follows added in the app, job history, event log, exports, backups |
+| `/app/config` | `overrides.json` (settings saved on the **Settings** page), `.env`, an optional `sofascore.toml`, and the 2.x league list `leagues.txt` / `league_sports.json` |
 | `/app/browser-profile` | The browser profile with the solved challenge; keeping it makes restarts fast |
 | `/app/logs` | The log file (`sofascore_scraper.log`, rotated, about 30 MB at most). The same lines go to stdout (`docker logs`). See [Logs and diagnostics](#logs-and-diagnostics) |
 
 Things to know:
 
 - **There are no user accounts.** The examples publish the port on `127.0.0.1` only. If you publish it to your network (`-p 8000:8000`), set an access token (`-e SOFASCORE_API_TOKEN=<long random value>`): without it anyone who can reach the port can read and delete data and change settings. Inside the container the app listens on every interface and cannot see how the port is published, so without a token it logs a warning at every start; with the port on `127.0.0.1` only you can ignore it. You must also list the name or IP you open it with: `-e SOFASCORE_ALLOWED_HOSTS=localhost,127.0.0.1,my-server.lan` (requests with any other `Host` header are rejected; keep `127.0.0.1`, the health check uses it). When no allow-list is set anywhere, the entrypoint uses the loopback names. See [Security model](#security-model).
-- **Settings:** every variable in `.env.example` can be passed with `-e` / `environment:`. On every start a variable set that way wins over the value saved on the Settings page, so only set the ones you want fixed (for example `APP_LANGUAGE=en`, `USE_PROXY` / `PROXY_URL`). `PORT` changes the port inside the container.
+- **Settings:** every variable in `.env.example` can be passed with `-e` / `environment:`, and so can every setting of the config file as `SOFASCORE_<SECTION>__<KEY>` (see [Configuration](#configuration)). A variable set that way wins over the value saved on the Settings page, which then shows the setting as locked; so only set the ones you want fixed (for example `APP_LANGUAGE=en`, `USE_PROXY` / `PROXY_URL`). `PORT` changes the port inside the container.
 - **Shared memory:** Chromium needs more than Docker's 64 MB default, hence `--shm-size=1g` (`shm_size` in Compose).
 - **Bind mounts** (`-v ./data:/app/data`) work when the folder is writable by uid 1000: `mkdir -p data config && sudo chown -R 1000:1000 data config`. To use another uid, build with `--build-arg APP_UID=$(id -u) --build-arg APP_GID=$(id -g)`.
 - **Other commands:** `serve [options]` goes to `ssc serve`; any other arguments after the image name go to `main.py`, which runs a command of the [command line](#command-line-ssc) or, for one more release, the old flags. For example `docker run --rm ghcr.io/tunjayoff/sofascore_scraper:latest --version`, or a scheduled download with the same volumes: `docker compose run --rm sofascore-scraper sync`. The browser profile can be used by one container at a time, so stop the web container (`docker compose stop`) before running a download this way; a second container on a busy profile logs a warning and cannot open its browser.
@@ -191,7 +155,16 @@ python -m patchright install chromium --no-shell   # required: the browser the a
 
 The browser step is required even when Google Chrome is installed. The bridge starts patchright's own Chromium build (through Scrapling's `StealthySession`), not the system browser. Use `patchright` in this command, not `playwright`: each of the two packages downloads the build its own version expects. `--no-shell` leaves out the separate headless shell, which the bridge never uses.
 
-Build the web app (needs Node.js 20.19+ or 22.12+; skip it if you only use the terminal modes):
+Optional, in the same environment:
+
+```bash
+pip install -e .              # the ssc command (otherwise: python main.py <command>)
+pip install -e ".[parquet]"   # the same plus pyarrow, for Parquet exports
+```
+
+Only this editable install is supported: the version, the translations and the web app are read from the project folder.
+
+Build the web app (needs Node.js 20.19+ or 22.12+; skip it if you only use the command line or the HTTP API):
 
 ```bash
 cd frontend && npm install && npm run build && cd ..
@@ -219,13 +192,14 @@ The check never contacts SofaScore. Each line is `OK`, `WARN` or `FAIL`, and eve
 | `browser` | The Chromium build the bridge starts is installed **and starts** (headless, on `about:blank`, with a temporary profile). |
 | `profile` | The browser profile folder is writable and not locked by another machine, a leftover browser or a dead process. |
 | `data_dir`, `config_dir` | `DATA_DIR` and `config/` are writable. |
-| `frontend` | `frontend/dist/` exists. Missing is a warning: the terminal modes work without it. |
+| `config` | The config file (`sofascore.toml`), when there is one, loads, and the data and log folders it names can be written. |
+| `frontend` | `frontend/dist/` exists. Missing is a warning: the command line and the HTTP API work without it. |
 | `env` | `.env` parses and its values are valid (numbers, `true`/`false`, proxy address, language, log level). |
 | `budget` | The shared request budget: a warning when it is above the default (5 requests/s) or off. |
 
 ```text
 [ OK ] Python: 3.14.0
-[ OK ] Packages: all 13 required packages can be imported
+[ OK ] Packages: all 11 required packages can be imported
 [FAIL] Browser: the Chromium build of patchright 1.63.0 is not installed (expected at ...); an installed Google Chrome is not used
        Fix: Run: .venv/bin/python -m patchright install chromium --no-shell
 [WARN] Web UI: not built (frontend/dist is missing): the web app shows a help page instead; the terminal modes work without it
@@ -240,17 +214,73 @@ The check never contacts SofaScore. Each line is `OK`, `WARN` or `FAIL`, and eve
 
 ## Configuration
 
+A setting can come from several places. The later one in this list wins:
+
+1. the built-in default;
+2. `.env`, with the variable names of 2.x (the common ones are in `.env.example`; `ssc describe config` names each setting's variable as `x-legacy-env`);
+3. `config/overrides.json`, which the web app's **Settings** page writes;
+4. the config file `sofascore.toml`;
+5. the environment: the 2.x names, and every setting as `SOFASCORE_<SECTION>__<KEY>` (for example `SOFASCORE_CLIENT__RATE=2`);
+6. a command-line flag (`--data-dir`, `--rate`, …).
+
+`ssc config show` prints every setting with its value and where it comes from (secrets masked). A setting that the config file, the environment or a flag sets is shown as locked on the **Settings** page: a change there would have no effect, so it is refused.
+
+### Config file (`sofascore.toml`)
+
+Optional: without it the app reads `.env` and the environment as before. It is looked for in `--config FILE`, then `SOFASCORE_CONFIG`, then `./sofascore.toml`, then `config/sofascore.toml`. An unknown key or a value of the wrong type stops the start with a message that names the file and the key. Relative paths in it are resolved against the file's folder.
+
+```bash
+ssc config init > sofascore.toml                # a starter file; the command only prints it
+ssc config init --from-legacy > sofascore.toml  # today's .env and config/leagues.txt as a config file
+ssc config validate                             # checks the file and the environment (exit code 2 if not valid)
+ssc config path                                 # which file is in use
+ssc describe config                             # every section and key, as JSON Schema
+```
+
+Sections: `[storage]`, `[client]`, `[breaker]`, `[bridge]`, `[fetch]`, `[defaults]`, `[refresh]`, `[live]`, `[schedule]`, `[server]`, `[log]`, `[display]`, `[slices.<sport>]`, and the lists `[[follow]]`, `[[sink]]` and `[[schedule.task]]`. Two values are read from the environment only, never from the file: the captcha token (`SOFA_CAPTCHA_TOKEN`) and the access token (`SOFASCORE_API_TOKEN`, or the variable that `[server] token_env` names).
+
+```toml
+[client]
+rate = 5                  # requests per second, all processes together
+odds_country = ""         # empty: no country is recorded with odds
+
+[defaults]
+slices = ["core"]         # data types of every sport; add "odds" for betting odds
+
+[slices.football]
+enable = ["standings"]
+
+[[follow]]
+tournament = 17
+name = "Premier League"
+sport = "football"
+seasons = "last:2"
+live = true               # watched by ssc watch
+
+[[follow]]
+team = 42
+name = "Arsenal"
+sport = "football"
+
+[[sink]]
+name = "events-file"
+type = "file"
+path = "events.jsonl"
+```
+
+A follow of the config file is shown in the web app and by `ssc follows list`, but it is changed in the file only. Sinks (`stdout`, `file`, `webhook`) are configured in the file or in `SOFASCORE_SINKS`; the web app's **Outputs** page only shows whether they deliver.
+
 ### Environment (`.env`)
 
-See `.env.example` for all keys. Common ones:
+The 2.x variable names keep working, in `.env` and in the environment. Common ones:
 
 | Variable | Purpose |
 |----------|---------|
-| `DATA_DIR` | Root folder for stored data (default `data`). Web app reads this via `ConfigManager`. |
-| `APP_LANGUAGE` | `en` or `tr`. Empty (the default) means no language is pinned: the system language is used if it is Turkish, English otherwise. The language switch under **Settings** in the web app writes this value. See [Language](#language). |
+| `DATA_DIR` | Root folder for stored data (default `data`), for the web app and the command line alike; `--data-dir` overrides it for one run. |
+| `APP_LANGUAGE` | `en` or `tr`. Empty (the default) means no language is pinned: the system language is used if it is Turkish, English otherwise. **Server language** on the **Settings** page sets the same thing. See [Language](#language). |
 | `MAX_CONCURRENT` | Parallel detail requests cap. |
-| `REQUEST_RATE_LIMIT` | Requests per second to SofaScore for **all processes together** (web app, CLI, every `--watch`, `--refresh-only`). Default `5`; a higher value or `0` / `off` (no limit) is faster but raises the risk of being blocked. See [Request budget](#request-budget-all-processes). |
-| `USE_PROXY` / `PROXY_URL` | Optional proxy: `http://`, `https://` or `socks5://`, e.g. `http://user:password@host:8080`. Also under **Settings → Connection** in the web app; the saved password is never shown again (the form and the API show `***`, and leaving it that way keeps it). The built-in browser uses a changed proxy after the app restarts. |
+| `REQUEST_RATE_LIMIT` | Requests per second to SofaScore for **all processes together** (web app, CLI, `ssc watch`, every legacy `--watch` and `--refresh-only`). Default `5`; a higher value or `0` / `off` (no limit) is faster but raises the risk of being blocked. See [Request budget](#request-budget-all-processes). |
+| `USE_PROXY` / `PROXY_URL` | Optional proxy: `http://`, `https://` or `socks5://`, e.g. `http://user:password@host:8080`. Also on the **Settings** page (**Requests**); the saved password is never shown again. The built-in browser uses a changed proxy after the app restarts. |
 | `FETCH_ONLY_FINISHED` | Show only finished matches (`status.type == finished`) in the match lists. Default `true`. Every listed match is stored whatever its status; the setting filters what the lists show, not what is downloaded. |
 | `REFRESH_WINDOW_HOURS` | Hours after kick-off during which a saved match is provisional and gets re-read (default `72`, `0` = off). See [Refresh policy](#refresh-policy). |
 | `RATE_LIMIT_*` / `SERVER_ERROR_*` | Circuit breaker thresholds, counted per request across all phases of a job. See [Missing slices, failed requests and the circuit breaker](#missing-slices-failed-requests-and-the-circuit-breaker). |
@@ -258,43 +288,45 @@ See `.env.example` for all keys. Common ones:
 | `SOFASCORE_API_TOKEN` | Optional access token for the web app and its API. Empty (the default) = off. See [Security model](#security-model). |
 | `SOFASCORE_ALLOWED_HOSTS` | Host names the web app answers to, comma-separated (default `localhost,127.0.0.1,[::1]`). See [Security model](#security-model). |
 
-Tuning for the web UI (timeouts, retries, logging) is exposed under **Settings**; writing settings updates `.env`.
+The **Settings** page of the web app changes the request, data, refresh, display, logging and storage settings and writes them to `config/overrides.json`, not to `.env`. The server's address, the allowed host names, the access token, the live service and the scheduler are shown there but set in the config file or the environment only.
 
 ### Language
 
-The app speaks English and Turkish. The terminal, `--doctor`, the installers, the launcher and the web app all choose between them by one rule:
+The app speaks English and Turkish. The command line, `ssc doctor`, the installers, the launcher and the web app all choose between them by one rule:
 
-1. **A language you chose wins.** That is `APP_LANGUAGE=en` or `tr` in `.env` (or in the environment), which is also what the language switch on the **Settings** page writes. A browser additionally remembers the choice made in it.
+1. **A language you chose wins.** That is `APP_LANGUAGE=en` or `tr` in `.env` or in the environment, `[display] language` in the config file, or **Server language** on the **Settings** page. In the web app, the language picked in the top-bar menu is kept in that browser and wins there.
 2. **Otherwise the system language is used.** The terminal side reads `LC_ALL`, `LC_MESSAGES` and `LANG` (on Windows without those: the display language); the web app reads the browser's language list and takes the first language it has.
 3. **Otherwise English**, which is also the answer for every language other than Turkish.
 
-A new install pins nothing: `.env.example` ships with `APP_LANGUAGE` empty, so a Turkish system or browser gets Turkish and everyone else gets English. To force one language everywhere, set `APP_LANGUAGE`. An existing `.env` with `APP_LANGUAGE=tr` keeps Turkish.
+A new install pins nothing: `.env.example` ships with `APP_LANGUAGE` empty, so a Turkish system or browser gets Turkish and everyone else gets English. To force one language everywhere, set `APP_LANGUAGE`. An existing `.env` with `APP_LANGUAGE=tr` keeps Turkish. `--lang en|tr` sets it for one command; JSON output is never translated.
 
-Log lines (console and log file) are still written in Turkish whatever the language; `argparse`'s own words in `--help` (`usage:`, `options:`) stay English.
+Some log lines (console and log file) are still written in Turkish whatever the language; `argparse`'s own words in `--help` (`usage:`, `options:`) stay English.
 
 ### Request budget (all processes)
 
-Every code path limits itself (`MAX_CONCURRENT`, the waits, the watcher's 1 s spacing), but separate processes do not see each other: one `--watch` per sport plus a web job plus a cron `--refresh-only` simply add up. `REQUEST_RATE_LIMIT` is one budget shared by all of them. Every request to SofaScore, through curl or through the browser, first reserves the next free slot in a small state file guarded by an operating-system file lock.
+Every code path limits itself (`MAX_CONCURRENT`, the waits, the watcher's 1 s spacing), but separate processes do not see each other: a live service, a web job and a cron `ssc refresh` simply add up. `REQUEST_RATE_LIMIT` (`[client] rate`) is one budget shared by all of them. Every request to SofaScore, through curl or through the browser, first reserves the next free slot in a small state file guarded by an operating-system file lock.
 
 - **Default: `5` requests per second for all processes together**, with up to one second of budget (5 requests) as a burst after idle time. This is deliberately far below what the download path can do on its own (about 20–60 requests/s with default settings; measured offline, reproduce with `python scripts/bench_bulk_rate.py`): it keeps the load on SofaScore low and the risk of being blocked small.
-- **How long a download takes.** Match details cost 7 requests per football match (8 for tennis), so a 380-match season is about 2,700 requests: roughly **9 minutes** at the default, where it used to take one to two minutes. While the budget is the limit, raising `MAX_CONCURRENT` does not make a download faster.
-- **Raising it or turning it off is your call, and your risk.** Set `REQUEST_RATE_LIMIT=20` in `.env` (four times faster), or change **Shared request budget** under **Settings → Advanced** in the web app, which the running web app applies at once; other running processes read `.env` when they start. `0` or `off` removes the limit entirely: every process is on its own again and sends as fast as it can. Both make it more likely that SofaScore blocks you; the Settings page shows a warning while the value is above 5 or off.
+- **How long a download takes.** Match details cost 7 requests per football match (8 for tennis) with the default data selection, so a 380-match season is about 2,700 requests: roughly **9 minutes** at the default, where it used to take one to two minutes. While the budget is the limit, raising `MAX_CONCURRENT` does not make a download faster.
+- **Raising it or turning it off is your call, and your risk.** Set `REQUEST_RATE_LIMIT=20` in `.env` (four times faster), `--rate 20` for one command, or change **Requests per second** under **Settings → Requests** in the web app, which the running web app applies at once; other running processes read the new value when they start. `0` or `off` removes the limit entirely: every process is on its own again and sends as fast as it can. Both make it more likely that SofaScore blocks you; the Settings page shows a warning while the value is above 5 or off, and `ssc doctor` warns too.
 - **Lower it to be gentler**, e.g. `1`. At `1` or below requests are evenly spaced. A request that has to wait long for its turn is not dropped: the wait does not count against the browser bridge's 120 s request timeout.
-- **Watchers** share an extra 1 request/s lane, so one `--watch` per sport stays at least 1 s apart in total, not per process.
-- **Where the state lives:** `~/.cache/sofascore_scraper/throttle/` (change with `SOFASCORE_THROTTLE_DIR`). Processes share the budget when they share this folder; for containers, point them at one shared volume.
+- **Watchers** share an extra 1 request/s lane, so the polling of several watchers stays at least 1 s apart in total, not per process.
+- **Where the state lives:** `~/.cache/sofascore_scraper/throttle/` (change with `SOFASCORE_THROTTLE_DIR`). Processes share the budget when they share this folder; for containers, point them at one shared volume. The **Health** page shows the budget in use.
 - **Failure behaviour:** the lock is released by the operating system when a process dies, so a crash cannot leave a stale lock. If the folder is not writable or the lock cannot be taken within 1 s, requests are not blocked: that process paces itself, logs one warning and retries the file 30 s later.
 
-### Leagues (`config/leagues.txt`)
+### Leagues and follows
 
-One line per league, `Name: ID`, where ID is the numeric SofaScore **unique tournament ID** (it appears in tournament URLs, e.g. `.../premier-league/17` → `17`). The file is yours and is not tracked by git: on first run it is created from `config/leagues.example.txt`, which contains no league. A new install starts empty: add leagues in the web app (**Leagues → Add league**, which also records each league's sport) or with `ssc follows add`. The app adds and removes lines itself when you manage leagues in the web app or the CLI.
+What the app downloads is a list of **follows**: leagues (tournaments), teams, players and single matches. Each follow has a sport, a season choice (`current`, `last:N`, `all` or season ids; for a team or a player the same words choose a time window) and optionally its own data selection, and can be marked `live` for `ssc watch`. A new install has none.
 
-CLI override:
+- **Web app:** **Add league** (in the top bar, on Overview and on **Leagues & follows**) searches SofaScore for a league, a team or a player, or takes the SofaScore id from the address (`.../premier-league/17` → `17`), then asks for the seasons and the data to download. A follow added there can be edited, disabled or removed later; removing can also delete its stored matches.
+- **Command line:** `ssc follows add tournament 17 --name "Premier League" --sport football --seasons last:2 [--live]`, `ssc follows list`, `ssc follows remove KIND ID`, `ssc follows export` (prints them as `[[follow]]` tables).
+- **Config file:** `[[follow]]` entries, see above.
 
-```bash
-python main.py --config /path/to/leagues.txt --data-dir /path/to/data
-```
+Follows added in the web app, through the API or with `ssc follows add` are kept in the data folder (`.meta/state.db`), so they travel with the data and its backups.
 
-`--config` / `--data-dir` apply to the **headless** flags. The web server loads the singleton `ConfigManager` from the project `.env` (`DATA_DIR`, etc.); align paths so the web UI and CLI see the same data if you use both.
+**`config/leagues.txt` (2.x).** The league list of 2.x (`Name: ID` per line, plus each league's sport in `config/league_sports.json`) is still read: its leagues are followed and downloaded like any other. The app no longer adds lines to it. Such a follow shows as coming from the old list; only its sport can be changed until you **Move to here** (web app) or `PATCH /api/v1/follows/{id}` with `{"origin": "api"}`, which takes the line out of the file and makes every field editable. Removing such a follow removes its line. On a first run `config/leagues.txt` is created from `config/leagues.example.txt`, which contains no league.
+
+`--config` names the config file. A leagues file given there (`--config leagues.txt`, the 2.x meaning) is ignored with a warning.
 
 ## Usage
 
@@ -302,19 +334,21 @@ python main.py --config /path/to/leagues.txt --data-dir /path/to/data
 
 **Web (recommended for most users)**
 
-1. Finish **Installation** and **Configuration** (`pip install`, `cp .env.example .env`). Optionally set `DATA_DIR` if you want data somewhere other than `./data`.
+1. Finish **Installation** (`pip install`, the browser, optionally `cp .env.example .env`). Optionally set `DATA_DIR` if you want data somewhere other than `./data`.
 2. Start the app: `./start-sofascore.sh` (or `python scripts/start_web.py`; on Windows double-click `Start SofaScore.bat`, on macOS `Start SofaScore.command`). The launcher creates `.venv` if it is missing, runs the [setup check](#check-your-setup-doctor), installs what is missing (Python packages, the browser), builds the web app when `frontend/dist/` is missing and Node.js is installed, then opens `http://127.0.0.1:8000`. `ssc serve` (or `python -m src.cli.main serve`) starts the server alone and installs nothing.
    After updating the code (`git pull`), rebuild the web app yourself: `cd frontend && npm install && npm run build`. The start script only builds when `frontend/dist/` is missing, so otherwise you keep seeing the old interface.
-3. **Sport** — The switch at the top of the sidebar (All / Football / Basketball / Tennis) filters every page. Pick the sport you are working on.
-4. **Leagues** — A new install has no leagues; the page opens with an **Add league** button. **Add league** searches SofaScore; filter the results by sport and press **Add**. A league whose sport is unknown (for example one added to `config/leagues.txt` by hand) shows a **Pick sport** box; choose once and it is saved.
-5. **Download** — Left column: pick a league. Middle: tick seasons (the season list is fetched automatically the first time; **Latest season** / **Last 3 seasons** are shortcuts). You can pick seasons from several leagues; they collect in the **Download list** on the right. Press **Download N seasons**. Matches and their details (statistics, events, lineups) are downloaded together.
-6. While a download runs, the card at the bottom left of the sidebar shows progress; **Stop** takes effect right away: no new requests are sent and retry waits are cut short; a request already in flight can take up to the request timeout (`REQUEST_TIMEOUT`) to return. Only one download runs at a time. **Activity** lists the current and past downloads.
-7. **Matches** — Filter by league, season, date and **Details** (with / missing). When a league has matches without details (typically after a stopped download), a banner offers **Download missing**. Click a row to open the match: score by period, overview, statistics, events and lineups.
-8. **Settings** — Language and theme; data folder, disk usage, **Back up** and **Delete all data**; **Connection**: a connection check (**Test connection** sends one request to SofaScore, only when you press it, and says what happened) and the proxy; advanced request settings (timeout, concurrency, waits, retries).
+3. **Overview** — What runs, what needs attention (SofaScore refusing requests, a failed job, an output that cannot deliver) and how much is stored. A new install shows a getting-started card.
+4. **Add league** — In the top bar, on Overview and on **Leagues & follows**. Search SofaScore by name (a league, a team or a player; filter by sport) or enter the SofaScore id from its address, choose the seasons and the data to download (betting odds are off unless you tick them), then **Add**. The download starts right away unless you untick that.
+5. **Jobs** — Every download, export, backup and restore is a job, whether the web app, the command line or the scheduler started it. The pill in the top bar shows the running one; a job's page shows its progress and log, and **Stop** takes effect right away: no new requests are sent and retry waits are cut short; a request already in flight can take up to the request timeout (`REQUEST_TIMEOUT`) to return. Only one job writes to the data folder at a time.
+6. **Leagues & follows** — Every follow with its seasons, data and how many matches have details. A follow's page has its seasons (download one season), its matches, its data selection and its jobs, and **Fetch missing details** for matches whose details are missing (typically after a stopped download). **Update all** downloads every enabled follow.
+7. **Matches** — Filter by sport, league, season, team, status, date and whether details are stored; select matches to **Fetch missing data** or **Fetch again**. Open a match for its score by period, statistics, line-ups, incidents, odds (when downloaded), score changes and the raw SofaScore data. A match "in progress" shows the state of its last read: the web app has no live view.
+8. **Exports**, **Backups**, **Data cleanup** — New exports (see [Exporting datasets](#command-line-ssc)) and their downloads; backups (create, download, check, restore); rebuilding the index, clearing stored data of one kind or deleting one league's data.
+9. **Health**, **Logs**, **Settings** — The connection to SofaScore (**Run connection check** sends one request, only when you press it), the request budget, the live service and who holds the data folder; the log tail and the diagnostics bundle; the settings with where each value comes from.
+10. **Help** (top-bar menu) explains the words used in the app; the (i) tips next to them do the same.
 
-> **Delete all data** removes every downloaded season, match and detail and cannot be undone. Take a backup first. A backup is a zip under `data/backups/` (inside your `DATA_DIR`) holding `data/`, `leagues.txt` and `league_sports.json`. `.env` is left out because it can hold proxy credentials and the access token; add `?include_env=true` to `POST /api/data/backup` if you want it (such a backup has `_with_env` in its file name and is readable by its owner only). To restore: stop the app, unzip `data/` into the project folder (or your `DATA_DIR`), and copy `leagues.txt` and `league_sports.json` to `config/` if you want those back too.
+> **Clearing data** (**Data cleanup**, `ssc data clear`) removes stored match details, schedules or season lists and cannot be undone. Take a backup first. A backup is a zip under `backups/` in your `DATA_DIR`: the follows, the job history and the event log (`state.db`), the stored data and the change log, and `leagues.txt` / `league_sports.json` (from the command line also the config file in use). `.env` is left out because it can hold proxy credentials and the access token; **Include secrets** (web) or `ssc backup create --include-secrets` adds it, and such a backup has `_with_env` in its file name and is readable by its owner only. **Restore** on the **Backups** page, or `ssc backup restore NAME --yes`, first checks the backup and then replaces the data folder (the current data is moved to the trash first; nothing is merged). Settings files and `.env` are never restored. Backups made by 2.x can be restored too. More in [docs/deploy](docs/deploy/README.md#backups).
 
-> **While a download is running**, **Back up**, **Delete all data**, removing a league and changing the data folder are refused with a message: stop the download or wait for it to finish. A download cannot start while a backup or delete is still in progress either. Changing the data folder takes effect immediately (no restart): downloads and the **Activity** history then use the new folder (each data folder keeps its own history in `.meta/jobs.db`); files in the old folder are not moved.
+> **While a job holds the data folder**, backups, restores, clearing and changing the data folder are refused with a message naming it: stop the job or wait for it to finish. Changing the data folder (**Settings → Storage**) takes effect immediately (no restart): jobs and their history then use the new folder (each data folder keeps its own in `.meta/state.db`); files in the old folder are not moved.
 
 **Command line**
 
@@ -323,49 +357,49 @@ The terminal menu was removed in 3.0: `python main.py` without arguments prints 
 **Tips**
 
 - The first download of a big league can take a long time; start with one league and a few recent seasons.
-- If you hit rate limits or many errors, lower the **shared request budget** (`REQUEST_RATE_LIMIT`; back to the default `5` if you raised it or turned it off) in **Settings**; avoid `--ignore-rate-limit` unless you know what you are doing.
-- For the same dataset in **web** and **CLI/headless**, keep `DATA_DIR` in `.env` aligned with `--data-dir` when you use the command line.
-- Prefer a season that already has finished matches. The newest label (e.g. European `26/27`) is often fixtures-only; the scraper can fall back automatically.
-- Stopping a download keeps everything fetched so far. Matches whose details were not reached show **Details: No** in Matches; use **Download missing** there (or on the Download page) to complete them.
+- If you hit rate limits or many errors, lower the **request budget** (`REQUEST_RATE_LIMIT`; back to the default `5` if you raised it or turned it off) in **Settings**; avoid `--ignore-breaker` (the old `--ignore-rate-limit`) unless you know what you are doing.
+- The web app and the command line use the same data folder (`DATA_DIR`); `--data-dir` changes it for one command only.
+- Prefer a season that already has finished matches. The newest label (e.g. European `26/27`) is often fixtures-only.
+- Stopping a download keeps everything fetched so far. Matches whose details were not reached show as missing in **Matches** (filter **Details missing**); **Fetch missing data** there, or **Fetch missing details** on the league's page, completes them.
 
 ### Troubleshooting
 
 **Something does not start, or every download fails**
 
-Run `python main.py --doctor`. It names what is missing (most often the browser: `python -m patchright install chromium --no-shell`) and prints the fix. When the browser cannot start, the app does not retry for 5 minutes, so fix the cause and restart the app. See [Check your setup](#check-your-setup-doctor).
+Run `ssc doctor` (or `python main.py doctor`). It names what is missing (most often the browser: `python -m patchright install chromium --no-shell`) and prints the fix. When the browser cannot start, the app does not retry for 5 minutes, so fix the cause and restart the app. See [Check your setup](#check-your-setup-doctor).
 
 **The browser shows "The web interface is not built"**
 
-`frontend/dist/` is missing. Build it with `cd frontend && npm install && npm run build` (Node.js 20.19+ or 22.12+) and reload the page; the server does not need a restart. Without Node.js, use a release archive from the [Releases page](https://github.com/tunjayoff/sofascore_scraper/releases) once one is published (it ships with the web app built), or copy a `frontend/dist/` folder built on another machine. The API and the terminal modes work in the meantime.
+`frontend/dist/` is missing. Build it with `cd frontend && npm install && npm run build` (Node.js 20.19+ or 22.12+) and reload the page; the server does not need a restart. Without Node.js, use a release archive from the [Releases page](https://github.com/tunjayoff/sofascore_scraper/releases) once one is published (it ships with the web app built), or copy a `frontend/dist/` folder built on another machine. The HTTP API and the command line work in the meantime.
 
-**Seasons appear but fetch finds 0 matches** (`İşlenecek maç verisi bulunamadı` / `0it`)
+**Seasons appear but a download finds 0 matches**
 
 1. Confirm the SofaScore **unique tournament ID** in the URL (MLS is **`242`** — that ID is correct).
 2. Not every league exposes a sequential week schedule (`events/round/1..N`). **Premier League**-style competitions do; **MLS** and some others do not:
    - MLS `/rounds` is empty or only playoff-style IDs (e.g. `227`), and `events/round/1` returns nothing.
    - The scraper must use paginated **`events/last` + `events/next`** for those seasons.
-   - Older builds that only probed weeks `1..50` therefore downloaded PL fine but returned **zero MLS matches**. Update to a release that includes the event-list fallback, refresh seasons, and re-run the fetch.
-3. With `FETCH_ONLY_FINISHED=true` (default), not-yet-played fixtures are ignored. If a brand-new season has no finished games yet, pick the previous season (or wait / set `FETCH_ONLY_FINISHED=false` if you intentionally want fixtures).
-4. Stale season IDs (SofaScore retired the ID after a refresh) also yield empty schedules — open the league on the **Download** page, press **Refresh** above its seasons, then download again.
+   - The app does this by itself when a season has no usable rounds. Builds of 2.x that only probed weeks `1..50` downloaded PL fine but returned **zero MLS matches**; with this version, read the season list again (item 4) and download again.
+3. Matches of every status are stored, but match details are downloaded only once a match has finished, and with `FETCH_ONLY_FINISHED=true` (default) the match lists show finished matches only. If a brand-new season has no finished games yet, pick the previous season (or wait, or set `FETCH_ONLY_FINISHED=false` to list fixtures too).
+4. Stale season IDs (SofaScore retired the ID after a refresh) also yield empty schedules. A download reads a league's season list again at most every 6 hours; to read it now, run `ssc sync --tournament ID --only seasons`, then download again.
 
 ### Logs and diagnostics
 
 Everything the app logs goes to the console **and** to a log file, so the output is still there after the launcher window is closed or an overnight download has failed.
 
-- **Where:** `logs/sofascore_scraper.log` in the project folder. Change the folder with `LOG_DIR` (a relative path is resolved against the project folder, not the current directory). The web app, the command line (`ssc`, and the deprecated `--headless`, `--watch` and `--refresh-only` flags) all write to the same file; each line carries the process id.
-- **Size:** the file is rotated at `LOG_MAX_MB` (default 5 MB) and `LOG_BACKUP_COUNT` (default 5) older files are kept as `.1` … `.5`, so logs never take more than about 30 MB. On Windows a file that is open cannot be renamed: while more than one process is writing to the log (for example the web app and a `--watch`), it is not rotated and can grow past the limit; it is rotated again once a single process is left.
-- **Level:** `LOG_LEVEL` (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`; `DEBUG=true` forces `DEBUG`). Changing it under **Settings** takes effect immediately in the running web app, no restart. Other processes that are already running pick it up on their next start.
+- **Where:** `logs/sofascore_scraper.log` in the project folder. Change the folder with `LOG_DIR` (a relative path is resolved against the project folder, not the current directory). The web app, the command line (`ssc`, and the deprecated `main.py` flags) and `ssc watch` all write to the same file; each line carries the process id.
+- **Size:** the file is rotated at `LOG_MAX_MB` (default 5 MB) and `LOG_BACKUP_COUNT` (default 5) older files are kept as `.1` … `.5`, so logs never take more than about 30 MB. On Windows a file that is open cannot be renamed: while more than one process is writing to the log (for example the web app and `ssc watch`), it is not rotated and can grow past the limit; it is rotated again once a single process is left.
+- **Level:** `LOG_LEVEL` (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`; `DEBUG=true` forces `DEBUG`). Changing it under **Settings → Logging** takes effect immediately in the running web app, no restart (the log folder, rotation and format need a restart). Other processes that are already running pick it up on their next start.
 - **Secrets are masked** before a line is written (file and console): the captcha token, cookies, `Authorization` headers, proxy credentials (`http://user:password@host` becomes `http://***@host`) and the value of any `.env` key that looks like a secret (`*TOKEN*`, `*SECRET*`, `*PASSWORD*`, `*_KEY`, …).
 - **Server / Docker:** the console (stdout) is always on and is the primary output in a container; when stdout is not a terminal the lines are plain, timestamped text. In the Docker image the file is written to the `/app/logs` volume; set `LOG_TO_FILE=false` to rely on `docker logs` only. If the folder is not writable the app says so once and continues with the console only.
 
 **Reporting a problem:** attach a diagnostics bundle. It is a small zip with `diagnostics.json` (app version and commit, Python and OS, package versions, settings with secrets masked, bridge health, request budget, the [setup check](#check-your-setup-doctor) results (without starting the browser), the last download jobs) and `log_tail.txt` (the last 1000 log lines). Your home directory is written as `~`; values of `.env` keys the app does not know are left out. Have a look at it before you send it.
 
 ```bash
-python main.py --diagnostics              # writes logs/sofascore-diagnostics-<time>.zip and prints the path
-python main.py --diagnostics ./report.zip # or a path / folder of your choice
+ssc diagnostics                    # writes logs/sofascore-diagnostics-<time>.zip and prints the path
+ssc diagnostics --out ./report.zip # or a path / folder of your choice (python main.py --diagnostics PATH still works)
 ```
 
-With the web app running (Docker included), the same bundle downloads from `http://127.0.0.1:8000/api/diagnostics/bundle`, and it is the better one for "SofaScore is blocking us" reports: bridge health is per process, so only the web app's bundle carries the web app's state. `GET /api/logs?limit=200&level=WARNING` returns the most recent log entries as JSON.
+With the web app running (Docker included), the same bundle downloads from the **Logs** page or `http://127.0.0.1:8000/api/v1/diagnostics/bundle`, and it is the better one for "SofaScore is blocking us" reports: bridge health is per process, so only the web app's bundle carries the web app's state. `GET /api/v1/logs?limit=200&level=WARNING` returns the most recent log entries as JSON.
 
 ### Web application
 
@@ -373,11 +407,11 @@ With the web app running (Docker included), the same bundle downloads from `http
 ssc serve                   # or: python -m src.cli.main serve
 ```
 
-Default URL: `http://127.0.0.1:8000` (`[server] host` and `port` in the config file change the defaults). The server only listens on this machine. `--host` opens it to your network; read [Security model](#security-model) first. One address (`--host 192.168.1.5`) works as it is. `--host 0.0.0.0` (every interface) also needs the allowed host names (`--allowed-hosts`, `[server] allowed_hosts` or `SOFASCORE_ALLOWED_HOSTS`) and exits with code 2 without them, and without `SOFASCORE_API_TOKEN` the app warns at startup that anyone who can reach the port can read and delete data and change settings. `--port` changes the port and `--dev` reloads on code changes. Ctrl+C or SIGTERM stops it with exit code 0; configured sinks are delivered while it runs. Health: `GET /health` (also reports the version). `python main.py --web` still works for one release and runs `ssc serve`. Running it as a systemd service, behind a reverse proxy, with backups: [docs/deploy/](docs/deploy/README.md).
+Default URL: `http://127.0.0.1:8000` (`[server] host` and `port` in the config file change the defaults). The server only listens on this machine. `--host` opens it to your network; read [Security model](#security-model) first. One address (`--host 192.168.1.5`) works as it is. `--host 0.0.0.0` (every interface) also needs the allowed host names (`--allowed-hosts`, `[server] allowed_hosts` or `SOFASCORE_ALLOWED_HOSTS`) and exits with code 2 without them, and without `SOFASCORE_API_TOKEN` the app warns at startup that anyone who can reach the port can read and delete data and change settings. `--port` changes the port and `--dev` reloads on code changes. `--scheduler` / `--no-scheduler` turn the in-app scheduler on or off (below). Ctrl+C or SIGTERM stops it with exit code 0; a server that cannot start (port in use) exits with 1; configured sinks are delivered while it runs. Health: `GET /health` (also reports the version). The web app shows stored data only; live watching is `ssc watch`, a process of its own ([Watch mode](#watch-mode)). `python main.py --web` still works for one release and runs `ssc serve`. Running it as a systemd service, behind a reverse proxy, with backups: [docs/deploy/](docs/deploy/README.md).
 
-**Scheduled downloads (optional, off by default):** `ssc serve --scheduler`, or `[schedule] enabled = true` in the config file, runs the `[[schedule.task]]` entries of the config file inside the web server: `run = "sync"`, `"fetch"`, `"refresh"`, `"backup"` or `"prune-history"`, with `every = "6h"` or `cron = "15 */6 * * *"` (the machine's local time). Each run is an ordinary job that shows in the job list; if the previous run of the task or another download still holds the data folder, the run is skipped and logged. An `every` task counts from its last run in the job history, so restarting the server does not restart the count. `prune-history` needs `older_than` (for example `"90d"`) and deletes older snapshots of the kept slice history (odds), keeping the newest one of every slice. `ssc config validate` checks the tasks; `--no-scheduler` turns the scheduler off for one run.
+**Scheduled downloads (optional, off by default):** `ssc serve --scheduler`, or `[schedule] enabled = true` in the config file, runs the `[[schedule.task]]` entries of the config file inside the web server: `run = "sync"`, `"fetch"`, `"refresh"` (option `league_id`), `"backup"` (options `scope`, `include_env`) or `"prune-history"`, with `every = "6h"` or `cron = "15 */6 * * *"` (the machine's local time). No task exists until you write one. Each run is an ordinary job that shows in the job list; if the previous run of the task or another download still holds the data folder, the run is skipped and logged. An `every` task counts from its last run in the job history, so restarting the server does not restart the count; missed runs are not queued up. `prune-history` needs `older_than` (for example `"90d"`) and deletes older snapshots of the kept slice history (odds), keeping the newest one of every slice. `ssc config validate` checks the tasks; `--no-scheduler` turns the scheduler off for one run, and it never runs with `--dev`. The **Health** page and `GET /api/v1/status` show the next runs. A systemd timer or cron running `ssc sync` does the same from outside the server ([docs/deploy](docs/deploy/README.md#scheduled-downloads)).
 
-Background jobs report status via `GET /api/scrape/status` and `GET /api/scrape/stream` (SSE). Heavy API work runs off the asyncio event loop so the UI stays responsive during long fetches.
+Jobs report their state through `GET /api/v1/jobs` and `GET /api/v1/jobs/{id}/events` (SSE). Heavy API work runs off the asyncio event loop so the UI stays responsive during long fetches.
 
 ### Security model
 
@@ -388,9 +422,9 @@ The web app has **no user accounts**. By default it listens on this computer onl
 - **Answers to known host names only** (DNS rebinding). A request is served only if its `Host` header is on the allow-list: `localhost`, `127.0.0.1` and `[::1]` by default. `SOFASCORE_ALLOWED_HOSTS` (comma-separated, in `.env` or the environment) replaces the list and is always used exactly as written. `--host 192.168.1.5` adds that one address by itself. `--host 0.0.0.0` (every interface) does not start until `SOFASCORE_ALLOWED_HOSTS` says which names to answer to. `--allow-any-host` (or `SOFASCORE_ALLOWED_HOSTS=*`) answers to any name; this is **insecure** and turns the protection off.
 - **Refuses writes triggered by other sites** (CSRF). No `GET` endpoint changes anything. Every state-changing request (start or stop a download, save settings, delete data, back up, search SofaScore) is answered with `403` when the browser reports that another site sent it (`Sec-Fetch-Site`, `Origin`). Programs that send neither header, such as curl, are not affected.
 - **Sends security headers** with every response: a Content-Security-Policy (scripts, styles, fonts and requests only from the app itself; no inline script, no `eval`, no framing), `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` and `Cross-Origin-Resource-Policy: same-origin`. Two exceptions: a web app build made before this policy existed still needs `eval`, so it is served with `'unsafe-eval'` (and a warning in the log) until you rebuild it; and the API documentation pages `/docs` and `/redoc` load their scripts from a CDN and get a policy of their own.
-- **Optional access token.** Off by default. Set `SOFASCORE_API_TOKEN` to a long random value and restart the app; `python -c "import secrets; print(secrets.token_urlsafe(32))"` makes one. From then on every `/api` request needs it. Programs send `Authorization: Bearer <token>`. The web app asks for it once and keeps an `HttpOnly`, `SameSite=Strict` session cookie for 30 days (the live status stream uses the same cookie); **Settings → General → Sign out** ends the session, and changing the token ends all of them. `GET /health` stays open for health checks, but without the token it answers only `{"status": "ok"}`. The token is compared in constant time and never appears in the log, the diagnostics bundle or an API response.
+- **Optional access token.** Off by default. Set `SOFASCORE_API_TOKEN` to a long random value and restart the app; `python -c "import secrets; print(secrets.token_urlsafe(32))"` makes one. From then on every `/api` request needs it. Programs send `Authorization: Bearer <token>`. The web app asks for it once and keeps an `HttpOnly`, `SameSite=Strict` session cookie for 30 days (the job event streams use the same cookie); **Sign out** in the top-bar menu ends the session, and changing the token ends all of them. `GET /health` stays open for health checks, but without the token it answers only `{"status": "ok"}`. The token is compared in constant time and never appears in the log, the diagnostics bundle or an API response.
 - **Warns once at startup** when it listens on a non-local address without a token.
-- **Keeps secrets private on disk.** `.env` (proxy password, tokens) is created with mode `0600` and the browser profile folder (SofaScore cookies) with `0700`; existing ones are tightened at every start. A backup that includes `.env` says so in its file name (`backup_…_with_env_….zip`) and is readable by its owner only. On Windows the files rely on the permissions of your user folder instead. The proxy password is masked in the settings API, the logs, the diagnostics bundle and in error messages returned by the API.
+- **Keeps secrets private on disk.** `.env` and `config/overrides.json` (proxy password, tokens) are created with mode `0600` and the browser profile folder (SofaScore cookies) with `0700`; existing ones are tightened at every start. A backup that includes `.env` says so in its file name (`backup_…_with_env_….zip`) and is readable by its owner only. On Windows the files rely on the permissions of your user folder instead. The proxy password is masked in the settings API, the logs, the diagnostics bundle and in error messages returned by the API.
 
 **What you must do before opening it to a network**
 
@@ -400,7 +434,7 @@ The web app has **no user accounts**. By default it listens on this computer onl
 - With Docker, the container always listens on every interface inside its own network and `-p` decides who can reach it, so the startup warning appears even when the port is published on `127.0.0.1` only (then it can be ignored): if you publish the port beyond `127.0.0.1`, set the token and `SOFASCORE_ALLOWED_HOSTS` yourself.
 
 ```bash
-curl -H "Authorization: Bearer $SOFASCORE_API_TOKEN" http://127.0.0.1:8000/api/leagues
+curl -H "Authorization: Bearer $SOFASCORE_API_TOKEN" http://127.0.0.1:8000/api/v1/follows
 ```
 
 ### Command line (`ssc`)
@@ -408,23 +442,26 @@ curl -H "Authorization: Bearer $SOFASCORE_API_TOKEN" http://127.0.0.1:8000/api/l
 The command line for servers and automation. It never asks questions: the result goes to stdout, logs and errors go to stderr, and the exit code tells what happened. `ssc <command>` after `pip install -e .`, or `python main.py <command>` / `python -m src.cli.main <command>` without installing.
 
 ```bash
-ssc sync                                   # every configured league: season lists, schedules, then the matches that need details
+ssc sync                                   # every enabled follow: season lists, schedules, then the matches that need details
 ssc sync --tournament 17 --only events     # one league, match details only
+ssc sync --follow team:42                  # one follow (tournament:ID, team:ID, player:ID, event:ID)
+ssc sync --tournament 17 --only seasons    # read the season list again now
 ssc sync --dry-run                         # sends nothing: what would be fetched and at least how many requests
 ssc fetch event 12345678 12345679          # these matches, configured or not
 ssc fetch tournament 17 --season 61627     # one tournament (or every season of it)
 ssc refresh [--tournament 17] [--include-legacy]   # re-read provisional records only (a daily cron)
-ssc export --dataset events --format csv --out events.csv   # a dataset (events, slices, changes) of the data schema
+ssc export --dataset events --format csv --out events.csv   # a dataset (events, slices, changes, odds, standings)
 ssc export --out matches.csv               # the wide CSV (legacy-wide-csv); without --out: match_details/processed/
 ssc export --schema raw --format jsonl --out raw.jsonl   # the stored payloads as they are
 ssc data recheck-unavailable [--all]       # reopen "slice not available" markers (no request)
 ssc data clear --scope events --yes        # delete match details, old and new layout alike
-ssc follows list | add | remove | export   # what the live service watches; export prints [[follow]] tables
-ssc status [--coverage] [--check]          # data summary, store, locks, running and last job, live service
+ssc follows list | add | remove | export   # what is downloaded (and, with --live, watched); export prints [[follow]] tables
+ssc status [--coverage] [--disk] [--check] # data summary, store, locks, running and last job, live service
 ssc jobs list | show ID | cancel ID | tail ID [--follow]   # job history and control, across processes
-ssc serve [--host H] [--port P]            # the web app and the HTTP API (see Web application)
+ssc serve [--host H] [--port P] [--scheduler]   # the web app and the HTTP API (see Web application)
 ssc watch / ssc events                     # live service and the event log (see Watch mode)
-ssc doctor | describe | config | version | diagnostics | migrate | catalog | backup
+ssc backup create | list | verify NAME | restore NAME --yes   # backups of the data folder
+ssc doctor | describe | config | version | diagnostics | migrate | catalog
 ```
 
 - **Machine-readable output.** `--json` prints exactly one JSON document (`{"ok", "command", "schema": "sofascore.cli/1", "version", "data" | "error", ...}`; `ssc describe schemas` has its schema). Streaming commands (`events`, `jobs tail`) write one JSON object per line, each with a `type`, and end with a `{"type": "end", ...}` line; an error in the middle of a stream is a `{"type": "error", ...}` line. A reader that closes the pipe early (`ssc events | head -1`) is not an error.
@@ -433,7 +470,7 @@ ssc doctor | describe | config | version | diagnostics | migrate | catalog | bac
 - **Stopping a job.** Ctrl+C or SIGTERM cancels a running `sync`, `fetch` or `refresh`: requests stop at the next check, the match being written is written whole or not at all, the job is stored as `cancelled`, the lock is released and the result is still printed. A second Ctrl+C exits at once. `ssc jobs cancel ID` cancels a job from any other process (the web app's jobs too).
 - **One writer per data folder.** Downloads and `data recheck-unavailable` hold the folder's writer lock; while it is held elsewhere they exit with **6** and the holder (process, host, purpose, since when). Reading commands (`status`, `events`, `export`, `jobs list`) take no lock.
 - **Sinks.** The `[[sink]]` outputs of `sofascore.toml` (stdout, file, webhook) also receive the events of one-shot jobs (`job.started`, `job.finished`): they are registered before the job and drained for up to 10 s after it. `ssc config validate` checks them.
-- **Exporting datasets.** `ssc export --dataset events|slices|changes` writes the records of the data schema (version 1; field by field in `docs/design/04-schema-v1.md`, as JSON Schema in `ssc describe schemas`): `events` are the matches with status, score, winner and how reliable the record is, `slices` the state of each stored response about a match (statistics, lineups, …; the payloads themselves are in the raw export), `changes` the corrections found in stored matches. `--format jsonl` (the default) writes one record per line exactly as the API returns it; `csv`, `parquet` and `sqlite` write one column per field, named by its path (`status_class`, `score_home`, `quality_observed_at_utc`), with lists as JSON text and an empty cell for a missing value. Parquet needs the optional package `pyarrow` (`pip install -e ".[parquet]"`). Filters: `--sport`, `--tournament`, `--season`, `--event`, `--status` (status class), `--from` / `--to` (ISO dates, UTC; for `changes` the time the correction was recorded). Without `--out` the file goes to the data folder's `exports/`; `--out -` writes JSONL or CSV to stdout; an existing file is replaced only with `--force`. `--schema raw` writes the stored SofaScore payloads (`--dataset events`: the match payload only; without `--dataset`: every payload). The `--json` result names the `schema_version` of the records. Without `--dataset` or `--schema`, `ssc export` still writes the 2.x wide CSV.
+- **Exporting datasets.** `ssc export --dataset events|slices|changes|odds|standings` writes the records of the data schema (version 1; field by field in [`docs/design/04-schema-v1.md`](docs/design/04-schema-v1.md), as JSON Schema in `ssc describe schemas`): `events` are the matches with status, score, winner and how reliable the record is, `slices` the state of each stored response about a match (statistics, lineups, …; the payloads themselves are in the raw export), `changes` the corrections found in stored matches, `odds` one row per outcome of each stored odds snapshot, `standings` the standings rows of the seasons of the chosen matches (odds and standings exist only when those data types were downloaded). `--format jsonl` (the default) writes one record per line exactly as the API returns it; `csv`, `parquet` and `sqlite` write one column per field, named by its path (`status_class`, `score_home`, `quality_observed_at_utc`), with lists as JSON text and an empty cell for a missing value. Parquet needs the optional package `pyarrow` (`pip install -e ".[parquet]"`). Filters: `--sport`, `--tournament`, `--season`, `--event`, `--status` (status class), `--from` / `--to` (ISO dates, UTC; for `changes` the time the correction was recorded). Without `--out` the file goes to the data folder's `exports/` (`<dataset>_<time>.<format>`), where the web app's **Exports** page lists it too; `--out -` writes JSONL or CSV to stdout; an existing file is replaced only with `--force`. `--schema raw` writes the stored SofaScore payloads (`--dataset events`: the match payload only; without `--dataset`: every payload). The `--json` result names the `schema_version` of the records. Without `--dataset` or `--schema`, `ssc export` still writes the 2.x wide CSV (to `match_details/processed/` unless `--out` says otherwise). The web app's **Exports** page starts the same exports as jobs; their files are named after the league or dataset and the date (`premier-league_2026-10-06_x7k2m9qa.csv`).
 
 ### From the terminal menu (removed in 3.0)
 
@@ -441,15 +478,15 @@ ssc doctor | describe | config | version | diagnostics | migrate | catalog | bac
 
 | Menu entry | Now |
 |------------|-----|
-| Leagues: list, add, reload, search | Web app **Leagues** (search SofaScore, add, remove); `ssc follows list`, `ssc follows add tournament ID --name NAME --sport SPORT`, `ssc follows remove`; `config/leagues.txt`. Every command reads the configuration when it starts, so there is nothing to reload. |
-| Seasons: update all, update one league, list | `ssc sync` (season lists, schedules, then match details), `ssc fetch tournament ID`; web app **Download** (fetches and refreshes a league's season list); `GET /api/v1/tournaments/{id}/seasons` |
-| Matches: fetch one league, all leagues, list | `ssc fetch tournament ID --season ID`, `ssc sync --tournament ID`, `ssc sync`; web app **Download** and **Matches**; `GET /api/v1/events` |
-| Match details: fetch by id, fetch all | `ssc fetch event ID…`, `ssc sync --only events`; web app **Matches → Download missing** |
-| Match details: CSV of one match, one league, all | `ssc export --event ID`, `ssc export --tournament ID`, `ssc export` (`--out PATH` picks the file); `GET /api/export/csv` |
+| Leagues: list, add, reload, search | Web app **Add league** and **Leagues & follows** (search SofaScore, add, edit, remove); `ssc follows list`, `ssc follows add tournament ID --name NAME --sport SPORT`, `ssc follows remove tournament ID`; `[[follow]]` in the config file. Every command reads the configuration when it starts, so there is nothing to reload. |
+| Seasons: update all, update one league, list | `ssc sync` (season lists, schedules, then match details), `ssc sync --tournament ID --only seasons`, `ssc fetch tournament ID`; web app **Leagues & follows** (a league's page lists its seasons); `GET /api/v1/tournaments/{id}/seasons` |
+| Matches: fetch one league, all leagues, list | `ssc fetch tournament ID --season ID`, `ssc sync --tournament ID`, `ssc sync`; web app **Leagues & follows** (**Download now**, **Update all**) and **Matches**; `GET /api/v1/events` |
+| Match details: fetch by id, fetch all | `ssc fetch event ID…`, `ssc sync --only events`; web app **Matches** (**Fetch missing data**, **Fetch again**) and **Jobs → Start a job → Fetch missing details** |
+| Match details: CSV of one match, one league, all | `ssc export --event ID`, `ssc export --tournament ID`, `ssc export` (`--out PATH` picks the file); web app **Exports** (match table CSV) |
 | Statistics: system, leagues, report file | `ssc status` (`--coverage` adds matches and details per tournament; `--json > report.json` writes a report file); web app **Overview** |
-| Settings: API, data folder, display, language | Web app **Settings**; `.env` or `sofascore.toml` (`ssc config show` lists every value and where it comes from); `--lang` |
+| Settings: API, data folder, display, language | Web app **Settings**; `sofascore.toml` or `.env` (`ssc config show` lists every value and where it comes from); `--lang` |
 | Settings: move the data folder | Stop the app, move the folder, then point `DATA_DIR` (web app **Settings**, `.env` or `--data-dir`) at the new place. |
-| Settings: backup, restore, clear | `ssc backup create`, `ssc backup restore NAME --yes`, `ssc data clear --all --yes`; web app **Settings** (back up, delete all data) |
+| Settings: backup, restore, clear | `ssc backup create`, `ssc backup restore NAME --yes`, `ssc data clear --all --yes`; web app **Backups** (create, download, check, restore) and **Data cleanup** |
 | Settings: about | `ssc version` |
 
 ### Headless / automation (deprecated flags)
@@ -459,17 +496,19 @@ The flags of `python main.py` keep working for one release. Each run is translat
 | Flag | Meaning |
 |------|---------|
 | `--headless` | Run an action (the 2.x flag that skipped the terminal menu) |
-| `--update-all` | Run a fetch pipeline |
+| `--update-all` | Run a download (`ssc sync`) |
 | `--fetch-mode full` | Seasons + match lists + details (default) |
-| `--fetch-mode details` | Match details only (uses existing schedule/summary CSVs) |
-| `--league-id ID` | Limit `--update-all` to one configured league |
-| `--csv-export` | Build/export processed CSV dataset |
-| `--ignore-rate-limit` | Disable circuit breaker (use with care) |
+| `--fetch-mode details` | Match details only, for the schedules already stored (`ssc sync --only events`) |
+| `--league-id ID` | Limit `--update-all`, `--refresh-only` or `--recheck-unavailable` to one league (`--tournament ID`) |
+| `--csv-export` | Write the 2.x wide CSV (`ssc export`) |
+| `--ignore-rate-limit` | Disable the circuit breaker (`--ignore-breaker`; use with care) |
 | `--refresh-only` | Only re-read provisional records (no `--headless` needed); see [Refresh policy](#refresh-policy) |
 | `--refresh-legacy` | Also refresh records saved before `observation.json` existed, once |
 | `--recheck-unavailable [legacy\|all]` | Reopen "this slice does not exist for this match" markers so the next download asks again; sends no requests itself. See [Missing slices](#missing-slices-failed-requests-and-the-circuit-breaker) |
 | `--watch` | Live watcher with `--sport` and `--league-ids` or `--event-ids` (`--watch-hours` optional); see [Watch mode](#watch-mode) |
 | `--doctor` | Check the environment and exit, `0` = ready, `1` = something failed (no `--headless` needed); see [Check your setup](#check-your-setup-doctor) |
+| `--diagnostics [PATH]` | Write the diagnostics bundle (`ssc diagnostics`) |
+| `--web [--host H] [--port P] [--dev] [--allow-any-host]` | The web app (`ssc serve`), always on 127.0.0.1:8000 unless `--host` / `--port` say otherwise |
 
 Examples:
 
@@ -479,7 +518,7 @@ python main.py --headless --update-all --fetch-mode details --league-id 52
 python main.py --headless --csv-export --data-dir ./data
 ```
 
-Exit codes are those of the [command line](#command-line-ssc): **0** success, **2** usage error, **3** partial success, **4** the circuit breaker stopped the run, **5** data could not be written, **6** another process is already writing to the same data folder, **130** / **143** cancelled. Before 3.0 a breaker stop was **2**, a storage error **1**, Ctrl+C **0**, and a run in which every request was refused or a CSV export with nothing to export ended with **0**.
+Exit codes are those of the [command line](#command-line-ssc): **0** success, **1** general error, **2** usage error, **3** partial success, **4** the circuit breaker stopped the run, **5** data could not be written, **6** another process is already writing to the same data folder, **130** / **143** cancelled. Before 3.0 a breaker stop was **2**, a storage error **1**, Ctrl+C **0**, and a run in which every request was refused or a CSV export with nothing to export ended with **0**.
 
 Only one process writes to a data folder at a time. While a download runs in the web app or in another headless run, `--headless --update-all`, `--refresh-only` and `--recheck-unavailable` do not start: they print who holds the lock (process id, host, purpose, since when) and exit with **6**. The same goes for `--watch` while another live service or watcher runs. `--headless --csv-export` on its own is not affected. `--config` now names the configuration file (`sofascore.toml`); a leagues file (`.txt`) given there is ignored with a warning, as it always was.
 
@@ -497,21 +536,26 @@ Typical structure:
 
 ```text
 data/
+├── .meta/
+│   ├── catalog.db     # The index of the stored files (rebuilt with ssc catalog rebuild)
+│   ├── state.db       # Follows added in the app, job history, event log, live state
+│   ├── locks/         # Who holds the data folder (writer, live service, maintenance)
+│   └── trash/         # Data moved aside by a restore, until it has finished
 ├── v3/
 │   ├── events/        # Match details, one folder per match: manifest.json + compressed slices (*.json.gz)
-│   └── tournaments/   # Season lists and match schedules per league and season (compressed)
+│   ├── tournaments/   # Season lists, match schedules and season data per league and season (compressed)
+│   └── teams/, players/, sports/   # Team, player and sport data, when those data types are selected
 ├── changes/           # Post-finish changes found by refresh, one file per month (see Refresh policy)
-├── seasons/           # Season metadata per league
-├── matches/           # Match list / summary CSVs by league & season
-├── match_details/     # Per-match JSON folders written by older versions (basic, stats, lineups, …)
-│   └── processed/     # Aggregated CSV exports
+├── exports/           # Files written by exports (web app, API, ssc export)
+├── backups/           # Backups (web app, API, ssc backup create, the scheduler)
+├── match_details/     # Per-match JSON folders written by 2.x (basic, stats, lineups, …)
+│   └── processed/     # The 2.x wide CSV export
+├── seasons/, matches/ # Season lists and schedules written by 2.x (a new data folder does not have them)
 ├── datasets/          # Reserved / auxiliary
-└── score_changes.jsonl  # Change log of older versions (kept, no longer appended to)
+└── score_changes.jsonl  # Change log of 2.x (kept and read, no longer appended to)
 ```
 
-Exact paths may vary slightly by league naming and migrations.
-
-Match details are stored under `v3/events/<id / 1,000,000>/<(id / 1,000) mod 1,000>/<id>/`, compressed. Folders under `match_details/` written by older versions stay where they are and stay readable in the app; when such a match is written again (a refill, a refresh, a marker reset), its current state is first copied to `v3/` and the old folder is left untouched. Programs that read `match_details/` directly do not see matches downloaded by this version.
+Match details are stored under `v3/events/<id / 1,000,000>/<(id / 1,000) mod 1,000>/<id>/`, compressed. A path depends only on the id, so renaming a league moves nothing. Folders under `match_details/` written by older versions stay where they are and stay readable in the app; when such a match is written again (a refill, a refresh, a marker reset), its current state is first copied to `v3/` and the old folder is left untouched. Programs that read `match_details/` directly do not see matches downloaded by this version.
 
 ### Moving old data to the new layout (`ssc migrate`)
 
@@ -535,9 +579,18 @@ ssc migrate --purge-derived --yes       # delete season summaries of seasons tha
 
 The match list reads the index of the data folder (`.meta/catalog.db`), which covers the 3.0 layout and the files of 2.x alike; the export CSV in `match_details/processed/` is never read back.
 
-Next to `config/leagues.txt` (the `name: id` list the CLI also reads), `config/league_sports.json` stores each league's sport as `{"<id>": "football" | "basketball" | "tennis"}`. It is filled when a league is added from the web app, when you pick a sport in the UI, or from a downloaded match of that league.
+Next to `config/leagues.txt` (the 2.x `name: id` list, see [Leagues and follows](#leagues-and-follows)), `config/league_sports.json` stores the sport of each of its leagues as `{"<id>": "<sport>"}` (`football`, `ice-hockey`, `table-tennis`, …; `ssc describe sports` lists them). It is filled when you pick a sport for such a league in the web app or from a downloaded match of that league.
 
-The supported sports are defined in one place, the registry in `src/sports.py`: per sport its score shape, the live watcher's parameters and the match-detail endpoints requested for it. The CLI, the downloader, the watcher and the web API all read it.
+The supported sports are defined in one place, the registry in `src/sports.py`: per sport its score shape, the live watcher's parameters and the data types (slices) that can be requested for it. The CLI, the downloader, the watcher and the web API all read it; `ssc describe sports` and `ssc describe slices` print it as JSON.
+
+### Data types (slices)
+
+Each part downloaded for a match, a season, a team, a player or a sport is a data type. `ssc describe slices` and `GET /api/v1/sports` list every one with its group, its owner and the sports it applies to.
+
+- **On by default** (group `core`): statistics, team streaks, pregame form, head to head, line-ups and incidents where the sport has them, tennis and darts point by point, cricket innings and e-sports games.
+- **Off until you select them:** betting odds (`odds`: featured and all markets, odds changes, winning odds, from the bookmaker set in `[client] odds_provider`), `standings`, `season` (season info, cup tree), `leaders` (top players and teams), `rankings` and `players` (season statistics of followed players). Season, team, player and sport data are fetched once per owner, not per match.
+- **Where to choose:** for every sport with `[defaults] slices` (or **Settings → Data** in the web app), per sport with `[slices.<sport>] enable / disable`, per follow with its own selection (**Data to download** on the follow's page, or `slices` in `[[follow]]`). A data type that is not selected is never requested, and a match is complete when the selected ones are stored.
+- **Odds** are snapshots: before kick-off they are read again on each download once they are 30 minutes old (in the week before the match), and once more after the match; every changed read is kept in the slice's history. `[client] odds_country` (empty by default) records a country code with every odds read; it is never derived from the machine. The `prune-history` scheduler task deletes old snapshots.
 
 ### Missing slices, failed requests and the circuit breaker
 
@@ -549,15 +602,15 @@ Each match folder holds one file per detail slice (`statistics`, `lineups`, `inc
 Earlier releases counted every empty result, including requests that failed during a block or an outage. Those markers cannot be told apart from genuine ones, so they are left alone and are **not** reset automatically: that would re-request every "no lineups" tennis match on the next run. To re-check them:
 
 ```bash
-python main.py --recheck-unavailable                 # reopen markers not confirmed by a definitive answer
-python main.py --recheck-unavailable --league-id 17  # one league
-python main.py --recheck-unavailable all             # reopen every marker
-python main.py --recheck-unavailable --headless --update-all --fetch-mode details   # reopen, then download
+ssc data recheck-unavailable                   # reopen markers not confirmed by a definitive answer
+ssc data recheck-unavailable --tournament 17   # one league
+ssc data recheck-unavailable --all             # reopen every marker
+ssc sync --only events --recheck-unavailable   # reopen, then download (all: --recheck-unavailable all)
 ```
 
-The flag itself sends no requests; the reopened slices are requested by the next details download. Markers confirmed by a definitive answer are kept, so running it a second time changes nothing.
+(`python main.py --recheck-unavailable [all] [--league-id 17]` still works for one release.) The command itself sends no requests; the reopened slices are requested by the next details download. Markers confirmed by a definitive answer are kept, so running it a second time changes nothing.
 
-**Circuit breaker.** One breaker per job counts the final outcome of every request: season lists, match lists, `/event`, each detail slice and refreshes. It trips after `RATE_LIMIT_THRESHOLD_CONSECUTIVE` failed requests in a row (default 20), when `RATE_LIMIT_THRESHOLD_RATIO` of all requests have failed (default 0.9, after the first 50), or after `SERVER_ERROR_THRESHOLD_CONSECUTIVE` 5xx answers in a row (default 50). It also trips early when the browser bridge turns `blocked` during the job (see [bridge health](#is-sofascore-blocking-us-bridge-health)) and the job's own requests keep ending in 403. A 404 is an answer, not a failure. Once tripped, the job sends no further requests in any phase and says why: the web job card shows it, and `--headless` and `--refresh-only` exit with code 2.
+**Circuit breaker.** One breaker per job counts the final outcome of every request: season lists, match lists, `/event`, each detail slice and refreshes. It trips after `RATE_LIMIT_THRESHOLD_CONSECUTIVE` failed requests in a row (default 20), when `RATE_LIMIT_THRESHOLD_RATIO` of all requests have failed (default 0.9, after the first 50), or after `SERVER_ERROR_THRESHOLD_CONSECUTIVE` 5xx answers in a row (default 50). It also trips early when the browser bridge turns `blocked` during the job (see [bridge health](#is-sofascore-blocking-us-bridge-health)) and the job's own requests keep ending in 403. A 404 is an answer, not a failure. Once tripped, the job sends no further requests in any phase and says why: the job's page in the web app shows it, and `ssc sync`, `ssc fetch`, `ssc refresh` (and the deprecated `--headless` and `--refresh-only`) exit with code 4. `--ignore-breaker` turns the breaker off for one run.
 
 **Storage errors.** A match whose files cannot be written is reported as failed, not as downloaded. If the cause will repeat for every match (disk or quota full, permission denied, read-only file system), the job stops with a message naming the path and the reason.
 
@@ -567,8 +620,8 @@ Every match is stored by its id, also one without a SofaScore unique-tournament 
 
 SofaScore keeps editing some results after a match has finished. In the research run (`docs/status-matrix/README.md`, "Geriye dönük"), the final or period score changed after `finished` in 78 of 255 lower-tier basketball matches, 6 of 240 lower-tier football matches and 4 of 145 upper-tier basketball matches. The latest final-score change came 66.4 h after kick-off. A match downloaded once can therefore differ from SofaScore's own final state.
 
-- **When a record is refreshed.** Every saved match records when we read it (`observed_at_utc`) and SofaScore's `changes.changeTimestamp` (in `manifest.json`; older folders: `observation.json` next to `basic.json`). A record is *provisional* while `observed_at_utc < startTimestamp + REFRESH_WINDOW_HOURS` (default **72**). On the next download (web job, `--update-all`, or `--refresh-only`), provisional records are re-read. Only `/event/{id}` is fetched; the stats and lineups are not. Refreshes run after new and incomplete matches, and the job card counts them separately ("N refreshed (M changed)"). A record is re-read at most once every `REFRESH_MIN_INTERVAL_HOURS` (default 6, advanced `.env` setting), so hourly downloads do not fetch the same match 72 times. Once a read lands after the window, the record is final and never fetched again.
-- **Older records.** Matches saved before this feature have no `observation.json`. They count as final, so the default setting adds **no** requests for existing data. `--refresh-legacy` re-reads each of them once.
+- **When a record is refreshed.** Every saved match records when we read it (`observed_at_utc`) and SofaScore's `changes.changeTimestamp` (in `manifest.json`; older folders: `observation.json` next to `basic.json`). A record is *provisional* while `observed_at_utc < startTimestamp + REFRESH_WINDOW_HOURS` (default **72**). On the next download (a web job, `ssc sync`, or `ssc refresh`), provisional records are re-read. Only `/event/{id}` is fetched; the stats and lineups are not. Refreshes run after new and incomplete matches, and the job counts them separately ("N refreshed (M changed)"). A record is re-read at most once every `REFRESH_MIN_INTERVAL_HOURS` (default 6, advanced `.env` setting), so hourly downloads do not fetch the same match 72 times. Once a read lands after the window, the record is final and never fetched again.
+- **Older records.** Matches saved before this feature have no `observation.json`. They count as final, so the default setting adds **no** requests for existing data. `ssc refresh --include-legacy` (the old `--refresh-legacy`) re-reads each of them once.
 - **Turning it off.** Set `REFRESH_WINDOW_HOURS=0` (in `.env` or under **Settings**).
 - **Change log.** When the status triple, `winnerCode`, any `homeScore`/`awayScore` field or `startTimestamp` differs, the stored match page is replaced and one line is appended to `DATA_DIR/changes/<yyyy>-<mm>.jsonl` (ignored by git; older versions appended to `score_changes.jsonl`, which stays and is still read). The line is written in the same step as the match, so an interrupted write cannot lose it: it is added on the next write of that match or the next start.
 
@@ -586,21 +639,29 @@ SofaScore keeps editing some results after a match has finished. In the research
   - If a match that counted as played turns void (`completed` → `void`, e.g. cancelled afterwards), the line carries `"status_regressed": true`. The same flag is kept with the match's observation and never cleared. The record is **not** deleted; that decision is yours.
 
 ```bash
-python main.py --refresh-only                 # re-read provisional records only (e.g. a daily cron)
-python main.py --refresh-only --league-id 17  # one league
-python main.py --refresh-only --refresh-legacy
+ssc refresh                      # re-read provisional records only (e.g. a daily cron)
+ssc refresh --tournament 17      # one league
+ssc refresh --include-legacy     # also old records without an observation, once
 ```
+
+`python main.py --refresh-only [--league-id 17] [--refresh-legacy]` still works for one release. The web app lists the recorded changes on **Score changes**; `GET /api/v1/changes` and `ssc export --dataset changes` return them.
 
 ## Watch mode
 
-`python main.py --watch` follows live matches and writes **events**; it does not settle anything. Since 3.0 it is an alias of `ssc watch --source poll --stdout` (polling only: it never starts a browser): the events are printed on stdout, one JSON envelope (`sofascore.event/1`) per line, and stored in the event log, where `ssc events` and the configured sinks read them. A consumer decides what to do with them.
+`ssc watch` is the live service: one foreground process for every watched sport. It follows live matches and writes **events**; it does not settle anything. The events are stored in the data folder's event log, where `ssc events` and the configured sinks (`[[sink]]`: stdout, file, webhook) read them; `--stdout` also prints them, one JSON envelope (`sofascore.event/1`) per line. A consumer decides what to do with them. The web app has no live view: its **Health** page only shows whether the service runs.
 
 ```bash
-python main.py --watch --sport football --league-ids 17,8     # every live match of these leagues
-python main.py --watch --sport tennis --event-ids 17196038,17210464 --watch-hours 3
+ssc watch                                        # the follows marked live (ssc follows add ... --live, live = true in [[follow]])
+ssc watch --sport football --tournament 17 --tournament 8 --stdout   # every live match of these leagues
+ssc watch --sport tennis --event 17196038 --hours 3 --source poll
+ssc events --follow --type 'live.*'              # read the event log as it grows
 ```
 
-- **How it polls.** Every 30 s one request to `/sport/{sport}/events/live`, plus `/event/{id}`:
+The legacy `python main.py --watch --sport S --league-ids A,B | --event-ids X [--watch-hours H]` keeps working for one release as `ssc watch --source poll --stdout` (polling only: it never starts a browser). Only one live service runs per data folder (exit code **6** for a second one).
+
+The polling described here is what `--source poll` does, and the fallback of the other sources (see [Live sources](#live-sources-of-ssc-watch)):
+
+- **How it polls.** Every `[live] poll_interval_seconds` (default 30 s) one request to `/sport/{sport}/events/live`, plus `/event/{id}`:
   - immediately when a tracked live match drops out of the live list (the earliest end signal);
   - every 30 s while a match is near its end;
   - every 5 min for a stuck match.
@@ -608,11 +669,11 @@ python main.py --watch --sport tennis --event-ids 17196038,17210464 --watch-hour
   - football: 2nd half from minute 80 or once `injuryTime2` appears;
   - basketball: `played ≥ 90%` of regulation, or the last period when there is no clock data;
   - tennis: the deciding set.
-- **Rate budget.** At most `WATCH_MAX_EVENT_POLLS` (default 20) match pages per round, requests at least 1 s apart. The spacing is shared by every `--watch` process on the machine (see [Request budget](#request-budget-all-processes)), so one watcher per sport still stays under 1 request/s in total; with several busy watchers a round can take longer than 30 s. If more matches are near the end than that, match pages drop to every 60 s and a warning is logged.
+- **Rate budget.** At most `[live] max_event_polls` (`WATCH_MAX_EVENT_POLLS`, default 20) match pages per round, requests at least 1 s apart. The spacing is shared by every watcher on the machine (see [Request budget](#request-budget-all-processes)), so one watcher per sport still stays under 1 request/s in total; with several busy watchers a round can take longer than 30 s. If more matches are near the end than that, match pages drop to every 60 s and a warning is logged.
 - **Stuck match.** Still live or not started 4 h after kick-off (tennis: 6 h after the real first-set start, since its `startTimestamp` is only the scheduled slot; set durations exclude breaks such as rain delays, so this start can come out late and `stuck` fires a little later): one `stuck` event, then polled every 5 min. If it turns void and its start time has moved (suspended tennis continues the next day with the same id), it stays tracked.
 - **Events.** `live.status_changed` (`from`, `to`, `change_ts`, `score`; the first `completed` carries `provisional: true` until the refresh window closes, see [Refresh policy](#refresh-policy)), `live.score_changed` and `live.stuck`, each with `event_id`, `sport`, `tournament_id`, `seq` and `ts`. `DATA_DIR/watch_events.jsonl` and `watch_state_{sport}.json` are no longer written; old files can be deleted.
-- **Restarts.** The last known state per match is kept in the data folder's store, so a restart does not emit the same transition twice. Ctrl+C or SIGTERM stops cleanly with exit code 0. Only one live service runs per data folder (exit code **6** for a second one).
-- **When it exits.** With `--event-ids`, the service exits when every tracked match is over.
+- **Restarts.** The last known state per match is kept in the data folder's store (`.meta/state.db`), so a restart does not emit the same transition twice. Ctrl+C or SIGTERM stops cleanly with exit code 0.
+- **When it exits.** With `--event` only (legacy `--event-ids`), the service exits when every tracked match is over; `--hours` stops it after that many hours.
 
 Why these numbers: `events/live` is cached for 5 s at the CDN, and whistle → `finished` took a median of 20 s (max 302 s) in the research (`docs/status-matrix/README.md`). Polling faster than 30 s gains nothing.
 
@@ -647,24 +708,21 @@ What was measured and what was not (`docs/push-channel/README.md`, section 7): o
 
 Running `ssc watch` as a systemd service or in a container, with the memory each source needs: [docs/deploy/watch.md](docs/deploy/watch.md).
 
-## REST API (overview)
+## HTTP API (overview)
 
-All routes are prefixed with `/api` unless noted.
+The versioned API is under `/api/v1`; the web app uses nothing else. Its contract is recorded in [`docs/api/openapi-v1.json`](docs/api/openapi-v1.json), and the running server documents it at `GET /docs` and `/redoc`. A single resource is answered as `{"data": {...}}`, a list as `{"data": [...], "page": {"limit", "next_cursor"}}`, an error as `{"error": {"code", "message", "details", "request_id"}}` with a stable code and an English message; every response carries `X-Request-Id`.
 
-- **Leagues**: list (each with `sport`), create (optional `sport`), `PATCH /api/leagues/{id}` to set the sport, delete, search (local: `GET /api/leagues/search`; remote: `POST /api/leagues/search-remote?q=…`, a `POST` because every call sends a request to SofaScore; remote results carry `sport`), seasons, refresh seasons, missing-details.
-  - Remote search and season refresh say why they failed instead of answering with an empty list. The error body is `{"detail": {"reason": "...", "message": "..."}}`, with `reason` one of `blocked` (SofaScore answered 403), `browser` (it asked for the challenge and the built-in browser could not start), `rate_limited` (429/503), `network` (no connection, timeout, proxy), `not_found` (season refresh: no league with that ID) or `upstream` (an answer the app did not expect). The status is 502, except 503 for `rate_limited` and 404 for `not_found`. An empty list with 200 means SofaScore really found nothing. The web app shows each reason with a next step.
-- **Sports**: `GET /api/sports` — the supported sports and, for each, the match-detail slices requested for it (read-only view of the registry in `src/sports.py`).
-- **Matches**: `GET /api/matches` — paginated, filters `league_id` (one id or several comma-separated, e.g. `17,8`), `season_id`, `date`, `details=present|missing`, `sort=asc|desc`; every row has `has_details`. Also single-match JSON and on-demand fetch for one match.
-- **Scraper**: `POST /api/fetch` (body: mode `full` or `details`, `selections: [{league_id, season_ids, match_ids}]`), `POST /api/scrape/cancel` (no new requests after it; retry waits are cut short), status, SSE stream.
-- **Dashboard / stats / settings**: JSON for the web UI; settings mirror `.env` keys.
-- **Data**: backup zip, clear scopes, CSV export (`GET /api/export/csv` downloads the existing export and answers `404` when there is none; `POST /api/export/csv` creates it first). The datasets of `ssc export` are an export job of API v1: `POST /api/v1/jobs` with `{"kind": "export", "spec": {"dataset": "events", "format": "parquet", "filter": {...}}}`, then `GET /api/v1/exports` and `/api/v1/exports/{id}/download` (a Parquet export without `pyarrow` on the server answers `501`).
-- **Access**: no `GET` endpoint changes anything, and state-changing requests that another site triggered are refused with `403`. With `SOFASCORE_API_TOKEN` set, every `/api` request needs `Authorization: Bearer <token>` or the web app's session cookie (`POST /api/auth/login` with `{"token": "..."}`, `POST /api/auth/logout`, `GET /api/auth` for the state); otherwise the answer is `401` with `{"detail": {"code": "auth_required", "message": "..."}}`. See [Security model](#security-model).
-- **Refusals while a download runs**: `POST /api/data/clear`, `POST /api/data/backup` (except `scope=config`), `DELETE /api/leagues/{id}` and a `POST /api/settings` that changes `data_dir` answer `409` with `{"detail": {"code": "job_running", "message": "..."}}`. While one of these is in progress, they and `POST /api/fetch` answer `409` with code `data_operation_running`. A successful `data_dir` change answers `"data_dir_changed": true`; a folder that cannot be created answers `400` with code `data_dir_unusable`.
-- **Bypass Status**: `GET /api/bypass/status` (with `health`: `ok` / `degraded` / `blocked`, see [Is SofaScore blocking us?](#is-sofascore-blocking-us-bridge-health)) and live test `POST /api/bypass/test`: one request through the browser, answered with `success`, `reason` (as above, when it failed), `browser_ready`, `has_token` / `is_valid` and `health`. Nothing calls it on its own; in the web app it is the **Test connection** button under **Settings → Connection**.
-- **Logs / diagnostics** (read-only, see [Logs and diagnostics](#logs-and-diagnostics)): `GET /api/logs` (`limit` 1–2000, `level` = minimum level), `GET /api/diagnostics` (the summary as JSON), `GET /api/diagnostics/bundle` (zip download). None of them takes a file path.
-- **Health**: `GET /health` (no `/api` prefix) answers `status`, `version`, `ui`, plus `bridge` (the same health block) and `throttle` (the shared [request budget](#request-budget-all-processes)). With an access token set, a caller without it gets only `{"status": "ok"}`.
+- **Service**: `GET /api/v1/health`; `GET /api/v1/status` (the connection to SofaScore, the bridge health, the request budget, the live service, the scheduler's next runs, what the data folder holds, who holds it); `POST /api/v1/status/check` (one request to SofaScore, only when called); `GET /api/v1/sports`, `/sports/{slug}` (the sports and their data types); `GET /api/v1/sinks` (read-only).
+- **Follows**: `GET`, `POST /api/v1/follows`; `GET`, `PATCH`, `DELETE /api/v1/follows/{kind}:{id}` (`?delete_data=true` also deletes the stored matches of a league). `POST /api/v1/tournaments/search` searches SofaScore for tournaments, and with `kinds: ["team", "player"]` for teams and players (a `POST` because every call sends a request to SofaScore). A follow from the config file is listed but can only be changed in the file (`409 follow_managed`).
+- **Data**: `GET /api/v1/tournaments`, `/tournaments/{id}`, `/tournaments/{id}/seasons` (`?include=counts`), `/seasons/{id}`, `/seasons/{id}/slices`, `/seasons/{id}/slices/{key}`, `/seasons/{id}/standings`, `/events` (filters by sport, tournament, season, team, status, date, stored details, name and follows), `/events/{id}`, `/events/{id}/slices`, `/events/{id}/slices/{key}`, `/events/{id}/odds`, `/events/{id}/odds/{key}`, `/changes`. Records follow the normalized schema v1; `/events/{id}/raw` and `/events/{id}/slices/{key}/raw` return the stored SofaScore payload unchanged.
+- **Jobs**: `GET`, `POST /api/v1/jobs` with `kind` `sync`, `fetch`, `refresh`, `export`, `backup`, `clear` (needs `confirm: true`), `rebuild` or `restore` (`dry_run: true` by default; `false` restores); `GET /api/v1/jobs/{id}`, `POST /api/v1/jobs/{id}/cancel`, `GET /api/v1/jobs/{id}/events` (server-sent events, resumable with `Last-Event-ID`). Jobs started from the command line or the scheduler are listed too and can be cancelled. While another job holds the data folder, a job that needs it is refused with `409`, naming the holder.
+- **Exports and backups**: an export is a job, for example `{"kind": "export", "spec": {"dataset": "events", "format": "parquet", "filter": {"tournament_ids": [17]}}}` (a Parquet export without `pyarrow` on the server answers `501 not_supported`); then `GET /api/v1/exports` and `/exports/{id}/download`. `GET /api/v1/backups` and `/backups/{name}` (download).
+- **Settings**: `GET /api/v1/settings` (each value, where it comes from, whether it is locked); `PATCH /api/v1/settings` writes `config/overrides.json` and refuses a value that the config file, the environment or a flag pins.
+- **Logs and diagnostics** (read-only, see [Logs and diagnostics](#logs-and-diagnostics)): `GET /api/v1/logs` (`limit` 1–2000, `level` = minimum level), `GET /api/v1/diagnostics`, `GET /api/v1/diagnostics/bundle` (zip). None of them takes a file path.
+- **Access**: no `GET` endpoint changes anything, and state-changing requests that another site triggered are refused with `403`. With `SOFASCORE_API_TOKEN` set, every `/api` request needs `Authorization: Bearer <token>` or the web app's session cookie (`POST /api/v1/auth/login` with `{"token": "..."}`, `POST /api/v1/auth/logout`, `GET /api/v1/auth` for the state); otherwise the answer is `401`. See [Security model](#security-model).
+- **Health**: `GET /health` (no `/api` prefix) answers `status`, `version`, `ui`, plus `bridge` (the [bridge health](#is-sofascore-blocking-us-bridge-health)) and `throttle` (the shared [request budget](#request-budget-all-processes)). With an access token set, a caller without it gets only `{"status": "ok"}`.
 
-OpenAPI: `GET /docs` when the server is running.
+**The 2.x routes** (`/api/leagues`, `/api/matches`, `/api/fetch`, `/api/scrape/*`, `/api/settings`, `/api/data/*`, `/api/export/csv`, `/api/bypass/*`, `/api/logs`, `/api/diagnostics*`, `/api/auth*`, `/api/sports`, …) still answer for one more release, with their old shapes. They are marked deprecated in the OpenAPI document, and every answer carries a `Deprecation` header and a `Link` to its successor under `/api/v1`. Move programs to `/api/v1`.
 
 ## Anti-Bot Protection (BrowserBridge)
 
@@ -674,7 +732,7 @@ SofaScore rejects plain HTTP clients: API requests get `403 {"reason": "challeng
 2. **Challenge:** on a 403 challenge it opens `sofascore.com/captcha.html`; Scrapling passes the embedded Cloudflare Turnstile and the resulting `sofa_captcha` cookie unlocks the API. Concurrent 403s share one solve; a failed solve is not retried for 3 minutes.
 3. **Browser-first mode:** once curl is blocked and the browser succeeds, requests go straight to the browser for 10 minutes instead of failing through curl first.
 
-The browser always runs **headless**, on a desktop and on a server alike, so the same code path is used everywhere; no display, Xvfb or Google Chrome is needed. Measured on the three sports: full seasons of Premier League (50 matches), Wimbledon (239) and EuroBasket (76) downloaded at 100% coverage without a display. Set `SOFASCORE_BROWSER_HEADED=1` to watch the browser while debugging.
+The browser always runs **headless**, on a desktop and on a server alike, so the same code path is used everywhere; no display, Xvfb or Google Chrome is needed. Measured on three sports: full seasons of Premier League (50 matches), Wimbledon (239) and EuroBasket (76) downloaded at 100% coverage without a display. Set `SOFASCORE_BROWSER_HEADED=1` to watch the browser while debugging.
 
 The browser profile (cookies, solved challenge) lives in `~/.cache/sofascore_scraper/chrome_profile`; change it with `SOFASCORE_BROWSER_PROFILE`. A restart with an existing profile answers its first request in about 1–6 s.
 
@@ -690,11 +748,11 @@ Everything depends on the browser solving the challenge. When that stops working
 
 - **What counts as a failure:** a challenge that could not be solved (or a request still refused after solving), a 403 with no challenge offered, a browser that cannot start. A 403 that is solved and retried is a success. Network errors, 5xx and 429 neither extend nor reset the streak. One answered request returns the state to `ok`.
 - **Where you see it:**
-  - `GET /health` → `bridge` and `GET /api/bypass/status` → `health`: `state`, `consecutive_failures`, `last_success_at`, `failing_since`, `last_error` (`kind`: `challenge` / `forbidden` / `browser`), `thresholds`. `status` in `/health` stays `ok`: it says the server is up.
-  - Web app: a banner at the top of every page while the state is not `ok`. Dismissing hides it for that streak; it returns if the state gets worse or a new streak starts.
-  - Web app, **Settings → Connection**: the same state, and **Test connection** to try one request yourself (browser running or not, anti-bot check passed or not, and the reason if it failed).
+  - `GET /health` → `bridge` and `GET /api/v1/status`: `state`, `consecutive_failures`, `last_success_at`, `failing_since`, `last_error` (`kind`: `challenge` / `forbidden` / `browser`), `thresholds`. `status` in `/health` stays `ok`: it says the server is up.
+  - Web app: the health pill in the top bar and **Needs attention** on Overview while the state is not `ok`.
+  - Web app, **Health**: the same state, when SofaScore last answered and last failed, and **Run connection check** to try one request yourself (`POST /api/v1/status/check`), with the reason if it failed.
   - Log: one warning per state change, not per request.
-  - Command line (`ssc` and the deprecated `--headless`, `--watch`, `--refresh-only` flags): one line on stderr per state change, in the app language.
+  - Command line (`ssc` and the deprecated `main.py` flags): one line on stderr per state change, in the app language.
 - The state is per process: the web app reports its own bridge, each CLI process its own.
 
 ### Server setup (Linux / Docker)
@@ -707,7 +765,7 @@ python -m patchright install chromium --no-shell
 # Debian/Ubuntu only, once: system libraries Chromium needs (uses sudo)
 python -m patchright install-deps chromium
 # exit code 0 = ready; starts the browser once on about:blank, makes no request to SofaScore
-python main.py --doctor --skip frontend
+ssc doctor --skip frontend      # or: python main.py doctor --skip frontend
 ```
 
 ## Development
@@ -723,11 +781,13 @@ The web app is a Vue 3 + TypeScript + Vite project in `frontend/` (Pinia, vue-ro
 ```bash
 cd frontend
 npm install
-npm run dev      # http://localhost:5173, proxies /api to 127.0.0.1:8000
+npm run dev      # http://localhost:5173, proxies /api and /health to 127.0.0.1:8000
 npm run build    # type-check (vue-tsc) + production build into frontend/dist/
+npm test         # vitest
+npm run lint     # ESLint
 ```
 
-Layout: `src/views/` one file per page, `src/components/` shared pieces, `src/stores/` (leagues, sport filter, running job), `src/api/client.ts` every backend call, `src/locales/{tr,en}.ts` all UI text.
+Layout: `src/screens/` one folder or file per screen, `src/app/` the shell (menu, top bar, quick search, Help), `src/ui/` the shared components, `src/api/v1/` every backend call (types generated from `docs/api/openapi-v1.json` with `npm run gen:api`), `src/locales/` all UI text in English and Turkish. More in [frontend/README.md](frontend/README.md).
 
 Tests and lint (CI runs the same on Linux with Python 3.10 and 3.14; the Windows and macOS jobs, with Python 3.14, are best-effort: they report their result but do not block a pull request or a release):
 
@@ -772,7 +832,7 @@ Contributions are welcome. You can help in several ways:
 
 - **Bug reports** — Open an issue with steps to reproduce, expected vs actual behaviour, OS/Python version, and relevant `.env` flags (redact secrets).
 - **Feature ideas** — Suggest use cases and constraints; maintainers may triage and discuss scope in the issue.
-- **Pull requests** — Fork the repo, use a focused branch, keep changes small and on-topic, and describe *what* and *why* in the PR. Match existing code style; avoid drive-by refactors. If you touch user-visible text, update both languages: `frontend/src/locales/tr.ts` and `en.ts` for the web app, `locales/en.json` and `locales/tr.json` for the command line.
+- **Pull requests** — Fork the repo, use a focused branch, keep changes small and on-topic, and describe *what* and *why* in the PR. Match existing code style; avoid drive-by refactors. If you touch user-visible text, update both languages: `frontend/src/locales/ui/en.ts` and `tr.ts` (and `frontend/src/locales/en.ts` / `tr.ts`) for the web app, `locales/en.json` and `locales/tr.json` for the command line.
 - **Docs & translations** — Improvements to these READMEs or locale strings are appreciated.
 
 By submitting a contribution, you agree that it is licensed under the project's license and that the maintainer may also offer it under other terms (for example, a commercial license). Be respectful in issues and reviews. If you are unsure whether an idea fits, open an issue first.
