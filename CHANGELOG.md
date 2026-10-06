@@ -15,8 +15,8 @@ section is what the first tagged release will contain.
 ### Added
 
 - **Basketball and tennis.** League search, fixtures and match details for football, basketball
-  and tennis; eight more sports followed in #112. A league's sport is stored in
-  `config/league_sports.json`, and the web app has a sport switch that filters every page.
+  and tennis; eighteen more sports followed in #112, #115 and #118. A league's sport is stored
+  in `config/league_sports.json`, and the web app has a sport switch that filters every page.
 - **BrowserBridge.** SofaScore answers plain HTTP clients with `403 challenge`, so API
   requests are now made from inside a headless Chromium (Scrapling `StealthySession`) that
   passes the Cloudflare Turnstile challenge on its own. It runs headless on a desktop and on
@@ -42,8 +42,9 @@ section is what the first tagged release will contain.
   `main.py --refresh-only` runs refreshes alone and `--refresh-legacy` also covers records saved
   before `observation.json` existed (#11).
 - **Watch mode.** `main.py --watch --sport … --league-ids …|--event-ids …` follows live
-  matches and writes status, score and stuck-match events to `DATA_DIR/watch_events.jsonl`
-  (#12).
+  matches and reports status, score and stuck-match events (#12). Since #119 it runs
+  `ssc watch --source poll --stdout`: the events are printed and stored in the event log
+  (`ssc events`), and `DATA_DIR/watch_events.jsonl` is no longer written.
 - **Shared request budget.** `REQUEST_RATE_LIMIT` is one requests-per-second budget for all
   processes on the machine together (web app, CLI, every `--watch`, `--refresh-only`),
   whether a request goes through curl or through the browser. The default is 5 requests
@@ -65,10 +66,11 @@ section is what the first tagged release will contain.
   setting can be set as `SOFASCORE_<SECTION>__<KEY>` (for example `SOFASCORE_CLIENT__RATE=2`).
   Relative paths in the file are resolved against the file's folder. An unknown key or a value
   of the wrong type stops the start with a message that names the file and the key. Without the
-  file nothing changes: `.env` and the existing variables are read as before. `[[follow]]`,
-  `[[sink]]` and `[live]` are used by the live service (`ssc watch`, #91, #95, #101), and
-  `[server]` can name the access token's variable (#74); not used yet, only checked:
-  `[schedule]`, `[defaults]`, `[slices.*]` and the host and port in `[server]`. The classic
+  file nothing changes: `.env` and the existing variables are read as before. `[[follow]]` is
+  what downloads and the live service follow (#91, #152), `[[sink]]` and `[live]` are used by
+  the live service and `ssc serve` (#91, #95, #101, #125), `[server]` holds the host, the port
+  and the access token's variable (#74, #125), `[schedule]` the in-app scheduler (#128), and
+  `[defaults]` and `[slices.*]` the choice of what is downloaded (#134, #140). The classic
   Settings page still writes `.env` and does not show which values the file pins; the Settings
   screen of the new web UI saves through `PATCH /api/v1/settings` and shows where each value
   comes from (#74, #107). On Python 3.10 this adds the `tomli` package to `requirements.txt`.
@@ -147,14 +149,14 @@ section is what the first tagged release will contain.
   (`docs/status-matrix/`, #8) and an overview of all sports (`docs/all-sports/`, #17).
 - Web app screenshots in the READMEs.
 - A command line for servers and automation next to `main.py`:
-  `python -m src.cli.main <command>`, or `ssc <command>` after `pip install -e .`. Commands so
-  far: `version`, `doctor`, `describe`, `config show|validate|init|path`, `diagnostics`,
+  `python -m src.cli.main <command>`, or `ssc <command>` after `pip install -e .`. The first
+  commands: `version`, `doctor`, `describe`, `config show|validate|init|path`, `diagnostics`,
   `events` (#73), `watch` (#91), `backup create|list|verify|restore` (#109), `migrate` and
   `catalog rebuild|verify|reconcile` (#110). The result goes to stdout (`--json` prints one JSON
   document), logs and errors go to stderr, and the exit codes are fixed: 0 success, 1 error, 2
   usage or configuration error, 3 partial success, 4 SofaScore is blocking, 5 storage error, 6
-  another instance is running. Downloading and the web app are still started with `main.py`
-  (#65).
+  another instance is running (#65). Downloads, exports, follows, jobs and status came with
+  #119, `ssc serve` (the web app) with #125; their entries are below.
 - `ssc doctor` warns when the request budget is above the default of 5 requests per second or
   turned off (#65).
 - `ssc config init` prints a starter `sofascore.toml`; `ssc config init --from-legacy` prints
@@ -217,8 +219,8 @@ section is what the first tagged release will contain.
     area that you choose knowingly.
   - Measured on one evening only, with one connection and one subject, for about 38 minutes
     (#101).
-- Optional install extra `parquet` (`pip install -e ".[parquet]"`, installs `pyarrow`) for
-  Parquet exports (#108).
+- Optional install extra `parquet` (`pip install -e ".[parquet]"`, installs `pyarrow`, version
+  16 or newer since #155) for Parquet exports (#108).
 - `ssc backup create|list|verify|restore`. A restore takes a backup from the data folder's
   `backups/` by name, checks every member path first, refuses a folder that already holds data
   unless `--force` (which moves that data to the trash first; a restore never merges), rebuilds
@@ -248,6 +250,179 @@ section is what the first tagged release will contain.
   scores are read period by period (quarters, halves or thirds), with overtime and, in handball,
   the penalty shoot-out and the aggregate of a two-legged tie. The data folder's index is
   rebuilt once on the first start (#112).
+- Five more sports can be followed: volleyball, badminton, table tennis, padel and snooker
+  (`--sport`, the config file, the web app). Their scores are read set by set (points per set in
+  volleyball, badminton and table tennis; games and tie-breaks in padel; frames won in snooker).
+  A retirement or walkover shows in the match status, not in the score. The data folder's index
+  is rebuilt once on the first start (#115).
+- Five more sports can be followed: baseball, cricket, e-sports, darts and MMA (`--sport`, the
+  config file, the web app). Baseball scores are read inning by inning with hits and errors;
+  cricket innings by innings (runs, wickets, overs); darts by sets of legs, or by legs in
+  matches played without sets; e-sports by games won, and the result of each game is stored from
+  SofaScore's games list. MMA has no score: the result is the winner, how the fight was decided
+  (for example UD or TKO) and the final round. The data folder's index is rebuilt once on the
+  first start (#118).
+- Set-based scores in API v1 and in the normalized records say what they count (`score.format`:
+  games, points, frames, legs, legs_won, games_won) (#118).
+- Cricket matches get the `innings` slice (scorecard), darts matches the `point_by_point` slice
+  (#121).
+- `ssc describe slices` shows `not_in` and `optional_in`; `GET /api/sports` and `/api/v1/sports`
+  report `required` per sport (#121).
+- **`ssc sync`, `ssc fetch event|tournament`, `ssc refresh`**: downloads as jobs (in the job
+  history, cancellable from the web app or with `ssc jobs cancel`). `--dry-run` sends nothing
+  and shows what would be fetched and at least how many requests that takes. Ctrl+C or SIGTERM
+  cancels the job, stores it as cancelled, releases the data folder and still prints the result;
+  a second Ctrl+C exits at once (#119).
+- **`ssc export`** (the wide CSV to the data folder, a file or stdout; the raw stored payloads
+  as JSON lines or a folder tree), **`ssc data clear|recheck-unavailable`**,
+  **`ssc follows list|add|remove|export`**, **`ssc status`** (`--check` for monitoring,
+  `--coverage`) and **`ssc jobs list|show|cancel|tail`** (#119).
+- Global flags `--wait SECONDS` (wait for a busy data folder instead of exiting with 6),
+  `--progress text|ndjson` (a job's progress on stderr) and `--log-format json` (log lines as
+  one JSON object each) (#119).
+- The configured `[[sink]]` outputs also receive the events of one-shot jobs (`job.started`,
+  `job.finished`); `ssc config validate` checks the sinks (#119).
+- `ssc version` prints the data schema and the Store's versions; `ssc describe schemas` includes
+  the JSON Schema of the records (#119).
+- Streaming commands end an error with a `{"type": "error"}` line, and a reader that closes the
+  pipe early (`ssc events | head -1`) no longer makes the command exit with 1 (#119).
+- **`ssc serve`**: the web app and the HTTP API, in the foreground until stopped (`--host`,
+  `--port`, `--allowed-hosts`, `--allow-any-host`, `--dev`; host and port default to
+  `[server] host` and `port`). It keeps the rules of the Host allow-list: names you set are used
+  as written, `--host 0.0.0.0` does not start until they are set (exit code 2),
+  `--allow-any-host` is the insecure opt-out. Without an access token it warns at start-up when
+  it listens beyond this computer. Configured `[[sink]]` outputs are delivered while it runs.
+  Ctrl+C or SIGTERM stops it with exit code 0; a server that cannot start (port in use) exits
+  with 1. Its log lines and uvicorn's access lines go to stderr (#125).
+- **`docs/deploy/`**: systemd units for `ssc serve` and `ssc watch`, a timer for `ssc sync`, and
+  pages on the access token, the Host allow-list, running behind a reverse proxy (the limit on
+  wrong tokens counts per client address: set `FORWARDED_ALLOW_IPS` for a proxy on another
+  machine or container), backups, `ssc migrate`, the memory each live source needs and the
+  warnings of the `direct` source (#125).
+- The Compose example has an opt-in live service: `docker compose --profile live up -d` also
+  runs `ssc watch` (#125).
+- **API v1: sessions, status and sinks.** `GET /api/v1/auth`, `POST /api/v1/auth/login` and
+  `POST /api/v1/auth/logout` replace the `/api/auth*` routes for the web UI (same cookie, same
+  limit on failed attempts). `GET /api/v1/status` now also reports the live service (running,
+  source, sports, heartbeat), what the data folder holds (matches, details, seasons, per
+  tournament with coverage, disk use, events still in the old layout), the leases held right
+  now, the optional features of the server (Parquet, SSE) and the schema version; it still
+  answers when the data folder cannot be opened. `POST /api/v1/status/check` tests the
+  connection to SofaScore with one request. `GET /api/v1/sinks` shows each configured sink's
+  position, lag, last error and dropped events (read-only; sinks are still configured in the
+  config file only) (#122).
+- **API v1: data.** `GET /api/v1/tournaments`, `/tournaments/{id}`, `/tournaments/{id}/seasons`,
+  `/seasons/{id}`, `/seasons/{id}/slices/{key}`, `/events` (filters by sport, tournament,
+  season, team, status, date, stored details, name and follows; newest or oldest first;
+  optionally a per-event summary of the stored data), `/events/{id}`, `/events/{id}/slices`,
+  `/events/{id}/slices/{key}` and `/changes` (score corrections and status changes, oldest or
+  newest first, by event, tournament and time). Records follow the normalized schema v1.
+  `GET /api/v1/events/{id}/raw` and `/events/{id}/slices/{key}/raw` return the stored SofaScore
+  payload unchanged, with `ETag` and `X-Sofascore-Fetched-At` (#123).
+- **API v1: follows.** `GET`, `POST /api/v1/follows` and `GET`, `PATCH`,
+  `DELETE /api/v1/follows/{kind}:{id}` list, add, change and remove what is downloaded and
+  watched: tournaments, and now also teams, players and single events. A follow from the config
+  file is shown but can only be changed in the file; where a follow added here is kept is
+  described under Changed (#156). `POST /api/v1/tournaments/search` looks a tournament up on
+  SofaScore (#124).
+- **API v1: exports, backups and maintenance.** `POST /api/v1/jobs` now also starts `export`
+  (the 2.x wide CSV, or the stored SofaScore payloads as JSONL, written to the data folder's
+  `exports/`), `backup`, `clear` (needs `confirm: true`), `rebuild` (the catalog) and `restore`
+  as a check of what a restore would do (a real restore as a job came with #152).
+  `GET /api/v1/exports` and `/exports/{id}/download`, `GET /api/v1/backups` and
+  `/backups/{name}`, `GET /api/v1/logs`, `/diagnostics` and `/diagnostics/bundle`. Clearing and
+  rebuilding hold the data folder for themselves: no download, live service or other data
+  operation runs meanwhile (#126).
+- **Optional in-app scheduler (off by default).** `ssc serve --scheduler`, or
+  `[schedule] enabled = true` in the config file, runs the `[[schedule.task]]` entries of the
+  config file inside the web server. A task is `run = "sync"`, `"fetch"`, `"refresh"` or
+  `"backup"` (and `"prune-history"`, below), with `every = "6h"` or `cron = "15 */6 * * *"` (the
+  machine's local time), and options `league_id` (download tasks) or `scope` and `include_env`
+  (backup). Each run is an ordinary job (`origin` scheduler) that shows in the job list and
+  waits for no one: if the task's previous run is still going, or another download or data
+  operation holds the data folder, the run is skipped and logged, and missed times are not
+  repeated. An `every` task counts from its last run in the job history, so restarting
+  `ssc serve` does not restart the count; an interval that passed while the server was off runs
+  once at start (#155). An unknown task or option stops `serve` before it starts (exit code 2).
+  `--no-scheduler` turns it off for one run. The scheduler does not run with `--dev`.
+  `GET /api/v1/status` has the new `schedule` field (`enabled`, `next_runs`), and
+  `capabilities.scheduler` is true while it runs. On shutdown, a scheduled job that is still
+  running is cancelled (#128).
+- Scheduler task `run = "prune-history"` with `older_than = "90d"`: deletes older snapshots of
+  the kept slice history (odds), keeping the newest one of every slice. Off unless configured
+  (#155).
+- **Export datasets in an open format.** `ssc export --dataset events|slices|changes` writes the
+  records of the data schema (version 1): `events` (matches with status, score, winner and
+  record quality), `slices` (the state of each stored response about a match) and `changes`
+  (corrections found in stored matches), as JSONL (one record per line, as the API returns it),
+  CSV, Parquet or SQLite (one column per field, named by its path such as `score_home`; lists as
+  JSON text; Parquet needs the optional `pyarrow`, `pip install -e ".[parquet]"`). Filters
+  `--sport`, `--tournament`, `--season`, `--event`, `--status`, `--from`, `--to`; without
+  `--out` the file goes to the data folder's `exports/`, `--out -` streams JSONL or CSV,
+  `--force` replaces an existing file. The raw export (`--schema raw`) takes
+  `--dataset events|slices` and the same filters. The web API starts the same exports as jobs
+  (`POST /api/v1/jobs` with `kind: "export"`; `dataset` may now be `changes`, `filter` takes
+  `status_classes`, `from` and `to`), and `GET /api/v1/exports` names the `schema_version` of
+  each export. `ssc export` without `--dataset` or `--schema` still writes the 2.x wide CSV
+  (#130).
+- **Choose what is downloaded.** Each data type of a match (statistics, line-ups, incidents,
+  head-to-head, form, streaks, point-by-point ...) can be switched on or off: for all sports
+  with `[defaults] slices`, per sport with `[slices.<sport>] enable / disable`, and per follow
+  with `slices` (a list = only these; `enable` / `disable` = changes to the defaults). A data
+  type that is not selected is never requested, and a match is complete when the selected ones
+  are stored. Unknown names are a configuration error. Through the API: follows take `slices`,
+  `PATCH /api/v1/settings` accepts `defaults.slices` and `slices.<sport>`,
+  `GET /api/v1/settings` lists the per-sport selections and each setting's type, limits and
+  choices, and `GET /api/v1/sports` shows each data type's group, phases and whether the
+  defaults select it. `ssc describe slices` shows the same. Without any of these settings
+  nothing changes (#134).
+- **Odds and non-match data, off unless chosen.** New data types can be selected like the other
+  slices (`[defaults] slices`, `[slices.<sport>]`, a follow's `slices`): `odds` (featured and
+  all markets, odds changes, winning odds, from the bookmaker set in `[client] odds_provider`),
+  `standings` (total and home tables), `season` (season info, cup tree), `leaders` (top players
+  and teams), `rankings` (tennis players' rankings and the ATP list) and `players` (season
+  statistics of followed players). Nothing of this is requested unless named. A read of odds is
+  a snapshot: before kick-off they are read again on each sync once they are 30 minutes old (in
+  the week before the match), and once more after the match; every changed read is kept in the
+  slice's history. Season, team, player and sport data are fetched once per owner, not per
+  match, and refreshed while the season is running. New API routes:
+  `GET /api/v1/events/{id}/odds/{key}` (normalized odds, snapshot by snapshot),
+  `GET /api/v1/seasons/{id}/slices`, `GET /api/v1/seasons/{id}/standings`; new export datasets
+  `odds` and `standings` (`ssc export --dataset odds`). `GET /api/v1/sports` and
+  `ssc describe slices` list every data type with its owner. Without a selection nothing changes
+  (#140).
+- `[client] odds_country`: a country code recorded with every odds read; empty (the default)
+  records none. It is never derived from the machine (#155).
+- API v1: a season-list job (`sync` with `only: "seasons"`), a fetch and a refresh of events by
+  id (`event_ids`), a sync of named follows (`follows`), and a real restore as a job (`restore`
+  with `dry_run: false`). `GET /jobs` filters by `origin` and `target`, `GET /follows` by
+  `sport`, `GET /changes` by `sport` and `regressed` with the participant names; per-season
+  counts (`GET /tournaments/{id}/seasons?include=counts`); `/status` shows the data-folder path,
+  the last migration and the sinks (#152).
+- `ssc sync --only seasons`; `ssc status` shows the last migration and the sink lag, and
+  `--disk` the disk use; `ssc config validate` checks the scheduler's tasks (#152).
+- **Team, player and match follows download their matches.**
+  - A team follow reads the team's recent and upcoming matches from SofaScore. A player follow
+    reads the player's recent matches. A match follow is that match.
+  - The window comes from the follow's `seasons`: `current` = the last 365 days, `last:N` = N
+    years, `all` = up to five pages back, season ids = those seasons.
+  - Every match is downloaded with the follow's data selection.
+  - This works in `ssc sync` (also `ssc sync --follow team:42`), the scheduler and the web UI's
+    sync (`POST /api/v1/jobs` with `follows`) (#156).
+- **Search teams and players by name:** `POST /api/v1/tournaments/search` with
+  `kinds: ["team", "player"]` returns typed hits with sport, country and a player's team (#156).
+- **Delete one league's data.** `POST /api/v1/jobs` `clear` with `tournament_id` (and
+  `season_id`) deletes that tournament's (or season's) stored matches, schedules and season
+  list. `DELETE /api/v1/follows/{id}?delete_data=true` removes a follow together with its data
+  (#156).
+- `/api/v1/status`, `/health` and `/status/check` report the connection to SofaScore as
+  `never_tried`, `ok` or `failed`, with the time and reason of the last failure and the last
+  connection check. `bridge.last_success_at` and `bridge.last_failure_at` count requests of
+  every transport (#156).
+- `GET /api/v1/exports` lists and serves the files `ssc export` wrote into the data folder's
+  `exports/` (#156).
+- `ssc doctor` checks the config file (`config`): a broken `sofascore.toml` and a data or log
+  folder it names that cannot be written are reported, with the loader's message (#155).
 
 ### Changed
 
@@ -280,10 +455,10 @@ section is what the first tagged release will contain.
 - `main.py --help`, the messages of `--watch`, `--refresh-only` and `--headless`, the progress
   lines of a headless download, the launcher and the installers exist in both languages. The
   help and the installers used to be Turkish only and the launcher English only. Some log lines
-  are still Turkish (those of the browser bridge, the request layer, the schedule and season
-  downloads, the configuration and the terminal menu among them); those of the data store (#70,
-  #85, #100), the match-details downloads (#113), the CSV export (#99) and the season reader's
-  catalog lines (#79) are English (#39).
+  are still Turkish (those of the browser bridge, the request layer and the configuration among
+  them); those of the data store (#70, #85, #100), the match-details downloads (#113), the CSV
+  export (#99), the season reader's catalog lines (#79) and the schedule and season downloads
+  are English (#39).
 - `GET /api/settings` reports `language_explicit`: whether `APP_LANGUAGE` is set (#39).
 - The comments in `.env.example` are in English (#39).
 - `config/leagues.txt` and `config/league_sports.json` are user state and no longer tracked
@@ -314,10 +489,9 @@ section is what the first tagged release will contain.
   unfinished matches is fetched again once it is older than 6 hours.
 - The supported sports are defined in one registry (`src/sports.py`) that the CLI, the
   downloader, the watcher and the web API read (#18).
-- Terminal UI text goes through the locale files, so the CLI follows `APP_LANGUAGE`.
+- Command-line text goes through the locale files, so the CLI follows `APP_LANGUAGE`.
 - The web app bundles its fonts instead of loading them from Google Fonts.
-- One statistics service feeds the web dashboard, `/api/stats/system` and the CLI
-  statistics screens.
+- One statistics service feeds the web dashboard and `/api/stats/system`.
 - File and SQLite work in web handlers runs in the thread pool instead of blocking the
   event loop.
 - Dependencies: `scrapling[fetchers]` pinned to the version the challenge solve was verified
@@ -345,7 +519,6 @@ section is what the first tagged release will contain.
   `{"detail": {"reason", "message"}}` with 502 / 503 / 404 (#23).
 - `POST /api/bypass/test` always answers 200 with `success`, `reason`, `browser_ready` and
   `health` (#23).
-- The interactive season refresh tries at most twice (#23).
 - Changing `LOG_LEVEL` / `DEBUG` on the Settings page takes effect immediately, without a
   restart (#24).
 - When stdout is not a terminal (Docker, cron, pipes) console log lines are plain
@@ -372,15 +545,14 @@ section is what the first tagged release will contain.
   free again when the process ends, however it ends. On a file system without lock support (some
   network shares) a warning is logged and the folder must be used by one process, as before.
   Since #64 the command-line runs (`--headless --update-all`, `--refresh-only`,
-  `--recheck-unavailable`, `--watch`) take the lock too; the interactive terminal menu does not,
-  except for **Clear data** (#104).
+  `--recheck-unavailable`, `--watch`) take the lock too (#104).
 - **Store layer: file modes and sub names.** Payload files, manifests and `.meta/schema.json`
   written by the new Store layer get the mode the process umask gives (0644 with the usual umask
   022) instead of 0600, so a Docker bind mount read by another user, or a backup tool running
   under another account, can read the data. The lock files (#70), `state.db` and `catalog.db`
   (#85), the match details, season lists and schedules the Store writes since #98 and #104, the
-  CSV export and the files that are appended to (`watch_events.jsonl`, the change log under
-  `changes/`) follow the umask too; the files under `config/` written by the older helpers
+  CSV export and the files that are appended to (the change log under `changes/`) follow the
+  umask too; the files under `config/` written by the older helpers
   (`leagues.txt`, `league_sports.json`, `overrides.json`) keep mode 0600, and `.env` and the
   browser profile stay private. Slice sub names are lower-case only (`[a-z0-9_.-]`), because
   Windows and default macOS file systems do not distinguish case. Since #91, `--watch` no longer
@@ -393,10 +565,9 @@ section is what the first tagged release will contain.
   `CSV file successfully created: …`) to the server console. Since #99 a web download has no CSV
   step and the web export writes no file (#57).
 - `--watch` keeps its state in the data directory's `state.db` and also stores every event with
-  a sequence number in the durable `live` stream. `watch_events.jsonl` is still written. An
-  existing `watch_state_<sport>.json` is imported once, on the first run after the upgrade;
-  since #91 the file is no longer written. On Windows `watch_events.jsonl` now gets LF line
-  endings like every other data file (#59).
+  a sequence number in the durable `live` stream. An existing `watch_state_<sport>.json` is
+  imported once, on the first run after the upgrade; since #91 the file is no longer written,
+  and since #119 `watch_events.jsonl` is not written either (#59).
 - Headless runs (`--headless --update-all`, with or without `--league-id` and `--fetch-mode`)
   now run the same flow as a download started in the web app. The terminal menu's banners are
   gone from the output; a run ends with one summary line
@@ -410,10 +581,8 @@ section is what the first tagged release will contain.
   id, host, purpose, since when) and exit with code **6**. A second `--watch` for the same sport
   on the same data folder is refused the same way. `--headless --csv-export` on its own is not
   affected. These runs create `.meta/` in the data folder, as the web app does (#64).
-- Exit codes of headless runs are otherwise unchanged, with two exceptions: an unexpected error
-  while fetching match details ends the run with exit code 1 instead of being logged and
-  ignored, and an `APP_EXIT_CODE` variable in the environment no longer overrides the exit code
-  (#64).
+- An `APP_EXIT_CODE` variable in the environment no longer overrides the exit code of a
+  headless run; the exit codes themselves are in the entry of #119 (#64).
 - The warnings the logger prints to stderr (invalid `LOG_LEVEL`, log file cannot be opened or
   written) are in English (#65).
 - Downloads and refreshes started from the command line (`--headless --update-all`,
@@ -449,7 +618,7 @@ section is what the first tagged release will contain.
   after every download. The dashboard and the statistics (#78), the season lists (#79), stored
   matches (#80) and the match lists (#89) are read from it; it can be deleted at any time and is
   rebuilt (#75).
-- The dashboard and the statistics (web and terminal) now count from the data folder's index
+- The dashboard and the statistics now count from the data folder's index
   instead of walking the files. A match that is listed in two summary files and a league with
   two season-list files are counted once; details that sit outside a league's season folders
   (single-match downloads, folders of old versions) are counted; a downloaded match that no
@@ -458,8 +627,8 @@ section is what the first tagged release will contain.
   no details are not counted, also in seasons that were downloaded while the setting was off. On
   folders without these cases the numbers are the same. Disk usage is measured again at most
   once a minute unless a download or a clear changed the data (#78).
-- The season list of a league is read from the data folder's index everywhere (web app,
-  downloads, terminal menu), so all of them see the same list. When `seasons/` holds several
+- The season list of a league is read from the data folder's index everywhere (web app and
+  downloads), so both see the same list. When `seasons/` holds several
   list files for one league (left by older versions or by renaming a league), the newest one is
   used whatever its name; before, the web app preferred a bare `<id>_seasons.json` and downloads
   preferred the file named after the configured league, even when it was the older one. A list
@@ -515,9 +684,9 @@ section is what the first tagged release will contain.
   the next start once the minute is over, or with `ssc catalog reconcile`. Set
   `STORE_OPEN_RECONCILE_SECONDS=0` to check on every start (#90).
 - `main.py --watch` no longer writes `watch_state_<sport>.json`. Its state is kept in the data
-  folder's state database, and an existing file is imported once. It keeps writing its stdout
-  lines and `watch_events.jsonl` in the 2.x format for one more release. It no longer stops when
-  the store is busy for a moment (#91).
+  folder's state database, and an existing file is imported once. It no longer stops when the
+  store is busy for a moment (#91). Since #119 it runs `ssc watch --source poll --stdout`, see
+  that entry.
 - The `data` of live events in the event log (`ssc events`, the sinks) has its final shape.
   `live.status_changed` has `from`, `to`, `change_ts`, `provisional` and `score`.
   `live.score_changed` has `from`, `to` (each `{home, away}`), `change_ts` and `score`.
@@ -537,13 +706,12 @@ section is what the first tagged release will contain.
   league's "missing details" no longer read every saved file, and take milliseconds instead of
   seconds on large folders. For data written by current versions the decisions are the same
   (#113 changed two rules later, see its entry); inside a season, matches are now taken in
-  kick-off order. "Only finished matches" (`FETCH_ONLY_FINISHED`) applies when the plan is made,
-  as in the match list: a season downloaded with the setting off no longer offers its unfinished
-  matches while the setting is on. For data saved by older versions: records in flat or
-  `_no_tournament` folders, and in league folders without an id, are refreshed too (also with
-  `--league-id`); a match saved only as one combined file counts as downloaded in "missing
-  details". If the index cannot be brought up to date, a download stops with a storage error
-  instead of treating every match as missing (#97).
+  kick-off order. Since #129 "only finished matches" (`FETCH_ONLY_FINISHED`) no longer changes
+  what is downloaded: details are fetched once a match has finished (see that entry). For data
+  saved by older versions: records in flat or `_no_tournament` folders, and in league folders
+  without an id, are refreshed too (also with `--league-id`); a match saved only as one combined
+  file counts as downloaded in "missing details". If the index cannot be brought up to date, a
+  download stops with a storage error instead of treating every match as missing (#97).
 - Season lists and match schedules are now stored in the new data layout, compressed:
   `DATA_DIR/v3/tournaments/<league id>/seasons.json.gz` and
   `DATA_DIR/v3/tournaments/<league id>/seasons/<season id>/schedule/`. Previously they were
@@ -562,7 +730,7 @@ section is what the first tagged release will contain.
   versions in `match_details/<id>` used to appear two or three times. A match stored only as a
   combined `<id>/<id>.json` file is now included. Rows are in kick-off order. A download in the
   web app no longer ends with a CSV step: its phases are seasons, matches and details.
-  `--headless --csv-export` and the terminal menu still write the file to
+  `ssc export` (and `--headless --csv-export`) still writes the file to
   `match_details/processed/`. The progress bar is gone from that step, and its log lines are now
   in English (#99).
 - `ssc watch --source direct` no longer falls back to polling with the `live_source_unavailable`
@@ -587,18 +755,16 @@ section is what the first tagged release will contain.
   The "not available" counts and failed-request marks of a slice live in the match's manifest
   instead of `_unavailable.json` / `_slice_status.json`. A write that finds the data store busy
   is retried a few times; if the store stays busy, the match is reported as failed (before, a
-  busy index never failed a save). In the terminal menu, **Clear data** now goes through the
-  data store like the web app's clear: it removes seasons, matches and match details from both
-  the old folders and `v3/`, and is refused while another process uses the data folder.
-  **Backup** and **Restore** in the terminal menu still copy only the old folders, and the disk
-  sizes in **Statistics** count only the old folders; each of these menus says so (#104).
+  busy index never failed a save). Clearing data removes seasons, matches and match details from
+  both the old folders and `v3/`, and is refused while another process uses the data folder
+  (#104).
 - The web UI is new (FE-2a): an application shell with a side rail (bottom bar on phone), a
   health pill and a job pill, quick search (`Ctrl K`) and keyboard shortcuts; the Overview,
   Jobs, Job detail (live log over the job's event stream, Stop for jobs of any process, Run
   again), Health and Settings (where each value comes from, locked values with the reason,
   all-or-nothing save) screens on `/api/v1`. Light, dark and system themes, compact density,
-  times in local time with UTC on hover, English and Turkish. Screens that need the next API
-  routes are marked "Soon". The previous views remain under `/classic` (menu
+  times in local time with UTC on hover, English and Turkish. The screens that needed later API
+  routes came with #132 and #133. The previous views remain under `/classic` (menu
   `⋯ → Classic interface`); their old addresses redirect there or to the new screen (#107).
 - The token prompt shows a countdown after too many wrong tokens (#107).
 - Backups now also contain `state.db` (follows added in the app, job history, event log), the
@@ -610,13 +776,14 @@ section is what the first tagged release will contain.
   now the Store's defaults) (#109).
 - A league whose matches are American football or minifootball is no longer counted as football,
   and an ice hockey, handball, rugby, futsal, Aussie rules or floorball league is shown under
-  its sport instead of "sport not set" (#112).
+  its sport instead of "sport not set" (#112). A table tennis league is no longer counted as
+  tennis (#115), and a darts, baseball, cricket, e-sports or MMA league is shown under its sport
+  instead of "sport not set" (#118).
 - **One download pipeline for match details** (`src/services/pipeline.py`): league and season
-  downloads, matches picked by id, the single-match fetch (`POST /api/matches/{id}/fetch`, the
-  terminal menu), refills and `--refresh-only` now all run the same code. Picked and single
-  matches get the same data as league downloads, including optional slices such as tennis
-  point-by-point; "only finished matches" (`FETCH_ONLY_FINISHED`) is honoured everywhere, and an
-  unfinished match is reported as skipped instead of failed. Retries are the request layer's
+  downloads, matches picked by id, the single-match fetch (`POST /api/matches/{id}/fetch`),
+  refills and `--refresh-only` now all run the same code. Picked and single matches get the same
+  data as league downloads, including optional slices such as tennis point-by-point; since #129
+  an unfinished match picked on purpose is stored as it is. Retries are the request layer's
   only (`MAX_RETRIES`, default 3) on every path; the extra per-match retries are gone. A
   single-match fetch runs under its own circuit breaker. Every run uses one warmed session and
   runs its requests concurrently, paced by the shared request budget; the terminal progress bar
@@ -627,6 +794,146 @@ section is what the first tagged release will contain.
   refilled or refreshed by downloads (the live service, or a later listing, brings it up to
   date). Changes found by downloads are announced on the `change` event stream
   (`change.recorded`) (#113).
+- A cricket match between two days of play ("End of day 1") is shown as live instead of unknown
+  (#118).
+- Each sport requests the event detail slices SofaScore's match page offers for it. Darts, MMA,
+  padel and snooker no longer request lineups or incidents, and e-sports no longer requests
+  incidents. Slices that SofaScore answers with 404 on started matches are still requested but
+  no longer count for completeness in cricket, darts, e-sports, futsal, ice hockey,
+  minifootball, padel and snooker (statistics, pregame form, lineups as listed in
+  `ssc describe slices`), so those matches are no longer refilled. Football, basketball and
+  tennis are unchanged (#121).
+- **Season lists and schedules are typed download steps**: a season list or a round that
+  SofaScore refuses is reported as a failed step in the job log and the job ends "partial"
+  instead of looking like "no seasons" or "no matches"; a schedule that could not be fetched is
+  no longer counted as an empty one. A download right after another one does not ask for the
+  season list again within 6 hours or for a season's schedule within 15 minutes (finished rounds
+  were already kept, unfinished ones for 6 hours). The season list of a download now uses the
+  same warmed session as the rest of the run. The terminal progress bar of the schedule phase is
+  gone (#116).
+- `match_files_stats.json` and `match_files_report.csv` (the terminal menu's match file report)
+  are no longer written into `match_details/processed/`. Coverage is counted from the data
+  folder's index, wherever a match is stored, and shown per tournament by
+  `ssc status --coverage` and `GET /api/v1/status`. The detail download logs its progress
+  ("Details will be fetched for …", "Done: …") as English log lines instead of printing plain
+  text (#117).
+- **`python main.py` is a thin wrapper around the new command line.** Its flags keep working for
+  one release: each run is translated into a command of the new CLI and prints one line on
+  stderr that names it (`--headless --update-all` is `ssc sync`, `--refresh-only` is
+  `ssc refresh`, `--headless --csv-export` is `ssc export`, `--recheck-unavailable` is
+  `ssc data recheck-unavailable`, `--doctor` is `ssc doctor`, `--diagnostics` is
+  `ssc diagnostics`), and it follows that command's rules: the result on stdout, log lines on
+  stderr. `python main.py <command>` runs any command of the new CLI (#119).
+- **Exit codes of downloads, refreshes and exports.** **3** when the run finished but some
+  matches, season lists or schedules could not be fetched (before: 0, or 1 when every refreshed
+  match failed), **4** when the circuit breaker stopped the run (before: 2), **5** when data
+  could not be written (before: 1), **130** / **143** when Ctrl+C / SIGTERM or a cancel from
+  another process stopped it (before: 0), **6** when another process holds the data folder
+  (unchanged). A run in which SofaScore refused every request now ends with 3, and a CSV export
+  with nothing to export with 1 and no file (both used to end with 0) (#119).
+- `--watch` runs `ssc watch --source poll --stdout`: the live service with polling, which never
+  starts a browser. Its events are printed on stdout as `sofascore.event/1` lines and stored in
+  the event log (`ssc events`); `watch_events.jsonl` is no longer written (#119).
+- `--config` names the configuration file (`sofascore.toml`); a broken file stops the run with
+  exit code 2 and no traceback. A leagues file (`.txt`) given there is ignored with a warning
+  (#119).
+- `--headless` without `--update-all` or `--csv-export` (and `--watch` without `--sport` and
+  ids) is reported before anything runs; the data folder is no longer created first (#119).
+- `python main.py --doctor` runs `ssc doctor`: `--json` prints the CLI envelope with the report
+  in `data`, and the request-budget check (`budget`) is part of every check list (#119).
+- The log line "log level changed" is English (#119).
+- `python main.py --web` runs `ssc serve` (with the `--host`, `--port`, `--dev` and
+  `--allow-any-host` it was given; still 127.0.0.1:8000 by default) and prints one deprecation
+  line. Its log lines are now on stderr, and `--data-dir` now applies to it (#125).
+- The launchers (`start-sofascore.sh`, `Start SofaScore.bat`, `Start SofaScore.command`, the
+  `.desktop` file, `scripts/start_web.py`) start `ssc serve` on 127.0.0.1 (#125).
+- **Docker:** the image's default command is `ssc serve` (the old `web` still works); other
+  arguments go to `main.py`, so `docker run … sync` runs a command of the CLI. When no
+  allow-list is set anywhere, the entrypoint uses the loopback names; the Compose example sets
+  them explicitly. Without `SOFASCORE_API_TOKEN` the container logs a warning at every start,
+  which you can ignore while the port is published on 127.0.0.1 only. The image sets the browser
+  profile as `SOFASCORE_CLIENT__BROWSER_PROFILE`, so a config file no longer causes a "legacy
+  name" warning for it (#125).
+- `ssc --help` names `ssc serve` for the web app instead of `python main.py --web` (#131).
+- The deprecated `/api/…` routes now run on the same services as `/api/v1`; their answers are
+  unchanged. Starting the web server no longer creates `config/leagues.txt` or the job database
+  before the first request (#127).
+- **Matches of every status are stored.** Season schedules now keep fixtures, live, postponed
+  and cancelled matches as well as finished ones. "Only finished matches"
+  (`FETCH_ONLY_FINISHED`) now only decides what the match lists and the dashboard show. With the
+  setting on (the default) they show the same matches as before. With it off they show fixtures
+  too. Match details are downloaded once a match has finished, whatever the setting, so with the
+  setting off downloads no longer fetch the details of fixtures. A match you fetch on purpose (a
+  single match, or one picked by id) is stored even if it has not finished. "Keep empty rounds"
+  (`SAVE_EMPTY_ROUNDS`) is retired: rounds without matches are not stored (#129).
+- **A stored match that a newer schedule disagrees with is read again.** If a later schedule
+  shows a different score, status or kick-off time for a finished match, the next download or
+  `--refresh-only` run reads that match first, records the change in the change log and clears
+  the mark. This also happens with `REFRESH_WINDOW_HOURS=0`. The refresh window now applies only
+  to records that are finished, decided without play (walkover or retirement), postponed or
+  cancelled. A record that has gone back to "live" or "not started" is kept up to date by the
+  schedules and the live service instead (#129).
+- `ssc export --schema raw` writes the matches oldest first (it wrote them newest first) (#130).
+- Web UI, operations and system: new Exports (download, new export with the wide CSV or raw
+  JSONL), Backups (create, download, a three-step restore whose check is a dry run and whose
+  last step gives the server command), Maintenance (rebuild the index, the old-layout count with
+  the migrate command, clear with a typed confirmation), Logs and diagnostics (log tail with
+  filters, diagnostics summary and checks, the bundle) and Sinks (read-only, with lag) screens.
+  Overview shows the stored-data tiles and more attention items; Health runs the connection
+  check and shows the live service, the leases and the storage. The token prompt and Sign out
+  use `/api/v1/auth` (#132).
+- Web UI, data: new Follows (with sync, edit, disable, remove; config follows locked), Follow
+  editor (search at SofaScore or by id; seasons; the data selection with odds as their own
+  group, off by default, and the request cost per match, read-only in the web UI for now; review
+  with live watching and sync now), Follow detail (seasons, events, data selection, jobs),
+  Events (filters in the address, data column, fetch missing data and fetch again for selected
+  matches), Event detail (score and quality, statistics, line-ups and incidents for football,
+  basketball and tennis, every slice with its state, corrections, odds; a raw view with search,
+  copy and full-size download) and Corrections screens; quick search over follows, tournaments
+  and event ids. The old addresses lead to the new screens; the classic views remain under
+  `/classic` (#133).
+- The web UI needs Safari 16.4, Chrome 111 or Firefox 128 or newer: it moved to Tailwind CSS 4,
+  and the screens look the same (#136).
+- Web UI, the newcomer pass:
+  - **Add league everywhere:** "Add league" is always one click away, in the Overview header,
+    the top bar and the phone's More sheet.
+  - **Quick search:** it has actions (Add league, Back up, Export, Settings, Help) and, when
+    nothing matches, a "Search SofaScore" entry that runs one search in the editor.
+  - **Plain words in Turkish and English:** Leagues & follows, Matches, Score changes, Outputs,
+    Data cleanup, download and update, access key. Leagues show by name instead of by id.
+  - **Help:** a Help panel with a glossary and the getting-started steps, and (i) tips next to
+    its words.
+  - **Feedback:** a toast when a download ends, and the league page updating itself.
+  - **The connection** is no longer "Connected" before SofaScore has answered.
+  - **Matches** shows every status by default, and team names on a match link to that team's
+    matches.
+  - **The data a league downloads** is shown in one line with Details.
+  - **Team, player and single-match follows** are marked "coming soon" (#154).
+- Downloads (`ssc sync`, the web UI's sync, the scheduler) now read the follows table: every
+  enabled tournament follow is downloaded, whichever way it was added (`config/leagues.txt`,
+  `[[follow]]` in the config file, the web UI or `ssc follows add`), each with its season choice
+  (`all`, `current`, `last:N` or season ids). `ssc follows remove` of a `leagues.txt` follow
+  removes it from the file (#152).
+- `/api/v1/status` `summary.disk.total` counts the 3.0 layout (`v3/`) and the change log; it
+  read 0 for a data folder written by 3.0 (#152).
+- A new data folder no longer gets the empty `seasons/` and `matches/` folders of 2.x (season
+  lists and schedules are stored under `v3/tournaments/`) (#155).
+- The recorded spec of a download job (`GET /api/v1/jobs`, `ssc jobs`) no longer has the unused
+  `export` field (#155).
+- A `SOFASCORE_SINKS` value shown by the app masks every option the sinks do not know, as the
+  diagnostics bundle already did (#155).
+- A follow added in the web UI or through the API is always kept in the follows table and stays
+  editable (enable/disable, seasons, data selection), also without a config file. Before,
+  without a config file, it was written to `config/leagues.txt` and shown locked.
+  `config/leagues.txt` is read as before; a follow of it can be moved into the follows table
+  with `PATCH /api/v1/follows/{id}` `{"origin": "api"}`. The classic views (`/classic`, legacy
+  `/api/leagues`) list only `config/leagues.txt` (#156).
+- Export files are named after the league or dataset and the date
+  (`premier-league_2026-10-06_x7k2m9qa.csv`), and downloads use that name (#156).
+- A SofaScore search that finds nothing answers an empty list, also when SofaScore answers 404
+  (#156).
+- `/api/v1/status` `summary.tournaments[].followed` counts every follow, including those added
+  in the web UI (#156).
 
 ### Fixed
 
@@ -734,12 +1041,6 @@ section is what the first tagged release will contain.
   Such a request used to be sent after the stop whenever its place in the request budget had
   already come: almost every waiting request with the request budget off or set high, and about
   one request per interval with the default budget on a slow machine (#83).
-- **Terminal menu: clear, restore and "move data directory" keep the data folder's index
-  current.** These functions changed the files without telling the index
-  (`.meta/catalog.db`), so in the same session the statistics showed the old counts and a
-  match lookup could answer for files that were gone, until the program was restarted. The
-  index is now rebuilt from the files after each of them, also when the operation stops
-  half-way (#86).
 - Changing the data folder in Settings right as a download finished could crash the server or
   lose the job's end; the change is now refused (409 `job_running`) until the job is fully done
   (#93).
@@ -754,6 +1055,24 @@ section is what the first tagged release will contain.
   download (`GET /api/export/csv?league_id=…`) no longer turns whole numbers into decimals
   (`61.0` is `61` again) and no longer rewrites values such as a rating of `6.50`: each row is
   the same as in the full export (#103).
+- A setting saved on the Settings page now takes effect even when the same setting was changed
+  earlier through `PATCH /api/v1/settings`; before, the earlier value stayed in force and the
+  page reported success (#127).
+- Stopping a download now also stops the requests that wait inside the browser bridge: a stopped
+  job no longer waits for a challenge solve (up to 90 s) or a page fetch (up to 20 s) to finish,
+  and a bridge request is no longer sent after the stop because its turn in the request budget
+  had already come. An answer the browser already returned when the stop arrived is kept instead
+  of dropped (#139).
+- After the data folder is changed in the web UI, the old folder is no longer held open (it can
+  be moved or deleted on Windows while the app runs) (#152).
+- A restore started from the web UI no longer makes its own job disappear from the job list
+  while it runs (seen on Windows) (#153).
+- `ssc config init --from-legacy` only reads: it no longer creates a missing
+  `config/leagues.txt` or writes the follows into the data folder (#155).
+- A live browser (`ssc watch --source page` or `direct`) that cannot start no longer marks the
+  bridge health of the process degraded (#155).
+- The observation returned with a downloaded match is the moment its page was read, as stored
+  (it could be one second later) (#155).
 
 ### Removed
 
@@ -763,6 +1082,22 @@ section is what the first tagged release will contain.
   `python-multipart`) and about 330 locale keys only the retired UI used.
 - `scripts/catalog_tool.py` (replaced by `ssc catalog`) and `scripts/migrate_match_details.py`
   (renamed league folders in place; the new layout does not depend on folder names) (#110).
+- **The interactive terminal menu is gone.** `python main.py` without arguments (or with only
+  `--data-dir`, `--config`, `--refresh-legacy` or `--ignore-rate-limit`) no longer opens a menu:
+  it prints a short help and exits with code 2. Use the web app (`ssc serve`) to work with your
+  data, and the command line (`ssc --help`; `python main.py <command>` when `ssc` is not
+  installed) on servers and in scripts. The README has a table of what replaces each menu entry.
+  Every deprecated flag (`--headless`, `--refresh-only`, `--watch`, `--doctor`, `--web`, …)
+  keeps working for one more release. Moving the data folder is now done by hand: stop the app,
+  move the folder, set `DATA_DIR` (#131).
+- `colorama` and `tqdm` are no longer dependencies (#131).
+- `pandas` is no longer a dependency (nothing used it since the CSV export was rewritten);
+  `ssc doctor` no longer checks it (#155).
+- Library code without a caller in the app: the `shadow_*` functions of `src.store`, the old
+  bulk-download, CSV and file-report methods of `MatchDataFetcher`, the old schedule and season
+  methods of `MatchFetcher` and `SeasonFetcher`, `QueryService.detail_needs` and `refresh_due`,
+  `services.export.export_all_csv`, `web.league_sports.resolve_all` and `SyncSpec.export`
+  (#155).
 
 ### Security
 
@@ -816,6 +1151,8 @@ section is what the first tagged release will contain.
   secret that was written into the wrong field no longer appears in the error message.
   `ssc config show` and the diagnostics bundle print `***` for the value of a sink option
   that the sinks do not define (a misspelt or invented key); the key itself stays visible (#84).
+- Frontend build dependencies updated to clear GHSA-vfj7-8cjw-p6xm (`braces`, which came in
+  through Tailwind CSS 3, #136) and GHSA-68fv-2mgg-jv7q (`source-map-js`, #146).
 
 ## Earlier history
 
