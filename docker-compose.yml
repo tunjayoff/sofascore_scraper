@@ -30,8 +30,8 @@ services:
     environment:
       # The host names the server answers to (DNS rebinding protection), used as written.
       SOFASCORE_ALLOWED_HOSTS: "localhost,127.0.0.1,[::1]"
-      # Optional: APP_LANGUAGE pins the language (en or tr) and, set here, wins over the choice made
-      # on the Settings page at every start. Left out, each browser's language decides.
+      # Optional: APP_LANGUAGE pins the language (en or tr). A setting given here wins over the Settings
+      # page, which then shows it as fixed and cannot change it. Left out, each browser's language decides.
       # APP_LANGUAGE: tr
       # SOFASCORE_API_TOKEN: "a-long-random-value"
       # USE_PROXY: "true"
@@ -42,7 +42,7 @@ services:
 
     volumes:
       - data:/app/data # downloaded seasons, matches, details, backups, job history
-      - config:/app/config # leagues.txt, league_sports.json and .env (settings saved in the UI)
+      - config:/app/config # overrides.json (settings saved in the UI), .env, leagues.txt, league_sports.json
       - browser-profile:/app/browser-profile # solved challenge; makes restarts fast
       - logs:/app/logs # rotating log file (the same lines also go to the container output)
       # To keep the files in folders next to this file instead, replace the two lines above

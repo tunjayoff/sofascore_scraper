@@ -4,6 +4,12 @@ SofaScore sitesi her sayfada SofaScore'un push sunucusuna bir **NATS**-over-WebS
 açıyor ve canlı maç değişikliklerini oradan alıyor (bkz. `docs/all-sports/README.md`, "Canlı sinyal"). Bu belge,
 canlı izlemeyi üretimde bu push kanalıyla yapmanın (yoklama yedekte) uygulanabilirliğini ölçer.
 
+> **Bugünkü davranış.** Bu belge 2026-10-01'deki bir ölçümün kaydıdır. Uygulama bu ölçümden sonra `ssc watch`'a
+> üç canlı kaynak ekledi: `page` (varsayılan; sayfanın kendi push bağlantısını dinler), `poll` (yalnız yoklama)
+> ve `direct` (yalnızca açıkça seçilince; riskleri `ssc watch --help`'te yazar). Yoklama her kaynağın yedeğidir.
+> Kullanım: [README](../../README.md), "Live sources of `ssc watch`"; servis olarak çalıştırma:
+> [docs/deploy/watch.md](../deploy/watch.md). Web arayüzünde canlı görünüm yoktur.
+
 - **Tarih:** 2026-10-01 akşamı, Avrupa kupa maçları penceresi (~19:25–22:00 +03).
 - **Script'ler (ağ keşfi; `src/` değişmez):**
   - `scripts/push_channel_run.py` — spor sayfalarını ayrı sekmelerde açar, her sekmenin **kendi** push
@@ -152,9 +158,7 @@ Chrome süreçlerinin toplamı.
 ## 7. Doğrudan bağlantı deneyi (Talimat 07)
 
 **Yetki:** bu deney, önceki "kendi bağlantını açma" sınırının dışında ve **Tuncay tarafından doğrudan,
-açıkça onaylandı** (manuel modda, her adım onaylanarak). Bir eş oturumun isteğiyle yapılmadı. Not: harness'in
-otomatik izin katmanı bunu "Credential Exploration" diye bir kez engelledi; kullanıcı manuel moda geçip bizzat
-onaylayınca yapıldı.
+açıkça onaylandı** (her adım ayrıca onaylanarak).
 
 **Yöntem:** tarayıcı sekmesi yok. Düz bir Python istemcisi (aiohttp WebSocket, **TLS parmak izi taklidi yok**)
 SofaScore'un push sunucusuna bağlandı. Kimlik, köprünün açtığı futbol sayfasının **kendi `CONNECT`
@@ -163,7 +167,7 @@ jeton; kimsenin hesabı değil). Davranış asgari: **tek bağlantı, tek konu `
 PUB yok, wildcard yok, 120 sn'de bir PING. Reddedilse durulacaktı.
 
 **Sonuç:**
-- **Kabul edildi.** El sıkışma + `INFO` (version 2.12.15, auth_required) + `CONNECT`+`SUB` sonrası `-ERR`
+- **Kabul edildi.** El sıkışma + `INFO` (`auth_required`) + `CONNECT`+`SUB` sonrası `-ERR`
   gelmedi, `MSG` akışı başladı. Düz istemci (tarayıcı TLS taklidi olmadan) reddedilmedi.
 - **Kapsam birebir.** Sayfa sekmesiyle ortak ~30 dk penceresinde: doğrudan 225 kare, sayfa 225 kare;
   ayrı (id, kod) kümesi 112'ye 112, **ikisinde de aynı, sıfır fark**.
@@ -185,7 +189,8 @@ PUB yok, wildcard yok, 120 sn'de bir PING. Reddedilse durulacaktı.
 **Değerlendirme:** doğrudan istemci üretim için teknik olarak uygulanabilir ve belleğin ~onda biri. Riski
 teknik değil, dayanıklılık/uyum: (a) kimlik paylaşımlı bir jeton — SofaScore değiştirirse ya da düz (tarayıcı
 olmayan) istemcileri engellerse kırılır; (b) tarayıcı dışı programatik erişim kullanım şartları açısından gri
-alan. Üretim kararı bu PR'ın kapsamı dışında; bu belge yalnızca ölçümü sunar.
+alan. Üretim kararı ölçümün yapıldığı PR'ın kapsamı dışındaydı; bu belge yalnızca ölçümü sunar. (Sonradan
+`direct`, varsayılan olmayan ve yalnızca açıkça seçilen bir kaynak olarak eklendi; yukarıdaki not.)
 
 ---
 
@@ -194,7 +199,7 @@ alan. Üretim kararı bu PR'ın kapsamı dışında; bu belge yalnızca ölçüm
 - **Doğrudan istemci** yalnızca `sport.football`, tek bağlantı, ~38 dk denendi. Çoklu konu, uzun süre (saatler),
   birden çok spor, gün boyu kimlik rotasyonu denenmedi.
 - **Playwright `close` olayı** güvenilir gelmediğinden kopma pencereleri yaklaşık; "kopmada kayıp" üst sınır.
-- Ölçüm tek akşam, tek bölge (TR), kupa maçları penceresinde. Düşük trafikli saatler / başka sporların canlı
+- Ölçüm tek akşam, tek bölge, kupa maçları penceresinde. Düşük trafikli saatler / başka sporların canlı
   yükü farklı olabilir.
 - Üç sporlu ana koşu, bellek koruması için erken bitirilmedi (boş bellek eşik üstünde kaldı); spor başına 3+
   yeniden bağlanma döngüsü görüldükten sonra elle durduruldu.

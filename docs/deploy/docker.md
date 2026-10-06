@@ -25,9 +25,9 @@ docker compose run --rm --no-deps sofascore-scraper status      # any command of
 | Arguments after the image name | Runs |
 |---|---|
 | none, `serve [options]` (or the old `web`) | `ssc serve --host ${HOST:-0.0.0.0} --port ${PORT:-8000} [options]` |
-| anything else | `python main.py …`: a command of the CLI (`sync`, `watch`, `status`, `backup create`, …) or, for one more release, the old flags (`--version`, `--headless --update-all`, …) with their deprecation line |
+| anything else | `python main.py …`: a command of the CLI (`sync`, `watch`, `status`, `backup create`, …), `--version`, or, for one more release, the old flags (`--headless --update-all`, …) with their deprecation line |
 
-## Host allow-list and the access token (decision D17)
+## Host allow-list and the access token
 
 Inside the container the server listens on `0.0.0.0`, the container's own interface; which network reaches it
 is decided by `-p` / `ports:`, which the app cannot see. Two rules follow:
@@ -53,7 +53,7 @@ the page [`README.md`](README.md#behind-a-reverse-proxy) explains why, and what 
 | Volume | Holds |
 |---|---|
 | `/app/data` | everything downloaded, the job history and the event log (`DATA_DIR`) |
-| `/app/config` | `leagues.txt`, `league_sports.json`, `.env` (settings saved in the web app) and, if you add one, `sofascore.toml` |
+| `/app/config` | `overrides.json` (the settings saved on the web app's **Settings** page), `.env` (settings under their 2.x names), `leagues.txt` and `league_sports.json` (the 2.x league list, read as follows) and, if you add one, `sofascore.toml`. The follows themselves are in the data volume |
 | `/app/browser-profile` | the browser profile with the solved challenge; keeps restarts fast |
 | `/app/logs` | the rotating log file; the same lines go to the container output (`docker logs`) |
 

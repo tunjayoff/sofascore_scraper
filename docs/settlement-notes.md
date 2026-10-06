@@ -15,7 +15,7 @@ Otomatik sonuçlandırma yalnızca elle onaylanmış lig listesinde; kapsam bayr
 | Durum | Kural | Dayanak (README) |
 |---|---|---|
 | `LIVE` | İzle: `events/live` + bitişe yakın `event/{id}` | "Önbellek/tutarlılık bulguları": `events/live` `max-age=5, s-maxage=5`; "Basketbol düdük → finished": `lag_whistle` medyan 20 sn, maks 302 sn (n = 9) |
-| `COMPLETED` ilk görüldüğünde | **Geçici sonuç.** Skor anlık görüntüsü (`extract_scores`) ve `observation.json` (`observed_at_utc`, `change_ts`) saklanır | "Geriye dönük: bitiş sonrası güncellemeler": `finished` görüldükten sonra skor değişebiliyor |
+| `COMPLETED` ilk görüldüğünde | **Geçici sonuç.** Skor anlık görüntüsü (`extract_scores`) ve gözlem (`observed_at_utc`, `change_ts`; maçın `manifest.json`'ında, 2.x klasörlerinde `observation.json`) saklanır | "Geriye dönük: bitiş sonrası güncellemeler": `finished` görüldükten sonra skor değişebiliyor |
 | Kesinleşme kontrolü | `event/{id}` yeniden okunur, **skor alanları saklananla karşılaştırılır**. Aynıysa kesin; farklıysa yeniden sonuçlandır ve uyar. `changes`'a güvenilmez | Aynı bölüm: `changes` yalnızca son güncellemeyi gösterir; sonraki `time.*` / `providerLock.*` güncellemesi skor değişikliğini gizler (tenis 333/400, futbol 133/400) |
 | Kesinleşme gecikmesi | Üst lig futbol/tenis/basketbol **T+2 sa**; alt lig futbol/tenis **T+6 sa**; alt lig basketbol **T+72 sa ya da elle** (T = bitiş) | Aşağıdaki tablo |
 | Kesinleşme gecikmesi, piyasaya göre (üst lig) | Maç sonucu **T+2 sa**; periyot / çeyrek / yarı piyasaları **T+24 sa** | Aşağıdaki tablo: U19 Eccellenza 17101022'de periyot skorları başlangıçtan 16,4 sa sonra değişti, nihai skor değişmedi |

@@ -5,6 +5,14 @@ trafiği kaydedildi. Amaç, projeyi üç spordan (futbol, basketbol, tenis) tüm
 bilgiyi çıkarmak: hangi sporlar var, veri modelleri mevcut modele ne kadar uyuyor, site hangi uç noktaları
 kullanıyor, canlı sayfa nasıl tazeleniyor.
 
+> **Bugünkü durum.** Bu belge 01.10.2026'daki keşfin kaydıdır; "Özet" ve "Sınıf gerekçeleri" o günkü kodu anlatır.
+> Uygulama bundan sonra olay (`event`) modelindeki **21 sporu** destekler hale geldi: futbol, basketbol, tenis ve
+> A/B sınıflarının 18 sporu, her biri kendi skor biçimi ve detay dilimleriyle (`src/sports.py`, `SPORTS`; skor:
+> `src/status.py`, `extract_scores`; kriketin `willcontinue` durumu canlı sayılır). `stage` modeli (motor
+> sporları, bisiklet) ile bandy, su topu ve plaj voleybolu desteklenmez. Bahis oranları ve maç dışı veriler
+> (`odds` grubu vb.) varsayılan olarak kapalıdır; seçilmedikçe istenmez. Bir oran okumasıyla ülke kodu yalnızca
+> `[client] odds_country` ayarlanmışsa kaydedilir; bu makineden türetilmez (`src/config/settings.py`).
+
 - **Tarih:** 01.10.2026, 12:00–14:02 UTC (Perşembe; hafta içi programı).
 - **Script'ler:**
   - `scripts/explore_all_sports.py`: gezinti ve kayıt;
@@ -243,7 +251,7 @@ Spor sayfasındaki **Bitti** filtresi repoda kullanılan `scheduled-tournaments`
 SofaScore'un push sunucusu (WebSocket üzerinden NATS). Kaynak: `research/all_sports/ws.jsonl`.
 
 - **Bağlantı:** sitenin her sayfası bağlanıyor.
-  - Sunucu `INFO` karesinde `"version": "2.12.15"`, `"auth_required": true` diyor. Kayıtta INFO'dan yalnızca
+  - Sunucu `INFO` karesinde `"auth_required": true` diyor. Kayıtta INFO'dan yalnızca
     `version`, `auth_required` ve `tls_required` tutuldu.
   - İstemci `CONNECT` ile `user`/`pass` gönderiyor (`"lang": "nats.ws"`). **Kayıtta maskelendi.**
   - Bu çalışma yalnızca sitenin kendi bağlantısının karelerini kaydetti; kendi bağlantısını açmadı, SUB denemedi.
@@ -310,9 +318,9 @@ arasındaki medyan aralık (`docs/all-sports/endpoints.csv` → `live_repeat_s`)
 - futbol: Japonya–Ekvador, penaltılar sırasında;
 - tenis: Menšík–Bublik.
 
-Widget `lmt.fn.sportradar.com` adresini ~4 sn arayla sorguluyor ve `ws.fn.sportradar.com` WebSocket'ini açıyor
+Widget Sportradar'ın kendi sunucusunu ~4 sn arayla sorguluyor ve bir Sportradar WebSocket'i açıyor
 (`research/all_sports/third_party_hosts.json` → `hosts`, `sportradar_widget_pages`). URL'lerde imzalı token olduğu
-için yalnızca alan adı tutuldu; gövde ve şema saklanmadı.
+için kayıtta yalnızca alan adı tutuldu; gövde ve şema saklanmadı.
 
 Diğer canlı futbol sayfası (WSG Tirol–Jahn Regensburg) widget açmadı. Diğer sporlarda canlı maç sayfası açılmadığı
 için bu sporların sayfalarının widget'a dayanıp dayanmadığı **bilinmiyor**.

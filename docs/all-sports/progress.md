@@ -19,7 +19,7 @@ spor menüsü (`links`).
   `research/all_sports/samples/football/sport-id-event-count__1.json`.
 
 **En şaşırtıcı 3 bulgu:**
-1. **Push kanalı var.** `wss://ws.sofascore.com:9222/` bir **NATS** sunucusu (`INFO {"version":"2.12.15", "auth_required":true, ...}`).
+1. **Push kanalı var.** Sitenin kendi push sunucusu (adresi yayımlanmaz) bir **NATS** sunucusu (`INFO {"auth_required":true, ...}`).
    Her sayfada açılıyor. `sport.football` konusunda olay nesnesinin **değişen alanları** noktalı yol olarak
    geliyor, ör. `{"status.code":100,"status.type":"finished","homeScore.current":8,"winnerCode":1,
    "changes.changeTimestamp":1790856421,"id":17124861}` (`research/all_sports/ws.jsonl`). Bitiş sinyali
@@ -27,7 +27,7 @@ spor menüsü (`links`).
 2. **"Bitti" filtresi farklı bir uç noktaya gidiyor.** `/sport/{sport}/finished-upcoming-tournaments/{date}`; repodaki
    `scheduled-tournaments` ile aynı değil.
 3. **Boşta duran sayfa da istek atıyor.** Ana sayfa listedeki maçlar için `/event/{id}`, `/event/{id}/odds/{id}/all`
-   ve `/event/{id}/votes` istiyor (önden yükleme). Ayrıca challenge sonrası ülke kodu `TR` → `XX` oluyor
+   ve `/event/{id}/votes` istiyor (önden yükleme). Ayrıca challenge sonrası ülke kodu `XX` oluyor
    (`/config/top-unique-tournaments/XX/football`).
 
 **Araç düzeltmeleri:**
@@ -123,8 +123,8 @@ spor menüsü (`links`).
 - **Stage modelinin statüsünde kod yok:** yalnızca `{type, description}`; sezon stage'inde `type` boş
   (`research/all_sports/samples/motorsport/stage-id-extended__1.json`).
 - **Kriket'te yeni `status.type`: `willcontinue`.**
-- **Tenis canlı sayfası iki üçüncü taraf kanal açıyor:** Sportradar LMT widget'ı (`lmt.fn.sportradar.com/common`,
-  ~4 sn polling) ve `wss://ws.fn.sportradar.com/wss`. URL'de imzalı token var; gizli bilgi taramasında
+- **Tenis canlı sayfası iki üçüncü taraf kanal açıyor:** Sportradar LMT widget'ı (~4 sn polling) ve bir Sportradar
+  WebSocket'i. URL'de imzalı token var; gizli bilgi taramasında
   maskelenecek.
 - **Tenis canlı sayfasında SofaScore polling:** `statistics` ve `point-by-point` ~10–25 sn arayla.
 - **NATS konuları:** spor sayfası `sport.{sport}`, maç/liste sayfaları `event.{id}`, ayrıca `odds.{id}`.
