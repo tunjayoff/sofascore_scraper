@@ -41,6 +41,12 @@ updates:
     open-pull-requests-limit: 3
     commit-message:
       prefix: "chore(deps)"
+    ignore:
+      # TypeScript 7 (the native compiler) no longer ships the JavaScript compiler API that vue-tsc
+      # and typescript-eslint load (vue-tsc: "./lib/tsc is not exported"; typescript-eslint 8.71
+      # peer range ">=4.8.4 <6.1.0"). Remove this once both support it (#142).
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     groups:
       frontend-minor-patch:
         update-types:
