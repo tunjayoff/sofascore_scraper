@@ -138,10 +138,15 @@ def list_follows(
     origin: Optional[Literal["legacy", "config", "api"]] = Query(None, description="Only follows of this origin."),
     enabled: Optional[bool] = Query(None, description="Only enabled (true) or disabled (false) follows."),
     q: Optional[str] = Query(None, min_length=1, max_length=80, description="Text in the name; case ignored."),
+    sport: Optional[str] = Query(
+        None, max_length=40,
+        description="Only follows of this sport (slug): the follow's own sport, else the sport the catalog knows for "
+                    "a tournament. An unknown sport is 400.",
+    ),
 ) -> FollowListResponse:
     """Every follow of every origin, in their order. The successor of `GET /api/leagues` and its search."""
     service = deps.follows_service()
-    rows = service.list(kind=kind, origin=origin, enabled=enabled, text=q)
+    rows = service.list(kind=kind, origin=origin, enabled=enabled, text=q, sport=sport)
     return FollowListResponse(data=[record(service, row) for row in rows],
                               page=PageInfo(limit=len(rows), next_cursor=None))
 

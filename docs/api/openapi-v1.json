@@ -637,6 +637,25 @@
               "title": "Q"
             },
             "description": "Text in the name; case ignored."
+          },
+          {
+            "name": "sport",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only follows of this sport (slug): the follow's own sport, else the sport the catalog knows for a tournament. An unknown sport is 400.",
+              "title": "Sport"
+            },
+            "description": "Only follows of this sport (slug): the follow's own sport, else the sport the catalog knows for a tournament. An unknown sport is 400."
           }
         ],
         "responses": {

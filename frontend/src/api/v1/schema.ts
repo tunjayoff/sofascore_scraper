@@ -1472,7 +1472,7 @@ export interface Operations {
     method: "GET"
     path: "/api/v1/follows"
     params: {}
-    query: { kind?: "tournament" | "team" | "player" | "event" | null; origin?: "legacy" | "config" | "api" | null; enabled?: boolean | null; q?: string | null }
+    query: { kind?: "tournament" | "team" | "player" | "event" | null; origin?: "legacy" | "config" | "api" | null; enabled?: boolean | null; q?: string | null; sport?: string | null }
     body: never
     response: FollowListResponse
   }
