@@ -69,6 +69,25 @@ class BridgeHealth(BaseModel):
     thresholds: Dict[str, float]
 
 
+class ConnectionStatus(BaseModel):
+    """
+    Whether this server's requests reach SofaScore: the outcome of the last request it sent (a job of this server,
+    a search, the connection check). Separate from `bridge`, which counts refused requests only and reads `ok`
+    before any request. Requests of other processes (`ssc` commands, `ssc watch`) are not counted here.
+    """
+
+    state: Literal["never_tried", "ok", "failed"] = Field(
+        description="never_tried: no request has ended since the server started; ok: the last one was answered "
+                    "(200 or 404); failed: the last one was not.",
+    )
+    last_success_at: Optional[str] = Field(default=None, description="ISO-8601, UTC.")
+    last_failure_at: Optional[str] = Field(default=None, description="ISO-8601, UTC.")
+    last_failure_reason: Optional[str] = Field(
+        default=None, description="403, 429, 5xx, timeout, network, parse or other.",
+    )
+    last_failure_status: Optional[int] = Field(default=None, description="HTTP status of the last failure, if any.")
+
+
 class ThrottleStatus(BaseModel):
     """The request budget shared by all processes of this machine."""
 
@@ -83,6 +102,7 @@ class Health(BaseModel):
     version: str
     api_version: Literal["v1"]
     bridge: BridgeHealth
+    connection: ConnectionStatus
     throttle: ThrottleStatus
 
 
@@ -236,6 +256,7 @@ class Status(BaseModel):
     )
     auth_required: bool = Field(description="Whether an access token is configured.")
     bridge: BridgeHealth
+    connection: ConnectionStatus
     throttle: ThrottleStatus
     active_job: Optional[Job] = Field(
         default=None, description="The job that runs on the data directory right now, in any process.",
@@ -275,6 +296,7 @@ class StatusCheck(BaseModel):
     events_count: Optional[int] = Field(default=None, description="Live events in the answer; null on failure.")
     checked_at_utc: str
     bridge: BridgeHealth
+    connection: ConnectionStatus
 
 
 class StatusCheckResponse(BaseModel):
@@ -354,6 +376,12 @@ def _bridge() -> BridgeHealth:
     from src import bridge_health
 
     return BridgeHealth.model_validate(bridge_health.snapshot())
+
+
+def _connection() -> ConnectionStatus:
+    from src import bridge_health
+
+    return ConnectionStatus.model_validate(bridge_health.connection())
 
 
 def _throttle() -> ThrottleStatus:
@@ -552,7 +580,8 @@ def sinks_summary(store: "Store") -> SinksSummary:
 def health() -> HealthResponse:
     """The server is up; whether SofaScore answers it; the request budget."""
     return HealthResponse(data=Health(
-        status="ok", version=__version__, api_version=API_VERSION, bridge=_bridge(), throttle=_throttle(),
+        status="ok", version=__version__, api_version=API_VERSION, bridge=_bridge(), connection=_connection(),
+        throttle=_throttle(),
     ))
 
 
@@ -588,6 +617,7 @@ def status() -> StatusResponse:
         schema_version=SCHEMA_VERSION,
         auth_required=bool(security.api_token()),
         bridge=_bridge(),
+        connection=_connection(),
         throttle=_throttle(),
         active_job=job_model(active) if active is not None else None,
         live=live,
@@ -631,7 +661,7 @@ def check_sofascore() -> StatusCheck:
     message = "SofaScore answered." if reason is None else upstream.detail(reason)["message"]
     return StatusCheck(
         ok=reason is None, reason=reason, message=message, events_count=count,  # type: ignore[arg-type]
-        checked_at_utc=utc_text(time.time()) or "", bridge=_bridge(),
+        checked_at_utc=utc_text(time.time()) or "", bridge=_bridge(), connection=_connection(),
     )
 
 

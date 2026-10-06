@@ -181,6 +181,24 @@ export interface ClearJobSpec {
   season_id?: number | null
 }
 
+/**
+ * Whether this server's requests reach SofaScore: the outcome of the last request it sent (a job of this server,
+ * a search, the connection check). Separate from `bridge`, which counts refused requests only and reads `ok`
+ * before any request. Requests of other processes (`ssc` commands, `ssc watch`) are not counted here.
+ */
+export interface ConnectionStatus {
+  /** never_tried: no request has ended since the server started; ok: the last one was answered (200 or 404); failed: the last one was not. */
+  state: "never_tried" | "ok" | "failed"
+  /** ISO-8601, UTC. */
+  last_success_at?: string | null
+  /** ISO-8601, UTC. */
+  last_failure_at?: string | null
+  /** 403, 429, 5xx, timeout, network, parse or other. */
+  last_failure_reason?: string | null
+  /** HTTP status of the last failure, if any. */
+  last_failure_status?: number | null
+}
+
 /** One innings of one side in cricket. */
 export interface CricketInnings {
   /** The side that batted. */
@@ -539,6 +557,7 @@ export interface Health {
   version: string
   api_version: "v1"
   bridge: BridgeHealth
+  connection: ConnectionStatus
   throttle: ThrottleStatus
 }
 
@@ -1364,6 +1383,7 @@ export interface Status {
   /** Whether an access token is configured. */
   auth_required: boolean
   bridge: BridgeHealth
+  connection: ConnectionStatus
   throttle: ThrottleStatus
   /** The job that runs on the data directory right now, in any process. */
   active_job?: Job | null
@@ -1393,6 +1413,7 @@ export interface StatusCheck {
   events_count?: number | null
   checked_at_utc: string
   bridge: BridgeHealth
+  connection: ConnectionStatus
 }
 
 /** What to check. */

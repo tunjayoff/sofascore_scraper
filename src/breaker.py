@@ -296,12 +296,31 @@ def check(url: str = "") -> None:
 
 
 def report_ok() -> None:
+    _connection_answered()
     breaker = current()
     if breaker is not None:
         breaker.record(OK)
 
 
 def report_exception(exc: BaseException) -> None:
+    kind = failure_kind(exc)
+    if kind == NOT_FOUND:
+        _connection_answered()  # 404: SofaScore yanıt verdi
+    elif kind != BREAKER_OPEN:  # devre açıkken istek gönderilmedi: bağlantı hakkında bir şey söylemez
+        _connection_unanswered(kind, http_status(exc))
     breaker = current()
     if breaker is not None:
         breaker.record_exception(exc)
+
+
+def _connection_answered() -> None:
+    """Sürecin bağlantı durumu (src/bridge_health.py `ConnectionState`; FX-19): son istek yanıt aldı."""
+    from src import bridge_health
+
+    bridge_health.record_answer()
+
+
+def _connection_unanswered(kind: str, status: Optional[int]) -> None:
+    from src import bridge_health
+
+    bridge_health.record_unanswered(kind, status)

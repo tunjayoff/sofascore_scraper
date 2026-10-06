@@ -5271,6 +5271,74 @@
         "type": "object",
         "title": "ClearJobSpec"
       },
+      "ConnectionStatus": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "never_tried",
+              "ok",
+              "failed"
+            ],
+            "title": "State",
+            "description": "never_tried: no request has ended since the server started; ok: the last one was answered (200 or 404); failed: the last one was not."
+          },
+          "last_success_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Success At",
+            "description": "ISO-8601, UTC."
+          },
+          "last_failure_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Failure At",
+            "description": "ISO-8601, UTC."
+          },
+          "last_failure_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Failure Reason",
+            "description": "403, 429, 5xx, timeout, network, parse or other."
+          },
+          "last_failure_status": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Failure Status",
+            "description": "HTTP status of the last failure, if any."
+          }
+        },
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "title": "ConnectionStatus",
+        "description": "Whether this server's requests reach SofaScore: the outcome of the last request it sent (a job of this server,\na search, the connection check). Separate from `bridge`, which counts refused requests only and reads `ok`\nbefore any request. Requests of other processes (`ssc` commands, `ssc watch`) are not counted here."
+      },
       "CricketInnings": {
         "properties": {
           "side": {
@@ -7023,6 +7091,9 @@
           "bridge": {
             "$ref": "#/components/schemas/BridgeHealth"
           },
+          "connection": {
+            "$ref": "#/components/schemas/ConnectionStatus"
+          },
           "throttle": {
             "$ref": "#/components/schemas/ThrottleStatus"
           }
@@ -7033,6 +7104,7 @@
           "version",
           "api_version",
           "bridge",
+          "connection",
           "throttle"
         ],
         "title": "Health"
@@ -10544,6 +10616,9 @@
           "bridge": {
             "$ref": "#/components/schemas/BridgeHealth"
           },
+          "connection": {
+            "$ref": "#/components/schemas/ConnectionStatus"
+          },
           "throttle": {
             "$ref": "#/components/schemas/ThrottleStatus"
           },
@@ -10626,6 +10701,7 @@
           "schema_version",
           "auth_required",
           "bridge",
+          "connection",
           "throttle",
           "schedule",
           "capabilities"
@@ -10680,6 +10756,9 @@
           },
           "bridge": {
             "$ref": "#/components/schemas/BridgeHealth"
+          },
+          "connection": {
+            "$ref": "#/components/schemas/ConnectionStatus"
           }
         },
         "type": "object",
@@ -10687,7 +10766,8 @@
           "ok",
           "message",
           "checked_at_utc",
-          "bridge"
+          "bridge",
+          "connection"
         ],
         "title": "StatusCheck",
         "description": "The outcome of one connection check; a failed check is a result, not an error."

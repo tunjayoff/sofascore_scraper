@@ -236,8 +236,78 @@ class BridgeHealth:
             self._change_callbacks.remove(fn)
 
 
+# --- bağlantı: istek katmanının son sonucu (plan maddesi FX-19) --------------------------------------------
+
+# Bağlantı durumları: hiç istek bitmedi / son istek yanıt aldı / son istek yanıt alamadı
+CONNECTION_NEVER = "never_tried"
+CONNECTION_OK = "ok"
+CONNECTION_FAILED = "failed"
+
+
+class ConnectionState:
+    """
+    Bu sürecin SofaScore'a son isteğinin sonucu (köprü durumundan ayrı: köprü yalnızca reddedilen istekleri sayar
+    ve hiç istek yokken de "ok" der). İstek katmanı her isteğin son halini bildirir (src/breaker.py
+    `report_ok` / `report_exception`): yanıt (200, 404) başarı; 403, 429, 5xx, zaman aşımı, ağ ve okunamayan yanıt
+    başarısızlık. Devre kesicinin göndermediği istek sayılmaz. Arayüz böylece hiçbir istek başarmadan "bağlı"
+    demez.
+    """
+
+    def __init__(self, clock: Callable[[], float] = time.time) -> None:
+        self._clock = clock
+        self._lock = threading.Lock()
+        self.last_success_at: Optional[float] = None
+        self.last_failure_at: Optional[float] = None
+        self.last_failure_reason: Optional[str] = None
+        self.last_failure_status: Optional[int] = None
+
+    def record_answer(self) -> None:
+        with self._lock:
+            self.last_success_at = self._clock()
+
+    def record_unanswered(self, reason: str, status: Optional[int] = None) -> None:
+        with self._lock:
+            self.last_failure_at = self._clock()
+            self.last_failure_reason = str(reason)
+            self.last_failure_status = status if isinstance(status, int) and not isinstance(status, bool) else None
+
+    def snapshot(self) -> Dict[str, Any]:
+        """JSON'a hazır görüntü; `state`: never_tried, ok ya da failed (son sonuç). Zamanlar ISO-8601 UTC."""
+        with self._lock:
+            success, failure = self.last_success_at, self.last_failure_at
+            if success is None and failure is None:
+                state = CONNECTION_NEVER
+            elif failure is None or (success is not None and success >= failure):
+                state = CONNECTION_OK
+            else:
+                state = CONNECTION_FAILED
+            return {
+                "state": state,
+                "last_success_at": _iso(success),
+                "last_failure_at": _iso(failure),
+                "last_failure_reason": self.last_failure_reason,
+                "last_failure_status": self.last_failure_status,
+            }
+
+
 # Süreç başına tek köprü (BrowserBridge.get_instance) → tek sağlık durumu
 _health = BridgeHealth()
+_connection = ConnectionState()
+
+
+def record_answer() -> None:
+    """SofaScore bir isteğe yanıt verdi (istek katmanından; FX-19)."""
+    _connection.record_answer()
+
+
+def record_unanswered(reason: str, status: Optional[int] = None) -> None:
+    """Bir istek yanıt alamadı: reason src/breaker.py `failure_kind`'ın türüdür (FX-19)."""
+    _connection.record_unanswered(reason, status)
+
+
+def connection() -> Dict[str, Any]:
+    """Bağlantının görüntüsü (`ConnectionState.snapshot`)."""
+    return _connection.snapshot()
 
 
 def record_success() -> None:
@@ -269,9 +339,10 @@ def remove_on_health_change(fn: HealthChangeCallback) -> None:
 
 
 def reset() -> None:
-    """Durumu sıfırlar (testler)."""
-    global _health
+    """Durumu sıfırlar (testler): köprü ve bağlantı."""
+    global _health, _connection
     _health = BridgeHealth()
+    _connection = ConnectionState()
 
 
 # --- CLI ------------------------------------------------------------------------------------
