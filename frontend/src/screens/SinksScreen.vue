@@ -76,7 +76,7 @@ onUnmounted(() => stop?.())
 
 <template>
   <div>
-    <PageHeader :title="t('ui.nav.sinks')" :description="t('ui.sinks.description')">
+    <PageHeader :title="t('ui.nav.sinks')" :description="t('ui.sinks.description')" help="outputs">
       <template #actions>
         <button type="button" class="u-btn" :disabled="loading" @click="load"><UiIcon name="refresh" :size="16" />{{ t('ui.common.refresh') }}</button>
       </template>

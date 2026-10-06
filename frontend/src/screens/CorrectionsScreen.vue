@@ -82,7 +82,7 @@ onMounted(() => {
 
 <template>
   <div>
-    <PageHeader :title="t('ui.nav.corrections')" :description="t('ui.corrections.description')">
+    <PageHeader :title="t('ui.nav.corrections')" :description="t('ui.corrections.description')" help="scoreChanges">
       <template #actions>
         <button type="button" class="u-btn" @click="list.load()"><UiIcon name="refresh" :size="16" />{{ t('ui.common.refresh') }}</button>
       </template>

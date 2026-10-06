@@ -41,6 +41,9 @@ export const railCollapsed = stored<'0' | '1'>('ssui.rail', ['0', '1'], '0')
 /** Times in the browser's zone (default, decision 13) or in UTC. */
 export const timeDisplay = stored<TimeDisplay>('ssui.time', ['local', 'utc'], 'local')
 
+/** The getting-started card on Overview, hidden by the user; Help shows it again (FX-14a). */
+export const startCardHidden = stored<'0' | '1'>('ssui.startCard', ['0', '1'], '0')
+
 export function applyDensity() {
   document.documentElement.dataset.density = density.value
 }
