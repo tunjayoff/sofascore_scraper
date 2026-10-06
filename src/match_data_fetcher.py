@@ -145,8 +145,8 @@ class SingleFetchReport:
     Tek maç çekiminde (fetch_match_data / refill_missing_match_slices) SofaScore'a giden isteklerin sonucu.
 
     Bu iki fonksiyon "maç yok", "maç bitmemiş" ve "istek reddedildi" durumlarının hepsinde None döndürür;
-    dilimlerin hepsi reddedildiğinde de dolu bir sözlük döndürür. Nedeni kullanıcıya söylemesi gereken
-    çağıran (web: POST /api/matches/{id}/fetch) bir rapor verir ve sonuca oradan bakar.
+    dilimlerin hepsi reddedildiğinde de dolu bir sözlük döndürür. Nedeni öğrenmek isteyen çağıran bir rapor verir
+    ve sonuca oradan bakar. (Web'in tek maç ucu, POST /api/matches/{id}/fetch, boru hattını doğrudan çağırır.)
     """
 
     # /event/{id} isteğinin sonucu; istek gönderilmediyse None

@@ -2,7 +2,7 @@
 Store hata sınıfları (docs/design/01-storage.md, bölüm 2.3).
 
 StoreError, bugünkü StorageError'ın alt sınıfıdır: `fatal` özelliği aynen çalışır, bu yüzden
-"disk dolu → işi durdur" diyen çağıranlar (src/match_data_fetcher.py, src/web/fetch_job.py)
+"disk dolu → işi durdur" diyen çağıranlar (src/services/pipeline.py, src/services/sync.py)
 Store hatalarını da aynı `except StorageError` ile yakalar.
 
 Bütün sınıflar tabanın kurucu imzasını (message, path, errno_code, detail) korur; sınıfa özgü

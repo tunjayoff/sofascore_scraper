@@ -66,7 +66,7 @@ LEGACY_SLICE_KEYS: Tuple[str, ...] = ("statistics", "team_streaks", "pregame_for
 PRIORITY_COLUMNS: Tuple[str, ...] = ("match_id", "league_folder", "season_folder", "tournament_name", "season_name",
                                      "round", "home_team_name", "away_team_name", "home_score_ft", "away_score_ft",
                                      "match_date")
-NO_TOURNAMENT_DIR = "_no_tournament"  # src/match_data_fetcher.py NO_TOURNAMENT_DIR ile aynı
+NO_TOURNAMENT_DIR = "_no_tournament"  # src/match_data_fetcher.py ve src/store/legacy.py NO_TOURNAMENT_DIR ile aynı
 _LEGACY_LAYOUT = "legacy"
 _MATCH_DETAILS_DIR = "match_details"
 _SORT = "start_asc"
@@ -229,7 +229,7 @@ class ExportService:
             size += len(chunk.encode("utf-8"))
         return ExportResult(prepared.rows, prepared.columns, size, None)
 
-    # -- dosyaya yazan eski girişler (terminal menüsü, --headless --csv-export) ---------------------------
+    # -- dosyaya yazan girişler (`ssc export --profile legacy-wide-csv`, eski adı --headless --csv-export) ------
 
     def write_legacy_csv(self, directory: str, spec: Optional[ExportSpec] = None, *,
                          now: Optional[float] = None) -> Optional[ExportResult]:
@@ -744,7 +744,7 @@ def legacy_folders(event: "EventRow", basic: Any) -> Tuple[Optional[str], Option
     """
     Satırın `league_folder` ve `season_folder` değerleri. Eski düzende lig/sezon/maç derinliğindeki kayıt için
     dizin adları (`season_` önekleri atılmış); düz kayıtta (`match_details/<id>`) ikisi de yok. Eski düzende
-    olmayan kayıtta, eski yazıcının o maç için seçeceği adlar (src/match_data_fetcher.py `_match_storage_dir`).
+    olmayan kayıtta, eski yazıcının o maç için seçeceği adlar (2.x'te `MatchDataFetcher._match_storage_dir`).
     """
     if event.layout == _LEGACY_LAYOUT:
         parts = (event.path or "").split("/")
@@ -773,7 +773,7 @@ def _dir_name(name: Any) -> str:
 
 
 def _safe_part(name: str) -> str:
-    """src/match_data_fetcher.py `_path_part` ile aynı kural: dizin adında güvenli tek parça."""
+    """2.x yazıcısının `_path_part` kuralı (tests/legacy_writer.py'de de): dizin adında güvenli tek parça."""
     return re.sub(r"[^A-Za-z0-9_.-]", "_", str(name)).strip(".") or "unknown"
 
 
@@ -781,7 +781,7 @@ def legacy_wide_row(match_id: str, match_data: Mapping[str, Any], league_folder:
                     season_folder: Optional[str] = None) -> Dict[str, Any]:
     """
     Bir maçın `legacy-wide-csv` satırı; `match_data` dilim adı → yük (`basic`, `statistics`, `team_streaks`,
-    `pregame_form`, `h2h`, `lineups`). src/match_data_fetcher.py `process_match_for_csv`'nin kuralı, değişmeden.
+    `pregame_form`, `h2h`, `lineups`). 2.x'teki `MatchDataFetcher.process_match_for_csv`'nin kuralı, değişmeden.
     """
     processed: Dict[str, Any] = {
         # Basic match info

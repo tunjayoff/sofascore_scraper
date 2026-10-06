@@ -15,8 +15,8 @@ pakete girmez; iş metinlerinde, tarayıcı profili kilidinde ve log kuyruğunda
 Okunan dosyalar sabittir: log dosyası yalnızca src.logger'ın yazdığı dosyadır,
 dışarıdan yol alınmaz. Paket üretmek hiçbir şeyi değiştirmez (iş geçmişi salt okunur açılır).
 
-Web: GET /api/logs, GET /api/diagnostics, GET /api/diagnostics/bundle (src/web/routes/diagnostics.py).
-CLI: python main.py --diagnostics [YOL]
+Web: GET /api/logs, GET /api/diagnostics, GET /api/diagnostics/bundle (src/web/api/legacy.py) ve
+GET /api/v1/diagnostics (src/web/api/v1/). CLI: ssc diagnostics [YOL] (eski adı: python main.py --diagnostics)
 """
 from __future__ import annotations
 

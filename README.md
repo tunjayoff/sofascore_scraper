@@ -251,7 +251,7 @@ See `.env.example` for all keys. Common ones:
 | `MAX_CONCURRENT` | Parallel detail requests cap. |
 | `REQUEST_RATE_LIMIT` | Requests per second to SofaScore for **all processes together** (web app, CLI, every `--watch`, `--refresh-only`). Default `5`; a higher value or `0` / `off` (no limit) is faster but raises the risk of being blocked. See [Request budget](#request-budget-all-processes). |
 | `USE_PROXY` / `PROXY_URL` | Optional proxy: `http://`, `https://` or `socks5://`, e.g. `http://user:password@host:8080`. Also under **Settings → Connection** in the web app; the saved password is never shown again (the form and the API show `***`, and leaving it that way keeps it). The built-in browser uses a changed proxy after the app restarts. |
-| `FETCH_ONLY_FINISHED` | Keep only finished matches (`status.type == finished`). Default `true`. Upcoming fixtures are dropped from schedule files. |
+| `FETCH_ONLY_FINISHED` | Show only finished matches (`status.type == finished`) in the match lists. Default `true`. Every listed match is stored whatever its status; the setting filters what the lists show, not what is downloaded. |
 | `REFRESH_WINDOW_HOURS` | Hours after kick-off during which a saved match is provisional and gets re-read (default `72`, `0` = off). See [Refresh policy](#refresh-policy). |
 | `RATE_LIMIT_*` / `SERVER_ERROR_*` | Circuit breaker thresholds, counted per request across all phases of a job. See [Missing slices, failed requests and the circuit breaker](#missing-slices-failed-requests-and-the-circuit-breaker). |
 | `LOG_LEVEL` / `LOG_DIR` / `LOG_TO_FILE` / `LOG_MAX_MB` / `LOG_BACKUP_COUNT` | Log level, log file location and rotation. See [Logs and diagnostics](#logs-and-diagnostics). |
@@ -531,7 +531,7 @@ ssc migrate --purge-derived --yes       # delete season summaries of seasons tha
 
 `ssc catalog verify [--deep] [--repair]`, `ssc catalog reconcile [--deep]` and `ssc catalog rebuild` check, update or rebuild the index of the stored files (`.meta/catalog.db`). They replace `scripts/catalog_tool.py`; `scripts/migrate_match_details.py` (which renamed league folders in place) is gone as well, since the new layout no longer depends on folder names.
 
-The match list reads the per-season summaries under `matches/`; the export CSV in `match_details/processed/` is only a fallback when no summaries exist.
+The match list reads the index of the data folder (`.meta/catalog.db`), which covers the 3.0 layout and the files of 2.x alike; the export CSV in `match_details/processed/` is never read back.
 
 Next to `config/leagues.txt` (the `name: id` list the CLI also reads), `config/league_sports.json` stores each league's sport as `{"<id>": "football" | "basketball" | "tennis"}`. It is filled when a league is added from the web app, when you pick a sport in the UI, or from a downloaded match of that league.
 

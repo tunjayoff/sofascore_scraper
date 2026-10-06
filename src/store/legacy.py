@@ -366,7 +366,7 @@ def _plain_int(value: Any) -> Optional[int]:
 
 
 def _confirmed_empty(entry: Any) -> int:
-    """`_slice_status.json[k].empty.count`: pozitif tam sayı değilse 0 (MatchDataFetcher._confirmed_empty_count)."""
+    """`_slice_status.json[k].empty.count`: pozitif tam sayı değilse 0 (2.x yazıcısının kuralı)."""
     empty = entry.get("empty") if isinstance(entry, dict) else None
     count = _plain_int(empty.get("count")) if isinstance(empty, dict) else None
     return count if count is not None and count > 0 else 0
@@ -547,9 +547,8 @@ class LegacyReader:
 
     def _walk_details(self) -> Tuple[List[LegacyEventDir], List[LegacyProblem]]:
         """
-        `match_details` ağacı. Kural `MatchDataFetcher._build_match_index` ile aynıdır: birinci düzeyde olay
-        yükü olan dizin düz kayıttır (L3); öteki birinci düzey dizinler lig dizinidir ve maçlar üçüncü
-        düzeydedir. Fark: yalnızca birleşik dosyası olan dizin de adaydır (bölüm 5.1).
+        `match_details` ağacı. Kural 2.x yazıcısının ağaç gezintisinin kuralıdır: birinci düzeyde olay yükü olan
+        dizin düz kayıttır (L3); öteki birinci düzey dizinler lig dizinidir ve maçlar üçüncü düzeydedir. Fark: yalnızca birleşik dosyası olan dizin de adaydır (bölüm 5.1).
         """
         found: List[LegacyEventDir] = []
         problems: List[LegacyProblem] = []
@@ -610,7 +609,7 @@ class LegacyReader:
     # -- maç dizinleri: okuma --
 
     def _marker_counts(self, base: str, problems: List[LegacyProblem]) -> Dict[str, int]:
-        """_unavailable.json: {dilim: sayı}. Okunamayan dosya boş sayılır (MatchDataFetcher._load_unavailable)."""
+        """_unavailable.json: {dilim: sayı}. Okunamayan dosya boş sayılır (2.x yazıcısının kuralı)."""
         data = self._load_dict(f"{base}/{UNAVAILABLE_FILE}", problems)
         if data is None:
             return {}
@@ -913,7 +912,8 @@ class LegacyReader:
         """
         Sezon özetleri, yola göre sıralı: lig dizinindeki `<sezon id>_..._summary.json|csv` ve eski
         `_matches.csv`, sezon dizinindeki `*_summary.csv|_matches.csv` (ilk sürümün tur başına dosyaları).
-        Kural `MatchDataFetcher._season_summary_files` ile aynıdır.
+        Kural, 2.x'te özetleri arayan kodun kuralıdır (sonuncusu `MatchDataFetcher._season_summary_files`; P15 ile
+        kalktı).
         """
         problems: List[LegacyProblem] = []
         out: List[LegacySummaryFile] = []

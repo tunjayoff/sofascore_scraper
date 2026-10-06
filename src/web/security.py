@@ -181,9 +181,9 @@ def requires_token(path: str) -> bool:
 
 # --- Güvenlik başlıkları --------------------------------------------------------------------
 
-# Derleme, betiklerinin eval gerektirmediğini frontend/index.html'deki bu etiketle bildirir
-# (vite.config.ts: __INTLIFY_JIT_COMPILATION__). Etiketi taşımayan eski bir derleme vue-i18n
-# iletilerini `Function(...)` ile derler; onu bozmamak için politika 'unsafe-eval' ile gevşer.
+# Derleme, betiklerinin eval gerektirmediğini frontend/index.html'deki bu etiketle bildirir (vue-i18n 10'dan
+# beri iletiler her zaman JIT ile, eval'siz derlenir; frontend/csp.test bunu sınar). Etiketi taşımayan eski bir
+# derleme vue-i18n iletilerini `Function(...)` ile derler; onu bozmamak için politika 'unsafe-eval' ile gevşer.
 CSP_MARKER = '<meta name="sofascore-csp" content="no-eval"'
 
 _CSP = (

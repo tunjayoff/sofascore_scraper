@@ -152,7 +152,9 @@ class BridgeSettings:
 
 @dataclass(frozen=True)
 class FetchSettings:
-    only_finished: bool = setting(True, KIND_BOOL, "Keep finished events only in summaries and event pages.")
+    only_finished: bool = setting(
+        True, KIND_BOOL, "Show only finished events in the match lists; every listed event is stored whatever its status.",
+    )
     save_empty_rounds: bool = setting(False, KIND_BOOL, "Write round files that hold no event.")
 
 

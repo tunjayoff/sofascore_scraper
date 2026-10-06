@@ -40,7 +40,7 @@ class FetchCancelled(BaseException):
 Cancelled = FetchCancelled
 
 
-# İş başına ayarlanır (web/routes/api.py). ContextVar olduğu için yalnızca o işin
+# İş başına ayarlanır (`request_context`: iş yöneticisinin işleri). ContextVar olduğu için yalnızca o işin
 # thread'ini ve onun asyncio.run / asyncio.to_thread çağrılarını etkiler; aynı anda
 # gelen diğer web istekleri (lig arama, tek maç çekme) etkilenmez.
 _cancel_check: "contextvars.ContextVar[Optional[CancelCheck]]" = contextvars.ContextVar(

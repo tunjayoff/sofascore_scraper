@@ -249,7 +249,7 @@ Tüm anahtarlar `.env.example` içinde. Sık kullanılanlar:
 | `MAX_CONCURRENT` | Paralel detay isteği üst sınırı. |
 | `REQUEST_RATE_LIMIT` | **Tüm süreçlerin toplamı** için SofaScore'a saniyede istek sayısı (web uygulaması, CLI, her `--watch`, `--refresh-only`). Varsayılan `5`; daha yüksek bir değer ya da `0` / `off` (sınırsız) daha hızlıdır ama engellenme riskini artırır. Bkz. [Ortak istek bütçesi](#ortak-istek-bütçesi-tüm-süreçler). |
 | `USE_PROXY` / `PROXY_URL` | İsteğe bağlı proxy: `http://`, `https://` ya da `socks5://`; örn. `http://kullanici:parola@sunucu:8080`. Web uygulamasında **Ayarlar → Bağlantı** altından da ayarlanır; kayıtlı parola bir daha gösterilmez (form ve API `***` gösterir, öyle bırakılırsa parola korunur). Yerleşik tarayıcı değişen proxy’yi uygulama yeniden başlayınca kullanır. |
-| `FETCH_ONLY_FINISHED` | Yalnız bitmiş maçları tut (`status.type == finished`). Varsayılan `true`. Henüz oynanmamış fikstürler schedule dosyalarına yazılmaz. |
+| `FETCH_ONLY_FINISHED` | Maç listelerinde yalnız bitmiş maçları göster (`status.type == finished`). Varsayılan `true`. Listelenen her maç durumu ne olursa olsun saklanır; ayar neyin indirildiğini değil, listelerin neyi gösterdiğini süzer. |
 | `REFRESH_WINDOW_HOURS` | Kaydedilen maçın başlangıçtan kaç saat boyunca geçici sayılıp yeniden okunacağı (varsayılan `72`, `0` = kapalı). Bkz. [Yenileme politikası](#yenileme-politikası). |
 | `RATE_LIMIT_*` / `SERVER_ERROR_*` | Devre kesicinin eşikleri; işin tüm aşamalarında istek başına sayılır. Bkz. [Eksik dilimler, başarısız istekler ve devre kesici](#eksik-dilimler-başarısız-istekler-ve-devre-kesici). |
 | `LOG_LEVEL` / `LOG_DIR` / `LOG_TO_FILE` / `LOG_MAX_MB` / `LOG_BACKUP_COUNT` | Log seviyesi, log dosyasının yeri ve çevrilmesi. Bkz. [Loglar ve tanılama](#loglar-ve-tanılama). |
@@ -529,7 +529,7 @@ ssc migrate --purge-derived --yes       # programı olan sezonların özetlerini
 
 `ssc catalog verify [--deep] [--repair]`, `ssc catalog reconcile [--deep]` ve `ssc catalog rebuild` saklanan dosyaların dizinini (`.meta/catalog.db`) denetler, günceller ya da yeniden kurar. `scripts/catalog_tool.py`'nin yerini alırlar; lig klasörlerini yerinde yeniden adlandıran `scripts/migrate_match_details.py` de kaldırıldı, çünkü yeni düzen klasör adlarına bağlı değildir.
 
-Maç listesi `matches/` altındaki sezon özetlerinden okunur; `match_details/processed/` içindeki export CSV yalnızca hiç özet yoksa yedek olarak kullanılır.
+Maç listesi veri klasörünün dizininden (`.meta/catalog.db`) okunur; dizin 3.0 düzenini ve 2.x dosyalarını birlikte kapsar. `match_details/processed/` içindeki export CSV geri okunmaz.
 
 `config/leagues.txt`’nin (CLI’ın da okuduğu `ad: id` listesi) yanında `config/league_sports.json` her ligin sporunu `{"<id>": "football" | "basketball" | "tennis"}` olarak saklar. Lig web’den eklendiğinde, arayüzde spor seçildiğinde veya o ligin indirilmiş bir maçından doldurulur.
 
