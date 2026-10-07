@@ -14,6 +14,7 @@ import { useStatusStore } from '@/app/statusStore'
 import JobDetailScreen from '@/screens/jobs/JobDetailScreen.vue'
 import EventDetailScreen from '@/screens/events/EventDetailScreen.vue'
 import ExportsScreen from '@/screens/exports/ExportsScreen.vue'
+import HealthScreen from '@/screens/HealthScreen.vue'
 import { resetNames } from '@/screens/events/eventText'
 import { hitPlace, placeName, playerTeam } from '@/screens/follows/followText'
 import { resetSports } from '@/app/sports'
@@ -509,5 +510,21 @@ describe('F13: the export filter offers the added teams and matches', () => {
     expect(sent.spec.profile).toBe('legacy-wide-csv')
     expect([...sent.spec.filter.event_ids].sort()).toEqual([14000001, 14000002, 14000003, 16950622, 9100003])
     expect(callsTo(f, 'GET /api/v1/events')).toHaveLength(2)
+  })
+})
+
+describe('F15: Health names the running job', () => {
+  it('"Download · Göztepe" with a link to the job, not its id', async () => {
+    setLocale('tr')
+    const running = job({ id: '01M4BVXYZ', state: 'running', spec: { follows: ['team:3071'], names: { 'team:3071': 'Göztepe' } } })
+    mockFetch({ 'GET /api/v1/status': { data: status({ active_job: running }) }, 'GET /api/v1/tournaments': page([]) })
+    const { w } = await mountScreen(HealthScreen, '/system/health')
+    wrappers.push(w)
+    await flush()
+    const link = w.find('[data-testid="health-running-job"]')
+    expect(link.text()).toBe(`${t('ui.job.kind.sync')} · Göztepe`)
+    expect(link.attributes('href')).toBe('/jobs/01M4BVXYZ')
+    expect(link.attributes('title')).toBe('01M4BVXYZ')
+    expect(link.classes()).not.toContain('u-mono')
   })
 })

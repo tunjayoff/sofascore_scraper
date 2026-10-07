@@ -20,7 +20,7 @@ import { sportName } from '@/app/sports'
 import { liveState } from '@/ui/status'
 import { failureText } from '@/screens/jobs/eventText'
 import { loadTournaments } from '@/screens/events/eventText'
-import { jobKindText, leagueName } from '@/screens/jobs/jobText'
+import { jobKindText, jobTarget, leagueName } from '@/screens/jobs/jobText'
 import type { ScheduledRun } from '@/api/v1/schema'
 import { bytesText, duration, now as clockNow, num, useClock } from '@/ui/time'
 
@@ -256,7 +256,7 @@ onMounted(() => {
           <p class="m-0 flex flex-wrap items-center gap-2 pt-2" style="border-top: 1px solid var(--line)">
             <span class="u-muted">{{ t('ui.health.runningJob') }}</span>
             <StatusBadge kind="job" :value="s.active_job.state" />
-            <RouterLink :to="`/jobs/${s.active_job.id}`" class="u-mono">{{ s.active_job.id }}</RouterLink>
+            <RouterLink :to="`/jobs/${s.active_job.id}`" :title="s.active_job.id" data-testid="health-running-job">{{ jobKindText(s.active_job.kind, s.active_job.spec) }} · {{ jobTarget(s.active_job) }}</RouterLink>
           </p>
         </template>
       </section>
