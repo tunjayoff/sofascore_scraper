@@ -123,8 +123,8 @@ class ConfigManager:
         # Yapılandırma dizinlerini kontrol et
         self._ensure_config_dir()
 
-        # Yapılandırma dosyaları yoksa örnek dosyaları oluştur
-        if not os.path.exists(self.league_config_path):
+        # Lig listesi yoksa örneğinden oluşturulur, ama yalnızca eski liste takiplerin kaynağıyken (FX-23, F24)
+        if not os.path.exists(self.league_config_path) and self._legacy_list_in_use():
             self._create_sample_league_config()
 
         # Ligleri yükle
@@ -146,6 +146,19 @@ class ConfigManager:
         league_config_dir = os.path.dirname(self.league_config_path)
         if league_config_dir:
             os.makedirs(league_config_dir, exist_ok=True)
+
+    @staticmethod
+    def _legacy_list_in_use() -> bool:
+        """
+        Eski lig listesi (leagues.txt) takiplerin kaynağı mı: yapılandırma dosyası (sofascore.toml) yokken evet
+        (docs/design/02-services.md, çözüm 9: dosya yokken eski dosyalar geçerlidir ve tabloya yansıtılır). Dosya
+        varsa takipler ondan ve takip tablosundan gelir: yalnızca yorum satırları taşıyan bir örnek yaratılmaz
+        (yedeklere giriyordu). Var olan liste her durumda okunur. Ayarlar okunamazsa eski davranış: evet.
+        """
+        try:
+            return not settings_loader.active().config_file
+        except Exception:
+            return True
 
     def _create_sample_league_config(self) -> None:
         """
@@ -214,7 +227,9 @@ class ConfigManager:
         """Ligleri metin dosyasından yükler."""
         self._leagues_mtime = self._league_file_mtime()
         if not os.path.exists(self.league_config_path):
-            logger.warning(f"League file not found: {self.league_config_path}")
+            # Yapılandırma dosyası kullanılırken liste olmayabilir (yaratılmaz): uyarı değildir
+            level = logger.warning if self._legacy_list_in_use() else logger.debug
+            level(f"League file not found: {self.league_config_path}")
             return
 
         try:
