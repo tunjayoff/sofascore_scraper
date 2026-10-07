@@ -22,6 +22,7 @@ import JobOutput from './JobOutput.vue'
 import { JobStream, type JobEventMessage } from './jobStream'
 import { logLine, codeText, seasonsWanted, type LogLine } from './eventText'
 import { loadSeasons, loadTournaments } from '@/screens/events/eventText'
+import { etaSeconds, noteProgress } from '@/app/eta'
 import { breakerText, countsText, faceText, isTerminal, jobErrorText, jobKindText, jobLeague, jobTarget, phaseText, readProgress, rerunBody, waitText, type ProgressView } from './jobText'
 
 /**
@@ -60,6 +61,11 @@ let eventLog: JobEventMessage[] = []
 const notFound = computed(() => error.value instanceof V1Error && error.value.code === 'not_found')
 const terminal = computed(() => !!job.value && isTerminal(job.value.state))
 const progress = computed(() => live.value ?? readProgress(job.value?.progress))
+// the pace of the last minutes, measured here: the time left is the longer of it and the server's (FX-24 F17)
+watch(progress, (p) => {
+  if (job.value && !terminal.value) noteProgress(job.value.id, p)
+})
+const eta = computed(() => etaSeconds(job.value?.id, progress.value))
 const result = computed(() => (job.value?.result ?? null) as Record<string, unknown> | null)
 const failedList = computed(() => {
   const r = result.value?.failed
@@ -296,7 +302,7 @@ onUnmounted(() => {
         <ProgressBar :value="progress.percent" :label="t('ui.job.progressLabel')" :text="progress.total ? countsText(progress, num) : undefined" />
         <p class="m-0 u-small u-muted flex flex-wrap gap-x-4">
           <span v-if="progress.total">{{ countsText(progress, num) }}</span>
-          <span v-if="progress.eta">{{ t('ui.job.eta', { time: duration(progress.eta) }) }}</span>
+          <span v-if="eta" data-testid="job-eta">{{ t('ui.job.eta', { time: duration(eta) }) }}</span>
           <span v-if="progress.failedCount" style="color: var(--danger)">{{ t('ui.jobs.failedCount', { n: num(progress.failedCount) }) }}</span>
         </p>
         <p v-if="waitLeft && progress.wait" class="m-0 u-small flex items-center gap-2" style="color: var(--warn-fg)">

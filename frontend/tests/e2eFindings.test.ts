@@ -17,6 +17,7 @@ import ExportsScreen from '@/screens/exports/ExportsScreen.vue'
 import HealthScreen from '@/screens/HealthScreen.vue'
 import { countsText, everyText } from '@/screens/jobs/jobText'
 import OverviewScreen from '@/screens/OverviewScreen.vue'
+import { etaSeconds, measuredEta, noteProgress, resetEta } from '@/app/eta'
 import { resetNames } from '@/screens/events/eventText'
 import { hitPlace, placeName, playerTeam } from '@/screens/follows/followText'
 import { resetSports } from '@/app/sports'
@@ -597,5 +598,74 @@ describe('F25: the counts of every phase have a unit', () => {
     store.status = status({ active_job: running })
     await flush()
     expect(w.find('[data-testid="running"]').text()).toContain('0 / 1 sezon listesi')
+  })
+})
+
+describe('F17: the time left follows the pace of the last minutes', () => {
+  beforeEach(() => resetEta())
+  const p = (done: number, eta: number | null = null, total = 70) => ({ phase: 'details', done, total, eta })
+
+  it('the end-to-end case: 33 of 70 after a fast start, then 4 s a match: about 2.5 min left, not 71 s', () => {
+    // the first 33 matches in 63 s (the server's average: 71 s left), the last minutes at 4 s a match
+    noteProgress('J', p(3), 0)
+    noteProgress('J', p(18), 30_000)
+    noteProgress('J', p(25), 60_000)
+    noteProgress('J', p(29), 76_000)
+    noteProgress('J', p(33), 92_000)
+    // the window keeps the last three minutes: 30 matches in 92 s at first … but the newest steps decide
+    expect(measuredEta('J', p(33))).toBeGreaterThan(71)
+    noteProgress('J', p(37), 108_000)
+    noteProgress('J', p(41), 124_000)
+    noteProgress('J', p(45), 140_000)
+    noteProgress('J', p(49), 156_000)
+    noteProgress('J', p(53), 172_000)
+    noteProgress('J', p(57), 188_000)
+    noteProgress('J', p(61), 204_000)
+    noteProgress('J', p(65), 220_000)
+    noteProgress('J', p(66), 225_000)
+    // after the fast start left the window: 4 s a match, 4 left
+    const left = measuredEta('J', p(66))!
+    expect(left).toBeGreaterThanOrEqual(15)
+    expect(left).toBeLessThanOrEqual(20)
+    // the longer estimate wins; either alone when the other is missing
+    expect(etaSeconds('J', p(66, 5))).toBe(left)
+    expect(etaSeconds('J', p(66, 60))).toBe(60)
+    expect(etaSeconds('other', p(66, 60))).toBe(60)
+    expect(etaSeconds('J', p(66, null))).toBe(left)
+  })
+
+  it('too little measured: the server’s estimate; a new phase starts again', () => {
+    noteProgress('J', p(1), 0)
+    noteProgress('J', p(2), 10_000)
+    expect(measuredEta('J', p(2))).toBeNull()
+    expect(etaSeconds('J', p(2, 99))).toBe(99)
+    noteProgress('J', { phase: 'matches', done: 0, total: 3, eta: null }, 20_000)
+    expect(measuredEta('J', p(2))).toBeNull()
+  })
+
+  it('Overview shows the measured time left of the running job from its status reads', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date('2026-10-07T19:00:00Z'))
+    const running = (done: number, eta: number) =>
+      job({ id: 'R1', state: 'running', finished_at: null, result: null, spec: { follows: ['team:3071'], names: { 'team:3071': 'Göztepe' } }, progress: { phase: 'details', phase_index: 3, phase_count: 3, done, total: 70, percent: 50, eta_seconds: eta } })
+    mockFetch({
+      'GET /api/v1/status': { data: status() },
+      'GET /api/v1/jobs': page([]),
+      'GET /api/v1/follows': page([follow()]),
+      'GET /api/v1/sinks': list([]),
+      'GET /api/v1/changes': page([]),
+      'GET /api/v1/tournaments': page([]),
+    })
+    const { w } = await mountScreen(OverviewScreen, '/')
+    wrappers.push(w)
+    const store = useStatusStore()
+    // three reads, 15 s apart: 4 matches in 30 s, i.e. 7.5 s a match; the server says 71 s for the 37 left
+    for (const [i, done] of [29, 31, 33].entries()) {
+      vi.setSystemTime(new Date(Date.UTC(2026, 9, 7, 19, 0, 15 * i)))
+      store.status = status({ active_job: running(done, 71) })
+      await flush()
+    }
+    // 37 left at 7.5 s a match: 4 min 38 s
+    expect(w.find('[data-testid="running-eta"]').text()).toBe(t('ui.job.eta', { time: '4 min 38 s' }))
   })
 })

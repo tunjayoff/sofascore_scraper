@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import PageHeader from '@/ui/PageHeader.vue'
@@ -18,6 +18,7 @@ import { v1 } from '@/api/v1/client'
 import type { Change, FollowRecord, Job, SinkStatus } from '@/api/v1/schema'
 import { diskBytes, useStatusStore } from '@/app/statusStore'
 import { poll } from '@/app/poll'
+import { etaSeconds, noteProgress } from '@/app/eta'
 import { sportName } from '@/app/sports'
 import { liveState, sinkState } from '@/ui/status'
 import { toast } from '@/ui/toast'
@@ -54,6 +55,11 @@ const s = computed(() => store.status)
 const summary = computed(() => s.value?.summary ?? null)
 const active = computed(() => store.activeJob)
 const activeProgress = computed(() => readProgress(active.value?.progress))
+// the pace of the running job as measured from the status reads, for a truer time left (FX-24 F17)
+watch(activeProgress, (p) => {
+  if (active.value) noteProgress(active.value.id, p)
+})
+const activeEta = computed(() => (active.value ? etaSeconds(active.value.id, activeProgress.value) : null))
 const live = computed(() => s.value?.live ?? null)
 
 async function loadJobs() {
@@ -278,7 +284,7 @@ onUnmounted(() => stopPoll?.())
               <ProgressBar :value="jobPercent(active)" :label="t('ui.job.progressLabel')" />
               <p v-if="activeProgress.total" class="m-0 u-small u-muted">
                 {{ countsText(activeProgress, num) }}
-                <template v-if="activeProgress.eta"> · {{ t('ui.job.eta', { time: duration(activeProgress.eta) }) }}</template>
+                <template v-if="activeEta"> · <span data-testid="running-eta">{{ t('ui.job.eta', { time: duration(activeEta) }) }}</span></template>
               </p>
               <div class="flex gap-2 justify-end">
                 <RouterLink :to="`/jobs/${active.id}`" class="u-btn u-btn-sm">{{ t('ui.overview.open') }}</RouterLink>
