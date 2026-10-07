@@ -28,6 +28,7 @@ import { MORE_FOLLOW_KINDS } from '@/screens/follows/followText'
 import SliceTab from './SliceTab.vue'
 import RawPayload from './RawPayload.vue'
 import ChangeFields from './ChangeFields.vue'
+import OddsView from './OddsView.vue'
 import { awayName, eventTitle, fetchSelections, homeName, loadSeasons, loadTournaments, scoreDetail, scoreText, seasonName, sliceLabel, tournamentName } from './eventText'
 
 /**
@@ -391,15 +392,19 @@ onMounted(() => {
               <SkeletonBlock v-else :lines="3" />
             </div>
 
-            <div v-else-if="tab === 'odds'" class="flex flex-col gap-2" data-testid="event-odds">
-              <p class="m-0 u-small u-muted">{{ t('ui.eventDetail.oddsNote') }}</p>
-              <ul class="m-0 p-0 list-none">
-                <li v-for="o in odds" :key="`${o.key}:${o.sub}`" class="flex flex-wrap items-center gap-3 py-2" style="border-top: 1px solid var(--line)">
-                  <span class="flex-1">{{ sliceLabel(o.key) }}<span v-if="o.sub" class="u-muted"> · {{ o.sub }}</span></span>
-                  <StatusBadge kind="slice" :value="o.state" />
-                  <button v-if="o.has_payload" type="button" class="u-btn u-btn-sm" @click="raw = { key: o.key, sub: o.sub }">{{ t('ui.eventDetail.view') }}</button>
-                </li>
-              </ul>
+            <div v-else-if="tab === 'odds'" class="flex flex-col gap-6" data-testid="event-odds">
+              <OddsView :event-id="id" :slices="odds" />
+              <section class="flex flex-col gap-2" data-testid="odds-raw">
+                <h2 class="u-h3">{{ t('ui.odds.raw') }}</h2>
+                <p class="m-0 u-small u-muted">{{ t('ui.odds.rawNote') }}</p>
+                <ul class="m-0 p-0 list-none">
+                  <li v-for="o in odds" :key="`${o.key}:${o.sub}`" class="flex flex-wrap items-center gap-3 py-2" style="border-top: 1px solid var(--line)">
+                    <span class="flex-1">{{ sliceLabel(o.key) }}<span v-if="o.sub" class="u-muted"> · {{ o.sub }}</span></span>
+                    <StatusBadge kind="slice" :value="o.state" />
+                    <button v-if="o.has_payload" type="button" class="u-btn u-btn-sm" :aria-label="t('ui.eventDetail.viewRawOf', { key: sliceLabel(o.key) })" @click="raw = { key: o.key, sub: o.sub }">{{ t('ui.eventDetail.view') }}</button>
+                  </li>
+                </ul>
+              </section>
             </div>
           </UiTabs>
         </div>

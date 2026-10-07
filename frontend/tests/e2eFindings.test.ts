@@ -12,11 +12,12 @@ import FollowDetailScreen from '@/screens/follows/FollowDetailScreen.vue'
 import { JOB_WATCH_MS, watchJob, watchJobs } from '@/app/jobWatch'
 import { useStatusStore } from '@/app/statusStore'
 import JobDetailScreen from '@/screens/jobs/JobDetailScreen.vue'
+import EventDetailScreen from '@/screens/events/EventDetailScreen.vue'
 import { resetNames } from '@/screens/events/eventText'
 import { hitPlace, placeName, playerTeam } from '@/screens/follows/followText'
 import { resetSports } from '@/app/sports'
 import { callsTo, flush, mockFetch } from './helpers'
-import { axeViolations, FakeES, follow, job, mountScreen, page, sport, status, useFakeES } from './v1'
+import { axeViolations, event, FakeES, follow, job, mountScreen, page, slice, sport, status, useFakeES } from './v1'
 
 /**
  * FX-24: the findings of the end-to-end test of the web UI against the real SofaScore (F5 to F37 of the
@@ -388,5 +389,81 @@ describe('F8: the job log names seasons, not their numbers', () => {
     expect(lines.some((l) => l.includes('2024') && l.includes('#99999'))).toBe(true)
     // the season list is read once, from this server
     expect(callsTo(f, 'GET /api/v1/tournaments/465/seasons')).toHaveLength(1)
+  })
+})
+
+describe('F11: the odds of a match as a table', () => {
+  const choice = (name: string, fractional: string, decimal: number, initial: string, initialDecimal: number, change: number, winning: boolean | null = null) => ({
+    name, fractional, decimal, initial_fractional: initial, initial_decimal: initialDecimal, change, winning,
+  })
+  const fullTime = {
+    market_id: 1, name: 'Full time', group: '1X2', period: 'Full-time', choice_group: null, label: 'default', is_live: false, suspended: false,
+    choices: [choice('1', '4/5', 1.8, '17/20', 1.85, -1, true), choice('X', '3/1', 4, '14/5', 3.8, 1, false), choice('2', '10/3', 4.333, '3/1', 4, 0, false)],
+  }
+  const goals = {
+    market_id: 9, name: 'Match goals', group: 'Over/Under', period: 'Full-time', choice_group: '2.5', label: null, is_live: false, suspended: true,
+    choices: [choice('Over', '8/11', 1.727, '4/5', 1.8, -1), choice('Under', '1/1', 2, '10/11', 1.909, 1)],
+  }
+  const odds = (key: string, markets: unknown[]) => list([{ event_id: 9100003, key, provider_id: 1, fetched_at_utc: '2026-10-07T19:45:45Z', markets }])
+  const routes = (over: Record<string, unknown> = {}) => ({
+    ...SPORTS,
+    'GET /api/v1/tournaments': page([]),
+    'GET /api/v1/tournaments/17/seasons': list([]),
+    'GET /api/v1/events/9100003': { data: event() },
+    'GET /api/v1/events/9100003/slices': list([slice('event')]),
+    'GET /api/v1/events/9100003/odds': list([slice('odds_featured', { sub: '1' }), slice('odds_all', { sub: '1' })]),
+    'GET /api/v1/events/9100003/odds/odds_featured': odds('odds_featured', [fullTime]),
+    'GET /api/v1/events/9100003/odds/odds_all': odds('odds_all', [fullTime, goals]),
+    'GET /api/v1/changes': page([]),
+    ...over,
+  })
+
+  it('markets with their outcomes, decimal and fractional prices, the opening price, the change and the winner; the raw answer stays', async () => {
+    setLocale('tr')
+    const f = mockFetch(routes())
+    const { w } = await mountScreen(EventDetailScreen, '/events/9100003?tab=odds', '/events/:id')
+    wrappers.push(w)
+    await flush()
+    await flush()
+    // the latest read only, of the featured list first
+    expect(String(callsTo(f, 'GET /api/v1/events/9100003/odds/odds_featured')[0][0])).toContain('history=false')
+    const view = w.find('[data-testid="odds-view"]')
+    expect(view.text()).toContain(t('ui.odds.provider', { id: 1 }))
+    const markets = view.findAll('[data-testid="odds-market"]')
+    expect(markets).toHaveLength(1)
+    expect(markets[0].find('h3').text()).toBe('Maç sonucu')
+    const home = markets[0].find('[data-choice="1"]')
+    expect(home.findAll('td').map((td) => td.text())).toEqual([`1${t('ui.odds.won')}`, '1,80', '4/5', '1,85', t('ui.odds.change.down')])
+    expect(markets[0].find('[data-choice="X"]').text()).toContain(t('ui.odds.change.up'))
+    expect(markets[0].find('[data-choice="2"]').text()).toContain('4,333')
+    expect(markets[0].find('[data-choice="2"]').text()).toContain(t('ui.odds.change.none'))
+    // the other list: a line market in words, suspended
+    await view.find('[data-odds-key="odds_all"]').trigger('click')
+    await flush()
+    const all = w.findAll('[data-testid="odds-market"]')
+    expect(all.map((m) => m.find('h3 span').text())).toEqual(['Maç sonucu', 'Toplam gol 2.5'])
+    expect(all[1].text()).toContain(t('ui.odds.suspended'))
+    expect(all[1].findAll('tbody tr').map((r) => r.find('td').text())).toEqual(['Üst', 'Alt'])
+    // SofaScore's answer is still there, with its raw view
+    const raw = w.find('[data-testid="odds-raw"]')
+    expect(raw.find('h2').text()).toBe('SofaScore yanıtı')
+    expect(raw.findAll('button')).toHaveLength(2)
+    expect(await axeViolations(w.find('[data-testid="event-odds"]').element)).toEqual([])
+  })
+
+  it('an unknown market keeps SofaScore’s name, marked as English; no odds in a normalized form says so', async () => {
+    mockFetch(routes({
+      'GET /api/v1/events/9100003/odds': list([slice('odds_featured', { sub: '1' })]),
+      'GET /api/v1/events/9100003/odds/odds_featured': odds('odds_featured', [{ ...fullTime, name: 'Penalty in match' }]),
+    }))
+    const { w } = await mountScreen(EventDetailScreen, '/events/9100003?tab=odds', '/events/:id')
+    wrappers.push(w)
+    await flush()
+    await flush()
+    expect(w.find('[data-odds-key]').exists()).toBe(false)
+    const title = w.find('[data-testid="odds-market"] h3 span')
+    expect(title.text()).toBe('Penalty in match')
+    expect(title.attributes('lang')).toBe('en')
+    expect(w.find('[data-choice="1"]').text()).toContain('1.80')
   })
 })
