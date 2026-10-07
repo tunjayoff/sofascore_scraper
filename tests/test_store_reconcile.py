@@ -666,7 +666,7 @@ def test_random_changes_reconcile_to_the_rows_of_a_rebuild(tmp_path: Path, make_
 
 def test_reconcile_needs_a_usable_catalog(canonical: sf.LegacyFixture, make_admin) -> None:
     admin = make_admin(canonical.data_dir)
-    with pytest.raises(StoreError, match="önce yeniden kurulmalı"):
+    with pytest.raises(StoreError, match="must be rebuilt first"):
         admin.reconcile()  # katalog dosyası yok
     assert not os.path.exists(admin.catalog.path)
     admin.catalog.prepare()  # şema var, satırlar kurulmadı

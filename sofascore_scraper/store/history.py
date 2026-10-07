@@ -296,7 +296,7 @@ def read_member(path: PathLike, offset: int, length: int) -> Tuple[datetime, str
             f.seek(offset)
             data = f.read(length)
     except FileNotFoundError as exc:
-        raise PayloadMissing(f"Geçmiş dosyası bulunamadı: {target}", path=target) from exc
+        raise PayloadMissing(f"History file not found: {target}", path=target) from exc
     except OSError as exc:
         raise StoreError.from_exception(exc, target, reading=True) from exc
     return decode_member(data, target)
@@ -306,12 +306,12 @@ def decode_member(data: bytes, path: str) -> Tuple[datetime, str, bytes]:
     """Tek bir üyenin baytları → (zaman, özet, yük baytları); tam bir üye ya da geçerli bir satır değilse PayloadCorrupt."""
     found = _inflate(memoryview(data), 0) if data else None
     if found is None or found[1] != len(data):
-        raise PayloadCorrupt(f"Geçmiş dosyasında bu aralıkta tam bir üye yok: {path}", path=path,
+        raise PayloadCorrupt(f"The history file has no complete member in this range: {path}", path=path,
                              detail="not a complete gzip member")
     try:
         return parse_line(found[0])
     except (ValueError, RecursionError, StoreError) as exc:
-        raise PayloadCorrupt(f"Geçmiş satırı geçersiz ({exc}): {path}", path=path, detail=str(exc)) from exc
+        raise PayloadCorrupt(f"Invalid history line ({exc}): {path}", path=path, detail=str(exc)) from exc
 
 
 # --- API ----------------------------------------------------------------------------------------------
@@ -430,7 +430,7 @@ class HistoryStore:
             for n, _at, digest, offset, length in rows:
                 moment, found, raw = decode_member(data[offset:offset + length], path)
                 if found != digest:
-                    raise PayloadCorrupt(f"Geçmiş üyesinin özeti katalogdakinden farklı: {path}", path=path,
+                    raise PayloadCorrupt(f"The digest of the history member differs from the catalog's: {path}", path=path,
                                          detail=f"n={n}")
                 out.append((int(n), moment, found, raw))
             return out
@@ -452,7 +452,7 @@ class HistoryStore:
             try:
                 moment, found, data = read_member(self._path(directory, key, sub), int(offset), int(length))
                 if found != digest:
-                    raise PayloadCorrupt(f"Geçmiş üyesinin özeti katalogdakinden farklı (n={n})",
+                    raise PayloadCorrupt(f"The digest of the history member differs from the catalog's (n={n})",
                                          detail=f"n={n}")
             except (PayloadMissing, PayloadCorrupt):
                 if attempt == 2:
@@ -478,7 +478,7 @@ class HistoryStore:
         events = self._store.events
         events._writable()
         if not self._store._leases.held_here(LEASE_WRITER):
-            raise StoreError(f"Geçmişi budamak için `{LEASE_WRITER}` kilidi tutulmalı: {self._data_dir}",
+            raise StoreError(f"Pruning the history needs the `{LEASE_WRITER}` lease: {self._data_dir}",
                              path=self._data_dir, detail="writer lease not held")
         if ref is not None and ref.kind != "event":
             return 0

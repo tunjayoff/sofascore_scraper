@@ -1458,7 +1458,7 @@ class EntityStore:
             if item.kind == "csv" and item.path == path and item.tournament_id == tournament_id:
                 return item.payload
         full = self._reader.resolve(path)
-        raise PayloadMissing(f"Sezon listesi bulunamadı (turnuva {tournament_id}): {full}", path=full)
+        raise PayloadMissing(f"Season list not found (tournament {tournament_id}): {full}", path=full)
 
     def slices(self, ref: Ref) -> List[SliceInfo]:
         """Varlığın katalogdaki bütün dilim satırları, (anahtar, alt anahtar) sırasıyla (metin sırası)."""
@@ -1642,7 +1642,7 @@ class EntityStore:
     def _writable(self) -> None:
         self._store._require_open()
         if self._store.readonly:
-            raise StoreError(f"Depo salt okunur açılmış: {self._data_dir}", path=self._data_dir)
+            raise StoreError(f"The store is opened read-only: {self._data_dir}", path=self._data_dir)
 
     def _checkpoint(self, step: str) -> None:
         """Protokolün adımları arasında çağrılır (`STEP_*`). Hiçbir şey yapmaz; testler süreci burada öldürür."""
@@ -1680,8 +1680,8 @@ class EntityStore:
                 raise
             self._checkpoint(STEP_DONE)
             return result
-        raise StoreBusy(f"{ref.kind} {ref.id} için yarım yazma işareti korunamadı: veri dizini başka süreçlerce "
-                        f"sürekli uzlaştırılıyor: {self._data_dir}", path=self._data_dir)
+        raise StoreBusy(f"The partial-write marker of {ref.kind} {ref.id} could not be kept: other processes keep "
+                        f"reconciling the data directory: {self._data_dir}", path=self._data_dir)
 
     def _open_manifest(self, ref: Ref, directory: str, now: datetime) -> Tuple[Manifest, bool]:
         """Varlığın manifesti (kilit altında) ve "yeni mi"; okunamayan manifest baştan kurulur (uyarı)."""
@@ -1702,7 +1702,7 @@ class EntityStore:
         if found is None:
             return Manifest(kind=ref.kind, id=ref.id, created_at=now, updated_at=now), True
         if found.kind != ref.kind or found.id != ref.id:
-            raise StoreError(f"Manifest bu varlığın dizinine ait değil ({found.kind} {found.id!r}): {manifest_file}",
+            raise StoreError(f"The manifest does not belong to this entity's directory ({found.kind} {found.id!r}): {manifest_file}",
                              path=manifest_file)
         return found, False
 

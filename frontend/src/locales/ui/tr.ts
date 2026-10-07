@@ -266,6 +266,8 @@ const tr: typeof en = {
     individual: 'SofaScore {sport} oyuncularını takım olarak listeler: bu oyuncu takım olarak eklenir ve maçları böyle indirilir.',
     number: 'No. {id}',
     sameName: 'Başka bir sonuçla aynı ad: numaraları sofascore.com’da karşılaştırın',
+    women: 'Kadın',
+    national: 'Milli takım',
   },
   place: {
     england: 'İngiltere',
@@ -482,6 +484,11 @@ const tr: typeof en = {
       '5xx': 'SofaScore sunucu hatalarıyla yanıt verdi (5xx)',
       other: 'çok fazla istek başarısız oldu',
     },
+    extrasKinds: {
+      saved: '{kinds} kaydedildi',
+      unavailable: '{kinds} SofaScore’da yok',
+      none: 'Hiçbir veri türü kaydedilmedi',
+    },
     code: {
       fetch_stopped_by_breaker: 'Erken durdu: {reason}.',
       refresh_stopped_by_breaker: 'Erken durdu: {reason}. {skipped} maç yenilenmedi.',
@@ -500,7 +507,7 @@ const tr: typeof en = {
       sync_details_selected: 'Seçilen {count} maçın ayrıntıları indiriliyor…',
       sync_breaker_stopped: 'İndirme durdu ({what}): {reason}.',
       sync_extras: 'Bahis oranları ve maç dışı veriler: {stored} kaydedildi, {failed} başarısız.',
-      sync_extras_kinds: 'Kaydedilenler: {saved}. SofaScore’da olmayanlar: {unavailable}.',
+      sync_extras_kinds: '{kinds}.',
       sync_follow_listing: '{follow} için maç listesi okunuyor…',
       sync_follow_listing_failed: '{follow} için maç listesi tam okunamadı ({reason}).',
       sync_follow_details: 'Takım, oyuncu ve maç takiplerinden {count} maç indiriliyor…',

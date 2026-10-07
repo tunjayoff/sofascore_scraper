@@ -79,7 +79,7 @@ def canonical_bytes(payload: Any) -> bytes:
     try:
         return json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     except (TypeError, ValueError, RecursionError) as e:  # UnicodeEncodeError bir ValueError'dır
-        raise StoreError(f"Yük JSON'a çevrilemedi ({e})", detail=str(e)) from e
+        raise StoreError(f"The payload could not be converted to JSON ({e})", detail=str(e)) from e
 
 
 def sha256_hex(data: bytes) -> str:
@@ -105,12 +105,12 @@ def codec_of(path: PathLike) -> str:
         return "zstd"
     if name.endswith(SUFFIX_JSON):
         return "json"
-    raise LayoutError(f"Tanınmayan yük dosyası soneki: {os.fspath(path)}", path=os.fspath(path))
+    raise LayoutError(f"Unknown payload file suffix: {os.fspath(path)}", path=os.fspath(path))
 
 
 def _corrupt(path: PathLike, exc: BaseException) -> PayloadCorrupt:
     detail = str(exc) or type(exc).__name__
-    return PayloadCorrupt(f"Yük dosyası bozuk ({detail}): {os.fspath(path)}", path=os.fspath(path), detail=detail)
+    return PayloadCorrupt(f"Payload file is corrupt ({detail}): {os.fspath(path)}", path=os.fspath(path), detail=detail)
 
 
 def decode(stored: bytes, path: PathLike) -> bytes:
@@ -118,8 +118,8 @@ def decode(stored: bytes, path: PathLike) -> bytes:
     kind = codec_of(path)
     if kind == "zstd" and _zstd is None:
         raise StoreError(
-            "Bu dosya zstd ile sıkıştırılmış ama zstd modülü yok "
-            f"(Python 3.14+ ya da `backports.zstd` paketi gerekir): {os.fspath(path)}",
+            "This file is compressed with zstd but the zstd module is missing "
+            f"(Python 3.14+ or the `backports.zstd` package is needed): {os.fspath(path)}",
             path=os.fspath(path),
         )
     try:
@@ -133,7 +133,7 @@ def decode(stored: bytes, path: PathLike) -> bytes:
         raise _corrupt(path, e) from e
     if not raw or raw.isspace():
         # Elektrik kesintisinden sonra boş kalmış dosya: gzip.decompress(b"") hata vermeden b"" döndürür
-        raise _corrupt(path, ValueError("dosya boş"))
+        raise _corrupt(path, ValueError("empty file"))
     return raw
 
 
@@ -160,7 +160,7 @@ def write_payload(path: PathLike, payload: Any, *, durable: Optional[bool] = Non
     Dönen Encoded, manifeste yazılacak sha256 ve boyutları taşır.
     """
     if codec_of(path) != "gzip":
-        raise LayoutError(f"Yük dosyaları yalnızca {SUFFIX_GZIP} olarak yazılır: {os.fspath(path)}",
+        raise LayoutError(f"Payload files are written as {SUFFIX_GZIP} only: {os.fspath(path)}",
                           path=os.fspath(path))
     encoded = encode(payload)
     files.write_bytes(path, encoded.stored, durable=durable)

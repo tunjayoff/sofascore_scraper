@@ -867,8 +867,8 @@ def promote_legacy(data_dir: Union[str, "os.PathLike[str]"], event: LegacyEvent,
                 back, same = b"", False
             if not same or codec.sha256_hex(back) != found.slices[key].sha256:
                 raise StoreError(
-                    f"Yükseltme doğrulanamadı: {key} dilimi geri okunduğunda eski yükle aynı değil "
-                    f"(maç {event.event_id}, {event.path})", path=path, detail=f"{key}: read-back mismatch")
+                    f"The upgrade could not be verified: slice {key} does not read back as the old payload "
+                    f"(match {event.event_id}, {event.path})", path=path, detail=f"{key}: read-back mismatch")
         manifest_file = os.path.join(staged, layout.MANIFEST_NAME)
         manifest_mod.write_manifest(manifest_file, found)
         manifest_mod.read_manifest(manifest_file)
@@ -920,7 +920,7 @@ def write_change_intent(data_dir: Union[str, "os.PathLike[str]"], event_id: int,
         data = json.dumps({"event_id": event_id, "sha256": sha256, "row": row}, ensure_ascii=False,
                           sort_keys=True).encode("utf-8")
     except (TypeError, ValueError, RecursionError) as exc:  # UnicodeEncodeError bir ValueError'dır
-        raise StoreError(f"Değişiklik satırı JSON'a çevrilemedi ({exc})", detail=str(exc)) from exc
+        raise StoreError(f"The change row could not be converted to JSON ({exc})", detail=str(exc)) from exc
     files.write_bytes(_intent_file(data_dir, event_id), data)
 
 
@@ -1136,13 +1136,13 @@ class EventStore:
             return codec.read_raw(path) if raw else codec.read_payload(path)
         directory = where.path or ""
         if not directory or sub:
-            raise PayloadMissing(f"Eski düzende böyle bir dilim yok: {event_id} {layout.slice_name(key, sub)}",
+            raise PayloadMissing(f"The legacy layout has no such slice: {event_id} {layout.slice_name(key, sub)}",
                                  path=directory or None)
         value = self._reader.read_payload(directory, key, raw=raw)
         # Ayrıştırılmış None iki şey olabilir: dosya yok ya da dosyanın içeriği JSON `null`
         if value is None and (raw or self._reader.read_payload(directory, key, raw=True) is None):
             where_text = self._reader.resolve(directory)
-            raise PayloadMissing(f"Yük dosyası bulunamadı: {where_text} ({key})", path=where_text)
+            raise PayloadMissing(f"Payload file not found: {where_text} ({key})", path=where_text)
         return value
 
     # -- dilim durumları -------------------------------------------------------------------------------
@@ -1473,7 +1473,7 @@ class EventStore:
     def _writable(self) -> None:
         self._store._require_open()
         if self._store.readonly:
-            raise StoreError(f"Depo salt okunur açılmış: {self._data_dir}", path=self._data_dir)
+            raise StoreError(f"The store is opened read-only: {self._data_dir}", path=self._data_dir)
 
     def _checkpoint(self, step: str) -> None:
         """Protokolün adımları arasında çağrılır (`STEP_*`). Hiçbir şey yapmaz; testler süreci burada öldürür."""
@@ -1534,8 +1534,8 @@ class EventStore:
                 raise
             self._checkpoint(STEP_DONE)
             return result
-        raise StoreBusy(f"Maç {event_id} için yarım yazma işareti korunamadı: veri dizini başka süreçlerce "
-                        f"sürekli uzlaştırılıyor: {self._data_dir}", path=self._data_dir)
+        raise StoreBusy(f"The partial-write marker of match {event_id} could not be kept: other processes keep "
+                        f"reconciling the data directory: {self._data_dir}", path=self._data_dir)
 
     def _open_for_write(self, write: _Write, event_id: int, *, has_event: bool, now: datetime) -> _Opened:
         """
@@ -1563,7 +1563,7 @@ class EventStore:
             found = None
         if found is not None:
             if found.kind != "event" or found.id != event_id:
-                raise StoreError(f"Manifest bu maç dizinine ait değil ({found.kind} {found.id!r}): {manifest_file}",
+                raise StoreError(f"The manifest does not belong to this match directory ({found.kind} {found.id!r}): {manifest_file}",
                                  path=manifest_file)
             return _Opened(manifest=found)
         fresh = Manifest(kind="event", id=event_id, created_at=now, updated_at=now)
@@ -1809,8 +1809,8 @@ class EventStore:
         """Maçın katalog satırlarını dosyalardan yeniden türetir (yeniden kurmanın yazacağı satırlar)."""
         problems: List[Any] = []
         if self._store.catalog.index_event(event_id, problems=problems) != LAYOUT_V3:
-            detail = "; ".join(f"{p.kind}: {p.detail}" for p in problems) or "v3 dizini dizinlenemedi"
-            raise StoreError(f"Maç {event_id} yazıldı ama dizinlenemedi ({detail})",
+            detail = "; ".join(f"{p.kind}: {p.detail}" for p in problems) or "the v3 directory could not be indexed"
+            raise StoreError(f"Match {event_id} was written but could not be indexed ({detail})",
                              path=layout.resolve(self._data_dir, layout.event_dir(event_id)), detail=detail)
         self._checkpoint(STEP_INDEXED)
 

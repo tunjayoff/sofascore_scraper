@@ -25,7 +25,8 @@ import EventsList from '@/screens/events/EventsList.vue'
 import FollowActions from './FollowActions.vue'
 import MoveFollow from './MoveFollow.vue'
 import SlicePicker from './SlicePicker.vue'
-import { dataText, hasOdds, lastSyncOf, lockReason, placeName, seasonsText, syncIncludes } from './followText'
+import { dataText, hasOdds, hitPlace, hitTraits, lastSyncOf, lockReason, placeName, seasonsText, syncIncludes } from './followText'
+import { seenTeam } from '@/app/suggest'
 import { followCoverage, type FollowCoverage } from './followCoverage'
 
 /**
@@ -126,10 +127,13 @@ function loadTournament() {
 const headerLine = computed(() => {
   const f = follow.value
   if (!f) return ''
+  // takımın ülkesi, cinsiyeti ve milli takım olduğu takip kaydında yok: bu sayfada görülen arama sonucundan
+  // okunur, bilinmiyorsa yazılmaz (FX-25 F26): "Voleybol · Türkiye · Takım · Kadın"
+  const seen = f.kind === 'team' ? seenTeam(f.id) : null
   const category = tournament.value?.category
-  const place = category ? placeName(category.country_code, category.name) : ''
-  const kindWord = t(`ui.followDetail.kindShort.${f.kind === 'team' && isIndividual(f.sport) ? 'player' : f.kind}`)
-  return [sportName(f.sport), place, kindWord].filter(Boolean).join(' · ')
+  const place = category ? placeName(category.country_code, category.name) : seen ? hitPlace(seen) : ''
+  const kindWord = seen?.national === true ? '' : t(`ui.followDetail.kindShort.${f.kind === 'team' && isIndividual(f.sport) ? 'player' : f.kind}`)
+  return [sportName(f.sport), place, kindWord, ...hitTraits(seen)].filter(Boolean).join(' · ')
 })
 
 function loadJobs() {

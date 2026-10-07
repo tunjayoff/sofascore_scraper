@@ -1,7 +1,7 @@
 import { i18n } from '@/i18n'
 import type { JobEventMessage } from './jobStream'
 import { breakerText, faceText, followName, leagueName, phaseText } from './jobText'
-import { seasonName, seasonNames } from '@/screens/events/eventText'
+import { seasonName, seasonNames, sliceLabel } from '@/screens/events/eventText'
 import { num, pct } from '@/ui/time'
 
 /**
@@ -48,7 +48,23 @@ export function codeText(code: unknown, params: unknown): string | null {
   if (typeof p.follow === 'string') args.follow = typeof p.name === 'string' && p.name ? p.name : followName(p.follow)
   if (typeof p.what === 'string') args.what = whatText(p.what)
   for (const k of ['count', 'stored', 'failed', 'skipped']) if (typeof p[k] === 'number') args[k] = num(p[k] as number)
+  if (code === 'sync_extras_kinds') args.kinds = extrasKindsText(p.saved, p.unavailable)
   return t(`ui.job.code.${code}`, args)
+}
+
+/**
+ * Maç dışı verilerin türleri (FX-23 F18; `saved` / `unavailable` dilim anahtarlarının listesi) okurun
+ * dilinde ve veri türlerinin adlarıyla: "Puan durumu kaydedildi; Sezon oranları SofaScore’da yok". Boş
+ * liste yazılmaz; bilinmeyen bir anahtar olduğu gibi kalır.
+ */
+function extrasKindsText(saved: unknown, unavailable: unknown): string {
+  const names = (keys: unknown) => (Array.isArray(keys) ? keys.filter((k): k is string => typeof k === 'string').map(sliceLabel) : [])
+  const s = names(saved)
+  const u = names(unavailable)
+  const parts: string[] = []
+  if (s.length) parts.push(t('ui.job.extrasKinds.saved', { kinds: s.join(', ') }))
+  if (u.length) parts.push(t('ui.job.extrasKinds.unavailable', { kinds: u.join(', ') }))
+  return parts.length ? parts.join('; ') : t('ui.job.extrasKinds.none')
 }
 
 /**

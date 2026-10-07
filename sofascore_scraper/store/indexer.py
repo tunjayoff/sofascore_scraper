@@ -480,22 +480,22 @@ def read_v3_event(data_dir: PathLike, event_id: int) -> V3Event:
     manifest_file = layout.resolve(data_dir, layout.manifest_path(rel))
     sig = file_signature(manifest_file)  # okumadan önce: araya giren bir yazma imzayı eski bırakır, yeni değil
     if sig is None:
-        raise PayloadMissing(f"Manifest bulunamadı: {manifest_file}", path=manifest_file)
+        raise PayloadMissing(f"Manifest not found: {manifest_file}", path=manifest_file)
     found = manifest_mod.read_manifest(manifest_file)
     if found.kind != "event" or found.id != event_id:
         raise LayoutError(
-            f"Manifest bu maç dizinine ait değil ({found.kind} {found.id!r}): {manifest_file}",
-            path=manifest_file, detail=f"{found.kind} {found.id!r}, dizin {event_id}")
+            f"The manifest does not belong to this match directory ({found.kind} {found.id!r}): {manifest_file}",
+            path=manifest_file, detail=f"{found.kind} {found.id!r}, directory {event_id}")
     entry = found.slices.get(EVENT_KEY)
     if entry is None or entry.state != "ok" or not entry.has_payload:
-        raise PayloadMissing(f"v3 maç dizininde geçerli olay yükü yok: {manifest_file}", path=manifest_file,
-                             detail="manifestte event dilimi ok değil")
+        raise PayloadMissing(f"The v3 match directory has no valid event payload: {manifest_file}", path=manifest_file,
+                             detail="the manifest's event slice is not ok")
     payload_file = layout.resolve(data_dir, layout.slice_path(rel, EVENT_KEY))
     payload = codec.read_payload(payload_file)
     if not isinstance(payload, dict) or isinstance(payload.get("id"), bool) or payload.get("id") != event_id:
         got = payload.get("id") if isinstance(payload, dict) else type(payload).__name__
-        raise LayoutError(f"Olay yükündeki id ({got!r}) dizine ({event_id}) eşit değil: {payload_file}",
-                          path=payload_file, detail=f"id {got!r}, dizin {event_id}")
+        raise LayoutError(f"The id in the event payload ({got!r}) is not the directory's ({event_id}): {payload_file}",
+                          path=payload_file, detail=f"id {got!r}, directory {event_id}")
     return V3Event(event_id=event_id, path=rel, manifest=found, event=payload, sig=sig,
                    history=tuple(history_mod.history_rows(data_dir, KIND_EVENT, event_id, rel)))
 
@@ -704,8 +704,8 @@ def _record(event_id: int, layout_name: str, payload: Dict[str, Any], *, observe
             history: Sequence[Row] = ()) -> EventRecord:
     row = derive.event_row(payload, "event", observed_at)
     if row["id"] != event_id:
-        raise LayoutError(f"Olay yükündeki id ({row['id']!r}) dizine ({event_id}) eşit değil",
-                          detail=f"id {row['id']!r}, dizin {event_id}")
+        raise LayoutError(f"The id in the event payload ({row['id']!r}) is not the directory's ({event_id})",
+                          detail=f"id {row['id']!r}, directory {event_id}")
     row.update(storage)
     entity_rows = derive.event_entity_rows(payload, updated_at=payload_at)
     for found in (entity_rows.sport, entity_rows.category, entity_rows.tournament, entity_rows.season,
@@ -1027,7 +1027,7 @@ class CatalogAdmin:
         elif mode == MODE_IN_PLACE and not in_place_possible:
             if state.rebuild_reason != catalog_mod.REBUILD_MISSING:
                 raise StoreError(
-                    f"Katalog yerinde yeniden kurulamaz ({state.rebuild_reason}); yeniden yaratılmalı: "
+                    f"The catalog cannot be rebuilt in place ({state.rebuild_reason}); it must be recreated: "
                     f"{self.catalog.path}", path=self.catalog.path, detail=state.detail)
             self.catalog.prepare()
         report = RebuildReport(mode=mode, reason=state.rebuild_reason)
@@ -1088,7 +1088,7 @@ class CatalogAdmin:
         except StoreError as exc:
             self._remove_database(build_path)
             raise StoreError(
-                f"Katalog yeniden yaratılamadı; catalog.db başka bir süreçte açık olabilir "
+                f"The catalog could not be recreated; catalog.db may be open in another process "
                 f"({_detail(exc)}): {main.path}", path=main.path, errno_code=exc.errno,
                 detail=_detail(exc)) from exc
 
@@ -1491,7 +1491,7 @@ class CatalogAdmin:
         state = cat.inspect()
         if not state.usable:
             raise StoreError(
-                f"Katalog uzlaştırılamaz, önce yeniden kurulmalı ({state.rebuild_reason}): {cat.path}",
+                f"The catalog cannot be reconciled; it must be rebuilt first ({state.rebuild_reason}): {cat.path}",
                 path=cat.path, detail=state.detail)
         report = ReconcileReport(deep=deep, v3=v3 or deep)
         with cat.write():
@@ -1636,7 +1636,7 @@ class CatalogAdmin:
         state = cat.inspect()
         if not state.usable:
             raise StoreError(
-                f"Katalog uzlaştırılamaz, önce yeniden kurulmalı ({state.rebuild_reason}): {cat.path}",
+                f"The catalog cannot be reconciled; it must be rebuilt first ({state.rebuild_reason}): {cat.path}",
                 path=cat.path, detail=state.detail)
         report = ReconcileReport(deep=False, v3=False)
         with cat.write():

@@ -84,15 +84,45 @@ def file_lock(path: str) -> Iterator[None]:
     Kilit, hedefin yanındaki `<path>.lock` dosyasında tutulur; Windows'ta kilitlenmez.
     `fcntl` bu modülün adı üzerinden okunur: testler kilitsiz dalı `config_files.fcntl = None` ile dener.
     Store'un kendi kilitleri (lease) bu değildir: onlar sofascore_scraper/store/lease.py'dedir.
+
+    `.lock` dosyası iş bitince, kilit hâlâ tutulurken silinir (FX-25: ayar kaydından sonra
+    `overrides.json.lock` kalıyordu). Silinmiş bir dosyada bekleyen süreç kilidi alınca yolun hâlâ aynı
+    dosyayı (inode) gösterdiğine bakar; göstermiyorsa yeniden açıp yeniden dener, böylece iki süreç iki ayrı
+    dosyada aynı anda kilit tutamaz. Kilit dosyası geçici bir dizine taşınmadı: CLI ve servis farklı
+    TMPDIR'lerle (systemd PrivateTmp) çalışabilir, o zaman aynı kilidi görmezlerdi.
     """
     if fcntl is None:
         yield
         return
     lock_path = f"{path}.lock"
     os.makedirs(os.path.dirname(os.path.abspath(lock_path)), exist_ok=True)
-    with open(lock_path, "a") as lock_file:
-        fcntl.flock(lock_file, fcntl.LOCK_EX)
+    while True:
+        lock_file = open(lock_path, "a")
         try:
-            yield
-        finally:
+            fcntl.flock(lock_file, fcntl.LOCK_EX)
+            if _same_file(lock_path, lock_file.fileno()):
+                break
+        except BaseException:
+            lock_file.close()
+            raise
+        # Önceki sahip dosyayı sildi (ya da yenisi yaratıldı): bu kilit artık kimsenin görmediği bir dosyada
+        lock_file.close()
+    try:
+        yield
+    finally:
+        try:
+            with contextlib.suppress(OSError):
+                os.remove(lock_path)
             fcntl.flock(lock_file, fcntl.LOCK_UN)
+        finally:
+            lock_file.close()
+
+
+def _same_file(path: str, fd: int) -> bool:
+    """`path` hâlâ açık `fd`'nin dosyasını mı gösteriyor (aynı aygıt ve inode); yol yoksa hayır."""
+    try:
+        named = os.stat(path)
+    except FileNotFoundError:
+        return False
+    held = os.fstat(fd)
+    return (named.st_dev, named.st_ino) == (held.st_dev, held.st_ino)

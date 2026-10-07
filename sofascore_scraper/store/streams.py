@@ -150,7 +150,7 @@ class SinkCursor:
 
 def _check_stream(stream: Any) -> str:
     if not isinstance(stream, str) or not _STREAM_RE.fullmatch(stream):
-        raise StoreError(f"Geçersiz akış adı: {stream!r}", detail="stream")
+        raise StoreError(f"Invalid stream name: {stream!r}", detail="stream")
     return stream
 
 
@@ -158,7 +158,7 @@ def _optional_int(value: Any, what: str) -> Optional[int]:
     if value is None:
         return None
     if isinstance(value, bool) or not isinstance(value, int):
-        raise StoreError(f"Akış olayında {what} tam sayı olmalı: {value!r}", detail=what)
+        raise StoreError(f"The stream event's {what} must be an integer: {value!r}", detail=what)
     return value
 
 
@@ -166,7 +166,7 @@ def _optional_text(value: Any, what: str) -> Optional[str]:
     if value is None:
         return None
     if not isinstance(value, str):
-        raise StoreError(f"Akış olayında {what} metin olmalı: {value!r}", detail=what)
+        raise StoreError(f"The stream event's {what} must be a string: {value!r}", detail=what)
     return value
 
 
@@ -208,15 +208,15 @@ class StreamLog:
     @staticmethod
     def _row(stream: str, event: StreamEvent) -> Tuple[Any, ...]:
         if not isinstance(event.type, str) or not event.type:
-            raise StoreError(f"Akış olayının türü boş olamaz: {event.type!r}", detail="type")
+            raise StoreError(f"The stream event's type cannot be empty: {event.type!r}", detail="type")
         try:
             payload = json.dumps(dict(event.data), ensure_ascii=False, separators=(",", ":"))
         except (TypeError, ValueError) as e:
-            raise StoreError(f"Akış olayı JSON'a çevrilemedi: {event.type} ({e})", detail=str(e)) from e
+            raise StoreError(f"The stream event could not be converted to JSON: {event.type} ({e})", detail=str(e)) from e
         try:
             ts_ms = int(round((time.time() if event.ts is None else float(event.ts)) * 1000))
         except (TypeError, ValueError, OverflowError) as e:
-            raise StoreError(f"Akış olayının zamanı geçersiz: {event.ts!r}", detail="ts") from e
+            raise StoreError(f"The stream event's time is not valid: {event.ts!r}", detail="ts") from e
         return (
             stream,
             ts_ms,
@@ -243,9 +243,9 @@ class StreamLog:
         söyler (yalnızca akışa göre bilinir; öteki süzgeçler hesaba katılmaz).
         """
         if isinstance(after, bool) or not isinstance(after, int) or after < 0:
-            raise StoreError(f"after sıfır ya da pozitif bir sıra numarası olmalı: {after!r}", detail="after")
+            raise StoreError(f"after must be zero or a positive sequence number: {after!r}", detail="after")
         if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
-            raise StoreError(f"limit en az 1 olmalı: {limit!r}", detail="limit")
+            raise StoreError(f"limit must be at least 1: {limit!r}", detail="limit")
         names = [_check_stream(name) for name in dict.fromkeys(streams)]
         where: List[str] = []
         params: List[Any] = []
@@ -387,9 +387,9 @@ class StreamLog:
         `read`'de `gap=True` görür.
         """
         if max_age_s is not None and max_age_s < 0:
-            raise StoreError(f"max_age_s negatif olamaz: {max_age_s!r}", detail="max_age_s")
+            raise StoreError(f"max_age_s cannot be negative: {max_age_s!r}", detail="max_age_s")
         if max_rows is not None and (isinstance(max_rows, bool) or not isinstance(max_rows, int) or max_rows < 0):
-            raise StoreError(f"max_rows sıfır ya da pozitif bir tam sayı olmalı: {max_rows!r}", detail="max_rows")
+            raise StoreError(f"max_rows must be zero or a positive integer: {max_rows!r}", detail="max_rows")
         if max_age_s is None and max_rows is None:
             return 0
         removed = 0
@@ -454,9 +454,9 @@ class StreamLog:
         None önceki hatayı siler.
         """
         if not isinstance(sink, str) or not sink:
-            raise StoreError(f"Sink adı boş olamaz: {sink!r}", detail="sink")
+            raise StoreError(f"The sink name cannot be empty: {sink!r}", detail="sink")
         if isinstance(seq, bool) or not isinstance(seq, int) or seq < 0:
-            raise StoreError(f"Sink konumu sıfır ya da pozitif bir sıra numarası olmalı: {seq!r}", detail="seq")
+            raise StoreError(f"The sink position must be zero or a positive sequence number: {seq!r}", detail="seq")
         with self._state.write() as conn:
             conn.execute(
                 """

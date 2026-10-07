@@ -264,6 +264,8 @@ const en = {
     individual: 'SofaScore lists {sport} players as teams: this one is added as a team, which downloads its matches.',
     number: 'No. {id}',
     sameName: 'Another result has the same name: compare the numbers on sofascore.com',
+    women: 'Women',
+    national: 'National team',
   },
   place: {
     england: 'England',
@@ -480,6 +482,11 @@ const en = {
       '5xx': 'SofaScore answered with server errors (5xx)',
       other: 'too many requests failed',
     },
+    extrasKinds: {
+      saved: '{kinds} saved',
+      unavailable: '{kinds} not available on SofaScore',
+      none: 'No kind of data was saved',
+    },
     code: {
       fetch_stopped_by_breaker: 'Stopped early: {reason}.',
       refresh_stopped_by_breaker: 'Stopped early: {reason}. {skipped} matches were not refreshed.',
@@ -498,7 +505,7 @@ const en = {
       sync_details_selected: 'Downloading the details of {count} chosen matches…',
       sync_breaker_stopped: 'Stopped downloading {what}: {reason}.',
       sync_extras: 'Odds and non-match data: {stored} stored, {failed} failed.',
-      sync_extras_kinds: 'Saved: {saved}. Not available on SofaScore: {unavailable}.',
+      sync_extras_kinds: '{kinds}.',
       sync_follow_listing: 'Reading the match list of {follow}…',
       sync_follow_listing_failed: 'The match list of {follow} could not be read completely ({reason}).',
       sync_follow_details: 'Downloading {count} matches of team, player and match follows…',

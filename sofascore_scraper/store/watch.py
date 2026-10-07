@@ -44,30 +44,30 @@ def legacy_state_file(sport: str) -> str:
     """Sporun 2.x durum dosyasının adı. Spor adı tek bir yol bileşeni olmalıdır; değilse LayoutError."""
     if (not isinstance(sport, str) or not sport or sport in (".", "..")
             or any(ch in sport for ch in ("/", "\\", "\0"))):
-        raise LayoutError(f"Geçersiz spor adı: {sport!r}")
+        raise LayoutError(f"Invalid sport name: {sport!r}")
     return LEGACY_STATE_FILE.format(sport=sport)
 
 
 def _event_key(key: Any) -> int:
     """Durum sözlüğünün anahtarı (maç id'si, metin ya da tam sayı) → tam sayı; değilse StoreError."""
     if isinstance(key, bool):
-        raise StoreError(f"Geçersiz maç kimliği: {key!r}", detail="event_id")
+        raise StoreError(f"Invalid match id: {key!r}", detail="event_id")
     if isinstance(key, int):
         return key
     if isinstance(key, str) and _EVENT_KEY_RE.fullmatch(key):
         return int(key)
-    raise StoreError(f"Geçersiz maç kimliği: {key!r}", detail="event_id")
+    raise StoreError(f"Invalid match id: {key!r}", detail="event_id")
 
 
 def _dump(event_id: int, value: Any) -> str:
     if not isinstance(value, Mapping):
-        raise StoreError(f"İzleyici durumu bir sözlük olmalı (maç {event_id}): {type(value).__name__}",
+        raise StoreError(f"The watcher state must be a mapping (match {event_id}): {type(value).__name__}",
                          detail="state")
     try:
         # Anahtar sırası korunur: yeniden yüklenen durum, yazılan sözlükle aynı sırada döner
         return json.dumps(dict(value), ensure_ascii=False, separators=(",", ":"))
     except (TypeError, ValueError) as e:
-        raise StoreError(f"İzleyici durumu JSON'a çevrilemedi (maç {event_id}): {e}", detail=str(e)) from e
+        raise StoreError(f"The watcher state could not be converted to JSON (match {event_id}): {e}", detail=str(e)) from e
 
 
 class WatchStateStore:
@@ -113,7 +113,7 @@ class WatchStateStore:
         olanlar silinir.
         """
         if not isinstance(watcher, str) or not watcher:
-            raise StoreError(f"İzleyici adı boş olamaz: {watcher!r}", detail="watcher")
+            raise StoreError(f"The watcher name cannot be empty: {watcher!r}", detail="watcher")
         rows = {_event_key(key): value for key, value in state.items()}
         now = int(self._clock())
         with self._state.write() as conn:

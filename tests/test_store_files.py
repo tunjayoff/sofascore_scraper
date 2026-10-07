@@ -93,9 +93,9 @@ def test_from_exception_works_on_every_class_and_keeps_path_and_errno(cls):
 
     assert type(written) is cls and written.fatal is True
     assert written.path == "/data/v3/events/1/event.json.gz"
-    assert "yazılamadı" in str(written) and "No space left on device" in str(written)
+    assert "could not be written" in str(written) and "No space left on device" in str(written)
     assert type(read) is cls and read.fatal is False
-    assert read.path == "/data/x.json.gz" and "okunamadı" in str(read)
+    assert read.path == "/data/x.json.gz" and "could not be read" in str(read)
 
 
 def test_from_exception_accepts_a_serialisation_error():
@@ -146,7 +146,7 @@ def test_read_bytes_returns_the_file_and_maps_errors(tmp_path):
     with pytest.raises(StoreError) as not_a_file:  # dizin: POSIX'te EISDIR, Windows'ta EACCES
         files.read_bytes(tmp_path)
     assert not isinstance(not_a_file.value, PayloadMissing)
-    assert "okunamadı" in str(not_a_file.value)
+    assert "could not be read" in str(not_a_file.value)
 
 
 def test_failed_write_becomes_a_store_error_and_keeps_the_old_file(tmp_path, monkeypatch):

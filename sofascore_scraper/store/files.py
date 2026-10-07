@@ -104,7 +104,7 @@ def _open_store_tmp(directory: str, name: str, mode: int = STORE_FILE_MODE) -> T
             return os.open(tmp, _TMP_OPEN_FLAGS, mode), tmp
         except FileExistsError:
             continue  # ad dolu: var olan dosyaya dokunulmadı (O_EXCL), başka adla dene
-    raise FileExistsError(errno.EEXIST, "Kullanılmayan geçici dosya adı bulunamadı", directory)
+    raise FileExistsError(errno.EEXIST, "No unused temporary file name was found", directory)
 
 
 def _atomic_write(path: PathLike, data: bytes, *, durable: bool, mode: int = STORE_FILE_MODE) -> None:
@@ -134,7 +134,7 @@ def _store_error(exc: OSError, path: Optional[PathLike], *, reading: bool = Fals
     if isinstance(exc, ReplaceBusy):
         # Geçici durum (dosya başka süreçte açık): errno verilmez ki hata `fatal` sayılıp işi durdurmasın
         detail = exc.strerror or str(exc)
-        return StoreError(f"Dosya yerine konamadı, başka bir süreçte açık ({detail}): {where}",
+        return StoreError(f"The file could not be replaced; it is open in another process ({detail}): {where}",
                           path=where, detail=detail)
     return StoreError.from_exception(exc, where, reading=reading)
 
@@ -145,7 +145,7 @@ def read_bytes(path: PathLike) -> bytes:
         with open(path, "rb") as f:
             return f.read()
     except FileNotFoundError as e:
-        raise PayloadMissing(f"Dosya bulunamadı: {os.fspath(path)}", path=os.fspath(path)) from e
+        raise PayloadMissing(f"File not found: {os.fspath(path)}", path=os.fspath(path)) from e
     except OSError as e:
         raise _store_error(e, path, reading=True) from e
 
@@ -232,7 +232,7 @@ def publish_dir(staged: PathLike, final: PathLike, *, durable: Optional[bool] = 
     parent = os.path.dirname(os.path.abspath(target))
     try:
         if os.path.lexists(target):
-            raise FileExistsError(errno.EEXIST, "Hedef dizin zaten var", target)
+            raise FileExistsError(errno.EEXIST, "The target directory already exists", target)
         os.makedirs(parent, exist_ok=True)
         _retry_while_busy(os.rename, source, target)
     except OSError as e:

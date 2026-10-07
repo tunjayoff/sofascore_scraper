@@ -278,7 +278,7 @@ def test_a_promotion_that_cannot_be_verified_leaves_everything_as_it_was(canonic
         return raw.replace(b"Arsenal", b"Arsenel") if os.path.basename(path) == "event.json.gz" else raw
 
     monkeypatch.setattr(codec, "read_raw", flipped)
-    with pytest.raises(StoreError, match="doğrulanamadı") as raised:
+    with pytest.raises(StoreError, match="could not be verified") as raised:
         store.events.put(ARS, {"lineups": gone()})
     assert not raised.value.fatal
 

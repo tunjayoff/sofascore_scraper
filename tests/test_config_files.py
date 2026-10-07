@@ -288,15 +288,49 @@ def _acquire_in_thread(path: str) -> tuple[threading.Thread, threading.Event]:
 
 
 @needs_fcntl
-def test_file_lock_keeps_its_lock_file_next_to_the_target(tmp_path):
+def test_file_lock_removes_its_lock_file_next_to_the_target_after_use(tmp_path):
     target = tmp_path / "cfg" / "leagues.txt"
 
     with file_lock(str(target)):
         assert (tmp_path / "cfg" / "leagues.txt.lock").is_file()
 
-    # Kilit hedefi oluşturmaz/değiştirmez; .lock dosyası sonraki kullanım için kalır
+    # Kilit hedefi oluşturmaz/değiştirmez; .lock dosyası iş bitince silinir (FX-25: overrides.json.lock kalıyordu)
     assert not target.exists()
-    assert os.listdir(tmp_path / "cfg") == ["leagues.txt.lock"]
+    assert os.listdir(tmp_path / "cfg") == []
+
+    # bir istisnadan sonra da
+    with pytest.raises(ValueError):
+        with file_lock(str(target)):
+            raise ValueError("inside")
+    assert os.listdir(tmp_path / "cfg") == []
+
+
+@needs_fcntl
+def test_a_waiter_on_a_removed_lock_file_takes_the_lock_again_on_the_new_one(tmp_path, monkeypatch):
+    """
+    Bekleyen süreç, önceki sahibin sildiği dosyada kilidi alır: yol artık o dosyayı göstermez, yeniden açar.
+    Burada bu yarış elle kurulur: ilk açılan dosya, kilit alınmadan hemen önce silinip yenisi yaratılır.
+    """
+    target = str(tmp_path / "overrides.json")
+    lock_path = f"{target}.lock"
+    opened: list[int] = []
+    real_flock = config_files.fcntl.flock
+
+    def flock(f, op):
+        if op == config_files.fcntl.LOCK_EX and not opened:
+            # önceki sahip dosyayı sildi, üçüncü bir süreç yenisini yarattı
+            os.remove(lock_path)
+            open(lock_path, "a").close()
+        if op == config_files.fcntl.LOCK_EX:
+            opened.append(os.fstat(f.fileno()).st_ino)
+        return real_flock(f, op)
+
+    monkeypatch.setattr(config_files.fcntl, "flock", flock)
+    with file_lock(target):
+        # ikinci denemede yolun gösterdiği dosyada kilit tutuluyor
+        assert len(opened) == 2
+        assert os.stat(lock_path).st_ino == opened[-1]
+    assert not os.path.exists(lock_path)
 
 
 @no_lock_on_windows
@@ -368,6 +402,45 @@ def test_file_lock_serialises_threads_of_one_process(tmp_path):
 
     assert errors == []
     assert max_inside == 1
+
+
+@no_lock_on_windows
+def test_file_lock_stays_exclusive_while_owners_remove_the_lock_file(tmp_path):
+    """Her sahip çıkarken dosyayı siler: bekleyenler yeni dosyada yeniden dener, aynı anda yine tek sahip."""
+    target = str(tmp_path / "overrides.json")
+    start = threading.Barrier(8)
+    guard = threading.Lock()
+    inside = 0
+    max_inside = 0
+    rounds = 0
+    errors: list[BaseException] = []
+
+    def worker() -> None:
+        nonlocal inside, max_inside, rounds
+        try:
+            start.wait(timeout=10)
+            for _ in range(25):
+                with file_lock(target):
+                    with guard:
+                        inside += 1
+                        rounds += 1
+                        max_inside = max(max_inside, inside)
+                    time.sleep(0.001)
+                    with guard:
+                        inside -= 1
+        except BaseException as e:
+            errors.append(e)
+
+    threads = [threading.Thread(target=worker) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=120)
+
+    assert errors == []
+    assert rounds == 8 * 25
+    assert max_inside == 1
+    assert os.listdir(tmp_path) == []
 
 
 def test_file_lock_is_released_when_the_body_raises(tmp_path):

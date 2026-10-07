@@ -46,6 +46,18 @@ export function hitPlace(h: Pick<TournamentHit, 'country' | 'category'>): string
 }
 
 /**
+ * Bir takımın milli takım ve kadın takımı olduğu, okurun dilinde (FX-25 F26): ["Milli takım", "Kadın"].
+ * SofaScore'un söylemediği (null) ya da bilinmeyen bir cinsiyet yazılmaz; erkek takımları ayrıca
+ * işaretlenmez (SofaScore'da çoğunluk onlar), aynı adlı kadın takımı "Kadın" ile ayrılır.
+ */
+export function hitTraits(h: Pick<TournamentHit, 'gender' | 'national'> | null | undefined): string[] {
+  const out: string[] = []
+  if (h?.national === true) out.push(t('ui.suggest.national'))
+  if (h?.gender === 'F') out.push(t('ui.suggest.women'))
+  return out
+}
+
+/**
  * SofaScore's places that are no country of ISO 3166 (regions, the home nations, "World"), by the slug of
  * their English name, to the key of their name under `ui.place` (FX-24 F12). SofaScore writes them in
  * English and gives them no code, or a code of its own (`EN` for England).

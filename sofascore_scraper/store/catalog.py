@@ -263,7 +263,7 @@ class Catalog:
             raise StoreError.from_exception(exc, directory) from exc
         for name, other in self._attach.items():
             if not os.path.isfile(other):
-                raise StoreError(f"ATTACH edilecek veritabanı yok ({name}): {other}", path=other)
+                raise StoreError(f"No database to ATTACH ({name}): {other}", path=other)
         try:
             conn = connect(self.path, busy_timeout_ms=self.busy_timeout_ms)
         except sqlite3.Error as exc:
@@ -317,7 +317,7 @@ class Catalog:
 
         if conn.in_transaction:
             # Okuma işlemini yazmaya yükseltmek tam da kaçınılan şey: ortada SQLITE_BUSY alınabilir
-            raise StoreError("Açık bir okuma işleminin içinde yazma işlemi başlatılamaz", path=self.path)
+            raise StoreError("A write cannot start inside an open read transaction", path=self.path)
         try:
             begin_immediate(conn, self.path)
         except sqlite3.Error as exc:
@@ -355,7 +355,7 @@ class Catalog:
     def _require_write(self) -> sqlite3.Connection:
         slot = self._slot()
         if not slot.depth:
-            raise StoreError("Bu çağrı Catalog.write() bloğunun içinde yapılmalı", path=self.path)
+            raise StoreError("This call must be made inside a Catalog.write() block", path=self.path)
         return slot.conn
 
     # -- şema ve sürümler ----------------------------------------------------------------------------
@@ -488,7 +488,7 @@ class Catalog:
         if info is None:
             rows = conn.execute("SELECT name, pk, dflt_value FROM pragma_table_info(?)", (table,)).fetchall()
             if not rows:
-                raise StoreError(f"Katalogda böyle bir tablo yok: {table!r}", path=self.path)
+                raise StoreError(f"The catalog has no table {table!r}", path=self.path)
             columns = tuple(str(r[0]) for r in rows)
             keyed = sorted((r for r in rows if r[1]), key=lambda r: r[1])
             primary = tuple(str(r[0]) for r in keyed)
@@ -522,7 +522,7 @@ class Catalog:
             missing = [name for name in required if name not in names]
             if unknown or missing:
                 raise StoreError(
-                    f"{table}: geçersiz satır (bilinmeyen sütun: {unknown}, eksik anahtar sütunu: {missing})",
+                    f"{table}: invalid row (unknown columns: {unknown}, missing key columns: {missing})",
                     path=self.path)
             updates = [name for name in names if name not in primary]
             action = "DO NOTHING"

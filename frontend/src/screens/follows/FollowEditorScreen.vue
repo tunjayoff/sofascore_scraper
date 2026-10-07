@@ -23,7 +23,7 @@ import MoveFollow from './MoveFollow.vue'
 import HelpTip from '@/ui/HelpTip.vue'
 import { noteFollowAdded } from '@/app/suggest'
 import FollowSearch from './FollowSearch.vue'
-import { FOLLOW_KINDS, MORE_FOLLOW_KINDS, dataText, followKindReady, followPath, hitPlace, lockReason, playerTeam, seasonsText, type FollowKind } from './followText'
+import { FOLLOW_KINDS, MORE_FOLLOW_KINDS, dataText, followKindReady, followPath, hitPlace, hitTraits, lockReason, playerTeam, seasonsText, type FollowKind } from './followText'
 
 /**
  * The follow editor (6.3), "Add a league or team". A new follow in four steps:
@@ -303,6 +303,7 @@ onMounted(() => {
               <span class="u-small u-muted">{{ t(`ui.follows.kind.${pickedIndividual ? 'player' : (picked.kind ?? 'tournament')}`) }}</span>
               <span v-if="picked.sport" class="u-small u-muted">{{ sportName(picked.sport) }}</span>
               <span v-if="hitPlace(picked)" class="u-small u-muted">{{ hitPlace(picked) }}</span>
+              <span v-for="trait in hitTraits(picked)" :key="trait" class="u-small u-muted" data-testid="picked-trait">{{ trait }}</span>
               <span v-if="playerTeam(picked.team)" class="u-small u-muted">{{ t('ui.followEditor.playsFor', { team: playerTeam(picked.team) }) }}</span>
               <span class="u-small u-muted u-mono">#{{ picked.id }}</span>
               <UiBadge v-if="picked.followed" tone="ok" icon="check">{{ t('ui.followEditor.alreadyFollowed') }}</UiBadge>

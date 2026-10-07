@@ -42,8 +42,8 @@ export type Suggestion = {
   followed: boolean
   source: SuggestSource
   /**
-   * Another suggestion of the same group has the same name and sport (a men's and a women's team, FX-24 F26):
-   * the number tells them apart, since the search answer has no gender (`TournamentHit` has none).
+   * Another suggestion of the same group has the same name and sport (a men's and a women's team, FX-24 F26)
+   * and their gender or national-team flag does not tell them apart (FX-25): the number does.
    */
   twin: boolean
 }
@@ -57,11 +57,27 @@ export function shownKind(kind: SuggestKind, sport: string | null | undefined): 
   return kind === 'team' && isIndividual(sport) ? 'player' : kind
 }
 
-/** Marks the entries whose `same` key another entry has too (`twin`); returns them in the same order. */
-export function markTwins<T extends { twin: boolean }>(list: T[], same: (x: T) => string): T[] {
-  const count = new Map<string, number>()
-  for (const x of list) count.set(same(x), (count.get(same(x)) ?? 0) + 1)
-  return list.map((x) => ({ ...x, twin: (count.get(same(x)) ?? 0) > 1 }))
+/**
+ * Marks the entries whose `same` key another entry has too (`twin`); returns them in the same order. With
+ * `apart`, an entry is a twin only when some other entry of its key is not told apart from it by `apart`.
+ */
+export function markTwins<T extends { twin: boolean }>(list: T[], same: (x: T) => string, apart?: (a: T, b: T) => boolean): T[] {
+  const byKey = new Map<string, T[]>()
+  for (const x of list) byKey.set(same(x), [...(byKey.get(same(x)) ?? []), x])
+  return list.map((x) => ({ ...x, twin: (byKey.get(same(x)) ?? []).some((y) => y !== x && !apart?.(x, y)) }))
+}
+
+const knownGender = (g: string | null | undefined) => (g === 'M' || g === 'F' ? g : null)
+
+/**
+ * İki aynı adlı sonucu cinsiyet ya da milli takım bilgisi zaten ayırıyor mu (ikisinde de biliniyor ve
+ * farklı; FX-25 F26): o zaman numara ("No. 36456") gerekmez. Birinde bilinmiyorsa ayırmaz.
+ */
+export function traitsApart(a: Pick<TournamentHit, 'gender' | 'national'>, b: Pick<TournamentHit, 'gender' | 'national'>): boolean {
+  const ga = knownGender(a.gender)
+  const gb = knownGender(b.gender)
+  if (ga && gb && ga !== gb) return true
+  return a.national != null && b.national != null && a.national !== b.national
 }
 
 /** The text as it is sent: trimmed, inner spaces as one. */
@@ -91,6 +107,30 @@ function remember(key: string, hits: TournamentHit[]) {
   remoteCache.delete(key)
   remoteCache.set(key, hits)
   while (remoteCache.size > CACHE_SIZE) remoteCache.delete(remoteCache.keys().next().value as string)
+  noteHits(hits)
+}
+
+/**
+ * Bu sayfada görülen takım sonuçları (`team:<id>` → sonuç), cinsiyeti, milli takım bilgisi ya da ülkesi
+ * olanlar (FX-25 F26): takip kaydında bunlar yok (API'de takım kaydı yok), takip sayfasının başlığı ve
+ * Ctrl K'dan açılan düzenleyici onları buradan okur. Yalnızca bu sekme için; yeni bir istek göndermez.
+ */
+const seenTeams = new Map<string, TournamentHit>()
+const SEEN_SIZE = 500
+
+function noteHits(hits: TournamentHit[]) {
+  for (const h of hits) {
+    if (h.kind !== 'team' || (h.gender == null && h.national == null && !h.country)) continue
+    const key = `team:${h.id}`
+    seenTeams.delete(key)
+    seenTeams.set(key, h)
+  }
+  while (seenTeams.size > SEEN_SIZE) seenTeams.delete(seenTeams.keys().next().value as string)
+}
+
+/** A team hit seen on this page (`team:<id>`), with its gender, national-team flag and country; else null. */
+export function seenTeam(key: string): TournamentHit | null {
+  return seenTeams.get(key) ?? null
 }
 
 /** A follow added or removed on this page: "already added" follows it at once. */
@@ -106,6 +146,7 @@ export function noteFollowAdded(f: FollowRecord) {
 /** For tests: forget the kept answers. */
 export function clearSuggestCache() {
   remoteCache.clear()
+  seenTeams.clear()
   sharedFollows.value = null
   followsPending = null
 }
@@ -135,6 +176,8 @@ function merged(a: TournamentHit, b: TournamentHit): TournamentHit {
     sport: a.sport ?? b.sport,
     country: a.country ?? b.country,
     team: a.team ?? b.team,
+    gender: a.gender ?? b.gender,
+    national: a.national ?? b.national,
     category: { ...(b.category ?? {}), ...(a.category ?? {}) },
   }
 }
@@ -315,7 +358,7 @@ export function useSuggest(query: Ref<string>, opts: SuggestOptions = {}) {
       remote.value.filter((h) => fresh || fold(h.name).replace(/ /g, '').includes(bare)).forEach((h) => add(h, 'sofascore'))
     }
     const found = [...out.values()]
-    return markTwins(found, (x) => `${x.group}|${x.hit.sport ?? ''}|${fold(x.hit.name)}`)
+    return markTwins(found, (x) => `${x.group}|${x.hit.sport ?? ''}|${fold(x.hit.name)}`, (a, b) => traitsApart(a.hit, b.hit))
   })
 
   const groups = computed<SuggestGroup[]>(() =>

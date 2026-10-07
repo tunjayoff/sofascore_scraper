@@ -545,8 +545,8 @@ class FollowStore:
             ).fetchone()
             if holder is not None and int(holder["id"]) != ignore_id:
                 raise FollowExists(
-                    f"{FollowExists.default_message}: {wanted.name!r} adı {TOURNAMENT} {holder['entity_id']} "
-                    "için kullanılıyor"
+                    f"{FollowExists.default_message}: the name {wanted.name!r} is used by {TOURNAMENT} "
+                    f"{holder['entity_id']}"
                 )
 
     @staticmethod

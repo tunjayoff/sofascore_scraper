@@ -227,74 +227,74 @@ def _validate_slice(name: str, entry: Any, problems: List[str]) -> None:
     try:
         layout.split_slice_name(name)
     except LayoutError:
-        bad("geçersiz dilim adı")
+        bad("invalid slice name")
     if not isinstance(entry, SliceEntry):
-        bad("nesne değil")
+        bad("not an object")
         return
     if entry.state not in STATES:
-        bad(f"geçersiz state {entry.state!r}")
+        bad(f"invalid state {entry.state!r}")
     for label, value in (("fetched_at", entry.fetched_at), ("checked_at", entry.checked_at)):
         if value is not None and not _is_ts(value):
-            bad(f"{label} geçerli bir zaman değil")
+            bad(f"{label} is not a valid time")
     payload_fields = (entry.stored_bytes, entry.raw_bytes, entry.sha256)
     if any(v is not None for v in payload_fields):
         if not (_is_int(entry.stored_bytes) and _is_int(entry.raw_bytes) and _is_sha256(entry.sha256)):
-            bad("bytes, raw_bytes ve sha256 birlikte ve geçerli olmalı")
+            bad("bytes, raw_bytes and sha256 must be given together and be valid")
     elif entry.state == "ok":
-        bad("state ok ama yük bilgisi (sha256) yok")
+        bad("state ok but no payload information (sha256)")
     if entry.state == "error" and entry.error is None:
-        bad("state error ama error alanı yok")
+        bad("state error but no error field")
     if entry.empty is not None:
         mark = entry.empty
         if not isinstance(mark, EmptyMark):
-            bad("empty nesne değil")
+            bad("empty is not an object")
         elif not (_is_int(mark.count) and _is_int(mark.unverified)
                   and (mark.reason is None or isinstance(mark.reason, str))
                   and (mark.at is None or _is_ts(mark.at))):
-            bad("empty alanı geçersiz")
+            bad("empty is not valid")
     if entry.error is not None:
         failure = entry.error
         if not isinstance(failure, ErrorMark):
-            bad("error nesne değil")
+            bad("error is not an object")
         elif not (isinstance(failure.reason, str) and failure.reason
                   and (failure.status is None or _is_int(failure.status))
                   and (failure.at is None or _is_ts(failure.at))
                   and _is_int(failure.count, 1)):
-            bad("error alanı geçersiz")
+            bad("error is not valid")
     if entry.history is not None:
         history = entry.history
         if not isinstance(history, HistoryMark):
-            bad("history nesne değil")
+            bad("history is not an object")
         elif not (_is_int(history.count) and (history.last_sha256 is None or _is_sha256(history.last_sha256))):
-            bad("history alanı geçersiz")
+            bad("history is not valid")
     if entry.meta is not None and not isinstance(entry.meta, dict):
-        bad("meta nesne değil")
+        bad("meta is not an object")
 
 
 def validate(manifest: Manifest) -> List[str]:
     """Biçim 1 kurallarına göre sorunların listesi; boş liste = geçerli. Hata fırlatmaz."""
     problems: List[str] = []
     if not _is_int(manifest.format, 1):
-        problems.append(f"geçersiz format {manifest.format!r}")
+        problems.append(f"invalid format {manifest.format!r}")
     if manifest.kind not in layout.KINDS:
-        problems.append(f"geçersiz kind {manifest.kind!r}")
+        problems.append(f"invalid kind {manifest.kind!r}")
     if not _is_int(manifest.id):
-        problems.append(f"geçersiz id {manifest.id!r}")
+        problems.append(f"invalid id {manifest.id!r}")
     for label, value in (("created_at", manifest.created_at), ("updated_at", manifest.updated_at)):
         if not _is_ts(value):
-            problems.append(f"{label} geçerli bir zaman değil")
+            problems.append(f"{label} is not a valid time")
     if manifest.migrated_from is not None and not (isinstance(manifest.migrated_from, str) and manifest.migrated_from):
-        problems.append("migrated_from boş olmayan bir metin olmalı")
+        problems.append("migrated_from must be a non-empty string")
     observation = manifest.observation
     if observation is not None:
         if not isinstance(observation, Observation):
-            problems.append("observation nesne değil")
+            problems.append("observation is not an object")
         elif not ((observation.observed_at is None or _is_ts(observation.observed_at))
                   and (observation.change_ts is None or _is_int(observation.change_ts))
                   and isinstance(observation.status_regressed, bool)):
-            problems.append("observation alanı geçersiz")
+            problems.append("observation is not valid")
     if not isinstance(manifest.slices, dict):
-        problems.append("slices nesne değil")
+        problems.append("slices is not an object")
     else:
         for name, entry in manifest.slices.items():
             _validate_slice(name, entry, problems)
@@ -310,7 +310,7 @@ def from_dict(data: Any, path: Optional[PathLike] = None) -> Manifest:
     """
     where = os.fspath(path) if path is not None else None
     if not isinstance(data, dict):
-        raise PayloadCorrupt(f"Manifest bir JSON nesnesi değil: {where}", path=where)
+        raise PayloadCorrupt(f"The manifest is not a JSON object: {where}", path=where)
     found = data.get("format")
     if _is_int(found) and found > MANIFEST_FORMAT:
         raise SchemaTooNew(path=where, component="manifest", found=found, supported=MANIFEST_FORMAT)
@@ -329,7 +329,7 @@ def from_dict(data: Any, path: Optional[PathLike] = None) -> Manifest:
     problems = validate(manifest)
     if problems:
         detail = "; ".join(problems)
-        raise PayloadCorrupt(f"Manifest geçersiz ({detail}): {where}", path=where, detail=detail)
+        raise PayloadCorrupt(f"Invalid manifest ({detail}): {where}", path=where, detail=detail)
     return manifest
 
 
@@ -338,7 +338,7 @@ def to_dict(manifest: Manifest) -> Dict[str, Any]:
     problems = validate(manifest)
     if problems:
         detail = "; ".join(problems)
-        raise LayoutError(f"Geçersiz manifest yazılamaz ({detail})", detail=detail)
+        raise LayoutError(f"An invalid manifest cannot be written ({detail})", detail=detail)
     observation = manifest.observation
     return _with_extra({
         "format": MANIFEST_FORMAT,
@@ -363,7 +363,7 @@ def read_manifest(path: PathLike) -> Manifest:
         data = json.loads(raw)
     except (ValueError, RecursionError) as e:
         detail = str(e) or type(e).__name__
-        raise PayloadCorrupt(f"Manifest okunamadı ({detail}): {os.fspath(path)}",
+        raise PayloadCorrupt(f"The manifest could not be read ({detail}): {os.fspath(path)}",
                              path=os.fspath(path), detail=detail) from e
     return from_dict(data, path)
 
