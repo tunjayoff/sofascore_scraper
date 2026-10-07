@@ -255,3 +255,26 @@ def test_settings_that_cannot_be_loaded_are_not_kept(tmp_path: Path, sandbox: Pa
     assert MEMBER in report.skipped and MEMBER not in report.restored and MEMBER not in report.replaced
     assert sandbox.read_bytes() == before and len(calls) == 2
     assert loader.active().settings.client.retries == 8
+
+
+def test_a_settings_save_leaves_no_lock_file_and_a_backup_takes_none(tmp_path: Path, sandbox: Path) -> None:
+    """
+    FX-25: ayar kaydından sonra `overrides.json.lock` kalmaz (kilit dosyası iş bitince silinir) ve yedek,
+    önceki bir sürümün bıraktığı `.lock` dosyasını da almaz: ayar dosyaları adlarıyla verilir.
+    """
+    from sofascore_scraper import config_files
+
+    overrides.write_overrides({"client.retries": 7})
+    assert sandbox.is_file()
+    lock = Path(f"{sandbox}.lock")
+    if config_files.fcntl is not None:
+        assert not lock.exists()
+
+    lock.write_text("", encoding="utf-8")  # eski bir sürümden kalan kilit dosyası
+    source = open_store(sf.build_fixture("canonical", tmp_path / "source" / "data").data_dir)
+    info = BackupService(source).create("all", config_files=[str(sandbox.parent / "league_sports.json")])
+
+    with zipfile.ZipFile(info.path) as zf:
+        names = zf.namelist()
+    assert MEMBER in names
+    assert [n for n in names if n.endswith(".lock")] == []
