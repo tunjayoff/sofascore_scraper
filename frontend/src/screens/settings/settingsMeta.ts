@@ -1,7 +1,7 @@
 /**
  * How each setting is shown (05-web-ui.md 6.16). The API has no setting metadata yet (gap G4 of 7.3, P27):
  * until then this table gives every known key its section and control, with the limits of the server's
- * model (src/config/settings.py) and of its write rules (src/web/api/v1/settings.py: WRITABLE). Whether a
+ * model (sofascore_scraper/config/settings.py) and of its write rules (sofascore_scraper/web/api/v1/settings.py: WRITABLE). Whether a
  * key can be changed always comes from the server (`writable`, `locked`); a key missing here is shown as
  * text under "Other", so nothing the server reports is hidden.
  */

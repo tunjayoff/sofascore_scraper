@@ -1,7 +1,7 @@
 import type { FollowRecord, SportSlice } from '@/api/v1/schema'
 
 /**
- * The data selection as the server resolves it (P27, `src/sports.py` `resolve_selection`), for the
+ * The data selection as the server resolves it (P27, `sofascore_scraper/sports.py` `resolve_selection`), for the
  * checklists of the follow editor and of Settings › Data (FX-14b). A name in a selection is a slice key or
  * a group (`core`, `odds`, `standings` …), and naming a group selects every slice of it.
  *

@@ -8,7 +8,7 @@ import en from '@/locales/en'
 import tr from '@/locales/tr'
 
 /**
- * The server's Content-Security-Policy has no 'unsafe-eval' (src/web/security.py). vue-i18n (10 and later)
+ * The server's Content-Security-Policy has no 'unsafe-eval' (sofascore_scraper/web/security.py). vue-i18n (10 and later)
  * always compiles messages without eval, so what has to hold is checked directly: every message renders where
  * eval and new Function are refused, and the production bundle contains neither.
  */
@@ -56,7 +56,7 @@ function builtScripts(dir: string): string[] {
 
 describe('the app runs without eval (Content-Security-Policy)', () => {
   it('index.html tells the server and has no inline script', () => {
-    // src/web/security.py: CSP_MARKER. Without it the server keeps 'unsafe-eval' for old builds.
+    // sofascore_scraper/web/security.py: CSP_MARKER. Without it the server keeps 'unsafe-eval' for old builds.
     expect(indexHtml).toContain('<meta name="sofascore-csp" content="no-eval"')
     // No inline script: script-src is 'self' only
     expect([...indexHtml.matchAll(/<script\b[^>]*>/g)].map((m) => m[0])).toEqual(['<script type="module" src="/src/main.ts">'])

@@ -15,7 +15,7 @@ export function langOf(tag: unknown): Lang | null {
 
 /**
  * The language rule, the same one the CLI, the installers and the launcher follow
- * (src/language.py): explicit choice > detected language > English.
+ * (sofascore_scraper/language.py): explicit choice > detected language > English.
  * `saved` is the choice made in this browser; `languages` is navigator.languages, in the
  * user's order of preference: the first one we have a translation for wins.
  */
