@@ -33,7 +33,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field, field_validator
 
 from sofascore_scraper import breaker as request_breaker
-from sofascore_scraper import bridge_health, diagnostics, sports
+from sofascore_scraper import bridge_health, diagnostics, sports, throttle
 from sofascore_scraper import store as store_api
 from sofascore_scraper.errors import to_platform_error
 from sofascore_scraper.exceptions import SofaScoreScraperError, StorageError
@@ -140,8 +140,9 @@ def _search_remote_leagues_sync(q: str) -> List[RemoteLeagueResult]:
     url = api_url(endpoints.search_unique_tournaments(q))
     before = bridge_health.snapshot()
     try:
-        # Etkileşimli arama: 403 bekleme döngüsüyle bir sunucu işçisini dakikalarca tutma
-        data = make_api_request(url, max_retries=1, timeout=10, raise_errors=True)
+        # Etkileşimli arama: 403 bekleme döngüsüyle bir sunucu işçisini dakikalarca tutma; ortak bütçede öncelikli
+        with throttle.interactive():
+            data = make_api_request(url, max_retries=1, timeout=10, raise_errors=True)
     except SofaScoreScraperError as e:
         reason = upstream.reason_for(e, before)
         # Arama uç noktası sonuç yokken boş liste döndürür: 404 "sonuç yok" değil, beklenmeyen yanıt

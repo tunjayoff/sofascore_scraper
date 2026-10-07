@@ -457,15 +457,17 @@ class FollowsService:
 
     def _ask(self, path: str) -> Any:
         """Aramanın tek isteği; 404 None (bulunamadı), öteki hatalar tipli hata."""
-        from sofascore_scraper import bridge_health
+        from sofascore_scraper import bridge_health, throttle
         from sofascore_scraper.client import api_url
         from sofascore_scraper.exceptions import APIError, NetworkError, RateLimitError, ResourceNotFoundError, SofaScoreScraperError
         from sofascore_scraper.utils import make_api_request
 
         before = bridge_health.snapshot()
         try:
-            # Etkileşimli arama: 403 bekleme döngüsüyle bir sunucu işçisini dakikalarca tutma
-            return make_api_request(api_url(path), max_retries=1, timeout=10, raise_errors=True)
+            # Etkileşimli arama: 403 bekleme döngüsüyle bir sunucu işçisini dakikalarca tutma. Kullanıcı bekliyor:
+            # ortak bütçede indirmenin bekleyen isteklerinin önüne geçer (öncelik şeridi, FX-23, F16)
+            with throttle.interactive():
+                return make_api_request(api_url(path), max_retries=1, timeout=10, raise_errors=True)
         except SofaScoreScraperError as e:
             if isinstance(e, ResourceNotFoundError):
                 return None

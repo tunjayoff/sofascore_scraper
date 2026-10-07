@@ -210,10 +210,11 @@ async def _wait_for_slot() -> None:
         if wait is not None:
             wait.own += delay
         with throttle.give_back_if_interrupted(delay):
-            if shared:
-                await asyncio.sleep(delay)
-            else:
-                await _cancellable_sleep(delay)
+            sleep = asyncio.sleep if shared else _cancellable_sleep
+            await sleep(delay)
+            # Etkileşimli bir istek önüne geçtiyse (FX-23, F16) kaydırılan sırayı bekler
+            if (extra := await throttle.settle_async(delay, sleep)) and wait is not None:
+                wait.own += extra
 
 
 class BrowserBridge:

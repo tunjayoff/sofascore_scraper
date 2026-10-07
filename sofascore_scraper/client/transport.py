@@ -119,6 +119,7 @@ def _throttle() -> None:
     if delay > 0:
         with throttle.give_back_if_interrupted(delay):
             _sleep(delay)
+            throttle.settle(delay, _sleep)  # etkileşimli bir istek önüne geçtiyse (FX-23, F16)
 
 
 async def _athrottle() -> None:
@@ -126,6 +127,7 @@ async def _athrottle() -> None:
     if delay > 0:
         with throttle.give_back_if_interrupted(delay):
             await _asleep(delay)
+            await throttle.settle_async(delay, _asleep)
 
 
 IMPERSONATE_PROFILES = [
