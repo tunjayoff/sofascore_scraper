@@ -13,6 +13,7 @@ import { JOB_WATCH_MS, watchJob, watchJobs } from '@/app/jobWatch'
 import { useStatusStore } from '@/app/statusStore'
 import JobDetailScreen from '@/screens/jobs/JobDetailScreen.vue'
 import EventDetailScreen from '@/screens/events/EventDetailScreen.vue'
+import ExportsScreen from '@/screens/exports/ExportsScreen.vue'
 import { resetNames } from '@/screens/events/eventText'
 import { hitPlace, placeName, playerTeam } from '@/screens/follows/followText'
 import { resetSports } from '@/app/sports'
@@ -465,5 +466,48 @@ describe('F11: the odds of a match as a table', () => {
     expect(title.text()).toBe('Penalty in match')
     expect(title.attributes('lang')).toBe('en')
     expect(w.find('[data-choice="1"]').text()).toContain('1.80')
+  })
+})
+
+describe('F13: the export filter offers the added teams and matches', () => {
+  it('a team stands for its stored matches and a match for itself, sent as match numbers; players are explained', async () => {
+    const f = mockFetch({
+      ...SPORTS,
+      'GET /api/v1/exports': page([]),
+      'GET /api/v1/tournaments': page([{ id: 17, sport: 'football', category_id: 1, name: 'Premier League', slug: 'pl', followed: true }]),
+      'GET /api/v1/follows': page([
+        follow(),
+        follow({ id: 'team:3071', kind: 'team', entity_id: 3071, name: 'Göztepe' }),
+        follow({ id: 'event:9100003', kind: 'event', entity_id: 9100003, name: 'Chelsea – Liverpool' }),
+        follow({ id: 'player:7', kind: 'player', entity_id: 7, name: 'Bukayo Saka' }),
+      ]),
+      'GET /api/v1/events': (_init?: RequestInit, url?: string) => {
+        const q = new URL(String(url), 'http://x').searchParams
+        expect(q.get('participant')).toBe('3071')
+        return q.get('cursor') ? page([{ id: 14000003 }]) : page([{ id: 14000001 }, { id: 14000002 }], 'c2')
+      },
+      'POST /api/v1/jobs': { data: job({ id: 'EX1', kind: 'export', state: 'running' }) },
+    })
+    const { w } = await mountScreen(ExportsScreen, '/exports')
+    wrappers.push(w)
+    await flush()
+    await w.findAll('button').find((b) => b.text().includes(t('ui.exports.new')))!.trigger('click')
+    await flush()
+    const box = w.find('[data-testid="export-follows"]')
+    // teams and single matches, not leagues (they have their own list) and not players
+    expect(box.findAll('[data-follow]').map((x) => x.attributes('data-follow'))).toEqual(['team:3071', 'event:9100003'])
+    expect(w.find('[data-testid="export-players-note"]').text()).toBe(t('ui.exports.dialog.playersNote'))
+    await box.find('[data-follow="team:3071"] input').setValue(true)
+    await flush()
+    expect(box.find('[data-testid="export-team-matches"]').text()).toBe(`· ${t('ui.exports.dialog.followMatches', { n: 3 })}`)
+    await box.find('[data-follow="event:9100003"] input').setValue(true)
+    await w.findAll('[role="dialog"] input.u-mono')[0].setValue('16950622')
+    expect(await axeViolations(w.find('[role="dialog"]').element)).toEqual([])
+    await w.find('[data-testid="confirm"]').trigger('click')
+    await flush()
+    const sent = JSON.parse(String(callsTo(f, 'POST /api/v1/jobs')[0][1]!.body))
+    expect(sent.spec.profile).toBe('legacy-wide-csv')
+    expect([...sent.spec.filter.event_ids].sort()).toEqual([14000001, 14000002, 14000003, 16950622, 9100003])
+    expect(callsTo(f, 'GET /api/v1/events')).toHaveLength(2)
   })
 })
