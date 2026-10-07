@@ -777,6 +777,13 @@ const en = {
       origin: 'Added from',
       created: 'Added',
       match: 'Match',
+      number: 'SofaScore number',
+    },
+    kindShort: {
+      tournament: 'League',
+      team: 'Team',
+      player: 'Player',
+      event: 'Match',
     },
     openMatch: 'Open the match',
     seasonCounts: '{events} matches · {finished} finished · {details} with details',

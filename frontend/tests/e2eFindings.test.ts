@@ -8,10 +8,12 @@ import { clearToasts } from '@/ui/toast'
 import { i18n, setLocale } from '@/i18n'
 import FollowEditorScreen from '@/screens/follows/FollowEditorScreen.vue'
 import FollowsScreen from '@/screens/follows/FollowsScreen.vue'
+import FollowDetailScreen from '@/screens/follows/FollowDetailScreen.vue'
+import { JOB_WATCH_MS, watchJob, watchJobs } from '@/app/jobWatch'
 import { hitPlace, placeName, playerTeam } from '@/screens/follows/followText'
 import { resetSports } from '@/app/sports'
 import { callsTo, flush, mockFetch } from './helpers'
-import { axeViolations, follow, mountScreen, page, sport, status } from './v1'
+import { axeViolations, follow, job, mountScreen, page, sport, status } from './v1'
 
 /**
  * FX-24: the findings of the end-to-end test of the web UI against the real SofaScore (F5 to F37 of the
@@ -231,5 +233,59 @@ describe('F26: same-named teams can be told apart', () => {
     wrappers.push(w)
     await flush()
     expect(w.findAll('[data-testid="follow-number"]').map((x) => x.text())).toEqual([t('ui.suggest.number', { id: 36456 }), t('ui.suggest.number', { id: 36460 })])
+  })
+})
+
+describe('F5: the follow page says where the league is from, not its number', () => {
+  const supercup = (category: unknown) => ({ data: { id: 465, sport: 'football', category_id: 1465, name: 'UEFA Super Cup', slug: 'uefa-super-cup', category, followed: true } })
+  const europe = { id: 1465, sport: 'football', name: 'Europe', slug: 'europe', country_code: null }
+
+  it('"Football · Europe · League", in Turkish "Futbol · Avrupa · Lig"; the number is in the facts; a download that brings the category shows it', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    let category: unknown = null
+    const f = mockFetch({
+      ...SPORTS,
+      'GET /api/v1/follows/tournament:465': { data: follow({ id: 'tournament:465', entity_id: 465, name: 'UEFA Super Cup', seasons: [76138] }) },
+      'GET /api/v1/tournaments/465': () => supercup(category),
+      'GET /api/v1/tournaments/465/seasons': list([]),
+      'GET /api/v1/tournaments': page([]),
+      'GET /api/v1/jobs': page([]),
+      'GET /api/v1/jobs/D1': { data: job({ id: 'D1', spec: { follows: ['tournament:465'] } }) },
+    })
+    const { w } = await mountScreen(FollowDetailScreen, '/follows/tournament/465', '/follows/:kind/:id')
+    wrappers.push(w)
+    await flush()
+    // before the first download the catalog has no category: no number in its place
+    expect(w.find('[data-testid="follow-header-line"]').text()).toBe('Football · League')
+    expect(w.find('[data-testid="follow-facts"]').text()).toContain(t('ui.followDetail.fact.number'))
+    expect(w.find('[data-testid="follow-facts"]').text()).toContain('465')
+    // the download ends: the league's record is read again and has its category now
+    category = europe
+    const stop = watchJobs()
+    watchJob({ id: 'D1' })
+    await vi.advanceTimersByTimeAsync(JOB_WATCH_MS + 50)
+    await flush()
+    expect(callsTo(f, 'GET /api/v1/tournaments/465')).toHaveLength(2)
+    expect(w.find('[data-testid="follow-header-line"]').text()).toBe('Football · Europe · League')
+    setLocale('tr')
+    await flush()
+    expect(w.find('[data-testid="follow-header-line"]').text()).toBe('Futbol · Avrupa · Lig')
+    expect(w.find('[data-testid="follow-header-line"]').text()).not.toContain('#')
+    stop()
+  })
+
+  it('a country by its code, in the reader’s language', async () => {
+    setLocale('tr')
+    mockFetch({
+      ...SPORTS,
+      'GET /api/v1/follows/tournament:52': { data: follow({ id: 'tournament:52', entity_id: 52, name: 'Trendyol Süper Lig' }) },
+      'GET /api/v1/tournaments/52': { data: { id: 52, sport: 'football', category_id: 46, name: 'Trendyol Süper Lig', slug: 'x', category: { id: 46, sport: 'football', name: 'Turkey', slug: 'turkey', country_code: 'TR' } } },
+      'GET /api/v1/tournaments/52/seasons': list([]),
+      'GET /api/v1/jobs': page([]),
+    })
+    const { w } = await mountScreen(FollowDetailScreen, '/follows/tournament/52', '/follows/:kind/:id')
+    wrappers.push(w)
+    await flush()
+    expect(w.find('[data-testid="follow-header-line"]').text()).toBe('Futbol · Türkiye · Lig')
   })
 })

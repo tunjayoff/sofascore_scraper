@@ -14,7 +14,7 @@ import ErrorState from '@/ui/ErrorState.vue'
 import SkeletonBlock from '@/ui/SkeletonBlock.vue'
 import { v1, V1Error } from '@/api/v1/client'
 import type { FollowRecord, Job, SeasonEntry, TournamentRecord } from '@/api/v1/schema'
-import { sportName } from '@/app/sports'
+import { isIndividual, sportName } from '@/app/sports'
 import { useStatusStore } from '@/app/statusStore'
 import { onJobEnded } from '@/app/jobWatch'
 import { num, pct } from '@/ui/time'
@@ -24,7 +24,7 @@ import EventsList from '@/screens/events/EventsList.vue'
 import FollowActions from './FollowActions.vue'
 import MoveFollow from './MoveFollow.vue'
 import SlicePicker from './SlicePicker.vue'
-import { dataText, hasOdds, lastSyncOf, lockReason, seasonsText, syncIncludes } from './followText'
+import { dataText, hasOdds, lastSyncOf, lockReason, placeName, seasonsText, syncIncludes } from './followText'
 
 /**
  * Follow detail (6.4): one follow with its seasons, its matches, its data selection and its downloads.
@@ -86,9 +86,7 @@ async function load() {
     follow.value = await v1.follow(followId.value)
     noteFollowNames([follow.value])
     if (isTournament.value) {
-      v1.tournament(entityId.value)
-        .then((x) => (tournament.value = x))
-        .catch(() => (tournament.value = null))
+      loadTournament()
       loadSeasons()
     }
     loadJobs()
@@ -99,6 +97,26 @@ async function load() {
     loading.value = false
   }
 }
+
+/** The league's record: its category (country or region) is stored by its first download (FX-24 F5). */
+function loadTournament() {
+  v1.tournament(entityId.value)
+    .then((x) => (tournament.value = x))
+    .catch(() => (tournament.value = null))
+}
+
+/**
+ * The line under the title (FX-24 F5): the sport, the league's country or region in the reader's language
+ * and what is followed in one word ("Football · Europe · League"); the number is in the facts.
+ */
+const headerLine = computed(() => {
+  const f = follow.value
+  if (!f) return ''
+  const category = tournament.value?.category
+  const place = category ? placeName(category.country_code, category.name) : ''
+  const kindWord = t(`ui.followDetail.kindShort.${f.kind === 'team' && isIndividual(f.sport) ? 'player' : f.kind}`)
+  return [sportName(f.sport), place, kindWord].filter(Boolean).join(' · ')
+})
 
 function loadJobs() {
   const byTarget = v1.jobs({ target: followId.value, limit: 50 }).then((r) => r.data)
@@ -117,7 +135,10 @@ const stopListening = onJobEnded((job) => {
   if (!f || !(syncIncludes(f, job) || jobLeague(job) === f.entity_id || targets(job))) return
   loadJobs()
   void status.refresh().catch(() => {})
-  if (isTournament.value) loadSeasons()
+  if (isTournament.value) {
+    loadTournament()
+    loadSeasons()
+  }
 })
 onUnmounted(stopListening)
 
@@ -156,6 +177,7 @@ const facts = computed(() => {
     ...(f.kind === 'tournament' ? [{ key: 'coverage', label: t('ui.followDetail.fact.coverage') }] : []),
     { key: 'origin', label: t('ui.followDetail.fact.origin') },
     { key: 'created', label: t('ui.followDetail.fact.created') },
+    { key: 'number', label: t('ui.followDetail.fact.number'), value: String(f.entity_id), mono: true },
   ]
 })
 
@@ -178,7 +200,7 @@ onMounted(() => void load())
     <template v-else-if="follow">
       <PageHeader :title="follow.name" :crumbs="[{ label: t('ui.nav.follows'), to: '/follows' }]">
         <template #meta>
-          <span class="u-small u-muted">{{ [sportName(follow.sport), tournament?.category?.name, `${t(`ui.follows.kind.${follow.kind}`)} #${follow.entity_id}`].filter(Boolean).join(' · ') }}</span>
+          <span class="u-small u-muted" data-testid="follow-header-line">{{ headerLine }}</span>
           <StatusBadge v-if="follow.origin !== 'api'" kind="origin" :value="follow.origin" />
           <UiBadge v-if="!follow.enabled" tone="neutral" icon="pause">{{ t('ui.follows.disabled') }}</UiBadge>
         </template>

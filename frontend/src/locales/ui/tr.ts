@@ -779,6 +779,13 @@ const tr: typeof en = {
       origin: 'Nereden eklendi',
       created: 'Eklenme',
       match: 'Maç',
+      number: 'SofaScore numarası',
+    },
+    kindShort: {
+      tournament: 'Lig',
+      team: 'Takım',
+      player: 'Oyuncu',
+      event: 'Tek maç',
     },
     openMatch: 'Maçı aç',
     seasonCounts: '{events} maç · {finished} bitti · {details} ayrıntılı',
