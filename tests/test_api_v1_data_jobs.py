@@ -207,6 +207,25 @@ def test_a_backup_job_and_the_backup_list(jobs: JobStore, store: Store) -> None:
     error(client.get("/api/v1/backups/..%2Fstate.db"), 404, "not_found")
 
 
+def test_a_backup_job_records_itself_as_finished_in_the_archive(jobs: JobStore, store: Store,
+                                                                 tmp_path: Path) -> None:
+    """F30 (FX-23): yedekteki state.db'de yedeği alan iş `completed`; geri yüklemeden sonra yarıda kalmış görünmez."""
+    import sqlite3
+
+    job = start({"kind": "backup", "spec": {"scope": "all"}})
+    done = ended(job["id"])
+    assert done["state"] == "succeeded", done
+    archived = tmp_path / "archived_state.db"
+    with zipfile.ZipFile(store.data_dir / "backups" / done["result"]["backup"]["name"]) as zf:
+        archived.write_bytes(zf.read(".meta/state.db"))
+    conn = sqlite3.connect(archived)
+    try:
+        row = conn.execute("SELECT status, finished_at FROM jobs WHERE id = ?", (job["id"],)).fetchone()
+    finally:
+        conn.close()
+    assert row[0] == "completed" and row[1]
+
+
 def test_a_restore_is_checked_not_done(jobs: JobStore, store: Store) -> None:
     name = BackupService(store).create("data").name
     job = start({"kind": "restore", "spec": {"name": name}})

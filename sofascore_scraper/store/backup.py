@@ -100,6 +100,9 @@ _PRIVATE_MODE = 0o600
 _COPY_CHUNK = 1024 * 1024
 _STORED_SUFFIX = ".gz"  # zaten sıkıştırılmış üyeler
 _DRIVE_RE = re.compile(r"^[A-Za-z]:")
+# İş satırının durumları (sofascore_scraper/store/jobs.py STATUS_*): çalışan / sıradaki ve başarıyla biten
+_ACTIVE_JOB = "status IN ('running', 'queued')"
+_JOB_COMPLETED = "completed"
 
 
 class BackupNotFound(StoreError):
@@ -441,7 +444,8 @@ class BackupManager:
     # --- yazma -----------------------------------------------------------------------------------
 
     def create(self, scope: str = "all", *, config_files: Sequence[str] = (), env_file: Optional[str] = None,
-               overrides_file: Optional[str] = None, now: Optional[datetime] = None) -> BackupInfo:
+               overrides_file: Optional[str] = None, now: Optional[datetime] = None,
+               job_id: Optional[str] = None) -> BackupInfo:
         """
         Yedeği biçim 2'de yazar ve bilgisini döndürür (modül belgesindeki tablo).
 
@@ -452,6 +456,9 @@ class BackupManager:
         overrides_file  verilirse, aynı kapsamlarda ve dosya varsa `config/overrides.json` olarak eklenir;
                       proxy adresi parola taşıyabildiği için dosyanın izni 0600 olur (adı değişmez)
         now           dosya adındaki zaman (yerel); verilmezse şimdi
+        job_id        yedeği alan iş (web'in ya da zamanlayıcının `backup` işi). Kopyadaki satırı bitmiş
+                      (`completed`) yazılır: yedek alınırken iş henüz çalışıyordur, geri yüklenen geçmişte
+                      "running" kalsaydı geri yükleme onu yarıda kalmış sayardı (FX-23, F30)
 
         Bilinmeyen kapsam ValueError; dosya sistemi hatası StoreError (yarım zip silinir).
         """
@@ -483,7 +490,7 @@ class BackupManager:
                 if scope in STATE_SCOPES:
                     staging = files.new_staging_dir(data_dir, "backup")
                     copy = os.path.join(staging, "state.db")
-                    state_schema = self._snapshot_state(copy, counts)
+                    state_schema = self._snapshot_state(copy, counts, job_id=job_id)
                     zf.write(copy, STATE_MEMBER)
                 if scope != "config":
                     schema = layout.resolve(data_dir, layout.SCHEMA_FILE)
@@ -528,10 +535,11 @@ class BackupManager:
             raise StoreError(f"Backup was written but cannot be read back: {path}", path=path)
         return info
 
-    def _snapshot_state(self, target: str, counts: Counter[str]) -> int:
+    def _snapshot_state(self, target: str, counts: Counter[str], *, job_id: Optional[str] = None) -> int:
         """
         state.db'nin tutarlı bir kopyasını SQLite'ın yedekleme API'siyle `target`'a alır (WAL dosyası
-        kopyalanmaz; kopya tek dosyadır). Kopyada kilit sahibi satırları silinir. Şema sürümünü döndürür.
+        kopyalanmaz; kopya tek dosyadır). Kopyada kilit sahibi satırları silinir. `job_id` yedeği alan işse
+        kopyadaki satırı bitmiş yazılır (`create`). Şema sürümünü döndürür.
         """
         source = self._store._state.connection()
         copy = sqlite3.connect(target, isolation_level=None)
@@ -539,6 +547,10 @@ class BackupManager:
             source.backup(copy)
             copy.execute("PRAGMA journal_mode = DELETE")
             copy.execute("DELETE FROM leases")
+            if job_id is not None:
+                copy.execute(
+                    f"UPDATE jobs SET status = ?, progress = 100, finished_at = ? WHERE id = ? AND {_ACTIVE_JOB}",
+                    (_JOB_COMPLETED, datetime.now(timezone.utc).replace(microsecond=0).isoformat(), job_id))
             for table in ("follows", "jobs", "stream_events", "sink_cursors"):
                 counts[table] = int(copy.execute(f"SELECT count(*) FROM {table}").fetchone()[0])
             counts["api_follows"] = int(
@@ -901,6 +913,10 @@ class BackupManager:
         Çalışan iş (geri yüklemeyi yapan iş, ör. API'nin `restore` işi) satırı ve olaylarıyla korunur: iş
         bittiğinde kendi satırına yazar; geri yüklenen geçmişte o satır yoktur (plan maddesi FX-13).
 
+        Geri yüklenen geçmişte çalışıyor görünen bir iş bu veri dizininde bitmişse (eski bir yedeği alan iş:
+        yedek alınırken çalışıyordu, F30) bugünkü bitmiş satırı ve olayları alınır; yoksa geri yüklemeden
+        sonra yarıda kalmış sayılır ve sahte bir uyarı verirdi.
+
         Korunan satırlar ve yeni kimlik önce `path`teki kopyaya yazılır, sonra kopya tek bir yedekleme adımıyla
         yerine konur: açık veritabanını okuyan başka bir bağlantı (iş geçmişini soran web isteği) ya eski ya
         yeni içeriği görür, işin satırının olmadığı bir ara durumu görmez. Önceden satırlar yedeklemeden sonra
@@ -923,7 +939,12 @@ class BackupManager:
                 for job_id in running_ids:
                     source.execute("DELETE FROM jobs WHERE id = ?", (job_id,))
                     source.execute("DELETE FROM job_events WHERE job_id = ?", (job_id,))
-                for table, (columns, rows) in (("leases", leases), ("jobs", running), ("job_events", events)):
+                finished = self._finished_here(live, source, running_ids)
+                for job_id in finished[0]:
+                    source.execute("DELETE FROM jobs WHERE id = ?", (job_id,))
+                    source.execute("DELETE FROM job_events WHERE job_id = ?", (job_id,))
+                for table, (columns, rows) in (("leases", leases), ("jobs", running), ("job_events", events),
+                                               ("jobs", finished[1]), ("job_events", finished[2])):
                     if rows:
                         source.executemany(
                             f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({', '.join('?' * len(columns))})",
@@ -939,6 +960,26 @@ class BackupManager:
         finally:
             source.close()
         self._store.streams._stream_id = None
+
+    @staticmethod
+    def _finished_here(live: sqlite3.Connection, source: sqlite3.Connection, running_ids: Sequence[str]
+                       ) -> Tuple[List[str], Tuple[List[str], List[Any]], Tuple[List[str], List[Any]]]:
+        """
+        Geri yüklenen kopyada çalışıyor / sırada görünen ama bu veri dizininde bitmiş işler: (kimlikler, canlı
+        satırları, canlı olayları). Bu süreçte hâlâ çalışan işler (`running_ids`) zaten korunuyor, sayılmaz.
+        """
+        restored_active = [row[0] for row in source.execute(f"SELECT id FROM jobs WHERE {_ACTIVE_JOB}")
+                           if row[0] not in running_ids]
+        if not restored_active:
+            return [], ([], []), ([], [])
+        marks = ", ".join("?" * len(restored_active))
+        rows = _rows_of(live, f"SELECT * FROM jobs WHERE id IN ({marks}) AND NOT {_ACTIVE_JOB}", restored_active)
+        if not rows[1]:
+            return [], ([], []), ([], [])
+        ids = [row[rows[0].index("id")] for row in rows[1]]
+        events = _rows_of(live, "SELECT * FROM job_events WHERE job_id IN ({})".format(", ".join("?" * len(ids))),
+                          ids)
+        return ids, rows, events
 
     def _roll_back(self, moved_aside: Sequence[Tuple[str, str]], placed: Sequence[str],
                    state_saved: Optional[str], settings_saved: Optional[Tuple[str, Optional[bytes]]] = None) -> None:

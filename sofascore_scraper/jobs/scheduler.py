@@ -317,7 +317,8 @@ def _backup_plan(options: Mapping[str, Any], context: ContextFactory) -> TaskPla
         from sofascore_scraper.services.backup import BackupService
 
         info = BackupService(context().store).create(
-            scope, config_files=_backup_config_files(), include_secrets=include_env)  # type: ignore[arg-type]
+            scope, config_files=_backup_config_files(), include_secrets=include_env,  # type: ignore[arg-type]
+            job_id=getattr(handle, "id", None))
         return JobOutcome(result={"backup": {"name": info.name, "scope": info.scope, "with_env": info.with_env,
                                              "bytes": info.size, "format": info.format}})
 

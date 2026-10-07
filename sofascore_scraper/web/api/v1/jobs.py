@@ -723,7 +723,8 @@ def _backup_body(spec: Mapping[str, Any]) -> Any:
         from sofascore_scraper.services.backup import BackupService
 
         info = BackupService(deps.store()).create(
-            spec["scope"], config_files=_config_files(), include_secrets=bool(spec.get("include_env")))
+            spec["scope"], config_files=_config_files(), include_secrets=bool(spec.get("include_env")),
+            job_id=handle.id)
         return JobOutcome(result={"backup": {"name": info.name, "scope": info.scope, "with_env": info.with_env,
                                              "bytes": info.size, "format": info.format}})
 
